@@ -1,4 +1,4 @@
-package edu.washington.escience.myria.column;
+package edu.washington.escience.myria.column.builder;
 
 import java.nio.BufferOverflowException;
 import java.sql.ResultSet;
@@ -11,6 +11,8 @@ import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.StringColumn;
+import edu.washington.escience.myria.column.mutable.StringMutableColumn;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.StringColumnMessage;
 
@@ -119,6 +121,12 @@ public final class StringColumnBuilder implements ColumnBuilder<String> {
   public StringColumn build() {
     built = true;
     return new StringColumn(data, numStrings);
+  }
+
+  @Override
+  public StringMutableColumn buildMutable() {
+    built = true;
+    return new StringMutableColumn(data, numStrings);
   }
 
   @Override

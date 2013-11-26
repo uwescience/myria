@@ -8,7 +8,7 @@ import org.junit.Test;
 
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.column.LongColumn;
-import edu.washington.escience.myria.column.LongColumnBuilder;
+import edu.washington.escience.myria.column.builder.LongColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 
 public class LongColumnTest {

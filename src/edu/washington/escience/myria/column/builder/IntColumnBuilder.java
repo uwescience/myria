@@ -1,8 +1,7 @@
-package edu.washington.escience.myria.column;
+package edu.washington.escience.myria.column.builder;
 
 import java.nio.BufferOverflowException;
-import java.nio.ByteBuffer;
-import java.nio.LongBuffer;
+import java.nio.IntBuffer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -12,15 +11,20 @@ import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.IntArrayColumn;
+import edu.washington.escience.myria.column.IntColumn;
+import edu.washington.escience.myria.column.IntProtoColumn;
+import edu.washington.escience.myria.column.mutable.IntArrayMutableColumn;
+import edu.washington.escience.myria.column.mutable.IntMutableColumn;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 
 /**
- * A column of Long values.
+ * A column of Integer values.
  * 
  */
-public final class LongColumnBuilder implements ColumnBuilder<Long> {
-  /** View of the column data as longs. */
-  private final LongBuffer data;
+public final class IntColumnBuilder implements ColumnBuilder<Integer> {
+  /** View of the column data as ints. */
+  private final IntBuffer data;
 
   /**
    * If the builder has built the column.
@@ -28,8 +32,8 @@ public final class LongColumnBuilder implements ColumnBuilder<Long> {
   private boolean built = false;
 
   /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
-  public LongColumnBuilder() {
-    data = LongBuffer.allocate(TupleBatch.BATCH_SIZE);
+  public IntColumnBuilder() {
+    data = IntBuffer.allocate(TupleBatch.BATCH_SIZE);
   }
 
   /**
@@ -37,35 +41,30 @@ public final class LongColumnBuilder implements ColumnBuilder<Long> {
    * 
    * @param data the underlying data
    * */
-  private LongColumnBuilder(final LongBuffer data) {
+  private IntColumnBuilder(final IntBuffer data) {
     this.data = data;
   }
 
   /**
-   * Constructs a LongColumn by deserializing the given ColumnMessage.
+   * Constructs an IntColumn by deserializing the given ColumnMessage.
    * 
    * @param message a ColumnMessage containing the contents of this column.
    * @param numTuples num tuples in the column message
    * @return the built column
    */
-  public static LongColumn buildFromProtobuf(final ColumnMessage message, final int numTuples) {
-    if (message.getType().ordinal() != ColumnMessage.Type.LONG_VALUE) {
-      throw new IllegalArgumentException("Trying to construct LongColumn from non-LONG ColumnMessage");
+  public static IntColumn buildFromProtobuf(final ColumnMessage message, final int numTuples) {
+    if (message.getType().ordinal() != ColumnMessage.Type.INT_VALUE) {
+      throw new IllegalArgumentException("Trying to construct IntColumn from non-INT ColumnMessage");
     }
-    if (!message.hasLongColumn()) {
-      throw new IllegalArgumentException("ColumnMessage has type LONG but no LongColumn");
+    if (!message.hasIntColumn()) {
+      throw new IllegalArgumentException("ColumnMessage has type INT but no IntColumn");
     }
-    ByteBuffer dataBytes = message.getLongColumn().getData().asReadOnlyByteBuffer();
-    LongBuffer newData = LongBuffer.allocate(numTuples);
-    for (int i = 0; i < numTuples; i++) {
-      newData.put(dataBytes.getLong());
-    }
-    return new LongColumnBuilder(newData).build();
+    return new IntProtoColumn(message.getIntColumn());
   }
 
   @Override
   public Type getType() {
-    return Type.LONG_TYPE;
+    return Type.INT_TYPE;
   }
 
   /**
@@ -73,38 +72,38 @@ public final class LongColumnBuilder implements ColumnBuilder<Long> {
    * 
    * @param value element to be inserted.
    * @return this column.
-   * @throws BufferOverflowException if exceeds buffer up bound.
+   * @throws BufferOverflowException if the column is already full
    */
-  public LongColumnBuilder append(final long value) throws BufferOverflowException {
+  public IntColumnBuilder append(final int value) throws BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
     data.put(value);
     return this;
   }
 
   @Override
-  public ColumnBuilder<Long> appendFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException,
+  public IntColumnBuilder appendObject(final Object value) throws BufferOverflowException {
+    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+    return append((Integer) value);
+  }
+
+  @Override
+  public IntColumnBuilder appendFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException,
       BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return append(resultSet.getLong(jdbcIndex));
+    return append(resultSet.getInt(jdbcIndex));
   }
 
   @Override
-  public ColumnBuilder<Long> appendFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException,
+  public IntColumnBuilder appendFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException,
       BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return append(statement.columnLong(index));
+    return append(statement.columnInt(index));
   }
 
   @Override
-  public ColumnBuilder<Long> append(final Long value) throws BufferOverflowException {
+  public IntColumnBuilder append(final Integer value) {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return append(value.longValue());
-  }
-
-  @Override
-  public ColumnBuilder<Long> appendObject(final Object value) throws BufferOverflowException {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return append((Long) value);
+    return append(value.intValue());
   }
 
   @Override
@@ -113,15 +112,21 @@ public final class LongColumnBuilder implements ColumnBuilder<Long> {
   }
 
   @Override
-  public LongColumn build() {
+  public IntColumn build() {
     built = true;
-    return new LongColumn(data.array(), data.position());
+    return new IntArrayColumn(data.array(), data.position());
+  }
+
+  @Override
+  public IntMutableColumn buildMutable() {
+    built = true;
+    return new IntArrayMutableColumn(data.array(), data.position());
   }
 
   @Override
   @Deprecated
-  public ColumnBuilder<Long> replace(final int idx, final Long value) throws IndexOutOfBoundsException {
-    return replace(idx, value.longValue());
+  public IntColumnBuilder replace(final int idx, final Integer value) throws IndexOutOfBoundsException {
+    return replace(idx, value.intValue());
   }
 
   /**
@@ -132,7 +137,7 @@ public final class LongColumnBuilder implements ColumnBuilder<Long> {
    * @return this column builder.
    * @throws IndexOutOfBoundsException if the idx exceeds the currently valid indices, i.e. the currently built size.
    */
-  public ColumnBuilder<Long> replace(final int idx, final long value) throws IndexOutOfBoundsException {
+  public IntColumnBuilder replace(final int idx, final int value) throws IndexOutOfBoundsException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
     Preconditions.checkElementIndex(idx, data.position());
     data.put(idx, value);
@@ -140,7 +145,7 @@ public final class LongColumnBuilder implements ColumnBuilder<Long> {
   }
 
   @Override
-  public ColumnBuilder<Long> expand(final int size) {
+  public IntColumnBuilder expand(final int size) {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
     Preconditions.checkArgument(size >= 0);
     data.position(data.position() + size);
@@ -148,15 +153,15 @@ public final class LongColumnBuilder implements ColumnBuilder<Long> {
   }
 
   @Override
-  public ColumnBuilder<Long> expandAll() {
+  public IntColumnBuilder expandAll() {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    data.position(data.limit());
+    data.position(data.capacity());
     return this;
   }
 
   @Override
   @Deprecated
-  public Long get(final int row) {
+  public Integer get(final int row) {
     return data.get(row);
   }
 
@@ -164,15 +169,15 @@ public final class LongColumnBuilder implements ColumnBuilder<Long> {
    * @param row the row to get
    * @return primitive value of the row
    * */
-  public long getLong(final int row) {
+  public int getInt(final int row) {
     return data.get(row);
   }
 
   @Override
-  public LongColumnBuilder forkNewBuilder() {
-    long[] arr = new long[data.array().length];
-    System.arraycopy(data.array(), 0, arr, 0, arr.length);
-    return new LongColumnBuilder((LongBuffer) LongBuffer.wrap(arr).position(data.position()).limit(data.limit()));
+  public IntColumnBuilder forkNewBuilder() {
+    int[] arr = new int[data.array().length];
+    System.arraycopy(data.array(), 0, arr, 0, data.position());
+    return new IntColumnBuilder((IntBuffer) IntBuffer.wrap(arr).position(data.position()).limit(data.limit()));
   }
 
 }

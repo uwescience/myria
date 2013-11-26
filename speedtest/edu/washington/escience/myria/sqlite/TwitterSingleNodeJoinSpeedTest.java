@@ -27,6 +27,7 @@ import edu.washington.escience.myria.operator.ColumnSelect;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
+import edu.washington.escience.myria.operator.StreamingStateWrapper;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.parallel.QueryExecutionMode;
 import edu.washington.escience.myria.parallel.TaskResourceManager;
@@ -103,7 +104,7 @@ public class TwitterSingleNodeJoinSpeedTest {
     final ColumnSelect colSelect = new ColumnSelect(new int[] { 0, 3 }, join);
 
     /* Now Dupelim */
-    final DupElim dupelim = new DupElim(colSelect);
+    final StreamingStateWrapper dupelim = new StreamingStateWrapper(colSelect, new DupElim());
 
     dupelim.open(execEnvVars);
     long result = 0;
@@ -135,7 +136,7 @@ public class TwitterSingleNodeJoinSpeedTest {
     final SymmetricHashJoin localColSelectJoin =
         new SymmetricHashJoin(scan1, scan2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
     /* Now Dupelim */
-    final DupElim dupelim = new DupElim(localColSelectJoin);
+    final StreamingStateWrapper dupelim = new StreamingStateWrapper(localColSelectJoin, new DupElim());
 
     dupelim.open(execEnvVars);
     long result = 0;
@@ -167,7 +168,7 @@ public class TwitterSingleNodeJoinSpeedTest {
     final SymmetricHashJoin localColSelectJoin =
         new SymmetricHashJoin(scan1, scan2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
     /* Now Dupelim */
-    final DupElim dupelim = new DupElim(localColSelectJoin);
+    final StreamingStateWrapper dupelim = new StreamingStateWrapper(localColSelectJoin, new DupElim());
     final RelationKey distinctJoinStored = RelationKey.of("Speedtest", "TwitterSingleNodeJoinSpeedTest", "TwitterJoin");
     /* .. and insert */
     final DbInsert insert = new DbInsert(dupelim, distinctJoinStored, connectionInfo, true);

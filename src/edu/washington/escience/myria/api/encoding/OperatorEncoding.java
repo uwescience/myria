@@ -19,7 +19,7 @@ import edu.washington.escience.myria.parallel.Server;
  * 
  * 1. Create an Encoding class that extends OperatorEncoding.
  * 
- * 2. Add the operator to the list of JsonSubTypes below.
+ * 2. Add the operator to the list of (alphabetically sorted) JsonSubTypes below.
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "op_type")
 @JsonSubTypes({
@@ -37,10 +37,9 @@ import edu.washington.escience.myria.parallel.Server;
     @Type(name = "FileScan", value = FileScanEncoding.class), @Type(name = "Filter", value = FilterEncoding.class),
     @Type(name = "HyperShuffleProducer", value = HyperShuffleProducerEncoding.class),
     @Type(name = "HyperShuffleConsumer", value = HyperShuffleConsumerEncoding.class),
-    @Type(name = "IDBInput", value = IDBInputEncoding.class),
     @Type(name = "LocalMultiwayConsumer", value = LocalMultiwayConsumerEncoding.class),
     @Type(name = "LocalMultiwayProducer", value = LocalMultiwayProducerEncoding.class),
-    @Type(name = "Merge", value = MergeEncoding.class),
+    @Type(name = "Merge", value = MergeEncoding.class), @Type(name = "MergeJoin", value = MergeJoinEncoding.class),
     @Type(name = "MultiGroupByAggregate", value = MultiGroupByAggregateEncoding.class),
     @Type(name = "Rename", value = RenameEncoding.class),
     @Type(name = "RightHashCountingJoin", value = RightHashCountingJoinEncoding.class),
@@ -52,6 +51,13 @@ import edu.washington.escience.myria.parallel.Server;
     @Type(name = "SinkRoot", value = SinkRootEncoding.class),
     @Type(name = "SymmetricHashJoin", value = SymmetricHashJoinEncoding.class),
     @Type(name = "SymmetricHashCountingJoin", value = SymmetricHashCountingJoinEncoding.class),
+    @Type(name = "DbInsert", value = DbInsertEncoding.class), @Type(name = "FileScan", value = FileScanEncoding.class),
+    @Type(name = "BinaryFileScan", value = BinaryFileScanEncoding.class),
+    @Type(name = "TipsyFileScan", value = TipsyFileScanEncoding.class),
+    @Type(name = "EOSController", value = EOSControllerEncoding.class),
+    @Type(name = "IDBController", value = IDBControllerEncoding.class),
+    @Type(name = "Aggregate", value = AggregateEncoding.class),
+    @Type(name = "UnionAll", value = UnionAllEncoding.class),
     @Type(name = "TableScan", value = TableScanEncoding.class),
     @Type(name = "TipsyFileScan", value = TipsyFileScanEncoding.class),
     @Type(name = "UnionAll", value = UnionAllEncoding.class), })

@@ -13,7 +13,6 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
-import edu.washington.escience.myria.Type;
 
 /**
  * Merges the sorted output of a set of operators.
@@ -41,7 +40,7 @@ public final class Merge extends NAryOperator {
    * 
    * -1 indicates an invalid pointer.
    */
-  private transient ArrayList<Integer> pointerIntoChildBatches = new ArrayList<Integer>();
+  private transient ArrayList<Integer> childRowIndexes = new ArrayList<Integer>();
 
   /**
    * The buffer holding the results.
@@ -50,78 +49,30 @@ public final class Merge extends NAryOperator {
 
   /**
    * Use a heap to find the smallest tuple (actually just the index in {@link #childBatches} to a child, where the
-   * pointer in {@link #pointerIntoChildBatches} points to the smallest tuple).
+   * pointer in {@link #childRowIndexes} points to the smallest tuple).
    */
   private transient Queue<Integer> heap;
 
   /**
    * Comparator for tuples in tuple batch.
-   * 
-   * @author dominik
-   * 
    */
   class TupleComparator implements Comparator<Integer> {
     @Override
     public int compare(final Integer left, final Integer right) {
-      Integer leftPointer = pointerIntoChildBatches.get(left);
-      Integer rightPointer = pointerIntoChildBatches.get(right);
+      Integer leftPointer = childRowIndexes.get(left);
+      Integer rightPointer = childRowIndexes.get(right);
       TupleBatch leftTb = childBatches.get(left);
       TupleBatch rightTb = childBatches.get(right);
       Preconditions.checkArgument(leftTb.numTuples() > leftPointer);
       Preconditions.checkArgument(rightTb.numTuples() > rightPointer);
       for (int columnIndex = 0; columnIndex < sortedColumns.length; columnIndex++) {
-        Type columnType = getSchema().getColumnType(columnIndex);
-        int compared, factor;
-        if (ascending[columnIndex]) {
-          factor = 1;
-        } else {
-          factor = -1;
-        }
-        switch (columnType) {
-          case INT_TYPE:
-            compared =
-                Type.compareRaw(leftTb.getInt(columnIndex, leftPointer), rightTb.getInt(columnIndex, rightPointer));
-            break;
-
-          case FLOAT_TYPE:
-            compared =
-                Type.compareRaw(leftTb.getFloat(columnIndex, leftPointer), rightTb.getFloat(columnIndex, rightPointer));
-            break;
-
-          case LONG_TYPE:
-            compared =
-                Type.compareRaw(leftTb.getLong(columnIndex, leftPointer), rightTb.getLong(columnIndex, rightPointer));
-            break;
-
-          case DOUBLE_TYPE:
-            compared =
-                Type.compareRaw(leftTb.getDouble(columnIndex, leftPointer), rightTb
-                    .getDouble(columnIndex, rightPointer));
-            break;
-
-          case BOOLEAN_TYPE:
-            compared =
-                Type.compareRaw(leftTb.getBoolean(columnIndex, leftPointer), rightTb.getBoolean(columnIndex,
-                    rightPointer));
-            break;
-
-          case STRING_TYPE:
-            compared =
-                Type.compareRaw(leftTb.getString(columnIndex, leftPointer), rightTb
-                    .getString(columnIndex, rightPointer));
-            break;
-
-          case DATETIME_TYPE:
-            compared =
-                Type.compareRaw(leftTb.getDateTime(columnIndex, leftPointer), rightTb.getDateTime(columnIndex,
-                    rightPointer));
-            break;
-
-          default:
-            throw new UnsupportedOperationException("Unknown type " + columnType);
-        }
+        int compared = leftTb.cellCompare(columnIndex, leftPointer, rightTb, columnIndex, rightPointer);
         if (compared != 0) {
-          return compared * factor;
+          if (ascending[columnIndex]) {
+            return compared;
+          } else {
+            return -compared;
+          }
         }
       }
       return 0;
@@ -177,7 +128,7 @@ public final class Merge extends NAryOperator {
           }
           if (tb != null) {
             childBatches.set(childIdx, tb);
-            pointerIntoChildBatches.set(childIdx, 0);
+            childRowIndexes.set(childIdx, 0);
 
             // add the index after we refilled the batch or
             // when the batches are initially loaded
@@ -201,15 +152,15 @@ public final class Merge extends NAryOperator {
 
       Integer smallestTb = heap.poll();
       if (smallestTb != null) {
-        Integer positionInSmallestTb = pointerIntoChildBatches.get(smallestTb);
+        Integer positionInSmallestTb = childRowIndexes.get(smallestTb);
         ans.put(childBatches.get(smallestTb), positionInSmallestTb);
 
         // reset tb or advance position pointer
         if (positionInSmallestTb == childBatches.get(smallestTb).numTuples() - 1) {
-          pointerIntoChildBatches.set(smallestTb, -1);
+          childRowIndexes.set(smallestTb, -1);
           childBatches.set(smallestTb, null);
         } else {
-          pointerIntoChildBatches.set(smallestTb, positionInSmallestTb + 1);
+          childRowIndexes.set(smallestTb, positionInSmallestTb + 1);
           // We either re-add the index to the child here or when we fetch more data.
           // We cannot re-add it here because we don't know whether there will be data or not.
           heap.add(smallestTb);
@@ -245,7 +196,7 @@ public final class Merge extends NAryOperator {
       Preconditions.checkArgument(getSchema().equals(child.getSchema()));
 
       childBatches.add(null);
-      pointerIntoChildBatches.add(-1);
+      childRowIndexes.add(-1);
     }
 
     Comparator<Integer> comparator = new TupleComparator();

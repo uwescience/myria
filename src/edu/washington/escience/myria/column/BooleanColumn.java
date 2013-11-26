@@ -11,6 +11,8 @@ import com.google.common.hash.Hasher;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.builder.BooleanColumnBuilder;
+import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.BooleanColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.util.ImmutableBitSet;
@@ -35,7 +37,7 @@ public final class BooleanColumn implements Column<Boolean> {
    * @param data the data
    * @param size the size of this column;
    * */
-  BooleanColumn(final BitSet data, final int size) {
+  public BooleanColumn(final BitSet data, final int size) {
     this.data = new ImmutableBitSet(data);
     numBits = size;
   }

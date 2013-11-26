@@ -28,6 +28,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
@@ -125,6 +126,7 @@ public final class QueryResource {
     SingleQueryPlanWithArgs masterPlan = queryPlan.get(MyriaConstants.MASTER_ID);
     if (masterPlan == null) {
       masterPlan = new SingleQueryPlanWithArgs(new SinkRoot(new EOSSource()));
+      masterPlan.setFTMode(FTMODE.valueOf(query.ftMode));
     } else {
       queryPlan.remove(MyriaConstants.MASTER_ID);
     }
