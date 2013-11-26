@@ -5,7 +5,7 @@ import java.util.Arrays;
 import org.junit.Test;
 
 import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.column.LongColumnBuilder;
+import edu.washington.escience.myria.column.builder.LongColumnBuilder;
 import edu.washington.escience.myria.util.DateTimeUtils;
 import edu.washington.escience.myria.util.TestUtils;
 

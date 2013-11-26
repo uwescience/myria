@@ -1,10 +1,11 @@
-package edu.washington.escience.myria.column;
+package edu.washington.escience.myria.column.builder;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 
 /**

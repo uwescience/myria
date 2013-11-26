@@ -1,4 +1,4 @@
-package edu.washington.escience.myria.column;
+package edu.washington.escience.myria.column.builder;
 
 import java.nio.BufferOverflowException;
 import java.nio.LongBuffer;
@@ -13,6 +13,8 @@ import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.DateTimeColumn;
+import edu.washington.escience.myria.column.mutable.DateTimeMutableColumn;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.DateTimeColumnMessage;
 
@@ -131,6 +133,12 @@ public final class DateTimeColumnBuilder implements ColumnBuilder<DateTime> {
   public DateTimeColumn build() {
     built = true;
     return new DateTimeColumn(data, numDates);
+  }
+
+  @Override
+  public DateTimeMutableColumn buildMutable() {
+    built = true;
+    return new DateTimeMutableColumn(data, numDates);
   }
 
   @Override

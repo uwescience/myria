@@ -11,6 +11,8 @@ import com.google.common.hash.Hasher;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.builder.ColumnBuilder;
+import edu.washington.escience.myria.column.builder.LongColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.LongColumnMessage;
 
@@ -36,7 +38,7 @@ public final class LongColumn implements Column<Long> {
    * @param data the data
    * @param numData number of tuples.
    * */
-  LongColumn(final long[] data, final int numData) {
+  public LongColumn(final long[] data, final int numData) {
     this.data = data;
     position = numData;
   }

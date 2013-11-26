@@ -14,6 +14,8 @@ import com.google.common.hash.Hasher;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.builder.ColumnBuilder;
+import edu.washington.escience.myria.column.builder.DateTimeColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.DateTimeColumnMessage;
 import edu.washington.escience.myria.util.TypeFunnel;
@@ -38,7 +40,7 @@ public final class DateTimeColumn implements Column<DateTime> {
    * @param data the data
    * @param numData number of tuples.
    * */
-  DateTimeColumn(final DateTime[] data, final int numData) {
+  public DateTimeColumn(final DateTime[] data, final int numData) {
     this.data = data;
     position = numData;
   }

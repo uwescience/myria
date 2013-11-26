@@ -30,7 +30,7 @@ public final class IntArrayColumn extends IntColumn {
    * @param data the data
    * @param numData number of tuples.
    * */
-  IntArrayColumn(final int[] data, final int numData) {
+  public IntArrayColumn(final int[] data, final int numData) {
     this.data = data;
     position = numData;
   }

@@ -8,6 +8,8 @@ import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.hash.Hasher;
 
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.builder.ColumnBuilder;
+import edu.washington.escience.myria.column.builder.IntColumnBuilder;
 
 /**
  * An abstract Column<Integer> with a primitive type accessor.

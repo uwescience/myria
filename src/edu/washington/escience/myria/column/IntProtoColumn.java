@@ -32,6 +32,16 @@ public final class IntProtoColumn extends IntColumn {
     intBuffer = columnData.asReadOnlyByteBuffer().asIntBuffer();
   }
 
+  /**
+   * Construct a new IntProtoColumn using the ByteString data.
+   * 
+   * @param data a byte string of data.
+   */
+  public IntProtoColumn(final ByteString data) {
+    columnData = data;
+    intBuffer = columnData.asReadOnlyByteBuffer().asIntBuffer();
+  }
+
   @Override
   public Integer get(final int row) {
     return Integer.valueOf(intBuffer.get(row));
