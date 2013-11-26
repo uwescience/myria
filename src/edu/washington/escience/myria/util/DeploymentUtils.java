@@ -38,7 +38,7 @@ public final class DeploymentUtils {
     final String configFileName = args[0];
 
     Map<String, Map<String, String>> config = READER.load(configFileName);
-    String description = config.get("deployment").get("name");
+    final String description = config.get("deployment").get("name");
     String username = config.get("deployment").get("username");
 
     final String action = args[1];
@@ -101,7 +101,7 @@ public final class DeploymentUtils {
         rsyncFileToRemote("sqlite4java-282", hostname, remotePath);
         rsyncFileToRemote("get_logs.py", hostname, remotePath);
         rsyncFileToRemote("myriadeploy.py", hostname, remotePath);
-        rsyncFileToRemote("../visualization/query_execution/performance_profile.py", hostname, remotePath);
+        rsyncFileToRemote("extract_profiling_data.py", hostname, remotePath);
       }
     } else if (action.equals("-start_master")) {
       String workingDir = config.get("deployment").get("path");
