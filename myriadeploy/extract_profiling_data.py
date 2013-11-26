@@ -205,7 +205,7 @@ def generateProfile(path,query_id,fragment_id,query_plan_file):
     qf_details = {
         'begin': 0,
         'end': end_time-start_time,
-        'hierachy': [data]
+        'hierarchy': [data]
     }
 
     print pretty_json(qf_details)
