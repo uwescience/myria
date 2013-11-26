@@ -87,6 +87,9 @@ public final class DeploymentUtils {
         rsyncFileToRemote("sqlite4java-282", hostname, remotePath);
         // server needs the config file to create catalogs for new workers
         rsyncFileToRemote(configFileName, hostname, remotePath);
+        rsyncFileToRemote("get_logs.py", hostname, remotePath);
+        rsyncFileToRemote("myriadeploy.py", hostname, remotePath);
+        rsyncFileToRemote("extract_profiling_data.py", hostname, remotePath);
       }
       Map<String, String> workers = config.get("workers");
       for (String workerId : workers.keySet()) {
@@ -99,9 +102,6 @@ public final class DeploymentUtils {
         rsyncFileToRemote("libs", hostname, remotePath);
         rsyncFileToRemote("conf", hostname, remotePath);
         rsyncFileToRemote("sqlite4java-282", hostname, remotePath);
-        rsyncFileToRemote("get_logs.py", hostname, remotePath);
-        rsyncFileToRemote("myriadeploy.py", hostname, remotePath);
-        rsyncFileToRemote("extract_profiling_data.py", hostname, remotePath);
       }
     } else if (action.equals("-start_master")) {
       String workingDir = config.get("deployment").get("path");

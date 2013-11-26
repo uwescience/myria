@@ -229,6 +229,7 @@ public final class QueryResource {
     }
 
     /* pull profiling logs from worker directories. */
+    /* TODO: handle error properly. */
     String response = "error";
     ProcessBuilder pb =
         new ProcessBuilder("./get_logs.py", server.getConfiguration(MyriaSystemConfigKeys.DEPLOYMENT_FILE));
@@ -236,7 +237,7 @@ public final class QueryResource {
       Process shell = pb.start();
       int error = shell.waitFor();
       shell.destroy();
-      response = "here " + error;
+      response = "error! number " + error;
       String profileFilePath =
           "./" + server.getConfiguration(MyriaSystemConfigKeys.DESCRIPTION) + "/worker_" + workerId + "_profile";
       /* extract data for visualization. */
