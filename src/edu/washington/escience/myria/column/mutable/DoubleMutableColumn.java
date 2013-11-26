@@ -146,7 +146,7 @@ public final class DoubleMutableColumn implements MutableColumn<Double> {
   }
 
   @Override
-  public DoubleMutableColumn cloneItself() {
+  public DoubleMutableColumn clone() {
     return new DoubleMutableColumn(data.clone(), position);
   }
 }

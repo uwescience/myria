@@ -139,7 +139,7 @@ public final class StringMutableColumn implements MutableColumn<String> {
   }
 
   @Override
-  public StringMutableColumn cloneItself() {
+  public StringMutableColumn clone() {
     return new StringMutableColumn(data.clone(), numStrings);
   }
 }

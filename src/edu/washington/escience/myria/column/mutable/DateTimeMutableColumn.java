@@ -139,7 +139,7 @@ public final class DateTimeMutableColumn implements MutableColumn<DateTime> {
   }
 
   @Override
-  public DateTimeMutableColumn cloneItself() {
+  public DateTimeMutableColumn clone() {
     return new DateTimeMutableColumn(data.clone(), position);
   }
 }

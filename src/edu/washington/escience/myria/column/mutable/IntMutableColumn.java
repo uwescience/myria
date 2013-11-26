@@ -73,4 +73,7 @@ public abstract class IntMutableColumn implements MutableColumn<Integer> {
     sb.append(']');
     return sb.toString();
   }
+
+  @Override
+  abstract public IntMutableColumn clone();
 }

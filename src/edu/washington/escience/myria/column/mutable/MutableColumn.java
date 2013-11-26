@@ -8,7 +8,7 @@ import edu.washington.escience.myria.column.Column;
  * @param <T> type of the objects in this column.
  * 
  */
-public interface MutableColumn<T extends Comparable<?>> extends Column<T> {
+public interface MutableColumn<T extends Comparable<?>> extends Column<T>, Cloneable {
 
   /**
    * replace the old value at index with the new value.
@@ -30,5 +30,5 @@ public interface MutableColumn<T extends Comparable<?>> extends Column<T> {
    * 
    * @return the clone
    */
-  MutableColumn<T> cloneItself();
+  public MutableColumn<T> clone();
 }

@@ -144,7 +144,7 @@ public final class LongMutableColumn implements MutableColumn<Long> {
   }
 
   @Override
-  public LongMutableColumn cloneItself() {
+  public LongMutableColumn clone() {
     return new LongMutableColumn(data.clone(), position);
   }
 }

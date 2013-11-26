@@ -86,7 +86,7 @@ public final class IntArrayMutableColumn extends IntMutableColumn {
   }
 
   @Override
-  public IntArrayMutableColumn cloneItself() {
+  public IntArrayMutableColumn clone() {
     return new IntArrayMutableColumn(data.clone(), position);
   }
 }

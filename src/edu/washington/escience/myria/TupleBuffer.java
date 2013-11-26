@@ -817,7 +817,7 @@ public class TupleBuffer implements Cloneable {
     for (MutableColumn<?>[] columns : readyTuples) {
       MutableColumn<?>[] tmp = new MutableColumn<?>[columns.length];
       for (int i = 0; i < columns.length; ++i) {
-        tmp[i] = columns[i].cloneItself();
+        tmp[i] = columns[i].clone();
       }
       ret.readyTuples.add(tmp);
     }

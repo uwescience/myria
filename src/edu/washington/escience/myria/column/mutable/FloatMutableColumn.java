@@ -146,7 +146,7 @@ public final class FloatMutableColumn implements MutableColumn<Float> {
   }
 
   @Override
-  public FloatMutableColumn cloneItself() {
+  public FloatMutableColumn clone() {
     return new FloatMutableColumn(data.clone(), position);
   }
 }

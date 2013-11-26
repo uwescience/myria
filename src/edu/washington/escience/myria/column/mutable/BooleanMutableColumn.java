@@ -138,7 +138,7 @@ public class BooleanMutableColumn implements MutableColumn<Boolean> {
   }
 
   @Override
-  public BooleanMutableColumn cloneItself() {
+  public BooleanMutableColumn clone() {
     return new BooleanMutableColumn((BitSet) data.clone(), numBits);
   }
 }
