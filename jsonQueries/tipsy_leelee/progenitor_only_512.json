@@ -234,6 +234,24 @@
                     ]
                 },
                 {
+                    "arg_child": "PotPro1-Rename",
+                    "arg_pf": {
+                        "index": "0",
+                        "type": "SingleFieldHash"
+                    },
+                    "op_name": "SP_PotPro1-Rename",
+                    "op_type": "ShuffleProducer"
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "arg_operator_id": "SP_PotPro1-Rename",
+                    "op_name": "SC_PotPro1-Rename",
+                    "op_type": "ShuffleConsumer"
+                },
+                {
                     "arg_agg_fields": [
                         "2"
                     ],
@@ -242,7 +260,7 @@
                             "AGG_OP_MAX"
                         ]
                     ],
-                    "arg_child": "PotPro1-Rename",
+                    "arg_child": "SC_PotPro1-Rename",
                     "arg_group_field": 0,
                     "op_name": "GrpsWithMaxVals",
                     "op_type": "SingleGroupByAggregate"
@@ -296,33 +314,11 @@
             "operators":[
                 {
                     "arg_operator_id": "SP_GrpsWithMaxVals",
-                    "arg_schema":{
-                        "column_names":[
-                            "maxvals_grp",
-                            "maxvals_max_aggr_value"
-                        ],
-                        "column_types":[
-                            "INT_TYPE",
-                            "LONG_TYPE"
-                        ]
-                    },
                     "op_name": "SC_GrpsWithMaxVals",
                     "op_type": "ShuffleConsumer"
                 },
                 {
                     "arg_operator_id": "SP_PotPro2",
-                    "arg_schema": {
-                        "column_names": [
-                            "potpro2_grp2",
-                            "potpro2_pgrt2",
-                            "potpro2_aggr_col2"
-                        ],
-                        "column_types": [
-                            "INT_TYPE",
-                            "INT_TYPE",
-                            "LONG_TYPE"
-                        ]
-                    },
                     "op_name": "SC_PotPro2",
                     "op_type": "ShuffleConsumer"
                 },
@@ -400,31 +396,11 @@
             "operators": [
                 {
                     "arg_operator_id": "SP_masstable",
-                    "arg_schema": {
-                        "column_names": [
-                            "grp_m",
-                            "tot_mass_m"
-                        ],
-                        "column_types": [
-                            "INT_TYPE",
-                            "DOUBLE_TYPE"
-                        ]
-                    },
                     "op_name": "SC_masstable",
                     "op_type": "ShuffleConsumer"
                 },
                 {
                     "arg_operator_id": "SP_SelectedProgenitorGroupedBy",
-                    "arg_schema": {
-                        "column_names": [
-                            "selected_grp",
-                            "selected_min"
-                        ],
-                        "column_types": [
-                            "INT_TYPE",
-                            "INT_TYPE"
-                        ]
-                    },
                     "op_name": "SC_SelectedProgenitorGroupedBy",
                     "op_type": "ShuffleConsumer"
                 },
@@ -458,18 +434,6 @@
             "operators":[
                 {
                     "arg_operator_id":"SendResult",
-                    "arg_schema":{
-                        "column_names":[
-                            "result_grp",
-                            "result_min_pgtr",
-                            "result_tot_mass"
-                        ],
-                        "column_types":[
-                            "INT_TYPE",
-                            "INT_TYPE",
-                            "DOUBLE_TYPE"
-                        ]
-                    },
                     "op_name":"CollectResult",
                     "op_type":"CollectConsumer"
                 },
@@ -480,7 +444,7 @@
                     "op_type":"DbInsert",
                     "relation_key":{
                         "program_name":"astro",
-                        "relation_name":"progenitor512-512-3",
+                        "relation_name":"progenitor512-512-3workers",
                         "user_name":"leelee"
                     }
                 }
