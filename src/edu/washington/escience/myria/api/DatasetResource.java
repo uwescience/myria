@@ -34,7 +34,6 @@ import edu.washington.escience.myria.api.encoding.DatasetEncoding;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.TipsyDatasetEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
-import edu.washington.escience.myria.io.ByteArraySource;
 import edu.washington.escience.myria.operator.FileScan;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.TipsyFileScan;
@@ -215,12 +214,7 @@ public final class DatasetResource {
     }
 
     /* Do the work. */
-    Operator source;
-    if (dataset.data != null) {
-      source = new FileScan(new ByteArraySource(dataset.data), dataset.schema);
-    } else {
-      source = new FileScan(dataset.fileName, dataset.schema, dataset.delimiter);
-    }
+    Operator source = new FileScan(dataset.source, dataset.schema);
     DatasetStatus status = null;
     try {
       status = server.ingestDataset(dataset.relationKey, dataset.workers, source);
