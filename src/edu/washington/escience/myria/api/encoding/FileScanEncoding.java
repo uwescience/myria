@@ -6,19 +6,20 @@ import java.util.Map;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.operator.FileScan;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.parallel.Server;
 
 public class FileScanEncoding extends OperatorEncoding<FileScan> {
   public Schema schema;
-  public String fileName;
+  public DataSource source;
   public String delimiter;
-  private static final List<String> requiredArguments = ImmutableList.of("schema", "fileName");
+  private static final List<String> requiredArguments = ImmutableList.of("schema", "source");
 
   @Override
   public FileScan construct(final Server server) {
-    return new FileScan(fileName, schema, delimiter);
+    return new FileScan(source, schema, delimiter);
   }
 
   @Override
