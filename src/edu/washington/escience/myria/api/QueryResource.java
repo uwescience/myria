@@ -214,14 +214,27 @@ public final class QueryResource {
   }
 
   @GET
-  @Path("query-{query_id:\\d+}/qf={qf_number:\\d+}/worker={worker_id:\\d+}")
-  public Response getProfile(@PathParam("query_id") final long queryId, @PathParam("qf_number") final long qf_number,
-      @PathParam("worker_id") final long workerId, @Context final UriInfo uriInfo) throws CatalogException, IOException {
+  @Path("query-{query_id:\\d+}/fragment-{fragment_id:\\d+}/worker-{worker_id:\\d+}")
+  public Response getProfile(@PathParam("query_id") final long queryId,
+      @PathParam("fragment_id") final long fragment_id, @PathParam("worker_id") final long workerId,
+      @Context final UriInfo uriInfo) throws CatalogException, IOException {
+
+    /* validate the query_id */
+    final QueryStatusEncoding queryStatus = server.getQueryStatus(queryId);
+    final URI uri = uriInfo.getAbsolutePath();
+    if (queryStatus == null) {
+      return Response.status(Status.NOT_FOUND).contentLocation(uri).entity("Query " + queryId + " was not found")
+          .build();
+    }
+
     /* write current physical plan to JSON. */
     final String queryPlanName = "query_" + queryId + ".json";
     try {
       File queryPlan = new File(queryPlanName);
       if (!queryPlan.exists()) {
+        if (server.getQueryStatus(queryId).physicalPlan.getClass() != QueryEncoding.class) {
+          throw new CatalogException("cannot serialize physical plan.");
+        }
         MyriaJsonMapperProvider.getMapper().writeValue(queryPlan, server.getQueryStatus(queryId).physicalPlan);
       }
     } catch (IOException e) {
@@ -243,7 +256,8 @@ public final class QueryResource {
       /* extract data for visualization. */
       if (error == 0) {
         pb =
-            new ProcessBuilder("./extract_profiling_data.py", profileFilePath, String.valueOf(qf_number), queryPlanName);
+            new ProcessBuilder("./extract_profiling_data.py", profileFilePath, String.valueOf(queryId), String
+                .valueOf(fragment_id), queryPlanName);
         shell = pb.start();
         InputStream shellIn = shell.getInputStream();
         response = IOUtils.toString(shellIn);

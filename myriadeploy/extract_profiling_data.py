@@ -213,14 +213,15 @@ def generateProfile(path,query_id,fragment_id,query_plan_file):
 
 def main(argv):
 # Usage
-    if len(argv) != 4:
+    if len(argv) != 5:
         print >> sys.stderr, "Usage: %s <log_file_path> <query_id> <query_plan_file>" % (argv[0])
         print >> sys.stderr, "       log_file_path "
         print >> sys.stderr, "       query_id "
+        print >> sys.stderr, "       query_fragment_id"
         print >> sys.stderr, "       query_plan_file "
         sys.exit(1)
 
-    generateProfile(argv[1],int(argv[2]),2,argv[3])
+    generateProfile(argv[1],int(argv[2]),int(argv[3]),argv[4])
 
 if __name__ == "__main__":
     main(sys.argv)
