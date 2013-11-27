@@ -1,7 +1,5 @@
 package edu.washington.escience.myria.api;
 
-import java.io.ByteArrayInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
@@ -36,6 +34,7 @@ import edu.washington.escience.myria.api.encoding.DatasetEncoding;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.TipsyDatasetEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
+import edu.washington.escience.myria.io.ByteArraySource;
 import edu.washington.escience.myria.operator.FileScan;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.TipsyFileScan;
@@ -218,14 +217,9 @@ public final class DatasetResource {
     /* Do the work. */
     Operator source;
     if (dataset.data != null) {
-      source = new FileScan(dataset.schema);
-      ((FileScan) source).setInputStream(new ByteArrayInputStream(dataset.data));
+      source = new FileScan(new ByteArraySource(dataset.data), dataset.schema);
     } else {
-      try {
-        source = new FileScan(dataset.fileName, dataset.schema, dataset.delimiter);
-      } catch (FileNotFoundException e) {
-        throw new MyriaApiException(Status.NOT_FOUND, e);
-      }
+      source = new FileScan(dataset.fileName, dataset.schema, dataset.delimiter);
     }
     DatasetStatus status = null;
     try {
