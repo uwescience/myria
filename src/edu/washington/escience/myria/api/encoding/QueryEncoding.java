@@ -304,6 +304,7 @@ public class QueryEncoding extends MyriaApiEncoding {
     }
 
     for (PlanFragmentEncoding f : dependantFragments) {
+      fragmentId.decrement();
       instantiateFragment(f, fragmentId, server, instantiatedFragments, opOwnerFragment, allOperators);
     }
 
