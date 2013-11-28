@@ -76,10 +76,9 @@ public class QueryEncoding extends MyriaApiEncoding {
     setupWorkerNetworkOperators();
 
     HashMap<String, PlanFragmentEncoding> op2OwnerFragmentMapping = new HashMap<String, PlanFragmentEncoding>();
-    HashMap<PlanFragmentEncoding, Long> fragmentIdxMapping = new HashMap<PlanFragmentEncoding, Long>();
     int idx = 0;
     for (PlanFragmentEncoding fragment : fragments) {
-      fragmentIdxMapping.put(fragment, (long) idx++);
+      fragment.setFragmentIndex(idx++);
       for (OperatorEncoding<?> op : fragment.operators) {
         op2OwnerFragmentMapping.put(op.opName, fragment);
       }
@@ -91,8 +90,7 @@ public class QueryEncoding extends MyriaApiEncoding {
     HashMap<String, Operator> allOperators = new HashMap<String, Operator>();
     for (PlanFragmentEncoding fragment : fragments) {
       RootOperator op =
-          instantiateFragment(fragment, fragmentIdxMapping, server, instantiatedFragments, op2OwnerFragmentMapping,
-              allOperators);
+          instantiateFragment(fragment, server, instantiatedFragments, op2OwnerFragmentMapping, allOperators);
       for (Integer worker : fragment.workers) {
         SingleQueryPlanWithArgs workerPlan = plan.get(worker);
         if (workerPlan == null) {
@@ -252,8 +250,7 @@ public class QueryEncoding extends MyriaApiEncoding {
    * @return the actual plan fragment.
    */
   @JsonIgnore
-  private RootOperator instantiateFragment(final PlanFragmentEncoding planFragment,
-      final HashMap<PlanFragmentEncoding, Long> fragmentIdxMapping, final Server server,
+  private RootOperator instantiateFragment(final PlanFragmentEncoding planFragment, final Server server,
       final HashMap<PlanFragmentEncoding, RootOperator> instantiatedFragments,
       final Map<String, PlanFragmentEncoding> opOwnerFragment, final Map<String, Operator> allOperators) {
     RootOperator instantiatedFragment = instantiatedFragments.get(planFragment);
@@ -279,7 +276,7 @@ public class QueryEncoding extends MyriaApiEncoding {
       Operator op = encoding.construct(server);
       /* helpful for debugging. */
       op.setOpName(encoding.opName);
-      op.setFragmentId(fragmentIdxMapping.get(planFragment));
+      op.setFragmentId(planFragment.fragmentIndex);
       myOperators.put(encoding.opName, op);
       if (op instanceof RootOperator) {
         if (fragmentRoot != null) {
@@ -305,7 +302,7 @@ public class QueryEncoding extends MyriaApiEncoding {
     }
 
     for (PlanFragmentEncoding f : dependantFragments) {
-      instantiateFragment(f, fragmentIdxMapping, server, instantiatedFragments, opOwnerFragment, allOperators);
+      instantiateFragment(f, server, instantiatedFragments, opOwnerFragment, allOperators);
     }
 
     for (AbstractConsumerEncoding<?> c : nonIterativeConsumers.values()) {
