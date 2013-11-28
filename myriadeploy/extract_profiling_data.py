@@ -9,6 +9,7 @@ import copy
 # root operators
 root_operators = set(['LocalMultiwayProducer',
                       'CollectProducer',
+                      'RecoverProducer',
                       'ShuffleProducer',
                       'BroadcastProducer',
                       'SinkRoot',
@@ -20,6 +21,7 @@ root_operators = set(['LocalMultiwayProducer',
 children = defaultdict(list)
 # Populate the list for all operators that do have children
 children['CollectProducer'] = ['arg_child']
+children['RecoverProducer'] = ['arg_child']
 children['EOSController'] = ['arg_child']
 children['IDBInput'] = [
     'arg_initial_input', 'arg_iteration_input', 'arg_eos_controller_input']
@@ -130,10 +132,10 @@ def build_operator_state(
         last_state = event['message']
         last_time = event['time']
 
-    chilren_ops = []
+    children_ops = []
 
     for op in children_dict[op_name]:
-        chilren_ops.append(
+        children_ops.append(
             build_operator_state(
                 op, operators, children_dict, type_dict, start_time))
 
@@ -141,11 +143,24 @@ def build_operator_state(
         'type': type_dict[op_name],
         'name': op_name,
         'states': states,
-        'children': chilren_ops
+        'children': children_ops
     }
 
     return qf
 
+def getRecoveryTaskStructure(operators, type_dict):
+    for k, v in operators.items():
+        if k.startswith("tupleSource_for_"):
+            opName1 = k
+            type_dict[k] = "TupleSource"
+        if k.startswith("recProducer_for_"):
+            opName2 = k
+            type_dict[k] = "RecoverProducer"
+    parent = dict()
+    parent[opName1] = opName2
+    children_dict  = defaultdict(list)
+    children_dict[opName2].append(opName1)
+    return (parent, children_dict, type_dict)
 
 def generateProfile(path, query_id, fragment_id, query_plan_file):
     # get name type mapping
@@ -156,7 +171,7 @@ def generateProfile(path, query_id, fragment_id, query_plan_file):
 
     # parse infomation from each log message
     tuples = [re.findall(
-        r'.query_id#(\d*)..([\w(),]*)@(\w*)..(\d*).:([\w|\W]*)', line)
+        r'.query_id#(\d*)..([\w(),]*)@(-?\w*)..(\d*).:([\w|\W]*)', line)
         for line in lines]
     tuples = [i[0] for i in tuples if len(i) > 0]
     tuples = [(i[1], {
@@ -178,10 +193,15 @@ def generateProfile(path, query_id, fragment_id, query_plan_file):
         operators[tp[0]].append(tp[1])
 
     # get fragment tree structure
-    query_plan = read_json(query_plan_file)
-    fragment = query_plan['fragments'][fragment_id]
-    parent = get_parent(fragment)
-    children_dict = get_children(fragment)
+    if fragment_id < 0:
+        # recovery tasks
+        (parent, children_dict, type_dict) = getRecoveryTaskStructure(operators, type_dict)
+    else:
+        # normal fragments in the json query plan
+        query_plan = read_json(query_plan_file)
+        fragment = query_plan['fragments'][fragment_id]
+        parent = get_parent(fragment)
+        children_dict = get_children(fragment)
 
     # update parent's events
     induced_operators = defaultdict(list)
@@ -205,6 +225,7 @@ def generateProfile(path, query_id, fragment_id, query_plan_file):
         if type_dict[k] in root_operators:
             start_time = operators[k][0]['time']
             end_time = operators[k][-1]['time']
+            break
 
     # build json
     for k, v in operators.items():
