@@ -92,7 +92,7 @@ def get_children(fragment):
             if not isinstance(operator[field], list):
                 ret[operator['op_name']].append(operator[field])
             else:
-                for op in field:
+                for op in operator[field]:
                     ret[operator['op_name']].append(op)
     return ret
 
@@ -158,7 +158,7 @@ def generateProfile(path, query_id, fragment_id, query_plan_file):
     tuples = [re.findall(
         r'.query_id#(\d*)..([\w(),]*)@(\w*)..(\d*).:([\w|\W]*)', line)
         for line in lines]
-    tuples = [i[0] for i in tuples]
+    tuples = [i[0] for i in tuples if len(i) > 0]
     tuples = [(i[1], {
         'time': long(i[3]),
         'query_id':i[0],
