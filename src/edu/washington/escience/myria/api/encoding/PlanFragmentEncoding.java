@@ -18,8 +18,14 @@ public final class PlanFragmentEncoding extends MyriaApiEncoding {
   public List<Integer> workers;
   /** The Operators in this plan fragment. */
   public List<OperatorEncoding<?>> operators;
+  /** Index of this fragment. */
+  public long fragmentIndex = -1;
   /** List of required fields. */
   public static final List<String> requiredFields = ImmutableList.of("operators");
+
+  public void setFragmentIndex(long fragmentIndex) {
+    this.fragmentIndex = fragmentIndex;
+  }
 
   @Override
   protected List<String> getRequiredFields() {
