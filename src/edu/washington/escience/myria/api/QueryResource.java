@@ -214,7 +214,7 @@ public final class QueryResource {
   }
 
   @GET
-  @Path("query-{query_id:\\d+}/fragment-{fragment_id:\\d+}/worker-{worker_id:\\d+}")
+  @Path("query-{query_id:\\d+}/fragment-{fragment_id:-?\\d+}/worker-{worker_id:\\d+}")
   public Response getProfile(@PathParam("query_id") final long queryId,
       @PathParam("fragment_id") final long fragment_id, @PathParam("worker_id") final long workerId,
       @Context final UriInfo uriInfo) throws CatalogException, IOException {

@@ -384,12 +384,14 @@ public class WorkerQueryPartition implements QueryPartition {
           int j = indices.get(i);
           /* buffers.get(j) might be an empty List<TupleBatch>, so need to set its schema explicitly. */
           TupleSource scan = new TupleSource(buffers.get(j), task.getRootOp().getSchema());
-          scan.setOpName("tuplesource for " + task.getRootOp().getOpName() + channels[j].getID());
+          scan.setOpName("tupleSource_for_" + task.getRootOp().getOpName());
           RecoverProducer rp =
               new RecoverProducer(scan, ExchangePairID.fromExisting(channels[j].getID().getStreamID()), channels[j]
                   .getID().getRemoteID(), (Producer) task.getRootOp(), j);
-          rp.setOpName("recProducer for " + task.getRootOp().getOpName() + channels[j].getID());
+          rp.setOpName("recProducer_for_" + task.getRootOp().getOpName());
           recoveryTasks.add(rp);
+          scan.setFragmentId(0 - recoveryTasks.size());
+          rp.setFragmentId(0 - recoveryTasks.size());
         }
       }
     }

@@ -36,7 +36,7 @@ public class StreamIOChannelID implements Comparable<StreamIOChannelID>, Seriali
   public StreamIOChannelID(final long streamID, final int remoteID) {
     this.remoteID = remoteID;
     this.streamID = streamID;
-    toStringValue = "(opID:" + streamID + ",rmtID:" + remoteID + "])";
+    toStringValue = "(opID:" + streamID + ",rmtID:" + remoteID + ")";
   }
 
   @Override
