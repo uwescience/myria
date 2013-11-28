@@ -12,7 +12,9 @@ root_operators = set(['LocalMultiwayProducer',
                       'ShuffleProducer',
                       'BroadcastProducer',
                       'SinkRoot',
-                      'DbInsert'])
+                      'DbInsert',
+                      'EOSController'
+                      ])
 
 # By default, all operators have no children
 children = defaultdict(list)
