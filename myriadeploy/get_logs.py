@@ -47,7 +47,7 @@ def get_error_logs_from_master(hostname, dirname, username, description):
     return subprocess.call(args)
 
 
-def getlog(config_file):
+def getlog(config_file, from_worker_id=None):
     ''' get configuration'''
     config = myriadeploy.read_config_file(config_file)
 
@@ -59,46 +59,50 @@ def getlog(config_file):
     username = config['username']
 
     # get logs from master
-    (hostname, _, path) = get_host_port_path(master, default_path)
-    if get_logs_from_master(hostname, "%s/%s-files" \
-            % (path, description), username, description):
-        raise Exception("Error on getting logs from master %s" \
-                % (hostname,))
-
-    if get_error_logs_from_master(hostname, "%s/%s-files" \
-            % (path, description), username, description):
-        raise Exception("Error on getting error logs from master %s" \
-                % (hostname,))
+    if from_worker_id == None or from_worker_id == 0:
+        (hostname, _, path) = get_host_port_path(master, default_path)
+        if get_logs_from_master(hostname, "%s/%s-files" \
+                % (path, description), username, description):
+            raise Exception("Error on getting logs from master %s" \
+                    % (hostname,))
+        if get_error_logs_from_master(hostname, "%s/%s-files" \
+                % (path, description), username, description):
+            raise Exception("Error on getting error logs from master %s" \
+                    % (hostname,))
 
     for (i, worker) in enumerate(workers):
         # Workers are numbered from 1, not 0
         worker_id = i + 1
-
         # get logs from workers
-        (hostname, _, path) = get_host_port_path(worker, default_path)
-        if get_std_logs_from_worker(hostname, "%s/%s-files" \
-                % (path, description), username, worker_id, description):
-            raise Exception("Error on getting logs from worker %d %s" \
-                    % (worker_id, hostname))
-        if get_error_logs_from_worker(hostname, "%s/%s-files" \
-                % (path, description), username, worker_id, description):
-            raise Exception("Error on getting error logs from worker %d %s" \
-                    % (worker_id, hostname))    
-        if get_profiling_logs_from_worker(hostname, "%s/%s-files" \
-                % (path, description), username, worker_id, description):
-            raise Exception("Error on getting profiling logs from worker %d %s" \
-                    % (worker_id, hostname)) 
+        if from_worker_id == None or from_worker_id == worker_id:
+            (hostname, _, path) = get_host_port_path(worker, default_path)
+            if get_std_logs_from_worker(hostname, "%s/%s-files" \
+                    % (path, description), username, worker_id, description):
+                raise Exception("Error on getting logs from worker %d %s" \
+                        % (worker_id, hostname))
+            if get_error_logs_from_worker(hostname, "%s/%s-files" \
+                    % (path, description), username, worker_id, description):
+                raise Exception("Error on getting error logs from worker %d %s" \
+                        % (worker_id, hostname))    
+            if get_profiling_logs_from_worker(hostname, "%s/%s-files" \
+                    % (path, description), username, worker_id, description):
+                raise Exception("Error on getting profiling logs from worker %d %s" \
+                        % (worker_id, hostname)) 
 
 
 def main(argv):
     # Usage
-    if len(argv) != 2:
-        print >> sys.stderr, "Usage: %s <deployment.cfg>" % (argv[0])
+    if len(argv) < 2 or len(argv) > 3:
+        print >> sys.stderr, "Usage: %s <deployment.cfg> <worker_id>" % (argv[0])
         print >> sys.stderr, "       deployment.cfg: a configuration file modeled after deployment.cfg.sample"
+        print >> sys.stderr, "       worker_id (optional): get logs from this worker only, 0 = server"
         print >> sys.stderr, "       logs will be put in the directory named after \"description\" in .cfg."
         sys.exit(1)
 
-    getlog(argv[1])
+    if len(argv) == 2:
+        getlog(argv[1])
+    elif len(argv) == 3:
+        getlog(argv[1], int(argv[2]))
 
 if __name__ == "__main__":
     main(sys.argv)
