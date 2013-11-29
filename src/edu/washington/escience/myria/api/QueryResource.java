@@ -245,7 +245,8 @@ public final class QueryResource {
     /* TODO: handle error properly. */
     String response = "error";
     ProcessBuilder pb =
-        new ProcessBuilder("./get_logs.py", server.getConfiguration(MyriaSystemConfigKeys.DEPLOYMENT_FILE));
+        new ProcessBuilder("./get_logs.py", server.getConfiguration(MyriaSystemConfigKeys.DEPLOYMENT_FILE), workerId
+            + "");
     try {
       Process shell = pb.start();
       int error = shell.waitFor();
