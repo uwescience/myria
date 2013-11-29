@@ -90,7 +90,6 @@ public final class DeploymentUtils {
         rsyncFileToRemote("get_logs.py", hostname, remotePath);
         rsyncFileToRemote("myriadeploy.py", hostname, remotePath);
         rsyncFileToRemote("extract_profiling_data.py", hostname, remotePath);
-        rmFile(hostname, remotePath + "/profile.log");
       }
       Map<String, String> workers = config.get("workers");
       for (String workerId : workers.keySet()) {

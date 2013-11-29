@@ -2,6 +2,7 @@
 
 import subprocess
 import sys
+import remove_deployment
 
 
 def make_catalog(config_file):
@@ -38,13 +39,16 @@ def main(argv):
             a configuration file modeled after deployment.cfg.sample"
         sys.exit(1)
 
-    # Step 1: make the Catalog
+    # Step 1: clear previous deployment (if there is)
+    remove_deployment.main(argv)
+
+    # Step 2: make the Catalog
     make_catalog(argv[1])
 
-    # Step 2: Copy each catalog over
+    # Step 3: Copy each catalog over
     copy_catalogs(argv[1])
 
-    # Step 3: Copy over java, libs, myriad, conf
+    # Step 4: Copy over java, libs, myriad, conf
     copy_distribution(argv[1])
 
 if __name__ == "__main__":
