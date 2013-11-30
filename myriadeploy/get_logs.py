@@ -59,35 +59,35 @@ def getlog(config_file, from_worker_id=None):
     username = config['username']
 
     # get logs from master
-    if from_worker_id == None or from_worker_id == 0:
+    if from_worker_id is None or from_worker_id == 0:
         (hostname, _, path) = get_host_port_path(master, default_path)
-        if get_logs_from_master(hostname, "%s/%s-files" \
+        if get_logs_from_master(hostname, "%s/%s-files"
                 % (path, description), username, description):
-            raise Exception("Error on getting logs from master %s" \
+            raise Exception("Error on getting logs from master %s"
                     % (hostname,))
-        if get_error_logs_from_master(hostname, "%s/%s-files" \
+        if get_error_logs_from_master(hostname, "%s/%s-files"
                 % (path, description), username, description):
-            raise Exception("Error on getting error logs from master %s" \
+            raise Exception("Error on getting error logs from master %s"
                     % (hostname,))
 
     for (i, worker) in enumerate(workers):
         # Workers are numbered from 1, not 0
         worker_id = i + 1
         # get logs from workers
-        if from_worker_id == None or from_worker_id == worker_id:
+        if from_worker_id is None or from_worker_id == worker_id:
             (hostname, _, path) = get_host_port_path(worker, default_path)
-            if get_std_logs_from_worker(hostname, "%s/%s-files" \
+            if get_std_logs_from_worker(hostname, "%s/%s-files"
                     % (path, description), username, worker_id, description):
-                raise Exception("Error on getting logs from worker %d %s" \
+                raise Exception("Error on getting logs from worker %d %s"
                         % (worker_id, hostname))
-            if get_error_logs_from_worker(hostname, "%s/%s-files" \
+            if get_error_logs_from_worker(hostname, "%s/%s-files"
                     % (path, description), username, worker_id, description):
-                raise Exception("Error on getting error logs from worker %d %s" \
-                        % (worker_id, hostname))    
-            if get_profiling_logs_from_worker(hostname, "%s/%s-files" \
+                raise Exception("Error on getting error logs from worker %d %s"
+                        % (worker_id, hostname))
+            if get_profiling_logs_from_worker(hostname, "%s/%s-files"
                     % (path, description), username, worker_id, description):
-                raise Exception("Error on getting profiling logs from worker %d %s" \
-                        % (worker_id, hostname)) 
+                raise Exception("Error on getting profiling logs from worker %d %s"
+                        % (worker_id, hostname))
 
 
 def main(argv):
