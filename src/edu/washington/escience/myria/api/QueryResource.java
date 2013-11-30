@@ -252,13 +252,12 @@ public final class QueryResource {
       int error = shell.waitFor();
       shell.destroy();
       response = "error! number " + error;
-      String profileFilePath =
-          "./" + server.getConfiguration(MyriaSystemConfigKeys.DESCRIPTION) + "/worker_" + workerId + "_profile";
+      String description = "./" + server.getConfiguration(MyriaSystemConfigKeys.DESCRIPTION);
       /* extract data for visualization. */
       if (error == 0) {
         pb =
-            new ProcessBuilder("./extract_profiling_data.py", profileFilePath, String.valueOf(queryId), String
-                .valueOf(fragment_id), queryPlanName);
+            new ProcessBuilder("./extract_profiling_data.py", description, String.valueOf(workerId), String
+                .valueOf(queryId), String.valueOf(fragment_id), queryPlanName);
         shell = pb.start();
         InputStream shellIn = shell.getInputStream();
         response = IOUtils.toString(shellIn);

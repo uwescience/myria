@@ -101,7 +101,8 @@ def get_children(fragment):
 
 # build operator state
 def build_operator_state(
-        op_name, operators, children_dict, type_dict, start_time):
+        op_name, operators, induced_operators,
+        children_dict, type_dict, start_time):
 
     # build state from events
     states = []
@@ -110,17 +111,11 @@ def build_operator_state(
 
     for event in operators[op_name]:
         if last_state != 'null':
-            if last_state == 'live' or last_state == 'wake':
+            if last_state == 'live':
                 state = {
                     'begin': last_time-start_time,
                     'end': event['time']-start_time,
                     'name': 'compute'
-                }
-            elif last_state == 'wait':
-                state = {
-                    'begin': last_time-start_time,
-                    'end': event['time']-start_time,
-                    'name': 'wait'
                 }
             elif last_state == 'hang':
                 state = {
@@ -128,16 +123,19 @@ def build_operator_state(
                     'end': event['time']-start_time,
                     'name': 'sleep'
                 }
+            else:
+                raise Exception("error in parsing operator state")
             states.append(state)
         last_state = event['message']
         last_time = event['time']
 
+    states.extend(buildWaitStates(op_name, induced_operators, start_time))
     children_ops = []
 
     for op in children_dict[op_name]:
         children_ops.append(
-            build_operator_state(
-                op, operators, children_dict, type_dict, start_time))
+            build_operator_state(op, operators, induced_operators,
+                                 children_dict, type_dict, start_time))
 
     qf = {
         'type': type_dict[op_name],
@@ -147,6 +145,26 @@ def build_operator_state(
     }
 
     return qf
+
+
+def buildWaitStates(op_name, induced_operators, start_time):
+    states = []
+    last_state = 'null'
+    last_time = 0
+    for event in induced_operators[op_name]:
+        if last_state != "null":
+            if last_state == "wait" and event['message'] == 'wake':
+                state = {
+                    'begin': last_time-start_time,
+                    'end': event['time']-start_time,
+                    'name': 'wait'
+                }
+                states.append(state)
+        last_state = event['message']
+        last_time = event['time']
+
+    return states
+
 
 def getRecoveryTaskStructure(operators, type_dict):
     for k, v in operators.items():
@@ -158,16 +176,19 @@ def getRecoveryTaskStructure(operators, type_dict):
             type_dict[k] = "RecoverProducer"
     parent = dict()
     parent[opName1] = opName2
-    children_dict  = defaultdict(list)
+    children_dict = defaultdict(list)
     children_dict[opName2].append(opName1)
     return (parent, children_dict, type_dict)
 
-def generateProfile(path, query_id, fragment_id, query_plan_file):
+
+def getFragmentStatsOnSingleWorker(path, worker_id, query_id,
+                                   fragment_id, query_plan_file):
     # get name type mapping
     type_dict = name_type_mapping(query_plan_file)
 
     # Workers are numbered from 1, not 0
-    lines = [line.strip() for line in open(path)]
+    lines = [line.strip() for line in
+             open("%s/worker_%i_profile" % (path.rstrip('/'), worker_id))]
 
     # parse infomation from each log message
     tuples = [re.findall(
@@ -187,6 +208,10 @@ def generateProfile(path, query_id, fragment_id, query_plan_file):
         i for i in tuples if int(i[1]['query_id']) == query_id and
         int(i[1]['fragment_id']) == fragment_id]
 
+    if len(tuples) == 0:
+        raise Exception("Cannot get profiling information \
+                        in %s/worker_%i_profile" % (path, worker_id))
+
     # group by operator name
     operators = defaultdict(list)
     for tp in tuples:
@@ -195,7 +220,8 @@ def generateProfile(path, query_id, fragment_id, query_plan_file):
     # get fragment tree structure
     if fragment_id < 0:
         # recovery tasks
-        (parent, children_dict, type_dict) = getRecoveryTaskStructure(operators, type_dict)
+        (parent, children_dict, type_dict) = \
+            getRecoveryTaskStructure(operators, type_dict)
     else:
         # normal fragments in the json query plan
         query_plan = read_json(query_plan_file)
@@ -219,9 +245,11 @@ def generateProfile(path, query_id, fragment_id, query_plan_file):
                     new_state['name'] = parent[k]
                     induced_operators[parent[k]].append(new_state)
 
+    # build wait states
     for k, v in induced_operators.items():
-        operators[k].extend(v)
-        operators[k] = sorted(operators[k], key=lambda k: k['time'])
+        #operators[k].extend(v)
+        induced_operators[k] = sorted(induced_operators[k],
+                                      key=lambda k: k['time'])
         if type_dict[k] in root_operators:
             start_time = operators[k][0]['time']
             end_time = operators[k][-1]['time']
@@ -230,8 +258,8 @@ def generateProfile(path, query_id, fragment_id, query_plan_file):
     # build json
     for k, v in operators.items():
         if type_dict[k] in root_operators:
-            data = build_operator_state(
-                k, operators, children_dict, type_dict, start_time)
+            data = build_operator_state(k, operators, induced_operators,
+                                        children_dict, type_dict, start_time)
             break
     qf_details = {
         'begin': 0,
@@ -242,18 +270,32 @@ def generateProfile(path, query_id, fragment_id, query_plan_file):
     print pretty_json(qf_details)
 
 
+def generateProfile(path, query_id, fragment_id, query_plan_file):
+    # TODO: implement this method
+    print "here"
+
+
 def main(argv):
 # Usage
-    if len(argv) != 5:
+    if len(argv) != 5 and len(argv) != 6:
         print >> sys.stderr, \
-            "Usage: %s <log_file_path> <query_id> <query_plan_file>" % (argv[0])
-        print >> sys.stderr, "       log_file_path "
+            "Usage: %s <log_files_directory> <worker_id> <query_id> \
+            <fragment_id> <query_plan_file>" % (argv[0])
+        print >> sys.stderr, \
+            " or %s <log_files_directory>  <query_id> <fragment_id>\
+            <query_plan_file>" % (argv[0])
+        print >> sys.stderr, "       log_file_directory "
+        print >> sys.stderr, "       worker_id "
         print >> sys.stderr, "       query_id "
-        print >> sys.stderr, "       query_fragment_id"
+        print >> sys.stderr, "       fragment_id"
         print >> sys.stderr, "       query_plan_file "
         sys.exit(1)
+    elif len(argv) == 6:
+        getFragmentStatsOnSingleWorker(argv[1], int(argv[2]), int(argv[3]),
+                                       int(argv[4]), argv[5])
+    else:
+        generateProfile(argv[1], int(argv[2]), int(argv[3]), argv[4])
 
-    generateProfile(argv[1], int(argv[2]), int(argv[3]), argv[4])
 
 if __name__ == "__main__":
     main(sys.argv)

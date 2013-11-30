@@ -102,7 +102,6 @@ public final class DeploymentUtils {
         rsyncFileToRemote("libs", hostname, remotePath);
         rsyncFileToRemote("conf", hostname, remotePath);
         rsyncFileToRemote("sqlite4java-282", hostname, remotePath);
-        rmFile(hostname, remotePath + "/profile.log");
       }
     } else if (action.equals("-start_master")) {
       String workingDir = config.get("deployment").get("path");
