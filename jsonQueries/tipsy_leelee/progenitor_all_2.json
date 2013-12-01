@@ -853,11 +853,17 @@
                     "op_type": "MultiGroupByAggregate"
                 },
                 {
-                    "arg_child":"SelectedProgenitorGroupedBy",
-                    "op_name":"CP_SelectedProgenitorGroupedBy",
-                    "op_type":"CollectProducer"
+                    "arg_child": "SelectedProgenitorGroupedBy",
+                    "arg_pf": {
+                        "field_indexes": [
+                            "2",
+                            "1"
+                        ],
+                        "type": "MultiFieldHash"
+                    },
+                    "op_name": "SP_SelectedProgenitorGroupedBy",
+                    "op_type": "ShuffleProducer"
                 }
-                
             ]
         },
         {
@@ -1355,27 +1361,34 @@
                     "op_type": "UnionAll"
                 },
                 {
-                    "arg_child":"UnionAllMassTable",
-                    "op_name":"CP_UnionAllMassTable",
-                    "op_type":"CollectProducer"
+                    "arg_child": "UnionAllMassTable",
+                    "arg_pf": {
+                        "field_indexes": [
+                            "0",
+                            "2"
+                        ],
+                        "type": "MultiFieldHash"
+                    },
+                    "op_name": "SP_UnionAllMassTable",
+                    "op_type": "ShuffleProducer"
                 }
             ]
         },
         {
             "operators":[
                 {
-                    "arg_operator_id":"CP_UnionAllMassTable",
-                    "op_name":"CollectResult-MassTable",
-                    "op_type":"CollectConsumer"
+                    "arg_operator_id": "SP_SelectedProgenitorGroupedBy",
+                    "op_name": "SC_SelectedProgenitorGroupedBy",
+                    "op_type": "ShuffleConsumer"
                 },
                 {
-                    "arg_operator_id":"CP_SelectedProgenitorGroupedBy",
-                    "op_name":"CollectResult-Selected",
-                    "op_type":"CollectConsumer"
+                    "arg_operator_id": "SP_UnionAllMassTable",
+                    "op_name": "SC_UnionAllMassTable",
+                    "op_type": "ShuffleConsumer"
                 },
                 {
-                    "arg_child1": "CollectResult-Selected",
-                    "arg_child2": "CollectResult-MassTable",
+                    "arg_child1": "SC_SelectedProgenitorGroupedBy",
+                    "arg_child2": "SC_UnionAllMassTable",
                     "arg_columns1": [
                         "2",
                         "1"
@@ -1400,9 +1413,6 @@
                     "op_name":"SendResult",
                     "op_type":"CollectProducer"
                 }
-            ],
-            "workers":[
-                1
             ]
         },
         {
@@ -1419,7 +1429,7 @@
                     "op_type":"DbInsert",
                     "relation_key":{
                         "program_name":"astro",
-                        "relation_name":"progenitoralltest8",
+                        "relation_name":"progenitoralltestfinal",
                         "user_name":"leelee"
                     }
                 }
@@ -1429,6 +1439,6 @@
             ]
         }
     ],
-    "logical_ra": "progenitor-all1 holds the results of a large progenitor query",
+    "logical_ra": "progenitor-all holds the results of a large progenitor query",
     "raw_datalog": "blah."
 }
