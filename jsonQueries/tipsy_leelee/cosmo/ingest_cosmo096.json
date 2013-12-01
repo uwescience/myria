@@ -1,0 +1,10 @@
+{ 
+    	"grp_filename": "/projects/db8/dataset_astro_2011/cosmo50cmb.256g2MbwK.00096.amiga.grp",
+    	"iorder_filename": "/projects/db8/dataset_astro_2011/cosmo50cmb.256g2MbwK.00096.iord",
+    	"relation_key": {
+        	"program_name": "astro",
+        	"relation_name": "cosmo096",
+        	"user_name": "leelee"
+    	},
+    	"tipsy_filename": "/projects/db8/dataset_astro_2011/cosmo50cmb.256g2MbwK.00096"
+	}
