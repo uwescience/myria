@@ -11,11 +11,13 @@ import java.util.Set;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -214,10 +216,11 @@ public final class QueryResource {
   }
 
   @GET
-  @Path("query-{query_id:\\d+}/fragment-{fragment_id:-?\\d+}/worker-{worker_id:\\d+}")
+  @Path("query-{query_id:\\d+}/fragment-{fragment_id:-?\\d+}")
   public Response getProfile(@PathParam("query_id") final long queryId,
-      @PathParam("fragment_id") final long fragment_id, @PathParam("worker_id") final long workerId,
-      @Context final UriInfo uriInfo) throws CatalogException, IOException {
+      @PathParam("fragment_id") final long fragment_id,
+      @DefaultValue("0") @QueryParam("worker_id") final long workerId, @Context final UriInfo uriInfo)
+      throws CatalogException, IOException {
 
     /* validate the query_id */
     final QueryStatusEncoding queryStatus = server.getQueryStatus(queryId);
@@ -244,9 +247,18 @@ public final class QueryResource {
     /* pull profiling logs from worker directories. */
     /* TODO: handle error properly. */
     String response = "error";
-    ProcessBuilder pb =
-        new ProcessBuilder("./get_logs.py", server.getConfiguration(MyriaSystemConfigKeys.DEPLOYMENT_FILE), workerId
-            + "");
+    final String depolymentFile = server.getConfiguration(MyriaSystemConfigKeys.DEPLOYMENT_FILE);
+    ProcessBuilder pb;
+    if (workerId != 0) {/* if there is an user defined workerId, get logs of this specific worker. otherwise, get all. */
+      if (workerId > server.getWorkers().size() || workerId <= 0) {
+        return Response.status(Status.NOT_FOUND).contentLocation(uri).entity("worker " + workerId + " was not found")
+            .build();
+      }
+      pb = new ProcessBuilder("./get_logs.py", depolymentFile, workerId + "");
+    } else {
+      pb = new ProcessBuilder("./get_logs.py", depolymentFile);
+    }
+
     try {
       Process shell = pb.start();
       int error = shell.waitFor();
@@ -255,9 +267,15 @@ public final class QueryResource {
       String description = "./" + server.getConfiguration(MyriaSystemConfigKeys.DESCRIPTION);
       /* extract data for visualization. */
       if (error == 0) {
-        pb =
-            new ProcessBuilder("./extract_profiling_data.py", description, String.valueOf(workerId), String
-                .valueOf(queryId), String.valueOf(fragment_id), queryPlanName);
+        if (workerId != 0) {
+          pb =
+              new ProcessBuilder("./extract_profiling_data.py", description, String.valueOf(workerId), String
+                  .valueOf(queryId), String.valueOf(fragment_id), queryPlanName, depolymentFile);
+        } else {
+          pb =
+              new ProcessBuilder("./extract_profiling_data.py", description, String.valueOf(queryId), String
+                  .valueOf(fragment_id), queryPlanName, depolymentFile);
+        }
         shell = pb.start();
         InputStream shellIn = shell.getInputStream();
         response = IOUtils.toString(shellIn);

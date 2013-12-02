@@ -5,6 +5,7 @@ import re
 import sys
 import json
 import copy
+import myriadeploy
 
 # root operators
 root_operators = set(['LocalMultiwayProducer',
@@ -73,6 +74,13 @@ def name_type_mapping(query_plan_file):
     return mapping
 
 
+# get number of fragment of a query plan
+def num_of_fragment(query_plan_file):
+    plan = read_json(query_plan_file)
+    fragments = plan['fragments']
+    return len(fragments)
+
+
 # build parent mapping
 def get_parent(fragment):
     ret = dict()
@@ -124,6 +132,10 @@ def build_operator_state(
                     'name': 'sleep'
                 }
             else:
+                print "op_name: {}".format(op_name)
+                print "time: {}".format(event['time'])
+                print " last_state: {}".format(last_state)
+                print " current_state: {}".format(event['message'])
                 raise Exception("error in parsing operator state")
             states.append(state)
         last_state = event['message']
@@ -182,7 +194,19 @@ def getRecoveryTaskStructure(operators, type_dict):
 
 
 def getFragmentStatsOnSingleWorker(path, worker_id, query_id,
-                                   fragment_id, query_plan_file):
+                                   fragment_id, query_plan_file, config_file):
+    # get config info
+    config = myriadeploy.read_config_file(config_file)
+    workers = config['workers']
+
+    # validate worker_id
+    if worker_id > len(workers):
+        raise Exception("worker_id {} is beyond range".format(worker_id))
+
+    # validate fragment_id
+    if fragment_id >= num_of_fragment(query_plan_file):
+        raise Exception("Invalid fragment_id {}".format(fragment_id))
+
     # get name type mapping
     type_dict = name_type_mapping(query_plan_file)
 
@@ -232,6 +256,10 @@ def getFragmentStatsOnSingleWorker(path, worker_id, query_id,
     # update parent's events
     induced_operators = defaultdict(list)
     for k, v in operators.items():
+        operators[k] = sorted(operators[k], key=lambda k: k['time'])
+        if type_dict[k] in root_operators:
+            start_time = operators[k][0]['time']
+            end_time = operators[k][-1]['time']
         if k in parent:
             for state in v:
                 if state['message'] == 'live':
@@ -250,10 +278,6 @@ def getFragmentStatsOnSingleWorker(path, worker_id, query_id,
         #operators[k].extend(v)
         induced_operators[k] = sorted(induced_operators[k],
                                       key=lambda k: k['time'])
-        if type_dict[k] in root_operators:
-            start_time = operators[k][0]['time']
-            end_time = operators[k][-1]['time']
-            break
 
     # build json
     for k, v in operators.items():
@@ -270,31 +294,114 @@ def getFragmentStatsOnSingleWorker(path, worker_id, query_id,
     print pretty_json(qf_details)
 
 
-def generateProfile(path, query_id, fragment_id, query_plan_file):
-    # TODO: implement this method
-    print "here"
+def generateProfile(path, query_id, fragment_id, query_plan_file, config_file):
+    # get configuration
+    config = myriadeploy.read_config_file(config_file)
+    workers = config['workers']
+
+    # validate fragment_id
+    if fragment_id >= num_of_fragment(query_plan_file):
+        raise Exception("Invalid fragment_id {}".format(fragment_id))
+
+    profile_data = []
+
+    for (i, worker) in enumerate(workers):
+        worker_id = i+1
+        profile_data.append(generateRootOpProfile(path, query_id, fragment_id,
+                            worker_id, query_plan_file))
+    profile = {
+        'query': query_id,
+        'profile': profile_data
+    }
+
+    print pretty_json(profile)
+
+
+def generateRootOpProfile(path, query_id, fragment_id,
+                          worker_id, query_plan_file):
+    # get name type mapping
+    type_dict = name_type_mapping(query_plan_file)
+
+    # Workers are numbered from 1, not 0
+    lines = [line.strip() for line in
+             open("%s/worker_%i_profile" % (path.rstrip('/'), worker_id))]
+
+    # parse infomation from each log message
+    tuples = [re.findall(
+        r'.query_id#(\d*)..([\w(),]*)@(-?\w*)..(\d*).:([\w|\W]*)', line)
+        for line in lines]
+    tuples = [i[0] for i in tuples if len(i) > 0]
+    tuples = [(i[1], {
+        'time': long(i[3]),
+        'query_id':i[0],
+        'name':i[1],
+        'fragment_id':i[2],
+        'message':i[4]
+    }) for i in tuples]
+
+    # filter out unrelevant queries
+    tuples = [
+        i for i in tuples if int(i[1]['query_id']) == query_id and
+        int(i[1]['fragment_id']) == fragment_id]
+
+    # filter out non-root operators
+    tuples = [i for i in tuples if type_dict[i[0]] in root_operators]
+
+    if len(tuples) == 0:
+        raise Exception("Cannot get profiling information \
+                        in %s/worker_%i_profile" % (path, worker_id))
+    # group by operator name
+    operators = defaultdict(list)
+    for tp in tuples:
+        operators[tp[0]].append(tp[1])
+
+    # check that there is one and only one root
+    if len(operators) != 1:
+        raise Exception("{} root operators in fragment {} "
+                        .format(len(operators), fragment_id))
+
+    induced_operators = defaultdict(list)
+    children_dict = defaultdict(list)
+
+    for k, v in operators.items():
+        v = sorted(v, key=lambda k: k['time'])
+        start_time = v[0]['time']
+        end_time = v[-1]['time']
+        data = build_operator_state(k, operators, induced_operators,
+                                    children_dict, type_dict, start_time)
+        break
+
+    qf_details = {
+        'begin': 0,
+        'end': end_time-start_time,
+        'hierarchy': [data],
+        'worker': worker_id
+    }
+
+    return qf_details
 
 
 def main(argv):
 # Usage
-    if len(argv) != 5 and len(argv) != 6:
+    if len(argv) != 6 and len(argv) != 7:
         print >> sys.stderr, \
             "Usage: %s <log_files_directory> <worker_id> <query_id> \
-            <fragment_id> <query_plan_file>" % (argv[0])
+            <fragment_id> <query_plan_file> <config_file>" % (argv[0])
         print >> sys.stderr, \
             " or %s <log_files_directory>  <query_id> <fragment_id>\
-            <query_plan_file>" % (argv[0])
+            <query_plan_file> <config_file>" % (argv[0])
         print >> sys.stderr, "       log_file_directory "
         print >> sys.stderr, "       worker_id "
         print >> sys.stderr, "       query_id "
-        print >> sys.stderr, "       fragment_id"
+        print >> sys.stderr, "       fragment_id "
         print >> sys.stderr, "       query_plan_file "
+        print >> sys.stderr, "       config file "
         sys.exit(1)
-    elif len(argv) == 6:
+    elif len(argv) == 7:
         getFragmentStatsOnSingleWorker(argv[1], int(argv[2]), int(argv[3]),
-                                       int(argv[4]), argv[5])
+                                       int(argv[4]), argv[5], argv[6])
     else:
-        generateProfile(argv[1], int(argv[2]), int(argv[3]), argv[4])
+        generateProfile(argv[1], int(argv[2]), int(argv[3]), argv[4], argv[5])
 
 
 if __name__ == "__main__":

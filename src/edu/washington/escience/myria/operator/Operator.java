@@ -278,7 +278,7 @@ public abstract class Operator implements Serializable {
       throw new DbException(e);
     }
 
-    if (isProfilingMode()) {
+    if (isProfilingMode() && !eos()) {
       PROFILING_LOGGER.info("[{}#{}][{}@{}][{}]:hang", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(), getOpName(),
           getFragmentId(), System.nanoTime());
     }
