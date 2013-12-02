@@ -146,16 +146,16 @@ public final class FileScan extends LeafOperator {
               }
               break;
             case DOUBLE_TYPE:
-              buffer.putDouble(count, scanner.nextDouble());
+              buffer.putDouble(count, Double.parseDouble(scanner.next()));
               break;
             case FLOAT_TYPE:
-              buffer.putFloat(count, scanner.nextFloat());
+              buffer.putFloat(count, Float.parseFloat(scanner.next()));
               break;
             case INT_TYPE:
-              buffer.putInt(count, scanner.nextInt());
+              buffer.putInt(count, Integer.parseInt(scanner.next()));
               break;
             case LONG_TYPE:
-              buffer.putLong(count, scanner.nextLong());
+              buffer.putLong(count, Long.parseLong(scanner.next()));
               break;
             case STRING_TYPE:
               buffer.putString(count, scanner.next());
