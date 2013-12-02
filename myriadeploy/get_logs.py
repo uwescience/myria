@@ -5,6 +5,7 @@ import myriadeploy
 import subprocess
 import sys
 
+
 def get_host_port_path(node, default_path):
     if len(node) == 2:
         (hostname, port) = node
@@ -16,34 +17,50 @@ def get_host_port_path(node, default_path):
         (hostname, port, path) = node
     return (hostname, port, path)
 
+
 def mkdir_if_not_exists(description):
     args = ["mkdir", "-p", description]
     return subprocess.call(args)
 
-def get_std_logs_from_worker(hostname, dirname, username, worker_id, description):
+
+def get_std_logs_from_worker(hostname, dirname, username,
+                             worker_id, description):
     mkdir_if_not_exists(description)
-    args = ["scp", "%s@%s:%s/worker_%s_stdout" % (username, hostname, dirname, worker_id), "%s/worker_%s_stdout" % (description, worker_id,)]
+    args = ["scp", "%s@%s:%s/worker_%s_stdout" %
+            (username, hostname, dirname, worker_id),
+            "%s/worker_%s_stdout" % (description, worker_id,)]
     return subprocess.call(args)
 
-def get_error_logs_from_worker(hostname, dirname, username, worker_id, description):
+
+def get_error_logs_from_worker(hostname, dirname, username,
+                               worker_id, description):
     mkdir_if_not_exists(description)
-    args = ["scp", "%s@%s:%s/worker_%s_stderr" % (username, hostname, dirname, worker_id), "%s/worker_%s_stderr" % (description, worker_id,)]
+    args = ["scp", "%s@%s:%s/worker_%s_stderr" %
+            (username, hostname, dirname, worker_id),
+            "%s/worker_%s_stderr" % (description, worker_id,)]
     return subprocess.call(args)
 
-def get_profiling_logs_from_worker(hostname, dirname, username, worker_id, description):
+
+def get_profiling_logs_from_worker(hostname, dirname,
+                                   username, worker_id, description):
     mkdir_if_not_exists(description)
-    args = ["scp", "%s@%s:%s/profile.log" % (username, hostname, dirname), "%s/worker_%s_profile" % (description, worker_id,)]
-    return subprocess.call(args)  
+    args = ["scp", "%s@%s:%s/profile.log" %
+            (username, hostname, dirname),
+            "%s/worker_%s_profile" % (description, worker_id,)]
+    return subprocess.call(args)
 
 
 def get_logs_from_master(hostname, dirname, username, description):
     mkdir_if_not_exists(description)
-    args = ["scp", "%s@%s:%s/master_stdout" % (username, hostname, dirname), "%s/master_stdout" % (description)]
+    args = ["scp", "%s@%s:%s/master_stdout" %
+            (username, hostname, dirname), "%s/master_stdout" % (description)]
     return subprocess.call(args)
+
 
 def get_error_logs_from_master(hostname, dirname, username, description):
     mkdir_if_not_exists(description)
-    args = ["scp", "%s@%s:%s/master_stderr" % (username, hostname, dirname), "%s/master_stderr" % (description)]
+    args = ["scp", "%s@%s:%s/master_stderr" %
+            (username, hostname, dirname), "%s/master_stderr" % (description)]
     return subprocess.call(args)
 
 
@@ -62,13 +79,13 @@ def getlog(config_file, from_worker_id=None):
     if from_worker_id is None or from_worker_id == 0:
         (hostname, _, path) = get_host_port_path(master, default_path)
         if get_logs_from_master(hostname, "%s/%s-files"
-                % (path, description), username, description):
+           % (path, description), username, description):
             raise Exception("Error on getting logs from master %s"
-                    % (hostname,))
+                            % (hostname,))
         if get_error_logs_from_master(hostname, "%s/%s-files"
-                % (path, description), username, description):
+           % (path, description), username, description):
             raise Exception("Error on getting error logs from master %s"
-                    % (hostname,))
+                            % (hostname,))
 
     for (i, worker) in enumerate(workers):
         # Workers are numbered from 1, not 0
@@ -77,26 +94,32 @@ def getlog(config_file, from_worker_id=None):
         if from_worker_id is None or from_worker_id == worker_id:
             (hostname, _, path) = get_host_port_path(worker, default_path)
             if get_std_logs_from_worker(hostname, "%s/%s-files"
-                    % (path, description), username, worker_id, description):
+               % (path, description), username, worker_id, description):
                 raise Exception("Error on getting logs from worker %d %s"
-                        % (worker_id, hostname))
+                                % (worker_id, hostname))
             if get_error_logs_from_worker(hostname, "%s/%s-files"
-                    % (path, description), username, worker_id, description):
+               % (path, description), username, worker_id, description):
                 raise Exception("Error on getting error logs from worker %d %s"
-                        % (worker_id, hostname))
+                                % (worker_id, hostname))
             if get_profiling_logs_from_worker(hostname, "%s/%s-files"
-                    % (path, description), username, worker_id, description):
-                raise Exception("Error on getting profiling logs from worker %d %s"
-                        % (worker_id, hostname))
+               % (path, description), username, worker_id, description):
+                raise Exception("Error on getting profiling logs \
+                    from worker %d %s" % (worker_id, hostname))
 
 
 def main(argv):
     # Usage
     if len(argv) < 2 or len(argv) > 3:
-        print >> sys.stderr, "Usage: %s <deployment.cfg> <worker_id>" % (argv[0])
-        print >> sys.stderr, "       deployment.cfg: a configuration file modeled after deployment.cfg.sample"
-        print >> sys.stderr, "       worker_id (optional): get logs from this worker only, 0 = server"
-        print >> sys.stderr, "       logs will be put in the directory named after \"description\" in .cfg."
+        print >> sys.stderr, \
+            "Usage: %s <deployment.cfg> <worker_id>" % (argv[0])
+        print >> sys.stderr, \
+            "       deployment.cfg: configuration file "
+        print >> sys.stderr, \
+            "       worker_id (optional): \
+            get logs from this worker only, 0 = server"
+        print >> sys.stderr, \
+            "       logs will be put in the directory \
+            named after \"description\" in .cfg."
         sys.exit(1)
 
     if len(argv) == 2:
