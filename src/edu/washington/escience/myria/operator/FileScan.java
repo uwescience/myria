@@ -8,7 +8,6 @@ import java.io.InputStreamReader;
 import java.io.SequenceInputStream;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.InputMismatchException;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -164,7 +163,7 @@ public final class FileScan extends LeafOperator {
               buffer.putDateTime(count, DateTimeUtils.parse(scanner.next()));
               break;
           }
-        } catch (final InputMismatchException e) {
+        } catch (final IllegalArgumentException e) {
           throw new DbException("Error parsing column " + count + " of row " + lineNumber + ": ", e);
         }
       }
