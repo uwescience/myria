@@ -139,9 +139,9 @@ public final class FileScan extends LeafOperator {
           switch (schema.getColumnType(count)) {
             case BOOLEAN_TYPE:
               if (scanner.hasNextBoolean()) {
-                buffer.putBoolean(count, scanner.nextBoolean());
+                buffer.putBoolean(count, Boolean.parseBoolean(scanner.next()));
               } else if (scanner.hasNextFloat()) {
-                buffer.putBoolean(count, scanner.nextFloat() != 0);
+                buffer.putBoolean(count, Float.parseFloat(scanner.next()) != 0);
               }
               break;
             case DOUBLE_TYPE:
