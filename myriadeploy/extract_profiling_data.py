@@ -108,9 +108,8 @@ def get_children(fragment):
 
 
 # build operator state
-def build_operator_state(
-        op_name, operators, induced_operators,
-        children_dict, type_dict, start_time):
+def build_operator_state(op_name, operators, children_dict,
+                         type_dict, start_time):
 
     # build state from events
     states = []
@@ -119,11 +118,17 @@ def build_operator_state(
 
     for event in operators[op_name]:
         if last_state != 'null':
-            if last_state == 'live':
+            if last_state == 'live' or last_state == 'wake':
                 state = {
                     'begin': last_time-start_time,
                     'end': event['time']-start_time,
                     'name': 'compute'
+                }
+            elif last_state == 'wait':
+                state = {
+                    'begin': last_time-start_time,
+                    'end': event['time']-start_time,
+                    'name': 'wait'
                 }
             elif last_state == 'hang':
                 state = {
@@ -131,23 +136,16 @@ def build_operator_state(
                     'end': event['time']-start_time,
                     'name': 'sleep'
                 }
-            else:
-                print "op_name: {}".format(op_name)
-                print "time: {}".format(event['time'])
-                print " last_state: {}".format(last_state)
-                print " current_state: {}".format(event['message'])
-                raise Exception("error in parsing operator state")
             states.append(state)
         last_state = event['message']
         last_time = event['time']
 
-    states.extend(buildWaitStates(op_name, induced_operators, start_time))
     children_ops = []
 
     for op in children_dict[op_name]:
         children_ops.append(
-            build_operator_state(op, operators, induced_operators,
-                                 children_dict, type_dict, start_time))
+            build_operator_state(
+                op, operators, children_dict, type_dict, start_time))
 
     qf = {
         'type': type_dict[op_name],
@@ -157,25 +155,6 @@ def build_operator_state(
     }
 
     return qf
-
-
-def buildWaitStates(op_name, induced_operators, start_time):
-    states = []
-    last_state = 'null'
-    last_time = 0
-    for event in induced_operators[op_name]:
-        if last_state != "null":
-            if last_state == "wait" and event['message'] == 'wake':
-                state = {
-                    'begin': last_time-start_time,
-                    'end': event['time']-start_time,
-                    'name': 'wait'
-                }
-                states.append(state)
-        last_state = event['message']
-        last_time = event['time']
-
-    return states
 
 
 def getRecoveryTaskStructure(operators, type_dict):
@@ -241,7 +220,7 @@ def getFragmentStatsOnSingleWorker(path, worker_id, query_id,
     for tp in tuples:
         operators[tp[0]].append(tp[1])
 
-    # get fragment tree structure
+     # get fragment tree structure
     if fragment_id < 0:
         # recovery tasks
         (parent, children_dict, type_dict) = \
@@ -256,10 +235,6 @@ def getFragmentStatsOnSingleWorker(path, worker_id, query_id,
     # update parent's events
     induced_operators = defaultdict(list)
     for k, v in operators.items():
-        operators[k] = sorted(operators[k], key=lambda k: k['time'])
-        if type_dict[k] in root_operators:
-            start_time = operators[k][0]['time']
-            end_time = operators[k][-1]['time']
         if k in parent:
             for state in v:
                 if state['message'] == 'live':
@@ -273,17 +248,19 @@ def getFragmentStatsOnSingleWorker(path, worker_id, query_id,
                     new_state['name'] = parent[k]
                     induced_operators[parent[k]].append(new_state)
 
-    # build wait states
     for k, v in induced_operators.items():
-        #operators[k].extend(v)
-        induced_operators[k] = sorted(induced_operators[k],
-                                      key=lambda k: k['time'])
+        operators[k].extend(v)
+        operators[k] = sorted(operators[k], key=lambda k: k['time'])
+        if type_dict[k] in root_operators:
+            start_time = operators[k][0]['time']
+            end_time = operators[k][-1]['time']
+            break
 
     # build json
     for k, v in operators.items():
         if type_dict[k] in root_operators:
-            data = build_operator_state(k, operators, induced_operators,
-                                        children_dict, type_dict, start_time)
+            data = build_operator_state(
+                k, operators, children_dict, type_dict, start_time)
             break
     qf_details = {
         'begin': 0,
@@ -294,6 +271,7 @@ def getFragmentStatsOnSingleWorker(path, worker_id, query_id,
     print pretty_json(qf_details)
 
 
+# return result of visualization of one fragment over all workers
 def generateProfile(path, query_id, fragment_id, query_plan_file, config_file):
     # get configuration
     config = myriadeploy.read_config_file(config_file)
@@ -309,9 +287,18 @@ def generateProfile(path, query_id, fragment_id, query_plan_file, config_file):
         worker_id = i+1
         profile_data.append(generateRootOpProfile(path, query_id, fragment_id,
                             worker_id, query_plan_file))
+    begin = -1
+    end = -1
+    for pf in profile_data:
+        if begin == -1 or begin < pf['begin']:
+            begin = pf['begin']
+        if end == -1 or end > pf['end']:
+            end = pf['end']
+
     profile = {
-        'query': query_id,
-        'profile': profile_data
+        'begin': begin,
+        'end': end,
+        'hierarchy': profile_data
     }
 
     print pretty_json(profile)
@@ -360,22 +347,23 @@ def generateRootOpProfile(path, query_id, fragment_id,
         raise Exception("{} root operators in fragment {} "
                         .format(len(operators), fragment_id))
 
-    induced_operators = defaultdict(list)
     children_dict = defaultdict(list)
 
     for k, v in operators.items():
         v = sorted(v, key=lambda k: k['time'])
         start_time = v[0]['time']
         end_time = v[-1]['time']
-        data = build_operator_state(k, operators, induced_operators,
-                                    children_dict, type_dict, start_time)
+        data = build_operator_state(k, operators, children_dict,
+                                    type_dict, start_time)
         break
 
     qf_details = {
         'begin': 0,
         'end': end_time-start_time,
-        'hierarchy': [data],
-        'worker': worker_id
+        'states': data['states'],
+        'name': "worker_id: {}".format(worker_id),
+        'type': "worker",
+        'children': []
     }
 
     return qf_details
