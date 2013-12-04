@@ -109,7 +109,7 @@ def get_children(fragment):
 
 # build operator state
 def build_operator_state(op_name, operators, children_dict,
-                         type_dict, start_time):
+                         type_dict, start_time, query_start_time):
 
     # build state from events
     states = []
@@ -120,20 +120,20 @@ def build_operator_state(op_name, operators, children_dict,
         if last_state != 'null':
             if last_state == 'live' or last_state == 'wake':
                 state = {
-                    'begin': last_time-start_time,
-                    'end': event['time']-start_time,
+                    'begin': last_time-start_time+query_start_time,
+                    'end': event['time']-start_time+query_start_time,
                     'name': 'compute'
                 }
             elif last_state == 'wait':
                 state = {
-                    'begin': last_time-start_time,
-                    'end': event['time']-start_time,
+                    'begin': last_time-start_time+query_start_time,
+                    'end': event['time']-start_time+query_start_time,
                     'name': 'wait'
                 }
             elif last_state == 'hang':
                 state = {
-                    'begin': last_time-start_time,
-                    'end': event['time']-start_time,
+                    'begin': last_time-start_time+query_start_time,
+                    'end': event['time']-start_time+query_start_time,
                     'name': 'sleep'
                 }
             states.append(state)
@@ -144,8 +144,8 @@ def build_operator_state(op_name, operators, children_dict,
 
     for op in children_dict[op_name]:
         children_ops.append(
-            build_operator_state(
-                op, operators, children_dict, type_dict, start_time))
+            build_operator_state(op, operators, children_dict,
+                                 type_dict, start_time, query_start_time))
 
     qf = {
         'type': type_dict[op_name],
@@ -207,9 +207,25 @@ def getFragmentStatsOnSingleWorker(path, worker_id, query_id,
     }) for i in tuples]
 
     # filter out unrelevant queries
+    # filter on query id
+    tuples = [i for i in tuples if int(i[1]['query_id']) == query_id]
+
+    # get start time
+    mst = [i for i in tuples if i[0] == 'startTimeInMS']
+    nst = [i for i in tuples if i[0] == 'startTimeInNS']
+
+    for i in mst:
+        s_time_in_ms = i[1]['time']
+        break
+
+    for i in nst:
+        start_time_in_ns = i[1]['time']
+        break
+
+    # filter out unrelevant queries
     tuples = [
-        i for i in tuples if int(i[1]['query_id']) == query_id and
-        int(i[1]['fragment_id']) == fragment_id]
+        i for i in tuples if int(i[1]['fragment_id']) == fragment_id
+        and i[1]['message'] != 'set time']
 
     if len(tuples) == 0:
         raise Exception("Cannot get profiling information \
@@ -252,19 +268,18 @@ def getFragmentStatsOnSingleWorker(path, worker_id, query_id,
         operators[k].extend(v)
         operators[k] = sorted(operators[k], key=lambda k: k['time'])
         if type_dict[k] in root_operators:
-            start_time = operators[k][0]['time']
             end_time = operators[k][-1]['time']
             break
 
     # build json
     for k, v in operators.items():
         if type_dict[k] in root_operators:
-            data = build_operator_state(
-                k, operators, children_dict, type_dict, start_time)
+            data = build_operator_state(k, operators, children_dict, type_dict,
+                                        start_time_in_ns, s_time_in_ms*1000000)
             break
     qf_details = {
-        'begin': 0,
-        'end': end_time-start_time,
+        'begin': s_time_in_ms*1000000,
+        'end': end_time-start_time_in_ns+s_time_in_ms*1000000,
         'hierarchy': [data]
     }
 
@@ -326,10 +341,25 @@ def generateRootOpProfile(path, query_id, fragment_id,
         'message':i[4]
     }) for i in tuples]
 
+    # filter on query id
+    tuples = [i for i in tuples if int(i[1]['query_id']) == query_id]
+
+    # get start time
+    mst = [i for i in tuples if i[0] == 'startTimeInMS']
+    nst = [i for i in tuples if i[0] == 'startTimeInNS']
+
+    for i in mst:
+        s_time_in_ms = i[1]['time']
+        break
+
+    for i in nst:
+        start_time_in_ns = i[1]['time']
+        break
+
     # filter out unrelevant queries
     tuples = [
-        i for i in tuples if int(i[1]['query_id']) == query_id and
-        int(i[1]['fragment_id']) == fragment_id]
+        i for i in tuples if int(i[1]['fragment_id']) == fragment_id
+        and i[1]['message'] != 'set time']
 
     # filter out non-root operators
     tuples = [i for i in tuples if type_dict[i[0]] in root_operators]
@@ -351,15 +381,14 @@ def generateRootOpProfile(path, query_id, fragment_id,
 
     for k, v in operators.items():
         v = sorted(v, key=lambda k: k['time'])
-        start_time = v[0]['time']
         end_time = v[-1]['time']
-        data = build_operator_state(k, operators, children_dict,
-                                    type_dict, start_time)
+        data = build_operator_state(k, operators, children_dict, type_dict,
+                                    start_time_in_ns, s_time_in_ms*1000000)
         break
 
     qf_details = {
-        'begin': 0,
-        'end': end_time-start_time,
+        'begin': s_time_in_ms*1000000,
+        'end': end_time-start_time_in_ns+s_time_in_ms*1000000,
         'states': data['states'],
         'name': "worker_id: {}".format(worker_id),
         'type': "worker",
