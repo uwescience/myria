@@ -214,13 +214,8 @@ def getFragmentStatsOnSingleWorker(path, worker_id, query_id,
     mst = [i for i in tuples if i[0] == 'startTimeInMS']
     nst = [i for i in tuples if i[0] == 'startTimeInNS']
 
-    for i in mst:
-        s_time_in_ms = i[1]['time']
-        break
-
-    for i in nst:
-        start_time_in_ns = i[1]['time']
-        break
+    s_time_in_ms = mst[0][1]['time']
+    start_time_in_ns = nst[0][1]['time']
 
     # filter out unrelevant queries
     tuples = [
@@ -275,11 +270,12 @@ def getFragmentStatsOnSingleWorker(path, worker_id, query_id,
     for k, v in operators.items():
         if type_dict[k] in root_operators:
             data = build_operator_state(k, operators, children_dict, type_dict,
-                                        start_time_in_ns, s_time_in_ms*1000000)
+                                        start_time_in_ns, s_time_in_ms*1e6)
             break
+    begin = s_time_in_ms * 1e6
     qf_details = {
-        'begin': s_time_in_ms*1000000,
-        'end': end_time-start_time_in_ns+s_time_in_ms*1000000,
+        'begin': begin,
+        'end': end_time - start_time_in_ns + begin,
         'hierarchy': [data]
     }
 
@@ -348,13 +344,8 @@ def generateRootOpProfile(path, query_id, fragment_id,
     mst = [i for i in tuples if i[0] == 'startTimeInMS']
     nst = [i for i in tuples if i[0] == 'startTimeInNS']
 
-    for i in mst:
-        s_time_in_ms = i[1]['time']
-        break
-
-    for i in nst:
-        start_time_in_ns = i[1]['time']
-        break
+    s_time_in_ms = mst[0][1]['time']
+    start_time_in_ns = nst[1]['time']
 
     # filter out unrelevant queries
     tuples = [
@@ -383,12 +374,13 @@ def generateRootOpProfile(path, query_id, fragment_id,
         v = sorted(v, key=lambda k: k['time'])
         end_time = v[-1]['time']
         data = build_operator_state(k, operators, children_dict, type_dict,
-                                    start_time_in_ns, s_time_in_ms*1000000)
+                                    start_time_in_ns, s_time_in_ms*1e6)
         break
 
+    begin = s_time_in_ms * 1e6
     qf_details = {
-        'begin': s_time_in_ms*1000000,
-        'end': end_time-start_time_in_ns+s_time_in_ms*1000000,
+        'begin': begin,
+        'end': end_time - start_time_in_ns + begin,
         'states': data['states'],
         'name': "worker_id: {}".format(worker_id),
         'type': "worker",
