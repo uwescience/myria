@@ -211,8 +211,10 @@ def getFragmentStatsOnSingleWorker(path, worker_id, query_id,
     tuples = [i for i in tuples if int(i[1]['query_id']) == query_id]
 
     # get start time
-    mst = [i for i in tuples if i[0] == 'startTimeInMS']
-    nst = [i for i in tuples if i[0] == 'startTimeInNS']
+    mst = [i for i in tuples if i[0] == 'startTimeInMS'
+           and int(i[1]['fragment_id']) == fragment_id]
+    nst = [i for i in tuples if i[0] == 'startTimeInNS'
+           and int(i[1]['fragment_id']) == fragment_id]
 
     s_time_in_ms = mst[0][1]['time']
     start_time_in_ns = nst[0][1]['time']
@@ -265,6 +267,11 @@ def getFragmentStatsOnSingleWorker(path, worker_id, query_id,
         if type_dict[k] in root_operators:
             end_time = operators[k][-1]['time']
             break
+        if(operators[k][0]['time']) < start_time_in_ns:
+            print k
+            print operators[k][0]['time']
+            print start_time_in_ns
+            raise Exception("wrong!")
 
     # build json
     for k, v in operators.items():
@@ -296,8 +303,10 @@ def generateProfile(path, query_id, fragment_id, query_plan_file, config_file):
 
     for (i, worker) in enumerate(workers):
         worker_id = i+1
-        profile_data.append(generateRootOpProfile(path, query_id, fragment_id,
-                            worker_id, query_plan_file))
+        qf_i = generateRootOpProfile(path, query_id, fragment_id,
+                                     worker_id, query_plan_file)
+        if qf_i:
+            profile_data.append(qf_i)
     begin = -1
     end = -1
     for pf in profile_data:
@@ -341,11 +350,12 @@ def generateRootOpProfile(path, query_id, fragment_id,
     tuples = [i for i in tuples if int(i[1]['query_id']) == query_id]
 
     # get start time
-    mst = [i for i in tuples if i[0] == 'startTimeInMS']
-    nst = [i for i in tuples if i[0] == 'startTimeInNS']
-
+    mst = [i for i in tuples if i[0] == 'startTimeInMS'
+           and int(i[1]['fragment_id']) == fragment_id]
+    nst = [i for i in tuples if i[0] == 'startTimeInNS'
+           and int(i[1]['fragment_id']) == fragment_id]
     s_time_in_ms = mst[0][1]['time']
-    start_time_in_ns = nst[1]['time']
+    start_time_in_ns = nst[0][1]['time']
 
     # filter out unrelevant queries
     tuples = [
@@ -356,8 +366,8 @@ def generateRootOpProfile(path, query_id, fragment_id,
     tuples = [i for i in tuples if type_dict[i[0]] in root_operators]
 
     if len(tuples) == 0:
-        raise Exception("Cannot get profiling information \
-                        in %s/worker_%i_profile" % (path, worker_id))
+        return
+
     # group by operator name
     operators = defaultdict(list)
     for tp in tuples:
