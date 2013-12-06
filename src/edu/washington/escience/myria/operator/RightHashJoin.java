@@ -8,6 +8,7 @@ import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
+import edu.washington.escience.myria.column.mutable.MutableColumn;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
@@ -249,7 +250,7 @@ public final class RightHashJoin extends BinaryOperator {
   protected void addToAns(final TupleBatch cntTB, final int row, final TupleBuffer hashTable, final int index) {
     List<Column<?>> tbColumns = cntTB.getDataColumns();
     final int rowInColumn = cntTB.getValidIndices().get(row);
-    Column<?>[] hashTblColumns = hashTable.getColumns(index);
+    MutableColumn<?>[] hashTblColumns = hashTable.getColumns(index);
     ColumnBuilder<?>[] hashTblColumnBuilders = null;
     if (hashTblColumns == null) {
       hashTblColumnBuilders = hashTable.getColumnBuilders(index);
