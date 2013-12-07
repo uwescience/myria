@@ -307,12 +307,13 @@ def generateProfile(path, query_id, fragment_id, query_plan_file, config_file):
                                      worker_id, query_plan_file)
         if qf_i:
             profile_data.append(qf_i)
+
     begin = -1
     end = -1
     for pf in profile_data:
-        if begin == -1 or begin < pf['begin']:
+        if begin == -1 or pf['begin'] < begin:
             begin = pf['begin']
-        if end == -1 or end > pf['end']:
+        if end == -1 or pf['end'] < end:
             end = pf['end']
 
     profile = {
@@ -392,7 +393,7 @@ def generateRootOpProfile(path, query_id, fragment_id,
         'begin': begin,
         'end': end_time - start_time_in_ns + begin,
         'states': data['states'],
-        'name': "worker_id: {}".format(worker_id),
+        'name': "worker {}".format(worker_id),
         'type': "worker",
         'children': []
     }
