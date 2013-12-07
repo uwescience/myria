@@ -47,6 +47,8 @@ children['SinkRoot'] = ['arg_child']
 children['DupElim'] = ['arg_child']
 children['Rename'] = ['arg_child']
 
+million = int(1e6)
+
 
 # deserialize json
 def read_json(filename):
@@ -277,9 +279,9 @@ def getFragmentStatsOnSingleWorker(path, worker_id, query_id,
     for k, v in operators.items():
         if type_dict[k] in root_operators:
             data = build_operator_state(k, operators, children_dict, type_dict,
-                                        start_time_in_ns, s_time_in_ms*1e6)
+                                        start_time_in_ns, s_time_in_ms*million)
             break
-    begin = s_time_in_ms * 1e6
+    begin = s_time_in_ms * million
     qf_details = {
         'begin': begin,
         'end': end_time - start_time_in_ns + begin,
@@ -385,10 +387,10 @@ def generateRootOpProfile(path, query_id, fragment_id,
         v = sorted(v, key=lambda k: k['time'])
         end_time = v[-1]['time']
         data = build_operator_state(k, operators, children_dict, type_dict,
-                                    start_time_in_ns, s_time_in_ms*1e6)
+                                    start_time_in_ns, s_time_in_ms*million)
         break
 
-    begin = s_time_in_ms * 1e6
+    begin = s_time_in_ms * million
     qf_details = {
         'begin': begin,
         'end': end_time - start_time_in_ns + begin,
