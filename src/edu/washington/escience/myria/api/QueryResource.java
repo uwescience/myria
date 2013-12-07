@@ -218,9 +218,8 @@ public final class QueryResource {
   @GET
   @Path("query-{query_id:\\d+}/fragment-{fragment_id:-?\\d+}")
   public Response getProfile(@PathParam("query_id") final long queryId,
-      @PathParam("fragment_id") final long fragment_id,
-      @DefaultValue("0") @QueryParam("worker_id") final long workerId, @Context final UriInfo uriInfo)
-      throws CatalogException, IOException {
+      @PathParam("fragment_id") final long fragmentId, @DefaultValue("0") @QueryParam("worker_id") final long workerId,
+      @Context final UriInfo uriInfo) throws CatalogException, IOException {
 
     /* validate the query_id */
     final QueryStatusEncoding queryStatus = server.getQueryStatus(queryId);
@@ -236,7 +235,7 @@ public final class QueryResource {
       File queryPlan = new File(queryPlanName);
       if (!queryPlan.exists()) {
         if (server.getQueryStatus(queryId).physicalPlan.getClass() != QueryEncoding.class) {
-          throw new CatalogException("cannot serialize physical plan.");
+          throw new CatalogException("Cannot serialize physical plan.");
         }
         MyriaJsonMapperProvider.getMapper().writeValue(queryPlan, server.getQueryStatus(queryId).physicalPlan);
       }
@@ -246,10 +245,11 @@ public final class QueryResource {
 
     /* pull profiling logs from worker directories. */
     /* TODO: handle error properly. */
-    String response = "error";
+    String response;
     final String depolymentFile = server.getConfiguration(MyriaSystemConfigKeys.DEPLOYMENT_FILE);
     ProcessBuilder pb;
-    if (workerId != 0) {/* if there is an user defined workerId, get logs of this specific worker. otherwise, get all. */
+    /* if there is an user defined workerId, get logs of this specific worker. otherwise, get all. */
+    if (workerId != 0) {
       if (workerId > server.getWorkers().size() || workerId <= 0) {
         return Response.status(Status.NOT_FOUND).contentLocation(uri).entity("worker " + workerId + " was not found")
             .build();
@@ -260,27 +260,30 @@ public final class QueryResource {
     }
 
     try {
-      Process shell = pb.start();
-      int error = shell.waitFor();
+      Process shell = pb.redirectErrorStream(true).start();
+      String errorMessage = IOUtils.toString(shell.getInputStream());
+      int exitStatus = shell.waitFor();
       shell.destroy();
-      response = "error! number " + error;
-      String description = "./" + server.getConfiguration(MyriaSystemConfigKeys.DESCRIPTION);
-      /* extract data for visualization. */
-      if (error == 0) {
+      if (exitStatus == 0) {
+        String description = "./" + server.getConfiguration(MyriaSystemConfigKeys.DESCRIPTION);
+
         if (workerId != 0) {
           pb =
               new ProcessBuilder("./extract_profiling_data.py", description, String.valueOf(workerId), String
-                  .valueOf(queryId), String.valueOf(fragment_id), queryPlanName, depolymentFile);
+                  .valueOf(queryId), String.valueOf(fragmentId), queryPlanName, depolymentFile);
         } else {
           pb =
               new ProcessBuilder("./extract_profiling_data.py", description, String.valueOf(queryId), String
-                  .valueOf(fragment_id), queryPlanName, depolymentFile);
+                  .valueOf(fragmentId), queryPlanName, depolymentFile);
         }
         shell = pb.start();
         InputStream shellIn = shell.getInputStream();
         response = IOUtils.toString(shellIn);
+
         shellIn.close();
         shell.destroy();
+      } else {
+        throw new CatalogException("Could not get logs. Exit status: " + exitStatus + "\n" + errorMessage);
       }
 
     } catch (IOException ex) {
