@@ -26,41 +26,58 @@ def mkdir_if_not_exists(description):
 def get_std_logs_from_worker(hostname, dirname, username,
                              worker_id, description):
     mkdir_if_not_exists(description)
-    args = ["scp", "%s@%s:%s/worker_%s_stdout" %
-            (username, hostname, dirname, worker_id),
-            "%s/worker_%s_stdout" % (description, worker_id,)]
+    if hostname == 'localhost':
+        uri = "%s/worker_%s_stdout" % (dirname, worker_id)
+    else:
+        uri = "%s@%s:%s/worker_%s_stdout" % (
+            username, hostname, dirname, worker_id)
+
+    args = ["scp", "-v", uri, "%s/worker_%s_stdout" % (description, worker_id,)]
     return subprocess.call(args)
 
 
 def get_error_logs_from_worker(hostname, dirname, username,
                                worker_id, description):
     mkdir_if_not_exists(description)
-    args = ["scp", "%s@%s:%s/worker_%s_stderr" %
-            (username, hostname, dirname, worker_id),
-            "%s/worker_%s_stderr" % (description, worker_id,)]
+    if hostname == 'localhost':
+        uri = "%s/worker_%s_stderr" % (dirname, worker_id)
+    else:
+        uri = "%s@%s:%s/worker_%s_stderr" % (
+            username, hostname, dirname, worker_id)
+    args = ["scp", "-v", uri, "%s/worker_%s_stderr"
+            % (description, worker_id,)]
     return subprocess.call(args)
 
 
 def get_profiling_logs_from_worker(hostname, dirname,
                                    username, worker_id, description):
     mkdir_if_not_exists(description)
-    args = ["scp", "%s@%s:%s/profile.log" %
-            (username, hostname, dirname),
-            "%s/worker_%s_profile" % (description, worker_id,)]
+    if hostname == 'localhost':
+        uri = "%s/profile.log" % (dirname)
+    else:
+        uri = "%s@%s:%s/profile.log" % (
+            username, hostname, dirname)
+    args = ["scp", "-v", uri, "%s/worker_%s_profile"
+            % (description, worker_id,)]
     return subprocess.call(args)
 
 
 def get_logs_from_master(hostname, dirname, username, description):
     mkdir_if_not_exists(description)
-    args = ["scp", "%s@%s:%s/master_stdout" %
-            (username, hostname, dirname), "%s/master_stdout" % (description)]
+    if hostname == 'localhost':
+        uri = "%s/master_stdout" % (dirname)
+    else:
+        uri = "%s@%s:%s/master_stdout" % (username, hostname, dirname)
+    args = ["scp", "-v", uri, "%s/master_stdout" % (description)]
     return subprocess.call(args)
 
 
 def get_error_logs_from_master(hostname, dirname, username, description):
-    mkdir_if_not_exists(description)
-    args = ["scp", "%s@%s:%s/master_stderr" %
-            (username, hostname, dirname), "%s/master_stderr" % (description)]
+    if hostname == 'localhost':
+        uri = "%s/master_stderr" % (dirname)
+    else:
+        uri = "%s@%s:%s/master_stderr" % (username, hostname, dirname)
+    args = ["scp", "-v", uri, "%s/master_stderr" % (description)]
     return subprocess.call(args)
 
 
@@ -103,8 +120,7 @@ def getlog(config_file, from_worker_id=None):
                                 % (worker_id, hostname))
             if get_profiling_logs_from_worker(hostname, "%s/%s-files"
                % (path, description), username, worker_id, description):
-                raise Exception("Error on getting profiling logs \
-                    from worker %d %s" % (worker_id, hostname))
+                raise Exception("Error on getting profiling logs from worker %d %s" % (worker_id, hostname))
 
 
 def main(argv):
