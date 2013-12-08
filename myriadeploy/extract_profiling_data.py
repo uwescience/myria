@@ -111,32 +111,33 @@ def get_children(fragment):
 
 # build operator state
 def build_operator_state(op_name, operators, children_dict,
-                         type_dict, start_time, query_start_time):
+                         type_dict, start_time):
 
     # build state from events
     states = []
     last_state = 'null'
     last_time = 0
 
+    '''state:  0-compute, 1-sleep, 2-wait, 3-send, 4-receive'''
     for event in operators[op_name]:
         if last_state != 'null':
             if last_state == 'live' or last_state == 'wake':
                 state = {
-                    'begin': last_time-start_time+query_start_time,
-                    'end': event['time']-start_time+query_start_time,
-                    'name': 'compute'
+                    'begin': last_time-start_time,
+                    'end': event['time']-start_time,
+                    'name': 0
                 }
             elif last_state == 'wait':
                 state = {
-                    'begin': last_time-start_time+query_start_time,
-                    'end': event['time']-start_time+query_start_time,
-                    'name': 'wait'
+                    'begin': last_time-start_time,
+                    'end': event['time']-start_time,
+                    'name': 2
                 }
             elif last_state == 'hang':
                 state = {
-                    'begin': last_time-start_time+query_start_time,
-                    'end': event['time']-start_time+query_start_time,
-                    'name': 'sleep'
+                    'begin': last_time-start_time,
+                    'end': event['time']-start_time,
+                    'name': 1
                 }
             states.append(state)
         last_state = event['message']
@@ -147,7 +148,7 @@ def build_operator_state(op_name, operators, children_dict,
     for op in children_dict[op_name]:
         children_ops.append(
             build_operator_state(op, operators, children_dict,
-                                 type_dict, start_time, query_start_time))
+                                 type_dict, start_time))
 
     qf = {
         'type': type_dict[op_name],
@@ -157,6 +158,26 @@ def build_operator_state(op_name, operators, children_dict,
     }
 
     return qf
+
+
+# unify time
+def unify_time(viz_json):
+    start_time = min(qf['real_begin'] for qf in viz_json['hierarchy'])
+    viz_json['real_begin'] = start_time
+    for root in viz_json['hierarchy']:
+        unify_operator_time(root['real_begin']-start_time, root)
+
+
+# unify operator time
+def unify_operator_time(offset, operator):
+    # update its own states
+    for state in operator['states']:
+        state['begin'] = state['begin']+offset
+        state['end'] = state['end']+offset
+
+    # update its children's states
+    for child_op in operator['children']:
+        unify_operator_time(offset, child_op)
 
 
 def getRecoveryTaskStructure(operators, type_dict):
@@ -174,8 +195,9 @@ def getRecoveryTaskStructure(operators, type_dict):
     return (parent, children_dict, type_dict)
 
 
-def getFragmentStatsOnSingleWorker(path, worker_id, query_id,
-                                   fragment_id, query_plan_file, config_file):
+# print opertor level viz
+def getOpLevelViz(path, worker_id, query_id,
+                  fragment_id, query_plan_file, config_file):
     # get config info
     config = myriadeploy.read_config_file(config_file)
     workers = config['workers']
@@ -212,14 +234,14 @@ def getFragmentStatsOnSingleWorker(path, worker_id, query_id,
     # filter on query id
     tuples = [i for i in tuples if int(i[1]['query_id']) == query_id]
 
-    # get start time
+    # get query_fragment start time
     mst = [i for i in tuples if i[0] == 'startTimeInMS'
            and int(i[1]['fragment_id']) == fragment_id]
     nst = [i for i in tuples if i[0] == 'startTimeInNS'
            and int(i[1]['fragment_id']) == fragment_id]
 
-    s_time_in_ms = mst[0][1]['time']
-    start_time_in_ns = nst[0][1]['time']
+    qf_start_in_ms = mst[0][1]['time']
+    qf_start_in_ns = nst[0][1]['time']
 
     # filter out unrelevant queries
     tuples = [
@@ -267,32 +289,37 @@ def getFragmentStatsOnSingleWorker(path, worker_id, query_id,
         operators[k].extend(v)
         operators[k] = sorted(operators[k], key=lambda k: k['time'])
         if type_dict[k] in root_operators:
+            begin_time = operators[k][0]['time']
             end_time = operators[k][-1]['time']
             break
-        if(operators[k][0]['time']) < start_time_in_ns:
+        if(operators[k][0]['time']) < qf_start_in_ns:
             print k
             print operators[k][0]['time']
-            print start_time_in_ns
+            print qf_start_in_ns
             raise Exception("wrong!")
 
     # build json
     for k, v in operators.items():
         if type_dict[k] in root_operators:
             data = build_operator_state(k, operators, children_dict, type_dict,
-                                        start_time_in_ns, s_time_in_ms*million)
+                                        begin_time)
             break
-    begin = s_time_in_ms * million
+
+    data['real_begin'] = qf_start_in_ms*million+begin_time-qf_start_in_ns
+
     qf_details = {
-        'begin': begin,
-        'end': end_time - start_time_in_ns + begin,
+        'begin': 0,
+        'end': end_time - end_time,
         'hierarchy': [data]
     }
+
+    unify_time(qf_details)
 
     print pretty_json(qf_details)
 
 
-# return result of visualization of one fragment over all workers
-def generateProfile(path, query_id, fragment_id, query_plan_file, config_file):
+# print fragment level viz
+def getQfLevelViz(path, query_id, fragment_id, query_plan_file, config_file):
     # get configuration
     config = myriadeploy.read_config_file(config_file)
     workers = config['workers']
@@ -305,8 +332,8 @@ def generateProfile(path, query_id, fragment_id, query_plan_file, config_file):
 
     for (i, worker) in enumerate(workers):
         worker_id = i+1
-        qf_i = generateRootOpProfile(path, query_id, fragment_id,
-                                     worker_id, query_plan_file)
+        qf_i = getRootOpProfile(path, query_id, fragment_id,
+                                worker_id, query_plan_file)
         if qf_i:
             profile_data.append(qf_i)
 
@@ -319,11 +346,13 @@ def generateProfile(path, query_id, fragment_id, query_plan_file, config_file):
         'hierarchy': profile_data
     }
 
+    unify_time(profile)
+
     print pretty_json(profile)
 
 
-def generateRootOpProfile(path, query_id, fragment_id,
-                          worker_id, query_plan_file):
+def getRootOpProfile(path, query_id, fragment_id,
+                     worker_id, query_plan_file):
     # get name type mapping
     type_dict = name_type_mapping(query_plan_file)
 
@@ -352,8 +381,8 @@ def generateRootOpProfile(path, query_id, fragment_id,
            and int(i[1]['fragment_id']) == fragment_id]
     nst = [i for i in tuples if i[0] == 'startTimeInNS'
            and int(i[1]['fragment_id']) == fragment_id]
-    s_time_in_ms = mst[0][1]['time']
-    start_time_in_ns = nst[0][1]['time']
+    qf_start_in_ms = mst[0][1]['time']
+    qf_start_in_ns = nst[0][1]['time']
 
     # filter out unrelevant queries
     tuples = [
@@ -380,15 +409,16 @@ def generateRootOpProfile(path, query_id, fragment_id,
 
     for k, v in operators.items():
         v = sorted(v, key=lambda k: k['time'])
+        start_time = v[0]['time']
         end_time = v[-1]['time']
         data = build_operator_state(k, operators, children_dict, type_dict,
-                                    start_time_in_ns, s_time_in_ms*million)
+                                    start_time)
         break
 
-    begin = s_time_in_ms * million
     qf_details = {
-        'begin': begin,
-        'end': end_time - start_time_in_ns + begin,
+        'real_begin': qf_start_in_ms*million+start_time-qf_start_in_ns,
+        'begin': 0,
+        'end': end_time - start_time,
         'states': data['states'],
         'name': "worker {}".format(worker_id),
         'type': "worker",
@@ -415,10 +445,10 @@ def main(argv):
         print >> sys.stderr, "       config file "
         sys.exit(1)
     elif len(argv) == 7:
-        getFragmentStatsOnSingleWorker(argv[1], int(argv[2]), int(argv[3]),
-                                       int(argv[4]), argv[5], argv[6])
+        getOpLevelViz(argv[1], int(argv[2]), int(argv[3]),
+                      int(argv[4]), argv[5], argv[6])
     else:
-        generateProfile(argv[1], int(argv[2]), int(argv[3]), argv[4], argv[5])
+        getQfLevelViz(argv[1], int(argv[2]), int(argv[3]), argv[4], argv[5])
 
 
 if __name__ == "__main__":
