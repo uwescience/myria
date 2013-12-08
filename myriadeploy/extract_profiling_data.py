@@ -309,7 +309,7 @@ def getOpLevelViz(path, worker_id, query_id,
 
     qf_details = {
         'begin': 0,
-        'end': end_time - end_time,
+        'end': end_time - begin_time,
         'hierarchy': [data]
     }
 
@@ -337,12 +337,12 @@ def getQfLevelViz(path, query_id, fragment_id, query_plan_file, config_file):
         if qf_i:
             profile_data.append(qf_i)
 
-    begin = min(x['begin'] for x in profile_data)
-    end = max(x['end'] for x in profile_data)
+    begin = min(x['real_begin'] for x in profile_data)
+    end = max(x['real_begin']+x['end'] for x in profile_data)
 
     profile = {
-        'begin': begin,
-        'end': end,
+        'begin': 0,
+        'end': end-begin,
         'hierarchy': profile_data
     }
 
