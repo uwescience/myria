@@ -195,7 +195,7 @@ def getFragmentStatsOnSingleWorker(path, worker_id, query_id,
     lines = [line.strip() for line in
              open("%s/worker_%i_profile" % (path.rstrip('/'), worker_id))]
 
-    # parse infomation from each log message
+    # parse information from each log message
     tuples = [re.findall(
         r'.query_id#(\d*)..([\w(),]*)@(-?\w*)..(\d*).:([\w|\W]*)', line)
         for line in lines]
@@ -310,13 +310,8 @@ def generateProfile(path, query_id, fragment_id, query_plan_file, config_file):
         if qf_i:
             profile_data.append(qf_i)
 
-    begin = -1
-    end = -1
-    for pf in profile_data:
-        if begin == -1 or pf['begin'] < begin:
-            begin = pf['begin']
-        if end == -1 or pf['end'] < end:
-            end = pf['end']
+    begin = min(x['begin'] for x in profile_data)
+    end = max(x['end'] for x in profile_data)
 
     profile = {
         'begin': begin,
@@ -336,7 +331,7 @@ def generateRootOpProfile(path, query_id, fragment_id,
     lines = [line.strip() for line in
              open("%s/worker_%i_profile" % (path.rstrip('/'), worker_id))]
 
-    # parse infomation from each log message
+    # parse information from each log message
     tuples = [re.findall(
         r'.query_id#(\d*)..([\w(),]*)@(-?\w*)..(\d*).:([\w|\W]*)', line)
         for line in lines]
