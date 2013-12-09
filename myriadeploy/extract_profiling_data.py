@@ -6,6 +6,8 @@ import sys
 import json
 import copy
 import myriadeploy
+import cPickle as pickle
+import os.path
 
 # root operators
 root_operators = set(['LocalMultiwayProducer',
@@ -179,7 +181,12 @@ def unify_operator_time(offset, operator):
     for child_op in operator['children']:
         unify_operator_time(offset, child_op)
 
+    if 'begin' in operator:
+        operator['begin'] = operator['begin']+offset
+        operator['end'] = operator['end']+offset
 
+
+# handle recovery task
 def getRecoveryTaskStructure(operators, type_dict):
     for k, v in operators.items():
         if k.startswith("tupleSource_for_"):
@@ -195,7 +202,7 @@ def getRecoveryTaskStructure(operators, type_dict):
     return (parent, children_dict, type_dict)
 
 
-# print opertor level viz
+# extract viz data of ?qf=fragment_id & worker=worker_id
 def getOpLevelViz(path, worker_id, query_id,
                   fragment_id, query_plan_file, config_file):
     # get config info
@@ -210,8 +217,62 @@ def getOpLevelViz(path, worker_id, query_id,
     if fragment_id >= num_of_fragment(query_plan_file):
         raise Exception("Invalid fragment_id {}".format(fragment_id))
 
-    # get name type mapping
-    type_dict = name_type_mapping(query_plan_file)
+    fileName = "{}/query_{}_vis".format(path.rstrip('/'), query_id)
+    query_data = pickle.load(open(fileName, "rb"))
+
+    data = [qf for qf in query_data['hierarchy']
+            if qf['worker_id'] == worker_id
+            and qf['fragment_index'] == fragment_id]
+    begin = min(int(qf['begin']) for qf in data)
+    end = max(int(qf['end']) for qf in data)
+
+    ans = {
+        'begin': begin,
+        'end': end,
+        'hierarchy': data
+    }
+
+    print pretty_json(ans)
+
+
+# get viz data of ?qf=fragment_id
+def getQfLevelViz(path, query_id, fragment_id, query_plan_file, config_file):
+    # validate fragment_id
+    if fragment_id >= num_of_fragment(query_plan_file):
+        raise Exception("Invalid fragment_id {}".format(fragment_id))
+
+    # read query viz data
+    fileName = "{}/query_{}_vis".format(path.rstrip('/'), query_id)
+    query_data = pickle.load(open(fileName, "rb"))
+
+    # filter relevant part
+    data = [qf for qf in query_data['hierarchy']
+            if qf['fragment_index'] == fragment_id]
+    data = sorted(data, key=lambda qf: qf['worker_id'])
+
+    begin = min(x['begin'] for x in data)
+    end = max(x['end'] for x in data)
+
+    # only keep root operators
+    for qf in data:
+        qf['children'] = []
+        qf['name'] = "{} @ worker {}".format(qf['name'], qf['worker_id'])
+
+    profile = {
+        'begin': begin,
+        'end': end,
+        'hierarchy': data
+    }
+
+    print pretty_json(profile)
+
+
+# generate viz data per query per worker
+def generateSingleWorkerViz(path, worker_id, query_id,
+                            query_plan_file, config_file):
+
+    # get query information
+    query = read_json(query_plan_file)
 
     # Workers are numbered from 1, not 0
     lines = [line.strip() for line in
@@ -230,9 +291,25 @@ def getOpLevelViz(path, worker_id, query_id,
         'message':i[4]
     }) for i in tuples]
 
+    ret = []
+
     # filter out unrelevant queries
-    # filter on query id
     tuples = [i for i in tuples if int(i[1]['query_id']) == query_id]
+    for i, fragment in enumerate(query['fragments']):
+        if ('workers' not in fragment or
+                worker_id in map(int, fragment['workers'])):
+            ret.append(generateFragmentViz(
+                tuples, worker_id, i, query_plan_file, config_file))
+
+    return ret
+
+
+# generate viz data per query per worker per fragment
+def generateFragmentViz(tuples, worker_id, fragment_id,
+                        query_plan_file, config_file):
+
+    # get name type mapping
+    type_dict = name_type_mapping(query_plan_file)
 
     # get query_fragment start time
     mst = [i for i in tuples if i[0] == 'startTimeInMS'
@@ -244,30 +321,24 @@ def getOpLevelViz(path, worker_id, query_id,
     qf_start_in_ns = nst[0][1]['time']
 
     # filter out unrelevant queries
-    tuples = [
+    relevant_tuples = [
         i for i in tuples if int(i[1]['fragment_id']) == fragment_id
         and i[1]['message'] != 'set time']
 
-    if len(tuples) == 0:
+    if len(relevant_tuples) == 0:
         raise Exception("Cannot get profiling information \
-                        in %s/worker_%i_profile" % (path, worker_id))
+                        of worker {}".format(worker_id))
 
     # group by operator name
     operators = defaultdict(list)
-    for tp in tuples:
+    for tp in relevant_tuples:
         operators[tp[0]].append(tp[1])
 
-     # get fragment tree structure
-    if fragment_id < 0:
-        # recovery tasks
-        (parent, children_dict, type_dict) = \
-            getRecoveryTaskStructure(operators, type_dict)
-    else:
-        # normal fragments in the json query plan
-        query_plan = read_json(query_plan_file)
-        fragment = query_plan['fragments'][fragment_id]
-        parent = get_parent(fragment)
-        children_dict = get_children(fragment)
+    # get fragment information
+    query_plan = read_json(query_plan_file)
+    fragment = query_plan['fragments'][fragment_id]
+    parent = get_parent(fragment)
+    children_dict = get_children(fragment)
 
     # update parent's events
     induced_operators = defaultdict(list)
@@ -306,126 +377,47 @@ def getOpLevelViz(path, worker_id, query_id,
             break
 
     data['real_begin'] = qf_start_in_ms*million+begin_time-qf_start_in_ns
-
-    qf_details = {
-        'begin': 0,
-        'end': end_time - begin_time,
-        'hierarchy': [data]
-    }
-
-    unify_time(qf_details)
-
-    print pretty_json(qf_details)
+    data['fragment_index'] = fragment_id
+    data['worker_id'] = worker_id
+    data['begin'] = 0
+    data['end'] = end_time-begin_time
+    return data
 
 
-# print fragment level viz
-def getQfLevelViz(path, query_id, fragment_id, query_plan_file, config_file):
+# generate visualization data per query
+def generateViz(path, query_id, query_plan_file, config_file):
     # get configuration
     config = myriadeploy.read_config_file(config_file)
     workers = config['workers']
 
-    # validate fragment_id
-    if fragment_id >= num_of_fragment(query_plan_file):
-        raise Exception("Invalid fragment_id {}".format(fragment_id))
-
-    profile_data = []
-
+    # generate viz data from each worker and each query fragment
+    viz_data = []
     for (i, worker) in enumerate(workers):
-        worker_id = i+1
-        qf_i = getRootOpProfile(path, query_id, fragment_id,
-                                worker_id, query_plan_file)
-        if qf_i:
-            profile_data.append(qf_i)
+        viz_data.extend(
+            generateSingleWorkerViz(path, i+1, query_id,
+                                    query_plan_file, config_file))
 
-    begin = min(x['real_begin'] for x in profile_data)
-    end = max(x['real_begin']+x['end'] for x in profile_data)
+    query_start_time = min(int(qf['real_begin']) for qf in viz_data)
 
-    profile = {
+    for qf in viz_data:
+        unify_operator_time(qf['real_begin']-query_start_time, qf)
+
+    end = max(qf['end'] for qf in viz_data)
+
+    viz = {
         'begin': 0,
-        'end': end-begin,
-        'hierarchy': profile_data
+        'end': end,
+        'hierarchy': viz_data
     }
-
-    unify_time(profile)
-
-    print pretty_json(profile)
+    return viz
 
 
-def getRootOpProfile(path, query_id, fragment_id,
-                     worker_id, query_plan_file):
-    # get name type mapping
-    type_dict = name_type_mapping(query_plan_file)
-
-    # Workers are numbered from 1, not 0
-    lines = [line.strip() for line in
-             open("%s/worker_%i_profile" % (path.rstrip('/'), worker_id))]
-
-    # parse information from each log message
-    tuples = [re.findall(
-        r'.query_id#(\d*)..([\w(),]*)@(-?\w*)..(\d*).:([\w|\W]*)', line)
-        for line in lines]
-    tuples = [i[0] for i in tuples if len(i) > 0]
-    tuples = [(i[1], {
-        'time': long(i[3]),
-        'query_id':i[0],
-        'name':i[1],
-        'fragment_id':i[2],
-        'message':i[4]
-    }) for i in tuples]
-
-    # filter on query id
-    tuples = [i for i in tuples if int(i[1]['query_id']) == query_id]
-
-    # get start time
-    mst = [i for i in tuples if i[0] == 'startTimeInMS'
-           and int(i[1]['fragment_id']) == fragment_id]
-    nst = [i for i in tuples if i[0] == 'startTimeInNS'
-           and int(i[1]['fragment_id']) == fragment_id]
-    qf_start_in_ms = mst[0][1]['time']
-    qf_start_in_ns = nst[0][1]['time']
-
-    # filter out unrelevant queries
-    tuples = [
-        i for i in tuples if int(i[1]['fragment_id']) == fragment_id
-        and i[1]['message'] != 'set time']
-
-    # filter out non-root operators
-    tuples = [i for i in tuples if type_dict[i[0]] in root_operators]
-
-    if len(tuples) == 0:
-        return
-
-    # group by operator name
-    operators = defaultdict(list)
-    for tp in tuples:
-        operators[tp[0]].append(tp[1])
-
-    # check that there is one and only one root
-    if len(operators) != 1:
-        raise Exception("{} root operators in fragment {} "
-                        .format(len(operators), fragment_id))
-
-    children_dict = defaultdict(list)
-
-    for k, v in operators.items():
-        v = sorted(v, key=lambda k: k['time'])
-        start_time = v[0]['time']
-        end_time = v[-1]['time']
-        data = build_operator_state(k, operators, children_dict, type_dict,
-                                    start_time)
-        break
-
-    qf_details = {
-        'real_begin': qf_start_in_ms*million+start_time-qf_start_in_ns,
-        'begin': 0,
-        'end': end_time - start_time,
-        'states': data['states'],
-        'name': "worker {}".format(worker_id),
-        'type': "worker",
-        'children': []
-    }
-
-    return qf_details
+# write visualization data to disk if there no data written before
+def writeViz(path, query_id, query_plan_file, config_file):
+    fileName = "{}/query_{}_vis".format(path.rstrip('/'), query_id)
+    if not os.path.isfile(fileName):
+        viz = generateViz(path, query_id, query_plan_file, config_file)
+        pickle.dump(viz, open(fileName, "wb"))
 
 
 def main(argv):
@@ -445,9 +437,11 @@ def main(argv):
         print >> sys.stderr, "       config file "
         sys.exit(1)
     elif len(argv) == 7:
+        writeViz(argv[1], int(argv[3]), argv[5], argv[6])
         getOpLevelViz(argv[1], int(argv[2]), int(argv[3]),
                       int(argv[4]), argv[5], argv[6])
     else:
+        writeViz(argv[1], int(argv[2]), argv[4], argv[5])
         getQfLevelViz(argv[1], int(argv[2]), int(argv[3]), argv[4], argv[5])
 
 
