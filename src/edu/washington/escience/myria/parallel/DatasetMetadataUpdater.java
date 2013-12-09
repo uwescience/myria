@@ -55,7 +55,7 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
     this.catalog = Objects.requireNonNull(catalog);
     this.queryId = queryId;
     relationsCreated = inferRelationsCreated(Objects.requireNonNull(workerPlans), catalog);
-    LOGGER.info("DatasetMetadatUpdater configured for query #{} with relations-worker map {}", queryId,
+    LOGGER.info("DatasetMetadataUpdater configured for query #{} with relations-worker map {}", queryId,
         relationsCreated);
   }
 
@@ -117,8 +117,8 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
           /* Check if the relation already has a schema in the database and, if so, it better match! */
           if (oldSchema != null) {
             Preconditions.checkArgument(oldSchema.equals(newSchema),
-                "Relation %s already exists with Schema %s. You cannot overwrite it with the new Schema %s", relationKey,
-                oldSchema, newSchema);
+                "Relation %s already exists with Schema %s. You cannot overwrite it with the new Schema %s",
+                relationKey, oldSchema, newSchema);
           }
           meta.setSchema(newSchema);
         }
