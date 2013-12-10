@@ -129,6 +129,8 @@ def build_operator_state(op_name, operators, children_dict,
                     'end': event['time']-start_time,
                     'name': 0
                 }
+                if event['message'] == 'hang':
+                    state['tp_num'] = event['tp_num']
             elif last_state == 'wait':
                 state = {
                     'begin': last_time-start_time,
@@ -280,21 +282,26 @@ def generateSingleWorkerViz(path, worker_id, query_id,
 
     # parse information from each log message
     tuples = [re.findall(
-        r'.query_id#(\d*)..([\w(),]*)@(-?\w*)..(\d*).:([\w|\W]*)', line)
+        r'.query_id#(\d*)..([\w(),]*)@(-?\w*)..(\d*)..(\d*).:([\w|\W]*)', line)
         for line in lines]
+
     tuples = [i[0] for i in tuples if len(i) > 0]
     tuples = [(i[1], {
         'time': long(i[3]),
         'query_id':i[0],
         'name':i[1],
         'fragment_id':i[2],
-        'message':i[4]
+        'message':i[5],
+        'tp_num': int(i[4])
     }) for i in tuples]
 
     ret = []
 
     # filter out unrelevant queries
     tuples = [i for i in tuples if int(i[1]['query_id']) == query_id]
+    if len(tuples) == 0:
+        raise Exception("cannot find information of query {} on worker {}"
+                        .format(query_id, worker_id))
     for i, fragment in enumerate(query['fragments']):
         if ('workers' not in fragment or
                 worker_id in map(int, fragment['workers'])):

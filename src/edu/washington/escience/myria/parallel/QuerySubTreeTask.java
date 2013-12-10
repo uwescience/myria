@@ -358,10 +358,10 @@ public final class QuerySubTreeTask {
   private Object executeActually() {
 
     // TODO: add profiling mode to QuerySubTreeTask
-    PROFILING_LOGGER.info("[{}#{}][{}@{}][{}]:set time", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, root.getQueryId(),
-        "startTimeInMS", root.getFragmentId(), System.currentTimeMillis());
-    PROFILING_LOGGER.info("[{}#{}][{}@{}][{}]:set time", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, root.getQueryId(),
-        "startTimeInNS", root.getFragmentId(), System.nanoTime());
+    PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:set time", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, root.getQueryId(),
+        "startTimeInMS", root.getFragmentId(), System.currentTimeMillis(), 0);
+    PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:set time", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, root.getQueryId(),
+        "startTimeInNS", root.getFragmentId(), System.nanoTime(), 0);
 
     if (executionCondition.compareAndSet(EXECUTION_READY | STATE_EXECUTION_REQUESTED, EXECUTION_READY
         | STATE_EXECUTION_REQUESTED | STATE_IN_EXECUTION)) {

@@ -263,10 +263,10 @@ public class WorkerQueryPartition implements QueryPartition {
     }
 
     if (isProfilingMode()) {
-      PROFILING_LOGGER.info("[{}#{}][{}@{}][{}]:set time", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryID(),
-          "startTimeInMS", "0", System.currentTimeMillis());
-      PROFILING_LOGGER.info("[{}#{}][{}@{}][{}]:set time", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryID(),
-          "startTimeInNS", "0", System.nanoTime());
+      PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:set time", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryID(),
+          "startTimeInMS", "0", System.currentTimeMillis(), 0);
+      PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:set time", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryID(),
+          "startTimeInNS", "0", System.nanoTime(), 0);
     }
 
     queryStatistics.markQueryStart();
