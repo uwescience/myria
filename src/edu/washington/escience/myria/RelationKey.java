@@ -49,7 +49,7 @@ public final class RelationKey implements Serializable {
   }
 
   /** The regular expression specifying what names are valid. */
-  public static final String VALID_NAME_REGEX = "^[\\d\\w]+$";
+  public static final String VALID_NAME_REGEX = "^[a-zA-Z_]\\w*$";
   /** The regular expression matcher for {@link #VALID_NAME_REGEX}. */
   private static final Pattern VALID_NAME_PATTERN = Pattern.compile(VALID_NAME_REGEX);
 
