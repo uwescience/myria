@@ -1,6 +1,6 @@
 package edu.washington.escience.myria.operator;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -82,63 +82,63 @@ public class FileScanTest {
   public void testBadCommaTwoColumnInt() throws DbException, InterruptedException {
     final String filename = "comma_two_col_int_unix.txt";
     final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
-    assertTrue(getRowCount(filename, schema) == 7);
+    assertEquals(7, getRowCount(filename, schema));
   }
 
   @Test(expected = DbException.class)
   public void testBadTwoColumnInt() throws DbException, InterruptedException {
     final String filename = "bad_two_col_int.txt";
     final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
-    assertTrue(getRowCount(filename, schema) == 7);
+    assertEquals(7, getRowCount(filename, schema));
   }
 
   @Test(expected = DbException.class)
   public void testBadTwoColumnInt2() throws DbException, InterruptedException {
     final String filename = "bad_two_col_int_2.txt";
     final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
-    assertTrue(getRowCount(filename, schema) == 7);
+    assertEquals(7, getRowCount(filename, schema));
   }
 
   @Test(expected = DbException.class)
   public void testBadTwoColumnInt3() throws DbException, InterruptedException {
     final String filename = "bad_two_col_int_3.txt";
     final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
-    assertTrue(getRowCount(filename, schema) == 7);
+    assertEquals(7, getRowCount(filename, schema));
   }
 
   @Test
   public void testCommaTwoColumnIntUnix() throws DbException, InterruptedException {
     final String filename = "comma_two_col_int_unix.txt";
     final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
-    assertTrue(getRowCount(filename, schema, ",") == 7);
+    assertEquals(7, getRowCount(filename, schema, ","));
   }
 
   @Test
   public void testCommaTwoColumnIntUnixNoTrailingNewline() throws DbException, InterruptedException {
     final String filename = "comma_two_col_int_unix_no_trailing_newline.txt";
     final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
-    assertTrue(getRowCount(filename, schema, ",") == 7);
+    assertEquals(7, getRowCount(filename, schema, ","));
   }
 
   @Test
   public void testCommaTwoColumnIntDos() throws DbException, InterruptedException {
     final String filename = "comma_two_col_int_dos.txt";
     final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
-    assertTrue(getRowCount(filename, schema, ",") == 7);
+    assertEquals(7, getRowCount(filename, schema, ","));
   }
 
   @Test
   public void testSimpleTwoColumnInt() throws DbException, InterruptedException {
     final String filename = "simple_two_col_int.txt";
     final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
-    assertTrue(getRowCount(filename, schema) == 7);
+    assertEquals(7, getRowCount(filename, schema));
   }
 
   @Test
   public void testSimpleTwoColumnFloat() throws Exception {
     final String filename = "simple_two_col_float.txt";
     final Schema schema = new Schema(ImmutableList.of(Type.FLOAT_TYPE, Type.FLOAT_TYPE));
-    assertTrue(getRowCount(filename, schema) == 7);
+    assertEquals(7, getRowCount(filename, schema));
   }
 
   @Test
@@ -153,7 +153,7 @@ public class FileScanTest {
     printedBytes.flush();
     FileScan scanBytes = new FileScan(Schema.of(ImmutableList.of(Type.INT_TYPE), ImmutableList.of("col1")));
     scanBytes.setInputStream(new ByteArrayInputStream(bytes.toByteArray()));
-    assertTrue(getRowCount(scanBytes) == 2 * TupleBatch.BATCH_SIZE);
+    assertEquals(2 * TupleBatch.BATCH_SIZE, getRowCount(scanBytes));
   }
 
   @Test
@@ -162,6 +162,6 @@ public class FileScanTest {
     final Schema schema =
         new Schema(ImmutableList.of(Type.STRING_TYPE, Type.STRING_TYPE, Type.INT_TYPE, Type.INT_TYPE, Type.INT_TYPE,
             Type.INT_TYPE, Type.INT_TYPE));
-    assertTrue(getRowCount(filename, schema, "|") == 100);
+    assertEquals(100, getRowCount(filename, schema, "|"));
   }
 }

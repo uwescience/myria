@@ -718,7 +718,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
     final int nextIndex = hashTable.numTuples();
     TIntList tupleIndicesList = hashTable1IndicesLocal.get(hashCode);
     if (tupleIndicesList == null) {
-      tupleIndicesList = new TIntArrayList();
+      tupleIndicesList = new TIntArrayList(1);
       hashTable1IndicesLocal.put(hashCode, tupleIndicesList);
     }
 

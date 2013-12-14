@@ -70,7 +70,7 @@ public final class DupElim extends StreamingState {
       checkUniqueness.row = i;
       checkUniqueness.unique = true;
       if (tupleIndexList == null) {
-        tupleIndexList = new TIntArrayList();
+        tupleIndexList = new TIntArrayList(1);
         tupleIndexList.add(nextIndex);
         uniqueTupleIndices.put(cntHashCode, tupleIndexList);
       } else {
@@ -115,6 +115,7 @@ public final class DupElim extends StreamingState {
     return uniqueTuples.getAll();
   }
 
+  @Override
   public int numTuples() {
     return uniqueTuples.numTuples();
   }
