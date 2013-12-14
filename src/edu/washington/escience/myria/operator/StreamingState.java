@@ -15,7 +15,14 @@ public abstract class StreamingState implements Serializable {
   private static final long serialVersionUID = 1L;
 
   /** the operator that it belongs to. */
-  protected Operator op;
+  private Operator op;
+
+  /**
+   * @return the operator that it belongs to.
+   */
+  protected Operator getOp() {
+    return op;
+  }
 
   /**
    * set its attached operator for inferring schema.
@@ -57,5 +64,8 @@ public abstract class StreamingState implements Serializable {
    */
   public abstract List<TupleBatch> exportState();
 
+  /**
+   * @return the number of tuples of state.
+   */
   public abstract int numTuples();
 }
