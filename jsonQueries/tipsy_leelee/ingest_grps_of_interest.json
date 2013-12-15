@@ -8,5 +8,5 @@
     "column_types" : ["INT_TYPE"],
     "column_names" : ["grp"]
   },
-  "file_name" : "/Users/dhalperi/escience/myria/data_nocommit/tipsy/groups_of_interest.txt"
+  "file_name" : "/projects/db8/leelee_cosmo_grps_of_interest/groups_of_interest.txt"
 }

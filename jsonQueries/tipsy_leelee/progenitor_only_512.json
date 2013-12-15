@@ -4,11 +4,11 @@
             "operators": [
                 {
                     "op_name": "Scan_base",
-                    "op_type": "QueryScan",
+                    "op_type": "DbQueryScan",
                     "schema": {
                         "column_names": [
-                            "iOrder",
-                            "grp"
+                            "iOrder_base1",
+                            "grp_base_base_bse"
                         ],
                         "column_types": [
                             "LONG_TYPE",
@@ -20,7 +20,7 @@
                 {
                     "arg_child": "Scan_base",
                     "arg_pf": {
-                        "index": "0",
+                        "index": "1",
                         "type": "SingleFieldHash"
                     },
                     "op_name": "SP_base",
@@ -32,11 +32,11 @@
             "operators": [
                 {
                     "op_name": "Scan_pgtr",
-                    "op_type": "QueryScan",
+                    "op_type": "DbQueryScan",
                     "schema": {
                         "column_names": [
-                            "iOrder",
-                            "grp"
+                            "iOrder_pgrt1",
+                            "grp_pgtr1"
                         ],
                         "column_types": [
                             "LONG_TYPE",
@@ -52,48 +52,6 @@
                         "type": "SingleFieldHash"
                     },
                     "op_name": "SP_pgtr",
-                    "op_type": "ShuffleProducer"
-                }
-            ]
-        },
-        {
-            "operators": [
-                {
-                    "arg_operator_id": "SP_base",
-                    "op_name": "SC1",
-                    "op_type": "ShuffleConsumer"
-                },
-                {
-                    "arg_operator_id": "SP_pgtr",
-                    "op_name": "SC2",
-                    "op_type": "ShuffleConsumer"
-                },
-                {
-                    "arg_child1": "SC1",
-                    "arg_child2": "SC2",
-                    "arg_columns1": [
-                        "0"
-                    ],
-                    "arg_columns2": [
-                        "0"
-                    ],
-                    "arg_select1": [
-                        "0",
-                        "1"
-                    ],
-                    "arg_select2": [
-                        "1"
-                    ],
-                    "op_name": "JoinOnIOrder",
-                    "op_type": "SymmetricHashJoin"
-                },
-                {
-                    "arg_child": "JoinOnIOrder",
-                    "arg_pf": {
-                        "index": "1",
-                        "type": "SingleFieldHash"
-                    },
-                    "op_name": "SP_JoinOnIOrder",
                     "op_type": "ShuffleProducer"
                 }
             ]
@@ -123,9 +81,18 @@
         {
             "operators": [
                 {
-                    "arg_operator_id": "SP_JoinOnIOrder",
-                    "op_name": "SC3",
+                    "arg_operator_id": "SP_base",
+                    "op_name": "SC1",
                     "op_type": "ShuffleConsumer"
+                },
+                {
+                    "op_name": "SC1-Rename",
+                    "arg_child": "SC1",
+                    "column_names": [
+                        "iOrder_base2",
+                        "base_grp_base2"
+                    ],
+                    "op_type": "Rename"
                 },
                 {
                     "arg_operator_id": "SP_grps_of_interest",
@@ -133,10 +100,69 @@
                     "op_type": "ShuffleConsumer"
                 },
                 {
-                    "arg_child1": "SC3",
-                    "arg_child2": "SC4",
+                    "op_name": "SC4-Rename",
+                    "arg_child": "SC4",
+                    "column_names": [
+                        "grp"
+                    ],
+                    "op_type": "Rename"
+                },
+                {
+                    "arg_child1": "SC1-Rename",
+                    "arg_child2": "SC4-Rename",
                     "arg_columns1": [
                         "1"
+                    ],
+                    "arg_columns2": [
+                        "0"
+                    ],
+                    "arg_select1": [
+                        "0",
+                        "1"
+                    ],
+                    "arg_select2": [
+                        "0"
+                    ],
+                    "op_name": "BaseWithGrpsOfInterestOnIOrder",
+                    "op_type": "SymmetricHashJoin"
+                },
+                {
+                    "arg_child": "BaseWithGrpsOfInterestOnIOrder",
+                    "arg_pf": {
+                        "index": "0",
+                        "type": "SingleFieldHash"
+                    },
+                    "op_name": "SP_BaseWithGrpsOfInterestOnIOrder",
+                    "op_type": "ShuffleProducer"
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "arg_operator_id": "SP_pgtr",
+                    "op_name": "SC2",
+                    "op_type": "ShuffleConsumer"
+                },
+                {
+                    "arg_child": "SC2",
+                    "column_names": [
+                        "iOrder_pgtr2",
+                        "grp_pgtr2"
+                    ],
+                    "op_name": "SC2-Rename",
+                    "op_type": "Rename"
+                },
+                {
+                    "arg_operator_id": "SP_BaseWithGrpsOfInterestOnIOrder",
+                    "op_name": "SC_BaseWithGrpsOfInterestOnIOrder",
+                    "op_type": "ShuffleConsumer"
+                },
+                {
+                    "arg_child1": "SC_BaseWithGrpsOfInterestOnIOrder",
+                    "arg_child2": "SC2-Rename",
+                    "arg_columns1": [
+                        "0"
                     ],
                     "arg_columns2": [
                         "0"
@@ -147,21 +173,21 @@
                         "2"
                     ],
                     "arg_select2": [
-                        "0"
+                        "1"
                     ],
-                    "op_name": "JoinOnIOrderWihGroupsOfInterest",
+                    "op_name": "BasePgtrGrpsOfInterest",
                     "op_type": "SymmetricHashJoin"
                 },
                 {
-                    "arg_child": "JoinOnIOrderWihGroupsOfInterest",
+                    "arg_child": "BasePgtrGrpsOfInterest",
                     "arg_pf": {
-                        "index": [
+                        "field_indexes": [
                             "1",
-                            "2"
+                            "3"
                         ],
                         "type": "MultiFieldHash"
                     },
-                    "op_name": "SP_JoinOnIOrderWithGroupsOfInterest",
+                    "op_name": "SP_BasePgtrGrpsOfInterest",
                     "op_type": "ShuffleProducer"
                 }
             ]
@@ -169,9 +195,20 @@
         {
             "operators": [
                 {
-                    "arg_operator_id": "SP_JoinOnIOrderWithGroupsOfInterest",
-                    "op_name": "SC_JoinOnIOrderWithGroupsOfInterest",
+                    "arg_operator_id": "SP_BasePgtrGrpsOfInterest",
+                    "op_name": "SC_BasePgtrGrpsOfInterest",
                     "op_type": "ShuffleConsumer"
+                },
+                {
+                    "arg_child": "SC_BasePgtrGrpsOfInterest",
+                    "op_name": "SC_BasePgtrGrpsOfInterest_Rename",
+                    "column_names": [
+                        "iOrder_base3",
+                        "grp_base3",
+                        "grp_interest",
+                        "grp_pgtr3"
+                    ],
+                    "op_type": "Rename"
                 },
                 {
                     "arg_agg_fields": [
@@ -182,10 +219,10 @@
                             "AGG_OP_COUNT"
                         ]
                     ],
-                    "arg_child": "SC_JoinOnIOrderWithGroupsOfInterest",
+                    "arg_child": "SC_BasePgtrGrpsOfInterest_Rename",
                     "arg_group_fields": [
                         "1",
-                        "2"
+                        "3"
                     ],
                     "op_name": "PotentialProgenitorGroup",
                     "op_type": "MultiGroupByAggregate"
@@ -196,40 +233,23 @@
                     "op_type": "LocalMultiwayProducer"
                 }
             ]
-        },
+        },       
         {
-            "operators": [
-                {
-                    "op_name": "Scan_masstable",
-                    "op_type": "TableScan",
-                    "relation_key": {
-                        "program_name": "astro",
-                        "relation_name": "masstable",
-                        "user_name": "leelee"
-                    }
-                },
-                {
-                    "arg_child": "Scan_masstable",
-                    "arg_pf": {
-                        "index": "0",
-                        "type": "SingleFieldHash"
-                    },
-                    "op_name": "SP_masstable",
-                    "op_type": "ShuffleProducer"
-                }
-            ]
-        },
-        {
-            "operators": [
-                {
-                    "arg_operator_id": "SP_masstable",
-                    "op_name": "SC_masstable",
-                    "op_type": "ShuffleConsumer"
-                },
+            "operators":[
                 {
                     "arg_operator_id": "PotPro",
                     "op_name": "PotPro1",
                     "op_type": "LocalMultiwayConsumer"
+                },
+                {
+                    "op_type": "Rename",
+                    "op_name": "PotPro1-Rename",
+                    "arg_child": "PotPro1",
+                    "column_names": [
+                        "potpro1_grp",
+                        "potpro1_pgrt",
+                        "potpro1_aggr_col"
+                    ]
                 },
                 {
                     "arg_agg_fields": [
@@ -240,19 +260,71 @@
                             "AGG_OP_MAX"
                         ]
                     ],
-                    "arg_child": "PotPro1",
+                    "arg_child": "PotPro1-Rename",
                     "arg_group_field": 0,
                     "op_name": "GrpsWithMaxVals",
                     "op_type": "SingleGroupByAggregate"
                 },
+                {
+                    "arg_child": "GrpsWithMaxVals",
+                    "arg_pf": {
+                        "field_indexes": [
+                            "0",
+                            "1"
+                        ],
+                        "type": "MultiFieldHash"
+                    },
+                    "op_name": "SP_GrpsWithMaxVals",
+                    "op_type": "ShuffleProducer"
+                }
+            ]
+        },
+        {
+            "operators":[
                 {
                     "arg_operator_id": "PotPro",
                     "op_name": "PotPro2",
                     "op_type": "LocalMultiwayConsumer"
                 },
                 {
-                    "arg_child1": "PotPro2",
-                    "arg_child2": "GrpsWithMaxVals",
+                    "op_type": "Rename",
+                    "op_name": "PotPro2-Rename",
+                    "arg_child": "PotPro2",
+                    "column_names": [
+                        "potpro2_grp",
+                        "potpro2_pgrt",
+                        "potpro2_aggr_col"
+                    ]
+                },
+                {
+                    "arg_child": "PotPro2-Rename",
+                    "arg_pf": {
+                        "field_indexes": [
+                            "0",
+                            "2"
+                        ],
+                        "type": "MultiFieldHash"
+                    },
+                    "op_name": "SP_PotPro2",
+                    "op_type": "ShuffleProducer"
+                }
+            ]
+        },
+        {
+            "operators":[
+                {
+                    "arg_operator_id": "SP_GrpsWithMaxVals",
+                    "op_name": "SC_GrpsWithMaxVals",
+                    "op_type": "ShuffleConsumer"
+                },
+                {
+                    "arg_operator_id": "SP_PotPro2",
+                    "op_name": "SC_PotPro2",
+                    "op_type": "ShuffleConsumer"
+                },
+                {
+                    "arg_child1": "SC_PotPro2",
+                    "arg_child2": "SC_GrpsWithMaxVals",
                     "arg_columns1": [
                         "0",
                         "2"
@@ -287,7 +359,53 @@
                     "op_type": "SingleGroupByAggregate"
                 },
                 {
-                    "arg_child1": "SelectedProgenitorGroupedBy",
+                    "arg_child": "SelectedProgenitorGroupedBy",
+                    "arg_pf": {
+                        "index": "1",
+                        "type": "SingleFieldHash"
+                    },
+                    "op_name": "SP_SelectedProgenitorGroupedBy",
+                    "op_type": "ShuffleProducer"
+                }
+                
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "op_name": "Scan_masstable",
+                    "op_type": "TableScan",
+                    "relation_key": {
+                        "program_name": "astro",
+                        "relation_name": "masstable512",
+                        "user_name": "leelee"
+                    }
+                },
+                {
+                    "arg_child": "Scan_masstable",
+                    "arg_pf": {
+                        "index": "0",
+                        "type": "SingleFieldHash"
+                    },
+                    "op_name": "SP_masstable",
+                    "op_type": "ShuffleProducer"
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "arg_operator_id": "SP_masstable",
+                    "op_name": "SC_masstable",
+                    "op_type": "ShuffleConsumer"
+                },
+                {
+                    "arg_operator_id": "SP_SelectedProgenitorGroupedBy",
+                    "op_name": "SC_SelectedProgenitorGroupedBy",
+                    "op_type": "ShuffleConsumer"
+                },
+                {
+                    "arg_child1": "SC_SelectedProgenitorGroupedBy",
                     "arg_child2": "SC_masstable",
                     "arg_columns1": [
                         "1"
@@ -306,16 +424,33 @@
                     "op_type": "SymmetricHashJoin"
                 },
                 {
-                    "arg_child": "result",
-                    "arg_overwrite_table": true,
-                    "op_name": "INSERT",
-                    "op_type": "DbInsert",
-                    "relation_key": {
-                        "program_name": "astro",
-                        "relation_name": "progenitor512-512",
-                        "user_name": "leelee"
+                    "arg_child":"result",
+                    "op_name":"SendResult",
+                    "op_type":"CollectProducer"
+                }
+            ]
+        },
+        {
+            "operators":[
+                {
+                    "arg_operator_id":"SendResult",
+                    "op_name":"CollectResult",
+                    "op_type":"CollectConsumer"
+                },
+                {
+                    "arg_child":"CollectResult",
+                    "arg_overwrite_table":true,
+                    "op_name":"Insert",
+                    "op_type":"DbInsert",
+                    "relation_key":{
+                        "program_name":"astro",
+                        "relation_name":"progenitor512to512second5",
+                        "user_name":"leelee"
                     }
                 }
+            ],
+            "workers":[
+                1
             ]
         }
     ],

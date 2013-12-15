@@ -1429,7 +1429,7 @@
                     "op_type":"DbInsert",
                     "relation_key":{
                         "program_name":"astro",
-                        "relation_name":"progenitoralltestfinal",
+                        "relation_name":"progenitorall4",
                         "user_name":"leelee"
                     }
                 }
