@@ -27,21 +27,20 @@ public class MultiwayJoin extends NAryOperator {
   private static final long serialVersionUID = 1L;
 
   /**
-   * stores mapping from joined fields to the fields of child tables. This also implies variable ordering. E.g.
-   * joinFieldsMapping[0]: List of joined fields in child tables and will be the firstly iterated.
    * 
+   * {@code joinFieldMapping[i]} is the list of JoinFields of i-th join variable
    */
   private final List<List<JoinField>> joinFieldMapping;
 
   /**
-   * stores the index of a join field in the local variable ordering.
+   * {@code fieldLocalOrder[i][j]} stores join field order of j-th field of i-th child's table.
    */
   private final List<List<JoinFieldOrder>> joinFieldLocalOrder;
 
   /**
-   * stores the index of i-th local variable to the field index.
+   * {@code localOrderedJoinField[i][j]} stores the join field (locally) ordered j of i-th child's table.
    */
-  private final List<List<JoinFieldOrder>> localOrderedJoinField;
+  private final List<List<JoinField>> localOrderedJoinField;
 
   /**
    * stores mapping from output fields to child table's fields.
@@ -156,6 +155,12 @@ public class MultiwayJoin extends NAryOperator {
       this.tableIndex = tableIndex;
       this.fieldIndex = fieldIndex;
     }
+
+    @Override
+    public String toString() {
+      return tableIndex + ":" + fieldIndex;
+    }
+
   }
 
   /**
@@ -171,7 +176,7 @@ public class MultiwayJoin extends NAryOperator {
       return rowIndices[currentField];
     }
 
-    public void setRow(int currentRow) {
+    public void setRowOfCurrentField(int currentRow) {
       rowIndices[currentField] = currentRow;
     }
 
@@ -365,7 +370,7 @@ public class MultiwayJoin extends NAryOperator {
     /* set children */
     setChildren(children);
 
-    /* set join field mapping and reverse field mapping */
+    /* initiate join field mapping and field local order */
     this.joinFieldMapping = new ArrayList<List<JoinField>>();
     joinFieldLocalOrder = new ArrayList<>(children.length);
     for (Operator element : children) {
@@ -375,6 +380,8 @@ public class MultiwayJoin extends NAryOperator {
       }
       joinFieldLocalOrder.add(localOrder);
     }
+
+    /* set join field mapping and field local order */
     for (int i = 0; i < joinFieldMapping.size(); ++i) {
       List<JoinField> joinedFieldList = new ArrayList<JoinField>();
       for (int j = 0; j < joinFieldMapping.get(i).size(); ++j) {
@@ -394,11 +401,13 @@ public class MultiwayJoin extends NAryOperator {
     localOrderedJoinField = new ArrayList<>();
     for (int i = 0; i < joinFieldLocalOrder.size(); ++i) {
 
-      List<JoinFieldOrder> orderedJoinField = new ArrayList<>();
+      List<JoinField> jfl = new ArrayList<>();
+      List<JoinFieldOrder> orderedJoinFieldOrder = new ArrayList<>();
       for (JoinFieldOrder localOrder : joinFieldLocalOrder.get(i)) {
-        orderedJoinField.add(new JoinFieldOrder(localOrder.getOrder(), localOrder.getFieldIndex()));
+        orderedJoinFieldOrder.add(new JoinFieldOrder(localOrder.getOrder(), localOrder.getFieldIndex()));
       }
-      Collections.sort(orderedJoinField, new Comparator<JoinFieldOrder>() {
+
+      Collections.sort(orderedJoinFieldOrder, new Comparator<JoinFieldOrder>() {
         @Override
         public int compare(JoinFieldOrder o1, JoinFieldOrder o2) {
           if (o1.getOrder() == -1 && o2.getOrder() == -1) {
@@ -412,31 +421,32 @@ public class MultiwayJoin extends NAryOperator {
           }
         }
       });
-      localOrderedJoinField.add(orderedJoinField);
+
+      for (int j = 0; j < orderedJoinFieldOrder.size(); j++) {
+        jfl.add(new JoinField(i, orderedJoinFieldOrder.get(j).getFieldIndex()));
+      }
+      localOrderedJoinField.add(jfl);
     }
 
     /* convert the global order to the local order and update the local order back to the joinFieldLocalOrder. */
     for (int i = 0; i < localOrderedJoinField.size(); ++i) {
-      List<JoinFieldOrder> orderedJoinField = localOrderedJoinField.get(i);
+      List<JoinField> orderedJoinField = localOrderedJoinField.get(i);
       for (int j = 0; j < orderedJoinField.size(); j++) {
-        JoinFieldOrder joinFieldOrder = orderedJoinField.get(j);
-        if (joinFieldOrder.getOrder() != -1) {
-          joinFieldOrder.setOrder(j);
-          joinFieldLocalOrder.get(i).get(joinFieldOrder.getFieldIndex()).setOrder(j);
-        }
+        JoinField jf = orderedJoinField.get(j);
+        joinFieldLocalOrder.get(i).get(jf.fieldIndex).setOrder(j);
       }
     }
 
-    /* for debugging only. */
+    /* TODO: (to be removed) for debugging only. */
     System.out.println("localOrderedJoinField: ");
-    for (List<JoinFieldOrder> localOrderList : localOrderedJoinField) {
+    for (List<JoinField> localOrderList : localOrderedJoinField) {
       System.out.println(Arrays.toString(localOrderList.toArray()));
     }
-
     System.out.println("joinFieldLocalOrder: ");
     for (List<JoinFieldOrder> localOrderList : joinFieldLocalOrder) {
       System.out.println(Arrays.toString(localOrderList.toArray()));
     }
+
     /* set output field */
     this.outputFieldMapping = new ArrayList<JoinField>();
     for (int i = 0; i < outputFieldMapping.size(); ++i) {
@@ -461,7 +471,7 @@ public class MultiwayJoin extends NAryOperator {
   @Override
   protected TupleBatch fetchNextReady() throws Exception {
 
-    /* draining all the children. */
+    /* drain all the children first. */
     Operator[] children = getChildren();
     while (numberOfEOSChild != children.length) {
       int numberOfNoDataChild = 0;
@@ -522,10 +532,12 @@ public class MultiwayJoin extends NAryOperator {
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
 
     generateSchema();
+    /* Initiate hash tables */
     Operator[] children = getChildren();
     for (int i = 0; i < children.length; ++i) {
       tables[i] = new TupleBuffer(children[i].getSchema());
     }
+    /* Initiate iterators */
     iterators = new TableIterator[children.length];
     for (int i = 0; i < children.length; ++i) {
       iterators[i] = new TableIterator(i);
@@ -562,10 +574,9 @@ public class MultiwayJoin extends NAryOperator {
   }
 
   /**
-   * Start leap-frog join.
+   * init/restart leap-frog join.
    */
   private void leapfrog_init() {
-
     for (JoinField jf : joinFieldMapping.get(currentDepth)) {
       final int localOrder = joinFieldLocalOrder.get(jf.tableIndex).get(jf.fieldIndex).order;
       final TableIterator it = iterators[jf.tableIndex];
@@ -574,15 +585,14 @@ public class MultiwayJoin extends NAryOperator {
         it.ranges[jf.fieldIndex].setMinRow(0);
         it.ranges[jf.fieldIndex].setMaxRow(tables[jf.tableIndex].numTuples());
         it.setCurrentField(jf.fieldIndex);
-        it.setRow(0);
-
+        it.setRowOfCurrentField(0);
       } else {
         /* if the join field is not ordered as the first, reset the cursor to last level */
         final int lastJf = localOrderedJoinField.get(jf.tableIndex).get(localOrder - 1).fieldIndex;
         it.ranges[jf.fieldIndex].setMinRow(it.ranges[lastJf].getMinRow());
         it.ranges[jf.fieldIndex].setMaxRow(it.ranges[lastJf].getMaxRow());
         it.setCurrentField(jf.fieldIndex);
-        it.setRow(it.ranges[lastJf].getMinRow());
+        it.setRowOfCurrentField(it.ranges[lastJf].getMinRow());
       }
     }
 
@@ -669,7 +679,7 @@ public class MultiwayJoin extends NAryOperator {
 
       if (startRow == maxRow - 1) {
         cursor.setRow(maxRow);
-        iterators[jf.tableIndex].setRow(maxRow);
+        iterators[jf.tableIndex].setRowOfCurrentField(maxRow);
         return false;
       }
     }
@@ -683,7 +693,7 @@ public class MultiwayJoin extends NAryOperator {
   private boolean compareHigherOrdered(CellPointer cp1, CellPointer cp2) {
     Preconditions.checkArgument(cp1.getTableIndex() == cp2.getTableIndex());
     for (int i = 0; i < joinFieldLocalOrder.get(cp2.getTableIndex()).get(cp2.getFieldIndex()).getOrder(); i++) {
-      int fieldIndex = localOrderedJoinField.get(cp2.getTableIndex()).get(i).getFieldIndex();
+      int fieldIndex = localOrderedJoinField.get(cp2.getTableIndex()).get(i).fieldIndex;
       if (cellCompare(new CellPointer(cp1.getTableIndex(), fieldIndex, cp1.getRow()), new CellPointer(cp2
           .getTableIndex(), fieldIndex, cp2.getRow())) != 0) {
         return false;
@@ -699,10 +709,11 @@ public class MultiwayJoin extends NAryOperator {
 
     /* initiate the join for the first time */
     if (currentDepth == -1) {
-      leapfrog_init();
       currentDepth = 0;
+      leapfrog_init();
     }
 
+    /* break if a full tuple batch has been formed */
     while (ansTBB.numTuples() < TupleBatch.BATCH_SIZE) {
       boolean atEnd = leapfrog_search();
       if (atEnd && currentDepth == 0) {
@@ -740,6 +751,8 @@ public class MultiwayJoin extends NAryOperator {
         // if that is initial open.
         iterators[jf.tableIndex].ranges[jf.fieldIndex].setMinRow(0);
         iterators[jf.tableIndex].ranges[jf.fieldIndex].setMaxRow(tables[jf.tableIndex].numTuples());
+      } else {
+        // TODO: set the new range by binary search
       }
     }
     leapfrog_init();
@@ -764,7 +777,7 @@ public class MultiwayJoin extends NAryOperator {
     JoinField currentJF = joinFieldMapping.get(currentDepth).get(index);
     int currentRow = iterators[currentJF.tableIndex].ranges[index].minRow;
     for (; currentRow < iterators[currentJF.tableIndex].ranges[index].maxRow; currentRow++) {
-      iterators[currentJF.tableIndex].setRow(currentRow);
+      iterators[currentJF.tableIndex].setRowOfCurrentField(currentRow);
       if (index == joinFieldMapping.get(currentDepth).size() - 1) {
         addToAns();
       } else {
