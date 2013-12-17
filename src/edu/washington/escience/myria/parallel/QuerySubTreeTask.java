@@ -31,8 +31,10 @@ import edu.washington.escience.myria.util.concurrent.ReentrantSpinLock;
  * 4) Has not started.
  * */
 public final class QuerySubTreeTask {
-  /** The logger for this class. */
+
+  /** The loggers for this class. */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(QuerySubTreeTask.class.getName());
+  private static final org.slf4j.Logger PROFILING_LOGGER = org.slf4j.LoggerFactory.getLogger("profile");
 
   /**
    * The root operator.
@@ -137,6 +139,7 @@ public final class QuerySubTreeTask {
     for (int i = 0; i < outputChannels.length; i++) {
       outputChannelAvailable.set(i);
     }
+
     executionTask = new Callable<Void>() {
       @Override
       public Void call() throws Exception {
@@ -353,6 +356,12 @@ public final class QuerySubTreeTask {
    * @return always null. The return value is unused.
    * */
   private Object executeActually() {
+
+    // TODO: add profiling mode to QuerySubTreeTask
+    PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:set time", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, root.getQueryId(),
+        "startTimeInMS", root.getFragmentId(), System.currentTimeMillis(), 0);
+    PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:set time", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, root.getQueryId(),
+        "startTimeInNS", root.getFragmentId(), System.nanoTime(), 0);
 
     if (executionCondition.compareAndSet(EXECUTION_READY | STATE_EXECUTION_REQUESTED, EXECUTION_READY
         | STATE_EXECUTION_REQUESTED | STATE_IN_EXECUTION)) {

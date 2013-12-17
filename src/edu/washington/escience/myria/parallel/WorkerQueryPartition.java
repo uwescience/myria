@@ -37,6 +37,11 @@ public class WorkerQueryPartition implements QueryPartition {
   private static final Logger LOGGER = LoggerFactory.getLogger(WorkerQueryPartition.class);
 
   /**
+   * logger for profile.
+   */
+  private static final org.slf4j.Logger PROFILING_LOGGER = org.slf4j.LoggerFactory.getLogger("profile");
+
+  /**
    * The query ID.
    * */
   private final long queryID;
@@ -256,6 +261,14 @@ public class WorkerQueryPartition implements QueryPartition {
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("Query : " + getQueryID() + " start processing.");
     }
+
+    if (isProfilingMode()) {
+      PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:set time", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryID(),
+          "startTimeInMS", "0", System.currentTimeMillis(), 0);
+      PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:set time", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryID(),
+          "startTimeInNS", "0", System.nanoTime(), 0);
+    }
+
     queryStatistics.markQueryStart();
     for (QuerySubTreeTask t : tasks) {
       t.execute();

@@ -11,11 +11,13 @@ import java.util.Set;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -214,9 +216,9 @@ public final class QueryResource {
   }
 
   @GET
-  @Path("query-{query_id:\\d+}/fragment-{fragment_id:-?\\d+}/worker-{worker_id:\\d+}")
+  @Path("query-{query_id:\\d+}/fragment-{fragment_id:-?\\d+}")
   public Response getProfile(@PathParam("query_id") final long queryId,
-      @PathParam("fragment_id") final long fragment_id, @PathParam("worker_id") final long workerId,
+      @PathParam("fragment_id") final long fragmentId, @DefaultValue("0") @QueryParam("worker_id") final long workerId,
       @Context final UriInfo uriInfo) throws CatalogException, IOException {
 
     /* validate the query_id */
@@ -233,7 +235,7 @@ public final class QueryResource {
       File queryPlan = new File(queryPlanName);
       if (!queryPlan.exists()) {
         if (server.getQueryStatus(queryId).physicalPlan.getClass() != QueryEncoding.class) {
-          throw new CatalogException("cannot serialize physical plan.");
+          throw new CatalogException("Cannot serialize physical plan.");
         }
         MyriaJsonMapperProvider.getMapper().writeValue(queryPlan, server.getQueryStatus(queryId).physicalPlan);
       }
@@ -243,27 +245,45 @@ public final class QueryResource {
 
     /* pull profiling logs from worker directories. */
     /* TODO: handle error properly. */
-    String response = "error";
-    ProcessBuilder pb =
-        new ProcessBuilder("./get_logs.py", server.getConfiguration(MyriaSystemConfigKeys.DEPLOYMENT_FILE), workerId
-            + "");
+    String response;
+    final String depolymentFile = server.getConfiguration(MyriaSystemConfigKeys.DEPLOYMENT_FILE);
+    ProcessBuilder pb;
+    /* if there is an user defined workerId, get logs of this specific worker. otherwise, get all. */
+    if (workerId != 0) {
+      if (workerId > server.getWorkers().size() || workerId <= 0) {
+        return Response.status(Status.NOT_FOUND).contentLocation(uri).entity("worker " + workerId + " was not found")
+            .build();
+      }
+      pb = new ProcessBuilder("./get_logs.py", depolymentFile, workerId + "");
+    } else {
+      pb = new ProcessBuilder("./get_logs.py", depolymentFile);
+    }
+
     try {
-      Process shell = pb.start();
-      int error = shell.waitFor();
+      Process shell = pb.redirectErrorStream(true).start();
+      String errorMessage = IOUtils.toString(shell.getInputStream());
+      int exitStatus = shell.waitFor();
       shell.destroy();
-      response = "error! number " + error;
-      String profileFilePath =
-          "./" + server.getConfiguration(MyriaSystemConfigKeys.DESCRIPTION) + "/worker_" + workerId + "_profile";
-      /* extract data for visualization. */
-      if (error == 0) {
-        pb =
-            new ProcessBuilder("./extract_profiling_data.py", profileFilePath, String.valueOf(queryId), String
-                .valueOf(fragment_id), queryPlanName);
+      if (exitStatus == 0) {
+        String description = "./" + server.getConfiguration(MyriaSystemConfigKeys.DESCRIPTION);
+
+        if (workerId != 0) {
+          pb =
+              new ProcessBuilder("./extract_profiling_data.py", description, String.valueOf(workerId), String
+                  .valueOf(queryId), String.valueOf(fragmentId), queryPlanName, depolymentFile);
+        } else {
+          pb =
+              new ProcessBuilder("./extract_profiling_data.py", description, String.valueOf(queryId), String
+                  .valueOf(fragmentId), queryPlanName, depolymentFile);
+        }
         shell = pb.start();
         InputStream shellIn = shell.getInputStream();
         response = IOUtils.toString(shellIn);
+
         shellIn.close();
         shell.destroy();
+      } else {
+        throw new CatalogException("Could not get logs. Exit status: " + exitStatus + "\n" + errorMessage);
       }
 
     } catch (IOException ex) {
