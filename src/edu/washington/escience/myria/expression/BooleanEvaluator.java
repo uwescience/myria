@@ -1,18 +1,74 @@
 package edu.washington.escience.myria.expression;
 
+import java.lang.reflect.InvocationTargetException;
+import java.util.Objects;
+
+import org.codehaus.commons.compiler.CompilerFactoryFactory;
+import org.codehaus.commons.compiler.IScriptEvaluator;
+
+import com.google.common.base.Preconditions;
+
+import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
+import edu.washington.escience.myria.Type;
 
 /**
- * Interface for evaluating janino expressions that return bools.
+ * An Expression evaluator for stateless boolean expressions.
  */
-public interface BooleanEvaluator {
+public class BooleanEvaluator extends Evaluator {
+
   /**
-   * The interface for applying expressions. We only need a reference to the tuple batch and a row id. The variables
-   * will be fetched from the tuple buffer using the rowId provided in {@link VariableExpression}.
+   * Default constructor.
+   * 
+   * @param expression the expression for the evaluator
+   * @param schema the schema that the expression expects
+   */
+  public BooleanEvaluator(final Expression expression, final Schema schema) {
+    super(expression, schema);
+    Preconditions.checkArgument(expression.getOutputType().equals(Type.BOOLEAN_TYPE));
+  }
+
+  /**
+   * Expression evaluator.
+   */
+  private BooleanEvalInterface evaluator;
+
+  /**
+   * Compiles the {@link #javaExpression}.
+   * 
+   * @throws DbException compilation failed
+   */
+  @Override
+  public void compile() throws DbException {
+    Preconditions.checkArgument(!getExpression().isCopyFromInput(),
+        "This expression does not need to be compiled because the data can be copied from the input.");
+    getExpression().setJavaExpression(
+        getExpression().getRootExpressionOperator().getJavaString(
+            Objects.requireNonNull(getExpression().getInputSchema())));
+
+    try {
+      IScriptEvaluator se = CompilerFactoryFactory.getDefaultCompilerFactory().newExpressionEvaluator();
+
+      evaluator =
+          (BooleanEvalInterface) se.createFastEvaluator(getExpression().getJavaExpression(),
+              BooleanEvalInterface.class, new String[] { "tb", "rowId" });
+    } catch (Exception e) {
+      throw new DbException("Error when compiling expression " + this, e);
+    }
+  }
+
+  /**
+   * Evaluates the {@link #getJavaExpression()} using the {@link #evaluator}.
    * 
    * @param tb a tuple batch
-   * @param rowId the row in the tb that should be used.
+   * @param rowId the row that should be used for input data
    * @return the result from the evaluation
+   * @throws InvocationTargetException exception thrown from janino
    */
-  boolean evaluate(final TupleBatch tb, final int rowId);
+  public boolean eval(final TupleBatch tb, final int rowId) throws InvocationTargetException {
+    Preconditions.checkArgument(evaluator != null,
+        "Call compile first or copy the data if it is the same in the input.");
+    return evaluator.evaluate(tb, rowId);
+  }
 }

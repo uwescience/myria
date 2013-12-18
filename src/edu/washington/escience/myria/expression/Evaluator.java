@@ -1,18 +1,40 @@
 package edu.washington.escience.myria.expression;
 
-import edu.washington.escience.myria.TupleBatch;
+import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.Schema;
 
 /**
- * Interface for evaluating janino expressions.
+ * Compile and evaluate expressions.
  */
-public interface Evaluator {
+public abstract class Evaluator {
   /**
-   * The interface for applying expressions. We only need a reference to the tuple batch and a row id. The variables
-   * will be fetched from the tuple buffer using the rowId provided in {@link VariableExpression}.
-   * 
-   * @param tb a tuple batch
-   * @param rowId the row in the tb that should be used.
-   * @return the result from the evaluation
+   * The expression to be compiled and evaluated.
    */
-  Object evaluate(final TupleBatch tb, final int rowId);
+  private final Expression expression;
+
+  /**
+   * Default constructor.
+   * 
+   * @param expression the expression for the evaluator
+   * @param schema the schema that the expression expects
+   */
+  public Evaluator(final Expression expression, final Schema schema) {
+    this.expression = expression;
+    getExpression().setSchema(schema);
+  }
+
+  /**
+   * @return the {@link #expression}
+   */
+  public Expression getExpression() {
+    return expression;
+  }
+
+  /**
+   * Compiles the {@link #javaExpression}.
+   * 
+   * @throws DbException compilation failed
+   */
+  public void compile() throws DbException {
+  }
 }
