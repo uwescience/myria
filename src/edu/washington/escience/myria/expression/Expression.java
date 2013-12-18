@@ -11,7 +11,7 @@ import edu.washington.escience.myria.Type;
 /**
  * An expression that can be applied to a tuple.
  */
-public abstract class Expression implements Serializable {
+public class Expression implements Serializable {
 
   /***/
   private static final long serialVersionUID = 1L;

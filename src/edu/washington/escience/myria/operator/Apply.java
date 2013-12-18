@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.operator;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.google.common.base.Preconditions;
@@ -12,7 +13,7 @@ import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.Expression;
-import edu.washington.escience.myria.expression.GenericExpression;
+import edu.washington.escience.myria.expression.GenericEvaluator;
 
 /**
  * Generic apply operator.
@@ -24,7 +25,12 @@ public class Apply extends UnaryOperator {
   /**
    * List of expressions that will be used to create the output.
    */
-  private ImmutableList<GenericExpression> genericExpressions;
+  private ImmutableList<Expression> expressions;
+
+  /**
+   * Evaluators for generic stateless expressions. One evaluator per expression in {@link #expressions}.
+   */
+  private ArrayList<GenericEvaluator> evaluators;
 
   /**
    * Buffers the output tuples.
@@ -32,24 +38,38 @@ public class Apply extends UnaryOperator {
   private TupleBatchBuffer resultBuffer;
 
   /**
+   * @return the expressions
+   */
+  protected ImmutableList<Expression> getExpressions() {
+    return expressions;
+  }
+
+  /**
+   * @return the evaluators
+   */
+  public ArrayList<GenericEvaluator> getEvaluators() {
+    return evaluators;
+  }
+
+  /**
    * 
    * @param child child operator that data is fetched from
-   * @param genericExpressions expression that created the output
+   * @param expressions expression that created the output
    */
-  public Apply(final Operator child, final List<GenericExpression> genericExpressions) {
+  public Apply(final Operator child, final List<Expression> expressions) {
     super(child);
-    if (genericExpressions != null) {
-      setExpressions(genericExpressions);
+    if (expressions != null) {
+      setExpressions(expressions);
     }
   }
 
   /**
    * Set the expressions for each column.
    * 
-   * @param genericExpressions the expressions
+   * @param expressions the expressions
    */
-  private void setExpressions(final List<GenericExpression> genericExpressions) {
-    this.genericExpressions = ImmutableList.copyOf(genericExpressions);
+  private void setExpressions(final List<Expression> expressions) {
+    this.expressions = ImmutableList.copyOf(expressions);
   }
 
   @Override
@@ -62,8 +82,8 @@ public class Apply extends UnaryOperator {
     while ((tb = getChild().nextReady()) != null) {
       for (int rowIdx = 0; rowIdx < tb.numTuples(); rowIdx++) {
         int columnIdx = 0;
-        for (GenericExpression expr : genericExpressions) {
-          expr.evalAndPut(tb, rowIdx, resultBuffer, columnIdx);
+        for (GenericEvaluator evaluator : evaluators) {
+          evaluator.evalAndPut(tb, rowIdx, resultBuffer, columnIdx);
           columnIdx++;
         }
       }
@@ -80,24 +100,26 @@ public class Apply extends UnaryOperator {
 
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    Preconditions.checkNotNull(genericExpressions);
+    Preconditions.checkNotNull(expressions);
 
     resultBuffer = new TupleBatchBuffer(getSchema());
 
     Schema inputSchema = getChild().getSchema();
 
-    for (GenericExpression expr : genericExpressions) {
-
-      expr.setSchema(inputSchema);
+    evaluators = new ArrayList<>();
+    evaluators.ensureCapacity(expressions.size());
+    for (Expression expr : expressions) {
+      GenericEvaluator evaluator = new GenericEvaluator(expr, inputSchema);
       if (expr.needsCompiling()) {
-        expr.compile();
+        evaluator.compile();
       }
+      evaluators.add(evaluator);
     }
   }
 
   @Override
   public Schema generateSchema() {
-    if (genericExpressions == null) {
+    if (expressions == null) {
       return null;
     }
     Operator child = getChild();
@@ -112,7 +134,7 @@ public class Apply extends UnaryOperator {
     ImmutableList.Builder<Type> typesBuilder = ImmutableList.builder();
     ImmutableList.Builder<String> namesBuilder = ImmutableList.builder();
 
-    for (Expression expr : genericExpressions) {
+    for (Expression expr : expressions) {
       expr.setSchema(childSchema);
       typesBuilder.add(expr.getOutputType());
       namesBuilder.add(expr.getOutputName());

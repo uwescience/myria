@@ -12,7 +12,7 @@ import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.AndExpression;
-import edu.washington.escience.myria.expression.BooleanExpression;
+import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.LessThanExpression;
 import edu.washington.escience.myria.expression.MinusExpression;
@@ -24,13 +24,13 @@ public class FilterTest {
   /**
    * A predicate for filtering x - y < target < x + y. Assuming both the columns have the same type.
    */
-  private static BooleanExpression WithinSumRangeExpression(int x, int y, int target) {
+  private static Expression WithinSumRangeExpression(int x, int y, int target) {
     ExpressionOperator varX = new VariableExpression(x);
     ExpressionOperator varY = new VariableExpression(y);
     ExpressionOperator varTarget = new VariableExpression(target);
     ExpressionOperator lower = new LessThanExpression(new MinusExpression(varX, varY), varTarget);
     ExpressionOperator upper = new LessThanExpression(varTarget, new PlusExpression(varX, varY));
-    return new BooleanExpression("withinSumRange(" + x + "," + y + "," + target + ")", new AndExpression(lower, upper));
+    return new Expression("withinSumRange(" + x + "," + y + "," + target + ")", new AndExpression(lower, upper));
   }
 
   @Test

@@ -5,7 +5,7 @@ import edu.washington.escience.myria.TupleBatch;
 /**
  * Interface for evaluating janino expressions.
  */
-public interface Evaluator {
+public interface EvalInterface {
   /**
    * The interface for applying expressions. We only need a reference to the tuple batch and a row id. The variables
    * will be fetched from the tuple buffer using the rowId provided in {@link VariableExpression}.
