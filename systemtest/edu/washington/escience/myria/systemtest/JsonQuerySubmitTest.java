@@ -67,7 +67,7 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
     conn.disconnect();
 
-    String data = JsonAPIUtils.download("localhost", masterDaemonPort, "jwang", "global_join", "smallTable");
+    String data = JsonAPIUtils.download("localhost", masterDaemonPort, "jwang", "global_join", "smallTable", "json");
     String subStr = "{\"follower\":46,\"followee\":17}";
     assertTrue(data.contains(subStr));
 

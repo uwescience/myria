@@ -59,25 +59,30 @@ public final class JsonAPIUtils {
     return conn;
   }
 
+  private static String getDatasetUrlString(final String host, int port, final String user, final String program,
+      final String relation, final String format) {
+    return String.format("http://%s:%d/dataset/user-%s/program-%s/relation-%s/data?format=%s", host, port, user,
+        program, relation, format);
+  }
+
   /**
-   * Download a dataset as a CSV.
+   * Download a dataset
    * 
    * @param host master hostname
    * @param port master port
    * @param user user parameter of the dataset
    * @param program program parameter of the dataset
-   * @param relation reltation parameter of the dataset
+   * @param relation relation parameter of the dataset
+   * @param format the format of the relation ("json", "csv", "tsv")
    * 
-   * @return dataset encoded as a CSV
+   * @return dataset encoded in the requested format
    * @throws IOException if an error occurs
    */
   public static String download(final String host, final int port, final String user, final String program,
-      final String relation) throws IOException {
+      final String relation, final String format) throws IOException {
     HttpClient client = new HttpClient();
 
-    String s =
-        String.format("http://%s:%d/dataset/user-%s/program-%s/relation-%s/data?format=json", host, port, user,
-            program, relation);
+    String s = getDatasetUrlString(host, port, user, program, relation, format);
     GetMethod method = new GetMethod(s);
 
     try {
@@ -132,5 +137,4 @@ public final class JsonAPIUtils {
     conn.getResponseCode();
     return conn;
   }
-
 }
