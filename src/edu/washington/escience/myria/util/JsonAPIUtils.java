@@ -129,7 +129,7 @@ public final class JsonAPIUtils {
     conn.setRequestProperty("Content-Type", "application/octet-stream");
     conn.setRequestMethod("PUT");
 
-    byte[] payload = format.getBytes("UTF-8");
+    byte[] payload = dataset.getBytes("UTF-8");
     conn.setFixedLengthStreamingMode(payload.length);
     try {
       OutputStream out = conn.getOutputStream();
