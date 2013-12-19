@@ -237,7 +237,8 @@ public final class DatasetResource {
     dataset.source = new InputStreamSource(is);
     dataset.workers = null;
 
-    return doIngest(dataset);
+    ResponseBuilder builder = Response.ok();
+    return doIngest(dataset, builder);
   }
 
   /**
@@ -260,17 +261,20 @@ public final class DatasetResource {
       throw new DbException(e);
     }
 
-    return doIngest(dataset);
+    URI datasetUri = getCanonicalResourcePath(uriInfo, dataset.relationKey);
+    ResponseBuilder builder = Response.created(datasetUri);
+    return doIngest(dataset, builder);
   }
 
   /**
    * Ingest a dataset; replace any previous version.
    * 
    * @param dataset description of the dataset to ingest
+   * @param builder the template response
    * @return the created dataset resource
    * @throws DbException on any error
    */
-  private Response doIngest(final DatasetEncoding dataset) throws DbException {
+  private Response doIngest(final DatasetEncoding dataset, final ResponseBuilder builder) throws DbException {
     /* If we don't have any workers alive right now, tell the user we're busy. */
     if (server.getAliveWorkers().size() == 0) {
       /* Throw a 503 (Service Unavailable) */
@@ -301,7 +305,7 @@ public final class DatasetResource {
     /* In the response, tell the client the path to the relation. */
     URI datasetUri = getCanonicalResourcePath(uriInfo, dataset.relationKey);
     status.setUri(datasetUri);
-    return Response.created(datasetUri).entity(status).build();
+    return builder.entity(status).build();
   }
 
   /**
