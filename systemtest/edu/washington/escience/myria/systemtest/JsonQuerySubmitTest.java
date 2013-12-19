@@ -2,6 +2,7 @@ package edu.washington.escience.myria.systemtest;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,6 +49,10 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     }
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
     conn.disconnect();
+
+    String data = JsonAPIUtils.download("localhost", masterDaemonPort, "jwang", "global_join", "smallTable");
+    String subStr = "{\"follower\":46,\"followee\":17}";
+    assertTrue(data.contains(subStr));
 
     conn = JsonAPIUtils.submitQuery("localhost", masterDaemonPort, queryJson);
     if (null != conn.getErrorStream()) {
