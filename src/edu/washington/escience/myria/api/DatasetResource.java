@@ -226,7 +226,7 @@ public final class DatasetResource {
     String validFormat = validateFormat(format);
     if (validFormat.equals("csv")) {
       dataset.delimiter = ",";
-    } else if (validFormat.equals("\t")) {
+    } else if (validFormat.equals("tsv")) {
       dataset.delimiter = "\t";
     } else {
       throw new MyriaApiException(Status.BAD_REQUEST, "format must be 'csv', 'tsv'");
