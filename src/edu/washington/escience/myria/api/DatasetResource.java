@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.api;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.net.URI;
@@ -10,6 +11,7 @@ import java.util.Set;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -179,6 +181,22 @@ public final class DatasetResource {
 
     /* Yay, worked! Ensure the file has the correct filename. */
     return response.build();
+  }
+
+  @PUT
+  @Consumes(MediaType.APPLICATION_OCTET_STREAM)
+  @Produces(MediaType.APPLICATION_JSON)
+  @Path("/user-{user_name}/program-{program_name}/relation-{relation_name}/data")
+  public Response replaceDataset(final InputStream is, @PathParam("user_name") final String userName,
+      @PathParam("program_name") final String programName, @PathParam("relation_name") final String relationName,
+      @QueryParam("format") final String format) throws DbException {
+    /* Assemble the name of the relation. */
+    RelationKey relationKey = RelationKey.of(userName, programName, relationName);
+
+    /* Validate the request format. This will throw a MyriaApiException if format is invalid. */
+    String validFormat = validateFormat(format);
+
+    return Response.ok().build();
   }
 
   /**
