@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.systemtest;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -64,8 +65,20 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
     conn.disconnect();
 
-    String dataset = "\"Hello world\",3242\n" + "\"goodbye world\",321\n" + "\"pizza pizza\",104";
+    String dataset = "Hello world,3242\n" + "goodbye world,321\n" + "pizza pizza,104";
     JsonAPIUtils.replace("localhost", masterDaemonPort, "public", "adhoc", "smallTable", dataset, "csv");
+
+    String fetchedDataset =
+        JsonAPIUtils.download("localhost", masterDaemonPort, "public", "adhoc", "smallTable", "csv");
+    assertTrue(fetchedDataset.contains("pizza pizza"));
+
+    // Replace the dataset with all new contents
+    dataset = "mexico\t42\n" + "sri lanka\t12342\n" + "belize\t802304";
+    JsonAPIUtils.replace("localhost", masterDaemonPort, "public", "adhoc", "smallTable", dataset, "tsv");
+
+    fetchedDataset = JsonAPIUtils.download("localhost", masterDaemonPort, "public", "adhoc", "smallTable", "csv");
+    assertFalse(fetchedDataset.contains("pizza pizza"));
+    assertTrue(fetchedDataset.contains("sri lanka"));
   }
 
   @Test
