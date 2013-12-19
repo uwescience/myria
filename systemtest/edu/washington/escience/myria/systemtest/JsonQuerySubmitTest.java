@@ -50,6 +50,25 @@ public class JsonQuerySubmitTest extends SystemTestBase {
   }
 
   @Test
+  public void datasetPutTest() throws Exception {
+    String ingestJson =
+        "{" + "  \"relation_key\" : {" + "    \"user_name\" : \"public\"," + "    \"program_name\" : \"adhoc\","
+            + "    \"relation_name\" : \"smallTable\"" + "  }," + "  \"schema\" : {"
+            + "    \"column_types\" : [\"STRING_TYPE\", \"LONG_TYPE\"]," + "    \"column_names\" : [\"foo\", \"bar\"]"
+            + "  }}";
+
+    HttpURLConnection conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestJson);
+    if (null != conn.getErrorStream()) {
+      throw new IllegalStateException(getContents(conn));
+    }
+    assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
+    conn.disconnect();
+
+    String dataset = "\"Hello world\",3242\n" + "\"goodbye world\", 321\n" + "\"pizza pizza\", 104\n" + "";
+    JsonAPIUtils.replace("localhost", masterDaemonPort, "pubilc", "adhoc", "smallTable", dataset, "csv");
+  }
+
+  @Test
   public void jsonQuerySubmitTest() throws Exception {
     // DeploymentUtils.ensureMasterStart("localhost", masterDaemonPort);
 

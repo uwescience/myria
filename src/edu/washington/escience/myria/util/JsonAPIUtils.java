@@ -109,6 +109,40 @@ public final class JsonAPIUtils {
   }
 
   /**
+   * Replace the contents of a dataset.
+   * 
+   * @param host master hostname
+   * @param port master port
+   * @param user user parameter of the dataset
+   * @param program program parameter of the dataset
+   * @param relation relation parameter of the dataset
+   * @param dataset the dataset to upload
+   * @param format the format of the relation ("json", "csv", "tsv")
+   * 
+   * @throws IOException if an error occurs
+   */
+  public static void replace(final String host, final int port, final String user, final String program,
+      final String relation, final String dataset, final String format) throws IOException {
+    URL url = getDatasetUrl(host, port, user, program, relation, format);
+    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+    conn.setDoOutput(true);
+    conn.setRequestProperty("Content-Type", "application/octet-stream");
+    conn.setRequestMethod("PUT");
+
+    byte[] payload = format.getBytes("UTF-8");
+    conn.setFixedLengthStreamingMode(payload.length);
+    try {
+      OutputStream out = conn.getOutputStream();
+      out.write(payload);
+      if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
+        throw new IOException("Failed upload: " + conn.getResponseCode());
+      }
+    } finally {
+      conn.disconnect();
+    }
+  }
+
+  /**
    * @param masterHostname master hostname
    * @param apiPort rest api port
    * @param queryFile query file
