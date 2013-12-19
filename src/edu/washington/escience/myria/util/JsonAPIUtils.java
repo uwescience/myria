@@ -2,14 +2,13 @@ package edu.washington.escience.myria.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 
 /**
  * Util methods for handling of Json API stuff.
@@ -59,14 +58,26 @@ public final class JsonAPIUtils {
     return conn;
   }
 
-  private static String getDatasetUrlString(final String host, int port, final String user, final String program,
-      final String relation, final String format) {
-    return String.format("http://%s:%d/dataset/user-%s/program-%s/relation-%s/data?format=%s", host, port, user,
-        program, relation, format);
+  /**
+   * Construct a URL for get/put of a dataset.
+   * 
+   * @param host master hostname
+   * @param port master port
+   * @param user user parameter of the dataset
+   * @param program program parameter of the dataset
+   * @param relation relation parameter of the dataset
+   * @param format the format of the relation ("json", "csv", "tsv")
+   * @return a URL for the dataset
+   * @throws IOException if an error occurs
+   */
+  private static URL getDatasetUrl(final String host, final int port, final String user, final String program,
+      final String relation, final String format) throws IOException {
+    return new URL(String.format("http://%s:%d/dataset/user-%s/program-%s/relation-%s/data?format=%s", host, port,
+        user, program, relation, format));
   }
 
   /**
-   * Download a dataset
+   * Download a dataset.
    * 
    * @param host master hostname
    * @param port master port
@@ -80,23 +91,20 @@ public final class JsonAPIUtils {
    */
   public static String download(final String host, final int port, final String user, final String program,
       final String relation, final String format) throws IOException {
-    HttpClient client = new HttpClient();
+    URL url = getDatasetUrl(host, port, user, program, relation, format);
+    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+    conn.setDoOutput(true);
+    conn.setRequestMethod("GET");
 
-    String s = getDatasetUrlString(host, port, user, program, relation, format);
-    GetMethod method = new GetMethod(s);
+    if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
+      throw new IOException("Failed to download result:" + conn.getResponseCode());
+    }
 
     try {
-      // Execute the method.
-      int statusCode = client.executeMethod(method);
-
-      if (statusCode != HttpStatus.SC_OK) {
-        throw new IOException("Failed download: " + statusCode);
-      }
-
-      byte[] responseBody = method.getResponseBody();
-      return new String(responseBody, "UTF-8");
+      InputStream is = conn.getInputStream();
+      return IOUtils.toString(is, "UTF-8");
     } finally {
-      method.releaseConnection();
+      conn.disconnect();
     }
   }
 
