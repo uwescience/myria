@@ -33,6 +33,23 @@ public class JsonQuerySubmitTest extends SystemTestBase {
   }
 
   @Test
+  public void emptySubmitTest() throws Exception {
+    String ingestJson =
+        "{" + "  \"relation_key\" : {" + "    \"user_name\" : \"public\"," + "    \"program_name\" : \"adhoc\","
+            + "    \"relation_name\" : \"smallTable\"" + "  }," + "  \"schema\" : {"
+            + "    \"column_types\" : [\"STRING_TYPE\", \"LONG_TYPE\"]," + "    \"column_names\" : [\"foo\", \"bar\"]"
+            + "  }}";
+
+    HttpURLConnection conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestJson);
+    if (null != conn.getErrorStream()) {
+      throw new IllegalStateException(getContents(conn));
+    }
+    assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
+    conn.disconnect();
+
+  }
+
+  @Test
   public void jsonQuerySubmitTest() throws Exception {
     // DeploymentUtils.ensureMasterStart("localhost", masterDaemonPort);
 

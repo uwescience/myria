@@ -17,7 +17,7 @@ public class DatasetEncoding extends MyriaApiEncoding {
   public DataSource source;
   public String delimiter;
   public Boolean importFromDatabase = false;
-  private static final List<String> requiredFields = ImmutableList.of("source", "relationKey", "schema");
+  private static final List<String> requiredFields = ImmutableList.of("relationKey", "schema");
 
   @Override
   protected List<String> getRequiredFields() {
