@@ -65,7 +65,7 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     conn.disconnect();
 
     String dataset = "\"Hello world\",3242\n" + "\"goodbye world\", 321\n" + "\"pizza pizza\", 104\n" + "";
-    JsonAPIUtils.replace("localhost", masterDaemonPort, "pubilc", "adhoc", "smallTable", dataset, "csv");
+    JsonAPIUtils.replace("localhost", masterDaemonPort, "public", "adhoc", "smallTable", dataset, "csv");
   }
 
   @Test

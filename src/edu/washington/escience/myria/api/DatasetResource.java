@@ -24,6 +24,8 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
+import org.slf4j.LoggerFactory;
+
 import com.sun.jersey.core.header.ContentDisposition;
 
 import edu.washington.escience.myria.CsvTupleWriter;
@@ -31,6 +33,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.JsonTupleWriter;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
+import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleWriter;
 import edu.washington.escience.myria.api.encoding.DatasetEncoding;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
@@ -58,6 +61,9 @@ public final class DatasetResource {
   /** Information about the URL of the request. */
   @Context
   private UriInfo uriInfo;
+
+  /** Logger. */
+  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(DatasetResource.class);
 
   /**
    * @param userName the user who owns the target relation.
@@ -184,6 +190,17 @@ public final class DatasetResource {
     return response.build();
   }
 
+  /**
+   * Replace a dataset with new contents.
+   * 
+   * @param is InputStream containing the data set * @param userName the user who owns the target relation.
+   * @param userName the user who owns the target relation.
+   * @param programName the program to which the target relation belongs.
+   * @param relationName the name of the target relation.
+   * @param format the format of the output data. Valid options are (case-insensitive) "csv", "tsv", and "json".
+   * @throws DbException on any error
+   * @return metadata about the specified relation.
+   */
   @PUT
   @Consumes(MediaType.APPLICATION_OCTET_STREAM)
   @Produces(MediaType.APPLICATION_JSON)
@@ -194,10 +211,16 @@ public final class DatasetResource {
     RelationKey relationKey = RelationKey.of(userName, programName, relationName);
     DatasetEncoding dataset = new DatasetEncoding();
 
-    DatasetStatus status = server.getDatasetStatus(relationKey);
-    if (status == null) {
+    Schema schema;
+    try {
+      schema = server.getSchema(relationKey);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+
+    if (schema == null) {
       /* Not found, throw a 404 (Not Found) */
-      throw new MyriaApiException(Status.NOT_FOUND, "That dataset was not found");
+      throw new MyriaApiException(Status.NOT_FOUND, "The dataset was not found: " + relationKey.toString());
     }
 
     String validFormat = validateFormat(format);
@@ -210,7 +233,7 @@ public final class DatasetResource {
     }
 
     dataset.relationKey = relationKey;
-    dataset.schema = status.getSchema();
+    dataset.schema = schema;
     dataset.source = new InputStreamSource(is);
     dataset.workers = null;
 
