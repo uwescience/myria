@@ -219,14 +219,24 @@ public final class DatasetResource {
       throw new DbException(e);
     }
 
+    return doIngest(dataset);
+  }
+
+  /**
+   * Ingest a dataset; replace any previous version.
+   * 
+   * @param dataset description of the dataset to ingest
+   * @return the created dataset resource
+   * @throws DbException on any error
+   */
+  private Response doIngest(final DatasetEncoding dataset) throws DbException {
     /* If we don't have any workers alive right now, tell the user we're busy. */
-    Set<Integer> workers = server.getAliveWorkers();
-    if (workers.size() == 0) {
+    if (server.getAliveWorkers().size() == 0) {
       /* Throw a 503 (Service Unavailable) */
       throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "There are no alive workers to receive this dataset.");
     }
 
-    /* Moreover, check whether all requested workers are alive. */
+    /* Check whether all requested workers are alive. */
     if (dataset.workers != null && !server.getAliveWorkers().containsAll(dataset.workers)) {
       /* Throw a 503 (Service Unavailable) */
       throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "Not all requested workers are alive");
