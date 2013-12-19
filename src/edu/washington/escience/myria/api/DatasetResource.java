@@ -36,6 +36,7 @@ import edu.washington.escience.myria.api.encoding.DatasetEncoding;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.TipsyDatasetEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
+import edu.washington.escience.myria.io.InputStreamSource;
 import edu.washington.escience.myria.operator.EmptyRelation;
 import edu.washington.escience.myria.operator.FileScan;
 import edu.washington.escience.myria.operator.Operator;
@@ -190,13 +191,30 @@ public final class DatasetResource {
   public Response replaceDataset(final InputStream is, @PathParam("user_name") final String userName,
       @PathParam("program_name") final String programName, @PathParam("relation_name") final String relationName,
       @QueryParam("format") final String format) throws DbException {
-    /* Assemble the name of the relation. */
     RelationKey relationKey = RelationKey.of(userName, programName, relationName);
+    DatasetEncoding dataset = new DatasetEncoding();
 
-    /* Validate the request format. This will throw a MyriaApiException if format is invalid. */
+    DatasetStatus status = server.getDatasetStatus(relationKey);
+    if (status == null) {
+      /* Not found, throw a 404 (Not Found) */
+      throw new MyriaApiException(Status.NOT_FOUND, "That dataset was not found");
+    }
+
     String validFormat = validateFormat(format);
+    if (validFormat.equals("csv")) {
+      dataset.delimiter = ",";
+    } else if (validFormat.equals("\t")) {
+      dataset.delimiter = "\t";
+    } else {
+      throw new MyriaApiException(Status.BAD_REQUEST, "format must be 'csv', 'tsv'");
+    }
 
-    return Response.ok().build();
+    dataset.relationKey = relationKey;
+    dataset.schema = status.getSchema();
+    dataset.source = new InputStreamSource(is);
+    dataset.workers = null;
+
+    return doIngest(dataset);
   }
 
   /**
