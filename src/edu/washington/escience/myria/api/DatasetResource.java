@@ -263,7 +263,7 @@ public final class DatasetResource {
     /* Do the work. */
     Operator source;
     if (dataset.source != null) {
-      source = new FileScan(dataset.source, dataset.schema);
+      source = new FileScan(dataset.source, dataset.schema, dataset.delimiter);
     } else {
       source = EmptyRelation.of(dataset.schema);
     }
