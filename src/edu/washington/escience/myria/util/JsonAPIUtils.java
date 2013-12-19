@@ -6,6 +6,9 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.io.FileUtils;
 
 /**
@@ -54,6 +57,42 @@ public final class JsonAPIUtils {
     conn.connect();
     conn.getResponseCode();
     return conn;
+  }
+
+  /**
+   * Download a dataset as a CSV.
+   * 
+   * @param host master hostname
+   * @param port master port
+   * @param user user parameter of the dataset
+   * @param program program parameter of the dataset
+   * @param relation reltation parameter of the dataset
+   * 
+   * @return dataset encoded as a CSV
+   * @throws IOException if an error occurs
+   */
+  public static String download(final String host, final int port, final String user, final String program,
+      final String relation) throws IOException {
+    HttpClient client = new HttpClient();
+
+    String s =
+        String.format("http://%s:%d/dataset/user-%s/program-%s/relation-%s/data?format=json", host, port, user,
+            program, relation);
+    GetMethod method = new GetMethod(s);
+
+    try {
+      // Execute the method.
+      int statusCode = client.executeMethod(method);
+
+      if (statusCode != HttpStatus.SC_OK) {
+        throw new IOException("Failed download: " + statusCode);
+      }
+
+      byte[] responseBody = method.getResponseBody();
+      return new String(responseBody, "UTF-8");
+    } finally {
+      method.releaseConnection();
+    }
   }
 
   /**
