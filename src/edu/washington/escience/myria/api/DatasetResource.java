@@ -214,7 +214,7 @@ public final class DatasetResource {
     }
 
     /* Do the work. */
-    Operator source = new FileScan(dataset.source, dataset.schema);
+    Operator source = new FileScan(dataset.source, dataset.schema, dataset.delimiter);
     DatasetStatus status = null;
     try {
       status = server.ingestDataset(dataset.relationKey, dataset.workers, source);
