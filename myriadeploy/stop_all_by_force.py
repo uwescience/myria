@@ -8,12 +8,7 @@ import subprocess
 import sys
 
 def get_hostname(node):
-    if len(node) == 2:
-        (hostname, _) = node
-    else:
-        (hostname, _, _) = node
-    return hostname
-
+    return node[0]
 
 def stop_all(config):
     "Kill all Myria processes on the nodes in this cluster."
