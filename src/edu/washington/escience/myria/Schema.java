@@ -311,6 +311,17 @@ public final class Schema implements Serializable {
   }
 
   /**
+   * Return true if the two schema are "compatible": they have the same size and column types; column names are ignored.
+   * 
+   * @param s2 the Schema object to compare
+   * 
+   * @return true if the schemas are compatible
+   */
+  public boolean compatible(final Schema s2) {
+    return columnTypes.equals(s2.columnTypes);
+  }
+
+  /**
    * Find the index of the column with a given name.
    * 
    * @param name name of the column.
