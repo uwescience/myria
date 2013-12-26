@@ -33,32 +33,26 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     return m;
   }
 
+  private static final String emptyIngestJson = "{" + "  \"relation_key\" : {" + "    \"user_name\" : \"public\","
+      + "    \"program_name\" : \"adhoc\"," + "    \"relation_name\" : \"smallTable\"" + "  }," + "  \"schema\" : {"
+      + "    \"column_types\" : [\"STRING_TYPE\", \"LONG_TYPE\"]," + "    \"column_names\" : [\"foo\", \"bar\"]"
+      + "  }," + "\"source\" : { \"data_type\" : \"Empty\" } " + "}";
+
   @Test
   public void emptySubmitTest() throws Exception {
-    String ingestJson =
-        "{" + "  \"relation_key\" : {" + "    \"user_name\" : \"public\"," + "    \"program_name\" : \"adhoc\","
-            + "    \"relation_name\" : \"smallTable\"" + "  }," + "  \"schema\" : {"
-            + "    \"column_types\" : [\"STRING_TYPE\", \"LONG_TYPE\"]," + "    \"column_names\" : [\"foo\", \"bar\"]"
-            + "  }}";
 
-    HttpURLConnection conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestJson);
+    HttpURLConnection conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, emptyIngestJson);
     if (null != conn.getErrorStream()) {
       throw new IllegalStateException(getContents(conn));
     }
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
     conn.disconnect();
-
   }
 
   @Test
   public void datasetPutTest() throws Exception {
-    String ingestJson =
-        "{" + "  \"relation_key\" : {" + "    \"user_name\" : \"public\"," + "    \"program_name\" : \"adhoc\","
-            + "    \"relation_name\" : \"smallTable\"" + "  }," + "  \"schema\" : {"
-            + "    \"column_types\" : [\"STRING_TYPE\", \"LONG_TYPE\"]," + "    \"column_names\" : [\"foo\", \"bar\"]"
-            + "  }}";
 
-    HttpURLConnection conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestJson);
+    HttpURLConnection conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, emptyIngestJson);
     if (null != conn.getErrorStream()) {
       throw new IllegalStateException(getContents(conn));
     }

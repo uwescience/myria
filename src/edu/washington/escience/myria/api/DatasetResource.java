@@ -40,7 +40,6 @@ import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.TipsyDatasetEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.io.InputStreamSource;
-import edu.washington.escience.myria.operator.EmptyRelation;
 import edu.washington.escience.myria.operator.FileScan;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.TipsyFileScan;
@@ -288,12 +287,7 @@ public final class DatasetResource {
     }
 
     /* Do the work. */
-    Operator source;
-    if (dataset.source != null) {
-      source = new FileScan(dataset.source, dataset.schema, dataset.delimiter);
-    } else {
-      source = EmptyRelation.of(dataset.schema);
-    }
+    Operator source = new FileScan(dataset.source, dataset.schema, dataset.delimiter);
 
     DatasetStatus status = null;
     try {
