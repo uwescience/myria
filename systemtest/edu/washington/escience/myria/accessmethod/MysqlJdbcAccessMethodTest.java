@@ -3,7 +3,7 @@
  */
 package edu.washington.escience.myria.accessmethod;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
@@ -13,7 +13,6 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.accessmethod.JdbcInfo;
 import edu.washington.escience.myria.operator.DbQueryScan;
 
 /**
@@ -53,7 +52,7 @@ public class MysqlJdbcAccessMethodTest {
         count += tb.numTuples();
       }
     }
-    assertTrue(count == expectedNumResults);
+    assertEquals(expectedNumResults, count);
 
     /* Cleanup */
     scan.close();

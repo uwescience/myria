@@ -100,4 +100,9 @@ public final class TupleSource extends LeafOperator {
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     index = 0;
   }
+
+  @Override
+  protected void checkEOSAndEOI() {
+    // do nothing since already done in fetchNextReady()
+  }
 }

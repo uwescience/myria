@@ -8,7 +8,8 @@ import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.column.ColumnBuilder;
+import edu.washington.escience.myria.column.builder.ColumnBuilder;
+import edu.washington.escience.myria.column.mutable.MutableColumn;
 import edu.washington.escience.myria.parallel.QueryExecutionMode;
 import edu.washington.escience.myria.parallel.TaskResourceManager;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
@@ -116,9 +117,60 @@ public final class SymmetricHashJoin extends BinaryOperator {
   };
 
   /**
+   * Traverse through the list of tuples with the same hash code.
+   * */
+  private final class ReplaceProcedure implements TIntProcedure {
+
+    /**
+     * Hash table.
+     * */
+    private TupleBuffer hashTable;
+
+    /**
+     * the columns to compare against.
+     * */
+    private int[] keyColumns;
+    /**
+     * row index of the tuple.
+     * */
+    private int row;
+
+    /**
+     * input TupleBatch.
+     * */
+    private TupleBatch inputTB;
+
+    /** if found a replacement. */
+    private boolean replaced;
+
+    @Override
+    public boolean execute(final int index) {
+      if (inputTB.tupleEquals(row, hashTable, index, keyColumns, keyColumns)) {
+        replaced = true;
+        List<Column<?>> columns = inputTB.getDataColumns();
+        int inColumnRow = inputTB.getValidIndices().get(row);
+        for (int j = 0; j < inputTB.numColumns(); ++j) {
+          hashTable.replace(j, index, columns.get(j), inColumnRow);
+        }
+      }
+      return replaced;
+    }
+  };
+
+  /**
    * Traverse through the list of tuples.
    * */
   private transient JoinProcedure doJoin;
+
+  /**
+   * Traverse through the list of tuples and replace old values.
+   * */
+  private transient ReplaceProcedure doReplace;
+
+  /** if the hash table of the left child should use set semantics. */
+  private boolean setSemanticsLeft = false;
+  /** if the hash table of the right child should use set semantics. */
+  private boolean setSemanticsRight = false;
 
   /**
    * Construct an EquiJoin operator. It returns all columns from both children when the corresponding columns in
@@ -150,6 +202,55 @@ public final class SymmetricHashJoin extends BinaryOperator {
   public SymmetricHashJoin(final Operator left, final Operator right, final int[] compareIndx1,
       final int[] compareIndx2, final int[] answerColumns1, final int[] answerColumns2) {
     this(null, left, right, compareIndx1, compareIndx2, answerColumns1, answerColumns2);
+  }
+
+  /**
+   * Construct an SymmetricHashJoin operator. It returns the specified columns from both children when the corresponding
+   * columns in compareIndx1 and compareIndx2 match.
+   * 
+   * @param left the left child.
+   * @param right the right child.
+   * @param compareIndx1 the columns of the left child to be compared with the right. Order matters.
+   * @param compareIndx2 the columns of the right child to be compared with the left. Order matters.
+   * @param answerColumns1 the columns of the left child to be returned. Order matters.
+   * @param answerColumns2 the columns of the right child to be returned. Order matters.
+   * @param setSemanticsLeft if the hash table of the left child should use set semantics.
+   * @param setSemanticsRight if the hash table of the right child should use set semantics.
+   * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>, or if
+   *        <tt>outputSchema</tt> does not have the correct number of columns and column types.
+   */
+  public SymmetricHashJoin(final Operator left, final Operator right, final int[] compareIndx1,
+      final int[] compareIndx2, final int[] answerColumns1, final int[] answerColumns2, final boolean setSemanticsLeft,
+      final boolean setSemanticsRight) {
+    this(null, left, right, compareIndx1, compareIndx2, answerColumns1, answerColumns2);
+    this.setSemanticsLeft = setSemanticsLeft;
+    this.setSemanticsRight = setSemanticsRight;
+  }
+
+  /**
+   * Construct an SymmetricHashJoin operator. It returns the specified columns from both children when the corresponding
+   * columns in compareIndx1 and compareIndx2 match.
+   * 
+   * @param outputColumns the names of the columns in the output schema. If null, the corresponding columns will be
+   *          copied from the children.
+   * @param left the left child.
+   * @param right the right child.
+   * @param compareIndx1 the columns of the left child to be compared with the right. Order matters.
+   * @param compareIndx2 the columns of the right child to be compared with the left. Order matters.
+   * @param answerColumns1 the columns of the left child to be returned. Order matters.
+   * @param answerColumns2 the columns of the right child to be returned. Order matters. * @param setSemanticsLeft if
+   *          the hash table of the left child should use set semantics.
+   * @param setSemanticsLeft if the hash table of the left child should use set semantics.
+   * @param setSemanticsRight if the hash table of the right child should use set semantics.
+   * @throw IllegalArgumentException if there are duplicated column names in <tt>outputColumns</tt>, or if
+   *        <tt>outputColumns</tt> does not have the correct number of columns and column types.
+   */
+  public SymmetricHashJoin(final List<String> outputColumns, final Operator left, final Operator right,
+      final int[] compareIndx1, final int[] compareIndx2, final int[] answerColumns1, final int[] answerColumns2,
+      final boolean setSemanticsLeft, final boolean setSemanticsRight) {
+    this(outputColumns, left, right, compareIndx1, compareIndx2, answerColumns1, answerColumns2);
+    this.setSemanticsLeft = setSemanticsLeft;
+    this.setSemanticsRight = setSemanticsRight;
   }
 
   /**
@@ -258,7 +359,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
       final boolean fromLeft) {
     List<Column<?>> tbColumns = cntTB.getDataColumns();
     final int rowInColumn = cntTB.getValidIndices().get(row);
-    Column<?>[] hashTblColumns = hashTable.getColumns(index);
+    MutableColumn<?>[] hashTblColumns = hashTable.getColumns(index);
     ColumnBuilder<?>[] hashTblColumnBuilders = null;
     if (hashTblColumns == null) {
       hashTblColumnBuilders = hashTable.getColumnBuilders(index);
@@ -522,6 +623,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
     TaskResourceManager qem = (TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
     nonBlocking = qem.getExecutionMode() == QueryExecutionMode.NON_BLOCKING;
     doJoin = new JoinProcedure();
+    doReplace = new ReplaceProcedure();
   }
 
   /**
@@ -534,7 +636,6 @@ public final class SymmetricHashJoin extends BinaryOperator {
    * @param fromLeft if the tb is from left.
    */
   protected void processChildTB(final TupleBatch tb, final boolean fromLeft) {
-
     final Operator left = getLeft();
     final Operator right = getRight();
 
@@ -555,6 +656,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
       hashTable1 = null;
     }
 
+    final boolean useSetSemantics = fromLeft && setSemanticsLeft || !fromLeft && setSemanticsRight;
     TupleBuffer hashTable1Local = null;
     TIntObjectMap<TIntList> hashTable1IndicesLocal = null;
     TIntObjectMap<TIntList> hashTable2IndicesLocal = null;
@@ -565,6 +667,10 @@ public final class SymmetricHashJoin extends BinaryOperator {
       hashTable2IndicesLocal = rightHashTableIndices;
       doJoin.inputCmpColumns = leftCompareIndx;
       doJoin.joinAgainstCmpColumns = rightCompareIndx;
+      if (useSetSemantics) {
+        doReplace.hashTable = hashTable1;
+        doReplace.keyColumns = leftCompareIndx;
+      }
     } else {
       hashTable1Local = hashTable2;
       doJoin.joinAgainstHashTable = hashTable1;
@@ -572,9 +678,16 @@ public final class SymmetricHashJoin extends BinaryOperator {
       hashTable2IndicesLocal = leftHashTableIndices;
       doJoin.inputCmpColumns = rightCompareIndx;
       doJoin.joinAgainstCmpColumns = leftCompareIndx;
+      if (useSetSemantics) {
+        doReplace.hashTable = hashTable2;
+        doReplace.keyColumns = rightCompareIndx;
+      }
     }
     doJoin.fromLeft = fromLeft;
     doJoin.inputTB = tb;
+    if (useSetSemantics) {
+      doReplace.inputTB = tb;
+    }
 
     for (int row = 0; row < tb.numTuples(); ++row) {
       final int cntHashCode = tb.hashCode(row, doJoin.inputCmpColumns);
@@ -586,7 +699,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
 
       if (hashTable1Local != null) {
         // only build hash table on two sides if none of the children is EOS
-        addToHashTable(tb, row, hashTable1Local, hashTable1IndicesLocal, cntHashCode);
+        addToHashTable(tb, row, hashTable1Local, hashTable1IndicesLocal, cntHashCode, useSetSemantics);
       }
     }
   }
@@ -597,20 +710,31 @@ public final class SymmetricHashJoin extends BinaryOperator {
    * @param hashTable the target hash table
    * @param hashTable1IndicesLocal hash table 1 indices local
    * @param hashCode the hashCode of the tb.
+   * @param useSetSemantics if need to update the hash table using set semantics.
    * */
   private void addToHashTable(final TupleBatch tb, final int row, final TupleBuffer hashTable,
-      final TIntObjectMap<TIntList> hashTable1IndicesLocal, final int hashCode) {
+      final TIntObjectMap<TIntList> hashTable1IndicesLocal, final int hashCode, final boolean useSetSemantics) {
+
     final int nextIndex = hashTable.numTuples();
     TIntList tupleIndicesList = hashTable1IndicesLocal.get(hashCode);
     if (tupleIndicesList == null) {
-      tupleIndicesList = new TIntArrayList();
+      tupleIndicesList = new TIntArrayList(1);
       hashTable1IndicesLocal.put(hashCode, tupleIndicesList);
     }
-    tupleIndicesList.add(nextIndex);
-    List<Column<?>> inputColumns = tb.getDataColumns();
-    int inColumnRow = tb.getValidIndices().get(row);
-    for (int column = 0; column < tb.numColumns(); column++) {
-      hashTable.put(column, inputColumns.get(column), inColumnRow);
+
+    doReplace.replaced = false;
+    if (useSetSemantics) {
+      doReplace.row = row;
+      tupleIndicesList.forEach(doReplace);
+    }
+    if (!doReplace.replaced) {
+      /* not using set semantics || using set semantics but found nothing to replace (i.e. new) */
+      tupleIndicesList.add(nextIndex);
+      List<Column<?>> inputColumns = tb.getDataColumns();
+      int inColumnRow = tb.getValidIndices().get(row);
+      for (int column = 0; column < tb.numColumns(); column++) {
+        hashTable.put(column, inputColumns.get(column), inColumnRow);
+      }
     }
   }
 }

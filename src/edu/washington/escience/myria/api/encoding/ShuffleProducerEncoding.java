@@ -19,6 +19,7 @@ import edu.washington.escience.myria.util.MyriaUtils;
 public class ShuffleProducerEncoding extends AbstractProducerEncoding<GenericShuffleProducer> {
   public String argChild;
   public PartitionFunction argPf;
+  public StreamingStateEncoding<?> argBufferStateType;
   private static final List<String> requiredArguments = ImmutableList.of("argChild", "argPf");
 
   @Override
@@ -30,8 +31,22 @@ public class ShuffleProducerEncoding extends AbstractProducerEncoding<GenericShu
   public GenericShuffleProducer construct(Server server) {
     Set<Integer> workerIds = getRealWorkerIds();
     argPf.setNumPartitions(workerIds.size());
-    return new GenericShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
-        .integerCollectionToIntArray(workerIds), argPf);
+    GenericShuffleProducer producer =
+        new GenericShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
+            .integerCollectionToIntArray(workerIds), argPf);
+    if (argBufferStateType != null) {
+      if (argBufferStateType instanceof KeepMinValueStateEncoding) {
+        producer.setBackupBufferAsMin(((KeepMinValueStateEncoding) argBufferStateType).keyColIndices,
+            ((KeepMinValueStateEncoding) argBufferStateType).valueColIndex);
+      } else if (argBufferStateType instanceof KeepAndSortOnMinValueStateEncoding) {
+        producer.setBackupBufferAsPrioritizedMin(
+            ((KeepAndSortOnMinValueStateEncoding) argBufferStateType).keyColIndices,
+            ((KeepAndSortOnMinValueStateEncoding) argBufferStateType).valueColIndex);
+      } else if (argBufferStateType instanceof DupElimStateEncoding) {
+        producer.setBackupBufferAsDupElim();
+      }
+    }
+    return producer;
   }
 
   @Override

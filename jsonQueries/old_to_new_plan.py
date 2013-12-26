@@ -11,7 +11,7 @@ delete_fields['Consumer'] = ['arg_worker_ids']
 delete_fields['CollectConsumer'] = ['arg_worker_ids']
 delete_fields['CollectProducer'] = ['arg_worker_id']
 delete_fields['EOSController'] = ['arg_worker_ids']
-delete_fields['IDBInput'] = ['arg_controller_worker_id']
+delete_fields['IDBController'] = ['arg_controller_worker_id']
 delete_fields['ShuffleConsumer'] = ['arg_worker_ids']
 delete_fields['ShuffleProducer'] = ['arg_worker_ids']
 

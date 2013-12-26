@@ -43,9 +43,7 @@ public final class MultiFieldHashPartitionFunction extends PartitionFunction {
    * @param numPartition number of partitions
    * @param fieldIndexes the indices used for partitioning.
    */
-  @JsonCreator
-  public MultiFieldHashPartitionFunction(@JsonProperty("num_partitions") final Integer numPartition,
-      @JsonProperty(value = "field_indexes", required = true) final int[] fieldIndexes) {
+  public MultiFieldHashPartitionFunction(final Integer numPartition, final int[] fieldIndexes) {
     super(numPartition);
     Preconditions.checkArgument(fieldIndexes.length > 1, "MultiFieldHash requires at least 2 fields to hash");
     this.fieldIndexes = fieldIndexes;

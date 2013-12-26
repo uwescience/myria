@@ -27,6 +27,13 @@ public class GenericExpression extends Expression {
   private Evaluator evaluator;
 
   /**
+   * This is not really unused, it's used automagically by Jackson deserialization.
+   */
+  @SuppressWarnings("unused")
+  private GenericExpression() {
+  }
+
+  /**
    * Constructs the Expression object.
    * 
    * @param outputName the name of the resulting element

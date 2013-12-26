@@ -12,6 +12,8 @@ import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.builder.ColumnBuilder;
+import edu.washington.escience.myria.column.builder.FloatColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.FloatColumnMessage;
 
@@ -37,7 +39,7 @@ public final class FloatColumn implements Column<Float> {
    * @param data the underlying data
    * @param numData number of tuples.
    * */
-  FloatColumn(final float[] data, final int numData) {
+  public FloatColumn(final float[] data, final int numData) {
     Preconditions.checkNotNull(data);
     Preconditions.checkArgument(numData <= TupleBatch.BATCH_SIZE);
     this.data = data;

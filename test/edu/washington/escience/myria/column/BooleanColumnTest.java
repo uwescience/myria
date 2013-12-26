@@ -8,7 +8,7 @@ import org.junit.Test;
 
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.column.BooleanColumn;
-import edu.washington.escience.myria.column.BooleanColumnBuilder;
+import edu.washington.escience.myria.column.builder.BooleanColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 
 public class BooleanColumnTest {

@@ -29,6 +29,13 @@ public class BooleanExpression extends Expression {
   private BooleanEvaluator evaluator;
 
   /**
+   * This is not really unused, it's used automagically by Jackson deserialization.
+   */
+  @SuppressWarnings("unused")
+  private BooleanExpression() {
+  }
+
+  /**
    * Constructs the Expression object.
    * 
    * @param outputName the name of the resulting element

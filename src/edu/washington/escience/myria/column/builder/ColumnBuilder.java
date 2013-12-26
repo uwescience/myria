@@ -1,4 +1,4 @@
-package edu.washington.escience.myria.column;
+package edu.washington.escience.myria.column.builder;
 
 import java.nio.BufferOverflowException;
 import java.sql.ResultSet;
@@ -8,6 +8,8 @@ import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.column.mutable.MutableColumn;
 
 /**
  * @param <T> type of the objects in this column.
@@ -96,6 +98,11 @@ public interface ColumnBuilder<T extends Comparable<?>> {
    * @return a column with the contents built.
    * */
   Column<T> build();
+
+  /**
+   * @return a mutable column with the contents built.
+   * */
+  MutableColumn<T> buildMutable();
 
   /**
    * @return a new builder with the contents initialized by this builder. The two builders share no data.
