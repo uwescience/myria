@@ -7,6 +7,7 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
+import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
@@ -82,4 +83,15 @@ public class DifferenceTest {
     TestUtils.assertTupleBagEqual(expectedBag, resultBag);
   }
 
+  @Test(expected = DbException.class)
+  public void incompatibleSchemas() throws DbException {
+    final Schema s1 = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+    Operator left = EmptyRelation.of(s1);
+
+    final Schema s2 = new Schema(ImmutableList.of(Type.INT_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+    Operator right = EmptyRelation.of(s2);
+
+    BinaryOperator diff = new Difference(left, right);
+    diff.open(null);
+  }
 }
