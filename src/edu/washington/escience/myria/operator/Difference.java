@@ -153,6 +153,11 @@ public final class Difference extends BinaryOperator {
 
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+
+    if (!getLeft().getSchema().compatible(getRight().getSchema())) {
+      throw new DbException("Incompatible input schemas");
+    }
+
     tupleIndices = new TIntObjectHashMap<TIntList>();
     tuplesToRemove = new TupleBuffer(getSchema());
   }
