@@ -215,6 +215,11 @@ public final class MyriaConstants {
    */
   public static final int DEFAULT_PIPED_INPUT_STREAM_SIZE = 1024 * 1024 * 16;
 
+  /**
+   * The maximum number of currently active (running, queued, paused, ...) queries at the master.
+   */
+  public static final int MAX_ACTIVE_QUERIES = 5;
+
   /** Private constructor to disallow building utility class. */
   private MyriaConstants() {
   }

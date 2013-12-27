@@ -141,6 +141,12 @@ public final class QueryResource {
     } catch (DbException | CatalogException e) {
       throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, e);
     }
+
+    /* Check to see if the query was submitted successfully. */
+    if (qf == null) {
+      throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "The server cannot accept new queries right now.");
+    }
+
     long queryId = qf.getQuery().getQueryID();
     qf.addListener(new QueryFutureListener() {
 

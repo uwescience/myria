@@ -941,7 +941,7 @@ public final class Server {
 
   /**
    * Submit a query for execution. The workerPlans may be removed in the future if the query compiler and schedulers are
-   * ready.
+   * ready. Returns null if there are too many active queries.
    * 
    * @param rawQuery the raw user-defined query. E.g., the source Datalog program.
    * @param logicalRa the logical relational algebra of the compiled plan.
@@ -955,13 +955,17 @@ public final class Server {
   public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final String physicalPlan,
       final SingleQueryPlanWithArgs masterPlan, final Map<Integer, SingleQueryPlanWithArgs> workerPlans)
       throws DbException, CatalogException {
+    /* First check whether there are too many active queries. */
+    if (!canSubmitQuery()) {
+      return null;
+    }
     final long queryID = catalog.newQuery(rawQuery, logicalRa, physicalPlan);
     return submitQuery(queryID, masterPlan, workerPlans);
   }
 
   /**
    * Submit a query for execution. The workerPlans may be removed in the future if the query compiler and schedulers are
-   * ready.
+   * ready. Returns null if there are too many active queries.
    * 
    * @param rawQuery the raw user-defined query. E.g., the source Datalog program.
    * @param logicalRa the logical relational algebra of the compiled plan.
@@ -975,13 +979,17 @@ public final class Server {
   public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final QueryEncoding physicalPlan,
       final SingleQueryPlanWithArgs masterPlan, final Map<Integer, SingleQueryPlanWithArgs> workerPlans)
       throws DbException, CatalogException {
+    /* First check whether there are too many active queries. */
+    if (!canSubmitQuery()) {
+      return null;
+    }
     final long queryID = catalog.newQuery(rawQuery, logicalRa, physicalPlan);
     return submitQuery(queryID, masterPlan, workerPlans);
   }
 
   /**
    * Submit a query for execution. The workerPlans may be removed in the future if the query compiler and schedulers are
-   * ready.
+   * ready. Returns null if there are too many active queries.
    * 
    * @param queryID the catalog's assigned ID for this query.
    * @param workerPlans the physical parallel plan fragments for each worker.
@@ -992,7 +1000,10 @@ public final class Server {
    * */
   private QueryFuture submitQuery(final long queryID, final SingleQueryPlanWithArgs masterPlan,
       final Map<Integer, SingleQueryPlanWithArgs> workerPlans) throws DbException, CatalogException {
-
+    /* First check whether there are too many active queries. */
+    if (!canSubmitQuery()) {
+      return null;
+    }
     workerPlans.remove(MyriaConstants.MASTER_ID);
     try {
       final MasterQueryPartition mqp = new MasterQueryPartition(masterPlan, workerPlans, queryID, this);
@@ -1126,6 +1137,9 @@ public final class Server {
       QueryFuture qf =
           submitQuery("ingest " + relationKey.toString("sqlite"), "ingest " + relationKey.toString("sqlite"),
               "ingest " + relationKey.toString("sqlite"), new SingleQueryPlanWithArgs(scatter), workerPlans).sync();
+      if (qf == null) {
+        return null;
+      }
       /* TODO(dhalperi) -- figure out how to populate the numTuples column. */
       DatasetStatus status =
           new DatasetStatus(relationKey, source.getSchema(), -1, qf.getQuery().getQueryID(), qf.getQuery()
@@ -1135,6 +1149,13 @@ public final class Server {
     } catch (CatalogException e) {
       throw new DbException(e);
     }
+  }
+
+  /**
+   * @return whether this master can handle more queries or not.
+   */
+  public boolean canSubmitQuery() {
+    return (activeQueries.size() < MyriaConstants.MAX_ACTIVE_QUERIES);
   }
 
   /**
@@ -1162,6 +1183,10 @@ public final class Server {
           submitQuery("import " + relationKey.toString("sqlite"), "import " + relationKey.toString("sqlite"),
               "import " + relationKey.toString("sqlite"), new SingleQueryPlanWithArgs(new SinkRoot(new EOSSource())),
               workerPlans).sync();
+
+      if (qf == null) {
+        throw new DbException("Cannot import dataset right now, server is overloaded.");
+      }
 
       /* Now that the query has finished, add the metadata about this relation to the dataset. */
       /* TODO(dhalperi) -- figure out how to populate the numTuples column. */
