@@ -286,9 +286,6 @@ public final class SymmetricHashJoin extends BinaryOperator {
     leftAnswerColumns = MyriaArrayUtils.checkSet(answerColumns1);
     rightAnswerColumns = MyriaArrayUtils.checkSet(answerColumns2);
 
-    if (left != null && right != null) {
-      generateSchema();
-    }
   }
 
   /**
@@ -612,8 +609,6 @@ public final class SymmetricHashJoin extends BinaryOperator {
     final Operator right = getRight();
     leftHashTableIndices = new TIntObjectHashMap<TIntList>();
     rightHashTableIndices = new TIntObjectHashMap<TIntList>();
-
-    generateSchema();
 
     hashTable1 = new TupleBuffer(left.getSchema());
     hashTable2 = new TupleBuffer(right.getSchema());
