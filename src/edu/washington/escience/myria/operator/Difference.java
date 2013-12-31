@@ -148,7 +148,11 @@ public final class Difference extends BinaryOperator {
 
   @Override
   protected Schema generateSchema() {
-    return getLeft().getSchema();
+    if (getLeft() == null) {
+      return null;
+    } else {
+      return getLeft().getSchema();
+    }
   }
 
   @Override
