@@ -8,5 +8,8 @@
     "column_types" : ["LONG_TYPE","LONG_TYPE","LONG_TYPE","DOUBLE_TYPE"],
     "column_names" : ["x","y","time","data"]
   },
-  "file_name" : "/disk1/lsst_dataset/small.csv"
+  "source" : {
+    "data_type" : 'File',
+    "filename" : "/disk1/lsst_dataset/small.csv"
+  }
 }

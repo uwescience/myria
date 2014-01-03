@@ -111,7 +111,10 @@ public abstract class Expression implements Serializable {
   @JsonProperty
   public String getJavaExpression() {
     if (javaExpression == null) {
-      return rootExpressionOperator.getJavaString(Objects.requireNonNull(inputSchema));
+      if (inputSchema == null) {
+        return null;
+      }
+      return rootExpressionOperator.getJavaString(inputSchema);
     }
     return javaExpression;
   }

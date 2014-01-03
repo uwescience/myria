@@ -7,7 +7,8 @@ import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.column.ColumnBuilder;
+import edu.washington.escience.myria.column.builder.ColumnBuilder;
+import edu.washington.escience.myria.column.mutable.MutableColumn;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
@@ -178,9 +179,6 @@ public final class RightHashJoin extends BinaryOperator {
     leftAnswerColumns = MyriaArrayUtils.checkSet(answerColumns1);
     rightAnswerColumns = MyriaArrayUtils.checkSet(answerColumns2);
 
-    if (left != null && right != null) {
-      generateSchema();
-    }
   }
 
   /**
@@ -249,7 +247,7 @@ public final class RightHashJoin extends BinaryOperator {
   protected void addToAns(final TupleBatch cntTB, final int row, final TupleBuffer hashTable, final int index) {
     List<Column<?>> tbColumns = cntTB.getDataColumns();
     final int rowInColumn = cntTB.getValidIndices().get(row);
-    Column<?>[] hashTblColumns = hashTable.getColumns(index);
+    MutableColumn<?>[] hashTblColumns = hashTable.getColumns(index);
     ColumnBuilder<?>[] hashTblColumnBuilders = null;
     if (hashTblColumns == null) {
       hashTblColumnBuilders = hashTable.getColumnBuilders(index);
@@ -378,8 +376,6 @@ public final class RightHashJoin extends BinaryOperator {
     final Operator right = getRight();
     rightHashTableIndices = new TIntObjectHashMap<TIntList>();
 
-    generateSchema();
-
     rightHashTable = new TupleBuffer(right.getSchema());
     ans = new TupleBatchBuffer(getSchema());
     doJoin = new JoinProcedure();
@@ -433,7 +429,7 @@ public final class RightHashJoin extends BinaryOperator {
     final int nextIndex = hashTable.numTuples();
     TIntList tupleIndicesList = hashTable1IndicesLocal.get(hashCode);
     if (tupleIndicesList == null) {
-      tupleIndicesList = new TIntArrayList();
+      tupleIndicesList = new TIntArrayList(1);
       hashTable1IndicesLocal.put(hashCode, tupleIndicesList);
     }
     tupleIndicesList.add(nextIndex);

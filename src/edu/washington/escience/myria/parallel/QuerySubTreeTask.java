@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.operator.IDBInput;
+import edu.washington.escience.myria.operator.IDBController;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.parallel.ipc.StreamIOChannelID;
@@ -70,9 +70,9 @@ public final class QuerySubTreeTask {
   private final Map<StreamIOChannelID, Consumer> inputChannels;
 
   /**
-   * The IDBInput operators in this task.
+   * The IDBController operators in this task.
    * */
-  private final Set<IDBInput> idbInputSet;
+  private final Set<IDBController> idbControllerSet;
 
   /**
    * IPC ID of the owner {@link Worker} or {@link Server}.
@@ -125,7 +125,7 @@ public final class QuerySubTreeTask {
     myExecutor = executor;
     this.ownerQuery = ownerQuery;
     taskExecutionFuture = new DefaultTaskFuture(this, true);
-    idbInputSet = new HashSet<IDBInput>();
+    idbControllerSet = new HashSet<IDBController>();
     HashSet<StreamIOChannelID> outputChannelSet = new HashSet<StreamIOChannelID>();
     collectDownChannels(root, outputChannelSet);
     outputChannels = outputChannelSet.toArray(new StreamIOChannelID[] {});
@@ -174,14 +174,14 @@ public final class QuerySubTreeTask {
   }
 
   /**
-   * @return all the IDBInput operators in this task.
+   * @return all the IDBController operators in this task.
    * */
-  Set<IDBInput> getIDBInputs() {
-    return idbInputSet;
+  Set<IDBController> getIDBControllers() {
+    return idbControllerSet;
   }
 
   /**
-   * gather all output (Producer or IDBInput's EOI report) channel IDs.
+   * gather all output (Producer or IDBController's EOI report) channel IDs.
    * 
    * @param currentOperator current operator to check.
    * @param outputExchangeChannels the current collected output channel IDs.
@@ -195,12 +195,12 @@ public final class QuerySubTreeTask {
       for (StreamIOChannelID element : exCID) {
         outputExchangeChannels.add(element);
       }
-    } else if (currentOperator instanceof IDBInput) {
-      IDBInput p = (IDBInput) currentOperator;
+    } else if (currentOperator instanceof IDBController) {
+      IDBController p = (IDBController) currentOperator;
       ExchangePairID oID = p.getControllerOperatorID();
       int wID = p.getControllerWorkerID();
       outputExchangeChannels.add(new StreamIOChannelID(oID.getLong(), wID));
-      idbInputSet.add(p);
+      idbControllerSet.add(p);
     }
 
     final Operator[] children = currentOperator.getChildren();
@@ -616,7 +616,7 @@ public final class QuerySubTreeTask {
       AtomicUtils.setBitByValue(executionCondition, STATE_INITIALIZED);
     } catch (Throwable e) {
       if (LOGGER.isErrorEnabled()) {
-        LOGGER.error("Task failed to open because of execption. ", e);
+        LOGGER.error("Task failed to open because of exception:", e);
       }
       AtomicUtils.setBitByValue(executionCondition, STATE_FAIL);
       cleanup(true);

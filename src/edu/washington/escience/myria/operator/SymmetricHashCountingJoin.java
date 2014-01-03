@@ -384,7 +384,7 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
 
     /* create one is there is no such a index yet (there is no tuple with the same hash code has been processed ) */
     if (tupleIndicesList == null) {
-      tupleIndicesList = new TIntArrayList();
+      tupleIndicesList = new TIntArrayList(1);
       hashTableIndices.put(hashCode, tupleIndicesList);
     }
 

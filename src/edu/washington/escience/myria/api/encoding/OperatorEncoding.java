@@ -19,7 +19,7 @@ import edu.washington.escience.myria.parallel.Server;
  * 
  * 1. Create an Encoding class that extends OperatorEncoding.
  * 
- * 2. Add the operator to the list of JsonSubTypes below.
+ * 2. Add the operator to the list of (alphabetically sorted) JsonSubTypes below.
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "op_type")
 @JsonSubTypes({
@@ -30,24 +30,27 @@ import edu.washington.escience.myria.parallel.Server;
     @Type(name = "CollectConsumer", value = CollectConsumerEncoding.class),
     @Type(name = "CollectProducer", value = CollectProducerEncoding.class),
     @Type(name = "ColumnSelect", value = ColumnSelectEncoding.class),
-    @Type(name = "Consumer", value = ConsumerEncoding.class), @Type(name = "DbInsert", value = DbInsertEncoding.class),
+    @Type(name = "Consumer", value = ConsumerEncoding.class), @Type(name = "Counter", value = CounterEncoding.class),
+    @Type(name = "DbInsert", value = DbInsertEncoding.class),
     @Type(name = "DbQueryScan", value = QueryScanEncoding.class),
-    @Type(name = "DupElim", value = DupElimEncoding.class),
+    @Type(name = "DupElim", value = DupElimEncoding.class), @Type(name = "Empty", value = EmptyRelationEncoding.class),
     @Type(name = "EOSController", value = EOSControllerEncoding.class),
     @Type(name = "FileScan", value = FileScanEncoding.class), @Type(name = "Filter", value = FilterEncoding.class),
     @Type(name = "HyperShuffleProducer", value = HyperShuffleProducerEncoding.class),
     @Type(name = "HyperShuffleConsumer", value = HyperShuffleConsumerEncoding.class),
-    @Type(name = "IDBInput", value = IDBInputEncoding.class),
+    @Type(name = "IDBController", value = IDBControllerEncoding.class),
     @Type(name = "LocalMultiwayConsumer", value = LocalMultiwayConsumerEncoding.class),
     @Type(name = "LocalMultiwayProducer", value = LocalMultiwayProducerEncoding.class),
-    @Type(name = "Merge", value = MergeEncoding.class),
+    @Type(name = "Merge", value = MergeEncoding.class), @Type(name = "MergeJoin", value = MergeJoinEncoding.class),
     @Type(name = "MultiGroupByAggregate", value = MultiGroupByAggregateEncoding.class),
     @Type(name = "Rename", value = RenameEncoding.class),
     @Type(name = "RightHashCountingJoin", value = RightHashCountingJoinEncoding.class),
     @Type(name = "RightHashJoin", value = RightHashJoinEncoding.class),
+    @Type(name = "SeaFlowScan", value = SeaFlowFileScanEncoding.class),
     @Type(name = "ShuffleConsumer", value = ShuffleConsumerEncoding.class),
     @Type(name = "ShuffleProducer", value = ShuffleProducerEncoding.class),
     @Type(name = "SingleGroupByAggregate", value = SingleGroupByAggregateEncoding.class),
+    @Type(name = "Singleton", value = SingletonEncoding.class),
     @Type(name = "SinkRoot", value = SinkRootEncoding.class),
     @Type(name = "SymmetricHashJoin", value = SymmetricHashJoinEncoding.class),
     @Type(name = "SymmetricHashCountingJoin", value = SymmetricHashCountingJoinEncoding.class),

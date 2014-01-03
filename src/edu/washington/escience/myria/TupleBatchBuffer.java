@@ -11,22 +11,30 @@ import org.joda.time.DateTime;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.column.BooleanColumn;
-import edu.washington.escience.myria.column.BooleanColumnBuilder;
 import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.column.ColumnBuilder;
-import edu.washington.escience.myria.column.ColumnFactory;
 import edu.washington.escience.myria.column.DateTimeColumn;
-import edu.washington.escience.myria.column.DateTimeColumnBuilder;
 import edu.washington.escience.myria.column.DoubleColumn;
-import edu.washington.escience.myria.column.DoubleColumnBuilder;
 import edu.washington.escience.myria.column.FloatColumn;
-import edu.washington.escience.myria.column.FloatColumnBuilder;
 import edu.washington.escience.myria.column.IntColumn;
-import edu.washington.escience.myria.column.IntColumnBuilder;
 import edu.washington.escience.myria.column.LongColumn;
-import edu.washington.escience.myria.column.LongColumnBuilder;
 import edu.washington.escience.myria.column.StringColumn;
-import edu.washington.escience.myria.column.StringColumnBuilder;
+import edu.washington.escience.myria.column.builder.BooleanColumnBuilder;
+import edu.washington.escience.myria.column.builder.ColumnBuilder;
+import edu.washington.escience.myria.column.builder.ColumnFactory;
+import edu.washington.escience.myria.column.builder.DateTimeColumnBuilder;
+import edu.washington.escience.myria.column.builder.DoubleColumnBuilder;
+import edu.washington.escience.myria.column.builder.FloatColumnBuilder;
+import edu.washington.escience.myria.column.builder.IntColumnBuilder;
+import edu.washington.escience.myria.column.builder.LongColumnBuilder;
+import edu.washington.escience.myria.column.builder.StringColumnBuilder;
+import edu.washington.escience.myria.column.mutable.BooleanMutableColumn;
+import edu.washington.escience.myria.column.mutable.DateTimeMutableColumn;
+import edu.washington.escience.myria.column.mutable.DoubleMutableColumn;
+import edu.washington.escience.myria.column.mutable.FloatMutableColumn;
+import edu.washington.escience.myria.column.mutable.IntMutableColumn;
+import edu.washington.escience.myria.column.mutable.LongMutableColumn;
+import edu.washington.escience.myria.column.mutable.MutableColumn;
+import edu.washington.escience.myria.column.mutable.StringMutableColumn;
 
 /**
  * Used for creating TupleBatch objects on the fly. A helper class used in, e.g., the Scatter operator. Currently it
@@ -74,11 +82,12 @@ public class TupleBatchBuffer {
   }
 
   /**
-   * Append the tuple batch directly into readTuples.
+   * Append the tuple batch directly into readTuples. The tuple batch cannot have any invalid tuples.
    * 
    * @param tb the TB.
    */
   public final void appendTB(final TupleBatch tb) {
+    Preconditions.checkArgument(tb.isEOI() || tb.numTuples() == tb.getDataColumns().get(0).size());
     finishBatch();
     readyTuplesNum += tb.numTuples();
     readyTuples.add(tb.getDataColumns());
@@ -427,6 +436,43 @@ public class TupleBatchBuffer {
         break;
       case STRING_TYPE:
         ((StringColumnBuilder) dest).append(((StringColumn) sourceColumn).getString(sourceRow));
+        break;
+    }
+    columnPut(destColumn);
+  }
+
+  /**
+   * Append the specified value to the specified destination column in this TupleBatchBuffer from the source mutable
+   * column.
+   * 
+   * @param destColumn which column in this TBB the value will be inserted.
+   * @param sourceColumn the mutable column from which data will be retrieved.
+   * @param sourceRow the row in the source column from which data will be retrieved.
+   */
+  public final void put(final int destColumn, final MutableColumn<?> sourceColumn, final int sourceRow) {
+    checkPutIndex(destColumn);
+    ColumnBuilder<?> dest = currentBuildingColumns.get(destColumn);
+    switch (dest.getType()) {
+      case BOOLEAN_TYPE:
+        ((BooleanColumnBuilder) dest).append(((BooleanMutableColumn) sourceColumn).getBoolean(sourceRow));
+        break;
+      case DATETIME_TYPE:
+        ((DateTimeColumnBuilder) dest).append(((DateTimeMutableColumn) sourceColumn).getDateTime(sourceRow));
+        break;
+      case DOUBLE_TYPE:
+        ((DoubleColumnBuilder) dest).append(((DoubleMutableColumn) sourceColumn).getDouble(sourceRow));
+        break;
+      case FLOAT_TYPE:
+        ((FloatColumnBuilder) dest).append(((FloatMutableColumn) sourceColumn).getFloat(sourceRow));
+        break;
+      case INT_TYPE:
+        ((IntColumnBuilder) dest).append(((IntMutableColumn) sourceColumn).getInt(sourceRow));
+        break;
+      case LONG_TYPE:
+        ((LongColumnBuilder) dest).append(((LongMutableColumn) sourceColumn).getLong(sourceRow));
+        break;
+      case STRING_TYPE:
+        ((StringColumnBuilder) dest).append(((StringMutableColumn) sourceColumn).getString(sourceRow));
         break;
     }
     columnPut(destColumn);

@@ -8,8 +8,8 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.column.DoubleColumnBuilder;
 import edu.washington.escience.myria.column.LongColumn;
+import edu.washington.escience.myria.column.builder.DoubleColumnBuilder;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.UnaryOperator;
 

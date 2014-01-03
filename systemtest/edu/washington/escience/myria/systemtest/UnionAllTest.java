@@ -1,6 +1,6 @@
 package edu.washington.escience.myria.systemtest;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 import java.util.HashMap;
 
@@ -79,7 +79,6 @@ public class UnionAllTest extends SystemTestBase {
     final SinkRoot serverPlan = new SinkRoot(serverCollect);
 
     server.submitQueryPlan(serverPlan, workerPlans).sync();
-    assertTrue(serverPlan.getCount() == (numTbl1 + numTbl2));
-
+    assertEquals(numTbl1 + numTbl2, serverPlan.getCount());
   }
 }

@@ -3,6 +3,7 @@
  */
 package edu.washington.escience.myria.accessmethod;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedReader;
@@ -192,7 +193,7 @@ public class BenchmarkTest {
             count += tb.numTuples();
           }
         }
-        assertTrue(count == NUM_TUPLES);
+        assertEquals(NUM_TUPLES, count);
         scan.close();
       }
       t2 = System.nanoTime();
@@ -221,7 +222,7 @@ public class BenchmarkTest {
             count += tb.numTuples();
           }
         }
-        assertTrue(count == NUM_TUPLES);
+        assertEquals(NUM_TUPLES, count);
         scan.close();
       }
       t2 = System.nanoTime();
@@ -250,7 +251,7 @@ public class BenchmarkTest {
             count += tb.numTuples();
           }
         }
-        assertTrue(count == NUM_TUPLES);
+        assertEquals(NUM_TUPLES, count);
         scan.close();
       }
       t2 = System.nanoTime();
@@ -284,7 +285,7 @@ public class BenchmarkTest {
         if (numExpectedTuples == null) {
           numExpectedTuples = count;
         } else {
-          assertTrue(count == numExpectedTuples);
+          assertEquals(numExpectedTuples, Integer.valueOf(count));
         }
         scan.close();
       }
@@ -319,7 +320,7 @@ public class BenchmarkTest {
         if (numExpectedTuples == null) {
           numExpectedTuples = count;
         } else {
-          assertTrue(count == numExpectedTuples);
+          assertEquals(numExpectedTuples, Integer.valueOf(count));
         }
         scan.close();
       }
