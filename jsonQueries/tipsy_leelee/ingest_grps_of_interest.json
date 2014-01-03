@@ -8,5 +8,8 @@
     "column_types" : ["INT_TYPE"],
     "column_names" : ["grp"]
   },
-  "file_name" : "/Users/dhalperi/escience/myria/data_nocommit/tipsy/groups_of_interest.txt"
+  "source" : {
+    "data_type" : 'File',
+    "filename" : "/Users/dhalperi/escience/myria/data_nocommit/tipsy/groups_of_interest.txt"
+  }
 }
