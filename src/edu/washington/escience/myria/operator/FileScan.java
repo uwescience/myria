@@ -3,7 +3,6 @@ package edu.washington.escience.myria.operator;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.InputMismatchException;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Scanner;
@@ -119,22 +118,22 @@ public final class FileScan extends LeafOperator {
           switch (schema.getColumnType(count)) {
             case BOOLEAN_TYPE:
               if (scanner.hasNextBoolean()) {
-                buffer.putBoolean(count, scanner.nextBoolean());
+                buffer.putBoolean(count, Boolean.parseBoolean(scanner.next()));
               } else if (scanner.hasNextFloat()) {
-                buffer.putBoolean(count, scanner.nextFloat() != 0);
+                buffer.putBoolean(count, Float.parseFloat(scanner.next()) != 0);
               }
               break;
             case DOUBLE_TYPE:
-              buffer.putDouble(count, scanner.nextDouble());
+              buffer.putDouble(count, Double.parseDouble(scanner.next()));
               break;
             case FLOAT_TYPE:
-              buffer.putFloat(count, scanner.nextFloat());
+              buffer.putFloat(count, Float.parseFloat(scanner.next()));
               break;
             case INT_TYPE:
-              buffer.putInt(count, scanner.nextInt());
+              buffer.putInt(count, Integer.parseInt(scanner.next()));
               break;
             case LONG_TYPE:
-              buffer.putLong(count, scanner.nextLong());
+              buffer.putLong(count, Long.parseLong(scanner.next()));
               break;
             case STRING_TYPE:
               buffer.putString(count, scanner.next());
@@ -143,7 +142,7 @@ public final class FileScan extends LeafOperator {
               buffer.putDateTime(count, DateTimeUtils.parse(scanner.next()));
               break;
           }
-        } catch (final InputMismatchException e) {
+        } catch (final IllegalArgumentException e) {
           throw new DbException("Error parsing column " + count + " of row " + lineNumber + ": ", e);
         }
       }
