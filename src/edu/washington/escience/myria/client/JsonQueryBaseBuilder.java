@@ -38,7 +38,7 @@ import edu.washington.escience.myria.api.encoding.DupElimEncoding;
 import edu.washington.escience.myria.api.encoding.EOSControllerEncoding;
 import edu.washington.escience.myria.api.encoding.FileScanEncoding;
 import edu.washington.escience.myria.api.encoding.FilterEncoding;
-import edu.washington.escience.myria.api.encoding.IDBInputEncoding;
+import edu.washington.escience.myria.api.encoding.IDBControllerEncoding;
 import edu.washington.escience.myria.api.encoding.LocalMultiwayConsumerEncoding;
 import edu.washington.escience.myria.api.encoding.LocalMultiwayProducerEncoding;
 import edu.washington.escience.myria.api.encoding.OperatorEncoding;
@@ -54,11 +54,12 @@ import edu.washington.escience.myria.api.encoding.TableScanEncoding;
 import edu.washington.escience.myria.api.encoding.TipsyFileScanEncoding;
 import edu.washington.escience.myria.api.encoding.UnionAllEncoding;
 import edu.washington.escience.myria.expression.BooleanExpression;
+import edu.washington.escience.myria.io.FileSource;
 import edu.washington.escience.myria.operator.ColumnSelect;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.FileScan;
-import edu.washington.escience.myria.operator.IDBInput;
+import edu.washington.escience.myria.operator.IDBController;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
@@ -132,7 +133,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     OPERATOR_PREFICES.put(BroadcastConsumerEncoding.class, "bc");
     OPERATOR_PREFICES.put(SinkRootEncoding.class, "sink");
     OPERATOR_PREFICES.put(DbInsertEncoding.class, "insert");
-    OPERATOR_PREFICES.put(IDBInputEncoding.class, "idbinput");
+    OPERATOR_PREFICES.put(IDBControllerEncoding.class, "idbinput");
     OPERATOR_PREFICES.put(EOSControllerEncoding.class, "eosController");
     OPERATOR_PREFICES.put(TipsyFileScanEncoding.class, "tipsy");
     OPERATOR_PREFICES.put(FileScanEncoding.class, "file");
@@ -417,23 +418,23 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
                 new JsonQueryBaseBuilder[] { eosC }, NO_PREFERENCE);
         eosReceiver.setName("eosReceiver#" + i);
 
-        JsonQueryBaseBuilder idbI =
-            buildOperator(IDBInputEncoding.class, new String[] {
+        JsonQueryBaseBuilder idbC =
+            buildOperator(IDBControllerEncoding.class, new String[] {
                 "argInitialInput", "argIterationInput", "argEosControllerInput" }, new JsonQueryBaseBuilder[] {
                 initialInput, iterationInput, eosReceiver }, NO_PREFERENCE);
-        idbI.op.opName = "idbInput#" + i;
-        ((IDBInputEncoding) idbI.op).argSelfIdbId = i;
+        idbC.op.opName = "idbInput#" + i;
+        ((IDBControllerEncoding) idbC.op).argSelfIdbId = i;
 
         for (int j = 0; j < iterationBeginParent.children.length; j++) {
           JsonQueryBaseBuilder c = iterationBeginParent.children[j];
           if (c == iterationBeginPoint) {
-            iterationBeginParent.children[j] = idbI;
+            iterationBeginParent.children[j] = idbC;
           }
         }
 
-        idbI.parents.add(iterationBeginParent);
+        idbC.parents.add(iterationBeginParent);
 
-        eoiReceivers[i].children[0] = idbI;
+        eoiReceivers[i].children[0] = idbC;
 
       }
     }
@@ -861,7 +862,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
   public JsonQueryBaseBuilder fileScan(final String fileName, final String delimeter, final Schema outputSchema) {
     JsonQueryBaseBuilder scan = buildOperator(FileScanEncoding.class, ALL_WORKERS);
     ((FileScanEncoding) scan.op).delimiter = delimeter;
-    ((FileScanEncoding) scan.op).fileName = fileName;
+    ((FileScanEncoding) scan.op).source = new FileSource(fileName);
     ((FileScanEncoding) scan.op).schema = outputSchema;
     return scan;
   }
@@ -1073,7 +1074,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
   /**
    * A helper class to mark the place where the iteration starts.
    * */
-  private static final class IterateBeginPlaceHolder extends OperatorEncoding<IDBInput> {
+  private static final class IterateBeginPlaceHolder extends OperatorEncoding<IDBController> {
 
     /**
      * Used by java reflection.
@@ -1088,7 +1089,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     }
 
     @Override
-    public IDBInput construct(final Server server) throws MyriaApiException {
+    public IDBController construct(final Server server) throws MyriaApiException {
       throw new UnsupportedOperationException();
     }
 
@@ -1101,7 +1102,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
   /**
    * A helper class to mark the place where the iteration ends.
    * */
-  private static final class IterateEndPlaceHolder extends OperatorEncoding<IDBInput> {
+  private static final class IterateEndPlaceHolder extends OperatorEncoding<IDBController> {
 
     /**
      * The corresponding iteration begin placeholder.
@@ -1121,7 +1122,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     }
 
     @Override
-    public IDBInput construct(final Server server) throws MyriaApiException {
+    public IDBController construct(final Server server) throws MyriaApiException {
       throw new UnsupportedOperationException();
     }
 

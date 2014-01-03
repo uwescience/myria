@@ -1,7 +1,6 @@
 package edu.washington.escience.myria.client;
 
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
-import edu.washington.escience.myria.operator.IDBInput;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;

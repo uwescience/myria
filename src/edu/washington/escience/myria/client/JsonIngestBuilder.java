@@ -10,6 +10,8 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.api.MyriaApiException;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.DatasetEncoding;
+import edu.washington.escience.myria.io.ByteArraySource;
+import edu.washington.escience.myria.io.FileSource;
 
 /**
  * Json dataset ingest builder base. This class provides common building blocks for creating json dataset ingest.
@@ -28,9 +30,8 @@ public final class JsonIngestBuilder {
   public DatasetEncoding buildIngest(final byte[] data, final Schema dataSchema, final RelationKey ingestInto) {
     Preconditions.checkNotNull(data);
     DatasetEncoding de = new DatasetEncoding();
-    de.data = data;
+    de.source = new ByteArraySource(data);
     de.delimiter = null;
-    de.fileName = null;
     de.importFromDatabase = false;
     de.relationKey = ingestInto;
     de.schema = dataSchema;
@@ -63,9 +64,8 @@ public final class JsonIngestBuilder {
       final RelationKey ingestInto) {
 
     DatasetEncoding de = new DatasetEncoding();
-    de.data = null;
+    de.source = new FileSource(filename);
     de.delimiter = delimiter;
-    de.fileName = filename;
     de.importFromDatabase = false;
     de.relationKey = ingestInto;
     de.schema = dataSchema;
@@ -96,9 +96,8 @@ public final class JsonIngestBuilder {
   public DatasetEncoding buildIngest(final RelationKey ingestInto) {
 
     DatasetEncoding de = new DatasetEncoding();
-    de.data = null;
+    de.source = null;
     de.delimiter = null;
-    de.fileName = null;
     de.importFromDatabase = true;
     de.relationKey = ingestInto;
     de.schema = null;
