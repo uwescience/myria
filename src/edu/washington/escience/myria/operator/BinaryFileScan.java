@@ -1,11 +1,12 @@
 package edu.washington.escience.myria.operator;
 
+import java.io.BufferedInputStream;
 import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.channels.FileChannel;
+import java.io.InputStream;
 import java.util.Objects;
 
 import com.google.common.collect.ImmutableMap;
@@ -35,14 +36,12 @@ public class BinaryFileScan extends LeafOperator {
   private transient TupleBatchBuffer buffer;
   /** Indicates the endianess of the bin file to read. */
   private final boolean isLittleEndian;
-  /** FileInputStream for the bin file. */
-  private transient FileInputStream fStream;
   /** Data input to read data from the bin file. */
   private transient DataInput dataInput;
-  /** FileChannel for fStream. */
-  private transient FileChannel fc;
   /** Keeps track of the file size. */
   private long fileLength;
+  /** The sum of all column sizes in bytes. */
+  private int tupleSize = 0;
 
   /**
    * Construct a new BinaryFileScan object that reads the given binary file and create tuples from the file data that
@@ -79,27 +78,24 @@ public class BinaryFileScan extends LeafOperator {
           switch (schema.getColumnType(count)) {
             case DOUBLE_TYPE:
               buffer.putDouble(count, dataInput.readDouble());
-              fileLength -= 8;
               break;
             case FLOAT_TYPE:
               float readFloat = dataInput.readFloat();
               buffer.putFloat(count, readFloat);
-              fileLength -= 4;
               break;
             case INT_TYPE:
               buffer.putInt(count, dataInput.readInt());
-              fileLength -= 4;
               break;
             case LONG_TYPE:
               long readLong = dataInput.readLong();
               buffer.putLong(count, readLong);
-              fileLength -= 8;
               break;
             default:
               throw new UnsupportedOperationException(
                   "BinaryFileScan only support reading fixed width type from the binary file.");
           }
         }
+        fileLength -= tupleSize;
       }
     } catch (IOException e) {
       throw new DbException(e);
@@ -118,21 +114,41 @@ public class BinaryFileScan extends LeafOperator {
   @Override
   protected final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     buffer = new TupleBatchBuffer(getSchema());
-    if (fileName != null) {
-      fStream = null;
-      try {
-        fStream = new FileInputStream(fileName);
-        fc = fStream.getChannel();
-        fileLength = fc.size();
-      } catch (FileNotFoundException e) {
-        throw new DbException(e);
-      } catch (IOException e) {
-        throw new DbException(e);
-      }
-      if (isLittleEndian) {
-        dataInput = new LittleEndianDataInputStream(fStream);
-      } else {
-        dataInput = new DataInputStream(fStream);
+    InputStream inputStream;
+    try {
+      FileInputStream fStream = new FileInputStream(Objects.requireNonNull(fileName));
+      fileLength = fStream.getChannel().size();
+      inputStream = new BufferedInputStream(fStream);
+    } catch (FileNotFoundException e) {
+      throw new DbException(e);
+    } catch (IOException e) {
+      throw new DbException(e);
+    }
+
+    if (isLittleEndian) {
+      dataInput = new LittleEndianDataInputStream(inputStream);
+    } else {
+      dataInput = new DataInputStream(inputStream);
+    }
+
+    tupleSize = 0;
+    for (int count = 0; count < schema.numColumns(); ++count) {
+      switch (schema.getColumnType(count)) {
+        case DOUBLE_TYPE:
+          tupleSize += 8;
+          break;
+        case FLOAT_TYPE:
+          tupleSize += 4;
+          break;
+        case INT_TYPE:
+          tupleSize += 4;
+          break;
+        case LONG_TYPE:
+          tupleSize += 8;
+          break;
+        default:
+          throw new UnsupportedOperationException(
+              "BinaryFileScan only supports reading fixed-width types from the binary file.");
       }
     }
   }
