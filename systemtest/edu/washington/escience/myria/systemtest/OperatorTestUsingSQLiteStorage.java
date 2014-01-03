@@ -1,6 +1,6 @@
 package edu.washington.escience.myria.systemtest;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 import java.util.HashMap;
 import java.util.List;
@@ -26,6 +26,7 @@ import edu.washington.escience.myria.operator.RightHashCountingJoin;
 import edu.washington.escience.myria.operator.RightHashJoin;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.StreamingStateWrapper;
 import edu.washington.escience.myria.operator.SymmetricHashCountingJoin;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
@@ -74,11 +75,11 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
     final DbQueryScan scanTable = new DbQueryScan(testtableKey, schema);
 
-    final DupElim dupElimOnScan = new DupElim(scanTable);
+    final StreamingStateWrapper dupElimOnScan = new StreamingStateWrapper(scanTable, new DupElim());
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     final CollectProducer cp1 = new CollectProducer(dupElimOnScan, collectID, workerIDs[0]);
     final CollectConsumer cc1 = new CollectConsumer(cp1.getSchema(), collectID, workerIDs);
-    final DupElim dumElim3 = new DupElim(cc1);
+    final StreamingStateWrapper dumElim3 = new StreamingStateWrapper(cc1, new DupElim());
     workerPlans
         .put(workerIDs[0], new RootOperator[] { cp1, new CollectProducer(dumElim3, serverReceiveID, MASTER_ID) });
     workerPlans.put(workerIDs[1], new RootOperator[] { cp1 });
@@ -129,7 +130,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
     final DbQueryScan scanTable = new DbQueryScan(testtableKey, schema);
 
-    final DupElim dupElimOnScan = new DupElim(scanTable);
+    final StreamingStateWrapper dupElimOnScan = new StreamingStateWrapper(scanTable, new DupElim());
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
 
     final CollectProducer cp1 = new CollectProducer(dupElimOnScan, serverReceiveID, MASTER_ID);
@@ -428,7 +429,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
         actual += tb.getLong(0, 0);
       }
     }
-    assertTrue(actual == expectedCount);
+    assertEquals(expectedCount, actual);
   }
 
   @Test
@@ -483,7 +484,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
         actual += tb.getLong(0, 0);
       }
     }
-    assertTrue(actual == expectedCount);
+    assertEquals(expectedCount, actual);
   }
 
   @Test

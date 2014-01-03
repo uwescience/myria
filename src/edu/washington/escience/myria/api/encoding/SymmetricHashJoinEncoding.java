@@ -5,8 +5,8 @@ import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.Operator;
+import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.parallel.Server;
 
 public class SymmetricHashJoinEncoding extends OperatorEncoding<SymmetricHashJoin> {
@@ -17,6 +17,8 @@ public class SymmetricHashJoinEncoding extends OperatorEncoding<SymmetricHashJoi
   public int[] argColumns2;
   public int[] argSelect1;
   public int[] argSelect2;
+  public boolean argSetSemanticsLeft = false;
+  public boolean argSetSemanticsRight = false;
   private static final List<String> requiredArguments = ImmutableList.of("argChild1", "argChild2", "argColumns1",
       "argColumns2", "argSelect1", "argSelect2");
 
@@ -27,7 +29,8 @@ public class SymmetricHashJoinEncoding extends OperatorEncoding<SymmetricHashJoi
 
   @Override
   public SymmetricHashJoin construct(Server server) {
-    return new SymmetricHashJoin(argColumnNames, null, null, argColumns1, argColumns2, argSelect1, argSelect2);
+    return new SymmetricHashJoin(argColumnNames, null, null, argColumns1, argColumns2, argSelect1, argSelect2,
+        argSetSemanticsLeft, argSetSemanticsRight);
   }
 
   @Override

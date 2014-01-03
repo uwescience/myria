@@ -12,6 +12,8 @@ import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.builder.ColumnBuilder;
+import edu.washington.escience.myria.column.builder.DoubleColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.DoubleColumnMessage;
 
@@ -37,7 +39,7 @@ public final class DoubleColumn implements Column<Double> {
    * @param data the data
    * @param numData number of tuples.
    * */
-  DoubleColumn(final double[] data, final int numData) {
+  public DoubleColumn(final double[] data, final int numData) {
     Preconditions.checkNotNull(data);
     Preconditions.checkArgument(numData <= TupleBatch.BATCH_SIZE);
     this.data = data;

@@ -2,7 +2,6 @@ package edu.washington.escience.myria.operator;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 import java.util.HashMap;
 
@@ -53,7 +52,7 @@ public class AggregateTest {
     while (!agg.eos()) {
       tb = agg.nextReady();
       if (tb != null) {
-        assertTrue(Double.compare(sumID * 1.0 / numTuples, tb.getDouble(0, 0)) == 0);
+        assertEquals(sumID * 1.0 / numTuples, tb.getDouble(0, 0), 0.0001);
       }
     }
     agg.close();
@@ -72,7 +71,7 @@ public class AggregateTest {
     while (!agg.eos()) {
       TupleBatch tb = agg.nextReady();
       if (tb != null) {
-        assertTrue(Double.compare(sumID * 1.0 / numTuples, tb.getDouble(0, 0)) == 0);
+        assertEquals(sumID * 1.0 / numTuples, tb.getDouble(0, 0), 0.0001);
       }
     }
     agg.close();

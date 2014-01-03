@@ -7,7 +7,7 @@
 			[
 			{
 			  "op_name" : "cc",
-			  "op_type" : "CollectConsumer"
+			  "op_type" : "CollectConsumer",
 			  "arg_operator_id" : "cpc"
 			}
 			],
@@ -21,18 +21,18 @@
 			[
 			{
 				"op_name" : "eoiReceiverA",
-				"op_type" : "Consumer"
+				"op_type" : "Consumer",
 				"arg_operator_id" : "idbinputa"
 			},
 			{
-				"op_name" : "unionAll",
+				"op_name" : "merge",
 				"op_type" : "UnionAll",
 				"arg_children" : ["eoiReceiverA"]
 			},
 			{
 				"op_name" : "eosController",
 				"op_type" : "EOSController",
-				"arg_child" : "unionAll"
+				"arg_child" : "merge"
 			}
 			],
 			"workers": 
@@ -59,7 +59,7 @@
 				"arg_pf" : {
 					"type" : "SingleFieldHash",
 					"index" : 0
-				},
+				}
 			}
 			]
 		},
@@ -106,10 +106,14 @@
 			},
 			{
 				"op_name" : "idbinputa",
-				"op_type" : "IDBInput",
+				"op_type" : "IDBController",
 				"arg_self_idb_id" : "0",
 				"arg_initial_input" : "sc2a",
 				"arg_iteration_input" : "sc3a",
+				"arg_state" : 
+				{
+					"type" : "DupElim"
+				},
 				"arg_eos_controller_input" : "eosReceivera"
 			},
 			{
@@ -125,8 +129,7 @@
 			{
 				"op_name" : "send2joina",
 				"op_type" : "LocalMultiwayConsumer",
-				"arg_operator_id" : "mpa",
-				"arg_schema" : {"column_types":["LONG_TYPE"],"column_names":["followee"]}
+				"arg_operator_id" : "mpa"
 			},
 			{
 				"op_name" : "sc1g",
@@ -167,7 +170,7 @@
 				"op_type" : "Aggregate",
 				"arg_child" : "send2server",
 				"arg_agg_fields" : ["0"],
-				"arg_agg_ops" : ["1"]
+				"arg_agg_operators" : [["AGG_OP_COUNT"]]
 			},
 			{
 				"op_name" : "cpc",

@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.operator;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -82,7 +83,7 @@ public class SQLiteInsertTest {
             + ";");
     assertTrue(statement.step());
     final int inserted = statement.columnInt(0);
-    assertTrue(inserted == NUM_TUPLES);
+    assertEquals(NUM_TUPLES, inserted);
     sqliteConnection.dispose();
   }
 

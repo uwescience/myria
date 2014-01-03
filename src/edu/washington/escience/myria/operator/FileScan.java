@@ -1,30 +1,22 @@
 package edu.washington.escience.myria.operator;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.SequenceInputStream;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Scanner;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
+import javax.annotation.Nullable;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
+import edu.washington.escience.myria.io.DataSource;
+import edu.washington.escience.myria.io.FileSource;
 import edu.washington.escience.myria.util.DateTimeUtils;
 
 /**
@@ -34,17 +26,14 @@ import edu.washington.escience.myria.util.DateTimeUtils;
  * 
  */
 public final class FileScan extends LeafOperator {
-  /** The input stream that this scan is reading from. */
-  private transient InputStream inputStream = null;
   /** The Schema of the relation stored in this file. */
   private final Schema schema;
   /** Scanner used to parse the file. */
   private transient Scanner scanner = null;
   /** A user-provided file delimiter; if null, the system uses the default whitespace delimiter. */
   private final String delimiter;
-
-  /** The filename of the input, if any. */
-  private String filename = null;
+  /** The data source that will generate the input stream to be read at initialization. */
+  private final DataSource source;
 
   /** Holds the tuples that are ready for release. */
   private transient TupleBatchBuffer buffer;
@@ -63,58 +52,48 @@ public final class FileScan extends LeafOperator {
    * Construct a new FileScan object to read from the specified file. This file is assumed to be whitespace-separated
    * and have one record per line.
    * 
-   * @param filename the file containing the relation.
+   * @param filename file containing the data to be scanned.
    * @param schema the Schema of the relation contained in the file.
-   * @throws FileNotFoundException if the given filename does not exist.
    */
-  public FileScan(final String filename, final Schema schema) throws FileNotFoundException {
+  public FileScan(final String filename, final Schema schema) {
     this(filename, schema, null);
+  }
+
+  /**
+   * Construct a new FileScan object to read from the specified file. This file is assumed to be whitespace-separated
+   * and have one record per line.
+   * 
+   * @param source the data source containing the relation.
+   * @param schema the Schema of the relation contained in the file.
+   */
+  public FileScan(final DataSource source, final Schema schema) {
+    this(source, schema, null);
   }
 
   /**
    * Construct a new FileScan object to read from the specified file. This file is assumed to be whitespace-separated
    * and have one record per line. If delimiter is non-null, the system uses its value as a delimiter.
    * 
-   * @param filename the file containing the relation.
+   * @param filename file containing the data to be scanned.
    * @param schema the Schema of the relation contained in the file.
    * @param delimiter An optional override file delimiter.
-   * @throws FileNotFoundException if the given filename does not exist.
    */
-  public FileScan(final String filename, final Schema schema, final String delimiter) throws FileNotFoundException {
-    Objects.requireNonNull(filename);
-    Objects.requireNonNull(schema);
-    this.schema = schema;
-    this.delimiter = delimiter;
-    this.filename = filename;
+  public FileScan(final String filename, final Schema schema, @Nullable final String delimiter) {
+    this(new FileSource(filename), schema, delimiter);
   }
 
   /**
-   * Construct a new FileScan object to read from a inputStream. If commaIsDelimiter is true, then records may be
-   * whitespace or comma-separated. inputStream is assumed to be set later by setInputStream().
+   * Construct a new FileScan object to read from the specified file. This file is assumed to be whitespace-separated
+   * and have one record per line. If delimiter is non-null, the system uses its value as a delimiter.
    * 
+   * @param source the data source containing the relation.
    * @param schema the Schema of the relation contained in the file.
-   * @param delimiter An optional non-default file delimiter
+   * @param delimiter An optional override file delimiter.
    */
-  public FileScan(final Schema schema, final String delimiter) {
-    this.schema = schema;
+  public FileScan(final DataSource source, final Schema schema, final String delimiter) {
+    this.source = Objects.requireNonNull(source);
+    this.schema = Objects.requireNonNull(schema);
     this.delimiter = delimiter;
-  }
-
-  /**
-   * Construct a new FileScan object to read from a input stream. The data is assumed to be whitespace-separated and
-   * have one record per line. inputStream is assumed to be set later by setInputStream().
-   * 
-   * @param schema the Schema of the relation contained in the file.
-   */
-  public FileScan(final Schema schema) {
-    this(schema, null);
-  }
-
-  /**
-   * @param inputStream the data containing the relation.
-   */
-  public void setInputStream(final InputStream inputStream) {
-    this.inputStream = inputStream;
   }
 
   @Override
@@ -192,33 +171,11 @@ public final class FileScan extends LeafOperator {
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     buffer = new TupleBatchBuffer(getSchema());
-    if (filename != null) {
-      // Use Hadoop's URI parsing machinery to extract an input stream for the underlying "file"
-      Configuration conf = new Configuration();
-      try {
-        FileSystem fs = FileSystem.get(URI.create(filename), conf);
-        Path rootPath = new Path(filename);
-        FileStatus[] statii = fs.globStatus(rootPath);
-
-        if (statii == null || statii.length == 0) {
-          throw new FileNotFoundException(filename);
-        }
-
-        List<InputStream> streams = new ArrayList<InputStream>();
-        for (FileStatus status : statii) {
-          Path path = status.getPath();
-
-          LOGGER.debug("Incorporating input file: " + path);
-          streams.add(fs.open(path));
-        }
-
-        inputStream = new SequenceInputStream(java.util.Collections.enumeration(streams));
-      } catch (IOException ex) {
-        throw new DbException(ex);
-      }
+    try {
+      scanner = new Scanner(new BufferedReader(new InputStreamReader(source.getInputStream())));
+    } catch (IOException e) {
+      throw new DbException(e);
     }
-    Preconditions.checkArgument(inputStream != null, "FileScan input stream has not been set!");
-    scanner = new Scanner(new BufferedReader(new InputStreamReader(inputStream)));
     if (delimiter != null) {
       scanner.useDelimiter("(\\r\\n)|\\n|(\\Q" + delimiter + "\\E)");
     }

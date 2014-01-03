@@ -1,7 +1,8 @@
-package edu.washington.escience.myria.column;
+package edu.washington.escience.myria.column.builder;
 
 import java.nio.BufferOverflowException;
-import java.nio.IntBuffer;
+import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -11,15 +12,17 @@ import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.FloatColumn;
+import edu.washington.escience.myria.column.mutable.FloatMutableColumn;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 
 /**
- * A column of Integer values.
+ * A column of Float values.
  * 
  */
-public final class IntColumnBuilder implements ColumnBuilder<Integer> {
-  /** View of the column data as ints. */
-  private final IntBuffer data;
+public final class FloatColumnBuilder implements ColumnBuilder<Float> {
+  /** View of the column data as floats. */
+  private final FloatBuffer data;
 
   /**
    * If the builder has built the column.
@@ -27,8 +30,8 @@ public final class IntColumnBuilder implements ColumnBuilder<Integer> {
   private boolean built = false;
 
   /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
-  public IntColumnBuilder() {
-    data = IntBuffer.allocate(TupleBatch.BATCH_SIZE);
+  public FloatColumnBuilder() {
+    data = FloatBuffer.allocate(TupleBatch.BATCH_SIZE);
   }
 
   /**
@@ -36,30 +39,35 @@ public final class IntColumnBuilder implements ColumnBuilder<Integer> {
    * 
    * @param data the underlying data
    * */
-  private IntColumnBuilder(final IntBuffer data) {
+  private FloatColumnBuilder(final FloatBuffer data) {
     this.data = data;
   }
 
   /**
-   * Constructs an IntColumn by deserializing the given ColumnMessage.
+   * Constructs a FloatColumn by deserializing the given ColumnMessage.
    * 
    * @param message a ColumnMessage containing the contents of this column.
    * @param numTuples num tuples in the column message
    * @return the built column
    */
-  public static IntColumn buildFromProtobuf(final ColumnMessage message, final int numTuples) {
-    if (message.getType().ordinal() != ColumnMessage.Type.INT_VALUE) {
-      throw new IllegalArgumentException("Trying to construct IntColumn from non-INT ColumnMessage");
+  public static FloatColumn buildFromProtobuf(final ColumnMessage message, final int numTuples) {
+    if (message.getType().ordinal() != ColumnMessage.Type.FLOAT_VALUE) {
+      throw new IllegalArgumentException("Trying to construct FloatColumn from non-FLOAT ColumnMessage");
     }
-    if (!message.hasIntColumn()) {
-      throw new IllegalArgumentException("ColumnMessage has type INT but no IntColumn");
+    if (!message.hasFloatColumn()) {
+      throw new IllegalArgumentException("ColumnMessage has type FLOAT but no FloatColumn");
     }
-    return new IntProtoColumn(message.getIntColumn());
+    ByteBuffer dataBytes = message.getFloatColumn().getData().asReadOnlyByteBuffer();
+    FloatBuffer data = FloatBuffer.allocate(numTuples);
+    for (int i = 0; i < numTuples; i++) {
+      data.put(dataBytes.getFloat());
+    }
+    return new FloatColumn(data.array(), numTuples);
   }
 
   @Override
   public Type getType() {
-    return Type.INT_TYPE;
+    return Type.FLOAT_TYPE;
   }
 
   /**
@@ -67,38 +75,38 @@ public final class IntColumnBuilder implements ColumnBuilder<Integer> {
    * 
    * @param value element to be inserted.
    * @return this column.
-   * @throws BufferOverflowException if the column is already full
+   * @throws BufferOverflowException if exceeds buffer up bound.
    */
-  public IntColumnBuilder append(final int value) throws BufferOverflowException {
+  public FloatColumnBuilder append(final float value) throws BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
     data.put(value);
     return this;
   }
 
   @Override
-  public IntColumnBuilder appendObject(final Object value) throws BufferOverflowException {
+  public FloatColumnBuilder appendObject(final Object value) throws BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return append((Integer) value);
+    return append((Float) value);
   }
 
   @Override
-  public IntColumnBuilder appendFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException,
+  public FloatColumnBuilder appendFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException,
       BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return append(resultSet.getInt(jdbcIndex));
+    return append(resultSet.getFloat(jdbcIndex));
   }
 
   @Override
-  public IntColumnBuilder appendFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException,
+  public FloatColumnBuilder appendFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException,
       BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return append(statement.columnInt(index));
+    return append((float) statement.columnDouble(index));
   }
 
   @Override
-  public IntColumnBuilder append(final Integer value) {
+  public FloatColumnBuilder append(final Float value) throws BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return append(value.intValue());
+    return append(value.floatValue());
   }
 
   @Override
@@ -107,15 +115,21 @@ public final class IntColumnBuilder implements ColumnBuilder<Integer> {
   }
 
   @Override
-  public IntColumn build() {
+  public FloatColumn build() {
     built = true;
-    return new IntArrayColumn(data.array(), data.position());
+    return new FloatColumn(data.array(), data.position());
+  }
+
+  @Override
+  public FloatMutableColumn buildMutable() {
+    built = true;
+    return new FloatMutableColumn(data.array(), data.position());
   }
 
   @Override
   @Deprecated
-  public IntColumnBuilder replace(final int idx, final Integer value) throws IndexOutOfBoundsException {
-    return replace(idx, value.intValue());
+  public FloatColumnBuilder replace(final int idx, final Float value) throws IndexOutOfBoundsException {
+    return replace(idx, value.floatValue());
   }
 
   /**
@@ -126,7 +140,7 @@ public final class IntColumnBuilder implements ColumnBuilder<Integer> {
    * @return this column builder.
    * @throws IndexOutOfBoundsException if the idx exceeds the currently valid indices, i.e. the currently built size.
    */
-  public IntColumnBuilder replace(final int idx, final int value) throws IndexOutOfBoundsException {
+  public FloatColumnBuilder replace(final int idx, final float value) throws IndexOutOfBoundsException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
     Preconditions.checkElementIndex(idx, data.position());
     data.put(idx, value);
@@ -134,7 +148,7 @@ public final class IntColumnBuilder implements ColumnBuilder<Integer> {
   }
 
   @Override
-  public IntColumnBuilder expand(final int size) {
+  public FloatColumnBuilder expand(final int size) {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
     Preconditions.checkArgument(size >= 0);
     data.position(data.position() + size);
@@ -142,7 +156,7 @@ public final class IntColumnBuilder implements ColumnBuilder<Integer> {
   }
 
   @Override
-  public IntColumnBuilder expandAll() {
+  public FloatColumnBuilder expandAll() {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
     data.position(data.capacity());
     return this;
@@ -150,7 +164,7 @@ public final class IntColumnBuilder implements ColumnBuilder<Integer> {
 
   @Override
   @Deprecated
-  public Integer get(final int row) {
+  public Float get(final int row) {
     return data.get(row);
   }
 
@@ -158,15 +172,14 @@ public final class IntColumnBuilder implements ColumnBuilder<Integer> {
    * @param row the row to get
    * @return primitive value of the row
    * */
-  public int getInt(final int row) {
+  public float getFloat(final int row) {
     return data.get(row);
   }
 
   @Override
-  public IntColumnBuilder forkNewBuilder() {
-    int[] arr = new int[data.array().length];
+  public FloatColumnBuilder forkNewBuilder() {
+    float[] arr = new float[data.array().length];
     System.arraycopy(data.array(), 0, arr, 0, data.position());
-    return new IntColumnBuilder((IntBuffer) IntBuffer.wrap(arr).position(data.position()).limit(data.limit()));
+    return new FloatColumnBuilder((FloatBuffer) FloatBuffer.wrap(arr).position(data.position()).limit(data.limit()));
   }
-
 }

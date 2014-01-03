@@ -414,6 +414,16 @@ public final class TestUtils {
     return result;
   }
 
+  public static int[] randomInt(final int min, final int max, final int size) {
+    final int[] result = new int[size];
+    final Random r = new Random();
+    final int top = max - min + 1;
+    for (int i = 0; i < size; i++) {
+      result[i] = r.nextInt(top) + min;
+    }
+    return result;
+  }
+
   public static long[] randomLong(final long min, final long max, final int size) {
     final long[] result = new long[size];
     final long top = max - min + 1;
