@@ -142,6 +142,20 @@ public final class Schema implements Serializable {
   }
 
   /**
+   * Create a new Schema using an existing Schema and a new column.
+   * 
+   * @param schema the existing schema.
+   * @param type the type of the new column.
+   * @param name the name of the new column.
+   * @return the new Schema.
+   */
+  public static Schema appendColumn(final Schema schema, final Type type, final String name) {
+    List<Type> types = ImmutableList.<Type> builder().addAll(schema.getColumnTypes()).add(type).build();
+    List<String> names = ImmutableList.<String> builder().addAll(schema.getColumnNames()).add(name).build();
+    return new Schema(types, names);
+  }
+
+  /**
    * Merge two Schemas into one. The result has the columns of the first concatenated with the columns of the second.
    * <p>
    * Note that if there are duplicate column names from the two merging schemas, the duplicate columns from the first

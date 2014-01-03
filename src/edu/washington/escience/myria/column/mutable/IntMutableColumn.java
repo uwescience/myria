@@ -75,5 +75,5 @@ public abstract class IntMutableColumn implements MutableColumn<Integer> {
   }
 
   @Override
-  abstract public IntMutableColumn clone();
+  public abstract IntMutableColumn clone();
 }
