@@ -179,9 +179,6 @@ public final class RightHashJoin extends BinaryOperator {
     leftAnswerColumns = MyriaArrayUtils.checkSet(answerColumns1);
     rightAnswerColumns = MyriaArrayUtils.checkSet(answerColumns2);
 
-    if (left != null && right != null) {
-      generateSchema();
-    }
   }
 
   /**
@@ -378,8 +375,6 @@ public final class RightHashJoin extends BinaryOperator {
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     final Operator right = getRight();
     rightHashTableIndices = new TIntObjectHashMap<TIntList>();
-
-    generateSchema();
 
     rightHashTable = new TupleBuffer(right.getSchema());
     ans = new TupleBatchBuffer(getSchema());
