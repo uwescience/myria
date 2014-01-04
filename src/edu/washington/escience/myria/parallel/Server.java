@@ -1286,10 +1286,11 @@ public final class Server {
   /**
    * Computes and returns the status of queries that have been submitted to Myria.
    * 
+   * @param limit the maximum number of results to return. Any value <= 0 is interpreted as all results.
    * @throws CatalogException if there is an error in the catalog.
    * @return a list of the status of every query that has been submitted to Myria.
    */
-  public List<QueryStatusEncoding> getQueries() throws CatalogException {
+  public List<QueryStatusEncoding> getQueries(final int limit) throws CatalogException {
     List<QueryStatusEncoding> ret = new LinkedList<QueryStatusEncoding>();
 
     /* Begin by adding the status for all the active queries. */
@@ -1306,7 +1307,7 @@ public final class Server {
     }
 
     /* Now add in the status for all the inactive (finished, killed, etc.) queries. */
-    for (QueryStatusEncoding q : catalog.getQueries()) {
+    for (QueryStatusEncoding q : catalog.getQueries(limit)) {
       if (!activeQueryIds.contains(q.queryId)) {
         ret.add(q);
       }

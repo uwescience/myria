@@ -1182,10 +1182,11 @@ public final class MasterCatalog {
   /**
    * Get the status of all queries in the system.
    * 
+   * @param limit the maximum number of results to return. Any value <= 0 is interpreted as all results.
    * @return a list of the status of all queries.
    * @throws CatalogException if there is an error in the MasterCatalog.
    */
-  public List<QueryStatusEncoding> getQueries() throws CatalogException {
+  public List<QueryStatusEncoding> getQueries(final int limit) throws CatalogException {
     if (isClosed) {
       throw new CatalogException("MasterCatalog is closed.");
     }
@@ -1196,9 +1197,17 @@ public final class MasterCatalog {
         protected List<QueryStatusEncoding> job(final SQLiteConnection sqliteConnection) throws CatalogException,
             SQLiteException {
           try {
-            SQLiteStatement statement =
-                sqliteConnection
-                    .prepare("SELECT query_id, raw_query,logical_ra,physical_plan,submit_time,start_time,finish_time,elapsed_nanos,status FROM queries ORDER BY query_id DESC;");
+            SQLiteStatement statement;
+            if (limit <= 0) {
+              String sql =
+                  "SELECT query_id,raw_query,logical_ra,physical_plan,submit_time,start_time,finish_time,elapsed_nanos,status FROM queries ORDER BY query_id DESC;";
+              statement = sqliteConnection.prepare(sql);
+            } else {
+              String sql =
+                  "SELECT query_id,raw_query,logical_ra,physical_plan,submit_time,start_time,finish_time,elapsed_nanos,status FROM queries ORDER BY query_id DESC LIMIT ?;";
+              statement = sqliteConnection.prepare(sql);
+              statement.bind(1, limit);
+            }
             statement.step();
             List<QueryStatusEncoding> ret = new LinkedList<QueryStatusEncoding>();
             while (statement.hasRow()) {

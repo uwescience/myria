@@ -14,6 +14,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -25,6 +26,7 @@ import javax.ws.rs.core.UriInfo;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.base.Objects;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
@@ -237,12 +239,17 @@ public final class QueryResource {
    * Get information about a query. This includes when it started, when it finished, its URL, etc.
    * 
    * @param uriInfo the URL of the current request.
+   * @param limit the maximum number of results to return. If null, the default of
+   *          {@link MyriaApiConstants.MYRIA_API_DEFAULT_NUM_RESULTS} is used. Any value <= 0 is interpreted as all
+   *          results.
    * @return information about the query.
    * @throws CatalogException if there is an error in the catalog.
    */
   @GET
-  public Response getQueries(@Context final UriInfo uriInfo) throws CatalogException {
-    List<QueryStatusEncoding> queries = server.getQueries();
+  public Response getQueries(@Context final UriInfo uriInfo, @QueryParam("limit") final Integer limit)
+      throws CatalogException {
+    int realLimit = Objects.firstNonNull(limit, MyriaApiConstants.MYRIA_API_DEFAULT_NUM_RESULTS);
+    List<QueryStatusEncoding> queries = server.getQueries(realLimit);
     for (QueryStatusEncoding status : queries) {
       status.url = getCanonicalResourcePath(uriInfo, status.queryId);
     }
