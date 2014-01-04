@@ -242,14 +242,16 @@ public final class QueryResource {
    * @param limit the maximum number of results to return. If null, the default of
    *          {@link MyriaApiConstants.MYRIA_API_DEFAULT_NUM_RESULTS} is used. Any value <= 0 is interpreted as all
    *          results.
+   * @param maxId the largest query ID returned. If null or <= 0, all queries will be returned.
    * @return information about the query.
    * @throws CatalogException if there is an error in the catalog.
    */
   @GET
-  public Response getQueries(@Context final UriInfo uriInfo, @QueryParam("limit") final Integer limit)
-      throws CatalogException {
+  public Response getQueries(@Context final UriInfo uriInfo, @QueryParam("limit") final Integer limit,
+      @QueryParam("max") final Integer maxId) throws CatalogException {
     int realLimit = Objects.firstNonNull(limit, MyriaApiConstants.MYRIA_API_DEFAULT_NUM_RESULTS);
-    List<QueryStatusEncoding> queries = server.getQueries(realLimit);
+    int realMaxId = Objects.firstNonNull(maxId, 0);
+    List<QueryStatusEncoding> queries = server.getQueries(realLimit, realMaxId);
     for (QueryStatusEncoding status : queries) {
       status.url = getCanonicalResourcePath(uriInfo, status.queryId);
     }
