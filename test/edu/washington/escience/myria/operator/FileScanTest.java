@@ -2,11 +2,10 @@ package edu.washington.escience.myria.operator;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintStream;
+import java.nio.file.Paths;
 
 import org.junit.Test;
 
@@ -16,6 +15,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.io.ByteArraySource;
 
 public class FileScanTest {
 
@@ -45,13 +45,8 @@ public class FileScanTest {
    */
   private static int getRowCount(final String filename, final Schema schema, final String delimiter)
       throws DbException, InterruptedException {
-    final String realFilename = "testdata" + File.separatorChar + "filescan" + File.separatorChar + filename;
-    FileScan fileScan;
-    try {
-      fileScan = new FileScan(realFilename, schema, delimiter);
-    } catch (FileNotFoundException e) {
-      throw new DbException(e);
-    }
+    final String realFilename = Paths.get("testdata", "filescan", filename).toString();
+    FileScan fileScan = new FileScan(realFilename, schema, delimiter);
     return getRowCount(fileScan);
   }
 
@@ -151,8 +146,9 @@ public class FileScanTest {
       printedBytes.print('\n');
     }
     printedBytes.flush();
-    FileScan scanBytes = new FileScan(Schema.of(ImmutableList.of(Type.INT_TYPE), ImmutableList.of("col1")));
-    scanBytes.setInputStream(new ByteArrayInputStream(bytes.toByteArray()));
+    FileScan scanBytes =
+        new FileScan(new ByteArraySource(bytes.toByteArray()), Schema.of(ImmutableList.of(Type.INT_TYPE), ImmutableList
+            .of("col1")));
     assertEquals(2 * TupleBatch.BATCH_SIZE, getRowCount(scanBytes));
   }
 

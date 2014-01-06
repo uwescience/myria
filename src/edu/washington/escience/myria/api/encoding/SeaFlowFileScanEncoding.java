@@ -5,21 +5,18 @@ import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.io.DataSource;
-import edu.washington.escience.myria.operator.FileScan;
 import edu.washington.escience.myria.operator.Operator;
+import edu.washington.escience.myria.operator.SeaFlowFileScan;
 import edu.washington.escience.myria.parallel.Server;
 
-public class FileScanEncoding extends OperatorEncoding<FileScan> {
-  public Schema schema;
+public class SeaFlowFileScanEncoding extends OperatorEncoding<SeaFlowFileScan> {
   public DataSource source;
-  public String delimiter;
-  private static final List<String> requiredArguments = ImmutableList.of("schema", "source");
+  private static final List<String> requiredArguments = ImmutableList.of("source");
 
   @Override
-  public FileScan construct(final Server server) {
-    return new FileScan(source, schema, delimiter);
+  public SeaFlowFileScan construct(final Server server) {
+    return new SeaFlowFileScan(source);
   }
 
   @Override

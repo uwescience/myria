@@ -194,9 +194,6 @@ public final class MergeJoin extends BinaryOperator {
 
     this.ascending = ascending;
 
-    if (left != null && right != null) {
-      generateSchema();
-    }
   }
 
   /**
