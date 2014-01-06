@@ -114,7 +114,12 @@ public final class MasterCatalog {
     + "    stored_relation_id INTEGER NOT NULL REFERENCES stored_relations,\n"
     + "    shard_index INTEGER NOT NULL,\n"
     + "    worker_id INTEGER NOT NULL REFERENCES workers);";
-/** CREATE TABLE statements @formatter:on */
+  /** Create the stored_relations table. */
+  private static final String UPDATE_UNKNOWN_STATUS =
+      "UPDATE queries "
+    + "SET status = '" + QueryStatusEncoding.Status.UNKNOWN.toString() + "'"
+    + "WHERE status = '" + QueryStatusEncoding.Status.ACCEPTED.toString() + "';";
+ /** CREATE TABLE statements @formatter:on */
 
   /**
    * @param filename the path to the SQLite database storing the catalog.
@@ -261,6 +266,7 @@ public final class MasterCatalog {
           sqliteConnection.exec("PRAGMA locking_mode = EXCLUSIVE;");
           sqliteConnection.exec("BEGIN EXCLUSIVE;");
           sqliteConnection.exec("COMMIT;");
+          sqliteConnection.exec(UPDATE_UNKNOWN_STATUS);
           return null;
         }
       }).get();
