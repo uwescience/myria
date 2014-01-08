@@ -3,7 +3,13 @@
  */
 package edu.washington.escience.myria.accessmethod;
 
+import java.io.Serializable;
 import java.util.Iterator;
+import java.util.List;
+
+import org.apache.commons.lang.builder.HashCodeBuilder;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
@@ -117,15 +123,151 @@ public abstract class AccessMethod {
    * @param relationKey the relation name
    * @return the create table statement string
    */
-  public abstract String createStatementFromSchema(Schema schema, RelationKey relationKey);
+  public abstract String createIfNotExistsStatementFromSchema(Schema schema, RelationKey relationKey);
 
   /**
-   * Creates a table into the database.
+   * Creates a table in the database, if it does not already exist.
    * 
    * @param relationKey the relation name
    * @param schema the relation schema
-   * @param overwriteTable a flag to overwrite the table or not
    * @throws DbException if anything goes wrong
    */
-  public abstract void createTable(RelationKey relationKey, Schema schema, boolean overwriteTable) throws DbException;
+  public abstract void createTableIfNotExists(RelationKey relationKey, Schema schema) throws DbException;
+
+  /**
+   * Overwrite <code>oldRelation</code> with <code>newRelation</code> by dropping <code>oldRelation</code> if it exists
+   * and renaming <code>newRelation</code> to <code>oldRelation</code>.
+   * 
+   * @param oldRelation the table to be overwritten.
+   * @param newRelation the table replacing <code>old</code>.
+   * @throws DbException if there is an error during this operation.
+   */
+  public abstract void dropAndRenameTables(RelationKey oldRelation, RelationKey newRelation) throws DbException;
+
+  /**
+   * Drop the specified table, if it exists.
+   * 
+   * @param relationKey the table to be dropped.
+   * @throws DbException if there is an error dropping the table.
+   */
+  public abstract void dropTableIfExists(RelationKey relationKey) throws DbException;
+
+  /**
+   * Creates the specified indexes on the provided temporary table, but uses the real table name for their names.
+   * 
+   * @param relationKey the table on which the indexes will be created.
+   * @param schema the Schema of the data in the table.
+   * @param indexes a list of indexes to be created; each entry is a list of column indices.
+   * @throws DbException if there is an error in the DBMS.
+   */
+  public abstract void createIndexes(final RelationKey relationKey, final Schema schema,
+      final List<List<IndexRef>> indexes) throws DbException;
+
+  /**
+   * Rename the indexes from the old relation name to the new relation name.
+   * 
+   * @param oldRelation the relation on whose name the index names are based.
+   * @param newRelation the new name for that relation.
+   * @param indexes the description of the indexes themselves.
+   * @throws DbException if there is an error in the DBMS.
+   */
+  public abstract void renameIndexes(RelationKey oldRelation, RelationKey newRelation, List<List<IndexRef>> indexes)
+      throws DbException;
+
+  /**
+   * Holds a reference to a column and whether it is ascending or descending.
+   */
+  public static final class IndexRef implements Serializable {
+
+    /** Required for Java serialization. */
+    private static final long serialVersionUID = 1L;
+    /** Which column should be hashed. */
+    @JsonProperty
+    private final int column;
+    /** True if the column should be hashed in ascending order. */
+    @JsonProperty
+    private final boolean ascending;
+
+    /**
+     * This is not really unused, it's used automagically by Jackson deserialization.
+     */
+    private IndexRef() {
+      column = -1;
+      ascending = true;
+    }
+
+    /**
+     * Constructs a new IndexRef.
+     * 
+     * @param column which column should be hashed.
+     * @param ascending true if the column should be hashed in ascending order.
+     */
+    private IndexRef(final int column, final boolean ascending) {
+      this.column = column;
+      this.ascending = ascending;
+    }
+
+    /**
+     * Constructs a new IndexRef.
+     * 
+     * @param column which column should be hashed.
+     */
+    private IndexRef(final int column) {
+      this(column, true);
+    }
+
+    /**
+     * Factory method for IndexRef.
+     * 
+     * @param column which column should be hashed.
+     * @return an IndexRef representing ascending order over that column.
+     */
+    public static IndexRef of(final int column) {
+      return new IndexRef(column);
+    }
+
+    /**
+     * Factory method for IndexRef.
+     * 
+     * @param column which column should be hashed.
+     * @param ascending true if the column should be hashed in ascending order.
+     * @return an IndexRef representing the specified order over the specified column.
+     */
+    public static IndexRef of(final int column, final boolean ascending) {
+      return new IndexRef(column, ascending);
+    }
+
+    /**
+     * @return which column should be hashed.
+     */
+    public int getColumn() {
+      return column;
+    }
+
+    /**
+     * @return true if the column should be hashed in ascending order.
+     */
+    public boolean isAscending() {
+      return ascending;
+    }
+
+    @Override
+    public int hashCode() {
+      HashCodeBuilder hb = new HashCodeBuilder();
+      hb.append(ascending).append(column);
+      return hb.toHashCode();
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (o == null) {
+        return false;
+      }
+      if (!(o instanceof IndexRef)) {
+        return false;
+      }
+      IndexRef other = (IndexRef) o;
+      return ascending == other.ascending && column == other.column;
+    }
+  }
 }

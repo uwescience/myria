@@ -1,32 +1,25 @@
 package edu.washington.escience.myria.api.encoding;
 
-import java.io.FileNotFoundException;
 import java.util.List;
 import java.util.Map;
-
-import javax.ws.rs.core.Response.Status;
 
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.api.MyriaApiException;
+import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.operator.FileScan;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.parallel.Server;
 
 public class FileScanEncoding extends OperatorEncoding<FileScan> {
   public Schema schema;
-  public String fileName;
+  public DataSource source;
   public String delimiter;
-  private static final List<String> requiredArguments = ImmutableList.of("schema", "fileName");
+  private static final List<String> requiredArguments = ImmutableList.of("schema", "source");
 
   @Override
   public FileScan construct(final Server server) {
-    try {
-      return new FileScan(fileName, schema, delimiter);
-    } catch (FileNotFoundException e) {
-      throw new MyriaApiException(Status.BAD_REQUEST, e);
-    }
+    return new FileScan(source, schema, delimiter);
   }
 
   @Override

@@ -616,7 +616,7 @@ public final class QuerySubTreeTask {
       AtomicUtils.setBitByValue(executionCondition, STATE_INITIALIZED);
     } catch (Throwable e) {
       if (LOGGER.isErrorEnabled()) {
-        LOGGER.error("Task failed to open because of execption. ", e);
+        LOGGER.error("Task failed to open because of exception:", e);
       }
       AtomicUtils.setBitByValue(executionCondition, STATE_FAIL);
       cleanup(true);

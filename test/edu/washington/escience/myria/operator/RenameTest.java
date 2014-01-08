@@ -1,6 +1,6 @@
 package edu.washington.escience.myria.operator;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 import java.util.List;
 
@@ -59,25 +59,25 @@ public class RenameTest {
   @Test
   public void testTupleBatch() {
     /* Sanity check originalTuples */
-    assertTrue(originalTuples.getSchema().equals(originalSchema));
-    assertTrue(originalTuples.numTuples() == TUPLES_TO_BUILD);
+    assertEquals(originalSchema, originalTuples.getSchema());
+    assertEquals(TUPLES_TO_BUILD, originalTuples.numTuples());
 
     /* Do the renaming using TupleBatch.rename() */
     final List<String> newNames = ImmutableList.of("stringNew", "intNew");
     final TupleBatch renamed = originalTuples.rename(newNames);
 
     /* Verify the renamed TB's schema */
-    assertTrue(renamed.getSchema().getColumnTypes().equals(originalSchema.getColumnTypes()));
-    assertTrue(renamed.getSchema().getColumnNames().equals(newNames));
+    assertEquals(originalSchema.getColumnTypes(), renamed.getSchema().getColumnTypes());
+    assertEquals(newNames, renamed.getSchema().getColumnNames());
 
     /* Verify the renamed TB's size */
-    assertTrue(renamed.numColumns() == originalTuples.numColumns());
-    assertTrue(renamed.numTuples() == originalTuples.numTuples());
+    assertEquals(originalTuples.numColumns(), renamed.numColumns());
+    assertEquals(originalTuples.numTuples(), renamed.numTuples());
 
     /* Verify the renamed TB's data */
     for (int row = 0; row < renamed.numTuples(); ++row) {
       for (int column = 0; column < renamed.numColumns(); ++column) {
-        assertTrue(renamed.getObject(column, row).equals(originalTuples.getObject(column, row)));
+        assertEquals(originalTuples.getObject(column, row), renamed.getObject(column, row));
       }
     }
   }
@@ -85,8 +85,8 @@ public class RenameTest {
   @Test(expected = IllegalArgumentException.class)
   public void testTupleBatchTooManyColumns() {
     /* Sanity check originalTuples */
-    assertTrue(originalTuples.getSchema().equals(originalSchema));
-    assertTrue(originalTuples.numTuples() == TUPLES_TO_BUILD);
+    assertEquals(originalSchema, originalTuples.getSchema());
+    assertEquals(TUPLES_TO_BUILD, originalTuples.numTuples());
 
     /* Do the renaming using TupleBatch.rename() */
     final List<String> newNames = ImmutableList.of("stringNew", "intNew", "badExtraColumn");
@@ -96,8 +96,8 @@ public class RenameTest {
   @Test(expected = IllegalArgumentException.class)
   public void testTupleBatchTooFewColumns() {
     /* Sanity check originalTuples */
-    assertTrue(originalTuples.getSchema().equals(originalSchema));
-    assertTrue(originalTuples.numTuples() == TUPLES_TO_BUILD);
+    assertEquals(originalSchema, originalTuples.getSchema());
+    assertEquals(TUPLES_TO_BUILD, originalTuples.numTuples());
 
     /* Do the renaming using TupleBatch.rename() */
     final List<String> newNames = ImmutableList.of("onlyOneColumn");
@@ -107,8 +107,8 @@ public class RenameTest {
   @Test(expected = NullPointerException.class)
   public void testTupleBatchNull() {
     /* Sanity check originalTuples */
-    assertTrue(originalTuples.getSchema().equals(originalSchema));
-    assertTrue(originalTuples.numTuples() == TUPLES_TO_BUILD);
+    assertEquals(originalSchema, originalTuples.getSchema());
+    assertEquals(TUPLES_TO_BUILD, originalTuples.numTuples());
 
     /* Do the renaming using TupleBatch.rename() */
     originalTuples.rename(null);
@@ -117,8 +117,8 @@ public class RenameTest {
   @Test
   public void testRenameOperator() throws DbException {
     /* Sanity check originalTuples */
-    assertTrue(originalTuples.getSchema().equals(originalSchema));
-    assertTrue(originalTuples.numTuples() == TUPLES_TO_BUILD);
+    assertEquals(originalSchema, originalTuples.getSchema());
+    assertEquals(TUPLES_TO_BUILD, originalTuples.numTuples());
 
     /* Do the renaming using the Rename operator */
     final List<String> newNames = ImmutableList.of("stringNew", "intNew");
@@ -132,17 +132,17 @@ public class RenameTest {
         continue;
       }
       /* Verify the renamed TB's schema */
-      assertTrue(renamed.getSchema().getColumnTypes().equals(originalSchema.getColumnTypes()));
-      assertTrue(renamed.getSchema().getColumnNames().equals(newNames));
+      assertEquals(originalSchema.getColumnTypes(), renamed.getSchema().getColumnTypes());
+      assertEquals(newNames, renamed.getSchema().getColumnNames());
 
       /* Verify the renamed TB's size */
-      assertTrue(renamed.numColumns() == originalTuples.numColumns());
-      assertTrue(renamed.numTuples() == originalTuples.numTuples());
+      assertEquals(originalTuples.numColumns(), renamed.numColumns());
+      assertEquals(originalTuples.numTuples(), renamed.numTuples());
 
       /* Verify the renamed TB's data */
       for (int row = 0; row < renamed.numTuples(); ++row) {
         for (int column = 0; column < renamed.numColumns(); ++column) {
-          assertTrue(renamed.getObject(column, row).equals(originalTuples.getObject(column, row)));
+          assertEquals(originalTuples.getObject(column, row), renamed.getObject(column, row));
         }
       }
     }
@@ -151,8 +151,8 @@ public class RenameTest {
   @Test(expected = IllegalArgumentException.class)
   public void testRenameOperatorTooManyColumns() throws DbException {
     /* Sanity check originalTuples */
-    assertTrue(originalTuples.getSchema().equals(originalSchema));
-    assertTrue(originalTuples.numTuples() == TUPLES_TO_BUILD);
+    assertEquals(originalSchema, originalTuples.getSchema());
+    assertEquals(TUPLES_TO_BUILD, originalTuples.numTuples());
 
     /* Do the renaming using the Rename operator */
     final List<String> newNames = ImmutableList.of("stringNew", "intNew", "extraColumn");
@@ -164,8 +164,8 @@ public class RenameTest {
   @Test(expected = IllegalArgumentException.class)
   public void testRenameOperatorTooFewColumns() throws DbException {
     /* Sanity check originalTuples */
-    assertTrue(originalTuples.getSchema().equals(originalSchema));
-    assertTrue(originalTuples.numTuples() == TUPLES_TO_BUILD);
+    assertEquals(originalSchema, originalTuples.getSchema());
+    assertEquals(TUPLES_TO_BUILD, originalTuples.numTuples());
 
     /* Do the renaming using the Rename operator */
     final List<String> newNames = ImmutableList.of("onlyOneColumn");
@@ -177,8 +177,8 @@ public class RenameTest {
   @Test(expected = NullPointerException.class)
   public void testRenameOperatorNull() throws DbException {
     /* Sanity check originalTuples */
-    assertTrue(originalTuples.getSchema().equals(originalSchema));
-    assertTrue(originalTuples.numTuples() == TUPLES_TO_BUILD);
+    assertEquals(originalSchema, originalTuples.getSchema());
+    assertEquals(TUPLES_TO_BUILD, originalTuples.numTuples());
 
     TupleSource source = new TupleSource(ImmutableList.of(originalTuples, originalTuples));
     new Rename(source, null);
@@ -187,8 +187,8 @@ public class RenameTest {
   @Test
   public void testRenameOperatorDelayedChild() throws DbException {
     /* Sanity check originalTuples */
-    assertTrue(originalTuples.getSchema().equals(originalSchema));
-    assertTrue(originalTuples.numTuples() == TUPLES_TO_BUILD);
+    assertEquals(originalSchema, originalTuples.getSchema());
+    assertEquals(TUPLES_TO_BUILD, originalTuples.numTuples());
 
     /* Do the renaming using the Rename operator */
     final List<String> newNames = ImmutableList.of("stringNew", "intNew");
@@ -203,17 +203,17 @@ public class RenameTest {
         continue;
       }
       /* Verify the renamed TB's schema */
-      assertTrue(renamed.getSchema().getColumnTypes().equals(originalSchema.getColumnTypes()));
-      assertTrue(renamed.getSchema().getColumnNames().equals(newNames));
+      assertEquals(originalSchema.getColumnTypes(), renamed.getSchema().getColumnTypes());
+      assertEquals(newNames, renamed.getSchema().getColumnNames());
 
       /* Verify the renamed TB's size */
-      assertTrue(renamed.numColumns() == originalTuples.numColumns());
-      assertTrue(renamed.numTuples() == originalTuples.numTuples());
+      assertEquals(originalTuples.numColumns(), renamed.numColumns());
+      assertEquals(originalTuples.numTuples(), renamed.numTuples());
 
       /* Verify the renamed TB's data */
       for (int row = 0; row < renamed.numTuples(); ++row) {
         for (int column = 0; column < renamed.numColumns(); ++column) {
-          assertTrue(renamed.getObject(column, row).equals(originalTuples.getObject(column, row)));
+          assertEquals(originalTuples.getObject(column, row), renamed.getObject(column, row));
         }
       }
     }
@@ -222,8 +222,8 @@ public class RenameTest {
   /* TODO(dhalperi) make this test pass @Test(expected = IllegalArgumentException.class) */
   public void testRenameOperatorDelayedChildTooManyColumns() throws DbException {
     /* Sanity check originalTuples */
-    assertTrue(originalTuples.getSchema().equals(originalSchema));
-    assertTrue(originalTuples.numTuples() == TUPLES_TO_BUILD);
+    assertEquals(originalSchema, originalTuples.getSchema());
+    assertEquals(TUPLES_TO_BUILD, originalTuples.numTuples());
 
     /* Do the renaming using the Rename operator */
     final List<String> newNames = ImmutableList.of("stringNew", "intNew", "extraColumn");
@@ -236,8 +236,8 @@ public class RenameTest {
   /* TODO(dhalperi) make this test pass @Test(expected = IllegalArgumentException.class) */
   public void testRenameOperatorDelayedChildTooFewColumns() throws DbException {
     /* Sanity check originalTuples */
-    assertTrue(originalTuples.getSchema().equals(originalSchema));
-    assertTrue(originalTuples.numTuples() == TUPLES_TO_BUILD);
+    assertEquals(originalSchema, originalTuples.getSchema());
+    assertEquals(TUPLES_TO_BUILD, originalTuples.numTuples());
 
     /* Do the renaming using the Rename operator */
     final List<String> newNames = ImmutableList.of("onlyOneColumn");
@@ -250,8 +250,8 @@ public class RenameTest {
   @Test(expected = NullPointerException.class)
   public void testRenameOperatorDelayedChildNull() throws DbException {
     /* Sanity check originalTuples */
-    assertTrue(originalTuples.getSchema().equals(originalSchema));
-    assertTrue(originalTuples.numTuples() == TUPLES_TO_BUILD);
+    assertEquals(originalSchema, originalTuples.getSchema());
+    assertEquals(TUPLES_TO_BUILD, originalTuples.numTuples());
 
     TupleSource source = new TupleSource(ImmutableList.of(originalTuples, originalTuples));
     Rename rename = new Rename(null);

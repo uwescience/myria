@@ -1,6 +1,6 @@
 package edu.washington.escience.myria.systemtest;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 import java.util.HashMap;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -95,10 +95,10 @@ public class SplitDataTest extends SystemTestBase {
     TupleBatch result = aggResult.take();
 
     /* Sanity-check the results, sum them, then confirm. */
-    assertTrue(result.getLong(0, 0) == workerIDs.length);
+    assertEquals(workerIDs.length, result.getLong(0, 0));
 
     LOGGER.debug("numTuplesInsert=" + numTuplesInserted + ", sum=" + result.getObject(0, 0));
-    assertTrue(result.getLong(1, 0) == numTuplesInserted);
+    assertEquals(numTuplesInserted, result.getLong(1, 0));
 
   }
 }

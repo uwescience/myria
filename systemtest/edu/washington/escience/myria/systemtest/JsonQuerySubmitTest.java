@@ -1,7 +1,9 @@
 package edu.washington.escience.myria.systemtest;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,6 +33,48 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     return m;
   }
 
+  private static final String emptyIngestJson = "{" + "  \"relation_key\" : {" + "    \"user_name\" : \"public\","
+      + "    \"program_name\" : \"adhoc\"," + "    \"relation_name\" : \"smallTable\"" + "  }," + "  \"schema\" : {"
+      + "    \"column_types\" : [\"STRING_TYPE\", \"LONG_TYPE\"]," + "    \"column_names\" : [\"foo\", \"bar\"]"
+      + "  }," + "\"source\" : { \"data_type\" : \"Empty\" } " + "}";
+
+  @Test
+  public void emptySubmitTest() throws Exception {
+
+    HttpURLConnection conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, emptyIngestJson);
+    if (null != conn.getErrorStream()) {
+      throw new IllegalStateException(getContents(conn));
+    }
+    assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
+    conn.disconnect();
+  }
+
+  @Test
+  public void datasetPutTest() throws Exception {
+
+    HttpURLConnection conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, emptyIngestJson);
+    if (null != conn.getErrorStream()) {
+      throw new IllegalStateException(getContents(conn));
+    }
+    assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
+    conn.disconnect();
+
+    String dataset = "Hello world,3242\n" + "goodbye world,321\n" + "pizza pizza,104";
+    JsonAPIUtils.replace("localhost", masterDaemonPort, "public", "adhoc", "smallTable", dataset, "csv");
+
+    String fetchedDataset =
+        JsonAPIUtils.download("localhost", masterDaemonPort, "public", "adhoc", "smallTable", "csv");
+    assertTrue(fetchedDataset.contains("pizza pizza"));
+
+    // Replace the dataset with all new contents
+    dataset = "mexico\t42\n" + "sri lanka\t12342\n" + "belize\t802304";
+    JsonAPIUtils.replace("localhost", masterDaemonPort, "public", "adhoc", "smallTable", dataset, "tsv");
+
+    fetchedDataset = JsonAPIUtils.download("localhost", masterDaemonPort, "public", "adhoc", "smallTable", "csv");
+    assertFalse(fetchedDataset.contains("pizza pizza"));
+    assertTrue(fetchedDataset.contains("sri lanka"));
+  }
+
   @Test
   public void jsonQuerySubmitTest() throws Exception {
     // DeploymentUtils.ensureMasterStart("localhost", masterDaemonPort);
@@ -48,6 +92,10 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     }
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
     conn.disconnect();
+
+    String data = JsonAPIUtils.download("localhost", masterDaemonPort, "jwang", "global_join", "smallTable", "json");
+    String subStr = "{\"follower\":46,\"followee\":17}";
+    assertTrue(data.contains(subStr));
 
     conn = JsonAPIUtils.submitQuery("localhost", masterDaemonPort, queryJson);
     if (null != conn.getErrorStream()) {

@@ -37,7 +37,7 @@ public final class SimpleAppender extends StreamingState {
 
   @Override
   public Schema getSchema() {
-    return op.getSchema();
+    return getOp().getSchema();
   }
 
   @Override

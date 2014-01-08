@@ -18,6 +18,7 @@ import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteJob;
 import com.almworks.sqlite4java.SQLiteQueue;
 import com.almworks.sqlite4java.SQLiteStatement;
+import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
@@ -219,7 +220,7 @@ public final class SQLiteAccessMethod extends AccessMethod {
         }
       }).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw new DbException(e);
+      throw new DbException("Error executing DDL command: " + ddlCommand, e);
     }
   }
 
@@ -304,9 +305,10 @@ public final class SQLiteAccessMethod extends AccessMethod {
   }
 
   @Override
-  public String createStatementFromSchema(final Schema schema, final RelationKey relationKey) {
+  public String createIfNotExistsStatementFromSchema(final Schema schema, final RelationKey relationKey) {
     final StringBuilder sb = new StringBuilder();
-    sb.append("CREATE TABLE ").append(relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)).append(" (");
+    sb.append("CREATE TABLE IF NOT EXISTS ").append(relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)).append(
+        " (");
     for (int i = 0; i < schema.numColumns(); ++i) {
       if (i > 0) {
         sb.append(", ");
@@ -343,19 +345,83 @@ public final class SQLiteAccessMethod extends AccessMethod {
   }
 
   @Override
-  public void createTable(final RelationKey relationKey, final Schema schema, final boolean overwriteTable)
-      throws DbException {
+  public void createTableIfNotExists(final RelationKey relationKey, final Schema schema) throws DbException {
     Objects.requireNonNull(sqliteQueue);
     Objects.requireNonNull(sqliteInfo);
     Objects.requireNonNull(relationKey);
     Objects.requireNonNull(schema);
 
-    try {
-      execute("DROP TABLE IF EXISTS " + relationKey.toString(sqliteInfo.getDbms()) + ";");
-    } catch (DbException e) {
-      ; /* Skip. this is okay. */
+    execute(createIfNotExistsStatementFromSchema(schema, relationKey));
+  }
+
+  @Override
+  public void dropAndRenameTables(final RelationKey oldRelation, final RelationKey newRelation) throws DbException {
+    dropTableIfExists(oldRelation);
+    final String oldName = oldRelation.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE);
+    final String newName = newRelation.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE);
+    execute("ALTER TABLE " + newName + " RENAME TO " + oldName);
+  }
+
+  @Override
+  public void renameIndexes(final RelationKey oldRelation, final RelationKey newRelation,
+      final List<List<IndexRef>> indexes) throws DbException {
+    /* Do nothing -- rather than renaming the right way, we create every index with a different unique name. */
+    return;
+  }
+
+  @Override
+  public void dropTableIfExists(final RelationKey relationKey) throws DbException {
+    execute("DROP TABLE IF EXISTS " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
+  }
+
+  @Override
+  public void createIndexes(final RelationKey relationKey, final Schema schema, final List<List<IndexRef>> indexes)
+      throws DbException {
+
+    Objects.requireNonNull(relationKey);
+    Objects.requireNonNull(schema);
+    Objects.requireNonNull(indexes);
+
+    /*
+     * All indexes go in a separate "program" that has the name "__myria_indexes_TIMESTAMP" appended to it. We need the
+     * timestamp because SQLite doesn't have a rename indexes command.
+     */
+    final String indexProgramName =
+        new StringBuilder(relationKey.getProgramName()).append("__myria_indexes_").append(System.nanoTime()).toString();
+
+    final String tempTableName = relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE);
+    for (List<IndexRef> index : indexes) {
+      Objects.requireNonNull(index);
+      /* The inner loop builds two things: the relation name for the index, and the list of columns to be indexed. */
+      StringBuilder name = new StringBuilder(relationKey.getRelationName());
+      StringBuilder columns = new StringBuilder("(");
+      boolean first = true;
+      for (IndexRef i : index) {
+        Objects.requireNonNull(i);
+        Preconditions.checkElementIndex(i.getColumn(), schema.numColumns());
+        name.append('_').append(i.getColumn());
+        if (!first) {
+          columns.append(',');
+        }
+        first = false;
+        columns.append(schema.getColumnName(i.getColumn()));
+        if (i.isAscending()) {
+          columns.append(" ASC");
+        } else {
+          columns.append(" DESC");
+        }
+      }
+      columns.append(')');
+
+      RelationKey indexRelationKey = RelationKey.of(relationKey.getUserName(), indexProgramName, name.toString());
+      final String indexName = indexRelationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE);
+
+      StringBuilder statement = new StringBuilder();
+      statement.append("CREATE INDEX ").append(indexName).append(" ON ").append(tempTableName).append(
+          columns.toString());
+
+      execute(statement.toString());
     }
-    execute(createStatementFromSchema(schema, relationKey));
   }
 }
 

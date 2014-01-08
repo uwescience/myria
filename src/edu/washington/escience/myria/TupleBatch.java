@@ -88,8 +88,7 @@ public class TupleBatch implements Serializable {
   }
 
   /**
-   * Broken-out copy constructor. Shallow copy of the schema, column list, and the number of tuples; deep copy of the
-   * valid tuples since that's what we mutate.
+   * <strong>Protected</strong> copy constructor. True copy constructor; shallow copy of everything.
    * 
    * @param schema schema of the tuples in this batch. Must match columns.
    * @param columns contains the column-stored data. Must match schema.
@@ -1008,5 +1007,33 @@ public class TupleBatch implements Serializable {
   public int tupleCompare(final int[] columnCompareIndexes, final int rowIdx, final int rowIdx2,
       final boolean[] ascending) {
     return tupleCompare(columnCompareIndexes, rowIdx, this, columnCompareIndexes, rowIdx2, ascending);
+  }
+
+  /**
+   * Construct a new TupleBatch that equals the current batch with the specified column appended. The number of valid
+   * tuples in this batch must be the same as the size of the other batch. If this batch is not dense, then
+   * 
+   * @param columnName the name of the column to be added.
+   * @param column the column to be added.
+   * @return a new TupleBatch containing the tuples of this column plus the tuples of the other.
+   */
+  public TupleBatch appendColumn(final String columnName, final Column<?> column) {
+    Preconditions.checkArgument(numTuples() == column.size(), "Error appending column of size %s to batch of size %s",
+        column.size(), numTuples());
+    Schema newSchema = Schema.appendColumn(schema, column.getType(), columnName);
+    /* If this TupleBatch is compact, just append the new column. */
+    if (isCompact()) {
+      ImmutableList<Column<?>> newColumns = ImmutableList.<Column<?>> builder().addAll(columns).add(column).build();
+      return new TupleBatch(newSchema, newColumns, validTuples, validIndices, isEOI);
+    } else {
+      TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
+      compactInto(tbb);
+      List<List<Column<?>>> compactCols = tbb.getAllAsRawColumn();
+      Preconditions.checkState(compactCols.size() == 1, "Expected compact TupleBatch to have size 1, not %s",
+          compactCols.size());
+      List<Column<?>> newColumns = compactCols.get(0);
+      newColumns.add(column);
+      return new TupleBatch(newSchema, newColumns);
+    }
   }
 }
