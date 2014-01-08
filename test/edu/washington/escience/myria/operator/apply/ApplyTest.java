@@ -14,6 +14,7 @@ import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.AbsExpression;
 import edu.washington.escience.myria.expression.AndExpression;
+import edu.washington.escience.myria.expression.CastExpression;
 import edu.washington.escience.myria.expression.CeilExpression;
 import edu.washington.escience.myria.expression.ConstantExpression;
 import edu.washington.escience.myria.expression.CosExpression;
@@ -39,6 +40,7 @@ import edu.washington.escience.myria.expression.TimesExpression;
 import edu.washington.escience.myria.expression.ToUpperCaseExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.operator.Apply;
+import edu.washington.escience.myria.operator.StatefulApply;
 import edu.washington.escience.myria.operator.TupleSource;
 
 public class ApplyTest {
@@ -425,6 +427,55 @@ public class ApplyTest {
           assertEquals(c.compareTo(d) < 0, result.getBoolean(3, curI));
           assertEquals(c.compareTo(d) >= 0, result.getBoolean(4, curI));
           assertEquals(c.compareTo(d) <= 0, result.getBoolean(5, curI));
+        }
+        resultSize += result.numTuples();
+      }
+    }
+    assertEquals(SMALL_NUM_TUPLES, resultSize);
+    apply.close();
+  }
+
+  @Test
+  public void testStatefulApplyRange() throws DbException {
+    final Schema schema = new Schema(ImmutableList.of(Type.STRING_TYPE), ImmutableList.of("name"));
+    final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
+    for (long i = 0; i < SMALL_NUM_TUPLES; i++) {
+      tbb.putString(0, "Foo" + i);
+    }
+
+    Expression initializer = new Expression("", new ConstantExpression(Type.INT_TYPE, "0"));
+
+    Expression expression =
+        new Expression("index", new CastExpression(new ConstantExpression(Type.OBJ_TYPE, "state"), Type.INT_TYPE));
+
+    Expression increment =
+        new Expression("", new PlusExpression(new CastExpression(new ConstantExpression(Type.OBJ_TYPE, "state"),
+            Type.INT_TYPE), new ConstantExpression(Type.INT_TYPE, "1")));
+
+    ImmutableList.Builder<Expression> Initializers = ImmutableList.builder();
+    Initializers.add(initializer);
+
+    ImmutableList.Builder<Expression> Expressions = ImmutableList.builder();
+    Expressions.add(expression);
+
+    ImmutableList.Builder<Expression> Updaters = ImmutableList.builder();
+    Updaters.add(increment);
+
+    StatefulApply apply =
+        new StatefulApply(new TupleSource(tbb), Expressions.build(), Initializers.build(), Updaters.build());
+
+    apply.open(null);
+    TupleBatch result;
+    int resultSize = 0;
+    while (!apply.eos()) {
+      result = apply.nextReady();
+      if (result != null) {
+        assertEquals(1, result.getSchema().numColumns());
+        assertEquals(Type.INT_TYPE, result.getSchema().getColumnType(0));
+
+        for (int curI = 0; curI < result.numTuples(); curI++) {
+          long i = curI + resultSize;
+          assertEquals(i, result.getInt(0, curI));
         }
         resultSize += result.numTuples();
       }

@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.operator;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,6 +39,13 @@ public class Apply extends UnaryOperator {
   private TupleBatchBuffer resultBuffer;
 
   /**
+   * @return the resultBuffer
+   */
+  public TupleBatchBuffer getResultBuffer() {
+    return resultBuffer;
+  }
+
+  /**
    * @return the expressions
    */
   protected ImmutableList<Expression> getExpressions() {
@@ -73,7 +81,7 @@ public class Apply extends UnaryOperator {
   }
 
   @Override
-  protected TupleBatch fetchNextReady() throws Exception {
+  protected TupleBatch fetchNextReady() throws DbException {
     TupleBatch tb = null;
     if (getChild().eoi() || getChild().eos()) {
       return resultBuffer.popAny();
@@ -83,7 +91,11 @@ public class Apply extends UnaryOperator {
       for (int rowIdx = 0; rowIdx < tb.numTuples(); rowIdx++) {
         int columnIdx = 0;
         for (GenericEvaluator evaluator : evaluators) {
-          evaluator.evalAndPut(tb, rowIdx, resultBuffer, columnIdx);
+          try {
+            evaluator.evalAndPut(tb, rowIdx, resultBuffer, columnIdx);
+          } catch (InvocationTargetException e) {
+            throw new DbException(e);
+          }
           columnIdx++;
         }
       }

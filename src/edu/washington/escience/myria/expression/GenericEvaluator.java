@@ -53,7 +53,7 @@ public class GenericEvaluator extends Evaluator {
 
       evaluator =
           (EvalInterface) se.createFastEvaluator(getExpression().getJavaExpression(), EvalInterface.class,
-              new String[] { "tb", "rowId" });
+              new String[] { "tb", "rowId", "state" });
     } catch (Exception e) {
       throw new DbException("Error when compiling expression " + this, e);
     }
@@ -65,13 +65,14 @@ public class GenericEvaluator extends Evaluator {
    * 
    * @param tb a tuple batch
    * @param rowId the row that should be used for input data
+   * @param state additional state that affects the computation
    * @return the result from the evaluation
    * @throws InvocationTargetException exception thrown from janino
    */
-  public Object eval(final TupleBatch tb, final int rowId) throws InvocationTargetException {
+  public Object eval(final TupleBatch tb, final int rowId, final Object state) throws InvocationTargetException {
     Preconditions.checkArgument(evaluator != null,
         "Call compile first or copy the data if it is the same in the input.");
-    return evaluator.evaluate(tb, rowId);
+    return evaluator.evaluate(tb, rowId, state);
   }
 
   /**
@@ -83,18 +84,38 @@ public class GenericEvaluator extends Evaluator {
    * @param sourceRowIdx the row that should be used in the input batch
    * @param targetTupleBuffer the tuple buffer that should be used as output
    * @param targetColumnIdx the column that the data should be written to
+   * @param state
    * @throws InvocationTargetException exception thrown from janino
    */
   @SuppressWarnings("deprecation")
   public void evalAndPut(final TupleBatch sourceTupleBatch, final int sourceRowIdx,
       final TupleBatchBuffer targetTupleBuffer, final int targetColumnIdx) throws InvocationTargetException {
+    evalAndPut(sourceTupleBatch, sourceRowIdx, targetTupleBuffer, targetColumnIdx, null);
+  }
+
+  /**
+   * Runs {@link #eval(TupleBatch, int)} if necessary and puts the result in the target tuple buffer.
+   * 
+   * If evaluating is not necessary, the data is copied directly from the source tuple batch into the target buffer.
+   * 
+   * @param sourceTupleBatch the tuple buffer that should be used as input
+   * @param sourceRowIdx the row that should be used in the input batch
+   * @param targetTupleBuffer the tuple buffer that should be used as output
+   * @param targetColumnIdx the column that the data should be written to
+   * @param state additional state that affects the result
+   * @throws InvocationTargetException exception thrown from janino
+   */
+  @SuppressWarnings("deprecation")
+  public void evalAndPut(final TupleBatch sourceTupleBatch, final int sourceRowIdx,
+      final TupleBatchBuffer targetTupleBuffer, final int targetColumnIdx, final Object state)
+      throws InvocationTargetException {
     if (getExpression().isCopyFromInput()) {
       final Column<?> sourceColumn =
           sourceTupleBatch.getDataColumns().get(
               ((VariableExpression) getExpression().getRootExpressionOperator()).getColumnIdx());
       targetTupleBuffer.put(targetColumnIdx, sourceColumn, sourceRowIdx);
     } else {
-      Object result = eval(sourceTupleBatch, sourceRowIdx);
+      Object result = eval(sourceTupleBatch, sourceRowIdx, state);
       /** We already have an object, so we're not using the wrong version of put. Remove the warning. */
       targetTupleBuffer.put(targetColumnIdx, result);
     }

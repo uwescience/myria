@@ -15,11 +15,13 @@ public class Expression implements Serializable {
 
   /***/
   private static final long serialVersionUID = 1L;
+
   /**
    * Name of the column that the result will be written to.
    */
   @JsonProperty
   private final String outputName;
+
   /**
    * The java expression to be evaluated.
    */
@@ -28,11 +30,14 @@ public class Expression implements Serializable {
   /**
    * Expression encoding reference is needed to get the output type.
    */
+
   @JsonProperty
   private final ExpressionOperator rootExpressionOperator;
   /**
    * The schema of the input tuples to this expression.
    */
+
+  // TODO: move to evaluator
   private Schema inputSchema;
   /**
    * An expression does not have to be compiled when it only renames or copies a column. This is an optimization to
