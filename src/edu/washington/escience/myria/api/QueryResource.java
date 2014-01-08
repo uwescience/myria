@@ -247,10 +247,10 @@ public final class QueryResource {
    * @throws CatalogException if there is an error in the catalog.
    */
   @GET
-  public Response getQueries(@Context final UriInfo uriInfo, @QueryParam("limit") final Integer limit,
-      @QueryParam("max") final Integer maxId) throws CatalogException {
-    int realLimit = Objects.firstNonNull(limit, MyriaApiConstants.MYRIA_API_DEFAULT_NUM_RESULTS);
-    int realMaxId = Objects.firstNonNull(maxId, 0);
+  public Response getQueries(@Context final UriInfo uriInfo, @QueryParam("limit") final Long limit,
+      @QueryParam("max") final Long maxId) throws CatalogException {
+    long realLimit = Objects.firstNonNull(limit, MyriaApiConstants.MYRIA_API_DEFAULT_NUM_RESULTS);
+    long realMaxId = Objects.firstNonNull(maxId, 0L);
     List<QueryStatusEncoding> queries = server.getQueries(realLimit, realMaxId);
     for (QueryStatusEncoding status : queries) {
       status.url = getCanonicalResourcePath(uriInfo, status.queryId);

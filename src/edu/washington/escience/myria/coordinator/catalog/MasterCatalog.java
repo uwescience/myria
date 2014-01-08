@@ -1215,7 +1215,7 @@ public final class MasterCatalog {
    * @return a list of the status of all queries.
    * @throws CatalogException if there is an error in the MasterCatalog.
    */
-  public List<QueryStatusEncoding> getQueries(final int limit, final int maxId) throws CatalogException {
+  public List<QueryStatusEncoding> getQueries(final long limit, final long maxId) throws CatalogException {
     if (isClosed) {
       throw new CatalogException("MasterCatalog is closed.");
     }
@@ -1231,7 +1231,7 @@ public final class MasterCatalog {
                 new StringBuilder(
                     "SELECT query_id,raw_query,submit_time,start_time,finish_time,elapsed_nanos,status FROM queries");
             /* The query arguments, if any. */
-            List<Integer> bound = Lists.newLinkedList();
+            List<Long> bound = Lists.newLinkedList();
             /* If there is a max query id, add the WHERE clause. */
             if (maxId > 0) {
               sb.append(" WHERE query_id <= ?");
@@ -1250,7 +1250,7 @@ public final class MasterCatalog {
             /* Build it and bind any arguments present. */
             SQLiteStatement statement = sqliteConnection.prepare(sb.toString());
             int argPos = 1;
-            for (Integer arg : bound) {
+            for (Long arg : bound) {
               statement.bind(argPos, arg);
               argPos++;
             }

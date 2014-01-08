@@ -1291,7 +1291,7 @@ public final class Server {
    * @throws CatalogException if there is an error in the catalog.
    * @return a list of the status of every query that has been submitted to Myria.
    */
-  public List<QueryStatusEncoding> getQueries(final int limit, final int maxId) throws CatalogException {
+  public List<QueryStatusEncoding> getQueries(final long limit, final long maxId) throws CatalogException {
     List<QueryStatusEncoding> ret = new LinkedList<QueryStatusEncoding>();
 
     /* Begin by adding the status for all the active queries. */

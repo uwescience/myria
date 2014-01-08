@@ -18,5 +18,5 @@ public final class MyriaApiConstants {
   /** The string identifying the Myria ApiServer in the Restlet Context variable. */
   public static final String MYRIA_API_SERVER_ATTRIBUTE = "myria.master_api_server";
   /** The default number of results returned in a large query. */
-  public static final Integer MYRIA_API_DEFAULT_NUM_RESULTS = 10;
+  public static final Long MYRIA_API_DEFAULT_NUM_RESULTS = 10L;
 }
