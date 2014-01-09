@@ -45,13 +45,13 @@ public class StatefulApply extends Apply {
   /**
    * 
    * @param child child operator that data is fetched from
-   * @param genericExpressions expressions that creates the output
+   * @param expressions expressions that creates the output
    * @param initializerExpressions expressions that initializes the state
    * @param updaterExpressions expressions that update the state
    */
-  public StatefulApply(final Operator child, final List<Expression> genericExpressions,
+  public StatefulApply(final Operator child, final List<Expression> expressions,
       final List<Expression> initializerExpressions, final List<Expression> updaterExpressions) {
-    super(child, genericExpressions);
+    super(child, expressions);
     if (initializerExpressions != null) {
       setInitializers(initializerExpressions);
     }
