@@ -16,7 +16,7 @@ public class ApplyEncoding extends OperatorEncoding<Apply> {
 
   public List<Expression> expressions;
 
-  private static final ImmutableList<String> requiredArguments = ImmutableList.of("argChild", "genericExpressions");
+  private static final ImmutableList<String> requiredArguments = ImmutableList.of("argChild", "expressions");
 
   @Override
   public Apply construct(Server server) {

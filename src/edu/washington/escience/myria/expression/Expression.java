@@ -83,10 +83,7 @@ public class Expression implements Serializable {
    */
   public String getJavaExpression(final Schema inputSchema) {
     if (javaExpression == null) {
-      if (inputSchema == null) {
-        return null;
-      }
-      return rootExpressionOperator.getJavaString(inputSchema);
+      return rootExpressionOperator.getJavaString(Objects.requireNonNull(inputSchema));
     }
     return javaExpression;
   }
