@@ -20,12 +20,12 @@ import edu.washington.escience.myria.Schema;
     @Type(name = "CONSTANT", value = ConstantExpression.class),
     @Type(name = "VARIABLE", value = VariableExpression.class),
     /* Unary */
-    @Type(name = "ABS", value = AbsExpression.class), @Type(name = "CEIL", value = CeilExpression.class),
-    @Type(name = "COS", value = CosExpression.class), @Type(name = "FLOOR", value = FloorExpression.class),
-    @Type(name = "LOG", value = LogExpression.class), @Type(name = "NOT", value = NotExpression.class),
-    @Type(name = "NEG", value = NegateExpression.class), @Type(name = "SIN", value = SinExpression.class),
-    @Type(name = "SQRT", value = SqrtExpression.class), @Type(name = "TAN", value = TanExpression.class),
-    @Type(name = "UPPER", value = ToUpperCaseExpression.class),
+    @Type(name = "ABS", value = AbsExpression.class), @Type(name = "CAST", value = CastExpression.class),
+    @Type(name = "CEIL", value = CeilExpression.class), @Type(name = "COS", value = CosExpression.class),
+    @Type(name = "FLOOR", value = FloorExpression.class), @Type(name = "LOG", value = LogExpression.class),
+    @Type(name = "NOT", value = NotExpression.class), @Type(name = "NEG", value = NegateExpression.class),
+    @Type(name = "SIN", value = SinExpression.class), @Type(name = "SQRT", value = SqrtExpression.class),
+    @Type(name = "TAN", value = TanExpression.class), @Type(name = "UPPER", value = ToUpperCaseExpression.class),
     /* Binary */
     @Type(name = "AND", value = AndExpression.class), @Type(name = "DIVIDE", value = DivideExpression.class),
     @Type(name = "EQ", value = EqualsExpression.class), @Type(name = "GT", value = GreaterThanExpression.class),

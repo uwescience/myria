@@ -15,6 +15,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.expression.AbsExpression;
 import edu.washington.escience.myria.expression.AndExpression;
+import edu.washington.escience.myria.expression.CastExpression;
 import edu.washington.escience.myria.expression.CeilExpression;
 import edu.washington.escience.myria.expression.ConstantExpression;
 import edu.washington.escience.myria.expression.CosExpression;
@@ -67,8 +68,9 @@ public class ApplySerializationTest {
     TanExpression tan = new TanExpression(constant);
     ToUpperCaseExpression upper = new ToUpperCaseExpression(constant);
     NotExpression not = new NotExpression(constant);
+    CastExpression cast = new CastExpression(constant, Type.INT_TYPE);
     expressions.add(abs).add(ceil).add(cos).add(floor).add(log).add(negate).add(not).add(sin).add(sqrt).add(tan).add(
-        upper);
+        upper).add(cast);
 
     /* Binary */
     DivideExpression divide = new DivideExpression(constant, variable);
