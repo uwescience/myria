@@ -90,14 +90,12 @@ public class Apply extends UnaryOperator {
 
     while ((tb = getChild().nextReady()) != null) {
       for (int rowIdx = 0; rowIdx < tb.numTuples(); rowIdx++) {
-        int columnIdx = 0;
-        for (GenericEvaluator evaluator : evaluators) {
+        for (int columnIdx = 0; columnIdx < getSchema().numColumns(); columnIdx++) {
           try {
-            evaluator.evalAndPut(tb, rowIdx, resultBuffer, columnIdx);
+            evaluate(tb, rowIdx, columnIdx);
           } catch (InvocationTargetException e) {
             throw new DbException(e);
           }
-          columnIdx++;
         }
       }
       if (resultBuffer.hasFilledTB()) {
@@ -109,6 +107,24 @@ public class Apply extends UnaryOperator {
     } else {
       return resultBuffer.popFilled();
     }
+  }
+
+  /**
+   * @param tb the source tuple batch
+   * @param rowIdx the current row index
+   * @param columnIdx the current column index
+   * @throws InvocationTargetException exception when evaluating
+   */
+  protected void evaluate(final TupleBatch tb, final int rowIdx, final int columnIdx) throws InvocationTargetException {
+    getEvaluator(columnIdx).evalAndPut(tb, rowIdx, resultBuffer, columnIdx);
+  }
+
+  /**
+   * @param columnIdx the column index
+   * @return evaluator for column index
+   */
+  protected GenericEvaluator getEvaluator(final int columnIdx) {
+    return evaluators.get(columnIdx);
   }
 
   @Override

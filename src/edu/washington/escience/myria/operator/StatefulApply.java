@@ -11,7 +11,6 @@ import com.google.common.collect.ImmutableMap;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.expression.ConstantEvaluator;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.GenericEvaluator;
@@ -108,39 +107,17 @@ public class StatefulApply extends Apply {
     }
   }
 
+  /**
+   * @param tb the source tuple batch
+   * @param rowIdx the current row index
+   * @param columnIdx the current column index
+   * @throws InvocationTargetException exception when evaluating
+   */
   @Override
-  protected TupleBatch fetchNextReady() throws DbException {
+  protected void evaluate(final TupleBatch tb, final int rowIdx, final int columnIdx) throws InvocationTargetException {
+    final Object state = states.get(columnIdx);
 
-    TupleBatchBuffer resultBuffer = getResultBuffer();
-
-    TupleBatch tb = null;
-    if (getChild().eoi() || getChild().eos()) {
-      return resultBuffer.popAny();
-    }
-
-    while ((tb = getChild().nextReady()) != null) {
-      for (int rowIdx = 0; rowIdx < tb.numTuples(); rowIdx++) {
-        int columnIdx = 0;
-        for (GenericEvaluator evaluator : getEvaluators()) {
-          try {
-            final Object state = states.get(columnIdx);
-
-            evaluator.evalAndPut(tb, rowIdx, resultBuffer, columnIdx, state);
-            states.set(columnIdx, updateEvaluators.get(columnIdx).eval(tb, rowIdx, state));
-          } catch (InvocationTargetException e) {
-            throw new DbException(e);
-          }
-          columnIdx++;
-        }
-      }
-      if (resultBuffer.hasFilledTB()) {
-        return resultBuffer.popFilled();
-      }
-    }
-    if (getChild().eoi() || getChild().eos()) {
-      return resultBuffer.popAny();
-    } else {
-      return resultBuffer.popFilled();
-    }
+    getEvaluator(columnIdx).evalAndPut(tb, rowIdx, getResultBuffer(), columnIdx, state);
+    states.set(columnIdx, updateEvaluators.get(columnIdx).eval(tb, rowIdx, state));
   }
 }
