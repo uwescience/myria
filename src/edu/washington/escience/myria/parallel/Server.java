@@ -841,9 +841,9 @@ public final class Server {
     ExecutorService ipcWorkerExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("Master IPC worker"));
 
     ipcPipelineExecutor =
-        new OrderedMemoryAwareThreadPoolExecutor(Runtime.getRuntime().availableProcessors() * 2 + 1, 0, 0,
-            MyriaConstants.THREAD_POOL_KEEP_ALIVE_TIME_IN_MS, TimeUnit.MILLISECONDS, new RenamingThreadFactory(
-                "Master Pipeline executor"));
+        new OrderedMemoryAwareThreadPoolExecutor(Runtime.getRuntime().availableProcessors() * 2 + 1,
+            5 * MyriaConstants.MB, 5 * MyriaConstants.MB, MyriaConstants.THREAD_POOL_KEEP_ALIVE_TIME_IN_MS,
+            TimeUnit.MILLISECONDS, new RenamingThreadFactory("Master Pipeline executor"));
 
     /**
      * The {@link ChannelFactory} for creating client side connections.
