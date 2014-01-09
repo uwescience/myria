@@ -2,8 +2,10 @@ package edu.washington.escience.myria;
 
 import java.io.Serializable;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Preconditions;
 
 /**
  * This class holds the key that identifies a relation. The notation is user.program.relation.
@@ -46,6 +48,26 @@ public final class RelationKey implements Serializable {
     return new RelationKey(userName, programName, relationName);
   }
 
+  /** The regular expression specifying what names are valid. */
+  public static final String VALID_NAME_REGEX = "^[a-zA-Z_]\\w*$";
+  /** The regular expression matcher for {@link #VALID_NAME_REGEX}. */
+  private static final Pattern VALID_NAME_PATTERN = Pattern.compile(VALID_NAME_REGEX);
+
+  /**
+   * Validate a potential user, program, relation name for use in a Relation Key. Valid names are given by
+   * {@link #VALID_NAME_REGEX}.
+   * 
+   * @param name the candidate user, program, or relation name.
+   * @return the supplied name, if it is valid.
+   * @throws IllegalArgumentException if the name does not match the regex {@link #VALID_NAME_REGEX}.
+   */
+  private static String checkName(final String name) {
+    Objects.requireNonNull(name);
+    Preconditions.checkArgument(VALID_NAME_PATTERN.matcher(name).matches(),
+        "supplied name %s does not match the valid name regex %s", name, VALID_NAME_REGEX);
+    return name;
+  }
+
   /**
    * Private constructor to create a RelationKey object.
    * 
@@ -54,9 +76,9 @@ public final class RelationKey implements Serializable {
    * @param relationName the name of the relation.
    */
   public RelationKey(final String userName, final String programName, final String relationName) {
-    Objects.requireNonNull(userName);
-    Objects.requireNonNull(programName);
-    Objects.requireNonNull(relationName);
+    checkName(userName);
+    checkName(programName);
+    checkName(relationName);
     this.userName = userName;
     this.programName = programName;
     this.relationName = relationName;

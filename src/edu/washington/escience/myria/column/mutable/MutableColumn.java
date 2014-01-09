@@ -30,5 +30,5 @@ public interface MutableColumn<T extends Comparable<?>> extends Column<T>, Clone
    * 
    * @return the clone
    */
-  public MutableColumn<T> clone();
+  MutableColumn<T> clone();
 }

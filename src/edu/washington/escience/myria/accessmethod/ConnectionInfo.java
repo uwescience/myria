@@ -37,11 +37,12 @@ public abstract class ConnectionInfo {
         case MyriaConstants.STORAGE_SYSTEM_MYSQL:
         case MyriaConstants.STORAGE_SYSTEM_POSTGRESQL:
           return mapper.readValue(jsonConnInfo, JdbcInfo.class);
+        default:
+          throw new IllegalArgumentException("Invalid storage system " + dbms);
       }
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-    return null;
   }
 
   /**

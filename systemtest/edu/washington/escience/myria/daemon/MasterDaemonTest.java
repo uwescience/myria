@@ -1,6 +1,6 @@
 package edu.washington.escience.myria.daemon;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 import java.io.File;
 import java.util.Collections;
@@ -97,7 +97,7 @@ public class MasterDaemonTest {
       /* Stop the master. */
       WebResource shutdownRest = client.resource("http://localhost:" + REST_PORT + "/server/shutdown");
       ClientResponse response = shutdownRest.get(ClientResponse.class);
-      assertTrue(response.getStatus() == Status.NO_CONTENT.getStatusCode());
+      assertEquals(Status.NO_CONTENT.getStatusCode(), response.getStatus());
       client.destroy();
 
       /* Wait for all threads that weren't there when we started to finish. */

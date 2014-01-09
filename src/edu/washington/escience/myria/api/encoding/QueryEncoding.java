@@ -130,7 +130,19 @@ public class QueryEncoding extends MyriaApiEncoding {
             throw new MyriaApiException(Status.BAD_REQUEST, "Unable to find workers that store "
                 + scan.relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
           }
-          fragment.workers.addAll(scanWorkers);
+          if (fragment.workers.size() == 0) {
+            fragment.workers.addAll(scanWorkers);
+          } else {
+            /*
+             * If the fragment already has workers, it scans multiple relations. They better use the exact same set of
+             * workers.
+             */
+            if (fragment.workers.size() != scanWorkers.size() || !fragment.workers.containsAll(scanWorkers)) {
+              throw new MyriaApiException(Status.BAD_REQUEST,
+                  "All tables scanned within a fragment must use the exact same set of workers. Caught at TableScan("
+                      + scan.relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE) + ")");
+            }
+          }
         }
       }
       if (fragment.workers.size() > 0) {
