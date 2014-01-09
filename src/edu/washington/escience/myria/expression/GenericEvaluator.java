@@ -1,7 +1,6 @@
 package edu.washington.escience.myria.expression;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.Objects;
 
 import org.codehaus.commons.compiler.CompilerFactoryFactory;
 import org.codehaus.commons.compiler.IScriptEvaluator;
@@ -16,9 +15,9 @@ import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.operator.Apply;
 
 /**
- * An Expression evaluator for generic stateless expressions. Used in {@link Apply}.
+ * An Expression evaluator for generic expressions. Used in {@link Apply}.
  */
-public class GenericEvaluator extends Evaluator {
+public class GenericEvaluator extends TupleEvaluator {
 
   /**
    * Default constructor.
@@ -42,18 +41,15 @@ public class GenericEvaluator extends Evaluator {
    */
   @Override
   public void compile() throws DbException {
-    Preconditions.checkArgument(!getExpression().isCopyFromInput(),
+    Preconditions.checkArgument(!isCopyFromInput(),
         "This expression does not need to be compiled because the data can be copied from the input.");
-    getExpression().setJavaExpression(
-        getExpression().getRootExpressionOperator().getJavaString(
-            Objects.requireNonNull(getExpression().getInputSchema())));
 
     try {
       IScriptEvaluator se = CompilerFactoryFactory.getDefaultCompilerFactory().newExpressionEvaluator();
 
       evaluator =
-          (EvalInterface) se.createFastEvaluator(getExpression().getJavaExpression(), EvalInterface.class,
-              new String[] { "tb", "rowId", "state" });
+          (EvalInterface) se.createFastEvaluator(getJavaExpression(), EvalInterface.class, new String[] {
+              "tb", "rowId", "state" });
     } catch (Exception e) {
       throw new DbException("Error when compiling expression " + this, e);
     }
@@ -87,7 +83,6 @@ public class GenericEvaluator extends Evaluator {
    * @param state
    * @throws InvocationTargetException exception thrown from janino
    */
-  @SuppressWarnings("deprecation")
   public void evalAndPut(final TupleBatch sourceTupleBatch, final int sourceRowIdx,
       final TupleBatchBuffer targetTupleBuffer, final int targetColumnIdx) throws InvocationTargetException {
     evalAndPut(sourceTupleBatch, sourceRowIdx, targetTupleBuffer, targetColumnIdx, null);
@@ -109,7 +104,7 @@ public class GenericEvaluator extends Evaluator {
   public void evalAndPut(final TupleBatch sourceTupleBatch, final int sourceRowIdx,
       final TupleBatchBuffer targetTupleBuffer, final int targetColumnIdx, final Object state)
       throws InvocationTargetException {
-    if (getExpression().isCopyFromInput()) {
+    if (isCopyFromInput()) {
       final Column<?> sourceColumn =
           sourceTupleBatch.getDataColumns().get(
               ((VariableExpression) getExpression().getRootExpressionOperator()).getColumnIdx());

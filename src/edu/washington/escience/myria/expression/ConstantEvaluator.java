@@ -36,8 +36,6 @@ public class ConstantEvaluator extends Evaluator {
    */
   @Override
   public void compile() throws DbException {
-    getExpression().setJavaExpression(getExpression().getRootExpressionOperator().getJavaString(null));
-
     try {
       evaluator =
           new ExpressionEvaluator(getExpression().getJavaExpression(), Type.OBJ_TYPE.toJavaType(), new String[] {},

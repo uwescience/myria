@@ -73,7 +73,7 @@ public final class Filter extends UnaryOperator {
     Schema inputSchema = getChild().getSchema();
 
     evaluator = new BooleanEvaluator(predicate, inputSchema);
-    if (predicate.needsCompiling()) {
+    if (evaluator.needsCompiling()) {
       evaluator.compile();
     }
   }

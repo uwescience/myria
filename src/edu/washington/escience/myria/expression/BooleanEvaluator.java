@@ -1,7 +1,6 @@
 package edu.washington.escience.myria.expression;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.Objects;
 
 import org.codehaus.commons.compiler.CompilerFactoryFactory;
 import org.codehaus.commons.compiler.IScriptEvaluator;
@@ -16,7 +15,7 @@ import edu.washington.escience.myria.Type;
 /**
  * An Expression evaluator for stateless boolean expressions.
  */
-public class BooleanEvaluator extends Evaluator {
+public class BooleanEvaluator extends TupleEvaluator {
 
   /**
    * Default constructor.
@@ -26,7 +25,7 @@ public class BooleanEvaluator extends Evaluator {
    */
   public BooleanEvaluator(final Expression expression, final Schema schema) {
     super(expression, schema);
-    Preconditions.checkArgument(expression.getOutputType().equals(Type.BOOLEAN_TYPE));
+    Preconditions.checkArgument(getOutputType().equals(Type.BOOLEAN_TYPE));
   }
 
   /**
@@ -41,18 +40,15 @@ public class BooleanEvaluator extends Evaluator {
    */
   @Override
   public void compile() throws DbException {
-    Preconditions.checkArgument(!getExpression().isCopyFromInput(),
+    Preconditions.checkArgument(!isCopyFromInput(),
         "This expression does not need to be compiled because the data can be copied from the input.");
-    getExpression().setJavaExpression(
-        getExpression().getRootExpressionOperator().getJavaString(
-            Objects.requireNonNull(getExpression().getInputSchema())));
 
     try {
       IScriptEvaluator se = CompilerFactoryFactory.getDefaultCompilerFactory().newExpressionEvaluator();
 
       evaluator =
-          (BooleanEvalInterface) se.createFastEvaluator(getExpression().getJavaExpression(),
-              BooleanEvalInterface.class, new String[] { "tb", "rowId" });
+          (BooleanEvalInterface) se.createFastEvaluator(getJavaExpression(), BooleanEvalInterface.class, new String[] {
+              "tb", "rowId" });
     } catch (Exception e) {
       throw new DbException("Error when compiling expression " + this, e);
     }

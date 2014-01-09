@@ -38,6 +38,7 @@ import edu.washington.escience.myria.expression.SqrtExpression;
 import edu.washington.escience.myria.expression.TanExpression;
 import edu.washington.escience.myria.expression.TimesExpression;
 import edu.washington.escience.myria.expression.ToUpperCaseExpression;
+import edu.washington.escience.myria.expression.TupleEvaluator;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.StatefulApply;
@@ -173,7 +174,8 @@ public class ApplyTest {
       // Expression (just copy/ rename): a;
       Expression expr = new Expression("copy", vara);
 
-      assertTrue(!expr.needsCompiling());
+      TupleEvaluator eval = new TupleEvaluator(expr, tbb.getSchema());
+      assertTrue(!eval.needsCompiling());
       Expressions.add(expr);
     }
 
@@ -443,13 +445,13 @@ public class ApplyTest {
       tbb.putString(0, "Foo" + i);
     }
 
-    Expression initializer = new Expression("", new ConstantExpression(Type.INT_TYPE, "0"));
+    Expression initializer = new Expression(new ConstantExpression(Type.INT_TYPE, "0"));
 
     Expression expression =
         new Expression("index", new CastExpression(new ConstantExpression(Type.OBJ_TYPE, "state"), Type.INT_TYPE));
 
     Expression increment =
-        new Expression("", new PlusExpression(new CastExpression(new ConstantExpression(Type.OBJ_TYPE, "state"),
+        new Expression(new PlusExpression(new CastExpression(new ConstantExpression(Type.OBJ_TYPE, "state"),
             Type.INT_TYPE), new ConstantExpression(Type.INT_TYPE, "1")));
 
     ImmutableList.Builder<Expression> Initializers = ImmutableList.builder();

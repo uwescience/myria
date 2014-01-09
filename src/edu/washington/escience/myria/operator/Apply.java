@@ -15,6 +15,7 @@ import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.GenericEvaluator;
+import edu.washington.escience.myria.expression.TupleEvaluator;
 
 /**
  * Generic apply operator.
@@ -114,19 +115,19 @@ public class Apply extends UnaryOperator {
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     Preconditions.checkNotNull(expressions);
 
-    resultBuffer = new TupleBatchBuffer(getSchema());
-
     Schema inputSchema = getChild().getSchema();
 
     evaluators = new ArrayList<>();
     evaluators.ensureCapacity(expressions.size());
     for (Expression expr : expressions) {
       GenericEvaluator evaluator = new GenericEvaluator(expr, inputSchema);
-      if (expr.needsCompiling()) {
+      if (evaluator.needsCompiling()) {
         evaluator.compile();
       }
       evaluators.add(evaluator);
     }
+
+    resultBuffer = new TupleBatchBuffer(getSchema());
   }
 
   @Override
@@ -146,10 +147,10 @@ public class Apply extends UnaryOperator {
     ImmutableList.Builder<Type> typesBuilder = ImmutableList.builder();
     ImmutableList.Builder<String> namesBuilder = ImmutableList.builder();
 
-    for (Expression expr : expressions) {
-      expr.setSchema(childSchema);
-      typesBuilder.add(expr.getOutputType());
-      namesBuilder.add(expr.getOutputName());
+    for (TupleEvaluator evaluator : evaluators) {
+      evaluator.setSchema(childSchema);
+      typesBuilder.add(evaluator.getOutputType());
+      namesBuilder.add(evaluator.getOutputName());
     }
     return new Schema(typesBuilder.build(), namesBuilder.build());
   }
