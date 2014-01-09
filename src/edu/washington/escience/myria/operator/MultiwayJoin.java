@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.operator;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -33,9 +34,15 @@ public class MultiwayJoin extends NAryOperator {
   private final List<List<JoinField>> joinFieldMapping;
 
   /**
-   * {@code fieldLocalOrder[i][j]} stores join field order of j-th field of i-th child's table.
+   * {@code joinFieldLocalOrder[i][j]} stores join field order of j-th field of i-th child's table.
    */
   private final List<List<JoinFieldOrder>> joinFieldLocalOrder;
+
+  /**
+   * {@code joinFieldGlobalOrder[i][j]} stores global order of j-th field of i-th child's table (-1 means not a joining
+   * field).
+   */
+  private final List<List<JoinFieldOrder>> joinFieldGlobalOrder;
 
   /**
    * {@code localOrderedJoinField[i][j]} stores the join field (locally) ordered j of i-th child's table.
@@ -110,7 +117,14 @@ public class MultiwayJoin extends NAryOperator {
     }
 
     public void setRow(int row) {
-      Preconditions.checkArgument(row >= 0 && row <= tables[tableIndex].numTuples());
+      // Preconditions.checkArgument(row >= 0 && row <= tables[tableIndex].numTuples());
+      if (row < 0 || row > tables[tableIndex].numTuples()) {
+        System.err.println("row: " + row);
+        System.err.println("tableIndex: " + tableIndex);
+        System.err.println("CurrentDepth:" + currentDepth);
+        System.err.println("numTp:" + tables[tableIndex].numTuples());
+        Preconditions.checkArgument(row >= 0 && row <= tables[tableIndex].numTuples());
+      }
       this.row = row;
     }
 
@@ -127,12 +141,9 @@ public class MultiwayJoin extends NAryOperator {
       this(cp.getTableIndex(), cp.getFieldIndex(), cp.getRow());
     }
 
-    public boolean atEnd() {
-      if (row == tables[tableIndex].numTuples()) {
-        return true;
-      } else {
-        return false;
-      }
+    @Override
+    public String toString() {
+      return "t:" + tableIndex + " f:" + fieldIndex + " r:" + row;
     }
   }
 
@@ -140,7 +151,12 @@ public class MultiwayJoin extends NAryOperator {
    * 
    * Indicate a field in a child table
    */
-  private final class JoinField {
+  private final class JoinField implements Serializable {
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 1L;
+
     /**
      * index of table containing this field in children
      */
@@ -167,65 +183,31 @@ public class MultiwayJoin extends NAryOperator {
    * Iterator of table, which implements a Trie like interface.
    * 
    */
-  private final class TableIterator {
+  private class TableIterator {
     private final int tableIndex;
     private int currentField = -1;
     private final int[] rowIndices;
 
-    public int getRow() {
+    public int getRowOfCurrentField() {
       return rowIndices[currentField];
     }
 
-    public void setRowOfCurrentField(int currentRow) {
-      rowIndices[currentField] = currentRow;
+    public int getRow(int field) {
+      Preconditions.checkElementIndex(field, rowIndices.length);
+      return rowIndices[field];
     }
 
-    public int getCurrentField() {
-      return currentField;
+    public void setRowOfCurrentField(int row) {
+      rowIndices[currentField] = row;
+    }
+
+    public void setRow(int field, int row) {
+      Preconditions.checkElementIndex(field, rowIndices.length);
+      rowIndices[field] = row;
     }
 
     private void setCurrentField(int currentField) {
       this.currentField = currentField;
-    }
-
-    /**
-     * Return to the parent key at the previous depth
-     */
-    public void up() {
-      final int localOrder = joinFieldLocalOrder.get(tableIndex).get(currentField).order;
-      if (localOrder == 0) {
-        return;
-      } else {
-        currentField = localOrderedJoinField.get(tableIndex).get(localOrder - 1).fieldIndex;
-      }
-    }
-
-    /**
-     * Proceed to the first key at the next depth
-     */
-    public void open() {
-      final int lastField = currentField;
-      final int localOrder = joinFieldLocalOrder.get(tableIndex).get(currentField).order;
-      if (localOrder == joinFieldLocalOrder.get(tableIndex).size() - 1) {
-        return;
-      } else {
-        currentField = localOrderedJoinField.get(tableIndex).get(localOrder + 1).fieldIndex;
-        rowIndices[currentField] = ranges[lastField].getMinRow();
-      }
-    }
-
-    /**
-     * go to the next row
-     * 
-     * @return whether the iterator reaches the end.
-     */
-    public boolean next() {
-      rowIndices[currentField]++;
-      if (getRow() >= ranges[currentField].getMaxRow()) {
-        return true;
-      } else {
-        return false;
-      }
     }
 
     /**
@@ -243,14 +225,21 @@ public class MultiwayJoin extends NAryOperator {
 
       /* initiate ranges */
       ranges = new IteratorRange[tables[tableIndex].numColumns()];
-      Arrays.fill(ranges, new IteratorRange(-1, -1));
+      for (int i = 0; i < tables[tableIndex].numColumns(); ++i) {
+        ranges[i] = new IteratorRange(-1, -1);
+      }
 
       /* initiate rowIndices */
       rowIndices = new int[getChildren().length];
       Arrays.fill(rowIndices, -1);
     }
 
-    private final class IteratorRange {
+    @SuppressWarnings("unused")
+    public int getTableIndex() {
+      return tableIndex;
+    }
+
+    private class IteratorRange {
       /**
        * minRow is reachable.
        */
@@ -272,14 +261,6 @@ public class MultiwayJoin extends NAryOperator {
         this.maxRow = maxRow;
       }
 
-      public boolean contains(int row) {
-        if (row < maxRow && row >= minRow) {
-          return true;
-        } else {
-          return false;
-        }
-      }
-
       /**
        * maxRow is unreachable.
        */
@@ -291,12 +272,6 @@ public class MultiwayJoin extends NAryOperator {
       }
     }
 
-    /**
-     * @return whether this iterator reaches the end of the table.
-     */
-    public boolean atEndOfTable() {
-      return getRow() >= tables[tableIndex].numTuples();
-    }
   }
 
   /**
@@ -305,8 +280,8 @@ public class MultiwayJoin extends NAryOperator {
   private class JoinIteratorCompare implements Comparator<JoinField> {
     @Override
     public int compare(JoinField o1, JoinField o2) {
-      return tables[o1.tableIndex].compare(o1.fieldIndex, iterators[o1.tableIndex].getRow(), tables[o2.tableIndex],
-          o2.fieldIndex, iterators[o2.tableIndex].getRow());
+      return tables[o1.tableIndex].compare(o1.fieldIndex, iterators[o1.tableIndex].getRowOfCurrentField(),
+          tables[o2.tableIndex], o2.fieldIndex, iterators[o2.tableIndex].getRowOfCurrentField());
     }
   }
 
@@ -314,7 +289,11 @@ public class MultiwayJoin extends NAryOperator {
    * record a field in a table and its join order
    * 
    */
-  private final class JoinFieldOrder {
+  private final class JoinFieldOrder implements Serializable {
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 1L;
     /**
      * join order of this field
      */
@@ -373,12 +352,16 @@ public class MultiwayJoin extends NAryOperator {
     /* initiate join field mapping and field local order */
     this.joinFieldMapping = new ArrayList<List<JoinField>>();
     joinFieldLocalOrder = new ArrayList<>(children.length);
+    joinFieldGlobalOrder = new ArrayList<>(children.length);
     for (Operator element : children) {
       List<JoinFieldOrder> localOrder = new ArrayList<>();
+      List<JoinFieldOrder> globalOrder = new ArrayList<>();
       for (int i = 0; i < element.getSchema().numColumns(); ++i) {
         localOrder.add(new JoinFieldOrder(-1, i));
+        globalOrder.add(new JoinFieldOrder(-1, i));
       }
       joinFieldLocalOrder.add(localOrder);
+      joinFieldGlobalOrder.add(globalOrder);
     }
 
     /* set join field mapping and field local order */
@@ -394,6 +377,7 @@ public class MultiwayJoin extends NAryOperator {
         Preconditions.checkPositionIndex(fieldIndex, children[tableIndex].getSchema().numColumns());
         joinedFieldList.add(new JoinField(tableIndex, fieldIndex));
         joinFieldLocalOrder.get(tableIndex).get(fieldIndex).setOrder(i);
+        joinFieldGlobalOrder.get(tableIndex).get(fieldIndex).setOrder(i);
       }
       this.joinFieldMapping.add(joinedFieldList);
     }
@@ -438,13 +422,22 @@ public class MultiwayJoin extends NAryOperator {
     }
 
     /* TODO: (to be removed) for debugging only. */
-    System.out.println("localOrderedJoinField: ");
-    for (List<JoinField> localOrderList : localOrderedJoinField) {
-      System.out.println(Arrays.toString(localOrderList.toArray()));
+    System.err.println("joinFieldMapping:");
+    for (List<JoinField> singleFieldMapping : this.joinFieldMapping) {
+      System.err.println(Arrays.toString(singleFieldMapping.toArray()));
     }
-    System.out.println("joinFieldLocalOrder: ");
+
+    System.err.println("localOrderedJoinField: ");
+    for (List<JoinField> localOrderList : localOrderedJoinField) {
+      System.err.println(Arrays.toString(localOrderList.toArray()));
+    }
+    System.err.println("joinFieldLocalOrder: ");
     for (List<JoinFieldOrder> localOrderList : joinFieldLocalOrder) {
-      System.out.println(Arrays.toString(localOrderList.toArray()));
+      System.err.println(Arrays.toString(localOrderList.toArray()));
+    }
+    System.err.println("joinFieldGlobalOrder: ");
+    for (List<JoinFieldOrder> localOrderList : joinFieldGlobalOrder) {
+      System.err.println(Arrays.toString(localOrderList.toArray()));
     }
 
     /* set output field */
@@ -452,6 +445,11 @@ public class MultiwayJoin extends NAryOperator {
     for (int i = 0; i < outputFieldMapping.size(); ++i) {
       Preconditions.checkArgument(outputFieldMapping.get(i).size() == 2);
       this.outputFieldMapping.add(new JoinField(outputFieldMapping.get(i).get(0), outputFieldMapping.get(i).get(1)));
+    }
+
+    System.err.println("outputFieldMapping: ");
+    for (JoinField jf : this.outputFieldMapping) {
+      System.err.println(jf);
     }
 
     /* set output schema */
@@ -463,9 +461,6 @@ public class MultiwayJoin extends NAryOperator {
       this.outputColumnNames = null;
     }
 
-    if (children.length > 0) {
-      generateSchema();
-    }
   }
 
   @Override
@@ -497,17 +492,29 @@ public class MultiwayJoin extends NAryOperator {
       }
     }
 
+    /* do the join, pop if there is ready tb. */
+    System.err.println("join called");
     leapfrog_join();
     TupleBatch nexttb = ansTBB.popAny();
+
     if (nexttb != null) {
+      System.err.println("tbsize: " + nexttb.numTuples());
       return nexttb;
-    } else if (nexttb == null && joinFinished) {
-      setEOS();
+    } else if (joinFinished) {
+      checkEOSAndEOI();
+      System.err.println("eos:" + eos() + " ansTBB :" + ansTBB.numTuples());
       return null;
     } else {
       throw new RuntimeException("incorrect return.");
     }
+  }
 
+  @Override
+  public void checkEOSAndEOI() {
+    if (ansTBB.numTuples() == 0) {
+      setEOS();
+      return;
+    }
   }
 
   @Override
@@ -531,9 +538,9 @@ public class MultiwayJoin extends NAryOperator {
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
 
-    generateSchema();
     /* Initiate hash tables */
     Operator[] children = getChildren();
+    tables = new TupleBuffer[children.length];
     for (int i = 0; i < children.length; ++i) {
       tables[i] = new TupleBuffer(children[i].getSchema());
     }
@@ -543,6 +550,8 @@ public class MultiwayJoin extends NAryOperator {
       iterators[i] = new TableIterator(i);
     }
     currentDepth = -1;
+
+    ansTBB = new TupleBatchBuffer(getSchema());
 
   }
 
@@ -557,6 +566,7 @@ public class MultiwayJoin extends NAryOperator {
       iterators[i] = null;
     }
     iterators = null;
+    ansTBB = null;
   }
 
   /**
@@ -577,6 +587,7 @@ public class MultiwayJoin extends NAryOperator {
    * init/restart leap-frog join.
    */
   private void leapfrog_init() {
+
     for (JoinField jf : joinFieldMapping.get(currentDepth)) {
       final int localOrder = joinFieldLocalOrder.get(jf.tableIndex).get(jf.fieldIndex).order;
       final TableIterator it = iterators[jf.tableIndex];
@@ -587,14 +598,16 @@ public class MultiwayJoin extends NAryOperator {
         it.setCurrentField(jf.fieldIndex);
         it.setRowOfCurrentField(0);
       } else {
-        /* if the join field is not ordered as the first, reset the cursor to last level */
+        /* if the join field is not ordered as the first, set the cursor to last level */
         final int lastJf = localOrderedJoinField.get(jf.tableIndex).get(localOrder - 1).fieldIndex;
         it.ranges[jf.fieldIndex].setMinRow(it.ranges[lastJf].getMinRow());
         it.ranges[jf.fieldIndex].setMaxRow(it.ranges[lastJf].getMaxRow());
         it.setCurrentField(jf.fieldIndex);
-        it.setRowOfCurrentField(it.ranges[lastJf].getMinRow());
+        it.setRowOfCurrentField(it.ranges[jf.fieldIndex].getMinRow());
       }
+      System.err.println("init, t: " + jf.tableIndex + " f: " + jf.fieldIndex + " pos:" + it.getRowOfCurrentField());
     }
+    System.err.println("# min:" + iterators[0].ranges[0].getMinRow() + " max: " + iterators[0].ranges[0].getMaxRow());
 
     Collections.sort(joinFieldMapping.get(currentDepth), new JoinIteratorCompare());
     currentIteratorIndex = 0;
@@ -610,19 +623,28 @@ public class MultiwayJoin extends NAryOperator {
    */
   private boolean leapfrog_search() {
     boolean atEnd = false;
+    Preconditions.checkElementIndex(currentDepth, joinFieldMapping.size());
     JoinField fieldWithMaxKey =
-        joinFieldMapping.get(currentDepth).get((currentIteratorIndex - 1) % joinFieldMapping.get(currentDepth).size());
+        joinFieldMapping.get(currentDepth).get(
+            (currentIteratorIndex - 1 + joinFieldMapping.get(currentDepth).size())
+                % joinFieldMapping.get(currentDepth).size());
     CellPointer maxKey =
         new CellPointer(fieldWithMaxKey.tableIndex, fieldWithMaxKey.fieldIndex, iterators[fieldWithMaxKey.tableIndex]
-            .getRow());
+            .getRowOfCurrentField());
+
+    Preconditions
+        .checkArgument(maxKey.getRow() <= iterators[fieldWithMaxKey.tableIndex].ranges[fieldWithMaxKey.fieldIndex]
+            .getMaxRow());
+    if (maxKey.getRow() == iterators[fieldWithMaxKey.tableIndex].ranges[fieldWithMaxKey.fieldIndex].getMaxRow()) {
+      return true;
+    }
 
     while (true) {
       JoinField fieldWithLeastKey = joinFieldMapping.get(currentDepth).get(currentIteratorIndex);
       CellPointer leastKey =
           new CellPointer(fieldWithLeastKey.tableIndex, fieldWithLeastKey.fieldIndex,
-              iterators[fieldWithLeastKey.tableIndex].getRow());
+              iterators[fieldWithLeastKey.tableIndex].getRowOfCurrentField());
       if (cellCompare(leastKey, maxKey) == 0) { // if the value current
-        refineRanges();
         break;
       } else {
         atEnd = leapfrog_seek(fieldWithLeastKey, maxKey);
@@ -631,7 +653,7 @@ public class MultiwayJoin extends NAryOperator {
         } else {// if leapfrog_seek hasn't reach end, update max key, move to the next table
           maxKey =
               new CellPointer(fieldWithLeastKey.tableIndex, fieldWithLeastKey.fieldIndex,
-                  iterators[fieldWithLeastKey.tableIndex].getRow());
+                  iterators[fieldWithLeastKey.tableIndex].getRowOfCurrentField());
           currentIteratorIndex = (currentIteratorIndex + 1) % joinFieldMapping.get(currentDepth).size();
         }
       }
@@ -639,8 +661,80 @@ public class MultiwayJoin extends NAryOperator {
     return atEnd;
   }
 
-  /* TODO: for each join field, find the boundary of current value. */
-  public void refineRanges() {
+  /**
+   * @param jf JoinField
+   * @throws DbException
+   */
+  private void refineRange(JoinField jf) {
+
+    int startRow = iterators[jf.tableIndex].getRow(jf.fieldIndex);
+    int endRow = iterators[jf.tableIndex].ranges[jf.fieldIndex].getMaxRow() - 1;
+    iterators[jf.tableIndex].ranges[jf.fieldIndex].setMinRow(startRow);
+    if (startRow > endRow) {
+      System.err.println("start row:" + startRow);
+      System.err.println("end row:" + endRow);
+      System.err.println("current depth:" + currentDepth);
+    }
+    Preconditions.checkArgument(startRow <= endRow);
+
+    final CellPointer startCursor = new CellPointer(jf.tableIndex, jf.fieldIndex, startRow);
+
+    /* short cut: if the maxCursor has the same value as current line */
+    CellPointer cursor = new CellPointer(jf.tableIndex, jf.fieldIndex, endRow);
+    if (cellCompare(startCursor, cursor) == 0) {
+      return;
+    }
+
+    /* short cut: if the next line has different value */
+    cursor.setRow(++startRow);
+    if (cellCompare(startCursor, cursor) < 0) {
+      for (int i = 0; i < iterators[jf.tableIndex].ranges.length; ++i) {
+        System.err.println("###1### t :" + jf.tableIndex + " f:" + i + " max:"
+            + iterators[jf.tableIndex].ranges[i].maxRow);
+      }
+      iterators[jf.tableIndex].ranges[jf.fieldIndex].maxRow = startRow;
+      for (int i = 0; i < iterators[jf.tableIndex].ranges.length; ++i) {
+        System.err.println("###2### t :" + jf.tableIndex + " f:" + i + " max:"
+            + iterators[jf.tableIndex].ranges[i].maxRow);
+      }
+      return;
+    }
+
+    /* refine start */
+    int step = 1;
+    while (true) {
+      int compare = cellCompare(startCursor, cursor);
+      Preconditions.checkArgument(compare <= 0);
+      if (compare < 0) {
+        endRow = cursor.getRow();
+        break;
+      } else if (compare == 0) {
+        startRow = cursor.getRow();
+        cursor.setRow(startRow + step);
+        step = step * 2;
+        if (cursor.getRow() + step > endRow) {
+          break;
+        }
+      }
+    }
+
+    /* refine end */
+    while (true) {
+      cursor.setRow((startRow + endRow) / 2);
+      int compare = cellCompare(startCursor, cursor);
+      if (compare == 0) { // if current cursor equals to start cursor
+        startRow = cursor.getRow();
+      } else if (compare < 0) { // if current cursor is greater than start cursor
+        endRow = cursor.getRow();
+      }
+
+      if (endRow == startRow + 1) {
+        iterators[jf.tableIndex].ranges[jf.fieldIndex].setMaxRow(endRow);
+        System.err.println("#3 min:" + iterators[0].ranges[0].getMinRow() + " max: "
+            + iterators[0].ranges[0].getMaxRow());
+        return;
+      }
+    }
 
   }
 
@@ -652,8 +746,19 @@ public class MultiwayJoin extends NAryOperator {
    * @return at end or not.
    */
   private boolean leapfrog_seek(JoinField jf, CellPointer target) {
-    int startRow = iterators[jf.tableIndex].getRow();
-    int maxRow = iterators[jf.tableIndex].ranges[jf.fieldIndex].getMaxRow() - 1;
+
+    int startRow = iterators[jf.tableIndex].getRow(jf.fieldIndex);
+    int endRow = iterators[jf.tableIndex].ranges[jf.fieldIndex].getMaxRow() - 1;
+    if (startRow > endRow) {
+      System.err.println("start row: " + startRow);
+      System.err.println("max row: " + endRow);
+      System.err.println("numTuple: " + tables[jf.tableIndex].numTuples());
+      System.err.println("CurrentDepth:" + currentDepth);
+      System.err.println("table index:" + jf.tableIndex);
+      System.err.println("field index:" + jf.fieldIndex);
+    }
+    Preconditions.checkArgument(startRow <= endRow);
+
     final CellPointer startCursor = new CellPointer(jf.tableIndex, jf.fieldIndex, startRow);
     CellPointer cursor = new CellPointer(startCursor);
 
@@ -661,45 +766,29 @@ public class MultiwayJoin extends NAryOperator {
     if (cellCompare(startCursor, target) >= 0) {
       return false;
     }
+
     /* set row number to upper bound */
-    cursor.setRow(maxRow);
+    cursor.setRow(endRow);
     if (cellCompare(cursor, target) < 0) {
       return true;
     }
 
     /* binary search: find the first row whose value is not less than target */
     while (true) {
-      cursor.setRow((maxRow + startRow) / 2);
+      cursor.setRow((endRow + startRow) / 2);
       int compare = cellCompare(cursor, target);
       if (compare >= 0) { // cursor > target
-        maxRow = cursor.getRow();
+        endRow = cursor.getRow();
       } else if (compare < 0) { // cursor < target
         startRow = cursor.getRow();
       }
 
-      if (startRow == maxRow - 1) {
-        cursor.setRow(maxRow);
-        iterators[jf.tableIndex].setRowOfCurrentField(maxRow);
+      if (startRow == endRow - 1) {
+        cursor.setRow(endRow);
+        iterators[jf.tableIndex].setRow(jf.fieldIndex, endRow);
         return false;
       }
     }
-  }
-
-  /**
-   * @param cp1 CellPointer 1
-   * @param cp2 CellPointer 2
-   * @return whether two rows have the same higher ordered variables
-   */
-  private boolean compareHigherOrdered(CellPointer cp1, CellPointer cp2) {
-    Preconditions.checkArgument(cp1.getTableIndex() == cp2.getTableIndex());
-    for (int i = 0; i < joinFieldLocalOrder.get(cp2.getTableIndex()).get(cp2.getFieldIndex()).getOrder(); i++) {
-      int fieldIndex = localOrderedJoinField.get(cp2.getTableIndex()).get(i).fieldIndex;
-      if (cellCompare(new CellPointer(cp1.getTableIndex(), fieldIndex, cp1.getRow()), new CellPointer(cp2
-          .getTableIndex(), fieldIndex, cp2.getRow())) != 0) {
-        return false;
-      }
-    }
-    return true;
   }
 
   /**
@@ -713,47 +802,98 @@ public class MultiwayJoin extends NAryOperator {
       leapfrog_init();
     }
 
-    /* break if a full tuple batch has been formed */
+    /* break if a full tuple batch has been formed TODO: to be revised */
+    System.err.println("ansTBB: " + ansTBB.numTuples());
+    System.err.println("Batch size: " + TupleBatch.BATCH_SIZE);
     while (ansTBB.numTuples() < TupleBatch.BATCH_SIZE) {
+      System.err.println("______________________________");
+      System.err.println("depth: " + currentDepth);
+      for (JoinField jf : joinFieldMapping.get(currentDepth)) {
+        System.err.println("t: " + jf.tableIndex + " f: " + iterators[jf.tableIndex].currentField + " pos:"
+            + iterators[jf.tableIndex].getRowOfCurrentField() + " min: "
+            + iterators[jf.tableIndex].ranges[jf.fieldIndex].minRow + " max:"
+            + iterators[jf.tableIndex].ranges[jf.fieldIndex].maxRow);
+        Preconditions.checkArgument(jf.fieldIndex == iterators[jf.tableIndex].currentField);
+      }
       boolean atEnd = leapfrog_search();
+      System.err.println("after--");
+      System.err.println(" atEnd: " + atEnd);
+      for (JoinField jf : joinFieldMapping.get(currentDepth)) {
+        System.err.println("t: " + jf.tableIndex + " f: " + iterators[jf.tableIndex].currentField + " pos:"
+            + iterators[jf.tableIndex].getRowOfCurrentField() + " min: "
+            + iterators[jf.tableIndex].ranges[jf.fieldIndex].minRow + " max:"
+            + iterators[jf.tableIndex].ranges[jf.fieldIndex].maxRow);
+      }
+
       if (atEnd && currentDepth == 0) {
         /* if the first join variable reaches end, then the join finish. */
         joinFinished = true;
-        return;
+        break;
 
       } else if (atEnd) {
         /* reach to the end in current depth, go back to last depth */
         join_up();
 
       } else if (currentDepth == joinFieldMapping.size() - 1) {
+
+        /* refine range */
+        for (JoinField jf : joinFieldMapping.get(currentDepth)) {
+          refineRange(jf);
+        }
+
         /* exhaust all output with current join key */
         exhaustOutput(0);
 
         /* move to the next value */
         iterators[joinFieldMapping.get(currentDepth).get(currentIteratorIndex).tableIndex].nextValue();
+        currentIteratorIndex =
+            (currentIteratorIndex - 1 + joinFieldMapping.get(currentDepth).size())
+                % joinFieldMapping.get(currentDepth).size();
+
+        /* restore range */
+        for (JoinField jf : joinFieldMapping.get(currentDepth)) {
+          final int localOrder = joinFieldLocalOrder.get(jf.tableIndex).get(jf.fieldIndex).order;
+          final TableIterator it = iterators[jf.tableIndex];
+          if (localOrder != 0) {
+            final int lastJf = localOrderedJoinField.get(jf.tableIndex).get(localOrder - 1).fieldIndex;
+            it.ranges[jf.fieldIndex].setMinRow(it.ranges[lastJf].getMinRow());
+            it.ranges[jf.fieldIndex].setMaxRow(it.ranges[lastJf].getMaxRow());
+          } else {
+            it.ranges[jf.fieldIndex].setMaxRow(tables[jf.tableIndex].numTuples());
+          }
+        }
+
       } else {
         /* go to the next join variable. */
         join_open();
-
       }
     }
+
+    System.err.println("leap_frog finish, numTup:" + ansTBB.numTuples());
   }
 
   /**
    * advance to the next join variable.
    */
   private void join_open() {
-    currentDepth++;
     for (JoinField jf : joinFieldMapping.get(currentDepth)) {
-      iterators[jf.tableIndex].open();
-
-      if (currentDepth == 0) {
-        // if that is initial open.
+      int ti = jf.tableIndex;
+      // iterators[ti].open();
+      /* set the range for the highest ordered field in a table */
+      if (joinFieldLocalOrder.get(ti).get(iterators[ti].currentField).getOrder() == 0) {
         iterators[jf.tableIndex].ranges[jf.fieldIndex].setMinRow(0);
         iterators[jf.tableIndex].ranges[jf.fieldIndex].setMaxRow(tables[jf.tableIndex].numTuples());
-      } else {
-        // TODO: set the new range by binary search
       }
+      refineRange(jf);
+      System.err.println("refine t:" + jf.tableIndex + " f: " + jf.fieldIndex + " pos: "
+          + iterators[jf.tableIndex].rowIndices[jf.fieldIndex] + " min: "
+          + iterators[jf.tableIndex].ranges[jf.fieldIndex].getMinRow() + " max: "
+          + iterators[jf.tableIndex].ranges[jf.fieldIndex].getMaxRow());
+    }
+    currentDepth++;
+    for (JoinField jf : joinFieldMapping.get(currentDepth)) {
+      iterators[jf.tableIndex].setCurrentField(jf.fieldIndex);
+      iterators[jf.tableIndex].setRowOfCurrentField(iterators[jf.tableIndex].ranges[jf.fieldIndex].getMinRow());
     }
     leapfrog_init();
   }
@@ -762,10 +902,33 @@ public class MultiwayJoin extends NAryOperator {
    * backtrack to previous join variable.
    */
   private void join_up() {
-    for (JoinField jf : joinFieldMapping.get(currentDepth)) {
-      iterators[jf.tableIndex].up();
-    }
+
     currentDepth--;
+
+    for (JoinField jf : joinFieldMapping.get(currentDepth)) {
+      iterators[jf.tableIndex].setCurrentField(jf.fieldIndex);
+    }
+
+    /* move to the next value */
+    currentIteratorIndex = 0;
+    iterators[joinFieldMapping.get(currentDepth).get(currentIteratorIndex).tableIndex].nextValue();
+    currentIteratorIndex =
+        (currentIteratorIndex - 1 + joinFieldMapping.get(currentDepth).size())
+            % joinFieldMapping.get(currentDepth).size();
+
+    for (JoinField jf : joinFieldMapping.get(currentDepth)) {
+      final TableIterator it = iterators[jf.tableIndex];
+      final int localOrder = joinFieldLocalOrder.get(jf.tableIndex).get(jf.fieldIndex).order;
+      if (localOrder == 0) {
+        it.ranges[jf.fieldIndex].setMinRow(0);
+        it.ranges[jf.fieldIndex].setMaxRow(tables[jf.tableIndex].numTuples());
+      } else {
+        final int lastJf = localOrderedJoinField.get(jf.tableIndex).get(localOrder - 1).fieldIndex;
+        it.ranges[jf.fieldIndex].setMinRow(it.ranges[lastJf].getMinRow());
+        it.ranges[jf.fieldIndex].setMaxRow(it.ranges[lastJf].getMaxRow());
+      }
+    }
+
   }
 
   /**
@@ -775,8 +938,11 @@ public class MultiwayJoin extends NAryOperator {
    */
   private void exhaustOutput(final int index) {
     JoinField currentJF = joinFieldMapping.get(currentDepth).get(index);
-    int currentRow = iterators[currentJF.tableIndex].ranges[index].minRow;
-    for (; currentRow < iterators[currentJF.tableIndex].ranges[index].maxRow; currentRow++) {
+    int currentRow = iterators[currentJF.tableIndex].ranges[currentJF.fieldIndex].minRow;
+    for (; currentRow < iterators[currentJF.tableIndex].ranges[currentJF.fieldIndex].maxRow; currentRow++) {
+      System.err.println("t:" + currentJF.tableIndex + " f:" + currentJF.fieldIndex + " index:" + index + " minRow:"
+          + iterators[currentJF.tableIndex].ranges[currentJF.fieldIndex].minRow + " maxRow:"
+          + iterators[currentJF.tableIndex].ranges[currentJF.fieldIndex].maxRow + " currentRow:" + currentRow);
       iterators[currentJF.tableIndex].setRowOfCurrentField(currentRow);
       if (index == joinFieldMapping.get(currentDepth).size() - 1) {
         addToAns();
@@ -790,9 +956,10 @@ public class MultiwayJoin extends NAryOperator {
    * add result to answer.
    */
   private void addToAns() {
+    System.err.println("add to ans");
     for (int i = 0; i < outputFieldMapping.size(); ++i) {
       ansTBB.put(tables[outputFieldMapping.get(i).tableIndex], outputFieldMapping.get(i).fieldIndex,
-          iterators[outputFieldMapping.get(i).tableIndex].getRow(), i);
+          iterators[outputFieldMapping.get(i).tableIndex].getRowOfCurrentField(), i);
     }
   }
 

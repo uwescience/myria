@@ -152,15 +152,15 @@ public class MultiwayJoinTest extends SystemTestBase {
     final DbQueryScan scanS = new DbQueryScan(TWITTER_S, TWITTER_S_SCHEMA);
     final DbQueryScan scanT = new DbQueryScan(TWITTER_T, TWITTER_T_SCHEMA);
 
-    final InMemoryOrderBy R = new InMemoryOrderBy(scanR, new int[] { 0, 1 }, new boolean[] { true });
-    final InMemoryOrderBy S = new InMemoryOrderBy(scanS, new int[] { 0, 1 }, new boolean[] { true });
-    final InMemoryOrderBy T = new InMemoryOrderBy(scanT, new int[] { 0, 1 }, new boolean[] { true });
+    final InMemoryOrderBy R = new InMemoryOrderBy(scanR, new int[] { 0, 1 }, new boolean[] { true, true });
+    final InMemoryOrderBy S = new InMemoryOrderBy(scanS, new int[] { 0, 1 }, new boolean[] { true, true });
+    final InMemoryOrderBy T = new InMemoryOrderBy(scanT, new int[] { 0, 1 }, new boolean[] { true, true });
 
     List<List<List<Integer>>> fieldMap =
         new ArrayList<List<List<Integer>>>(asList(new ArrayList<List<Integer>>(asList(new ArrayList<Integer>(asList(0,
-            0)), new ArrayList<Integer>(asList(2, 1)))), new ArrayList<List<Integer>>(asList(new ArrayList<Integer>(
+            0)), new ArrayList<Integer>(asList(2, 0)))), new ArrayList<List<Integer>>(asList(new ArrayList<Integer>(
             asList(1, 0)), new ArrayList<Integer>(asList(0, 1)))), new ArrayList<List<Integer>>(asList(
-            new ArrayList<Integer>(asList(1, 1)), new ArrayList<Integer>(asList(2, 0))))));
+            new ArrayList<Integer>(asList(1, 1)), new ArrayList<Integer>(asList(2, 1))))));
 
     final MultiwayJoin mj =
         new MultiwayJoin(new Operator[] { R, S, T }, fieldMap, new ArrayList<List<Integer>>(asList(
@@ -181,14 +181,14 @@ public class MultiwayJoinTest extends SystemTestBase {
     server.submitQueryPlan(serverPlanMJ, workerPlansMJ).sync();
     TupleBatchBuffer multiwayJoinResult = new TupleBatchBuffer(queueStoreMJ.getSchema());
     tb = null;
-    while (!receivedTupleBatches.isEmpty()) {
-      tb = receivedTupleBatches.poll();
+    while (!receivedMJTB.isEmpty()) {
+      tb = receivedMJTB.poll();
       if (tb != null) {
-        tb.compactInto(actualResult);
+        tb.compactInto(multiwayJoinResult);
       }
     }
     final HashMap<Tuple, Integer> multiwayJoinResultBag = TestUtils.tupleBatchToTupleBag(multiwayJoinResult);
-
+    System.err.println("number of result: " + multiwayJoinResultBag.size());
     TestUtils.assertTupleBagEqual(pipelineJoinResultBag, multiwayJoinResultBag);
 
   }
