@@ -337,13 +337,13 @@ public class MultiwayJoin extends NAryOperator {
 
   /**
    * @param children list of child operators
-   * @param joinFieldMapping mapping of output field to child table field
+   * @param joinFieldMapping mapping of join field to child table field
    * @param outputColumns output column names
    */
   public MultiwayJoin(final Operator[] children, final List<List<List<Integer>>> joinFieldMapping,
       final List<List<Integer>> outputFieldMapping, final List<String> outputColumnNames) {
     if (outputColumnNames != null) {
-      Preconditions.checkArgument(joinFieldMapping.size() == outputColumnNames.size(),
+      Preconditions.checkArgument(outputFieldMapping.size() == outputColumnNames.size(),
           "outputColumns and JoinFieldMapping should have the same cardinality.");
     }
     /* set children */
@@ -397,9 +397,9 @@ public class MultiwayJoin extends NAryOperator {
           if (o1.getOrder() == -1 && o2.getOrder() == -1) {
             return 0;
           } else if (o1.getOrder() == -1 && o2.getOrder() != -1) {
-            return -1;
-          } else if (o1.getOrder() != -1 && o2.getOrder() == -1) {
             return 1;
+          } else if (o1.getOrder() != -1 && o2.getOrder() == -1) {
+            return -1;
           } else {
             return Integer.compare(o1.getOrder(), o2.getOrder());
           }
@@ -448,9 +448,7 @@ public class MultiwayJoin extends NAryOperator {
     }
 
     System.err.println("outputFieldMapping: ");
-    for (JoinField jf : this.outputFieldMapping) {
-      System.err.println(jf);
-    }
+    System.err.println(Arrays.toString(outputFieldMapping.toArray()));
 
     /* set output schema */
     if (outputColumnNames != null) {
@@ -466,15 +464,23 @@ public class MultiwayJoin extends NAryOperator {
   @Override
   protected TupleBatch fetchNextReady() throws Exception {
 
+    System.err.println("fnr is called.");
+
     /* drain all the children first. */
     Operator[] children = getChildren();
     while (numberOfEOSChild != children.length) {
+
       int numberOfNoDataChild = 0;
       for (int i = 0; i < children.length; ++i) {
+
         Operator child = children[i];
+        System.err.println("child:" + child.hashCode() + " i:" + i);
         if (!child.eos()) {
           TupleBatch childTB = child.nextReady();
+          System.err.println("not EOS");
+
           if (childTB == null) {
+            System.err.println("null");
             if (child.eos()) {
               numberOfEOSChild++;
             }
@@ -487,22 +493,30 @@ public class MultiwayJoin extends NAryOperator {
           numberOfNoDataChild++;
         }
       }
+
+      int realNumberOfEOSChild = 0;
+      for (Operator child : getChildren()) {
+        if (child.eos()) {
+          realNumberOfEOSChild++;
+        }
+      }
+
+      System.err.println("realNumberOfEOSChild: " + realNumberOfEOSChild);
+
       if (numberOfNoDataChild == children.length && numberOfEOSChild != children.length) {
+        System.err.println("numOfChildren:" + children.length + " numEOSChild:" + numberOfEOSChild);
         return null;
       }
     }
 
     /* do the join, pop if there is ready tb. */
-    System.err.println("join called");
     leapfrog_join();
     TupleBatch nexttb = ansTBB.popAny();
 
     if (nexttb != null) {
-      System.err.println("tbsize: " + nexttb.numTuples());
       return nexttb;
     } else if (joinFinished) {
       checkEOSAndEOI();
-      System.err.println("eos:" + eos() + " ansTBB :" + ansTBB.numTuples());
       return null;
     } else {
       throw new RuntimeException("incorrect return.");
@@ -605,9 +619,7 @@ public class MultiwayJoin extends NAryOperator {
         it.setCurrentField(jf.fieldIndex);
         it.setRowOfCurrentField(it.ranges[jf.fieldIndex].getMinRow());
       }
-      System.err.println("init, t: " + jf.tableIndex + " f: " + jf.fieldIndex + " pos:" + it.getRowOfCurrentField());
     }
-    System.err.println("# min:" + iterators[0].ranges[0].getMinRow() + " max: " + iterators[0].ranges[0].getMaxRow());
 
     Collections.sort(joinFieldMapping.get(currentDepth), new JoinIteratorCompare());
     currentIteratorIndex = 0;
@@ -688,15 +700,7 @@ public class MultiwayJoin extends NAryOperator {
     /* short cut: if the next line has different value */
     cursor.setRow(++startRow);
     if (cellCompare(startCursor, cursor) < 0) {
-      for (int i = 0; i < iterators[jf.tableIndex].ranges.length; ++i) {
-        System.err.println("###1### t :" + jf.tableIndex + " f:" + i + " max:"
-            + iterators[jf.tableIndex].ranges[i].maxRow);
-      }
       iterators[jf.tableIndex].ranges[jf.fieldIndex].maxRow = startRow;
-      for (int i = 0; i < iterators[jf.tableIndex].ranges.length; ++i) {
-        System.err.println("###2### t :" + jf.tableIndex + " f:" + i + " max:"
-            + iterators[jf.tableIndex].ranges[i].maxRow);
-      }
       return;
     }
 
@@ -730,8 +734,6 @@ public class MultiwayJoin extends NAryOperator {
 
       if (endRow == startRow + 1) {
         iterators[jf.tableIndex].ranges[jf.fieldIndex].setMaxRow(endRow);
-        System.err.println("#3 min:" + iterators[0].ranges[0].getMinRow() + " max: "
-            + iterators[0].ranges[0].getMaxRow());
         return;
       }
     }
@@ -801,29 +803,15 @@ public class MultiwayJoin extends NAryOperator {
       currentDepth = 0;
       leapfrog_init();
     }
+    System.err.println("join called");
 
     /* break if a full tuple batch has been formed TODO: to be revised */
-    System.err.println("ansTBB: " + ansTBB.numTuples());
-    System.err.println("Batch size: " + TupleBatch.BATCH_SIZE);
     while (ansTBB.numTuples() < TupleBatch.BATCH_SIZE) {
-      System.err.println("______________________________");
-      System.err.println("depth: " + currentDepth);
       for (JoinField jf : joinFieldMapping.get(currentDepth)) {
-        System.err.println("t: " + jf.tableIndex + " f: " + iterators[jf.tableIndex].currentField + " pos:"
-            + iterators[jf.tableIndex].getRowOfCurrentField() + " min: "
-            + iterators[jf.tableIndex].ranges[jf.fieldIndex].minRow + " max:"
-            + iterators[jf.tableIndex].ranges[jf.fieldIndex].maxRow);
         Preconditions.checkArgument(jf.fieldIndex == iterators[jf.tableIndex].currentField);
       }
       boolean atEnd = leapfrog_search();
-      System.err.println("after--");
-      System.err.println(" atEnd: " + atEnd);
-      for (JoinField jf : joinFieldMapping.get(currentDepth)) {
-        System.err.println("t: " + jf.tableIndex + " f: " + iterators[jf.tableIndex].currentField + " pos:"
-            + iterators[jf.tableIndex].getRowOfCurrentField() + " min: "
-            + iterators[jf.tableIndex].ranges[jf.fieldIndex].minRow + " max:"
-            + iterators[jf.tableIndex].ranges[jf.fieldIndex].maxRow);
-      }
+      System.err.println("currentDepth: " + currentDepth);
 
       if (atEnd && currentDepth == 0) {
         /* if the first join variable reaches end, then the join finish. */
@@ -833,6 +821,7 @@ public class MultiwayJoin extends NAryOperator {
       } else if (atEnd) {
         /* reach to the end in current depth, go back to last depth */
         join_up();
+        System.err.println("joinUp ");
 
       } else if (currentDepth == joinFieldMapping.size() - 1) {
 
@@ -843,6 +832,8 @@ public class MultiwayJoin extends NAryOperator {
 
         /* exhaust all output with current join key */
         exhaustOutput(0);
+
+        System.err.println("output ");
 
         /* move to the next value */
         iterators[joinFieldMapping.get(currentDepth).get(currentIteratorIndex).tableIndex].nextValue();
@@ -869,7 +860,6 @@ public class MultiwayJoin extends NAryOperator {
       }
     }
 
-    System.err.println("leap_frog finish, numTup:" + ansTBB.numTuples());
   }
 
   /**
@@ -885,10 +875,6 @@ public class MultiwayJoin extends NAryOperator {
         iterators[jf.tableIndex].ranges[jf.fieldIndex].setMaxRow(tables[jf.tableIndex].numTuples());
       }
       refineRange(jf);
-      System.err.println("refine t:" + jf.tableIndex + " f: " + jf.fieldIndex + " pos: "
-          + iterators[jf.tableIndex].rowIndices[jf.fieldIndex] + " min: "
-          + iterators[jf.tableIndex].ranges[jf.fieldIndex].getMinRow() + " max: "
-          + iterators[jf.tableIndex].ranges[jf.fieldIndex].getMaxRow());
     }
     currentDepth++;
     for (JoinField jf : joinFieldMapping.get(currentDepth)) {
@@ -940,9 +926,6 @@ public class MultiwayJoin extends NAryOperator {
     JoinField currentJF = joinFieldMapping.get(currentDepth).get(index);
     int currentRow = iterators[currentJF.tableIndex].ranges[currentJF.fieldIndex].minRow;
     for (; currentRow < iterators[currentJF.tableIndex].ranges[currentJF.fieldIndex].maxRow; currentRow++) {
-      System.err.println("t:" + currentJF.tableIndex + " f:" + currentJF.fieldIndex + " index:" + index + " minRow:"
-          + iterators[currentJF.tableIndex].ranges[currentJF.fieldIndex].minRow + " maxRow:"
-          + iterators[currentJF.tableIndex].ranges[currentJF.fieldIndex].maxRow + " currentRow:" + currentRow);
       iterators[currentJF.tableIndex].setRowOfCurrentField(currentRow);
       if (index == joinFieldMapping.get(currentDepth).size() - 1) {
         addToAns();
@@ -956,7 +939,6 @@ public class MultiwayJoin extends NAryOperator {
    * add result to answer.
    */
   private void addToAns() {
-    System.err.println("add to ans");
     for (int i = 0; i < outputFieldMapping.size(); ++i) {
       ansTBB.put(tables[outputFieldMapping.get(i).tableIndex], outputFieldMapping.get(i).fieldIndex,
           iterators[outputFieldMapping.get(i).tableIndex].getRowOfCurrentField(), i);

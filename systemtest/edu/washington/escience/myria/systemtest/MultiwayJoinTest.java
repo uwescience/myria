@@ -35,6 +35,9 @@ import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
+import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
+import edu.washington.escience.myria.parallel.GenericShuffleProducer;
+import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.util.TestUtils;
 import edu.washington.escience.myria.util.Tuple;
 
@@ -104,7 +107,7 @@ public class MultiwayJoinTest extends SystemTestBase {
   }
 
   @Test
-  public void multiwayJoinTest() throws Exception {
+  public void twitterTriangle() throws Exception {
 
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
@@ -137,6 +140,7 @@ public class MultiwayJoinTest extends SystemTestBase {
     SinkRoot serverPlan = new SinkRoot(queueStore);
 
     server.submitQueryPlan(serverPlan, workerPlans).sync();
+
     TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
     TupleBatch tb = null;
     while (!receivedTupleBatches.isEmpty()) {
@@ -179,6 +183,7 @@ public class MultiwayJoinTest extends SystemTestBase {
     SinkRoot serverPlanMJ = new SinkRoot(queueStoreMJ);
 
     server.submitQueryPlan(serverPlanMJ, workerPlansMJ).sync();
+
     TupleBatchBuffer multiwayJoinResult = new TupleBatchBuffer(queueStoreMJ.getSchema());
     tb = null;
     while (!receivedMJTB.isEmpty()) {
@@ -188,8 +193,74 @@ public class MultiwayJoinTest extends SystemTestBase {
       }
     }
     final HashMap<Tuple, Integer> multiwayJoinResultBag = TestUtils.tupleBatchToTupleBag(multiwayJoinResult);
-    System.err.println("number of result: " + multiwayJoinResultBag.size());
+
     TestUtils.assertTupleBagEqual(pipelineJoinResultBag, multiwayJoinResultBag);
 
+  }
+
+  @Test
+  public void twoWayJoinUsingMultiwayJoinOperator() throws Exception {
+    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
+    Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
+
+    final HashMap<Tuple, Integer> expectedResult = simpleRandomJoinTestBase();
+
+    final ExchangePairID serverReceiveID = ExchangePairID.newID();
+    final ExchangePairID table1ShuffleID = ExchangePairID.newID();
+    final ExchangePairID table2ShuffleID = ExchangePairID.newID();
+    final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(2, 0);
+
+    final ImmutableList<Type> outputTypes =
+        ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE, Type.LONG_TYPE, Type.STRING_TYPE);
+    final ImmutableList<String> outputColumnNames = ImmutableList.of("id1", "name1", "id2", "name2");
+    final Schema outputSchema = new Schema(outputTypes, outputColumnNames);
+
+    final DbQueryScan scan1 = new DbQueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA);
+    final DbQueryScan scan2 = new DbQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA);
+
+    final GenericShuffleProducer sp1 =
+        new GenericShuffleProducer(scan1, table1ShuffleID, new int[] { workerIDs[0], workerIDs[1] }, pf);
+    final GenericShuffleConsumer sc1 =
+        new GenericShuffleConsumer(sp1.getSchema(), table1ShuffleID, new int[] { workerIDs[0], workerIDs[1] });
+    final GenericShuffleProducer sp2 =
+        new GenericShuffleProducer(scan2, table2ShuffleID, new int[] { workerIDs[0], workerIDs[1] }, pf);
+    final GenericShuffleConsumer sc2 =
+        new GenericShuffleConsumer(sp2.getSchema(), table2ShuffleID, new int[] { workerIDs[0], workerIDs[1] });
+
+    final InMemoryOrderBy o1 = new InMemoryOrderBy(sc1, new int[] { 0, 1 }, new boolean[] { true, true });
+    final InMemoryOrderBy o2 = new InMemoryOrderBy(sc2, new int[] { 0, 1 }, new boolean[] { true, true });
+
+    List<List<List<Integer>>> fieldMap =
+        new ArrayList<List<List<Integer>>>(asList(new ArrayList<List<Integer>>(asList(new ArrayList<Integer>(asList(0,
+            0)), new ArrayList<Integer>(asList(1, 0))))));
+
+    final MultiwayJoin localjoin =
+        new MultiwayJoin(new Operator[] { o1, o2 }, fieldMap, new ArrayList<List<Integer>>(asList(
+            new ArrayList<Integer>(asList(0, 0)), new ArrayList<Integer>(asList(0, 1)), new ArrayList<Integer>(asList(
+                1, 0)), new ArrayList<Integer>(asList(1, 1)))), new ArrayList<String>(asList("id1", "name1", "id2",
+            "name2")));
+
+    final CollectProducer cp1 = new CollectProducer(localjoin, serverReceiveID, MASTER_ID);
+    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
+    workerPlans.put(workerIDs[0], new RootOperator[] { sp1, sp2, cp1 });
+    workerPlans.put(workerIDs[1], new RootOperator[] { sp1, sp2, cp1 });
+
+    final CollectConsumer serverCollect =
+        new CollectConsumer(outputSchema, serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
+    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
+    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
+    SinkRoot serverPlan = new SinkRoot(queueStore);
+
+    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
+    TupleBatch tb = null;
+    while (!receivedTupleBatches.isEmpty()) {
+      tb = receivedTupleBatches.poll();
+      if (tb != null) {
+        tb.compactInto(actualResult);
+      }
+    }
+    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
+    TestUtils.assertTupleBagEqual(expectedResult, resultBag);
   }
 }
