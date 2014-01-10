@@ -463,9 +463,6 @@ public class MultiwayJoin extends NAryOperator {
 
   @Override
   protected TupleBatch fetchNextReady() throws Exception {
-
-    System.err.println("fnr is called.");
-
     /* drain all the children first. */
     Operator[] children = getChildren();
     while (numberOfEOSChild != children.length) {
@@ -491,17 +488,7 @@ public class MultiwayJoin extends NAryOperator {
         }
       }
 
-      int realNumberOfEOSChild = 0;
-      for (Operator child : getChildren()) {
-        if (child.eos()) {
-          realNumberOfEOSChild++;
-        }
-      }
-
-      System.err.println("realNumberOfEOSChild: " + realNumberOfEOSChild);
-
       if (numberOfNoDataChild == children.length && numberOfEOSChild != children.length) {
-        System.err.println("numOfChildren:" + children.length + " numEOSChild:" + numberOfEOSChild);
         return null;
       }
     }
@@ -522,9 +509,8 @@ public class MultiwayJoin extends NAryOperator {
 
   @Override
   public void checkEOSAndEOI() {
-    if (ansTBB.numTuples() == 0) {
+    if (numberOfEOSChild == getChildren().length && ansTBB.numTuples() == 0) {
       setEOS();
-      return;
     }
   }
 
