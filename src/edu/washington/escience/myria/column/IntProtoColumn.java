@@ -28,8 +28,7 @@ public final class IntProtoColumn extends IntColumn {
    * @param message a Protobuf message containing a column of integers.
    */
   public IntProtoColumn(final IntColumnMessage message) {
-    columnData = message.getData();
-    intBuffer = columnData.asReadOnlyByteBuffer().asIntBuffer();
+    this(message.getData());
   }
 
   /**
