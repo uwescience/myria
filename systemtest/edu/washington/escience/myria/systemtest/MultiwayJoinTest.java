@@ -160,16 +160,13 @@ public class MultiwayJoinTest extends SystemTestBase {
     final InMemoryOrderBy S = new InMemoryOrderBy(scanS, new int[] { 0, 1 }, new boolean[] { true, true });
     final InMemoryOrderBy T = new InMemoryOrderBy(scanT, new int[] { 0, 1 }, new boolean[] { true, true });
 
-    List<List<List<Integer>>> fieldMap =
-        new ArrayList<List<List<Integer>>>(asList(new ArrayList<List<Integer>>(asList(new ArrayList<Integer>(asList(0,
-            0)), new ArrayList<Integer>(asList(2, 0)))), new ArrayList<List<Integer>>(asList(new ArrayList<Integer>(
-            asList(1, 0)), new ArrayList<Integer>(asList(0, 1)))), new ArrayList<List<Integer>>(asList(
-            new ArrayList<Integer>(asList(1, 1)), new ArrayList<Integer>(asList(2, 1))))));
+    int[][][] joinFieldMapping =
+        new int[][][] { { { 0, 0 }, { 2, 0 } }, { { 0, 1 }, { 1, 0 } }, { { 1, 1 }, { 2, 1 } } };
+    int[][] outputFieldMapping = new int[][] { { 0, 0 }, { 1, 0 }, { 1, 1 } };
 
     final MultiwayJoin mj =
-        new MultiwayJoin(new Operator[] { R, S, T }, fieldMap, new ArrayList<List<Integer>>(asList(
-            new ArrayList<Integer>(asList(0, 0)), new ArrayList<Integer>(asList(1, 0)), new ArrayList<Integer>(asList(
-                1, 1)))), new ArrayList<String>(asList("x", "y", "z")));
+        new MultiwayJoin(new Operator[] { R, S, T }, joinFieldMapping, outputFieldMapping, new ArrayList<String>(
+            asList("x", "y", "z")));
 
     final ExchangePairID serverReceiveIDMJ = ExchangePairID.newID();
     final CollectProducer cp2 = new CollectProducer(mj, serverReceiveIDMJ, MASTER_ID);
@@ -230,15 +227,12 @@ public class MultiwayJoinTest extends SystemTestBase {
     final InMemoryOrderBy o1 = new InMemoryOrderBy(sc1, new int[] { 0, 1 }, new boolean[] { true, true });
     final InMemoryOrderBy o2 = new InMemoryOrderBy(sc2, new int[] { 0, 1 }, new boolean[] { true, true });
 
-    List<List<List<Integer>>> fieldMap =
-        new ArrayList<List<List<Integer>>>(asList(new ArrayList<List<Integer>>(asList(new ArrayList<Integer>(asList(0,
-            0)), new ArrayList<Integer>(asList(1, 0))))));
+    int[][][] fieldMap = new int[][][] { { { 0, 0 }, { 1, 0 } } };
+    int[][] outputMap = new int[][] { { 0, 0 }, { 0, 1 }, { 1, 0 }, { 1, 1 } };
 
     final MultiwayJoin localjoin =
-        new MultiwayJoin(new Operator[] { o1, o2 }, fieldMap, new ArrayList<List<Integer>>(asList(
-            new ArrayList<Integer>(asList(0, 0)), new ArrayList<Integer>(asList(0, 1)), new ArrayList<Integer>(asList(
-                1, 0)), new ArrayList<Integer>(asList(1, 1)))), new ArrayList<String>(asList("id1", "name1", "id2",
-            "name2")));
+        new MultiwayJoin(new Operator[] { o1, o2 }, fieldMap, outputMap, new ArrayList<String>(asList("id1", "name1",
+            "id2", "name2")));
 
     final CollectProducer cp1 = new CollectProducer(localjoin, serverReceiveID, MASTER_ID);
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();

@@ -340,11 +340,11 @@ public class MultiwayJoin extends NAryOperator {
    * @param joinFieldMapping mapping of join field to child table field
    * @param outputColumns output column names
    */
-  public MultiwayJoin(final Operator[] children, final List<List<List<Integer>>> joinFieldMapping,
-      final List<List<Integer>> outputFieldMapping, final List<String> outputColumnNames) {
+  public MultiwayJoin(final Operator[] children, final int[][][] joinFieldMapping, final int[][] outputFieldMapping,
+      final List<String> outputColumnNames) {
     if (outputColumnNames != null) {
-      Preconditions.checkArgument(outputFieldMapping.size() == outputColumnNames.size(),
-          "outputColumns and JoinFieldMapping should have the same cardinality.");
+      Preconditions.checkArgument(outputFieldMapping.length == outputColumnNames.size(),
+          "outputColumns and outputFieldMapping should have the same cardinality.");
     }
     /* set children */
     setChildren(children);
@@ -365,13 +365,13 @@ public class MultiwayJoin extends NAryOperator {
     }
 
     /* set join field mapping and field local order */
-    for (int i = 0; i < joinFieldMapping.size(); ++i) {
+    for (int i = 0; i < joinFieldMapping.length; ++i) {
       List<JoinField> joinedFieldList = new ArrayList<JoinField>();
-      for (int j = 0; j < joinFieldMapping.get(i).size(); ++j) {
+      for (int j = 0; j < joinFieldMapping[i].length; ++j) {
         // get table index and field index of each join field
-        Preconditions.checkArgument(joinFieldMapping.get(i).get(j).size() == 2);
-        int tableIndex = joinFieldMapping.get(i).get(j).get(0);
-        int fieldIndex = joinFieldMapping.get(i).get(j).get(1);
+        Preconditions.checkArgument(joinFieldMapping[i][j].length == 2);
+        int tableIndex = joinFieldMapping[i][j][0];
+        int fieldIndex = joinFieldMapping[i][j][1];
         // update joinFieldMapping and reverseJoinFieldMapping
         Preconditions.checkPositionIndex(tableIndex, children.length);
         Preconditions.checkPositionIndex(fieldIndex, children[tableIndex].getSchema().numColumns());
@@ -442,13 +442,13 @@ public class MultiwayJoin extends NAryOperator {
 
     /* set output field */
     this.outputFieldMapping = new ArrayList<JoinField>();
-    for (int i = 0; i < outputFieldMapping.size(); ++i) {
-      Preconditions.checkArgument(outputFieldMapping.get(i).size() == 2);
-      this.outputFieldMapping.add(new JoinField(outputFieldMapping.get(i).get(0), outputFieldMapping.get(i).get(1)));
+    for (int[] element : outputFieldMapping) {
+      Preconditions.checkArgument(element.length == 2);
+      this.outputFieldMapping.add(new JoinField(element[0], element[1]));
     }
 
     System.err.println("outputFieldMapping: ");
-    System.err.println(Arrays.toString(outputFieldMapping.toArray()));
+    System.err.println(Arrays.toString(outputFieldMapping));
 
     /* set output schema */
     if (outputColumnNames != null) {
@@ -474,13 +474,10 @@ public class MultiwayJoin extends NAryOperator {
       for (int i = 0; i < children.length; ++i) {
 
         Operator child = children[i];
-        System.err.println("child:" + child.hashCode() + " i:" + i);
         if (!child.eos()) {
           TupleBatch childTB = child.nextReady();
-          System.err.println("not EOS");
 
           if (childTB == null) {
-            System.err.println("null");
             if (child.eos()) {
               numberOfEOSChild++;
             }
