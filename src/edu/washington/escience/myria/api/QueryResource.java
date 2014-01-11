@@ -195,6 +195,7 @@ public final class QueryResource {
       case SUCCESS:
       case ERROR:
       case KILLED:
+      case UNKNOWN:
         httpStatus = Status.OK;
         cache = true;
         break;
