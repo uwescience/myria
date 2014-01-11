@@ -17,6 +17,7 @@ import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.StringColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.StringColumnMessage;
+import edu.washington.escience.myria.util.ImmutableIntArray;
 import edu.washington.escience.myria.util.TypeFunnel;
 
 /**
@@ -83,6 +84,24 @@ public final class StringMutableColumn implements MutableColumn<String> {
     StringBuilder sb = new StringBuilder();
     int startP = 0, endP = 0;
     for (int i = 0; i < numStrings; i++) {
+      endP = startP + data[i].length();
+      inner.addStartIndices(startP);
+      inner.addEndIndices(endP);
+      sb.append(data[i]);
+      startP = endP;
+    }
+    inner.setData(ByteString.copyFromUtf8(sb.toString()));
+
+    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.STRING).setStringColumn(inner).build();
+  }
+
+  @Override
+  public ColumnMessage serializeToProto(final ImmutableIntArray validIndices) {
+    /* Note that we do *not* build the inner class. We pass its builder instead. */
+    final StringColumnMessage.Builder inner = StringColumnMessage.newBuilder();
+    StringBuilder sb = new StringBuilder();
+    int startP = 0, endP = 0;
+    for (int i : validIndices) {
       endP = startP + data[i].length();
       inner.addStartIndices(startP);
       inner.addEndIndices(endP);

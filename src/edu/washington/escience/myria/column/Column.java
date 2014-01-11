@@ -11,6 +11,7 @@ import com.google.common.hash.Hasher;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
+import edu.washington.escience.myria.util.ImmutableIntArray;
 
 /**
  * A column of a batch of tuples.
@@ -61,6 +62,14 @@ public interface Column<T extends Comparable<?>> extends Serializable {
    * @return a ColumnMessage containing a serialized copy of this column.
    */
   ColumnMessage serializeToProto();
+
+  /**
+   * Serializes this column as a protobuf message into the specified output stream.
+   * 
+   * @param validIndices the rows of the column to serialize.
+   * @return a ColumnMessage containing a serialized copy of this column.
+   */
+  ColumnMessage serializeToProto(ImmutableIntArray validIndices);
 
   /**
    * Returns the number of elements in this column.

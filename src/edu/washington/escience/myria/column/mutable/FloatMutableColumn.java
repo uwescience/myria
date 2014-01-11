@@ -18,6 +18,7 @@ import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.FloatColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.FloatColumnMessage;
+import edu.washington.escience.myria.util.ImmutableIntArray;
 
 /**
  * A mutable column of Float values.
@@ -87,6 +88,17 @@ public final class FloatMutableColumn implements MutableColumn<Float> {
     dataBytes.flip();
     final FloatColumnMessage.Builder inner = FloatColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
 
+    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.FLOAT).setFloatColumn(inner).build();
+  }
+
+  @Override
+  public ColumnMessage serializeToProto(final ImmutableIntArray validIndices) {
+    ByteBuffer dataBytes = ByteBuffer.allocate(validIndices.length() * Float.SIZE / Byte.SIZE);
+    for (int i : validIndices) {
+      dataBytes.putFloat(data[i]);
+    }
+    dataBytes.flip();
+    final FloatColumnMessage.Builder inner = FloatColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
     return ColumnMessage.newBuilder().setType(ColumnMessage.Type.FLOAT).setFloatColumn(inner).build();
   }
 
