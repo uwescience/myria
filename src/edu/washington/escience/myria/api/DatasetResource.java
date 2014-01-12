@@ -1,8 +1,7 @@
 package edu.washington.escience.myria.api;
 
-import java.io.ByteArrayInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.net.URI;
@@ -12,6 +11,7 @@ import java.util.Set;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -24,6 +24,8 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
+import org.slf4j.LoggerFactory;
+
 import com.sun.jersey.core.header.ContentDisposition;
 
 import edu.washington.escience.myria.CsvTupleWriter;
@@ -31,11 +33,13 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.JsonTupleWriter;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
+import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleWriter;
 import edu.washington.escience.myria.api.encoding.DatasetEncoding;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.TipsyDatasetEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
+import edu.washington.escience.myria.io.InputStreamSource;
 import edu.washington.escience.myria.operator.FileScan;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.TipsyFileScan;
@@ -56,6 +60,9 @@ public final class DatasetResource {
   /** Information about the URL of the request. */
   @Context
   private UriInfo uriInfo;
+
+  /** Logger. */
+  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(DatasetResource.class);
 
   /**
    * @param userName the user who owns the target relation.
@@ -172,10 +179,65 @@ public final class DatasetResource {
     }
 
     /* Start streaming tuples into the TupleWriter, and through the pipes to the PipedStreamingOutput. */
-    server.startDataStream(relationKey, writer);
+    try {
+      server.startDataStream(relationKey, writer);
+    } catch (IllegalArgumentException e) {
+      throw new MyriaApiException(Status.BAD_REQUEST, e);
+    }
 
     /* Yay, worked! Ensure the file has the correct filename. */
     return response.build();
+  }
+
+  /**
+   * Replace a dataset with new contents.
+   * 
+   * @param is InputStream containing the data set * @param userName the user who owns the target relation.
+   * @param userName the user who owns the target relation.
+   * @param programName the program to which the target relation belongs.
+   * @param relationName the name of the target relation.
+   * @param format the format of the output data. Valid options are (case-insensitive) "csv", "tsv", and "json".
+   * @throws DbException on any error
+   * @return metadata about the specified relation.
+   */
+  @PUT
+  @Consumes(MediaType.APPLICATION_OCTET_STREAM)
+  @Produces(MediaType.APPLICATION_JSON)
+  @Path("/user-{user_name}/program-{program_name}/relation-{relation_name}/data")
+  public Response replaceDataset(final InputStream is, @PathParam("user_name") final String userName,
+      @PathParam("program_name") final String programName, @PathParam("relation_name") final String relationName,
+      @QueryParam("format") final String format) throws DbException {
+    RelationKey relationKey = RelationKey.of(userName, programName, relationName);
+    DatasetEncoding dataset = new DatasetEncoding();
+
+    Schema schema;
+    try {
+      schema = server.getSchema(relationKey);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+
+    if (schema == null) {
+      /* Not found, throw a 404 (Not Found) */
+      throw new MyriaApiException(Status.NOT_FOUND, "The dataset was not found: " + relationKey.toString());
+    }
+
+    String validFormat = validateFormat(format);
+    if (validFormat.equals("csv")) {
+      dataset.delimiter = ",";
+    } else if (validFormat.equals("tsv")) {
+      dataset.delimiter = "\t";
+    } else {
+      throw new MyriaApiException(Status.BAD_REQUEST, "format must be 'csv', 'tsv'");
+    }
+
+    dataset.relationKey = relationKey;
+    dataset.schema = schema;
+    dataset.source = new InputStreamSource(is);
+    dataset.workers = null;
+
+    ResponseBuilder builder = Response.ok();
+    return doIngest(dataset, builder);
   }
 
   /**
@@ -198,31 +260,35 @@ public final class DatasetResource {
       throw new DbException(e);
     }
 
+    URI datasetUri = getCanonicalResourcePath(uriInfo, dataset.relationKey);
+    ResponseBuilder builder = Response.created(datasetUri);
+    return doIngest(dataset, builder);
+  }
+
+  /**
+   * Ingest a dataset; replace any previous version.
+   * 
+   * @param dataset description of the dataset to ingest
+   * @param builder the template response
+   * @return the created dataset resource
+   * @throws DbException on any error
+   */
+  private Response doIngest(final DatasetEncoding dataset, final ResponseBuilder builder) throws DbException {
     /* If we don't have any workers alive right now, tell the user we're busy. */
-    Set<Integer> workers = server.getAliveWorkers();
-    if (workers.size() == 0) {
+    if (server.getAliveWorkers().size() == 0) {
       /* Throw a 503 (Service Unavailable) */
       throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "There are no alive workers to receive this dataset.");
     }
 
-    /* Moreover, check whether all requested workers are alive. */
+    /* Check whether all requested workers are alive. */
     if (dataset.workers != null && !server.getAliveWorkers().containsAll(dataset.workers)) {
       /* Throw a 503 (Service Unavailable) */
       throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "Not all requested workers are alive");
     }
 
     /* Do the work. */
-    Operator source;
-    if (dataset.data != null) {
-      source = new FileScan(dataset.schema);
-      ((FileScan) source).setInputStream(new ByteArrayInputStream(dataset.data));
-    } else {
-      try {
-        source = new FileScan(dataset.fileName, dataset.schema, dataset.delimiter);
-      } catch (FileNotFoundException e) {
-        throw new MyriaApiException(Status.NOT_FOUND, e);
-      }
-    }
+    Operator source = new FileScan(dataset.source, dataset.schema, dataset.delimiter);
+
     DatasetStatus status = null;
     try {
       status = server.ingestDataset(dataset.relationKey, dataset.workers, source);
@@ -233,7 +299,7 @@ public final class DatasetResource {
     /* In the response, tell the client the path to the relation. */
     URI datasetUri = getCanonicalResourcePath(uriInfo, dataset.relationKey);
     status.setUri(datasetUri);
-    return Response.created(datasetUri).entity(status).build();
+    return builder.entity(status).build();
   }
 
   /**

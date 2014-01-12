@@ -1,4 +1,4 @@
 /**
- * Interfaces and implementations of Columns for the Myria project.
+ * In memory column data structures.
  */
 package edu.washington.escience.myria.column;

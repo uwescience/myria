@@ -19,6 +19,7 @@ import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SQLiteSetFilter;
 import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.StreamingStateWrapper;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.parallel.CollectConsumer;
@@ -46,7 +47,7 @@ public class Erdos {
 
   final static ExchangePairID sendToMasterID = ExchangePairID.newID();
 
-  public static DupElim erdosOne(int[] allWorkers, ArrayList<Producer> producers) throws DbException {
+  public static StreamingStateWrapper erdosOne(int[] allWorkers, ArrayList<Producer> producers) throws DbException {
     final SingleFieldHashPartitionFunction pfOn0 = new SingleFieldHashPartitionFunction(allWorkers.length, 0);
 
     final ExchangePairID paulErdoesPubsShuffleID = ExchangePairID.newID();
@@ -91,7 +92,7 @@ public class Erdos {
 
     final ColumnSelect projCoAuthorID = new ColumnSelect(new int[] { 2 }, joinCoAuthors);
     // schema: (authorId long)
-    final DupElim localDECoAuthorID = new DupElim(projCoAuthorID); // local dupelim
+    final StreamingStateWrapper localDECoAuthorID = new StreamingStateWrapper(projCoAuthorID, new DupElim());
     // schema: (authorId long)
 
     final GenericShuffleProducer coAuthorShuffleP =
@@ -103,11 +104,11 @@ public class Erdos {
     producers.add(allPubsShuffleP);
     producers.add(paulErdoesPubsShuffleP);
     // schema: (authorId long)
-    return new DupElim(coAuthorShuffleC);
+    return new StreamingStateWrapper(coAuthorShuffleC, new DupElim());
   }
 
-  public static DupElim erdosN(DupElim erdosNMinus1, int[] allWorkers, ArrayList<Producer> producers)
-      throws DbException {
+  public static StreamingStateWrapper erdosN(StreamingStateWrapper erdosNMinus1, int[] allWorkers,
+      ArrayList<Producer> producers) throws DbException {
 
     final SingleFieldHashPartitionFunction pfOn0 = new SingleFieldHashPartitionFunction(allWorkers.length, 0);
     final SingleFieldHashPartitionFunction pfOn1 = new SingleFieldHashPartitionFunction(allWorkers.length, 1);
@@ -134,7 +135,8 @@ public class Erdos {
     final ColumnSelect projCoAuthorPubsID = new ColumnSelect(new int[] { 1 }, joinCoAuthorPubs);
     // schema: (pubId long)
 
-    final DupElim coAuthorPubsLocalDE = new DupElim(projCoAuthorPubsID); // local dupelim
+    final StreamingStateWrapper coAuthorPubsLocalDE =
+        new StreamingStateWrapper(projCoAuthorPubsID, new DupElim());
     // schema: (pubId long)
 
     ExchangePairID coAuthorPubsShuffleID = ExchangePairID.newID();
@@ -144,7 +146,8 @@ public class Erdos {
         new GenericShuffleConsumer(coAuthorPubsShuffleP.getSchema(), coAuthorPubsShuffleID, allWorkers);
     // schema: (pubId long)
 
-    final DupElim coAuthorPubsGlobalDE = new DupElim(coAuthorPubsShuffleC); // local dupelim
+    final StreamingStateWrapper coAuthorPubsGlobalDE =
+        new StreamingStateWrapper(coAuthorPubsShuffleC, new DupElim());
     // schema: (pubId long)
 
     final DbQueryScan allPubsAuthorNames = new DbQueryScan(//
@@ -171,7 +174,8 @@ public class Erdos {
     final ColumnSelect projCoCoAuthorName = new ColumnSelect(new int[] { 2 }, joinCoCoAuthorPubs);
     // schema: (authorId long)
 
-    final DupElim coCoAuthorNameLocalDE = new DupElim(projCoCoAuthorName); // local dupelim
+    final StreamingStateWrapper coCoAuthorNameLocalDE =
+        new StreamingStateWrapper(projCoCoAuthorName, new DupElim());
     // schema: (authorId long)
 
     ExchangePairID coCoAuthorNameShuffleID = ExchangePairID.newID();
@@ -185,23 +189,23 @@ public class Erdos {
     producers.add(coAuthorNamesPubsShuffleP);
     producers.add(coAuthorPubsShuffleP);
     producers.add(allPubsShuffleByAuthorP);
-    return new DupElim(coCoAuthorNameShuffleC); // local dupelim
+    return new StreamingStateWrapper(coCoAuthorNameShuffleC, new DupElim()); // local dupelim
     // schema: (authorId long)
   }
 
-  public static Operator extractName(DupElim erdosN) {
+  public static Operator extractName(StreamingStateWrapper erdosN) {
     final SQLiteSetFilter allNames =
         new SQLiteSetFilter(erdosN, "Dictionary", "ID", new String[] { "val" }, singleStringSchema);
-
     return allNames;
   }
 
-  public static DupElim erdosN(int n, int[] allWorkers, ArrayList<Producer> producers) throws DbException {
-    DupElim erdos1 = erdosOne(allWorkers, producers);
+  public static StreamingStateWrapper erdosN(int n, int[] allWorkers, ArrayList<Producer> producers)
+      throws DbException {
+    StreamingStateWrapper erdos1 = erdosOne(allWorkers, producers);
     if (n <= 1) {
       return erdos1;
     } else {
-      DupElim erdosNMinus1 = erdos1;
+      StreamingStateWrapper erdosNMinus1 = erdos1;
       for (int i = 1; i < n; i++) {
         erdosNMinus1 = erdosN(erdosNMinus1, allWorkers, producers);
       }

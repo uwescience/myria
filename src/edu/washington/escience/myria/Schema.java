@@ -142,6 +142,20 @@ public final class Schema implements Serializable {
   }
 
   /**
+   * Create a new Schema using an existing Schema and a new column.
+   * 
+   * @param schema the existing schema.
+   * @param type the type of the new column.
+   * @param name the name of the new column.
+   * @return the new Schema.
+   */
+  public static Schema appendColumn(final Schema schema, final Type type, final String name) {
+    List<Type> types = ImmutableList.<Type> builder().addAll(schema.getColumnTypes()).add(type).build();
+    List<String> names = ImmutableList.<String> builder().addAll(schema.getColumnNames()).add(name).build();
+    return new Schema(types, names);
+  }
+
+  /**
    * Merge two Schemas into one. The result has the columns of the first concatenated with the columns of the second.
    * <p>
    * Note that if there are duplicate column names from the two merging schemas, the duplicate columns from the first
@@ -308,6 +322,17 @@ public final class Schema implements Serializable {
     }
     final Schema other = (Schema) o;
     return (this == o) || columnTypes.equals(other.columnTypes) && columnNames.equals(other.columnNames);
+  }
+
+  /**
+   * Return true if the two schema are "compatible": they have the same size and column types; column names are ignored.
+   * 
+   * @param s2 the Schema object to compare
+   * 
+   * @return true if the schemas are compatible
+   */
+  public boolean compatible(final Schema s2) {
+    return columnTypes.equals(s2.columnTypes);
   }
 
   /**

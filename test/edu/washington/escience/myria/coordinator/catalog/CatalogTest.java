@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.coordinator.catalog;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -59,20 +60,20 @@ public class CatalogTest {
     /* Set and test the description */
     catalog = MasterCatalog.createInMemory();
     catalog.setConfigurationValue("description", DESCRIPTION);
-    assertTrue(catalog.getDescription().equals(DESCRIPTION));
+    assertEquals(DESCRIPTION, catalog.getDescription());
 
     /* Set and test the server */
     catalog.addMaster(SERVER);
     final List<SocketInfo> servers = catalog.getMasters();
-    assertTrue(servers.size() == 1);
-    assertTrue(servers.get(0).toString().equals(SERVER));
+    assertEquals(1, servers.size());
+    assertEquals(SERVER, servers.get(0).toString());
 
     /* Set and test the workers */
     for (int i = 0; i < WORKERS.length; ++i) {
       catalog.addWorker(i + 1, WORKERS[i]);
     }
     final Map<Integer, SocketInfo> workers = catalog.getWorkers();
-    assertTrue(workers.size() == WORKERS.length);
+    assertEquals(WORKERS.length, workers.size());
     /* Slightly annoying equality check here */
     final Collection<SocketInfo> values = workers.values();
     for (final String worker : WORKERS) {
@@ -104,7 +105,7 @@ public class CatalogTest {
         .build(), Collections.<String, String> emptyMap(), Collections.<String, String> emptyMap());
 
     MasterCatalog c = MasterCatalog.open(masterCatalogPath);
-    assertTrue(c.getWorkers().size() == numWorkers);
+    assertEquals(numWorkers, c.getWorkers().size());
     c.close();
     FSUtils.blockingDeleteDirectory(path.toString());
   }

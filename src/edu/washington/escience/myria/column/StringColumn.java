@@ -10,6 +10,8 @@ import com.google.common.hash.Hasher;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.builder.ColumnBuilder;
+import edu.washington.escience.myria.column.builder.StringColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.StringColumnMessage;
 import edu.washington.escience.myria.util.TypeFunnel;
@@ -36,7 +38,7 @@ public final class StringColumn implements Column<String> {
    * @param data the data
    * @param numStrings number of tuples.
    * */
-  StringColumn(final String[] data, final int numStrings) {
+  public StringColumn(final String[] data, final int numStrings) {
     this.data = data;
     this.numStrings = numStrings;
   }

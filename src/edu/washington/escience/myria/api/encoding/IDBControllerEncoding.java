@@ -3,17 +3,15 @@ package edu.washington.escience.myria.api.encoding;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myria.operator.IDBInput;
+import edu.washington.escience.myria.operator.IDBController;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.Server;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class IDBInputEncoding extends OperatorEncoding<IDBInput> {
+public class IDBControllerEncoding extends OperatorEncoding<IDBController> {
   @JsonProperty
   public Integer argSelfIdbId;
   @JsonProperty
@@ -25,12 +23,15 @@ public class IDBInputEncoding extends OperatorEncoding<IDBInput> {
 
   private ExchangePairID realControllerOperatorId;
   public Integer realControllerWorkerId;
+
+  public StreamingStateEncoding<?> argState;
   private static final List<String> requiredArguments = ImmutableList.of("argSelfIdbId", "argInitialInput",
-      "argIterationInput", "argEosControllerInput");
+      "argIterationInput", "argEosControllerInput", "argState");
 
   @Override
-  public IDBInput construct(Server server) {
-    return new IDBInput(argSelfIdbId, realControllerOperatorId, realControllerWorkerId, null, null, null);
+  public IDBController construct(Server server) {
+    return new IDBController(argSelfIdbId, realControllerOperatorId, realControllerWorkerId, null, null, null, argState
+        .construct());
   }
 
   @Override

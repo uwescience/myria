@@ -82,7 +82,7 @@ public final class DeploymentUtils {
         if (username != null) {
           hostname = username + "@" + hostname;
         }
-        rsyncFileToRemote("libs", hostname, remotePath);
+        rsyncFileToRemote("libs", hostname, remotePath, true);
         rsyncFileToRemote("conf", hostname, remotePath);
         rsyncFileToRemote("sqlite4java-282", hostname, remotePath);
         // server needs the config file to create catalogs for new workers
@@ -99,12 +99,13 @@ public final class DeploymentUtils {
         if (username != null) {
           hostname = username + "@" + hostname;
         }
-        rsyncFileToRemote("libs", hostname, remotePath);
+        rsyncFileToRemote("libs", hostname, remotePath, true);
         rsyncFileToRemote("conf", hostname, remotePath);
         rsyncFileToRemote("sqlite4java-282", hostname, remotePath);
       }
     } else if (action.equals("-start_master")) {
       String workingDir = config.get("deployment").get("path");
+      String remotePath = workingDir + "/" + description + "-files";
       int restPort = Integer.parseInt(config.get("deployment").get("rest_port"));
       String maxHeapSize = config.get("deployment").get("max_heap_size");
       if (maxHeapSize == null) {
@@ -116,6 +117,8 @@ public final class DeploymentUtils {
         if (username != null) {
           hostname = username + "@" + hostname;
         }
+        // server needs the config file to create catalogs for new workers
+        rsyncFileToRemote(configFileName, hostname, remotePath);
         startMaster(hostname, workingDir, description, maxHeapSize, restPort);
       }
 
@@ -298,9 +301,25 @@ public final class DeploymentUtils {
    * @param remotePath e.g. /tmp/test
    */
   public static void rsyncFileToRemote(final String localPath, final String address, final String remotePath) {
+    rsyncFileToRemote(localPath, address, remotePath, false);
+  }
+
+  /**
+   * Copy a local file to a location on a remote machine, using rsync.
+   * 
+   * @param localPath path to the local file that you want to copy from
+   * @param address e.g. beijing.cs.washington.edu
+   * @param remotePath e.g. /tmp/test
+   * @param useDel if use --del option
+   */
+  public static void rsyncFileToRemote(final String localPath, final String address, final String remotePath,
+      final boolean useDel) {
     StringBuilder builder = new StringBuilder();
     builder.append("rsync");
     builder.append(" -aLvz");
+    if (useDel) {
+      builder.append(" --del");
+    }
     builder.append(" " + localPath);
     builder.append(" " + address + ":" + remotePath);
     startAProcess(builder.toString());

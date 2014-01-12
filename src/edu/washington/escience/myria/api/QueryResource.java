@@ -29,8 +29,11 @@ import javax.ws.rs.core.UriInfo;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
@@ -59,6 +62,33 @@ public final class QueryResource {
   private Server server;
 
   /**
+   * For testing purposes, simply deserialize the submitted query and instantiate it with physical parameters (specific
+   * machines, etc.). Return the result.
+   * 
+   * @param query the query to be validated.
+   * @param uriInfo the URI of the current request.
+   * @return the deserialized query.
+   */
+  @POST
+  @Path("validate")
+  public Response validateQuery(final QueryEncoding query, @Context final UriInfo uriInfo) {
+    /* Validate the input. */
+    if (query == null) {
+      throw new MyriaApiException(Status.BAD_REQUEST, "Missing query encoding.");
+    }
+    query.validate();
+    /* Make sure we can serialize it properly. */
+    try {
+      MyriaJsonMapperProvider.getWriter().writeValueAsString(query);
+    } catch (JsonProcessingException e) {
+      throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, new IOException(
+          "Unable to re-serialize the validated query", e));
+    }
+    /* Send back the deserialized query. */
+    return Response.ok(query).build();
+  }
+
+  /**
    * For now, simply echoes back its input.
    * 
    * @param query the query to be executed.
@@ -69,6 +99,9 @@ public final class QueryResource {
   @POST
   public Response postNewQuery(final QueryEncoding query, @Context final UriInfo uriInfo) throws CatalogException {
     /* Validate the input. */
+    if (query == null) {
+      throw new MyriaApiException(Status.BAD_REQUEST, "Missing query encoding.");
+    }
     query.validate();
 
     /* Deserialize the three arguments we need */
@@ -99,6 +132,7 @@ public final class QueryResource {
     SingleQueryPlanWithArgs masterPlan = queryPlan.get(MyriaConstants.MASTER_ID);
     if (masterPlan == null) {
       masterPlan = new SingleQueryPlanWithArgs(new SinkRoot(new EOSSource()));
+      masterPlan.setFTMode(FTMODE.valueOf(query.ftMode));
     } else {
       queryPlan.remove(MyriaConstants.MASTER_ID);
     }

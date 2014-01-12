@@ -8,12 +8,7 @@ import subprocess
 import sys
 
 def get_hostname(node):
-    if len(node) == 2:
-        (hostname, _) = node
-    else:
-        (hostname, _, _) = node
-    return hostname
-
+    return node[0]
 
 def stop_all(config):
     "Kill all Myria processes on the nodes in this cluster."
@@ -23,7 +18,7 @@ def stop_all(config):
 
     # Stop the Master
     hostname = get_hostname(master)
-    cmd = "ssh -o ConnectTimeout=6 %s@%s $'ps aux | grep edu.washington.escience.myria.daemon.MasterDaemon | grep %s | grep -v grep | awk \\'{print $2}\\''" % (username, hostname, username)
+    cmd = "ssh -o ConnectTimeout=6 %s@%s $'ps -o pid,user:20,command ax | grep edu.washington.escience.myria.daemon.MasterDaemon | grep %s | grep -v grep | awk \\'{print $1}\\''" % (username, hostname, username)
     pids = subprocess.check_output(cmd, shell=True).split('\n')
     for pid in pids:
         if pid != "":
@@ -38,7 +33,7 @@ def stop_all(config):
         if hostname in done:
             continue
         done.add(hostname)
-        cmd = "ssh -o ConnectTimeout=6 %s@%s $'ps aux | grep edu.washington.escience.myria.parallel.Worker | grep %s | grep -v grep | awk \\'{print $2}\\''" % (username, hostname, username)
+        cmd = "ssh -o ConnectTimeout=6 %s@%s $'ps -o pid,user:20,command ax | grep edu.washington.escience.myria.parallel.Worker | grep %s | grep -v grep | awk \\'{print $1}\\''" % (username, hostname, username)
         try:
             pids = subprocess.check_output(cmd, shell=True).split('\n')
         except:
