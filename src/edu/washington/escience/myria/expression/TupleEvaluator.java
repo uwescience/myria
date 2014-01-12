@@ -15,8 +15,7 @@ public class TupleEvaluator extends Evaluator {
   private Schema inputSchema;
 
   /**
-   * An expression does not have to be compiled when it only renames or copies a column. This is an optimization to
-   * avoid evaluating the expression and avoid autoboxing values.
+   * True if the input value is the same as the output.
    */
   private final boolean copyFromInput;
 
@@ -30,11 +29,7 @@ public class TupleEvaluator extends Evaluator {
     Preconditions.checkNotNull(inputSchema);
     this.inputSchema = inputSchema;
 
-    if (getExpression().getRootExpressionOperator() instanceof VariableExpression) {
-      copyFromInput = true;
-    } else {
-      copyFromInput = false;
-    }
+    copyFromInput = getExpression().getRootExpressionOperator() instanceof VariableExpression;
   }
 
   /**
@@ -42,13 +37,6 @@ public class TupleEvaluator extends Evaluator {
    */
   protected Schema getInputSchema() {
     return inputSchema;
-  }
-
-  /**
-   * @return the copyFromInput
-   */
-  protected boolean isCopyFromInput() {
-    return copyFromInput;
   }
 
   /**
@@ -62,7 +50,15 @@ public class TupleEvaluator extends Evaluator {
   }
 
   /**
-   * Often, there is no need to compile this expression because the input value is the same as the output.
+   * @return the copyFromInput
+   */
+  protected boolean isCopyFromInput() {
+    return copyFromInput;
+  }
+
+  /**
+   * An expression does not have to be compiled when it only renames or copies a column. This is an optimization to
+   * avoid evaluating the expression and avoid autoboxing values.
    * 
    * @return true if the expression does not have to be compiled.
    */

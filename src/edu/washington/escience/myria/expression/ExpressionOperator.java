@@ -18,7 +18,7 @@ import edu.washington.escience.myria.Schema;
 @JsonSubTypes({
     /* Zeroary */
     @Type(name = "CONSTANT", value = ConstantExpression.class),
-    @Type(name = "VARIABLE", value = VariableExpression.class),
+    @Type(name = "VARIABLE", value = VariableExpression.class), @Type(name = "STATE", value = StateExpression.class),
     /* Unary */
     @Type(name = "ABS", value = AbsExpression.class), @Type(name = "CAST", value = CastExpression.class),
     @Type(name = "CEIL", value = CeilExpression.class), @Type(name = "COS", value = CosExpression.class),

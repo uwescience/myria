@@ -35,6 +35,7 @@ import edu.washington.escience.myria.expression.PlusExpression;
 import edu.washington.escience.myria.expression.PowExpression;
 import edu.washington.escience.myria.expression.SinExpression;
 import edu.washington.escience.myria.expression.SqrtExpression;
+import edu.washington.escience.myria.expression.StateExpression;
 import edu.washington.escience.myria.expression.TanExpression;
 import edu.washington.escience.myria.expression.TimesExpression;
 import edu.washington.escience.myria.expression.ToUpperCaseExpression;
@@ -447,12 +448,11 @@ public class ApplyTest {
 
     Expression initializer = new Expression(new ConstantExpression(Type.INT_TYPE, "0"));
 
-    Expression expression =
-        new Expression("index", new CastExpression(new ConstantExpression(Type.OBJ_TYPE, "state"), Type.INT_TYPE));
+    Expression expression = new Expression("index", new CastExpression(new StateExpression(), Type.INT_TYPE));
 
     Expression increment =
-        new Expression(new PlusExpression(new CastExpression(new ConstantExpression(Type.OBJ_TYPE, "state"),
-            Type.INT_TYPE), new ConstantExpression(Type.INT_TYPE, "1")));
+        new Expression(new PlusExpression(new CastExpression(new StateExpression(), Type.INT_TYPE),
+            new ConstantExpression(Type.INT_TYPE, "1")));
 
     ImmutableList.Builder<Expression> Initializers = ImmutableList.builder();
     Initializers.add(initializer);

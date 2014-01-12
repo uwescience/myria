@@ -13,9 +13,10 @@ import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.operator.Apply;
+import edu.washington.escience.myria.operator.StatefulApply;
 
 /**
- * An Expression evaluator for generic expressions. Used in {@link Apply}.
+ * An Expression evaluator for generic expressions. Used in {@link Apply} and {@link StatefulApply}.
  */
 public class GenericEvaluator extends TupleEvaluator {
 
@@ -80,7 +81,6 @@ public class GenericEvaluator extends TupleEvaluator {
    * @param sourceRowIdx the row that should be used in the input batch
    * @param targetTupleBuffer the tuple buffer that should be used as output
    * @param targetColumnIdx the column that the data should be written to
-   * @param state
    * @throws InvocationTargetException exception thrown from janino
    */
   public void evalAndPut(final TupleBatch sourceTupleBatch, final int sourceRowIdx,
