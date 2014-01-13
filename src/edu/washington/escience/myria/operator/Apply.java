@@ -27,10 +27,10 @@ public class Apply extends UnaryOperator {
   /**
    * List of expressions that will be used to create the output.
    */
-  private ImmutableList<Expression> expressions;
+  private ImmutableList<Expression> iterExpressions;
 
   /**
-   * Evaluators for generic stateless expressions. One evaluator per expression in {@link #expressions}.
+   * One evaluator for each expression in {@link #iterExpressions}.
    */
   private ArrayList<GenericEvaluator> evaluators;
 
@@ -50,7 +50,7 @@ public class Apply extends UnaryOperator {
    * @return the expressions
    */
   protected ImmutableList<Expression> getExpressions() {
-    return expressions;
+    return iterExpressions;
   }
 
   /**
@@ -63,22 +63,20 @@ public class Apply extends UnaryOperator {
   /**
    * 
    * @param child child operator that data is fetched from
-   * @param expressions expression that created the output
+   * @param iterateExpressions expression that created the output
    */
-  public Apply(final Operator child, final List<Expression> expressions) {
+  public Apply(final Operator child, final List<Expression> iterateExpressions) {
     super(child);
-    if (expressions != null) {
-      setExpressions(expressions);
+    if (iterateExpressions != null) {
+      setIterExpressions(iterateExpressions);
     }
   }
 
   /**
-   * Set the expressions for each column.
-   * 
-   * @param expressions the expressions
+   * @param iterateExpressions the iterate expressions for each column
    */
-  private void setExpressions(final List<Expression> expressions) {
-    this.expressions = ImmutableList.copyOf(expressions);
+  private void setIterExpressions(final List<Expression> iterateExpressions) {
+    iterExpressions = ImmutableList.copyOf(iterateExpressions);
   }
 
   @Override
@@ -110,6 +108,8 @@ public class Apply extends UnaryOperator {
   }
 
   /**
+   * Called in {@link #fetchNextReady()}.
+   * 
    * @param tb the source tuple batch
    * @param rowIdx the current row index
    * @param columnIdx the current column index
@@ -129,13 +129,13 @@ public class Apply extends UnaryOperator {
 
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    Preconditions.checkNotNull(expressions);
+    Preconditions.checkNotNull(iterExpressions);
 
     Schema inputSchema = getChild().getSchema();
 
     evaluators = new ArrayList<>();
-    evaluators.ensureCapacity(expressions.size());
-    for (Expression expr : expressions) {
+    evaluators.ensureCapacity(iterExpressions.size());
+    for (Expression expr : iterExpressions) {
       GenericEvaluator evaluator = new GenericEvaluator(expr, inputSchema);
       if (evaluator.needsCompiling()) {
         evaluator.compile();
@@ -148,7 +148,7 @@ public class Apply extends UnaryOperator {
 
   @Override
   public Schema generateSchema() {
-    if (expressions == null) {
+    if (iterExpressions == null) {
       return null;
     }
     Operator child = getChild();

@@ -25,12 +25,12 @@ public class StatefulApply extends Apply {
   /**
    * Expressions that are used to initialize the state.
    */
-  private ImmutableList<Expression> initializerExpressions;
+  private ImmutableList<Expression> initExpressions;
 
   /**
    * Expressions that are used to update the state.
    */
-  private ImmutableList<Expression> updaterExpressions;
+  private ImmutableList<Expression> updateExpressions;
 
   /**
    * The states that are passed during execution.
@@ -38,58 +38,55 @@ public class StatefulApply extends Apply {
   private ArrayList<Object> states;
 
   /**
-   * Evaluators that update the {@link #states}.
+   * Evaluators that update the {@link #states}. One evaluator for each expression in {@link #updateExpressions}.
    */
   private ArrayList<GenericEvaluator> updateEvaluators;
 
   /**
-   * 
    * @param child child operator that data is fetched from
-   * @param expressions expressions that creates the output
+   * @param iterateExpression expressions that creates the output
    * @param initializerExpressions expressions that initializes the state
    * @param updaterExpressions expressions that update the state
    */
-  public StatefulApply(final Operator child, final List<Expression> expressions,
+  public StatefulApply(final Operator child, final List<Expression> iterateExpression,
       final List<Expression> initializerExpressions, final List<Expression> updaterExpressions) {
-    super(child, expressions);
+    super(child, iterateExpression);
     if (initializerExpressions != null) {
-      setInitializers(initializerExpressions);
+      setInitExpressions(initializerExpressions);
     }
     if (updaterExpressions != null) {
-      setUpdaters(updaterExpressions);
+      setUpdateExpressions(updaterExpressions);
     }
   }
 
   /**
-   * 
    * @param initializerExpressions the expressions that initialize the state
    */
-  private void setInitializers(final List<Expression> initializerExpressions) {
-    this.initializerExpressions = ImmutableList.copyOf(initializerExpressions);
+  private void setInitExpressions(final List<Expression> initializerExpressions) {
+    initExpressions = ImmutableList.copyOf(initializerExpressions);
   }
 
   /**
-   * 
    * @param updaterExpressions the expressions that update the state
    */
-  private void setUpdaters(final List<Expression> updaterExpressions) {
-    this.updaterExpressions = ImmutableList.copyOf(updaterExpressions);
+  private void setUpdateExpressions(final List<Expression> updaterExpressions) {
+    updateExpressions = ImmutableList.copyOf(updaterExpressions);
   }
 
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    Preconditions.checkArgument(initializerExpressions.size() == getExpressions().size());
+    Preconditions.checkArgument(initExpressions.size() == getExpressions().size());
     super.init(execEnvVars);
 
     Schema inputSchema = getChild().getSchema();
 
     states = new ArrayList<>();
-    states.ensureCapacity(initializerExpressions.size());
+    states.ensureCapacity(initExpressions.size());
 
     updateEvaluators = new ArrayList<>();
-    updateEvaluators.ensureCapacity(updaterExpressions.size());
+    updateEvaluators.ensureCapacity(updateExpressions.size());
 
-    for (Expression expr : initializerExpressions) {
+    for (Expression expr : initExpressions) {
       ConstantEvaluator evaluator = new ConstantEvaluator(expr);
       evaluator.compile();
 
@@ -100,7 +97,7 @@ public class StatefulApply extends Apply {
       }
     }
 
-    for (Expression expr : updaterExpressions) {
+    for (Expression expr : updateExpressions) {
       GenericEvaluator evaluator = new GenericEvaluator(expr, inputSchema);
       evaluator.compile();
       updateEvaluators.add(evaluator);
@@ -108,6 +105,8 @@ public class StatefulApply extends Apply {
   }
 
   /**
+   * Overrides function call in {@link #fetchNextReady()}.
+   * 
    * @param tb the source tuple batch
    * @param rowIdx the current row index
    * @param columnIdx the current column index

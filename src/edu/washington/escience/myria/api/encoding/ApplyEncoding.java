@@ -14,13 +14,13 @@ public class ApplyEncoding extends OperatorEncoding<Apply> {
 
   public String argChild;
 
-  public List<Expression> expressions;
+  public List<Expression> iterExpressions;
 
-  private static final ImmutableList<String> requiredArguments = ImmutableList.of("argChild", "expressions");
+  private static final ImmutableList<String> requiredArguments = ImmutableList.of("argChild", "iterExpressions");
 
   @Override
   public Apply construct(Server server) {
-    return new Apply(null, expressions);
+    return new Apply(null, iterExpressions);
   }
 
   @Override
