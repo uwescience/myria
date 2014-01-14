@@ -74,7 +74,10 @@ public final class UnionAll extends NAryOperator {
     childrenWithData = new LinkedList<Operator>();
     for (Operator child : getChildren()) {
       Preconditions.checkNotNull(child);
-      Preconditions.checkArgument(getSchema().equals(child.getSchema()));
+
+      if (!getSchema().compatible(child.getSchema())) {
+        throw new DbException("Incompatible input schema");
+      }
       childrenWithData.add(child);
     }
   }
