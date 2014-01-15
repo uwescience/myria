@@ -27,10 +27,10 @@ public class Apply extends UnaryOperator {
   /**
    * List of expressions that will be used to create the output.
    */
-  private ImmutableList<Expression> iterExpressions;
+  private ImmutableList<Expression> emitExpressions;
 
   /**
-   * One evaluator for each expression in {@link #iterExpressions}.
+   * One evaluator for each expression in {@link #emitExpressions}.
    */
   private ArrayList<GenericEvaluator> evaluators;
 
@@ -47,10 +47,10 @@ public class Apply extends UnaryOperator {
   }
 
   /**
-   * @return the expressions
+   * @return the {@link #emitExpressions}
    */
-  protected ImmutableList<Expression> getExpressions() {
-    return iterExpressions;
+  protected ImmutableList<Expression> getEmitExpressions() {
+    return emitExpressions;
   }
 
   /**
@@ -63,20 +63,20 @@ public class Apply extends UnaryOperator {
   /**
    * 
    * @param child child operator that data is fetched from
-   * @param iterateExpressions expression that created the output
+   * @param emitExpressions expression that created the output
    */
-  public Apply(final Operator child, final List<Expression> iterateExpressions) {
+  public Apply(final Operator child, final List<Expression> emitExpressions) {
     super(child);
-    if (iterateExpressions != null) {
-      setIterExpressions(iterateExpressions);
+    if (emitExpressions != null) {
+      setEmitExpressions(emitExpressions);
     }
   }
 
   /**
-   * @param iterateExpressions the iterate expressions for each column
+   * @param emitExpressions the emit expressions for each column
    */
-  private void setIterExpressions(final List<Expression> iterateExpressions) {
-    iterExpressions = ImmutableList.copyOf(iterateExpressions);
+  private void setEmitExpressions(final List<Expression> emitExpressions) {
+    this.emitExpressions = ImmutableList.copyOf(emitExpressions);
   }
 
   @Override
@@ -129,13 +129,13 @@ public class Apply extends UnaryOperator {
 
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    Preconditions.checkNotNull(iterExpressions);
+    Preconditions.checkNotNull(emitExpressions);
 
     Schema inputSchema = getChild().getSchema();
 
     evaluators = new ArrayList<>();
-    evaluators.ensureCapacity(iterExpressions.size());
-    for (Expression expr : iterExpressions) {
+    evaluators.ensureCapacity(emitExpressions.size());
+    for (Expression expr : emitExpressions) {
       GenericEvaluator evaluator = new GenericEvaluator(expr, inputSchema);
       if (evaluator.needsCompiling()) {
         evaluator.compile();
@@ -148,7 +148,7 @@ public class Apply extends UnaryOperator {
 
   @Override
   public Schema generateSchema() {
-    if (iterExpressions == null) {
+    if (emitExpressions == null) {
       return null;
     }
     Operator child = getChild();

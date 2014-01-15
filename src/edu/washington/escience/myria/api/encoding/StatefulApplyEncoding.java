@@ -15,16 +15,16 @@ public class StatefulApplyEncoding extends OperatorEncoding<Apply> {
 
   public String argChild;
 
-  public List<Expression> expressions;
+  public List<Expression> emitExpressions;
   public List<Expression> initializerExpressions;
   public List<Expression> updaterExpressions;
 
-  private static final ImmutableList<String> requiredArguments = ImmutableList.of("argChild", "expressions",
+  private static final ImmutableList<String> requiredArguments = ImmutableList.of("argChild", "emitExpressions",
       "initializerExpressions", "updaterExpressions");
 
   @Override
   public Apply construct(Server server) {
-    return new StatefulApply(null, expressions, initializerExpressions, updaterExpressions);
+    return new StatefulApply(null, emitExpressions, initializerExpressions, updaterExpressions);
   }
 
   @Override

@@ -44,13 +44,13 @@ public class StatefulApply extends Apply {
 
   /**
    * @param child child operator that data is fetched from
-   * @param iterateExpression expressions that creates the output
+   * @param emitExpression expressions that creates the output
    * @param initializerExpressions expressions that initializes the state
    * @param updaterExpressions expressions that update the state
    */
-  public StatefulApply(final Operator child, final List<Expression> iterateExpression,
+  public StatefulApply(final Operator child, final List<Expression> emitExpression,
       final List<Expression> initializerExpressions, final List<Expression> updaterExpressions) {
-    super(child, iterateExpression);
+    super(child, emitExpression);
     if (initializerExpressions != null) {
       setInitExpressions(initializerExpressions);
     }
@@ -75,7 +75,7 @@ public class StatefulApply extends Apply {
 
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    Preconditions.checkArgument(initExpressions.size() == getExpressions().size());
+    Preconditions.checkArgument(initExpressions.size() == getEmitExpressions().size());
     super.init(execEnvVars);
 
     Schema inputSchema = getChild().getSchema();
