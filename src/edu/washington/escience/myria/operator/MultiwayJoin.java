@@ -27,27 +27,31 @@ public class MultiwayJoin extends NAryOperator {
    */
   private static final long serialVersionUID = 1L;
 
+  private final int[][][] joinFieldMapping_;
+
+  private final int[][] outputFieldMapping_;
+
   /**
    * 
    * {@code joinFieldMapping[i]} is the list of JoinFields of i-th join variable
    */
-  private final List<List<JoinField>> joinFieldMapping;
+  private transient List<List<JoinField>> joinFieldMapping;
 
   /**
    * {@code joinFieldLocalOrder[i][j]} stores join field order of j-th field of i-th child's table.
    */
-  private final List<List<JoinFieldOrder>> joinFieldLocalOrder;
+  private transient List<List<JoinFieldOrder>> joinFieldLocalOrder;
 
   /**
    * {@code joinFieldGlobalOrder[i][j]} stores global order of j-th field of i-th child's table (-1 means not a joining
    * field).
    */
-  private final List<List<JoinFieldOrder>> joinFieldGlobalOrder;
+  private transient List<List<JoinFieldOrder>> joinFieldGlobalOrder;
 
   /**
    * {@code localOrderedJoinField[i][j]} stores the join field (locally) ordered j of i-th child's table.
    */
-  private final List<List<JoinField>> localOrderedJoinField;
+  private transient List<List<JoinField>> localOrderedJoinField;
 
   /**
    * stores mapping from output fields to child table's fields.
@@ -348,107 +352,8 @@ public class MultiwayJoin extends NAryOperator {
     }
     /* set children */
     setChildren(children);
-
-    /* initiate join field mapping and field local order */
-    this.joinFieldMapping = new ArrayList<List<JoinField>>();
-    joinFieldLocalOrder = new ArrayList<>(children.length);
-    joinFieldGlobalOrder = new ArrayList<>(children.length);
-    for (Operator element : children) {
-      List<JoinFieldOrder> localOrder = new ArrayList<>();
-      List<JoinFieldOrder> globalOrder = new ArrayList<>();
-      for (int i = 0; i < element.getSchema().numColumns(); ++i) {
-        localOrder.add(new JoinFieldOrder(-1, i));
-        globalOrder.add(new JoinFieldOrder(-1, i));
-      }
-      joinFieldLocalOrder.add(localOrder);
-      joinFieldGlobalOrder.add(globalOrder);
-    }
-
-    /* set join field mapping and field local order */
-    for (int i = 0; i < joinFieldMapping.length; ++i) {
-      List<JoinField> joinedFieldList = new ArrayList<JoinField>();
-      for (int j = 0; j < joinFieldMapping[i].length; ++j) {
-        // get table index and field index of each join field
-        Preconditions.checkArgument(joinFieldMapping[i][j].length == 2);
-        int tableIndex = joinFieldMapping[i][j][0];
-        int fieldIndex = joinFieldMapping[i][j][1];
-        // update joinFieldMapping and reverseJoinFieldMapping
-        Preconditions.checkPositionIndex(tableIndex, children.length);
-        Preconditions.checkPositionIndex(fieldIndex, children[tableIndex].getSchema().numColumns());
-        joinedFieldList.add(new JoinField(tableIndex, fieldIndex));
-        joinFieldLocalOrder.get(tableIndex).get(fieldIndex).setOrder(i);
-        joinFieldGlobalOrder.get(tableIndex).get(fieldIndex).setOrder(i);
-      }
-      this.joinFieldMapping.add(joinedFieldList);
-    }
-
-    localOrderedJoinField = new ArrayList<>();
-    for (int i = 0; i < joinFieldLocalOrder.size(); ++i) {
-
-      List<JoinField> jfl = new ArrayList<>();
-      List<JoinFieldOrder> orderedJoinFieldOrder = new ArrayList<>();
-      for (JoinFieldOrder localOrder : joinFieldLocalOrder.get(i)) {
-        orderedJoinFieldOrder.add(new JoinFieldOrder(localOrder.getOrder(), localOrder.getFieldIndex()));
-      }
-
-      Collections.sort(orderedJoinFieldOrder, new Comparator<JoinFieldOrder>() {
-        @Override
-        public int compare(JoinFieldOrder o1, JoinFieldOrder o2) {
-          if (o1.getOrder() == -1 && o2.getOrder() == -1) {
-            return 0;
-          } else if (o1.getOrder() == -1 && o2.getOrder() != -1) {
-            return 1;
-          } else if (o1.getOrder() != -1 && o2.getOrder() == -1) {
-            return -1;
-          } else {
-            return Integer.compare(o1.getOrder(), o2.getOrder());
-          }
-        }
-      });
-
-      for (int j = 0; j < orderedJoinFieldOrder.size(); j++) {
-        jfl.add(new JoinField(i, orderedJoinFieldOrder.get(j).getFieldIndex()));
-      }
-      localOrderedJoinField.add(jfl);
-    }
-
-    /* convert the global order to the local order and update the local order back to the joinFieldLocalOrder. */
-    for (int i = 0; i < localOrderedJoinField.size(); ++i) {
-      List<JoinField> orderedJoinField = localOrderedJoinField.get(i);
-      for (int j = 0; j < orderedJoinField.size(); j++) {
-        JoinField jf = orderedJoinField.get(j);
-        joinFieldLocalOrder.get(i).get(jf.fieldIndex).setOrder(j);
-      }
-    }
-
-    /* TODO: (to be removed) for debugging only. */
-    System.err.println("joinFieldMapping:");
-    for (List<JoinField> singleFieldMapping : this.joinFieldMapping) {
-      System.err.println(Arrays.toString(singleFieldMapping.toArray()));
-    }
-
-    System.err.println("localOrderedJoinField: ");
-    for (List<JoinField> localOrderList : localOrderedJoinField) {
-      System.err.println(Arrays.toString(localOrderList.toArray()));
-    }
-    System.err.println("joinFieldLocalOrder: ");
-    for (List<JoinFieldOrder> localOrderList : joinFieldLocalOrder) {
-      System.err.println(Arrays.toString(localOrderList.toArray()));
-    }
-    System.err.println("joinFieldGlobalOrder: ");
-    for (List<JoinFieldOrder> localOrderList : joinFieldGlobalOrder) {
-      System.err.println(Arrays.toString(localOrderList.toArray()));
-    }
-
-    /* set output field */
-    this.outputFieldMapping = new ArrayList<JoinField>();
-    for (int[] element : outputFieldMapping) {
-      Preconditions.checkArgument(element.length == 2);
-      this.outputFieldMapping.add(new JoinField(element[0], element[1]));
-    }
-
-    System.err.println("outputFieldMapping: ");
-    System.err.println(Arrays.toString(outputFieldMapping));
+    joinFieldMapping_ = joinFieldMapping;
+    outputFieldMapping_ = outputFieldMapping;
 
     /* set output schema */
     if (outputColumnNames != null) {
@@ -457,6 +362,13 @@ public class MultiwayJoin extends NAryOperator {
       this.outputColumnNames = ImmutableList.copyOf(outputColumnNames);
     } else {
       this.outputColumnNames = null;
+    }
+
+    /* set output field */
+    this.outputFieldMapping = new ArrayList<JoinField>();
+    for (int[] element : outputFieldMapping_) {
+      Preconditions.checkArgument(element.length == 2);
+      this.outputFieldMapping.add(new JoinField(element[0], element[1]));
     }
 
   }
@@ -535,8 +447,82 @@ public class MultiwayJoin extends NAryOperator {
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
 
-    /* Initiate hash tables */
     Operator[] children = getChildren();
+
+    /* initiate join field mapping and field local order */
+    joinFieldMapping = new ArrayList<List<JoinField>>();
+    joinFieldLocalOrder = new ArrayList<>(children.length);
+    joinFieldGlobalOrder = new ArrayList<>(children.length);
+    for (Operator element : children) {
+      List<JoinFieldOrder> localOrder = new ArrayList<>();
+      List<JoinFieldOrder> globalOrder = new ArrayList<>();
+      for (int i = 0; i < element.getSchema().numColumns(); ++i) {
+        localOrder.add(new JoinFieldOrder(-1, i));
+        globalOrder.add(new JoinFieldOrder(-1, i));
+      }
+      joinFieldLocalOrder.add(localOrder);
+      joinFieldGlobalOrder.add(globalOrder);
+    }
+
+    /* set join field mapping and field local order */
+    for (int i = 0; i < joinFieldMapping_.length; ++i) {
+      List<JoinField> joinedFieldList = new ArrayList<JoinField>();
+      for (int j = 0; j < joinFieldMapping_[i].length; ++j) {
+        // get table index and field index of each join field
+        Preconditions.checkArgument(joinFieldMapping_[i][j].length == 2);
+        int tableIndex = joinFieldMapping_[i][j][0];
+        int fieldIndex = joinFieldMapping_[i][j][1];
+        // update joinFieldMapping and reverseJoinFieldMapping
+        Preconditions.checkPositionIndex(tableIndex, children.length);
+        Preconditions.checkPositionIndex(fieldIndex, children[tableIndex].getSchema().numColumns());
+        joinedFieldList.add(new JoinField(tableIndex, fieldIndex));
+        joinFieldLocalOrder.get(tableIndex).get(fieldIndex).setOrder(i);
+        joinFieldGlobalOrder.get(tableIndex).get(fieldIndex).setOrder(i);
+      }
+      joinFieldMapping.add(joinedFieldList);
+    }
+
+    localOrderedJoinField = new ArrayList<>();
+    for (int i = 0; i < joinFieldLocalOrder.size(); ++i) {
+
+      List<JoinField> jfl = new ArrayList<>();
+      List<JoinFieldOrder> orderedJoinFieldOrder = new ArrayList<>();
+      for (JoinFieldOrder localOrder : joinFieldLocalOrder.get(i)) {
+        orderedJoinFieldOrder.add(new JoinFieldOrder(localOrder.getOrder(), localOrder.getFieldIndex()));
+      }
+
+      Collections.sort(orderedJoinFieldOrder, new Comparator<JoinFieldOrder>() {
+        @Override
+        public int compare(JoinFieldOrder o1, JoinFieldOrder o2) {
+          if (o1.getOrder() == -1 && o2.getOrder() == -1) {
+            return 0;
+          } else if (o1.getOrder() == -1 && o2.getOrder() != -1) {
+            return 1;
+          } else if (o1.getOrder() != -1 && o2.getOrder() == -1) {
+            return -1;
+          } else {
+            return Integer.compare(o1.getOrder(), o2.getOrder());
+          }
+        }
+      });
+
+      for (int j = 0; j < orderedJoinFieldOrder.size(); j++) {
+        jfl.add(new JoinField(i, orderedJoinFieldOrder.get(j).getFieldIndex()));
+      }
+      localOrderedJoinField.add(jfl);
+    }
+
+    /* convert the global order to the local order and update the local order back to the joinFieldLocalOrder. */
+    for (int i = 0; i < localOrderedJoinField.size(); ++i) {
+      List<JoinField> orderedJoinField = localOrderedJoinField.get(i);
+      for (int j = 0; j < orderedJoinField.size(); j++) {
+        JoinField jf = orderedJoinField.get(j);
+        joinFieldLocalOrder.get(i).get(jf.fieldIndex).setOrder(j);
+      }
+    }
+
+    /* Initiate hash tables */
+
     tables = new TupleBuffer[children.length];
     for (int i = 0; i < children.length; ++i) {
       tables[i] = new TupleBuffer(children[i].getSchema());
@@ -786,7 +772,6 @@ public class MultiwayJoin extends NAryOperator {
       currentDepth = 0;
       leapfrog_init();
     }
-    System.err.println("join called");
 
     /* break if a full tuple batch has been formed TODO: to be revised */
     while (ansTBB.numTuples() < TupleBatch.BATCH_SIZE) {
@@ -794,7 +779,6 @@ public class MultiwayJoin extends NAryOperator {
         Preconditions.checkArgument(jf.fieldIndex == iterators[jf.tableIndex].currentField);
       }
       boolean atEnd = leapfrog_search();
-      System.err.println("currentDepth: " + currentDepth);
 
       if (atEnd && currentDepth == 0) {
         /* if the first join variable reaches end, then the join finish. */
@@ -804,7 +788,6 @@ public class MultiwayJoin extends NAryOperator {
       } else if (atEnd) {
         /* reach to the end in current depth, go back to last depth */
         join_up();
-        System.err.println("joinUp ");
 
       } else if (currentDepth == joinFieldMapping.size() - 1) {
 
@@ -815,8 +798,6 @@ public class MultiwayJoin extends NAryOperator {
 
         /* exhaust all output with current join key */
         exhaustOutput(0);
-
-        System.err.println("output ");
 
         /* move to the next value */
         iterators[joinFieldMapping.get(currentDepth).get(currentIteratorIndex).tableIndex].nextValue();
