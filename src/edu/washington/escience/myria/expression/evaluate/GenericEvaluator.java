@@ -1,4 +1,4 @@
-package edu.washington.escience.myria.expression;
+package edu.washington.escience.myria.expression.evaluate;
 
 import java.lang.reflect.InvocationTargetException;
 
@@ -12,6 +12,9 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.expression.Expression;
+import edu.washington.escience.myria.expression.StateVariableExpression;
+import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.StatefulApply;
 

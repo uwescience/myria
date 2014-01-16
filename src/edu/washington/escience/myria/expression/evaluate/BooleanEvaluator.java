@@ -1,4 +1,4 @@
-package edu.washington.escience.myria.expression;
+package edu.washington.escience.myria.expression.evaluate;
 
 import java.lang.reflect.InvocationTargetException;
 
@@ -11,6 +11,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.expression.Expression;
 
 /**
  * An Expression evaluator for stateless boolean expressions.

@@ -13,9 +13,9 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.expression.ConstantEvaluator;
 import edu.washington.escience.myria.expression.Expression;
-import edu.washington.escience.myria.expression.GenericEvaluator;
+import edu.washington.escience.myria.expression.evaluate.ConstantEvaluator;
+import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
 
 /**
  * Apply operator that has to be initialized and carries a state while new tuples are generated.

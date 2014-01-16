@@ -1,4 +1,4 @@
-package edu.washington.escience.myria.expression;
+package edu.washington.escience.myria.expression.evaluate;
 
 /**
  * Interface for evaluating janino expressions.

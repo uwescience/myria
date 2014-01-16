@@ -1,6 +1,8 @@
-package edu.washington.escience.myria.expression;
+package edu.washington.escience.myria.expression.evaluate;
 
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.expression.Expression;
+import edu.washington.escience.myria.expression.VariableExpression;
 
 /**
  * 

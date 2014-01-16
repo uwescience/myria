@@ -65,7 +65,7 @@ public class Expression implements Serializable {
   /**
    * @return the rootExpressionOperator
    */
-  protected ExpressionOperator getRootExpressionOperator() {
+  public ExpressionOperator getRootExpressionOperator() {
     return rootExpressionOperator;
   }
 

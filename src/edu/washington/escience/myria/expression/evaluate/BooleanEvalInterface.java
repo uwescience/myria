@@ -1,6 +1,7 @@
-package edu.washington.escience.myria.expression;
+package edu.washington.escience.myria.expression.evaluate;
 
 import edu.washington.escience.myria.TupleBatch;
+import edu.washington.escience.myria.expression.VariableExpression;
 
 /**
  * Interface for evaluating janino expressions that return bools.

@@ -14,8 +14,8 @@ import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.Expression;
-import edu.washington.escience.myria.expression.GenericEvaluator;
-import edu.washington.escience.myria.expression.TupleEvaluator;
+import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
+import edu.washington.escience.myria.expression.evaluate.TupleEvaluator;
 
 /**
  * Generic apply operator.

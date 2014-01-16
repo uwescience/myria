@@ -9,8 +9,8 @@ import com.google.common.collect.ImmutableMap;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.expression.BooleanEvaluator;
 import edu.washington.escience.myria.expression.Expression;
+import edu.washington.escience.myria.expression.evaluate.BooleanEvaluator;
 
 /**
  * Filter is an operator that implements a relational select.

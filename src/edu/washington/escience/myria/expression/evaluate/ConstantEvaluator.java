@@ -1,4 +1,4 @@
-package edu.washington.escience.myria.expression;
+package edu.washington.escience.myria.expression.evaluate;
 
 import java.lang.reflect.InvocationTargetException;
 
@@ -9,6 +9,7 @@ import com.google.common.base.Preconditions;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.operator.StatefulApply;
 
 /**
