@@ -8,7 +8,10 @@ import edu.washington.escience.myria.column.Column;
  * @param <T> type of the objects in this column.
  * 
  */
-public interface MutableColumn<T extends Comparable<?>> extends Column<T>, Cloneable {
+public abstract class MutableColumn<T extends Comparable<?>> extends Column<T> implements Cloneable {
+
+  /** Required for Java serialization. */
+  private static final long serialVersionUID = 1L;
 
   /**
    * replace the old value at index with the new value.
@@ -16,19 +19,20 @@ public interface MutableColumn<T extends Comparable<?>> extends Column<T>, Clone
    * @param index the index
    * @param value the new value
    */
-  void replace(int index, T value);
+  public abstract void replace(int index, T value);
 
   /**
    * return the column representation of this mutable column. It copies data.
    * 
    * @return the column representation of this mutable column.
    */
-  Column<T> toColumn();
+  public abstract Column<T> toColumn();
 
   /**
    * clone itself by copying data.
    * 
    * @return the clone
    */
-  MutableColumn<T> clone();
+  @Override
+  public abstract MutableColumn<T> clone();
 }

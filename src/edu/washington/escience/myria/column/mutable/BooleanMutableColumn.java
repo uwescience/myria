@@ -24,10 +24,8 @@ import edu.washington.escience.myria.util.ImmutableIntArray;
  * A mutable column of Boolean values.
  * 
  */
-public class BooleanMutableColumn implements MutableColumn<Boolean> {
-  /**
-   * 
-   */
+public class BooleanMutableColumn extends MutableColumn<Boolean> {
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** Internal representation of the column data. */
   private final BitSet data;
@@ -44,16 +42,11 @@ public class BooleanMutableColumn implements MutableColumn<Boolean> {
   }
 
   @Override
-  public Boolean get(final int row) {
+  public Boolean getObject(final int row) {
     return Boolean.valueOf(getBoolean(row));
   }
 
-  /**
-   * Returns the element at the specified row in this column.
-   * 
-   * @param row row of element to return.
-   * @return the element at the specified row in this column.
-   */
+  @Override
   public boolean getBoolean(final int row) {
     Preconditions.checkElementIndex(row, numBits);
     return data.get(row);

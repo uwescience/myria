@@ -17,7 +17,7 @@ import edu.washington.escience.myria.column.builder.IntColumnBuilder;
  * @author dhalperi
  * 
  */
-public abstract class IntColumn implements Column<Integer> {
+public abstract class IntColumn extends Column<Integer> {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
@@ -27,6 +27,7 @@ public abstract class IntColumn implements Column<Integer> {
    * @param row row of element to return.
    * @return the element at the specified row in this column.
    */
+  @Override
   public abstract int getInt(final int row);
 
   @Override

@@ -377,7 +377,7 @@ public class TupleBatch implements Serializable {
    * @return the value in the specified column and row.
    */
   public final Object getObject(final int column, final int row) {
-    return columns.get(column).get(getValidIndices().get(row));
+    return columns.get(column).getObject(getValidIndices().get(row));
   }
 
   /**
@@ -426,7 +426,7 @@ public class TupleBatch implements Serializable {
     ImmutableIntArray indices = getValidIndices();
     for (int i = 0; i < indices.length(); i++) {
       int row = indices.get(i);
-      final Object v = gC.get(row);
+      final Object v = gC.getObject(row);
       Pair<Object, TupleBatchBuffer> kvPair = buffers.get(v);
       TupleBatchBuffer tbb = null;
       if (kvPair == null) {

@@ -37,7 +37,7 @@ public final class IntArrayColumn extends IntColumn {
   }
 
   @Override
-  public Integer get(final int row) {
+  public Integer getObject(final int row) {
     return Integer.valueOf(getInt(row));
   }
 

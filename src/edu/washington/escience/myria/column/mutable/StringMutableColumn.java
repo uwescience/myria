@@ -24,10 +24,8 @@ import edu.washington.escience.myria.util.TypeFunnel;
  * A mutable column of String values.
  * 
  */
-public final class StringMutableColumn implements MutableColumn<String> {
-  /**
-   * 
-   */
+public final class StringMutableColumn extends MutableColumn<String> {
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** Contains the packed character data. */
   private final String[] data;
@@ -46,7 +44,7 @@ public final class StringMutableColumn implements MutableColumn<String> {
   }
 
   @Override
-  public String get(final int row) {
+  public String getObject(final int row) {
     return getString(row);
   }
 
@@ -61,12 +59,7 @@ public final class StringMutableColumn implements MutableColumn<String> {
     statement.bind(sqliteIndex, getString(row));
   }
 
-  /**
-   * Returns the element at the specified row in this column.
-   * 
-   * @param row row of element to return.
-   * @return the element at the specified row in this column.
-   */
+  @Override
   public String getString(final int row) {
     Preconditions.checkElementIndex(row, numStrings);
     return data[row];
@@ -134,7 +127,7 @@ public final class StringMutableColumn implements MutableColumn<String> {
 
   @Override
   public boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
-    return getString(leftIdx).equals(rightColumn.get(rightIdx));
+    return getString(leftIdx).equals(rightColumn.getObject(rightIdx));
   }
 
   @Override

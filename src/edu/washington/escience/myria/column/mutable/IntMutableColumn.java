@@ -16,7 +16,7 @@ import edu.washington.escience.myria.column.builder.IntColumnBuilder;
  * An abstract MutableColumn<Integer> with a primitive type accessor.
  * 
  */
-public abstract class IntMutableColumn implements MutableColumn<Integer> {
+public abstract class IntMutableColumn extends MutableColumn<Integer> {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
@@ -26,6 +26,7 @@ public abstract class IntMutableColumn implements MutableColumn<Integer> {
    * @param row row of element to return.
    * @return the element at the specified row in this column.
    */
+  @Override
   public abstract int getInt(final int row);
 
   @Override

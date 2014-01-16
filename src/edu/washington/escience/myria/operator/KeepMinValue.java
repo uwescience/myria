@@ -80,13 +80,13 @@ public final class KeepMinValue extends StreamingState {
     Type t = column.getType();
     switch (t) {
       case INT_TYPE:
-        return (((IntColumn) column).get(row)) < uniqueTuples.getInt(valueColIndex, index);
+        return (((IntColumn) column).getObject(row)) < uniqueTuples.getInt(valueColIndex, index);
       case FLOAT_TYPE:
-        return (((FloatColumn) column).get(row)) < uniqueTuples.getFloat(valueColIndex, index);
+        return (((FloatColumn) column).getObject(row)) < uniqueTuples.getFloat(valueColIndex, index);
       case DOUBLE_TYPE:
-        return (((DoubleColumn) column).get(row)) < uniqueTuples.getDouble(valueColIndex, index);
+        return (((DoubleColumn) column).getObject(row)) < uniqueTuples.getDouble(valueColIndex, index);
       case LONG_TYPE:
-        return (((LongColumn) column).get(row)) < uniqueTuples.getLong(valueColIndex, index);
+        return (((LongColumn) column).getObject(row)) < uniqueTuples.getLong(valueColIndex, index);
       default:
         throw new IllegalStateException("type " + t + " is not supported in KeepMinValue.replace()");
     }

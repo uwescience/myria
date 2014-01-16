@@ -16,12 +16,12 @@ import edu.washington.escience.myria.util.TypeFunnel;
  * An abstract column of String values.
  * 
  */
-public abstract class StringColumn implements Column<String> {
+public abstract class StringColumn extends Column<String> {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   @Override
-  public final String get(final int row) {
+  public final String getObject(final int row) {
     return getString(row);
   }
 
@@ -37,12 +37,7 @@ public abstract class StringColumn implements Column<String> {
     statement.bind(sqliteIndex, getString(row));
   }
 
-  /**
-   * Returns the element at the specified row in this column.
-   * 
-   * @param row row of element to return.
-   * @return the element at the specified row in this column.
-   */
+  @Override
   public abstract String getString(final int row);
 
   @Override
@@ -66,7 +61,7 @@ public abstract class StringColumn implements Column<String> {
 
   @Override
   public final boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
-    return getString(leftIdx).equals(rightColumn.get(rightIdx));
+    return getString(leftIdx).equals(rightColumn.getObject(rightIdx));
   }
 
   @Override

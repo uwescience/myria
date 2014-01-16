@@ -24,10 +24,8 @@ import edu.washington.escience.myria.util.ImmutableIntArray;
  * A mutable column of Double values.
  * 
  */
-public final class DoubleMutableColumn implements MutableColumn<Double> {
-  /**
-   * 
-   */
+public final class DoubleMutableColumn extends MutableColumn<Double> {
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** Internal representation of the column data. */
   private final double[] data;
@@ -48,7 +46,7 @@ public final class DoubleMutableColumn implements MutableColumn<Double> {
   }
 
   @Override
-  public Double get(final int row) {
+  public Double getObject(final int row) {
     return Double.valueOf(getDouble(row));
   }
 
@@ -63,12 +61,7 @@ public final class DoubleMutableColumn implements MutableColumn<Double> {
     statement.bind(sqliteIndex, getDouble(row));
   }
 
-  /**
-   * Returns the element at the specified row in this column.
-   * 
-   * @param row row of element to return.
-   * @return the element at the specified row in this column.
-   */
+  @Override
   public double getDouble(final int row) {
     Preconditions.checkElementIndex(row, position);
     return data[row];

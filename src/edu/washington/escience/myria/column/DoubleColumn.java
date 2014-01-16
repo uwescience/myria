@@ -24,10 +24,8 @@ import edu.washington.escience.myria.util.ImmutableIntArray;
  * @author dhalperi
  * 
  */
-public final class DoubleColumn implements Column<Double> {
-  /**
-   * 
-   */
+public final class DoubleColumn extends Column<Double> {
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** Internal representation of the column data. */
   private final double[] data;
@@ -48,7 +46,7 @@ public final class DoubleColumn implements Column<Double> {
   }
 
   @Override
-  public Double get(final int row) {
+  public Double getObject(final int row) {
     return Double.valueOf(getDouble(row));
   }
 
@@ -69,6 +67,7 @@ public final class DoubleColumn implements Column<Double> {
    * @param row row of element to return.
    * @return the element at the specified row in this column.
    */
+  @Override
   public double getDouble(final int row) {
     Preconditions.checkElementIndex(row, position);
     return data[row];

@@ -23,10 +23,8 @@ import edu.washington.escience.myria.util.ImmutableIntArray;
  * A mutable column of Long values.
  * 
  */
-public final class LongMutableColumn implements MutableColumn<Long> {
-  /**
-   * 
-   */
+public final class LongMutableColumn extends MutableColumn<Long> {
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** Internal representation of the column data. */
   private final long[] data;
@@ -45,7 +43,7 @@ public final class LongMutableColumn implements MutableColumn<Long> {
   }
 
   @Override
-  public Long get(final int row) {
+  public Long getObject(final int row) {
     return Long.valueOf(getLong(row));
   }
 
@@ -60,12 +58,7 @@ public final class LongMutableColumn implements MutableColumn<Long> {
     statement.bind(sqliteIndex, getLong(row));
   }
 
-  /**
-   * Returns the element at the specified row in this column.
-   * 
-   * @param row row of element to return.
-   * @return the element at the specified row in this column.
-   */
+  @Override
   public long getLong(final int row) {
     Preconditions.checkElementIndex(row, position);
     return data[row];

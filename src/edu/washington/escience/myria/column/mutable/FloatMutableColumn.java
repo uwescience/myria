@@ -24,10 +24,8 @@ import edu.washington.escience.myria.util.ImmutableIntArray;
  * A mutable column of Float values.
  * 
  */
-public final class FloatMutableColumn implements MutableColumn<Float> {
-  /**
-   * 
-   */
+public final class FloatMutableColumn extends MutableColumn<Float> {
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** Internal representation of the column data. */
   private final float[] data;
@@ -48,7 +46,7 @@ public final class FloatMutableColumn implements MutableColumn<Float> {
   }
 
   @Override
-  public Float get(final int row) {
+  public Float getObject(final int row) {
     return Float.valueOf(getFloat(row));
   }
 
@@ -63,12 +61,7 @@ public final class FloatMutableColumn implements MutableColumn<Float> {
     statement.bind(sqliteIndex, getFloat(row));
   }
 
-  /**
-   * Returns the element at the specified row in this column.
-   * 
-   * @param row row of element to return.
-   * @return the element at the specified row in this column.
-   */
+  @Override
   public float getFloat(final int row) {
     Preconditions.checkElementIndex(row, position);
     return data[row];

@@ -45,7 +45,7 @@ public class SubStr extends UnaryOperator {
       builder.expandAll();
       ImmutableList<Column<?>> source = tb.getDataColumns();
       for (Integer idx : tb.getValidIndices()) {
-        String subStr = ((StringColumn) source.get(substrColumnIdx)).get(idx).substring(fromCharIdx, endCharIdx);
+        String subStr = ((StringColumn) source.get(substrColumnIdx)).getObject(idx).substring(fromCharIdx, endCharIdx);
         builder.replace(idx, subStr);
       }
 

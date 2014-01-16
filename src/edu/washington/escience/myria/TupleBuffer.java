@@ -126,7 +126,7 @@ public class TupleBuffer implements Cloneable {
       throw new IndexOutOfBoundsException();
     }
     if (tupleBatchIndex < readyTuples.size()) {
-      return readyTuples.get(tupleBatchIndex)[colIndex].get(tupleIndex);
+      return readyTuples.get(tupleBatchIndex)[colIndex].getObject(tupleIndex);
     }
     return currentBuildingColumns[colIndex].get(tupleIndex);
   }

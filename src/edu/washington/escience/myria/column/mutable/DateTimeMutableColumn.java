@@ -27,11 +27,9 @@ import edu.washington.escience.myria.util.TypeFunnel;
  * A mutable column of Date values.
  * 
  */
-public final class DateTimeMutableColumn implements MutableColumn<DateTime> {
-  /**
-   * 
-   */
-  private static final long serialVersionUID = -6748591038891797523L;
+public final class DateTimeMutableColumn extends MutableColumn<DateTime> {
+  /** Required for Java serialization. */
+  private static final long serialVersionUID = 1L;
   /** Internal representation of the column data. */
   private final DateTime[] data;
   /** The number of existing rows in this column. */
@@ -49,7 +47,7 @@ public final class DateTimeMutableColumn implements MutableColumn<DateTime> {
   }
 
   @Override
-  public DateTime get(final int row) {
+  public DateTime getObject(final int row) {
     return getDateTime(row);
   }
 
@@ -64,12 +62,7 @@ public final class DateTimeMutableColumn implements MutableColumn<DateTime> {
     statement.bind(sqliteIndex, getDateTime(row).getMillis()); // SQLite long
   }
 
-  /**
-   * Returns the element at the specified row in this column.
-   * 
-   * @param row row of element to return.
-   * @return the element at the specified row in this column.
-   */
+  @Override
   public DateTime getDateTime(final int row) {
     Preconditions.checkElementIndex(row, position);
     return data[row];
@@ -129,7 +122,7 @@ public final class DateTimeMutableColumn implements MutableColumn<DateTime> {
 
   @Override
   public boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
-    return getDateTime(leftIdx).equals(rightColumn.get(rightIdx));
+    return getDateTime(leftIdx).equals(rightColumn.getObject(rightIdx));
   }
 
   @Override

@@ -44,7 +44,7 @@ public final class IntProtoColumn extends IntColumn {
   }
 
   @Override
-  public Integer get(final int row) {
+  public Integer getObject(final int row) {
     return Integer.valueOf(intBuffer.get(row));
   }
 
