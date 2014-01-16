@@ -50,25 +50,25 @@ public abstract class ComparisonExpression extends BinaryExpression {
   }
 
   @Override
-  public Type getOutputType(final Schema schema) {
-    Type leftType = getLeft().getOutputType(schema);
-    Type rightType = getRight().getOutputType(schema);
+  public Type getOutputType(final Schema schema, final Schema stateSchema) {
+    Type leftType = getLeft().getOutputType(schema, stateSchema);
+    Type rightType = getRight().getOutputType(schema, stateSchema);
 
     if (leftType == Type.STRING_TYPE || leftType == Type.DATETIME_TYPE) {
       Preconditions.checkArgument(rightType == leftType,
           "If the type of the left child is %s, %s requires right child [%s] of Type %s to be %s as well.", leftType,
           getClass().getSimpleName(), getRight(), rightType, leftType);
     } else {
-      checkAndReturnDefaultNumericType(schema);
+      checkAndReturnDefaultNumericType(schema, stateSchema);
     }
     return Type.BOOLEAN_TYPE;
   }
 
   @Override
-  public String getJavaString(final Schema schema) {
-    if (getLeft().getOutputType(schema) == Type.STRING_TYPE) {
+  public String getJavaString(final Schema schema, final Schema stateSchema) {
+    if (getLeft().getOutputType(schema, stateSchema) == Type.STRING_TYPE) {
       return getObjectComparisonString(getOperation(), schema);
     }
-    return getInfixBinaryString(getOperation().toJavaString(), schema);
+    return getInfixBinaryString(getOperation().toJavaString(), schema, stateSchema);
   }
 }

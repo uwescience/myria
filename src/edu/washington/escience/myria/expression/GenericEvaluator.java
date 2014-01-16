@@ -24,10 +24,11 @@ public class GenericEvaluator extends TupleEvaluator {
    * Default constructor.
    * 
    * @param expression the expression for the evaluator
-   * @param schema the schema that the expression expects
+   * @param inputSchema the schema that the expression expects
+   * @param stateSchema the schema of the state
    */
-  public GenericEvaluator(final Expression expression, final Schema schema) {
-    super(expression, schema);
+  public GenericEvaluator(final Expression expression, final Schema inputSchema, final Schema stateSchema) {
+    super(expression, inputSchema, stateSchema);
   }
 
   /**
@@ -66,26 +67,10 @@ public class GenericEvaluator extends TupleEvaluator {
    * @return the result from the evaluation
    * @throws InvocationTargetException exception thrown from janino
    */
-  public Object eval(final TupleBatch tb, final int rowId, final Object state) throws InvocationTargetException {
+  public Object eval(final TupleBatch tb, final int rowId, final TupleBatch state) throws InvocationTargetException {
     Preconditions.checkArgument(evaluator != null,
         "Call compile first or copy the data if it is the same in the input.");
     return evaluator.evaluate(tb, rowId, state);
-  }
-
-  /**
-   * Runs {@link #eval(TupleBatch, int)} if necessary and puts the result in the target tuple buffer.
-   * 
-   * If evaluating is not necessary, the data is copied directly from the source tuple batch into the target buffer.
-   * 
-   * @param sourceTupleBatch the tuple buffer that should be used as input
-   * @param sourceRowIdx the row that should be used in the input batch
-   * @param targetTupleBuffer the tuple buffer that should be used as output
-   * @param targetColumnIdx the column that the data should be written to
-   * @throws InvocationTargetException exception thrown from janino
-   */
-  public void evalAndPut(final TupleBatch sourceTupleBatch, final int sourceRowIdx,
-      final TupleBatchBuffer targetTupleBuffer, final int targetColumnIdx) throws InvocationTargetException {
-    evalAndPut(sourceTupleBatch, sourceRowIdx, targetTupleBuffer, targetColumnIdx, null);
   }
 
   /**
@@ -102,13 +87,18 @@ public class GenericEvaluator extends TupleEvaluator {
    */
   @SuppressWarnings("deprecation")
   public void evalAndPut(final TupleBatch sourceTupleBatch, final int sourceRowIdx,
-      final TupleBatchBuffer targetTupleBuffer, final int targetColumnIdx, final Object state)
+      final TupleBatchBuffer targetTupleBuffer, final int targetColumnIdx, final TupleBatch state)
       throws InvocationTargetException {
     if (isCopyFromInput()) {
+      TupleBatch tb = sourceTupleBatch;
+      int row = sourceRowIdx;
+      if (getExpression().getRootExpressionOperator() instanceof StateVariableExpression) {
+        tb = state;
+        row = 0;
+      }
       final Column<?> sourceColumn =
-          sourceTupleBatch.getDataColumns().get(
-              ((VariableExpression) getExpression().getRootExpressionOperator()).getColumnIdx());
-      targetTupleBuffer.put(targetColumnIdx, sourceColumn, sourceRowIdx);
+          tb.getDataColumns().get(((VariableExpression) getExpression().getRootExpressionOperator()).getColumnIdx());
+      targetTupleBuffer.put(targetColumnIdx, sourceColumn, row);
     } else {
       Object result = eval(sourceTupleBatch, sourceRowIdx, state);
       /** We already have an object, so we're not using the wrong version of put. Remove the warning. */

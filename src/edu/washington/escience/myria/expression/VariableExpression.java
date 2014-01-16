@@ -29,21 +29,21 @@ public class VariableExpression extends ZeroaryExpression {
   /**
    * A {@link VariableExpression} that references column <code>columnIdx</code> from the input.
    * 
-   * @param columnIdx the index in the input that this {@link VariableExpression} references.
+   * @param columnIdx the index in the input.
    */
   public VariableExpression(final int columnIdx) {
     this.columnIdx = columnIdx;
   }
 
   @Override
-  public Type getOutputType(final Schema schema) {
+  public Type getOutputType(final Schema schema, final Schema stateSchema) {
     return schema.getColumnType(columnIdx);
   }
 
   @Override
-  public String getJavaString(final Schema schema) {
+  public String getJavaString(final Schema schema, final Schema stateSchema) {
     String tName = null;
-    switch (getOutputType(schema)) {
+    switch (getOutputType(schema, stateSchema)) {
       case INT_TYPE:
         tName = "Int";
         break;

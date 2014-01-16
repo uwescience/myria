@@ -15,5 +15,5 @@ public interface EvalInterface {
    * @param state optional state that is passed during evaluation
    * @return the result from the evaluation
    */
-  Object evaluate(final TupleBatch tb, final int rowId, final Object state);
+  Object evaluate(final TupleBatch tb, final int rowId, final TupleBatch state);
 }

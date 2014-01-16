@@ -18,7 +18,8 @@ import edu.washington.escience.myria.Schema;
 @JsonSubTypes({
     /* Zeroary */
     @Type(name = "CONSTANT", value = ConstantExpression.class),
-    @Type(name = "VARIABLE", value = VariableExpression.class), @Type(name = "STATE", value = StateExpression.class),
+    @Type(name = "VARIABLE", value = VariableExpression.class),
+    @Type(name = "STATE", value = StateVariableExpression.class),
     /* Unary */
     @Type(name = "ABS", value = AbsExpression.class), @Type(name = "CAST", value = CastExpression.class),
     @Type(name = "CEIL", value = CeilExpression.class), @Type(name = "COS", value = CosExpression.class),
@@ -41,14 +42,15 @@ public abstract class ExpressionOperator implements Serializable {
 
   /**
    * @param schema the schema of the tuples this expression references.
+   * @param stateSchema the schema of the state if used.
    * @return the type of the output of this expression.
    */
-  public abstract edu.washington.escience.myria.Type getOutputType(final Schema schema);
+  public abstract edu.washington.escience.myria.Type getOutputType(final Schema schema, final Schema stateSchema);
 
   /**
-   * @return the entire tree represented as an expression.
-   * 
    * @param schema the input schema
+   * @param stateSchema the schema of the state if used.
+   * @return the entire tree represented as an expression.
    */
-  public abstract String getJavaString(final Schema schema);
+  public abstract String getJavaString(final Schema schema, final Schema stateSchema);
 }

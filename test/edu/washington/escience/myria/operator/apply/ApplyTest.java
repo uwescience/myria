@@ -14,7 +14,6 @@ import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.AbsExpression;
 import edu.washington.escience.myria.expression.AndExpression;
-import edu.washington.escience.myria.expression.CastExpression;
 import edu.washington.escience.myria.expression.CeilExpression;
 import edu.washington.escience.myria.expression.ConstantExpression;
 import edu.washington.escience.myria.expression.CosExpression;
@@ -35,7 +34,7 @@ import edu.washington.escience.myria.expression.PlusExpression;
 import edu.washington.escience.myria.expression.PowExpression;
 import edu.washington.escience.myria.expression.SinExpression;
 import edu.washington.escience.myria.expression.SqrtExpression;
-import edu.washington.escience.myria.expression.StateExpression;
+import edu.washington.escience.myria.expression.StateVariableExpression;
 import edu.washington.escience.myria.expression.TanExpression;
 import edu.washington.escience.myria.expression.TimesExpression;
 import edu.washington.escience.myria.expression.ToUpperCaseExpression;
@@ -175,7 +174,7 @@ public class ApplyTest {
       // Expression (just copy/ rename): a;
       Expression expr = new Expression("copy", vara);
 
-      TupleEvaluator eval = new TupleEvaluator(expr, tbb.getSchema());
+      TupleEvaluator eval = new TupleEvaluator(expr, tbb.getSchema(), null);
       assertTrue(!eval.needsCompiling());
       Expressions.add(expr);
     }
@@ -446,13 +445,10 @@ public class ApplyTest {
       tbb.putString(0, "Foo" + i);
     }
 
-    Expression initializer = new Expression(new ConstantExpression(Type.INT_TYPE, "0"));
-
-    Expression expression = new Expression("index", new CastExpression(new StateExpression(), Type.INT_TYPE));
-
+    Expression initializer = new Expression("counter", new ConstantExpression(Type.INT_TYPE, "-1"));
+    Expression expression = new Expression("index", new StateVariableExpression(0));
     Expression increment =
-        new Expression(new PlusExpression(new CastExpression(new StateExpression(), Type.INT_TYPE),
-            new ConstantExpression(Type.INT_TYPE, "1")));
+        new Expression(new PlusExpression(new StateVariableExpression(0), new ConstantExpression(Type.INT_TYPE, "1")));
 
     ImmutableList.Builder<Expression> Initializers = ImmutableList.builder();
     Initializers.add(initializer);

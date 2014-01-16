@@ -1,7 +1,6 @@
 package edu.washington.escience.myria.expression;
 
 import java.io.Serializable;
-import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -79,21 +78,23 @@ public class Expression implements Serializable {
 
   /**
    * @param inputSchema the schema of the input relation
+   * @param stateSchema the schema of the state
    * @return the Java form of this expression.
    */
-  public String getJavaExpression(final Schema inputSchema) {
+  public String getJavaExpression(final Schema inputSchema, final Schema stateSchema) {
     if (javaExpression == null) {
-      return rootExpressionOperator.getJavaString(Objects.requireNonNull(inputSchema));
+      return rootExpressionOperator.getJavaString(inputSchema, stateSchema);
     }
     return javaExpression;
   }
 
   /**
    * @param inputSchema the schema of the input relation
+   * @param stateSchema the schema of the state
    * @return the type of the output
    */
-  public Type getOutputType(final Schema inputSchema) {
-    return rootExpressionOperator.getOutputType(Objects.requireNonNull(inputSchema));
+  public Type getOutputType(final Schema inputSchema, final Schema stateSchema) {
+    return rootExpressionOperator.getOutputType(inputSchema, stateSchema);
   }
 
   /**
@@ -101,16 +102,9 @@ public class Expression implements Serializable {
    */
   public String getJavaExpression() {
     if (javaExpression == null) {
-      return rootExpressionOperator.getJavaString(null);
+      return rootExpressionOperator.getJavaString(null, null);
     }
     return javaExpression;
-  }
-
-  /**
-   * @return the type of the output
-   */
-  public Type getOutputType() {
-    return rootExpressionOperator.getOutputType(null);
   }
 
   /**

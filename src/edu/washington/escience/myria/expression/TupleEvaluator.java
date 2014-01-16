@@ -1,19 +1,11 @@
 package edu.washington.escience.myria.expression;
 
-import com.google.common.base.Preconditions;
-
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.Type;
 
 /**
  * 
  */
 public class TupleEvaluator extends Evaluator {
-  /**
-   * The schema of the input tuples to this expression.
-   */
-  private Schema inputSchema;
-
   /**
    * True if the input value is the same as the output.
    */
@@ -22,31 +14,11 @@ public class TupleEvaluator extends Evaluator {
   /**
    * @param expression the expression to be evaluated
    * @param inputSchema the schema that the expression expects if it operates on a schema
+   * @param stateSchema the schema of the state
    */
-  public TupleEvaluator(final Expression expression, final Schema inputSchema) {
-    super(expression);
-
-    Preconditions.checkNotNull(inputSchema);
-    this.inputSchema = inputSchema;
-
+  public TupleEvaluator(final Expression expression, final Schema inputSchema, final Schema stateSchema) {
+    super(expression, inputSchema, stateSchema);
     copyFromInput = getExpression().getRootExpressionOperator() instanceof VariableExpression;
-  }
-
-  /**
-   * @return the inputSchema
-   */
-  protected Schema getInputSchema() {
-    return inputSchema;
-  }
-
-  /**
-   * Set the schema of the input tuples to this expression.
-   * 
-   * @param inputSchema schema the schema that the expression expects if it operates on a schema.
-   */
-  public void setSchema(final Schema inputSchema) {
-    this.inputSchema = inputSchema;
-    getExpression().resetJavaExpression();
   }
 
   /**
@@ -70,14 +42,7 @@ public class TupleEvaluator extends Evaluator {
    * @return the Java form of this expression.
    */
   public String getJavaExpression() {
-    return getExpression().getJavaExpression(getInputSchema());
-  }
-
-  /**
-   * @return the type of the output
-   */
-  public Type getOutputType() {
-    return getExpression().getOutputType(getInputSchema());
+    return getExpression().getJavaExpression(getInputSchema(), getStateSchema());
   }
 
   /**

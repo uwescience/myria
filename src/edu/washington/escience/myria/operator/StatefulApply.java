@@ -11,6 +11,8 @@ import com.google.common.collect.ImmutableMap;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
+import edu.washington.escience.myria.TupleBatchBuffer;
+import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.ConstantEvaluator;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.GenericEvaluator;
@@ -35,12 +37,17 @@ public class StatefulApply extends Apply {
   /**
    * The states that are passed during execution.
    */
-  private ArrayList<Object> states;
+  private TupleBatch state;
 
   /**
-   * Evaluators that update the {@link #states}. One evaluator for each expression in {@link #updateExpressions}.
+   * Evaluators that update the {@link #state}. One evaluator for each expression in {@link #updateExpressions}.
    */
   private ArrayList<GenericEvaluator> updateEvaluators;
+
+  /**
+   * Schema of the state relation.
+   */
+  private Schema stateSchema = null;
 
   /**
    * @param child child operator that data is fetched from
@@ -51,6 +58,7 @@ public class StatefulApply extends Apply {
   public StatefulApply(final Operator child, final List<Expression> emitExpression,
       final List<Expression> initializerExpressions, final List<Expression> updaterExpressions) {
     super(child, emitExpression);
+    // ToDo: make sure the init and update expressions have the same names
     if (initializerExpressions != null) {
       setInitExpressions(initializerExpressions);
     }
@@ -75,48 +83,97 @@ public class StatefulApply extends Apply {
 
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    Preconditions.checkArgument(initExpressions.size() == getEmitExpressions().size());
-    super.init(execEnvVars);
+    Preconditions.checkArgument(initExpressions.size() == updateExpressions.size());
+    Preconditions.checkNotNull(getEmitExpressions());
 
     Schema inputSchema = getChild().getSchema();
 
-    states = new ArrayList<>();
-    states.ensureCapacity(initExpressions.size());
+    ArrayList<GenericEvaluator> evaluators = new ArrayList<>();
+    evaluators.ensureCapacity(getEmitExpressions().size());
+    setEvaluators(evaluators);
+    for (Expression expr : getEmitExpressions()) {
+      GenericEvaluator evaluator = new GenericEvaluator(expr, inputSchema, getStateSchema());
+      if (evaluator.needsCompiling()) {
+        evaluator.compile();
+      }
+      evaluators.add(evaluator);
+    }
+
+    setResultBuffer(new TupleBatchBuffer(getSchema()));
+
+    // states = new TupleBatch(stateSchema, null, 1);
 
     updateEvaluators = new ArrayList<>();
     updateEvaluators.ensureCapacity(updateExpressions.size());
 
-    for (Expression expr : initExpressions) {
-      ConstantEvaluator evaluator = new ConstantEvaluator(expr);
+    TupleBatchBuffer tbb = new TupleBatchBuffer(getStateSchema());
+
+    for (int columnIdx = 0; columnIdx < getStateSchema().numColumns(); columnIdx++) {
+      Expression expr = initExpressions.get(columnIdx);
+      ConstantEvaluator evaluator = new ConstantEvaluator(expr, inputSchema, getStateSchema());
       evaluator.compile();
 
       try {
-        states.add(evaluator.eval());
+        tbb.put(columnIdx, evaluator.eval());
       } catch (InvocationTargetException e) {
         throw new DbException(e);
       }
+      state = tbb.popAny();
     }
 
     for (Expression expr : updateExpressions) {
-      GenericEvaluator evaluator = new GenericEvaluator(expr, inputSchema);
+      GenericEvaluator evaluator = new GenericEvaluator(expr, inputSchema, getStateSchema());
       evaluator.compile();
       updateEvaluators.add(evaluator);
     }
   }
 
   /**
-   * Overrides function call in {@link #fetchNextReady()}.
-   * 
-   * @param tb the source tuple batch
-   * @param rowIdx the current row index
-   * @param columnIdx the current column index
-   * @throws InvocationTargetException exception when evaluating
+   * @return The schema of the state relation.
    */
-  @Override
-  protected void evaluate(final TupleBatch tb, final int rowIdx, final int columnIdx) throws InvocationTargetException {
-    final Object state = states.get(columnIdx);
+  private Schema getStateSchema() {
+    if (stateSchema == null) {
+      return generateStateSchema();
+    }
+    return stateSchema;
+  }
 
-    getEvaluator(columnIdx).evalAndPut(tb, rowIdx, getResultBuffer(), columnIdx, state);
-    states.set(columnIdx, updateEvaluators.get(columnIdx).eval(tb, rowIdx, state));
+  /**
+   * Generates the state schema and returns it.
+   * 
+   * @return the state schema
+   */
+  private Schema generateStateSchema() {
+    ImmutableList.Builder<Type> typesBuilder = ImmutableList.builder();
+    ImmutableList.Builder<String> namesBuilder = ImmutableList.builder();
+
+    for (Expression expr : initExpressions) {
+      typesBuilder.add(expr.getOutputType(null, null));
+      namesBuilder.add(expr.getOutputName());
+    }
+    stateSchema = new Schema(typesBuilder.build(), namesBuilder.build());
+    return stateSchema;
+  }
+
+  @Override
+  protected void fillBuffer(final TupleBatch tb) throws DbException {
+    for (int rowIdx = 0; rowIdx < tb.numTuples(); rowIdx++) {
+      TupleBatchBuffer tbb = new TupleBatchBuffer(getStateSchema());
+      for (int columnIdx = 0; columnIdx < getStateSchema().numColumns(); columnIdx++) {
+        try {
+          tbb.put(columnIdx, updateEvaluators.get(columnIdx).eval(tb, rowIdx, state));
+        } catch (InvocationTargetException e) {
+          throw new DbException(e);
+        }
+      }
+      state = tbb.popAny();
+      for (int columnIdx = 0; columnIdx < getSchema().numColumns(); columnIdx++) {
+        try {
+          getEvaluator(columnIdx).evalAndPut(tb, rowIdx, getResultBuffer(), columnIdx, state);
+        } catch (InvocationTargetException e) {
+          throw new DbException(e);
+        }
+      }
+    }
   }
 }

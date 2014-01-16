@@ -7,10 +7,13 @@ import org.codehaus.janino.ExpressionEvaluator;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.operator.StatefulApply;
 
 /**
- * An Expression evaluator for generic expressions that produce a constant.
+ * An Expression evaluator for generic expressions that produces a constant such as the initial state in
+ * {@link StatefulApply}.
  */
 public class ConstantEvaluator extends Evaluator {
 
@@ -18,9 +21,11 @@ public class ConstantEvaluator extends Evaluator {
    * Default constructor.
    * 
    * @param expression the expression for the evaluator
+   * @param inputSchema the schema that the expression expects if it operates on a schema
+   * @param stateSchema the schema of the state
    */
-  public ConstantEvaluator(final Expression expression) {
-    super(expression);
+  public ConstantEvaluator(final Expression expression, final Schema inputSchema, final Schema stateSchema) {
+    super(expression, inputSchema, stateSchema);
   }
 
   /**

@@ -49,10 +49,13 @@ public abstract class UnaryExpression extends ExpressionOperator {
    * 
    * @param functionName the string representation of the Java function name.
    * @param schema the input schema
+   * @param stateSchema the schema of the state
    * @return the Java string for this operator.
    */
-  protected final String getFunctionCallUnaryString(final String functionName, final Schema schema) {
-    return new StringBuilder(functionName).append('(').append(operand.getJavaString(schema)).append(')').toString();
+  protected final String getFunctionCallUnaryString(final String functionName, final Schema schema,
+      final Schema stateSchema) {
+    return new StringBuilder(functionName).append('(').append(operand.getJavaString(schema, null)).append(')')
+        .toString();
   }
 
   /**
@@ -64,7 +67,7 @@ public abstract class UnaryExpression extends ExpressionOperator {
    * @return the Java string for this operator.
    */
   protected final String getDotFunctionCallUnaryString(final String functionName, final Schema schema) {
-    return new StringBuilder(operand.getJavaString(schema)).append(functionName).toString();
+    return new StringBuilder(operand.getJavaString(schema, null)).append(functionName).toString();
   }
 
   /**
@@ -94,10 +97,11 @@ public abstract class UnaryExpression extends ExpressionOperator {
    * A function that could be used as the default type checker for a unary expression where the operand must be numeric.
    * 
    * @param schema the schema of the input tuples.
+   * @param stateSchema the schema of the state
    * @return the default numeric type, based on the type of the operand and Java type precedence.
    */
-  protected Type checkAndReturnDefaultNumericType(final Schema schema) {
-    Type operandType = getOperand().getOutputType(schema);
+  protected Type checkAndReturnDefaultNumericType(final Schema schema, final Schema stateSchema) {
+    Type operandType = getOperand().getOutputType(schema, stateSchema);
     ImmutableList<Type> validTypes = ImmutableList.of(Type.DOUBLE_TYPE, Type.FLOAT_TYPE, Type.LONG_TYPE, Type.INT_TYPE);
     Preconditions.checkArgument(validTypes.contains(operandType), "%s cannot handle operand [%s] of Type %s",
         getClass().getSimpleName(), getOperand(), operandType);
@@ -110,7 +114,7 @@ public abstract class UnaryExpression extends ExpressionOperator {
    * @param schema the schema of the input tuples.
    */
   protected void checkBooleanType(final Schema schema) {
-    Type operandType = getOperand().getOutputType(schema);
+    Type operandType = getOperand().getOutputType(schema, null);
     Preconditions.checkArgument(operandType == Type.BOOLEAN_TYPE, "%s cannot handle operand [%s] of Type %s",
         getClass().getSimpleName(), getOperand(), operandType);
   }

@@ -87,15 +87,7 @@ public class Apply extends UnaryOperator {
     }
 
     while ((tb = getChild().nextReady()) != null) {
-      for (int rowIdx = 0; rowIdx < tb.numTuples(); rowIdx++) {
-        for (int columnIdx = 0; columnIdx < getSchema().numColumns(); columnIdx++) {
-          try {
-            evaluate(tb, rowIdx, columnIdx);
-          } catch (InvocationTargetException e) {
-            throw new DbException(e);
-          }
-        }
-      }
+      fillBuffer(tb);
       if (resultBuffer.hasFilledTB()) {
         return resultBuffer.popFilled();
       }
@@ -108,6 +100,22 @@ public class Apply extends UnaryOperator {
   }
 
   /**
+   * @param tb the source tuple batch
+   * @throws DbException thrown if something goes wrong during evaluation
+   */
+  protected void fillBuffer(final TupleBatch tb) throws DbException {
+    for (int rowIdx = 0; rowIdx < tb.numTuples(); rowIdx++) {
+      for (int columnIdx = 0; columnIdx < getSchema().numColumns(); columnIdx++) {
+        try {
+          getEvaluator(columnIdx).evalAndPut(tb, rowIdx, resultBuffer, columnIdx, null);
+        } catch (InvocationTargetException e) {
+          throw new DbException(e);
+        }
+      }
+    }
+  }
+
+  /**
    * Called in {@link #fetchNextReady()}.
    * 
    * @param tb the source tuple batch
@@ -116,7 +124,7 @@ public class Apply extends UnaryOperator {
    * @throws InvocationTargetException exception when evaluating
    */
   protected void evaluate(final TupleBatch tb, final int rowIdx, final int columnIdx) throws InvocationTargetException {
-    getEvaluator(columnIdx).evalAndPut(tb, rowIdx, resultBuffer, columnIdx);
+
   }
 
   /**
@@ -136,7 +144,7 @@ public class Apply extends UnaryOperator {
     evaluators = new ArrayList<>();
     evaluators.ensureCapacity(emitExpressions.size());
     for (Expression expr : emitExpressions) {
-      GenericEvaluator evaluator = new GenericEvaluator(expr, inputSchema);
+      GenericEvaluator evaluator = new GenericEvaluator(expr, inputSchema, null);
       if (evaluator.needsCompiling()) {
         evaluator.compile();
       }
@@ -144,6 +152,20 @@ public class Apply extends UnaryOperator {
     }
 
     resultBuffer = new TupleBatchBuffer(getSchema());
+  }
+
+  /**
+   * @param evaluators the evaluators to set
+   */
+  public void setEvaluators(final ArrayList<GenericEvaluator> evaluators) {
+    this.evaluators = evaluators;
+  }
+
+  /**
+   * @param resultBuffer the resultBuffer to set
+   */
+  public void setResultBuffer(final TupleBatchBuffer resultBuffer) {
+    this.resultBuffer = resultBuffer;
   }
 
   @Override
@@ -164,7 +186,7 @@ public class Apply extends UnaryOperator {
     ImmutableList.Builder<String> namesBuilder = ImmutableList.builder();
 
     for (TupleEvaluator evaluator : evaluators) {
-      evaluator.setSchema(childSchema);
+      evaluator.setInputSchema(childSchema);
       typesBuilder.add(evaluator.getOutputType());
       namesBuilder.add(evaluator.getOutputName());
     }

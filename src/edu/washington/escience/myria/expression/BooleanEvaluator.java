@@ -21,10 +21,11 @@ public class BooleanEvaluator extends TupleEvaluator {
    * Default constructor.
    * 
    * @param expression the expression for the evaluator
-   * @param schema the schema that the expression expects
+   * @param inoutSchema the schema that the expression expects
+   * @param stateSchema the schema of the state
    */
-  public BooleanEvaluator(final Expression expression, final Schema schema) {
-    super(expression, schema);
+  public BooleanEvaluator(final Expression expression, final Schema inoutSchema, final Schema stateSchema) {
+    super(expression, inoutSchema, stateSchema);
     Preconditions.checkArgument(getOutputType().equals(Type.BOOLEAN_TYPE));
   }
 

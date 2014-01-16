@@ -36,15 +36,15 @@ public class CastExpression extends UnaryExpression {
   }
 
   @Override
-  public Type getOutputType(final Schema schema) {
+  public Type getOutputType(final Schema schema, final Schema stateSchema) {
     // TODO support more than just casting from object, i.e. from string to int
-    Preconditions.checkArgument(getOperand().getOutputType(schema) == Type.OBJ_TYPE);
+    Preconditions.checkArgument(getOperand().getOutputType(schema, stateSchema) == Type.OBJ_TYPE);
     return valueType;
   }
 
   @Override
-  public String getJavaString(final Schema schema) {
+  public String getJavaString(final Schema schema, final Schema stateSchema) {
     return new StringBuilder().append("((").append(valueType.toJavaObjectType().getSimpleName()).append(")").append(
-        getOperand().getJavaString(schema)).append(")").toString();
+        getOperand().getJavaString(schema, stateSchema)).append(")").toString();
   }
 }

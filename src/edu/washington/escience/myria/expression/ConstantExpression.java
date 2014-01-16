@@ -43,12 +43,12 @@ public class ConstantExpression extends ZeroaryExpression {
   }
 
   @Override
-  public Type getOutputType(final Schema schema) {
+  public Type getOutputType(final Schema schema, final Schema stateSchema) {
     return valueType;
   }
 
   @Override
-  public String getJavaString(final Schema schema) {
+  public String getJavaString(final Schema schema, final Schema stateSchema) {
     switch (valueType) {
       case BOOLEAN_TYPE:
       case DOUBLE_TYPE:
