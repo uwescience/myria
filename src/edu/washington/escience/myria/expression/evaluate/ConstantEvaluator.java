@@ -8,7 +8,6 @@ import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.operator.StatefulApply;
 
@@ -44,8 +43,8 @@ public class ConstantEvaluator extends Evaluator {
   public void compile() throws DbException {
     try {
       evaluator =
-          new ExpressionEvaluator(getExpression().getJavaExpression(), Type.OBJ_TYPE.toJavaType(), new String[] {},
-              new Class[] {});
+          new ExpressionEvaluator(getExpression().getJavaExpression(), getExpression().getOutputType(null, null)
+              .toJavaType(), new String[] {}, new Class[] {});
     } catch (Exception e) {
       throw new DbException("Error when compiling expression " + this, e);
     }

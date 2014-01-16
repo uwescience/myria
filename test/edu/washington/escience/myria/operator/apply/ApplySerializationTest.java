@@ -68,9 +68,8 @@ public class ApplySerializationTest {
     TanExpression tan = new TanExpression(constant);
     ToUpperCaseExpression upper = new ToUpperCaseExpression(constant);
     NotExpression not = new NotExpression(constant);
-    CastExpression cast = new CastExpression(constant, Type.INT_TYPE);
     expressions.add(abs).add(ceil).add(cos).add(floor).add(log).add(negate).add(not).add(sin).add(sqrt).add(tan).add(
-        upper).add(cast);
+        upper);
 
     /* Binary */
     DivideExpression divide = new DivideExpression(constant, variable);
@@ -86,8 +85,9 @@ public class ApplySerializationTest {
     LessThanExpression lt = new LessThanExpression(constant, variable);
     GreaterThanOrEqualsExpression gte = new GreaterThanOrEqualsExpression(constant, variable);
     LessThanOrEqualsExpression lte = new LessThanOrEqualsExpression(constant, variable);
+    CastExpression cast = new CastExpression(constant, variable);
     expressions.add(and).add(divide).add(eq).add(gt).add(gte).add(lt).add(lte).add(minus).add(ne).add(or).add(plus)
-        .add(pow).add(times);
+        .add(pow).add(times).add(cast);
 
     /* Test serializing and deserializing all of them. */
     for (ExpressionOperator op : expressions.build()) {

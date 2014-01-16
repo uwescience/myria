@@ -4,7 +4,6 @@ import java.io.Serializable;
 
 import org.joda.time.DateTime;
 
-import edu.washington.escience.myria.SimplePredicate.Op;
 import edu.washington.escience.myria.column.BooleanColumn;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.DateTimeColumn;
@@ -235,32 +234,6 @@ public enum Type implements Serializable {
     @Override
     public Class<?> toJavaType() {
       return DateTime.class;
-    }
-
-    @Override
-    public Class<?> toJavaObjectType() {
-      return toJavaType();
-    }
-  },
-
-  /**
-   * Object type. Should only be used to be caseted to another type.
-   */
-  OBJ_TYPE() {
-
-    @Override
-    public boolean filter(final Op op, final Column<?> column, final int tupleIndex, final Object operand) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public String toString(final Column<?> column, final int tupleIndex) {
-      return "" + column.get(tupleIndex);
-    }
-
-    @Override
-    public Class<?> toJavaType() {
-      return Object.class;
     }
 
     @Override

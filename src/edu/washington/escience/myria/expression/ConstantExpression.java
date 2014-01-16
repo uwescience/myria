@@ -55,7 +55,6 @@ public class ConstantExpression extends ZeroaryExpression {
       case FLOAT_TYPE:
       case INT_TYPE:
       case LONG_TYPE:
-      case OBJ_TYPE:
         return value;
       case DATETIME_TYPE:
         throw new UnsupportedOperationException("using constant value of type DateTime");

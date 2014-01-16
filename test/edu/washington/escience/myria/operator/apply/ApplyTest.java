@@ -14,6 +14,7 @@ import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.AbsExpression;
 import edu.washington.escience.myria.expression.AndExpression;
+import edu.washington.escience.myria.expression.CastExpression;
 import edu.washington.escience.myria.expression.CeilExpression;
 import edu.washington.escience.myria.expression.ConstantExpression;
 import edu.washington.escience.myria.expression.CosExpression;
@@ -38,11 +39,13 @@ import edu.washington.escience.myria.expression.StateVariableExpression;
 import edu.washington.escience.myria.expression.TanExpression;
 import edu.washington.escience.myria.expression.TimesExpression;
 import edu.washington.escience.myria.expression.ToUpperCaseExpression;
+import edu.washington.escience.myria.expression.TypeExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.expression.evaluate.TupleEvaluator;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.StatefulApply;
 import edu.washington.escience.myria.operator.TupleSource;
+import edu.washington.escience.myria.util.TestUtils;
 
 public class ApplyTest {
 
@@ -429,6 +432,45 @@ public class ApplyTest {
           assertEquals(c.compareTo(d) < 0, result.getBoolean(3, curI));
           assertEquals(c.compareTo(d) >= 0, result.getBoolean(4, curI));
           assertEquals(c.compareTo(d) <= 0, result.getBoolean(5, curI));
+        }
+        resultSize += result.numTuples();
+      }
+    }
+    assertEquals(SMALL_NUM_TUPLES, resultSize);
+    apply.close();
+  }
+
+  @Test
+  public void testCast() throws DbException {
+    final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE), ImmutableList.of("number"));
+    final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
+
+    final int[] ids = TestUtils.randomInt(0, 1000, SMALL_NUM_TUPLES);
+
+    for (int i = 0; i < SMALL_NUM_TUPLES; i++) {
+      tbb.putInt(0, ids[i]);
+    }
+
+    ImmutableList.Builder<Expression> Expressions = ImmutableList.builder();
+
+    Expression expr =
+        new Expression("castedNumber",
+            new CastExpression(new VariableExpression(0), new TypeExpression(Type.LONG_TYPE)));
+    Expressions.add(expr);
+
+    Apply apply = new Apply(new TupleSource(tbb), Expressions.build());
+
+    apply.open(null);
+    TupleBatch result;
+    int resultSize = 0;
+    while (!apply.eos()) {
+      result = apply.nextReady();
+      if (result != null) {
+        assertEquals(1, result.getSchema().numColumns());
+        assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(0));
+
+        for (int row = 0; row < result.numTuples(); row++) {
+          assertEquals(ids[row], result.getLong(0, row));
         }
         resultSize += result.numTuples();
       }

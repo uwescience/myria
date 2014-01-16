@@ -11,7 +11,7 @@ import edu.washington.escience.myria.SimplePredicate;
 import edu.washington.escience.myria.Type;
 
 /**
- * An ExpressionOperator with one child.
+ * An ExpressionOperator with two children.
  */
 public abstract class BinaryExpression extends ExpressionOperator {
 
