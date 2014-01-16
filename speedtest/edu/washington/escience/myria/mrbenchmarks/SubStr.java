@@ -44,8 +44,8 @@ public class SubStr extends UnaryOperator {
       StringColumnBuilder builder = new StringColumnBuilder();
       builder.expandAll();
       ImmutableList<Column<?>> source = tb.getDataColumns();
-      for (Integer idx : tb.getValidIndices()) {
-        String subStr = ((StringColumn) source.get(substrColumnIdx)).getObject(idx).substring(fromCharIdx, endCharIdx);
+      for (int idx = 0; idx < tb.numTuples(); ++idx) {
+        String subStr = source.get(substrColumnIdx).getString(idx).substring(fromCharIdx, endCharIdx);
         builder.replace(idx, subStr);
       }
 
@@ -58,7 +58,7 @@ public class SubStr extends UnaryOperator {
           newColumnsB.add(sc);
         }
       }
-      tb = new TupleBatch(child.getSchema(), newColumnsB.build(), tb.getValidTuples());
+      tb = new TupleBatch(child.getSchema(), newColumnsB.build(), tb.numTuples());
     }
     return tb;
   }

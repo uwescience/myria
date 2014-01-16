@@ -49,7 +49,7 @@ public abstract class IntColumn extends Column<Integer> {
 
   @Override
   public final boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
-    return getInt(leftIdx) == ((IntColumn) rightColumn).getInt(rightIdx);
+    return getInt(leftIdx) == rightColumn.getInt(rightIdx);
   }
 
   @Override

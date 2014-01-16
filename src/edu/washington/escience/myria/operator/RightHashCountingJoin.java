@@ -321,13 +321,12 @@ public class RightHashCountingJoin extends BinaryOperator {
 
     Preconditions.checkArgument(hashTable.numColumns() == compareColumns.length);
     List<Column<?>> inputColumns = tb.getDataColumns();
-    int inColumnRow = tb.getValidIndices().get(row);
 
-    /* find whether this tuple's comparing key has occured before. If it is, only update occurred times */
+    /* find whether this tuple's comparing key has occurred before. If it is, only update occurred times */
     boolean found = false;
     for (int i = 0; i < tupleIndicesList.size(); ++i) {
       int index = tupleIndicesList.get(i);
-      if (tb.tupleEquals(inColumnRow, hashTable, index, compareColumns)) {
+      if (tb.tupleEquals(row, hashTable, index, compareColumns)) {
         occuredTimes.set(index, occuredTimes.get(index) + 1);
         found = true;
         break;
@@ -337,7 +336,7 @@ public class RightHashCountingJoin extends BinaryOperator {
     if (!found) {
       tupleIndicesList.add(nextIndex);
       for (int column = 0; column < hashTable.numColumns(); ++column) {
-        hashTable.put(column, inputColumns.get(compareColumns[column]), inColumnRow);
+        hashTable.put(column, inputColumns.get(compareColumns[column]), row);
       }
       occuredTimes.add(1);
     }

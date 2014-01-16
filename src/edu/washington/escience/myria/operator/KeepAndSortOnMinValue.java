@@ -120,14 +120,13 @@ public final class KeepAndSortOnMinValue extends StreamingState {
         }
       }
       if (doReplace.unique) {
-        int inColumnRow = tb.getValidIndices().get(i);
         for (int j = 0; j < tb.numColumns(); ++j) {
-          uniqueTuples.put(j, columns.get(j), inColumnRow);
+          uniqueTuples.put(j, columns.get(j), i);
         }
         tupleIndexList.add(nextIndex);
       }
     }
-    return tb.remove(toRemove);
+    return tb.filterOut(toRemove);
   }
 
   @Override
@@ -185,9 +184,8 @@ public final class KeepAndSortOnMinValue extends StreamingState {
       if (inputTB.tupleEquals(row, uniqueTuples, index, keyColIndices, keyColIndices)) {
         unique = false;
         Column<?> valueColumn = inputTB.getDataColumns().get(valueColIndex);
-        int inColumnRow = inputTB.getValidIndices().get(row);
-        if (shouldReplace(index, valueColumn, inColumnRow)) {
-          uniqueTuples.replace(valueColIndex, index, valueColumn, inColumnRow);
+        if (shouldReplace(index, valueColumn, row)) {
+          uniqueTuples.replace(valueColIndex, index, valueColumn, row);
           replaced = true;
         }
       }

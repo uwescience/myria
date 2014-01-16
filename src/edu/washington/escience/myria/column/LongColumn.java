@@ -116,7 +116,7 @@ public final class LongColumn extends Column<Long> {
 
   @Override
   public boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
-    return getLong(leftIdx) == ((LongColumn) rightColumn).getLong(rightIdx);
+    return getLong(leftIdx) == rightColumn.getLong(rightIdx);
   }
 
   @Override

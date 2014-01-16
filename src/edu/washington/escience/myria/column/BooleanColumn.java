@@ -52,6 +52,7 @@ public final class BooleanColumn extends Column<Boolean> {
    * @param row row of element to return.
    * @return the element at the specified row in this column.
    */
+  @Override
   public boolean getBoolean(final int row) {
     Preconditions.checkElementIndex(row, numBits);
     return data.get(row);
@@ -129,7 +130,7 @@ public final class BooleanColumn extends Column<Boolean> {
 
   @Override
   public boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
-    return getBoolean(leftIdx) == ((BooleanColumn) rightColumn).getBoolean(rightIdx);
+    return getBoolean(leftIdx) == rightColumn.getBoolean(rightIdx);
   }
 
   @Override

@@ -123,7 +123,7 @@ public final class DoubleColumn extends Column<Double> {
 
   @Override
   public boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
-    return getDouble(leftIdx) == ((DoubleColumn) rightColumn).getDouble(rightIdx);
+    return getDouble(leftIdx) == rightColumn.getDouble(rightIdx);
   }
 
   @Override

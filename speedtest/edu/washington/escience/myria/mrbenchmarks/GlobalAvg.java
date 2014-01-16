@@ -8,7 +8,6 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.column.LongColumn;
 import edu.washington.escience.myria.column.builder.DoubleColumnBuilder;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.UnaryOperator;
@@ -46,16 +45,15 @@ public class GlobalAvg extends UnaryOperator {
       ImmutableList<Column<?>> inputColumns = tb.getDataColumns();
       DoubleColumnBuilder rc = new DoubleColumnBuilder();
       rc.expandAll();
-      for (Integer idx : tb.getValidIndices()) {
-        rc.replace(idx.intValue(), ((LongColumn) inputColumns.get(sumIdx)).getObject(idx) * 1.0
-            / ((LongColumn) inputColumns.get(countIdx)).getObject(idx));
+      for (int idx = 0; idx < tb.numTuples(); ++idx) {
+        rc.replace(idx, inputColumns.get(sumIdx).getLong(idx) * 1.0 / inputColumns.get(countIdx).getLong(idx));
       }
 
       ImmutableList.Builder<Column<?>> newColumnsB = ImmutableList.builder();
       newColumnsB.addAll(inputColumns);
       newColumnsB.add(rc.build());
 
-      tb = new TupleBatch(getSchema(), newColumnsB.build(), tb.getValidTuples());
+      tb = new TupleBatch(getSchema(), newColumnsB.build(), tb.numTuples());
     }
     return tb;
   }

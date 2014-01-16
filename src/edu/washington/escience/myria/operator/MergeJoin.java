@@ -265,14 +265,12 @@ public final class MergeJoin extends BinaryOperator {
   protected void addToAns(final TupleBatch leftTb, final int leftRow, final TupleBatch rightTb, final int rightRow) {
     Preconditions.checkArgument(leftTb.tupleCompare(leftCompareIndx, leftRow, rightTb, rightCompareIndx, rightRow,
         ascending) == 0);
-    final int leftRowInColumn = leftTb.getValidIndices().get(leftRow);
-    final int rightRowInColumn = rightTb.getValidIndices().get(rightRow);
 
     for (int i = 0; i < leftAnswerColumns.length; ++i) {
-      ans.put(i, leftTb.getDataColumns().get(leftAnswerColumns[i]), leftRowInColumn);
+      ans.put(i, leftTb.getDataColumns().get(leftAnswerColumns[i]), leftRow);
     }
     for (int i = 0; i < rightAnswerColumns.length; ++i) {
-      ans.put(i + leftAnswerColumns.length, rightTb.getDataColumns().get(rightAnswerColumns[i]), rightRowInColumn);
+      ans.put(i + leftAnswerColumns.length, rightTb.getDataColumns().get(rightAnswerColumns[i]), rightRow);
     }
   }
 

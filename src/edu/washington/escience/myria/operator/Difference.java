@@ -75,11 +75,10 @@ public final class Difference extends BinaryOperator {
 
     // This is a new tuple: add it to the toRemove tuple buffer
     final int nextToRemoveRow = tuplesToRemove.numTuples();
-    final int absoluteRowNum = batch.getValidIndices().get(rowNum);
     final List<Column<?>> columns = batch.getDataColumns();
 
     for (int columnNum = 0; columnNum < batch.numColumns(); columnNum++) {
-      tuplesToRemove.put(columnNum, columns.get(columnNum), absoluteRowNum);
+      tuplesToRemove.put(columnNum, columns.get(columnNum), rowNum);
     }
     tupleIndexList.add(nextToRemoveRow);
     return true;
@@ -114,7 +113,7 @@ public final class Difference extends BinaryOperator {
       }
     }
 
-    return batch.remove(toRemove);
+    return batch.filterOut(toRemove);
   }
 
   @Override

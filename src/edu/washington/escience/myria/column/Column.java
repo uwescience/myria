@@ -3,6 +3,7 @@ package edu.washington.escience.myria.column;
 import java.io.Serializable;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.BitSet;
 
 import org.joda.time.DateTime;
 
@@ -186,4 +187,38 @@ public abstract class Column<T extends Comparable<?>> implements Serializable {
    * @return the number of elements in this column.
    */
   public abstract int size();
+
+  /**
+   * Creates a new Column containing the contents of this column including only the specified rows.
+   * 
+   * @param filter a BitSet indicating which rows should be kept.
+   * @return a new Column containing the contents of this column including only the specified rows.
+   */
+  public Column<T> filter(final BitSet filter) {
+    return new FilteredColumn<T>(this, filter);
+  }
+
+  /**
+   * @param type the type of the column to be returned.
+   * @return a new empty column of the specified type.
+   */
+  public static Column<?> emptyColumn(final Type type) {
+    switch (type) {
+      case BOOLEAN_TYPE:
+        return new BooleanColumn(new BitSet(0), 0);
+      case DATETIME_TYPE:
+        return new DateTimeColumn(new DateTime[] {}, 0);
+      case DOUBLE_TYPE:
+        return new DoubleColumn(new double[] {}, 0);
+      case FLOAT_TYPE:
+        return new FloatColumn(new float[] {}, 0);
+      case INT_TYPE:
+        return new IntArrayColumn(new int[] {}, 0);
+      case LONG_TYPE:
+        return new LongColumn(new long[] {}, 0);
+      case STRING_TYPE:
+        return new StringArrayColumn(new String[] {}, 0);
+    }
+    throw new UnsupportedOperationException("Allocating an empty column of type " + type);
+  }
 }

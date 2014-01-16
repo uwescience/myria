@@ -246,7 +246,6 @@ public final class RightHashJoin extends BinaryOperator {
    */
   protected void addToAns(final TupleBatch cntTB, final int row, final TupleBuffer hashTable, final int index) {
     List<Column<?>> tbColumns = cntTB.getDataColumns();
-    final int rowInColumn = cntTB.getValidIndices().get(row);
     MutableColumn<?>[] hashTblColumns = hashTable.getColumns(index);
     ColumnBuilder<?>[] hashTblColumnBuilders = null;
     if (hashTblColumns == null) {
@@ -255,7 +254,7 @@ public final class RightHashJoin extends BinaryOperator {
     int tupleIdx = hashTable.getTupleIndexInContainingTB(index);
 
     for (int i = 0; i < leftAnswerColumns.length; ++i) {
-      ans.put(i, tbColumns.get(leftAnswerColumns[i]), rowInColumn);
+      ans.put(i, tbColumns.get(leftAnswerColumns[i]), row);
     }
 
     for (int i = 0; i < rightAnswerColumns.length; ++i) {
@@ -434,9 +433,8 @@ public final class RightHashJoin extends BinaryOperator {
     }
     tupleIndicesList.add(nextIndex);
     List<Column<?>> inputColumns = tb.getDataColumns();
-    int inColumnRow = tb.getValidIndices().get(row);
     for (int column = 0; column < tb.numColumns(); column++) {
-      hashTable.put(column, inputColumns.get(column), inColumnRow);
+      hashTable.put(column, inputColumns.get(column), row);
     }
   }
 }

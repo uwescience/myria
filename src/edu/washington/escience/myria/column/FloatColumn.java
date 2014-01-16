@@ -120,7 +120,7 @@ public final class FloatColumn extends Column<Float> {
 
   @Override
   public boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
-    return getFloat(leftIdx) == ((FloatColumn) rightColumn).getFloat(rightIdx);
+    return getFloat(leftIdx) == rightColumn.getFloat(rightIdx);
   }
 
   @Override

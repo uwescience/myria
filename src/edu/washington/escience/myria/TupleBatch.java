@@ -11,8 +11,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import javax.annotation.Nullable;
-
 import net.jcip.annotations.ThreadSafe;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -25,33 +23,20 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
-import com.google.common.primitives.Ints;
 
-import edu.washington.escience.myria.column.BooleanColumn;
 import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.column.DateTimeColumn;
-import edu.washington.escience.myria.column.DoubleColumn;
-import edu.washington.escience.myria.column.FloatColumn;
-import edu.washington.escience.myria.column.IntColumn;
-import edu.washington.escience.myria.column.LongColumn;
-import edu.washington.escience.myria.column.StringColumn;
 import edu.washington.escience.myria.parallel.PartitionFunction;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myria.util.IPCUtils;
-import edu.washington.escience.myria.util.ImmutableBitSet;
-import edu.washington.escience.myria.util.ImmutableIntArray;
 
 /**
  * Container class for a batch of tuples. The goal is to amortize memory management overhead.
  * 
- * @author dhalperi
- * 
  */
 @ThreadSafe
 public class TupleBatch implements Serializable {
-  /***/
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
-
   /** The hard-coded number of tuples in a batch. */
   public static final int BATCH_SIZE = 10 * 1000;
   /** Class-specific magic number used to generate the hash code. */
@@ -62,82 +47,26 @@ public class TupleBatch implements Serializable {
   private final Schema schema;
   /** Tuple data stored as columns in this batch. */
   private final ImmutableList<Column<?>> columns;
-  /** Number of valid tuples in this TB. */
-  private final int numValidTuples;
-  /** Which tuples are valid in this batch. */
-  private final ImmutableBitSet validTuples;
-
-  /**
-   * valid indices.
-   * */
-  private transient ImmutableIntArray validIndices;
-
-  /**
-   * If this TB is an EOI TB.
-   * */
+  /** Number of tuples in this TB. */
+  private final int numTuples;
+  /** Whether this TB is an EOI TB. */
   private final boolean isEOI;
-
-  /** Identity mapping. */
-  protected static final int[] IDENTITY_MAPPING;
-
-  static {
-    IDENTITY_MAPPING = new int[BATCH_SIZE];
-    for (int i = 0; i < BATCH_SIZE; i++) {
-      IDENTITY_MAPPING[i] = i;
-    }
-  }
-
-  /**
-   * <strong>Protected</strong> copy constructor. True copy constructor; shallow copy of everything.
-   * 
-   * @param schema schema of the tuples in this batch. Must match columns.
-   * @param columns contains the column-stored data. Must match schema.
-   * @param validTuples BitSet determines which tuples are valid tuples in this batch.
-   * @param validIndices valid tuple indices.
-   * @param isEOI eoi TB.
-   */
-  protected TupleBatch(final Schema schema, final ImmutableList<Column<?>> columns, final ImmutableBitSet validTuples,
-      final ImmutableIntArray validIndices, final boolean isEOI) {
-    /** For a private copy constructor, no data checks are needed. Checks are only needed in the public constructor. */
-    this.schema = schema;
-    this.columns = columns;
-    numValidTuples = validTuples.cardinality();
-    this.validTuples = validTuples;
-    this.validIndices = validIndices;
-    this.isEOI = isEOI;
-  }
 
   /**
    * EOI TB constructor.
    * 
-   * @param schema schema of the tuples in this batch. Must match columns.
+   * @param schema schema of the tuples in this batch.
+   * @param isEoi whether this TupleBatch is an EOI TupleBatch.
    * */
-  private TupleBatch(final Schema schema) {
-    validTuples = new ImmutableBitSet(new BitSet());
+  private TupleBatch(final Schema schema, final boolean isEoi) {
     this.schema = schema;
-    numValidTuples = 0;
+    numTuples = 0;
     ImmutableList.Builder<Column<?>> b = ImmutableList.builder();
-    columns = b.build();
-    isEOI = true;
-  }
-
-  /**
-   * @return if this TB is compact, i.e. tuples occupy from index 0 to numValidTuples-1.
-   * */
-  public final boolean isCompact() {
-    return validTuples.nextClearBit(0) == numValidTuples;
-  }
-
-  /**
-   * @return if this TB is full, i.e., the underlying columns are full and all rows are valid.
-   */
-  public final boolean isFull() {
-    /* EOI TupleBatches, for instance, have no columns and should be considered full. */
-    if (columns.size() == 0) {
-      return true;
+    for (Type type : schema.getColumnTypes()) {
+      b.add(Column.emptyColumn(type));
     }
-    /* Note: We don't need to that this TB is compact if possible size == numValidTuples. */
-    return columns.get(0).size() == numValidTuples;
+    columns = b.build();
+    isEOI = isEoi;
   }
 
   /**
@@ -145,22 +74,8 @@ public class TupleBatch implements Serializable {
    * @return a shallow copy of the specified TupleBatch with the new column names.
    */
   public TupleBatch rename(final List<String> columnNames) {
-    return shallowCopy(Schema.of(getSchema().getColumnTypes(), columnNames), columns, validTuples, validIndices, isEOI);
-  }
-
-  /**
-   * Call this method instead of the copy constructor for a new TupleBatch copy.
-   * 
-   * @param schema schema of the tuples in this batch. Must match columns.
-   * @param columns contains the column-stored data. Must match schema.
-   * @param validTuples BitSet determines which tuples are valid tuples in this batch.
-   * @param validIndices valid tuple indices.
-   * @param isEOI if is EOI
-   * @return shallow copy
-   */
-  protected TupleBatch shallowCopy(final Schema schema, final ImmutableList<Column<?>> columns,
-      final ImmutableBitSet validTuples, @Nullable final ImmutableIntArray validIndices, final boolean isEOI) {
-    return new TupleBatch(schema, columns, validTuples, validIndices, isEOI);
+    Schema newSchema = Schema.of(schema.getColumnTypes(), columnNames);
+    return new TupleBatch(newSchema, columns, numTuples, isEOI);
   }
 
   /**
@@ -168,51 +83,10 @@ public class TupleBatch implements Serializable {
    * 
    * @param schema schema of the tuples in this batch. Must match columns.
    * @param columns contains the column-stored data. Must match schema.
-   * @param numTuples number of tuples in the batch.
+   * @param numTuples the number of tuples in this TupleBatch.
    */
   public TupleBatch(final Schema schema, final List<Column<?>> columns, final int numTuples) {
-    /* Take the input arguments directly */
-    this.schema = Objects.requireNonNull(schema);
-    Objects.requireNonNull(columns);
-    Preconditions.checkArgument(columns.size() == schema.numColumns(),
-        "Number of columns in data must equal to the number of fields in schema");
-    if (columns instanceof ImmutableList) {
-      this.columns = (ImmutableList<Column<?>>) columns;
-    } else {
-      this.columns = ImmutableList.copyOf(columns);
-    }
-    Preconditions.checkArgument(numTuples >= 0 && numTuples <= BATCH_SIZE,
-        "numTuples must be non negative and no more than TupleBatch.BATCH_SIZE");
-    numValidTuples = numTuples;
-    validIndices = new ImmutableIntArray(Arrays.copyOfRange(IDENTITY_MAPPING, 0, numTuples));
-    /* All tuples are valid */
-    final BitSet tmp = new BitSet(numTuples);
-    tmp.set(0, numTuples);
-    validTuples = new ImmutableBitSet(tmp);
-    isEOI = false;
-  }
-
-  /**
-   * Standard immutable TupleBatch constructor. All fields must be populated before creation and cannot be changed.
-   * 
-   * @param schema schema of the tuples in this batch. Must match columns.
-   * @param columns contains the column-stored data. Must match schema.
-   * @param validTuples the valid tuple BitSet
-   */
-  public TupleBatch(final Schema schema, final List<Column<?>> columns, final ImmutableBitSet validTuples) {
-    /* Take the input arguments directly */
-    this.schema = Objects.requireNonNull(schema);
-    Objects.requireNonNull(columns);
-    Preconditions.checkArgument(columns.size() == schema.numColumns(),
-        "Number of columns in data must equal to the number of fields in schema");
-    if (columns instanceof ImmutableList) {
-      this.columns = (ImmutableList<Column<?>>) columns;
-    } else {
-      this.columns = ImmutableList.copyOf(columns);
-    }
-    numValidTuples = validTuples.cardinality();
-    this.validTuples = validTuples;
-    isEOI = false;
+    this(schema, columns, numTuples, false);
   }
 
   /**
@@ -223,6 +97,24 @@ public class TupleBatch implements Serializable {
    */
   public TupleBatch(final Schema schema, final List<Column<?>> columns) {
     this(schema, columns, columns.get(0).size());
+  }
+
+  /**
+   * Construct a TupleBatch from the specified components.
+   * 
+   * @param schema schema of the tuples in this batch. Must match columns.
+   * @param columns schema of the tuples in this batch. Must match columns.
+   * @param numTuples the number of tuples in this batch. Must match columns.
+   * @param isEOI whether this is an EOI TupleBatch.
+   */
+  public TupleBatch(final Schema schema, final List<Column<?>> columns, final int numTuples, final boolean isEOI) {
+    this.schema = Objects.requireNonNull(schema);
+    Objects.requireNonNull(columns);
+    Preconditions.checkArgument(columns.size() == schema.numColumns(),
+        "Number of columns in data must equal the number of fields in schema");
+    this.columns = ImmutableList.copyOf(columns);
+    this.numTuples = numTuples;
+    this.isEOI = isEOI;
   }
 
   /**
@@ -250,10 +142,9 @@ public class TupleBatch implements Serializable {
       return;
     }
     final int numColumns = columns.size();
-    ImmutableIntArray indices = getValidIndices();
-    for (int i = 0; i < indices.length(); i++) {
+    for (int i = 0; i < numTuples; i++) {
       for (int column = 0; column < numColumns; column++) {
-        tbb.put(column, columns.get(column), indices.get(i));
+        tbb.put(column, columns.get(column), i);
       }
     }
   }
@@ -267,28 +158,18 @@ public class TupleBatch implements Serializable {
    * @return a TupleBatch that contains only the filtered rows of the current dataset.
    */
   public final TupleBatch filter(final BitSet filter) {
-    /* Shortcut 1: the filter is full, so all current tuples are retained. Just return this. */
-    if (filter.cardinality() == numTuples()) {
+    int newNumTuples = filter.cardinality();
+
+    /* Shortcut: the filter is full, so all current tuples are retained. Just return this. */
+    if (newNumTuples == numTuples) {
       return this;
     }
 
-    /* Shortcut 2: all current tuples in this batch are valid. filter actually is indexed correctly. */
-    if (validTuples.cardinality() == validTuples.size()) {
-      return new TupleBatch(getSchema(), getDataColumns(), new ImmutableBitSet(filter));
+    ImmutableList.Builder<Column<?>> newColumns = ImmutableList.builder();
+    for (Column<?> column : columns) {
+      newColumns.add(column.filter(filter));
     }
-
-    /* Okay, we have to do work. */
-    BitSet realFilter = new BitSet(validTuples.size());
-    int[] realValidIndices = new int[filter.cardinality()];
-    int row = 0;
-    for (int i = filter.nextSetBit(0); i >= 0; i = filter.nextSetBit(i + 1)) {
-      int realIndex = getValidIndices().get(i);
-      realFilter.set(realIndex);
-      realValidIndices[row] = realIndex;
-      ++row;
-    }
-    return new TupleBatch(getSchema(), getDataColumns(), new ImmutableBitSet(realFilter), new ImmutableIntArray(
-        realValidIndices), false);
+    return new TupleBatch(schema, newColumns.build(), newNumTuples, isEOI);
   }
 
   /**
@@ -297,7 +178,7 @@ public class TupleBatch implements Serializable {
    * @return the value in the specified column and row.
    */
   public final boolean getBoolean(final int column, final int row) {
-    return ((BooleanColumn) columns.get(column)).getBoolean(getValidIndices().get(row));
+    return columns.get(column).getBoolean(row);
   }
 
   /**
@@ -306,7 +187,7 @@ public class TupleBatch implements Serializable {
    * @return the value in the specified column and row.
    */
   public final double getDouble(final int column, final int row) {
-    return ((DoubleColumn) columns.get(column)).getDouble(getValidIndices().get(row));
+    return columns.get(column).getDouble(row);
   }
 
   /**
@@ -315,7 +196,7 @@ public class TupleBatch implements Serializable {
    * @return the value in the specified column and row.
    */
   public final float getFloat(final int column, final int row) {
-    return ((FloatColumn) columns.get(column)).getFloat(getValidIndices().get(row));
+    return columns.get(column).getFloat(row);
   }
 
   /**
@@ -324,7 +205,7 @@ public class TupleBatch implements Serializable {
    * @return the value in the specified column and row.
    */
   public final int getInt(final int column, final int row) {
-    return ((IntColumn) columns.get(column)).getInt(getValidIndices().get(row));
+    return columns.get(column).getInt(row);
   }
 
   /**
@@ -334,11 +215,10 @@ public class TupleBatch implements Serializable {
    * @throws SQLException any exception caused by JDBC.
    * */
   public final void getIntoJdbc(final PreparedStatement statement) throws SQLException {
-    ImmutableIntArray indices = getValidIndices();
-    for (int i = 0; i < indices.length(); i++) {
+    for (int i = 0; i < numTuples; i++) {
       int column = 0;
       for (final Column<?> c : columns) {
-        c.getIntoJdbc(indices.get(i), statement, ++column);
+        c.getIntoJdbc(i, statement, ++column);
       }
       statement.addBatch();
     }
@@ -351,11 +231,10 @@ public class TupleBatch implements Serializable {
    * @throws SQLiteException any exception caused by SQLite.
    * */
   public final void getIntoSQLite(final SQLiteStatement statement) throws SQLiteException {
-    ImmutableIntArray indices = getValidIndices();
-    for (int i = 0; i < indices.length(); i++) {
+    for (int i = 0; i < numTuples; i++) {
       int column = 0;
       for (final Column<?> c : columns) {
-        c.getIntoSQLite(indices.get(i), statement, ++column);
+        c.getIntoSQLite(i, statement, ++column);
       }
       statement.step();
       statement.reset();
@@ -368,7 +247,7 @@ public class TupleBatch implements Serializable {
    * @return the value in the specified column and row.
    */
   public final long getLong(final int column, final int row) {
-    return ((LongColumn) columns.get(column)).getLong(getValidIndices().get(row));
+    return columns.get(column).getLong(row);
   }
 
   /**
@@ -377,7 +256,7 @@ public class TupleBatch implements Serializable {
    * @return the value in the specified column and row.
    */
   public final Object getObject(final int column, final int row) {
-    return columns.get(column).getObject(getValidIndices().get(row));
+    return columns.get(column).getObject(row);
   }
 
   /**
@@ -397,7 +276,7 @@ public class TupleBatch implements Serializable {
    * @return the element at the specified position in this TupleBatch.
    */
   public final String getString(final int column, final int row) {
-    return ((StringColumn) columns.get(column)).getString(getValidIndices().get(row));
+    return columns.get(column).getString(row);
   }
 
   /**
@@ -408,7 +287,7 @@ public class TupleBatch implements Serializable {
    * @return the element at the specified position in this TupleBatch.
    */
   public final DateTime getDateTime(final int column, final int row) {
-    return ((DateTimeColumn) columns.get(column)).getDateTime(getValidIndices().get(row));
+    return columns.get(column).getDateTime(row);
   }
 
   /**
@@ -423,9 +302,7 @@ public class TupleBatch implements Serializable {
       final Map<Object, Pair<Object, TupleBatchBuffer>> buffers) {
     Set<Pair<Object, TupleBatchBuffer>> ready = null;
     final Column<?> gC = columns.get(groupByColumn);
-    ImmutableIntArray indices = getValidIndices();
-    for (int i = 0; i < indices.length(); i++) {
-      int row = indices.get(i);
+    for (int row = 0; row < numTuples; row++) {
       final Object v = gC.getObject(row);
       Pair<Object, TupleBatchBuffer> kvPair = buffers.get(v);
       TupleBatchBuffer tbb = null;
@@ -456,9 +333,8 @@ public class TupleBatch implements Serializable {
    */
   public final int hashCode(final int row) {
     Hasher hasher = HASH_FUNCTION.newHasher();
-    final int mappedRow = getValidIndices().get(row);
     for (Column<?> c : columns) {
-      c.addToHasher(mappedRow, hasher);
+      c.addToHasher(row, hasher);
     }
     return hasher.hash().asInt();
   }
@@ -473,10 +349,9 @@ public class TupleBatch implements Serializable {
   public final int hashCode(final int row, final int[] hashColumns) {
     Objects.requireNonNull(hashColumns);
     Hasher hasher = HASH_FUNCTION.newHasher();
-    final int mappedRow = getValidIndices().get(row);
     for (final int i : hashColumns) {
       Column<?> c = columns.get(i);
-      c.addToHasher(mappedRow, hasher);
+      c.addToHasher(row, hasher);
     }
     return hasher.hash().asInt();
   }
@@ -490,9 +365,8 @@ public class TupleBatch implements Serializable {
    */
   public final int hashCode(final int row, final int hashColumn) {
     Hasher hasher = HASH_FUNCTION.newHasher();
-    final int mappedRow = getValidIndices().get(row);
     Column<?> c = columns.get(hashColumn);
-    c.addToHasher(mappedRow, hasher);
+    c.addToHasher(row, hasher);
     return hasher.hash().asInt();
   }
 
@@ -511,7 +385,7 @@ public class TupleBatch implements Serializable {
    * @return the number of valid tuples in this TupleBatch.
    */
   public final int numTuples() {
-    return numValidTuples;
+    return numTuples;
   }
 
   /**
@@ -525,13 +399,10 @@ public class TupleBatch implements Serializable {
 
     final int[] partitions = pf.partition(this);
 
-    ImmutableIntArray indices = getValidIndices();
-
     for (int i = 0; i < partitions.length; i++) {
       final int pOfTuple = partitions[i];
-      final int mappedI = indices.get(i);
       for (int j = 0; j < numColumns; j++) {
-        buffers[pOfTuple].put(j, columns.get(j), mappedI);
+        buffers[pOfTuple].put(j, columns.get(j), i);
       }
     }
   }
@@ -551,21 +422,19 @@ public class TupleBatch implements Serializable {
     }
 
     final int[] partitions = pf.partition(this);
-    final ImmutableIntArray mapping = getValidIndices();
 
     BitSet[] resultBitSet = new BitSet[result.length];
     for (int i = 0; i < partitions.length; i++) {
       int p = partitions[i];
-      int actualRow = mapping.get(i);
       if (resultBitSet[p] == null) {
-        resultBitSet[p] = new BitSet(actualRow + 1);
+        resultBitSet[p] = new BitSet(result.length);
       }
-      resultBitSet[p].set(actualRow);
+      resultBitSet[p].set(i);
     }
 
     for (int i = 0; i < result.length; i++) {
       if (resultBitSet[i] != null) {
-        result[i] = shallowCopy(schema, columns, new ImmutableBitSet(resultBitSet[i]), null, isEOI);
+        result[i] = filter(resultBitSet[i]);
       }
     }
     return result;
@@ -581,14 +450,14 @@ public class TupleBatch implements Serializable {
   final void partitionInto(final TupleBatchBuffer[] destinations, final int[] hashColumns) {
     Objects.requireNonNull(destinations);
     Objects.requireNonNull(hashColumns);
-    final ImmutableIntArray indices = getValidIndices();
-    for (int i = 0; i < indices.length(); i++) {
-      int dest = hashCode(indices.get(i), hashColumns) % destinations.length;
+    Preconditions.checkArgument(!isEOI);
+    for (int i = 0; i < numTuples; i++) {
+      int dest = hashCode(i, hashColumns) % destinations.length;
       /* hashCode can be negative, so wrap positive if necessary */
       if (dest < destinations.length) {
         dest += destinations.length;
       }
-      appendTupleInto(indices.get(i), destinations[dest]);
+      appendTupleInto(i, destinations[dest]);
     }
   }
 
@@ -602,30 +471,7 @@ public class TupleBatch implements Serializable {
    * @return a TupleBatch with only the specified columns remaining.
    */
   public final TupleBatch selectColumns(final int[] remainingColumns) {
-    Objects.requireNonNull(remainingColumns);
-    final ImmutableList.Builder<Type> newTypes = new ImmutableList.Builder<Type>();
-    final ImmutableList.Builder<String> newNames = new ImmutableList.Builder<String>();
-    final ImmutableList.Builder<Column<?>> newColumns = new ImmutableList.Builder<Column<?>>();
-    for (final int i : remainingColumns) {
-      newColumns.add(columns.get(i));
-      newTypes.add(schema.getColumnType(i));
-      newNames.add(schema.getColumnName(i));
-    }
-    return shallowCopy(new Schema(newTypes, newNames), newColumns.build(), validTuples, validIndices, isEOI);
-  }
-
-  /**
-   * Creates a new TupleBatch with only the indicated columns.
-   * 
-   * Internal implementation of column selection, like a relational algebra project operator but without duplicate
-   * elimination.
-   * 
-   * @param remainingColumns zero-indexed array of columns to retain.
-   * @return a TupleBatch with only the specified columns remaining.
-   */
-  public final TupleBatch selectColumns(final Integer[] remainingColumns) {
-    Objects.requireNonNull(remainingColumns);
-    return selectColumns(Ints.toArray(Arrays.asList(remainingColumns)));
+    return selectColumns(remainingColumns, schema);
   }
 
   /**
@@ -643,24 +489,17 @@ public class TupleBatch implements Serializable {
     for (final int i : remainingColumns) {
       newColumns.add(columns.get(i));
     }
-    return shallowCopy(resultSchema, newColumns.build(), validTuples, validIndices, isEOI);
+    return new TupleBatch(resultSchema, newColumns.build(), numTuples, isEOI);
   }
 
   /**
-   * @param tupleIndicesToRemove the indices to remove
-   * @return a new TB.
+   * @param rows a BitSet flagging the rows to be removed.
+   * @return a new TB with the specified rows removed.
    * */
-  public final TupleBatch remove(final BitSet tupleIndicesToRemove) {
-    final ImmutableIntArray indices = getValidIndices();
-    final BitSet newValidTuples = validTuples.cloneAsBitSet();
-    for (int i = tupleIndicesToRemove.nextSetBit(0); i >= 0; i = tupleIndicesToRemove.nextSetBit(i + 1)) {
-      newValidTuples.clear(indices.get(i));
-    }
-    if (newValidTuples.cardinality() != numValidTuples) {
-      return shallowCopy(schema, columns, new ImmutableBitSet(newValidTuples), null, isEOI);
-    } else {
-      return this;
-    }
+  public final TupleBatch filterOut(final BitSet rows) {
+    BitSet inverted = (BitSet) rows.clone();
+    inverted.flip(0, numTuples);
+    return filter(inverted);
   }
 
   @Override
@@ -670,11 +509,10 @@ public class TupleBatch implements Serializable {
     }
     final List<Type> columnTypes = schema.getColumnTypes();
     final StringBuilder sb = new StringBuilder();
-    final ImmutableIntArray indices = getValidIndices();
-    for (int i = 0; i < indices.length(); i++) {
+    for (int i = 0; i < numTuples; i++) {
       sb.append("|\t");
       for (int j = 0; j < schema.numColumns(); j++) {
-        sb.append(columnTypes.get(j).toString(columns.get(j), indices.get(i)));
+        sb.append(columnTypes.get(j).toString(columns.get(j), i));
         sb.append("\t|\t");
       }
       sb.append('\n');
@@ -683,42 +521,10 @@ public class TupleBatch implements Serializable {
   }
 
   /**
-   * For the representation with a BitSet listing which rows are valid, generate and return an array containing the
-   * indices of all valid rows.
-   * 
-   * Since we are now using index mapping, it's unnecessary to expose the filtered/removed tuples
-   * 
-   * @return a list containing the indices of all valid rows.
+   * @return the data columns.
    */
-  public final ImmutableIntArray getValidIndices() {
-    if (validIndices != null) {
-      return validIndices;
-    }
-
-    int[] validIndicesTmp = new int[numValidTuples];
-    int i = 0;
-    for (int valid = validTuples.nextSetBit(0); valid >= 0; valid = validTuples.nextSetBit(valid + 1)) {
-      validIndicesTmp[i] = valid;
-      i++;
-    }
-    if (validIndices == null) {
-      validIndices = new ImmutableIntArray(validIndicesTmp);
-    }
-    return validIndices;
-  }
-
-  /**
-   * @return the data columns. Work together with the valid indices.
-   * */
   public final ImmutableList<Column<?>> getDataColumns() {
     return columns;
-  }
-
-  /**
-   * @return expose valid tuple BitSet.
-   * */
-  public final ImmutableBitSet getValidTuples() {
-    return validTuples;
   }
 
   /**
@@ -735,8 +541,7 @@ public class TupleBatch implements Serializable {
   public final boolean tupleMatches(final int leftIdx, final int[] leftCompareIdx, final TupleBatch rightTb,
       final int rightIdx, final int[] rightCompareIdx) {
     for (int i = 0; i < leftCompareIdx.length; ++i) {
-      if (!columns.get(leftCompareIdx[i]).equals(getValidIndices().get(leftIdx),
-          rightTb.columns.get(rightCompareIdx[i]), rightTb.getValidIndices().get(rightIdx))) {
+      if (!columns.get(leftCompareIdx[i]).equals(leftIdx, rightTb.columns.get(rightCompareIdx[i]), rightIdx)) {
         return false;
       }
     }
@@ -747,11 +552,7 @@ public class TupleBatch implements Serializable {
    * @return a TransportMessage encoding the TupleBatch.
    * */
   public final TransportMessage toTransportMessage() {
-    if (isCompact()) {
-      return IPCUtils.normalDataMessage(columns, numValidTuples);
-    } else {
-      return IPCUtils.normalDataMessage(columns, validIndices);
-    }
+    return IPCUtils.normalDataMessage(columns, numTuples);
   }
 
   /**
@@ -761,7 +562,7 @@ public class TupleBatch implements Serializable {
    * @return EOI TB for the schema.
    * */
   public static final TupleBatch eoiTupleBatch(final Schema schema) {
-    return new TupleBatch(schema);
+    return new TupleBatch(schema, true);
   }
 
   /**
@@ -1031,19 +832,7 @@ public class TupleBatch implements Serializable {
     Preconditions.checkArgument(numTuples() == column.size(), "Error appending column of size %s to batch of size %s",
         column.size(), numTuples());
     Schema newSchema = Schema.appendColumn(schema, column.getType(), columnName);
-    /* If this TupleBatch is compact, just append the new column. */
-    if (isCompact()) {
-      ImmutableList<Column<?>> newColumns = ImmutableList.<Column<?>> builder().addAll(columns).add(column).build();
-      return new TupleBatch(newSchema, newColumns, validTuples, validIndices, isEOI);
-    } else {
-      TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
-      compactInto(tbb);
-      List<List<Column<?>>> compactCols = tbb.getAllAsRawColumn();
-      Preconditions.checkState(compactCols.size() == 1, "Expected compact TupleBatch to have size 1, not %s",
-          compactCols.size());
-      List<Column<?>> newColumns = compactCols.get(0);
-      newColumns.add(column);
-      return new TupleBatch(newSchema, newColumns);
-    }
+    List<Column<?>> newColumns = ImmutableList.<Column<?>> builder().addAll(columns).add(column).build();
+    return new TupleBatch(newSchema, newColumns, numTuples, isEOI);
   }
 }
