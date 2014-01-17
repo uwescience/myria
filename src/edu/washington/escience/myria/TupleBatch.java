@@ -5,15 +5,11 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import net.jcip.annotations.ThreadSafe;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.joda.time.DateTime;
 
 import com.almworks.sqlite4java.SQLiteException;
@@ -118,19 +114,6 @@ public class TupleBatch implements Serializable {
   }
 
   /**
-   * Helper function to append the specified row into the specified TupleBatchBuffer.
-   * 
-   * @param mappedRow the true row in column list to append to the buffer.
-   * @param buffer buffer the row is appended to.
-   */
-  private void appendTupleInto(final int mappedRow, final TupleBatchBuffer buffer) {
-    Objects.requireNonNull(buffer);
-    for (int i = 0; i < numColumns(); ++i) {
-      buffer.put(i, columns.get(i), mappedRow);
-    }
-  }
-
-  /**
    * put the tuple batch into TBB by smashing it into cells and putting them one by one.
    * 
    * @param tbb the TBB buffer.
@@ -158,6 +141,8 @@ public class TupleBatch implements Serializable {
    * @return a TupleBatch that contains only the filtered rows of the current dataset.
    */
   public final TupleBatch filter(final BitSet filter) {
+    Preconditions.checkArgument(filter.length() <= numTuples(),
+        "Error: trying to filter a TupleBatch of length %s with a filter of length %s", numTuples(), filter.length());
     int newNumTuples = filter.cardinality();
 
     /* Shortcut: the filter is full, so all current tuples are retained. Just return this. */
@@ -291,43 +276,6 @@ public class TupleBatch implements Serializable {
   }
 
   /**
-   * Do groupby on this TupleBatch and return the set of (GroupByKey, TupleBatchBuffer) pairs which have filled
-   * TupleBatches.
-   * 
-   * @return the set of (GroupByKey, TupleBatchBuffer).
-   * @param groupByColumn the column index for doing group by.
-   * @param buffers the data buffers for holding the groupby results.
-   * */
-  public final Set<Pair<Object, TupleBatchBuffer>> groupby(final int groupByColumn,
-      final Map<Object, Pair<Object, TupleBatchBuffer>> buffers) {
-    Set<Pair<Object, TupleBatchBuffer>> ready = null;
-    final Column<?> gC = columns.get(groupByColumn);
-    for (int row = 0; row < numTuples; row++) {
-      final Object v = gC.getObject(row);
-      Pair<Object, TupleBatchBuffer> kvPair = buffers.get(v);
-      TupleBatchBuffer tbb = null;
-      if (kvPair == null) {
-        tbb = new TupleBatchBuffer(getSchema());
-        kvPair = Pair.of(v, tbb);
-        buffers.put(v, kvPair);
-      } else {
-        tbb = kvPair.getRight();
-      }
-      int j = 0;
-      for (final Column<?> c : columns) {
-        tbb.put(j++, c, row);
-      }
-      if (tbb.hasFilledTB()) {
-        if (ready == null) {
-          ready = new HashSet<Pair<Object, TupleBatchBuffer>>();
-        }
-        ready.add(kvPair);
-      }
-    }
-    return ready;
-  }
-
-  /**
    * @param row the row to be hashed.
    * @return the hash of the tuples in the specified row.
    */
@@ -389,25 +337,6 @@ public class TupleBatch implements Serializable {
   }
 
   /**
-   * Partition this TB using the partition function.
-   * 
-   * @param pf the partition function.
-   * @param buffers the buffers storing the partitioned data.
-   * */
-  public final void partition(final PartitionFunction pf, final TupleBatchBuffer[] buffers) {
-    final int numColumns = numColumns();
-
-    final int[] partitions = pf.partition(this);
-
-    for (int i = 0; i < partitions.length; i++) {
-      final int pOfTuple = partitions[i];
-      for (int j = 0; j < numColumns; j++) {
-        buffers[pOfTuple].put(j, columns.get(j), i);
-      }
-    }
-  }
-
-  /**
    * Partition this TB using the partition function. The method is implemented by shallow copy of TupleBatches.
    * 
    * @return an array of TBs. The length of the array is the same as the number of partitions. If no tuple presents in a
@@ -438,40 +367,6 @@ public class TupleBatch implements Serializable {
       }
     }
     return result;
-  }
-
-  /**
-   * Hash the valid tuples in this batch and partition them into the supplied TupleBatchBuffers. This is a useful helper
-   * primitive for, e.g., the Scatter operator.
-   * 
-   * @param destinations TupleBatchBuffers into which these tuples will be partitioned.
-   * @param hashColumns determines the key columns for the hash.
-   */
-  final void partitionInto(final TupleBatchBuffer[] destinations, final int[] hashColumns) {
-    Objects.requireNonNull(destinations);
-    Objects.requireNonNull(hashColumns);
-    Preconditions.checkArgument(!isEOI);
-    for (int i = 0; i < numTuples; i++) {
-      int dest = hashCode(i, hashColumns) % destinations.length;
-      /* hashCode can be negative, so wrap positive if necessary */
-      if (dest < destinations.length) {
-        dest += destinations.length;
-      }
-      appendTupleInto(i, destinations[dest]);
-    }
-  }
-
-  /**
-   * Creates a new TupleBatch with only the indicated columns.
-   * 
-   * Internal implementation of column selection, like a relational algebra project operator but without duplicate
-   * elimination.
-   * 
-   * @param remainingColumns zero-indexed array of columns to retain.
-   * @return a TupleBatch with only the specified columns remaining.
-   */
-  public final TupleBatch selectColumns(final int[] remainingColumns) {
-    return selectColumns(remainingColumns, schema);
   }
 
   /**
@@ -806,7 +701,7 @@ public class TupleBatch implements Serializable {
   }
 
   /**
-   * Same as {@link #tupleCompare(int[], int, TupleBatch, int[], int, boolean[])} but comparioson within the same TB.
+   * Same as {@link #tupleCompare(int[], int, TupleBatch, int[], int, boolean[])} but comparison within the same TB.
    * 
    * @param columnCompareIndexes the columns from this TB that should be compared with the column of the other TB
    * @param rowIdx row in this TB
@@ -829,7 +724,7 @@ public class TupleBatch implements Serializable {
    * @return a new TupleBatch containing the tuples of this column plus the tuples of the other.
    */
   public TupleBatch appendColumn(final String columnName, final Column<?> column) {
-    Preconditions.checkArgument(numTuples() == column.size(), "Error appending column of size %s to batch of size %s",
+    Preconditions.checkArgument(numTuples() == column.size(), "Cannot append column of size %s to batch of size %s",
         column.size(), numTuples());
     Schema newSchema = Schema.appendColumn(schema, column.getType(), columnName);
     List<Column<?>> newColumns = ImmutableList.<Column<?>> builder().addAll(columns).add(column).build();
