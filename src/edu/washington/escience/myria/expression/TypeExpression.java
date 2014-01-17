@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.expression;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 
@@ -13,6 +15,7 @@ public class TypeExpression extends ZeroaryExpression {
   /**
    * The type of this expression operator.
    */
+  @JsonProperty
   private final Type type;
 
   /**
