@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * A {@link TupleWriter} is an object that can serialize a {@link TupleBatch}. The assumption is that most classes that
- * implement {@link TupleWriter} will write the data to an {@link java.io.OutputStream}, e.g.
+ * A {@link TupleWriter} is an object that can serialize a {@link ReadableTable}. The assumption is that most classes
+ * that implement {@link TupleWriter} will write the data to an {@link java.io.OutputStream}, e.g.
  * 
  * There are three functions:
  * 
@@ -36,7 +36,7 @@ public interface TupleWriter {
    * @param tuples the batch of tuples to be serialized.
    * @throws IOException if there is an error writing the tuples.
    */
-  void writeTuples(TupleBatch tuples) throws IOException;
+  void writeTuples(ReadableTable tuples) throws IOException;
 
   /**
    * Inform the TupleWriter that no more tuples will come. It may close and flush an {@link java.io.OutputStream}, for
