@@ -75,14 +75,17 @@ public class TupleBatchBuffer {
   }
 
   /**
-   * Append the tuple batch directly into readyTuples. The tuple batch cannot have any invalid tuples.
+   * Append the tuple batch directly into readyTuples.
    * 
    * @param tb the TB.
    */
   public final void appendTB(final TupleBatch tb) {
-    // Preconditions.checkArgument(tb.isEOI() || tb.numTuples() == tb.getDataColumns().get(0).size());
-    // Preconditions.checkArgument(!tb.isEOI());
+    /*
+     * If we're currently building a batch, we better finish it before we append this one to the list. Otherwise
+     * reordering will happen.
+     */
     finishBatch();
+
     readyTuplesNum += tb.numTuples();
     readyTuples.add(tb);
   }
@@ -101,7 +104,7 @@ public class TupleBatchBuffer {
 
   /**
    * clear this TBB.
-   * */
+   */
   public final void clear() {
     columnsReady.clear();
     currentBuildingColumns.clear();
@@ -119,10 +122,13 @@ public class TupleBatchBuffer {
   private void columnPut(final int column) {
     columnsReady.set(column, true);
     numColumnsReady++;
+
+    /* All columns are full, move to next line. */
     if (numColumnsReady == numColumns) {
       currentInProgressTuples++;
       numColumnsReady = 0;
       columnsReady.clear();
+      /* See if the current batch is full and finish it if so. */
       if (currentInProgressTuples == TupleBatch.BATCH_SIZE) {
         finishBatch();
       }
@@ -135,20 +141,20 @@ public class TupleBatchBuffer {
    * @return true if any tuples were added.
    */
   private boolean finishBatch() {
-    if (numColumnsReady != 0) {
-      throw new AssertionError("Can't finish a batch with partially-completed tuples!");
-    }
+    Preconditions.checkState(numColumnsReady == 0, "Cannot finish a batch with partially-completed tuples");
     if (currentInProgressTuples == 0) {
       return false;
     }
+
+    /* Build the batch */
     List<Column<?>> buildingColumns = new ArrayList<Column<?>>(currentBuildingColumns.size());
     for (ColumnBuilder<?> cb : currentBuildingColumns) {
       buildingColumns.add(cb.build());
     }
     readyTuples.add(new TupleBatch(schema, buildingColumns, currentInProgressTuples));
-    if (buildingColumns.size() > 0) {
-      readyTuplesNum += buildingColumns.get(0).size();
-    }
+
+    /* Update the metadata and refresh the building state. */
+    readyTuplesNum += buildingColumns.get(0).size();
     currentBuildingColumns = ColumnFactory.allocateColumns(schema);
     currentInProgressTuples = 0;
     return true;
@@ -160,10 +166,8 @@ public class TupleBatchBuffer {
    * @return a List<TupleBatch> containing all complete tuples that have been inserted into this buffer.
    */
   public final List<TupleBatch> getAll() {
-    final List<TupleBatch> output = new ArrayList<TupleBatch>();
-    for (final TupleBatch batch : readyTuples) {
-      output.add(batch);
-    }
+    final List<TupleBatch> output = new ArrayList<TupleBatch>(readyTuples.size() + 1);
+    output.addAll(readyTuples);
     if (currentInProgressTuples > 0) {
       output.add(new TupleBatch(schema, getInProgressColumns(), currentInProgressTuples));
     }
@@ -187,9 +191,9 @@ public class TupleBatchBuffer {
   }
 
   /**
-   * Get elapsed time since the last time when a TB is poped.
+   * Get elapsed time since the last time when a TB is popped.
    * 
-   * @return the elapsed time from lastPopedTime to present
+   * @return the elapsed time from lastPoppedTime to present
    */
   private long getElapsedTime() {
     return System.nanoTime() - lastPoppedTime;
@@ -199,7 +203,7 @@ public class TupleBatchBuffer {
    * Build the in progress columns. The builders' states are untouched. They can keep building.
    * 
    * @return the built in progress columns.
-   * */
+   */
   private List<Column<?>> getInProgressColumns() {
     List<Column<?>> newColumns = new ArrayList<Column<?>>(currentBuildingColumns.size());
     for (ColumnBuilder<?> cb : currentBuildingColumns) {
@@ -224,14 +228,14 @@ public class TupleBatchBuffer {
 
   /**
    * @return if there is filled TupleBatches ready for pop.
-   * */
+   */
   public final boolean hasFilledTB() {
     return readyTuples.size() > 0;
   }
 
   /**
    * @param another TBB.
-   * */
+   */
   public final void unionAll(final TupleBatchBuffer another) {
     readyTuples.addAll(another.readyTuples);
     readyTuplesNum += another.getReadyTuplesNum();
@@ -248,7 +252,7 @@ public class TupleBatchBuffer {
 
   /**
    * @return num columns.
-   * */
+   */
   public final int numColumns() {
     return numColumns;
   }
@@ -262,17 +266,17 @@ public class TupleBatchBuffer {
 
   /**
    * @return pop filled and non-filled TupleBatch
-   * */
+   */
   public final TupleBatch popAny() {
     final TupleBatch tb = popFilled();
     if (tb != null) {
-      updateLastPopedTime();
+      updateLastPoppedTime();
       return tb;
     } else {
       if (currentInProgressTuples > 0) {
         final int size = currentInProgressTuples;
         finishBatch();
-        updateLastPopedTime();
+        updateLastPoppedTime();
         readyTuplesNum -= size;
         TupleBatch batch = readyTuples.remove(0);
         Preconditions.checkState(size == batch.numTuples(), "Error with number of tuples");
@@ -286,17 +290,17 @@ public class TupleBatchBuffer {
 
   /**
    * @return pop filled and non-filled TupleBatch
-   * */
+   */
   public final TupleBatch popAnyUsingTimeout() {
     final TupleBatch tb = popFilled();
     if (tb != null) {
-      updateLastPopedTime();
+      updateLastPoppedTime();
       return tb;
     } else {
       if (currentInProgressTuples > 0 && getElapsedTime() >= MyriaConstants.PUSHING_TB_TIMEOUT) {
         final int size = currentInProgressTuples;
         finishBatch();
-        updateLastPopedTime();
+        updateLastPoppedTime();
         readyTuplesNum -= size;
         TupleBatch batch = readyTuples.remove(0);
         Preconditions.checkState(size == batch.numTuples(), "Error with number of tuples");
@@ -315,7 +319,7 @@ public class TupleBatchBuffer {
    */
   public final TupleBatch popFilled() {
     if (readyTuples.size() > 0) {
-      updateLastPopedTime();
+      updateLastPoppedTime();
       TupleBatch batch = readyTuples.remove(0);
       readyTuplesNum -= batch.numTuples();
       return batch;
@@ -571,7 +575,7 @@ public class TupleBatchBuffer {
   /**
    * Update lastPopedTime to be the current time.
    */
-  private void updateLastPopedTime() {
+  private void updateLastPoppedTime() {
     lastPoppedTime = System.nanoTime();
   }
 
