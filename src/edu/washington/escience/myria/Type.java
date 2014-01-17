@@ -28,7 +28,7 @@ public enum Type implements Serializable {
     }
 
     @Override
-    public Object fromString(final String str) {
+    public Integer fromString(final String str) {
       return Integer.valueOf(str);
     }
 
@@ -56,7 +56,7 @@ public enum Type implements Serializable {
     }
 
     @Override
-    public Object fromString(final String str) {
+    public Float fromString(final String str) {
       return Float.valueOf(str);
     }
 
@@ -82,7 +82,7 @@ public enum Type implements Serializable {
     }
 
     @Override
-    public Object fromString(final String str) {
+    public Double fromString(final String str) {
       return Double.valueOf(str);
     }
 
@@ -108,7 +108,7 @@ public enum Type implements Serializable {
     }
 
     @Override
-    public Object fromString(final String str) {
+    public Boolean fromString(final String str) {
       return Boolean.valueOf(str);
     }
 
@@ -135,7 +135,7 @@ public enum Type implements Serializable {
     }
 
     @Override
-    public Object fromString(final String str) {
+    public String fromString(final String str) {
       return str;
     }
 
@@ -161,7 +161,7 @@ public enum Type implements Serializable {
     }
 
     @Override
-    public Object fromString(final String str) {
+    public Long fromString(final String str) {
       return Long.valueOf(str);
     }
 
@@ -188,7 +188,7 @@ public enum Type implements Serializable {
     }
 
     @Override
-    public Object fromString(final String str) {
+    public DateTime fromString(final String str) {
       return DateTime.parse(str);
     }
 
@@ -221,7 +221,7 @@ public enum Type implements Serializable {
    * @param str The string to convert
    * @return An object of an appropriate type
    */
-  public Object fromString(final String str) {
+  public Comparable<?> fromString(final String str) {
     throw new UnsupportedOperationException();
   }
 
