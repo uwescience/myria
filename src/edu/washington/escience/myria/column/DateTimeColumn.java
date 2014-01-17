@@ -26,7 +26,7 @@ import edu.washington.escience.myria.util.TypeFunnel;
  * 
  */
 public final class DateTimeColumn extends Column<DateTime> {
-  /** Required for Hava Serialization. */
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1;
   /** Internal representation of the column data. */
   private final DateTime[] data;
