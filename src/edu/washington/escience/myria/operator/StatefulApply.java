@@ -98,6 +98,7 @@ public class StatefulApply extends Apply {
       }
       evaluators.add(evaluator);
     }
+    setEvaluators(evaluators);
 
     setResultBuffer(new TupleBatchBuffer(getSchema()));
 
@@ -148,7 +149,7 @@ public class StatefulApply extends Apply {
     ImmutableList.Builder<String> namesBuilder = ImmutableList.builder();
 
     for (Expression expr : initExpressions) {
-      typesBuilder.add(expr.getOutputType(getSchema(), null));
+      typesBuilder.add(expr.getOutputType(getChild().getSchema(), null));
       namesBuilder.add(expr.getOutputName());
     }
     stateSchema = new Schema(typesBuilder.build(), namesBuilder.build());
