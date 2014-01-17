@@ -11,7 +11,6 @@ import com.google.common.hash.Hasher;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.LongColumn;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.LongColumnBuilder;
@@ -115,7 +114,7 @@ public final class LongMutableColumn extends MutableColumn<Long> {
   }
 
   @Override
-  public boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
+  public boolean equals(final int leftIdx, final MutableColumn<?> rightColumn, final int rightIdx) {
     return getLong(leftIdx) == ((LongMutableColumn) rightColumn).getLong(rightIdx);
   }
 

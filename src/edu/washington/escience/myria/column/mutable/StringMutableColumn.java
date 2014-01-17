@@ -10,7 +10,6 @@ import com.google.common.hash.Hasher;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.StringArrayColumn;
 import edu.washington.escience.myria.column.StringColumn;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
@@ -126,7 +125,7 @@ public final class StringMutableColumn extends MutableColumn<String> {
   }
 
   @Override
-  public boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
+  public boolean equals(final int leftIdx, final MutableColumn<?> rightColumn, final int rightIdx) {
     return getString(leftIdx).equals(rightColumn.getObject(rightIdx));
   }
 

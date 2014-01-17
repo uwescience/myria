@@ -14,7 +14,6 @@ import com.google.common.hash.Hasher;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.DateTimeColumn;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.DateTimeColumnBuilder;
@@ -121,7 +120,7 @@ public final class DateTimeMutableColumn extends MutableColumn<DateTime> {
   }
 
   @Override
-  public boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
+  public boolean equals(final int leftIdx, final MutableColumn<?> rightColumn, final int rightIdx) {
     return getDateTime(leftIdx).equals(rightColumn.getObject(rightIdx));
   }
 

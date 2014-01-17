@@ -8,7 +8,6 @@ import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.hash.Hasher;
 
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.IntColumnBuilder;
 
@@ -47,7 +46,7 @@ public abstract class IntMutableColumn extends MutableColumn<Integer> {
   }
 
   @Override
-  public final boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
+  public final boolean equals(final int leftIdx, final MutableColumn<?> rightColumn, final int rightIdx) {
     return getInt(leftIdx) == ((IntMutableColumn) rightColumn).getInt(rightIdx);
   }
 

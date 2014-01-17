@@ -12,7 +12,6 @@ import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.FloatColumn;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.FloatColumnBuilder;
@@ -115,7 +114,7 @@ public final class FloatMutableColumn extends MutableColumn<Float> {
   }
 
   @Override
-  public boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
+  public boolean equals(final int leftIdx, final MutableColumn<?> rightColumn, final int rightIdx) {
     return getFloat(leftIdx) == ((FloatMutableColumn) rightColumn).getFloat(rightIdx);
   }
 

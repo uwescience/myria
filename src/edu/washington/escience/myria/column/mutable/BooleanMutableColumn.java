@@ -12,7 +12,6 @@ import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.BooleanColumn;
-import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.BooleanColumnBuilder;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.BooleanColumnMessage;
@@ -118,7 +117,7 @@ public class BooleanMutableColumn extends MutableColumn<Boolean> {
   }
 
   @Override
-  public boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
+  public boolean equals(final int leftIdx, final MutableColumn<?> rightColumn, final int rightIdx) {
     return getBoolean(leftIdx) == ((BooleanMutableColumn) rightColumn).getBoolean(rightIdx);
   }
 

@@ -12,7 +12,6 @@ import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.DoubleColumn;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.DoubleColumnBuilder;
@@ -116,7 +115,7 @@ public final class DoubleMutableColumn extends MutableColumn<Double> {
   }
 
   @Override
-  public boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
+  public boolean equals(final int leftIdx, final MutableColumn<?> rightColumn, final int rightIdx) {
     return getDouble(leftIdx) == ((DoubleMutableColumn) rightColumn).getDouble(rightIdx);
   }
 
