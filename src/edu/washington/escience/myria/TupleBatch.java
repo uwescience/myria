@@ -30,7 +30,7 @@ import edu.washington.escience.myria.util.IPCUtils;
  * 
  */
 @ThreadSafe
-public class TupleBatch implements Serializable {
+public class TupleBatch implements ReadableTable, Serializable {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** The hard-coded number of tuples in a batch. */
@@ -157,38 +157,22 @@ public class TupleBatch implements Serializable {
     return new TupleBatch(schema, newColumns.build(), newNumTuples, isEOI);
   }
 
-  /**
-   * @param column the column of the desired value.
-   * @param row the row of the desired value.
-   * @return the value in the specified column and row.
-   */
+  @Override
   public final boolean getBoolean(final int column, final int row) {
     return columns.get(column).getBoolean(row);
   }
 
-  /**
-   * @param column the column of the desired value.
-   * @param row the row of the desired value.
-   * @return the value in the specified column and row.
-   */
+  @Override
   public final double getDouble(final int column, final int row) {
     return columns.get(column).getDouble(row);
   }
 
-  /**
-   * @param column the column of the desired value.
-   * @param row the row of the desired value.
-   * @return the value in the specified column and row.
-   */
+  @Override
   public final float getFloat(final int column, final int row) {
     return columns.get(column).getFloat(row);
   }
 
-  /**
-   * @param column the column of the desired value.
-   * @param row the row of the desired value.
-   * @return the value in the specified column and row.
-   */
+  @Override
   public final int getInt(final int column, final int row) {
     return columns.get(column).getInt(row);
   }
@@ -226,51 +210,27 @@ public class TupleBatch implements Serializable {
     }
   }
 
-  /**
-   * @param column the column of the desired value.
-   * @param row the row of the desired value.
-   * @return the value in the specified column and row.
-   */
+  @Override
   public final long getLong(final int column, final int row) {
     return columns.get(column).getLong(row);
   }
 
-  /**
-   * @param column the column of the desired value.
-   * @param row the row of the desired value.
-   * @return the value in the specified column and row.
-   */
+  @Override
   public final Object getObject(final int column, final int row) {
     return columns.get(column).getObject(row);
   }
 
-  /**
-   * Returns the Schema of the tuples in this batch.
-   * 
-   * @return the Schema of the tuples in this batch.
-   */
+  @Override
   public final Schema getSchema() {
     return schema;
   }
 
-  /**
-   * Returns the element at the specified column and row position.
-   * 
-   * @param column column in which the element is stored.
-   * @param row row in which the element is stored.
-   * @return the element at the specified position in this TupleBatch.
-   */
+  @Override
   public final String getString(final int column, final int row) {
     return columns.get(column).getString(row);
   }
 
-  /**
-   * Returns the element at the specified column and row position.
-   * 
-   * @param column column in which the element is stored.
-   * @param row row in which the element is stored.
-   * @return the element at the specified position in this TupleBatch.
-   */
+  @Override
   public final DateTime getDateTime(final int column, final int row) {
     return columns.get(column).getDateTime(row);
   }
@@ -318,20 +278,12 @@ public class TupleBatch implements Serializable {
     return hasher.hash().asInt();
   }
 
-  /**
-   * The number of columns in this TupleBatch.
-   * 
-   * @return number of columns in this TupleBatch.
-   */
+  @Override
   public final int numColumns() {
     return schema.numColumns();
   }
 
-  /**
-   * Returns the number of valid tuples in this TupleBatch.
-   * 
-   * @return the number of valid tuples in this TupleBatch.
-   */
+  @Override
   public final int numTuples() {
     return numTuples;
   }
