@@ -14,6 +14,13 @@ import edu.washington.escience.myria.Type;
  */
 public class ConstantExpression extends ZeroaryExpression {
 
+  /**
+   * @return the value.
+   */
+  public String getValue() {
+    return value;
+  }
+
   /***/
   private static final long serialVersionUID = 1L;
 
