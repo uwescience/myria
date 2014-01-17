@@ -12,7 +12,11 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
+import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.column.ConstantValueColumn;
+import edu.washington.escience.myria.column.builder.ColumnBuilder;
+import edu.washington.escience.myria.column.builder.ColumnFactory;
 
 /**
  * An expression that can be applied to a tuple. This is the generic version where the evaluator returns objects.
@@ -108,5 +112,38 @@ public class GenericExpression extends Expression {
       targetTupleBuffer.put(targetColumnIdx, result);
     }
 
+  }
+
+  /**
+   * Exaluate an expression over an entire TupleBatch and return the column of results.
+   * 
+   * @param tb the tuples to be input to this expression
+   * @return a column containing the result of evaluating this expression on the entire TupleBatch
+   * @throws InvocationTargetException exception thrown from janino
+   */
+  public Column<?> evaluateColumn(final TupleBatch tb) throws InvocationTargetException {
+    ExpressionOperator op = getRootExpressionOperator();
+    /* This expression just copies an input column. */
+    if (op instanceof VariableExpression) {
+      return tb.getDataColumns().get(((VariableExpression) op).getColumnIdx());
+    }
+
+    Type type = op.getOutputType(getInputSchema());
+
+    /* This expression is a constant. */
+    if (op instanceof ConstantExpression) {
+      ConstantExpression constOp = (ConstantExpression) op;
+      return new ConstantValueColumn(type.fromString(constOp.getValue()), type, tb.numTuples());
+    }
+    /*
+     * TODO for efficiency handle expressions that evaluate to a constant, e.g., they don't contain any
+     * VariableExpressions.
+     */
+
+    ColumnBuilder<?> ret = ColumnFactory.allocateColumn(type);
+    for (int row = 0; row < tb.numTuples(); ++row) {
+      ret.appendObject(eval(tb, row));
+    }
+    return ret.build();
   }
 }
