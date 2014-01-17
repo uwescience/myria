@@ -5,12 +5,13 @@ import java.util.List;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.GenericExpression;
 
@@ -25,11 +26,6 @@ public class Apply extends UnaryOperator {
    * List of expressions that will be used to create the output.
    */
   private ImmutableList<GenericExpression> genericExpressions;
-
-  /**
-   * Buffers the output tuples.
-   */
-  private TupleBatchBuffer resultBuffer;
 
   /**
    * 
@@ -54,40 +50,32 @@ public class Apply extends UnaryOperator {
 
   @Override
   protected TupleBatch fetchNextReady() throws Exception {
-    TupleBatch tb = null;
-    if (getChild().eoi() || getChild().eos()) {
-      return resultBuffer.popAny();
+    Operator child = getChild();
+
+    if (child.eoi() || getChild().eos()) {
+      return null;
     }
 
-    while ((tb = getChild().nextReady()) != null) {
-      for (int rowIdx = 0; rowIdx < tb.numTuples(); rowIdx++) {
-        int columnIdx = 0;
-        for (GenericExpression expr : genericExpressions) {
-          expr.evalAndPut(tb, rowIdx, resultBuffer, columnIdx);
-          columnIdx++;
-        }
-      }
-      if (resultBuffer.hasFilledTB()) {
-        return resultBuffer.popFilled();
-      }
+    TupleBatch tb = child.nextReady();
+    if (tb == null) {
+      return null;
     }
-    if (getChild().eoi() || getChild().eos()) {
-      return resultBuffer.popAny();
-    } else {
-      return resultBuffer.popFilled();
+
+    List<Column<?>> output = Lists.newLinkedList();
+    for (GenericExpression expr : genericExpressions) {
+      output.add(expr.evaluateColumn(tb));
     }
+    return new TupleBatch(getSchema(), output);
   }
 
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     Preconditions.checkNotNull(genericExpressions);
 
-    resultBuffer = new TupleBatchBuffer(getSchema());
-
     Schema inputSchema = getChild().getSchema();
+    getSchema();
 
     for (GenericExpression expr : genericExpressions) {
-
       expr.setSchema(inputSchema);
       if (expr.needsCompiling()) {
         expr.compile();
