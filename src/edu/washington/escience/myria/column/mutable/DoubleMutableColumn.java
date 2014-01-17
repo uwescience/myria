@@ -1,23 +1,10 @@
 package edu.washington.escience.myria.column.mutable;
 
-import java.nio.ByteBuffer;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-
-import com.almworks.sqlite4java.SQLiteException;
-import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
-import com.google.common.hash.Hasher;
-import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.DoubleColumn;
-import edu.washington.escience.myria.column.builder.ColumnBuilder;
-import edu.washington.escience.myria.column.builder.DoubleColumnBuilder;
-import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
-import edu.washington.escience.myria.proto.DataProto.DoubleColumnMessage;
-import edu.washington.escience.myria.util.ImmutableIntArray;
 
 /**
  * A mutable column of Double values.
@@ -50,17 +37,6 @@ public final class DoubleMutableColumn extends MutableColumn<Double> {
   }
 
   @Override
-  public void getIntoJdbc(final int row, final PreparedStatement statement, final int jdbcIndex) throws SQLException {
-    statement.setDouble(jdbcIndex, getDouble(row));
-  }
-
-  @Override
-  public void getIntoSQLite(final int row, final SQLiteStatement statement, final int sqliteIndex)
-      throws SQLiteException {
-    statement.bind(sqliteIndex, getDouble(row));
-  }
-
-  @Override
   public double getDouble(final int row) {
     Preconditions.checkElementIndex(row, position);
     return data[row];
@@ -69,30 +45,6 @@ public final class DoubleMutableColumn extends MutableColumn<Double> {
   @Override
   public Type getType() {
     return Type.DOUBLE_TYPE;
-  }
-
-  @Override
-  public ColumnMessage serializeToProto() {
-    ByteBuffer dataBytes = ByteBuffer.allocate(position * Double.SIZE / Byte.SIZE);
-    for (int i = 0; i < position; i++) {
-      dataBytes.putDouble(data[i]);
-    }
-    dataBytes.flip();
-    final DoubleColumnMessage.Builder inner = DoubleColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
-
-    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.DOUBLE).setDoubleColumn(inner).build();
-  }
-
-  @Override
-  public ColumnMessage serializeToProto(final ImmutableIntArray validIndices) {
-    ByteBuffer dataBytes = ByteBuffer.allocate(validIndices.length() * Double.SIZE / Byte.SIZE);
-    for (int i : validIndices) {
-      dataBytes.putDouble(data[i]);
-    }
-    dataBytes.flip();
-    final DoubleColumnMessage.Builder inner = DoubleColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
-
-    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.DOUBLE).setDoubleColumn(inner).build();
   }
 
   @Override
@@ -112,21 +64,6 @@ public final class DoubleMutableColumn extends MutableColumn<Double> {
     }
     sb.append(']');
     return sb.toString();
-  }
-
-  @Override
-  public boolean equals(final int leftIdx, final MutableColumn<?> rightColumn, final int rightIdx) {
-    return getDouble(leftIdx) == ((DoubleMutableColumn) rightColumn).getDouble(rightIdx);
-  }
-
-  @Override
-  public void append(final int index, final ColumnBuilder<?> columnBuilder) {
-    ((DoubleColumnBuilder) columnBuilder).append(getDouble(index));
-  }
-
-  @Override
-  public void addToHasher(final int row, final Hasher hasher) {
-    hasher.putDouble(getDouble(row));
   }
 
   @Override

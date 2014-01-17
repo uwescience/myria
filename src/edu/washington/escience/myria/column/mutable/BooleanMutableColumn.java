@@ -1,23 +1,12 @@
 package edu.washington.escience.myria.column.mutable;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.BitSet;
 
-import com.almworks.sqlite4java.SQLiteException;
-import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
-import com.google.common.hash.Hasher;
-import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.BooleanColumn;
-import edu.washington.escience.myria.column.builder.BooleanColumnBuilder;
-import edu.washington.escience.myria.column.builder.ColumnBuilder;
-import edu.washington.escience.myria.proto.DataProto.BooleanColumnMessage;
-import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.util.ImmutableBitSet;
-import edu.washington.escience.myria.util.ImmutableIntArray;
 
 /**
  * A mutable column of Boolean values.
@@ -52,49 +41,8 @@ public class BooleanMutableColumn extends MutableColumn<Boolean> {
   }
 
   @Override
-  public void getIntoJdbc(final int row, final PreparedStatement statement, final int jdbcIndex) throws SQLException {
-    statement.setBoolean(jdbcIndex, getBoolean(row));
-  }
-
-  @Override
-  public void getIntoSQLite(final int row, final SQLiteStatement statement, final int sqliteIndex)
-      throws SQLiteException {
-    throw new UnsupportedOperationException("SQLite does not support Boolean columns.");
-  }
-
-  @Override
   public Type getType() {
     return Type.BOOLEAN_TYPE;
-  }
-
-  @Override
-  public ColumnMessage serializeToProto() {
-    /* Note that we do *not* build the inner class. We pass its builder instead. */
-    final BooleanColumnMessage.Builder inner =
-        BooleanColumnMessage.newBuilder().setData(ByteString.copyFrom(data.toByteArray()));
-    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.BOOLEAN).setBooleanColumn(inner).build();
-  }
-
-  @Override
-  public ColumnMessage serializeToProto(final ImmutableIntArray validIndices) {
-    /* Construct the output ByteString using builder syntax. */
-    ByteString.Output bytes = ByteString.newOutput((validIndices.length() + 7) / 8);
-    int bitCnt = 0;
-    int b = 0;
-    for (int i : validIndices) {
-      if (data.get(i)) {
-        b |= (1 << bitCnt);
-      }
-      bitCnt++;
-      if (bitCnt == 8) {
-        bytes.write(b);
-        bitCnt = 0;
-        b = 0;
-      }
-    }
-    /* Note that we do *not* build the inner class. We pass its builder instead. */
-    final BooleanColumnMessage.Builder inner = BooleanColumnMessage.newBuilder().setData(bytes.toByteString());
-    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.BOOLEAN).setBooleanColumn(inner).build();
   }
 
   @Override
@@ -114,21 +62,6 @@ public class BooleanMutableColumn extends MutableColumn<Boolean> {
     }
     sb.append(']');
     return sb.toString();
-  }
-
-  @Override
-  public boolean equals(final int leftIdx, final MutableColumn<?> rightColumn, final int rightIdx) {
-    return getBoolean(leftIdx) == ((BooleanMutableColumn) rightColumn).getBoolean(rightIdx);
-  }
-
-  @Override
-  public void append(final int index, final ColumnBuilder<?> columnBuilder) {
-    ((BooleanColumnBuilder) columnBuilder).append(getBoolean(index));
-  }
-
-  @Override
-  public void addToHasher(final int row, final Hasher hasher) {
-    hasher.putBoolean(getBoolean(row));
   }
 
   @Override

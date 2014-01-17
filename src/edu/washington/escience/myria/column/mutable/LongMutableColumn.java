@@ -1,22 +1,9 @@
 package edu.washington.escience.myria.column.mutable;
 
-import java.nio.ByteBuffer;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-
-import com.almworks.sqlite4java.SQLiteException;
-import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
-import com.google.common.hash.Hasher;
-import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.LongColumn;
-import edu.washington.escience.myria.column.builder.ColumnBuilder;
-import edu.washington.escience.myria.column.builder.LongColumnBuilder;
-import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
-import edu.washington.escience.myria.proto.DataProto.LongColumnMessage;
-import edu.washington.escience.myria.util.ImmutableIntArray;
 
 /**
  * A mutable column of Long values.
@@ -47,17 +34,6 @@ public final class LongMutableColumn extends MutableColumn<Long> {
   }
 
   @Override
-  public void getIntoJdbc(final int row, final PreparedStatement statement, final int jdbcIndex) throws SQLException {
-    statement.setLong(jdbcIndex, getLong(row));
-  }
-
-  @Override
-  public void getIntoSQLite(final int row, final SQLiteStatement statement, final int sqliteIndex)
-      throws SQLiteException {
-    statement.bind(sqliteIndex, getLong(row));
-  }
-
-  @Override
   public long getLong(final int row) {
     Preconditions.checkElementIndex(row, position);
     return data[row];
@@ -66,32 +42,6 @@ public final class LongMutableColumn extends MutableColumn<Long> {
   @Override
   public Type getType() {
     return Type.LONG_TYPE;
-  }
-
-  @Override
-  public ColumnMessage serializeToProto() {
-    ByteBuffer dataBytes = ByteBuffer.allocate(position * Long.SIZE / Byte.SIZE);
-    for (int i = 0; i < position; i++) {
-      dataBytes.putLong(data[i]);
-    }
-
-    dataBytes.flip();
-    final LongColumnMessage.Builder inner = LongColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
-
-    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.LONG).setLongColumn(inner).build();
-  }
-
-  @Override
-  public ColumnMessage serializeToProto(final ImmutableIntArray validIndices) {
-    ByteBuffer dataBytes = ByteBuffer.allocate(validIndices.length() * Long.SIZE / Byte.SIZE);
-    for (int i : validIndices) {
-      dataBytes.putLong(data[i]);
-    }
-
-    dataBytes.flip();
-    final LongColumnMessage.Builder inner = LongColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
-
-    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.LONG).setLongColumn(inner).build();
   }
 
   @Override
@@ -111,21 +61,6 @@ public final class LongMutableColumn extends MutableColumn<Long> {
     }
     sb.append(']');
     return sb.toString();
-  }
-
-  @Override
-  public boolean equals(final int leftIdx, final MutableColumn<?> rightColumn, final int rightIdx) {
-    return getLong(leftIdx) == ((LongMutableColumn) rightColumn).getLong(rightIdx);
-  }
-
-  @Override
-  public void append(final int index, final ColumnBuilder<?> columnBuilder) {
-    ((LongColumnBuilder) columnBuilder).append(getLong(index));
-  }
-
-  @Override
-  public void addToHasher(final int row, final Hasher hasher) {
-    hasher.putLong(getLong(row));
   }
 
   @Override
