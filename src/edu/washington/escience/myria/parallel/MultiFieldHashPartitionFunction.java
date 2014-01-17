@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.parallel;
 
+import java.util.Objects;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -20,6 +22,7 @@ public final class MultiFieldHashPartitionFunction extends PartitionFunction {
   private static final long serialVersionUID = 1L;
 
   /** The indices used for partitioning. */
+  @JsonProperty
   private final int[] fieldIndexes;
 
   /**
@@ -30,6 +33,7 @@ public final class MultiFieldHashPartitionFunction extends PartitionFunction {
   public MultiFieldHashPartitionFunction(@Nullable @JsonProperty("num_partitions") final Integer numPartition,
       @JsonProperty(value = "field_indexes", required = true) final Integer[] fieldIndexes) {
     super(numPartition);
+    Objects.requireNonNull(fieldIndexes, "fieldIndexes");
     Preconditions.checkArgument(fieldIndexes.length > 1, "MultiFieldHash requires at least 2 fields to hash");
     this.fieldIndexes = new int[fieldIndexes.length];
     for (int i = 0; i < fieldIndexes.length; ++i) {
@@ -51,6 +55,13 @@ public final class MultiFieldHashPartitionFunction extends PartitionFunction {
       int index = fieldIndexes[i];
       Preconditions.checkArgument(index >= 0, "MultiFieldHash field index %s cannot take negative value %s", i, index);
     }
+  }
+
+  /**
+   * @return the field indexes on which tuples will be hash partitioned.
+   */
+  public int[] getFieldIndexes() {
+    return fieldIndexes;
   }
 
   @Override

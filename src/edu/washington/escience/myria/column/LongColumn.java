@@ -15,6 +15,7 @@ import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.LongColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.LongColumnMessage;
+import edu.washington.escience.myria.util.ImmutableIntArray;
 
 /**
  * A column of Long values.
@@ -22,10 +23,8 @@ import edu.washington.escience.myria.proto.DataProto.LongColumnMessage;
  * @author dhalperi
  * 
  */
-public final class LongColumn implements Column<Long> {
-  /**
-   * 
-   */
+public final class LongColumn extends Column<Long> {
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** Internal representation of the column data. */
   private final long[] data;
@@ -44,7 +43,7 @@ public final class LongColumn implements Column<Long> {
   }
 
   @Override
-  public Long get(final int row) {
+  public Long getObject(final int row) {
     return Long.valueOf(getLong(row));
   }
 
@@ -59,12 +58,7 @@ public final class LongColumn implements Column<Long> {
     statement.bind(sqliteIndex, getLong(row));
   }
 
-  /**
-   * Returns the element at the specified row in this column.
-   * 
-   * @param row row of element to return.
-   * @return the element at the specified row in this column.
-   */
+  @Override
   public long getLong(final int row) {
     Preconditions.checkElementIndex(row, position);
     return data[row];
@@ -79,6 +73,19 @@ public final class LongColumn implements Column<Long> {
   public ColumnMessage serializeToProto() {
     ByteBuffer dataBytes = ByteBuffer.allocate(position * Long.SIZE / Byte.SIZE);
     for (int i = 0; i < position; i++) {
+      dataBytes.putLong(data[i]);
+    }
+
+    dataBytes.flip();
+    final LongColumnMessage.Builder inner = LongColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
+
+    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.LONG).setLongColumn(inner).build();
+  }
+
+  @Override
+  public ColumnMessage serializeToProto(final ImmutableIntArray validIndices) {
+    ByteBuffer dataBytes = ByteBuffer.allocate(validIndices.length() * Long.SIZE / Byte.SIZE);
+    for (int i : validIndices) {
       dataBytes.putLong(data[i]);
     }
 
@@ -109,7 +116,7 @@ public final class LongColumn implements Column<Long> {
 
   @Override
   public boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
-    return getLong(leftIdx) == ((LongColumn) rightColumn).getLong(rightIdx);
+    return getLong(leftIdx) == rightColumn.getLong(rightIdx);
   }
 
   @Override

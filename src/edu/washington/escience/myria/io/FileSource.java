@@ -3,6 +3,7 @@ package edu.washington.escience.myria.io;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -11,7 +12,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /**
  * A data source that pulls data from local file.
  */
-public class FileSource implements DataSource {
+public class FileSource implements DataSource, Serializable {
+  /** Required for Java serialization. */
+  private static final long serialVersionUID = 1L;
   /** The filename. */
   @JsonProperty
   private final String filename;

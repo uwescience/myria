@@ -5,6 +5,7 @@ import java.io.Serializable;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -35,6 +36,7 @@ public abstract class PartitionFunction implements Serializable {
   /**
    * The number of partitions into which input tuples can be divided.
    */
+  @JsonProperty
   private int numPartitions = INVALID_NUM_PARTITIONS;
 
   /**
