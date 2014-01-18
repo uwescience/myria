@@ -131,7 +131,7 @@ public final class InMemoryOrderBy extends UnaryOperator {
   class TupleComparator implements Comparator<Integer> {
     @Override
     public int compare(final Integer rowIdx, final Integer otherRowIdx) {
-      for (int columnIdx = 0; columnIdx < sortColumns.length; columnIdx++) {
+      for (int columnIdx : sortColumns) {
         int compared = 0;
         switch (getSchema().getColumnType(columnIdx)) {
           case INT_TYPE:
