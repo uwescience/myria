@@ -291,7 +291,9 @@ public final class DatasetResource {
 
     DatasetStatus status = null;
     try {
-      status = server.ingestDataset(dataset.relationKey, dataset.workers, source);
+      status =
+          server.ingestDataset(dataset.relationKey, dataset.workers, source, dataset.partitionFunction,
+              dataset.hashIndices);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
     }
@@ -379,7 +381,7 @@ public final class DatasetResource {
     /* Do the work. */
     try {
       server.ingestDataset(dataset.relationKey, dataset.workers, new TipsyFileScan(dataset.tipsyFilename,
-          dataset.iorderFilename, dataset.grpFilename));
+          dataset.iorderFilename, dataset.grpFilename), null, null);
     } catch (InterruptedException ee) {
       Thread.currentThread().interrupt();
       ee.printStackTrace();

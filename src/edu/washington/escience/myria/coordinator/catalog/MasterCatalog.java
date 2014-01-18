@@ -113,6 +113,16 @@ public final class MasterCatalog {
     + "    stored_relation_id INTEGER NOT NULL REFERENCES stored_relations,\n"
     + "    shard_index INTEGER NOT NULL,\n"
     + "    worker_id INTEGER NOT NULL REFERENCES workers);";
+  /** Create the table for consistent hashing ring. */
+  private static final String CREATE_CONSISTENT_HASHING_RING =
+      "CREATE TABLE consistent_hashing_interval (\n" 
+    + "   worker_id INTEGER,\n"
+    + "   relation_id INTEGER,\n"
+    + "   start_interval INTEGER,\n"
+    + "   end_interval INTEGER,\n"
+    + "   FOREIGN KEY (worker_id) REFERENCES workers(worker_id),\n"
+    + "   FOREIGN KEY (relation_id) REFERENCES stored_relations(stored_relation_id)\n"
+    + ");";
 /** CREATE TABLE statements @formatter:on */
 
   /**
@@ -179,6 +189,7 @@ public final class MasterCatalog {
             sqliteConnection.exec(CREATE_RELATION_SCHEMA);
             sqliteConnection.exec(CREATE_STORED_RELATIONS);
             sqliteConnection.exec(CREATE_SHARDS);
+            sqliteConnection.exec(CREATE_CONSISTENT_HASHING_RING);
             sqliteConnection.exec("END TRANSACTION");
           } catch (final SQLiteException e) {
             sqliteConnection.exec("ROLLBACK TRANSACTION");

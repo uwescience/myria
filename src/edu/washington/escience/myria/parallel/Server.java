@@ -1093,12 +1093,15 @@ public final class Server {
    * @param relationKey the name of the dataset.
    * @param workersToIngest restrict the workers to ingest data (null for all)
    * @param source the source of tuples to be ingested.
+   * @param partitionFunctionName the partition function name to be used for ingest
+   * @param partitionFields the fields to hash on if using single/multiFieldHash (null is safe for RoundRobin)
    * @return the status of the ingested dataset.
    * @throws InterruptedException interrupted
    * @throws DbException if there is an error
    */
   public DatasetStatus ingestDataset(final RelationKey relationKey, final Set<Integer> workersToIngest,
-      final Operator source) throws InterruptedException, DbException {
+      final Operator source, final String partitionFunctionName, final List<Integer> partitionFields)
+      throws InterruptedException, DbException {
     /* Figure out the workers we will use. If workersToIngest is null, use all active workers. */
     Set<Integer> actualWorkers = workersToIngest;
     if (workersToIngest == null) {
@@ -1109,8 +1112,8 @@ public final class Server {
     /* The master plan: send the tuples out. */
     ExchangePairID scatterId = ExchangePairID.newID();
     GenericShuffleProducer scatter =
-        new GenericShuffleProducer(source, scatterId, workersArray,
-            new RoundRobinPartitionFunction(workersArray.length));
+        new GenericShuffleProducer(source, scatterId, workersArray, generatePartitionFunction(partitionFunctionName,
+            workersArray.length, partitionFields));
 
     /* The workers' plan */
     GenericShuffleConsumer gather =
@@ -1135,6 +1138,30 @@ public final class Server {
     } catch (CatalogException e) {
       throw new DbException(e);
     }
+  }
+
+  /**
+   * Helper method for returning a partition function to the caller. Supports RoundRobin, SingleFieldHash,
+   * MultiFieldHash. If the string is an invalid partition function name, this method will return RoundRobin as the
+   * default partition function.
+   * 
+   * @param partitionFunctionName the name of the partition function
+   * @param numWorkers number of workers
+   * @param partitionFields fields to be hashed on
+   * @return The partition function.
+   */
+  private PartitionFunction generatePartitionFunction(final String partitionFunctionName, final int numWorkers,
+      final List<Integer> partitionFields) {
+    System.out.println(partitionFields);
+    if (partitionFunctionName != null) {
+      if (partitionFunctionName.toLowerCase().equals("singlefieldhash")) {
+        return new SingleFieldHashPartitionFunction(numWorkers, partitionFields.get(0));
+      } else if (partitionFunctionName.toLowerCase().equals("multifieldhash")) {
+        Integer[] fieldIndexesArray = partitionFields.toArray(new Integer[partitionFields.size()]);
+        return new MultiFieldHashPartitionFunction(numWorkers, fieldIndexesArray);
+      }
+    }
+    return new RoundRobinPartitionFunction(numWorkers);
   }
 
   /**
