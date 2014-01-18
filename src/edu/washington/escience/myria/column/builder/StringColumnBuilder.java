@@ -11,6 +11,7 @@ import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.StringArrayColumn;
 import edu.washington.escience.myria.column.StringColumn;
 import edu.washington.escience.myria.column.mutable.StringMutableColumn;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
@@ -120,7 +121,7 @@ public final class StringColumnBuilder implements ColumnBuilder<String> {
   @Override
   public StringColumn build() {
     built = true;
-    return new StringColumn(data, numStrings);
+    return new StringArrayColumn(data, numStrings);
   }
 
   @Override

@@ -342,11 +342,15 @@ public final class DeploymentUtils {
    */
   private static void startAProcess(final String cmd) {
     LOGGER.debug(cmd);
+    int ret;
     try {
-      new ProcessBuilder().inheritIO().command(cmd.split(" ")).start().waitFor();
+      ret = new ProcessBuilder().inheritIO().command(cmd.split(" ")).start().waitFor();
     } catch (IOException | InterruptedException e) {
       e.printStackTrace();
       throw new RuntimeException(e);
+    }
+    if (ret != 0) {
+      throw new RuntimeException("Error " + ret + " executing command: " + cmd);
     }
   }
 

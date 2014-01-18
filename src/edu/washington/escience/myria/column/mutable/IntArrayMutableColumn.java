@@ -1,13 +1,8 @@
 package edu.washington.escience.myria.column.mutable;
 
-import java.nio.ByteBuffer;
-
 import com.google.common.base.Preconditions;
-import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myria.column.IntArrayColumn;
-import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
-import edu.washington.escience.myria.proto.DataProto.IntColumnMessage;
 
 /**
  * A mutable column of Int values.
@@ -35,7 +30,7 @@ public final class IntArrayMutableColumn extends IntMutableColumn {
   }
 
   @Override
-  public Integer get(final int row) {
+  public Integer getObject(final int row) {
     return Integer.valueOf(getInt(row));
   }
 
@@ -43,20 +38,6 @@ public final class IntArrayMutableColumn extends IntMutableColumn {
   public int getInt(final int row) {
     Preconditions.checkElementIndex(row, position);
     return data[row];
-  }
-
-  @Override
-  public ColumnMessage serializeToProto() {
-
-    ByteBuffer dataBytes = ByteBuffer.allocate(position * Integer.SIZE / Byte.SIZE);
-    for (int i = 0; i < position; i++) {
-      dataBytes.putInt(data[i]);
-    }
-
-    dataBytes.flip();
-    final IntColumnMessage.Builder inner = IntColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
-
-    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.INT).setIntColumn(inner).build();
   }
 
   @Override

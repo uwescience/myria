@@ -57,8 +57,8 @@ public class MultipleIDBTest extends SystemTestBase {
       List<Column<?>> output = iter1.next();
       int numRow = output.get(0).size();
       for (int i = 0; i < numRow; i++) {
-        int fr = Integer.parseInt(output.get(0).get(i).toString());
-        int fe = Integer.parseInt(output.get(1).get(i).toString());
+        int fr = Integer.parseInt(output.get(0).getObject(i).toString());
+        int fe = Integer.parseInt(output.get(1).getObject(i).toString());
         s[fr][fe] = true;
       }
     }
@@ -68,8 +68,8 @@ public class MultipleIDBTest extends SystemTestBase {
       List<Column<?>> output = iter2.next();
       int numRow = output.get(0).size();
       for (int i = 0; i < numRow; i++) {
-        int fr = Integer.parseInt(output.get(0).get(i).toString());
-        int fe = Integer.parseInt(output.get(1).get(i).toString());
+        int fr = Integer.parseInt(output.get(0).getObject(i).toString());
+        int fe = Integer.parseInt(output.get(1).getObject(i).toString());
         r[fr][fe] = true;
       }
     }
@@ -351,8 +351,8 @@ public class MultipleIDBTest extends SystemTestBase {
       List<Column<?>> output = iter1.next();
       int numRow = output.get(0).size();
       for (int i = 0; i < numRow; i++) {
-        int fr = Integer.parseInt(output.get(0).get(i).toString());
-        int fe = Integer.parseInt(output.get(1).get(i).toString());
+        int fr = Integer.parseInt(output.get(0).getObject(i).toString());
+        int fe = Integer.parseInt(output.get(1).getObject(i).toString());
         s1[fr][fe] = true;
       }
     }
@@ -362,8 +362,8 @@ public class MultipleIDBTest extends SystemTestBase {
       List<Column<?>> output = iter2.next();
       int numRow = output.get(0).size();
       for (int i = 0; i < numRow; i++) {
-        int fr = Integer.parseInt(output.get(0).get(i).toString());
-        int fe = Integer.parseInt(output.get(1).get(i).toString());
+        int fr = Integer.parseInt(output.get(0).getObject(i).toString());
+        int fe = Integer.parseInt(output.get(1).getObject(i).toString());
         s2[fr][fe] = true;
       }
     }
@@ -373,8 +373,8 @@ public class MultipleIDBTest extends SystemTestBase {
       List<Column<?>> output = iter3.next();
       int numRow = output.get(0).size();
       for (int i = 0; i < numRow; i++) {
-        int fr = Integer.parseInt(output.get(0).get(i).toString());
-        int fe = Integer.parseInt(output.get(1).get(i).toString());
+        int fr = Integer.parseInt(output.get(0).getObject(i).toString());
+        int fe = Integer.parseInt(output.get(1).getObject(i).toString());
         s3[fr][fe] = true;
       }
     }

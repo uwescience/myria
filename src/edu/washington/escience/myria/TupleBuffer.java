@@ -9,14 +9,7 @@ import org.joda.time.DateTime;
 
 import com.google.common.base.Preconditions;
 
-import edu.washington.escience.myria.column.BooleanColumn;
 import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.column.DateTimeColumn;
-import edu.washington.escience.myria.column.DoubleColumn;
-import edu.washington.escience.myria.column.FloatColumn;
-import edu.washington.escience.myria.column.IntColumn;
-import edu.washington.escience.myria.column.LongColumn;
-import edu.washington.escience.myria.column.StringColumn;
 import edu.washington.escience.myria.column.builder.BooleanColumnBuilder;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.ColumnFactory;
@@ -126,7 +119,7 @@ public class TupleBuffer implements Cloneable {
       throw new IndexOutOfBoundsException();
     }
     if (tupleBatchIndex < readyTuples.size()) {
-      return readyTuples.get(tupleBatchIndex)[colIndex].get(tupleIndex);
+      return readyTuples.get(tupleBatchIndex)[colIndex].getObject(tupleIndex);
     }
     return currentBuildingColumns[colIndex].get(tupleIndex);
   }
@@ -445,25 +438,25 @@ public class TupleBuffer implements Cloneable {
     ColumnBuilder<?> dest = currentBuildingColumns[destColumn];
     switch (dest.getType()) {
       case BOOLEAN_TYPE:
-        ((BooleanColumnBuilder) dest).append(((BooleanColumn) sourceColumn).getBoolean(sourceRow));
+        ((BooleanColumnBuilder) dest).append(sourceColumn.getBoolean(sourceRow));
         break;
       case DATETIME_TYPE:
-        ((DateTimeColumnBuilder) dest).append(((DateTimeColumn) sourceColumn).getDateTime(sourceRow));
+        ((DateTimeColumnBuilder) dest).append(sourceColumn.getDateTime(sourceRow));
         break;
       case DOUBLE_TYPE:
-        ((DoubleColumnBuilder) dest).append(((DoubleColumn) sourceColumn).getDouble(sourceRow));
+        ((DoubleColumnBuilder) dest).append(sourceColumn.getDouble(sourceRow));
         break;
       case FLOAT_TYPE:
-        ((FloatColumnBuilder) dest).append(((FloatColumn) sourceColumn).getFloat(sourceRow));
+        ((FloatColumnBuilder) dest).append(sourceColumn.getFloat(sourceRow));
         break;
       case INT_TYPE:
-        ((IntColumnBuilder) dest).append(((IntColumn) sourceColumn).getInt(sourceRow));
+        ((IntColumnBuilder) dest).append(sourceColumn.getInt(sourceRow));
         break;
       case LONG_TYPE:
-        ((LongColumnBuilder) dest).append(((LongColumn) sourceColumn).getLong(sourceRow));
+        ((LongColumnBuilder) dest).append(sourceColumn.getLong(sourceRow));
         break;
       case STRING_TYPE:
-        ((StringColumnBuilder) dest).append(((StringColumn) sourceColumn).getString(sourceRow));
+        ((StringColumnBuilder) dest).append(sourceColumn.getString(sourceRow));
         break;
     }
     columnPut(destColumn);
@@ -726,50 +719,50 @@ public class TupleBuffer implements Cloneable {
       MutableColumn<?> dest = readyTuples.get(tupleBatchIndex)[destColumn];
       switch (dest.getType()) {
         case BOOLEAN_TYPE:
-          ((BooleanMutableColumn) dest).replace(tupleIndex, ((BooleanColumn) sourceColumn).getBoolean(sourceRow));
+          ((BooleanMutableColumn) dest).replace(tupleIndex, sourceColumn.getBoolean(sourceRow));
           break;
         case DATETIME_TYPE:
-          ((DateTimeMutableColumn) dest).replace(tupleIndex, ((DateTimeColumn) sourceColumn).getDateTime(sourceRow));
+          ((DateTimeMutableColumn) dest).replace(tupleIndex, sourceColumn.getDateTime(sourceRow));
           break;
         case DOUBLE_TYPE:
-          ((DoubleMutableColumn) dest).replace(tupleIndex, ((DoubleColumn) sourceColumn).getDouble(sourceRow));
+          ((DoubleMutableColumn) dest).replace(tupleIndex, sourceColumn.getDouble(sourceRow));
           break;
         case FLOAT_TYPE:
-          ((FloatMutableColumn) dest).replace(tupleIndex, ((FloatColumn) sourceColumn).getFloat(sourceRow));
+          ((FloatMutableColumn) dest).replace(tupleIndex, sourceColumn.getFloat(sourceRow));
           break;
         case INT_TYPE:
-          ((IntArrayMutableColumn) dest).replace(tupleIndex, ((IntColumn) sourceColumn).getInt(sourceRow));
+          ((IntArrayMutableColumn) dest).replace(tupleIndex, sourceColumn.getInt(sourceRow));
           break;
         case LONG_TYPE:
-          ((LongMutableColumn) dest).replace(tupleIndex, ((LongColumn) sourceColumn).getLong(sourceRow));
+          ((LongMutableColumn) dest).replace(tupleIndex, sourceColumn.getLong(sourceRow));
           break;
         case STRING_TYPE:
-          ((StringMutableColumn) dest).replace(tupleIndex, ((StringColumn) sourceColumn).getString(sourceRow));
+          ((StringMutableColumn) dest).replace(tupleIndex, sourceColumn.getString(sourceRow));
           break;
       }
     } else {
       ColumnBuilder<?> dest = currentBuildingColumns[destColumn];
       switch (dest.getType()) {
         case BOOLEAN_TYPE:
-          ((BooleanColumnBuilder) dest).replace(tupleIndex, ((BooleanColumn) sourceColumn).getBoolean(sourceRow));
+          ((BooleanColumnBuilder) dest).replace(tupleIndex, sourceColumn.getBoolean(sourceRow));
           break;
         case DATETIME_TYPE:
-          ((DateTimeColumnBuilder) dest).replace(tupleIndex, ((DateTimeColumn) sourceColumn).getDateTime(sourceRow));
+          ((DateTimeColumnBuilder) dest).replace(tupleIndex, sourceColumn.getDateTime(sourceRow));
           break;
         case DOUBLE_TYPE:
-          ((DoubleColumnBuilder) dest).replace(tupleIndex, ((DoubleColumn) sourceColumn).getDouble(sourceRow));
+          ((DoubleColumnBuilder) dest).replace(tupleIndex, sourceColumn.getDouble(sourceRow));
           break;
         case FLOAT_TYPE:
-          ((FloatColumnBuilder) dest).replace(tupleIndex, ((FloatColumn) sourceColumn).getFloat(sourceRow));
+          ((FloatColumnBuilder) dest).replace(tupleIndex, sourceColumn.getFloat(sourceRow));
           break;
         case INT_TYPE:
-          ((IntColumnBuilder) dest).replace(tupleIndex, ((IntColumn) sourceColumn).getInt(sourceRow));
+          ((IntColumnBuilder) dest).replace(tupleIndex, sourceColumn.getInt(sourceRow));
           break;
         case LONG_TYPE:
-          ((LongColumnBuilder) dest).replace(tupleIndex, ((LongColumn) sourceColumn).getLong(sourceRow));
+          ((LongColumnBuilder) dest).replace(tupleIndex, sourceColumn.getLong(sourceRow));
           break;
         case STRING_TYPE:
-          ((StringColumnBuilder) dest).replace(tupleIndex, ((StringColumn) sourceColumn).getString(sourceRow));
+          ((StringColumnBuilder) dest).replace(tupleIndex, sourceColumn.getString(sourceRow));
           break;
       }
     }

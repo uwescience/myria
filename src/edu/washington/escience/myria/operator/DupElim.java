@@ -77,16 +77,15 @@ public final class DupElim extends StreamingState {
         tupleIndexList.forEach(checkUniqueness);
       }
       if (checkUniqueness.unique) {
-        int inColumnRow = tb.getValidIndices().get(i);
         for (int j = 0; j < tb.numColumns(); ++j) {
-          uniqueTuples.put(j, columns.get(j), inColumnRow);
+          uniqueTuples.put(j, columns.get(j), i);
         }
         tupleIndexList.add(nextIndex);
       } else {
         toRemove.set(i);
       }
     }
-    return tb.remove(toRemove);
+    return tb.filterOut(toRemove);
   }
 
   @Override

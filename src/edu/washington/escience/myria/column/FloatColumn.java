@@ -16,17 +16,13 @@ import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.FloatColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.FloatColumnMessage;
+import edu.washington.escience.myria.util.ImmutableIntArray;
 
 /**
- * A column of Float values.
- * 
- * @author dhalperi
- * 
+ * A column of {@link Float} values.
  */
-public final class FloatColumn implements Column<Float> {
-  /**
-   * 
-   */
+public final class FloatColumn extends Column<Float> {
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** Internal representation of the column data. */
   private final float[] data;
@@ -47,7 +43,7 @@ public final class FloatColumn implements Column<Float> {
   }
 
   @Override
-  public Float get(final int row) {
+  public Float getObject(final int row) {
     return Float.valueOf(getFloat(row));
   }
 
@@ -68,6 +64,7 @@ public final class FloatColumn implements Column<Float> {
    * @param row row of element to return.
    * @return the element at the specified row in this column.
    */
+  @Override
   public float getFloat(final int row) {
     Preconditions.checkElementIndex(row, position);
     return data[row];
@@ -82,6 +79,18 @@ public final class FloatColumn implements Column<Float> {
   public ColumnMessage serializeToProto() {
     ByteBuffer dataBytes = ByteBuffer.allocate(position * Float.SIZE / Byte.SIZE);
     for (int i = 0; i < position; i++) {
+      dataBytes.putFloat(data[i]);
+    }
+    dataBytes.flip();
+    final FloatColumnMessage.Builder inner = FloatColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
+
+    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.FLOAT).setFloatColumn(inner).build();
+  }
+
+  @Override
+  public ColumnMessage serializeToProto(final ImmutableIntArray validIndices) {
+    ByteBuffer dataBytes = ByteBuffer.allocate(validIndices.length() * Float.SIZE / Byte.SIZE);
+    for (int i : validIndices) {
       dataBytes.putFloat(data[i]);
     }
     dataBytes.flip();
@@ -111,7 +120,7 @@ public final class FloatColumn implements Column<Float> {
 
   @Override
   public boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
-    return getFloat(leftIdx) == ((FloatColumn) rightColumn).getFloat(rightIdx);
+    return getFloat(leftIdx) == rightColumn.getFloat(rightIdx);
   }
 
   @Override
