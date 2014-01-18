@@ -66,7 +66,7 @@ public abstract class StringColumn extends Column<String> {
 
   @Override
   public final void append(final int index, final ColumnBuilder<?> columnBuilder) {
-    ((StringColumnBuilder) columnBuilder).append(getString(index));
+    ((StringColumnBuilder) columnBuilder).appendString(getString(index));
   }
 
   @Override

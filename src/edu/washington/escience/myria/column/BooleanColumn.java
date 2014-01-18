@@ -135,7 +135,7 @@ public final class BooleanColumn extends Column<Boolean> {
 
   @Override
   public void append(final int index, final ColumnBuilder<?> columnBuilder) {
-    ((BooleanColumnBuilder) columnBuilder).append(getBoolean(index));
+    ((BooleanColumnBuilder) columnBuilder).appendBoolean(getBoolean(index));
   }
 
   @Override

@@ -13,7 +13,6 @@ import com.google.protobuf.ByteString;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
-import edu.washington.escience.myria.column.builder.DoubleColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.DoubleColumnMessage;
 import edu.washington.escience.myria.util.ImmutableIntArray;
@@ -128,7 +127,7 @@ public final class DoubleColumn extends Column<Double> {
 
   @Override
   public void append(final int index, final ColumnBuilder<?> columnBuilder) {
-    ((DoubleColumnBuilder) columnBuilder).append(getDouble(index));
+    columnBuilder.appendDouble(getDouble(index));
   }
 
   @Override

@@ -31,6 +31,7 @@ public final class FloatMutableColumn extends MutableColumn<Float> {
     position = numData;
   }
 
+  @Deprecated
   @Override
   public Float getObject(final int row) {
     return Float.valueOf(getFloat(row));

@@ -31,6 +31,7 @@ public final class DoubleMutableColumn extends MutableColumn<Double> {
     position = numData;
   }
 
+  @Deprecated
   @Override
   public Double getObject(final int row) {
     return Double.valueOf(getDouble(row));

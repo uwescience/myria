@@ -131,7 +131,7 @@ public final class DateTimeColumn extends Column<DateTime> {
 
   @Override
   public void append(final int index, final ColumnBuilder<?> columnBuilder) {
-    ((DateTimeColumnBuilder) columnBuilder).append(getDateTime(index));
+    ((DateTimeColumnBuilder) columnBuilder).appendDateTime(getDateTime(index));
   }
 
   @Override

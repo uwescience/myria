@@ -16,7 +16,7 @@ public class FloatColumnTest {
   @Test
   public void testProto() {
     final FloatColumnBuilder original = new FloatColumnBuilder();
-    original.append(1.0f).append(2.0f).append(5.0f).append(11.0f);
+    original.appendFloat(1.0f).appendFloat(2.0f).appendFloat(5.0f).appendFloat(11.0f);
     FloatColumn column = original.build();
     final ColumnMessage serialized = column.serializeToProto();
     final FloatColumn deserialized = FloatColumnBuilder.buildFromProtobuf(serialized, original.size());
@@ -30,7 +30,7 @@ public class FloatColumnTest {
   public void testFull() {
     final FloatColumnBuilder builder = new FloatColumnBuilder();
     for (int i = 0; i < TupleBatch.BATCH_SIZE; i++) {
-      builder.append(i * 1.0f);
+      builder.appendFloat(i * 1.0f);
     }
     builder.build();
   }
@@ -39,9 +39,9 @@ public class FloatColumnTest {
   public void testOverflow() {
     final FloatColumnBuilder builder = new FloatColumnBuilder();
     for (int i = 0; i < TupleBatch.BATCH_SIZE; i++) {
-      builder.append(i * 1.0f);
+      builder.appendFloat(i * 1.0f);
     }
-    builder.append(0.0f);
+    builder.appendFloat(0.0f);
     builder.build();
   }
 

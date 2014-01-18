@@ -31,6 +31,7 @@ public final class DateTimeMutableColumn extends MutableColumn<DateTime> {
   }
 
   @Override
+  @Deprecated
   public DateTime getObject(final int row) {
     return getDateTime(row);
   }

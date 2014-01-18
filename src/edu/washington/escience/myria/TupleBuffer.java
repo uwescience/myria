@@ -23,7 +23,6 @@ import edu.washington.escience.myria.column.mutable.BooleanMutableColumn;
 import edu.washington.escience.myria.column.mutable.DateTimeMutableColumn;
 import edu.washington.escience.myria.column.mutable.DoubleMutableColumn;
 import edu.washington.escience.myria.column.mutable.FloatMutableColumn;
-import edu.washington.escience.myria.column.mutable.IntArrayMutableColumn;
 import edu.washington.escience.myria.column.mutable.IntMutableColumn;
 import edu.washington.escience.myria.column.mutable.LongMutableColumn;
 import edu.washington.escience.myria.column.mutable.MutableColumn;
@@ -31,7 +30,7 @@ import edu.washington.escience.myria.column.mutable.StringMutableColumn;
 
 /** A simplified TupleBatchBuffer which supports random access. Designed for hash tables to use. */
 
-public class TupleBuffer implements Cloneable {
+public class TupleBuffer implements ReadableTable, Cloneable {
   /** Format of the emitted tuples. */
   private final Schema schema;
   /** Convenience constant; must match schema.numColumns() and currentColumns.size(). */
@@ -90,16 +89,12 @@ public class TupleBuffer implements Cloneable {
     currentInProgressTuples = 0;
   }
 
-  /**
-   * @return the Schema of the tuples in this buffer.
-   */
+  @Override
   public final Schema getSchema() {
     return schema;
   }
 
-  /**
-   * @return the number of complete tuples stored in this TupleBuffer.
-   */
+  @Override
   public final int numTuples() {
     return readyTuples.size() * TupleBatch.BATCH_SIZE + currentInProgressTuples;
   }
@@ -121,14 +116,10 @@ public class TupleBuffer implements Cloneable {
     if (tupleBatchIndex < readyTuples.size()) {
       return readyTuples.get(tupleBatchIndex)[colIndex].getObject(tupleIndex);
     }
-    return currentBuildingColumns[colIndex].get(tupleIndex);
+    return currentBuildingColumns[colIndex].getObject(tupleIndex);
   }
 
-  /**
-   * @param column the column of the desired value.
-   * @param row the row of the desired value.
-   * @return the value in the specified column and row.
-   */
+  @Override
   public final boolean getBoolean(final int column, final int row) {
     int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
     int tupleIndex = row % TupleBatch.BATCH_SIZE;
@@ -139,14 +130,10 @@ public class TupleBuffer implements Cloneable {
     if (tupleBatchIndex < readyTuples.size()) {
       return ((BooleanMutableColumn) (readyTuples.get(tupleBatchIndex)[column])).getBoolean(tupleIndex);
     }
-    return ((BooleanColumnBuilder) (currentBuildingColumns[column])).getBoolean(tupleIndex);
+    return currentBuildingColumns[column].getBoolean(tupleIndex);
   }
 
-  /**
-   * @param column the column of the desired value.
-   * @param row the row of the desired value.
-   * @return the value in the specified column and row.
-   */
+  @Override
   public final double getDouble(final int column, final int row) {
     int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
     int tupleIndex = row % TupleBatch.BATCH_SIZE;
@@ -157,14 +144,10 @@ public class TupleBuffer implements Cloneable {
     if (tupleBatchIndex < readyTuples.size()) {
       return ((DoubleMutableColumn) (readyTuples.get(tupleBatchIndex)[column])).getDouble(tupleIndex);
     }
-    return ((DoubleColumnBuilder) (currentBuildingColumns[column])).getDouble(tupleIndex);
+    return currentBuildingColumns[column].getDouble(tupleIndex);
   }
 
-  /**
-   * @param column the column of the desired value.
-   * @param row the row of the desired value.
-   * @return the value in the specified column and row.
-   */
+  @Override
   public final float getFloat(final int column, final int row) {
     int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
     int tupleIndex = row % TupleBatch.BATCH_SIZE;
@@ -175,14 +158,10 @@ public class TupleBuffer implements Cloneable {
     if (tupleBatchIndex < readyTuples.size()) {
       return ((FloatMutableColumn) (readyTuples.get(tupleBatchIndex)[column])).getFloat(tupleIndex);
     }
-    return ((FloatColumnBuilder) (currentBuildingColumns[column])).getFloat(tupleIndex);
+    return currentBuildingColumns[column].getFloat(tupleIndex);
   }
 
-  /**
-   * @param column the column of the desired value.
-   * @param row the row of the desired value.
-   * @return the value in the specified column and row.
-   */
+  @Override
   public final long getLong(final int column, final int row) {
     int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
     int tupleIndex = row % TupleBatch.BATCH_SIZE;
@@ -193,14 +172,10 @@ public class TupleBuffer implements Cloneable {
     if (tupleBatchIndex < readyTuples.size()) {
       return ((LongMutableColumn) (readyTuples.get(tupleBatchIndex)[column])).getLong(tupleIndex);
     }
-    return ((LongColumnBuilder) (currentBuildingColumns[column])).getLong(tupleIndex);
+    return currentBuildingColumns[column].getLong(tupleIndex);
   }
 
-  /**
-   * @param column the column of the desired value.
-   * @param row the row of the desired value.
-   * @return the value in the specified column and row.
-   */
+  @Override
   public final int getInt(final int column, final int row) {
     int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
     int tupleIndex = row % TupleBatch.BATCH_SIZE;
@@ -211,14 +186,10 @@ public class TupleBuffer implements Cloneable {
     if (tupleBatchIndex < readyTuples.size()) {
       return ((IntMutableColumn) (readyTuples.get(tupleBatchIndex)[column])).getInt(tupleIndex);
     }
-    return ((IntColumnBuilder) (currentBuildingColumns[column])).getInt(tupleIndex);
+    return currentBuildingColumns[column].getInt(tupleIndex);
   }
 
-  /**
-   * @param column the column of the desired value.
-   * @param row the row of the desired value.
-   * @return the value in the specified column and row.
-   */
+  @Override
   public final String getString(final int column, final int row) {
     int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
     int tupleIndex = row % TupleBatch.BATCH_SIZE;
@@ -229,14 +200,10 @@ public class TupleBuffer implements Cloneable {
     if (tupleBatchIndex < readyTuples.size()) {
       return ((StringMutableColumn) (readyTuples.get(tupleBatchIndex)[column])).getString(tupleIndex);
     }
-    return ((StringColumnBuilder) (currentBuildingColumns[column])).get(tupleIndex);
+    return currentBuildingColumns[column].getString(tupleIndex);
   }
 
-  /**
-   * @param column the column of the desired value.
-   * @param row the row of the desired value.
-   * @return the value in the specified column and row.
-   */
+  @Override
   public final DateTime getDateTime(final int column, final int row) {
     int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
     int tupleIndex = row % TupleBatch.BATCH_SIZE;
@@ -247,7 +214,7 @@ public class TupleBuffer implements Cloneable {
     if (tupleBatchIndex < readyTuples.size()) {
       return ((DateTimeMutableColumn) (readyTuples.get(tupleBatchIndex)[column])).getDateTime(tupleIndex);
     }
-    return ((DateTimeColumnBuilder) (currentBuildingColumns[column])).get(tupleIndex);
+    return ((DateTimeColumnBuilder) (currentBuildingColumns[column])).getDateTime(tupleIndex);
   }
 
   /**
@@ -292,9 +259,7 @@ public class TupleBuffer implements Cloneable {
     return currentBuildingColumns;
   }
 
-  /**
-   * @return num columns.
-   * */
+  @Override
   public final int numColumns() {
     return numColumns;
   }
@@ -320,7 +285,7 @@ public class TupleBuffer implements Cloneable {
    */
   public final void putBoolean(final int column, final boolean value) {
     checkPutIndex(column);
-    ((BooleanColumnBuilder) currentBuildingColumns[column]).append(value);
+    ((BooleanColumnBuilder) currentBuildingColumns[column]).appendBoolean(value);
     columnPut(column);
   }
 
@@ -332,7 +297,7 @@ public class TupleBuffer implements Cloneable {
    */
   public final void putDateTime(final int column, final DateTime value) {
     checkPutIndex(column);
-    ((DateTimeColumnBuilder) currentBuildingColumns[column]).append(value);
+    ((DateTimeColumnBuilder) currentBuildingColumns[column]).appendDateTime(value);
     columnPut(column);
   }
 
@@ -344,7 +309,7 @@ public class TupleBuffer implements Cloneable {
    */
   public final void putDouble(final int column, final double value) {
     checkPutIndex(column);
-    ((DoubleColumnBuilder) currentBuildingColumns[column]).append(value);
+    ((DoubleColumnBuilder) currentBuildingColumns[column]).appendDouble(value);
     columnPut(column);
   }
 
@@ -356,7 +321,7 @@ public class TupleBuffer implements Cloneable {
    */
   public final void putFloat(final int column, final float value) {
     checkPutIndex(column);
-    ((FloatColumnBuilder) currentBuildingColumns[column]).append(value);
+    ((FloatColumnBuilder) currentBuildingColumns[column]).appendFloat(value);
     columnPut(column);
   }
 
@@ -368,7 +333,7 @@ public class TupleBuffer implements Cloneable {
    */
   public final void putInt(final int column, final int value) {
     checkPutIndex(column);
-    ((IntColumnBuilder) currentBuildingColumns[column]).append(value);
+    ((IntColumnBuilder) currentBuildingColumns[column]).appendInt(value);
     columnPut(column);
   }
 
@@ -380,7 +345,7 @@ public class TupleBuffer implements Cloneable {
    */
   public final void putLong(final int column, final long value) {
     checkPutIndex(column);
-    ((LongColumnBuilder) currentBuildingColumns[column]).append(value);
+    ((LongColumnBuilder) currentBuildingColumns[column]).appendLong(value);
     columnPut(column);
   }
 
@@ -392,7 +357,7 @@ public class TupleBuffer implements Cloneable {
    */
   public final void putString(final int column, final String value) {
     checkPutIndex(column);
-    ((StringColumnBuilder) currentBuildingColumns[column]).append(value);
+    ((StringColumnBuilder) currentBuildingColumns[column]).appendString(value);
     columnPut(column);
   }
 
@@ -438,25 +403,25 @@ public class TupleBuffer implements Cloneable {
     ColumnBuilder<?> dest = currentBuildingColumns[destColumn];
     switch (dest.getType()) {
       case BOOLEAN_TYPE:
-        ((BooleanColumnBuilder) dest).append(sourceColumn.getBoolean(sourceRow));
+        dest.appendBoolean(sourceColumn.getBoolean(sourceRow));
         break;
       case DATETIME_TYPE:
-        ((DateTimeColumnBuilder) dest).append(sourceColumn.getDateTime(sourceRow));
+        dest.appendDateTime(sourceColumn.getDateTime(sourceRow));
         break;
       case DOUBLE_TYPE:
-        ((DoubleColumnBuilder) dest).append(sourceColumn.getDouble(sourceRow));
+        dest.appendDouble(sourceColumn.getDouble(sourceRow));
         break;
       case FLOAT_TYPE:
-        ((FloatColumnBuilder) dest).append(sourceColumn.getFloat(sourceRow));
+        dest.appendFloat(sourceColumn.getFloat(sourceRow));
         break;
       case INT_TYPE:
-        ((IntColumnBuilder) dest).append(sourceColumn.getInt(sourceRow));
+        dest.appendInt(sourceColumn.getInt(sourceRow));
         break;
       case LONG_TYPE:
-        ((LongColumnBuilder) dest).append(sourceColumn.getLong(sourceRow));
+        dest.appendLong(sourceColumn.getLong(sourceRow));
         break;
       case STRING_TYPE:
-        ((StringColumnBuilder) dest).append(sourceColumn.getString(sourceRow));
+        dest.appendString(sourceColumn.getString(sourceRow));
         break;
     }
     columnPut(destColumn);
@@ -648,13 +613,13 @@ public class TupleBuffer implements Cloneable {
         if (tupleBatchIndex1 < readyTuples.size()) {
           v1 = col1.getString(tupleIndex1);
         } else {
-          v1 = builder.get(tupleIndex1);
+          v1 = builder.getString(tupleIndex1);
         }
         if (tupleBatchIndex2 < readyTuples.size()) {
           v2 = col2.getString(tupleIndex2);
           col2.replace(tupleIndex2, v1);
         } else {
-          v2 = builder.get(tupleIndex2);
+          v2 = builder.getString(tupleIndex2);
           builder.replace(tupleIndex2, v1);
         }
         if (tupleBatchIndex1 < readyTuples.size()) {
@@ -678,13 +643,13 @@ public class TupleBuffer implements Cloneable {
         if (tupleBatchIndex1 < readyTuples.size()) {
           v1 = col1.getDateTime(tupleIndex1);
         } else {
-          v1 = builder.get(tupleIndex1);
+          v1 = builder.getDateTime(tupleIndex1);
         }
         if (tupleBatchIndex2 < readyTuples.size()) {
           v2 = col2.getDateTime(tupleIndex2);
           col2.replace(tupleIndex2, v1);
         } else {
-          v2 = builder.get(tupleIndex2);
+          v2 = builder.getDateTime(tupleIndex2);
           builder.replace(tupleIndex2, v1);
         }
         if (tupleBatchIndex1 < readyTuples.size()) {
@@ -731,7 +696,7 @@ public class TupleBuffer implements Cloneable {
           ((FloatMutableColumn) dest).replace(tupleIndex, sourceColumn.getFloat(sourceRow));
           break;
         case INT_TYPE:
-          ((IntArrayMutableColumn) dest).replace(tupleIndex, sourceColumn.getInt(sourceRow));
+          ((IntMutableColumn) dest).replace(tupleIndex, sourceColumn.getInt(sourceRow));
           break;
         case LONG_TYPE:
           ((LongMutableColumn) dest).replace(tupleIndex, sourceColumn.getLong(sourceRow));
@@ -818,5 +783,20 @@ public class TupleBuffer implements Cloneable {
       ret.currentBuildingColumns[i] = currentBuildingColumns[i].forkNewBuilder();
     }
     return ret;
+  }
+
+  @Override
+  @Deprecated
+  public Object getObject(final int column, final int row) {
+    int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
+    int tupleIndex = row % TupleBatch.BATCH_SIZE;
+    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
+        && tupleIndex >= currentInProgressTuples) {
+      throw new IndexOutOfBoundsException();
+    }
+    if (tupleBatchIndex < readyTuples.size()) {
+      return readyTuples.get(tupleBatchIndex)[column].getObject(tupleIndex);
+    }
+    return currentBuildingColumns[column].getObject(tupleIndex);
   }
 }

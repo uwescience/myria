@@ -4,6 +4,7 @@ import java.io.Serializable;
 
 import org.joda.time.DateTime;
 
+import edu.washington.escience.myria.ReadableColumn;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 
@@ -13,107 +14,54 @@ import edu.washington.escience.myria.column.Column;
  * @param <T> type of the objects in this column.
  * 
  */
-public abstract class MutableColumn<T extends Comparable<?>> implements Cloneable, Serializable {
+public abstract class MutableColumn<T extends Comparable<?>> implements Cloneable, ReadableColumn, Serializable {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  /**
-   * Returns the boolean value at the specified row in this column.
-   * 
-   * @param row row of element to return.
-   * @return the element at the specified row in this column.
-   * @throws UnsupportedOperationException if this column does not support this type.
-   */
+  @Override
   public boolean getBoolean(final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }
 
-  /**
-   * Returns the {@link DateTime} value at the specified row in this column.
-   * 
-   * @param row row of element to return.
-   * @return the element at the specified row in this column.
-   * @throws UnsupportedOperationException if this column does not support this type.
-   */
+  @Override
   public DateTime getDateTime(final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }
 
-  /**
-   * Returns the double value at the specified row in this column.
-   * 
-   * @param row row of element to return.
-   * @return the element at the specified row in this column.
-   * @throws UnsupportedOperationException if this column does not support this type.
-   */
+  @Override
   public double getDouble(final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }
 
-  /**
-   * Returns the float value at the specified row in this column.
-   * 
-   * @param row row of element to return.
-   * @return the element at the specified row in this column.
-   * @throws UnsupportedOperationException if this column does not support this type.
-   */
+  @Override
   public float getFloat(final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }
 
-  /**
-   * Returns the int value at the specified row in this column.
-   * 
-   * @param row row of element to return.
-   * @return the element at the specified row in this column.
-   * @throws UnsupportedOperationException if this column does not support this type.
-   */
+  @Override
   public int getInt(final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }
 
-  /**
-   * Returns the long value at the specified row in this column.
-   * 
-   * @param row row of element to return.
-   * @return the element at the specified row in this column.
-   * @throws UnsupportedOperationException if this column does not support this type.
-   */
+  @Override
   public long getLong(final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }
 
-  /**
-   * Returns the element at the specified row in this column.
-   * 
-   * @param row row of element to return.
-   * @return the element at the specified row in this column.
-   */
   @Deprecated
+  @Override
   public abstract T getObject(int row);
 
-  /**
-   * Returns the {@link String} value at the specified row in this column.
-   * 
-   * @param row row of element to return.
-   * @return the element at the specified row in this column.
-   * @throws UnsupportedOperationException if this column does not support this type.
-   */
+  @Override
   public String getString(final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }
 
-  /**
-   * @return a Myria {@link Type} object explaining what type of data is in this column.
-   */
+  @Override
   public abstract Type getType();
 
-  /**
-   * Returns the number of elements in this column.
-   * 
-   * @return the number of elements in this column.
-   */
+  @Override
   public abstract int size();
 
   /**
@@ -131,11 +79,6 @@ public abstract class MutableColumn<T extends Comparable<?>> implements Cloneabl
    */
   public abstract Column<T> toColumn();
 
-  /**
-   * clone itself by copying data.
-   * 
-   * @return the clone
-   */
   @Override
   public abstract MutableColumn<T> clone();
 }

@@ -18,8 +18,8 @@ public class DateTimeColumnTest {
   @Test
   public void testProto() {
     final DateTimeColumnBuilder original = new DateTimeColumnBuilder();
-    original.append(DateTimeUtils.parse("2000-02-03")).append(DateTimeUtils.parse("2000-02-03")).append(
-        DateTimeUtils.parse("2000-02-03 12:35:24")).append(DateTimeUtils.parse("2010-03-04 05:06:07"));
+    original.appendDateTime(DateTimeUtils.parse("2000-02-03")).appendDateTime(DateTimeUtils.parse("2000-02-03")).appendDateTime(
+        DateTimeUtils.parse("2000-02-03 12:35:24")).appendDateTime(DateTimeUtils.parse("2010-03-04 05:06:07"));
     final ColumnMessage serialized = original.build().serializeToProto();
     final DateTimeColumn deserialized = DateTimeColumnBuilder.buildFromProtobuf(serialized, original.size());
     assertTrue(original.build().toString().equals(deserialized.toString()));
@@ -29,7 +29,7 @@ public class DateTimeColumnTest {
   public void testFull() {
     final DateTimeColumnBuilder builder = new DateTimeColumnBuilder();
     for (int i = 0; i < TupleBatch.BATCH_SIZE; i++) {
-      builder.append(new DateTime());
+      builder.appendDateTime(new DateTime());
     }
     builder.build();
   }
@@ -38,9 +38,9 @@ public class DateTimeColumnTest {
   public void testOverflow() {
     final DateTimeColumnBuilder builder = new DateTimeColumnBuilder();
     for (int i = 0; i < TupleBatch.BATCH_SIZE; i++) {
-      builder.append(new DateTime());
+      builder.appendDateTime(new DateTime());
     }
-    builder.append(new DateTime());
+    builder.appendDateTime(new DateTime());
     builder.build();
   }
 

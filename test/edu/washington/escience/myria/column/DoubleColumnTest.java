@@ -7,7 +7,6 @@ import java.nio.BufferOverflowException;
 import org.junit.Test;
 
 import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.column.DoubleColumn;
 import edu.washington.escience.myria.column.builder.DoubleColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 
@@ -16,7 +15,7 @@ public class DoubleColumnTest {
   @Test
   public void testProto() {
     final DoubleColumnBuilder original = new DoubleColumnBuilder();
-    original.append(1).append(2).append(5).append(11);
+    original.appendDouble(1).appendDouble(2).appendDouble(5).appendDouble(11);
     final ColumnMessage serialized = original.build().serializeToProto();
     final DoubleColumn deserialized = DoubleColumnBuilder.buildFromProtobuf(serialized, original.size());
     assertTrue(original.build().toString().equals(deserialized.toString()));
@@ -26,7 +25,7 @@ public class DoubleColumnTest {
   public void testFull() {
     final DoubleColumnBuilder builder = new DoubleColumnBuilder();
     for (int i = 0; i < TupleBatch.BATCH_SIZE; i++) {
-      builder.append(i * 1.0);
+      builder.appendDouble(i * 1.0);
     }
     builder.build();
   }
@@ -35,9 +34,9 @@ public class DoubleColumnTest {
   public void testOverflow() {
     final DoubleColumnBuilder builder = new DoubleColumnBuilder();
     for (int i = 0; i < TupleBatch.BATCH_SIZE; i++) {
-      builder.append(i * 1.0);
+      builder.appendDouble(i * 1.0);
     }
-    builder.append(0.0);
+    builder.appendDouble(0.0);
     builder.build();
   }
 

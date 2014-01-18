@@ -429,8 +429,8 @@ public class TupleBatch implements ReadableTable, Serializable {
    * @param compareColumns2 the comparing list of columns of hashTable
    * @return true if equals.
    */
-  public boolean tupleEquals(final int row, final TupleBuffer hashTable, final int index, final int[] compareColumns1,
-      final int[] compareColumns2) {
+  public boolean tupleEquals(final int row, final ReadableTable hashTable, final int index,
+      final int[] compareColumns1, final int[] compareColumns2) {
     if (compareColumns1.length != compareColumns2.length) {
       return false;
     }
@@ -485,7 +485,7 @@ public class TupleBatch implements ReadableTable, Serializable {
    * @param compareColumns the columns of the tuple which will compare
    * @return true if equals
    */
-  public boolean tupleEquals(final int row, final TupleBuffer hashTable, final int index, final int[] compareColumns) {
+  public boolean tupleEquals(final int row, final ReadableTable hashTable, final int index, final int[] compareColumns) {
     if (compareColumns.length != hashTable.numColumns()) {
       return false;
     }
@@ -539,7 +539,7 @@ public class TupleBatch implements ReadableTable, Serializable {
    * @param index the index in the hashTable
    * @return true if equals
    */
-  public boolean tupleEquals(final int row, final TupleBuffer hashTable, final int index) {
+  public boolean tupleEquals(final int row, final ReadableTable hashTable, final int index) {
     if (numColumns() != hashTable.numColumns()) {
       return false;
     }
@@ -595,8 +595,8 @@ public class TupleBatch implements ReadableTable, Serializable {
    * @param otherRowIdx row in other tb
    * @return the result of compare
    */
-  public int cellCompare(final int columnIdx, final int rowIdx, final TupleBatch otherTb, final int otherColumnIndex,
-      final int otherRowIdx) {
+  public int cellCompare(final int columnIdx, final int rowIdx, final ReadableTable otherTb,
+      final int otherColumnIndex, final int otherRowIdx) {
     Type columnType = schema.getColumnType(columnIdx);
     switch (columnType) {
       case INT_TYPE:
@@ -637,7 +637,7 @@ public class TupleBatch implements ReadableTable, Serializable {
    * @return a negative integer, zero, or a positive integer as the first argument is less than, equal to, or greater
    *         than the second
    */
-  public int tupleCompare(final int[] columnCompareIndexes, final int rowIdx, final TupleBatch otherTb,
+  public int tupleCompare(final int[] columnCompareIndexes, final int rowIdx, final ReadableTable otherTb,
       final int[] otherCompareIndexes, final int otherRowIdx, final boolean[] ascending) {
     for (int i = 0; i < columnCompareIndexes.length; i++) {
       int compared = cellCompare(columnCompareIndexes[i], rowIdx, otherTb, otherCompareIndexes[i], otherRowIdx);
