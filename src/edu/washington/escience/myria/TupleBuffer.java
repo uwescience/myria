@@ -664,8 +664,6 @@ public class TupleBuffer implements Cloneable, Relation {
         }
         break;
       }
-      default:
-        break;
     }
   }
 
