@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.expression;
 
+import java.util.List;
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -56,6 +57,12 @@ public abstract class BinaryExpression extends ExpressionOperator {
     return right;
   }
 
+  @Override
+  public List<ExpressionOperator> getChildren() {
+    ImmutableList.Builder<ExpressionOperator> children = ImmutableList.builder();
+    return children.add(getLeft()).add(getRight()).build();
+  }
+
   /**
    * Returns the infix binary string: "(" + left + infix + right + ")". E.g, for {@link PlusExpression},
    * <code>infix</code> is <code>"+"</code>.
@@ -67,7 +74,7 @@ public abstract class BinaryExpression extends ExpressionOperator {
    */
   protected final String getInfixBinaryString(final String infix, final Schema schema, final Schema stateSchema) {
     return new StringBuilder("(").append(getLeft().getJavaString(schema, stateSchema)).append(infix).append(
-        getRight().getJavaString(schema, null)).append(')').toString();
+        getRight().getJavaString(schema, stateSchema)).append(')').toString();
   }
 
   /**

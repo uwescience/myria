@@ -8,12 +8,18 @@ import org.codehaus.commons.compiler.IScriptEvaluator;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.Relation;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
+import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.column.ConstantValueColumn;
+import edu.washington.escience.myria.column.builder.ColumnBuilder;
+import edu.washington.escience.myria.column.builder.ColumnFactory;
+import edu.washington.escience.myria.expression.ConstantExpression;
 import edu.washington.escience.myria.expression.Expression;
-import edu.washington.escience.myria.expression.StateVariableExpression;
+import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.StatefulApply;
@@ -70,43 +76,43 @@ public class GenericEvaluator extends TupleEvaluator {
    * @return the result from the evaluation
    * @throws InvocationTargetException exception thrown from janino
    */
-  public Object eval(final TupleBatch tb, final int rowId, final TupleBatch state) throws InvocationTargetException {
+  public Object eval(final TupleBatch tb, final int rowId, final Relation state) throws InvocationTargetException {
     Preconditions.checkArgument(evaluator != null,
         "Call compile first or copy the data if it is the same in the input.");
     return evaluator.evaluate(tb, rowId, state);
   }
 
   /**
-   * Runs {@link #eval(TupleBatch, int)} if necessary and puts the result in the target tuple buffer.
+   * Evaluate an expression over an entire TupleBatch and return the column of results. This method cannot take state
+   * into consideration.
    * 
-   * If evaluating is not necessary, the data is copied directly from the source tuple batch into the target buffer.
-   * 
-   * @param sourceTupleBatch the tuple buffer that should be used as input
-   * @param sourceRowIdx the row that should be used in the input batch
-   * @param targetTupleBuffer the tuple buffer that should be used as output
-   * @param targetColumnIdx the column that the data should be written to
-   * @param state additional state that affects the result
+   * @param tb the tuples to be input to this expression
+   * @return a column containing the result of evaluating this expression on the entire TupleBatch
    * @throws InvocationTargetException exception thrown from janino
    */
-  @SuppressWarnings("deprecation")
-  public void evalAndPut(final TupleBatch sourceTupleBatch, final int sourceRowIdx,
-      final TupleBatchBuffer targetTupleBuffer, final int targetColumnIdx, final TupleBatch state)
-      throws InvocationTargetException {
+  public Column<?> evaluateColumn(final TupleBatch tb) throws InvocationTargetException {
+    ExpressionOperator op = getExpression().getRootExpressionOperator();
+    /* This expression just copies an input column. */
     if (isCopyFromInput()) {
-      TupleBatch tb = sourceTupleBatch;
-      int row = sourceRowIdx;
-      if (getExpression().getRootExpressionOperator() instanceof StateVariableExpression) {
-        tb = state;
-        row = 0;
-      }
-      final Column<?> sourceColumn =
-          tb.getDataColumns().get(((VariableExpression) getExpression().getRootExpressionOperator()).getColumnIdx());
-      targetTupleBuffer.put(targetColumnIdx, sourceColumn, row);
-    } else {
-      Object result = eval(sourceTupleBatch, sourceRowIdx, state);
-      /** We already have an object, so we're not using the wrong version of put. Remove the warning. */
-      targetTupleBuffer.put(targetColumnIdx, result);
+      return tb.getDataColumns().get(((VariableExpression) op).getColumnIdx());
     }
 
+    Type type = getOutputType();
+
+    /* This expression is a constant. */
+    if (op instanceof ConstantExpression) {
+      ConstantExpression constOp = (ConstantExpression) op;
+      return new ConstantValueColumn(type.fromString(constOp.getValue()), type, tb.numTuples());
+    }
+    /*
+     * TODO for efficiency handle expressions that evaluate to a constant, e.g., they don't contain any
+     * VariableExpressions.
+     */
+
+    ColumnBuilder<?> ret = ColumnFactory.allocateColumn(type);
+    for (int row = 0; row < tb.numTuples(); ++row) {
+      ret.appendObject(eval(tb, row, null));
+    }
+    return ret.build();
   }
 }

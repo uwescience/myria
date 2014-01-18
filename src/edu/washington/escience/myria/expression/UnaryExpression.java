@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.expression;
 
+import java.util.List;
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -41,6 +42,12 @@ public abstract class UnaryExpression extends ExpressionOperator {
    */
   public final ExpressionOperator getOperand() {
     return operand;
+  }
+
+  @Override
+  public List<ExpressionOperator> getChildren() {
+    ImmutableList.Builder<ExpressionOperator> children = ImmutableList.builder();
+    return children.add(getOperand()).build();
   }
 
   /**

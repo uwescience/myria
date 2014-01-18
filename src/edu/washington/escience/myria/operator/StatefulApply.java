@@ -7,12 +7,16 @@ import java.util.List;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.Tuple;
 import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.column.builder.ColumnBuilder;
+import edu.washington.escience.myria.column.builder.ColumnFactory;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.evaluate.ConstantEvaluator;
 import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
@@ -37,7 +41,7 @@ public class StatefulApply extends Apply {
   /**
    * The states that are passed during execution.
    */
-  private TupleBatch state;
+  private Tuple state;
 
   /**
    * Evaluators that update the {@link #state}. One evaluator for each expression in {@link #updateExpressions}.
@@ -58,13 +62,13 @@ public class StatefulApply extends Apply {
   public StatefulApply(final Operator child, final List<Expression> emitExpression,
       final List<Expression> initializerExpressions, final List<Expression> updaterExpressions) {
     super(child, emitExpression);
-    // ToDo: make sure the init and update expressions have the same names
-    if (initializerExpressions != null) {
-      setInitExpressions(initializerExpressions);
+    Preconditions.checkArgument(initializerExpressions.size() == updaterExpressions.size());
+    for (int i = 0; i < initializerExpressions.size(); i++) {
+      Preconditions.checkArgument(updaterExpressions.get(i).getOutputName() == null
+          || initializerExpressions.get(i).getOutputName().equals(updaterExpressions.get(i).getOutputName()));
     }
-    if (updaterExpressions != null) {
-      setUpdateExpressions(updaterExpressions);
-    }
+    setInitExpressions(initializerExpressions);
+    setUpdateExpressions(updaterExpressions);
   }
 
   /**
@@ -79,6 +83,66 @@ public class StatefulApply extends Apply {
    */
   private void setUpdateExpressions(final List<Expression> updaterExpressions) {
     updateExpressions = ImmutableList.copyOf(updaterExpressions);
+  }
+
+  @Override
+  protected TupleBatch fetchNextReady() throws DbException, InvocationTargetException {
+    Operator child = getChild();
+
+    if (child.eoi() || getChild().eos()) {
+      return null;
+    }
+
+    TupleBatch tb = child.nextReady();
+    if (tb == null) {
+      return null;
+    }
+
+    final int numColumns = getSchema().numColumns();
+
+    List<Column<?>> output = Lists.newArrayListWithCapacity(numColumns);
+    for (int i = 0; i < numColumns; i++) {
+      output.add(null);
+    }
+    List<Integer> needState = Lists.newLinkedList();
+
+    // first, generate columns that do not require state. This can often be optimized.
+    for (int columnIdx = 0; columnIdx < numColumns; columnIdx++) {
+      final GenericEvaluator evaluator = getEmitEvaluators().get(columnIdx);
+      if (!evaluator.needsState() || evaluator.isCopyFromInput()) {
+        output.set(columnIdx, evaluator.evaluateColumn(tb));
+      } else {
+        needState.add(columnIdx);
+      }
+    }
+
+    // second, build and add the columns that require state
+    List<ColumnBuilder<?>> columnBuilders = Lists.newArrayListWithCapacity(needState.size());
+    for (int builderIdx = 0; builderIdx < needState.size(); builderIdx++) {
+      columnBuilders.add(ColumnFactory.allocateColumn(getEmitEvaluators().get(needState.get(builderIdx))
+          .getOutputType()));
+    }
+
+    for (int rowIdx = 0; rowIdx < tb.numTuples(); rowIdx++) {
+      // update state
+      Tuple newState = new Tuple(getStateSchema());
+      for (int columnIdx = 0; columnIdx < stateSchema.numColumns(); columnIdx++) {
+        newState.set(columnIdx, updateEvaluators.get(columnIdx).eval(tb, rowIdx, state));
+      }
+      state = newState;
+      // apply expression
+      for (int index = 0; index < needState.size(); index++) {
+        final GenericEvaluator evaluator = getEmitEvaluators().get(needState.get(index));
+        // TODO: optimize the case where the state is copied directly
+        columnBuilders.get(index).appendObject(evaluator.eval(tb, rowIdx, state));
+      }
+    }
+
+    for (int builderIdx = 0; builderIdx < needState.size(); builderIdx++) {
+      output.set(needState.get(builderIdx), columnBuilders.get(builderIdx).build());
+    }
+
+    return new TupleBatch(getSchema(), output);
   }
 
   @Override
@@ -100,26 +164,20 @@ public class StatefulApply extends Apply {
     }
     setEvaluators(evaluators);
 
-    setResultBuffer(new TupleBatchBuffer(getSchema()));
-
-    // states = new TupleBatch(stateSchema, null, 1);
-
     updateEvaluators = new ArrayList<>();
     updateEvaluators.ensureCapacity(updateExpressions.size());
 
-    TupleBatchBuffer tbb = new TupleBatchBuffer(getStateSchema());
+    state = new Tuple(getStateSchema());
 
     for (int columnIdx = 0; columnIdx < getStateSchema().numColumns(); columnIdx++) {
       Expression expr = initExpressions.get(columnIdx);
-      ConstantEvaluator evaluator = new ConstantEvaluator(expr, inputSchema, getStateSchema());
+      ConstantEvaluator evaluator = new ConstantEvaluator(expr, inputSchema, null);
       evaluator.compile();
-
       try {
-        tbb.put(columnIdx, evaluator.eval());
+        state.set(columnIdx, evaluator.eval());
       } catch (InvocationTargetException e) {
         throw new DbException(e);
       }
-      state = tbb.popAny();
     }
 
     for (Expression expr : updateExpressions) {
@@ -154,27 +212,5 @@ public class StatefulApply extends Apply {
     }
     stateSchema = new Schema(typesBuilder.build(), namesBuilder.build());
     return stateSchema;
-  }
-
-  @Override
-  protected void fillBuffer(final TupleBatch tb) throws DbException {
-    for (int rowIdx = 0; rowIdx < tb.numTuples(); rowIdx++) {
-      TupleBatchBuffer tbb = new TupleBatchBuffer(getStateSchema());
-      for (int columnIdx = 0; columnIdx < getStateSchema().numColumns(); columnIdx++) {
-        try {
-          tbb.put(columnIdx, updateEvaluators.get(columnIdx).eval(tb, rowIdx, state));
-        } catch (InvocationTargetException e) {
-          throw new DbException(e);
-        }
-      }
-      state = tbb.popAny();
-      for (int columnIdx = 0; columnIdx < getSchema().numColumns(); columnIdx++) {
-        try {
-          getEvaluator(columnIdx).evalAndPut(tb, rowIdx, getResultBuffer(), columnIdx, state);
-        } catch (InvocationTargetException e) {
-          throw new DbException(e);
-        }
-      }
-    }
   }
 }

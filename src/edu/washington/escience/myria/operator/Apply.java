@@ -7,12 +7,13 @@ import java.util.List;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
 import edu.washington.escience.myria.expression.evaluate.TupleEvaluator;
@@ -32,19 +33,7 @@ public class Apply extends UnaryOperator {
   /**
    * One evaluator for each expression in {@link #emitExpressions}.
    */
-  private ArrayList<GenericEvaluator> evaluators;
-
-  /**
-   * Buffers the output tuples.
-   */
-  private TupleBatchBuffer resultBuffer;
-
-  /**
-   * @return the resultBuffer
-   */
-  public TupleBatchBuffer getResultBuffer() {
-    return resultBuffer;
-  }
+  private ArrayList<GenericEvaluator> emitEvaluators;
 
   /**
    * @return the {@link #emitExpressions}
@@ -54,10 +43,10 @@ public class Apply extends UnaryOperator {
   }
 
   /**
-   * @return the evaluators
+   * @return the {@link #emitEvaluators}
    */
-  public ArrayList<GenericEvaluator> getEvaluators() {
-    return evaluators;
+  public ArrayList<GenericEvaluator> getEmitEvaluators() {
+    return emitEvaluators;
   }
 
   /**
@@ -80,59 +69,23 @@ public class Apply extends UnaryOperator {
   }
 
   @Override
-  protected TupleBatch fetchNextReady() throws DbException {
-    TupleBatch tb = null;
-    if (getChild().eoi() || getChild().eos()) {
-      return resultBuffer.popAny();
+  protected TupleBatch fetchNextReady() throws DbException, InvocationTargetException {
+    Operator child = getChild();
+
+    if (child.eoi() || getChild().eos()) {
+      return null;
     }
 
-    while ((tb = getChild().nextReady()) != null) {
-      fillBuffer(tb);
-      if (resultBuffer.hasFilledTB()) {
-        return resultBuffer.popFilled();
-      }
+    TupleBatch tb = child.nextReady();
+    if (tb == null) {
+      return null;
     }
-    if (getChild().eoi() || getChild().eos()) {
-      return resultBuffer.popAny();
-    } else {
-      return resultBuffer.popFilled();
+
+    List<Column<?>> output = Lists.newLinkedList();
+    for (GenericEvaluator evaluator : emitEvaluators) {
+      output.add(evaluator.evaluateColumn(tb));
     }
-  }
-
-  /**
-   * @param tb the source tuple batch
-   * @throws DbException thrown if something goes wrong during evaluation
-   */
-  protected void fillBuffer(final TupleBatch tb) throws DbException {
-    for (int rowIdx = 0; rowIdx < tb.numTuples(); rowIdx++) {
-      for (int columnIdx = 0; columnIdx < getSchema().numColumns(); columnIdx++) {
-        try {
-          getEvaluator(columnIdx).evalAndPut(tb, rowIdx, resultBuffer, columnIdx, null);
-        } catch (InvocationTargetException e) {
-          throw new DbException(e);
-        }
-      }
-    }
-  }
-
-  /**
-   * Called in {@link #fetchNextReady()}.
-   * 
-   * @param tb the source tuple batch
-   * @param rowIdx the current row index
-   * @param columnIdx the current column index
-   * @throws InvocationTargetException exception when evaluating
-   */
-  protected void evaluate(final TupleBatch tb, final int rowIdx, final int columnIdx) throws InvocationTargetException {
-
-  }
-
-  /**
-   * @param columnIdx the column index
-   * @return evaluator for column index
-   */
-  protected GenericEvaluator getEvaluator(final int columnIdx) {
-    return evaluators.get(columnIdx);
+    return new TupleBatch(getSchema(), output);
   }
 
   @Override
@@ -141,31 +94,22 @@ public class Apply extends UnaryOperator {
 
     Schema inputSchema = getChild().getSchema();
 
-    evaluators = new ArrayList<>();
-    evaluators.ensureCapacity(emitExpressions.size());
+    emitEvaluators = new ArrayList<>();
+    emitEvaluators.ensureCapacity(emitExpressions.size());
     for (Expression expr : emitExpressions) {
       GenericEvaluator evaluator = new GenericEvaluator(expr, inputSchema, null);
       if (evaluator.needsCompiling()) {
         evaluator.compile();
       }
-      evaluators.add(evaluator);
+      emitEvaluators.add(evaluator);
     }
-
-    resultBuffer = new TupleBatchBuffer(getSchema());
   }
 
   /**
    * @param evaluators the evaluators to set
    */
   public void setEvaluators(final ArrayList<GenericEvaluator> evaluators) {
-    this.evaluators = evaluators;
-  }
-
-  /**
-   * @param resultBuffer the resultBuffer to set
-   */
-  public void setResultBuffer(final TupleBatchBuffer resultBuffer) {
-    this.resultBuffer = resultBuffer;
+    emitEvaluators = evaluators;
   }
 
   @Override
@@ -185,7 +129,7 @@ public class Apply extends UnaryOperator {
     ImmutableList.Builder<Type> typesBuilder = ImmutableList.builder();
     ImmutableList.Builder<String> namesBuilder = ImmutableList.builder();
 
-    for (TupleEvaluator evaluator : evaluators) {
+    for (TupleEvaluator evaluator : emitEvaluators) {
       evaluator.setInputSchema(childSchema);
       typesBuilder.add(evaluator.getOutputType());
       namesBuilder.add(evaluator.getOutputName());

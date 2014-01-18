@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.expression.evaluate;
 
+import edu.washington.escience.myria.Relation;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.expression.VariableExpression;
 
@@ -16,5 +17,5 @@ public interface EvalInterface {
    * @param state optional state that is passed during evaluation
    * @return the result from the evaluation
    */
-  Object evaluate(final TupleBatch tb, final int rowId, final TupleBatch state);
+  Object evaluate(final TupleBatch tb, final int rowId, final Relation state);
 }

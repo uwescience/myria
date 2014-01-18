@@ -1,7 +1,13 @@
 package edu.washington.escience.myria.expression.evaluate;
 
+import java.util.LinkedList;
+
+import com.google.common.collect.Lists;
+
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.expression.Expression;
+import edu.washington.escience.myria.expression.ExpressionOperator;
+import edu.washington.escience.myria.expression.StateVariableExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
 
 /**
@@ -14,19 +20,43 @@ public class TupleEvaluator extends Evaluator {
   private final boolean copyFromInput;
 
   /**
+   * True if the expression uses state.
+   */
+  private final boolean needsState;
+
+  /**
    * @param expression the expression to be evaluated
    * @param inputSchema the schema that the expression expects if it operates on a schema
    * @param stateSchema the schema of the state
    */
   public TupleEvaluator(final Expression expression, final Schema inputSchema, final Schema stateSchema) {
     super(expression, inputSchema, stateSchema);
-    copyFromInput = getExpression().getRootExpressionOperator() instanceof VariableExpression;
+    ExpressionOperator rootOp = getExpression().getRootExpressionOperator();
+    copyFromInput = rootOp instanceof VariableExpression && !(rootOp instanceof StateVariableExpression);
+    needsState = hasOperator(StateVariableExpression.class);
+  }
+
+  /**
+   * @param optype Class to find
+   * @return true if the operator is in the expression
+   */
+  private boolean hasOperator(final Class<StateVariableExpression> optype) {
+    LinkedList<ExpressionOperator> ops = Lists.newLinkedList();
+    ops.add(getExpression().getRootExpressionOperator());
+    while (!ops.isEmpty()) {
+      final ExpressionOperator op = ops.pop();
+      if (op.getClass().equals(optype)) {
+        return true;
+      }
+      ops.addAll(op.getChildren());
+    }
+    return false;
   }
 
   /**
    * @return the copyFromInput
    */
-  protected boolean isCopyFromInput() {
+  public boolean isCopyFromInput() {
     return copyFromInput;
   }
 
@@ -52,5 +82,9 @@ public class TupleEvaluator extends Evaluator {
    */
   public String getOutputName() {
     return getExpression().getOutputName();
+  }
+
+  public boolean needsState() {
+    return needsState;
   }
 }

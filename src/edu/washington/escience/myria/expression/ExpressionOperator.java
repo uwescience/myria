@@ -4,6 +4,7 @@
 package edu.washington.escience.myria.expression;
 
 import java.io.Serializable;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
@@ -53,4 +54,9 @@ public abstract class ExpressionOperator implements Serializable {
    * @return the entire tree represented as an expression.
    */
   public abstract String getJavaString(final Schema schema, final Schema stateSchema);
+
+  /**
+   * @return all children
+   */
+  public abstract List<ExpressionOperator> getChildren();
 }
