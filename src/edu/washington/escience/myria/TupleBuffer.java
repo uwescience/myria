@@ -31,7 +31,7 @@ import edu.washington.escience.myria.column.mutable.StringMutableColumn;
 
 /** A simplified TupleBatchBuffer which supports random access. Designed for hash tables to use. */
 
-public class TupleBuffer implements Cloneable {
+public class TupleBuffer implements Cloneable, Relation {
   /** Format of the emitted tuples. */
   private final Schema schema;
   /** Convenience constant; must match schema.numColumns() and currentColumns.size(). */
@@ -93,6 +93,7 @@ public class TupleBuffer implements Cloneable {
   /**
    * @return the Schema of the tuples in this buffer.
    */
+  @Override
   public final Schema getSchema() {
     return schema;
   }
@@ -100,18 +101,14 @@ public class TupleBuffer implements Cloneable {
   /**
    * @return the number of complete tuples stored in this TupleBuffer.
    */
+  @Override
   public final int numTuples() {
     return readyTuples.size() * TupleBatch.BATCH_SIZE + currentInProgressTuples;
   }
 
-  /**
-   * @param colIndex column index
-   * @param rowIndex row index
-   * @return the element at (rowIndex, colIndex)
-   * @throws IndexOutOfBoundsException if indices are out of bounds.
-   * */
+  @Override
   @Deprecated
-  public final Object get(final int colIndex, final int rowIndex) throws IndexOutOfBoundsException {
+  public final Object getObject(final int colIndex, final int rowIndex) throws IndexOutOfBoundsException {
     int tupleBatchIndex = rowIndex / TupleBatch.BATCH_SIZE;
     int tupleIndex = rowIndex % TupleBatch.BATCH_SIZE;
     if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
@@ -124,11 +121,7 @@ public class TupleBuffer implements Cloneable {
     return currentBuildingColumns[colIndex].get(tupleIndex);
   }
 
-  /**
-   * @param column the column of the desired value.
-   * @param row the row of the desired value.
-   * @return the value in the specified column and row.
-   */
+  @Override
   public final boolean getBoolean(final int column, final int row) {
     int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
     int tupleIndex = row % TupleBatch.BATCH_SIZE;
@@ -142,11 +135,7 @@ public class TupleBuffer implements Cloneable {
     return ((BooleanColumnBuilder) (currentBuildingColumns[column])).getBoolean(tupleIndex);
   }
 
-  /**
-   * @param column the column of the desired value.
-   * @param row the row of the desired value.
-   * @return the value in the specified column and row.
-   */
+  @Override
   public final double getDouble(final int column, final int row) {
     int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
     int tupleIndex = row % TupleBatch.BATCH_SIZE;
@@ -160,11 +149,7 @@ public class TupleBuffer implements Cloneable {
     return ((DoubleColumnBuilder) (currentBuildingColumns[column])).getDouble(tupleIndex);
   }
 
-  /**
-   * @param column the column of the desired value.
-   * @param row the row of the desired value.
-   * @return the value in the specified column and row.
-   */
+  @Override
   public final float getFloat(final int column, final int row) {
     int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
     int tupleIndex = row % TupleBatch.BATCH_SIZE;
@@ -178,11 +163,7 @@ public class TupleBuffer implements Cloneable {
     return ((FloatColumnBuilder) (currentBuildingColumns[column])).getFloat(tupleIndex);
   }
 
-  /**
-   * @param column the column of the desired value.
-   * @param row the row of the desired value.
-   * @return the value in the specified column and row.
-   */
+  @Override
   public final long getLong(final int column, final int row) {
     int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
     int tupleIndex = row % TupleBatch.BATCH_SIZE;
@@ -196,11 +177,7 @@ public class TupleBuffer implements Cloneable {
     return ((LongColumnBuilder) (currentBuildingColumns[column])).getLong(tupleIndex);
   }
 
-  /**
-   * @param column the column of the desired value.
-   * @param row the row of the desired value.
-   * @return the value in the specified column and row.
-   */
+  @Override
   public final int getInt(final int column, final int row) {
     int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
     int tupleIndex = row % TupleBatch.BATCH_SIZE;
@@ -214,11 +191,7 @@ public class TupleBuffer implements Cloneable {
     return ((IntColumnBuilder) (currentBuildingColumns[column])).getInt(tupleIndex);
   }
 
-  /**
-   * @param column the column of the desired value.
-   * @param row the row of the desired value.
-   * @return the value in the specified column and row.
-   */
+  @Override
   public final String getString(final int column, final int row) {
     int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
     int tupleIndex = row % TupleBatch.BATCH_SIZE;
@@ -232,11 +205,7 @@ public class TupleBuffer implements Cloneable {
     return ((StringColumnBuilder) (currentBuildingColumns[column])).get(tupleIndex);
   }
 
-  /**
-   * @param column the column of the desired value.
-   * @param row the row of the desired value.
-   * @return the value in the specified column and row.
-   */
+  @Override
   public final DateTime getDateTime(final int column, final int row) {
     int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
     int tupleIndex = row % TupleBatch.BATCH_SIZE;
@@ -295,6 +264,7 @@ public class TupleBuffer implements Cloneable {
   /**
    * @return num columns.
    * */
+  @Override
   public final int numColumns() {
     return numColumns;
   }
