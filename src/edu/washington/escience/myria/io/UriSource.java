@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.SequenceInputStream;
+import java.io.Serializable;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,8 +24,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * 
  * If the URI points to a directory, all files in that directory will be concatenated into a single {@link InputStream}.
  */
-public class UriSource implements DataSource {
+public class UriSource implements DataSource, Serializable {
 
+  /** Required for Java serialization. */
+  private static final long serialVersionUID = 1L;
   /** The logger for debug, trace, etc. messages in this class. */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(UriSource.class);
 

@@ -18,6 +18,7 @@ import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.DateTimeColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.DateTimeColumnMessage;
+import edu.washington.escience.myria.util.ImmutableIntArray;
 import edu.washington.escience.myria.util.TypeFunnel;
 
 /**
@@ -81,6 +82,20 @@ public final class DateTimeColumn implements Column<DateTime> {
   public ColumnMessage serializeToProto() {
     ByteBuffer dataBytes = ByteBuffer.allocate(position * Long.SIZE / Byte.SIZE);
     for (int i = 0; i < position; i++) {
+      dataBytes.putLong(data[i].getMillis());
+    }
+
+    dataBytes.flip();
+    final DateTimeColumnMessage.Builder inner =
+        DateTimeColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
+
+    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.DATETIME).setDateColumn(inner).build();
+  }
+
+  @Override
+  public ColumnMessage serializeToProto(final ImmutableIntArray validIndices) {
+    ByteBuffer dataBytes = ByteBuffer.allocate(validIndices.length() * Long.SIZE / Byte.SIZE);
+    for (int i : validIndices) {
       dataBytes.putLong(data[i].getMillis());
     }
 

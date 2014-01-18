@@ -17,6 +17,7 @@ import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.LongColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.LongColumnMessage;
+import edu.washington.escience.myria.util.ImmutableIntArray;
 
 /**
  * A mutable column of Long values.
@@ -79,6 +80,19 @@ public final class LongMutableColumn implements MutableColumn<Long> {
   public ColumnMessage serializeToProto() {
     ByteBuffer dataBytes = ByteBuffer.allocate(position * Long.SIZE / Byte.SIZE);
     for (int i = 0; i < position; i++) {
+      dataBytes.putLong(data[i]);
+    }
+
+    dataBytes.flip();
+    final LongColumnMessage.Builder inner = LongColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
+
+    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.LONG).setLongColumn(inner).build();
+  }
+
+  @Override
+  public ColumnMessage serializeToProto(final ImmutableIntArray validIndices) {
+    ByteBuffer dataBytes = ByteBuffer.allocate(validIndices.length() * Long.SIZE / Byte.SIZE);
+    for (int i : validIndices) {
       dataBytes.putLong(data[i]);
     }
 
