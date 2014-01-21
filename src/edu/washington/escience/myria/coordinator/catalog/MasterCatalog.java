@@ -35,6 +35,7 @@ import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
 import edu.washington.escience.myria.parallel.SocketInfo;
+import edu.washington.escience.myria.scaling.ConsistentHashInterval;
 
 /**
  * This class is intended to store the configuration information for a Myria installation.
@@ -117,11 +118,9 @@ public final class MasterCatalog {
   private static final String CREATE_CONSISTENT_HASHING_RING =
       "CREATE TABLE consistent_hashing_interval (\n" 
     + "   worker_id INTEGER,\n"
-    + "   relation_id INTEGER,\n"
     + "   start_interval INTEGER,\n"
     + "   end_interval INTEGER,\n"
     + "   FOREIGN KEY (worker_id) REFERENCES workers(worker_id),\n"
-    + "   FOREIGN KEY (relation_id) REFERENCES stored_relations(stored_relation_id)\n"
     + ");";
 /** CREATE TABLE statements @formatter:on */
 
@@ -510,6 +509,7 @@ public final class MasterCatalog {
       throw new CatalogException("Catalog is closed.");
     }
     try {
+      // Populate the worker into the worker table
       queue.execute(new SQLiteJob<Object>() {
         @Override
         protected Object job(final SQLiteConnection sqliteConnection) throws SQLiteException, CatalogException {
@@ -521,6 +521,51 @@ public final class MasterCatalog {
                 sqliteConnection.prepare("INSERT INTO workers(worker_id, host_port) VALUES(?,?);", false);
             statement.bind(1, workerId);
             statement.bind(2, hostPortString);
+            statement.step();
+            statement.dispose();
+
+          } catch (final SQLiteException e) {
+            if (LOGGER.isErrorEnabled()) {
+              LOGGER.error(e.toString());
+            }
+            throw new CatalogException(e);
+          }
+          return null;
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+    return this;
+  }
+
+  /**
+   * Persists the consistent hashing interval for that worker on the master catalog.
+   * 
+   * @param workerId The id of the worker
+   * @param interval The interval to be persisted
+   * @return This Catalog
+   * @throws CatalogException When there is a database exception.
+   */
+  public MasterCatalog persistConsistentHashingInterval(final int workerId, final ConsistentHashInterval interval)
+      throws CatalogException {
+    Objects.requireNonNull(interval);
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+    try {
+      // Populate the worker into the worker table
+      queue.execute(new SQLiteJob<Object>() {
+        @Override
+        protected Object job(final SQLiteConnection sqliteConnection) throws SQLiteException, CatalogException {
+          try {
+            final SQLiteStatement statement =
+                sqliteConnection.prepare(
+                    "INSERT INTO consistent_hashing_interval(worker_id, start_interval, end_interval) VALUES(?,?,?);",
+                    false);
+            statement.bind(1, workerId);
+            statement.bind(2, interval.getStart());
+            statement.bind(3, interval.getEnd());
             statement.step();
             statement.dispose();
           } catch (final SQLiteException e) {

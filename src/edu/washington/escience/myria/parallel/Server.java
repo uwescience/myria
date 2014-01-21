@@ -65,6 +65,8 @@ import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myria.proto.QueryProto.QueryMessage;
 import edu.washington.escience.myria.proto.QueryProto.QueryReport;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
+import edu.washington.escience.myria.scaling.ConsistentHash;
+import edu.washington.escience.myria.scaling.ConsistentHashInterval;
 import edu.washington.escience.myria.tool.MyriaConfigurationReader;
 import edu.washington.escience.myria.util.DateTimeUtils;
 import edu.washington.escience.myria.util.DeploymentUtils;
@@ -251,6 +253,14 @@ public final class Server {
    * Default input buffer capacity for {@link Consumer} input buffers.
    * */
   private final int inputBufferCapacity;
+
+  /** The number of virtual replicas for consistent hashing. */
+  private static final int NUM_VIRTUAL_REPLICAS = 3;
+
+  /**
+   * The consistent hash ring structure for this cluster.
+   */
+  private final ConsistentHash consistentHash;
 
   /**
    * @return the system wide default inuput buffer recover event trigger.
@@ -462,6 +472,8 @@ public final class Server {
     scheduledTaskExecutor =
         Executors.newSingleThreadScheduledExecutor(new RenamingThreadFactory("Master global timer"));
 
+    consistentHash = new ConsistentHash(NUM_VIRTUAL_REPLICAS);
+    constructConsistentHashCircle();
   }
 
   /**
@@ -1162,6 +1174,21 @@ public final class Server {
       }
     }
     return new RoundRobinPartitionFunction(numWorkers);
+  }
+
+  /**
+   * Helper method for constructing the consistent hashing structure and persist the intervals in the catalog.
+   * 
+   * @throws CatalogException When there is a database problem.
+   */
+  private void constructConsistentHashCircle() throws CatalogException {
+    for (Integer workerId : workers.keySet()) {
+      consistentHash.addWorker(workerId);
+      Set<ConsistentHashInterval> intervals = consistentHash.getIntervals(workerId);
+      for (ConsistentHashInterval interval : intervals) {
+        catalog.persistConsistentHashingInterval(workerId, interval);
+      }
+    }
   }
 
   /**
