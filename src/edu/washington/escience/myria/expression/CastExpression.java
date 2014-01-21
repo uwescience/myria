@@ -1,7 +1,5 @@
 package edu.washington.escience.myria.expression;
 
-import com.google.common.base.Preconditions;
-
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 
@@ -36,8 +34,7 @@ public class CastExpression extends BinaryExpression {
     if (isSimpleCast(castFrom, castTo)) {
       return castTo;
     } else {
-      Preconditions.checkState(false, "Cannot cast from " + castFrom + " to " + castTo);
-      return null;
+      throw new IllegalStateException(String.format("Cannot cast from %s to %s", castFrom, castTo));
     }
   }
 
