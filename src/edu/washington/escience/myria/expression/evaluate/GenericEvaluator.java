@@ -8,7 +8,7 @@ import org.codehaus.commons.compiler.IScriptEvaluator;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.Relation;
+import edu.washington.escience.myria.ReadableTable;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
@@ -76,7 +76,7 @@ public class GenericEvaluator extends TupleEvaluator {
    * @return the result from the evaluation
    * @throws InvocationTargetException exception thrown from janino
    */
-  public Object eval(final TupleBatch tb, final int rowId, final Relation state) throws InvocationTargetException {
+  public Object eval(final TupleBatch tb, final int rowId, final ReadableTable state) throws InvocationTargetException {
     Preconditions.checkArgument(evaluator != null,
         "Call compile first or copy the data if it is the same in the input.");
     return evaluator.evaluate(tb, rowId, state);

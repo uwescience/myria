@@ -11,7 +11,7 @@ import com.google.common.collect.Lists;
 /**
  * A single row relation. Behaves like a tuple batch.
  */
-public class Tuple implements Serializable, Relation {
+public class Tuple implements Serializable, ReadableTable {
   /***/
   private static final long serialVersionUID = 1L;
 

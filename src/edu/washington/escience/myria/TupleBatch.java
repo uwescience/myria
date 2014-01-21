@@ -235,16 +235,6 @@ public class TupleBatch implements ReadableTable, Serializable {
     return columns.get(column).getDateTime(row);
   }
 
-  @Override
-  public final int numColumns() {
-    return schema.numColumns();
-  }
-
-  @Override
-  public final int numTuples() {
-    return numTuples;
-  }
-
   /**
    * @param row the row to be hashed.
    * @return the hash of the tuples in the specified row.

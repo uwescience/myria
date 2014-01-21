@@ -777,19 +777,4 @@ public class TupleBuffer implements ReadableTable, Cloneable {
     }
     return ret;
   }
-
-  @Override
-  @Deprecated
-  public Object getObject(final int column, final int row) {
-    int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
-    int tupleIndex = row % TupleBatch.BATCH_SIZE;
-    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
-        && tupleIndex >= currentInProgressTuples) {
-      throw new IndexOutOfBoundsException();
-    }
-    if (tupleBatchIndex < readyTuples.size()) {
-      return readyTuples.get(tupleBatchIndex)[column].getObject(tupleIndex);
-    }
-    return currentBuildingColumns[column].getObject(tupleIndex);
-  }
 }
