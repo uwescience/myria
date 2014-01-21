@@ -143,4 +143,11 @@ public class Expression implements Serializable {
     }
     return false;
   }
+
+  /**
+   * @return if this expression evaluates to a constant
+   */
+  public boolean isConstant() {
+    return !hasOperator(VariableExpression.class) && !hasOperator(StateExpression.class);
+  }
 }

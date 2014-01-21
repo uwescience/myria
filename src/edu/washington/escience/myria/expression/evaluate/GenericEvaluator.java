@@ -26,7 +26,7 @@ import edu.washington.escience.myria.operator.StatefulApply;
 /**
  * An Expression evaluator for generic expressions. Used in {@link Apply} and {@link StatefulApply}.
  */
-public class GenericEvaluator extends ColumnEvaluator {
+public class GenericEvaluator extends Evaluator {
   /**
    * Expression evaluator.
    */
@@ -79,7 +79,7 @@ public class GenericEvaluator extends ColumnEvaluator {
    * @param state additional state that affects the computation
    * @throws InvocationTargetException exception thrown from janino
    */
-  public void eval(final TupleBatch tb, final int rowIdx, final WritableColumn<?> result, final ReadableTable state)
+  public void eval(final TupleBatch tb, final int rowIdx, final WritableColumn result, final ReadableTable state)
       throws InvocationTargetException {
     Preconditions.checkArgument(evaluator != null,
         "Call compile first or copy the data if it is the same in the input.");

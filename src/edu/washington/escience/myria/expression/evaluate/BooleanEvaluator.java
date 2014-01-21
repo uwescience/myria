@@ -16,7 +16,7 @@ import edu.washington.escience.myria.expression.Expression;
 /**
  * An Expression evaluator for stateless boolean expressions.
  */
-public class BooleanEvaluator extends ColumnEvaluator {
+public class BooleanEvaluator extends Evaluator {
   /**
    * Expression evaluator.
    */

@@ -6,6 +6,8 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.Expression;
+import edu.washington.escience.myria.expression.ExpressionOperator;
+import edu.washington.escience.myria.expression.VariableExpression;
 
 /**
  * Compile and evaluate expressions.
@@ -92,5 +94,44 @@ public abstract class Evaluator {
    * @throws DbException compilation failed
    */
   public void compile() throws DbException {
+  }
+
+  /**
+   * @return the Java form of this expression.
+   */
+  public String getJavaExpression() {
+    return getExpression().getJavaExpression(getInputSchema(), getStateSchema());
+  }
+
+  /**
+   * @return the output name
+   */
+  public String getOutputName() {
+    return getExpression().getOutputName();
+  }
+
+  /**
+   * @return true if the expression just copies a column from the input
+   */
+  public boolean isCopyFromInput() {
+    final ExpressionOperator rootOp = getExpression().getRootExpressionOperator();
+    return rootOp instanceof VariableExpression;
+  }
+
+  /**
+   * An expression does not have to be compiled when it only renames or copies a column. This is an optimization to
+   * avoid evaluating the expression and avoid autoboxing values.
+   * 
+   * @return true if the expression does not have to be compiled.
+   */
+  public boolean needsCompiling() {
+    return !(isCopyFromInput() || isConstant());
+  }
+
+  /**
+   * @return true if the expression evaluates to a constant
+   */
+  public boolean isConstant() {
+    return getExpression().isConstant();
   }
 }

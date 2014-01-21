@@ -15,7 +15,6 @@ import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.expression.Expression;
-import edu.washington.escience.myria.expression.evaluate.ColumnEvaluator;
 import edu.washington.escience.myria.expression.evaluate.ConstantEvaluator;
 import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
 
@@ -99,7 +98,7 @@ public class Apply extends UnaryOperator {
     emitEvaluators.ensureCapacity(emitExpressions.size());
     for (Expression expr : emitExpressions) {
       GenericEvaluator evaluator;
-      if (GenericEvaluator.isConstant(expr)) {
+      if (expr.isConstant()) {
         evaluator = new ConstantEvaluator(expr, inputSchema, null);
       } else {
         evaluator = new GenericEvaluator(expr, inputSchema, null);
@@ -136,7 +135,7 @@ public class Apply extends UnaryOperator {
     ImmutableList.Builder<Type> typesBuilder = ImmutableList.builder();
     ImmutableList.Builder<String> namesBuilder = ImmutableList.builder();
 
-    for (ColumnEvaluator evaluator : emitEvaluators) {
+    for (GenericEvaluator evaluator : emitEvaluators) {
       evaluator.setInputSchema(childSchema);
       typesBuilder.add(evaluator.getOutputType());
       namesBuilder.add(evaluator.getOutputName());
