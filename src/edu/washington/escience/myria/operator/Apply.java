@@ -101,6 +101,7 @@ public class Apply extends UnaryOperator {
       if (evaluator.needsCompiling()) {
         evaluator.compile();
       }
+      Preconditions.checkArgument(!evaluator.needsState());
       emitEvaluators.add(evaluator);
     }
   }
