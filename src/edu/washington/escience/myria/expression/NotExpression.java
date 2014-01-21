@@ -30,7 +30,7 @@ public class NotExpression extends UnaryExpression {
 
   @Override
   public Type getOutputType(final Schema schema, final Schema stateSchema) {
-    checkBooleanType(schema);
+    checkBooleanType(schema, stateSchema);
     return Type.BOOLEAN_TYPE;
   }
 

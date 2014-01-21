@@ -26,10 +26,10 @@ public class Expression implements Serializable {
    */
   @JsonProperty
   private String javaExpression;
+
   /**
    * Expression encoding reference is needed to get the output type.
    */
-
   @JsonProperty
   private final ExpressionOperator rootExpressionOperator;
 

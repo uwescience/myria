@@ -61,7 +61,7 @@ public abstract class UnaryExpression extends ExpressionOperator {
    */
   protected final String getFunctionCallUnaryString(final String functionName, final Schema schema,
       final Schema stateSchema) {
-    return new StringBuilder(functionName).append('(').append(operand.getJavaString(schema, null)).append(')')
+    return new StringBuilder(functionName).append('(').append(operand.getJavaString(schema, stateSchema)).append(')')
         .toString();
   }
 
@@ -71,10 +71,12 @@ public abstract class UnaryExpression extends ExpressionOperator {
    * 
    * @param functionName the string representation of the Java function name.
    * @param schema the input schema
+   * @param stateSchema the schema of the state
    * @return the Java string for this operator.
    */
-  protected final String getDotFunctionCallUnaryString(final String functionName, final Schema schema) {
-    return new StringBuilder(operand.getJavaString(schema, null)).append(functionName).toString();
+  protected final String getDotFunctionCallUnaryString(final String functionName, final Schema schema,
+      final Schema stateSchema) {
+    return new StringBuilder(operand.getJavaString(schema, stateSchema)).append(functionName).toString();
   }
 
   /**
@@ -119,9 +121,10 @@ public abstract class UnaryExpression extends ExpressionOperator {
    * A function that could be used as the default type checker for a unary expression where the operand must be numeric.
    * 
    * @param schema the schema of the input tuples.
+   * @param stateSchema the schema of the state
    */
-  protected void checkBooleanType(final Schema schema) {
-    Type operandType = getOperand().getOutputType(schema, null);
+  protected void checkBooleanType(final Schema schema, final Schema stateSchema) {
+    Type operandType = getOperand().getOutputType(schema, stateSchema);
     Preconditions.checkArgument(operandType == Type.BOOLEAN_TYPE, "%s cannot handle operand [%s] of Type %s",
         getClass().getSimpleName(), getOperand(), operandType);
   }

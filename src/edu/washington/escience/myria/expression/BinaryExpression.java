@@ -83,11 +83,14 @@ public abstract class BinaryExpression extends ExpressionOperator {
    * 
    * @param op integer comparison operator >, <, ==, >=, <=.
    * @param schema the input schema
+   * @param stateSchema the schema of the state
    * @return the Java string for this operator.
    */
-  protected final String getObjectComparisonString(final SimplePredicate.Op op, final Schema schema) {
-    return new StringBuilder("(").append(getRight().getJavaString(schema, null)).append(".compareTo(").append(
-        getLeft().getJavaString(schema, null)).append(')').append(op.toJavaString()).append(0).append(")").toString();
+  protected final String getObjectComparisonString(final SimplePredicate.Op op, final Schema schema,
+      final Schema stateSchema) {
+    return new StringBuilder("(").append(getRight().getJavaString(schema, stateSchema)).append(".compareTo(").append(
+        getLeft().getJavaString(schema, stateSchema)).append(')').append(op.toJavaString()).append(0).append(")")
+        .toString();
   }
 
   /**
@@ -96,11 +99,13 @@ public abstract class BinaryExpression extends ExpressionOperator {
    * 
    * @param functionName the string representation of the Java function name.
    * @param schema the input schema
+   * @param stateSchema the schema of the state
    * @return the Java string for this operator.
    */
-  protected final String getFunctionCallBinaryString(final String functionName, final Schema schema) {
-    return new StringBuilder(functionName).append('(').append(getLeft().getJavaString(schema, null)).append(',')
-        .append(getRight().getJavaString(schema, null)).append(')').toString();
+  protected final String getFunctionCallBinaryString(final String functionName, final Schema schema,
+      final Schema stateSchema) {
+    return new StringBuilder(functionName).append('(').append(getLeft().getJavaString(schema, stateSchema)).append(',')
+        .append(getRight().getJavaString(schema, stateSchema)).append(')').toString();
   }
 
   /**
@@ -155,8 +160,8 @@ public abstract class BinaryExpression extends ExpressionOperator {
    * @param stateSchema the schema of the state
    */
   protected final void checkBooleanType(final Schema schema, final Schema stateSchema) {
-    Type leftType = getLeft().getOutputType(schema, null);
-    Type rightType = getRight().getOutputType(schema, null);
+    Type leftType = getLeft().getOutputType(schema, stateSchema);
+    Type rightType = getRight().getOutputType(schema, stateSchema);
     Preconditions.checkArgument(leftType == Type.BOOLEAN_TYPE, "%s cannot handle left child [%s] of Type %s",
         getClass().getSimpleName(), getLeft(), leftType);
     Preconditions.checkArgument(rightType == Type.BOOLEAN_TYPE, "%s cannot handle right child [%s] of Type %s",

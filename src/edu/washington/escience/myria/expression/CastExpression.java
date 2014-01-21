@@ -21,8 +21,6 @@ public class CastExpression extends BinaryExpression {
   }
 
   /**
-   * True if left and right are true.
-   * 
    * @param left what to cast.
    * @param right the output type of this operand is used to determine what to cast to.
    */

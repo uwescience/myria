@@ -67,7 +67,7 @@ public abstract class ComparisonExpression extends BinaryExpression {
   @Override
   public String getJavaString(final Schema schema, final Schema stateSchema) {
     if (getLeft().getOutputType(schema, stateSchema) == Type.STRING_TYPE) {
-      return getObjectComparisonString(getOperation(), schema);
+      return getObjectComparisonString(getOperation(), schema, stateSchema);
     }
     return getInfixBinaryString(getOperation().toJavaString(), schema, stateSchema);
   }

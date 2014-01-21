@@ -35,6 +35,6 @@ public class PowExpression extends BinaryExpression {
 
   @Override
   public String getJavaString(final Schema schema, final Schema stateSchema) {
-    return getFunctionCallBinaryString("Math.pow", schema);
+    return getFunctionCallBinaryString("Math.pow", schema, stateSchema);
   }
 }
