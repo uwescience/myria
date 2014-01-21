@@ -10,7 +10,6 @@ import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
 import edu.washington.escience.myria.ReadableColumn;
-import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.mutable.MutableColumn;
 
@@ -86,10 +85,6 @@ public abstract class ColumnBuilder<T extends Comparable<?>> implements Readable
   }
 
   @Override
-  @Deprecated
-  public abstract ColumnBuilder<T> appendObject(Object value) throws BufferOverflowException;
-
-  @Override
   public ColumnBuilder<T> appendString(final String value) throws BufferOverflowException {
     throw new UnsupportedOperationException(getClass().getName());
   }
@@ -149,12 +144,6 @@ public abstract class ColumnBuilder<T extends Comparable<?>> implements Readable
    */
   public abstract ColumnBuilder<T> forkNewBuilder();
 
-  @Override
-  public abstract T getObject(int row);
-
-  @Override
-  public abstract Type getType();
-
   /**
    * Replace the specified element.
    * 
@@ -164,11 +153,5 @@ public abstract class ColumnBuilder<T extends Comparable<?>> implements Readable
    * @throws IndexOutOfBoundsException if the idx exceeds the currently valid indices, i.e. the currently built size.
    */
   public abstract ColumnBuilder<T> replace(int idx, T value) throws IndexOutOfBoundsException;
-
-  /**
-   * @return the number of elements in the current building column.
-   */
-  @Override
-  public abstract int size();
 
 }
