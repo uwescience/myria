@@ -11,6 +11,7 @@ import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.hash.Hasher;
 
+import edu.washington.escience.myria.ReadableColumn;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
@@ -24,7 +25,7 @@ import edu.washington.escience.myria.util.ImmutableIntArray;
  * @author dhalperi
  * 
  */
-public abstract class Column<T extends Comparable<?>> implements Serializable {
+public abstract class Column<T extends Comparable<?>> implements ReadableColumn, Serializable {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -56,57 +57,27 @@ public abstract class Column<T extends Comparable<?>> implements Serializable {
    */
   public abstract boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx);
 
-  /**
-   * Returns the boolean value at the specified row in this column.
-   * 
-   * @param row row of element to return.
-   * @return the element at the specified row in this column.
-   * @throws UnsupportedOperationException if this column does not support this type.
-   */
+  @Override
   public boolean getBoolean(final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }
 
-  /**
-   * Returns the {@link DateTime} value at the specified row in this column.
-   * 
-   * @param row row of element to return.
-   * @return the element at the specified row in this column.
-   * @throws UnsupportedOperationException if this column does not support this type.
-   */
+  @Override
   public DateTime getDateTime(final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }
 
-  /**
-   * Returns the double value at the specified row in this column.
-   * 
-   * @param row row of element to return.
-   * @return the element at the specified row in this column.
-   * @throws UnsupportedOperationException if this column does not support this type.
-   */
+  @Override
   public double getDouble(final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }
 
-  /**
-   * Returns the float value at the specified row in this column.
-   * 
-   * @param row row of element to return.
-   * @return the element at the specified row in this column.
-   * @throws UnsupportedOperationException if this column does not support this type.
-   */
+  @Override
   public float getFloat(final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }
 
-  /**
-   * Returns the int value at the specified row in this column.
-   * 
-   * @param row row of element to return.
-   * @return the element at the specified row in this column.
-   * @throws UnsupportedOperationException if this column does not support this type.
-   */
+  @Override
   public int getInt(final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }
@@ -131,39 +102,20 @@ public abstract class Column<T extends Comparable<?>> implements Serializable {
    */
   public abstract void getIntoSQLite(int row, SQLiteStatement statement, int sqliteIndex) throws SQLiteException;
 
-  /**
-   * Returns the long value at the specified row in this column.
-   * 
-   * @param row row of element to return.
-   * @return the element at the specified row in this column.
-   * @throws UnsupportedOperationException if this column does not support this type.
-   */
+  @Override
   public long getLong(final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }
 
-  /**
-   * Returns the element at the specified row in this column.
-   * 
-   * @param row row of element to return.
-   * @return the element at the specified row in this column.
-   */
+  @Override
   public abstract T getObject(int row);
 
-  /**
-   * Returns the {@link String} value at the specified row in this column.
-   * 
-   * @param row row of element to return.
-   * @return the element at the specified row in this column.
-   * @throws UnsupportedOperationException if this column does not support this type.
-   */
+  @Override
   public String getString(final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }
 
-  /**
-   * @return a Myria {@link Type} object explaining what type of data is in this column.
-   */
+  @Override
   public abstract Type getType();
 
   /**
@@ -181,11 +133,7 @@ public abstract class Column<T extends Comparable<?>> implements Serializable {
    */
   public abstract ColumnMessage serializeToProto(ImmutableIntArray validIndices);
 
-  /**
-   * Returns the number of elements in this column.
-   * 
-   * @return the number of elements in this column.
-   */
+  @Override
   public abstract int size();
 
   /**

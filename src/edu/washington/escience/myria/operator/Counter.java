@@ -54,7 +54,7 @@ public class Counter extends UnaryOperator {
     }
     LongColumnBuilder builder = new LongColumnBuilder();
     for (int i = 0; i < childTuples.numTuples(); ++i) {
-      builder.append(count);
+      builder.appendLong(count);
       ++count;
     }
     return childTuples.appendColumn(columnName, builder.build());

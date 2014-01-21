@@ -20,7 +20,7 @@ import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
  * A column of Double values.
  * 
  */
-public final class DoubleColumnBuilder implements ColumnBuilder<Double> {
+public final class DoubleColumnBuilder extends ColumnBuilder<Double> {
   /** View of the column data as doubles. */
   private final DoubleBuffer data;
 
@@ -70,14 +70,8 @@ public final class DoubleColumnBuilder implements ColumnBuilder<Double> {
     return Type.DOUBLE_TYPE;
   }
 
-  /**
-   * Inserts the specified element at end of this column.
-   * 
-   * @param value element to be inserted.
-   * @return this column.
-   * @throws BufferOverflowException if exceeds buffer up bound.
-   */
-  public DoubleColumnBuilder append(final double value) throws BufferOverflowException {
+  @Override
+  public DoubleColumnBuilder appendDouble(final double value) throws BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
     data.put(value);
     return this;
@@ -86,21 +80,21 @@ public final class DoubleColumnBuilder implements ColumnBuilder<Double> {
   @Override
   public DoubleColumnBuilder appendObject(final Object value) throws BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return append((Double) value);
+    return appendDouble((Double) value);
   }
 
   @Override
   public DoubleColumnBuilder appendFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException,
       BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return append(resultSet.getDouble(jdbcIndex));
+    return appendDouble(resultSet.getDouble(jdbcIndex));
   }
 
   @Override
   public DoubleColumnBuilder appendFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException,
       BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return append(statement.columnDouble(index));
+    return appendDouble(statement.columnDouble(index));
   }
 
   @Override
@@ -121,12 +115,6 @@ public final class DoubleColumnBuilder implements ColumnBuilder<Double> {
     Preconditions.checkArgument(size >= 0);
     data.position(data.position() + size);
     return this;
-  }
-
-  @Override
-  public DoubleColumnBuilder append(final Double value) throws BufferOverflowException {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return append(value.doubleValue());
   }
 
   @Override
@@ -164,14 +152,11 @@ public final class DoubleColumnBuilder implements ColumnBuilder<Double> {
 
   @Override
   @Deprecated
-  public Double get(final int row) {
+  public Double getObject(final int row) {
     return data.get(row);
   }
 
-  /**
-   * @param row the row to get
-   * @return primitive value of the row
-   * */
+  @Override
   public double getDouble(final int row) {
     return data.get(row);
   }

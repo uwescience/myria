@@ -29,6 +29,7 @@ public class BooleanMutableColumn extends MutableColumn<Boolean> {
     numBits = size;
   }
 
+  @Deprecated
   @Override
   public Boolean getObject(final int row) {
     return Boolean.valueOf(getBoolean(row));

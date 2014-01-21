@@ -11,16 +11,8 @@ import org.joda.time.DateTime;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.column.builder.BooleanColumnBuilder;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.ColumnFactory;
-import edu.washington.escience.myria.column.builder.DateTimeColumnBuilder;
-import edu.washington.escience.myria.column.builder.DoubleColumnBuilder;
-import edu.washington.escience.myria.column.builder.FloatColumnBuilder;
-import edu.washington.escience.myria.column.builder.IntColumnBuilder;
-import edu.washington.escience.myria.column.builder.LongColumnBuilder;
-import edu.washington.escience.myria.column.builder.StringColumnBuilder;
-import edu.washington.escience.myria.column.mutable.MutableColumn;
 
 /**
  * Used for creating TupleBatch objects on the fly. A helper class used in, e.g., the Scatter operator. Currently it
@@ -366,67 +358,30 @@ public class TupleBatchBuffer {
    * @param sourceColumn the column from which data will be retrieved.
    * @param sourceRow the row in the source column from which data will be retrieved.
    */
-  public final void put(final int destColumn, final Column<?> sourceColumn, final int sourceRow) {
+  public final void put(final int destColumn, final ReadableColumn sourceColumn, final int sourceRow) {
     checkPutIndex(destColumn);
     ColumnBuilder<?> dest = currentBuildingColumns.get(destColumn);
     switch (dest.getType()) {
       case BOOLEAN_TYPE:
-        ((BooleanColumnBuilder) dest).append(sourceColumn.getBoolean(sourceRow));
+        dest.appendBoolean(sourceColumn.getBoolean(sourceRow));
         break;
       case DATETIME_TYPE:
-        ((DateTimeColumnBuilder) dest).append(sourceColumn.getDateTime(sourceRow));
+        dest.appendDateTime(sourceColumn.getDateTime(sourceRow));
         break;
       case DOUBLE_TYPE:
-        ((DoubleColumnBuilder) dest).append(sourceColumn.getDouble(sourceRow));
+        dest.appendDouble(sourceColumn.getDouble(sourceRow));
         break;
       case FLOAT_TYPE:
-        ((FloatColumnBuilder) dest).append(sourceColumn.getFloat(sourceRow));
+        dest.appendFloat(sourceColumn.getFloat(sourceRow));
         break;
       case INT_TYPE:
-        ((IntColumnBuilder) dest).append(sourceColumn.getInt(sourceRow));
+        dest.appendInt(sourceColumn.getInt(sourceRow));
         break;
       case LONG_TYPE:
-        ((LongColumnBuilder) dest).append(sourceColumn.getLong(sourceRow));
+        dest.appendLong(sourceColumn.getLong(sourceRow));
         break;
       case STRING_TYPE:
-        ((StringColumnBuilder) dest).append(sourceColumn.getString(sourceRow));
-        break;
-    }
-    columnPut(destColumn);
-  }
-
-  /**
-   * Append the specified value to the specified destination column in this TupleBatchBuffer from the source mutable
-   * column.
-   * 
-   * @param destColumn which column in this TBB the value will be inserted.
-   * @param sourceColumn the mutable column from which data will be retrieved.
-   * @param sourceRow the row in the source column from which data will be retrieved.
-   */
-  public final void put(final int destColumn, final MutableColumn<?> sourceColumn, final int sourceRow) {
-    checkPutIndex(destColumn);
-    ColumnBuilder<?> dest = currentBuildingColumns.get(destColumn);
-    switch (dest.getType()) {
-      case BOOLEAN_TYPE:
-        ((BooleanColumnBuilder) dest).append(sourceColumn.getBoolean(sourceRow));
-        break;
-      case DATETIME_TYPE:
-        ((DateTimeColumnBuilder) dest).append(sourceColumn.getDateTime(sourceRow));
-        break;
-      case DOUBLE_TYPE:
-        ((DoubleColumnBuilder) dest).append(sourceColumn.getDouble(sourceRow));
-        break;
-      case FLOAT_TYPE:
-        ((FloatColumnBuilder) dest).append(sourceColumn.getFloat(sourceRow));
-        break;
-      case INT_TYPE:
-        ((IntColumnBuilder) dest).append(sourceColumn.getInt(sourceRow));
-        break;
-      case LONG_TYPE:
-        ((LongColumnBuilder) dest).append(sourceColumn.getLong(sourceRow));
-        break;
-      case STRING_TYPE:
-        ((StringColumnBuilder) dest).append(sourceColumn.getString(sourceRow));
+        dest.appendString(sourceColumn.getString(sourceRow));
         break;
     }
     columnPut(destColumn);
@@ -446,42 +401,6 @@ public class TupleBatchBuffer {
   }
 
   /**
-   * Append the specified value to the specified destination column in this TupleBatchBuffer from the source column.
-   * 
-   * @param destColumn which column in this TBB the value will be inserted.
-   * @param sourceColumnB the column builder from which data will be retrieved.
-   * @param sourceRow the row in the source column from which data will be retrieved.
-   */
-  public final void put(final int destColumn, final ColumnBuilder<?> sourceColumnB, final int sourceRow) {
-    checkPutIndex(destColumn);
-    ColumnBuilder<?> dest = currentBuildingColumns.get(destColumn);
-    switch (dest.getType()) {
-      case BOOLEAN_TYPE:
-        ((BooleanColumnBuilder) dest).append(((BooleanColumnBuilder) sourceColumnB).getBoolean(sourceRow));
-        break;
-      case DATETIME_TYPE:
-        ((DateTimeColumnBuilder) dest).append(((DateTimeColumnBuilder) sourceColumnB).get(sourceRow));
-        break;
-      case DOUBLE_TYPE:
-        ((DoubleColumnBuilder) dest).append(((DoubleColumnBuilder) sourceColumnB).getDouble(sourceRow));
-        break;
-      case FLOAT_TYPE:
-        ((FloatColumnBuilder) dest).append(((FloatColumnBuilder) sourceColumnB).getFloat(sourceRow));
-        break;
-      case INT_TYPE:
-        ((IntColumnBuilder) dest).append(((IntColumnBuilder) sourceColumnB).getInt(sourceRow));
-        break;
-      case LONG_TYPE:
-        ((LongColumnBuilder) dest).append(((LongColumnBuilder) sourceColumnB).getLong(sourceRow));
-        break;
-      case STRING_TYPE:
-        ((StringColumnBuilder) dest).append(((StringColumnBuilder) sourceColumnB).get(sourceRow));
-        break;
-    }
-    columnPut(destColumn);
-  }
-
-  /**
    * Append the specified value to the specified column.
    * 
    * @param column index of the column.
@@ -489,7 +408,7 @@ public class TupleBatchBuffer {
    */
   public final void putBoolean(final int column, final boolean value) {
     checkPutIndex(column);
-    ((BooleanColumnBuilder) currentBuildingColumns.get(column)).append(value);
+    currentBuildingColumns.get(column).appendBoolean(value);
     columnPut(column);
   }
 
@@ -501,7 +420,7 @@ public class TupleBatchBuffer {
    */
   public final void putDateTime(final int column, final DateTime value) {
     checkPutIndex(column);
-    ((DateTimeColumnBuilder) currentBuildingColumns.get(column)).append(value);
+    currentBuildingColumns.get(column).appendDateTime(value);
     columnPut(column);
   }
 
@@ -513,7 +432,7 @@ public class TupleBatchBuffer {
    */
   public final void putDouble(final int column, final double value) {
     checkPutIndex(column);
-    ((DoubleColumnBuilder) currentBuildingColumns.get(column)).append(value);
+    currentBuildingColumns.get(column).appendDouble(value);
     columnPut(column);
   }
 
@@ -525,7 +444,7 @@ public class TupleBatchBuffer {
    */
   public final void putFloat(final int column, final float value) {
     checkPutIndex(column);
-    ((FloatColumnBuilder) currentBuildingColumns.get(column)).append(value);
+    currentBuildingColumns.get(column).appendFloat(value);
     columnPut(column);
   }
 
@@ -537,7 +456,7 @@ public class TupleBatchBuffer {
    */
   public final void putInt(final int column, final int value) {
     checkPutIndex(column);
-    ((IntColumnBuilder) currentBuildingColumns.get(column)).append(value);
+    currentBuildingColumns.get(column).appendInt(value);
     columnPut(column);
   }
 
@@ -549,7 +468,7 @@ public class TupleBatchBuffer {
    */
   public final void putLong(final int column, final long value) {
     checkPutIndex(column);
-    ((LongColumnBuilder) currentBuildingColumns.get(column)).append(value);
+    currentBuildingColumns.get(column).appendLong(value);
     columnPut(column);
   }
 
@@ -561,12 +480,12 @@ public class TupleBatchBuffer {
    */
   public final void putString(final int column, final String value) {
     checkPutIndex(column);
-    ((StringColumnBuilder) currentBuildingColumns.get(column)).append(value);
+    currentBuildingColumns.get(column).appendString(value);
     columnPut(column);
   }
 
   /**
-   * Update lastPopedTime to be the current time.
+   * Update lastPoppedTime to be the current time.
    */
   private void updateLastPoppedTime() {
     lastPoppedTime = System.nanoTime();

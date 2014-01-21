@@ -1,31 +1,46 @@
 package edu.washington.escience.myria.column.mutable;
 
+import com.google.common.base.Preconditions;
+
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.IntArrayColumn;
 
 /**
- * An abstract MutableColumn<Integer> with a primitive type accessor.
+ * A mutable column of Int values.
  * 
  */
-public abstract class IntMutableColumn extends MutableColumn<Integer> {
+public final class IntMutableColumn extends MutableColumn<Integer> {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
+  /** Internal representation of the column data. */
+  private final int[] data;
+  /** The number of existing rows in this column. */
+  private final int position;
 
   /**
-   * Returns the element at the specified row in this column.
+   * Constructs a new column.
    * 
-   * @param row row of element to return.
-   * @return the element at the specified row in this column.
-   */
+   * @param data the data
+   * @param numData number of tuples.
+   * */
+  public IntMutableColumn(final int[] data, final int numData) {
+    this.data = data;
+    position = numData;
+  }
+
+  @Deprecated
   @Override
-  public abstract int getInt(final int row);
+  public Integer getObject(final int row) {
+    return Integer.valueOf(getInt(row));
+  }
 
   @Override
-  public final Type getType() {
+  public Type getType() {
     return Type.INT_TYPE;
   }
 
   @Override
-  public final String toString() {
+  public String toString() {
     final StringBuilder sb = new StringBuilder();
     sb.append(size()).append(" elements: [");
     for (int i = 0; i < size(); ++i) {
@@ -39,5 +54,39 @@ public abstract class IntMutableColumn extends MutableColumn<Integer> {
   }
 
   @Override
-  public abstract IntMutableColumn clone();
+  public int getInt(final int row) {
+    Preconditions.checkElementIndex(row, position);
+    return data[row];
+  }
+
+  @Override
+  public int size() {
+    return position;
+  }
+
+  @Override
+  public void replace(final int index, final Integer value) {
+    replace(index, value.intValue());
+  }
+
+  /**
+   * replace the value on a row with the given int value.
+   * 
+   * @param index row index
+   * @param value the int value.
+   */
+  public void replace(final int index, final int value) {
+    Preconditions.checkElementIndex(index, size());
+    data[index] = value;
+  }
+
+  @Override
+  public IntArrayColumn toColumn() {
+    return new IntArrayColumn(data.clone(), position);
+  }
+
+  @Override
+  public IntMutableColumn clone() {
+    return new IntMutableColumn(data.clone(), position);
+  }
 }

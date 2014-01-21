@@ -29,6 +29,7 @@ public final class StringMutableColumn extends MutableColumn<String> {
     this.numStrings = numStrings;
   }
 
+  @Deprecated
   @Override
   public String getObject(final int row) {
     return getString(row);

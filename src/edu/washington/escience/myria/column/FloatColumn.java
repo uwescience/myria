@@ -125,7 +125,7 @@ public final class FloatColumn extends Column<Float> {
 
   @Override
   public void append(final int index, final ColumnBuilder<?> columnBuilder) {
-    ((FloatColumnBuilder) columnBuilder).append(getFloat(index));
+    ((FloatColumnBuilder) columnBuilder).appendFloat(getFloat(index));
   }
 
   @Override

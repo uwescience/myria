@@ -28,6 +28,7 @@ public final class LongMutableColumn extends MutableColumn<Long> {
     position = numData;
   }
 
+  @Deprecated
   @Override
   public Long getObject(final int row) {
     return Long.valueOf(getLong(row));

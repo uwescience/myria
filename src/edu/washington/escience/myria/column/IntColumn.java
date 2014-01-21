@@ -54,7 +54,7 @@ public abstract class IntColumn extends Column<Integer> {
 
   @Override
   public final void append(final int index, final ColumnBuilder<?> columnBuilder) {
-    ((IntColumnBuilder) columnBuilder).append(getInt(index));
+    ((IntColumnBuilder) columnBuilder).appendInt(getInt(index));
   }
 
   @Override

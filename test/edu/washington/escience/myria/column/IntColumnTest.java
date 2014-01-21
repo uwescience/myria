@@ -16,7 +16,7 @@ public class IntColumnTest {
   @Test
   public void testProto() {
     final IntColumnBuilder original = new IntColumnBuilder();
-    original.append(1).append(2).append(5).append(11);
+    original.appendInt(1).appendInt(2).appendInt(5).appendInt(11);
     final ColumnMessage serialized = original.build().serializeToProto();
     assertEquals(ColumnMessage.Type.INT, serialized.getType());
     final IntColumn deserialized = IntColumnBuilder.buildFromProtobuf(serialized, original.size());
@@ -26,7 +26,7 @@ public class IntColumnTest {
   @Test
   public void testIntProtoColumn() {
     final IntColumnBuilder original = new IntColumnBuilder();
-    original.append(1).append(2).append(5).append(11).append(17);
+    original.appendInt(1).appendInt(2).appendInt(5).appendInt(11).appendInt(17);
     final ColumnMessage serialized = original.build().serializeToProto();
     assertEquals(ColumnMessage.Type.INT, serialized.getType());
     final IntProtoColumn deserialized = new IntProtoColumn(serialized.getIntColumn());
@@ -37,7 +37,7 @@ public class IntColumnTest {
   public void testFull() {
     final IntColumnBuilder builder = new IntColumnBuilder();
     for (int i = 0; i < TupleBatch.BATCH_SIZE; i++) {
-      builder.append(i);
+      builder.appendInt(i);
     }
     builder.build();
   }
@@ -46,9 +46,9 @@ public class IntColumnTest {
   public void testOverflow() {
     final IntColumnBuilder builder = new IntColumnBuilder();
     for (int i = 0; i < TupleBatch.BATCH_SIZE; i++) {
-      builder.append(i);
+      builder.appendInt(i);
     }
-    builder.append(TupleBatch.BATCH_SIZE);
+    builder.appendInt(TupleBatch.BATCH_SIZE);
     builder.build();
   }
 

@@ -121,7 +121,7 @@ public final class LongColumn extends Column<Long> {
 
   @Override
   public void append(final int index, final ColumnBuilder<?> columnBuilder) {
-    ((LongColumnBuilder) columnBuilder).append(getLong(index));
+    ((LongColumnBuilder) columnBuilder).appendLong(getLong(index));
   }
 
   @Override
