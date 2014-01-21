@@ -44,8 +44,8 @@ public class StateExpression extends ZeroaryExpression {
   @Override
   public String getJavaString(final Schema schema, final Schema stateSchema) {
     // We generate a variable access into the state tuple.
-    return new StringBuilder("state.get").append(getOutputType(schema, stateSchema).getName()).append("(").append(
-        getColumnIdx()).append(", 0)").toString();
+    return new StringBuilder(Expression.STATE).append(".get").append(getOutputType(schema, stateSchema).getName())
+        .append("(").append(getColumnIdx()).append(", 0)").toString();
   }
 
   /**

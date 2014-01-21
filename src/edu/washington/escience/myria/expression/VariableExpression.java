@@ -43,8 +43,8 @@ public class VariableExpression extends ZeroaryExpression {
   @Override
   public String getJavaString(final Schema schema, final Schema stateSchema) {
     // We generate a variable access into the tuple buffer.
-    return new StringBuilder("tb.get").append(getOutputType(schema, stateSchema).getName()).append("(").append(
-        columnIdx).append(", rowId)").toString();
+    return new StringBuilder(Expression.TB).append(".get").append(getOutputType(schema, stateSchema).getName()).append(
+        "(").append(columnIdx).append(", ").append(Expression.ROW).append(")").toString();
   }
 
   /**

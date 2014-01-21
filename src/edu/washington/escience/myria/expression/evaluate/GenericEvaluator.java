@@ -63,7 +63,7 @@ public class GenericEvaluator extends Evaluator {
 
       evaluator =
           (EvalInterface) se.createFastEvaluator(getJavaExpression(), EvalInterface.class, new String[] {
-              "tb", "rowId", "result", "state" });
+              Expression.TB, Expression.ROW, Expression.RESULT, Expression.STATE });
     } catch (Exception e) {
       throw new DbException("Error when compiling expression " + this, e);
     }

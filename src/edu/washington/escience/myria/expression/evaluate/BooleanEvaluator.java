@@ -46,7 +46,7 @@ public class BooleanEvaluator extends Evaluator {
 
       evaluator =
           (BooleanEvalInterface) se.createFastEvaluator(getJavaExpression(), BooleanEvalInterface.class, new String[] {
-              "tb", "rowId" });
+              Expression.TB, Expression.ROW });
     } catch (Exception e) {
       throw new DbException("Error when compiling expression " + this, e);
     }

@@ -37,6 +37,23 @@ public class Expression implements Serializable {
   private final ExpressionOperator rootExpressionOperator;
 
   /**
+   * Variable name of result.
+   */
+  public static final String RESULT = "result";
+  /**
+   * Variable name of input tuple batch.
+   */
+  public static final String TB = "tb";
+  /**
+   * Variable name of row index.
+   */
+  public static final String ROW = "row";
+  /**
+   * Variable name of state.
+   */
+  public static final String STATE = "state";
+
+  /**
    * This is not really unused, it's used automagically by Jackson deserialization.
    */
   public Expression() {
@@ -116,7 +133,7 @@ public class Expression implements Serializable {
    * @return the Java form of this expression that also writes the results to a {@link ColumnBuilder}.
    */
   public String getJavaExpressionWithAppend(final Schema inputSchema, final Schema stateSchema) {
-    return new StringBuilder().append("result.append").append(getOutputType(inputSchema, stateSchema).getName())
+    return new StringBuilder(RESULT).append(".append").append(getOutputType(inputSchema, stateSchema).getName())
         .append("(").append(getJavaExpression(inputSchema, stateSchema)).append(")").toString();
   }
 
