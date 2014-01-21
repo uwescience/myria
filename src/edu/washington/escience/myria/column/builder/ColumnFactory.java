@@ -17,18 +17,39 @@ import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 public final class ColumnFactory {
 
   /**
+   * Allocate a ColumnBuilder for the specified Myria type.
+   * 
+   * @param type the Myria type of the returned Builder.
+   * @return a ColumnBuilder for the specified Myria type.
+   */
+  public static ColumnBuilder<?> allocateColumn(final Type type) {
+    switch (type) {
+      case BOOLEAN_TYPE:
+        return new BooleanColumnBuilder();
+      case DOUBLE_TYPE:
+        return new DoubleColumnBuilder();
+      case FLOAT_TYPE:
+        return new FloatColumnBuilder();
+      case INT_TYPE:
+        return new IntColumnBuilder();
+      case LONG_TYPE:
+        return new LongColumnBuilder();
+      case STRING_TYPE:
+        return new StringColumnBuilder();
+      case DATETIME_TYPE:
+        return new DateTimeColumnBuilder();
+    }
+    throw new IllegalArgumentException("Cannot allocate a ColumnBuilder for unknown type " + type);
+  }
+
+  /**
    * Allocates an array of Columns to match the given Schema.
    * 
    * @param schema the Schema
    * @return the list of Columns
    */
   public static List<ColumnBuilder<?>> allocateColumns(final Schema schema) {
-    final int numColumns = schema.numColumns();
-    final Type[] columnTypes = new Type[numColumns];
-    for (int columnIndex = 0; columnIndex < numColumns; ++columnIndex) {
-      columnTypes[columnIndex] = schema.getColumnType(columnIndex);
-    }
-    return allocateColumns(columnTypes);
+    return allocateColumns(schema.getColumnTypes());
   }
 
   /**
@@ -37,34 +58,10 @@ public final class ColumnFactory {
    * @param columnTypes the Types of the columns
    * @return the allocated Columns
    */
-  public static List<ColumnBuilder<?>> allocateColumns(final Type[] columnTypes) {
-    final int numColumns = columnTypes.length;
-    final ArrayList<ColumnBuilder<?>> columns = new ArrayList<ColumnBuilder<?>>(numColumns);
-
-    for (int columnIndex = 0; columnIndex < numColumns; ++columnIndex) {
-      switch (columnTypes[columnIndex]) {
-        case BOOLEAN_TYPE:
-          columns.add(new BooleanColumnBuilder());
-          break;
-        case DOUBLE_TYPE:
-          columns.add(new DoubleColumnBuilder());
-          break;
-        case FLOAT_TYPE:
-          columns.add(new FloatColumnBuilder());
-          break;
-        case INT_TYPE:
-          columns.add(new IntColumnBuilder());
-          break;
-        case LONG_TYPE:
-          columns.add(new LongColumnBuilder());
-          break;
-        case STRING_TYPE:
-          columns.add(new StringColumnBuilder());
-          break;
-        case DATETIME_TYPE:
-          columns.add(new DateTimeColumnBuilder());
-          break;
-      }
+  public static List<ColumnBuilder<?>> allocateColumns(final List<Type> columnTypes) {
+    final ArrayList<ColumnBuilder<?>> columns = new ArrayList<ColumnBuilder<?>>(columnTypes.size());
+    for (Type type : columnTypes) {
+      columns.add(allocateColumn(type));
     }
     return columns;
   }

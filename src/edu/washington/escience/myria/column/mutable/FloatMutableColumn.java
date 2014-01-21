@@ -1,33 +1,17 @@
 package edu.washington.escience.myria.column.mutable;
 
-import java.nio.ByteBuffer;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-
-import com.almworks.sqlite4java.SQLiteException;
-import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
-import com.google.common.hash.Hasher;
-import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.FloatColumn;
-import edu.washington.escience.myria.column.builder.ColumnBuilder;
-import edu.washington.escience.myria.column.builder.FloatColumnBuilder;
-import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
-import edu.washington.escience.myria.proto.DataProto.FloatColumnMessage;
-import edu.washington.escience.myria.util.ImmutableIntArray;
 
 /**
  * A mutable column of Float values.
  * 
  */
-public final class FloatMutableColumn implements MutableColumn<Float> {
-  /**
-   * 
-   */
+public final class FloatMutableColumn extends MutableColumn<Float> {
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** Internal representation of the column data. */
   private final float[] data;
@@ -47,28 +31,13 @@ public final class FloatMutableColumn implements MutableColumn<Float> {
     position = numData;
   }
 
+  @Deprecated
   @Override
-  public Float get(final int row) {
+  public Float getObject(final int row) {
     return Float.valueOf(getFloat(row));
   }
 
   @Override
-  public void getIntoJdbc(final int row, final PreparedStatement statement, final int jdbcIndex) throws SQLException {
-    statement.setFloat(jdbcIndex, getFloat(row));
-  }
-
-  @Override
-  public void getIntoSQLite(final int row, final SQLiteStatement statement, final int sqliteIndex)
-      throws SQLiteException {
-    statement.bind(sqliteIndex, getFloat(row));
-  }
-
-  /**
-   * Returns the element at the specified row in this column.
-   * 
-   * @param row row of element to return.
-   * @return the element at the specified row in this column.
-   */
   public float getFloat(final int row) {
     Preconditions.checkElementIndex(row, position);
     return data[row];
@@ -77,29 +46,6 @@ public final class FloatMutableColumn implements MutableColumn<Float> {
   @Override
   public Type getType() {
     return Type.FLOAT_TYPE;
-  }
-
-  @Override
-  public ColumnMessage serializeToProto() {
-    ByteBuffer dataBytes = ByteBuffer.allocate(position * Float.SIZE / Byte.SIZE);
-    for (int i = 0; i < position; i++) {
-      dataBytes.putFloat(data[i]);
-    }
-    dataBytes.flip();
-    final FloatColumnMessage.Builder inner = FloatColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
-
-    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.FLOAT).setFloatColumn(inner).build();
-  }
-
-  @Override
-  public ColumnMessage serializeToProto(final ImmutableIntArray validIndices) {
-    ByteBuffer dataBytes = ByteBuffer.allocate(validIndices.length() * Float.SIZE / Byte.SIZE);
-    for (int i : validIndices) {
-      dataBytes.putFloat(data[i]);
-    }
-    dataBytes.flip();
-    final FloatColumnMessage.Builder inner = FloatColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
-    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.FLOAT).setFloatColumn(inner).build();
   }
 
   @Override
@@ -119,21 +65,6 @@ public final class FloatMutableColumn implements MutableColumn<Float> {
     }
     sb.append(']');
     return sb.toString();
-  }
-
-  @Override
-  public boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
-    return getFloat(leftIdx) == ((FloatMutableColumn) rightColumn).getFloat(rightIdx);
-  }
-
-  @Override
-  public void append(final int index, final ColumnBuilder<?> columnBuilder) {
-    ((FloatColumnBuilder) columnBuilder).append(getFloat(index));
-  }
-
-  @Override
-  public void addToHasher(final int row, final Hasher hasher) {
-    hasher.putFloat(getFloat(row));
   }
 
   @Override

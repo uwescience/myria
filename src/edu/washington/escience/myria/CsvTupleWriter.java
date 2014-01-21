@@ -58,7 +58,7 @@ public class CsvTupleWriter implements TupleWriter {
   }
 
   @Override
-  public void writeTuples(final TupleBatch tuples) {
+  public void writeTuples(final ReadableTable tuples) {
     final String[] row = new String[tuples.numColumns()];
     /* Serialize every row into the output stream. */
     for (int i = 0; i < tuples.numTuples(); ++i) {

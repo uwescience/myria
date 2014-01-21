@@ -4,9 +4,12 @@ import java.nio.BufferOverflowException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import org.joda.time.DateTime;
+
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
+import edu.washington.escience.myria.ReadableColumn;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.mutable.MutableColumn;
@@ -15,12 +18,86 @@ import edu.washington.escience.myria.column.mutable.MutableColumn;
  * @param <T> type of the objects in this column.
  * 
  */
-public interface ColumnBuilder<T extends Comparable<?>> {
+public abstract class ColumnBuilder<T extends Comparable<?>> implements ReadableColumn {
 
   /**
-   * @return a Myria {@link Type} object explaining what type of data is in this column.
+   * Inserts the specified element at end of this column.
+   * 
+   * @param value element to be inserted.
+   * @return this column.
+   * @throws BufferOverflowException if exceeds buffer up bound.
    */
-  Type getType();
+  public ColumnBuilder<T> appendBoolean(final boolean value) throws BufferOverflowException {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  /**
+   * Inserts the specified element at end of this column.
+   * 
+   * @param value element to be inserted.
+   * @return this column.
+   * @throws BufferOverflowException if exceeds buffer up bound.
+   */
+  public ColumnBuilder<T> appendDateTime(final DateTime value) throws BufferOverflowException {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public boolean getBoolean(final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public DateTime getDateTime(final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public double getDouble(final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public float getFloat(final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public int getInt(final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public long getLong(final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public String getString(final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  /**
+   * Inserts the specified element at end of this column.
+   * 
+   * @param value element to be inserted.
+   * @return this column.
+   * @throws BufferOverflowException if exceeds buffer up bound.
+   */
+  public ColumnBuilder<T> appendDouble(final double value) throws BufferOverflowException {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  /**
+   * Inserts the specified element at end of this column.
+   * 
+   * @param value element to be inserted.
+   * @return this column.
+   * @throws BufferOverflowException if exceeds buffer up bound.
+   */
+  public ColumnBuilder<T> appendFloat(final float value) throws BufferOverflowException {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
 
   /**
    * Extracts the appropriate value from a JDBC ResultSet object and appends it to this column.
@@ -31,7 +108,8 @@ public interface ColumnBuilder<T extends Comparable<?>> {
    * @throws SQLException if there are JDBC errors.
    * @throws BufferOverflowException if the column is already full
    */
-  ColumnBuilder<T> appendFromJdbc(ResultSet resultSet, int jdbcIndex) throws SQLException, BufferOverflowException;
+  public abstract ColumnBuilder<T> appendFromJdbc(ResultSet resultSet, int jdbcIndex) throws SQLException,
+      BufferOverflowException;
 
   /**
    * Extracts the appropriate value from a SQLiteStatement object and appends it to this column.
@@ -42,17 +120,30 @@ public interface ColumnBuilder<T extends Comparable<?>> {
    * @throws SQLiteException if there are SQLite errors.
    * @throws BufferOverflowException if the column is already full
    */
-  ColumnBuilder<T> appendFromSQLite(SQLiteStatement statement, int index) throws SQLiteException,
+  public abstract ColumnBuilder<T> appendFromSQLite(SQLiteStatement statement, int index) throws SQLiteException,
       BufferOverflowException;
 
   /**
    * Inserts the specified element at end of this column.
    * 
    * @param value element to be inserted.
-   * @return this column builder.
-   * @throws BufferOverflowException if the column is already full
+   * @return this column.
+   * @throws BufferOverflowException if exceeds buffer up bound.
    */
-  ColumnBuilder<T> append(T value) throws BufferOverflowException;
+  public ColumnBuilder<T> appendInt(final int value) throws BufferOverflowException {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  /**
+   * Inserts the specified element at end of this column.
+   * 
+   * @param value element to be inserted.
+   * @return this column.
+   * @throws BufferOverflowException if exceeds buffer up bound.
+   */
+  public ColumnBuilder<T> appendLong(final long value) throws BufferOverflowException {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
 
   /**
    * Inserts the specified element at end of this column.
@@ -61,7 +152,56 @@ public interface ColumnBuilder<T extends Comparable<?>> {
    * @return this column builder.
    * @throws BufferOverflowException if the column is already full
    */
-  ColumnBuilder<T> appendObject(Object value) throws BufferOverflowException;
+  @Deprecated
+  public abstract ColumnBuilder<T> appendObject(Object value) throws BufferOverflowException;
+
+  /**
+   * Inserts the specified element at end of this column.
+   * 
+   * @param value element to be inserted.
+   * @return this column.
+   * @throws BufferOverflowException if exceeds buffer up bound.
+   */
+  public ColumnBuilder<T> appendString(final String value) throws BufferOverflowException {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  /**
+   * @return a column with the contents built.
+   */
+  public abstract Column<T> build();
+
+  /**
+   * @return a mutable column with the contents built.
+   */
+  public abstract MutableColumn<T> buildMutable();
+
+  /**
+   * expand some size.
+   * 
+   * @param size to expand
+   * @return this column builder.
+   * @throws BufferOverflowException if expanding size exceeds the column capacity
+   */
+  public abstract ColumnBuilder<T> expand(int size) throws BufferOverflowException;
+
+  /**
+   * expand to full size.
+   * 
+   * @return this column builder.
+   */
+  public abstract ColumnBuilder<T> expandAll();
+
+  /**
+   * @return a new builder with the contents initialized by this builder. The two builders share no data.
+   */
+  public abstract ColumnBuilder<T> forkNewBuilder();
+
+  @Override
+  public abstract T getObject(int row);
+
+  @Override
+  public abstract Type getType();
 
   /**
    * Replace the specified element.
@@ -71,50 +211,12 @@ public interface ColumnBuilder<T extends Comparable<?>> {
    * @return this column builder.
    * @throws IndexOutOfBoundsException if the idx exceeds the currently valid indices, i.e. the currently built size.
    */
-  ColumnBuilder<T> replace(int idx, T value) throws IndexOutOfBoundsException;
-
-  /**
-   * expand some size.
-   * 
-   * @param size to expand
-   * @return this column builder.
-   * @throws BufferOverflowException if expanding size exceeds the column capacity
-   * */
-  ColumnBuilder<T> expand(int size) throws BufferOverflowException;
-
-  /**
-   * expand to full size.
-   * 
-   * @return this column builder.
-   * */
-  ColumnBuilder<T> expandAll();
+  public abstract ColumnBuilder<T> replace(int idx, T value) throws IndexOutOfBoundsException;
 
   /**
    * @return the number of elements in the current building column.
    */
-  int size();
-
-  /**
-   * @return a column with the contents built.
-   * */
-  Column<T> build();
-
-  /**
-   * @return a mutable column with the contents built.
-   * */
-  MutableColumn<T> buildMutable();
-
-  /**
-   * @return a new builder with the contents initialized by this builder. The two builders share no data.
-   * */
-  ColumnBuilder<T> forkNewBuilder();
-
-  /**
-   * Returns the current element at the specified row in this building column.
-   * 
-   * @param row row of element to return.
-   * @return the element at the specified row in this column.
-   */
-  T get(int row);
+  @Override
+  public abstract int size();
 
 }

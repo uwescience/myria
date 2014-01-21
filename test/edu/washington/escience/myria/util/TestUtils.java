@@ -94,7 +94,7 @@ public final class TestUtils {
       for (int i = 0; i < numRow; i++) {
         final Tuple t = new Tuple(numColumn);
         for (int j = 0; j < numColumn; j++) {
-          t.set(j, columns.get(j).get(i));
+          t.set(j, columns.get(j).getObject(i));
         }
         expectedResults.put(t, 1);
       }
@@ -149,7 +149,7 @@ public final class TestUtils {
       for (int i = 0; i < numRow; i++) {
         final Tuple t = new Tuple(numColumn);
         for (int j = 0; j < numColumn; j++) {
-          t.set(j, child1RawData.get(j).get(i));
+          t.set(j, child1RawData.get(j).getObject(i));
         }
         final Object joinKey = t.get(child1JoinColumn);
         HashMap<Tuple, Integer> tupleOccur = child1Hash.get(joinKey);
@@ -173,13 +173,13 @@ public final class TestUtils {
       final int numRow = child2Columns.get(0).size();
       final int numChild2Column = child2Columns.size();
       for (int i = 0; i < numRow; i++) {
-        final Object joinKey = child2Columns.get(child2JoinColumn).get(i);
+        final Object joinKey = child2Columns.get(child2JoinColumn).getObject(i);
         final HashMap<Tuple, Integer> matchedTuples = child1Hash.get(joinKey);
         if (matchedTuples != null) {
           final Tuple child2Tuple = new Tuple(numChild2Column);
 
           for (int j = 0; j < numChild2Column; j++) {
-            child2Tuple.set(j, child2Columns.get(j).get(i));
+            child2Tuple.set(j, child2Columns.get(j).getObject(i));
           }
 
           for (final Entry<Tuple, Integer> entry : matchedTuples.entrySet()) {
@@ -211,8 +211,8 @@ public final class TestUtils {
     for (final List<Column<?>> rawData : tbs) {
       final int numTuples = rawData.get(0).size();
       for (int i = 0; i < numTuples; i++) {
-        final Object groupByValue = rawData.get(groupByColumn).get(i);
-        final Long aggValue = (Long) rawData.get(aggColumn).get(i);
+        final Object groupByValue = rawData.get(groupByColumn).getObject(i);
+        final Long aggValue = (Long) rawData.get(aggColumn).getObject(i);
         Long currentSum = sum.get(groupByValue);
         if (currentSum == null) {
           currentSum = 0L;
@@ -242,7 +242,7 @@ public final class TestUtils {
     for (final List<Column<?>> rawData : tbs) {
       final int numTuples = rawData.get(0).size();
       for (int i = 0; i < numTuples; i++) {
-        final Object groupByValue = rawData.get(groupByColumn).get(i);
+        final Object groupByValue = rawData.get(groupByColumn).getObject(i);
         Long currentCount = count.get(groupByValue);
         if (currentCount == null) {
           currentCount = 0L;
@@ -270,9 +270,9 @@ public final class TestUtils {
     for (final List<Column<?>> rawData : tbs) {
       final int numTuples = rawData.get(0).size();
       for (int i = 0; i < numTuples; i++) {
-        final Object groupByValue = rawData.get(groupByColumn).get(i);
+        final Object groupByValue = rawData.get(groupByColumn).getObject(i);
         @SuppressWarnings("unchecked")
-        final T aggValue = (T) rawData.get(aggColumn).get(i);
+        final T aggValue = (T) rawData.get(aggColumn).getObject(i);
         final T currentMax = max.get(groupByValue);
         if (currentMax == null) {
           max.put(groupByValue, aggValue);
@@ -301,9 +301,9 @@ public final class TestUtils {
     for (final List<Column<?>> rawData : tbs) {
       final int numTuples = rawData.get(0).size();
       for (int i = 0; i < numTuples; i++) {
-        final Object groupByValue = rawData.get(groupByColumn).get(i);
+        final Object groupByValue = rawData.get(groupByColumn).getObject(i);
         @SuppressWarnings("unchecked")
-        final T aggValue = (T) rawData.get(aggColumn).get(i);
+        final T aggValue = (T) rawData.get(aggColumn).getObject(i);
         final T currentMin = min.get(groupByValue);
         if (currentMin == null) {
           min.put(groupByValue, aggValue);
@@ -332,8 +332,8 @@ public final class TestUtils {
     for (final List<Column<?>> rawData : tbs) {
       final int numTuples = rawData.get(0).size();
       for (int i = 0; i < numTuples; i++) {
-        final Object groupByValue = rawData.get(groupByColumn).get(i);
-        final Long aggValue = (Long) rawData.get(aggColumn).get(i);
+        final Object groupByValue = rawData.get(groupByColumn).getObject(i);
+        final Long aggValue = (Long) rawData.get(aggColumn).getObject(i);
         Long currentSum = sum.get(groupByValue);
         if (currentSum == null) {
           currentSum = 0L;
@@ -357,12 +357,12 @@ public final class TestUtils {
   @SuppressWarnings("unchecked")
   public static <T extends Comparable<T>> T max(final TupleBatchBuffer tbb, final int column) {
     final List<List<Column<?>>> tbs = tbb.getAllAsRawColumn();
-    T max = (T) tbs.get(0).get(column).get(0);
+    T max = (T) tbs.get(0).get(column).getObject(0);
     for (final List<Column<?>> tb : tbs) {
       final int numTuples = tb.get(0).size();
       final Column<?> c = tb.get(column);
       for (int i = 0; i < numTuples; i++) {
-        final T current = (T) c.get(i);
+        final T current = (T) c.getObject(i);
         if (max.compareTo(current) < 0) {
           max = current;
         }
@@ -374,12 +374,12 @@ public final class TestUtils {
   @SuppressWarnings("unchecked")
   public static <T extends Comparable<T>> T min(final TupleBatchBuffer tbb, final int column) {
     final List<List<Column<?>>> tbs = tbb.getAllAsRawColumn();
-    T min = (T) tbs.get(0).get(column).get(0);
+    T min = (T) tbs.get(0).get(column).getObject(0);
     for (final List<Column<?>> tb : tbs) {
       final int numTuples = tb.get(0).size();
       final Column<?> c = tb.get(column);
       for (int i = 0; i < numTuples; i++) {
-        final T current = (T) c.get(i);
+        final T current = (T) c.getObject(i);
         if (min.compareTo(current) > 0) {
           min = current;
         }
@@ -395,7 +395,7 @@ public final class TestUtils {
       final int numTuples = tb.get(0).size();
       final Column<?> c = tb.get(column);
       for (int i = 0; i < numTuples; i++) {
-        final Long current = (Long) c.get(i);
+        final Long current = (Long) c.getObject(i);
         sum += current;
       }
     }
@@ -453,7 +453,7 @@ public final class TestUtils {
       for (int row = 0; row < numRow; row++) {
         final Tuple t = new Tuple(numColumn);
         for (int column = 0; column < numColumn; column++) {
-          t.set(column, columns.get(column).get(row));
+          t.set(column, columns.get(column).getObject(row));
         }
         final Integer numOccur = result.get(t);
         if (numOccur == null) {
@@ -476,7 +476,7 @@ public final class TestUtils {
       for (int row = 0; row < numRow; row++) {
         final Tuple t = new Tuple(numColumn);
         for (int column = 0; column < numColumn; column++) {
-          t.set(column, columns.get(column).get(row));
+          t.set(column, columns.get(column).getObject(row));
         }
         result.put(t, 1);
       }

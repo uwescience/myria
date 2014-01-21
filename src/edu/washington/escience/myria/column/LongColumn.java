@@ -23,10 +23,8 @@ import edu.washington.escience.myria.util.ImmutableIntArray;
  * @author dhalperi
  * 
  */
-public final class LongColumn implements Column<Long> {
-  /**
-   * 
-   */
+public final class LongColumn extends Column<Long> {
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** Internal representation of the column data. */
   private final long[] data;
@@ -45,7 +43,7 @@ public final class LongColumn implements Column<Long> {
   }
 
   @Override
-  public Long get(final int row) {
+  public Long getObject(final int row) {
     return Long.valueOf(getLong(row));
   }
 
@@ -60,12 +58,7 @@ public final class LongColumn implements Column<Long> {
     statement.bind(sqliteIndex, getLong(row));
   }
 
-  /**
-   * Returns the element at the specified row in this column.
-   * 
-   * @param row row of element to return.
-   * @return the element at the specified row in this column.
-   */
+  @Override
   public long getLong(final int row) {
     Preconditions.checkElementIndex(row, position);
     return data[row];
@@ -123,12 +116,12 @@ public final class LongColumn implements Column<Long> {
 
   @Override
   public boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
-    return getLong(leftIdx) == ((LongColumn) rightColumn).getLong(rightIdx);
+    return getLong(leftIdx) == rightColumn.getLong(rightIdx);
   }
 
   @Override
   public void append(final int index, final ColumnBuilder<?> columnBuilder) {
-    ((LongColumnBuilder) columnBuilder).append(getLong(index));
+    ((LongColumnBuilder) columnBuilder).appendLong(getLong(index));
   }
 
   @Override

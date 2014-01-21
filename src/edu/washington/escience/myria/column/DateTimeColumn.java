@@ -25,11 +25,9 @@ import edu.washington.escience.myria.util.TypeFunnel;
  * A column of Date values.
  * 
  */
-public final class DateTimeColumn implements Column<DateTime> {
-  /**
-   * 
-   */
-  private static final long serialVersionUID = -6748591038891797523L;
+public final class DateTimeColumn extends Column<DateTime> {
+  /** Required for Java serialization. */
+  private static final long serialVersionUID = 1;
   /** Internal representation of the column data. */
   private final DateTime[] data;
   /** The number of existing rows in this column. */
@@ -47,7 +45,7 @@ public final class DateTimeColumn implements Column<DateTime> {
   }
 
   @Override
-  public DateTime get(final int row) {
+  public DateTime getObject(final int row) {
     return getDateTime(row);
   }
 
@@ -68,6 +66,7 @@ public final class DateTimeColumn implements Column<DateTime> {
    * @param row row of element to return.
    * @return the element at the specified row in this column.
    */
+  @Override
   public DateTime getDateTime(final int row) {
     Preconditions.checkElementIndex(row, position);
     return data[row];
@@ -127,12 +126,12 @@ public final class DateTimeColumn implements Column<DateTime> {
 
   @Override
   public boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
-    return getDateTime(leftIdx).equals(rightColumn.get(rightIdx));
+    return getDateTime(leftIdx).equals(rightColumn.getObject(rightIdx));
   }
 
   @Override
   public void append(final int index, final ColumnBuilder<?> columnBuilder) {
-    ((DateTimeColumnBuilder) columnBuilder).append(getDateTime(index));
+    ((DateTimeColumnBuilder) columnBuilder).appendDateTime(getDateTime(index));
   }
 
   @Override

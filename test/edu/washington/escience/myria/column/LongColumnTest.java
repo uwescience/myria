@@ -16,7 +16,7 @@ public class LongColumnTest {
   @Test
   public void testProto() {
     final LongColumnBuilder original = new LongColumnBuilder();
-    original.append(1).append(2).append(5).append(11);
+    original.appendLong(1).appendLong(2).appendLong(5).appendLong(11);
     final ColumnMessage serialized = original.build().serializeToProto();
     final LongColumn deserialized = LongColumnBuilder.buildFromProtobuf(serialized, original.size());
     assertTrue(original.build().toString().equals(deserialized.toString()));
@@ -26,7 +26,7 @@ public class LongColumnTest {
   public void testFull() {
     final LongColumnBuilder builder = new LongColumnBuilder();
     for (int i = 0; i < TupleBatch.BATCH_SIZE; i++) {
-      builder.append(i);
+      builder.appendLong(i);
     }
     builder.build();
   }
@@ -35,9 +35,9 @@ public class LongColumnTest {
   public void testOverflow() {
     final LongColumnBuilder builder = new LongColumnBuilder();
     for (int i = 0; i < TupleBatch.BATCH_SIZE; i++) {
-      builder.append(i);
+      builder.appendLong(i);
     }
-    builder.append(0);
+    builder.appendLong(0);
     builder.build();
   }
 

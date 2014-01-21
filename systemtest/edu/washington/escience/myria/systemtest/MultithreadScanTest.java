@@ -49,8 +49,8 @@ public class MultithreadScanTest extends SystemTestBase {
       final List<Column<?>> output = tbs.next();
       final int numRow = output.get(0).size();
       for (int i = 0; i < numRow; i++) {
-        final int fr = Integer.parseInt(output.get(0).get(i).toString());
-        final int fe = Integer.parseInt(output.get(1).get(i).toString());
+        final int fr = Integer.parseInt(output.get(0).getObject(i).toString());
+        final int fe = Integer.parseInt(output.get(1).getObject(i).toString());
         graph[fr][fe] = cntgraph[fr][fe] = true;
       }
     }

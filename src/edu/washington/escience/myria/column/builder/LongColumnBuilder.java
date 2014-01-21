@@ -20,7 +20,7 @@ import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
  * A column of Long values.
  * 
  */
-public final class LongColumnBuilder implements ColumnBuilder<Long> {
+public final class LongColumnBuilder extends ColumnBuilder<Long> {
   /** View of the column data as longs. */
   private final LongBuffer data;
 
@@ -70,14 +70,8 @@ public final class LongColumnBuilder implements ColumnBuilder<Long> {
     return Type.LONG_TYPE;
   }
 
-  /**
-   * Inserts the specified element at end of this column.
-   * 
-   * @param value element to be inserted.
-   * @return this column.
-   * @throws BufferOverflowException if exceeds buffer up bound.
-   */
-  public LongColumnBuilder append(final long value) throws BufferOverflowException {
+  @Override
+  public LongColumnBuilder appendLong(final long value) throws BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
     data.put(value);
     return this;
@@ -87,26 +81,20 @@ public final class LongColumnBuilder implements ColumnBuilder<Long> {
   public ColumnBuilder<Long> appendFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException,
       BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return append(resultSet.getLong(jdbcIndex));
+    return appendLong(resultSet.getLong(jdbcIndex));
   }
 
   @Override
   public ColumnBuilder<Long> appendFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException,
       BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return append(statement.columnLong(index));
-  }
-
-  @Override
-  public ColumnBuilder<Long> append(final Long value) throws BufferOverflowException {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return append(value.longValue());
+    return appendLong(statement.columnLong(index));
   }
 
   @Override
   public ColumnBuilder<Long> appendObject(final Object value) throws BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return append((Long) value);
+    return appendLong((Long) value);
   }
 
   @Override
@@ -164,14 +152,11 @@ public final class LongColumnBuilder implements ColumnBuilder<Long> {
 
   @Override
   @Deprecated
-  public Long get(final int row) {
+  public Long getObject(final int row) {
     return data.get(row);
   }
 
-  /**
-   * @param row the row to get
-   * @return primitive value of the row
-   * */
+  @Override
   public long getLong(final int row) {
     return data.get(row);
   }

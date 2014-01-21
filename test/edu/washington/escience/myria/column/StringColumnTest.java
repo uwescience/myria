@@ -16,7 +16,7 @@ public class StringColumnTest {
   @Test
   public void testProto() {
     final StringColumnBuilder original = new StringColumnBuilder();
-    original.append("First").append("Second").append("Third").append("NextIsEmptyString").append("").append(
+    original.appendString("First").appendString("Second").appendString("Third").appendString("NextIsEmptyString").appendString("").appendString(
         "VeryVeryVeryVeryVeryVeryVeryVeryLongLast");
     final ColumnMessage serialized = original.build().serializeToProto();
     final StringColumn deserialized = StringColumnBuilder.buildFromProtobuf(serialized, original.size());
@@ -27,7 +27,7 @@ public class StringColumnTest {
   public void testFull() {
     final StringColumnBuilder builder = new StringColumnBuilder();
     for (int i = 0; i < TupleBatch.BATCH_SIZE; i++) {
-      builder.append("true");
+      builder.appendString("true");
     }
     builder.build();
   }
@@ -36,9 +36,9 @@ public class StringColumnTest {
   public void testOverflow() {
     final StringColumnBuilder builder = new StringColumnBuilder();
     for (int i = 0; i < TupleBatch.BATCH_SIZE; i++) {
-      builder.append("false");
+      builder.appendString("false");
     }
-    builder.append("true");
+    builder.appendString("true");
     builder.build();
   }
 
