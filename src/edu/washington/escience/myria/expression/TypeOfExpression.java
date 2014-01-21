@@ -8,9 +8,9 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 
 /**
- * Represents a reference to a child field in an expression tree.
+ * Represents a reference to the type of a child field in an expression tree.
  */
-public class VariableExpression extends ZeroaryExpression {
+public class TypeOfExpression extends ZeroaryExpression {
   /***/
   private static final long serialVersionUID = 1L;
 
@@ -22,16 +22,16 @@ public class VariableExpression extends ZeroaryExpression {
    * This is not really unused, it's used automagically by Jackson deserialization.
    */
   @SuppressWarnings("unused")
-  private VariableExpression() {
+  private TypeOfExpression() {
     this(-1);
   }
 
   /**
-   * A {@link VariableExpression} that references column <code>columnIdx</code> from the input.
+   * A {@link TypeOfExpression} that references the type of column <code>columnIdx</code> from the input.
    * 
    * @param columnIdx the index in the input.
    */
-  public VariableExpression(final int columnIdx) {
+  public TypeOfExpression(final int columnIdx) {
     this.columnIdx = columnIdx;
   }
 
@@ -42,9 +42,7 @@ public class VariableExpression extends ZeroaryExpression {
 
   @Override
   public String getJavaString(final Schema schema, final Schema stateSchema) {
-    // We generate a variable access into the tuple buffer.
-    return new StringBuilder("tb.get").append(getOutputType(schema, stateSchema).getName()).append("(").append(
-        columnIdx).append(", rowId)").toString();
+    throw new UnsupportedOperationException("This expression operator does not have a java string representation.");
   }
 
   /**
@@ -61,10 +59,10 @@ public class VariableExpression extends ZeroaryExpression {
 
   @Override
   public boolean equals(final Object other) {
-    if (other == null || !(other instanceof VariableExpression)) {
+    if (other == null || !(other instanceof TypeOfExpression)) {
       return false;
     }
-    VariableExpression otherExp = (VariableExpression) other;
+    TypeOfExpression otherExp = (TypeOfExpression) other;
     return Objects.equals(columnIdx, otherExp.columnIdx);
   }
 }

@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.expression;
 
+import com.google.common.base.Preconditions;
+
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 
@@ -24,6 +26,8 @@ public class CastExpression extends BinaryExpression {
    */
   public CastExpression(final ExpressionOperator left, final ExpressionOperator right) {
     super(left, right);
+    Preconditions.checkArgument(right instanceof TypeExpression || right instanceof TypeOfExpression,
+        "The right child of a cast operator must be a Type or a TypeOf, not a %s", right.getClass().getSimpleName());
   }
 
   @Override
