@@ -81,7 +81,7 @@ public final class ConstantEvaluator extends GenericEvaluator {
   }
 
   @Override
-  public void eval(final TupleBatch tb, final int rowIdx, final WritableColumn<?> result, final ReadableTable state) {
+  public void eval(final TupleBatch tb, final int rowIdx, final WritableColumn result, final ReadableTable state) {
     throw new UnsupportedOperationException("Should not be here. Should be using eval() instead");
   }
 

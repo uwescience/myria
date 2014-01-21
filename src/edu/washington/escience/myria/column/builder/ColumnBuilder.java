@@ -17,7 +17,7 @@ import edu.washington.escience.myria.column.mutable.MutableColumn;
  * @param <T> type of the objects in this column.
  * 
  */
-public abstract class ColumnBuilder<T extends Comparable<?>> implements ReadableColumn, WritableColumn<T> {
+public abstract class ColumnBuilder<T extends Comparable<?>> implements ReadableColumn, WritableColumn {
 
   @Override
   public ColumnBuilder<T> appendBoolean(final boolean value) throws BufferOverflowException {

@@ -12,7 +12,7 @@ import edu.washington.escience.myria.column.builder.WritableColumn;
  * 
  * @param <T> the type.
  */
-public class Field<T extends Comparable<?>> implements WritableColumn<T>, Serializable {
+public class Field<T extends Comparable<?>> implements WritableColumn, Serializable {
   /***/
   private static final long serialVersionUID = 1L;
 
@@ -22,49 +22,49 @@ public class Field<T extends Comparable<?>> implements WritableColumn<T>, Serial
   private Object value;
 
   @Override
-  public WritableColumn<T> appendBoolean(final boolean value) throws BufferOverflowException {
+  public WritableColumn appendBoolean(final boolean value) throws BufferOverflowException {
     this.value = value;
     return this;
   }
 
   @Override
-  public WritableColumn<T> appendDateTime(final DateTime value) throws BufferOverflowException {
+  public WritableColumn appendDateTime(final DateTime value) throws BufferOverflowException {
     this.value = value;
     return this;
   }
 
   @Override
-  public WritableColumn<T> appendDouble(final double value) throws BufferOverflowException {
+  public WritableColumn appendDouble(final double value) throws BufferOverflowException {
     this.value = value;
     return this;
   }
 
   @Override
-  public WritableColumn<T> appendFloat(final float value) throws BufferOverflowException {
+  public WritableColumn appendFloat(final float value) throws BufferOverflowException {
     this.value = value;
     return this;
   }
 
   @Override
-  public WritableColumn<T> appendInt(final int value) throws BufferOverflowException {
+  public WritableColumn appendInt(final int value) throws BufferOverflowException {
     this.value = value;
     return this;
   }
 
   @Override
-  public WritableColumn<T> appendLong(final long value) throws BufferOverflowException {
+  public WritableColumn appendLong(final long value) throws BufferOverflowException {
     this.value = value;
     return this;
   }
 
   @Override
-  public WritableColumn<T> appendObject(final Object value) throws BufferOverflowException {
+  public WritableColumn appendObject(final Object value) throws BufferOverflowException {
     this.value = value;
     return this;
   }
 
   @Override
-  public WritableColumn<T> appendString(final String value) throws BufferOverflowException {
+  public WritableColumn appendString(final String value) throws BufferOverflowException {
     this.value = value;
     return this;
   }
