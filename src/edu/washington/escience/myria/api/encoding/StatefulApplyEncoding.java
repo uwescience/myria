@@ -8,19 +8,23 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.Operator;
+import edu.washington.escience.myria.operator.StatefulApply;
 import edu.washington.escience.myria.parallel.Server;
 
-public class ApplyEncoding extends OperatorEncoding<Apply> {
+public class StatefulApplyEncoding extends OperatorEncoding<Apply> {
 
   public String argChild;
 
   public List<Expression> emitExpressions;
+  public List<Expression> initializerExpressions;
+  public List<Expression> updaterExpressions;
 
-  private static final ImmutableList<String> requiredArguments = ImmutableList.of("argChild", "emitExpressions");
+  private static final ImmutableList<String> requiredArguments = ImmutableList.of("argChild", "emitExpressions",
+      "initializerExpressions", "updaterExpressions");
 
   @Override
   public Apply construct(Server server) {
-    return new Apply(null, emitExpressions);
+    return new StatefulApply(null, emitExpressions, initializerExpressions, updaterExpressions);
   }
 
   @Override

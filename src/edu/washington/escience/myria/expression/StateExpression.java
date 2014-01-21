@@ -6,11 +6,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.operator.StatefulApply;
 
 /**
- * Represents a reference to a child field in an expression tree.
+ * Simple expression operator that allows access to fields of the state in {@link StatefulApply}.
  */
-public class VariableExpression extends ZeroaryExpression {
+public class StateExpression extends ZeroaryExpression {
   /***/
   private static final long serialVersionUID = 1L;
 
@@ -22,22 +23,22 @@ public class VariableExpression extends ZeroaryExpression {
    * This is not really unused, it's used automagically by Jackson deserialization.
    */
   @SuppressWarnings("unused")
-  private VariableExpression() {
+  private StateExpression() {
     columnIdx = -1;
   }
 
   /**
-   * A {@link VariableExpression} that references column <code>columnIdx</code> from the input.
+   * Default constructor.
    * 
-   * @param columnIdx the index in the input.
+   * @param columnIdx the index in the state.
    */
-  public VariableExpression(final int columnIdx) {
+  public StateExpression(final int columnIdx) {
     this.columnIdx = columnIdx;
   }
 
   @Override
   public Type getOutputType(final Schema schema, final Schema stateSchema) {
-    return schema.getColumnType(columnIdx);
+    return stateSchema.getColumnType(getColumnIdx());
   }
 
   @Override
@@ -73,8 +74,8 @@ public class VariableExpression extends ZeroaryExpression {
         break;
     }
 
-    // We generate a variable access into the tuple buffer.
-    return new StringBuilder("tb.get").append(tName).append("(").append(columnIdx).append(", rowId)").toString();
+    // We generate a variable access into the state tuple.
+    return new StringBuilder("state.get").append(tName).append("(").append(getColumnIdx()).append(", 0)").toString();
   }
 
   /**
@@ -86,15 +87,15 @@ public class VariableExpression extends ZeroaryExpression {
 
   @Override
   public int hashCode() {
-    return Objects.hash(getClass().getCanonicalName(), columnIdx);
+    return Objects.hash(getClass().getCanonicalName(), getColumnIdx());
   }
 
   @Override
   public boolean equals(final Object other) {
-    if (other == null || !(other instanceof VariableExpression)) {
+    if (other == null || !(other instanceof StateExpression)) {
       return false;
     }
-    VariableExpression otherExp = (VariableExpression) other;
-    return Objects.equals(columnIdx, otherExp.columnIdx);
+    StateExpression otherExp = (StateExpression) other;
+    return Objects.equals(getColumnIdx(), otherExp.getColumnIdx());
   }
 }

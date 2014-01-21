@@ -99,14 +99,9 @@ public class TupleBuffer implements ReadableTable, Cloneable {
     return readyTuples.size() * TupleBatch.BATCH_SIZE + currentInProgressTuples;
   }
 
-  /**
-   * @param colIndex column index
-   * @param rowIndex row index
-   * @return the element at (rowIndex, colIndex)
-   * @throws IndexOutOfBoundsException if indices are out of bounds.
-   * */
+  @Override
   @Deprecated
-  public final Object get(final int colIndex, final int rowIndex) throws IndexOutOfBoundsException {
+  public final Object getObject(final int colIndex, final int rowIndex) throws IndexOutOfBoundsException {
     int tupleBatchIndex = rowIndex / TupleBatch.BATCH_SIZE;
     int tupleIndex = rowIndex % TupleBatch.BATCH_SIZE;
     if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
@@ -659,8 +654,6 @@ public class TupleBuffer implements ReadableTable, Cloneable {
         }
         break;
       }
-      default:
-        break;
     }
   }
 
@@ -783,20 +776,5 @@ public class TupleBuffer implements ReadableTable, Cloneable {
       ret.currentBuildingColumns[i] = currentBuildingColumns[i].forkNewBuilder();
     }
     return ret;
-  }
-
-  @Override
-  @Deprecated
-  public Object getObject(final int column, final int row) {
-    int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
-    int tupleIndex = row % TupleBatch.BATCH_SIZE;
-    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
-        && tupleIndex >= currentInProgressTuples) {
-      throw new IndexOutOfBoundsException();
-    }
-    if (tupleBatchIndex < readyTuples.size()) {
-      return readyTuples.get(tupleBatchIndex)[column].getObject(tupleIndex);
-    }
-    return currentBuildingColumns[column].getObject(tupleIndex);
   }
 }

@@ -29,14 +29,14 @@ public class NotExpression extends UnaryExpression {
   }
 
   @Override
-  public Type getOutputType(final Schema schema) {
-    checkBooleanType(schema);
+  public Type getOutputType(final Schema schema, final Schema stateSchema) {
+    checkBooleanType(schema, stateSchema);
     return Type.BOOLEAN_TYPE;
   }
 
   @Override
-  public String getJavaString(final Schema schema) {
-    return getFunctionCallUnaryString("!", schema);
+  public String getJavaString(final Schema schema, final Schema stateSchema) {
+    return getFunctionCallUnaryString("!", schema, stateSchema);
   }
 
   @Override

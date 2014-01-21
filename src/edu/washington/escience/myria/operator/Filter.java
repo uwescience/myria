@@ -9,8 +9,8 @@ import com.google.common.collect.ImmutableMap;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.expression.BooleanExpression;
+import edu.washington.escience.myria.expression.Expression;
+import edu.washington.escience.myria.expression.evaluate.BooleanEvaluator;
 
 /**
  * Filter is an operator that implements a relational select.
@@ -22,7 +22,12 @@ public final class Filter extends UnaryOperator {
   /**
    * The operator.
    * */
-  private final BooleanExpression predicate;
+  private final Expression predicate;
+
+  /**
+   * Evaluator that evaluates {@link #predicate}.
+   */
+  private BooleanEvaluator evaluator;
 
   /**
    * Constructor accepts a predicate to apply and a child operator to read tuples to filter from.
@@ -30,7 +35,7 @@ public final class Filter extends UnaryOperator {
    * @param predicate the predicate by which to filter tuples.
    * @param child The child operator
    */
-  public Filter(final BooleanExpression predicate, final Operator child) {
+  public Filter(final Expression predicate, final Operator child) {
     super(child);
     this.predicate = predicate;
   }
@@ -43,7 +48,7 @@ public final class Filter extends UnaryOperator {
       for (int rowIdx = 0; rowIdx < tb.numTuples(); rowIdx++) {
         Boolean valid;
         try {
-          valid = predicate.eval(tb, rowIdx);
+          valid = evaluator.eval(tb, rowIdx);
         } catch (InvocationTargetException e) {
           throw new DbException(e);
         }
@@ -67,11 +72,10 @@ public final class Filter extends UnaryOperator {
 
     Schema inputSchema = getChild().getSchema();
 
-    predicate.setSchema(inputSchema);
-    if (predicate.needsCompiling()) {
-      predicate.compile();
+    evaluator = new BooleanEvaluator(predicate, inputSchema, null);
+    if (evaluator.needsCompiling()) {
+      evaluator.compile();
     }
-    Preconditions.checkArgument(predicate.getOutputType().equals(Type.BOOLEAN_TYPE));
   }
 
   @Override

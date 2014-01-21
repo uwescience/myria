@@ -1,10 +1,6 @@
-/**
- * 
- */
-package edu.washington.escience.myria.expression;
+package edu.washington.escience.myria.expression.evaluate;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.Objects;
 
 import org.codehaus.commons.compiler.CompilerFactoryFactory;
 import org.codehaus.commons.compiler.IScriptEvaluator;
@@ -15,52 +11,45 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.expression.Expression;
 
 /**
- * An expression that can be applied to a tuple. This is the specialized version where the evaluator returns booleans.
+ * An Expression evaluator for stateless boolean expressions.
  */
-public class BooleanExpression extends Expression {
-  /***/
-  private static final long serialVersionUID = 1L;
+public class BooleanEvaluator extends TupleEvaluator {
+
+  /**
+   * Default constructor.
+   * 
+   * @param expression the expression for the evaluator
+   * @param inoutSchema the schema that the expression expects
+   * @param stateSchema the schema of the state
+   */
+  public BooleanEvaluator(final Expression expression, final Schema inoutSchema, final Schema stateSchema) {
+    super(expression, inoutSchema, stateSchema);
+    Preconditions.checkArgument(getOutputType().equals(Type.BOOLEAN_TYPE));
+  }
 
   /**
    * Expression evaluator.
    */
-  private BooleanEvaluator evaluator;
-
-  /**
-   * This is not really unused, it's used automagically by Jackson deserialization.
-   */
-  @SuppressWarnings("unused")
-  private BooleanExpression() {
-  }
-
-  /**
-   * Constructs the Expression object.
-   * 
-   * @param outputName the name of the resulting element
-   * @param rootExpressionOperator the root of the AST representing this expression.
-   */
-  public BooleanExpression(final String outputName, final ExpressionOperator rootExpressionOperator) {
-    super(outputName, rootExpressionOperator);
-  }
+  private BooleanEvalInterface evaluator;
 
   /**
    * Compiles the {@link #javaExpression}.
    * 
    * @throws DbException compilation failed
    */
+  @Override
   public void compile() throws DbException {
     Preconditions.checkArgument(!isCopyFromInput(),
         "This expression does not need to be compiled because the data can be copied from the input.");
-    Preconditions.checkArgument(super.getOutputType() == Type.BOOLEAN_TYPE);
-    setJavaExpression(getRootExpressionOperator().getJavaString(Objects.requireNonNull(getInputSchema())));
 
     try {
       IScriptEvaluator se = CompilerFactoryFactory.getDefaultCompilerFactory().newExpressionEvaluator();
 
       evaluator =
-          (BooleanEvaluator) se.createFastEvaluator(getJavaExpression(), BooleanEvaluator.class, new String[] {
+          (BooleanEvalInterface) se.createFastEvaluator(getJavaExpression(), BooleanEvalInterface.class, new String[] {
               "tb", "rowId" });
     } catch (Exception e) {
       throw new DbException("Error when compiling expression " + this, e);
@@ -79,17 +68,5 @@ public class BooleanExpression extends Expression {
     Preconditions.checkArgument(evaluator != null,
         "Call compile first or copy the data if it is the same in the input.");
     return evaluator.evaluate(tb, rowId);
-  }
-
-  @Override
-  public Type getOutputType() {
-    Preconditions.checkArgument(super.getOutputType() == Type.BOOLEAN_TYPE);
-    return Type.BOOLEAN_TYPE;
-  }
-
-  @Override
-  public void setSchema(final Schema inputSchema) {
-    evaluator = null;
-    super.setSchema(inputSchema);
   }
 }

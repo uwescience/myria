@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.expression;
 
+import java.util.List;
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -11,7 +12,7 @@ import edu.washington.escience.myria.SimplePredicate;
 import edu.washington.escience.myria.Type;
 
 /**
- * An ExpressionOperator with one child.
+ * An ExpressionOperator with two children.
  */
 public abstract class BinaryExpression extends ExpressionOperator {
 
@@ -56,17 +57,24 @@ public abstract class BinaryExpression extends ExpressionOperator {
     return right;
   }
 
+  @Override
+  public List<ExpressionOperator> getChildren() {
+    ImmutableList.Builder<ExpressionOperator> children = ImmutableList.builder();
+    return children.add(getLeft()).add(getRight()).build();
+  }
+
   /**
    * Returns the infix binary string: "(" + left + infix + right + ")". E.g, for {@link PlusExpression},
    * <code>infix</code> is <code>"+"</code>.
    * 
    * @param infix the string representation of the Operator.
    * @param schema the input schema
+   * @param stateSchema the schema of the state
    * @return the Java string for this operator.
    */
-  protected final String getInfixBinaryString(final String infix, final Schema schema) {
-    return new StringBuilder("(").append(getLeft().getJavaString(schema)).append(infix).append(
-        getRight().getJavaString(schema)).append(')').toString();
+  protected final String getInfixBinaryString(final String infix, final Schema schema, final Schema stateSchema) {
+    return new StringBuilder("(").append(getLeft().getJavaString(schema, stateSchema)).append(infix).append(
+        getRight().getJavaString(schema, stateSchema)).append(')').toString();
   }
 
   /**
@@ -75,11 +83,14 @@ public abstract class BinaryExpression extends ExpressionOperator {
    * 
    * @param op integer comparison operator >, <, ==, >=, <=.
    * @param schema the input schema
+   * @param stateSchema the schema of the state
    * @return the Java string for this operator.
    */
-  protected final String getObjectComparisonString(final SimplePredicate.Op op, final Schema schema) {
-    return new StringBuilder("(").append(getRight().getJavaString(schema)).append(".compareTo(").append(
-        getLeft().getJavaString(schema)).append(')').append(op.toJavaString()).append(0).append(")").toString();
+  protected final String getObjectComparisonString(final SimplePredicate.Op op, final Schema schema,
+      final Schema stateSchema) {
+    return new StringBuilder("(").append(getRight().getJavaString(schema, stateSchema)).append(".compareTo(").append(
+        getLeft().getJavaString(schema, stateSchema)).append(')').append(op.toJavaString()).append(0).append(")")
+        .toString();
   }
 
   /**
@@ -88,11 +99,13 @@ public abstract class BinaryExpression extends ExpressionOperator {
    * 
    * @param functionName the string representation of the Java function name.
    * @param schema the input schema
+   * @param stateSchema the schema of the state
    * @return the Java string for this operator.
    */
-  protected final String getFunctionCallBinaryString(final String functionName, final Schema schema) {
-    return new StringBuilder(functionName).append('(').append(getLeft().getJavaString(schema)).append(',').append(
-        getRight().getJavaString(schema)).append(')').toString();
+  protected final String getFunctionCallBinaryString(final String functionName, final Schema schema,
+      final Schema stateSchema) {
+    return new StringBuilder(functionName).append('(').append(getLeft().getJavaString(schema, stateSchema)).append(',')
+        .append(getRight().getJavaString(schema, stateSchema)).append(')').toString();
   }
 
   /**
@@ -123,11 +136,12 @@ public abstract class BinaryExpression extends ExpressionOperator {
    * numeric.
    * 
    * @param schema the schema of the input tuples.
+   * @param stateSchema the schema of the state
    * @return the default numeric type, based on the types of the children and Java type precedence.
    */
-  protected final Type checkAndReturnDefaultNumericType(final Schema schema) {
-    Type leftType = getLeft().getOutputType(schema);
-    Type rightType = getRight().getOutputType(schema);
+  protected final Type checkAndReturnDefaultNumericType(final Schema schema, final Schema stateSchema) {
+    Type leftType = getLeft().getOutputType(schema, stateSchema);
+    Type rightType = getRight().getOutputType(schema, stateSchema);
     ImmutableList<Type> validTypes = ImmutableList.of(Type.DOUBLE_TYPE, Type.FLOAT_TYPE, Type.LONG_TYPE, Type.INT_TYPE);
     int leftIdx = validTypes.indexOf(leftType);
     int rightIdx = validTypes.indexOf(rightType);
@@ -143,10 +157,11 @@ public abstract class BinaryExpression extends ExpressionOperator {
    * boolean.
    * 
    * @param schema the schema of the input tuples.
+   * @param stateSchema the schema of the state
    */
-  protected final void checkBooleanType(final Schema schema) {
-    Type leftType = getLeft().getOutputType(schema);
-    Type rightType = getRight().getOutputType(schema);
+  protected final void checkBooleanType(final Schema schema, final Schema stateSchema) {
+    Type leftType = getLeft().getOutputType(schema, stateSchema);
+    Type rightType = getRight().getOutputType(schema, stateSchema);
     Preconditions.checkArgument(leftType == Type.BOOLEAN_TYPE, "%s cannot handle left child [%s] of Type %s",
         getClass().getSimpleName(), getLeft(), leftType);
     Preconditions.checkArgument(rightType == Type.BOOLEAN_TYPE, "%s cannot handle right child [%s] of Type %s",

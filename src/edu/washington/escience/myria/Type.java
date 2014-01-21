@@ -37,6 +37,10 @@ public enum Type implements Serializable {
       return int.class;
     }
 
+    @Override
+    public Class<?> toJavaObjectType() {
+      return Integer.class;
+    }
   },
 
   /**
@@ -64,7 +68,13 @@ public enum Type implements Serializable {
     public Class<?> toJavaType() {
       return float.class;
     }
+
+    @Override
+    public Class<?> toJavaObjectType() {
+      return Float.class;
+    }
   },
+
   /**
    * Double type.
    * */
@@ -90,7 +100,13 @@ public enum Type implements Serializable {
     public Class<?> toJavaType() {
       return double.class;
     }
+
+    @Override
+    public Class<?> toJavaObjectType() {
+      return Double.class;
+    }
   },
+
   /**
    * Boolean type.
    * */
@@ -115,6 +131,11 @@ public enum Type implements Serializable {
     @Override
     public Class<?> toJavaType() {
       return boolean.class;
+    }
+
+    @Override
+    public Class<?> toJavaObjectType() {
+      return Boolean.class;
     }
   },
 
@@ -143,7 +164,13 @@ public enum Type implements Serializable {
     public Class<?> toJavaType() {
       return String.class;
     }
+
+    @Override
+    public Class<?> toJavaObjectType() {
+      return toJavaType();
+    }
   },
+
   /**
    * Long type.
    * */
@@ -168,6 +195,11 @@ public enum Type implements Serializable {
     @Override
     public Class<?> toJavaType() {
       return long.class;
+    }
+
+    @Override
+    public Class<?> toJavaObjectType() {
+      return Long.class;
     }
   },
 
@@ -197,6 +229,10 @@ public enum Type implements Serializable {
       return DateTime.class;
     }
 
+    @Override
+    public Class<?> toJavaObjectType() {
+      return toJavaType();
+    }
   };
 
   /**
@@ -398,4 +434,9 @@ public enum Type implements Serializable {
    * @return the java type
    */
   public abstract Class<?> toJavaType();
+
+  /**
+   * @return the non primitive java type
+   */
+  public abstract Class<?> toJavaObjectType();
 }
