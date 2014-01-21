@@ -43,39 +43,9 @@ public class StateExpression extends ZeroaryExpression {
 
   @Override
   public String getJavaString(final Schema schema, final Schema stateSchema) {
-    String tName = null;
-    switch (getOutputType(schema, stateSchema)) {
-      case INT_TYPE:
-        tName = "Int";
-        break;
-
-      case FLOAT_TYPE:
-        tName = "Float";
-        break;
-
-      case DOUBLE_TYPE:
-        tName = "Double";
-        break;
-
-      case BOOLEAN_TYPE:
-        tName = "Boolean";
-        break;
-
-      case STRING_TYPE:
-        tName = "String";
-        break;
-
-      case LONG_TYPE:
-        tName = "Long";
-        break;
-
-      case DATETIME_TYPE:
-        tName = "DateTime";
-        break;
-    }
-
     // We generate a variable access into the state tuple.
-    return new StringBuilder("state.get").append(tName).append("(").append(getColumnIdx()).append(", 0)").toString();
+    return new StringBuilder("state.get").append(getOutputType(schema, stateSchema).getName()).append("(").append(
+        getColumnIdx()).append(", 0)").toString();
   }
 
   /**

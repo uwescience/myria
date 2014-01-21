@@ -61,8 +61,7 @@ public class ConstantEvaluator extends Evaluator {
    * @throws InvocationTargetException exception thrown from janino
    */
   public Object eval() throws InvocationTargetException {
-    Preconditions.checkArgument(evaluator != null,
-        "Call compile first or copy the data if it is the same in the input.");
+    Preconditions.checkArgument(evaluator != null, "Call compile first.");
     return evaluator.evaluate(new Object[] {});
   }
 }

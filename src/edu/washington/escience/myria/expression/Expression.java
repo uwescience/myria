@@ -8,6 +8,7 @@ import com.google.common.collect.Lists;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.builder.ColumnBuilder;
 
 /**
  * An expression that can be applied to a tuple.
@@ -107,6 +108,16 @@ public class Expression implements Serializable {
       return rootExpressionOperator.getJavaString(null, null);
     }
     return javaExpression;
+  }
+
+  /**
+   * @param inputSchema the schema of the input relation
+   * @param stateSchema the schema of the state
+   * @return the Java form of this expression that also writes the results to a {@link ColumnBuilder}.
+   */
+  public String getJavaExpressionWithAppend(final Schema inputSchema, final Schema stateSchema) {
+    return new StringBuilder().append("result.append").append(getOutputType(inputSchema, stateSchema).getName())
+        .append("(").append(getJavaExpression(inputSchema, stateSchema)).append(")").toString();
   }
 
   /**

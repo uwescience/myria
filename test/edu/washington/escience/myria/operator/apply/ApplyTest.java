@@ -41,7 +41,7 @@ import edu.washington.escience.myria.expression.TimesExpression;
 import edu.washington.escience.myria.expression.ToUpperCaseExpression;
 import edu.washington.escience.myria.expression.TypeExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
-import edu.washington.escience.myria.expression.evaluate.TupleEvaluator;
+import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.StatefulApply;
 import edu.washington.escience.myria.operator.TupleSource;
@@ -177,7 +177,7 @@ public class ApplyTest {
       // Expression (just copy/ rename): a;
       Expression expr = new Expression("copy", vara);
 
-      TupleEvaluator eval = new TupleEvaluator(expr, tbb.getSchema(), null);
+      GenericEvaluator eval = new GenericEvaluator(expr, tbb.getSchema(), null);
       assertTrue(!eval.needsCompiling());
       Expressions.add(expr);
     }
@@ -536,11 +536,9 @@ public class ApplyTest {
     Expression initializeSum = new Expression("sum", new ConstantExpression(Type.LONG_TYPE, "0"));
     Expression updateCounter =
         new Expression(new PlusExpression(new StateExpression(0), new ConstantExpression(Type.LONG_TYPE, "1")));
-    Expression updateSum =
-        new Expression(new PlusExpression(new StateExpression(1), new VariableExpression(0)));
+    Expression updateSum = new Expression(new PlusExpression(new StateExpression(1), new VariableExpression(0)));
 
-    Expression avg =
-        new Expression("average", new DivideExpression(new StateExpression(1), new StateExpression(0)));
+    Expression avg = new Expression("average", new DivideExpression(new StateExpression(1), new StateExpression(0)));
 
     ImmutableList.Builder<Expression> Initializers = ImmutableList.builder();
     Initializers.add(initializeCounter);

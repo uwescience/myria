@@ -18,26 +18,14 @@ import edu.washington.escience.myria.column.mutable.MutableColumn;
  * @param <T> type of the objects in this column.
  * 
  */
-public abstract class ColumnBuilder<T extends Comparable<?>> implements ReadableColumn {
+public abstract class ColumnBuilder<T extends Comparable<?>> implements ReadableColumn, WritableColumn<T> {
 
-  /**
-   * Inserts the specified element at end of this column.
-   * 
-   * @param value element to be inserted.
-   * @return this column.
-   * @throws BufferOverflowException if exceeds buffer up bound.
-   */
+  @Override
   public ColumnBuilder<T> appendBoolean(final boolean value) throws BufferOverflowException {
     throw new UnsupportedOperationException(getClass().getName());
   }
 
-  /**
-   * Inserts the specified element at end of this column.
-   * 
-   * @param value element to be inserted.
-   * @return this column.
-   * @throws BufferOverflowException if exceeds buffer up bound.
-   */
+  @Override
   public ColumnBuilder<T> appendDateTime(final DateTime value) throws BufferOverflowException {
     throw new UnsupportedOperationException(getClass().getName());
   }
@@ -77,25 +65,32 @@ public abstract class ColumnBuilder<T extends Comparable<?>> implements Readable
     throw new UnsupportedOperationException(getClass().getName());
   }
 
-  /**
-   * Inserts the specified element at end of this column.
-   * 
-   * @param value element to be inserted.
-   * @return this column.
-   * @throws BufferOverflowException if exceeds buffer up bound.
-   */
+  @Override
   public ColumnBuilder<T> appendDouble(final double value) throws BufferOverflowException {
     throw new UnsupportedOperationException(getClass().getName());
   }
 
-  /**
-   * Inserts the specified element at end of this column.
-   * 
-   * @param value element to be inserted.
-   * @return this column.
-   * @throws BufferOverflowException if exceeds buffer up bound.
-   */
+  @Override
   public ColumnBuilder<T> appendFloat(final float value) throws BufferOverflowException {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public ColumnBuilder<T> appendInt(final int value) throws BufferOverflowException {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public ColumnBuilder<T> appendLong(final long value) throws BufferOverflowException {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  @Deprecated
+  public abstract ColumnBuilder<T> appendObject(Object value) throws BufferOverflowException;
+
+  @Override
+  public ColumnBuilder<T> appendString(final String value) throws BufferOverflowException {
     throw new UnsupportedOperationException(getClass().getName());
   }
 
@@ -122,49 +117,6 @@ public abstract class ColumnBuilder<T extends Comparable<?>> implements Readable
    */
   public abstract ColumnBuilder<T> appendFromSQLite(SQLiteStatement statement, int index) throws SQLiteException,
       BufferOverflowException;
-
-  /**
-   * Inserts the specified element at end of this column.
-   * 
-   * @param value element to be inserted.
-   * @return this column.
-   * @throws BufferOverflowException if exceeds buffer up bound.
-   */
-  public ColumnBuilder<T> appendInt(final int value) throws BufferOverflowException {
-    throw new UnsupportedOperationException(getClass().getName());
-  }
-
-  /**
-   * Inserts the specified element at end of this column.
-   * 
-   * @param value element to be inserted.
-   * @return this column.
-   * @throws BufferOverflowException if exceeds buffer up bound.
-   */
-  public ColumnBuilder<T> appendLong(final long value) throws BufferOverflowException {
-    throw new UnsupportedOperationException(getClass().getName());
-  }
-
-  /**
-   * Inserts the specified element at end of this column.
-   * 
-   * @param value element to be inserted.
-   * @return this column builder.
-   * @throws BufferOverflowException if the column is already full
-   */
-  @Deprecated
-  public abstract ColumnBuilder<T> appendObject(Object value) throws BufferOverflowException;
-
-  /**
-   * Inserts the specified element at end of this column.
-   * 
-   * @param value element to be inserted.
-   * @return this column.
-   * @throws BufferOverflowException if exceeds buffer up bound.
-   */
-  public ColumnBuilder<T> appendString(final String value) throws BufferOverflowException {
-    throw new UnsupportedOperationException(getClass().getName());
-  }
 
   /**
    * @return a column with the contents built.

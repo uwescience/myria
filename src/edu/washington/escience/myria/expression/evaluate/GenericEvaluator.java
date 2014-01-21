@@ -11,15 +11,16 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.ReadableTable;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.ConstantValueColumn;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.ColumnFactory;
+import edu.washington.escience.myria.column.builder.WritableColumn;
 import edu.washington.escience.myria.expression.ConstantExpression;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
+import edu.washington.escience.myria.expression.StateExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.StatefulApply;
@@ -27,7 +28,16 @@ import edu.washington.escience.myria.operator.StatefulApply;
 /**
  * An Expression evaluator for generic expressions. Used in {@link Apply} and {@link StatefulApply}.
  */
-public class GenericEvaluator extends TupleEvaluator {
+public class GenericEvaluator extends ColumnEvaluator {
+  /**
+   * Expression evaluator.
+   */
+  private EvalInterface evaluator;
+
+  /**
+   * True if the expression uses state.
+   */
+  private final boolean needsState;
 
   /**
    * Default constructor.
@@ -38,12 +48,8 @@ public class GenericEvaluator extends TupleEvaluator {
    */
   public GenericEvaluator(final Expression expression, final Schema inputSchema, final Schema stateSchema) {
     super(expression, inputSchema, stateSchema);
+    needsState = getExpression().hasOperator(StateExpression.class);
   }
-
-  /**
-   * Expression evaluator.
-   */
-  private EvalInterface evaluator;
 
   /**
    * Compiles the {@link #javaExpression}.
@@ -52,15 +58,15 @@ public class GenericEvaluator extends TupleEvaluator {
    */
   @Override
   public void compile() throws DbException {
-    Preconditions.checkArgument(!isCopyFromInput(),
-        "This expression does not need to be compiled because the data can be copied from the input.");
+    System.err.println(getExpression().getJavaExpressionWithAppend(getInputSchema(), getStateSchema()));
+    Preconditions.checkArgument(needsCompiling(), "This expression does not need to be compiled.");
 
     try {
       IScriptEvaluator se = CompilerFactoryFactory.getDefaultCompilerFactory().newExpressionEvaluator();
 
       evaluator =
           (EvalInterface) se.createFastEvaluator(getJavaExpression(), EvalInterface.class, new String[] {
-              "tb", "rowId", "state" });
+              "tb", "rowId", "result", "state" });
     } catch (Exception e) {
       throw new DbException("Error when compiling expression " + this, e);
     }
@@ -68,18 +74,27 @@ public class GenericEvaluator extends TupleEvaluator {
 
   /**
    * Evaluates the {@link #getJavaExpression()} using the {@link #evaluator}. Prefer to use
-   * {@link #evalAndPut(TupleBatch, int, TupleBatchBuffer, int)} as it can copy data without evaluating the expression.
+   * {@link #evaluateColumn(TupleBatch)} as it can copy data without evaluating the expression.
    * 
    * @param tb a tuple batch
-   * @param rowId the row that should be used for input data
+   * @param rowIdx the row that should be used for input data
+   * @param result the column that the result should be appended to
    * @param state additional state that affects the computation
-   * @return the result from the evaluation
    * @throws InvocationTargetException exception thrown from janino
    */
-  public Object eval(final TupleBatch tb, final int rowId, final ReadableTable state) throws InvocationTargetException {
+  public void eval(final TupleBatch tb, final int rowIdx, final WritableColumn<?> result, final ReadableTable state)
+      throws InvocationTargetException {
     Preconditions.checkArgument(evaluator != null,
         "Call compile first or copy the data if it is the same in the input.");
-    return evaluator.evaluate(tb, rowId, state);
+    evaluator.evaluate(tb, rowIdx, result, state);
+  }
+
+  /**
+   * @return the Java form of this expression.
+   */
+  @Override
+  public String getJavaExpression() {
+    return getExpression().getJavaExpressionWithAppend(getInputSchema(), getStateSchema());
   }
 
   /**
@@ -90,7 +105,6 @@ public class GenericEvaluator extends TupleEvaluator {
    * @return a column containing the result of evaluating this expression on the entire TupleBatch
    * @throws InvocationTargetException exception thrown from janino
    */
-  @SuppressWarnings("deprecation")
   public Column<?> evaluateColumn(final TupleBatch tb) throws InvocationTargetException {
     ExpressionOperator op = getExpression().getRootExpressionOperator();
     /* This expression just copies an input column. */
@@ -101,7 +115,7 @@ public class GenericEvaluator extends TupleEvaluator {
     Type type = getOutputType();
 
     /* This expression is a constant. */
-    if (op instanceof ConstantExpression) {
+    if (isConstant()) {
       ConstantExpression constOp = (ConstantExpression) op;
       return new ConstantValueColumn(type.fromString(constOp.getValue()), type, tb.numTuples());
     }
@@ -113,8 +127,15 @@ public class GenericEvaluator extends TupleEvaluator {
     ColumnBuilder<?> ret = ColumnFactory.allocateColumn(type);
     for (int row = 0; row < tb.numTuples(); ++row) {
       /** We already have an object, so we're not using the wrong version of put. Remove the warning. */
-      ret.appendObject(eval(tb, row, null));
+      eval(tb, row, ret, null);
     }
     return ret.build();
+  }
+
+  /**
+   * @return true if the expression accesses the state.
+   */
+  public boolean needsState() {
+    return needsState;
   }
 }
