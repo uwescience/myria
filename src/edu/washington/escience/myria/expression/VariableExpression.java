@@ -14,7 +14,7 @@ public class VariableExpression extends ZeroaryExpression {
   /***/
   private static final long serialVersionUID = 1L;
 
-  /** The index in the input that this {@link VariableExpression} references. */
+  /** The index in the input that is referenced. */
   @JsonProperty
   private final int columnIdx;
 

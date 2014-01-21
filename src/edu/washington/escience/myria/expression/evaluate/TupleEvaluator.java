@@ -7,7 +7,7 @@ import com.google.common.collect.Lists;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
-import edu.washington.escience.myria.expression.StateVariableExpression;
+import edu.washington.escience.myria.expression.StateExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
 
 /**
@@ -32,15 +32,15 @@ public class TupleEvaluator extends Evaluator {
   public TupleEvaluator(final Expression expression, final Schema inputSchema, final Schema stateSchema) {
     super(expression, inputSchema, stateSchema);
     ExpressionOperator rootOp = getExpression().getRootExpressionOperator();
-    copyFromInput = rootOp instanceof VariableExpression && !(rootOp instanceof StateVariableExpression);
-    needsState = hasOperator(StateVariableExpression.class);
+    copyFromInput = rootOp instanceof VariableExpression;
+    needsState = hasOperator(StateExpression.class);
   }
 
   /**
    * @param optype Class to find
    * @return true if the operator is in the expression
    */
-  private boolean hasOperator(final Class<StateVariableExpression> optype) {
+  private boolean hasOperator(final Class<StateExpression> optype) {
     LinkedList<ExpressionOperator> ops = Lists.newLinkedList();
     ops.add(getExpression().getRootExpressionOperator());
     while (!ops.isEmpty()) {
@@ -84,6 +84,9 @@ public class TupleEvaluator extends Evaluator {
     return getExpression().getOutputName();
   }
 
+  /**
+   * @return true if the expression accesses the state.
+   */
   public boolean needsState() {
     return needsState;
   }

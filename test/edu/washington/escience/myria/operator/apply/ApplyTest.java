@@ -35,7 +35,7 @@ import edu.washington.escience.myria.expression.PlusExpression;
 import edu.washington.escience.myria.expression.PowExpression;
 import edu.washington.escience.myria.expression.SinExpression;
 import edu.washington.escience.myria.expression.SqrtExpression;
-import edu.washington.escience.myria.expression.StateVariableExpression;
+import edu.washington.escience.myria.expression.StateExpression;
 import edu.washington.escience.myria.expression.TanExpression;
 import edu.washington.escience.myria.expression.TimesExpression;
 import edu.washington.escience.myria.expression.ToUpperCaseExpression;
@@ -488,9 +488,9 @@ public class ApplyTest {
     }
 
     Expression initializer = new Expression("counter", new ConstantExpression(Type.INT_TYPE, "-1"));
-    Expression expression = new Expression("index", new StateVariableExpression(0));
+    Expression expression = new Expression("index", new StateExpression(0));
     Expression increment =
-        new Expression(new PlusExpression(new StateVariableExpression(0), new ConstantExpression(Type.INT_TYPE, "1")));
+        new Expression(new PlusExpression(new StateExpression(0), new ConstantExpression(Type.INT_TYPE, "1")));
 
     ImmutableList.Builder<Expression> Initializers = ImmutableList.builder();
     Initializers.add(initializer);
@@ -535,12 +535,12 @@ public class ApplyTest {
     Expression initializeCounter = new Expression("counter", new ConstantExpression(Type.LONG_TYPE, "0"));
     Expression initializeSum = new Expression("sum", new ConstantExpression(Type.LONG_TYPE, "0"));
     Expression updateCounter =
-        new Expression(new PlusExpression(new StateVariableExpression(0), new ConstantExpression(Type.LONG_TYPE, "1")));
+        new Expression(new PlusExpression(new StateExpression(0), new ConstantExpression(Type.LONG_TYPE, "1")));
     Expression updateSum =
-        new Expression(new PlusExpression(new StateVariableExpression(1), new VariableExpression(0)));
+        new Expression(new PlusExpression(new StateExpression(1), new VariableExpression(0)));
 
     Expression avg =
-        new Expression("average", new DivideExpression(new StateVariableExpression(1), new StateVariableExpression(0)));
+        new Expression("average", new DivideExpression(new StateExpression(1), new StateExpression(0)));
 
     ImmutableList.Builder<Expression> Initializers = ImmutableList.builder();
     Initializers.add(initializeCounter);
