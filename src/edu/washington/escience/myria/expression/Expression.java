@@ -1,8 +1,10 @@
 package edu.washington.escience.myria.expression;
 
 import java.io.Serializable;
+import java.util.LinkedList;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.Lists;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -112,5 +114,22 @@ public class Expression implements Serializable {
    */
   public void resetJavaExpression() {
     javaExpression = null;
+  }
+
+  /**
+   * @param optype Class to find
+   * @return true if the operator is in the expression
+   */
+  public boolean hasOperator(final Class<?> optype) {
+    LinkedList<ExpressionOperator> ops = Lists.newLinkedList();
+    ops.add(getRootExpressionOperator());
+    while (!ops.isEmpty()) {
+      final ExpressionOperator op = ops.pop();
+      if (op.getClass().equals(optype)) {
+        return true;
+      }
+      ops.addAll(op.getChildren());
+    }
+    return false;
   }
 }

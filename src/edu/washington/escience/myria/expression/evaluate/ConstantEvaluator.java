@@ -9,6 +9,7 @@ import com.google.common.base.Preconditions;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.expression.Expression;
+import edu.washington.escience.myria.expression.StateExpression;
 import edu.washington.escience.myria.operator.StatefulApply;
 
 /**
@@ -26,6 +27,9 @@ public class ConstantEvaluator extends Evaluator {
    */
   public ConstantEvaluator(final Expression expression, final Schema inputSchema, final Schema stateSchema) {
     super(expression, inputSchema, stateSchema);
+    // we might want a VariableExpression as the right child of a CastExpression, which is why there is no check for
+    // VariableExpression
+    Preconditions.checkArgument(!getExpression().hasOperator(StateExpression.class));
   }
 
   /**

@@ -1,9 +1,5 @@
 package edu.washington.escience.myria.expression.evaluate;
 
-import java.util.LinkedList;
-
-import com.google.common.collect.Lists;
-
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
@@ -33,24 +29,7 @@ public class TupleEvaluator extends Evaluator {
     super(expression, inputSchema, stateSchema);
     ExpressionOperator rootOp = getExpression().getRootExpressionOperator();
     copyFromInput = rootOp instanceof VariableExpression;
-    needsState = hasOperator(StateExpression.class);
-  }
-
-  /**
-   * @param optype Class to find
-   * @return true if the operator is in the expression
-   */
-  private boolean hasOperator(final Class<StateExpression> optype) {
-    LinkedList<ExpressionOperator> ops = Lists.newLinkedList();
-    ops.add(getExpression().getRootExpressionOperator());
-    while (!ops.isEmpty()) {
-      final ExpressionOperator op = ops.pop();
-      if (op.getClass().equals(optype)) {
-        return true;
-      }
-      ops.addAll(op.getChildren());
-    }
-    return false;
+    needsState = getExpression().hasOperator(StateExpression.class);
   }
 
   /**
