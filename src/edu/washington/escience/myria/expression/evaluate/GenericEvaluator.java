@@ -58,7 +58,6 @@ public class GenericEvaluator extends ColumnEvaluator {
    */
   @Override
   public void compile() throws DbException {
-    System.err.println(getExpression().getJavaExpressionWithAppend(getInputSchema(), getStateSchema()));
     Preconditions.checkArgument(needsCompiling(), "This expression does not need to be compiled.");
 
     try {
