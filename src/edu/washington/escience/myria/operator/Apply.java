@@ -15,8 +15,9 @@ import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.expression.Expression;
-import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
 import edu.washington.escience.myria.expression.evaluate.ColumnEvaluator;
+import edu.washington.escience.myria.expression.evaluate.ConstantEvaluator;
+import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
 
 /**
  * Generic apply operator.
@@ -97,7 +98,12 @@ public class Apply extends UnaryOperator {
     emitEvaluators = new ArrayList<>();
     emitEvaluators.ensureCapacity(emitExpressions.size());
     for (Expression expr : emitExpressions) {
-      GenericEvaluator evaluator = new GenericEvaluator(expr, inputSchema, null);
+      GenericEvaluator evaluator;
+      if (GenericEvaluator.isConstant(expr)) {
+        evaluator = new ConstantEvaluator(expr, inputSchema, null);
+      } else {
+        evaluator = new GenericEvaluator(expr, inputSchema, null);
+      }
       if (evaluator.needsCompiling()) {
         evaluator.compile();
       }

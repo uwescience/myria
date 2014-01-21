@@ -13,11 +13,9 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.column.ConstantValueColumn;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.ColumnFactory;
 import edu.washington.escience.myria.column.builder.WritableColumn;
-import edu.washington.escience.myria.expression.ConstantExpression;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.StateExpression;
@@ -112,16 +110,6 @@ public class GenericEvaluator extends ColumnEvaluator {
     }
 
     Type type = getOutputType();
-
-    /* This expression is a constant. */
-    if (isConstant()) {
-      ConstantExpression constOp = (ConstantExpression) op;
-      return new ConstantValueColumn(type.fromString(constOp.getValue()), type, tb.numTuples());
-    }
-    /*
-     * TODO for efficiency handle expressions that evaluate to a constant, e.g., they don't contain any
-     * VariableExpressions.
-     */
 
     ColumnBuilder<?> ret = ColumnFactory.allocateColumn(type);
     for (int row = 0; row < tb.numTuples(); ++row) {

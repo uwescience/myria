@@ -1,15 +1,15 @@
 package edu.washington.escience.myria.expression.evaluate;
 
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.expression.ConstantExpression;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
+import edu.washington.escience.myria.expression.StateExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
 
 /**
  * 
  */
-public class ColumnEvaluator extends Evaluator {
+public abstract class ColumnEvaluator extends Evaluator {
   /**
    * @param expression the expression to be evaluated
    * @param inputSchema the schema that the expression expects if it operates on a schema
@@ -52,10 +52,17 @@ public class ColumnEvaluator extends Evaluator {
   }
 
   /**
-   * @return true if the expression is a constant expression
+   * @return true if the expression evaluates to a constant
    */
   public boolean isConstant() {
-    final ExpressionOperator rootOp = getExpression().getRootExpressionOperator();
-    return rootOp instanceof ConstantExpression;
+    return isConstant(getExpression());
+  }
+
+  /**
+   * @param expr the expression to be tested
+   * @return true if the expression evaluates to a constant
+   */
+  public static boolean isConstant(final Expression expr) {
+    return !expr.hasOperator(VariableExpression.class) && !expr.hasOperator(StateExpression.class);
   }
 }

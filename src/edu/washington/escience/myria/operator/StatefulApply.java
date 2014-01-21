@@ -173,11 +173,7 @@ public class StatefulApply extends Apply {
       Expression expr = initExpressions.get(columnIdx);
       ConstantEvaluator evaluator = new ConstantEvaluator(expr, inputSchema, null);
       evaluator.compile();
-      try {
-        state.set(columnIdx, evaluator.eval());
-      } catch (InvocationTargetException e) {
-        throw new DbException(e);
-      }
+      state.set(columnIdx, evaluator.eval());
     }
 
     for (Expression expr : updateExpressions) {
