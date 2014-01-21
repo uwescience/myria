@@ -90,6 +90,7 @@ public class GenericEvaluator extends TupleEvaluator {
    * @return a column containing the result of evaluating this expression on the entire TupleBatch
    * @throws InvocationTargetException exception thrown from janino
    */
+  @SuppressWarnings("deprecation")
   public Column<?> evaluateColumn(final TupleBatch tb) throws InvocationTargetException {
     ExpressionOperator op = getExpression().getRootExpressionOperator();
     /* This expression just copies an input column. */
@@ -111,6 +112,7 @@ public class GenericEvaluator extends TupleEvaluator {
 
     ColumnBuilder<?> ret = ColumnFactory.allocateColumn(type);
     for (int row = 0; row < tb.numTuples(); ++row) {
+      /** We already have an object, so we're not using the wrong version of put. Remove the warning. */
       ret.appendObject(eval(tb, row, null));
     }
     return ret.build();
