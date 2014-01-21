@@ -89,6 +89,7 @@ public final class BooleanColumnBuilder extends ColumnBuilder<Boolean> {
     return this;
   }
 
+  @Deprecated
   @Override
   public BooleanColumnBuilder appendObject(final Object value) throws BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");

@@ -77,6 +77,7 @@ public final class FloatColumnBuilder extends ColumnBuilder<Float> {
     return this;
   }
 
+  @Deprecated
   @Override
   public FloatColumnBuilder appendObject(final Object value) throws BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");

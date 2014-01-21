@@ -163,6 +163,7 @@ public final class DateTimeColumnBuilder extends ColumnBuilder<DateTime> {
     return data[row];
   }
 
+  @Deprecated
   @Override
   public DateTimeColumnBuilder appendObject(final Object value) throws BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");

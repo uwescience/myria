@@ -77,6 +77,7 @@ public final class DoubleColumnBuilder extends ColumnBuilder<Double> {
     return this;
   }
 
+  @Deprecated
   @Override
   public DoubleColumnBuilder appendObject(final Object value) throws BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");

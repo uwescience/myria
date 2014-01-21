@@ -162,6 +162,7 @@ public final class StringColumnBuilder extends ColumnBuilder<String> {
     return data[row];
   }
 
+  @Deprecated
   @Override
   public ColumnBuilder<String> appendObject(final Object value) throws BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
