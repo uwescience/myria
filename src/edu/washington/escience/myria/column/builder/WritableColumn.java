@@ -73,6 +73,7 @@ public interface WritableColumn<T extends Comparable<?>> {
    * @return this column builder.
    * @throws BufferOverflowException if the column is already full
    */
+  @Deprecated
   WritableColumn<T> appendObject(final Object value) throws BufferOverflowException;
 
   /**
