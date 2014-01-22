@@ -120,7 +120,7 @@ public class Apply extends UnaryOperator {
 
   @Override
   public Schema generateSchema() {
-    if (emitExpressions == null) {
+    if (emitEvaluators == null) {
       return null;
     }
     Operator child = getChild();
