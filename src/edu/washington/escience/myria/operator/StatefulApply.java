@@ -100,10 +100,7 @@ public class StatefulApply extends Apply {
 
     final int numColumns = getSchema().numColumns();
 
-    List<Column<?>> output = Lists.newArrayListWithCapacity(numColumns);
-    for (int i = 0; i < numColumns; i++) {
-      output.add(null);
-    }
+    List<Column<?>> output = Lists.newArrayList(new Column<?>[numColumns]);
     List<Integer> needState = Lists.newLinkedList();
 
     // first, generate columns that do not require state. This can often be optimized.
@@ -207,5 +204,32 @@ public class StatefulApply extends Apply {
     }
     stateSchema = new Schema(typesBuilder.build(), namesBuilder.build());
     return stateSchema;
+  }
+
+  @Override
+  public Schema generateSchema() {
+    if (getEmitExpressions() == null) {
+      return null;
+    }
+    Operator child = getChild();
+    if (child == null) {
+      return null;
+    }
+    Schema inputSchema = child.getSchema();
+    if (inputSchema == null) {
+      return null;
+    }
+    if (getStateSchema() == null) {
+      return null;
+    }
+
+    ImmutableList.Builder<Type> typesBuilder = ImmutableList.builder();
+    ImmutableList.Builder<String> namesBuilder = ImmutableList.builder();
+
+    for (Expression expr : getEmitExpressions()) {
+      typesBuilder.add(expr.getOutputType(inputSchema, getStateSchema()));
+      namesBuilder.add(expr.getOutputName());
+    }
+    return new Schema(typesBuilder.build(), namesBuilder.build());
   }
 }

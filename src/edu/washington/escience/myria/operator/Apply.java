@@ -120,25 +120,24 @@ public class Apply extends UnaryOperator {
 
   @Override
   public Schema generateSchema() {
-    if (emitEvaluators == null) {
+    if (emitExpressions == null) {
       return null;
     }
     Operator child = getChild();
     if (child == null) {
       return null;
     }
-    Schema childSchema = child.getSchema();
-    if (childSchema == null) {
+    Schema inputSchema = child.getSchema();
+    if (inputSchema == null) {
       return null;
     }
 
     ImmutableList.Builder<Type> typesBuilder = ImmutableList.builder();
     ImmutableList.Builder<String> namesBuilder = ImmutableList.builder();
 
-    for (GenericEvaluator evaluator : emitEvaluators) {
-      evaluator.setInputSchema(childSchema);
-      typesBuilder.add(evaluator.getOutputType());
-      namesBuilder.add(evaluator.getOutputName());
+    for (Expression expr : emitExpressions) {
+      typesBuilder.add(expr.getOutputType(inputSchema, null));
+      namesBuilder.add(expr.getOutputName());
     }
     return new Schema(typesBuilder.build(), namesBuilder.build());
   }
