@@ -3,6 +3,7 @@ package edu.washington.escience.myria.operator;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -92,10 +93,9 @@ public class Apply extends UnaryOperator {
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     Preconditions.checkNotNull(emitExpressions);
 
-    Schema inputSchema = getChild().getSchema();
+    Schema inputSchema = Objects.requireNonNull(getChild().getSchema());
 
-    emitEvaluators = new ArrayList<>();
-    emitEvaluators.ensureCapacity(emitExpressions.size());
+    emitEvaluators = new ArrayList<>(emitExpressions.size());
     for (Expression expr : emitExpressions) {
       GenericEvaluator evaluator;
       if (expr.isConstant()) {
