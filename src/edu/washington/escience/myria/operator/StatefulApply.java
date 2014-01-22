@@ -127,14 +127,14 @@ public class StatefulApply extends Apply {
       // update state
       Tuple newState = new Tuple(getStateSchema());
       for (int columnIdx = 0; columnIdx < stateSchema.numColumns(); columnIdx++) {
-        newState.set(columnIdx, updateEvaluators.get(columnIdx).eval(tb, rowIdx, state));
+        updateEvaluators.get(columnIdx).eval(tb, rowIdx, newState.getColumn(columnIdx), state);
       }
       state = newState;
       // apply expression
       for (int index = 0; index < needState.size(); index++) {
         final GenericEvaluator evaluator = getEmitEvaluators().get(needState.get(index));
         // TODO: optimize the case where the state is copied directly
-        columnBuilders.get(index).appendObject(evaluator.eval(tb, rowIdx, state));
+        evaluator.eval(tb, rowIdx, columnBuilders.get(index), state);
       }
     }
 
@@ -173,11 +173,7 @@ public class StatefulApply extends Apply {
       Expression expr = initExpressions.get(columnIdx);
       ConstantEvaluator evaluator = new ConstantEvaluator(expr, inputSchema, null);
       evaluator.compile();
-      try {
-        state.set(columnIdx, evaluator.eval());
-      } catch (InvocationTargetException e) {
-        throw new DbException(e);
-      }
+      state.set(columnIdx, evaluator.eval());
     }
 
     for (Expression expr : updateExpressions) {

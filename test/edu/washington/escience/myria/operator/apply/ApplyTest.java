@@ -41,7 +41,8 @@ import edu.washington.escience.myria.expression.TimesExpression;
 import edu.washington.escience.myria.expression.ToUpperCaseExpression;
 import edu.washington.escience.myria.expression.TypeExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
-import edu.washington.escience.myria.expression.evaluate.TupleEvaluator;
+import edu.washington.escience.myria.expression.evaluate.ConstantEvaluator;
+import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.StatefulApply;
 import edu.washington.escience.myria.operator.TupleSource;
@@ -177,7 +178,34 @@ public class ApplyTest {
       // Expression (just copy/ rename): a;
       Expression expr = new Expression("copy", vara);
 
-      TupleEvaluator eval = new TupleEvaluator(expr, tbb.getSchema(), null);
+      GenericEvaluator eval = new GenericEvaluator(expr, tbb.getSchema(), null);
+      assertTrue(!eval.needsCompiling());
+      Expressions.add(expr);
+    }
+
+    {
+      // Expression (a constant value of 5);
+      Expression expr = new Expression("constant5", new ConstantExpression(Type.INT_TYPE, "5"));
+
+      GenericEvaluator eval = new ConstantEvaluator(expr, tbb.getSchema(), null);
+      assertTrue(!eval.needsCompiling());
+      Expressions.add(expr);
+    }
+
+    {
+      // Expression (a constant value of 5.0 float);
+      Expression expr = new Expression("constant5f", new ConstantExpression(Type.FLOAT_TYPE, "5"));
+
+      GenericEvaluator eval = new ConstantEvaluator(expr, tbb.getSchema(), null);
+      assertTrue(!eval.needsCompiling());
+      Expressions.add(expr);
+    }
+
+    {
+      // Expression (a constant value of 5.0 double);
+      Expression expr = new Expression("constant5d", new ConstantExpression(Type.DOUBLE_TYPE, "5"));
+
+      GenericEvaluator eval = new ConstantEvaluator(expr, tbb.getSchema(), null);
       assertTrue(!eval.needsCompiling());
       Expressions.add(expr);
     }
@@ -191,7 +219,7 @@ public class ApplyTest {
     while (!apply.eos()) {
       result = apply.nextReady();
       if (result != null) {
-        assertEquals(9, result.getSchema().numColumns());
+        assertEquals(12, result.getSchema().numColumns());
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(0));
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(1));
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(2));
@@ -201,6 +229,9 @@ public class ApplyTest {
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(6));
         assertEquals(Type.BOOLEAN_TYPE, result.getSchema().getColumnType(7));
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(8));
+        assertEquals(Type.INT_TYPE, result.getSchema().getColumnType(9));
+        assertEquals(Type.FLOAT_TYPE, result.getSchema().getColumnType(10));
+        assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(11));
 
         assertEquals("first", result.getSchema().getColumnName(0));
         assertEquals("second", result.getSchema().getColumnName(1));
@@ -211,6 +242,9 @@ public class ApplyTest {
         assertEquals("trig", result.getSchema().getColumnName(6));
         assertEquals("boolean", result.getSchema().getColumnName(7));
         assertEquals("copy", result.getSchema().getColumnName(8));
+        assertEquals("constant5", result.getSchema().getColumnName(9));
+        assertEquals("constant5f", result.getSchema().getColumnName(10));
+        assertEquals("constant5d", result.getSchema().getColumnName(11));
 
         for (int curI = 0; curI < result.numTuples(); curI++) {
           long i = curI + resultSize;
@@ -229,6 +263,9 @@ public class ApplyTest {
               * 4, result.getDouble(6, curI), tolerance);
           assertEquals(!(false || e && true), result.getBoolean(7, curI));
           assertEquals(a, result.getLong(8, curI));
+          assertEquals(5, result.getInt(9, curI));
+          assertEquals((float) 5.0, result.getFloat(10, curI), 0.00001);
+          assertEquals(5.0, result.getDouble(11, curI), 0.00001);
         }
         resultSize += result.numTuples();
       }
@@ -536,11 +573,9 @@ public class ApplyTest {
     Expression initializeSum = new Expression("sum", new ConstantExpression(Type.LONG_TYPE, "0"));
     Expression updateCounter =
         new Expression(new PlusExpression(new StateExpression(0), new ConstantExpression(Type.LONG_TYPE, "1")));
-    Expression updateSum =
-        new Expression(new PlusExpression(new StateExpression(1), new VariableExpression(0)));
+    Expression updateSum = new Expression(new PlusExpression(new StateExpression(1), new VariableExpression(0)));
 
-    Expression avg =
-        new Expression("average", new DivideExpression(new StateExpression(1), new StateExpression(0)));
+    Expression avg = new Expression("average", new DivideExpression(new StateExpression(1), new StateExpression(0)));
 
     ImmutableList.Builder<Expression> Initializers = ImmutableList.builder();
     Initializers.add(initializeCounter);

@@ -41,6 +41,11 @@ public enum Type implements Serializable {
     public Class<?> toJavaObjectType() {
       return Integer.class;
     }
+
+    @Override
+    public String getName() {
+      return "Int";
+    }
   },
 
   /**
@@ -72,6 +77,11 @@ public enum Type implements Serializable {
     @Override
     public Class<?> toJavaObjectType() {
       return Float.class;
+    }
+
+    @Override
+    public String getName() {
+      return "Float";
     }
   },
 
@@ -105,6 +115,11 @@ public enum Type implements Serializable {
     public Class<?> toJavaObjectType() {
       return Double.class;
     }
+
+    @Override
+    public String getName() {
+      return "Double";
+    }
   },
 
   /**
@@ -136,6 +151,11 @@ public enum Type implements Serializable {
     @Override
     public Class<?> toJavaObjectType() {
       return Boolean.class;
+    }
+
+    @Override
+    public String getName() {
+      return "Boolean";
     }
   },
 
@@ -169,6 +189,11 @@ public enum Type implements Serializable {
     public Class<?> toJavaObjectType() {
       return toJavaType();
     }
+
+    @Override
+    public String getName() {
+      return "String";
+    }
   },
 
   /**
@@ -201,6 +226,11 @@ public enum Type implements Serializable {
     public Class<?> toJavaObjectType() {
       return Long.class;
     }
+
+    @Override
+    public String getName() {
+      return "Long";
+    }
   },
 
   /**
@@ -232,6 +262,11 @@ public enum Type implements Serializable {
     @Override
     public Class<?> toJavaObjectType() {
       return toJavaType();
+    }
+
+    @Override
+    public String getName() {
+      return "DateTime";
     }
   };
 
@@ -439,4 +474,9 @@ public enum Type implements Serializable {
    * @return the non primitive java type
    */
   public abstract Class<?> toJavaObjectType();
+
+  /**
+   * @return The name of the type usually used in the code. May be used to generate function names.
+   */
+  public abstract String getName();
 }

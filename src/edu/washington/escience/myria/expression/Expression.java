@@ -8,6 +8,7 @@ import com.google.common.collect.Lists;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.builder.ColumnBuilder;
 
 /**
  * An expression that can be applied to a tuple.
@@ -34,6 +35,23 @@ public class Expression implements Serializable {
    */
   @JsonProperty
   private final ExpressionOperator rootExpressionOperator;
+
+  /**
+   * Variable name of result.
+   */
+  public static final String RESULT = "result";
+  /**
+   * Variable name of input tuple batch.
+   */
+  public static final String TB = "tb";
+  /**
+   * Variable name of row index.
+   */
+  public static final String ROW = "row";
+  /**
+   * Variable name of state.
+   */
+  public static final String STATE = "state";
 
   /**
    * This is not really unused, it's used automagically by Jackson deserialization.
@@ -110,6 +128,16 @@ public class Expression implements Serializable {
   }
 
   /**
+   * @param inputSchema the schema of the input relation
+   * @param stateSchema the schema of the state
+   * @return the Java form of this expression that also writes the results to a {@link ColumnBuilder}.
+   */
+  public String getJavaExpressionWithAppend(final Schema inputSchema, final Schema stateSchema) {
+    return new StringBuilder(RESULT).append(".append").append(getOutputType(inputSchema, stateSchema).getName())
+        .append("(").append(getJavaExpression(inputSchema, stateSchema)).append(")").toString();
+  }
+
+  /**
    * Reset {@link #javaExpression}.
    */
   public void resetJavaExpression() {
@@ -131,5 +159,12 @@ public class Expression implements Serializable {
       ops.addAll(op.getChildren());
     }
     return false;
+  }
+
+  /**
+   * @return if this expression evaluates to a constant
+   */
+  public boolean isConstant() {
+    return !hasOperator(VariableExpression.class) && !hasOperator(StateExpression.class);
   }
 }

@@ -16,7 +16,11 @@ import edu.washington.escience.myria.expression.Expression;
 /**
  * An Expression evaluator for stateless boolean expressions.
  */
-public class BooleanEvaluator extends TupleEvaluator {
+public class BooleanEvaluator extends Evaluator {
+  /**
+   * Expression evaluator.
+   */
+  private BooleanEvalInterface evaluator;
 
   /**
    * Default constructor.
@@ -31,26 +35,18 @@ public class BooleanEvaluator extends TupleEvaluator {
   }
 
   /**
-   * Expression evaluator.
-   */
-  private BooleanEvalInterface evaluator;
-
-  /**
    * Compiles the {@link #javaExpression}.
    * 
    * @throws DbException compilation failed
    */
   @Override
   public void compile() throws DbException {
-    Preconditions.checkArgument(!isCopyFromInput(),
-        "This expression does not need to be compiled because the data can be copied from the input.");
-
     try {
       IScriptEvaluator se = CompilerFactoryFactory.getDefaultCompilerFactory().newExpressionEvaluator();
 
       evaluator =
           (BooleanEvalInterface) se.createFastEvaluator(getJavaExpression(), BooleanEvalInterface.class, new String[] {
-              "tb", "rowId" });
+              Expression.TB, Expression.ROW });
     } catch (Exception e) {
       throw new DbException("Error when compiling expression " + this, e);
     }

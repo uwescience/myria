@@ -9,7 +9,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 
 /**
- * A single row relation. Behaves like a tuple batch.
+ * A single row relation.
  */
 public class Tuple implements Serializable, ReadableTable {
   /***/
@@ -23,7 +23,7 @@ public class Tuple implements Serializable, ReadableTable {
   /**
    * The data of the tuple.
    */
-  private final List<Object> data;
+  private final List<Field<?>> data;
 
   /**
    * @param schema the schema of the tuple
@@ -32,7 +32,7 @@ public class Tuple implements Serializable, ReadableTable {
     this.schema = schema;
     data = Lists.newArrayListWithCapacity(numColumns());
     for (int i = 0; i < numColumns(); i++) {
-      data.add(null);
+      data.add(new Field<>());
     }
   }
 
@@ -54,18 +54,7 @@ public class Tuple implements Serializable, ReadableTable {
   private Object getValue(final int column, final int row) {
     Preconditions.checkArgument(row == 0);
     Preconditions.checkElementIndex(column, numColumns());
-    return data.get(column);
-  }
-
-  /**
-   * Set a value in the tuple.
-   * 
-   * @param column the column index.
-   * @param value the value to set.
-   * @return
-   */
-  public void set(final int column, final Object value) {
-    data.set(column, value);
+    return data.get(column).getObject();
   }
 
   @Override
@@ -123,5 +112,23 @@ public class Tuple implements Serializable, ReadableTable {
   @Override
   public int numTuples() {
     return 1;
+  }
+
+  /**
+   * @param columnIdx the column index
+   * @return the field at the index
+   */
+  public Field<?> getColumn(final int columnIdx) {
+    return data.get(columnIdx);
+  }
+
+  /**
+   * Set value.
+   * 
+   * @param columnIdx the column index
+   * @param value the value to set
+   */
+  public void set(final int columnIdx, final Object value) {
+    getColumn(columnIdx).appendObject(value);
   }
 }
