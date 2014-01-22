@@ -1,0 +1,100 @@
+{
+    "logical_ra": "Nothing",
+    "fragments": [
+        {
+            "operators": [
+                {
+                    "relation_key": {
+                        "program_name": "adhoc",
+                        "relation_name": "TwitterK",
+                        "user_name": "public"
+                    },
+                    "op_name": "V1",
+                    "op_type": "TableScan"
+                },
+                {
+                    "updater_expressions": [
+                        {
+                            "root_expression_operator": {
+                                "right": {
+                                    "value_type": "LONG_TYPE",
+                                    "type": "CONSTANT",
+                                    "value": "1"
+                                },
+                                "type": "PLUS",
+                                "left": {
+                                    "column_idx": 0,
+                                    "type": "STATE"
+                                }
+                            },
+                            "output_name": "count"
+                        },
+                        {
+                            "root_expression_operator": {
+                                "right": {
+                                    "column_idx": 1,
+                                    "type": "VARIABLE"
+                                },
+                                "type": "PLUS",
+                                "left": {
+                                    "column_idx": 1,
+                                    "type": "STATE"
+                                }
+                            },
+                            "output_name": "sum"
+                        }
+                    ],
+                    "arg_child": "V1",
+                    "initializer_expressions": [
+                        {
+                            "root_expression_operator": {
+                                "value_type": "LONG_TYPE",
+                                "type": "CONSTANT",
+                                "value": "0"
+                            },
+                            "output_name": "count"
+                        },
+                        {
+                            "root_expression_operator": {
+                                "value_type": "LONG_TYPE",
+                                "type": "CONSTANT",
+                                "value": "0"
+                            },
+                            "output_name": "sum"
+                        }
+                    ],
+                    "emit_expressions": [
+                        {
+                            "root_expression_operator": {
+                                "right": {
+                                    "column_idx": 0,
+                                    "type": "STATE"
+                                },
+                                "type": "DIVIDE",
+                                "left": {
+                                    "column_idx": 1,
+                                    "type": "STATE"
+                                }
+                            },
+                            "output_name": "avg"
+                        }
+                    ],
+                    "op_name": "V0",
+                    "op_type": "StatefulApply"
+                },
+                {
+                    "arg_overwrite_table": true,
+                    "arg_child": "V0",
+                    "relation_key": {
+                        "program_name": "adhoc",
+                        "relation_name": "RunningMean",
+                        "user_name": "public"
+                    },
+                    "op_name": "Store",
+                    "op_type": "DbInsert"
+                }
+            ]
+        }
+    ],
+    "raw_datalog": "Nothing"
+}
