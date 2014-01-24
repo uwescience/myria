@@ -16,7 +16,6 @@ import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.BooleanColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.util.ImmutableBitSet;
-import edu.washington.escience.myria.util.ImmutableIntArray;
 
 /**
  * A column of Boolean values. To save space, this implementation uses a BitSet as the internal representation.
@@ -84,28 +83,6 @@ public final class BooleanColumn extends Column<Boolean> {
     /* Note that we do *not* build the inner class. We pass its builder instead. */
     final BooleanColumnMessage.Builder inner =
         BooleanColumnMessage.newBuilder().setData(ByteString.copyFrom(data.toByteArray()));
-    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.BOOLEAN).setBooleanColumn(inner).build();
-  }
-
-  @Override
-  public ColumnMessage serializeToProto(final ImmutableIntArray validIndices) {
-    /* Construct the output ByteString using builder syntax. */
-    ByteString.Output bytes = ByteString.newOutput((validIndices.length() + 7) / 8);
-    int bitCnt = 0;
-    int b = 0;
-    for (int i : validIndices) {
-      if (data.get(i)) {
-        b |= (1 << bitCnt);
-      }
-      bitCnt++;
-      if (bitCnt == 8) {
-        bytes.write(b);
-        bitCnt = 0;
-        b = 0;
-      }
-    }
-    /* Note that we do *not* build the inner class. We pass its builder instead. */
-    final BooleanColumnMessage.Builder inner = BooleanColumnMessage.newBuilder().setData(bytes.toByteString());
     return ColumnMessage.newBuilder().setType(ColumnMessage.Type.BOOLEAN).setBooleanColumn(inner).build();
   }
 
