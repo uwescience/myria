@@ -14,8 +14,6 @@ import com.google.common.hash.Hasher;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
-import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
-import edu.washington.escience.myria.util.ImmutableIntArray;
 import edu.washington.escience.myria.util.TypeFunnel;
 
 /**
@@ -248,16 +246,6 @@ public class ConstantValueColumn extends Column<Comparable<?>> {
   @Override
   public Type getType() {
     return type;
-  }
-
-  @Override
-  public ColumnMessage serializeToProto() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public ColumnMessage serializeToProto(final ImmutableIntArray validIndices) {
-    throw new UnsupportedOperationException();
   }
 
   @Override
