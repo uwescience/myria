@@ -15,6 +15,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.expression.AbsExpression;
 import edu.washington.escience.myria.expression.AndExpression;
+import edu.washington.escience.myria.expression.CastExpression;
 import edu.washington.escience.myria.expression.CeilExpression;
 import edu.washington.escience.myria.expression.ConstantExpression;
 import edu.washington.escience.myria.expression.CosExpression;
@@ -36,9 +37,12 @@ import edu.washington.escience.myria.expression.PlusExpression;
 import edu.washington.escience.myria.expression.PowExpression;
 import edu.washington.escience.myria.expression.SinExpression;
 import edu.washington.escience.myria.expression.SqrtExpression;
+import edu.washington.escience.myria.expression.StateExpression;
 import edu.washington.escience.myria.expression.TanExpression;
 import edu.washington.escience.myria.expression.TimesExpression;
 import edu.washington.escience.myria.expression.ToUpperCaseExpression;
+import edu.washington.escience.myria.expression.TypeExpression;
+import edu.washington.escience.myria.expression.TypeOfExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
 
 public class ApplySerializationTest {
@@ -52,8 +56,11 @@ public class ApplySerializationTest {
 
     /* Zeroary */
     ConstantExpression constant = new ConstantExpression(Type.INT_TYPE, "5");
-    VariableExpression variable = new VariableExpression(0);
-    expressions.add(constant).add(variable);
+    StateExpression state = new StateExpression(3);
+    TypeExpression type = new TypeExpression(Type.INT_TYPE);
+    VariableExpression variable = new VariableExpression(1);
+    TypeOfExpression typeof = new TypeOfExpression(2);
+    expressions.add(constant).add(state).add(type).add(variable).add(typeof);
 
     /* Unary */
     AbsExpression abs = new AbsExpression(constant);
@@ -84,8 +91,9 @@ public class ApplySerializationTest {
     LessThanExpression lt = new LessThanExpression(constant, variable);
     GreaterThanOrEqualsExpression gte = new GreaterThanOrEqualsExpression(constant, variable);
     LessThanOrEqualsExpression lte = new LessThanOrEqualsExpression(constant, variable);
+    CastExpression cast = new CastExpression(constant, typeof);
     expressions.add(and).add(divide).add(eq).add(gt).add(gte).add(lt).add(lte).add(minus).add(ne).add(or).add(plus)
-        .add(pow).add(times);
+        .add(pow).add(times).add(cast);
 
     /* Test serializing and deserializing all of them. */
     for (ExpressionOperator op : expressions.build()) {

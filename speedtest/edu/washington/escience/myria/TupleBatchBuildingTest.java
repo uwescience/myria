@@ -45,8 +45,8 @@ public class TupleBatchBuildingTest {
       LongColumnBuilder icb1 = new LongColumnBuilder();
       LongColumnBuilder icb2 = new LongColumnBuilder();
       for (int j = 0; j < TupleBatch.BATCH_SIZE; j++) {
-        icb1.append(icb1Source[j]);
-        icb2.append(icb2Source[j]);
+        icb1.appendLong(icb1Source[j]);
+        icb2.appendLong(icb2Source[j]);
       }
       lcs[0] = icb1.build();
       lcs[1] = icb2.build();

@@ -159,7 +159,7 @@ public final class DupElimRefOnly extends UnaryOperator {
         toRemove.set(i);
       }
     }
-    return tb.remove(toRemove);
+    return tb.filterOut(toRemove);
   }
 
   @Override

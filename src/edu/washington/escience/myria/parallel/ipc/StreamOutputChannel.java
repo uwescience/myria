@@ -206,6 +206,7 @@ public class StreamOutputChannel<PAYLOAD> extends StreamIOChannel {
         this.ownerPool.getShutdownLock().readLock().unlock();
       }
     } else {
+      LOGGER.error("No usable physical IO channel for id={}.", getID());
       throw new IllegalStateException("No usable physical IO channel.");
     }
   }

@@ -30,6 +30,7 @@ import org.apache.commons.io.IOUtils;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.base.Objects;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
@@ -147,6 +148,12 @@ public final class QueryResource {
     } catch (DbException | CatalogException e) {
       throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, e);
     }
+
+    /* Check to see if the query was submitted successfully. */
+    if (qf == null) {
+      throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "The server cannot accept new queries right now.");
+    }
+
     long queryId = qf.getQuery().getQueryID();
     qf.addListener(new QueryFutureListener() {
 
@@ -193,6 +200,7 @@ public final class QueryResource {
       case SUCCESS:
       case ERROR:
       case KILLED:
+      case UNKNOWN:
         httpStatus = Status.OK;
         cache = true;
         break;
@@ -237,12 +245,19 @@ public final class QueryResource {
    * Get information about a query. This includes when it started, when it finished, its URL, etc.
    * 
    * @param uriInfo the URL of the current request.
+   * @param limit the maximum number of results to return. If null, the default of
+   *          {@link MyriaApiConstants.MYRIA_API_DEFAULT_NUM_RESULTS} is used. Any value <= 0 is interpreted as all
+   *          results.
+   * @param maxId the largest query ID returned. If null or <= 0, all queries will be returned.
    * @return information about the query.
    * @throws CatalogException if there is an error in the catalog.
    */
   @GET
-  public Response getQueries(@Context final UriInfo uriInfo) throws CatalogException {
-    List<QueryStatusEncoding> queries = server.getQueries();
+  public Response getQueries(@Context final UriInfo uriInfo, @QueryParam("limit") final Long limit,
+      @QueryParam("max") final Long maxId) throws CatalogException {
+    long realLimit = Objects.firstNonNull(limit, MyriaApiConstants.MYRIA_API_DEFAULT_NUM_RESULTS);
+    long realMaxId = Objects.firstNonNull(maxId, 0L);
+    List<QueryStatusEncoding> queries = server.getQueries(realLimit, realMaxId);
     for (QueryStatusEncoding status : queries) {
       status.url = getCanonicalResourcePath(uriInfo, status.queryId);
     }

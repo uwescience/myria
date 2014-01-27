@@ -108,8 +108,28 @@ public final class JdbcAccessMethod extends AccessMethod {
       throws DbException {
     Objects.requireNonNull(jdbcConnection);
     try {
-      /* Set up and execute the query */
-      final Statement statement = jdbcConnection.createStatement();
+      Statement statement;
+      if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
+        /*
+         * Special handling for PostgreSQL comes from here:
+         * http://jdbc.postgresql.org/documentation/head/query.html#query-with-cursor
+         */
+        jdbcConnection.setAutoCommit(false);
+        statement = jdbcConnection.createStatement();
+        statement.setFetchSize(TupleBatch.BATCH_SIZE);
+      } else if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_MYSQL)) {
+        /*
+         * Special handling for MySQL comes from here:
+         * http://dev.mysql.com/doc/refman/5.0/en/connector-j-reference-implementation-notes.html
+         */
+        statement =
+            jdbcConnection.createStatement(java.sql.ResultSet.TYPE_FORWARD_ONLY, java.sql.ResultSet.CONCUR_READ_ONLY);
+        statement.setFetchSize(Integer.MIN_VALUE);
+      } else {
+        /* Unknown tricks for this DBMS. Hope it works! */
+        statement = jdbcConnection.createStatement();
+        statement.setFetchSize(TupleBatch.BATCH_SIZE);
+      }
       final ResultSet resultSet = statement.executeQuery(queryString);
       return new JdbcTupleBatchIterator(resultSet, schema);
     } catch (final SQLException e) {

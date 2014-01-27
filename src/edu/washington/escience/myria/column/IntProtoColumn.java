@@ -28,8 +28,7 @@ public final class IntProtoColumn extends IntColumn {
    * @param message a Protobuf message containing a column of integers.
    */
   public IntProtoColumn(final IntColumnMessage message) {
-    columnData = message.getData();
-    intBuffer = columnData.asReadOnlyByteBuffer().asIntBuffer();
+    this(message.getData());
   }
 
   /**
@@ -43,8 +42,13 @@ public final class IntProtoColumn extends IntColumn {
   }
 
   @Override
-  public Integer get(final int row) {
+  public Integer getObject(final int row) {
     return Integer.valueOf(intBuffer.get(row));
+  }
+
+  @Override
+  public int getInt(final int row) {
+    return intBuffer.get(row);
   }
 
   @Override
@@ -56,11 +60,6 @@ public final class IntProtoColumn extends IntColumn {
   @Override
   public int size() {
     return intBuffer.limit();
-  }
-
-  @Override
-  public int getInt(final int row) {
-    return intBuffer.get(row);
   }
 
 }

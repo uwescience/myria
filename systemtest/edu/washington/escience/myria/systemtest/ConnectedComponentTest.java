@@ -60,8 +60,8 @@ public class ConnectedComponentTest extends SystemTestBase {
       List<Column<?>> output = iter.next();
       int numRow = output.get(0).size();
       for (int i = 0; i < numRow; i++) {
-        int fr = Integer.parseInt(output.get(0).get(i).toString());
-        int fe = Integer.parseInt(output.get(1).get(i).toString());
+        int fr = Integer.parseInt(output.get(0).getObject(i).toString());
+        int fe = Integer.parseInt(output.get(1).getObject(i).toString());
         graph[fr][fe] = true;
       }
     }

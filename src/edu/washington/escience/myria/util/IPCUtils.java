@@ -333,6 +333,25 @@ public final class IPCUtils {
   }
 
   /**
+   * @param dataColumns data columns
+   * @param validIndices which tuples are valid in the columns.
+   * @return a data TM encoding the data columns.
+   * */
+  public static TransportMessage normalDataMessage(final List<Column<?>> dataColumns,
+      final ImmutableIntArray validIndices) {
+    final ColumnMessage[] columnProtos = new ColumnMessage[dataColumns.size()];
+
+    int i = 0;
+    for (final Column<?> c : dataColumns) {
+      columnProtos[i] = c.serializeToProto(validIndices);
+      i++;
+    }
+    return DATA_TM_BUILDER.get().setDataMessage(
+        NORMAL_DATAMESSAGE_BUILDER.get().clearColumns().addAllColumns(Arrays.asList(columnProtos)).setNumTuples(
+            validIndices.length())).build();
+  }
+
+  /**
    * @return a {@link TupleBatch} created from a data protobuf.
    * @param dm data message
    * @param s schema

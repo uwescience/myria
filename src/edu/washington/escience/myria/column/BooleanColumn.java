@@ -23,10 +23,8 @@ import edu.washington.escience.myria.util.ImmutableBitSet;
  * @author dhalperi
  * 
  */
-public final class BooleanColumn implements Column<Boolean> {
-  /**
-   * 
-   */
+public final class BooleanColumn extends Column<Boolean> {
+  /** Required for Java Serialization. */
   private static final long serialVersionUID = 1L;
   /** Internal representation of the column data. */
   private final BitSet data;
@@ -43,7 +41,7 @@ public final class BooleanColumn implements Column<Boolean> {
   }
 
   @Override
-  public Boolean get(final int row) {
+  public Boolean getObject(final int row) {
     return Boolean.valueOf(getBoolean(row));
   }
 
@@ -53,6 +51,7 @@ public final class BooleanColumn implements Column<Boolean> {
    * @param row row of element to return.
    * @return the element at the specified row in this column.
    */
+  @Override
   public boolean getBoolean(final int row) {
     Preconditions.checkElementIndex(row, numBits);
     return data.get(row);
@@ -108,12 +107,12 @@ public final class BooleanColumn implements Column<Boolean> {
 
   @Override
   public boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
-    return getBoolean(leftIdx) == ((BooleanColumn) rightColumn).getBoolean(rightIdx);
+    return getBoolean(leftIdx) == rightColumn.getBoolean(rightIdx);
   }
 
   @Override
   public void append(final int index, final ColumnBuilder<?> columnBuilder) {
-    ((BooleanColumnBuilder) columnBuilder).append(getBoolean(index));
+    ((BooleanColumnBuilder) columnBuilder).appendBoolean(getBoolean(index));
   }
 
   @Override

@@ -148,9 +148,8 @@ public final class SymmetricHashJoin extends BinaryOperator {
       if (inputTB.tupleEquals(row, hashTable, index, keyColumns, keyColumns)) {
         replaced = true;
         List<Column<?>> columns = inputTB.getDataColumns();
-        int inColumnRow = inputTB.getValidIndices().get(row);
         for (int j = 0; j < inputTB.numColumns(); ++j) {
-          hashTable.replace(j, index, columns.get(j), inColumnRow);
+          hashTable.replace(j, index, columns.get(j), row);
         }
       }
       return replaced;
@@ -355,7 +354,6 @@ public final class SymmetricHashJoin extends BinaryOperator {
   protected void addToAns(final TupleBatch cntTB, final int row, final TupleBuffer hashTable, final int index,
       final boolean fromLeft) {
     List<Column<?>> tbColumns = cntTB.getDataColumns();
-    final int rowInColumn = cntTB.getValidIndices().get(row);
     MutableColumn<?>[] hashTblColumns = hashTable.getColumns(index);
     ColumnBuilder<?>[] hashTblColumnBuilders = null;
     if (hashTblColumns == null) {
@@ -364,7 +362,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
     int tupleIdx = hashTable.getTupleIndexInContainingTB(index);
     if (fromLeft) {
       for (int i = 0; i < leftAnswerColumns.length; ++i) {
-        ans.put(i, tbColumns.get(leftAnswerColumns[i]), rowInColumn);
+        ans.put(i, tbColumns.get(leftAnswerColumns[i]), row);
       }
 
       for (int i = 0; i < rightAnswerColumns.length; ++i) {
@@ -384,7 +382,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
       }
 
       for (int i = 0; i < rightAnswerColumns.length; ++i) {
-        ans.put(i + leftAnswerColumns.length, tbColumns.get(rightAnswerColumns[i]), rowInColumn);
+        ans.put(i + leftAnswerColumns.length, tbColumns.get(rightAnswerColumns[i]), row);
       }
 
     }
@@ -726,9 +724,8 @@ public final class SymmetricHashJoin extends BinaryOperator {
       /* not using set semantics || using set semantics but found nothing to replace (i.e. new) */
       tupleIndicesList.add(nextIndex);
       List<Column<?>> inputColumns = tb.getDataColumns();
-      int inColumnRow = tb.getValidIndices().get(row);
       for (int column = 0; column < tb.numColumns(); column++) {
-        hashTable.put(column, inputColumns.get(column), inColumnRow);
+        hashTable.put(column, inputColumns.get(column), row);
       }
     }
   }

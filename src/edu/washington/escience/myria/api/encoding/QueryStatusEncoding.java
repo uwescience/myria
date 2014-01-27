@@ -59,6 +59,6 @@ public class QueryStatusEncoding {
 
   /** The current status of the query. */
   public static enum Status {
-    ACCEPTED, RUNNING, SUCCESS, PAUSED, KILLED, ERROR
+    ACCEPTED, RUNNING, SUCCESS, PAUSED, KILLED, ERROR, UNKNOWN
   }
 }

@@ -9,7 +9,7 @@
     "column_names" : ["follower", "followee"]
   },
   "source" : {
-    "data_type" : 'File',
+    "data_type" : "File",
     "filename" : "/Users/chushumo/Dropbox/My_Work/Multiway_Join/data/twitter_rv.615784"
   }
 }

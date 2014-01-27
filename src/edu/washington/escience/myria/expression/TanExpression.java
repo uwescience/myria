@@ -28,13 +28,13 @@ public class TanExpression extends UnaryExpression {
   }
 
   @Override
-  public Type getOutputType(final Schema schema) {
-    checkAndReturnDefaultNumericType(schema);
+  public Type getOutputType(final Schema schema, final Schema stateSchema) {
+    checkAndReturnDefaultNumericType(schema, stateSchema);
     return Type.DOUBLE_TYPE;
   }
 
   @Override
-  public String getJavaString(final Schema schema) {
-    return getFunctionCallUnaryString("Math.tan", schema);
+  public String getJavaString(final Schema schema, final Schema stateSchema) {
+    return getFunctionCallUnaryString("Math.tan", schema, stateSchema);
   }
 }
