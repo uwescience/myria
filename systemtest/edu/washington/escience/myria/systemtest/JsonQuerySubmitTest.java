@@ -33,10 +33,10 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     return m;
   }
 
-  private static final String emptyIngestJson = "{" + "  \"relation_key\" : {" + "    \"user_name\" : \"public\","
-      + "    \"program_name\" : \"adhoc\"," + "    \"relation_name\" : \"smallTable\"" + "  }," + "  \"schema\" : {"
-      + "    \"column_types\" : [\"STRING_TYPE\", \"LONG_TYPE\"]," + "    \"column_names\" : [\"foo\", \"bar\"]"
-      + "  }," + "\"source\" : { \"data_type\" : \"Empty\" } " + "}";
+  private static final String emptyIngestJson = "{" + "  \"relationKey\" : {" + "    \"userName\" : \"public\","
+      + "    \"programName\" : \"adhoc\"," + "    \"relationName\" : \"smallTable\"" + "  }," + "  \"schema\" : {"
+      + "    \"columnTypes\" : [\"STRING_TYPE\", \"LONG_TYPE\"]," + "    \"columnNames\" : [\"foo\", \"bar\"]" + "  },"
+      + "\"source\" : { \"dataType\" : \"Empty\" } " + "}";
 
   @Test
   public void emptySubmitTest() throws Exception {

@@ -80,9 +80,9 @@ public final class DatasetResource {
   @GET
   @ApiOperation(value = "get information about a dataset", response = DatasetStatus.class)
   @ApiResponses(value = { @ApiResponse(code = HttpStatus.SC_NOT_FOUND, message = "Dataset not found", response = String.class) })
-  @Path("/user-{user_name}/program-{program_name}/relation-{relation_name}")
-  public Response getDataset(@PathParam("user_name") final String userName,
-      @PathParam("program_name") final String programName, @PathParam("relation_name") final String relationName)
+  @Path("/user-{userName}/program-{programName}/relation-{relationName}")
+  public Response getDataset(@PathParam("userName") final String userName,
+      @PathParam("programName") final String programName, @PathParam("relationName") final String relationName)
       throws DbException {
     DatasetStatus status = server.getDatasetStatus(RelationKey.of(userName, programName, relationName));
     if (status == null) {
@@ -131,9 +131,9 @@ public final class DatasetResource {
    */
   @GET
   @Produces({ MediaType.APPLICATION_OCTET_STREAM, MediaType.APPLICATION_JSON })
-  @Path("/user-{user_name}/program-{program_name}/relation-{relation_name}/data")
-  public Response getDatasetData(@PathParam("user_name") final String userName,
-      @PathParam("program_name") final String programName, @PathParam("relation_name") final String relationName,
+  @Path("/user-{userName}/program-{programName}/relation-{relationName}/data")
+  public Response getDatasetData(@PathParam("userName") final String userName,
+      @PathParam("programName") final String programName, @PathParam("relationName") final String relationName,
       @QueryParam("format") final String format) throws DbException {
 
     /* Start building the response. */
@@ -211,9 +211,9 @@ public final class DatasetResource {
   @PUT
   @Consumes(MediaType.APPLICATION_OCTET_STREAM)
   @Produces(MediaType.APPLICATION_JSON)
-  @Path("/user-{user_name}/program-{program_name}/relation-{relation_name}/data")
-  public Response replaceDataset(final InputStream is, @PathParam("user_name") final String userName,
-      @PathParam("program_name") final String programName, @PathParam("relation_name") final String relationName,
+  @Path("/user-{userName}/program-{programName}/relation-{relationName}/data")
+  public Response replaceDataset(final InputStream is, @PathParam("userName") final String userName,
+      @PathParam("programName") final String programName, @PathParam("relationName") final String relationName,
       @QueryParam("format") final String format) throws DbException {
     RelationKey relationKey = RelationKey.of(userName, programName, relationName);
     DatasetEncoding dataset = new DatasetEncoding();
@@ -416,8 +416,8 @@ public final class DatasetResource {
    * @throws DbException if there is an error accessing the Catalog.
    */
   @GET
-  @Path("/user-{user_name}")
-  public List<DatasetStatus> getDatasetsForUser(@PathParam("user_name") final String userName) throws DbException {
+  @Path("/user-{userName}")
+  public List<DatasetStatus> getDatasetsForUser(@PathParam("userName") final String userName) throws DbException {
     List<DatasetStatus> datasets = server.getDatasetsForUser(userName);
     for (DatasetStatus status : datasets) {
       status.setUri(getCanonicalResourcePath(uriInfo, status.getRelationKey()));
@@ -432,9 +432,9 @@ public final class DatasetResource {
    * @throws DbException if there is an error accessing the Catalog.
    */
   @GET
-  @Path("/user-{user_name}/program-{program_name}")
-  public List<DatasetStatus> getDatasetsForUser(@PathParam("user_name") final String userName,
-      @PathParam("program_name") final String programName) throws DbException {
+  @Path("/user-{userName}/program-{programName}")
+  public List<DatasetStatus> getDatasetsForUser(@PathParam("userName") final String userName,
+      @PathParam("programName") final String programName) throws DbException {
     List<DatasetStatus> datasets = server.getDatasetsForProgram(userName, programName);
     for (DatasetStatus status : datasets) {
       status.setUri(getCanonicalResourcePath(uriInfo, status.getRelationKey()));
