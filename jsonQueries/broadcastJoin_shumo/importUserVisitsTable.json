@@ -1,12 +1,12 @@
 {
-  "relation_key" : {
-    "user_name" : "shumochu",
-    "program_name" : "broadcastjoin",
-    "relation_name" : "UserBase"
+  "relationKey" : {
+    "userName" : "shumochu",
+    "programName" : "broadcastjoin",
+    "relationName" : "UserBase"
   },
   "schema" : {
-    "column_types" : ["STRING_TYPE","STRING_TYPE","DATETIME_TYPE","FLOAT_TYPE","STRING_TYPE","STRING_TYPE","STRING_TYPE","STRING_TYPE","LONG_TYPE"],
-    "column_names" : ["sourceIPAddr","destinationURL","visitDate","adRevenue","UserAgent","cCode","lCode","sKeyword", "avgTimeOnSite"]
+    "columnTypes" : ["STRING_TYPE","STRING_TYPE","DATETIME_TYPE","FLOAT_TYPE","STRING_TYPE","STRING_TYPE","STRING_TYPE","STRING_TYPE","LONG_TYPE"],
+    "columnNames" : ["sourceIPAddr","destinationURL","visitDate","adRevenue","UserAgent","cCode","lCode","sKeyword", "avgTimeOnSite"]
   },
-  "import_from_database" : true
+  "importFromDatabase" : true
 }

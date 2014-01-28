@@ -180,7 +180,7 @@ public final class QueryResource {
    */
   @GET
   @Path("query-{query_id}")
-  public Response getQueryStatus(@PathParam("query_id") final long queryId, @Context final UriInfo uriInfo)
+  public Response getQueryStatus(@PathParam("queryId") final long queryId, @Context final UriInfo uriInfo)
       throws CatalogException {
     final QueryStatusEncoding queryStatus = server.getQueryStatus(queryId);
     final URI uri = uriInfo.getAbsolutePath();
@@ -222,7 +222,7 @@ public final class QueryResource {
    */
   @DELETE
   @Path("query-{query_id}")
-  public Response cancelQuery(@PathParam("query_id") final long queryId, @Context final UriInfo uriInfo)
+  public Response cancelQuery(@PathParam("queryId") final long queryId, @Context final UriInfo uriInfo)
       throws CatalogException {
     try {
       server.killQuery(queryId);

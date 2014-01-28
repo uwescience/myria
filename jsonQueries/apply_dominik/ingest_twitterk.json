@@ -1,15 +1,15 @@
 {
-  "relation_key" : {
-    "user_name" : "public",
-    "program_name" : "adhoc",
-    "relation_name" : "TwitterK"
+  "relationKey" : {
+    "userName" : "public",
+    "programName" : "adhoc",
+    "relationName" : "TwitterK"
   },
   "schema" : {
-    "column_types" : ["LONG_TYPE", "LONG_TYPE"],
-    "column_names" : ["follower", "followee"]
+    "columnTypes" : ["LONG_TYPE", "LONG_TYPE"],
+    "columnNames" : ["follower", "followee"]
   },
   "source" : {
-    "data_type" : "File",
+    "dataType" : "File",
     "filename" : "/Users/dominik/Developer/Workspace/myria/data_nocommit/TwitterK.csv"
   },
   "delimiter": ","

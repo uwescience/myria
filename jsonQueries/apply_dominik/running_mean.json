@@ -1,100 +1,100 @@
 {
-    "logical_ra": "Nothing",
+    "logicalRa": "Nothing",
     "fragments": [
         {
             "operators": [
                 {
-                    "relation_key": {
-                        "program_name": "adhoc",
-                        "relation_name": "TwitterK",
-                        "user_name": "public"
+                    "relationKey": {
+                        "programName": "adhoc",
+                        "relationName": "TwitterK",
+                        "userName": "public"
                     },
-                    "op_name": "V1",
-                    "op_type": "TableScan"
+                    "opName": "V1",
+                    "opType": "TableScan"
                 },
                 {
-                    "updater_expressions": [
+                    "updaterExpressions": [
                         {
-                            "root_expression_operator": {
+                            "rootExpressionOperator": {
                                 "right": {
-                                    "value_type": "LONG_TYPE",
+                                    "valueType": "LONG_TYPE",
                                     "type": "CONSTANT",
                                     "value": "1"
                                 },
                                 "type": "PLUS",
                                 "left": {
-                                    "column_idx": 0,
+                                    "columnIdx": 0,
                                     "type": "STATE"
                                 }
                             },
-                            "output_name": "count"
+                            "outputName": "count"
                         },
                         {
-                            "root_expression_operator": {
+                            "rootExpressionOperator": {
                                 "right": {
-                                    "column_idx": 1,
+                                    "columnIdx": 1,
                                     "type": "VARIABLE"
                                 },
                                 "type": "PLUS",
                                 "left": {
-                                    "column_idx": 1,
+                                    "columnIdx": 1,
                                     "type": "STATE"
                                 }
                             },
-                            "output_name": "sum"
+                            "outputName": "sum"
                         }
                     ],
-                    "arg_child": "V1",
-                    "initializer_expressions": [
+                    "argChild": "V1",
+                    "initializerExpressions": [
                         {
-                            "root_expression_operator": {
-                                "value_type": "LONG_TYPE",
+                            "rootExpressionOperator": {
+                                "valueType": "LONG_TYPE",
                                 "type": "CONSTANT",
                                 "value": "0"
                             },
-                            "output_name": "count"
+                            "outputName": "count"
                         },
                         {
-                            "root_expression_operator": {
-                                "value_type": "LONG_TYPE",
+                            "rootExpressionOperator": {
+                                "valueType": "LONG_TYPE",
                                 "type": "CONSTANT",
                                 "value": "0"
                             },
-                            "output_name": "sum"
+                            "outputName": "sum"
                         }
                     ],
-                    "emit_expressions": [
+                    "emitExpressions": [
                         {
-                            "root_expression_operator": {
+                            "rootExpressionOperator": {
                                 "right": {
-                                    "column_idx": 0,
+                                    "columnIdx": 0,
                                     "type": "STATE"
                                 },
                                 "type": "DIVIDE",
                                 "left": {
-                                    "column_idx": 1,
+                                    "columnIdx": 1,
                                     "type": "STATE"
                                 }
                             },
-                            "output_name": "avg"
+                            "outputName": "avg"
                         }
                     ],
-                    "op_name": "V0",
-                    "op_type": "StatefulApply"
+                    "opName": "V0",
+                    "opType": "StatefulApply"
                 },
                 {
-                    "arg_overwrite_table": true,
-                    "arg_child": "V0",
-                    "relation_key": {
-                        "program_name": "adhoc",
-                        "relation_name": "RunningMean",
-                        "user_name": "public"
+                    "argOverwriteTable": true,
+                    "argChild": "V0",
+                    "relationKey": {
+                        "programName": "adhoc",
+                        "relationName": "RunningMean",
+                        "userName": "public"
                     },
-                    "op_name": "Store",
-                    "op_type": "DbInsert"
+                    "opName": "Store",
+                    "opType": "DbInsert"
                 }
             ]
         }
     ],
-    "raw_datalog": "Nothing"
+    "rawDatalog": "Nothing"
 }
