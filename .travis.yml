@@ -5,5 +5,9 @@ branches:
 jdk:
   - openjdk7
   - oraclejdk7
+  - oraclejdk8
+matrix:
+  allow_failures:
+    - jdk: oraclejdk8
 addons:
   postgresql: 9.3
