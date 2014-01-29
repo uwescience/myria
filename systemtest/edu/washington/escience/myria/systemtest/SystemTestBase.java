@@ -105,6 +105,8 @@ public class SystemTestBase {
 
   public volatile static String workerTestBaseFolder;
 
+  public static final boolean DEBUG = false;
+
   public static void createTable(final int workerID, final RelationKey relationKey, final String sqlSchemaString)
       throws IOException, CatalogException {
     try {
@@ -157,10 +159,10 @@ public class SystemTestBase {
       finishClean = finishClean && AvailablePortFinder.available(masterDaemonPort);
       for (final int workerPort : workerPorts) {
         finishClean = finishClean && AvailablePortFinder.available(workerPort);
-      }
-      for (final int workerPort : workerPorts) {
-        // make sure the JDWP listening ports are also successfully released.
-        finishClean = finishClean && AvailablePortFinder.available(workerPort + 1000);
+        if (DEBUG) {
+          // make sure the JDWP listening ports are also successfully released.
+          finishClean = finishClean && AvailablePortFinder.available(workerPort + 1000);
+        }
       }
       if (!finishClean) {
         try {
@@ -482,27 +484,36 @@ public class SystemTestBase {
       String cp = System.getProperty("java.class.path");
       String lp = System.getProperty("java.library.path");
 
-      final ProcessBuilder pb =
-          new ProcessBuilder(
-              "java",
-              "-ea", // enable assertion
-              "-Djava.library.path=" + lp,
-              "-Dorg.jboss.netty.debug",
-              "-Xdebug",
-              // Now eclipse is able to debug remotely the worker processes
-              // following the steps:
-              // 1. Set a breakpoint at the beginning of a JUnit test method.
-              // 2. start debug the JUnit test method. The test method should stop
-              // at the preset breakpoint.
-              // But now, the worker processes are already started.
-              // 3. Create an Eclipse remote debugger and set to attach to localhost
-              // 10001 for worker1 and localhost
-              // 10002 for worker2
-              // 4. Now, you are able to debug the worker processes. All the Java
-              // debugging methods are supported such
-              // as breakpoints.
-              "-Xrunjdwp:transport=dt_socket,address=" + (workerPorts[i] + 1000) + ",server=y,suspend=n", "-classpath",
-              cp, Worker.class.getCanonicalName(), "--workingDir", workingDir);
+      ProcessBuilder tpb;
+      if (DEBUG) {
+        tpb =
+            new ProcessBuilder(
+                "java",
+                "-ea", // enable assertion
+                "-Djava.library.path=" + lp,
+                "-Dorg.jboss.netty.debug",
+                "-Xdebug",
+                // Now eclipse is able to debug remotely the worker processes
+                // following the steps:
+                // 1. Set a breakpoint at the beginning of a JUnit test method.
+                // 2. start debug the JUnit test method. The test method should stop
+                // at the preset breakpoint.
+                // But now, the worker processes are already started.
+                // 3. Create an Eclipse remote debugger and set to attach to localhost
+                // 10001 for worker1 and localhost
+                // 10002 for worker2
+                // 4. Now, you are able to debug the worker processes. All the Java
+                // debugging methods are supported such
+                // as breakpoints.
+                "-Xrunjdwp:transport=dt_socket,address=" + (workerPorts[i] + 1000) + ",server=y,suspend=n",
+                "-classpath", cp, Worker.class.getCanonicalName(), "--workingDir", workingDir);
+      } else {
+        tpb = new ProcessBuilder("java", "-ea", // enable assertion
+            "-Djava.library.path=" + lp, "-classpath", cp, // paths
+            "-Xmx512M", // memory limit to 512 MB
+            Worker.class.getCanonicalName(), "--workingDir", workingDir);
+      }
+      final ProcessBuilder pb = tpb;
 
       pb.directory(new File(workingDir));
       pb.redirectErrorStream(true);
