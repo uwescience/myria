@@ -217,11 +217,18 @@ task copyToLib(type: Copy) {
 }
 tasks.jar.dependsOn copyToLib
 
+/* Make sure test runs before any other type of tests */
+systemtest.dependsOn test
+speedtest.dependsOn test
+
 /* allTests just runs all tests */
 task allTests
 allTests.dependsOn test
 allTests.dependsOn systemtest
 allTests.dependsOn speedtest
+
+/* Make check run system tests. */
+check.dependsOn systemtest
 
 /* Assemble the Myria jar into `build/libs` */
 jar {

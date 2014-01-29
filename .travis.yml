@@ -12,6 +12,6 @@ matrix:
 addons:
   postgresql: 9.3
 
-before_script:
-  - mysql -e 'create database myria_test;'
-  - psql -c 'create database myria_test;' -U postgres
+before_install:
+  - sh travis/before_install.sh
+  - export TERM=dumb
