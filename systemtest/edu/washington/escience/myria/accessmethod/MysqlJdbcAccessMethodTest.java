@@ -7,44 +7,65 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
-
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
+import edu.washington.escience.myria.operator.TupleRangeSource;
+import edu.washington.escience.myria.util.TestUtils;
 
 /**
  * @author dhalperi
  * 
  */
 public class MysqlJdbcAccessMethodTest {
+  private static final String MYSQL_DRIVER_CLASS = "com.mysql.jdbc.Driver";
+  private static final int MYSQL_PORT = 3306;
+  private static final String MYSQL_DATABASE_NAME = "myria_test";
+
+  private JdbcInfo getJdbcInfo() {
+    if (TestUtils.inTravis()) {
+      /* Return localhost using Travis' default credentials. */
+      return JdbcInfo.of(MYSQL_DRIVER_CLASS, MyriaConstants.STORAGE_SYSTEM_MYSQL, "localhost", MYSQL_PORT,
+          MYSQL_DATABASE_NAME, "travis", "");
+    } else {
+      /* Return the MyriaTest AWS instance */
+      final String host = "54.213.118.143";
+      final String user = "myria";
+      final String password = "nays26[shark";
+      final String dbms = "mysql";
+      return JdbcInfo.of(MYSQL_DRIVER_CLASS, dbms, host, MYSQL_PORT, MYSQL_DATABASE_NAME, user, password);
+    }
+  }
 
   @Test
   public void testNumberResultsAndMultipleBatches() throws DbException, InterruptedException {
     /* Connection information */
-    final String host = "54.213.118.143";
-    final int port = 3306;
-    final String user = "myria";
-    final String password = "nays26[shark";
-    final String dbms = "mysql";
-    final String databaseName = "myria_test";
-    final String jdbcDriverName = "com.mysql.jdbc.Driver";
-    final int expectedNumResults = 250; /* Hardcoded in setup_testtablebig.sql */
-    final JdbcInfo jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, password);
-    /* Query information */
-    final String query = "select * from testtablebig";
-    final ImmutableList<Type> types = ImmutableList.of(Type.INT_TYPE);
-    final ImmutableList<String> columnNames = ImmutableList.of("value");
-    final Schema schema = new Schema(types, columnNames);
+    final JdbcInfo jdbcInfo = getJdbcInfo();
 
-    /* Build up the DbQueryScan parameters and open the scan */
-    final DbQueryScan scan = new DbQueryScan(jdbcInfo, query, schema);
-    scan.open(null);
+    /* First, insert tuples into the database. */
+    final int expectedNumResults = 250;
+    TupleRangeSource source = new TupleRangeSource(expectedNumResults, Type.INT_TYPE);
+    final Schema schema = source.getSchema();
+    final RelationKey relation = RelationKey.of("myria", "test", "mysql");
+    DbInsert insert = new DbInsert(source, relation, jdbcInfo, true);
+    /* Run to completion. */
+    insert.open(null);
+    while (!insert.eos()) {
+      insert.nextReady();
+    }
+    insert.close();
+
+    /* Next get all the tables back out. */
+    DbQueryScan scan = new DbQueryScan(jdbcInfo, relation, schema);
 
     /* Count up the results and assert they match expectations */
     int count = 0;
+    scan.open(null);
     TupleBatch tb = null;
     while (!scan.eos()) {
       tb = scan.nextReady();
@@ -52,10 +73,11 @@ public class MysqlJdbcAccessMethodTest {
         count += tb.numTuples();
       }
     }
-    assertEquals(expectedNumResults, count);
-
     /* Cleanup */
     scan.close();
+
+    /* Test it. */
+    assertEquals(expectedNumResults, count);
   }
 
 }
