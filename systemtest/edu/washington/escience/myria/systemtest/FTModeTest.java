@@ -368,6 +368,10 @@ public class FTModeTest extends SystemTestBase {
 
   @Test
   public void abandonTest() throws Throwable {
+    if (TestUtils.inTravis()) {
+      System.err.println("Skipping test because in Travis.");
+      return;
+    }
     // Using join chain as the test query
     // EDB: A0, B0, C0
     // A := A0
@@ -468,6 +472,10 @@ public class FTModeTest extends SystemTestBase {
 
   @Test
   public void rejoinTest() throws Throwable {
+    if (TestUtils.inTravis()) {
+      System.err.println("Skipping test because in Travis.");
+      return;
+    }
     // Using join chain as the test query
     // EDB: A0, B0, C0
     // A := A0
