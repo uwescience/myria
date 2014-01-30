@@ -8,6 +8,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
@@ -29,8 +30,25 @@ public final class Experimenter {
   public static void main(final String[] args) throws Throwable {
     // Generate new data
     // RandomDataGenerator.generateRandomData(1000000);
-    experimentToProveONotation(100, 10000);
-    experimentToProveONotation(10000, 100);
+    // experimentToProveONotation(100, 10000);
+    // experimentToProveONotation(10000, 100);
+    Integer[] workersArray = { 0, 1, 2 };
+    Integer[] datapoints = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    getResultsAfterConsistentHashing(Arrays.asList(workersArray), Arrays.asList(datapoints), 3);
+  }
+
+  /**
+   * Prints out the data distribution after consistent hashing. This method is good for a small numbers of datapoints.
+   * 
+   */
+  private static void getResultsAfterConsistentHashing(final List<Integer> nodes, final List<Integer> datapoints,
+      final int numReplica) {
+    ConsistentHash ch = new ConsistentHash(nodes, numReplica);
+    for (Integer datapoint : datapoints) {
+      ch.add(datapoint);
+    }
+    System.out.println(ch.getDistribution());
+    System.out.println(ch.getCircle());
   }
 
   /**

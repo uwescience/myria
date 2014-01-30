@@ -133,6 +133,13 @@ public class ConsistentHash {
   }
 
   /**
+   * @return the circle with all the numbers
+   */
+  public Map<Integer, List<Integer>> getCircle() {
+    return new TreeMap<Integer, List<Integer>>(circle);
+  }
+
+  /**
    * @return The hash number of all the replicas each node
    */
   public Map<Integer, List<Integer>> getNodesAndReplicas() {
