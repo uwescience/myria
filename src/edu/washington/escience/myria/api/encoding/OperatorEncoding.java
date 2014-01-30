@@ -54,11 +54,13 @@ import edu.washington.escience.myria.parallel.Server;
     @Type(name = "SingleGroupByAggregate", value = SingleGroupByAggregateEncoding.class),
     @Type(name = "Singleton", value = SingletonEncoding.class),
     @Type(name = "SinkRoot", value = SinkRootEncoding.class),
+    @Type(name = "StatefulApply", value = StatefulApplyEncoding.class),
     @Type(name = "SymmetricHashJoin", value = SymmetricHashJoinEncoding.class),
     @Type(name = "SymmetricHashCountingJoin", value = SymmetricHashCountingJoinEncoding.class),
     @Type(name = "TableScan", value = TableScanEncoding.class),
     @Type(name = "TipsyFileScan", value = TipsyFileScanEncoding.class),
-    @Type(name = "UnionAll", value = UnionAllEncoding.class), })
+    @Type(name = "UnionAll", value = UnionAllEncoding.class),
+    @Type(name = "Difference", value = DifferenceEncoding.class) })
 public abstract class OperatorEncoding<T extends Operator> extends MyriaApiEncoding {
 
   public String opName;

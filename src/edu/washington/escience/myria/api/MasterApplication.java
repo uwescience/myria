@@ -3,6 +3,7 @@ package edu.washington.escience.myria.api;
 import javax.ws.rs.core.Context;
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import com.sun.jersey.api.container.filter.GZIPContentEncodingFilter;
 import com.sun.jersey.api.core.PackagesResourceConfig;
 import com.sun.jersey.spi.inject.SingletonTypeInjectableProvider;
 
@@ -22,6 +23,7 @@ public final class MasterApplication extends PackagesResourceConfig {
    * @param server the Myria server running on this master.
    * @param daemon the Myria daemon running on this master.
    */
+  @SuppressWarnings("unchecked")
   public MasterApplication(final Server server, final MasterDaemon daemon) {
     /* Tell Jersey to look for resources inside the entire project. */
     super("edu.washington.escience.myria");
@@ -32,5 +34,8 @@ public final class MasterApplication extends PackagesResourceConfig {
     });
     /* Enable Jackson's JSON Serialization/Deserialization. */
     getClasses().add(JacksonJsonProvider.class);
+    /* Enable GZIP compression/decompression */
+    getContainerRequestFilters().add(GZIPContentEncodingFilter.class);
+    getContainerResponseFilters().add(GZIPContentEncodingFilter.class);
   }
 }

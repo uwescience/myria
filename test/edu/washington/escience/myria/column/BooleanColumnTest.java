@@ -16,8 +16,8 @@ public class BooleanColumnTest {
   @Test
   public void testProto() {
     final BooleanColumnBuilder original = new BooleanColumnBuilder();
-    original.append(true).append(false).append(true).append(false).append(false).append(false).append(false).append(
-        false).append(true).append(false).append(false).append(false).append(false).append(false);
+    original.appendBoolean(true).appendBoolean(false).appendBoolean(true).appendBoolean(false).appendBoolean(false).appendBoolean(false).appendBoolean(false).appendBoolean(
+        false).appendBoolean(true).appendBoolean(false).appendBoolean(false).appendBoolean(false).appendBoolean(false).appendBoolean(false);
     final ColumnMessage serialized = original.build().serializeToProto();
     final BooleanColumn deserialized = BooleanColumnBuilder.buildFromProtobuf(serialized, original.size());
     assertTrue(original.build().toString().equals(deserialized.toString()));
@@ -27,7 +27,7 @@ public class BooleanColumnTest {
   public void testFull() {
     final BooleanColumnBuilder builder = new BooleanColumnBuilder();
     for (int i = 0; i < TupleBatch.BATCH_SIZE; i++) {
-      builder.append(true);
+      builder.appendBoolean(true);
     }
     builder.build();
   }
@@ -36,9 +36,9 @@ public class BooleanColumnTest {
   public void testOverflow() {
     final BooleanColumnBuilder builder = new BooleanColumnBuilder();
     for (int i = 0; i < TupleBatch.BATCH_SIZE; i++) {
-      builder.append(false);
+      builder.appendBoolean(false);
     }
-    builder.append(true);
+    builder.appendBoolean(true);
     builder.build();
   }
 

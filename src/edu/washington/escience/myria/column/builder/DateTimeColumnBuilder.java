@@ -22,7 +22,7 @@ import edu.washington.escience.myria.proto.DataProto.DateTimeColumnMessage;
  * A column of Date values.
  * 
  */
-public final class DateTimeColumnBuilder implements ColumnBuilder<DateTime> {
+public final class DateTimeColumnBuilder extends ColumnBuilder<DateTime> {
 
   /**
    * The internal representation of the data.
@@ -77,15 +77,8 @@ public final class DateTimeColumnBuilder implements ColumnBuilder<DateTime> {
     return new DateTimeColumnBuilder(newData, numTuples).build();
   }
 
-  /**
-   * Inserts the specified element at end of this column.
-   * 
-   * @param value element to be inserted.
-   * @return this column.
-   * @throws BufferOverflowException if exceeds buffer up bound.
-   */
   @Override
-  public DateTimeColumnBuilder append(final DateTime value) throws BufferOverflowException {
+  public DateTimeColumnBuilder appendDateTime(final DateTime value) throws BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
     if (numDates >= TupleBatch.BATCH_SIZE) {
       throw new BufferOverflowException();
@@ -103,25 +96,15 @@ public final class DateTimeColumnBuilder implements ColumnBuilder<DateTime> {
   public DateTimeColumnBuilder appendFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException,
       BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return append(new DateTime(resultSet.getTimestamp(jdbcIndex).getTime()));
+    return appendDateTime(new DateTime(resultSet.getTimestamp(jdbcIndex).getTime()));
   }
 
-  /**
-   * SQLLite does not support date type. use long to store the difference, measured in milliseconds, between the date
-   * time and midnight, January 1, 1970 UTC.
-   * 
-   * @param statement contains the results
-   * @return this column builder.
-   * @param index the position of the element to extract. 0-indexed.
-   * @throws SQLiteException if there are SQLite errors.
-   * @throws BufferOverflowException if the column is already full
-   */
   @Override
   public DateTimeColumnBuilder appendFromSQLite(final SQLiteStatement statement, final int index)
       throws SQLiteException, BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
 
-    return append(new DateTime(statement.columnLong(index)));
+    return appendDateTime(new DateTime(statement.columnLong(index)));
   }
 
   @Override
@@ -169,15 +152,22 @@ public final class DateTimeColumnBuilder implements ColumnBuilder<DateTime> {
   }
 
   @Override
-  public DateTime get(final int row) {
+  public DateTime getDateTime(final int row) {
     Preconditions.checkArgument(row >= 0 && row < data.length);
     return data[row];
   }
 
   @Override
+  public DateTime getObject(final int row) {
+    Preconditions.checkArgument(row >= 0 && row < data.length);
+    return data[row];
+  }
+
+  @Deprecated
+  @Override
   public DateTimeColumnBuilder appendObject(final Object value) throws BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return append((DateTime) value);
+    return appendDateTime((DateTime) value);
   }
 
   @Override

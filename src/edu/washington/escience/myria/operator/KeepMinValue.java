@@ -5,10 +5,6 @@ import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.column.DoubleColumn;
-import edu.washington.escience.myria.column.FloatColumn;
-import edu.washington.escience.myria.column.IntColumn;
-import edu.washington.escience.myria.column.LongColumn;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
@@ -80,13 +76,13 @@ public final class KeepMinValue extends StreamingState {
     Type t = column.getType();
     switch (t) {
       case INT_TYPE:
-        return (((IntColumn) column).get(row)) < uniqueTuples.getInt(valueColIndex, index);
+        return column.getInt(row) < uniqueTuples.getInt(valueColIndex, index);
       case FLOAT_TYPE:
-        return (((FloatColumn) column).get(row)) < uniqueTuples.getFloat(valueColIndex, index);
+        return column.getFloat(row) < uniqueTuples.getFloat(valueColIndex, index);
       case DOUBLE_TYPE:
-        return (((DoubleColumn) column).get(row)) < uniqueTuples.getDouble(valueColIndex, index);
+        return column.getDouble(row) < uniqueTuples.getDouble(valueColIndex, index);
       case LONG_TYPE:
-        return (((LongColumn) column).get(row)) < uniqueTuples.getLong(valueColIndex, index);
+        return column.getLong(row) < uniqueTuples.getLong(valueColIndex, index);
       default:
         throw new IllegalStateException("type " + t + " is not supported in KeepMinValue.replace()");
     }
@@ -124,14 +120,13 @@ public final class KeepMinValue extends StreamingState {
         }
       }
       if (doReplace.unique) {
-        int inColumnRow = tb.getValidIndices().get(i);
         for (int j = 0; j < tb.numColumns(); ++j) {
-          uniqueTuples.put(j, columns.get(j), inColumnRow);
+          uniqueTuples.put(j, columns.get(j), i);
         }
         tupleIndexList.add(nextIndex);
       }
     }
-    return tb.remove(toRemove);
+    return tb.filterOut(toRemove);
   }
 
   @Override
@@ -187,9 +182,8 @@ public final class KeepMinValue extends StreamingState {
       if (inputTB.tupleEquals(row, uniqueTuples, index, keyColIndices, keyColIndices)) {
         unique = false;
         Column<?> valueColumn = inputTB.getDataColumns().get(valueColIndex);
-        int inColumnRow = inputTB.getValidIndices().get(row);
-        if (shouldReplace(index, valueColumn, inColumnRow)) {
-          uniqueTuples.replace(valueColIndex, index, valueColumn, inColumnRow);
+        if (shouldReplace(index, valueColumn, row)) {
+          uniqueTuples.replace(valueColIndex, index, valueColumn, row);
           replaced = true;
         }
       }

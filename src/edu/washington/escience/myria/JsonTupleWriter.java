@@ -65,7 +65,7 @@ public class JsonTupleWriter implements TupleWriter {
   }
 
   @Override
-  public void writeTuples(final TupleBatch tuples) throws IOException {
+  public void writeTuples(final ReadableTable tuples) throws IOException {
     Objects.requireNonNull(escapedColumnNames);
     List<Type> columnTypes = tuples.getSchema().getColumnTypes();
     /* Add a record. */

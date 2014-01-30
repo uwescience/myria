@@ -1,6 +1,5 @@
 package edu.washington.escience.myria.column;
 
-import java.nio.ByteBuffer;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
@@ -8,25 +7,17 @@ import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
 import com.google.common.hash.Hasher;
-import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.FloatColumnBuilder;
-import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
-import edu.washington.escience.myria.proto.DataProto.FloatColumnMessage;
 
 /**
- * A column of Float values.
- * 
- * @author dhalperi
- * 
+ * A column of {@link Float} values.
  */
-public final class FloatColumn implements Column<Float> {
-  /**
-   * 
-   */
+public final class FloatColumn extends Column<Float> {
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** Internal representation of the column data. */
   private final float[] data;
@@ -47,7 +38,7 @@ public final class FloatColumn implements Column<Float> {
   }
 
   @Override
-  public Float get(final int row) {
+  public Float getObject(final int row) {
     return Float.valueOf(getFloat(row));
   }
 
@@ -68,6 +59,7 @@ public final class FloatColumn implements Column<Float> {
    * @param row row of element to return.
    * @return the element at the specified row in this column.
    */
+  @Override
   public float getFloat(final int row) {
     Preconditions.checkElementIndex(row, position);
     return data[row];
@@ -76,18 +68,6 @@ public final class FloatColumn implements Column<Float> {
   @Override
   public Type getType() {
     return Type.FLOAT_TYPE;
-  }
-
-  @Override
-  public ColumnMessage serializeToProto() {
-    ByteBuffer dataBytes = ByteBuffer.allocate(position * Float.SIZE / Byte.SIZE);
-    for (int i = 0; i < position; i++) {
-      dataBytes.putFloat(data[i]);
-    }
-    dataBytes.flip();
-    final FloatColumnMessage.Builder inner = FloatColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
-
-    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.FLOAT).setFloatColumn(inner).build();
   }
 
   @Override
@@ -111,12 +91,12 @@ public final class FloatColumn implements Column<Float> {
 
   @Override
   public boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
-    return getFloat(leftIdx) == ((FloatColumn) rightColumn).getFloat(rightIdx);
+    return getFloat(leftIdx) == rightColumn.getFloat(rightIdx);
   }
 
   @Override
   public void append(final int index, final ColumnBuilder<?> columnBuilder) {
-    ((FloatColumnBuilder) columnBuilder).append(getFloat(index));
+    ((FloatColumnBuilder) columnBuilder).appendFloat(getFloat(index));
   }
 
   @Override

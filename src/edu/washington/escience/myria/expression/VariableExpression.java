@@ -14,7 +14,7 @@ public class VariableExpression extends ZeroaryExpression {
   /***/
   private static final long serialVersionUID = 1L;
 
-  /** The index in the input that this {@link VariableExpression} references. */
+  /** The index in the input that is referenced. */
   @JsonProperty
   private final int columnIdx;
 
@@ -23,58 +23,28 @@ public class VariableExpression extends ZeroaryExpression {
    */
   @SuppressWarnings("unused")
   private VariableExpression() {
-    columnIdx = -1;
+    this(-1);
   }
 
   /**
    * A {@link VariableExpression} that references column <code>columnIdx</code> from the input.
    * 
-   * @param columnIdx the index in the input that this {@link VariableExpression} references.
+   * @param columnIdx the index in the input.
    */
   public VariableExpression(final int columnIdx) {
     this.columnIdx = columnIdx;
   }
 
   @Override
-  public Type getOutputType(final Schema schema) {
+  public Type getOutputType(final Schema schema, final Schema stateSchema) {
     return schema.getColumnType(columnIdx);
   }
 
   @Override
-  public String getJavaString(final Schema schema) {
-    String tName = null;
-    switch (getOutputType(schema)) {
-      case INT_TYPE:
-        tName = "Int";
-        break;
-
-      case FLOAT_TYPE:
-        tName = "Float";
-        break;
-
-      case DOUBLE_TYPE:
-        tName = "Double";
-        break;
-
-      case BOOLEAN_TYPE:
-        tName = "Boolean";
-        break;
-
-      case STRING_TYPE:
-        tName = "String";
-        break;
-
-      case LONG_TYPE:
-        tName = "Long";
-        break;
-
-      case DATETIME_TYPE:
-        tName = "DateTime";
-        break;
-    }
-
+  public String getJavaString(final Schema schema, final Schema stateSchema) {
     // We generate a variable access into the tuple buffer.
-    return new StringBuilder("tb.get").append(tName).append("(").append(columnIdx).append(", rowId)").toString();
+    return new StringBuilder(Expression.TB).append(".get").append(getOutputType(schema, stateSchema).getName()).append(
+        "(").append(columnIdx).append(", ").append(Expression.ROW).append(")").toString();
   }
 
   /**

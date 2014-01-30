@@ -30,14 +30,14 @@ public class AndExpression extends BinaryExpression {
   }
 
   @Override
-  public Type getOutputType(final Schema schema) {
-    checkBooleanType(schema);
+  public Type getOutputType(final Schema schema, final Schema stateSchema) {
+    checkBooleanType(schema, stateSchema);
     return Type.BOOLEAN_TYPE;
   }
 
   @Override
-  public String getJavaString(final Schema schema) {
-    return getInfixBinaryString("&&", schema);
+  public String getJavaString(final Schema schema, final Schema stateSchema) {
+    return getInfixBinaryString("&&", schema, stateSchema);
   }
 
   @Override

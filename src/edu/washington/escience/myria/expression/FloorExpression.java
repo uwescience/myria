@@ -28,13 +28,13 @@ public class FloorExpression extends UnaryExpression {
   }
 
   @Override
-  public Type getOutputType(final Schema schema) {
-    checkAndReturnDefaultNumericType(schema);
+  public Type getOutputType(final Schema schema, final Schema stateSchema) {
+    checkAndReturnDefaultNumericType(schema, stateSchema);
     return Type.DOUBLE_TYPE;
   }
 
   @Override
-  public String getJavaString(final Schema schema) {
-    return getFunctionCallUnaryString("Math.floor", schema);
+  public String getJavaString(final Schema schema, final Schema stateSchema) {
+    return getFunctionCallUnaryString("Math.floor", schema, stateSchema);
   }
 }

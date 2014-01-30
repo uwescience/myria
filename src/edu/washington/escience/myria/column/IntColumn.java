@@ -17,7 +17,7 @@ import edu.washington.escience.myria.column.builder.IntColumnBuilder;
  * @author dhalperi
  * 
  */
-public abstract class IntColumn implements Column<Integer> {
+public abstract class IntColumn extends Column<Integer> {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
@@ -27,6 +27,7 @@ public abstract class IntColumn implements Column<Integer> {
    * @param row row of element to return.
    * @return the element at the specified row in this column.
    */
+  @Override
   public abstract int getInt(final int row);
 
   @Override
@@ -48,12 +49,12 @@ public abstract class IntColumn implements Column<Integer> {
 
   @Override
   public final boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
-    return getInt(leftIdx) == ((IntColumn) rightColumn).getInt(rightIdx);
+    return getInt(leftIdx) == rightColumn.getInt(rightIdx);
   }
 
   @Override
   public final void append(final int index, final ColumnBuilder<?> columnBuilder) {
-    ((IntColumnBuilder) columnBuilder).append(getInt(index));
+    ((IntColumnBuilder) columnBuilder).appendInt(getInt(index));
   }
 
   @Override

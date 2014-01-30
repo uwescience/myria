@@ -28,13 +28,13 @@ public class LogExpression extends UnaryExpression {
   }
 
   @Override
-  public Type getOutputType(final Schema schema) {
-    checkAndReturnDefaultNumericType(schema);
+  public Type getOutputType(final Schema schema, final Schema stateSchema) {
+    checkAndReturnDefaultNumericType(schema, stateSchema);
     return Type.DOUBLE_TYPE;
   }
 
   @Override
-  public String getJavaString(final Schema schema) {
-    return getFunctionCallUnaryString("Math.log", schema);
+  public String getJavaString(final Schema schema, final Schema stateSchema) {
+    return getFunctionCallUnaryString("Math.log", schema, stateSchema);
   }
 }

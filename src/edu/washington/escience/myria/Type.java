@@ -4,14 +4,7 @@ import java.io.Serializable;
 
 import org.joda.time.DateTime;
 
-import edu.washington.escience.myria.column.BooleanColumn;
 import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.column.DateTimeColumn;
-import edu.washington.escience.myria.column.DoubleColumn;
-import edu.washington.escience.myria.column.FloatColumn;
-import edu.washington.escience.myria.column.IntColumn;
-import edu.washington.escience.myria.column.LongColumn;
-import edu.washington.escience.myria.column.StringColumn;
 
 /**
  * Class representing a type in Myria. Types are static objects defined by this class; hence, the Type constructor is
@@ -25,17 +18,17 @@ public enum Type implements Serializable {
     @Override
     public boolean filter(final SimplePredicate.Op op, final Column<?> intColumn, final int tupleIndex,
         final Object operand) {
-      final int v = ((IntColumn) intColumn).getInt(tupleIndex);
+      final int v = intColumn.getInt(tupleIndex);
       return compare(op, v, (Integer) operand);
     }
 
     @Override
     public String toString(final Column<?> column, final int tupleIndex) {
-      return "" + ((IntColumn) column).getInt(tupleIndex);
+      return "" + column.getInt(tupleIndex);
     }
 
     @Override
-    public Object fromString(final String str) {
+    public Integer fromString(final String str) {
       return Integer.valueOf(str);
     }
 
@@ -44,6 +37,15 @@ public enum Type implements Serializable {
       return int.class;
     }
 
+    @Override
+    public Class<?> toJavaObjectType() {
+      return Integer.class;
+    }
+
+    @Override
+    public String getName() {
+      return "Int";
+    }
   },
 
   /**
@@ -53,17 +55,17 @@ public enum Type implements Serializable {
     @Override
     public boolean filter(final SimplePredicate.Op op, final Column<?> floatColumn, final int tupleIndex,
         final Object operand) {
-      final float v = ((FloatColumn) floatColumn).getFloat(tupleIndex);
+      final float v = floatColumn.getFloat(tupleIndex);
       return compare(op, v, (Float) operand);
     }
 
     @Override
     public String toString(final Column<?> column, final int tupleIndex) {
-      return "" + ((FloatColumn) column).getFloat(tupleIndex);
+      return "" + column.getFloat(tupleIndex);
     }
 
     @Override
-    public Object fromString(final String str) {
+    public Float fromString(final String str) {
       return Float.valueOf(str);
     }
 
@@ -71,7 +73,18 @@ public enum Type implements Serializable {
     public Class<?> toJavaType() {
       return float.class;
     }
+
+    @Override
+    public Class<?> toJavaObjectType() {
+      return Float.class;
+    }
+
+    @Override
+    public String getName() {
+      return "Float";
+    }
   },
+
   /**
    * Double type.
    * */
@@ -79,17 +92,17 @@ public enum Type implements Serializable {
     @Override
     public boolean filter(final SimplePredicate.Op op, final Column<?> doubleColumn, final int tupleIndex,
         final Object operand) {
-      final double v = ((DoubleColumn) doubleColumn).getDouble(tupleIndex);
+      final double v = doubleColumn.getDouble(tupleIndex);
       return compare(op, v, (Double) operand);
     }
 
     @Override
     public String toString(final Column<?> column, final int tupleIndex) {
-      return "" + ((DoubleColumn) column).getDouble(tupleIndex);
+      return "" + column.getDouble(tupleIndex);
     }
 
     @Override
-    public Object fromString(final String str) {
+    public Double fromString(final String str) {
       return Double.valueOf(str);
     }
 
@@ -97,7 +110,18 @@ public enum Type implements Serializable {
     public Class<?> toJavaType() {
       return double.class;
     }
+
+    @Override
+    public Class<?> toJavaObjectType() {
+      return Double.class;
+    }
+
+    @Override
+    public String getName() {
+      return "Double";
+    }
   },
+
   /**
    * Boolean type.
    * */
@@ -105,23 +129,33 @@ public enum Type implements Serializable {
     @Override
     public boolean filter(final SimplePredicate.Op op, final Column<?> booleanColumn, final int tupleIndex,
         final Object operand) {
-      final boolean v = ((BooleanColumn) booleanColumn).getBoolean(tupleIndex);
+      final boolean v = booleanColumn.getBoolean(tupleIndex);
       return compare(op, v, (Boolean) operand);
     }
 
     @Override
     public String toString(final Column<?> column, final int tupleIndex) {
-      return ((BooleanColumn) column).getBoolean(tupleIndex) + "";
+      return column.getBoolean(tupleIndex) + "";
     }
 
     @Override
-    public Object fromString(final String str) {
+    public Boolean fromString(final String str) {
       return Boolean.valueOf(str);
     }
 
     @Override
     public Class<?> toJavaType() {
       return boolean.class;
+    }
+
+    @Override
+    public Class<?> toJavaObjectType() {
+      return Boolean.class;
+    }
+
+    @Override
+    public String getName() {
+      return "Boolean";
     }
   },
 
@@ -132,17 +166,17 @@ public enum Type implements Serializable {
     @Override
     public boolean filter(final SimplePredicate.Op op, final Column<?> stringColumn, final int tupleIndex,
         final Object operand) {
-      final String string = ((StringColumn) stringColumn).getString(tupleIndex);
+      final String string = stringColumn.getString(tupleIndex);
       return compare(op, string, (String) operand);
     }
 
     @Override
     public String toString(final Column<?> column, final int tupleIndex) {
-      return ((StringColumn) column).getString(tupleIndex);
+      return column.getString(tupleIndex);
     }
 
     @Override
-    public Object fromString(final String str) {
+    public String fromString(final String str) {
       return str;
     }
 
@@ -150,7 +184,18 @@ public enum Type implements Serializable {
     public Class<?> toJavaType() {
       return String.class;
     }
+
+    @Override
+    public Class<?> toJavaObjectType() {
+      return toJavaType();
+    }
+
+    @Override
+    public String getName() {
+      return "String";
+    }
   },
+
   /**
    * Long type.
    * */
@@ -158,23 +203,33 @@ public enum Type implements Serializable {
     @Override
     public boolean filter(final SimplePredicate.Op op, final Column<?> longColumn, final int tupleIndex,
         final Object operand) {
-      final long v = ((LongColumn) longColumn).getLong(tupleIndex);
+      final long v = longColumn.getLong(tupleIndex);
       return compare(op, v, (Long) operand);
     }
 
     @Override
     public String toString(final Column<?> column, final int tupleIndex) {
-      return "" + ((LongColumn) column).getLong(tupleIndex);
+      return "" + column.getLong(tupleIndex);
     }
 
     @Override
-    public Object fromString(final String str) {
+    public Long fromString(final String str) {
       return Long.valueOf(str);
     }
 
     @Override
     public Class<?> toJavaType() {
       return long.class;
+    }
+
+    @Override
+    public Class<?> toJavaObjectType() {
+      return Long.class;
+    }
+
+    @Override
+    public String getName() {
+      return "Long";
     }
   },
 
@@ -185,17 +240,17 @@ public enum Type implements Serializable {
     @Override
     public boolean filter(final SimplePredicate.Op op, final Column<?> dateColumn, final int tupleIndex,
         final Object operand) {
-      final DateTime v = ((DateTimeColumn) dateColumn).getDateTime(tupleIndex);
+      final DateTime v = dateColumn.getDateTime(tupleIndex);
       return compare(op, v, (DateTime) operand);
     }
 
     @Override
     public String toString(final Column<?> column, final int tupleIndex) {
-      return "" + ((DateTimeColumn) column).getDateTime(tupleIndex);
+      return "" + column.getDateTime(tupleIndex);
     }
 
     @Override
-    public Object fromString(final String str) {
+    public DateTime fromString(final String str) {
       return DateTime.parse(str);
     }
 
@@ -204,6 +259,15 @@ public enum Type implements Serializable {
       return DateTime.class;
     }
 
+    @Override
+    public Class<?> toJavaObjectType() {
+      return toJavaType();
+    }
+
+    @Override
+    public String getName() {
+      return "DateTime";
+    }
   };
 
   /**
@@ -228,7 +292,7 @@ public enum Type implements Serializable {
    * @param str The string to convert
    * @return An object of an appropriate type
    */
-  public Object fromString(final String str) {
+  public Comparable<?> fromString(final String str) {
     throw new UnsupportedOperationException();
   }
 
@@ -405,4 +469,14 @@ public enum Type implements Serializable {
    * @return the java type
    */
   public abstract Class<?> toJavaType();
+
+  /**
+   * @return the non primitive java type
+   */
+  public abstract Class<?> toJavaObjectType();
+
+  /**
+   * @return The name of the type usually used in the code. May be used to generate function names.
+   */
+  public abstract String getName();
 }

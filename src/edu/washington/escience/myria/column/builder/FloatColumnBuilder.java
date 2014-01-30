@@ -20,7 +20,7 @@ import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
  * A column of Float values.
  * 
  */
-public final class FloatColumnBuilder implements ColumnBuilder<Float> {
+public final class FloatColumnBuilder extends ColumnBuilder<Float> {
   /** View of the column data as floats. */
   private final FloatBuffer data;
 
@@ -70,43 +70,32 @@ public final class FloatColumnBuilder implements ColumnBuilder<Float> {
     return Type.FLOAT_TYPE;
   }
 
-  /**
-   * Inserts the specified element at end of this column.
-   * 
-   * @param value element to be inserted.
-   * @return this column.
-   * @throws BufferOverflowException if exceeds buffer up bound.
-   */
-  public FloatColumnBuilder append(final float value) throws BufferOverflowException {
+  @Override
+  public FloatColumnBuilder appendFloat(final float value) throws BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
     data.put(value);
     return this;
   }
 
+  @Deprecated
   @Override
   public FloatColumnBuilder appendObject(final Object value) throws BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return append((Float) value);
+    return appendFloat((Float) value);
   }
 
   @Override
   public FloatColumnBuilder appendFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException,
       BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return append(resultSet.getFloat(jdbcIndex));
+    return appendFloat(resultSet.getFloat(jdbcIndex));
   }
 
   @Override
   public FloatColumnBuilder appendFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException,
       BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return append((float) statement.columnDouble(index));
-  }
-
-  @Override
-  public FloatColumnBuilder append(final Float value) throws BufferOverflowException {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return append(value.floatValue());
+    return appendFloat((float) statement.columnDouble(index));
   }
 
   @Override
@@ -164,14 +153,11 @@ public final class FloatColumnBuilder implements ColumnBuilder<Float> {
 
   @Override
   @Deprecated
-  public Float get(final int row) {
+  public Float getObject(final int row) {
     return data.get(row);
   }
 
-  /**
-   * @param row the row to get
-   * @return primitive value of the row
-   * */
+  @Override
   public float getFloat(final int row) {
     return data.get(row);
   }

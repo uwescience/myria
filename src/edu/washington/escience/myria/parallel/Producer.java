@@ -346,7 +346,7 @@ public abstract class Producer extends RootOperator {
       if (partitions != null) {
         for (int i = 0; i < numOfPartition; ++i) {
           if (partitions[i] != null) {
-            partitions[i].compactInto(partitionBuffers[i]);
+            partitionBuffers[i].absorb(partitions[i]);
           }
         }
       }

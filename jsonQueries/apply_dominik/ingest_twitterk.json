@@ -9,7 +9,8 @@
     "column_names" : ["follower", "followee"]
   },
   "source" : {
-    "data_type" : 'File',
-    "filename" : "/Users/dominik/Developer/Workspace/myria/jsonQueries/apply_dominik/TwitterK.csv"
-  }
+    "data_type" : "File",
+    "filename" : "/Users/dominik/Developer/Workspace/myria/data_nocommit/TwitterK.csv"
+  },
+  "delimiter": ","
 }

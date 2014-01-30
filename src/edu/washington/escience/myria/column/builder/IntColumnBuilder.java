@@ -14,7 +14,6 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.IntArrayColumn;
 import edu.washington.escience.myria.column.IntColumn;
 import edu.washington.escience.myria.column.IntProtoColumn;
-import edu.washington.escience.myria.column.mutable.IntArrayMutableColumn;
 import edu.washington.escience.myria.column.mutable.IntMutableColumn;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 
@@ -22,7 +21,7 @@ import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
  * A column of Integer values.
  * 
  */
-public final class IntColumnBuilder implements ColumnBuilder<Integer> {
+public final class IntColumnBuilder extends ColumnBuilder<Integer> {
   /** View of the column data as ints. */
   private final IntBuffer data;
 
@@ -67,43 +66,32 @@ public final class IntColumnBuilder implements ColumnBuilder<Integer> {
     return Type.INT_TYPE;
   }
 
-  /**
-   * Inserts the specified element at end of this column.
-   * 
-   * @param value element to be inserted.
-   * @return this column.
-   * @throws BufferOverflowException if the column is already full
-   */
-  public IntColumnBuilder append(final int value) throws BufferOverflowException {
+  @Override
+  public IntColumnBuilder appendInt(final int value) throws BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
     data.put(value);
     return this;
   }
 
+  @Deprecated
   @Override
   public IntColumnBuilder appendObject(final Object value) throws BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return append((Integer) value);
+    return appendInt((Integer) value);
   }
 
   @Override
   public IntColumnBuilder appendFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException,
       BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return append(resultSet.getInt(jdbcIndex));
+    return appendInt(resultSet.getInt(jdbcIndex));
   }
 
   @Override
   public IntColumnBuilder appendFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException,
       BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return append(statement.columnInt(index));
-  }
-
-  @Override
-  public IntColumnBuilder append(final Integer value) {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return append(value.intValue());
+    return appendInt(statement.columnInt(index));
   }
 
   @Override
@@ -120,7 +108,7 @@ public final class IntColumnBuilder implements ColumnBuilder<Integer> {
   @Override
   public IntMutableColumn buildMutable() {
     built = true;
-    return new IntArrayMutableColumn(data.array(), data.position());
+    return new IntMutableColumn(data.array(), data.position());
   }
 
   @Override
@@ -161,14 +149,11 @@ public final class IntColumnBuilder implements ColumnBuilder<Integer> {
 
   @Override
   @Deprecated
-  public Integer get(final int row) {
+  public Integer getObject(final int row) {
     return data.get(row);
   }
 
-  /**
-   * @param row the row to get
-   * @return primitive value of the row
-   * */
+  @Override
   public int getInt(final int row) {
     return data.get(row);
   }
