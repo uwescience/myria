@@ -421,9 +421,6 @@ public class TupleBuffer implements Cloneable {
   }
 
   /**
-<<<<<<< HEAD
-   * Append the specified value to the specified destination column in this TupleBuffer from the source column.
-=======
    * Compare two cells in two TupleBuffers.
    * 
    * @param columnInThisTB column index of the cell in this TupleBuffer.
@@ -467,7 +464,6 @@ public class TupleBuffer implements Cloneable {
 
   /**
    * Append the specified value to the specified destination column in this TupleBatchBuffer from the source column.
->>>>>>> update test, refactor multiway join
    * 
    * @param destColumn which column in this TB the value will be inserted.
    * @param sourceColumn the column from which data will be retrieved.

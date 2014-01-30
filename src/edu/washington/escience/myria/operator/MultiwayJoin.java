@@ -121,14 +121,7 @@ public class MultiwayJoin extends NAryOperator {
     }
 
     public void setRow(int row) {
-      // Preconditions.checkArgument(row >= 0 && row <= tables[tableIndex].numTuples());
-      if (row < 0 || row > tables[tableIndex].numTuples()) {
-        System.err.println("row: " + row);
-        System.err.println("tableIndex: " + tableIndex);
-        System.err.println("CurrentDepth:" + currentDepth);
-        System.err.println("numTp:" + tables[tableIndex].numTuples());
-        Preconditions.checkArgument(row >= 0 && row <= tables[tableIndex].numTuples());
-      }
+      Preconditions.checkElementIndex(row, tables[tableIndex].numTuples(), "row out of bound when setting row");
       this.row = row;
     }
 
@@ -832,7 +825,6 @@ public class MultiwayJoin extends NAryOperator {
   private void join_open() {
     for (JoinField jf : joinFieldMapping.get(currentDepth)) {
       int ti = jf.tableIndex;
-      // iterators[ti].open();
       /* set the range for the highest ordered field in a table */
       if (joinFieldLocalOrder.get(ti).get(iterators[ti].currentField).getOrder() == 0) {
         iterators[jf.tableIndex].ranges[jf.fieldIndex].setMinRow(0);
