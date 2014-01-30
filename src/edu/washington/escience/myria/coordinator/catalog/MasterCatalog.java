@@ -120,7 +120,7 @@ public final class MasterCatalog {
     + "   worker_id INTEGER,\n"
     + "   start_interval INTEGER,\n"
     + "   end_interval INTEGER,\n"
-    + "   FOREIGN KEY (worker_id) REFERENCES workers(worker_id),\n"
+    + "   FOREIGN KEY (worker_id) REFERENCES workers(worker_id)\n"
     + ");";
 /** CREATE TABLE statements @formatter:on */
 

@@ -472,7 +472,8 @@ public final class Server {
     scheduledTaskExecutor =
         Executors.newSingleThreadScheduledExecutor(new RenamingThreadFactory("Master global timer"));
 
-    consistentHash = new ConsistentHash(NUM_VIRTUAL_REPLICAS);
+    ConsistentHash.initialize(NUM_VIRTUAL_REPLICAS);
+    consistentHash = ConsistentHash.getInstance();
     constructConsistentHashCircle();
   }
 
@@ -1171,6 +1172,9 @@ public final class Server {
       } else if (partitionFunctionName.toLowerCase().equals("multifieldhash")) {
         Integer[] fieldIndexesArray = partitionFields.toArray(new Integer[partitionFields.size()]);
         return new MultiFieldHashPartitionFunction(numWorkers, fieldIndexesArray);
+      } else if (partitionFunctionName.toLowerCase().equals("consistenthash")) {
+        Integer[] fieldIndexesArray = partitionFields.toArray(new Integer[partitionFields.size()]);
+        return new ConsistentHashPartitionFunction(numWorkers, fieldIndexesArray);
       }
     }
     return new RoundRobinPartitionFunction(numWorkers);
