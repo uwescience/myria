@@ -20,6 +20,14 @@ import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 
+/**
+ * 
+ * This operator implement Leap-Frog join algorithm (http://arxiv.org/abs/1210.0481), which takes multiple relations and
+ * arbitrary join structure as input.
+ * 
+ * @author chushumo
+ * 
+ */
 public class LeapFrogJoin extends NAryOperator {
 
   /**
@@ -27,8 +35,14 @@ public class LeapFrogJoin extends NAryOperator {
    */
   private static final long serialVersionUID = 1L;
 
+  /**
+   * {@code joinFieldMapping_[i]} represents the list of JoinFiled of i-th join variable.
+   */
   private final int[][][] joinFieldMapping_;
 
+  /**
+   * {@code outputFieldMapping_[i]} represents the join field that i-th output column maps to
+   */
   private final int[][] outputFieldMapping_;
 
   /**
@@ -103,28 +117,55 @@ public class LeapFrogJoin extends NAryOperator {
    * 
    */
   private final class CellPointer {
+    /**
+     * Table index of this CellPointer
+     */
     private final int tableIndex;
 
+    /**
+     * @return Table index of this CellPointer
+     */
     public int getTableIndex() {
       return tableIndex;
     }
 
+    /**
+     * @return Field index of this CellPointer
+     */
     public int getFieldIndex() {
       return fieldIndex;
     }
 
+    /**
+     * Field index of this CellPointer
+     */
     private final int fieldIndex;
+
+    /**
+     * row number
+     */
     private int row;
 
+    /**
+     * @return row number
+     */
     public int getRow() {
       return row;
     }
 
+    /**
+     * @param row row number to set
+     */
     public void setRow(int row) {
       Preconditions.checkElementIndex(row, tables[tableIndex].numTuples(), "row out of bound when setting row");
       this.row = row;
     }
 
+    /**
+     * @param tableIndex the table index of this CellPointer
+     * @param fieldIndex the field index of this CellPointer
+     * @param row row number
+     */
     public CellPointer(int tableIndex, int fieldIndex, int row) {
       Preconditions.checkElementIndex(tableIndex, tables.length);
       Preconditions.checkElementIndex(fieldIndex, tables[tableIndex].numColumns());
@@ -134,6 +175,9 @@ public class LeapFrogJoin extends NAryOperator {
       this.row = row;
     }
 
+    /**
+     * @param cp the CellPoitner to copy from
+     */
     public CellPointer(CellPointer cp) {
       this(cp.getTableIndex(), cp.getFieldIndex(), cp.getRow());
     }

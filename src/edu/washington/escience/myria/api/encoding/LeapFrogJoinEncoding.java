@@ -31,7 +31,6 @@ public class LeapFrogJoinEncoding extends OperatorEncoding<LeapFrogJoin> {
 
   @Override
   public LeapFrogJoin construct(Server server) throws MyriaApiException {
-
     return new LeapFrogJoin(null, joinFieldMapping, outputFieldMapping, argColumnNames);
   }
 
