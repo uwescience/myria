@@ -26,7 +26,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.InMemoryOrderBy;
-import edu.washington.escience.myria.operator.MultiwayJoin;
+import edu.washington.escience.myria.operator.LeapFrogJoin;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
@@ -164,8 +164,8 @@ public class MultiwayJoinTest extends SystemTestBase {
         new int[][][] { { { 0, 0 }, { 2, 0 } }, { { 0, 1 }, { 1, 0 } }, { { 1, 1 }, { 2, 1 } } };
     int[][] outputFieldMapping = new int[][] { { 0, 0 }, { 1, 0 }, { 1, 1 } };
 
-    final MultiwayJoin mj =
-        new MultiwayJoin(new Operator[] { R, S, T }, joinFieldMapping, outputFieldMapping, new ArrayList<String>(
+    final LeapFrogJoin mj =
+        new LeapFrogJoin(new Operator[] { R, S, T }, joinFieldMapping, outputFieldMapping, new ArrayList<String>(
             asList("x", "y", "z")));
 
     final ExchangePairID serverReceiveIDMJ = ExchangePairID.newID();
@@ -230,8 +230,8 @@ public class MultiwayJoinTest extends SystemTestBase {
     int[][][] fieldMap = new int[][][] { { { 0, 0 }, { 1, 0 } } };
     int[][] outputMap = new int[][] { { 0, 0 }, { 0, 1 }, { 1, 0 }, { 1, 1 } };
 
-    final MultiwayJoin localjoin =
-        new MultiwayJoin(new Operator[] { o1, o2 }, fieldMap, outputMap, new ArrayList<String>(asList("id1", "name1",
+    final LeapFrogJoin localjoin =
+        new LeapFrogJoin(new Operator[] { o1, o2 }, fieldMap, outputMap, new ArrayList<String>(asList("id1", "name1",
             "id2", "name2")));
 
     final CollectProducer cp1 = new CollectProducer(localjoin, serverReceiveID, MASTER_ID);

@@ -20,7 +20,7 @@ import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 
-public class MultiwayJoin extends NAryOperator {
+public class LeapFrogJoin extends NAryOperator {
 
   /**
    * required.
@@ -337,7 +337,7 @@ public class MultiwayJoin extends NAryOperator {
    * @param joinFieldMapping mapping of join field to child table field
    * @param outputColumns output column names
    */
-  public MultiwayJoin(final Operator[] children, final int[][][] joinFieldMapping, final int[][] outputFieldMapping,
+  public LeapFrogJoin(final Operator[] children, final int[][][] joinFieldMapping, final int[][] outputFieldMapping,
       final List<String> outputColumnNames) {
     if (outputColumnNames != null) {
       Preconditions.checkArgument(outputFieldMapping.length == outputColumnNames.size(),

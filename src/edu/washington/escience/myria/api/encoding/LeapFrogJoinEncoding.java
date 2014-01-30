@@ -6,11 +6,11 @@ import java.util.Map;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.api.MyriaApiException;
-import edu.washington.escience.myria.operator.MultiwayJoin;
+import edu.washington.escience.myria.operator.LeapFrogJoin;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.parallel.Server;
 
-public class MultiwayJoinEncoding extends OperatorEncoding<MultiwayJoin> {
+public class LeapFrogJoinEncoding extends OperatorEncoding<LeapFrogJoin> {
 
   public List<String> argChildren;
   public List<String> argColumnNames;
@@ -30,9 +30,9 @@ public class MultiwayJoinEncoding extends OperatorEncoding<MultiwayJoin> {
   }
 
   @Override
-  public MultiwayJoin construct(Server server) throws MyriaApiException {
+  public LeapFrogJoin construct(Server server) throws MyriaApiException {
 
-    return new MultiwayJoin(null, joinFieldMapping, outputFieldMapping, argColumnNames);
+    return new LeapFrogJoin(null, joinFieldMapping, outputFieldMapping, argColumnNames);
   }
 
   @Override
