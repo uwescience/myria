@@ -370,7 +370,7 @@ public class TupleBuffer implements ReadableTable, Cloneable {
   public final int compare(final int columnInThisTB, final int rowInThisTB, final TupleBuffer comparedTB,
       final int columnInComparedTB, final int rowInComparedTB) {
     Preconditions.checkArgument(getSchema().getColumnType(columnInThisTB).equals(
-        comparedTB.getSchema().getColumnType(columnInComparedTB)), "The types of comparing cell are not matched.");
+        comparedTB.getSchema().getColumnType(columnInComparedTB)), "The types of comparing cells are not matched.");
     switch (getSchema().getColumnType(columnInThisTB)) {
       case BOOLEAN_TYPE:
         return Type.compareRaw(getBoolean(columnInThisTB, rowInThisTB), comparedTB.getBoolean(columnInComparedTB,
