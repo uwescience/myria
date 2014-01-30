@@ -552,9 +552,8 @@ public class MultiwayJoin extends NAryOperator {
   private void storeChildTuple(int childIndex, TupleBatch tb) {
     List<Column<?>> inputColumns = tb.getDataColumns();
     for (int row = 0; row < tb.numTuples(); ++row) {
-      int inColumnRow = tb.getValidIndices().get(row);
       for (int column = 0; column < tb.numColumns(); column++) {
-        tables[childIndex].put(column, inputColumns.get(column), inColumnRow);
+        tables[childIndex].put(column, inputColumns.get(column), row);
       }
     }
   }

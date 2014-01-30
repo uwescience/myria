@@ -96,9 +96,8 @@ public final class InMemoryOrderBy extends UnaryOperator {
       if (tb != null) {
         for (int row = 0; row < tb.numTuples(); ++row) {
           List<Column<?>> inputColumns = tb.getDataColumns();
-          int inColumnRow = tb.getValidIndices().get(row);
           for (int column = 0; column < tb.numColumns(); ++column) {
-            table.put(column, inputColumns.get(column), inColumnRow);
+            table.put(column, inputColumns.get(column), row);
           }
         }
 

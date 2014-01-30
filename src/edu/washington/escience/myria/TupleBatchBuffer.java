@@ -359,16 +359,9 @@ public class TupleBatchBuffer {
    */
   public final void put(final TupleBuffer hashTable, final int sourceColumnIdx, final int sourceRow,
       final int destColumn) {
-    checkPutIndex(destColumn);
     int tupleIdx = hashTable.getTupleIndexInContainingTB(sourceRow);
-    if (hashTable.getColumns(sourceRow) == null) {
-      ColumnBuilder<?> hashTblColumnBuilder = hashTable.getColumnBuilders(sourceRow)[sourceColumnIdx];
-      put(destColumn, hashTblColumnBuilder, tupleIdx);
-    } else {
-      MutableColumn<?> hashTblColumn = hashTable.getColumns(sourceRow)[sourceColumnIdx];
-      put(destColumn, hashTblColumn, tupleIdx);
-    }
-
+    ReadableColumn hashTblColumn = hashTable.getColumns(sourceRow)[sourceColumnIdx];
+    put(destColumn, hashTblColumn, tupleIdx);
   }
 
   /**

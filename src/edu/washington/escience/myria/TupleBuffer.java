@@ -214,23 +214,6 @@ public class TupleBuffer implements ReadableTable, Cloneable {
 
   /**
    * @param row the row number
-   * @return the columns of the TB that the row resides.
-   * */
-  public MutableColumn<?>[] getColumns(final int row) {
-    int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
-    int tupleIndex = row % TupleBatch.BATCH_SIZE;
-    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
-        && tupleIndex >= currentInProgressTuples) {
-      throw new IndexOutOfBoundsException();
-    }
-    if (tupleBatchIndex < readyTuples.size()) {
-      return readyTuples.get(tupleBatchIndex);
-    }
-    return null;
-  }
-
-  /**
-   * @param row the row number
    * @return the index of the row in the containing TB.
    * */
   public final int getTupleIndexInContainingTB(final int row) {
@@ -239,19 +222,19 @@ public class TupleBuffer implements ReadableTable, Cloneable {
 
   /**
    * @param row the row number
-   * @return the ColumnBuilder if the row resides in a in-building TB
-   * */
-  public ColumnBuilder<?>[] getColumnBuilders(final int row) {
+   * @return the columns
+   */
+  public ReadableColumn[] getColumns(final int row) {
     int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
     int tupleIndex = row % TupleBatch.BATCH_SIZE;
-    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
-        && tupleIndex >= currentInProgressTuples) {
+
+    if (tupleBatchIndex < readyTuples.size()) {
+      return readyTuples.get(tupleBatchIndex);
+    } else if (tupleBatchIndex == readyTuples.size() && tupleIndex < currentInProgressTuples) {
+      return currentBuildingColumns;
+    } else {
       throw new IndexOutOfBoundsException();
     }
-    if (tupleBatchIndex < readyTuples.size()) {
-      return null;
-    }
-    return currentBuildingColumns;
   }
 
   @Override
