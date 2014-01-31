@@ -118,6 +118,7 @@ public final class MasterCatalog {
   private static final String CREATE_CONSISTENT_HASHING_RING =
       "CREATE TABLE consistent_hashing_interval (\n" 
     + "   worker_id INTEGER,\n"
+    + "   partition INTEGER,\n"
     + "   start_interval INTEGER,\n"
     + "   end_interval INTEGER,\n"
     + "   FOREIGN KEY (worker_id) REFERENCES workers(worker_id)\n"
@@ -537,6 +538,45 @@ public final class MasterCatalog {
       throw new CatalogException(e);
     }
     return this;
+  }
+
+  /**
+   * Extract the value of a particular configuration parameter from the database. Returns null if the parameter is not
+   * configured.
+   * 
+   * @return all intervals used in consistent hash.
+   * @throws CatalogException if there is an error in the backing database.
+   */
+  public Set<ConsistentHashInterval> getConsistentHashIntervals() throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+    try {
+      return queue.execute(new SQLiteJob<Set<ConsistentHashInterval>>() {
+        @Override
+        protected Set<ConsistentHashInterval> job(final SQLiteConnection sqliteConnection) throws SQLiteException,
+            CatalogException {
+          final Set<ConsistentHashInterval> intervals = new HashSet<ConsistentHashInterval>();
+
+          try {
+            final SQLiteStatement statement =
+                sqliteConnection.prepare("SELECT * FROM consistent_hashing_interval;", false);
+            while (statement.step()) {
+              intervals.add(new ConsistentHashInterval(statement.columnInt(2), statement.columnInt(3), statement
+                  .columnInt(0), statement.columnInt(1)));
+            }
+            statement.dispose();
+          } catch (final SQLiteException e) {
+            LOGGER.error(e.toString());
+            throw new CatalogException(e);
+          }
+
+          return intervals;
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
   }
 
   /**

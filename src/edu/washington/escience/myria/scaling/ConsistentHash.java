@@ -53,7 +53,7 @@ public final class ConsistentHash {
   }
 
   /**
-   * Iniitializes the consistent hashing structure. Everytime initialize is called, the structure will be reset.
+   * Initializes the consistent hashing structure. Every time initialize is called, the structure will be reset.
    * 
    * @param numReplicas the number of replicas this consistent hashing is using
    */
@@ -79,13 +79,35 @@ public final class ConsistentHash {
   }
 
   /**
+   * This method should only be used when starting up the cluster and populating the intervals from the stored
+   * information. It assumes that the number of virtual replica specified from the cluster is equal to the one used when
+   * storing the ConsistentHash information.
+   * 
+   * @param intervals the intervals being populated
+   */
+  public void addIntervals(final Set<ConsistentHashInterval> intervals) {
+    for (ConsistentHashInterval interval : intervals) {
+      /* populate all the structure for consistent hash */
+      int workerId = interval.getWorkerId();
+      int workerHashCode = hashIntDataPoint(workerId);
+      circle.put(workerHashCode, workerId);
+      if (!hashNumbers.containsKey(workerId)) {
+        hashNumbers.put(workerId, new HashSet<ConsistentHashInterval>());
+      }
+      hashNumbers.get(workerId).add(interval);
+      partitionNumber.put(workerId, interval.getPartition());
+    }
+  }
+
+  /**
    * Adds a worker to the consistent hashing circle. To get the intervals of the node, the user must call
    * getIntervals().
    * 
    * @param workerId the id of the worker to be added.
    */
   public void addWorker(final int workerId) {
-    partitionNumber.put(workerId, partitionNumber.size());
+    int partition = partitionNumber.size();
+    partitionNumber.put(workerId, partition);
     for (int i = 0; i < numReplicas; i++) {
       int hashVal = workerId + i * MAGIC_HASHCODE;
       int hashCode = hashIntDataPoint(hashVal);
@@ -100,7 +122,7 @@ public final class ConsistentHash {
       if (circle.size() == 0) {
         /* The consistent hashing ring is still empty. Add an interval that covers the whole */
         Set<ConsistentHashInterval> interval = new HashSet<ConsistentHashInterval>();
-        interval.add(new ConsistentHashInterval(hashCode, hashCode));
+        interval.add(new ConsistentHashInterval(hashCode, hashCode, workerId, partition));
         hashNumbers.put(workerId, interval);
         circle.put(hashCode, workerId);
       } else {
@@ -120,9 +142,9 @@ public final class ConsistentHash {
         if (newWorkerIntervals == null) {
           newWorkerIntervals = new HashSet<ConsistentHashInterval>();
         }
-        otherWorkerIntervals.remove(new ConsistentHashInterval(startInterval, endInterval));
-        otherWorkerIntervals.add(new ConsistentHashInterval(startInterval, hashCode));
-        newWorkerIntervals.add(new ConsistentHashInterval(hashCode, endInterval));
+        otherWorkerIntervals.remove(new ConsistentHashInterval(startInterval, endInterval, workerId, partition));
+        otherWorkerIntervals.add(new ConsistentHashInterval(startInterval, hashCode, workerId, partition));
+        newWorkerIntervals.add(new ConsistentHashInterval(hashCode, endInterval, workerId, partition));
         hashNumbers.put(workerId, newWorkerIntervals);
       }
     }

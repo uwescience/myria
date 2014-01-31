@@ -1186,12 +1186,18 @@ public final class Server {
    * @throws CatalogException When there is a database problem.
    */
   private void constructConsistentHashCircle() throws CatalogException {
-    for (Integer workerId : workers.keySet()) {
-      consistentHash.addWorker(workerId);
-      Set<ConsistentHashInterval> intervals = consistentHash.getIntervals(workerId);
-      for (ConsistentHashInterval interval : intervals) {
-        catalog.persistConsistentHashingInterval(workerId, interval);
+    /* Try to get the stored consistent hash information from the catalog. */
+    Set<ConsistentHashInterval> storedConsistentHash = catalog.getConsistentHashIntervals();
+    if (storedConsistentHash.isEmpty()) {
+      for (Integer workerId : workers.keySet()) {
+        consistentHash.addWorker(workerId);
+        Set<ConsistentHashInterval> intervals = consistentHash.getIntervals(workerId);
+        for (ConsistentHashInterval interval : intervals) {
+          catalog.persistConsistentHashingInterval(workerId, interval);
+        }
       }
+    } else {
+      consistentHash.addIntervals(storedConsistentHash);
     }
   }
 

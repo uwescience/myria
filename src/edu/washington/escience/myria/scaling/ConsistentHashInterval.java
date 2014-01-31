@@ -13,16 +13,24 @@ public final class ConsistentHashInterval implements Comparable<ConsistentHashIn
   private int start;
   /** The end of the interval. */
   private int end;
+  /** The worker id that this interval belongs to. */
+  private int workerId;
+  /** The partition that this interval is assigned to. */
+  private int partition;
 
   /**
    * Constructs an interval with start and end point.
    * 
    * @param start the start of the interval.
    * @param end the end of the interval.
+   * @param workerId the worker id of this interval.
+   * @param partition the partition of this interval.
    */
-  public ConsistentHashInterval(final int start, final int end) {
+  public ConsistentHashInterval(final int start, final int end, final int workerId, final int partition) {
     this.start = start;
     this.end = end;
+    this.workerId = workerId;
+    this.partition = partition;
   }
 
   /**
@@ -51,6 +59,34 @@ public final class ConsistentHashInterval implements Comparable<ConsistentHashIn
    */
   public void setEnd(final int end) {
     this.end = end;
+  }
+
+  /**
+   * @return the workerId
+   */
+  public int getWorkerId() {
+    return workerId;
+  }
+
+  /**
+   * @return the partition
+   */
+  public int getPartition() {
+    return partition;
+  }
+
+  /**
+   * @param workerId the workerId to set
+   */
+  public void setWorkerId(final int workerId) {
+    this.workerId = workerId;
+  }
+
+  /**
+   * @param partition the partition to set
+   */
+  public void setPartition(final int partition) {
+    this.partition = partition;
   }
 
   /**
