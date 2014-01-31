@@ -264,6 +264,18 @@ public final class QueryResource {
     return Response.ok().cacheControl(MyriaApiUtils.doNotCache()).entity(queries).build();
   }
 
+  /**
+   * 
+   * Get the data for visualization in JSON format.
+   * 
+   * @param queryId query id.
+   * @param fragmentId fragment id.
+   * @param workerId worker id, default is 0, which means getting the data of all workers.
+   * @param uriInfo the URL of the current request.
+   * @return
+   * @throws CatalogException if there is an error in the catalog.
+   * @throws IOException if there is anything happens in serializing and deserializing JSON.
+   */
   @GET
   @Path("query-{query_id:\\d+}/fragment-{fragment_id:-?\\d+}")
   public Response getProfile(@PathParam("query_id") final long queryId,
@@ -293,7 +305,6 @@ public final class QueryResource {
     }
 
     /* pull profiling logs from worker directories. */
-    /* TODO: handle error properly. */
     String response;
     final String depolymentFile = server.getConfiguration(MyriaSystemConfigKeys.DEPLOYMENT_FILE);
     ProcessBuilder pb;
