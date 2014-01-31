@@ -13,6 +13,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.ReadableColumn;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
@@ -404,7 +405,8 @@ public class LeapFrogJoin extends NAryOperator {
     /* set output field */
     this.outputFieldMapping = new ArrayList<JoinField>();
     for (int[] element : outputFieldMapping_) {
-      Preconditions.checkArgument(element.length == 2);
+      Preconditions.checkArgument(element.length == 2,
+          "An array representing join field must be at length of 2. ([tableIndex,fieldIndex])");
       this.outputFieldMapping.add(new JoinField(element[0], element[1]));
     }
 
@@ -506,7 +508,8 @@ public class LeapFrogJoin extends NAryOperator {
       List<JoinField> joinedFieldList = new ArrayList<JoinField>();
       for (int j = 0; j < joinFieldMapping_[i].length; ++j) {
         // get table index and field index of each join field
-        Preconditions.checkArgument(joinFieldMapping_[i][j].length == 2);
+        Preconditions.checkArgument(joinFieldMapping_[i][j].length == 2,
+            "the inner arrary of JoinFieldMapping must have the length of 2");
         int tableIndex = joinFieldMapping_[i][j][0];
         int fieldIndex = joinFieldMapping_[i][j][1];
         // update joinFieldMapping and reverseJoinFieldMapping
@@ -687,12 +690,7 @@ public class LeapFrogJoin extends NAryOperator {
     int startRow = iterators[jf.tableIndex].getRow(jf.fieldIndex);
     int endRow = iterators[jf.tableIndex].ranges[jf.fieldIndex].getMaxRow() - 1;
     iterators[jf.tableIndex].ranges[jf.fieldIndex].setMinRow(startRow);
-    if (startRow > endRow) {
-      System.err.println("start row:" + startRow);
-      System.err.println("end row:" + endRow);
-      System.err.println("current depth:" + currentDepth);
-    }
-    Preconditions.checkArgument(startRow <= endRow);
+    Preconditions.checkState(startRow <= endRow, "startRow must smaller than endRow");
 
     final CellPointer startCursor = new CellPointer(jf.tableIndex, jf.fieldIndex, startRow);
 
@@ -713,7 +711,8 @@ public class LeapFrogJoin extends NAryOperator {
     int step = 1;
     while (true) {
       int compare = cellCompare(startCursor, cursor);
-      Preconditions.checkArgument(compare <= 0);
+      Preconditions.checkState(compare <= 0,
+          "startCursor must point to an element that is not greater than element pointed by current cursor");
       if (compare < 0) {
         endRow = cursor.getRow();
         break;
@@ -756,15 +755,7 @@ public class LeapFrogJoin extends NAryOperator {
 
     int startRow = iterators[jf.tableIndex].getRow(jf.fieldIndex);
     int endRow = iterators[jf.tableIndex].ranges[jf.fieldIndex].getMaxRow() - 1;
-    if (startRow > endRow) {
-      System.err.println("start row: " + startRow);
-      System.err.println("max row: " + endRow);
-      System.err.println("numTuple: " + tables[jf.tableIndex].numTuples());
-      System.err.println("CurrentDepth:" + currentDepth);
-      System.err.println("table index:" + jf.tableIndex);
-      System.err.println("field index:" + jf.fieldIndex);
-    }
-    Preconditions.checkArgument(startRow <= endRow);
+    Preconditions.checkState(startRow <= endRow, "startRow must be no less than endRow");
 
     final CellPointer startCursor = new CellPointer(jf.tableIndex, jf.fieldIndex, startRow);
     CellPointer cursor = new CellPointer(startCursor);
@@ -939,8 +930,10 @@ public class LeapFrogJoin extends NAryOperator {
    */
   private void addToAns() {
     for (int i = 0; i < outputFieldMapping.size(); ++i) {
-      ansTBB.put(tables[outputFieldMapping.get(i).tableIndex], outputFieldMapping.get(i).fieldIndex,
-          iterators[outputFieldMapping.get(i).tableIndex].getRowOfCurrentField(), i);
+      int row = iterators[outputFieldMapping.get(i).tableIndex].getRowOfCurrentField();
+      ReadableColumn sourceColumn =
+          tables[outputFieldMapping.get(i).tableIndex].getColumns(row)[outputFieldMapping.get(i).fieldIndex];
+      ansTBB.put(i, sourceColumn, row);
     }
   }
 
