@@ -30,6 +30,9 @@ public abstract class Operator implements Serializable {
    * loggers.
    * */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Operator.class);
+  /**
+   * loggers for profiling.
+   */
   private static final org.slf4j.Logger PROFILING_LOGGER = org.slf4j.LoggerFactory.getLogger("profile");
 
   /** Required for Java serialization. */

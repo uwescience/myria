@@ -272,7 +272,7 @@ public final class QueryResource {
    * @param fragmentId fragment id.
    * @param workerId worker id, default is 0, which means getting the data of all workers.
    * @param uriInfo the URL of the current request.
-   * @return
+   * @return the JSON formatted data for visualization
    * @throws CatalogException if there is an error in the catalog.
    * @throws IOException if there is anything happens in serializing and deserializing JSON.
    */
