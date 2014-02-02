@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.accessmethod;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.Objects;
 
 import org.apache.commons.lang3.StringUtils;
+import org.postgresql.PGConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,6 +100,23 @@ public final class JdbcAccessMethod extends AccessMethod {
       statement.executeBatch();
       statement.close();
     } catch (final SQLException e) {
+      LOGGER.error(e.getMessage(), e);
+      throw new DbException(e);
+    }
+  }
+
+  @Override
+  public void tupleBatchInsert(final RelationKey table, final String insertString, final TupleBatch tupleBatch)
+      throws DbException {
+    Objects.requireNonNull(jdbcConnection);
+    if (jdbcInfo.getDbms() != MyriaConstants.STORAGE_SYSTEM_POSTGRESQL) {
+      tupleBatchInsert(insertString, tupleBatch);
+      return;
+    }
+
+    try {
+      tupleBatch.getIntoPostgres((PGConnection) jdbcConnection, table);
+    } catch (final SQLException | IOException e) {
       LOGGER.error(e.getMessage(), e);
       throw new DbException(e);
     }

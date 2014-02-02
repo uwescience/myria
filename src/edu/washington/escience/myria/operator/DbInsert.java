@@ -146,7 +146,7 @@ public class DbInsert extends RootOperator {
   protected void consumeTuples(final TupleBatch tupleBatch) throws DbException {
     Objects.requireNonNull(accessMethod);
     Objects.requireNonNull(insertString);
-    accessMethod.tupleBatchInsert(insertString, tupleBatch);
+    accessMethod.tupleBatchInsert(relationKey, insertString, tupleBatch);
   }
 
   @Override
