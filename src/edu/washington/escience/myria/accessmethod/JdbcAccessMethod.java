@@ -109,7 +109,7 @@ public final class JdbcAccessMethod extends AccessMethod {
   public void tupleBatchInsert(final RelationKey table, final String insertString, final TupleBatch tupleBatch)
       throws DbException {
     Objects.requireNonNull(jdbcConnection);
-    if (jdbcInfo.getDbms() != MyriaConstants.STORAGE_SYSTEM_POSTGRESQL) {
+    if (!jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
       tupleBatchInsert(insertString, tupleBatch);
       return;
     }
