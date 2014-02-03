@@ -230,7 +230,7 @@ public class TupleBatch implements ReadableTable, Serializable {
     CopyManager cpManager = connection.getCopyAPI();
 
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    TupleWriter tw = new CsvTupleWriter('t', baos);
+    TupleWriter tw = new CsvTupleWriter(',', baos);
     tw.writeTuples(this);
     tw.done();
 
