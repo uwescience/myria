@@ -15,3 +15,6 @@ addons:
 before_install:
   - sh travis/before_install.sh
   - export TERM=dumb
+
+after_success:
+- gradle jacocoTestReport coveralls
