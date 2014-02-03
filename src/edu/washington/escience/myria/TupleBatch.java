@@ -236,7 +236,8 @@ public class TupleBatch implements ReadableTable, Serializable {
 
     // TODO: this seems complicated
     Reader reader = new InputStreamReader(new ByteArrayInputStream(baos.toByteArray()));
-    cpManager.copyIn("COPY " + table.getRelationName() + " FROM STDIN WITH CSV", reader);
+    cpManager.copyIn("COPY " + table.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL) + " FROM STDIN WITH CSV",
+        reader);
   }
 
   @Override
