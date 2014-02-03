@@ -116,7 +116,7 @@ dependencies {
 
   runtime "monetdb:monetdb-jdbc:2.8"
   runtime "mysql:mysql-connector-java:5.1.2:"
-  runtime "org.postgresql:postgresql:9.3-1100-jdbc41"
+  compile "org.postgresql:postgresql:9.3-1100-jdbc41"
 
   testCompile "junit:junit:4.11"
   testCompile "com.carrotsearch:junit-benchmarks:0.7.2"
