@@ -416,8 +416,6 @@ public abstract class Operator implements Serializable {
       LOGGER.info("[{}#{}][{}@{}][{}]: executionTime {} ms", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
           getOpName(), getFragmentId(), this, executionTime);
     }
-    LOGGER.info("[{}#{}][{}@{}][{}]: emit {} tuples", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(), getOpName(),
-        getFragmentId(), this, numOutputTuples);
     eos = true;
   }
 
