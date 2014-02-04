@@ -3,76 +3,76 @@
         {
             "operators":[
                 {
-                    "op_name":"Scan(R)",
-                    "op_type":"TableScan",
-                    "relation_key":{
-                        "program_name":"triangleJoin",
-                        "relation_name":"twitterR",
-                        "user_name":"test"
+                    "opName":"Scan(R)",
+                    "opType":"TableScan",
+                    "relationKey":{
+                        "programName":"triangleJoin",
+                        "relationName":"twitterR",
+                        "userName":"test"
                     }
                 },
                 {
-                    "op_name":"Scan(S)",
-                    "op_type":"TableScan",
-                    "relation_key":{
-                        "program_name":"triangleJoin",
-                        "relation_name":"twitterS",
-                        "user_name":"test"
+                    "opName":"Scan(S)",
+                    "opType":"TableScan",
+                    "relationKey":{
+                        "programName":"triangleJoin",
+                        "relationName":"twitterS",
+                        "userName":"test"
                     }
                 },
                 {
-                    "op_name":"Scan(T)",
-                    "op_type":"TableScan",
-                    "relation_key":{
-                        "program_name":"triangleJoin",
-                        "relation_name":"twitterT",
-                        "user_name":"test"
+                    "opName":"Scan(T)",
+                    "opType":"TableScan",
+                    "relationKey":{
+                        "programName":"triangleJoin",
+                        "relationName":"twitterT",
+                        "userName":"test"
                     }
                 },
                 {
-                    "op_name":"Order(R)",
-                    "op_type":"InMemoryOrderBy",
-                    "arg_child": "Scan(R)",
-                    "arg_sort_columns": [0,1],
-                    "arg_ascending": [true, true]
+                    "opName":"Order(R)",
+                    "opType":"InMemoryOrderBy",
+                    "argChild": "Scan(R)",
+                    "argSortColumns": [0,1],
+                    "argAscending": [true, true]
                 },
                 {
-                    "op_name":"Order(S)",
-                    "op_type":"InMemoryOrderBy",
-                    "arg_child": "Scan(S)",
-                    "arg_sort_columns": [0,1],
-                    "arg_ascending": [true, true]
+                    "opName":"Order(S)",
+                    "opType":"InMemoryOrderBy",
+                    "argChild": "Scan(S)",
+                    "argSortColumns": [0,1],
+                    "argAscending": [true, true]
                 },
                 {
-                    "op_name":"Order(T)",
-                    "op_type":"InMemoryOrderBy",
-                    "arg_child": "Scan(T)",
-                    "arg_sort_columns": [0,1],
-                    "arg_ascending": [true, true]
+                    "opName":"Order(T)",
+                    "opType":"InMemoryOrderBy",
+                    "argChild": "Scan(T)",
+                    "argSortColumns": [0,1],
+                    "argAscending": [true, true]
                 },
                 {
-                    "op_name":"Join",
-                    "op_type":"LeapFrogJoin",
-                    "arg_children": ["Order(R)", "Order(S)", "Order(T)"],
-                    "arg_column_names": ["x","y","z"],
-                    "join_field_mapping": [[[0,0],[2,0]],[[0,1],[1,0]],[[1,1],[2,1]]],
-                    "output_field_mapping": [[0,0],[1,0],[1,1]]
+                    "opName":"Join",
+                    "opType":"LeapFrogJoin",
+                    "argChildren": ["Order(R)", "Order(S)", "Order(T)"],
+                    "argColumnNames": ["x","y","z"],
+                    "joinFieldMapping": [[[0,0],[2,0]],[[0,1],[1,0]],[[1,1],[2,1]]],
+                    "outputFieldMapping": [[0,0],[1,0],[1,1]]
                 },
                 {
-                    "arg_child":"Join",
-                    "arg_overwrite_table":true,
-                    "op_name":"insert_result",
-                    "op_type":"DbInsert",
-                    "relation_key":{
-                        "program_name":"triangleJoin",
-                        "relation_name":"result",
-                        "user_name":"test"
+                    "argChild":"Join",
+                    "argOverwriteTable":true,
+                    "opName":"insert_result",
+                    "opType":"DbInsert",
+                    "relationKey":{
+                        "programName":"triangleJoin",
+                        "relationName":"result",
+                        "userName":"test"
                     }
                 }
             ]
         }
     ],
-    "logical_ra":"local triangle ",
-    "profiling_mode":true,
-    "raw_datalog":"T(x,y,z) =: S(x,y), R(y,z), T(z,x)"
+    "logicalRa":"local triangle ",
+    "profilingMode":true,
+    "rawDatalog":"T(x,y,z) =: S(x,y), R(y,z), T(z,x)"
 } 

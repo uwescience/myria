@@ -24,7 +24,7 @@ def scan_R_then_shuffle():
     hyper_shuffle = {
         "opType" : "HyperShuffleProducer",
         "opName" : "HyperShuffle(R)",
-        "arg_child" : "Scan(R)",
+        "argChild" : "Scan(R)",
         "argOperatorId" : "hash(follower)",
         "fieldIndexes" : [0],
         "hyperCubeDimensions" : [2,2],
@@ -47,7 +47,7 @@ def scan_S_then_shuffle():
     hyper_shuffle = {
         "opType" : "HyperShuffleProducer",
         "opName" : "HyperShuffle(S)",
-        "arg_child" : "Scan(S)",
+        "argChild" : "Scan(S)",
         "argOperatorId" : "hash(followee)",
         "fieldIndexes" : [1],
         "hyperCubeDimensions" : [2,2],
@@ -80,15 +80,15 @@ def receive_then_join():
     join = {
         "opType" : "SymmetricHashJoin",
         "opName" : "Join",
-        "arg_child1" : "GatherR",
-        "arg_child2" : "GatherS",
+        "argChild1" : "GatherR",
+        "argChild2" : "GatherS",
         "arg_columns1" : [1],
         "arg_columns2" : [0],
         "arg_select1" : [0],
         "arg_select2" : [1]
     }    
     collect = {
-        "arg_child": "Join",
+        "argChild": "Join",
         "argOperatorId": "collect",
         "opName": "SendResult",
         "opType": "CollectProducer"
@@ -115,7 +115,7 @@ def collect_result():
         "opType": "CollectConsumer"                       
     }
     insert = {
-        "arg_child": "CollectResult",
+        "argChild": "CollectResult",
         "argOverwriteTable": True,
         "opName": "Insert",
         "opType": "DbInsert",
@@ -149,7 +149,7 @@ def scan_R_then_partition():
     shuffle = {
         "opType" : "ShuffleProducer",
         "opName" : "Shuffle(R)",
-        "arg_child" : "Scan(R)",
+        "argChild" : "Scan(R)",
         "argOperatorId" : "hash(followee)",
         "argPf" : 
             {
@@ -173,7 +173,7 @@ def scan_S_then_partition():
     shuffle = {
         "opType" : "ShuffleProducer",
         "opName" : "Shuffle(S)",
-        "arg_child" : "Scan(S)",
+        "argChild" : "Scan(S)",
         "argOperatorId" : "hash(follower)",
         "argPf" : 
             {
@@ -208,15 +208,15 @@ def receive_partition_then_join():
     join = {
         "opType" : "SymmetricHashJoin",
         "opName" : "Join",
-        "arg_child1" : "GatherR",
-        "arg_child2" : "GatherS",
+        "argChild1" : "GatherR",
+        "argChild2" : "GatherS",
         "arg_columns1" : [1],
         "arg_columns2" : [0],
         "arg_select1" : [0],
         "arg_select2" : [1]
     }    
     collect = {
-        "arg_child": "Join",
+        "argChild": "Join",
         "argOperatorId": "collect",
         "opName": "SendResult",
         "opType": "CollectProducer"
@@ -243,7 +243,7 @@ def collect_partition_join_result():
         "opType": "CollectConsumer"                       
     }
     insert = {
-        "arg_child": "CollectResult",
+        "argChild": "CollectResult",
         "argOverwriteTable": True,
         "opName": "Insert",
         "opType": "DbInsert",

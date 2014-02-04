@@ -28,7 +28,7 @@ def scan_broadcast(relation_key):
     }
     
     broadcast = {
-        "arg_child": "ScanR",
+        "argChild": "ScanR",
         "argOperatorId": "broadcast",
         "opName": "broadcast",
         "opType": "BroadcastProducer"
@@ -61,8 +61,8 @@ def scan_join(relation_key):
         "opType": "BroadcastConsumer"
     }
     join = {
-        "arg_child1": "receive",
-        "arg_child2": "ScanU",
+        "argChild1": "receive",
+        "argChild2": "ScanU",
         "arg_columns1": [ 1 ],
         "arg_columns2": [ 1 ],
         "arg_select1": [ 0 ],
@@ -71,7 +71,7 @@ def scan_join(relation_key):
         "opType": "SymmetricHashJoin"
     }
     insert = {
-        "arg_child": "Join",
+        "argChild": "Join",
         "opName": "Insert",
         "opType": "DbInsert",
         "relationKey": relation_key,
@@ -115,7 +115,7 @@ def scan_and_shuffle(relation_key, relation_name):
         "connectionInfo": connection_info("localhost")
     }
     shuffle = {
-        "arg_child": "Scan("+relation_name+")",
+        "argChild": "Scan("+relation_name+")",
         "argOperatorId": "Shuffle("+relation_name+")",
         "opName": "Shuffle("+relation_name+")",
         "opType": "ShuffleProducer",
@@ -160,8 +160,8 @@ def receive_and_join(relation_key):
     }
 
     join = {
-        "arg_child1": "Gather(R)",
-            "arg_child2": "Gather(S)",
+        "argChild1": "Gather(R)",
+            "argChild2": "Gather(S)",
             "arg_columns1": [
                 1
             ],
@@ -178,7 +178,7 @@ def receive_and_join(relation_key):
             "opType": "SymmetricHashJoin"
     }
     insert = {
-        "arg_child": "Join",
+        "argChild": "Join",
         "opName": "InsertResult",
         "opType": "DbInsert",
         "relationKey": relation_key,
@@ -229,7 +229,7 @@ def scan_collect(relation_key):
         "connectionInfo": connection_info("localhost")
     }
     collect_producer = {
-        "arg_child": "ScanR",
+        "argChild": "ScanR",
         "argOperatorId": "Collect",
         "opName": "CollectProducer",
         "opType": "CollectProducer"
@@ -247,7 +247,7 @@ def collect_insert(relation_key, schema, worker_id):
         "opType": "CollectConsumer"
     }
     insert = {
-        "arg_child": "Gather",
+        "argChild": "Gather",
         "opName": "Insert",
         "opType": "DbInsert",
         "relationKey": relation_key,

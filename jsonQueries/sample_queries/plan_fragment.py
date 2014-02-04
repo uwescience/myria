@@ -19,7 +19,7 @@ def scan_then_insert():
     insert = {
         'opType' : 'DbInsert',
         'opName' : 'Insert',
-        'arg_child' : 'Scan',
+        'argChild' : 'Scan',
         'argOverwriteTable' : True,
         'relationKey' : {
             'userName' : 'jwang',
@@ -51,7 +51,7 @@ def repartition_on_x():
     scatter = {
         'opType' : 'ShuffleProducer',
         'opName' : 'Scatter',
-        'arg_child' : 'Scan',
+        'argChild' : 'Scan',
         'argOperatorId' : 'hash(follower)',
         'argPf' : {
             'type' : 'SingleFieldHash',
@@ -70,7 +70,7 @@ def repartition_on_x():
     insert = {
         'opType' : 'DbInsert',
         'opName' : 'Insert',
-        'arg_child' : 'Gather',
+        'argChild' : 'Gather',
         'argOverwriteTable' : True,
         'relationKey' : {
             'userName' : 'jwang',
@@ -105,7 +105,7 @@ def single_join():
     scatter0 = {
         'opType' : 'ShuffleProducer',
         'opName' : 'Scatter0',
-        'arg_child' : 'Scan0',
+        'argChild' : 'Scan0',
         'argOperatorId' : 'hash(x)',
         'argPf' : {
             'type' : 'SingleFieldHash',
@@ -134,7 +134,7 @@ def single_join():
     scatter1 = {
         'opType' : 'ShuffleProducer',
         'opName' : 'Scatter1',
-        'arg_child' : 'Scan1',
+        'argChild' : 'Scan1',
         'argOperatorId' : 'hash(y)',
         'argPf' : {
             'type' : 'SingleFieldHash',
@@ -154,8 +154,8 @@ def single_join():
     join = {
         'opType' : 'SymmetricHashJoin',
         'opName' : 'Join',
-        'arg_child1' : 'Gather1',
-        'arg_child2' : 'Gather0',
+        'argChild1' : 'Gather1',
+        'argChild2' : 'Gather0',
         'arg_columns1' : [1],
         'arg_columns2' : [0],
         'arg_select1' : [0],
@@ -164,7 +164,7 @@ def single_join():
     insert = {
         'opType' : 'DbInsert',
         'opName' : 'Insert',
-        'arg_child' : 'Join',
+        'argChild' : 'Join',
         'argOverwriteTable' : True,
         'relationKey' : {
             'userName' : 'jwang',
@@ -216,7 +216,7 @@ def ingest_tipsy_rr():
     scatter = {
         'opType' : 'ShuffleProducer',
         'opName' : 'Scatter',
-        'arg_child' : 'Scan',
+        'argChild' : 'Scan',
         'argOperatorId' : 'RoundRobin',
         'argPf' : {
             'type' : 'RoundRobin'
@@ -235,7 +235,7 @@ def ingest_tipsy_rr():
     insert = {
         'opType' : 'DbInsert',
         'opName' : 'Insert',
-        'arg_child' : 'Gather',
+        'argChild' : 'Gather',
         'argOverwriteTable' : True,
         'relationKey' : {
             'userName' : 'leelee',
@@ -266,7 +266,7 @@ def ingest_tipsy_hash_iorder():
     scatter = {
         'opType' : 'ShuffleProducer',
         'opName' : 'Scatter',
-        'arg_child' : 'Scan',
+        'argChild' : 'Scan',
         'argOperatorId' : 'hash(iorder)',
         'argPf' : {
             'type' : 'SingleFieldHash',
@@ -286,7 +286,7 @@ def ingest_tipsy_hash_iorder():
     insert = {
         'opType' : 'DbInsert',
         'opName' : 'Insert',
-        'arg_child' : 'Gather',
+        'argChild' : 'Gather',
         'argOverwriteTable' : True,
         'relationKey' : {
             'userName' : 'leelee',

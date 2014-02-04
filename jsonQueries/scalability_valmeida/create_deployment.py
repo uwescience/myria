@@ -226,7 +226,7 @@ if args.run_filename:
     }
 
     shuffle1 = {
-      "arg_child": "SCAN1",
+      "argChild": "SCAN1",
       "argOperatorId": "0",
       "opName": "SP1",
       "opType": "ShuffleProducer",
@@ -249,7 +249,7 @@ if args.run_filename:
     }
 
     shuffle2 = {
-      "arg_child": "SCAN2",
+      "argChild": "SCAN2",
       "argOperatorId": "1",
       "opName": "SP2",
       "opType": "ShuffleProducer",
@@ -285,8 +285,8 @@ if args.run_filename:
     }
  
     join = {
-      "arg_child1": "SC1",
-      "arg_child2": "SC2",
+      "argChild1": "SC1",
+      "argChild2": "SC2",
       "arg_columns1": [
         "1"
       ],
@@ -304,7 +304,7 @@ if args.run_filename:
     }
 
     sink_root = {
-      "arg_child": "JOIN",
+      "argChild": "JOIN",
       "opName": "SINK",
       "opType": "SinkRoot"
     }

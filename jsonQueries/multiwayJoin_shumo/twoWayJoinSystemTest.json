@@ -3,96 +3,96 @@
         {
             "operators":[
                 {
-                    "op_name":"scan_r",
-                    "op_type":"TableScan",
-                    "relation_key":{
-                        "program_name":"test",
-                        "relation_name":"testtable1",
-                        "user_name":"test"
+                    "opName":"scan_r",
+                    "opType":"TableScan",
+                    "relationKey":{
+                        "programName":"test",
+                        "relationName":"testtable1",
+                        "userName":"test"
                     }
                 },
                 {
-                    "arg_child":"scan_r",
-                    "arg_pf":{
+                    "argChild":"scan_r",
+                    "argPf":{
                         "index":0,
                         "type":"SingleFieldHash"
                     },
-                    "op_name":"shuffle_r",
-                    "op_type":"ShuffleProducer"
+                    "opName":"shuffle_r",
+                    "opType":"ShuffleProducer"
                 }
             ]
         },
         {
             "operators":[
                 {
-                    "op_name":"scan_s",
-                    "op_type":"TableScan",
-                    "relation_key":{
-                        "program_name":"test",
-                        "relation_name":"testtable2",
-                        "user_name":"test"
+                    "opName":"scan_s",
+                    "opType":"TableScan",
+                    "relationKey":{
+                        "programName":"test",
+                        "relationName":"testtable2",
+                        "userName":"test"
                     }
                 },
                 {
-                    "arg_child":"scan_s",
-                    "arg_pf":{
+                    "argChild":"scan_s",
+                    "argPf":{
                         "index":0,
                         "type":"SingleFieldHash"
                     },
-                    "op_name":"shuffle_s",
-                    "op_type":"ShuffleProducer"
+                    "opName":"shuffle_s",
+                    "opType":"ShuffleProducer"
                 }
             ]
         },
         {
             "operators":[
                 {
-                    "arg_operator_id":"shuffle_r",
-                    "op_name":"gather_r",
-                    "op_type":"ShuffleConsumer"
+                    "argOperatorId":"shuffle_r",
+                    "opName":"gather_r",
+                    "opType":"ShuffleConsumer"
                 },
                 {
-                    "op_name":"order_r",
-                    "op_type":"InMemoryOrderBy",
-                    "arg_child": "gather_r",
-                    "arg_sort_columns": [0,1],
-                    "arg_ascending": [true,true]
+                    "opName":"order_r",
+                    "opType":"InMemoryOrderBy",
+                    "argChild": "gather_r",
+                    "argSortColumns": [0,1],
+                    "argAscending": [true,true]
                 },
                 {
-                    "arg_operator_id":"shuffle_s",
-                    "op_name":"gather_s",
-                    "op_type":"ShuffleConsumer"
+                    "argOperatorId":"shuffle_s",
+                    "opName":"gather_s",
+                    "opType":"ShuffleConsumer"
                 },
                 {
-                    "op_name":"order_s",
-                    "op_type":"InMemoryOrderBy",
-                    "arg_child": "gather_s",
-                    "arg_sort_columns": [0,1],
-                    "arg_ascending": [true,true]
+                    "opName":"order_s",
+                    "opType":"InMemoryOrderBy",
+                    "argChild": "gather_s",
+                    "argSortColumns": [0,1],
+                    "argAscending": [true,true]
                 },
                 {
-                    "op_name":"join",
-                    "op_type":"LeapFrogJoin",
-                    "arg_children": ["order_r","order_s"],
-                    "arg_column_names": ["id1", "name1", "id2", "name2"],
-                    "join_field_mapping": [[[0,0],[1,0]]],
-                    "output_field_mapping": [[0,0],[0,1],[1,0],[1,1]]
+                    "opName":"join",
+                    "opType":"LeapFrogJoin",
+                    "argChildren": ["order_r","order_s"],
+                    "argColumnNames": ["id1", "name1", "id2", "name2"],
+                    "joinFieldMapping": [[[0,0],[1,0]]],
+                    "outputFieldMapping": [[0,0],[0,1],[1,0],[1,1]]
                 },
                 {
-                    "arg_child":"join",
-                    "arg_overwrite_table":true,
-                    "op_name":"insert_result",
-                    "op_type":"DbInsert",
-                    "relation_key":{
-                        "program_name":"test",
-                        "relation_name":"two_way_join_test",
-                        "user_name":"test"
+                    "argChild":"join",
+                    "argOverwriteTable":true,
+                    "opName":"insert_result",
+                    "opType":"DbInsert",
+                    "relationKey":{
+                        "programName":"test",
+                        "relationName":"two_way_join_test",
+                        "userName":"test"
                     }
                 }
             ]
         }
     ],
-    "logical_ra":"T(x,y,x,z) := S(x, y), R(y, z)",
-    "profiling_mode":true,
-    "raw_datalog":"T(x,y,x,z) := S(x, y), R(y, z)"
+    "logicalRa":"T(x,y,x,z) := S(x, y), R(y, z)",
+    "profilingMode":true,
+    "rawDatalog":"T(x,y,x,z) := S(x, y), R(y, z)"
 } 
