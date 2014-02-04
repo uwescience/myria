@@ -59,7 +59,8 @@ public final class MasterApplication extends PackagesResourceConfig {
 
     /* Swagger configuration -- must come BEFORE Swagger classes are added. */
     BeanConfig myriaBeanConfig = new BeanConfig();
-    myriaBeanConfig.setBasePath("http://localhost:8753");
+    /* TODO(dhalperi): make this more dynamic based on either Catalog or runtime option. */
+    myriaBeanConfig.setBasePath("http://rest.myria.cs.washington.edu:1776");
     myriaBeanConfig.setVersion("0.1.0");
     myriaBeanConfig.setResourcePackage("edu.washington.escience.myria.api");
     myriaBeanConfig.setScan(true);
@@ -72,6 +73,8 @@ public final class MasterApplication extends PackagesResourceConfig {
    * This is a container response filter. It will run on all responses leaving the server and add the CORS filters
    * saying that these API calls should be allowed from any website. This is a mechanism increasingly supported by
    * modern browsers instead of, e.g., JSONP.
+   * 
+   * For more information, visit http://www.w3.org/TR/cors/ and http://enable-cors.org/
    * 
    * TODO revisit the security of this model
    * 
