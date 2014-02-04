@@ -7,7 +7,6 @@
 			{
 			  "opName" : "cc",
 			  "opType" : "CollectConsumer",
-			  "arg_schema" : {"columnTypes":["LONG_TYPE","LONG_TYPE"],"columnNames":["node_id","cluster_id"]},
 			  "argOperatorId" : "cpc"
 			}
 			],
@@ -22,7 +21,6 @@
 			{
 				"opName" : "eoiReceiverA",
 				"opType" : "Consumer",
-				"arg_schema" : {"columnTypes":["INT_TYPE","BOOLEAN_TYPE"],"columnNames":["idbID","isDeltaEmpty"]},
 				"argOperatorId" : "idbinput"
 			},
 			{
@@ -94,19 +92,16 @@
 				"opName" : "scC",
 				"opType" : "ShuffleConsumer",
 				"argOperatorId" : "spC",
-				"arg_schema" : {"columnTypes":["LONG_TYPE","LONG_TYPE"],"columnNames":["node_id", "cluster_id"]}
 			},
 			{
 				"opName" : "scJoin",
 				"opType" : "ShuffleConsumer",
 				"argOperatorId" : "spJoin",
-				"arg_schema" : {"columnTypes":["LONG_TYPE","LONG_TYPE"],"columnNames":["node_id", "cluster_id"]}
 			},
 			{
 				"opName" : "eosReceiver",
 				"opType" : "Consumer",
 				"argOperatorId" : "eosController",
-				"arg_schema" : {"columnTypes":["BOOLEAN_TYPE"],"columnNames":["EOS"]}
 			},
 			{
 				"opName" : "idbinput",
@@ -135,13 +130,11 @@
 				"opName" : "sc1g",
 				"opType" : "ShuffleConsumer",
 				"argOperatorId" : "spG",
-				"arg_schema" : {"columnTypes":["LONG_TYPE","LONG_TYPE"],"columnNames":["node_id_1", "node_id_2"]}
 			},
 			{
 				"opName" : "send2join",
 				"opType" : "LocalMultiwayConsumer",
 				"argOperatorId" : "mp",
-				"arg_schema" : {"columnTypes":["LONG_TYPE","LONG_TYPE"],"columnNames":["node_id", "cluster_id"]}
 			},
 			{
 				"opName" : "join",
@@ -173,7 +166,6 @@
 				"opName" : "send2server",
 				"opType" : "LocalMultiwayConsumer",
 				"argOperatorId" : "mp",
-				"arg_schema" : {"columnTypes":["LONG_TYPE","LONG_TYPE"],"columnNames":["node_id", "cluster_id"]}
 			},
 			{
 				"opName" : "agg",
