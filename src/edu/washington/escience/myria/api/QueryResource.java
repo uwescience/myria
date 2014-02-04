@@ -179,7 +179,7 @@ public final class QueryResource {
    * @throws CatalogException if there is an error in the catalog.
    */
   @GET
-  @Path("query-{query_id}")
+  @Path("query-{queryId}")
   public Response getQueryStatus(@PathParam("queryId") final long queryId, @Context final UriInfo uriInfo)
       throws CatalogException {
     final QueryStatusEncoding queryStatus = server.getQueryStatus(queryId);
@@ -221,7 +221,7 @@ public final class QueryResource {
    * @throws CatalogException if there is an error in the catalog.
    */
   @DELETE
-  @Path("query-{query_id}")
+  @Path("query-{queryId}")
   public Response cancelQuery(@PathParam("queryId") final long queryId, @Context final UriInfo uriInfo)
       throws CatalogException {
     try {
