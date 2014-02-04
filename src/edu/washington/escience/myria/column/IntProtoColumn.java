@@ -1,13 +1,11 @@
 package edu.washington.escience.myria.column;
 
-import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.IntColumnMessage;
-import edu.washington.escience.myria.util.ImmutableIntArray;
 
 /**
  * An IntColumn that simply wraps a read-only Protobuf message.
@@ -56,17 +54,6 @@ public final class IntProtoColumn extends IntColumn {
   @Override
   public ColumnMessage serializeToProto() {
     final IntColumnMessage.Builder inner = IntColumnMessage.newBuilder().setData(columnData);
-    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.INT).setIntColumn(inner).build();
-  }
-
-  @Override
-  public ColumnMessage serializeToProto(final ImmutableIntArray validIndices) {
-    ByteBuffer dataBytes = ByteBuffer.allocate(validIndices.length() * Integer.SIZE / Byte.SIZE);
-    for (int i : validIndices) {
-      dataBytes.putInt(getInt(i));
-    }
-    dataBytes.flip();
-    final IntColumnMessage.Builder inner = IntColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
     return ColumnMessage.newBuilder().setType(ColumnMessage.Type.INT).setIntColumn(inner).build();
   }
 

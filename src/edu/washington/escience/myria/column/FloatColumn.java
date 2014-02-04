@@ -1,6 +1,5 @@
 package edu.washington.escience.myria.column;
 
-import java.nio.ByteBuffer;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
@@ -8,15 +7,11 @@ import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
 import com.google.common.hash.Hasher;
-import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.FloatColumnBuilder;
-import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
-import edu.washington.escience.myria.proto.DataProto.FloatColumnMessage;
-import edu.washington.escience.myria.util.ImmutableIntArray;
 
 /**
  * A column of {@link Float} values.
@@ -73,30 +68,6 @@ public final class FloatColumn extends Column<Float> {
   @Override
   public Type getType() {
     return Type.FLOAT_TYPE;
-  }
-
-  @Override
-  public ColumnMessage serializeToProto() {
-    ByteBuffer dataBytes = ByteBuffer.allocate(position * Float.SIZE / Byte.SIZE);
-    for (int i = 0; i < position; i++) {
-      dataBytes.putFloat(data[i]);
-    }
-    dataBytes.flip();
-    final FloatColumnMessage.Builder inner = FloatColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
-
-    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.FLOAT).setFloatColumn(inner).build();
-  }
-
-  @Override
-  public ColumnMessage serializeToProto(final ImmutableIntArray validIndices) {
-    ByteBuffer dataBytes = ByteBuffer.allocate(validIndices.length() * Float.SIZE / Byte.SIZE);
-    for (int i : validIndices) {
-      dataBytes.putFloat(data[i]);
-    }
-    dataBytes.flip();
-    final FloatColumnMessage.Builder inner = FloatColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
-
-    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.FLOAT).setFloatColumn(inner).build();
   }
 
   @Override

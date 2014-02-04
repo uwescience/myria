@@ -3,8 +3,7 @@ package edu.washington.escience.myria.operator;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-
-import org.joda.time.DateTime;
+import java.util.List;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -12,7 +11,9 @@ import com.google.common.collect.ImmutableMap;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
+import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.Column;
 
 /**
  * Orders tuples in memory.
@@ -42,7 +43,7 @@ public final class InMemoryOrderBy extends UnaryOperator {
   /**
    * Tuple data stored as columns until it is sorted.
    */
-  private ArrayList<ArrayList<Object>> columns;
+  private TupleBuffer table;
 
   /**
    * @param child the source of the tuples.
@@ -71,14 +72,9 @@ public final class InMemoryOrderBy extends UnaryOperator {
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws Exception {
     Preconditions.checkArgument(sortColumns.length == ascending.length);
     ans = new TupleBatchBuffer(getSchema());
+    table = new TupleBuffer(getSchema());
+  }
 
-    columns = new ArrayList<ArrayList<Object>>();
-    for (int i = 0; i < getSchema().numColumns(); i++) {
-      columns.add(new ArrayList<Object>());
-    }
-  };
-
-  @SuppressWarnings("deprecation")
   @Override
   protected TupleBatch fetchNextReady() throws Exception {
     TupleBatch nexttb = ans.popFilled();
@@ -88,7 +84,7 @@ public final class InMemoryOrderBy extends UnaryOperator {
       return ans.popAny();
     }
 
-    if (columns.get(0).size() > 0 && getChild().eos()) {
+    if (table.numTuples() > 0 && getChild().eos()) {
       setEOS();
       return null;
     }
@@ -96,12 +92,13 @@ public final class InMemoryOrderBy extends UnaryOperator {
     while (!getChild().eos()) {
       TupleBatch tb = getChild().nextReady();
       if (tb != null) {
-        for (int columnIdx = 0; columnIdx < tb.numColumns(); columnIdx++) {
-          ArrayList<Object> column = columns.get(columnIdx);
-          for (int rowIdx = 0; rowIdx < tb.numTuples(); rowIdx++) {
-            column.add(tb.getObject(columnIdx, rowIdx));
+        for (int row = 0; row < tb.numTuples(); ++row) {
+          List<Column<?>> inputColumns = tb.getDataColumns();
+          for (int column = 0; column < tb.numColumns(); ++column) {
+            table.put(column, inputColumns.get(column), row);
           }
         }
+
       } else if (!getChild().eos()) {
         return null;
       }
@@ -111,10 +108,10 @@ public final class InMemoryOrderBy extends UnaryOperator {
 
     sort();
 
-    final int numTuples = columns.get(0).size();
+    final int numTuples = table.numTuples();
     for (int rowIdx = 0; rowIdx < numTuples; rowIdx++) {
       for (int columnIdx = 0; columnIdx < getSchema().numColumns(); columnIdx++) {
-        ans.put(columnIdx, columns.get(columnIdx).get(indexes.get(rowIdx)));
+        ans.put(table, columnIdx, indexes.get(rowIdx), columnIdx);
       }
     }
 
@@ -131,30 +128,29 @@ public final class InMemoryOrderBy extends UnaryOperator {
   class TupleComparator implements Comparator<Integer> {
     @Override
     public int compare(final Integer rowIdx, final Integer otherRowIdx) {
-      for (int columnIdx = 0; columnIdx < sortColumns.length; columnIdx++) {
+      for (int columnIdx : sortColumns) {
         int compared = 0;
-        ArrayList<Object> column = columns.get(columnIdx);
         switch (getSchema().getColumnType(columnIdx)) {
           case INT_TYPE:
-            compared = Type.compareRaw((int) column.get(rowIdx), (int) column.get(otherRowIdx));
+            compared = Type.compareRaw(table.getInt(columnIdx, rowIdx), table.getInt(columnIdx, otherRowIdx));
             break;
           case FLOAT_TYPE:
-            compared = Type.compareRaw((float) column.get(rowIdx), (float) column.get(otherRowIdx));
+            compared = Type.compareRaw(table.getFloat(columnIdx, rowIdx), table.getFloat(columnIdx, otherRowIdx));
             break;
           case LONG_TYPE:
-            compared = Type.compareRaw((long) column.get(rowIdx), (long) column.get(otherRowIdx));
+            compared = Type.compareRaw(table.getLong(columnIdx, rowIdx), table.getLong(columnIdx, otherRowIdx));
             break;
           case DOUBLE_TYPE:
-            compared = Type.compareRaw((double) column.get(rowIdx), (double) column.get(otherRowIdx));
+            compared = Type.compareRaw(table.getDouble(columnIdx, rowIdx), table.getDouble(columnIdx, otherRowIdx));
             break;
           case BOOLEAN_TYPE:
-            compared = Type.compareRaw((boolean) column.get(rowIdx), (boolean) column.get(otherRowIdx));
+            compared = Type.compareRaw(table.getBoolean(columnIdx, rowIdx), table.getBoolean(columnIdx, otherRowIdx));
             break;
           case STRING_TYPE:
-            compared = Type.compareRaw((String) column.get(rowIdx), (String) column.get(otherRowIdx));
+            compared = Type.compareRaw(table.getString(columnIdx, rowIdx), table.getString(columnIdx, otherRowIdx));
             break;
           case DATETIME_TYPE:
-            compared = Type.compareRaw((DateTime) column.get(rowIdx), (DateTime) column.get(otherRowIdx));
+            compared = Type.compareRaw(table.getDateTime(columnIdx, rowIdx), table.getDateTime(columnIdx, otherRowIdx));
             break;
         }
         if (compared != 0) {
@@ -174,7 +170,7 @@ public final class InMemoryOrderBy extends UnaryOperator {
    * columns.
    */
   public void sort() {
-    final int numTuples = columns.get(0).size();
+    final int numTuples = table.numTuples();
     indexes = new ArrayList<>();
     indexes.ensureCapacity(numTuples);
     for (int i = 0; i < numTuples; i++) {

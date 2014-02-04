@@ -352,6 +352,19 @@ public class TupleBatchBuffer {
   }
 
   /**
+   * @param hashTable source TupleBuffer
+   * @param sourceColumnIdx column index in source TupleBuffer
+   * @param sourceRow row number in source TupleBuffer
+   * @param destColumn destination column number
+   */
+  public final void put(final TupleBuffer hashTable, final int sourceColumnIdx, final int sourceRow,
+      final int destColumn) {
+    int tupleIdx = hashTable.getTupleIndexInContainingTB(sourceRow);
+    ReadableColumn hashTblColumn = hashTable.getColumns(sourceRow)[sourceColumnIdx];
+    put(destColumn, hashTblColumn, tupleIdx);
+  }
+
+  /**
    * Append the specified value to the specified destination column in this TupleBatchBuffer from the source column.
    * 
    * @param destColumn which column in this TBB the value will be inserted.

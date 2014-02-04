@@ -12,8 +12,6 @@ import com.google.common.hash.Hasher;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
-import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
-import edu.washington.escience.myria.util.ImmutableIntArray;
 
 /**
  * Provides the abstraction of a full Column filtered to an indicated set of rows.
@@ -140,20 +138,6 @@ class FilteredColumn<T extends Comparable<?>> extends Column<T> {
   @Override
   public Type getType() {
     return inner.getType();
-  }
-
-  @Override
-  public ColumnMessage serializeToProto() {
-    return inner.serializeToProto(new ImmutableIntArray(validIndices));
-  }
-
-  @Override
-  public ColumnMessage serializeToProto(final ImmutableIntArray validIndices) {
-    final int[] innerIndices = new int[validIndices.length()];
-    for (int i = 0; i < validIndices.length(); ++i) {
-      innerIndices[i] = convertRow(validIndices.get(i));
-    }
-    return inner.serializeToProto(new ImmutableIntArray(innerIndices));
   }
 
   @Override
