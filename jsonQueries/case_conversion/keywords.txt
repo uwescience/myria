@@ -4,7 +4,10 @@ physical_plan
 arg_pf
 op_name
 op_type
-arg_chi
+arg_child
+arg_children
+arg_child1
+arg_child2
 emit_expr
 output_name
 user_name
@@ -52,3 +55,9 @@ fragment_id
 operator_name
 operator_type
 query_id
+arg_sort_columns
+arg_ascending
+arg_column_names
+join_field_mapping
+output_field_mapping
+profiling_mode
