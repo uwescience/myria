@@ -89,6 +89,9 @@ public abstract class Operator implements Serializable {
         .getOwnerQuery().getQueryID();
   }
 
+  /**
+   * @return worker query partition.
+   */
   public WorkerQueryPartition getWorkerQueryPartition() {
     return (WorkerQueryPartition) ((TaskResourceManager) execEnvVars
         .get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER)).getOwnerTask().getOwnerQuery();
@@ -413,6 +416,8 @@ public abstract class Operator implements Serializable {
       LOGGER.info("[{}#{}][{}@{}][{}]: executionTime {} ms", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
           getOpName(), getFragmentId(), this, executionTime);
     }
+    LOGGER.info("[{}#{}][{}@{}][{}]: emit {} tuples", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(), getOpName(),
+        getFragmentId(), this, numOutputTuples);
     eos = true;
   }
 
