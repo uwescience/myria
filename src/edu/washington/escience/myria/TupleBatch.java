@@ -1,10 +1,5 @@
 package edu.washington.escience.myria;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.io.Serializable;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -16,8 +11,6 @@ import java.util.Objects;
 import net.jcip.annotations.ThreadSafe;
 
 import org.joda.time.DateTime;
-import org.postgresql.PGConnection;
-import org.postgresql.copy.CopyManager;
 
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
@@ -215,29 +208,6 @@ public class TupleBatch implements ReadableTable, Serializable {
       statement.step();
       statement.reset();
     }
-  }
-
-  /**
-   * Copy data directly into postgres by creating a CSV.
-   * 
-   * @param connection the pg connection
-   * @param table the table to import into
-   * @throws SQLException exception raised when inserting into database
-   * @throws IOException exception raised from buffer
-   */
-  public final void getIntoPostgres(final PGConnection connection, final RelationKey table) throws SQLException,
-      IOException {
-    CopyManager cpManager = connection.getCopyAPI();
-
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    TupleWriter tw = new CsvTupleWriter(',', baos);
-    tw.writeTuples(this);
-    tw.done();
-
-    // TODO: this seems complicated
-    Reader reader = new InputStreamReader(new ByteArrayInputStream(baos.toByteArray()));
-    cpManager.copyIn("COPY " + table.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL) + " FROM STDIN WITH CSV",
-        reader);
   }
 
   @Override

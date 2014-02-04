@@ -10,6 +10,7 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
@@ -43,7 +44,8 @@ public class JdbcInsertSpeedTest {
 
     // Identifiers for database that is being tested
     private final JdbcInfo jdbcInfo;
-    private final String table;
+    private final RelationKey table;
+    private final Schema schema;
 
     // Total time received
     private double sum = 0;
@@ -65,7 +67,11 @@ public class JdbcInsertSpeedTest {
      */
     private SpeedTestData(final JdbcInfo jdbcInfo, final String table) {
       this.jdbcInfo = jdbcInfo;
-      this.table = table;
+      this.table = new RelationKey("public", "test", "table");
+
+      final ImmutableList<Type> types = ImmutableList.of(Type.INT_TYPE, Type.STRING_TYPE);
+      final ImmutableList<String> columnNames = ImmutableList.of("key", "value");
+      schema = new Schema(types, columnNames);
     }
 
     /**
@@ -137,7 +143,7 @@ public class JdbcInsertSpeedTest {
           // Time the write operation
           final long startTime = System.nanoTime();
           for (final TupleBatch batch : batches) {
-            jdbcAccessMethod.tupleBatchInsert(insertQuery, batch);
+            jdbcAccessMethod.tupleBatchInsert(table, schema, batch);
           }
           final long endTime = System.nanoTime();
 
