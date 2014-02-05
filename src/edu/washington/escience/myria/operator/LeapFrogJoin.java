@@ -26,6 +26,8 @@ import edu.washington.escience.myria.column.Column;
  * This operator implement Leap-Frog join algorithm (http://arxiv.org/abs/1210.0481), which takes multiple relations and
  * arbitrary join structure as input.
  * 
+ * It takes pre-sorted relations as input. The variable ordering must be implied at joinFieldMapping.
+ * 
  * @author chushumo
  * 
  */
@@ -37,12 +39,12 @@ public class LeapFrogJoin extends NAryOperator {
   private static final long serialVersionUID = 1L;
 
   /**
-   * {@code joinFieldMapping_[i]} represents the list of JoinFiled of i-th join variable.
+   * {@code joinFieldMappingInit[i]} represents the list of JoinFiled of i-th join variable.
    */
   private final int[][][] joinFieldMappingInit;
 
   /**
-   * {@code outputFieldMapping_[i]} represents the join field that i-th output column maps to.
+   * {@code outputFieldMappingInit[i]} represents the join field that i-th output column maps to.
    */
   private final int[][] outputFieldMappingInit;
 
@@ -167,16 +169,16 @@ public class LeapFrogJoin extends NAryOperator {
      * @param row row number
      */
     public CellPointer(final int tableIndex, final int fieldIndex, final int row) {
-      Preconditions.checkElementIndex(tableIndex, tables.length);
-      Preconditions.checkElementIndex(fieldIndex, tables[tableIndex].numColumns());
-      Preconditions.checkArgument(row >= 0 && row <= tables[tableIndex].numTuples());
+      Preconditions.checkElementIndex(tableIndex, tables.length, "tableIndex exceeds legal range.");
+      Preconditions.checkElementIndex(fieldIndex, tables[tableIndex].numColumns(), "fieldIndex exceeds legal range.");
+      Preconditions.checkState(row >= 0 && row <= tables[tableIndex].numTuples(), "row number exceeds legal range.");
       this.tableIndex = tableIndex;
       this.fieldIndex = fieldIndex;
       this.row = row;
     }
 
     /**
-     * @param cp the CellPoitner to copy from
+     * @param cp the CellPointer to copy from
      */
     public CellPointer(final CellPointer cp) {
       this(cp.getTableIndex(), cp.getFieldIndex(), cp.getRow());
@@ -258,7 +260,7 @@ public class LeapFrogJoin extends NAryOperator {
      * @return iterator position on given field.
      */
     public int getRow(final int field) {
-      Preconditions.checkElementIndex(field, rowIndices.length);
+      Preconditions.checkElementIndex(field, rowIndices.length, "field index cannot exceed number of columns.");
       return rowIndices[field];
     }
 
@@ -279,7 +281,7 @@ public class LeapFrogJoin extends NAryOperator {
      * @param row row number.
      */
     public void setRow(final int field, final int row) {
-      Preconditions.checkElementIndex(field, rowIndices.length);
+      Preconditions.checkElementIndex(field, rowIndices.length, "field index cannot exceed number of columns.");
       rowIndices[field] = row;
     }
 
@@ -306,7 +308,8 @@ public class LeapFrogJoin extends NAryOperator {
      * @param tableIndex table index.
      */
     public TableIterator(final int tableIndex) {
-      Preconditions.checkPositionIndex(tableIndex, getChildren().length);
+      Preconditions.checkPositionIndex(tableIndex, getChildren().length,
+          "table index cannot exceed number of children.");
       this.tableIndex = tableIndex;
 
       /* initiate ranges */
@@ -587,8 +590,10 @@ public class LeapFrogJoin extends NAryOperator {
         int tableIndex = joinFieldMappingInit[i][j][0];
         int fieldIndex = joinFieldMappingInit[i][j][1];
         // update joinFieldMapping and reverseJoinFieldMapping
-        Preconditions.checkPositionIndex(tableIndex, children.length);
-        Preconditions.checkPositionIndex(fieldIndex, children[tableIndex].getSchema().numColumns());
+        Preconditions.checkPositionIndex(tableIndex, children.length,
+            "table index cannot exceed the number of children.");
+        Preconditions.checkPositionIndex(fieldIndex, children[tableIndex].getSchema().numColumns(),
+            "filed index cannot exceed the number of columns.");
         joinedFieldList.add(new JoinField(tableIndex, fieldIndex));
         joinFieldLocalOrder.get(tableIndex).get(fieldIndex).setOrder(i);
         joinFieldGlobalOrder.get(tableIndex).get(fieldIndex).setOrder(i);
@@ -717,7 +722,7 @@ public class LeapFrogJoin extends NAryOperator {
    */
   private boolean leapfrogSearch() {
     boolean atEnd = false;
-    Preconditions.checkElementIndex(currentDepth, joinFieldMapping.size());
+    Preconditions.checkElementIndex(currentDepth, joinFieldMapping.size(), "current depth is invalid.");
     JoinField fieldWithMaxKey =
         joinFieldMapping.get(currentDepth).get(
             (currentIteratorIndex - 1 + joinFieldMapping.get(currentDepth).size())
@@ -726,9 +731,9 @@ public class LeapFrogJoin extends NAryOperator {
         new CellPointer(fieldWithMaxKey.tableIndex, fieldWithMaxKey.fieldIndex, iterators[fieldWithMaxKey.tableIndex]
             .getRowOfCurrentField());
 
-    Preconditions
-        .checkArgument(maxKey.getRow() <= iterators[fieldWithMaxKey.tableIndex].ranges[fieldWithMaxKey.fieldIndex]
-            .getMaxRow());
+    Preconditions.checkState(
+        maxKey.getRow() <= iterators[fieldWithMaxKey.tableIndex].ranges[fieldWithMaxKey.fieldIndex].getMaxRow(),
+        "violate max row during search.");
     if (maxKey.getRow() == iterators[fieldWithMaxKey.tableIndex].ranges[fieldWithMaxKey.fieldIndex].getMaxRow()) {
       return true;
     }
@@ -875,10 +880,11 @@ public class LeapFrogJoin extends NAryOperator {
       leapfrogInit();
     }
 
-    /* break if a full tuple batch has been formed TODO: to be revised */
+    /* break if a full tuple batch has been formed */
     while (ansTBB.numTuples() < TupleBatch.BATCH_SIZE) {
       for (JoinField jf : joinFieldMapping.get(currentDepth)) {
-        Preconditions.checkArgument(jf.fieldIndex == iterators[jf.tableIndex].currentField);
+        Preconditions.checkState(jf.fieldIndex == iterators[jf.tableIndex].currentField,
+            "current field invariant is not correct.");
       }
       boolean atEnd = leapfrogSearch();
 
