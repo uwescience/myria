@@ -314,7 +314,7 @@ public final class QueryResource {
         return Response.status(Status.NOT_FOUND).contentLocation(uri).entity("worker " + workerId + " was not found")
             .build();
       }
-      pb = new ProcessBuilder("./get_logs.py", depolymentFile, workerId + "");
+      pb = new ProcessBuilder("./get_logs.py", "--worker", workerId + "", depolymentFile);
     } else {
       pb = new ProcessBuilder("./get_logs.py", depolymentFile);
     }
@@ -329,8 +329,8 @@ public final class QueryResource {
 
         if (workerId != 0) {
           pb =
-              new ProcessBuilder("./extract_profiling_data.py", description, String.valueOf(workerId), String
-                  .valueOf(queryId), String.valueOf(fragmentId), queryPlanName, depolymentFile);
+              new ProcessBuilder("./extract_profiling_data.py", "--worker", String.valueOf(workerId), description,
+                  String.valueOf(queryId), String.valueOf(fragmentId), queryPlanName, depolymentFile);
         } else {
           pb =
               new ProcessBuilder("./extract_profiling_data.py", description, String.valueOf(queryId), String

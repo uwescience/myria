@@ -286,25 +286,20 @@ public abstract class Operator implements Serializable {
     } catch (Exception e) {
       throw new DbException(e);
     }
-
     if (isProfilingMode() && !eos()) {
       int numberOfTupleReturned = 0;
       if (result != null) {
         numberOfTupleReturned = result.numTuples();
       }
-
       PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:hang", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
           getOpName(), getFragmentId(), System.nanoTime(), numberOfTupleReturned);
-
     }
-
     if (result == null) {
       checkEOSAndEOI();
     } else {
       numOutputTBs++;
       numOutputTuples += result.numTuples();
     }
-
     return result;
   }
 

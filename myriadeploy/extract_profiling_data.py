@@ -8,6 +8,20 @@ import copy
 import myriadeploy
 import cPickle as pickle
 import os.path
+import argparse
+
+# argument parser
+parser = argparse.ArgumentParser(
+    description='Extract profiling data from logs')
+parser.add_argument('--worker', type=int, help='worker id')
+parser.add_argument(
+    'log_path', metavar='L', type=str, help='log file directory')
+parser.add_argument('query', metavar='Q', type=int, help='query id')
+parser.add_argument('fragment', metavar='F', type=int, help='fragment id')
+parser.add_argument('plan', metavar='P', type=str, help='query plan file')
+parser.add_argument(
+    'config', metavar='C', type=str, help='configuration file')
+args = parser.parse_args()
 
 # root operators
 root_operators = set(['LocalMultiwayProducer',
@@ -427,30 +441,15 @@ def writeViz(path, query_id, query_plan_file, config_file):
         pickle.dump(viz, open(fileName, "wb"))
 
 
-def main(argv):
-# Usage
-    if len(argv) != 6 and len(argv) != 7:
-        print >> sys.stderr, \
-            "Usage: %s <log_files_directory> <worker_id> <query_id> \
-            <fragment_id> <query_plan_file> <config_file>" % (argv[0])
-        print >> sys.stderr, \
-            " or %s <log_files_directory>  <query_id> <fragment_id>\
-            <query_plan_file> <config_file>" % (argv[0])
-        print >> sys.stderr, "       log_file_directory "
-        print >> sys.stderr, "       worker_id "
-        print >> sys.stderr, "       query_id "
-        print >> sys.stderr, "       fragment_id "
-        print >> sys.stderr, "       query_plan_file "
-        print >> sys.stderr, "       config file "
-        sys.exit(1)
-    elif len(argv) == 7:
-        writeViz(argv[1], int(argv[3]), argv[5], argv[6])
-        getOpLevelViz(argv[1], int(argv[2]), int(argv[3]),
-                      int(argv[4]), argv[5], argv[6])
+def main():
+    writeViz(args.log_path, args.query, args.plan, args.config)
+    if args.worker:
+        getOpLevelViz(args.log_path, args.worker, args.query,
+                      args.fragment, args.plan, args.config)
     else:
-        writeViz(argv[1], int(argv[2]), argv[4], argv[5])
-        getQfLevelViz(argv[1], int(argv[2]), int(argv[3]), argv[4], argv[5])
+        getQfLevelViz(args.log_path, args.query,
+                      args.fragment, args.plan, args.config)
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    main()

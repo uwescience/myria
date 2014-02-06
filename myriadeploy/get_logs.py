@@ -3,7 +3,13 @@
 import myriadeploy
 
 import subprocess
-import sys
+import argparse
+
+# parse args
+parser = argparse.ArgumentParser(description='collect logs from workers')
+parser.add_argument("--worker", type=int, help='worker id')
+parser.add_argument("config", metavar='C', type=str, help='configuration file')
+arguments = parser.parse_args()
 
 
 def get_host_port_path(node, default_path):
@@ -120,28 +126,15 @@ def getlog(config_file, from_worker_id=None):
                                 % (worker_id, hostname))
             if get_profiling_logs_from_worker(hostname, "%s/%s-files"
                % (path, description), username, worker_id, description):
-                raise Exception("Error on getting profiling logs from worker %d %s" % (worker_id, hostname))
+                raise Exception("Error on getting profiling logs from \
+                 worker %d %s" % (worker_id, hostname))
 
 
-def main(argv):
-    # Usage
-    if len(argv) < 2 or len(argv) > 3:
-        print >> sys.stderr, \
-            "Usage: %s <deployment.cfg> <worker_id>" % (argv[0])
-        print >> sys.stderr, \
-            "       deployment.cfg: configuration file "
-        print >> sys.stderr, \
-            "       worker_id (optional): \
-            get logs from this worker only, 0 = server"
-        print >> sys.stderr, \
-            "       logs will be put in the directory \
-            named after \"description\" in .cfg."
-        sys.exit(1)
-
-    if len(argv) == 2:
-        getlog(argv[1])
-    elif len(argv) == 3:
-        getlog(argv[1], int(argv[2]))
+def main():
+    if arguments.worker:
+        getlog(arguments.config, arguments.worker)
+    else:
+        getlog(arguments.config)
 
 if __name__ == "__main__":
-    main(sys.argv)
+    main()

@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 
+import myriadeploy
+
 import subprocess
 import sys
 
+
 def host_port_list(workers):
     return [str(worker[0]) + ':' + str(worker[1]) for worker in workers]
+
 
 def get_host_port_path(node, default_path):
     if len(node) == 2:
@@ -17,22 +21,26 @@ def get_host_port_path(node, default_path):
         (hostname, port, path) = node[:3]
     return (hostname, port, path)
 
-def copy_distribution(config_file):
+
+def copy_distribution(config):
     "Copy the distribution (jar and libs and conf) to compute nodes."
-    args = ["./using_deployment_utils.sh", config_file, "-copy_distribution"]
-    if subprocess.call(args):
-        raise Exception("Error copying distribution")
+    nodes = config['nodes']
+    description = config['description']
+    default_path = config['path']
+    username = config['username']
 
     for node in nodes:
         (hostname, _, path) = get_host_port_path(node, default_path)
         if hostname != 'localhost':
-            remote_path = "%s@%s:%s/%s-files" % (username, hostname, path, description)
+            remote_path = "{}@{}:{}/{}-files".format(
+                username, hostname, path, description)
         else:
             remote_path = "%s/%s-files" % (path, description)
         to_copy = ["libs", "conf"]
         args = ["rsync", "--del", "-rtLDvz"] + to_copy + [remote_path]
         if subprocess.call(args):
             raise Exception("Error copying distribution to %s" % (hostname,))
+
 
 def main(argv):
     # Usage
@@ -43,8 +51,10 @@ def main(argv):
             a configuration file modeled after deployment.cfg.sample"
         sys.exit(1)
 
+    config = myriadeploy.read_config_file(argv[1])
+
     # Step 1: Copy over libs, "conf", myria
-    copy_distribution(argv[1])
+    copy_distribution(config)
 
 if __name__ == "__main__":
     main(sys.argv)
