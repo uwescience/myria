@@ -405,7 +405,10 @@ public abstract class Operator implements Serializable {
    * Operators should not be able to unset an already set EOS except reopen it.
    */
   protected final void setEOS() {
-    if (isProfilingMode() && !eos()) {
+    if (eos()) {
+      return;
+    }
+    if (isProfilingMode()) {
       PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:end", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
           getOpName(), getFragmentId(), System.nanoTime());
     }

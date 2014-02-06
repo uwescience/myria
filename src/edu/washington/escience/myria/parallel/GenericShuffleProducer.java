@@ -1,11 +1,8 @@
 package edu.washington.escience.myria.parallel;
 
-import org.slf4j.LoggerFactory;
-
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
@@ -31,14 +28,6 @@ public class GenericShuffleProducer extends Producer {
    * partition of cells.
    */
   private final int[][] partitionToChannel;
-
-  /**
-   * The time spends on sending tuples via network.
-   */
-  private final long shuffleNetworkTime = 0;
-
-  /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(GenericShuffleProducer.class);
 
   /**
    * Shuffle to the same operator ID on multiple workers. (The old "ShuffleProducer")
@@ -103,15 +92,7 @@ public class GenericShuffleProducer extends Producer {
   @Override
   protected final void consumeTuples(final TupleBatch tup) throws DbException {
     TupleBatch[] partitions = getTupleBatchPartitions(tup);
-    if (isProfilingMode()) {
-      LOGGER.info("[{}#{}][{}@{}][{}]: send begins", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(), getOpName(),
-          getFragmentId(), System.nanoTime(), shuffleNetworkTime);
-    }
     writePartitionsIntoChannels(true, partitionToChannel, partitions);
-    if (isProfilingMode()) {
-      LOGGER.info("[{}#{}][{}@{}][{}]: send ends", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(), getOpName(),
-          getFragmentId(), System.nanoTime(), shuffleNetworkTime);
-    }
   }
 
   /**

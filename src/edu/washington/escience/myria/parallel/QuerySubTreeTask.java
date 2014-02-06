@@ -32,8 +32,12 @@ import edu.washington.escience.myria.util.concurrent.ReentrantSpinLock;
  * */
 public final class QuerySubTreeTask {
 
-  /** The loggers for this class. */
+  /** The logger for this class. */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(QuerySubTreeTask.class.getName());
+
+  /**
+   * The logger for profiler.
+   */
   private static final org.slf4j.Logger PROFILING_LOGGER = org.slf4j.LoggerFactory.getLogger("profile");
 
   /**
@@ -357,7 +361,6 @@ public final class QuerySubTreeTask {
    * */
   private Object executeActually() {
 
-    // TODO: add profiling mode to QuerySubTreeTask
     PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:set time", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, root.getQueryId(),
         "startTimeInMS", root.getFragmentId(), System.currentTimeMillis(), 0);
     PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:set time", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, root.getQueryId(),
