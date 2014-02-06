@@ -27,7 +27,7 @@ import edu.washington.escience.myria.parallel.WorkerQueryPartition;
 public abstract class Operator implements Serializable {
 
   /**
-   * loggers.
+   * logger for this class.
    * */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Operator.class);
   /**
