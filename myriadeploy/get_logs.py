@@ -38,7 +38,7 @@ def get_std_logs_from_worker(hostname, dirname, username,
         uri = "%s@%s:%s/worker_%s_stdout" % (
             username, hostname, dirname, worker_id)
 
-    args = ["scp", "-v", uri, "%s/worker_%s_stdout" % (description, worker_id,)]
+    args = ["scp", uri, "%s/worker_%s_stdout" % (description, worker_id,)]
     return subprocess.call(args)
 
 
@@ -50,7 +50,7 @@ def get_error_logs_from_worker(hostname, dirname, username,
     else:
         uri = "%s@%s:%s/worker_%s_stderr" % (
             username, hostname, dirname, worker_id)
-    args = ["scp", "-v", uri, "%s/worker_%s_stderr"
+    args = ["scp", uri, "%s/worker_%s_stderr"
             % (description, worker_id,)]
     return subprocess.call(args)
 
@@ -63,7 +63,7 @@ def get_profiling_logs_from_worker(hostname, dirname,
     else:
         uri = "%s@%s:%s/profile.log" % (
             username, hostname, dirname)
-    args = ["scp", "-v", uri, "%s/worker_%s_profile"
+    args = ["scp", uri, "%s/worker_%s_profile"
             % (description, worker_id,)]
     return subprocess.call(args)
 
@@ -74,7 +74,7 @@ def get_logs_from_master(hostname, dirname, username, description):
         uri = "%s/master_stdout" % (dirname)
     else:
         uri = "%s@%s:%s/master_stdout" % (username, hostname, dirname)
-    args = ["scp", "-v", uri, "%s/master_stdout" % (description)]
+    args = ["scp", uri, "%s/master_stdout" % (description)]
     return subprocess.call(args)
 
 
@@ -83,7 +83,7 @@ def get_error_logs_from_master(hostname, dirname, username, description):
         uri = "%s/master_stderr" % (dirname)
     else:
         uri = "%s@%s:%s/master_stderr" % (username, hostname, dirname)
-    args = ["scp", "-v", uri, "%s/master_stderr" % (description)]
+    args = ["scp", uri, "%s/master_stderr" % (description)]
     return subprocess.call(args)
 
 
