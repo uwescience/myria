@@ -108,7 +108,6 @@ public class JdbcInsertSpeedTest {
       final String createQuery =
           "CREATE TABLE " + table + " (k " + JdbcAccessMethod.typeToDbmsType(Type.INT_TYPE, jdbcInfo.getDbms())
               + ", v " + JdbcAccessMethod.typeToDbmsType(Type.STRING_TYPE, jdbcInfo.getDbms()) + ")";
-      final String insertQuery = "INSERT INTO " + table + " VALUES(?, ?)";
       final String countQuery = "SELECT COUNT(*) FROM " + table;
 
       JdbcAccessMethod jdbcAccessMethod;
