@@ -1,55 +1,55 @@
 {
-  "raw_datalog": "Sequence[StoreTemp(JustX)[Apply(LOG(($0 + 2))=LOG(($0 + 2)))[Scan(public:adhoc:TwitterK)]]]",
+  "rawDatalog": "Sequence[StoreTemp(JustX)[Apply(LOG(($0 + 2))=LOG(($0 + 2)))[Scan(public:adhoc:TwitterK)]]]",
   "fragments": [
     {
       "operators": [
         {
-          "op_type": "TableScan",
-          "op_name": "V0",
-          "relation_key": {
-            "user_name": "public",
-            "relation_name": "TwitterK",
-            "program_name": "adhoc"
+          "opType": "TableScan",
+          "opName": "V0",
+          "relationKey": {
+            "userName": "public",
+            "relationName": "TwitterK",
+            "programName": "adhoc"
           }
         },
         {
-          "op_type": "Apply",
-          "op_name": "V1",
-          "emit_expressions": [
+          "opType": "Apply",
+          "opName": "V1",
+          "emitExpressions": [
             {
-              "output_name": "log",
-              "root_expression_operator": {
+              "outputName": "log",
+              "rootExpressionOperator": {
                 "type": "LOG",
                 "operand": {
                   "left": {
                     "type": "VARIABLE",
-                    "column_idx": 0
+                    "columnIdx": 0
                   },
                   "type": "PLUS",
                   "right": {
                     "value": "2",
                     "type": "CONSTANT",
-                    "value_type": "INT_TYPE"
+                    "valueType": "INT_TYPE"
                   }
                 }
               }
             }
           ],
-          "arg_child": "V0"
+          "argChild": "V0"
         },
         {
-          "op_type": "DbInsert",
-          "op_name": "root",
-          "relation_key": {
-            "user_name": "public",
-            "relation_name": "JustX",
-            "program_name": "__TEMP__"
+          "opType": "DbInsert",
+          "opName": "root",
+          "relationKey": {
+            "userName": "public",
+            "relationName": "JustX",
+            "programName": "__TEMP__"
           },
-          "arg_child": "V1",
-          "arg_overwrite_table": true
+          "argChild": "V1",
+          "argOverwriteTable": true
         }
       ]
     }
   ],
-  "logical_ra": "Sequence[StoreTemp(JustX)[Apply(LOG(($0 + 2))=LOG(($0 + 2)))[Scan(public:adhoc:TwitterK)]]]"
+  "logicalRa": "Sequence[StoreTemp(JustX)[Apply(LOG(($0 + 2))=LOG(($0 + 2)))[Scan(public:adhoc:TwitterK)]]]"
 }

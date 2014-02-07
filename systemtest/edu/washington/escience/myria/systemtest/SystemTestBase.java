@@ -5,8 +5,10 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.ProcessBuilder.Redirect;
+import java.net.HttpURLConnection;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import com.almworks.sqlite4java.SQLiteException;
 import com.google.common.collect.ImmutableList;
+import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
@@ -128,6 +131,38 @@ public class SystemTestBase {
     final File ret = new File(sqliteInfo.getDatabaseFilename());
     wc.close();
     return ret;
+  }
+
+  protected static String getContents(HttpURLConnection conn) {
+    /* If there was any content returned, get it. */
+    String content = null;
+    try {
+      InputStream is = conn.getInputStream();
+      if (is != null) {
+        content = ByteString.readFrom(is).toStringUtf8();
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
+    /* If there was any error returned, get it. */
+    String error = null;
+    try {
+      InputStream is = conn.getErrorStream();
+      if (is != null) {
+        error = ByteString.readFrom(is).toStringUtf8();
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    StringBuilder ret = new StringBuilder();
+    if (content != null) {
+      ret.append("Content:\n").append(content);
+    }
+    if (error != null) {
+      ret.append("Error:\n").append(error);
+    }
+    return ret.toString();
   }
 
   /**

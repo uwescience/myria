@@ -1,0 +1,78 @@
+{
+    "fragments":[
+        {
+            "operators":[
+                {
+                    "opName":"Scan(R)",
+                    "opType":"TableScan",
+                    "relationKey":{
+                        "programName":"triangleJoin",
+                        "relationName":"twitterR",
+                        "userName":"test"
+                    }
+                },
+                {
+                    "opName":"Scan(S)",
+                    "opType":"TableScan",
+                    "relationKey":{
+                        "programName":"triangleJoin",
+                        "relationName":"twitterS",
+                        "userName":"test"
+                    }
+                },
+                {
+                    "opName":"Scan(T)",
+                    "opType":"TableScan",
+                    "relationKey":{
+                        "programName":"triangleJoin",
+                        "relationName":"twitterT",
+                        "userName":"test"
+                    }
+                },
+                {
+                    "opName":"Order(R)",
+                    "opType":"InMemoryOrderBy",
+                    "argChild": "Scan(R)",
+                    "argSortColumns": [0,1],
+                    "argAscending": [true, true]
+                },
+                {
+                    "opName":"Order(S)",
+                    "opType":"InMemoryOrderBy",
+                    "argChild": "Scan(S)",
+                    "argSortColumns": [0,1],
+                    "argAscending": [true, true]
+                },
+                {
+                    "opName":"Order(T)",
+                    "opType":"InMemoryOrderBy",
+                    "argChild": "Scan(T)",
+                    "argSortColumns": [0,1],
+                    "argAscending": [true, true]
+                },
+                {
+                    "opName":"Join",
+                    "opType":"LeapFrogJoin",
+                    "argChildren": ["Order(R)", "Order(S)", "Order(T)"],
+                    "argColumnNames": ["x","y","z"],
+                    "joinFieldMapping": [[[0,0],[2,0]],[[0,1],[1,0]],[[1,1],[2,1]]],
+                    "outputFieldMapping": [[0,0],[1,0],[1,1]]
+                },
+                {
+                    "argChild":"Join",
+                    "argOverwriteTable":true,
+                    "opName":"insert_result",
+                    "opType":"DbInsert",
+                    "relationKey":{
+                        "programName":"triangleJoin",
+                        "relationName":"result",
+                        "userName":"test"
+                    }
+                }
+            ]
+        }
+    ],
+    "logicalRa":"local triangle ",
+    "profilingMode":true,
+    "rawDatalog":"T(x,y,z) =: S(x,y), R(y,z), T(z,x)"
+} 

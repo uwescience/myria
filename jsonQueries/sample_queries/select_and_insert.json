@@ -3,27 +3,27 @@
         {
             "operators": [
                 {
-                    "op_name": "Scan",
-                    "op_type": "TableScan",
-                    "relation_key": {
-                        "program_name": "global_join",
-                        "relation_name": "smallTable",
-                        "user_name": "jwang"
+                    "opName": "Scan",
+                    "opType": "TableScan",
+                    "relationKey": {
+                        "programName": "global_join",
+                        "relationName": "smallTable",
+                        "userName": "jwang"
                     }
                 },
                 {
-                    "arg_child": "Scan",
-                    "op_name": "Insert",
-                    "op_type": "DbInsert",
-                    "relation_key": {
-                        "program_name": "global_join",
-                        "relation_name": "smallTable2",
-                        "user_name": "jwang"
+                    "argChild": "Scan",
+                    "opName": "Insert",
+                    "opType": "DbInsert",
+                    "relationKey": {
+                        "programName": "global_join",
+                        "relationName": "smallTable2",
+                        "userName": "jwang"
                     }
                 }
             ]
         }
     ],
-    "logical_ra": "Insert[Scan[smallTable], smallTable2]",
-    "raw_datalog": "smallTable2(_) :- smallTable(_)."
+    "logicalRa": "Insert[Scan[smallTable], smallTable2]",
+    "rawDatalog": "smallTable2(_) :- smallTable(_)."
 }

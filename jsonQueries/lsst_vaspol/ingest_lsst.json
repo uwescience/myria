@@ -1,15 +1,15 @@
 {
-  "relation_key" : {
-    "user_name" : "vaspol",
-    "program_name" : "LSST_useCase",
-    "relation_name" : "testtable"
+  "relationKey" : {
+    "userName" : "vaspol",
+    "programName" : "LSST_useCase",
+    "relationName" : "testtable"
   },
   "schema" : {
-    "column_types" : ["LONG_TYPE","LONG_TYPE","LONG_TYPE","DOUBLE_TYPE"],
-    "column_names" : ["x","y","time","data"]
+    "columnTypes" : ["LONG_TYPE","LONG_TYPE","LONG_TYPE","DOUBLE_TYPE"],
+    "columnNames" : ["x","y","time","data"]
   },
   "source" : {
-    "data_type" : 'File',
+    "dataType" : 'File',
     "filename" : "/disk1/lsst_dataset/large.csv",
   },
   "delimiter" : ","

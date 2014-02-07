@@ -1,15 +1,15 @@
 {
-  "relation_key" : {
-    "user_name" : "jwang",
-    "program_name" : "multiIDB",
-    "relation_name" : "a0"
+  "relationKey" : {
+    "userName" : "jwang",
+    "programName" : "multiIDB",
+    "relationName" : "a0"
   },
   "schema" : {
-    "column_types" : ["LONG_TYPE", "LONG_TYPE"],
-    "column_names" : ["follower", "followee"]
+    "columnTypes" : ["LONG_TYPE", "LONG_TYPE"],
+    "columnNames" : ["follower", "followee"]
   },
   "source" : {
-    "data_type" : "Bytes",
+    "dataType" : "Bytes",
     "bytes" : "MTAgNDMKNzIgNTkKOTcgNDMKMjkgMjAKNDMgODAKNyA5MAozNyA5Mwo0MiAxNgoyNCAxMgo3NSA1CjYzIDE4CjE0IDMzCjkgNTYKNjkgMzQKOTcgNwo1NSA0NAo1OSA5CjExIDcyCjQ1IDk5CjUgNjgKNjUgNjkKNjkgMTgKNDggNDMKNzggNDMKMTIgNTQKMzYgNjgKMzQgNDgKMzEgNDkKNjMgNzkKODAgNzUKMTcgMTQKMTEgOQo1MCA0Mwo0NyAyNwo4NiA3OQo2NCAxOQozNCA1MAo1OSA5NgozNiAyNQo4MCAzMAo0NyA2Ngo5MSAxNwoxNyA3MAozNCA5NAoxIDY3CjE0IDEzCjM3IDc3CjIzIDk2CjgwIDM1CjUzIDgzCjAgNzkKMyAyMgo2MCAxMQoyMSA1MQozMyA0Mwo1NSAxNQo0MCA5MwoxMiA3OAoxIDM1Cjg4IDgxCjY5IDEKNzkgNDcKNzcgMjMKNjggOTYKNTMgNTIKNDQgMjEKNjggOTIKNDIgNzkKNzMgMjkKOTYgMjkKMTQgNTgKMjcgNTEKNzggNDYKNTMgODIKNTIgNjAKNjUgNjQKOTUgODYKNjcgNDYKMjkgMTMKNDUgNTEKMzkgNTIKMTQgOTMKOTUgNzEKMjEgOTIKNjYgMzQKNzcgNDUKNDUgMTUKMTMgNDAKNDkgOTUKNDQgNjQKMzIgNzIKNjggOTAKMSA3MAo5MSA5CjQ0IDU1CjYwIDkxCjQgOTMKMTQgMTcKMCA2NAo2MyA4Mwo="
   }
 }

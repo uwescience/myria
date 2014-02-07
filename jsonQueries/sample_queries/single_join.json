@@ -3,91 +3,91 @@
         {
             "operators": [
                 {
-                    "op_name": "Scan0",
-                    "op_type": "TableScan",
-                    "relation_key": {
-                        "program_name": "global_join",
-                        "relation_name": "smallTable",
-                        "user_name": "jwang"
+                    "opName": "Scan0",
+                    "opType": "TableScan",
+                    "relationKey": {
+                        "programName": "global_join",
+                        "relationName": "smallTable",
+                        "userName": "jwang"
                     }
                 },
                 {
-                    "arg_child": "Scan0",
-                    "arg_pf": {
+                    "argChild": "Scan0",
+                    "argPf": {
                         "index": 0,
                         "type": "SingleFieldHash"
                     },
-                    "op_name": "Scatter0",
-                    "op_type": "ShuffleProducer"
+                    "opName": "Scatter0",
+                    "opType": "ShuffleProducer"
                 }
             ]
         },
         {
             "operators": [
                 {
-                    "op_name": "Scan1",
-                    "op_type": "TableScan",
-                    "relation_key": {
-                        "program_name": "global_join",
-                        "relation_name": "smallTable",
-                        "user_name": "jwang"
+                    "opName": "Scan1",
+                    "opType": "TableScan",
+                    "relationKey": {
+                        "programName": "global_join",
+                        "relationName": "smallTable",
+                        "userName": "jwang"
                     }
                 },
                 {
-                    "arg_child": "Scan1",
-                    "arg_pf": {
+                    "argChild": "Scan1",
+                    "argPf": {
                         "index": 1,
                         "type": "SingleFieldHash"
                     },
-                    "op_name": "Scatter1",
-                    "op_type": "ShuffleProducer"
+                    "opName": "Scatter1",
+                    "opType": "ShuffleProducer"
                 }
             ]
         },
         {
             "operators": [
                 {
-                    "arg_operator_id": "Scatter0",
-                    "op_name": "Gather0",
-                    "op_type": "ShuffleConsumer"
+                    "argOperatorId": "Scatter0",
+                    "opName": "Gather0",
+                    "opType": "ShuffleConsumer"
                 },
                 {
-                    "arg_operator_id": "Scatter1",
-                    "op_name": "Gather1",
-                    "op_type": "ShuffleConsumer"
+                    "argOperatorId": "Scatter1",
+                    "opName": "Gather1",
+                    "opType": "ShuffleConsumer"
                 },
                 {
-                    "arg_child1": "Gather1",
-                    "arg_child2": "Gather0",
-                    "arg_columns1": [
+                    "argChild1": "Gather1",
+                    "argChild2": "Gather0",
+                    "argColumns1": [
                         1
                     ],
-                    "arg_columns2": [
+                    "argColumns2": [
                         0
                     ],
-                    "arg_select1": [
+                    "argSelect1": [
                         0
                     ],
-                    "arg_select2": [
+                    "argSelect2": [
                         1
                     ],
-                    "op_name": "Join",
-                    "op_type": "SymmetricHashJoin"
+                    "opName": "Join",
+                    "opType": "SymmetricHashJoin"
                 },
                 {
-                    "arg_child": "Join",
-                    "arg_overwrite_table": true,
-                    "op_name": "Insert",
-                    "op_type": "DbInsert",
-                    "relation_key": {
-                        "program_name": "global_join",
-                        "relation_name": "smallTable_join_smallTable",
-                        "user_name": "jwang"
+                    "argChild": "Join",
+                    "argOverwriteTable": true,
+                    "opName": "Insert",
+                    "opType": "DbInsert",
+                    "relationKey": {
+                        "programName": "global_join",
+                        "relationName": "smallTable_join_smallTable",
+                        "userName": "jwang"
                     }
                 }
             ]
         }
     ],
-    "logical_ra": "Insert(smallTable_join_smallTable)[Join(1=0; [0,3])[Shuffle(1)[Scan], Shuffle(1)[Scan]]]",
-    "raw_datalog": "smallTable_join_smallTable(x,z) :- smallTable(x,y), mallTable(y,z)"
+    "logicalRa": "Insert(smallTable_join_smallTable)[Join(1=0; [0,3])[Shuffle(1)[Scan], Shuffle(1)[Scan]]]",
+    "rawDatalog": "smallTable_join_smallTable(x,z) :- smallTable(x,y), mallTable(y,z)"
 }

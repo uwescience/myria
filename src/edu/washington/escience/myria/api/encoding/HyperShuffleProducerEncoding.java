@@ -24,12 +24,12 @@ import edu.washington.escience.myria.util.MyriaUtils;
 public class HyperShuffleProducerEncoding extends AbstractProducerEncoding<GenericShuffleProducer> {
 
   public String argChild;
-  public int[] fieldIndexes;
+  public int[] indexes;
   public int[] hyperCubeDimensions;
   public int[][] cellPartition;
 
-  private static final List<String> requiredArguments = ImmutableList.of("argChild", "fieldIndexes",
-      "hyperCubeDimensions", "cellPartition");
+  private static final List<String> requiredArguments = ImmutableList.of("argChild", "indexes", "hyperCubeDimensions",
+      "cellPartition");
 
   @Override
   public void connect(final Operator current, final Map<String, Operator> operators) {
@@ -54,8 +54,7 @@ public class HyperShuffleProducerEncoding extends AbstractProducerEncoding<Gener
     }
 
     /* constructing a MFMDHashPartitionFunction. */
-    MFMDHashPartitionFunction pf =
-        new MFMDHashPartitionFunction(cellPartition.length, hyperCubeDimensions, fieldIndexes);
+    MFMDHashPartitionFunction pf = new MFMDHashPartitionFunction(cellPartition.length, hyperCubeDimensions, indexes);
 
     return new GenericShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), cellPartition,
         MyriaUtils.integerCollectionToIntArray(getRealWorkerIds()), pf);
