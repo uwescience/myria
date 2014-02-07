@@ -49,7 +49,7 @@ public class SerializationTests {
     assertEquals(pf.getClass(), deserialized.getClass());
     assertEquals(5, deserialized.numPartition());
     MultiFieldHashPartitionFunction pfMFH = (MultiFieldHashPartitionFunction) deserialized;
-    assertArrayEquals(multiFieldIndex, pfMFH.getFieldIndexes());
+    assertArrayEquals(multiFieldIndex, pfMFH.getIndexes());
 
     /* Whole tuple hash */
     pf = new WholeTupleHashPartitionFunction(5);

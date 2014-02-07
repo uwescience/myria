@@ -21,7 +21,7 @@ import edu.washington.escience.myria.parallel.Server;
  * 
  * 2. Add the operator to the list of (alphabetically sorted) JsonSubTypes below.
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "op_type")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "opType")
 @JsonSubTypes({
     @Type(name = "Aggregate", value = AggregateEncoding.class), @Type(name = "Apply", value = ApplyEncoding.class),
     @Type(name = "BinaryFileScan", value = BinaryFileScanEncoding.class),

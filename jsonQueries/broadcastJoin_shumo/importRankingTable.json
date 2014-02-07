@@ -1,12 +1,12 @@
 {
-  "relation_key" : {
-    "user_name" : "shumochu",
-    "program_name" : "broadcastjoin",
-    "relation_name" : "RankBase2x"
+  "relationKey" : {
+    "userName" : "shumochu",
+    "programName" : "broadcastjoin",
+    "relationName" : "RankBase2x"
   },
   "schema" : {
-    "column_types" : ["LONG_TYPE","STRING_TYPE","LONG_TYPE"],
-    "column_names" : ["pageRank","pageURL","avgDuration"]
+    "columnTypes" : ["LONG_TYPE","STRING_TYPE","LONG_TYPE"],
+    "columnNames" : ["pageRank","pageURL","avgDuration"]
   },
-  "import_from_database" : true
+  "importFromDatabase" : true
 }

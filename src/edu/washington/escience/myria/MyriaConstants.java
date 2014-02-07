@@ -60,7 +60,7 @@ public final class MyriaConstants {
   /**
    * Query ID.
    */
-  public static final String EXEC_ENV_VAR_QUERY_ID = "query_id";
+  public static final String EXEC_ENV_VAR_QUERY_ID = "queryId";
 
   /**
    * Profiling mode.

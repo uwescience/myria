@@ -29,7 +29,7 @@ public final class SingleFieldHashPartitionFunction extends PartitionFunction {
    * @param index the index of the partition field.
    */
   @JsonCreator
-  public SingleFieldHashPartitionFunction(@JsonProperty("num_partitions") final Integer numPartitions,
+  public SingleFieldHashPartitionFunction(@JsonProperty("numPartitions") final Integer numPartitions,
       @JsonProperty(value = "index", required = true) final Integer index) {
     super(numPartitions);
     /* TODO(dhalperi) once Jackson actually implements support for required, remove these checks. */

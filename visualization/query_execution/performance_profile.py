@@ -47,17 +47,17 @@ def generateProfile(path,query_id):
     tuples = [(i[8],
                 {
                     'time': datetime.datetime(int(i[0]),int(i[1]),int(i[2]),int(i[3]), int(i[4]), int(i[5]), int(i[6])*1000),
-                    'query_id':i[7],
-                    'operator_name':i[8],
-                    'fragment_id': i[9], 
-                    'operator_type': i[10],
+                    'queryId':i[7],
+                    'operatorName':i[8],
+                    'fragmentId': i[9], 
+                    'operatorType': i[10],
                     'hashcode':i[11], 
                     'message':i[12]
                 })
             for i in tuples ]
     
     # filter out unrelevant queries
-    tuples = [ i for i in tuples if int(i[1]['query_id']) == query_id ]
+    tuples = [ i for i in tuples if int(i[1]['queryId']) == query_id ]
 
     # retrieve execution time information
     for tp in tuples:

@@ -3,18 +3,18 @@
         {
             "operators":[
                 {
-                    "op_name":"Scan(R)",
-                    "op_type":"TableScan",
-                    "relation_key":{
-                        "program_name":"multiway_join",
-                        "relation_name":"twitter_small",
-                        "user_name":"chushumo"
+                    "opName":"Scan(R)",
+                    "opType":"TableScan",
+                    "relationKey":{
+                        "programName":"multiway_join",
+                        "relationName":"twitter_small",
+                        "userName":"chushumo"
                     }
                 },
                 {
-                    "arg_child":"Scan(R)",
-                    "field_indexes": [0],
-                    "cell_partition":[
+                    "argChild":"Scan(R)",
+                    "indexes": [0],
+                    "cellPartition":[
                         [
                             0,
                             1
@@ -24,30 +24,30 @@
                             3
                         ]
                     ],
-                    "hyper_cube_dimensions":[
+                    "hyperCubeDimensions":[
                         2,
                         2
                     ],
-                    "op_name":"HyperShuffle(R)",
-                    "op_type":"HyperShuffleProducer"
+                    "opName":"HyperShuffle(R)",
+                    "opType":"HyperShuffleProducer"
                 }
             ]
         },
         {
             "operators":[
                 {
-                    "op_name":"Scan(S)",
-                    "op_type":"TableScan",
-                    "relation_key":{
-                        "program_name":"multiway_join",
-                        "relation_name":"twitter_small",
-                        "user_name":"chushumo"
+                    "opName":"Scan(S)",
+                    "opType":"TableScan",
+                    "relationKey":{
+                        "programName":"multiway_join",
+                        "relationName":"twitter_small",
+                        "userName":"chushumo"
                     }
                 },
                 {
-                    "arg_child":"Scan(S)",
-                    "field_indexes": [1],
-                    "cell_partition":[
+                    "argChild":"Scan(S)",
+                    "indexes": [1],
+                    "cellPartition":[
                         [
                             0,
                             2
@@ -57,68 +57,68 @@
                             3
                         ]
                     ],
-                    "hyper_cube_dimensions":[
+                    "hyperCubeDimensions":[
                         2,
                         2
                     ],
-                    "op_name":"HyperShuffle(S)",
-                    "op_type":"HyperShuffleProducer"
+                    "opName":"HyperShuffle(S)",
+                    "opType":"HyperShuffleProducer"
                 }
             ]
         },
         {
             "operators":[
                 {
-                    "arg_operator_id":"HyperShuffle(R)",
-                    "op_name":"GatherR",
-                    "op_type":"HyperShuffleConsumer"
+                    "argOperatorId":"HyperShuffle(R)",
+                    "opName":"GatherR",
+                    "opType":"HyperShuffleConsumer"
                 },
                 {
-                    "arg_operator_id":"HyperShuffle(S)",
-                    "op_name":"GatherS",
-                    "op_type":"HyperShuffleConsumer"
+                    "argOperatorId":"HyperShuffle(S)",
+                    "opName":"GatherS",
+                    "opType":"HyperShuffleConsumer"
                 },
                 {
-                    "arg_child1":"GatherR",
-                    "arg_child2":"GatherS",
-                    "arg_columns1":[
+                    "argChild1":"GatherR",
+                    "argChild2":"GatherS",
+                    "argColumns1":[
                         1
                     ],
-                    "arg_columns2":[
+                    "argColumns2":[
                         0
                     ],
-                    "arg_select1":[
+                    "argSelect1":[
                         0
                     ],
-                    "arg_select2":[
+                    "argSelect2":[
                         1
                     ],
-                    "op_name":"Join",
-                    "op_type":"SymmetricHashJoin"
+                    "opName":"Join",
+                    "opType":"SymmetricHashJoin"
                 },
                 {
-                    "arg_child":"Join",
-                    "op_name":"SendResult",
-                    "op_type":"CollectProducer"
+                    "argChild":"Join",
+                    "opName":"SendResult",
+                    "opType":"CollectProducer"
                 }
             ]
         },
         {
             "operators":[
                 {
-                    "arg_operator_id":"SendResult",
-                    "op_name":"CollectResult",
-                    "op_type":"CollectConsumer"
+                    "argOperatorId":"SendResult",
+                    "opName":"CollectResult",
+                    "opType":"CollectConsumer"
                 },
                 {
-                    "arg_child":"CollectResult",
-                    "arg_overwrite_table":true,
-                    "op_name":"Insert",
-                    "op_type":"DbInsert",
-                    "relation_key":{
-                        "program_name":"multiway_join",
-                        "relation_name":"twitter_small_join_twitter_small",
-                        "user_name":"chushumo"
+                    "argChild":"CollectResult",
+                    "argOverwriteTable":true,
+                    "opName":"Insert",
+                    "opType":"DbInsert",
+                    "relationKey":{
+                        "programName":"multiway_join",
+                        "relationName":"twitter_small_join_twitter_small",
+                        "userName":"chushumo"
                     }
                 }
             ],
@@ -127,6 +127,6 @@
             ]
         }
     ],
-    "logical_ra":"two dimension multiway join",
-    "raw_datalog":"two dimension multiway join"
+    "logicalRa":"two dimension multiway join",
+    "rawDatalog":"two dimension multiway join"
 }

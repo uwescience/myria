@@ -20,7 +20,7 @@ public final class WholeTupleHashPartitionFunction extends PartitionFunction {
    * @param numPartitions total number of partitions.
    */
   @JsonCreator
-  public WholeTupleHashPartitionFunction(@Nullable @JsonProperty("num_partitions") final Integer numPartitions) {
+  public WholeTupleHashPartitionFunction(@Nullable @JsonProperty("numPartitions") final Integer numPartitions) {
     super(numPartitions);
   }
 
