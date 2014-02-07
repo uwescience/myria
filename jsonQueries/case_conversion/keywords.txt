@@ -62,3 +62,6 @@ join_field_mapping
 output_field_mapping
 profiling_mode
 tp_num
+real_begin
+fragment_index
+worker_id

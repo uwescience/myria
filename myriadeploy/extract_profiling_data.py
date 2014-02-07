@@ -180,10 +180,10 @@ def build_operator_state(op_name, operators, children_dict,
 
 # unify time
 def unify_time(viz_json):
-    start_time = min(qf['real_begin'] for qf in viz_json['hierarchy'])
-    viz_json['real_begin'] = start_time
+    start_time = min(qf['realBegin'] for qf in viz_json['hierarchy'])
+    viz_json['realBegin'] = start_time
     for root in viz_json['hierarchy']:
-        unify_operator_time(root['real_begin']-start_time, root)
+        unify_operator_time(root['realBegin']-start_time, root)
 
 
 # unify operator time
@@ -237,8 +237,8 @@ def getOpLevelViz(path, worker_id, query_id,
     query_data = pickle.load(open(fileName, "rb"))
 
     data = [qf for qf in query_data['hierarchy']
-            if qf['worker_id'] == worker_id
-            and qf['fragment_index'] == fragment_id]
+            if qf['workerId'] == worker_id
+            and qf['fragmentIndex'] == fragment_id]
     begin = min(int(qf['begin']) for qf in data)
     end = max(int(qf['end']) for qf in data)
 
@@ -263,8 +263,8 @@ def getQfLevelViz(path, query_id, fragment_id, query_plan_file, config_file):
 
     # filter relevant part
     data = [qf for qf in query_data['hierarchy']
-            if qf['fragment_index'] == fragment_id]
-    data = sorted(data, key=lambda qf: qf['worker_id'])
+            if qf['fragmentIndex'] == fragment_id]
+    data = sorted(data, key=lambda qf: qf['workerId'])
 
     begin = min(x['begin'] for x in data)
     end = max(x['end'] for x in data)
@@ -272,7 +272,7 @@ def getQfLevelViz(path, query_id, fragment_id, query_plan_file, config_file):
     # only keep root operators
     for qf in data:
         qf['children'] = []
-        qf['name'] = "{} @ worker {}".format(qf['name'], qf['worker_id'])
+        qf['name'] = "{} @ worker {}".format(qf['name'], qf['workerId'])
 
     profile = {
         'begin': begin,
@@ -397,9 +397,9 @@ def generateFragmentViz(tuples, worker_id, fragment_id,
                                         begin_time)
             break
 
-    data['real_begin'] = qf_start_in_ms*million+begin_time-qf_start_in_ns
-    data['fragment_index'] = fragment_id
-    data['worker_id'] = worker_id
+    data['realBegin'] = qf_start_in_ms*million+begin_time-qf_start_in_ns
+    data['fragmentIndex'] = fragment_id
+    data['workerId'] = worker_id
     data['begin'] = 0
     data['end'] = end_time-begin_time
     return data
@@ -418,10 +418,10 @@ def generateViz(path, query_id, query_plan_file, config_file):
             generateSingleWorkerViz(path, i+1, query_id,
                                     query_plan_file, config_file))
 
-    query_start_time = min(int(qf['real_begin']) for qf in viz_data)
+    query_start_time = min(int(qf['realBegin']) for qf in viz_data)
 
     for qf in viz_data:
-        unify_operator_time(qf['real_begin']-query_start_time, qf)
+        unify_operator_time(qf['realBegin']-query_start_time, qf)
 
     end = max(qf['end'] for qf in viz_data)
 
