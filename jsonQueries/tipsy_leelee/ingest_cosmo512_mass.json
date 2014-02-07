@@ -1,15 +1,15 @@
 {
-  "relation_key" : {
-    "user_name" : "leelee",
-    "program_name" : "astro",
-    "relation_name" : "masstable"
+  "relationKey" : {
+    "userName" : "leelee",
+    "programName" : "astro",
+    "relationName" : "masstable"
   },
   "schema" : {
-    "column_types" : ["INT_TYPE", "FLOAT_TYPE"],
-    "column_names" : ["grp", "tot_mass"]
+    "columnTypes" : ["INT_TYPE", "FLOAT_TYPE"],
+    "columnNames" : ["grp", "tot_mass"]
   },
   "source" : {
-    "data_type" : 'File',
+    "dataType" : 'File',
     "filename" : "/Users/dhalperi/escience/myria/data_nocommit/tipsy/cosmo512_mass.txt",
   },
   "delimiter": ","

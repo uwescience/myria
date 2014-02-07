@@ -214,23 +214,6 @@ public class TupleBuffer implements ReadableTable, Cloneable {
 
   /**
    * @param row the row number
-   * @return the columns of the TB that the row resides.
-   * */
-  public MutableColumn<?>[] getColumns(final int row) {
-    int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
-    int tupleIndex = row % TupleBatch.BATCH_SIZE;
-    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
-        && tupleIndex >= currentInProgressTuples) {
-      throw new IndexOutOfBoundsException();
-    }
-    if (tupleBatchIndex < readyTuples.size()) {
-      return readyTuples.get(tupleBatchIndex);
-    }
-    return null;
-  }
-
-  /**
-   * @param row the row number
    * @return the index of the row in the containing TB.
    * */
   public final int getTupleIndexInContainingTB(final int row) {
@@ -239,37 +222,24 @@ public class TupleBuffer implements ReadableTable, Cloneable {
 
   /**
    * @param row the row number
-   * @return the ColumnBuilder if the row resides in a in-building TB
-   * */
-  public ColumnBuilder<?>[] getColumnBuilders(final int row) {
+   * @return the columns
+   */
+  public ReadableColumn[] getColumns(final int row) {
     int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
     int tupleIndex = row % TupleBatch.BATCH_SIZE;
-    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
-        && tupleIndex >= currentInProgressTuples) {
+
+    if (tupleBatchIndex < readyTuples.size()) {
+      return readyTuples.get(tupleBatchIndex);
+    } else if (tupleBatchIndex == readyTuples.size() && tupleIndex < currentInProgressTuples) {
+      return currentBuildingColumns;
+    } else {
       throw new IndexOutOfBoundsException();
     }
-    if (tupleBatchIndex < readyTuples.size()) {
-      return null;
-    }
-    return currentBuildingColumns;
   }
 
   @Override
   public final int numColumns() {
     return numColumns;
-  }
-
-  /**
-   * Append the specified value to the specified column.
-   * 
-   * @param column index of the column.
-   * @param value value to be appended.
-   */
-  @Deprecated
-  public final void put(final int column, final Object value) {
-    checkPutIndex(column);
-    currentBuildingColumns[column].appendObject(value);
-    columnPut(column);
   }
 
   /**
@@ -387,7 +357,49 @@ public class TupleBuffer implements ReadableTable, Cloneable {
   }
 
   /**
-   * Append the specified value to the specified destination column in this TupleBuffer from the source column.
+   * Compare two cells in two TupleBuffers.
+   * 
+   * @param columnInThisTB column index of the cell in this TupleBuffer.
+   * @param rowInThisTB row index of the cell in this TupleBuffer.
+   * @param columnInComparedTB column index of the compared cell in compared TupleBuffer.
+   * @param rowInComparedTB row index of the compared cell in compared TupleBuffer.
+   * @param comparedTB the compared TupleBuffer.
+   * 
+   * @return compared result.
+   */
+  public final int compare(final int columnInThisTB, final int rowInThisTB, final TupleBuffer comparedTB,
+      final int columnInComparedTB, final int rowInComparedTB) {
+    Preconditions.checkArgument(getSchema().getColumnType(columnInThisTB).equals(
+        comparedTB.getSchema().getColumnType(columnInComparedTB)), "The types of comparing cells are not matched.");
+    switch (getSchema().getColumnType(columnInThisTB)) {
+      case BOOLEAN_TYPE:
+        return Type.compareRaw(getBoolean(columnInThisTB, rowInThisTB), comparedTB.getBoolean(columnInComparedTB,
+            rowInComparedTB));
+      case DOUBLE_TYPE:
+        return Type.compareRaw(getDouble(columnInThisTB, rowInThisTB), comparedTB.getDouble(columnInComparedTB,
+            rowInComparedTB));
+      case FLOAT_TYPE:
+        return Type.compareRaw(getFloat(columnInThisTB, rowInThisTB), comparedTB.getFloat(columnInComparedTB,
+            rowInComparedTB));
+      case INT_TYPE:
+        return Type.compareRaw(getInt(columnInThisTB, rowInThisTB), comparedTB.getInt(columnInComparedTB,
+            rowInComparedTB));
+      case LONG_TYPE:
+        return Type.compareRaw(getLong(columnInThisTB, rowInThisTB), comparedTB.getLong(columnInComparedTB,
+            rowInComparedTB));
+      case STRING_TYPE:
+        return Type.compareRaw(getString(columnInThisTB, rowInThisTB), comparedTB.getString(columnInComparedTB,
+            rowInComparedTB));
+      case DATETIME_TYPE:
+        return Type.compareRaw(getDateTime(columnInThisTB, rowInThisTB), comparedTB.getDateTime(columnInComparedTB,
+            rowInComparedTB));
+    }
+
+    throw new IllegalStateException("Invalid type in TupleBuffer.");
+  }
+
+  /**
+   * Append the specified value to the specified destination column in this TupleBatchBuffer from the source column.
    * 
    * @param destColumn which column in this TB the value will be inserted.
    * @param sourceColumn the column from which data will be retrieved.

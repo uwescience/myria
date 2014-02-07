@@ -71,7 +71,7 @@ _QUERYMESSAGE = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='query_id', full_name='QueryMessage.query_id', index=0,
+      name='queryId', full_name='QueryMessage.query_id', index=0,
       number=1, type=4, cpp_type=4, label=2,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,

@@ -25,7 +25,7 @@ public final class RoundRobinPartitionFunction extends PartitionFunction {
    * @param numPartitions the number of partitions.
    */
   @JsonCreator
-  public RoundRobinPartitionFunction(@Nullable @JsonProperty("num_partitions") final Integer numPartitions) {
+  public RoundRobinPartitionFunction(@Nullable @JsonProperty("numPartitions") final Integer numPartitions) {
     super(numPartitions);
   }
 

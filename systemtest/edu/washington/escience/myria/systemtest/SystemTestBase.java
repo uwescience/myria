@@ -5,8 +5,10 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.ProcessBuilder.Redirect;
+import java.net.HttpURLConnection;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import com.almworks.sqlite4java.SQLiteException;
 import com.google.common.collect.ImmutableList;
+import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
@@ -105,6 +108,11 @@ public class SystemTestBase {
 
   public volatile static String workerTestBaseFolder;
 
+  /** Whether to run the worker and master daemons in debug mode. */
+  public static final boolean DEBUG = false;
+  /** How much memory the system tests might use. */
+  public static final String MEMORY = "512M";
+
   public static void createTable(final int workerID, final RelationKey relationKey, final String sqlSchemaString)
       throws IOException, CatalogException {
     try {
@@ -123,6 +131,38 @@ public class SystemTestBase {
     final File ret = new File(sqliteInfo.getDatabaseFilename());
     wc.close();
     return ret;
+  }
+
+  protected static String getContents(HttpURLConnection conn) {
+    /* If there was any content returned, get it. */
+    String content = null;
+    try {
+      InputStream is = conn.getInputStream();
+      if (is != null) {
+        content = ByteString.readFrom(is).toStringUtf8();
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
+    /* If there was any error returned, get it. */
+    String error = null;
+    try {
+      InputStream is = conn.getErrorStream();
+      if (is != null) {
+        error = ByteString.readFrom(is).toStringUtf8();
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    StringBuilder ret = new StringBuilder();
+    if (content != null) {
+      ret.append("Content:\n").append(content);
+    }
+    if (error != null) {
+      ret.append("Error:\n").append(error);
+    }
+    return ret.toString();
   }
 
   /**
@@ -157,10 +197,10 @@ public class SystemTestBase {
       finishClean = finishClean && AvailablePortFinder.available(masterDaemonPort);
       for (final int workerPort : workerPorts) {
         finishClean = finishClean && AvailablePortFinder.available(workerPort);
-      }
-      for (final int workerPort : workerPorts) {
-        // make sure the JDWP listening ports are also successfully released.
-        finishClean = finishClean && AvailablePortFinder.available(workerPort + 1000);
+        if (DEBUG) {
+          // make sure the JDWP listening ports are also successfully released.
+          finishClean = finishClean && AvailablePortFinder.available(workerPort + 1000);
+        }
       }
       if (!finishClean) {
         try {
@@ -481,27 +521,32 @@ public class SystemTestBase {
       String cp = System.getProperty("java.class.path");
       String lp = System.getProperty("java.library.path");
 
-      final ProcessBuilder pb =
-          new ProcessBuilder(
-              "java",
-              "-ea", // enable assertion
-              "-Djava.library.path=" + lp,
-              "-Dorg.jboss.netty.debug",
-              "-Xdebug",
-              // Now eclipse is able to debug remotely the worker processes
-              // following the steps:
-              // 1. Set a breakpoint at the beginning of a JUnit test method.
-              // 2. start debug the JUnit test method. The test method should stop
-              // at the preset breakpoint.
-              // But now, the worker processes are already started.
-              // 3. Create an Eclipse remote debugger and set to attach to localhost
-              // 10001 for worker1 and localhost
-              // 10002 for worker2
-              // 4. Now, you are able to debug the worker processes. All the Java
-              // debugging methods are supported such
-              // as breakpoints.
-              "-Xrunjdwp:transport=dt_socket,address=" + (workerPorts[i] + 1000) + ",server=y,suspend=n", "-classpath",
-              cp, Worker.class.getCanonicalName(), "--workingDir", workingDir);
+      ProcessBuilder tpb;
+      if (DEBUG) {
+        tpb = new ProcessBuilder("java", "-ea", // enable assertion
+            "-Djava.library.path=" + lp, "-Dorg.jboss.netty.debug", "-Xdebug",
+            // Now eclipse is able to debug remotely the worker processes
+            // following the steps:
+            // 1. Set a breakpoint at the beginning of a JUnit test method.
+            // 2. start debug the JUnit test method. The test method should stop
+            // at the preset breakpoint.
+            // But now, the worker processes are already started.
+            // 3. Create an Eclipse remote debugger and set to attach to localhost
+            // 10001 for worker1 and localhost
+            // 10002 for worker2
+            // 4. Now, you are able to debug the worker processes. All the Java
+            // debugging methods are supported such
+            // as breakpoints.
+            "-Xrunjdwp:transport=dt_socket,address=" + (workerPorts[i] + 1000) + ",server=y,suspend=n", //
+            "-Xmx" + MEMORY, // memory limit to MEMORY
+            "-classpath", cp, Worker.class.getCanonicalName(), "--workingDir", workingDir);
+      } else {
+        tpb = new ProcessBuilder("java", "-ea", // enable assertion
+            "-Djava.library.path=" + lp, "-classpath", cp, // paths
+            "-Xmx" + MEMORY, // memory limit to MEMORY
+            Worker.class.getCanonicalName(), "--workingDir", workingDir);
+      }
+      final ProcessBuilder pb = tpb;
 
       pb.directory(new File(workingDir));
       pb.redirectErrorStream(true);

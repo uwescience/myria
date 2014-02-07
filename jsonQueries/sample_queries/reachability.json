@@ -6,9 +6,9 @@
 			"operators": 
 			[
 			{
-			  "op_name" : "cc",
-			  "op_type" : "CollectConsumer",
-			  "arg_operator_id" : "cpc"
+			  "opName" : "cc",
+			  "opType" : "CollectConsumer",
+			  "argOperatorId" : "cpc"
 			}
 			],
 			"workers": 
@@ -20,19 +20,19 @@
 			"operators": 
 			[
 			{
-				"op_name" : "eoiReceiverA",
-				"op_type" : "Consumer",
-				"arg_operator_id" : "idbinputa"
+				"opName" : "eoiReceiverA",
+				"opType" : "Consumer",
+				"argOperatorId" : "idbinputa"
 			},
 			{
-				"op_name" : "merge",
-				"op_type" : "UnionAll",
-				"arg_children" : ["eoiReceiverA"]
+				"opName" : "merge",
+				"opType" : "UnionAll",
+				"argChildren" : ["eoiReceiverA"]
 			},
 			{
-				"op_name" : "eosController",
-				"op_type" : "EOSController",
-				"arg_child" : "merge"
+				"opName" : "eosController",
+				"opType" : "EOSController",
+				"argChild" : "merge"
 			}
 			],
 			"workers": 
@@ -44,19 +44,19 @@
 			"operators": 
 			[
 			{
-				"op_name" : "scan2a",
-				"op_type" : "TableScan",
-				"relation_key" : {
-					"user_name" : "jwang",
-					"program_name" : "reachability",
-					"relation_name" : "a0"
+				"opName" : "scan2a",
+				"opType" : "TableScan",
+				"relationKey" : {
+					"userName" : "jwang",
+					"programName" : "reachability",
+					"relationName" : "a0"
 				}
 			},
 			{
-				"op_name" : "sp2a",
-				"op_type" : "ShuffleProducer",
-				"arg_child" : "scan2a",
-				"arg_pf" : {
+				"opName" : "sp2a",
+				"opType" : "ShuffleProducer",
+				"argChild" : "scan2a",
+				"argPf" : {
 					"type" : "SingleFieldHash",
 					"index" : 0
 				}
@@ -67,19 +67,19 @@
 			"operators": 
 			[
 			{
-				"op_name" : "scan2g",
-				"op_type" : "TableScan",
-				"relation_key" : {
-					"user_name" : "jwang",
-					"program_name" : "reachability",
-					"relation_name" : "g"
+				"opName" : "scan2g",
+				"opType" : "TableScan",
+				"relationKey" : {
+					"userName" : "jwang",
+					"programName" : "reachability",
+					"relationName" : "g"
 				}
 			},
 			{
-				"op_name" : "sp2g",
-				"op_type" : "ShuffleProducer",
-				"arg_child" : "scan2g",
-				"arg_pf" : {
+				"opName" : "sp2g",
+				"opType" : "ShuffleProducer",
+				"argChild" : "scan2g",
+				"argPf" : {
 					"type" : "SingleFieldHash",
 					"index" : 0
 				}
@@ -90,36 +90,36 @@
 			"operators": 
 			[
 			{
-				"op_name" : "sc2a",
-				"op_type" : "ShuffleConsumer",
-				"arg_operator_id" : "sp2a"
+				"opName" : "sc2a",
+				"opType" : "ShuffleConsumer",
+				"argOperatorId" : "sp2a"
 			},
 			{
-				"op_name" : "sc3a",
-				"op_type" : "ShuffleConsumer",
-				"arg_operator_id" : "sp3a"
+				"opName" : "sc3a",
+				"opType" : "ShuffleConsumer",
+				"argOperatorId" : "sp3a"
 			},
 			{
-				"op_name" : "eosReceivera",
-				"op_type" : "Consumer",
-				"arg_operator_id" : "eosController"
+				"opName" : "eosReceivera",
+				"opType" : "Consumer",
+				"argOperatorId" : "eosController"
 			},
 			{
-				"op_name" : "idbinputa",
-				"op_type" : "IDBController",
-				"arg_self_idb_id" : "0",
-				"arg_initial_input" : "sc2a",
-				"arg_iteration_input" : "sc3a",
-				"arg_state" : 
+				"opName" : "idbinputa",
+				"opType" : "IDBController",
+				"argSelfIdbId" : "0",
+				"argInitialInput" : "sc2a",
+				"argIterationInput" : "sc3a",
+				"argState" : 
 				{
 					"type" : "DupElim"
 				},
-				"arg_eos_controller_input" : "eosReceivera"
+				"argEosControllerInput" : "eosReceivera"
 			},
 			{
-				"op_name" : "mpa",
-				"op_type" : "LocalMultiwayProducer",
-				"arg_child" : "idbinputa"
+				"opName" : "mpa",
+				"opType" : "LocalMultiwayProducer",
+				"argChild" : "idbinputa"
 			}
 			]
 		},
@@ -127,30 +127,30 @@
 			"operators": 
 			[
 			{
-				"op_name" : "send2joina",
-				"op_type" : "LocalMultiwayConsumer",
-				"arg_operator_id" : "mpa"
+				"opName" : "send2joina",
+				"opType" : "LocalMultiwayConsumer",
+				"argOperatorId" : "mpa"
 			},
 			{
-				"op_name" : "sc1g",
-				"op_type" : "ShuffleConsumer",
-				"arg_operator_id" : "sp2g"
+				"opName" : "sc1g",
+				"opType" : "ShuffleConsumer",
+				"argOperatorId" : "sp2g"
 			},
 			{
-				"op_name" : "joina",
-				"op_type" : "SymmetricHashJoin",
-				"arg_child1" : "send2joina",
-				"arg_child2" : "sc1g",
-				"arg_columns1" : ["0"],
-				"arg_columns2" : ["0"],
-				"arg_select1" : [],
-				"arg_select2" : ["1"]
+				"opName" : "joina",
+				"opType" : "SymmetricHashJoin",
+				"argChild1" : "send2joina",
+				"argChild2" : "sc1g",
+				"argColumns1" : ["0"],
+				"argColumns2" : ["0"],
+				"argSelect1" : [],
+				"argSelect2" : ["1"]
 			},
 			{
-				"op_name" : "sp3a",
-				"op_type" : "ShuffleProducer",
-				"arg_child" : "joina",
-				"arg_pf" : {
+				"opName" : "sp3a",
+				"opType" : "ShuffleProducer",
+				"argChild" : "joina",
+				"argPf" : {
 					"type" : "SingleFieldHash",
 					"index" : 0
 				}
@@ -161,25 +161,25 @@
 			"operators": 
 			[
 			{
-				"op_name" : "send2server",
-				"op_type" : "LocalMultiwayConsumer",
-				"arg_operator_id" : "mpa"
+				"opName" : "send2server",
+				"opType" : "LocalMultiwayConsumer",
+				"argOperatorId" : "mpa"
 			},
 			{
-				"op_name" : "count",
-				"op_type" : "Aggregate",
-				"arg_child" : "send2server",
-				"arg_agg_fields" : ["0"],
-				"arg_agg_operators" : [["AGG_OP_COUNT"]]
+				"opName" : "count",
+				"opType" : "Aggregate",
+				"argChild" : "send2server",
+				"argAggFields" : ["0"],
+				"argAggOperators" : [["AGG_OP_COUNT"]]
 			},
 			{
-				"op_name" : "cpc",
-				"op_type" : "CollectProducer",
-				"arg_child" : "count"
+				"opName" : "cpc",
+				"opType" : "CollectProducer",
+				"argChild" : "count"
 			}
 			]
 		}
 	],
-	"logical_ra": "",
-	"raw_datalog": ""
+	"logicalRa": "",
+	"rawDatalog": ""
 }
