@@ -37,31 +37,31 @@ root_operators = set(['LocalMultiwayProducer',
 # By default, all operators have no children
 children = defaultdict(list)
 # Populate the list for all operators that do have children
-children['CollectProducer'] = ['arg_child']
-children['RecoverProducer'] = ['arg_child']
-children['EOSController'] = ['arg_child']
+children['CollectProducer'] = ['argChild']
+children['RecoverProducer'] = ['argChild']
+children['EOSController'] = ['argChild']
 children['IDBInput'] = [
-    'arg_initial_input', 'arg_iteration_input', 'arg_eos_controller_input']
-children['RightHashJoin'] = ['arg_child1', 'arg_child2']
-children['RightHashCountingJoin'] = ['arg_child1', 'arg_child2']
-children['SymmetricHashJoin'] = ['arg_child1', 'arg_child2']
-children['LocalMultiwayProducer'] = ['arg_child']
-children['MultiGroupByAggregate'] = ['arg_child']
-children['SingleGroupByAggregate'] = ['arg_child']
-children['ShuffleProducer'] = ['arg_child']
-children['DbInsert'] = ['arg_child']
-children['Aggregate'] = ['arg_child']
-children['Apply'] = ['arg_child']
-children['Filter'] = ['arg_child']
-children['UnionAll'] = ['arg_children']
-children['Merge'] = ['arg_children']
-children['ColumnSelect'] = ['arg_child']
-children['SymmetricHashCountingJoin'] = ['arg_child1', 'arg_child2']
-children['BroadcastProducer'] = ['arg_child']
-children['HyperShuffleProducer'] = ['arg_child']
-children['SinkRoot'] = ['arg_child']
-children['DupElim'] = ['arg_child']
-children['Rename'] = ['arg_child']
+    'argInitialInput', 'argIterationInput', 'argEosControllerInput']
+children['RightHashJoin'] = ['argChild1', 'argChild2']
+children['RightHashCountingJoin'] = ['argChild1', 'argChild2']
+children['SymmetricHashJoin'] = ['argChild1', 'argChild2']
+children['LocalMultiwayProducer'] = ['argChild']
+children['MultiGroupByAggregate'] = ['argChild']
+children['SingleGroupByAggregate'] = ['argChild']
+children['ShuffleProducer'] = ['argChild']
+children['DbInsert'] = ['argChild']
+children['Aggregate'] = ['argChild']
+children['Apply'] = ['argChild']
+children['Filter'] = ['argChild']
+children['UnionAll'] = ['argChildren']
+children['Merge'] = ['argChildren']
+children['ColumnSelect'] = ['argChild']
+children['SymmetricHashCountingJoin'] = ['argChild1', 'argChild2']
+children['BroadcastProducer'] = ['argChild']
+children['HyperShuffleProducer'] = ['argChild']
+children['SinkRoot'] = ['argChild']
+children['DupElim'] = ['argChild']
+children['Rename'] = ['argChild']
 
 million = int(1e6)
 
@@ -84,11 +84,11 @@ def name_type_mapping(query_plan_file):
     mapping = dict()
     for fragment in fragments:
         for operator in fragment['operators']:
-            if operator['op_name'] in mapping:
+            if operator['opName'] in mapping:
                 print >> sys.stderr, "       dup names "
                 sys.exit(1)
             else:
-                mapping[operator['op_name']] = operator['op_type']
+                mapping[operator['opName']] = operator['opType']
     return mapping
 
 
@@ -103,12 +103,12 @@ def num_of_fragment(query_plan_file):
 def get_parent(fragment):
     ret = dict()
     for operator in fragment['operators']:
-        for field in children[operator['op_type']]:
+        for field in children[operator['opType']]:
             if not isinstance(operator[field], list):
-                ret[operator[field]] = operator['op_name']
+                ret[operator[field]] = operator['opName']
             else:
                 for child in operator[field]:
-                    ret[child] = operator['op_name']
+                    ret[child] = operator['opName']
     return ret
 
 
@@ -116,12 +116,12 @@ def get_parent(fragment):
 def get_children(fragment):
     ret = defaultdict(list)
     for operator in fragment['operators']:
-        for field in children[operator['op_type']]:
+        for field in children[operator['opType']]:
             if not isinstance(operator[field], list):
-                ret[operator['op_name']].append(operator[field])
+                ret[operator['opName']].append(operator[field])
             else:
                 for op in operator[field]:
-                    ret[operator['op_name']].append(op)
+                    ret[operator['opName']].append(op)
     return ret
 
 
@@ -144,7 +144,7 @@ def build_operator_state(op_name, operators, children_dict,
                     'name': 0
                 }
                 if event['message'] == 'hang':
-                    state['tp_num'] = event['tp_num']
+                    state['tpNum'] = event['tpNum']
             elif last_state == 'wait':
                 state = {
                     'begin': last_time-start_time,
@@ -302,17 +302,17 @@ def generateSingleWorkerViz(path, worker_id, query_id,
     tuples = [i[0] for i in tuples if len(i) > 0]
     tuples = [(i[1], {
         'time': long(i[3]),
-        'query_id':i[0],
+        'queryId':i[0],
         'name':i[1],
-        'fragment_id':i[2],
+        'fragmentId':i[2],
         'message':i[5],
-        'tp_num': int(i[4])
+        'tpNum': int(i[4])
     }) for i in tuples]
 
     ret = []
 
     # filter out unrelevant queries
-    tuples = [i for i in tuples if int(i[1]['query_id']) == query_id]
+    tuples = [i for i in tuples if int(i[1]['queryId']) == query_id]
     if len(tuples) == 0:
         raise Exception("cannot find information of query {} on worker {}"
                         .format(query_id, worker_id))
@@ -334,16 +334,16 @@ def generateFragmentViz(tuples, worker_id, fragment_id,
 
     # get query_fragment start time
     mst = [i for i in tuples if i[0] == 'startTimeInMS'
-           and int(i[1]['fragment_id']) == fragment_id]
+           and int(i[1]['fragmentId']) == fragment_id]
     nst = [i for i in tuples if i[0] == 'startTimeInNS'
-           and int(i[1]['fragment_id']) == fragment_id]
+           and int(i[1]['fragmentId']) == fragment_id]
 
     qf_start_in_ms = mst[0][1]['time']
     qf_start_in_ns = nst[0][1]['time']
 
     # filter out unrelevant queries
     relevant_tuples = [
-        i for i in tuples if int(i[1]['fragment_id']) == fragment_id
+        i for i in tuples if int(i[1]['fragmentId']) == fragment_id
         and i[1]['message'] != 'set time']
 
     if len(relevant_tuples) == 0:

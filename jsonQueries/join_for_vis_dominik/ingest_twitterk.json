@@ -1,12 +1,12 @@
 {
-  "relation_key" : {
-    "user_name" : "public",
-    "program_name" : "join",
-    "relation_name" : "TwitterK"
+  "relationKey" : {
+    "userName" : "public",
+    "programName" : "join",
+    "relationName" : "TwitterK"
   },
   "schema" : {
-    "column_types" : ["LONG_TYPE", "LONG_TYPE"],
-    "column_names" : ["follower", "followee"]
+    "columnTypes" : ["LONG_TYPE", "LONG_TYPE"],
+    "columnNames" : ["follower", "followee"]
   },
   "file_name" : "/Users/dominik/Developer/Workspace/myria/data_nocommit/TwitterK.csv",
   "delimiter": ","

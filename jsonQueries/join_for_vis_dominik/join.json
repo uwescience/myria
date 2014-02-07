@@ -3,64 +3,64 @@
         {
             "operators":[
                 {
-                    "op_name":"Scan(R)",
-                    "op_type":"TableScan",
-                    "relation_key":{
-                        "program_name":"join",
-                        "relation_name":"TwitterK",
-                        "user_name":"public"
+                    "opName":"Scan(R)",
+                    "opType":"TableScan",
+                    "relationKey":{
+                        "programName":"join",
+                        "relationName":"TwitterK",
+                        "userName":"public"
                     }
                 },
                 {
-                    "arg_child":"Scan(R)",
-                    "arg_operator_id":"hash(followee)",
-                    "arg_pf":{
+                    "argChild":"Scan(R)",
+                    "argOperatorId":"hash(followee)",
+                    "argPf":{
                         "index":1,
                         "type":"SingleFieldHash"
                     },
-                    "op_name":"Shuffle(R)",
-                    "op_type":"ShuffleProducer"
+                    "opName":"Shuffle(R)",
+                    "opType":"ShuffleProducer"
                 }
             ]
         },
         {
             "operators":[
                 {
-                    "op_name":"Scan(S)",
-                    "op_type":"TableScan",
-                    "relation_key":{
-                        "program_name":"join",
-                        "relation_name":"TwitterK",
-                        "user_name":"public"
+                    "opName":"Scan(S)",
+                    "opType":"TableScan",
+                    "relationKey":{
+                        "programName":"join",
+                        "relationName":"TwitterK",
+                        "userName":"public"
                     }
                 },
                 {
-                    "arg_child":"Scan(S)",
-                    "arg_operator_id":"hash(follower)",
-                    "arg_pf":{
+                    "argChild":"Scan(S)",
+                    "argOperatorId":"hash(follower)",
+                    "argPf":{
                         "index":0,
                         "type":"SingleFieldHash"
                     },
-                    "op_name":"Shuffle(S)",
-                    "op_type":"ShuffleProducer"
+                    "opName":"Shuffle(S)",
+                    "opType":"ShuffleProducer"
                 }
             ]
         },
         {
             "operators":[
                 {
-                    "arg_operator_id":"Shuffle(R)",
-                    "op_name":"GatherR",
-                    "op_type":"ShuffleConsumer"
+                    "argOperatorId":"Shuffle(R)",
+                    "opName":"GatherR",
+                    "opType":"ShuffleConsumer"
                 },
                 {
-                    "arg_operator_id":"Shuffle(S)",
-                    "op_name":"GatherS",
-                    "op_type":"ShuffleConsumer"
+                    "argOperatorId":"Shuffle(S)",
+                    "opName":"GatherS",
+                    "opType":"ShuffleConsumer"
                 },
                 {
-                    "arg_child1":"GatherR",
-                    "arg_child2":"GatherS",
+                    "argChild1":"GatherR",
+                    "argChild2":"GatherS",
                     "arg_columns1":[
                         1
                     ],
@@ -73,32 +73,32 @@
                     "arg_select2":[
                         1
                     ],
-                    "op_name":"Join",
-                    "op_type":"SymmetricHashJoin"
+                    "opName":"Join",
+                    "opType":"SymmetricHashJoin"
                 },
                 {
-                    "arg_child":"Join",
-                    "op_name":"SendResult",
-                    "op_type":"CollectProducer"
+                    "argChild":"Join",
+                    "opName":"SendResult",
+                    "opType":"CollectProducer"
                 }
             ]
         },
         {
             "operators":[
                 {
-                    "arg_operator_id":"SendResult",
-                    "op_name":"CollectResult",
-                    "op_type":"CollectConsumer"
+                    "argOperatorId":"SendResult",
+                    "opName":"CollectResult",
+                    "opType":"CollectConsumer"
                 },
                 {
-                    "arg_child":"CollectResult",
-                    "arg_overwrite_table":true,
-                    "op_name":"Insert",
-                    "op_type":"DbInsert",
-                    "relation_key":{
-                        "program_name":"join",
-                        "relation_name":"twitterK_join",
-                        "user_name":"public"
+                    "argChild":"CollectResult",
+                    "argOverwriteTable":true,
+                    "opName":"Insert",
+                    "opType":"DbInsert",
+                    "relationKey":{
+                        "programName":"join",
+                        "relationName":"twitterK_join",
+                        "userName":"public"
                     }
                 }
             ],
@@ -107,7 +107,7 @@
             ]
         }
     ],
-    "logical_ra":"join",
-    "profiling_mode":true,
-    "raw_datalog":"join"
+    "logicalRa":"join",
+    "profilingMode":true,
+    "rawDatalog":"join"
 }
