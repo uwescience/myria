@@ -55,8 +55,7 @@ public class SQLiteAccessMethodTest {
 
     TupleBatch tb = null;
     while ((tb = tbb.popAny()) != null) {
-      final String insertTemplate = SQLiteUtils.insertStatementFromSchema(schema, testtableKey);
-      SQLiteAccessMethod.tupleBatchInsert(SQLiteInfo.of(dbFile.getAbsolutePath()), insertTemplate, tb);
+      SQLiteAccessMethod.tupleBatchInsert(SQLiteInfo.of(dbFile.getAbsolutePath()), testtableKey, schema, tb);
     }
 
     final Thread[] threads = new Thread[numThreads];
@@ -122,11 +121,9 @@ public class SQLiteAccessMethodTest {
     SQLiteUtils.createTable(dbFile.getAbsolutePath(), testtable1Key, "id long, name varchar(20)", true, true);
 
     TupleBatch tb = null;
-    final String insertTemplate0 = SQLiteUtils.insertStatementFromSchema(schema, testtable0Key);
-    final String insertTemplate1 = SQLiteUtils.insertStatementFromSchema(schema, testtable1Key);
     while ((tb = tbb.popAny()) != null) {
-      SQLiteAccessMethod.tupleBatchInsert(SQLiteInfo.of(dbFile.getAbsolutePath()), insertTemplate0, tb);
-      SQLiteAccessMethod.tupleBatchInsert(SQLiteInfo.of(dbFile.getAbsolutePath()), insertTemplate1, tb);
+      SQLiteAccessMethod.tupleBatchInsert(SQLiteInfo.of(dbFile.getAbsolutePath()), testtable0Key, schema, tb);
+      SQLiteAccessMethod.tupleBatchInsert(SQLiteInfo.of(dbFile.getAbsolutePath()), testtable1Key, schema, tb);
     }
 
     final Thread[] threads = new Thread[numThreads];
@@ -183,10 +180,9 @@ public class SQLiteAccessMethodTest {
     final RelationKey inputKey = RelationKey.of("test", "testWrite", "input");
     SQLiteUtils.createTable(dbFile.getAbsolutePath(), inputKey, "follower long, followee long", true, true);
 
-    final String insertString = SQLiteUtils.insertStatementFromSchema(tableSchema, inputKey);
     TupleBatch tb = null;
     while ((tb = tbl1.popAny()) != null) {
-      SQLiteAccessMethod.tupleBatchInsert(SQLiteInfo.of(dbFile.getAbsolutePath()), insertString, tb);
+      SQLiteAccessMethod.tupleBatchInsert(SQLiteInfo.of(dbFile.getAbsolutePath()), inputKey, tableSchema, tb);
     }
 
     final RelationKey outputKey = RelationKey.of("test", "testWrite", "output");

@@ -67,11 +67,14 @@ public abstract class AccessMethod {
   /**
    * Insert the tuples in this TupleBatch into the database.
    * 
-   * @param insertString the insert statement.
-   * @param tupleBatch the tupleBatch to be inserted
+   * @param relationKey the table to insert into.
+   * @param schema the schema of the relation.
+   * @param tupleBatch the tupleBatch to be inserted.
+   * 
    * @throws DbException if there is an error inserting the tuples.
    */
-  public abstract void tupleBatchInsert(final String insertString, final TupleBatch tupleBatch) throws DbException;
+  public abstract void tupleBatchInsert(final RelationKey relationKey, final Schema schema, final TupleBatch tupleBatch)
+      throws DbException;
 
   /**
    * Runs a query and expose the results as an Iterator<TupleBatch>.
@@ -114,7 +117,7 @@ public abstract class AccessMethod {
    * @param relationKey the relation name
    * @return the insert statement string
    */
-  public abstract String insertStatementFromSchema(Schema schema, RelationKey relationKey);
+  protected abstract String insertStatementFromSchema(Schema schema, RelationKey relationKey);
 
   /**
    * Generates the create table statement string for a relation in the database.

@@ -1,5 +1,10 @@
 package edu.washington.escience.myria.accessmethod;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -12,16 +17,20 @@ import java.util.List;
 import java.util.Objects;
 
 import org.apache.commons.lang3.StringUtils;
+import org.postgresql.PGConnection;
+import org.postgresql.copy.CopyManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 
+import edu.washington.escience.myria.CsvTupleWriter;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
+import edu.washington.escience.myria.TupleWriter;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
@@ -87,19 +96,40 @@ public final class JdbcAccessMethod extends AccessMethod {
   }
 
   @Override
-  public void tupleBatchInsert(final String insertString, final TupleBatch tupleBatch) throws DbException {
+  public void tupleBatchInsert(final RelationKey relationKey, final Schema schema, final TupleBatch tupleBatch)
+      throws DbException {
     Objects.requireNonNull(jdbcConnection);
-    try {
-      /* Set up and execute the query */
-      final PreparedStatement statement = jdbcConnection.prepareStatement(insertString);
-      tupleBatch.getIntoJdbc(statement);
-      // TODO make it also independent. should be getIntoJdbc(statement,
-      // tupleBatch)
-      statement.executeBatch();
-      statement.close();
-    } catch (final SQLException e) {
-      LOGGER.error(e.getMessage(), e);
-      throw new DbException(e);
+    if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
+      // Use the postgres COPY command which is much faster
+      try {
+        CopyManager cpManager = ((PGConnection) jdbcConnection).getCopyAPI();
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        TupleWriter tw = new CsvTupleWriter(',', baos);
+        tw.writeTuples(tupleBatch);
+        tw.done();
+
+        Reader reader = new InputStreamReader(new ByteArrayInputStream(baos.toByteArray()));
+        cpManager.copyIn("COPY " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)
+            + " FROM STDIN WITH CSV", reader);
+      } catch (final SQLException | IOException e) {
+        LOGGER.error(e.getMessage(), e);
+        throw new DbException(e);
+      }
+    } else {
+      try {
+        /* Set up and execute the query */
+        final PreparedStatement statement =
+            jdbcConnection.prepareStatement(insertStatementFromSchema(schema, relationKey));
+        tupleBatch.getIntoJdbc(statement);
+        // TODO make it also independent. should be getIntoJdbc(statement,
+        // tupleBatch)
+        statement.executeBatch();
+        statement.close();
+      } catch (final SQLException e) {
+        LOGGER.error(e.getMessage(), e);
+        throw new DbException(e);
+      }
     }
   }
 
@@ -170,14 +200,15 @@ public final class JdbcAccessMethod extends AccessMethod {
    * Insert the Tuples in this TupleBatch into the database.
    * 
    * @param jdbcInfo information about the connection parameters.
-   * @param insertString the insert statement. TODO No sanity checks at all right now.
+   * @param relationKey the table to insert into.
+   * @param schema the schema of the relation.
    * @param tupleBatch the tupleBatch to be inserted.
    * @throws DbException if there is an error inserting these tuples.
    */
-  public static void tupleBatchInsert(final JdbcInfo jdbcInfo, final String insertString, final TupleBatch tupleBatch)
-      throws DbException {
+  public static void tupleBatchInsert(final JdbcInfo jdbcInfo, final RelationKey relationKey, final Schema schema,
+      final TupleBatch tupleBatch) throws DbException {
     JdbcAccessMethod jdbcAccessMethod = new JdbcAccessMethod(jdbcInfo, false);
-    jdbcAccessMethod.tupleBatchInsert(insertString, tupleBatch);
+    jdbcAccessMethod.tupleBatchInsert(relationKey, schema, tupleBatch);
     jdbcAccessMethod.close();
   }
 

@@ -39,8 +39,6 @@ public class DbInsert extends RootOperator {
   private final RelationKey relationKey;
   /** Whether to overwrite an existing table or not. */
   private final boolean overwriteTable;
-  /** The statement used to insert tuples into the database. */
-  private String insertString;
   /** The name of the table the tuples should be inserted into. */
   private RelationKey tempRelationKey;
   /** The indexes to be created on the table. Each entry is a list of columns. */
@@ -145,8 +143,8 @@ public class DbInsert extends RootOperator {
   @Override
   protected void consumeTuples(final TupleBatch tupleBatch) throws DbException {
     Objects.requireNonNull(accessMethod);
-    Objects.requireNonNull(insertString);
-    accessMethod.tupleBatchInsert(insertString, tupleBatch);
+    Objects.requireNonNull(tempRelationKey);
+    accessMethod.tupleBatchInsert(tempRelationKey, getSchema(), tupleBatch);
   }
 
   @Override
@@ -187,8 +185,6 @@ public class DbInsert extends RootOperator {
       tempRelationKey = relationKey;
     }
 
-    /* Set up the insert statement. */
-    insertString = accessMethod.insertStatementFromSchema(getSchema(), tempRelationKey);
     /* Create the table */
     accessMethod.createTableIfNotExists(tempRelationKey, getSchema());
     /* Create indexes. */

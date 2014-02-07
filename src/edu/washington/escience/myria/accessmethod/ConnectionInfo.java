@@ -110,7 +110,7 @@ public abstract class ConnectionInfo {
         break;
 
       case MyriaConstants.STORAGE_SYSTEM_POSTGRESQL:
-        // TODO: Allow using the parameters to craete the connection info.
+        // TODO: Allow using the parameters to create the connection info.
         // Now it is hardcoded to use a specific connection info, which allows only one
         // myria instance per machine in the cluster
         host = hostName;
