@@ -119,7 +119,8 @@ public final class SQLiteAccessMethod extends AccessMethod {
   }
 
   @Override
-  public void tupleBatchInsert(final String insertString, final TupleBatch tupleBatch) throws DbException {
+  public void tupleBatchInsert(final RelationKey relationKey, final Schema schema, final TupleBatch tupleBatch)
+      throws DbException {
     Objects.requireNonNull(sqliteQueue);
 
     try {
@@ -131,7 +132,7 @@ public final class SQLiteAccessMethod extends AccessMethod {
             /* BEGIN TRANSACTION */
             sqliteConnection.exec("BEGIN TRANSACTION");
             /* Set up and execute the query */
-            statement = sqliteConnection.prepare(insertString);
+            statement = sqliteConnection.prepare(insertStatementFromSchema(schema, relationKey));
             tupleBatch.getIntoSQLite(statement);
             /* COMMIT TRANSACTION */
             sqliteConnection.exec("COMMIT TRANSACTION");
@@ -244,17 +245,18 @@ public final class SQLiteAccessMethod extends AccessMethod {
    * Inserts a TupleBatch into the SQLite database.
    * 
    * @param sqliteInfo SQLite connection information
-   * @param insertString parameterized string used to insert tuples
-   * @param tupleBatch TupleBatch that contains the data to be inserted
+   * @param relationKey the table to insert into.
+   * @param schema the schema of the relation.
+   * @param tupleBatch TupleBatch that contains the data to be inserted.
    * @throws DbException if there is an error in the database.
    */
-  public static synchronized void tupleBatchInsert(final SQLiteInfo sqliteInfo, final String insertString,
-      final TupleBatch tupleBatch) throws DbException {
+  public static synchronized void tupleBatchInsert(final SQLiteInfo sqliteInfo, final RelationKey relationKey,
+      final Schema schema, final TupleBatch tupleBatch) throws DbException {
 
     SQLiteAccessMethod sqliteAccessMethod = null;
     try {
       sqliteAccessMethod = new SQLiteAccessMethod(sqliteInfo, false);
-      sqliteAccessMethod.tupleBatchInsert(insertString, tupleBatch);
+      sqliteAccessMethod.tupleBatchInsert(relationKey, schema, tupleBatch);
     } catch (DbException e) {
       throw e;
     } finally {

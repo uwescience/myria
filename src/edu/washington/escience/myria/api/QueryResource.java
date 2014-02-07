@@ -184,8 +184,8 @@ public final class QueryResource {
    * @throws CatalogException if there is an error in the catalog.
    */
   @GET
-  @Path("query-{query_id:\\d+}")
-  public Response getQueryStatus(@PathParam("query_id") final long queryId, @Context final UriInfo uriInfo)
+  @Path("query-{queryId:\\d+}")
+  public Response getQueryStatus(@PathParam("queryId") final long queryId, @Context final UriInfo uriInfo)
       throws CatalogException {
     final QueryStatusEncoding queryStatus = server.getQueryStatus(queryId);
     final URI uri = uriInfo.getAbsolutePath();
@@ -226,8 +226,8 @@ public final class QueryResource {
    * @throws CatalogException if there is an error in the catalog.
    */
   @DELETE
-  @Path("query-{query_id:\\d+}")
-  public Response cancelQuery(@PathParam("query_id") final long queryId, @Context final UriInfo uriInfo)
+  @Path("query-{queryId:\\d+}")
+  public Response cancelQuery(@PathParam("queryId") final long queryId, @Context final UriInfo uriInfo)
       throws CatalogException {
     try {
       server.killQuery(queryId);
@@ -277,12 +277,12 @@ public final class QueryResource {
    * @throws IOException if there is anything happens in serializing and deserializing JSON.
    */
   @GET
-  @Path("query-{query_id:\\d+}/fragment-{fragment_id:-?\\d+}")
-  public Response getProfile(@PathParam("query_id") final long queryId,
-      @PathParam("fragment_id") final long fragmentId, @DefaultValue("0") @QueryParam("worker_id") final long workerId,
-      @Context final UriInfo uriInfo) throws CatalogException, IOException {
+  @Path("query-{queryId:\\d+}/fragment-{fragmentId:-?\\d+}")
+  public Response getProfile(@PathParam("queryId") final long queryId, @PathParam("fragmentId") final long fragmentId,
+      @DefaultValue("0") @QueryParam("workerId") final long workerId, @Context final UriInfo uriInfo)
+      throws CatalogException, IOException {
 
-    /* validate the query_id */
+    /* validate the query id */
     final QueryStatusEncoding queryStatus = server.getQueryStatus(queryId);
     final URI uri = uriInfo.getAbsolutePath();
     if (queryStatus == null) {

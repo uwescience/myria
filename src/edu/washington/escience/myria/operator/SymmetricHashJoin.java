@@ -2,14 +2,13 @@ package edu.washington.escience.myria.operator;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.ReadableColumn;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.column.builder.ColumnBuilder;
-import edu.washington.escience.myria.column.mutable.MutableColumn;
 import edu.washington.escience.myria.parallel.QueryExecutionMode;
 import edu.washington.escience.myria.parallel.TaskResourceManager;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
@@ -354,11 +353,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
   protected void addToAns(final TupleBatch cntTB, final int row, final TupleBuffer hashTable, final int index,
       final boolean fromLeft) {
     List<Column<?>> tbColumns = cntTB.getDataColumns();
-    MutableColumn<?>[] hashTblColumns = hashTable.getColumns(index);
-    ColumnBuilder<?>[] hashTblColumnBuilders = null;
-    if (hashTblColumns == null) {
-      hashTblColumnBuilders = hashTable.getColumnBuilders(index);
-    }
+    ReadableColumn[] hashTblColumns = hashTable.getColumns(index);
     int tupleIdx = hashTable.getTupleIndexInContainingTB(index);
     if (fromLeft) {
       for (int i = 0; i < leftAnswerColumns.length; ++i) {
@@ -366,19 +361,11 @@ public final class SymmetricHashJoin extends BinaryOperator {
       }
 
       for (int i = 0; i < rightAnswerColumns.length; ++i) {
-        if (hashTblColumns != null) {
-          ans.put(i + leftAnswerColumns.length, hashTblColumns[rightAnswerColumns[i]], tupleIdx);
-        } else {
-          ans.put(i + leftAnswerColumns.length, hashTblColumnBuilders[rightAnswerColumns[i]], tupleIdx);
-        }
+        ans.put(i + leftAnswerColumns.length, hashTblColumns[rightAnswerColumns[i]], tupleIdx);
       }
     } else {
       for (int i = 0; i < leftAnswerColumns.length; ++i) {
-        if (hashTblColumns != null) {
-          ans.put(i, hashTblColumns[leftAnswerColumns[i]], tupleIdx);
-        } else {
-          ans.put(i, hashTblColumnBuilders[leftAnswerColumns[i]], tupleIdx);
-        }
+        ans.put(i, hashTblColumns[leftAnswerColumns[i]], tupleIdx);
       }
 
       for (int i = 0; i < rightAnswerColumns.length; ++i) {

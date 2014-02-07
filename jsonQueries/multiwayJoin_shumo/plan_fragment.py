@@ -7,28 +7,28 @@ def pretty_json(obj):
 
 def twitter_small_relation_key():
     relation_key = {
-        "user_name" : "chushumo",
-        "program_name" : "multiway_join",
-        "relation_name" : "twitter_small"
+        "userName" : "chushumo",
+        "programName" : "multiway_join",
+        "relationName" : "twitter_small"
     }
     return relation_key
 
 
 def scan_R_then_shuffle():
     scan = {
-        "op_type" : "TableScan",
-        "op_name" : "Scan(R)",
-        "relation_key" : twitter_small_relation_key()
+        "opType" : "TableScan",
+        "opName" : "Scan(R)",
+        "relationKey" : twitter_small_relation_key()
     }
 
     hyper_shuffle = {
-        "op_type" : "HyperShuffleProducer",
-        "op_name" : "HyperShuffle(R)",
-        "arg_child" : "Scan(R)",
-        "arg_operator_id" : "hash(follower)",
-        "field_indexes" : [0],
-        "hyper_cube_dimensions" : [2,2],
-        "cell_partition": [ [0,1],[2,3] ]           
+        "opType" : "HyperShuffleProducer",
+        "opName" : "HyperShuffle(R)",
+        "argChild" : "Scan(R)",
+        "argOperatorId" : "hash(follower)",
+        "fieldIndexes" : [0],
+        "hyperCubeDimensions" : [2,2],
+        "cellPartition": [ [0,1],[2,3] ]           
     }
 
     fragment = {
@@ -39,19 +39,19 @@ def scan_R_then_shuffle():
 
 def scan_S_then_shuffle():
     scan = {
-        "op_type" : "TableScan",
-        "op_name" : "Scan(S)",
-        "relation_key" : twitter_small_relation_key()
+        "opType" : "TableScan",
+        "opName" : "Scan(S)",
+        "relationKey" : twitter_small_relation_key()
     }
 
     hyper_shuffle = {
-        "op_type" : "HyperShuffleProducer",
-        "op_name" : "HyperShuffle(S)",
-        "arg_child" : "Scan(S)",
-        "arg_operator_id" : "hash(followee)",
-        "field_indexes" : [1],
-        "hyper_cube_dimensions" : [2,2],
-        "cell_partition": [ [0,2],[1,3] ]           
+        "opType" : "HyperShuffleProducer",
+        "opName" : "HyperShuffle(S)",
+        "argChild" : "Scan(S)",
+        "argOperatorId" : "hash(followee)",
+        "fieldIndexes" : [1],
+        "hyperCubeDimensions" : [2,2],
+        "cellPartition": [ [0,2],[1,3] ]           
     }
     fragment = {
         "operators" : [scan, hyper_shuffle]
@@ -60,38 +60,38 @@ def scan_S_then_shuffle():
 
 def receive_then_join():
     gatherR = {
-        "op_type" : "HyperShuffleConsumer",
-        "op_name" : "GatherR",
-        "arg_operator_id" : "hash(follower)",
+        "opType" : "HyperShuffleConsumer",
+        "opName" : "GatherR",
+        "argOperatorId" : "hash(follower)",
         "arg_schema" : {
-            "column_types" : ["LONG_TYPE", "LONG_TYPE"],
-            "column_names" : ["follower", "followee"]
+            "columnTypes" : ["LONG_TYPE", "LONG_TYPE"],
+            "columnNames" : ["follower", "followee"]
         }
     }
     gatherS = {
-        "op_type" : "HyperShuffleConsumer",
-        "op_name" : "GatherS",
-        "arg_operator_id" : "hash(followee)",
+        "opType" : "HyperShuffleConsumer",
+        "opName" : "GatherS",
+        "argOperatorId" : "hash(followee)",
         "arg_schema" : {
-            "column_types" : ["LONG_TYPE", "LONG_TYPE"],
-            "column_names" : ["follower", "followee"]
+            "columnTypes" : ["LONG_TYPE", "LONG_TYPE"],
+            "columnNames" : ["follower", "followee"]
         }
     }
     join = {
-        "op_type" : "SymmetricHashJoin",
-        "op_name" : "Join",
-        "arg_child1" : "GatherR",
-        "arg_child2" : "GatherS",
+        "opType" : "SymmetricHashJoin",
+        "opName" : "Join",
+        "argChild1" : "GatherR",
+        "argChild2" : "GatherS",
         "arg_columns1" : [1],
         "arg_columns2" : [0],
         "arg_select1" : [0],
         "arg_select2" : [1]
     }    
     collect = {
-        "arg_child": "Join",
-        "arg_operator_id": "collect",
-        "op_name": "SendResult",
-        "op_type": "CollectProducer"
+        "argChild": "Join",
+        "argOperatorId": "collect",
+        "opName": "SendResult",
+        "opType": "CollectProducer"
     }
     fragment = {
         "operators": [gatherR, gatherS, join, collect]
@@ -100,29 +100,29 @@ def receive_then_join():
 
 def collect_result():
     gather = {
-        "arg_operator_id": "collect",
+        "argOperatorId": "collect",
         "arg_schema": {
-            "column_names": [
+            "columnNames": [
                 "follower",
                 "followee"
             ],
-            "column_types": [
+            "columnTypes": [
                 "LONG_TYPE",
                 "LONG_TYPE"
             ]
         },
-        "op_name": "CollectResult",
-        "op_type": "CollectConsumer"                       
+        "opName": "CollectResult",
+        "opType": "CollectConsumer"                       
     }
     insert = {
-        "arg_child": "CollectResult",
-        "arg_overwrite_table": True,
-        "op_name": "Insert",
-        "op_type": "DbInsert",
-        "relation_key": {
-            "program_name": "multiway_join",
-            "relation_name": "twitter_small_join_twitter_small",
-            "user_name": "chushumo"
+        "argChild": "CollectResult",
+        "argOverwriteTable": True,
+        "opName": "Insert",
+        "opType": "DbInsert",
+        "relationKey": {
+            "programName": "multiway_join",
+            "relationName": "twitter_small_join_twitter_small",
+            "userName": "chushumo"
         }
     }
     fragment = {
@@ -135,23 +135,23 @@ def two_dimension_multiway_join():
     fragments = [scan_R_then_shuffle(), scan_S_then_shuffle(), receive_then_join(), collect_result()]
     whole_plan = {
         "fragments":fragments,
-        "logical_ra" : "two dimension multiway join",
-        "raw_datalog" : "two dimension multiway join"
+        "logicalRa" : "two dimension multiway join",
+        "rawDatalog" : "two dimension multiway join"
     }
     return whole_plan
 
 def scan_R_then_partition():
     scan = {
-        "op_type" : "TableScan",
-        "op_name" : "Scan(R)",
-        "relation_key" : twitter_small_relation_key()
+        "opType" : "TableScan",
+        "opName" : "Scan(R)",
+        "relationKey" : twitter_small_relation_key()
     }
     shuffle = {
-        "op_type" : "ShuffleProducer",
-        "op_name" : "Shuffle(R)",
-        "arg_child" : "Scan(R)",
-        "arg_operator_id" : "hash(followee)",
-        "arg_pf" : 
+        "opType" : "ShuffleProducer",
+        "opName" : "Shuffle(R)",
+        "argChild" : "Scan(R)",
+        "argOperatorId" : "hash(followee)",
+        "argPf" : 
             {
                 "type" : "SingleFieldHash",
                 "index" : 1
@@ -165,17 +165,17 @@ def scan_R_then_partition():
 
 def scan_S_then_partition():
     scan = {
-        "op_type" : "TableScan",
-        "op_name" : "Scan(S)",
-        "relation_key" : twitter_small_relation_key()
+        "opType" : "TableScan",
+        "opName" : "Scan(S)",
+        "relationKey" : twitter_small_relation_key()
     }
 
     shuffle = {
-        "op_type" : "ShuffleProducer",
-        "op_name" : "Shuffle(S)",
-        "arg_child" : "Scan(S)",
-        "arg_operator_id" : "hash(follower)",
-        "arg_pf" : 
+        "opType" : "ShuffleProducer",
+        "opName" : "Shuffle(S)",
+        "argChild" : "Scan(S)",
+        "argOperatorId" : "hash(follower)",
+        "argPf" : 
             {
                 "type" : "SingleFieldHash",
                 "index" : 0
@@ -188,38 +188,38 @@ def scan_S_then_partition():
 
 def receive_partition_then_join():
     gatherR = {
-        "op_type" : "ShuffleConsumer",
-        "op_name" : "GatherR",
-        "arg_operator_id" : "hash(followee)",
+        "opType" : "ShuffleConsumer",
+        "opName" : "GatherR",
+        "argOperatorId" : "hash(followee)",
         "arg_schema" : {
-            "column_types" : ["LONG_TYPE", "LONG_TYPE"],
-            "column_names" : ["follower", "followee"]
+            "columnTypes" : ["LONG_TYPE", "LONG_TYPE"],
+            "columnNames" : ["follower", "followee"]
         }
     }
     gatherS = {
-        "op_type" : "ShuffleConsumer",
-        "op_name" : "GatherS",
-        "arg_operator_id" : "hash(follower)",
+        "opType" : "ShuffleConsumer",
+        "opName" : "GatherS",
+        "argOperatorId" : "hash(follower)",
         "arg_schema" : {
-            "column_types" : ["LONG_TYPE", "LONG_TYPE"],
-            "column_names" : ["follower", "followee"]
+            "columnTypes" : ["LONG_TYPE", "LONG_TYPE"],
+            "columnNames" : ["follower", "followee"]
         }
     }
     join = {
-        "op_type" : "SymmetricHashJoin",
-        "op_name" : "Join",
-        "arg_child1" : "GatherR",
-        "arg_child2" : "GatherS",
+        "opType" : "SymmetricHashJoin",
+        "opName" : "Join",
+        "argChild1" : "GatherR",
+        "argChild2" : "GatherS",
         "arg_columns1" : [1],
         "arg_columns2" : [0],
         "arg_select1" : [0],
         "arg_select2" : [1]
     }    
     collect = {
-        "arg_child": "Join",
-        "arg_operator_id": "collect",
-        "op_name": "SendResult",
-        "op_type": "CollectProducer"
+        "argChild": "Join",
+        "argOperatorId": "collect",
+        "opName": "SendResult",
+        "opType": "CollectProducer"
     }
     fragment = {
         "operators": [gatherR, gatherS, join, collect]
@@ -228,29 +228,29 @@ def receive_partition_then_join():
 
 def collect_partition_join_result():
     gather = {
-        "arg_operator_id": "collect",
+        "argOperatorId": "collect",
         "arg_schema": {
-            "column_names": [
+            "columnNames": [
                 "follower",
                 "followee"
             ],
-            "column_types": [
+            "columnTypes": [
                 "LONG_TYPE",
                 "LONG_TYPE"
             ]
         },
-        "op_name": "CollectResult",
-        "op_type": "CollectConsumer"                       
+        "opName": "CollectResult",
+        "opType": "CollectConsumer"                       
     }
     insert = {
-        "arg_child": "CollectResult",
-        "arg_overwrite_table": True,
-        "op_name": "Insert",
-        "op_type": "DbInsert",
-        "relation_key": {
-            "program_name": "multiway_join",
-            "relation_name": "twitter_small_partition_join_twitter_small",
-            "user_name": "chushumo"
+        "argChild": "CollectResult",
+        "argOverwriteTable": True,
+        "opName": "Insert",
+        "opType": "DbInsert",
+        "relationKey": {
+            "programName": "multiway_join",
+            "relationName": "twitter_small_partition_join_twitter_small",
+            "userName": "chushumo"
         }
     }
     fragment = {
@@ -264,8 +264,8 @@ def partition_join():
     fragments = [scan_R_then_partition(), scan_S_then_partition(), receive_partition_then_join(), collect_partition_join_result()]
     whole_plan = {
         "fragments":fragments,
-        "logical_ra" : "partition join",
-        "raw_datalog" : "parittion join"
+        "logicalRa" : "partition join",
+        "rawDatalog" : "parittion join"
     }
     return whole_plan
 

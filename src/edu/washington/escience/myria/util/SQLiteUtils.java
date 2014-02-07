@@ -2,7 +2,6 @@ package edu.washington.escience.myria.util;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
@@ -22,6 +21,7 @@ import edu.washington.escience.myria.accessmethod.SQLiteInfo;
 
 /**
  * Util methods for SQLite.
+ * 
  * */
 public final class SQLiteUtils {
   /** The logger for this class. */
@@ -82,16 +82,7 @@ public final class SQLiteUtils {
    * */
   public static void insertIntoSQLite(final Schema inputSchema, final RelationKey relationKey,
       final SQLiteInfo sqliteInfo, final TupleBatch data) throws DbException {
-
-    final List<String> fieldNames = inputSchema.getColumnNames();
-    final String[] placeHolders = new String[inputSchema.numColumns()];
-    for (int i = 0; i < inputSchema.numColumns(); ++i) {
-      placeHolders[i] = "?";
-    }
-
-    SQLiteAccessMethod.tupleBatchInsert(sqliteInfo, "insert into "
-        + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE) + " ([" + StringUtils.join(fieldNames, "],[")
-        + "] ) values ( " + StringUtils.join(placeHolders, ',') + " )", data);
+    SQLiteAccessMethod.tupleBatchInsert(sqliteInfo, relationKey, inputSchema, data);
   }
 
   /**

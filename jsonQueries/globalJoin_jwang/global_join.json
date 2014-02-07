@@ -3,9 +3,9 @@
         {
             "operators": [
                 {
-                    "arg_operator_id": "CP1",
-                    "op_name": "CC1",
-                    "op_type": "CollectConsumer"
+                    "argOperatorId": "CP1",
+                    "opName": "CC1",
+                    "opType": "CollectConsumer"
                 }
             ],
             "workers": [
@@ -15,85 +15,85 @@
         {
             "operators": [
                 {
-                    "op_name": "SCAN1",
-                    "op_type": "TableScan",
-                    "relation_key": {
-                        "program_name": "global_join",
-                        "relation_name": "smallTable",
-                        "user_name": "jwang"
+                    "opName": "SCAN1",
+                    "opType": "TableScan",
+                    "relationKey": {
+                        "programName": "global_join",
+                        "relationName": "smallTable",
+                        "userName": "jwang"
                     }
                 },
                 {
-                    "arg_child": "SCAN1",
-                    "arg_pf": {
+                    "argChild": "SCAN1",
+                    "argPf": {
                         "index": "1",
                         "type": "SingleFieldHash"
                     },
-                    "op_name": "SP1",
-                    "op_type": "ShuffleProducer"
+                    "opName": "SP1",
+                    "opType": "ShuffleProducer"
                 }
             ]
         },
         {
             "operators": [
                 {
-                    "op_name": "SCAN2",
-                    "op_type": "TableScan",
-                    "relation_key": {
-                        "program_name": "global_join",
-                        "relation_name": "smallTable",
-                        "user_name": "jwang"
+                    "opName": "SCAN2",
+                    "opType": "TableScan",
+                    "relationKey": {
+                        "programName": "global_join",
+                        "relationName": "smallTable",
+                        "userName": "jwang"
                     }
                 },
                 {
-                    "arg_child": "SCAN2",
-                    "arg_pf": {
+                    "argChild": "SCAN2",
+                    "argPf": {
                         "index": "0",
                         "type": "SingleFieldHash"
                     },
-                    "op_name": "SP2",
-                    "op_type": "ShuffleProducer"
+                    "opName": "SP2",
+                    "opType": "ShuffleProducer"
                 }
             ]
         },
         {
             "operators": [
                 {
-                    "arg_operator_id": "SP1",
-                    "op_name": "SC1",
-                    "op_type": "ShuffleConsumer"
+                    "argOperatorId": "SP1",
+                    "opName": "SC1",
+                    "opType": "ShuffleConsumer"
                 },
                 {
-                    "arg_operator_id": "SP2",
-                    "op_name": "SC2",
-                    "op_type": "ShuffleConsumer"
+                    "argOperatorId": "SP2",
+                    "opName": "SC2",
+                    "opType": "ShuffleConsumer"
                 },
                 {
-                    "arg_child1": "SC1",
-                    "arg_child2": "SC2",
-                    "arg_columns1": [
+                    "argChild1": "SC1",
+                    "argChild2": "SC2",
+                    "argColumns1": [
                         "1"
                     ],
-                    "arg_columns2": [
+                    "argColumns2": [
                         "0"
                     ],
-                    "arg_select1": [
+                    "argSelect1": [
                         "0"
                     ],
-                    "arg_select2": [
+                    "argSelect2": [
                         "1"
                     ],
-                    "op_name": "JOIN",
-                    "op_type": "SymmetricHashJoin"
+                    "opName": "JOIN",
+                    "opType": "SymmetricHashJoin"
                 },
                 {
-                    "arg_child": "JOIN",
-                    "op_name": "CP1",
-                    "op_type": "CollectProducer"
+                    "argChild": "JOIN",
+                    "opName": "CP1",
+                    "opType": "CollectProducer"
                 }
             ]
         }
     ],
-    "logical_ra": "INSERT(JOIN(SCAN1,SCAN2))",
-    "raw_datalog": "smallTableJoin(x,z) :- smallTable(x,y),smallTable(y,z)."
+    "logicalRa": "INSERT(JOIN(SCAN1,SCAN2))",
+    "rawDatalog": "smallTableJoin(x,z) :- smallTable(x,y),smallTable(y,z)."
 }

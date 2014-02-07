@@ -1,15 +1,15 @@
 {
-  "relation_key" : {
-    "user_name" : "chushumo",
-    "program_name" : "multiway_join",
-    "relation_name" : "twitter_small"
+  "relationKey" : {
+    "userName" : "chushumo",
+    "programName" : "multiway_join",
+    "relationName" : "twitter_small"
   },
   "schema" : {
-    "column_types" : ["LONG_TYPE", "LONG_TYPE"],
-    "column_names" : ["follower", "followee"]
+    "columnTypes" : ["LONG_TYPE", "LONG_TYPE"],
+    "columnNames" : ["follower", "followee"]
   },
   "source" : {
-    "data_type" : "File",
+    "dataType" : "File",
     "filename" : "/Users/chushumo/Dropbox/My_Work/Multiway_Join/data/twitter_rv.615784"
   }
 }

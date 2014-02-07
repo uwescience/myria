@@ -227,7 +227,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
    * @param child the child operator
    * @param groupAggs the aggregator for each grouping
    * @param gfields the group fields
-   * @param afields the aggregae fields
+   * @param afields the aggregate fields
    * @param agg the aggregators to be populated
    * @param aggOps ints representing the aggregate operations
    * 

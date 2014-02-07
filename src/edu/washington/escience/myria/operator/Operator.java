@@ -83,6 +83,9 @@ public abstract class Operator implements Serializable {
         .getOwnerQuery().getQueryID();
   }
 
+  /**
+   * @return worker query partition.
+   */
   public WorkerQueryPartition getWorkerQueryPartition() {
     return (WorkerQueryPartition) ((TaskResourceManager) execEnvVars
         .get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER)).getOwnerTask().getOwnerQuery();

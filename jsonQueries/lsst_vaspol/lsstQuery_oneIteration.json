@@ -3,25 +3,25 @@
         {
             "operators": [
                 {
-                    "op_name": "SCAN1",
-                    "op_type": "TableScan",
-                    "relation_key": {
-                        "program_name": "LSST_useCase",
-                        "relation_name": "testtable",
-                        "user_name": "vaspol"
+                    "opName": "SCAN1",
+                    "opType": "TableScan",
+                    "relationKey": {
+                        "programName": "LSST_useCase",
+                        "relationName": "testtable",
+                        "userName": "vaspol"
                     }
                 },
                 {
-                    "arg_child": "SCAN1",
-                    "arg_pf": {
+                    "argChild": "SCAN1",
+                    "argPf": {
                         "index": [
                             "0",
                             "1"
                         ],
                         "type": "MultiFieldHash"
                     },
-                    "op_name": "SP11",
-                    "op_type": "ShuffleProducer"
+                    "opName": "SP11",
+                    "opType": "ShuffleProducer"
                 }
             ],
             "workers": [
@@ -33,25 +33,25 @@
         {
             "operators": [
                 {
-                    "op_name": "SCAN2",
-                    "op_type": "TableScan",
-                    "relation_key": {
-                        "program_name": "LSST_useCase",
-                        "relation_name": "testtable",
-                        "user_name": "vaspol"
+                    "opName": "SCAN2",
+                    "opType": "TableScan",
+                    "relationKey": {
+                        "programName": "LSST_useCase",
+                        "relationName": "testtable",
+                        "userName": "vaspol"
                     }
                 },
                 {
-                    "arg_child": "SCAN2",
-                    "arg_pf": {
+                    "argChild": "SCAN2",
+                    "argPf": {
                         "index": [
                             "0",
                             "1"
                         ],
                         "type": "MultiFieldHash"
                     },
-                    "op_name": "SP12",
-                    "op_type": "ShuffleProducer"
+                    "opName": "SP12",
+                    "opType": "ShuffleProducer"
                 }
             ],
             "workers": [
@@ -63,74 +63,74 @@
         {
             "operators": [
                 {
-                    "arg_operator_id": "SP11",
-                    "op_name": "SC1",
-                    "op_type": "ShuffleConsumer"
+                    "argOperatorId": "SP11",
+                    "opName": "SC1",
+                    "opType": "ShuffleConsumer"
                 },
                 {
-                    "arg_agg_fields": [
+                    "argAggFields": [
                         "3"
                     ],
-                    "arg_agg_operators": [
+                    "argAggOperators": [
                         [
                             "AGG_OP_AVG",
                             "AGG_OP_STDEV"
                         ]
                     ],
-                    "arg_child": "SC1",
-                    "arg_group_fields": [
+                    "argChild": "SC1",
+                    "argGroupFields": [
                         "0",
                         "1"
                     ],
-                    "op_name": "MULTI_GRP_AGG",
-                    "op_type": "MultiGroupByAggregate"
+                    "opName": "MULTI_GRP_AGG",
+                    "opType": "MultiGroupByAggregate"
                 },
                 {
-                    "arg_operator_id": "SP12",
-                    "op_name": "SC3",
-                    "op_type": "ShuffleConsumer"
+                    "argOperatorId": "SP12",
+                    "opName": "SC3",
+                    "opType": "ShuffleConsumer"
                 },
                 {
-                    "arg_child1": "MULTI_GRP_AGG",
-                    "arg_child2": "SC3",
-                    "arg_columns1": [
+                    "argChild1": "MULTI_GRP_AGG",
+                    "argChild2": "SC3",
+                    "argColumns1": [
                         "0",
                         "1"
                     ],
-                    "arg_columns2": [
+                    "argColumns2": [
                         "0",
                         "1"
                     ],
-                    "arg_select1": [
+                    "argSelect1": [
                         "0",
                         "1",
                         "2",
                         "3"
                     ],
-                    "arg_select2": [
+                    "argSelect2": [
                         "2",
                         "3"
                     ],
-                    "op_name": "JOIN",
-                    "op_type": "SymmetricHashJoin"
+                    "opName": "JOIN",
+                    "opType": "SymmetricHashJoin"
                 },
                 {
-                    "arg_child": "JOIN",
-                    "arg_predicate": {
-                        "arg_compare_index": "5",
-                        "arg_operand_indices": [
+                    "argChild": "JOIN",
+                    "argPredicate": {
+                        "argCompareIndex": "5",
+                        "argOperandIndices": [
                             "2",
                             "3"
                         ],
                         "type": "WithinSumRangePredicate"
                     },
-                    "op_name": "FILTER",
-                    "op_type": "Filter"
+                    "opName": "FILTER",
+                    "opType": "Filter"
                 },
                 {
-                    "arg_child": "FILTER",
-                    "op_name": "CP1",
-                    "op_type": "CollectProducer"
+                    "argChild": "FILTER",
+                    "opName": "CP1",
+                    "opType": "CollectProducer"
                 }
             ],
             "workers": [
@@ -142,18 +142,18 @@
         {
             "operators": [
                 {
-                    "arg_operator_id": "CP1",
-                    "op_name": "CC1",
-                    "op_type": "CollectConsumer"
+                    "argOperatorId": "CP1",
+                    "opName": "CC1",
+                    "opType": "CollectConsumer"
                 },
                 {
-                    "arg_child": "CC1",
-                    "op_name": "INSERT",
-                    "op_type": "DbInsert",
-                    "relation_key": {
-                        "program_name": "LSST_useCase",
-                        "relation_name": "queryResult3",
-                        "user_name": "vaspol"
+                    "argChild": "CC1",
+                    "opName": "INSERT",
+                    "opType": "DbInsert",
+                    "relationKey": {
+                        "programName": "LSST_useCase",
+                        "relationName": "queryResult3",
+                        "userName": "vaspol"
                     }
                 }
             ],
@@ -162,6 +162,6 @@
             ]
         }
     ],
-    "logical_ra": "INSERT(JOIN(SCAN1,SCAN2))",
-    "raw_datalog": "smallTableJoin(x,z) :- smallTable(x,y),smallTable(y,z)."
+    "logicalRa": "INSERT(JOIN(SCAN1,SCAN2))",
+    "rawDatalog": "smallTableJoin(x,z) :- smallTable(x,y),smallTable(y,z)."
 }

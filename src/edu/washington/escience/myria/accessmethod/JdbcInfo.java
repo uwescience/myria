@@ -71,7 +71,7 @@ public final class JdbcInfo extends ConnectionInfo implements Serializable {
    * @return a new JdbcInfo containing this information.
    */
   @JsonCreator
-  public static JdbcInfo of(@JsonProperty("driver_class") final String driverClass,
+  public static JdbcInfo of(@JsonProperty("driverClass") final String driverClass,
       @JsonProperty("dbms") final String dbms, @JsonProperty("host") final String host,
       @JsonProperty("port") final int port, @JsonProperty("database") final String database,
       @JsonProperty("username") final String username, @JsonProperty("password") final String password,
