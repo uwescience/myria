@@ -19,6 +19,16 @@ public final class TestUtils {
 
   private static Random random = null;
 
+  /**
+   * See http://docs.travis-ci.com/user/ci-environment/#Environment-variables
+   * 
+   * @return <code>true</code> if the system is currently in a Travis CI build.
+   */
+  public static boolean inTravis() {
+    String travis = System.getenv("TRAVIS");
+    return (travis != null) && travis.equals("true");
+  }
+
   private synchronized static Random getRandom() {
     if (random == null) {
       random = new Random();

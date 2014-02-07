@@ -14,12 +14,36 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.collect.ImmutableList;
+
+import edu.washington.escience.myria.RelationKey;
+import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
+import edu.washington.escience.myria.api.encoding.DatasetEncoding;
+import edu.washington.escience.myria.io.EmptySource;
 import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.util.JsonAPIUtils;
 
 public class JsonQuerySubmitTest extends SystemTestBase {
 
   static Logger LOGGER = LoggerFactory.getLogger(JsonQuerySubmitTest.class);
+
+  /**
+   * Construct an empty ingest request.
+   * 
+   * @return a request to ingest an empty dataset called "public:adhoc:smallTable"
+   * @throws JsonProcessingException if there is an error producing the JSON
+   */
+  public static String emptyIngest() throws JsonProcessingException {
+    /* Construct the JSON for an Empty Ingest request. */
+    DatasetEncoding emptyIngest = new DatasetEncoding();
+    emptyIngest.relationKey = RelationKey.of("public", "adhoc", "smallTable");
+    emptyIngest.schema = Schema.of(ImmutableList.of(Type.STRING_TYPE, Type.LONG_TYPE), ImmutableList.of("foo", "bar"));
+    emptyIngest.source = new EmptySource();
+    return MyriaJsonMapperProvider.getWriter().writeValueAsString(emptyIngest);
+  }
 
   @Override
   public Map<Integer, SocketInfo> getWorkers() {
@@ -29,15 +53,9 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     return m;
   }
 
-  private static final String emptyIngestJson = "{" + "  \"relationKey\" : {" + "    \"userName\" : \"public\","
-      + "    \"programName\" : \"adhoc\"," + "    \"relationName\" : \"smallTable\"" + "  }," + "  \"schema\" : {"
-      + "    \"columnTypes\" : [\"STRING_TYPE\", \"LONG_TYPE\"]," + "    \"columnNames\" : [\"foo\", \"bar\"]" + "  },"
-      + "\"source\" : { \"dataType\" : \"Empty\" } " + "}";
-
   @Test
   public void emptySubmitTest() throws Exception {
-
-    HttpURLConnection conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, emptyIngestJson);
+    HttpURLConnection conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, emptyIngest());
     if (null != conn.getErrorStream()) {
       throw new IllegalStateException(getContents(conn));
     }
@@ -48,7 +66,7 @@ public class JsonQuerySubmitTest extends SystemTestBase {
   @Test
   public void datasetPutTest() throws Exception {
 
-    HttpURLConnection conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, emptyIngestJson);
+    HttpURLConnection conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, emptyIngest());
     if (null != conn.getErrorStream()) {
       throw new IllegalStateException(getContents(conn));
     }

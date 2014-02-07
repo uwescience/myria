@@ -150,7 +150,7 @@ tasks.withType(Compile) {
 /* Tell all tasks to add sqlite library to their classpath when running. */
 tasks.withType(Test) {
   systemProperty "java.library.path", file("lib/sqlite4java-282")
-  testReportDir = file('build/reports/'+name)
+  getReports().getHtml().setDestination(file('build/reports/'+name))
 
   // set heap size for the test JVM(s)
   minHeapSize = "512m"
@@ -207,9 +207,9 @@ eclipse.classpath {
   }
 }
 
-test {
+tasks.withType(Test) {
     /* Optional: uncomment the next line to print which test is running. Useful for debugging. */
-    // beforeTest { desc -> println "Executing test ${desc.name} [${desc.className}]" }
+    beforeTest { desc -> println "Executing test ${desc.name} [${desc.className}]" }
 }
 
 /*
@@ -222,11 +222,18 @@ task copyToLib(type: Copy) {
 }
 tasks.jar.dependsOn copyToLib
 
+/* Make sure test runs before any other type of tests */
+systemtest.dependsOn test
+speedtest.dependsOn test
+
 /* allTests just runs all tests */
 task allTests
 allTests.dependsOn test
 allTests.dependsOn systemtest
 allTests.dependsOn speedtest
+
+/* Make check run system tests. */
+check.dependsOn systemtest
 
 /* Assemble the Myria jar into `build/libs` */
 jar {
