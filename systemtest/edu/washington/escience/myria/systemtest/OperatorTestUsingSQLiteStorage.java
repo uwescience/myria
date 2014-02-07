@@ -265,7 +265,6 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     }
     final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
     TestUtils.assertTupleBagEqual(expectedResult, resultBag);
-
   }
 
   @Test
@@ -555,6 +554,6 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
     final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
     TestUtils.assertTupleBagEqual(expectedResult, resultBag);
-
   }
+
 }

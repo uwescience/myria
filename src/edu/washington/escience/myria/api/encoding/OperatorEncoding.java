@@ -39,6 +39,8 @@ import edu.washington.escience.myria.parallel.Server;
     @Type(name = "HyperShuffleProducer", value = HyperShuffleProducerEncoding.class),
     @Type(name = "HyperShuffleConsumer", value = HyperShuffleConsumerEncoding.class),
     @Type(name = "IDBController", value = IDBControllerEncoding.class),
+    @Type(name = "InMemoryOrderBy", value = InMemoryOrderByEncoding.class),
+    @Type(name = "LeapFrogJoin", value = LeapFrogJoinEncoding.class),
     @Type(name = "LocalMultiwayConsumer", value = LocalMultiwayConsumerEncoding.class),
     @Type(name = "LocalMultiwayProducer", value = LocalMultiwayProducerEncoding.class),
     @Type(name = "Merge", value = MergeEncoding.class), @Type(name = "MergeJoin", value = MergeJoinEncoding.class),
