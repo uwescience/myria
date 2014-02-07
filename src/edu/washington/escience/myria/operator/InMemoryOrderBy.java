@@ -8,6 +8,7 @@ import java.util.List;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 
+import edu.washington.escience.myria.ReadableColumn;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
@@ -111,7 +112,10 @@ public final class InMemoryOrderBy extends UnaryOperator {
     final int numTuples = table.numTuples();
     for (int rowIdx = 0; rowIdx < numTuples; rowIdx++) {
       for (int columnIdx = 0; columnIdx < getSchema().numColumns(); columnIdx++) {
-        ans.put(table, columnIdx, indexes.get(rowIdx), columnIdx);
+        int sourceRow = indexes.get(rowIdx);
+        int tupleIdx = table.getTupleIndexInContainingTB(sourceRow);
+        ReadableColumn hashTblColumn = table.getColumns(sourceRow)[columnIdx];
+        ans.put(columnIdx, hashTblColumn, tupleIdx);
       }
     }
 
