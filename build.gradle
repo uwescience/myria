@@ -8,6 +8,10 @@ archivesBaseName = "myria"
 group = "edu.washington.escience.myria"
 version = "0.1"
 
+task wrapper(type: Wrapper) {
+    gradleVersion = '1.9'
+}
+
 /* We use Java 1.7 */
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
