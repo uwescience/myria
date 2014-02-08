@@ -63,10 +63,10 @@ def scan_join(relation_key):
     join = {
         "argChild1": "receive",
         "argChild2": "ScanU",
-        "arg_columns1": [ 1 ],
-        "arg_columns2": [ 1 ],
-        "arg_select1": [ 0 ],
-        "arg_select2": [ 1 ],                
+        "argColumns1": [ 1 ],
+        "argColumns2": [ 1 ],
+        "argSelect1": [ 0 ],
+        "argSelect2": [ 1 ],                
         "opName": "Join",
         "opType": "SymmetricHashJoin"
     }
@@ -162,16 +162,16 @@ def receive_and_join(relation_key):
     join = {
         "argChild1": "Gather(R)",
             "argChild2": "Gather(S)",
-            "arg_columns1": [
+            "argColumns1": [
                 1
             ],
-            "arg_columns2": [
+            "argColumns2": [
                 1
             ],
-            "arg_select1": [
+            "argSelect1": [
                 0
             ],
-            "arg_select2": [
+            "argSelect2": [
                 1
             ],
             "opName": "Join",

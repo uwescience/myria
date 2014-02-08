@@ -156,10 +156,10 @@ def single_join():
         'opName' : 'Join',
         'argChild1' : 'Gather1',
         'argChild2' : 'Gather0',
-        'arg_columns1' : [1],
-        'arg_columns2' : [0],
-        'arg_select1' : [0],
-        'arg_select2' : [1],
+        'argColumns1' : [1],
+        'argColumns2' : [0],
+        'argSelect1' : [0],
+        'argSelect2' : [1],
     }
     insert = {
         'opType' : 'DbInsert',

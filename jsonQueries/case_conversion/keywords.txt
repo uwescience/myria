@@ -65,3 +65,7 @@ tp_num
 real_begin
 fragment_index
 worker_id
+arg_columns1
+arg_columns2
+arg_select1
+arg_select2
