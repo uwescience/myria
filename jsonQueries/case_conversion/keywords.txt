@@ -61,3 +61,11 @@ arg_column_names
 join_field_mapping
 output_field_mapping
 profiling_mode
+tp_num
+real_begin
+fragment_index
+worker_id
+arg_columns1
+arg_columns2
+arg_select1
+arg_select2

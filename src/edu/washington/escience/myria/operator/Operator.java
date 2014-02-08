@@ -27,9 +27,13 @@ import edu.washington.escience.myria.parallel.WorkerQueryPartition;
 public abstract class Operator implements Serializable {
 
   /**
-   * logger.
+   * logger for this class.
    * */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Operator.class);
+  /**
+   * loggers for profiling.
+   */
+  private static final org.slf4j.Logger PROFILING_LOGGER = org.slf4j.LoggerFactory.getLogger("profile");
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -50,11 +54,6 @@ public abstract class Operator implements Serializable {
   private Schema schema;
 
   /**
-   * A bit denoting whether the operator has began to consume tuples.
-   */
-  private boolean startProcessing = false;
-
-  /**
    * EOS. Initially set it as true;
    * */
   private volatile boolean eos = true;
@@ -63,11 +62,6 @@ public abstract class Operator implements Serializable {
    * End of iteration.
    * */
   private boolean eoi = false;
-
-  /**
-   * Actual execution time.
-   */
-  private long executionTime = 0;
 
   /**
    * Environmental variables during execution.
@@ -278,15 +272,10 @@ public abstract class Operator implements Serializable {
       return null;
     }
 
-    if (!startProcessing) {
-      if (isProfilingMode()) {
-        LOGGER.info("[{}#{}][{}@{}][{}]:begin to process", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
-            getOpName(), getFragmentId(), this);
-      }
-      startProcessing = true;
+    if (isProfilingMode()) {
+      PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:live", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
+          getOpName(), getFragmentId(), System.nanoTime(), 0);
     }
-
-    long startTime = System.currentTimeMillis();
 
     TupleBatch result = null;
     try {
@@ -300,16 +289,20 @@ public abstract class Operator implements Serializable {
     } catch (Exception e) {
       throw new DbException(e);
     }
-
-    executionTime += System.currentTimeMillis() - startTime;
-
+    if (isProfilingMode() && !eos()) {
+      int numberOfTupleReturned = 0;
+      if (result != null) {
+        numberOfTupleReturned = result.numTuples();
+      }
+      PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:hang", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
+          getOpName(), getFragmentId(), System.nanoTime(), numberOfTupleReturned);
+    }
     if (result == null) {
       checkEOSAndEOI();
     } else {
       numOutputTBs++;
       numOutputTuples += result.numTuples();
     }
-
     return result;
   }
 
@@ -410,11 +403,12 @@ public abstract class Operator implements Serializable {
    * Operators should not be able to unset an already set EOS except reopen it.
    */
   protected final void setEOS() {
-    if (startProcessing && isProfilingMode() && !eos()) {
-      LOGGER.info("[{}#{}][{}@{}][{}]:End of Processing (EOS)", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
-          getOpName(), getFragmentId(), this);
-      LOGGER.info("[{}#{}][{}@{}][{}]: executionTime {} ms", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
-          getOpName(), getFragmentId(), this, executionTime);
+    if (eos()) {
+      return;
+    }
+    if (isProfilingMode()) {
+      PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:end", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
+          getOpName(), getFragmentId(), System.nanoTime());
     }
     eos = true;
   }

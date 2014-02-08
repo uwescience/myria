@@ -1192,11 +1192,13 @@ public final class MasterCatalog {
     queryStatus.rawQuery = statement.columnString(1);
     queryStatus.logicalRa = statement.columnString(2);
     String physicalString = statement.columnString(3);
+
     try {
       queryStatus.physicalPlan = MyriaJsonMapperProvider.getMapper().readValue(physicalString, QueryEncoding.class);
     } catch (IOException e) {
       queryStatus.physicalPlan = physicalString;
     }
+
     queryStatus.submitTime = statement.columnString(4);
     queryStatus.startTime = statement.columnString(5);
     queryStatus.finishTime = statement.columnString(6);
