@@ -62,6 +62,8 @@ children['HyperShuffleProducer'] = ['argChild']
 children['SinkRoot'] = ['argChild']
 children['DupElim'] = ['argChild']
 children['Rename'] = ['argChild']
+children['LeapFrogJoin'] = ['argChild']
+children['InMemoryOrderBy'] = ['argChild']
 
 million = int(1e6)
 
@@ -296,7 +298,7 @@ def generateSingleWorkerViz(path, worker_id, query_id,
 
     # parse information from each log message
     tuples = [re.findall(
-        r'.query_id#(\d*)..([\w(),]*)@(-?\w*)..(\d*)..(\d*).:([\w|\W]*)', line)
+        r'.queryId#(\d*)..([\w(),]*)@(-?\w*)..(\d*)..(\d*).:([\w|\W]*)', line)
         for line in lines]
 
     tuples = [i[0] for i in tuples if len(i) > 0]
