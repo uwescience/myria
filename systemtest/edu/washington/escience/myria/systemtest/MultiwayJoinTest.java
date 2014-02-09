@@ -6,6 +6,8 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -73,10 +75,9 @@ public class MultiwayJoinTest extends SystemTestBase {
     final TupleBatchBuffer tbs = new TupleBatchBuffer(TWITTER_S_SCHEMA);
     final TupleBatchBuffer tbt = new TupleBatchBuffer(TWITTER_T_SCHEMA);
 
-    String twitterFilePath =
-        getClass().getClassLoader().getResource("./").getPath() + "../../testdata/twitter/TwitterK.csv";
+    Path twitterFilePath = Paths.get("testdata", "twitter", "TwitterK.csv");
 
-    CSVReader csv = new CSVReader(new FileReader(twitterFilePath));
+    CSVReader csv = new CSVReader(new FileReader(twitterFilePath.toFile()));
 
     String[] line;
 
