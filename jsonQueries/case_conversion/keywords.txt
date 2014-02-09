@@ -21,6 +21,7 @@ column_names
 data_type
 value_type
 updater_expressions
+emit_expressions
 initializer_expressions
 column_idx
 arg_operator_id
