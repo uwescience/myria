@@ -62,6 +62,8 @@ children['HyperShuffleProducer'] = ['argChild']
 children['SinkRoot'] = ['argChild']
 children['DupElim'] = ['argChild']
 children['Rename'] = ['argChild']
+children['LeapFrogJoin'] = ['argChild']
+children['InMemoryOrderBy'] = ['argChild']
 
 million = int(1e6)
 
