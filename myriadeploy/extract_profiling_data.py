@@ -296,7 +296,7 @@ def generateSingleWorkerViz(path, worker_id, query_id,
 
     # parse information from each log message
     tuples = [re.findall(
-        r'.query_id#(\d*)..([\w(),]*)@(-?\w*)..(\d*)..(\d*).:([\w|\W]*)', line)
+        r'.queryId#(\d*)..([\w(),]*)@(-?\w*)..(\d*)..(\d*).:([\w|\W]*)', line)
         for line in lines]
 
     tuples = [i[0] for i in tuples if len(i) > 0]
