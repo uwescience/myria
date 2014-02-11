@@ -51,6 +51,23 @@ public class FileScanTest {
   }
 
   /**
+   * @param filename the file in which the relation is stored.
+   * @param schema the schema of the relation in the file.
+   * @param delimiter if non-null, an override file delimiter
+   * @param quote the user specified quotation mark
+   * @return the number of rows in the file.
+   * @throws DbException if the file does not match the given Schema.
+   * @throws FileNotFoundException if the specified file does not exist.
+   * @throws InterruptedException
+   */
+  private static int getRowCount(final String filename, final Schema schema, final Character delimiter,
+      final Character quote) throws DbException, InterruptedException {
+    final String realFilename = Paths.get("testdata", "filescan", filename).toString();
+    FileScan fileScan = new FileScan(realFilename, schema, delimiter, quote);
+    return getRowCount(fileScan);
+  }
+
+  /**
    * Helper function used to run tests.
    * 
    * @param fileScan the FileScan object to be tested.
@@ -99,6 +116,13 @@ public class FileScanTest {
     final String filename = "escape_quote_two_col_string.txt";
     final Schema schema = new Schema(ImmutableList.of(Type.STRING_TYPE, Type.STRING_TYPE));
     assertEquals(7, getRowCount(filename, schema));
+  }
+
+  @Test
+  public void testCsvSingleQuote() throws DbException, InterruptedException {
+    final String filename = "quote_two_col_string.txt";
+    final Schema schema = new Schema(ImmutableList.of(Type.STRING_TYPE, Type.STRING_TYPE));
+    assertEquals(7, getRowCount(filename, schema, ',', '\''));
   }
 
   @Test(expected = DbException.class)

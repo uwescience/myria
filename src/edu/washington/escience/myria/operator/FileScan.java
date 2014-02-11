@@ -3,7 +3,6 @@ package edu.washington.escience.myria.operator;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Objects;
 
 import javax.annotation.Nullable;
 
@@ -11,6 +10,8 @@ import org.apache.commons.lang.BooleanUtils;
 
 import au.com.bytecode.opencsv.CSVReader;
 
+import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Floats;
 
@@ -35,6 +36,8 @@ public final class FileScan extends LeafOperator {
   private transient CSVReader scanner = null;
   /** A user-provided file delimiter; if null, the system uses the default whitespace delimiter. */
   private final Character delimiter;
+  /** A user-provided quotation mark. */
+  private final Character quote;
   /** A user-provided escape character, if null, the system uses '/'. */
   private final Character escape;
   /** The data source that will generate the input stream to be read at initialization. */
@@ -62,7 +65,7 @@ public final class FileScan extends LeafOperator {
    * @param schema the Schema of the relation contained in the file.
    */
   public FileScan(final String filename, final Schema schema) {
-    this(filename, schema, null, null, null);
+    this(filename, schema, null, null, null, null);
   }
 
   /**
@@ -73,7 +76,7 @@ public final class FileScan extends LeafOperator {
    * @param schema the Schema of the relation contained in the file.
    */
   public FileScan(final DataSource source, final Schema schema) {
-    this(source, schema, null, null, null);
+    this(source, schema, null, null, null, null);
   }
 
   /**
@@ -85,7 +88,7 @@ public final class FileScan extends LeafOperator {
    * @param delimiter An optional override file delimiter.
    */
   public FileScan(final String filename, final Schema schema, final Character delimiter) {
-    this(filename, schema, delimiter, null, null);
+    this(filename, schema, delimiter, null, null, null);
   }
 
   /**
@@ -97,7 +100,7 @@ public final class FileScan extends LeafOperator {
    * @param delimiter An optional override file delimiter.
    */
   public FileScan(final DataSource source, final Schema schema, final Character delimiter) {
-    this(source, schema, delimiter, null, null);
+    this(source, schema, delimiter, null, null, null);
   }
 
   /**
@@ -107,10 +110,10 @@ public final class FileScan extends LeafOperator {
    * @param filename file containing the data to be scanned.
    * @param schema the Schema of the relation contained in the file.
    * @param delimiter An optional override file delimiter.
-   * @param escape An optional escape character.
+   * @param quote An optional quote character
    */
-  public FileScan(final String filename, final Schema schema, final Character delimiter, final Character escape) {
-    this(filename, schema, delimiter, escape, null);
+  public FileScan(final String filename, final Schema schema, final Character delimiter, final Character quote) {
+    this(filename, schema, delimiter, quote, null, null);
   }
 
   /**
@@ -120,10 +123,40 @@ public final class FileScan extends LeafOperator {
    * @param source the data source containing the relation.
    * @param schema the Schema of the relation contained in the file.
    * @param delimiter An optional override file delimiter.
+   * @param quote An optional quote character
+   */
+  public FileScan(final DataSource source, final Schema schema, final Character delimiter, final Character quote) {
+    this(source, schema, delimiter, quote, null, null);
+  }
+
+  /**
+   * Construct a new FileScan object to read from the specified file. This file is assumed to be whitespace-separated
+   * and have one record per line.
+   * 
+   * @param filename file containing the data to be scanned.
+   * @param schema the Schema of the relation contained in the file.
+   * @param delimiter An optional override file delimiter.
+   * @param quote An optional quote character
    * @param escape An optional escape character.
    */
-  public FileScan(final DataSource source, final Schema schema, final Character delimiter, final Character escape) {
-    this(source, schema, delimiter, escape, null);
+  public FileScan(final String filename, final Schema schema, final Character delimiter, final Character quote,
+      final Character escape) {
+    this(filename, schema, delimiter, quote, escape, null);
+  }
+
+  /**
+   * Construct a new FileScan object to read from the specified file. This file is assumed to be whitespace-separated
+   * and have one record per line. If delimiter is non-null, the system uses its value as a delimiter.
+   * 
+   * @param source the data source containing the relation.
+   * @param schema the Schema of the relation contained in the file.
+   * @param delimiter An optional override file delimiter.
+   * @param quote An optional quote character
+   * @param escape An optional escape character.
+   */
+  public FileScan(final DataSource source, final Schema schema, final Character delimiter, final Character quote,
+      final Character escape) {
+    this(source, schema, delimiter, quote, escape, null);
   }
 
   /**
@@ -133,12 +166,13 @@ public final class FileScan extends LeafOperator {
    * @param filename file containing the data to be scanned.
    * @param schema the Schema of the relation contained in the file.
    * @param delimiter An optional override file delimiter.
+   * @param quote An optional quote character
    * @param escape An optional escape character.
    * @param numberOfSkippedLines number of lines to be skipped.
    */
   public FileScan(final String filename, final Schema schema, @Nullable final Character delimiter,
-      @Nullable final Character escape, @Nullable final Integer numberOfSkippedLines) {
-    this(new FileSource(filename), schema, delimiter, escape, numberOfSkippedLines);
+      @Nullable final Character quote, @Nullable final Character escape, @Nullable final Integer numberOfSkippedLines) {
+    this(new FileSource(filename), schema, delimiter, quote, escape, numberOfSkippedLines);
   }
 
   /**
@@ -148,14 +182,16 @@ public final class FileScan extends LeafOperator {
    * @param source the data source containing the relation.
    * @param schema the Schema of the relation contained in the file.
    * @param delimiter An optional override file delimiter.
+   * @param quote An optional quote character
    * @param escape An optional escape character.
    * @param numberOfSkippedLines number of lines to be skipped.
    */
-  public FileScan(final DataSource source, final Schema schema, final Character delimiter, final Character escape,
-      final Integer numberOfSkippedLines) {
-    this.source = Objects.requireNonNull(source);
-    this.schema = Objects.requireNonNull(schema);
+  public FileScan(final DataSource source, final Schema schema, final Character delimiter,
+      @Nullable final Character quote, final Character escape, final Integer numberOfSkippedLines) {
+    this.source = Preconditions.checkNotNull(source, "Datasoure should not be null.");
+    this.schema = Preconditions.checkNotNull(schema, "Schema should not be null.");
     this.delimiter = delimiter;
+    this.quote = quote;
     this.escape = escape;
     this.numberOfSkippedLines = numberOfSkippedLines;
   }
@@ -231,25 +267,11 @@ public final class FileScan extends LeafOperator {
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     buffer = new TupleBatchBuffer(getSchema());
-    Character delim = ',';
-    Character esc = '\\';
-    Integer skip = 0;
-
-    if (delimiter != null) {
-      delim = delimiter;
-    }
-
-    if (escape != null) {
-      esc = escape;
-    }
-
-    if (numberOfSkippedLines != null) {
-      skip = numberOfSkippedLines;
-    }
-
     try {
       scanner =
-          new CSVReader(new BufferedReader(new InputStreamReader(source.getInputStream())), delim, '"', esc, skip);
+          new CSVReader(new BufferedReader(new InputStreamReader(source.getInputStream())), Objects.firstNonNull(
+              delimiter, ','), Objects.firstNonNull(quote, '"'), Objects.firstNonNull(escape, '\\'), Objects
+              .firstNonNull(numberOfSkippedLines, 0));
 
     } catch (IOException e) {
       throw new DbException(e);

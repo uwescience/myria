@@ -296,7 +296,8 @@ public final class DatasetResource {
 
     /* Do the work. */
     Operator source =
-        new FileScan(dataset.source, dataset.schema, dataset.delimiter, dataset.escape, dataset.numberOfSkippedLines);
+        new FileScan(dataset.source, dataset.schema, dataset.delimiter, dataset.quote, dataset.escape,
+            dataset.numberOfSkippedLines);
 
     DatasetStatus status = null;
     try {

@@ -18,6 +18,7 @@ public class DatasetEncoding extends MyriaApiEncoding {
   public Character delimiter;
   public Character escape;
   public Integer numberOfSkippedLines;
+  public Character quote;
   public Boolean importFromDatabase = false;
   private static final List<String> requiredFields = ImmutableList.of("source", "relationKey", "schema");
 
