@@ -55,19 +55,27 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
     this.catalog = Objects.requireNonNull(catalog);
     this.queryId = queryId;
     relationsCreated = inferRelationsCreated(Objects.requireNonNull(workerPlans), catalog);
-    LOGGER.info("DatasetMetadataUpdater configured for query #{} with relations-worker map {}", queryId,
-        relationsCreated);
+    if (!relationsCreated.isEmpty()) {
+      LOGGER.debug("DatasetMetadataUpdater configured for query #{} with relations-worker map {}", queryId,
+          relationsCreated);
+    }
   }
 
   @Override
   public void operationComplete(final OperationFuture future) throws Exception {
-    if (!future.isSuccess()) {
-      LOGGER.info("Query #{} failed, so not updating the catalog metadata for relations {}.", queryId, relationsCreated
-          .keySet());
+    if (relationsCreated.isEmpty()) {
+      /* Do nothing */
       return;
     }
 
-    LOGGER.info("Query #{} succeeded, so updating the catalog metadata for relations.", queryId);
+    if (!future.isSuccess()) {
+      LOGGER.debug("Query #{} failed, so not updating the catalog metadata for relations {}.", queryId,
+          relationsCreated.keySet());
+      return;
+    }
+
+    LOGGER.debug("Query #{} succeeded, so updating the catalog metadata for relations {}.", queryId, relationsCreated
+        .keySet());
     for (Map.Entry<RelationKey, RelationMetadata> entry : relationsCreated.entrySet()) {
       RelationKey relation = entry.getKey();
       RelationMetadata meta = entry.getValue();
@@ -77,7 +85,7 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
         catalog.addRelationMetadata(relation, schema, -1, queryId);
       }
       catalog.addStoredRelation(relation, workers, "unknown");
-      LOGGER.info("Query #{} - adding {} to store shard of {}", queryId, workers, relation
+      LOGGER.debug("Query #{} - adding {} to store shard of {}", queryId, workers, relation
           .toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
     }
   }
