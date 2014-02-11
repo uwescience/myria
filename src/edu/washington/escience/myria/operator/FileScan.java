@@ -8,6 +8,7 @@ import javax.annotation.Nullable;
 
 import org.apache.commons.lang.BooleanUtils;
 
+import au.com.bytecode.opencsv.CSVParser;
 import au.com.bytecode.opencsv.CSVReader;
 
 import com.google.common.base.Objects;
@@ -25,9 +26,6 @@ import edu.washington.escience.myria.util.DateTimeUtils;
 
 /**
  * Reads data from a file.
- * 
- * @author dhalperi
- * 
  */
 public final class FileScan extends LeafOperator {
   /** The Schema of the relation stored in this file. */
@@ -184,16 +182,16 @@ public final class FileScan extends LeafOperator {
    * @param delimiter An optional override file delimiter.
    * @param quote An optional quote character
    * @param escape An optional escape character.
-   * @param numberOfSkippedLines number of lines to be skipped.
+   * @param numberOfSkippedLines number of lines to be skipped (number of lines in header).
    */
   public FileScan(final DataSource source, final Schema schema, final Character delimiter,
       @Nullable final Character quote, final Character escape, final Integer numberOfSkippedLines) {
     this.source = Preconditions.checkNotNull(source, "Datasoure should not be null.");
     this.schema = Preconditions.checkNotNull(schema, "Schema should not be null.");
-    this.delimiter = delimiter;
-    this.quote = quote;
-    this.escape = escape;
-    this.numberOfSkippedLines = numberOfSkippedLines;
+    this.delimiter = Objects.firstNonNull(delimiter, CSVParser.DEFAULT_SEPARATOR);
+    this.quote = Objects.firstNonNull(quote, CSVParser.DEFAULT_QUOTE_CHARACTER);
+    this.escape = Objects.firstNonNull(escape, CSVParser.DEFAULT_ESCAPE_CHARACTER);
+    this.numberOfSkippedLines = Objects.firstNonNull(numberOfSkippedLines, CSVReader.DEFAULT_SKIP_LINES);
   }
 
   @Override
@@ -269,9 +267,8 @@ public final class FileScan extends LeafOperator {
     buffer = new TupleBatchBuffer(getSchema());
     try {
       scanner =
-          new CSVReader(new BufferedReader(new InputStreamReader(source.getInputStream())), Objects.firstNonNull(
-              delimiter, ','), Objects.firstNonNull(quote, '"'), Objects.firstNonNull(escape, '\\'), Objects
-              .firstNonNull(numberOfSkippedLines, 0));
+          new CSVReader(new BufferedReader(new InputStreamReader(source.getInputStream())), delimiter, quote, escape,
+              numberOfSkippedLines);
 
     } catch (IOException e) {
       throw new DbException(e);
