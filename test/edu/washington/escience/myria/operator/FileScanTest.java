@@ -173,6 +173,15 @@ public class FileScanTest {
   }
 
   @Test
+  public void testRandomCSV() throws Exception {
+    // file generated using:
+    // python testdata/generated/generate_csv.py 10000 --delimiter ' ' int int float str > testdata/filescan/random.csv
+    final String filename = "random.csv";
+    final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE, Type.FLOAT_TYPE, Type.STRING_TYPE));
+    assertEquals(10000, getRowCount(filename, schema, ' '));
+  }
+
+  @Test
   public void testBigFile() throws Exception {
     ByteArrayOutputStream bytes = new ByteArrayOutputStream();
     PrintStream printedBytes = new PrintStream(bytes);
