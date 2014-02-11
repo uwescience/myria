@@ -180,8 +180,8 @@ public final class FileScan extends LeafOperator {
       }
       lineNumber++;
       if (nextLine.length != schema.numColumns()) {
-        throw new DbException("Error parsing row " + lineNumber + ": unexpected number of columns " + nextLine.length
-            + "(correct:" + schema.numColumns() + ")");
+        throw new DbException("Error parsing row " + lineNumber + ": Found " + nextLine.length
+            + " column(s) but expected " + schema.numColumns() + " column(s).");
       }
       for (int column = 0; column < schema.numColumns(); ++column) {
         try {
