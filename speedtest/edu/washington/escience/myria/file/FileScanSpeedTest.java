@@ -34,7 +34,7 @@ public class FileScanSpeedTest extends AbstractBenchmark {
     // -70000000 > twitter_rv.1GB.net
     // FileScan scan = new FileScan("data_nocommit/speedtest/twitter/twitter_rv.1GB.net", schema, "\t");
 
-    FileScan scan = new FileScan("hdfs://vega.cs.washington.edu:8020//datasets/twitter/twitter_rv.net", schema, "\t");
+    FileScan scan = new FileScan("hdfs://vega.cs.washington.edu:8020//datasets/twitter/twitter_rv.net", schema, '\t');
     SinkRoot sink = new SinkRoot(scan, limit);
     sink.open(null);
     while (!sink.eos()) {
