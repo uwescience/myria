@@ -183,38 +183,37 @@ public final class FileScan extends LeafOperator {
         throw new DbException("Error parsing row " + lineNumber + ": unexpected number of columns " + nextLine.length
             + "(correct:" + schema.numColumns() + ")");
       }
-      for (int count = 0; count < schema.numColumns(); ++count) {
-        /* Make sure the schema matches. */
+      for (int column = 0; column < schema.numColumns(); ++column) {
         try {
-          switch (schema.getColumnType(count)) {
+          switch (schema.getColumnType(column)) {
             case BOOLEAN_TYPE:
-              if (Floats.tryParse(nextLine[count]) != null) {
-                buffer.putBoolean(count, Floats.tryParse(nextLine[count]) != 0);
-              } else if (BooleanUtils.toBoolean(nextLine[count])) {
-                buffer.putBoolean(count, Boolean.parseBoolean(nextLine[count]));
+              if (Floats.tryParse(nextLine[column]) != null) {
+                buffer.putBoolean(column, Floats.tryParse(nextLine[column]) != 0);
+              } else if (BooleanUtils.toBoolean(nextLine[column])) {
+                buffer.putBoolean(column, Boolean.parseBoolean(nextLine[column]));
               }
               break;
             case DOUBLE_TYPE:
-              buffer.putDouble(count, Double.parseDouble(nextLine[count]));
+              buffer.putDouble(column, Double.parseDouble(nextLine[column]));
               break;
             case FLOAT_TYPE:
-              buffer.putFloat(count, Float.parseFloat(nextLine[count]));
+              buffer.putFloat(column, Float.parseFloat(nextLine[column]));
               break;
             case INT_TYPE:
-              buffer.putInt(count, Integer.parseInt(nextLine[count]));
+              buffer.putInt(column, Integer.parseInt(nextLine[column]));
               break;
             case LONG_TYPE:
-              buffer.putLong(count, Long.parseLong(nextLine[count]));
+              buffer.putLong(column, Long.parseLong(nextLine[column]));
               break;
             case STRING_TYPE:
-              buffer.putString(count, nextLine[count]);
+              buffer.putString(column, nextLine[column]);
               break;
             case DATETIME_TYPE:
-              buffer.putDateTime(count, DateTimeUtils.parse(nextLine[count]));
+              buffer.putDateTime(column, DateTimeUtils.parse(nextLine[column]));
               break;
           }
         } catch (final IllegalArgumentException e) {
-          throw new DbException("Error parsing column " + count + " of row " + lineNumber + ": ", e);
+          throw new DbException("Error parsing column " + column + " of row " + lineNumber + ": ", e);
         }
       }
     }
