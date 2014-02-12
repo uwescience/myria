@@ -520,9 +520,18 @@ public class LeapFrogJoin extends NAryOperator {
         return null;
       }
     }
-
+    /* handle the case that one of input tables is empty. */
+    if (currentDepth == -1) {
+      for (TupleBuffer table : tables) {
+        if (table.numTuples() == 0) {
+          joinFinished = true;
+        }
+      }
+    }
     /* do the join, pop if there is ready tb. */
-    leapfrogJoin();
+    if (!joinFinished) {
+      leapfrogJoin();
+    }
     TupleBatch nexttb = ansTBB.popAny();
 
     if (nexttb != null) {
