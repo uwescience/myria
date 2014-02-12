@@ -525,6 +525,8 @@ public class LeapFrogJoin extends NAryOperator {
       for (TupleBuffer table : tables) {
         if (table.numTuples() == 0) {
           joinFinished = true;
+          checkEOSAndEOI();
+          return null;
         }
       }
     }
