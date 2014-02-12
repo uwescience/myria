@@ -25,7 +25,7 @@ import edu.washington.escience.myria.io.FileSource;
 import edu.washington.escience.myria.util.DateTimeUtils;
 
 /**
- * Reads data from a file.
+ * Reads data from a file, the parsing follows the CSV standard (http://tools.ietf.org/html/rfc4180) .
  */
 public final class FileScan extends LeafOperator {
   /** The Schema of the relation stored in this file. */
