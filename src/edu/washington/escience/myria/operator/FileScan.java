@@ -25,18 +25,22 @@ import edu.washington.escience.myria.io.FileSource;
 import edu.washington.escience.myria.util.DateTimeUtils;
 
 /**
- * Reads data from a file, the parsing follows the CSV standard (http://tools.ietf.org/html/rfc4180) .
+ * Reads data from a file. For CSV files, the default parser follows the RFC 4180 (http://tools.ietf.org/html/rfc4180).
+ * However, this operator can be used to scan files with different delimiters, etc.
+ * 
+ * TODO(stechu): give examples of how to construct a FileScan operator to parse a standard file types, like
+ * tab-separated and Hadoop's pipe-separated format. Include a discussion of how to turn quoting off.
  */
 public final class FileScan extends LeafOperator {
   /** The Schema of the relation stored in this file. */
   private final Schema schema;
   /** Scanner used to parse the file. */
   private transient CSVReader scanner = null;
-  /** A user-provided file delimiter; if null, the system uses the default whitespace delimiter. */
+  /** A user-provided file delimiter; if null, the system uses the default TODO(stechu) whitespace delimiter. */
   private final Character delimiter;
-  /** A user-provided quotation mark. */
+  /** A user-provided quotation mark. TODO(stechu) (Default?) */
   private final Character quote;
-  /** A user-provided escape character, if null, the system uses '/'. */
+  /** A user-provided escape character, if null, the system uses TODO(stechu) '/'. */
   private final Character escape;
   /** The data source that will generate the input stream to be read at initialization. */
   private final DataSource source;
@@ -56,8 +60,8 @@ public final class FileScan extends LeafOperator {
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(FileScan.class);
 
   /**
-   * Construct a new FileScan object to read from the specified file. This file is assumed to be whitespace-separated
-   * and have one record per line.
+   * Construct a new FileScan object to read from the specified file. This file is assumed to be TODO(stechu)
+   * whitespace-separated and have one record per line. TODO(stechu) Quoting? Escape?
    * 
    * @param filename file containing the data to be scanned.
    * @param schema the Schema of the relation contained in the file.
@@ -67,8 +71,8 @@ public final class FileScan extends LeafOperator {
   }
 
   /**
-   * Construct a new FileScan object to read from the specified file. This file is assumed to be whitespace-separated
-   * and have one record per line.
+   * Construct a new FileScan object to read from the specified file. This file is assumed to be TODO(stechu)
+   * whitespace-separated and have one record per line.
    * 
    * @param source the data source containing the relation.
    * @param schema the Schema of the relation contained in the file.
@@ -78,8 +82,8 @@ public final class FileScan extends LeafOperator {
   }
 
   /**
-   * Construct a new FileScan object to read from the specified file. This file is assumed to be whitespace-separated
-   * and have one record per line.
+   * Construct a new FileScan object to read from the specified file. This file is assumed to be TODO(stechu)
+   * whitespace-separated and have one record per line.
    * 
    * @param filename file containing the data to be scanned.
    * @param schema the Schema of the relation contained in the file.
@@ -90,8 +94,8 @@ public final class FileScan extends LeafOperator {
   }
 
   /**
-   * Construct a new FileScan object to read from the specified file. This file is assumed to be whitespace-separated
-   * and have one record per line.
+   * Construct a new FileScan object to read from the specified file. This file is assumed to be TODO(stechu)
+   * whitespace-separated and have one record per line.
    * 
    * @param source the data source containing the relation.
    * @param schema the Schema of the relation contained in the file.
@@ -102,8 +106,8 @@ public final class FileScan extends LeafOperator {
   }
 
   /**
-   * Construct a new FileScan object to read from the specified file. This file is assumed to be whitespace-separated
-   * and have one record per line.
+   * Construct a new FileScan object to read from the specified file. This file is assumed to be TODO(stechu)
+   * whitespace-separated and have one record per line.
    * 
    * @param filename file containing the data to be scanned.
    * @param schema the Schema of the relation contained in the file.
@@ -115,8 +119,9 @@ public final class FileScan extends LeafOperator {
   }
 
   /**
-   * Construct a new FileScan object to read from the specified file. This file is assumed to be whitespace-separated
-   * and have one record per line. If delimiter is non-null, the system uses its value as a delimiter.
+   * Construct a new FileScan object to read from the specified file. This file is assumed to be TODO(stechu)
+   * whitespace-separated and have one record per line. If delimiter is non-null, the system uses its value as a
+   * delimiter.
    * 
    * @param source the data source containing the relation.
    * @param schema the Schema of the relation contained in the file.
@@ -128,8 +133,8 @@ public final class FileScan extends LeafOperator {
   }
 
   /**
-   * Construct a new FileScan object to read from the specified file. This file is assumed to be whitespace-separated
-   * and have one record per line.
+   * Construct a new FileScan object to read from the specified file. This file is assumed to be TODO(stechu)
+   * whitespace-separated and have one record per line.
    * 
    * @param filename file containing the data to be scanned.
    * @param schema the Schema of the relation contained in the file.
@@ -143,8 +148,9 @@ public final class FileScan extends LeafOperator {
   }
 
   /**
-   * Construct a new FileScan object to read from the specified file. This file is assumed to be whitespace-separated
-   * and have one record per line. If delimiter is non-null, the system uses its value as a delimiter.
+   * Construct a new FileScan object to read from the specified file. This file is assumed to be TODO(stechu)
+   * whitespace-separated and have one record per line. If delimiter is non-null, the system uses its value as a
+   * delimiter.
    * 
    * @param source the data source containing the relation.
    * @param schema the Schema of the relation contained in the file.
@@ -158,8 +164,9 @@ public final class FileScan extends LeafOperator {
   }
 
   /**
-   * Construct a new FileScan object to read from the specified file. This file is assumed to be whitespace-separated
-   * and have one record per line. If delimiter is non-null, the system uses its value as a delimiter.
+   * Construct a new FileScan object to read from the specified file. This file is assumed to be TODO(stechu)
+   * whitespace-separated and have one record per line. If delimiter is non-null, the system uses its value as a
+   * delimiter.
    * 
    * @param filename file containing the data to be scanned.
    * @param schema the Schema of the relation contained in the file.
@@ -174,8 +181,9 @@ public final class FileScan extends LeafOperator {
   }
 
   /**
-   * Construct a new FileScan object to read from the specified file. This file is assumed to be whitespace-separated
-   * and have one record per line. If delimiter is non-null, the system uses its value as a delimiter.
+   * Construct a new FileScan object to read from the specified file. This file is assumed to be TODO(stechu)
+   * whitespace-separated and have one record per line. If delimiter is non-null, the system uses its value as a
+   * delimiter.
    * 
    * @param source the data source containing the relation.
    * @param schema the Schema of the relation contained in the file.
@@ -252,7 +260,7 @@ public final class FileScan extends LeafOperator {
       }
     }
 
-    LOGGER.debug("Scanned " + (lineNumber - lineNumberBegin) + " input lines");
+    LOGGER.debug("Scanned {} input lines", lineNumber - lineNumberBegin);
 
     return buffer.popAny();
   }
