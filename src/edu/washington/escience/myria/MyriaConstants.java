@@ -60,7 +60,7 @@ public final class MyriaConstants {
   /**
    * Query ID.
    */
-  public static final String EXEC_ENV_VAR_QUERY_ID = "query_id";
+  public static final String EXEC_ENV_VAR_QUERY_ID = "queryId";
 
   /**
    * Profiling mode.
@@ -161,13 +161,6 @@ public final class MyriaConstants {
   public static final String STORAGE_SYSTEM_SQLITE = "sqlite";
 
   /**
-<<<<<<< HEAD
-=======
-   * Vertica storage.
-   * */
-  public static final String STORAGE_SYSTEM_VERTICA = "vertica";
-
-  /**
    * PostgreSQL storage.
    * */
   public static final String STORAGE_SYSTEM_POSTGRESQL = "postgresql";
@@ -178,7 +171,6 @@ public final class MyriaConstants {
   public static final int STORAGE_POSTGRESQL_PORT = 5401;
 
   /**
->>>>>>> fbacd2e... Added the database benchmark test.
    * Default value for {@link MyriaSystemConfigKeys#TCP_CONNECTION_TIMEOUT_MILLIS}.
    * */
   public static final int TCP_CONNECTION_TIMEOUT_MILLIS_DEFAULT_VALUE = 3000;
@@ -222,6 +214,11 @@ public final class MyriaConstants {
    * for the client to read them. 16 MB.
    */
   public static final int DEFAULT_PIPED_INPUT_STREAM_SIZE = 1024 * 1024 * 16;
+
+  /**
+   * The maximum number of currently active (running, queued, paused, ...) queries at the master.
+   */
+  public static final int MAX_ACTIVE_QUERIES = 5;
 
   /** Private constructor to disallow building utility class. */
   private MyriaConstants() {

@@ -37,7 +37,7 @@ def uniquify_fragments(query_plan):
 
 def clean_up(ops):
     def _clean_op(op):
-        for field in delete_fields[op['op_type']]:
+        for field in delete_fields[op['opType']]:
             try:
                 del op[field]
             except:
@@ -62,8 +62,8 @@ if __name__ == "__main__":
             'operators' : clean_up(ops)
         })
     output = {
-            'raw_datalog' : myria_json_plan['raw_datalog'],
-            'logical_ra' : myria_json_plan['logical_ra'],
+            'rawDatalog' : myria_json_plan['rawDatalog'],
+            'logicalRa' : myria_json_plan['logicalRa'],
             'fragments' : fragments
     }
 

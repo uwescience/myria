@@ -286,6 +286,7 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
     final Throwable cause = e.getCause();
     ChannelContext cc = ChannelContext.getChannelContext(c);
     if (cc != null) {
+      LOGGER.warn("Error occur in managed Netty Channel: {}, deregistering. {}", c, cause);
       RegisteredChannelContext rcc = cc.getRegisteredChannelContext();
       if (rcc != null) {
         StreamIOChannelPair pair = rcc.getIOPair();
@@ -294,9 +295,7 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
       }
       ownerConnectionPool.errorEncountered(c, cause);
     } else {
-      if (LOGGER.isTraceEnabled()) {
-        LOGGER.trace("Unknown error occur in unmanaged Netty Channel: " + c + ", close directly.", cause);
-      }
+      LOGGER.warn("Unknown error occur in unmanaged Netty Channel: {}, close directly. {}", c, cause);
       c.close();
     }
   }

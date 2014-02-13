@@ -3,14 +3,14 @@
         {
             "operators": [
                 {
-                    "op_name": "Scan_base",
-                    "op_type": "QueryScan",
+                    "opName": "Scan_base",
+                    "opType": "QueryScan",
                     "schema": {
-                        "column_names": [
+                        "columnNames": [
                             "iOrder",
                             "grp"
                         ],
-                        "column_types": [
+                        "columnTypes": [
                             "LONG_TYPE",
                             "INT_TYPE"
                         ]
@@ -18,27 +18,27 @@
                     "sql": "SELECT iOrder, grp FROM [leelee#astro#cosmo512] WHERE type='star'"
                 },
                 {
-                    "arg_child": "Scan_base",
-                    "arg_pf": {
+                    "argChild": "Scan_base",
+                    "argPf": {
                         "index": "0",
                         "type": "SingleFieldHash"
                     },
-                    "op_name": "SP_base",
-                    "op_type": "ShuffleProducer"
+                    "opName": "SP_base",
+                    "opType": "ShuffleProducer"
                 }
             ]
         },
         {
             "operators": [
                 {
-                    "op_name": "Scan_pgtr",
-                    "op_type": "QueryScan",
+                    "opName": "Scan_pgtr",
+                    "opType": "QueryScan",
                     "schema": {
-                        "column_names": [
+                        "columnNames": [
                             "iOrder",
                             "grp"
                         ],
-                        "column_types": [
+                        "columnTypes": [
                             "LONG_TYPE",
                             "INT_TYPE"
                         ]
@@ -46,279 +46,279 @@
                     "sql": "SELECT iOrder, grp FROM [leelee#astro#cosmo512] WHERE grp<>0"
                 },
                 {
-                    "arg_child": "Scan_pgtr",
-                    "arg_pf": {
+                    "argChild": "Scan_pgtr",
+                    "argPf": {
                         "index": "0",
                         "type": "SingleFieldHash"
                     },
-                    "op_name": "SP_pgtr",
-                    "op_type": "ShuffleProducer"
+                    "opName": "SP_pgtr",
+                    "opType": "ShuffleProducer"
                 }
             ]
         },
         {
             "operators": [
                 {
-                    "arg_operator_id": "SP_base",
-                    "op_name": "SC1",
-                    "op_type": "ShuffleConsumer"
+                    "argOperatorId": "SP_base",
+                    "opName": "SC1",
+                    "opType": "ShuffleConsumer"
                 },
                 {
-                    "arg_operator_id": "SP_pgtr",
-                    "op_name": "SC2",
-                    "op_type": "ShuffleConsumer"
+                    "argOperatorId": "SP_pgtr",
+                    "opName": "SC2",
+                    "opType": "ShuffleConsumer"
                 },
                 {
-                    "arg_child1": "SC1",
-                    "arg_child2": "SC2",
-                    "arg_columns1": [
+                    "argChild1": "SC1",
+                    "argChild2": "SC2",
+                    "argColumns1": [
                         "0"
                     ],
-                    "arg_columns2": [
+                    "argColumns2": [
                         "0"
                     ],
-                    "arg_select1": [
+                    "argSelect1": [
                         "0",
                         "1"
                     ],
-                    "arg_select2": [
+                    "argSelect2": [
                         "1"
                     ],
-                    "op_name": "JoinOnIOrder",
-                    "op_type": "SymmetricHashJoin"
+                    "opName": "JoinOnIOrder",
+                    "opType": "SymmetricHashJoin"
                 },
                 {
-                    "arg_child": "JoinOnIOrder",
-                    "arg_pf": {
+                    "argChild": "JoinOnIOrder",
+                    "argPf": {
                         "index": "1",
                         "type": "SingleFieldHash"
                     },
-                    "op_name": "SP_JoinOnIOrder",
-                    "op_type": "ShuffleProducer"
+                    "opName": "SP_JoinOnIOrder",
+                    "opType": "ShuffleProducer"
                 }
             ]
         },
         {
             "operators": [
                 {
-                    "op_name": "Scan_grps_of_interest",
-                    "op_type": "TableScan",
-                    "relation_key": {
-                        "program_name": "astro",
-                        "relation_name": "grps_of_interest",
-                        "user_name": "leelee"
+                    "opName": "Scan_grps_of_interest",
+                    "opType": "TableScan",
+                    "relationKey": {
+                        "programName": "astro",
+                        "relationName": "grps_of_interest",
+                        "userName": "leelee"
                     }
                 },
                 {
-                    "arg_child": "Scan_grps_of_interest",
-                    "arg_pf": {
+                    "argChild": "Scan_grps_of_interest",
+                    "argPf": {
                         "index": "0",
                         "type": "SingleFieldHash"
                     },
-                    "op_name": "SP_grps_of_interest",
-                    "op_type": "ShuffleProducer"
+                    "opName": "SP_grps_of_interest",
+                    "opType": "ShuffleProducer"
                 }
             ]
         },
         {
             "operators": [
                 {
-                    "arg_operator_id": "SP_JoinOnIOrder",
-                    "op_name": "SC3",
-                    "op_type": "ShuffleConsumer"
+                    "argOperatorId": "SP_JoinOnIOrder",
+                    "opName": "SC3",
+                    "opType": "ShuffleConsumer"
                 },
                 {
-                    "arg_operator_id": "SP_grps_of_interest",
-                    "op_name": "SC4",
-                    "op_type": "ShuffleConsumer"
+                    "argOperatorId": "SP_grps_of_interest",
+                    "opName": "SC4",
+                    "opType": "ShuffleConsumer"
                 },
                 {
-                    "arg_child1": "SC3",
-                    "arg_child2": "SC4",
-                    "arg_columns1": [
+                    "argChild1": "SC3",
+                    "argChild2": "SC4",
+                    "argColumns1": [
                         "1"
                     ],
-                    "arg_columns2": [
+                    "argColumns2": [
                         "0"
                     ],
-                    "arg_select1": [
+                    "argSelect1": [
                         "0",
                         "1",
                         "2"
                     ],
-                    "arg_select2": [
+                    "argSelect2": [
                         "0"
                     ],
-                    "op_name": "JoinOnIOrderWihGroupsOfInterest",
-                    "op_type": "SymmetricHashJoin"
+                    "opName": "JoinOnIOrderWihGroupsOfInterest",
+                    "opType": "SymmetricHashJoin"
                 },
                 {
-                    "arg_child": "JoinOnIOrderWihGroupsOfInterest",
-                    "arg_pf": {
+                    "argChild": "JoinOnIOrderWihGroupsOfInterest",
+                    "argPf": {
                         "index": [
                             "1",
                             "2"
                         ],
                         "type": "MultiFieldHash"
                     },
-                    "op_name": "SP_JoinOnIOrderWithGroupsOfInterest",
-                    "op_type": "ShuffleProducer"
+                    "opName": "SP_JoinOnIOrderWithGroupsOfInterest",
+                    "opType": "ShuffleProducer"
                 }
             ]
         },
         {
             "operators": [
                 {
-                    "arg_operator_id": "SP_JoinOnIOrderWithGroupsOfInterest",
-                    "op_name": "SC_JoinOnIOrderWithGroupsOfInterest",
-                    "op_type": "ShuffleConsumer"
+                    "argOperatorId": "SP_JoinOnIOrderWithGroupsOfInterest",
+                    "opName": "SC_JoinOnIOrderWithGroupsOfInterest",
+                    "opType": "ShuffleConsumer"
                 },
                 {
-                    "arg_agg_fields": [
+                    "argAggFields": [
                         "0"
                     ],
-                    "arg_agg_operators": [
+                    "argAggOperators": [
                         [
                             "AGG_OP_COUNT"
                         ]
                     ],
-                    "arg_child": "SC_JoinOnIOrderWithGroupsOfInterest",
-                    "arg_group_fields": [
+                    "argChild": "SC_JoinOnIOrderWithGroupsOfInterest",
+                    "argGroupFields": [
                         "1",
                         "2"
                     ],
-                    "op_name": "PotentialProgenitorGroup",
-                    "op_type": "MultiGroupByAggregate"
+                    "opName": "PotentialProgenitorGroup",
+                    "opType": "MultiGroupByAggregate"
                 },
                 {
-                    "arg_child": "PotentialProgenitorGroup",
-                    "op_name": "PotPro",
-                    "op_type": "LocalMultiwayProducer"
+                    "argChild": "PotentialProgenitorGroup",
+                    "opName": "PotPro",
+                    "opType": "LocalMultiwayProducer"
                 }
             ]
         },
         {
             "operators": [
                 {
-                    "op_name": "Scan_masstable",
-                    "op_type": "TableScan",
-                    "relation_key": {
-                        "program_name": "astro",
-                        "relation_name": "masstable",
-                        "user_name": "leelee"
+                    "opName": "Scan_masstable",
+                    "opType": "TableScan",
+                    "relationKey": {
+                        "programName": "astro",
+                        "relationName": "masstable",
+                        "userName": "leelee"
                     }
                 },
                 {
-                    "arg_child": "Scan_masstable",
-                    "arg_pf": {
+                    "argChild": "Scan_masstable",
+                    "argPf": {
                         "index": "0",
                         "type": "SingleFieldHash"
                     },
-                    "op_name": "SP_masstable",
-                    "op_type": "ShuffleProducer"
+                    "opName": "SP_masstable",
+                    "opType": "ShuffleProducer"
                 }
             ]
         },
         {
             "operators": [
                 {
-                    "arg_operator_id": "SP_masstable",
-                    "op_name": "SC_masstable",
-                    "op_type": "ShuffleConsumer"
+                    "argOperatorId": "SP_masstable",
+                    "opName": "SC_masstable",
+                    "opType": "ShuffleConsumer"
                 },
                 {
-                    "arg_operator_id": "PotPro",
-                    "op_name": "PotPro1",
-                    "op_type": "LocalMultiwayConsumer"
+                    "argOperatorId": "PotPro",
+                    "opName": "PotPro1",
+                    "opType": "LocalMultiwayConsumer"
                 },
                 {
-                    "arg_agg_fields": [
+                    "argAggFields": [
                         "2"
                     ],
-                    "arg_agg_operators": [
+                    "argAggOperators": [
                         [
                             "AGG_OP_MAX"
                         ]
                     ],
-                    "arg_child": "PotPro1",
-                    "arg_group_field": 0,
-                    "op_name": "GrpsWithMaxVals",
-                    "op_type": "SingleGroupByAggregate"
+                    "argChild": "PotPro1",
+                    "argGroupField": 0,
+                    "opName": "GrpsWithMaxVals",
+                    "opType": "SingleGroupByAggregate"
                 },
                 {
-                    "arg_operator_id": "PotPro",
-                    "op_name": "PotPro2",
-                    "op_type": "LocalMultiwayConsumer"
+                    "argOperatorId": "PotPro",
+                    "opName": "PotPro2",
+                    "opType": "LocalMultiwayConsumer"
                 },
                 {
-                    "arg_child1": "PotPro2",
-                    "arg_child2": "GrpsWithMaxVals",
-                    "arg_columns1": [
+                    "argChild1": "PotPro2",
+                    "argChild2": "GrpsWithMaxVals",
+                    "argColumns1": [
                         "0",
                         "2"
                     ],
-                    "arg_columns2": [
+                    "argColumns2": [
                         "0",
                         "1"
                     ],
-                    "arg_select1": [
+                    "argSelect1": [
                         "0",
                         "1",
                         "2"
                     ],
-                    "arg_select2": [
+                    "argSelect2": [
                         "0"
                     ],
-                    "op_name": "SelectedProgenitorJoined",
-                    "op_type": "SymmetricHashJoin"
+                    "opName": "SelectedProgenitorJoined",
+                    "opType": "SymmetricHashJoin"
                 },
                 {
-                    "arg_agg_fields": [
+                    "argAggFields": [
                         "1"
                     ],
-                    "arg_agg_operators": [
+                    "argAggOperators": [
                         [
                             "AGG_OP_MIN"
                         ]
                     ],
-                    "arg_child": "SelectedProgenitorJoined",
-                    "arg_group_field": 0,
-                    "op_name": "SelectedProgenitorGroupedBy",
-                    "op_type": "SingleGroupByAggregate"
+                    "argChild": "SelectedProgenitorJoined",
+                    "argGroupField": 0,
+                    "opName": "SelectedProgenitorGroupedBy",
+                    "opType": "SingleGroupByAggregate"
                 },
                 {
-                    "arg_child1": "SelectedProgenitorGroupedBy",
-                    "arg_child2": "SC_masstable",
-                    "arg_columns1": [
+                    "argChild1": "SelectedProgenitorGroupedBy",
+                    "argChild2": "SC_masstable",
+                    "argColumns1": [
                         "1"
                     ],
-                    "arg_columns2": [
+                    "argColumns2": [
                         "0"
                     ],
-                    "arg_select1": [
+                    "argSelect1": [
                         "0",
                         "1"
                     ],
-                    "arg_select2": [
+                    "argSelect2": [
                         "1"
                     ],
-                    "op_name": "result",
-                    "op_type": "SymmetricHashJoin"
+                    "opName": "result",
+                    "opType": "SymmetricHashJoin"
                 },
                 {
-                    "arg_child": "result",
-                    "arg_overwrite_table": true,
-                    "op_name": "INSERT",
-                    "op_type": "DbInsert",
-                    "relation_key": {
-                        "program_name": "astro",
-                        "relation_name": "progenitor512-512",
-                        "user_name": "leelee"
+                    "argChild": "result",
+                    "argOverwriteTable": true,
+                    "opName": "INSERT",
+                    "opType": "DbInsert",
+                    "relationKey": {
+                        "programName": "astro",
+                        "relationName": "progenitor512-512",
+                        "userName": "leelee"
                     }
                 }
             ]
         }
     ],
-    "logical_ra": "progenitor512-512 holds the results of a large progenitor query",
-    "raw_datalog": "blah."
+    "logicalRa": "progenitor512-512 holds the results of a large progenitor query",
+    "rawDatalog": "blah."
 }

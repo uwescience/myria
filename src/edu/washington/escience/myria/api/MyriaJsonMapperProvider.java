@@ -9,7 +9,6 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.jaxrs.json.JacksonJaxbJsonProvider;
 
 /**
@@ -72,9 +71,6 @@ public class MyriaJsonMapperProvider extends JacksonJaxbJsonProvider {
     mapper.setVisibility(PropertyAccessor.GETTER, Visibility.NONE);
     mapper.setVisibility(PropertyAccessor.IS_GETTER, Visibility.NONE);
     mapper.setVisibility(PropertyAccessor.SETTER, Visibility.NONE);
-
-    /* Use the Web's property naming strategy. */
-    mapper.setPropertyNamingStrategy(PropertyNamingStrategy.CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES);
 
     return mapper;
   }

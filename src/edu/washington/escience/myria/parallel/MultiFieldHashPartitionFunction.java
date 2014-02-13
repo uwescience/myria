@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.parallel;
 
+import java.util.Objects;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -20,44 +22,53 @@ public final class MultiFieldHashPartitionFunction extends PartitionFunction {
   private static final long serialVersionUID = 1L;
 
   /** The indices used for partitioning. */
-  private final int[] fieldIndexes;
+  @JsonProperty
+  private final int[] indexes;
 
   /**
    * @param numPartition number of partitions
-   * @param fieldIndexes the indices used for partitioning.
+   * @param indexes the indices used for partitioning.
    */
   @JsonCreator
-  public MultiFieldHashPartitionFunction(@Nullable @JsonProperty("num_partitions") final Integer numPartition,
-      @JsonProperty(value = "field_indexes", required = true) final Integer[] fieldIndexes) {
+  public MultiFieldHashPartitionFunction(@Nullable @JsonProperty("numPartitions") final Integer numPartition,
+      @JsonProperty(value = "indexes", required = true) final Integer[] indexes) {
     super(numPartition);
-    Preconditions.checkArgument(fieldIndexes.length > 1, "MultiFieldHash requires at least 2 fields to hash");
-    this.fieldIndexes = new int[fieldIndexes.length];
-    for (int i = 0; i < fieldIndexes.length; ++i) {
-      int index = Preconditions.checkNotNull(fieldIndexes[i], "MultiFieldHash field index %s cannot be null", i);
+    Objects.requireNonNull(indexes, "indexes");
+    Preconditions.checkArgument(indexes.length > 1, "MultiFieldHash requires at least 2 fields to hash");
+    this.indexes = new int[indexes.length];
+    for (int i = 0; i < indexes.length; ++i) {
+      int index = Preconditions.checkNotNull(indexes[i], "MultiFieldHash field index %s cannot be null", i);
       Preconditions.checkArgument(index >= 0, "MultiFieldHash field index %s cannot take negative value %s", i, index);
-      this.fieldIndexes[i] = index;
+      this.indexes[i] = index;
     }
   }
 
   /**
    * @param numPartition number of partitions
-   * @param fieldIndexes the indices used for partitioning.
+   * @param indexes the indices used for partitioning.
    */
-  public MultiFieldHashPartitionFunction(final Integer numPartition, final int[] fieldIndexes) {
+  public MultiFieldHashPartitionFunction(final Integer numPartition, final int[] indexes) {
     super(numPartition);
-    Preconditions.checkArgument(fieldIndexes.length > 1, "MultiFieldHash requires at least 2 fields to hash");
-    this.fieldIndexes = fieldIndexes;
-    for (int i = 0; i < fieldIndexes.length; ++i) {
-      int index = fieldIndexes[i];
+    Preconditions.checkArgument(indexes.length > 1, "MultiFieldHash requires at least 2 fields to hash");
+    this.indexes = indexes;
+    for (int i = 0; i < indexes.length; ++i) {
+      int index = indexes[i];
       Preconditions.checkArgument(index >= 0, "MultiFieldHash field index %s cannot take negative value %s", i, index);
     }
+  }
+
+  /**
+   * @return the field indexes on which tuples will be hash partitioned.
+   */
+  public int[] getIndexes() {
+    return indexes;
   }
 
   @Override
   public int[] partition(@Nonnull final TupleBatch tb) {
     final int[] result = new int[tb.numTuples()];
     for (int i = 0; i < result.length; i++) {
-      int p = tb.hashCode(i, fieldIndexes) % numPartition();
+      int p = tb.hashCode(i, indexes) % numPartition();
       if (p < 0) {
         p = p + numPartition();
       }

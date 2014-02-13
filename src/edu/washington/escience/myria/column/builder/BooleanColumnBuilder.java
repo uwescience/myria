@@ -19,7 +19,7 @@ import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
  * A column of Boolean values. To save space, this implementation uses a BitSet as the internal representation.
  * 
  */
-public final class BooleanColumnBuilder implements ColumnBuilder<Boolean> {
+public final class BooleanColumnBuilder extends ColumnBuilder<Boolean> {
   /** Internal representation of the column data. */
   private final BitSet data;
   /** Number of valid elements. */
@@ -79,14 +79,8 @@ public final class BooleanColumnBuilder implements ColumnBuilder<Boolean> {
     return Type.BOOLEAN_TYPE;
   }
 
-  /**
-   * Inserts the specified element at end of this column.
-   * 
-   * @param value element to be inserted.
-   * @return this column.
-   * @throws BufferOverflowException if exceeds buffer up bound.
-   */
-  public BooleanColumnBuilder append(final boolean value) throws BufferOverflowException {
+  @Override
+  public BooleanColumnBuilder appendBoolean(final boolean value) throws BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
     if (numBits >= TupleBatch.BATCH_SIZE) {
       throw new BufferOverflowException();
@@ -95,30 +89,25 @@ public final class BooleanColumnBuilder implements ColumnBuilder<Boolean> {
     return this;
   }
 
+  @Deprecated
   @Override
   public BooleanColumnBuilder appendObject(final Object value) throws BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return append((Boolean) value);
+    return appendBoolean((Boolean) value);
   }
 
   @Override
   public BooleanColumnBuilder appendFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException,
       BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return append(resultSet.getBoolean(jdbcIndex));
+    return appendBoolean(resultSet.getBoolean(jdbcIndex));
   }
 
   @Override
   public BooleanColumnBuilder appendFromSQLite(final SQLiteStatement statement, final int index)
       throws SQLiteException, BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return append(0 != statement.columnInt(index));
-  }
-
-  @Override
-  public BooleanColumnBuilder append(final Boolean value) throws BufferOverflowException {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return append(value.booleanValue());
+    return appendBoolean(0 != statement.columnInt(index));
   }
 
   @Override
@@ -179,15 +168,12 @@ public final class BooleanColumnBuilder implements ColumnBuilder<Boolean> {
 
   @Override
   @Deprecated
-  public Boolean get(final int row) {
+  public Boolean getObject(final int row) {
     Preconditions.checkArgument(row >= 0 && row < numBits);
     return data.get(row);
   }
 
-  /**
-   * @param row the row to get
-   * @return primitive value of the row
-   * */
+  @Override
   public boolean getBoolean(final int row) {
     Preconditions.checkArgument(row >= 0 && row < numBits);
     return data.get(row);

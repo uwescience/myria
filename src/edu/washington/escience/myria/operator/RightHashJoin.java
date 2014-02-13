@@ -1,14 +1,13 @@
 package edu.washington.escience.myria.operator;
 
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.ReadableColumn;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.column.builder.ColumnBuilder;
-import edu.washington.escience.myria.column.mutable.MutableColumn;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
@@ -246,24 +245,15 @@ public final class RightHashJoin extends BinaryOperator {
    */
   protected void addToAns(final TupleBatch cntTB, final int row, final TupleBuffer hashTable, final int index) {
     List<Column<?>> tbColumns = cntTB.getDataColumns();
-    final int rowInColumn = cntTB.getValidIndices().get(row);
-    MutableColumn<?>[] hashTblColumns = hashTable.getColumns(index);
-    ColumnBuilder<?>[] hashTblColumnBuilders = null;
-    if (hashTblColumns == null) {
-      hashTblColumnBuilders = hashTable.getColumnBuilders(index);
-    }
+    ReadableColumn[] hashTblColumns = hashTable.getColumns(index);
     int tupleIdx = hashTable.getTupleIndexInContainingTB(index);
 
     for (int i = 0; i < leftAnswerColumns.length; ++i) {
-      ans.put(i, tbColumns.get(leftAnswerColumns[i]), rowInColumn);
+      ans.put(i, tbColumns.get(leftAnswerColumns[i]), row);
     }
 
     for (int i = 0; i < rightAnswerColumns.length; ++i) {
-      if (hashTblColumns != null) {
-        ans.put(i + leftAnswerColumns.length, hashTblColumns[rightAnswerColumns[i]], tupleIdx);
-      } else {
-        ans.put(i + leftAnswerColumns.length, hashTblColumnBuilders[rightAnswerColumns[i]], tupleIdx);
-      }
+      ans.put(i + leftAnswerColumns.length, hashTblColumns[rightAnswerColumns[i]], tupleIdx);
     }
 
   }
@@ -434,9 +424,8 @@ public final class RightHashJoin extends BinaryOperator {
     }
     tupleIndicesList.add(nextIndex);
     List<Column<?>> inputColumns = tb.getDataColumns();
-    int inColumnRow = tb.getValidIndices().get(row);
     for (int column = 0; column < tb.numColumns(); column++) {
-      hashTable.put(column, inputColumns.get(column), inColumnRow);
+      hashTable.put(column, inputColumns.get(column), row);
     }
   }
 }

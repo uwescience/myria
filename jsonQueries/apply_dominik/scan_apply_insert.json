@@ -3,29 +3,29 @@
         {
             "operators": [
                 {
-                    "op_name": "Scan",
-                    "op_type": "TableScan",
-                    "relation_key": {
-                        "program_name": "adhoc",
-                        "relation_name": "TwitterK",
-                        "user_name": "public"
+                    "opName": "Scan",
+                    "opType": "TableScan",
+                    "relationKey": {
+                        "programName": "adhoc",
+                        "relationName": "TwitterK",
+                        "userName": "public"
                     }
                 },
                 {
-                    "arg_child": "Scan",
+                    "argChild": "Scan",
                     "expressions": [
                         {
-                            "output_name": "EvalResult",
-                            "root_expression_operator": {
+                            "outputName": "EvalResult",
+                            "rootExpressionOperator": {
                                 "type" : "SQRT",
                                 "operand" : {
                                     "left": {
                                         "type": "CONSTANT",
                                         "value": -500,
-                                        "value_type": "INT_TYPE"
+                                        "valueType": "INT_TYPE"
                                     },
                                     "right": {
-                                        "column_idx": 0,
+                                        "columnIdx": 0,
                                         "type": "VARIABLE"
                                     },
                                     "type": "PLUS"
@@ -33,23 +33,23 @@
                             }
                         }
                     ],
-                    "op_name": "Apply",
-                    "op_type": "Apply"
+                    "opName": "Apply",
+                    "opType": "Apply"
                 },
                 {
-                    "arg_child": "Apply",
-                    "arg_overwrite_table": true,
-                    "op_name": "Insert",
-                    "op_type": "DbInsert",
-                    "relation_key": {
-                        "program_name": "adhoc",
-                        "relation_name": "TwitterKApply",
-                        "user_name": "public"
+                    "argChild": "Apply",
+                    "argOverwriteTable": true,
+                    "opName": "Insert",
+                    "opType": "DbInsert",
+                    "relationKey": {
+                        "programName": "adhoc",
+                        "relationName": "TwitterKApply",
+                        "userName": "public"
                     }
                 }
             ]
         }
     ],
-    "logical_ra": "TwitterKApply :- Apply($0+5)[Scan(TwitterK)].",
-    "raw_datalog": "TwitterKApply :- Apply($0+5)[Scan(TwitterK)]."
+    "logicalRa": "TwitterKApply :- Apply($0+5)[Scan(TwitterK)].",
+    "rawDatalog": "TwitterKApply :- Apply($0+5)[Scan(TwitterK)]."
 }

@@ -1,0 +1,55 @@
+{
+  "rawDatalog": "Sequence[StoreTemp(JustX)[Apply(LOG(($0 + 2))=LOG(($0 + 2)))[Scan(public:adhoc:TwitterK)]]]",
+  "fragments": [
+    {
+      "operators": [
+        {
+          "opType": "TableScan",
+          "opName": "V0",
+          "relationKey": {
+            "userName": "public",
+            "relationName": "TwitterK",
+            "programName": "adhoc"
+          }
+        },
+        {
+          "opType": "Apply",
+          "opName": "V1",
+          "emitExpressions": [
+            {
+              "outputName": "log",
+              "rootExpressionOperator": {
+                "type": "LOG",
+                "operand": {
+                  "left": {
+                    "type": "VARIABLE",
+                    "columnIdx": 0
+                  },
+                  "type": "PLUS",
+                  "right": {
+                    "value": "2",
+                    "type": "CONSTANT",
+                    "valueType": "INT_TYPE"
+                  }
+                }
+              }
+            }
+          ],
+          "argChild": "V0"
+        },
+        {
+          "opType": "DbInsert",
+          "opName": "root",
+          "relationKey": {
+            "userName": "public",
+            "relationName": "JustX",
+            "programName": "__TEMP__"
+          },
+          "argChild": "V1",
+          "argOverwriteTable": true
+        }
+      ]
+    }
+  ],
+  "logicalRa": "Sequence[StoreTemp(JustX)[Apply(LOG(($0 + 2))=LOG(($0 + 2)))[Scan(public:adhoc:TwitterK)]]]"
+}

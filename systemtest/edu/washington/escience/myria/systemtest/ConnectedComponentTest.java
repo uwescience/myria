@@ -60,8 +60,8 @@ public class ConnectedComponentTest extends SystemTestBase {
       List<Column<?>> output = iter.next();
       int numRow = output.get(0).size();
       for (int i = 0; i < numRow; i++) {
-        int fr = Integer.parseInt(output.get(0).get(i).toString());
-        int fe = Integer.parseInt(output.get(1).get(i).toString());
+        int fr = Integer.parseInt(output.get(0).getObject(i).toString());
+        int fe = Integer.parseInt(output.get(1).getObject(i).toString());
         graph[fr][fe] = true;
       }
     }
@@ -140,6 +140,10 @@ public class ConnectedComponentTest extends SystemTestBase {
   }
 
   public void connectedComponents(final boolean failure, final boolean prioritized) throws Exception {
+    if (TestUtils.inTravis() && failure) {
+      System.err.println("Skipping test because in Travis.");
+      return;
+    }
 
     // data generation
     final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);

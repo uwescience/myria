@@ -28,12 +28,12 @@ public class TimesExpression extends BinaryExpression {
   }
 
   @Override
-  public Type getOutputType(final Schema schema) {
-    return checkAndReturnDefaultNumericType(schema);
+  public Type getOutputType(final Schema schema, final Schema stateSchema) {
+    return checkAndReturnDefaultNumericType(schema, stateSchema);
   }
 
   @Override
-  public String getJavaString(final Schema schema) {
-    return getInfixBinaryString("*", schema);
+  public String getJavaString(final Schema schema, final Schema stateSchema) {
+    return getInfixBinaryString("*", schema, stateSchema);
   }
 }

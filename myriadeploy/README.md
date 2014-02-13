@@ -76,6 +76,10 @@ B. The `launch_cluster.sh` script really just runs the following 2 scripts in or
      
        ./start_workers.py <deployment.cfg>
 
+C. You can also launch the cluster using Eclipse.
+
+   Edit the run configuration for `RunMyriaForProfiling` and set the working directory in *Arguments* to the Myria working directory (for example `/tmp/myria/twoNodeLocalParallel-files` if you are using `deployment.cfg.local`). When you hit run, the cluster is started.
+
 #### 2. Check the cluster status.
 
 A. Query which workers the master knows about. They better match what's in `deployment.cfg`!

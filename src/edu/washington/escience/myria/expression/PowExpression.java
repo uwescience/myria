@@ -28,13 +28,13 @@ public class PowExpression extends BinaryExpression {
   }
 
   @Override
-  public Type getOutputType(final Schema schema) {
-    checkAndReturnDefaultNumericType(schema);
+  public Type getOutputType(final Schema schema, final Schema stateSchema) {
+    checkAndReturnDefaultNumericType(schema, stateSchema);
     return Type.DOUBLE_TYPE;
   }
 
   @Override
-  public String getJavaString(final Schema schema) {
-    return getFunctionCallBinaryString("Math.pow", schema);
+  public String getJavaString(final Schema schema, final Schema stateSchema) {
+    return getFunctionCallBinaryString("Math.pow", schema, stateSchema);
   }
 }

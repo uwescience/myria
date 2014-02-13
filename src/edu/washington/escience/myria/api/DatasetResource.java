@@ -24,9 +24,14 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
+import org.apache.commons.httpclient.HttpStatus;
 import org.slf4j.LoggerFactory;
 
 import com.sun.jersey.core.header.ContentDisposition;
+import com.wordnik.swagger.annotations.Api;
+import com.wordnik.swagger.annotations.ApiOperation;
+import com.wordnik.swagger.annotations.ApiResponse;
+import com.wordnik.swagger.annotations.ApiResponses;
 
 import edu.washington.escience.myria.CsvTupleWriter;
 import edu.washington.escience.myria.DbException;
@@ -53,6 +58,7 @@ import edu.washington.escience.myria.parallel.Server;
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 @Path("/dataset")
+@Api(value = "/dataset", description = "Operations on datasets")
 public final class DatasetResource {
   /** The Myria server running on the master. */
   @Context
@@ -72,9 +78,11 @@ public final class DatasetResource {
    * @throws DbException if there is an error in the database.
    */
   @GET
-  @Path("/user-{user_name}/program-{program_name}/relation-{relation_name}")
-  public Response getDataset(@PathParam("user_name") final String userName,
-      @PathParam("program_name") final String programName, @PathParam("relation_name") final String relationName)
+  @ApiOperation(value = "get information about a dataset", response = DatasetStatus.class)
+  @ApiResponses(value = { @ApiResponse(code = HttpStatus.SC_NOT_FOUND, message = "Dataset not found", response = String.class) })
+  @Path("/user-{userName}/program-{programName}/relation-{relationName}")
+  public Response getDataset(@PathParam("userName") final String userName,
+      @PathParam("programName") final String programName, @PathParam("relationName") final String relationName)
       throws DbException {
     DatasetStatus status = server.getDatasetStatus(RelationKey.of(userName, programName, relationName));
     if (status == null) {
@@ -123,9 +131,9 @@ public final class DatasetResource {
    */
   @GET
   @Produces({ MediaType.APPLICATION_OCTET_STREAM, MediaType.APPLICATION_JSON })
-  @Path("/user-{user_name}/program-{program_name}/relation-{relation_name}/data")
-  public Response getDatasetData(@PathParam("user_name") final String userName,
-      @PathParam("program_name") final String programName, @PathParam("relation_name") final String relationName,
+  @Path("/user-{userName}/program-{programName}/relation-{relationName}/data")
+  public Response getDatasetData(@PathParam("userName") final String userName,
+      @PathParam("programName") final String programName, @PathParam("relationName") final String relationName,
       @QueryParam("format") final String format) throws DbException {
 
     /* Start building the response. */
@@ -203,9 +211,9 @@ public final class DatasetResource {
   @PUT
   @Consumes(MediaType.APPLICATION_OCTET_STREAM)
   @Produces(MediaType.APPLICATION_JSON)
-  @Path("/user-{user_name}/program-{program_name}/relation-{relation_name}/data")
-  public Response replaceDataset(final InputStream is, @PathParam("user_name") final String userName,
-      @PathParam("program_name") final String programName, @PathParam("relation_name") final String relationName,
+  @Path("/user-{userName}/program-{programName}/relation-{relationName}/data")
+  public Response replaceDataset(final InputStream is, @PathParam("userName") final String userName,
+      @PathParam("programName") final String programName, @PathParam("relationName") final String relationName,
       @QueryParam("format") final String format) throws DbException {
     RelationKey relationKey = RelationKey.of(userName, programName, relationName);
     DatasetEncoding dataset = new DatasetEncoding();
@@ -408,8 +416,8 @@ public final class DatasetResource {
    * @throws DbException if there is an error accessing the Catalog.
    */
   @GET
-  @Path("/user-{user_name}")
-  public List<DatasetStatus> getDatasetsForUser(@PathParam("user_name") final String userName) throws DbException {
+  @Path("/user-{userName}")
+  public List<DatasetStatus> getDatasetsForUser(@PathParam("userName") final String userName) throws DbException {
     List<DatasetStatus> datasets = server.getDatasetsForUser(userName);
     for (DatasetStatus status : datasets) {
       status.setUri(getCanonicalResourcePath(uriInfo, status.getRelationKey()));
@@ -424,9 +432,9 @@ public final class DatasetResource {
    * @throws DbException if there is an error accessing the Catalog.
    */
   @GET
-  @Path("/user-{user_name}/program-{program_name}")
-  public List<DatasetStatus> getDatasetsForUser(@PathParam("user_name") final String userName,
-      @PathParam("program_name") final String programName) throws DbException {
+  @Path("/user-{userName}/program-{programName}")
+  public List<DatasetStatus> getDatasetsForUser(@PathParam("userName") final String userName,
+      @PathParam("programName") final String programName) throws DbException {
     List<DatasetStatus> datasets = server.getDatasetsForProgram(userName, programName);
     for (DatasetStatus status : datasets) {
       status.setUri(getCanonicalResourcePath(uriInfo, status.getRelationKey()));

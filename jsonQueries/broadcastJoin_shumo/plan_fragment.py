@@ -7,7 +7,7 @@ def pretty_json(obj):
 
 def connection_info(host):
     connection_info = {
-        "driver_class": "com.vertica.jdbc.Driver",
+        "driverClass": "com.vertica.jdbc.Driver",
         "dbms": "vertica",
         "host": host,
         "port": "15433",
@@ -21,17 +21,17 @@ def connection_info(host):
 def scan_broadcast(relation_key):
     
     scan = {
-        "op_name": "ScanR",
-        "op_type": "TableScan",
-        "relation_key": relation_key,
-        "connection_info": connection_info("localhost")
+        "opName": "ScanR",
+        "opType": "TableScan",
+        "relationKey": relation_key,
+        "connectionInfo": connection_info("localhost")
     }
     
     broadcast = {
-        "arg_child": "ScanR",
-        "arg_operator_id": "broadcast",
-        "op_name": "broadcast",
-        "op_type": "BroadcastProducer"
+        "argChild": "ScanR",
+        "argOperatorId": "broadcast",
+        "opName": "broadcast",
+        "opType": "BroadcastProducer"
     }
 
     fragment = {
@@ -42,41 +42,41 @@ def scan_broadcast(relation_key):
 
 def scan_join(relation_key):
     scan = {
-        "op_name": "ScanU",
-        "op_type": "TableScan",
-        "relation_key": {
-            "program_name": "broadcastjoin",
-            "relation_name": "UserBase",
-            "user_name": "shumochu"
+        "opName": "ScanU",
+        "opType": "TableScan",
+        "relationKey": {
+            "programName": "broadcastjoin",
+            "relationName": "UserBase",
+            "userName": "shumochu"
         },
-        "connection_info":connection_info("localhost")
+        "connectionInfo":connection_info("localhost")
     }
     broadcast_consumer = {
-        "arg_operator_id": "broadcast",
+        "argOperatorId": "broadcast",
         "arg_schema": {
-            "column_types" : ["LONG_TYPE","STRING_TYPE","LONG_TYPE"],
-            "column_names" : ["pageRank","pageURL","avgDuration"]
+            "columnTypes" : ["LONG_TYPE","STRING_TYPE","LONG_TYPE"],
+            "columnNames" : ["pageRank","pageURL","avgDuration"]
         },
-        "op_name": "receive",
-        "op_type": "BroadcastConsumer"
+        "opName": "receive",
+        "opType": "BroadcastConsumer"
     }
     join = {
-        "arg_child1": "receive",
-        "arg_child2": "ScanU",
+        "argChild1": "receive",
+        "argChild2": "ScanU",
         "arg_columns1": [ 1 ],
         "arg_columns2": [ 1 ],
         "arg_select1": [ 0 ],
         "arg_select2": [ 1 ],                
-        "op_name": "Join",
-        "op_type": "SymmetricHashJoin"
+        "opName": "Join",
+        "opType": "SymmetricHashJoin"
     }
     insert = {
-        "arg_child": "Join",
-        "op_name": "Insert",
-        "op_type": "DbInsert",
-        "relation_key": relation_key,
-        "arg_overwrite_table": True,
-        "connection_info": ("localhost")
+        "argChild": "Join",
+        "opName": "Insert",
+        "opType": "DbInsert",
+        "relationKey": relation_key,
+        "argOverwriteTable": True,
+        "connectionInfo": ("localhost")
     }
     fragment = {
         "operators": [ scan, broadcast_consumer, join, insert ]
@@ -87,39 +87,39 @@ def scan_join(relation_key):
 def generate_broadcastjoin():
     
     table_R_key = {
-        "program_name": "broadcastjoin",
-        "relation_name": "RankBase2x",
-        "user_name": "shumochu"
+        "programName": "broadcastjoin",
+        "relationName": "RankBase2x",
+        "userName": "shumochu"
     }
     result_key = {
-        "program_name": "broadcastjoin",
-        "relation_name": "result2x",
-        "user_name": "shumochu"
+        "programName": "broadcastjoin",
+        "relationName": "result2x",
+        "userName": "shumochu"
     }
     
     fragments = [ scan_broadcast(table_R_key), scan_join(result_key) ]
 
     whole_plan = {
         "fragments": fragments,
-        "logical_ra": "broadcast join",
-        "raw_datalog": "broadcast join"
+        "logicalRa": "broadcast join",
+        "rawDatalog": "broadcast join"
     }
 
     return whole_plan
 
 def scan_and_shuffle(relation_key, relation_name):
     scan = {
-        "op_name": "Scan("+relation_name+")",
-        "op_type": "TableScan",
-        "relation_key": relation_key,
-        "connection_info": connection_info("localhost")
+        "opName": "Scan("+relation_name+")",
+        "opType": "TableScan",
+        "relationKey": relation_key,
+        "connectionInfo": connection_info("localhost")
     }
     shuffle = {
-        "arg_child": "Scan("+relation_name+")",
-        "arg_operator_id": "Shuffle("+relation_name+")",
-        "op_name": "Shuffle("+relation_name+")",
-        "op_type": "ShuffleProducer",
-        "arg_pf": {
+        "argChild": "Scan("+relation_name+")",
+        "argOperatorId": "Shuffle("+relation_name+")",
+        "opName": "Shuffle("+relation_name+")",
+        "opType": "ShuffleProducer",
+        "argPf": {
             "index": 1,
             "type": "SingleFieldHash"
         }
@@ -132,36 +132,36 @@ def scan_and_shuffle(relation_key, relation_name):
 
 def receive_and_join(relation_key):
     gatherR = {
-        "arg_operator_id": "Shuffle(R)",
+        "argOperatorId": "Shuffle(R)",
         "arg_schema": {
-            "column_names": [
+            "columnNames": [
                 "pageRank","pageURL","avgDuration"
             ],
-            "column_types": [
+            "columnTypes": [
                 "LONG_TYPE","STRING_TYPE","LONG_TYPE"
             ]
         },
-        "op_name": "Gather(R)",
-        "op_type": "ShuffleConsumer"
+        "opName": "Gather(R)",
+        "opType": "ShuffleConsumer"
     }
 
     getherS = {
-        "arg_operator_id": "Shuffle(S)",
+        "argOperatorId": "Shuffle(S)",
         "arg_schema": {
-            "column_names": [
+            "columnNames": [
                 "sourceIPAddr","destinationURL","visitDate","adRevenue","UserAgent","cCode","lCode","sKeyword", "avgTimeOnSite"
             ],
-            "column_types": [
+            "columnTypes": [
                 "STRING_TYPE","STRING_TYPE","DATETIME_TYPE","FLOAT_TYPE","STRING_TYPE","STRING_TYPE","STRING_TYPE","STRING_TYPE","LONG_TYPE"
             ]
         },
-        "op_name": "Gather(S)",
-        "op_type": "ShuffleConsumer"
+        "opName": "Gather(S)",
+        "opType": "ShuffleConsumer"
     }
 
     join = {
-        "arg_child1": "Gather(R)",
-            "arg_child2": "Gather(S)",
+        "argChild1": "Gather(R)",
+            "argChild2": "Gather(S)",
             "arg_columns1": [
                 1
             ],
@@ -174,16 +174,16 @@ def receive_and_join(relation_key):
             "arg_select2": [
                 1
             ],
-            "op_name": "Join",
-            "op_type": "SymmetricHashJoin"
+            "opName": "Join",
+            "opType": "SymmetricHashJoin"
     }
     insert = {
-        "arg_child": "Join",
-        "op_name": "InsertResult",
-        "op_type": "DbInsert",
-        "relation_key": relation_key,
-        "arg_overwrite_table": True,
-        "connection_info": connection_info("localhost")
+        "argChild": "Join",
+        "opName": "InsertResult",
+        "opType": "DbInsert",
+        "relationKey": relation_key,
+        "argOverwriteTable": True,
+        "connectionInfo": connection_info("localhost")
     }
     fragments = {
         "operators": [gatherR, getherS, join, insert]
@@ -194,19 +194,19 @@ def receive_and_join(relation_key):
 def generate_partition_join():
     
     table_R_key = {
-        "program_name": "broadcastjoin",
-        "relation_name": "RankBase2x",
-        "user_name": "shumochu"
+        "programName": "broadcastjoin",
+        "relationName": "RankBase2x",
+        "userName": "shumochu"
     }
     table_S_key = {
-        "program_name": "broadcastjoin",
-        "relation_name": "UserBase",
-        "user_name": "shumochu"
+        "programName": "broadcastjoin",
+        "relationName": "UserBase",
+        "userName": "shumochu"
     }
     result_key = {
-        "program_name": "broadcastjoin",
-        "relation_name": "PartitonJoinResult2x",
-        "user_name": "shumochu"
+        "programName": "broadcastjoin",
+        "relationName": "PartitonJoinResult2x",
+        "userName": "shumochu"
     }
 
     fragments = [ scan_and_shuffle(table_R_key,"R"),
@@ -216,23 +216,23 @@ def generate_partition_join():
 
     whole_plan = {
         "fragments": fragments,
-        "logical_ra": "partiton join",
-        "raw_datalog": "partition join"
+        "logicalRa": "partiton join",
+        "rawDatalog": "partition join"
     }
     return whole_plan
 
 def scan_collect(relation_key):
     scan = {
-        "op_name": "ScanR",
-        "op_type": "TableScan",
-        "relation_key": relation_key,
-        "connection_info": connection_info("localhost")
+        "opName": "ScanR",
+        "opType": "TableScan",
+        "relationKey": relation_key,
+        "connectionInfo": connection_info("localhost")
     }
     collect_producer = {
-        "arg_child": "ScanR",
-        "arg_operator_id": "Collect",
-        "op_name": "CollectProducer",
-        "op_type": "CollectProducer"
+        "argChild": "ScanR",
+        "argOperatorId": "Collect",
+        "opName": "CollectProducer",
+        "opType": "CollectProducer"
     }
     fragment = {
         "operators": [scan, collect_producer]
@@ -241,18 +241,18 @@ def scan_collect(relation_key):
 
 def collect_insert(relation_key, schema, worker_id):
     collect_consumer = {
-        "arg_operator_id": "Collect",
+        "argOperatorId": "Collect",
         "arg_schema": schema,
-        "op_name": "Gather",
-        "op_type": "CollectConsumer"
+        "opName": "Gather",
+        "opType": "CollectConsumer"
     }
     insert = {
-        "arg_child": "Gather",
-        "op_name": "Insert",
-        "op_type": "DbInsert",
-        "relation_key": relation_key,
-        "arg_overwrite_table": True,
-        "connection_info": connection_info("localhost")
+        "argChild": "Gather",
+        "opName": "Insert",
+        "opType": "DbInsert",
+        "relationKey": relation_key,
+        "argOverwriteTable": True,
+        "connectionInfo": connection_info("localhost")
     }
     fragment = {
         "operators": [collect_consumer, insert],
@@ -263,44 +263,44 @@ def collect_insert(relation_key, schema, worker_id):
 def concatenate():
     
     rank_schema = {
-        "column_names": [ "pageRank","pageURL","avgDuration" ],
-        "column_types": [ "LONG_TYPE","STRING_TYPE","LONG_TYPE" ]
+        "columnNames": [ "pageRank","pageURL","avgDuration" ],
+        "columnTypes": [ "LONG_TYPE","STRING_TYPE","LONG_TYPE" ]
     }
     user_schema = {
-        "column_names": [
+        "columnNames": [
             "sourceIPAddr","destinationURL","visitDate","adRevenue","UserAgent","cCode","lCode","sKeyword", "avgTimeOnSite"
         ],
-        "column_types": [
+        "columnTypes": [
             "STRING_TYPE","STRING_TYPE","DATETIME_TYPE","FLOAT_TYPE","STRING_TYPE","STRING_TYPE","STRING_TYPE","STRING_TYPE","LONG_TYPE"
         ]
     }
     rank_table_key = {
-        "program_name": "broadcastjoin",
-        "relation_name": "RankBase2x",
-        "user_name": "shumochu"
+        "programName": "broadcastjoin",
+        "relationName": "RankBase2x",
+        "userName": "shumochu"
     }
     user_table_key = {
-        "program_name": "broadcastjoin",
-        "relation_name": "UserBase",
-        "user_name": "shumochu"
+        "programName": "broadcastjoin",
+        "relationName": "UserBase",
+        "userName": "shumochu"
     }
     rank_table_insert_key = {
-        "program_name": "broadcastjoin",
-        "relation_name": "RankBase2xUnion8workers",
-        "user_name": "shumochu"
+        "programName": "broadcastjoin",
+        "relationName": "RankBase2xUnion8workers",
+        "userName": "shumochu"
     }
     user_table_insert_key = {
-        "program_name": "broadcastjoin",
-        "relation_name": "UserBaseUnion8workers",
-        "user_name": "shumochu"
+        "programName": "broadcastjoin",
+        "relationName": "UserBaseUnion8workers",
+        "userName": "shumochu"
     }
 
     fragments = [ scan_collect(rank_table_key), collect_insert(rank_table_insert_key, rank_schema, 1)]
 
     whole_plan = {
         "fragments": fragments,
-        "logical_ra": "union table in 8 workers",
-        "raw_datalog": "union table in 8 workers"
+        "logicalRa": "union table in 8 workers",
+        "rawDatalog": "union table in 8 workers"
     }
     return whole_plan
 

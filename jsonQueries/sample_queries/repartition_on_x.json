@@ -3,46 +3,46 @@
         {
             "operators": [
                 {
-                    "op_name": "Scan",
-                    "op_type": "TableScan",
-                    "relation_key": {
-                        "program_name": "global_join",
-                        "relation_name": "smallTable",
-                        "user_name": "jwang"
+                    "opName": "Scan",
+                    "opType": "TableScan",
+                    "relationKey": {
+                        "programName": "global_join",
+                        "relationName": "smallTable",
+                        "userName": "jwang"
                     }
                 },
                 {
-                    "arg_child": "Scan",
-                    "arg_pf": {
+                    "argChild": "Scan",
+                    "argPf": {
                         "index": 0,
                         "type": "SingleFieldHash"
                     },
-                    "op_name": "Scatter",
-                    "op_type": "ShuffleProducer"
+                    "opName": "Scatter",
+                    "opType": "ShuffleProducer"
                 }
             ]
         },
         {
             "operators": [
                 {
-                    "arg_operator_id": "Scatter",
-                    "op_name": "Gather",
-                    "op_type": "ShuffleConsumer"
+                    "argOperatorId": "Scatter",
+                    "opName": "Gather",
+                    "opType": "ShuffleConsumer"
                 },
                 {
-                    "arg_child": "Gather",
-                    "arg_overwrite_table": true,
-                    "op_name": "Insert",
-                    "op_type": "DbInsert",
-                    "relation_key": {
-                        "program_name": "global_join",
-                        "relation_name": "smallTable_hash_follower",
-                        "user_name": "jwang"
+                    "argChild": "Gather",
+                    "argOverwriteTable": true,
+                    "opName": "Insert",
+                    "opType": "DbInsert",
+                    "relationKey": {
+                        "programName": "global_join",
+                        "relationName": "smallTable_hash_follower",
+                        "userName": "jwang"
                     }
                 }
             ]
         }
     ],
-    "logical_ra": "Insert[Shuffle(0)[Scan[smallTable], smallTable2]]",
-    "raw_datalog": "smallTable_hash_follower(x,y) :- smallTable(x,y), @hash(x)."
+    "logicalRa": "Insert[Shuffle(0)[Scan[smallTable], smallTable2]]",
+    "rawDatalog": "smallTable_hash_follower(x,y) :- smallTable(x,y), @hash(x)."
 }

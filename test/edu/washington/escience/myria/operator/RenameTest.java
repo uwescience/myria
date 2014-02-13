@@ -16,6 +16,8 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.ColumnFactory;
+import edu.washington.escience.myria.column.builder.IntColumnBuilder;
+import edu.washington.escience.myria.column.builder.StringColumnBuilder;
 
 public class RenameTest {
 
@@ -40,13 +42,12 @@ public class RenameTest {
    */
   private static final int TUPLES_TO_BUILD = 100;
 
-  @SuppressWarnings("unchecked")
   @BeforeClass
   public static void setup() {
     List<ColumnBuilder<?>> dataBuilder = ColumnFactory.allocateColumns(originalSchema);
     for (int i = 0; i < TUPLES_TO_BUILD; ++i) {
-      ((ColumnBuilder<String>) dataBuilder.get(0)).append("val" + i);
-      ((ColumnBuilder<Integer>) dataBuilder.get(1)).append(i);
+      ((StringColumnBuilder) dataBuilder.get(0)).appendString("val" + i);
+      ((IntColumnBuilder) dataBuilder.get(1)).appendInt(i);
     }
     ImmutableList.Builder<Column<?>> dataColumnBuilder = new ImmutableList.Builder<Column<?>>();
     for (ColumnBuilder<?> builder : dataBuilder) {

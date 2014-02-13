@@ -1,18 +1,23 @@
 package edu.washington.escience.myria.operator;
 
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.expression.Expression;
-import edu.washington.escience.myria.expression.GenericExpression;
+import edu.washington.escience.myria.expression.evaluate.ConstantEvaluator;
+import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
 
 /**
  * Generic apply operator.
@@ -24,97 +29,114 @@ public class Apply extends UnaryOperator {
   /**
    * List of expressions that will be used to create the output.
    */
-  private ImmutableList<GenericExpression> genericExpressions;
+  private ImmutableList<Expression> emitExpressions;
 
   /**
-   * Buffers the output tuples.
+   * One evaluator for each expression in {@link #emitExpressions}.
    */
-  private TupleBatchBuffer resultBuffer;
+  private ArrayList<GenericEvaluator> emitEvaluators;
+
+  /**
+   * @return the {@link #emitExpressions}
+   */
+  protected ImmutableList<Expression> getEmitExpressions() {
+    return emitExpressions;
+  }
+
+  /**
+   * @return the {@link #emitEvaluators}
+   */
+  public ArrayList<GenericEvaluator> getEmitEvaluators() {
+    return emitEvaluators;
+  }
 
   /**
    * 
    * @param child child operator that data is fetched from
-   * @param genericExpressions expression that created the output
+   * @param emitExpressions expression that created the output
    */
-  public Apply(final Operator child, final List<GenericExpression> genericExpressions) {
+  public Apply(final Operator child, final List<Expression> emitExpressions) {
     super(child);
-    if (genericExpressions != null) {
-      setExpressions(genericExpressions);
+    if (emitExpressions != null) {
+      setEmitExpressions(emitExpressions);
     }
   }
 
   /**
-   * Set the expressions for each column.
-   * 
-   * @param genericExpressions the expressions
+   * @param emitExpressions the emit expressions for each column
    */
-  private void setExpressions(final List<GenericExpression> genericExpressions) {
-    this.genericExpressions = ImmutableList.copyOf(genericExpressions);
+  private void setEmitExpressions(final List<Expression> emitExpressions) {
+    this.emitExpressions = ImmutableList.copyOf(emitExpressions);
   }
 
   @Override
-  protected TupleBatch fetchNextReady() throws Exception {
-    TupleBatch tb = null;
-    if (getChild().eoi() || getChild().eos()) {
-      return resultBuffer.popAny();
+  protected TupleBatch fetchNextReady() throws DbException, InvocationTargetException {
+    Operator child = getChild();
+
+    if (child.eoi() || getChild().eos()) {
+      return null;
     }
 
-    while ((tb = getChild().nextReady()) != null) {
-      for (int rowIdx = 0; rowIdx < tb.numTuples(); rowIdx++) {
-        int columnIdx = 0;
-        for (GenericExpression expr : genericExpressions) {
-          expr.evalAndPut(tb, rowIdx, resultBuffer, columnIdx);
-          columnIdx++;
-        }
-      }
-      if (resultBuffer.hasFilledTB()) {
-        return resultBuffer.popFilled();
-      }
+    TupleBatch tb = child.nextReady();
+    if (tb == null) {
+      return null;
     }
-    if (getChild().eoi() || getChild().eos()) {
-      return resultBuffer.popAny();
-    } else {
-      return resultBuffer.popFilled();
+
+    List<Column<?>> output = Lists.newLinkedList();
+    for (GenericEvaluator evaluator : emitEvaluators) {
+      output.add(evaluator.evaluateColumn(tb));
     }
+    return new TupleBatch(getSchema(), output);
   }
 
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    Preconditions.checkNotNull(genericExpressions);
+    Preconditions.checkNotNull(emitExpressions);
 
-    resultBuffer = new TupleBatchBuffer(getSchema());
+    Schema inputSchema = Objects.requireNonNull(getChild().getSchema());
 
-    Schema inputSchema = getChild().getSchema();
-
-    for (GenericExpression expr : genericExpressions) {
-
-      expr.setSchema(inputSchema);
-      if (expr.needsCompiling()) {
-        expr.compile();
+    emitEvaluators = new ArrayList<>(emitExpressions.size());
+    for (Expression expr : emitExpressions) {
+      GenericEvaluator evaluator;
+      if (expr.isConstant()) {
+        evaluator = new ConstantEvaluator(expr, inputSchema, null);
+      } else {
+        evaluator = new GenericEvaluator(expr, inputSchema, null);
       }
+      if (evaluator.needsCompiling()) {
+        evaluator.compile();
+      }
+      Preconditions.checkArgument(!evaluator.needsState());
+      emitEvaluators.add(evaluator);
     }
+  }
+
+  /**
+   * @param evaluators the evaluators to set
+   */
+  public void setEvaluators(final ArrayList<GenericEvaluator> evaluators) {
+    emitEvaluators = evaluators;
   }
 
   @Override
   public Schema generateSchema() {
-    if (genericExpressions == null) {
+    if (emitExpressions == null) {
       return null;
     }
     Operator child = getChild();
     if (child == null) {
       return null;
     }
-    Schema childSchema = child.getSchema();
-    if (childSchema == null) {
+    Schema inputSchema = child.getSchema();
+    if (inputSchema == null) {
       return null;
     }
 
     ImmutableList.Builder<Type> typesBuilder = ImmutableList.builder();
     ImmutableList.Builder<String> namesBuilder = ImmutableList.builder();
 
-    for (Expression expr : genericExpressions) {
-      expr.setSchema(childSchema);
-      typesBuilder.add(expr.getOutputType());
+    for (Expression expr : emitExpressions) {
+      typesBuilder.add(expr.getOutputType(inputSchema, null));
       namesBuilder.add(expr.getOutputName());
     }
     return new Schema(typesBuilder.build(), namesBuilder.build());

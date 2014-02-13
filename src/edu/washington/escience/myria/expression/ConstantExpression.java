@@ -20,6 +20,7 @@ public class ConstantExpression extends ZeroaryExpression {
   /** The type of this object. */
   @JsonProperty
   private final Type valueType;
+
   /** The value of this object. */
   @JsonProperty
   private final String value;
@@ -43,12 +44,12 @@ public class ConstantExpression extends ZeroaryExpression {
   }
 
   @Override
-  public Type getOutputType(final Schema schema) {
+  public Type getOutputType(final Schema schema, final Schema stateSchema) {
     return valueType;
   }
 
   @Override
-  public String getJavaString(final Schema schema) {
+  public String getJavaString(final Schema schema, final Schema stateSchema) {
     switch (valueType) {
       case BOOLEAN_TYPE:
       case DOUBLE_TYPE:
@@ -76,5 +77,12 @@ public class ConstantExpression extends ZeroaryExpression {
     }
     ConstantExpression otherExp = (ConstantExpression) other;
     return Objects.equals(valueType, otherExp.valueType) && Objects.equals(value, otherExp.value);
+  }
+
+  /**
+   * @return the value
+   */
+  public String getValue() {
+    return value;
   }
 }

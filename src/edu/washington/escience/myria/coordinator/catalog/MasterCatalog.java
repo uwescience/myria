@@ -25,6 +25,7 @@ import com.almworks.sqlite4java.SQLiteStatement;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
@@ -113,7 +114,12 @@ public final class MasterCatalog {
     + "    stored_relation_id INTEGER NOT NULL REFERENCES stored_relations,\n"
     + "    shard_index INTEGER NOT NULL,\n"
     + "    worker_id INTEGER NOT NULL REFERENCES workers);";
-/** CREATE TABLE statements @formatter:on */
+  /** Create the stored_relations table. */
+  private static final String UPDATE_UNKNOWN_STATUS =
+      "UPDATE queries "
+    + "SET status = '" + QueryStatusEncoding.Status.UNKNOWN.toString() + "'"
+    + "WHERE status = '" + QueryStatusEncoding.Status.ACCEPTED.toString() + "';";
+ /** CREATE TABLE statements @formatter:on */
 
   /**
    * @param filename the path to the SQLite database storing the catalog.
@@ -260,6 +266,7 @@ public final class MasterCatalog {
           sqliteConnection.exec("PRAGMA locking_mode = EXCLUSIVE;");
           sqliteConnection.exec("BEGIN EXCLUSIVE;");
           sqliteConnection.exec("COMMIT;");
+          sqliteConnection.exec(UPDATE_UNKNOWN_STATUS);
           return null;
         }
       }).get();
@@ -1153,6 +1160,27 @@ public final class MasterCatalog {
   }
 
   /**
+   * Helper function to get a {@link QueryStatusEncoding} from a query over the <code>queries</code> table. This version
+   * expects a "simple" query status, which does not contain the logical or physical query plan.
+   * 
+   * @param statement the query over the <code>queries</code> table. Has been stepped once.
+   * @return the status of the first query in the result.
+   * @throws SQLiteException if there is an error in the database.
+   */
+  private static QueryStatusEncoding querySimpleStatusHelper(final SQLiteStatement statement) throws SQLiteException {
+    final QueryStatusEncoding queryStatus = new QueryStatusEncoding(statement.columnLong(0));
+    queryStatus.rawQuery = statement.columnString(1);
+    queryStatus.submitTime = statement.columnString(2);
+    queryStatus.startTime = statement.columnString(3);
+    queryStatus.finishTime = statement.columnString(4);
+    if (!statement.columnNull(5)) {
+      queryStatus.elapsedNanos = statement.columnLong(5);
+    }
+    queryStatus.status = QueryStatusEncoding.Status.valueOf(statement.columnString(6));
+    return queryStatus;
+  }
+
+  /**
    * Helper function to get a {@link QueryStatusEncoding} from a query over the <code>queries</code> table..
    * 
    * @param statement the query over the <code>queries</code> table. Has been stepped once.
@@ -1180,12 +1208,14 @@ public final class MasterCatalog {
   }
 
   /**
-   * Get the status of all queries in the system.
+   * Get the simple status (no logical or physical plan) for all queries in the system.
    * 
+   * @param limit the maximum number of results to return. Any value <= 0 is interpreted as all results.
+   * @param maxId return only queries with queryId <= maxId. Any value <= 0 is interpreted as no maximum.
    * @return a list of the status of all queries.
    * @throws CatalogException if there is an error in the MasterCatalog.
    */
-  public List<QueryStatusEncoding> getQueries() throws CatalogException {
+  public List<QueryStatusEncoding> getQueries(final long limit, final long maxId) throws CatalogException {
     if (isClosed) {
       throw new CatalogException("MasterCatalog is closed.");
     }
@@ -1196,13 +1226,41 @@ public final class MasterCatalog {
         protected List<QueryStatusEncoding> job(final SQLiteConnection sqliteConnection) throws CatalogException,
             SQLiteException {
           try {
-            SQLiteStatement statement =
-                sqliteConnection
-                    .prepare("SELECT query_id, raw_query,logical_ra,physical_plan,submit_time,start_time,finish_time,elapsed_nanos,status FROM queries ORDER BY query_id DESC;");
+            /* The base of the query */
+            StringBuilder sb =
+                new StringBuilder(
+                    "SELECT query_id,raw_query,submit_time,start_time,finish_time,elapsed_nanos,status FROM queries");
+            /* The query arguments, if any. */
+            List<Long> bound = Lists.newLinkedList();
+            /* If there is a max query id, add the WHERE clause. */
+            if (maxId > 0) {
+              sb.append(" WHERE query_id <= ?");
+              bound.add(maxId);
+            }
+
+            sb.append(" ORDER BY query_id DESC");
+
+            /* If there is a limit supplied, add the LIMIT clause */
+            if (limit > 0) {
+              sb.append(" LIMIT ?");
+              bound.add(limit);
+            }
+            sb.append(";");
+
+            /* Build it and bind any arguments present. */
+            SQLiteStatement statement = sqliteConnection.prepare(sb.toString());
+            int argPos = 1;
+            for (Long arg : bound) {
+              statement.bind(argPos, arg);
+              argPos++;
+            }
+            /* Step it. */
             statement.step();
+
+            /* Return the results. */
             List<QueryStatusEncoding> ret = new LinkedList<QueryStatusEncoding>();
             while (statement.hasRow()) {
-              ret.add(queryStatusHelper(statement));
+              ret.add(querySimpleStatusHelper(statement));
               statement.step();
             }
             statement.dispose();

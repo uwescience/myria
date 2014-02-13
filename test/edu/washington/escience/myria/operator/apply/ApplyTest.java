@@ -14,12 +14,13 @@ import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.AbsExpression;
 import edu.washington.escience.myria.expression.AndExpression;
+import edu.washington.escience.myria.expression.CastExpression;
 import edu.washington.escience.myria.expression.CeilExpression;
 import edu.washington.escience.myria.expression.ConstantExpression;
 import edu.washington.escience.myria.expression.CosExpression;
 import edu.washington.escience.myria.expression.DivideExpression;
 import edu.washington.escience.myria.expression.EqualsExpression;
-import edu.washington.escience.myria.expression.GenericExpression;
+import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.FloorExpression;
 import edu.washington.escience.myria.expression.GreaterThanExpression;
@@ -34,12 +35,18 @@ import edu.washington.escience.myria.expression.PlusExpression;
 import edu.washington.escience.myria.expression.PowExpression;
 import edu.washington.escience.myria.expression.SinExpression;
 import edu.washington.escience.myria.expression.SqrtExpression;
+import edu.washington.escience.myria.expression.StateExpression;
 import edu.washington.escience.myria.expression.TanExpression;
 import edu.washington.escience.myria.expression.TimesExpression;
 import edu.washington.escience.myria.expression.ToUpperCaseExpression;
+import edu.washington.escience.myria.expression.TypeExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
+import edu.washington.escience.myria.expression.evaluate.ConstantEvaluator;
+import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
 import edu.washington.escience.myria.operator.Apply;
+import edu.washington.escience.myria.operator.StatefulApply;
 import edu.washington.escience.myria.operator.TupleSource;
+import edu.washington.escience.myria.util.TestUtils;
 
 public class ApplyTest {
 
@@ -60,7 +67,7 @@ public class ApplyTest {
       tbb.putString(3, "Foo" + i);
       tbb.putBoolean(4, i % 2 == 0);
     }
-    ImmutableList.Builder<GenericExpression> genericExpressions = ImmutableList.builder();
+    ImmutableList.Builder<Expression> Expressions = ImmutableList.builder();
 
     ExpressionOperator vara = new VariableExpression(0);
     ExpressionOperator varb = new VariableExpression(1);
@@ -73,9 +80,9 @@ public class ApplyTest {
 
       ExpressionOperator squareRoot = new SqrtExpression(vara);
 
-      GenericExpression expr = new GenericExpression("first", squareRoot);
+      Expression expr = new Expression("first", squareRoot);
 
-      genericExpressions.add(expr);
+      Expressions.add(expr);
     }
 
     {
@@ -86,8 +93,8 @@ public class ApplyTest {
 
       ExpressionOperator times = new TimesExpression(plus, minus);
 
-      GenericExpression expr = new GenericExpression("second", times);
-      genericExpressions.add(expr);
+      Expression expr = new Expression("second", times);
+      Expressions.add(expr);
     }
 
     {
@@ -101,8 +108,8 @@ public class ApplyTest {
 
       ExpressionOperator sqrt = new SqrtExpression(plus);
 
-      GenericExpression expr = new GenericExpression("third", sqrt);
-      genericExpressions.add(expr);
+      Expression expr = new Expression("third", sqrt);
+      Expressions.add(expr);
     }
 
     {
@@ -110,8 +117,8 @@ public class ApplyTest {
 
       ExpressionOperator upper = new ToUpperCaseExpression(vard);
 
-      GenericExpression expr = new GenericExpression("fourth", upper);
-      genericExpressions.add(expr);
+      Expression expr = new Expression("fourth", upper);
+      Expressions.add(expr);
     }
 
     {
@@ -119,8 +126,8 @@ public class ApplyTest {
 
       ExpressionOperator abs = new AbsExpression(new MinusExpression(varb, vara));
 
-      GenericExpression expr = new GenericExpression("fifth", abs);
-      genericExpressions.add(expr);
+      Expression expr = new Expression("fifth", abs);
+      Expressions.add(expr);
     }
 
     {
@@ -131,9 +138,9 @@ public class ApplyTest {
       ExpressionOperator ceil = new CeilExpression(squareRoot);
       ExpressionOperator plus = new PlusExpression(floor, ceil);
 
-      GenericExpression expr = new GenericExpression("sixth", plus);
+      Expression expr = new Expression("sixth", plus);
 
-      genericExpressions.add(expr);
+      Expressions.add(expr);
     }
 
     {
@@ -151,9 +158,9 @@ public class ApplyTest {
           new TimesExpression(new TanExpression(angle), new ConstantExpression(Type.INT_TYPE, "4"));
       ExpressionOperator add = new PlusExpression(new PlusExpression(cos, sin), tan);
 
-      GenericExpression expr = new GenericExpression("trig", add);
+      Expression expr = new Expression("trig", add);
 
-      genericExpressions.add(expr);
+      Expressions.add(expr);
     }
 
     {
@@ -162,20 +169,48 @@ public class ApplyTest {
       ExpressionOperator and = new AndExpression(vare, new ConstantExpression(Type.BOOLEAN_TYPE, "true"));
       ExpressionOperator or = new OrExpression(new ConstantExpression(Type.BOOLEAN_TYPE, "false"), and);
       ExpressionOperator not = new NotExpression(or);
-      GenericExpression expr = new GenericExpression("boolean", not);
+      Expression expr = new Expression("boolean", not);
 
-      genericExpressions.add(expr);
+      Expressions.add(expr);
     }
 
     {
       // Expression (just copy/ rename): a;
-      GenericExpression expr = new GenericExpression("copy", vara);
+      Expression expr = new Expression("copy", vara);
 
-      assertTrue(!expr.needsCompiling());
-      genericExpressions.add(expr);
+      GenericEvaluator eval = new GenericEvaluator(expr, tbb.getSchema(), null);
+      assertTrue(!eval.needsCompiling());
+      Expressions.add(expr);
     }
 
-    Apply apply = new Apply(new TupleSource(tbb), genericExpressions.build());
+    {
+      // Expression (a constant value of 5);
+      Expression expr = new Expression("constant5", new ConstantExpression(Type.INT_TYPE, "5"));
+
+      GenericEvaluator eval = new ConstantEvaluator(expr, tbb.getSchema(), null);
+      assertTrue(!eval.needsCompiling());
+      Expressions.add(expr);
+    }
+
+    {
+      // Expression (a constant value of 5.0 float);
+      Expression expr = new Expression("constant5f", new ConstantExpression(Type.FLOAT_TYPE, "5"));
+
+      GenericEvaluator eval = new ConstantEvaluator(expr, tbb.getSchema(), null);
+      assertTrue(!eval.needsCompiling());
+      Expressions.add(expr);
+    }
+
+    {
+      // Expression (a constant value of 5.0 double);
+      Expression expr = new Expression("constant5d", new ConstantExpression(Type.DOUBLE_TYPE, "5"));
+
+      GenericEvaluator eval = new ConstantEvaluator(expr, tbb.getSchema(), null);
+      assertTrue(!eval.needsCompiling());
+      Expressions.add(expr);
+    }
+
+    Apply apply = new Apply(new TupleSource(tbb), Expressions.build());
 
     apply.open(null);
     TupleBatch result;
@@ -184,7 +219,7 @@ public class ApplyTest {
     while (!apply.eos()) {
       result = apply.nextReady();
       if (result != null) {
-        assertEquals(9, result.getSchema().numColumns());
+        assertEquals(12, result.getSchema().numColumns());
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(0));
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(1));
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(2));
@@ -194,6 +229,9 @@ public class ApplyTest {
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(6));
         assertEquals(Type.BOOLEAN_TYPE, result.getSchema().getColumnType(7));
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(8));
+        assertEquals(Type.INT_TYPE, result.getSchema().getColumnType(9));
+        assertEquals(Type.FLOAT_TYPE, result.getSchema().getColumnType(10));
+        assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(11));
 
         assertEquals("first", result.getSchema().getColumnName(0));
         assertEquals("second", result.getSchema().getColumnName(1));
@@ -204,6 +242,9 @@ public class ApplyTest {
         assertEquals("trig", result.getSchema().getColumnName(6));
         assertEquals("boolean", result.getSchema().getColumnName(7));
         assertEquals("copy", result.getSchema().getColumnName(8));
+        assertEquals("constant5", result.getSchema().getColumnName(9));
+        assertEquals("constant5f", result.getSchema().getColumnName(10));
+        assertEquals("constant5d", result.getSchema().getColumnName(11));
 
         for (int curI = 0; curI < result.numTuples(); curI++) {
           long i = curI + resultSize;
@@ -222,6 +263,9 @@ public class ApplyTest {
               * 4, result.getDouble(6, curI), tolerance);
           assertEquals(!(false || e && true), result.getBoolean(7, curI));
           assertEquals(a, result.getLong(8, curI));
+          assertEquals(5, result.getInt(9, curI));
+          assertEquals((float) 5.0, result.getFloat(10, curI), 0.00001);
+          assertEquals(5.0, result.getDouble(11, curI), 0.00001);
         }
         resultSize += result.numTuples();
       }
@@ -238,7 +282,7 @@ public class ApplyTest {
       tbb.putLong(0, i + 1);
       tbb.putLong(1, 2 * i);
     }
-    ImmutableList.Builder<GenericExpression> genericExpressions = ImmutableList.builder();
+    ImmutableList.Builder<Expression> Expressions = ImmutableList.builder();
 
     ExpressionOperator vara = new VariableExpression(0);
     ExpressionOperator varb = new VariableExpression(1);
@@ -247,57 +291,57 @@ public class ApplyTest {
       // Expression: vara == varb;
 
       ExpressionOperator eq = new EqualsExpression(vara, varb);
-      GenericExpression expr = new GenericExpression("equals", eq);
+      Expression expr = new Expression("equals", eq);
 
-      genericExpressions.add(expr);
+      Expressions.add(expr);
     }
 
     {
       // Expression: vara != varb;
 
       ExpressionOperator neq = new NotEqualsExpression(vara, varb);
-      GenericExpression expr = new GenericExpression("notequals", neq);
+      Expression expr = new Expression("notequals", neq);
 
-      genericExpressions.add(expr);
+      Expressions.add(expr);
     }
 
     {
       // Expression: vara > varb;
 
       ExpressionOperator gt = new GreaterThanExpression(vara, varb);
-      GenericExpression expr = new GenericExpression("greaterthan", gt);
+      Expression expr = new Expression("greaterthan", gt);
 
-      genericExpressions.add(expr);
+      Expressions.add(expr);
     }
 
     {
       // Expression: vara < varb;
 
       ExpressionOperator lt = new LessThanExpression(vara, varb);
-      GenericExpression expr = new GenericExpression("lessthan", lt);
+      Expression expr = new Expression("lessthan", lt);
 
-      genericExpressions.add(expr);
+      Expressions.add(expr);
     }
 
     {
       // Expression: vara >= varb;
 
       ExpressionOperator gteq = new GreaterThanOrEqualsExpression(vara, varb);
-      GenericExpression expr = new GenericExpression("greaterthanequals", gteq);
+      Expression expr = new Expression("greaterthanequals", gteq);
 
-      genericExpressions.add(expr);
+      Expressions.add(expr);
     }
 
     {
       // Expression: vara <= varb;
 
       ExpressionOperator lteq = new LessThanOrEqualsExpression(vara, varb);
-      GenericExpression expr = new GenericExpression("lessthanequals", lteq);
+      Expression expr = new Expression("lessthanequals", lteq);
 
-      genericExpressions.add(expr);
+      Expressions.add(expr);
     }
 
-    Apply apply = new Apply(new TupleSource(tbb), genericExpressions.build());
+    Apply apply = new Apply(new TupleSource(tbb), Expressions.build());
 
     apply.open(null);
     TupleBatch result;
@@ -339,7 +383,7 @@ public class ApplyTest {
       tbb.putString(0, "Foo" + i);
       tbb.putString(1, "Foo" + (2 - i));
     }
-    ImmutableList.Builder<GenericExpression> genericExpressions = ImmutableList.builder();
+    ImmutableList.Builder<Expression> Expressions = ImmutableList.builder();
 
     ExpressionOperator varc = new VariableExpression(0);
     ExpressionOperator vard = new VariableExpression(1);
@@ -348,57 +392,57 @@ public class ApplyTest {
       // Expression: varc == vard;
 
       ExpressionOperator eq = new EqualsExpression(varc, vard);
-      GenericExpression expr = new GenericExpression("s_equals", eq);
+      Expression expr = new Expression("s_equals", eq);
 
-      genericExpressions.add(expr);
+      Expressions.add(expr);
     }
 
     {
       // Expression: varc != vard;
 
       ExpressionOperator neq = new NotEqualsExpression(varc, vard);
-      GenericExpression expr = new GenericExpression("s_notequals", neq);
+      Expression expr = new Expression("s_notequals", neq);
 
-      genericExpressions.add(expr);
+      Expressions.add(expr);
     }
 
     {
       // Expression: varc > vard;
 
       ExpressionOperator gt = new GreaterThanExpression(varc, vard);
-      GenericExpression expr = new GenericExpression("s_greaterthan", gt);
+      Expression expr = new Expression("s_greaterthan", gt);
 
-      genericExpressions.add(expr);
+      Expressions.add(expr);
     }
 
     {
       // Expression: varc < vard;
 
       ExpressionOperator lt = new LessThanExpression(varc, vard);
-      GenericExpression expr = new GenericExpression("s_lessthan", lt);
+      Expression expr = new Expression("s_lessthan", lt);
 
-      genericExpressions.add(expr);
+      Expressions.add(expr);
     }
 
     {
       // Expression: varc >= vard;
 
       ExpressionOperator gteq = new GreaterThanOrEqualsExpression(varc, vard);
-      GenericExpression expr = new GenericExpression("s_greaterthanequals", gteq);
+      Expression expr = new Expression("s_greaterthanequals", gteq);
 
-      genericExpressions.add(expr);
+      Expressions.add(expr);
     }
 
     {
       // Expression: varc <= vard;
 
       ExpressionOperator lteq = new LessThanOrEqualsExpression(varc, vard);
-      GenericExpression expr = new GenericExpression("s_lessthanequals", lteq);
+      Expression expr = new Expression("s_lessthanequals", lteq);
 
-      genericExpressions.add(expr);
+      Expressions.add(expr);
     }
 
-    Apply apply = new Apply(new TupleSource(tbb), genericExpressions.build());
+    Apply apply = new Apply(new TupleSource(tbb), Expressions.build());
 
     apply.open(null);
     TupleBatch result;
@@ -425,6 +469,144 @@ public class ApplyTest {
           assertEquals(c.compareTo(d) < 0, result.getBoolean(3, curI));
           assertEquals(c.compareTo(d) >= 0, result.getBoolean(4, curI));
           assertEquals(c.compareTo(d) <= 0, result.getBoolean(5, curI));
+        }
+        resultSize += result.numTuples();
+      }
+    }
+    assertEquals(SMALL_NUM_TUPLES, resultSize);
+    apply.close();
+  }
+
+  @Test
+  public void testCast() throws DbException {
+    final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE), ImmutableList.of("number"));
+    final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
+
+    final int[] ids = TestUtils.randomInt(0, 1000, SMALL_NUM_TUPLES);
+
+    for (int i = 0; i < SMALL_NUM_TUPLES; i++) {
+      tbb.putInt(0, ids[i]);
+    }
+
+    ImmutableList.Builder<Expression> Expressions = ImmutableList.builder();
+
+    Expression expr =
+        new Expression("castedNumber",
+            new CastExpression(new VariableExpression(0), new TypeExpression(Type.LONG_TYPE)));
+    Expressions.add(expr);
+
+    Apply apply = new Apply(new TupleSource(tbb), Expressions.build());
+
+    apply.open(null);
+    TupleBatch result;
+    int resultSize = 0;
+    while (!apply.eos()) {
+      result = apply.nextReady();
+      if (result != null) {
+        assertEquals(1, result.getSchema().numColumns());
+        assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(0));
+
+        for (int row = 0; row < result.numTuples(); row++) {
+          assertEquals(ids[row], result.getLong(0, row));
+        }
+        resultSize += result.numTuples();
+      }
+    }
+    assertEquals(SMALL_NUM_TUPLES, resultSize);
+    apply.close();
+  }
+
+  @Test
+  public void testStatefulApplyRange() throws DbException {
+    final Schema schema = new Schema(ImmutableList.of(Type.STRING_TYPE), ImmutableList.of("name"));
+    final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
+    for (long i = 0; i < NUM_TUPLES; i++) {
+      tbb.putString(0, "Foo" + i);
+    }
+
+    Expression initializer = new Expression("counter", new ConstantExpression(Type.INT_TYPE, "-1"));
+    Expression expression = new Expression("index", new StateExpression(0));
+    Expression increment =
+        new Expression(new PlusExpression(new StateExpression(0), new ConstantExpression(Type.INT_TYPE, "1")));
+
+    ImmutableList.Builder<Expression> Initializers = ImmutableList.builder();
+    Initializers.add(initializer);
+
+    ImmutableList.Builder<Expression> Expressions = ImmutableList.builder();
+    Expressions.add(expression);
+
+    ImmutableList.Builder<Expression> Updaters = ImmutableList.builder();
+    Updaters.add(increment);
+
+    StatefulApply apply =
+        new StatefulApply(new TupleSource(tbb), Expressions.build(), Initializers.build(), Updaters.build());
+
+    apply.open(null);
+    TupleBatch result;
+    int resultSize = 0;
+    while (!apply.eos()) {
+      result = apply.nextReady();
+      if (result != null) {
+        assertEquals(1, result.getSchema().numColumns());
+        assertEquals(Type.INT_TYPE, result.getSchema().getColumnType(0));
+
+        for (int curI = 0; curI < result.numTuples(); curI++) {
+          long i = curI + resultSize;
+          assertEquals(i, result.getInt(0, curI));
+        }
+        resultSize += result.numTuples();
+      }
+    }
+    assertEquals(NUM_TUPLES, resultSize);
+    apply.close();
+  }
+
+  @Test
+  public void testStatefulApplyRunningMean() throws DbException {
+    final Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("salary"));
+    final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
+    for (long i = 0; i < SMALL_NUM_TUPLES; i++) {
+      tbb.putLong(0, i + 1);
+    }
+
+    Expression initializeCounter = new Expression("counter", new ConstantExpression(Type.LONG_TYPE, "0"));
+    Expression initializeSum = new Expression("sum", new ConstantExpression(Type.LONG_TYPE, "0"));
+    Expression updateCounter =
+        new Expression(new PlusExpression(new StateExpression(0), new ConstantExpression(Type.LONG_TYPE, "1")));
+    Expression updateSum = new Expression(new PlusExpression(new StateExpression(1), new VariableExpression(0)));
+
+    Expression avg = new Expression("average", new DivideExpression(new StateExpression(1), new StateExpression(0)));
+
+    ImmutableList.Builder<Expression> Initializers = ImmutableList.builder();
+    Initializers.add(initializeCounter);
+    Initializers.add(initializeSum);
+
+    ImmutableList.Builder<Expression> Updaters = ImmutableList.builder();
+    Updaters.add(updateCounter);
+    Updaters.add(updateSum);
+
+    ImmutableList.Builder<Expression> Expressions = ImmutableList.builder();
+    Expressions.add(avg);
+    Expressions.add(new Expression("number", new VariableExpression(0)));
+
+    StatefulApply apply =
+        new StatefulApply(new TupleSource(tbb), Expressions.build(), Initializers.build(), Updaters.build());
+
+    apply.open(null);
+    TupleBatch result;
+    int resultSize = 0;
+    while (!apply.eos()) {
+      result = apply.nextReady();
+      if (result != null) {
+        assertEquals(2, result.getSchema().numColumns());
+        assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(0));
+        assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(1));
+
+        for (int curI = 0; curI < result.numTuples(); curI++) {
+          long i = curI + resultSize + 1;
+          long sum = i * (i + 1) / 2;
+          long runningAverage = sum / i;
+          assertEquals(runningAverage, result.getLong(0, curI));
         }
         resultSize += result.numTuples();
       }

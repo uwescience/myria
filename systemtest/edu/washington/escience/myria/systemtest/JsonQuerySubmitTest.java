@@ -6,8 +6,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.util.HashMap;
 import java.util.Map;
@@ -16,14 +14,36 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.protobuf.ByteString;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.collect.ImmutableList;
 
+import edu.washington.escience.myria.RelationKey;
+import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
+import edu.washington.escience.myria.api.encoding.DatasetEncoding;
+import edu.washington.escience.myria.io.EmptySource;
 import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.util.JsonAPIUtils;
 
 public class JsonQuerySubmitTest extends SystemTestBase {
 
   static Logger LOGGER = LoggerFactory.getLogger(JsonQuerySubmitTest.class);
+
+  /**
+   * Construct an empty ingest request.
+   * 
+   * @return a request to ingest an empty dataset called "public:adhoc:smallTable"
+   * @throws JsonProcessingException if there is an error producing the JSON
+   */
+  public static String emptyIngest() throws JsonProcessingException {
+    /* Construct the JSON for an Empty Ingest request. */
+    DatasetEncoding emptyIngest = new DatasetEncoding();
+    emptyIngest.relationKey = RelationKey.of("public", "adhoc", "smallTable");
+    emptyIngest.schema = Schema.of(ImmutableList.of(Type.STRING_TYPE, Type.LONG_TYPE), ImmutableList.of("foo", "bar"));
+    emptyIngest.source = new EmptySource();
+    return MyriaJsonMapperProvider.getWriter().writeValueAsString(emptyIngest);
+  }
 
   @Override
   public Map<Integer, SocketInfo> getWorkers() {
@@ -33,15 +53,9 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     return m;
   }
 
-  private static final String emptyIngestJson = "{" + "  \"relation_key\" : {" + "    \"user_name\" : \"public\","
-      + "    \"program_name\" : \"adhoc\"," + "    \"relation_name\" : \"smallTable\"" + "  }," + "  \"schema\" : {"
-      + "    \"column_types\" : [\"STRING_TYPE\", \"LONG_TYPE\"]," + "    \"column_names\" : [\"foo\", \"bar\"]"
-      + "  }," + "\"source\" : { \"data_type\" : \"Empty\" } " + "}";
-
   @Test
   public void emptySubmitTest() throws Exception {
-
-    HttpURLConnection conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, emptyIngestJson);
+    HttpURLConnection conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, emptyIngest());
     if (null != conn.getErrorStream()) {
       throw new IllegalStateException(getContents(conn));
     }
@@ -52,7 +66,7 @@ public class JsonQuerySubmitTest extends SystemTestBase {
   @Test
   public void datasetPutTest() throws Exception {
 
-    HttpURLConnection conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, emptyIngestJson);
+    HttpURLConnection conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, emptyIngest());
     if (null != conn.getErrorStream()) {
       throw new IllegalStateException(getContents(conn));
     }
@@ -103,38 +117,6 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     }
     assertEquals(HttpURLConnection.HTTP_ACCEPTED, conn.getResponseCode());
     conn.disconnect();
-  }
-
-  private String getContents(HttpURLConnection conn) {
-    /* If there was any content returned, get it. */
-    String content = null;
-    try {
-      InputStream is = conn.getInputStream();
-      if (is != null) {
-        content = ByteString.readFrom(is).toStringUtf8();
-      }
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-
-    /* If there was any error returned, get it. */
-    String error = null;
-    try {
-      InputStream is = conn.getErrorStream();
-      if (is != null) {
-        error = ByteString.readFrom(is).toStringUtf8();
-      }
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-    StringBuilder ret = new StringBuilder();
-    if (content != null) {
-      ret.append("Content:\n").append(content);
-    }
-    if (error != null) {
-      ret.append("Error:\n").append(error);
-    }
-    return ret.toString();
   }
 
   @Test
