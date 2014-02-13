@@ -194,8 +194,8 @@ public final class FileScan extends LeafOperator {
    */
   public FileScan(final DataSource source, final Schema schema, final Character delimiter,
       @Nullable final Character quote, final Character escape, final Integer numberOfSkippedLines) {
-    this.source = Preconditions.checkNotNull(source, "Datasoure should not be null.");
-    this.schema = Preconditions.checkNotNull(schema, "Schema should not be null.");
+    this.source = Preconditions.checkNotNull(source, "source");
+    this.schema = Preconditions.checkNotNull(schema, "schema");
     this.delimiter = Objects.firstNonNull(delimiter, CSVParser.DEFAULT_SEPARATOR);
     this.quote = Objects.firstNonNull(quote, CSVParser.DEFAULT_QUOTE_CHARACTER);
     this.escape = Objects.firstNonNull(escape, CSVParser.DEFAULT_ESCAPE_CHARACTER);
