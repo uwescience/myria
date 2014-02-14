@@ -53,7 +53,7 @@ import edu.washington.escience.myria.api.encoding.SymmetricHashJoinEncoding;
 import edu.washington.escience.myria.api.encoding.TableScanEncoding;
 import edu.washington.escience.myria.api.encoding.TipsyFileScanEncoding;
 import edu.washington.escience.myria.api.encoding.UnionAllEncoding;
-import edu.washington.escience.myria.expression.BooleanExpression;
+import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.io.FileSource;
 import edu.washington.escience.myria.operator.ColumnSelect;
 import edu.washington.escience.myria.operator.DbQueryScan;
@@ -797,7 +797,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * @return builder.
    * @param predicate predicate.
    */
-  public JsonQueryBaseBuilder filter(final BooleanExpression predicate) {
+  public JsonQueryBaseBuilder filter(final Expression predicate) {
     JsonQueryBaseBuilder filter = buildOperator(FilterEncoding.class, NO_PREFERENCE);
     ((FilterEncoding) filter.op).argPredicate = predicate;
     return filter;
