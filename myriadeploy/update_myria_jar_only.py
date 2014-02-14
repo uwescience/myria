@@ -5,8 +5,10 @@ import myriadeploy
 import subprocess
 import sys
 
+
 def host_port_list(workers):
     return [str(worker[0]) + ':' + str(worker[1]) for worker in workers]
+
 
 def get_host_port_path(node, default_path):
     if len(node) == 2:
@@ -19,6 +21,7 @@ def get_host_port_path(node, default_path):
         (hostname, port, path) = node[:3]
     return (hostname, port, path)
 
+
 def copy_distribution(config):
     "Copy the distribution (jar and libs and conf) to compute nodes."
     nodes = config['nodes']
@@ -29,7 +32,8 @@ def copy_distribution(config):
     for node in nodes:
         (hostname, _, path) = get_host_port_path(node, default_path)
         if hostname != 'localhost':
-            remote_path = "%s@%s:%s/%s-files" % (username, hostname, path, description)
+            remote_path = "{}@{}:{}/{}-files".format(
+                username, hostname, path, description)
         else:
             remote_path = "%s/%s-files" % (path, description)
         to_copy = ["libs", "conf"]
@@ -37,11 +41,14 @@ def copy_distribution(config):
         if subprocess.call(args):
             raise Exception("Error copying distribution to %s" % (hostname,))
 
+
 def main(argv):
     # Usage
     if len(argv) != 2:
         print >> sys.stderr, "Usage: %s <deployment.cfg>" % (argv[0])
-        print >> sys.stderr, "       deployment.cfg: a configuration file modeled after deployment.cfg.sample"
+        print >> sys.stderr, \
+            "       deployment.cfg: \
+            a configuration file modeled after deployment.cfg.sample"
         sys.exit(1)
 
     config = myriadeploy.read_config_file(argv[1])

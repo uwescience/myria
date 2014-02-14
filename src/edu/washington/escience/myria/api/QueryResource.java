@@ -1,6 +1,8 @@
 package edu.washington.escience.myria.api;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.util.HashSet;
 import java.util.List;
@@ -9,6 +11,7 @@ import java.util.Set;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -23,6 +26,7 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
+import org.apache.commons.io.IOUtils;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -31,6 +35,7 @@ import com.google.common.base.Objects;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
@@ -179,7 +184,7 @@ public final class QueryResource {
    * @throws CatalogException if there is an error in the catalog.
    */
   @GET
-  @Path("query-{queryId}")
+  @Path("query-{queryId:\\d+}")
   public Response getQueryStatus(@PathParam("queryId") final long queryId, @Context final UriInfo uriInfo)
       throws CatalogException {
     final QueryStatusEncoding queryStatus = server.getQueryStatus(queryId);
@@ -221,7 +226,7 @@ public final class QueryResource {
    * @throws CatalogException if there is an error in the catalog.
    */
   @DELETE
-  @Path("query-{queryId}")
+  @Path("query-{queryId:\\d+}")
   public Response cancelQuery(@PathParam("queryId") final long queryId, @Context final UriInfo uriInfo)
       throws CatalogException {
     try {
@@ -257,6 +262,96 @@ public final class QueryResource {
       status.url = getCanonicalResourcePath(uriInfo, status.queryId);
     }
     return Response.ok().cacheControl(MyriaApiUtils.doNotCache()).entity(queries).build();
+  }
+
+  /**
+   * 
+   * Get the data for visualization in JSON format.
+   * 
+   * @param queryId query id.
+   * @param fragmentId fragment id.
+   * @param workerId worker id, default is 0, which means getting the data of all workers.
+   * @param uriInfo the URL of the current request.
+   * @return the JSON formatted data for visualization
+   * @throws CatalogException if there is an error in the catalog.
+   * @throws IOException if there is anything happens in serializing and deserializing JSON.
+   */
+  @GET
+  @Path("query-{queryId:\\d+}/fragment-{fragmentId:-?\\d+}")
+  public Response getProfile(@PathParam("queryId") final long queryId, @PathParam("fragmentId") final long fragmentId,
+      @DefaultValue("0") @QueryParam("workerId") final long workerId, @Context final UriInfo uriInfo)
+      throws CatalogException, IOException {
+
+    /* validate the query id */
+    final QueryStatusEncoding queryStatus = server.getQueryStatus(queryId);
+    final URI uri = uriInfo.getAbsolutePath();
+    if (queryStatus == null) {
+      return Response.status(Status.NOT_FOUND).contentLocation(uri).entity("Query " + queryId + " was not found")
+          .build();
+    }
+
+    /* write current physical plan to JSON. */
+    final String queryPlanName = "query_" + queryId + ".json";
+    try {
+      File queryPlan = new File(queryPlanName);
+      if (!queryPlan.exists()) {
+        if (server.getQueryStatus(queryId).physicalPlan.getClass() != QueryEncoding.class) {
+          throw new CatalogException("Cannot serialize physical plan.");
+        }
+        MyriaJsonMapperProvider.getMapper().writeValue(queryPlan, server.getQueryStatus(queryId).physicalPlan);
+      }
+    } catch (IOException e) {
+      throw new CatalogException(e);
+    }
+
+    /* pull profiling logs from worker directories. */
+    String response;
+    final String depolymentFile = server.getConfiguration(MyriaSystemConfigKeys.DEPLOYMENT_FILE);
+    ProcessBuilder pb;
+    /* if there is an user defined workerId, get logs of this specific worker. otherwise, get all. */
+    if (workerId != 0) {
+      if (workerId > server.getWorkers().size() || workerId <= 0) {
+        return Response.status(Status.NOT_FOUND).contentLocation(uri).entity("worker " + workerId + " was not found")
+            .build();
+      }
+      pb = new ProcessBuilder("./get_logs.py", "--worker", workerId + "", depolymentFile);
+    } else {
+      pb = new ProcessBuilder("./get_logs.py", depolymentFile);
+    }
+
+    try {
+      Process shell = pb.redirectErrorStream(true).start();
+      String errorMessage = IOUtils.toString(shell.getInputStream());
+      int exitStatus = shell.waitFor();
+      shell.destroy();
+      if (exitStatus == 0) {
+        String description = "./" + server.getConfiguration(MyriaSystemConfigKeys.DESCRIPTION);
+
+        if (workerId != 0) {
+          pb =
+              new ProcessBuilder("./extract_profiling_data.py", "--worker", String.valueOf(workerId), description,
+                  String.valueOf(queryId), String.valueOf(fragmentId), queryPlanName, depolymentFile);
+        } else {
+          pb =
+              new ProcessBuilder("./extract_profiling_data.py", description, String.valueOf(queryId), String
+                  .valueOf(fragmentId), queryPlanName, depolymentFile);
+        }
+        shell = pb.start();
+        InputStream shellIn = shell.getInputStream();
+        response = IOUtils.toString(shellIn);
+
+        shellIn.close();
+        shell.destroy();
+      } else {
+        throw new CatalogException("Could not get logs. Exit status: " + exitStatus + "\n" + errorMessage);
+      }
+
+    } catch (IOException ex) {
+      throw new CatalogException(ex);
+    } catch (InterruptedException e) {
+      throw new CatalogException(e);
+    }
+    return Response.ok().cacheControl(MyriaApiUtils.doNotCache()).entity(response).build();
   }
 
   /**

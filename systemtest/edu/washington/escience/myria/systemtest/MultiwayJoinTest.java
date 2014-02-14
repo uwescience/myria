@@ -6,6 +6,8 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,6 +30,9 @@ import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.operator.DbQueryScan;
+import edu.washington.escience.myria.operator.InMemoryOrderBy;
+import edu.washington.escience.myria.operator.LeapFrogJoin;
+import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
@@ -35,6 +40,9 @@ import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
+import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
+import edu.washington.escience.myria.parallel.GenericShuffleProducer;
+import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.util.JsonAPIUtils;
 import edu.washington.escience.myria.util.TestUtils;
 import edu.washington.escience.myria.util.Tuple;
@@ -73,10 +81,9 @@ public class MultiwayJoinTest extends SystemTestBase {
     final TupleBatchBuffer tbs = new TupleBatchBuffer(TWITTER_S_SCHEMA);
     final TupleBatchBuffer tbt = new TupleBatchBuffer(TWITTER_T_SCHEMA);
 
-    String twitterFilePath =
-        getClass().getClassLoader().getResource("./").getPath() + "../../testdata/twitter/TwitterK.csv";
+    Path twitterFilePath = Paths.get("testdata", "twitter", "TwitterK.csv");
 
-    CSVReader csv = new CSVReader(new FileReader(twitterFilePath));
+    CSVReader csv = new CSVReader(new FileReader(twitterFilePath.toFile()));
 
     String[] line;
 
@@ -250,6 +257,147 @@ public class MultiwayJoinTest extends SystemTestBase {
         tb.compactInto(actualResult);
       }
     }
+    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
+    TestUtils.assertTupleBagEqual(expectedResult, resultBag);
+  }
+
+  @Test
+  public void twoWayJoinUsingMultiwayJoinOperator2() throws Exception {
+    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
+    Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
+
+    /* Step 1: ingetst data */
+    /* Table 1 */
+    createTable(workerIDs[0], JOIN_TEST_TABLE_1, "id long, name varchar(20)");
+    createTable(workerIDs[1], JOIN_TEST_TABLE_1, "id long, name varchar(20)");
+
+    /* Table 2 */
+    createTable(workerIDs[0], JOIN_TEST_TABLE_2, "id long, name varchar(20)");
+    createTable(workerIDs[1], JOIN_TEST_TABLE_2, "id long, name varchar(20)");
+
+    final TupleBatchBuffer tb1w1 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
+    final TupleBatchBuffer tb2w1 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
+    final TupleBatchBuffer tb1w2 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
+    final TupleBatchBuffer tb2w2 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
+
+    Path table1Worker1FilePath = Paths.get("testdata", "multiwayjoin", "testtable1_worker1.csv");
+    Path table2Worker1FilePath = Paths.get("testdata", "multiwayjoin", "testtable2_worker1.csv");
+    Path table1Worker2FilePath = Paths.get("testdata", "multiwayjoin", "testtable1_worker2.csv");
+    Path table2Worker2FilePath = Paths.get("testdata", "multiwayjoin", "testtable2_worker2.csv");
+
+    CSVReader csv1 = new CSVReader(new FileReader(table1Worker1FilePath.toFile()));
+    CSVReader csv2 = new CSVReader(new FileReader(table2Worker1FilePath.toFile()));
+    CSVReader csv3 = new CSVReader(new FileReader(table1Worker2FilePath.toFile()));
+    CSVReader csv4 = new CSVReader(new FileReader(table2Worker2FilePath.toFile()));
+
+    String[] line;
+
+    while ((line = csv1.readNext()) != null) {
+      tb1w1.putLong(0, Long.parseLong(line[0]));
+      tb1w1.putString(1, line[1]);
+    }
+    csv1.close();
+
+    while ((line = csv2.readNext()) != null) {
+      tb2w1.putLong(0, Long.parseLong(line[0]));
+      tb2w1.putString(1, line[1]);
+    }
+    csv2.close();
+
+    while ((line = csv3.readNext()) != null) {
+      tb1w2.putLong(0, Long.parseLong(line[0]));
+      tb1w2.putString(1, line[1]);
+    }
+    csv3.close();
+
+    while ((line = csv4.readNext()) != null) {
+      tb2w2.putLong(0, Long.parseLong(line[0]));
+      tb2w2.putString(1, line[1]);
+    }
+    csv4.close();
+
+    final TupleBatchBuffer table1 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
+    table1.unionAll(tb1w1);
+    table1.unionAll(tb1w2);
+
+    final TupleBatchBuffer table2 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
+    table2.unionAll(tb2w1);
+    table2.unionAll(tb2w2);
+
+    final HashMap<Tuple, Integer> expectedResult = TestUtils.naturalJoin(table1, table2, 0, 0);
+
+    TupleBatch tb = null;
+    while ((tb = tb1w1.popAny()) != null) {
+      insert(workerIDs[0], JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA, tb);
+    }
+    while ((tb = tb2w1.popAny()) != null) {
+      insert(workerIDs[0], JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA, tb);
+    }
+    while ((tb = tb1w2.popAny()) != null) {
+      insert(workerIDs[1], JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA, tb);
+    }
+    while ((tb = tb2w2.popAny()) != null) {
+      insert(workerIDs[1], JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA, tb);
+    }
+
+    /* import dataset to catalog */
+    server.importDataset(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA, new HashSet<Integer>(Arrays.asList(workerIDs[0],
+        workerIDs[1])));
+    server.importDataset(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA, new HashSet<Integer>(Arrays.asList(workerIDs[0],
+        workerIDs[1])));
+
+    /* Step 2: do the query */
+    final ExchangePairID serverReceiveID = ExchangePairID.newID();
+    final ExchangePairID table1ShuffleID = ExchangePairID.newID();
+    final ExchangePairID table2ShuffleID = ExchangePairID.newID();
+    final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(2, 0);
+
+    final ImmutableList<Type> outputTypes =
+        ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE, Type.LONG_TYPE, Type.STRING_TYPE);
+    final ImmutableList<String> outputColumnNames = ImmutableList.of("id1", "name1", "id2", "name2");
+    final Schema outputSchema = new Schema(outputTypes, outputColumnNames);
+
+    final DbQueryScan scan1 = new DbQueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA);
+    final DbQueryScan scan2 = new DbQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA);
+
+    final GenericShuffleProducer sp1 =
+        new GenericShuffleProducer(scan1, table1ShuffleID, new int[] { workerIDs[0], workerIDs[1] }, pf);
+    final GenericShuffleConsumer sc1 =
+        new GenericShuffleConsumer(sp1.getSchema(), table1ShuffleID, new int[] { workerIDs[0], workerIDs[1] });
+    final GenericShuffleProducer sp2 =
+        new GenericShuffleProducer(scan2, table2ShuffleID, new int[] { workerIDs[0], workerIDs[1] }, pf);
+    final GenericShuffleConsumer sc2 =
+        new GenericShuffleConsumer(sp2.getSchema(), table2ShuffleID, new int[] { workerIDs[0], workerIDs[1] });
+
+    final InMemoryOrderBy o1 = new InMemoryOrderBy(sc1, new int[] { 0, 1 }, new boolean[] { true, true });
+    final InMemoryOrderBy o2 = new InMemoryOrderBy(sc2, new int[] { 0, 1 }, new boolean[] { true, true });
+
+    int[][][] fieldMap = new int[][][] { { { 0, 0 }, { 1, 0 } } };
+    int[][] outputMap = new int[][] { { 0, 0 }, { 0, 1 }, { 1, 0 }, { 1, 1 } };
+
+    final LeapFrogJoin localjoin = new LeapFrogJoin(new Operator[] { o1, o2 }, fieldMap, outputMap, outputColumnNames);
+    localjoin.getSchema();
+    final CollectProducer cp1 = new CollectProducer(localjoin, serverReceiveID, MASTER_ID);
+    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
+    workerPlans.put(workerIDs[0], new RootOperator[] { sp1, sp2, cp1 });
+    workerPlans.put(workerIDs[1], new RootOperator[] { sp1, sp2, cp1 });
+
+    final CollectConsumer serverCollect =
+        new CollectConsumer(outputSchema, serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
+    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
+    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
+    SinkRoot serverPlan = new SinkRoot(queueStore);
+
+    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
+    tb = null;
+    while (!receivedTupleBatches.isEmpty()) {
+      tb = receivedTupleBatches.poll();
+      if (tb != null) {
+        tb.compactInto(actualResult);
+      }
+    }
+
     final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
     TestUtils.assertTupleBagEqual(expectedResult, resultBag);
   }

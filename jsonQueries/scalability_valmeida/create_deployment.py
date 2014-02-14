@@ -287,16 +287,16 @@ if args.run_filename:
     join = {
       "argChild1": "SC1",
       "argChild2": "SC2",
-      "arg_columns1": [
+      "argColumns1": [
         "1"
       ],
-      "arg_columns2": [
+      "argColumns2": [
         "0"
       ],
-      "arg_select1": [
+      "argSelect1": [
         "0"
       ],
-      "arg_select2": [
+      "argSelect2": [
         "1"
       ],
       "opName": "JOIN",

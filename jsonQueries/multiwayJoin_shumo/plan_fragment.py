@@ -82,10 +82,10 @@ def receive_then_join():
         "opName" : "Join",
         "argChild1" : "GatherR",
         "argChild2" : "GatherS",
-        "arg_columns1" : [1],
-        "arg_columns2" : [0],
-        "arg_select1" : [0],
-        "arg_select2" : [1]
+        "argColumns1" : [1],
+        "argColumns2" : [0],
+        "argSelect1" : [0],
+        "argSelect2" : [1]
     }    
     collect = {
         "argChild": "Join",
@@ -210,10 +210,10 @@ def receive_partition_then_join():
         "opName" : "Join",
         "argChild1" : "GatherR",
         "argChild2" : "GatherS",
-        "arg_columns1" : [1],
-        "arg_columns2" : [0],
-        "arg_select1" : [0],
-        "arg_select2" : [1]
+        "argColumns1" : [1],
+        "argColumns2" : [0],
+        "argSelect1" : [0],
+        "argSelect2" : [1]
     }    
     collect = {
         "argChild": "Join",
