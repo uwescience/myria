@@ -1,6 +1,8 @@
 package edu.washington.escience.myria.client;
 
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
+import edu.washington.escience.myria.api.encoding.StreamingStateEncoding;
+import edu.washington.escience.myria.operator.IDBController;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
@@ -21,12 +23,21 @@ public interface JsonQueryBuilder {
   JsonQueryBuilder export();
 
   /**
-   * Begin iterate, denoting an {@link IDBInput}. All iterations built are currently governed by a single
+   * Begin iterate, denoting an {@link IDBController}. All iterations built are currently governed by a single
    * {@link EOSController}.
    * 
    * @return builder.
    * */
   JsonQueryBuilder beginIterate();
+
+  /**
+   * Begin iterate, denoting an {@link IDBController}. All iterations built are currently governed by a single
+   * {@link EOSController}.
+   * 
+   * @param idbStateProcessor the state processor in {@link IDBController}
+   * @return builder.
+   * */
+  JsonQueryBaseBuilder beginIterate(final StreamingStateEncoding<?> idbStateProcessor);
 
   /**
    * {@link SymmetricHashJoin}.

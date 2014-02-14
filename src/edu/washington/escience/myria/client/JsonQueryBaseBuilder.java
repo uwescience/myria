@@ -35,6 +35,7 @@ import edu.washington.escience.myria.api.encoding.ColumnSelectEncoding;
 import edu.washington.escience.myria.api.encoding.ConsumerEncoding;
 import edu.washington.escience.myria.api.encoding.DbInsertEncoding;
 import edu.washington.escience.myria.api.encoding.DupElimEncoding;
+import edu.washington.escience.myria.api.encoding.DupElimStateEncoding;
 import edu.washington.escience.myria.api.encoding.EOSControllerEncoding;
 import edu.washington.escience.myria.api.encoding.FileScanEncoding;
 import edu.washington.escience.myria.api.encoding.FilterEncoding;
@@ -49,6 +50,7 @@ import edu.washington.escience.myria.api.encoding.ShuffleConsumerEncoding;
 import edu.washington.escience.myria.api.encoding.ShuffleProducerEncoding;
 import edu.washington.escience.myria.api.encoding.SingleGroupByAggregateEncoding;
 import edu.washington.escience.myria.api.encoding.SinkRootEncoding;
+import edu.washington.escience.myria.api.encoding.StreamingStateEncoding;
 import edu.washington.escience.myria.api.encoding.SymmetricHashJoinEncoding;
 import edu.washington.escience.myria.api.encoding.TableScanEncoding;
 import edu.washington.escience.myria.api.encoding.TipsyFileScanEncoding;
@@ -424,6 +426,8 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
                 initialInput, iterationInput, eosReceiver }, NO_PREFERENCE);
         idbC.op.opName = "idbInput#" + i;
         ((IDBControllerEncoding) idbC.op).argSelfIdbId = i;
+        ((IDBControllerEncoding) idbC.op).argState =
+            ((IterateBeginPlaceHolder) (iterationBeginPoint.op)).idbStateProcessor;
 
         for (int j = 0; j < iterationBeginParent.children.length; j++) {
           JsonQueryBaseBuilder c = iterationBeginParent.children[j];
@@ -1049,10 +1053,15 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     return "Operator: " + op;
   }
 
+  public JsonQueryBaseBuilder beginIterate(final StreamingStateEncoding<?> idbStateProcessor) {
+    JsonQueryBaseBuilder ibJBB = buildOperator(IterateBeginPlaceHolder.class, "argChild", this, NO_PREFERENCE);
+    ((IterateBeginPlaceHolder) ibJBB.op).idbStateProcessor = idbStateProcessor;
+    return ibJBB;
+  }
+
   @Override
   public JsonQueryBaseBuilder beginIterate() {
-    JsonQueryBaseBuilder ibJBB = buildOperator(IterateBeginPlaceHolder.class, "argChild", this, NO_PREFERENCE);
-    return ibJBB;
+    return beginIterate(new DupElimStateEncoding());
   }
 
   @Override
@@ -1075,6 +1084,11 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * A helper class to mark the place where the iteration starts.
    * */
   private static final class IterateBeginPlaceHolder extends OperatorEncoding<IDBController> {
+
+    /**
+     * IDB state processor.
+     * */
+    private StreamingStateEncoding<?> idbStateProcessor;
 
     /**
      * Used by java reflection.
