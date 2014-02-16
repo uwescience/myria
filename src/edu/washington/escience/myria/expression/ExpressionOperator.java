@@ -36,7 +36,9 @@ import edu.washington.escience.myria.Schema;
     @Type(name = "LT", value = LessThanExpression.class), @Type(name = "MINUS", value = MinusExpression.class),
     @Type(name = "NEQ", value = NotEqualsExpression.class), @Type(name = "OR", value = OrExpression.class),
     @Type(name = "PLUS", value = PlusExpression.class), @Type(name = "POW", value = PowExpression.class),
-    @Type(name = "TIMES", value = TimesExpression.class), })
+    @Type(name = "TIMES", value = TimesExpression.class),
+    /* Nary */
+    @Type(name = "CONDITION", value = ConditionalExpression.class), })
 public abstract class ExpressionOperator implements Serializable {
   /***/
   private static final long serialVersionUID = 1L;

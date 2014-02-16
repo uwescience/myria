@@ -7,12 +7,19 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 
 /**
- * A conditional operator expression that uses the ternary operator.
+ * A conditional expression that uses the ternary operator.
  */
 public class ConditionalExpression extends NAryExpression {
 
   /***/
   private static final long serialVersionUID = 1L;
+
+  /**
+   * This is not really unused, it's used automagically by Jackson deserialization.
+   */
+  @SuppressWarnings("unused")
+  private ConditionalExpression() {
+  }
 
   /**
    * Create a conditional expression using a ternary operator.
