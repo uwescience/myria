@@ -2,6 +2,7 @@ package edu.washington.escience.myria.expression;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
@@ -26,7 +27,7 @@ public abstract class NAryExpression extends ExpressionOperator {
    * The children of this operator expression.
    */
   @JsonProperty
-  private final ImmutableList<ExpressionOperator> children;
+  private final List<ExpressionOperator> children;
 
   /**
    * This is not really unused, it's used automagically by Jackson deserialization.
@@ -86,5 +87,33 @@ public abstract class NAryExpression extends ExpressionOperator {
    */
   protected ExpressionOperator getChild(final int index) {
     return getChildren().get(index);
+  }
+
+  /**
+   * A function that could be used as the default hash code for an n-ary expression.
+   * 
+   * @return a hash of (getClass().getCanonicalName(), children).
+   */
+  protected final int defaultHashCode() {
+    return Objects.hash(getClass().getCanonicalName(), children);
+  }
+
+  @Override
+  public int hashCode() {
+    return defaultHashCode();
+  }
+
+  @Override
+  public boolean equals(final Object other) {
+    if (other == null || !getClass().equals(other.getClass())) {
+      return false;
+    }
+    NAryExpression otherExpr = (NAryExpression) other;
+    for (int i = 0; i < children.size(); i++) {
+      if (!Objects.equals(getChild(i), otherExpr.getChild(i))) {
+        return false;
+      }
+    }
+    return true;
   }
 }
