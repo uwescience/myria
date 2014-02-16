@@ -18,9 +18,9 @@ import edu.washington.escience.myria.Schema;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
     /* Zeroary */
-    @Type(name = "CONSTANT", value = ConstantExpression.class), @Type(name = "STATE", value = StateExpression.class),
-    @Type(name = "TYPE", value = TypeExpression.class), @Type(name = "TYPEOF", value = TypeOfExpression.class),
-    @Type(name = "VARIABLE", value = VariableExpression.class),
+    @Type(name = "CONSTANT", value = ConstantExpression.class), @Type(name = "RANDOM", value = RandomExpression.class),
+    @Type(name = "STATE", value = StateExpression.class), @Type(name = "TYPE", value = TypeExpression.class),
+    @Type(name = "TYPEOF", value = TypeOfExpression.class), @Type(name = "VARIABLE", value = VariableExpression.class),
     /* Unary */
     @Type(name = "ABS", value = AbsExpression.class), @Type(name = "CAST", value = CastExpression.class),
     @Type(name = "CEIL", value = CeilExpression.class), @Type(name = "COS", value = CosExpression.class),

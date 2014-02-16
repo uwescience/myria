@@ -35,6 +35,7 @@ import edu.washington.escience.myria.expression.NotExpression;
 import edu.washington.escience.myria.expression.OrExpression;
 import edu.washington.escience.myria.expression.PlusExpression;
 import edu.washington.escience.myria.expression.PowExpression;
+import edu.washington.escience.myria.expression.RandomExpression;
 import edu.washington.escience.myria.expression.SinExpression;
 import edu.washington.escience.myria.expression.SqrtExpression;
 import edu.washington.escience.myria.expression.StateExpression;
@@ -56,11 +57,12 @@ public class ApplySerializationTest {
 
     /* Zeroary */
     ConstantExpression constant = new ConstantExpression(Type.INT_TYPE, "5");
+    RandomExpression random = new RandomExpression();
     StateExpression state = new StateExpression(3);
     TypeExpression type = new TypeExpression(Type.INT_TYPE);
-    VariableExpression variable = new VariableExpression(1);
     TypeOfExpression typeof = new TypeOfExpression(2);
-    expressions.add(constant).add(state).add(type).add(variable).add(typeof);
+    VariableExpression variable = new VariableExpression(1);
+    expressions.add(constant).add(random).add(state).add(type).add(typeof).add(variable);
 
     /* Unary */
     AbsExpression abs = new AbsExpression(constant);
