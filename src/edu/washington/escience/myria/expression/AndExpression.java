@@ -1,7 +1,5 @@
 package edu.washington.escience.myria.expression;
 
-import com.google.common.base.Objects;
-
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 
@@ -38,19 +36,5 @@ public class AndExpression extends BinaryExpression {
   @Override
   public String getJavaString(final Schema schema, final Schema stateSchema) {
     return getInfixBinaryString("&&", schema, stateSchema);
-  }
-
-  @Override
-  public int hashCode() {
-    return defaultHashCode();
-  }
-
-  @Override
-  public boolean equals(final Object other) {
-    if (other == null || !(other instanceof AndExpression)) {
-      return false;
-    }
-    AndExpression bOther = (AndExpression) other;
-    return Objects.equal(getLeft(), bOther.getLeft()) && Objects.equal(getRight(), bOther.getRight());
   }
 }
