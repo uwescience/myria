@@ -16,6 +16,7 @@ import edu.washington.escience.myria.expression.AbsExpression;
 import edu.washington.escience.myria.expression.AndExpression;
 import edu.washington.escience.myria.expression.CastExpression;
 import edu.washington.escience.myria.expression.CeilExpression;
+import edu.washington.escience.myria.expression.ConditionalExpression;
 import edu.washington.escience.myria.expression.ConstantExpression;
 import edu.washington.escience.myria.expression.CosExpression;
 import edu.washington.escience.myria.expression.DivideExpression;
@@ -220,6 +221,17 @@ public class ApplyTest {
       Expressions.add(expr);
     }
 
+    {
+      // Expression: e ? a : c;
+      Expression expr =
+          new Expression("conditional", new ConditionalExpression(new VariableExpression(4), new VariableExpression(0),
+              new VariableExpression(2)));
+
+      GenericEvaluator eval = new GenericEvaluator(expr, tbb.getSchema(), null);
+      assertTrue(eval.needsCompiling());
+      Expressions.add(expr);
+    }
+
     Apply apply = new Apply(new TupleSource(tbb), Expressions.build());
 
     apply.open(null);
@@ -229,7 +241,7 @@ public class ApplyTest {
     while (!apply.eos()) {
       result = apply.nextReady();
       if (result != null) {
-        assertEquals(13, result.getSchema().numColumns());
+        assertEquals(14, result.getSchema().numColumns());
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(0));
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(1));
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(2));
@@ -243,6 +255,7 @@ public class ApplyTest {
         assertEquals(Type.FLOAT_TYPE, result.getSchema().getColumnType(10));
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(11));
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(12));
+        assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(13));
 
         assertEquals("first", result.getSchema().getColumnName(0));
         assertEquals("second", result.getSchema().getColumnName(1));
@@ -257,6 +270,7 @@ public class ApplyTest {
         assertEquals("constant5f", result.getSchema().getColumnName(10));
         assertEquals("constant5d", result.getSchema().getColumnName(11));
         assertEquals("random", result.getSchema().getColumnName(12));
+        assertEquals("conditional", result.getSchema().getColumnName(13));
 
         for (int curI = 0; curI < result.numTuples(); curI++) {
           long i = curI + resultSize;
@@ -279,6 +293,7 @@ public class ApplyTest {
           assertEquals((float) 5.0, result.getFloat(10, curI), 0.00001);
           assertEquals(5.0, result.getDouble(11, curI), 0.00001);
           assertTrue(0.0 <= result.getDouble(12, curI) && result.getDouble(12, curI) < 1.0);
+          assertEquals(e ? a : c, result.getLong(13, curI));
         }
         resultSize += result.numTuples();
       }

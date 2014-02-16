@@ -15,6 +15,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.expression.AbsExpression;
 import edu.washington.escience.myria.expression.AndExpression;
+import edu.washington.escience.myria.expression.ConditionalExpression;
 import edu.washington.escience.myria.expression.CastExpression;
 import edu.washington.escience.myria.expression.CeilExpression;
 import edu.washington.escience.myria.expression.ConstantExpression;
@@ -96,6 +97,11 @@ public class ApplySerializationTest {
     CastExpression cast = new CastExpression(constant, typeof);
     expressions.add(and).add(divide).add(eq).add(gt).add(gte).add(lt).add(lte).add(minus).add(ne).add(or).add(plus)
         .add(pow).add(times).add(cast);
+
+    /* NAry */
+    VariableExpression variable2 = new VariableExpression(2);
+    ConditionalExpression conditional = new ConditionalExpression(variable, constant, variable2);
+    expressions.add(conditional);
 
     /* Test serializing and deserializing all of them. */
     for (ExpressionOperator op : expressions.build()) {
