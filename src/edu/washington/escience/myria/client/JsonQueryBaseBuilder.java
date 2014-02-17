@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -101,17 +102,17 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
   /**
    * An operator is going to run on any single worker.
    * */
-  private static final Set<Integer> ANY_SINGLE_WORKER = ImmutableSet.<Integer> of();
+  private static final Set<Integer> ANY_SINGLE_WORKER = Collections.unmodifiableSet(new HashSet<Integer>(0));
   /**
    * An operator is going to run on all workers.
    * */
-  private static final Set<Integer> ALL_WORKERS = ImmutableSet.<Integer> of();
+  private static final Set<Integer> ALL_WORKERS = Collections.unmodifiableSet(new HashSet<Integer>(0));
   /**
    * An operator is going to run on any worker settings. The actual setting is decided by either other operators which
    * are in the same task as this operator, for example if the operator is in the same task as a collect consumer the
    * operator will be running on the same single worker as the collect consumer, or by the system.
    */
-  private static final Set<Integer> NO_PREFERENCE = ImmutableSet.<Integer> of();
+  private static final Set<Integer> NO_PREFERENCE = Collections.unmodifiableSet(new HashSet<Integer>(0));
   /**
    * The parents of the current op. It is for automatically generating {@link LocalMultiwayProducer} and
    * {@link LocalMultiwayConsumer} pairs.
@@ -1053,6 +1054,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     return "Operator: " + op;
   }
 
+  @Override
   public JsonQueryBaseBuilder beginIterate(final StreamingStateEncoding<?> idbStateProcessor) {
     JsonQueryBaseBuilder ibJBB = buildOperator(IterateBeginPlaceHolder.class, "argChild", this, NO_PREFERENCE);
     ((IterateBeginPlaceHolder) ibJBB.op).idbStateProcessor = idbStateProcessor;
