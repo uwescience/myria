@@ -19,8 +19,8 @@ import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
 
 val pfOn0 = new SingleFieldHashPartitionFunction(null, 0);
 val pfOn1 = new SingleFieldHashPartitionFunction(null, 1);
-val a = RelationKey.of("jwang", "multiIDB", "a");
-val b = RelationKey.of("jwang", "multiIDB", "b");
+val a = RelationKey.of("jwang", "multiIDB", "a0");
+val b = RelationKey.of("jwang", "multiIDB", "b0");
 val c = RelationKey.of("jwang", "multiIDB", "c0");
 val builder = new JsonQueryBaseBuilder().workers(Array(1,2,3))
 
