@@ -265,14 +265,19 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
       childrenWorkers = workerSetAlgebra(childrenWorkers, c.runnOnWorkers);
       if (childrenWorkers == null) {
         throw new IllegalArgumentException("Workers of a child are not compatible with other children. Current op: "
-            + currentOp.opName + ", conflicting child: " + c.op.opName);
+            + getOpName(this) + ", conflicting child: " + getOpName(c));
       }
     }
     if (compatibleWithChildrenWorkers) {
       runnOnWorkers = workerSetAlgebra(childrenWorkers, runningWorkers);
       if (runnOnWorkers == null) {
+        String[] childrenNames = new String[children.length];
+        for (int i = 0; i < children.length; i++) {
+          childrenNames[i] = getOpName(children[i]);
+        }
+
         throw new IllegalArgumentException("Running workers are not compatible with children workers. Current op: "
-            + op.opName + ", children: " + StringUtils.join(children, ','));
+            + getOpName(this) + ", children: " + StringUtils.join(childrenNames, ','));
       }
     } else {
       runnOnWorkers = runningWorkers;
@@ -446,6 +451,20 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
   }
 
   /**
+   * @param b the builder.
+   * @return the operator name.
+   * */
+  private String getOpName(final JsonQueryBaseBuilder b) {
+    if (b.op.opName != null) {
+      return b.op.opName;
+    }
+    for (JsonQueryBaseBuilder opp : allOperators) {
+      setOpNames(opp);
+    }
+    return b.op.opName;
+  }
+
+  /**
    * @return the encoding of the query this builder is going to build.
    * */
   @Override
@@ -459,10 +478,9 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
       processIterations();
 
       final QueryEncoding result = new QueryEncoding();
-      final HashMap<String, JsonQueryBaseBuilder> namedOperators = new HashMap<String, JsonQueryBaseBuilder>();
 
       for (JsonQueryBaseBuilder opp : allOperators) {
-        setOpNames(opp, namedOperators);
+        setOpNames(opp);
       }
 
       for (JsonQueryBaseBuilder opp : allOperators) {
@@ -678,6 +696,15 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
         throw new IllegalStateException(e);
       }
     }
+  }
+
+  /**
+   * Set all the operator names rooted by a given operator.
+   * 
+   * @param root the root operator to start
+   * */
+  private void setOpNames(final JsonQueryBaseBuilder root) {
+    setOpNames(root, new HashMap<String, JsonQueryBaseBuilder>());
   }
 
   /**
