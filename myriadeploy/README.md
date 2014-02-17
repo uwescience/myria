@@ -8,7 +8,7 @@ The scripts copy the directories `conf` and `libs` to the deployment hosts. The 
     ln -s ../build/libs libs
 
 #### 1. Build the Myria jar
-In Myria source (`../`), run `gradle jar`.
+In Myria source (`../`), run `./gradlew jar`.
 
 #### 2. Myria needs Java 7
 Make sure `java -version` shows 7 on any machines in the cluster. 
