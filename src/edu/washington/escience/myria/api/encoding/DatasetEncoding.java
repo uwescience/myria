@@ -15,7 +15,10 @@ public class DatasetEncoding extends MyriaApiEncoding {
   public String fileName;
   public Set<Integer> workers;
   public DataSource source;
-  public String delimiter;
+  public Character delimiter;
+  public Character escape;
+  public Integer numberOfSkippedLines;
+  public Character quote;
   public Boolean importFromDatabase = false;
   private static final List<String> requiredFields = ImmutableList.of("source", "relationKey", "schema");
 
