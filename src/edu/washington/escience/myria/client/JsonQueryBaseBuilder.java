@@ -9,7 +9,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import javax.annotation.Nonnull;
@@ -82,6 +81,42 @@ import edu.washington.escience.myria.parallel.Server;
  * 
  * */
 public class JsonQueryBaseBuilder implements JsonQueryBuilder {
+
+  /**
+   * Shared data among all instances in a single building process.
+   * */
+  private static final class SharedData {
+
+    /**
+     * record all operators this builder built.
+     * */
+    private final Set<JsonQueryBaseBuilder> allOperators;
+
+    /**
+     * User defined operator name to operator mapping.
+     * */
+    private final Map<String, JsonQueryBaseBuilder> userDefinedName2OpMap;
+
+    /**
+     * operator to user defined operator name mapping.
+     * */
+    private final Map<JsonQueryBaseBuilder, String> op2UserDefinedNameMap;
+
+    /**
+     * Constructor.
+     * */
+    private SharedData() {
+      allOperators = new HashSet<JsonQueryBaseBuilder>();
+      userDefinedName2OpMap = new HashMap<String, JsonQueryBaseBuilder>();
+      op2UserDefinedNameMap = new HashMap<JsonQueryBaseBuilder, String>();
+    }
+
+  }
+
+  /**
+   * Shared data.
+   * */
+  private final SharedData sharedData;
 
   /**
    * The current {@link Operator}, or the output of the current {@link Operator}, this builder represents.
@@ -210,50 +245,27 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * @param childrenFields children fields in current op
    * @param children the children
    * @param runningWorkers the worker set to run on
+   * @param sharedData shared data.
    * @param compatibleWithChildrenWorkers if true, make sure the current op's worker set is compatible with the
    *          children's, else no check, which happens in Producer/Consumer pairs
    * */
   private JsonQueryBaseBuilder(final OperatorEncoding<?> currentOp, final String[] childrenFields,
       final JsonQueryBaseBuilder[] children, @Nonnull final Set<Integer> runningWorkers,
-      final boolean compatibleWithChildrenWorkers) {
+      final boolean compatibleWithChildrenWorkers, final SharedData sharedData) {
     op = currentOp;
+    this.sharedData = sharedData;
 
     if (children == null || children.length == 0) {
       this.children = new JsonQueryBaseBuilder[] {};
-      allOperators = new HashSet<JsonQueryBaseBuilder>();
-      userDefinedName2OpMap = new HashMap<String, JsonQueryBaseBuilder>();
-      op2UserDefinedNameMap = new HashMap<JsonQueryBaseBuilder, String>();
     } else {
       this.children = children;
-      if (this.children.length == 1) {
-        allOperators = this.children[0].allOperators;
-        userDefinedName2OpMap = this.children[0].userDefinedName2OpMap;
-        op2UserDefinedNameMap = this.children[0].op2UserDefinedNameMap;
-        this.children[0].parents.add(this);
-      } else {
-        allOperators = new HashSet<JsonQueryBaseBuilder>();
-        userDefinedName2OpMap = new HashMap<String, JsonQueryBaseBuilder>();
-        op2UserDefinedNameMap = new HashMap<JsonQueryBaseBuilder, String>();
-        for (final JsonQueryBaseBuilder c : children) {
-          allOperators.addAll(c.allOperators);
-          for (Entry<String, JsonQueryBaseBuilder> e : c.userDefinedName2OpMap.entrySet()) {
-            JsonQueryBaseBuilder jqb = userDefinedName2OpMap.get(e.getKey());
-            if (jqb != null && e.getValue() != jqb) {
-              throw new IllegalArgumentException("Operator name conflict: " + e.getKey()
-                  + " mapped to multiple operators: " + e.getValue().op + "and " + jqb.op);
-            }
-          }
-          userDefinedName2OpMap.putAll(c.userDefinedName2OpMap);
-          op2UserDefinedNameMap.putAll(c.op2UserDefinedNameMap);
-          c.parents.add(this);
+      for (final JsonQueryBaseBuilder c : children) {
+        if (sharedData != c.sharedData) {
+          throw new IllegalArgumentException("Cannot combine operators built by different builders.");
         }
-
-        for (JsonQueryBaseBuilder opp : allOperators) {
-          opp.allOperators = allOperators;
-          opp.userDefinedName2OpMap = userDefinedName2OpMap;
-          opp.op2UserDefinedNameMap = op2UserDefinedNameMap;
-        }
+        c.parents.add(this);
       }
+
     }
 
     this.childrenFields = childrenFields;
@@ -292,11 +304,9 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     op = null;
     children = new JsonQueryBaseBuilder[] {};
     childrenFields = new String[] {};
-    userDefinedName2OpMap = new HashMap<String, JsonQueryBaseBuilder>();
-    op2UserDefinedNameMap = new HashMap<JsonQueryBaseBuilder, String>();
-    allOperators = new HashSet<JsonQueryBaseBuilder>();
     runnOnWorkers = new HashSet<Integer>();
     parents = new HashSet<JsonQueryBaseBuilder>();
+    sharedData = new SharedData();
   }
 
   /**
@@ -356,7 +366,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * Process output stream forking.
    * */
   private void processLocalStreamForks() {
-    for (JsonQueryBaseBuilder opp : allOperators.toArray(new JsonQueryBaseBuilder[] {})) {
+    for (JsonQueryBaseBuilder opp : sharedData.allOperators.toArray(new JsonQueryBaseBuilder[] {})) {
       // add local multiway producers
       if (opp.parents.size() > 1) {
         insertLocalMultiway(opp);
@@ -371,7 +381,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
   private void processIterations() {
 
     HashSet<JsonQueryBaseBuilder> iterationNodes = new HashSet<JsonQueryBaseBuilder>();
-    for (JsonQueryBaseBuilder opp : allOperators) {
+    for (JsonQueryBaseBuilder opp : sharedData.allOperators) {
       if (opp.op instanceof IterateEndPlaceHolder) {
         iterationNodes.add(opp);
       }
@@ -389,13 +399,10 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
         eoiReceivers[i] =
             buildOperator(ConsumerEncoding.class, new String[] { "argOperatorId" },
                 new JsonQueryBaseBuilder[] { fakeScan }, NO_PREFERENCE);
-        eoiReceivers[i].allOperators = allOperators;
-        eoiReceivers[i].userDefinedName2OpMap = userDefinedName2OpMap;
-        eoiReceivers[i].op2UserDefinedNameMap = op2UserDefinedNameMap;
 
         eoiReceivers[i].setName("eoiReceiver#" + i);
         eoiReceivers[i].op.opName = "eoiReceiver#" + i;
-        allOperators.add(eoiReceivers[i]);
+        sharedData.allOperators.add(eoiReceivers[i]);
 
       }
 
@@ -418,8 +425,8 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
         initialInput.parents.remove(iterationBeginPoint);
         iterationInput.parents.remove(iterationEndPoint);
 
-        allOperators.remove(iterationBeginPoint);
-        allOperators.remove(iterationEndPoint);
+        sharedData.allOperators.remove(iterationBeginPoint);
+        sharedData.allOperators.remove(iterationEndPoint);
 
         JsonQueryBaseBuilder eosReceiver =
             buildOperator(ConsumerEncoding.class, new String[] { "argOperatorId" },
@@ -458,7 +465,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     if (b.op.opName != null) {
       return b.op.opName;
     }
-    for (JsonQueryBaseBuilder opp : allOperators) {
+    for (JsonQueryBaseBuilder opp : sharedData.allOperators) {
       setOpNames(opp);
     }
     return b.op.opName;
@@ -479,17 +486,17 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
 
       final QueryEncoding result = new QueryEncoding();
 
-      for (JsonQueryBaseBuilder opp : allOperators) {
+      for (JsonQueryBaseBuilder opp : sharedData.allOperators) {
         setOpNames(opp);
       }
 
-      for (JsonQueryBaseBuilder opp : allOperators) {
+      for (JsonQueryBaseBuilder opp : sharedData.allOperators) {
         updateChildrenFields(opp);
       }
 
       Map<JsonQueryBaseBuilder, PlanFragmentEncoding> fragments =
           new HashMap<JsonQueryBaseBuilder, PlanFragmentEncoding>();
-      for (JsonQueryBaseBuilder opp : allOperators) {
+      for (JsonQueryBaseBuilder opp : sharedData.allOperators) {
         if (isRootOp(opp)) {
           buildFragment(fragments, opp);
         }
@@ -528,21 +535,6 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
   }
 
   /**
-   * record all operators this builder built.
-   * */
-  private Set<JsonQueryBaseBuilder> allOperators;
-
-  /**
-   * User defined operator name to operator mapping.
-   * */
-  private Map<String, JsonQueryBaseBuilder> userDefinedName2OpMap;
-
-  /**
-   * operator to user defined operator name mapping.
-   * */
-  private Map<JsonQueryBaseBuilder, String> op2UserDefinedNameMap;
-
-  /**
    * Build a single child {@link JsonQueryBaseBuilder}.
    * 
    * @param operatorClass the class of the wrapping operator.
@@ -553,7 +545,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * @return a wrapping {@link JsonQueryBaseBuilder}
    * @throws IllegalArgumentException if any argument is illegal
    * */
-  private static <T extends OperatorEncoding<?>> JsonQueryBaseBuilder buildOperator(final Class<T> operatorClass,
+  private <T extends OperatorEncoding<?>> JsonQueryBaseBuilder buildOperator(final Class<T> operatorClass,
       final String childField, final JsonQueryBaseBuilder child, final Set<Integer> runningWorkers)
       throws IllegalArgumentException {
     return buildOperator(Preconditions.checkNotNull(operatorClass), new String[] { Preconditions
@@ -569,7 +561,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * @return a wrapping {@link JsonQueryBaseBuilder}
    * @throws IllegalArgumentException if any argument is illegal
    * */
-  private static <T extends OperatorEncoding<?>> JsonQueryBaseBuilder buildOperator(final Class<T> operatorClass,
+  private <T extends OperatorEncoding<?>> JsonQueryBaseBuilder buildOperator(final Class<T> operatorClass,
       final Set<Integer> runningWorkers) throws IllegalArgumentException {
     return buildOperator(Preconditions.checkNotNull(operatorClass), new String[] {}, new JsonQueryBaseBuilder[] {},
         runningWorkers);
@@ -586,7 +578,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * @return a wrapping {@link JsonQueryBaseBuilder}
    * @throws IllegalArgumentException if any argument is illegal
    * */
-  private static <T extends OperatorEncoding<?>> JsonQueryBaseBuilder buildOperator(final Class<T> operatorClass,
+  private <T extends OperatorEncoding<?>> JsonQueryBaseBuilder buildOperator(final Class<T> operatorClass,
       final String childrenField, final JsonQueryBaseBuilder[] children, final Set<Integer> runningWorkers)
       throws IllegalArgumentException {
     return buildOperator(Preconditions.checkNotNull(operatorClass), new String[] { Preconditions
@@ -604,10 +596,9 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * @return a wrapping {@link JsonQueryBaseBuilder}
    * @throws IllegalArgumentException if any argument is illegal
    * */
-  private static <T extends OperatorEncoding<?>> JsonQueryBaseBuilder buildOperator(
-      @Nonnull final Class<T> operatorClass, @Nonnull final String[] childrenFields,
-      @Nonnull final JsonQueryBaseBuilder[] children, @Nonnull final Set<Integer> runningWorkers)
-      throws IllegalArgumentException {
+  private <T extends OperatorEncoding<?>> JsonQueryBaseBuilder buildOperator(@Nonnull final Class<T> operatorClass,
+      @Nonnull final String[] childrenFields, @Nonnull final JsonQueryBaseBuilder[] children,
+      @Nonnull final Set<Integer> runningWorkers) throws IllegalArgumentException {
     for (JsonQueryBaseBuilder ch : children) {
       if (isSinkRootOp(ch)) {
         throw new IllegalArgumentException(
@@ -620,8 +611,8 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
       T newOp = operatorClass.newInstance();
       JsonQueryBaseBuilder newOpB =
           new JsonQueryBaseBuilder(newOp, childrenFields, children, runningWorkers, !AbstractConsumerEncoding.class
-              .isAssignableFrom(operatorClass));
-      newOpB.allOperators.add(newOpB);
+              .isAssignableFrom(operatorClass), sharedData);
+      newOpB.sharedData.allOperators.add(newOpB);
       return newOpB;
     } catch (InstantiationException | IllegalAccessException e) {
       e.printStackTrace();
@@ -717,7 +708,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     if (root.op.opName != null) {
       return;
     } else {
-      String opName = op2UserDefinedNameMap.get(root);
+      String opName = sharedData.op2UserDefinedNameMap.get(root);
       if (opName != null) {
         root.op.opName = opName;
         return;
@@ -1056,21 +1047,21 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
 
   @Override
   public final JsonQueryBaseBuilder setName(final String name) {
-    JsonQueryBaseBuilder oe = userDefinedName2OpMap.get(name);
+    JsonQueryBaseBuilder oe = sharedData.userDefinedName2OpMap.get(name);
     if (oe != null && oe != this) {
       throw new IllegalArgumentException("Operator with name :\"" + name + "\" already exists: " + oe.op);
     }
 
-    String oldName = op2UserDefinedNameMap.get(this);
+    String oldName = sharedData.op2UserDefinedNameMap.get(this);
     if (oldName != null) {
-      userDefinedName2OpMap.remove(name);
-      op2UserDefinedNameMap.remove(this);
+      sharedData.userDefinedName2OpMap.remove(name);
+      sharedData.op2UserDefinedNameMap.remove(this);
     }
-    userDefinedName2OpMap.put(name, this);
-    op2UserDefinedNameMap.put(this, name);
+    sharedData.userDefinedName2OpMap.put(name, this);
+    sharedData.op2UserDefinedNameMap.put(this, name);
 
     if (op instanceof AbstractConsumerEncoding) {
-      op2UserDefinedNameMap.put(children[0], name + "P");
+      sharedData.op2UserDefinedNameMap.put(children[0], name + "P");
     }
 
     return this;

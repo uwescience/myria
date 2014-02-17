@@ -22,18 +22,19 @@ val pfOn1 = new SingleFieldHashPartitionFunction(null, 1);
 val a = RelationKey.of("jwang", "multiIDB", "a");
 val b = RelationKey.of("jwang", "multiIDB", "b");
 val c = RelationKey.of("jwang", "multiIDB", "c0");
+val builder = new JsonQueryBaseBuilder()
 
-val iterateA = new JsonQueryBaseBuilder()//
+val iterateA = builder//
         .scan(a).setName("scana")//
         .shuffle(pfOn0).setName("sc2a")//
         .beginIterate();
 
-val iterateB = new JsonQueryBaseBuilder()//
+val iterateB = builder//
         .scan(b).setName("scanb")//
         .shuffle(pfOn0).setName("shuffle_b")//
         .beginIterate();
 
-val iterateC = new JsonQueryBaseBuilder()//
+val iterateC = builde)//
         .scan(c).setName("scanc")//
         .shuffle(pfOn0).setName("shuffle_c")//
         .beginIterate();
