@@ -9,10 +9,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 import javax.annotation.Nonnull;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -75,6 +77,7 @@ import edu.washington.escience.myria.parallel.LocalMultiwayConsumer;
 import edu.washington.escience.myria.parallel.LocalMultiwayProducer;
 import edu.washington.escience.myria.parallel.PartitionFunction;
 import edu.washington.escience.myria.parallel.Server;
+import edu.washington.escience.myria.util.MyriaArrayUtils;
 
 /**
  * Json query builder base implementation. This class provides spark-like query plan building functionality.
@@ -86,6 +89,11 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * Shared data among all instances in a single building process.
    * */
   private static final class SharedData {
+
+    /**
+     * globalWorkers all workers in the computing system.
+     */
+    private Set<Integer> globalWorkers;
 
     /**
      * record all operators this builder built.
@@ -103,12 +111,18 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     private final Map<JsonQueryBaseBuilder, String> op2UserDefinedNameMap;
 
     /**
+     * Random number generator.
+     * */
+    private final Random rand = new Random();
+
+    /**
      * Constructor.
      * */
     private SharedData() {
       allOperators = new HashSet<JsonQueryBaseBuilder>();
       userDefinedName2OpMap = new HashMap<String, JsonQueryBaseBuilder>();
       op2UserDefinedNameMap = new HashMap<JsonQueryBaseBuilder, String>();
+      globalWorkers = NO_PREFERENCE;
     }
 
   }
@@ -215,7 +229,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
       return workers2;
     } else {
       if (workers2 == ANY_SINGLE_WORKER) {
-        if (workers1.size() == 1) {
+        if (workers1.size() == 1 && !workers1.contains(MyriaConstants.MASTER_ID)) {
           return workers1;
         } else {
           return null;
@@ -287,18 +301,17 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
         for (int i = 0; i < children.length; i++) {
           childrenNames[i] = getOpName(children[i]);
         }
-
         throw new IllegalArgumentException("Running workers are not compatible with children workers. Current op: "
             + getOpName(this) + ", children: " + StringUtils.join(childrenNames, ','));
       }
     } else {
       runnOnWorkers = runningWorkers;
     }
-
   }
 
   /**
    * Constructor.
+   * 
    * */
   public JsonQueryBaseBuilder() {
     op = null;
@@ -359,7 +372,6 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     }
     toMulti.parents.clear();
     toMulti.parents.add(lP);
-
   }
 
   /**
@@ -455,6 +467,12 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
 
       }
     }
+  }
+
+  @Override
+  public final JsonQueryBaseBuilder workers(final int[] ws) {
+    sharedData.globalWorkers = MyriaArrayUtils.checkSet(ArrayUtils.toObject(ws));
+    return this;
   }
 
   /**
@@ -629,25 +647,32 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     if (fragments.get(root) != null) {
       return;
     }
+    Preconditions.checkNotNull(root.runnOnWorkers);
+
     ArrayList<JsonQueryBaseBuilder> operators = new ArrayList<JsonQueryBaseBuilder>();
     PlanFragmentEncoding fragment = new PlanFragmentEncoding();
     findOperators(operators, root);
     fragment.operators = new ArrayList<OperatorEncoding<?>>(operators.size());
 
-    Set<Integer> workers = null;
     for (JsonQueryBaseBuilder obb : operators) {
       fragment.operators.add(obb.op);
-      if (obb.runnOnWorkers != ANY_SINGLE_WORKER && obb.runnOnWorkers != NO_PREFERENCE
-          && obb.runnOnWorkers != ALL_WORKERS) {
-        workers = obb.runnOnWorkers;
-      }
     }
 
-    if (workers == null) {
+    if (root.runnOnWorkers == ANY_SINGLE_WORKER) {
+      Preconditions.checkArgument(sharedData.globalWorkers.size() > 0,
+          "A set of workers must be provided if a query contains a fragment which must be run on a single worker.");
+      fragment.workers =
+          Arrays.asList(new Integer[] { sharedData.globalWorkers.toArray(new Integer[] {})[sharedData.rand
+              .nextInt(sharedData.globalWorkers.size())] });
+    } else if (root.runnOnWorkers == ALL_WORKERS || root.runnOnWorkers == NO_PREFERENCE) {
       fragment.workers = null;
+    } else if (root.runnOnWorkers.size() <= 0) {
+      throw new IllegalArgumentException("Number of workers of a fragment must be positive. Root: " + getOpName(root)
+          + ". " + root.runnOnWorkers.getClass());
     } else {
-      fragment.workers = Arrays.asList(workers.toArray(new Integer[] {}));
+      fragment.workers = Arrays.asList(root.runnOnWorkers.toArray(new Integer[] {}));
     }
+
     fragments.put(root, fragment);
   }
 

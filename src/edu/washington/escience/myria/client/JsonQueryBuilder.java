@@ -14,6 +14,14 @@ import edu.washington.escience.myria.parallel.EOSController;
 public interface JsonQueryBuilder {
 
   /**
+   * Set the set of workers in the computing system.
+   * 
+   * @param workers the set of workers in the computing system
+   * @return builder.
+   * */
+  JsonQueryBuilder workers(final int[] workers);
+
+  /**
    * Send data back to user client.
    * 
    * TODO

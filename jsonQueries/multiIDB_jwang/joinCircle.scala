@@ -22,21 +22,21 @@ val pfOn1 = new SingleFieldHashPartitionFunction(null, 1);
 val a = RelationKey.of("jwang", "multiIDB", "a");
 val b = RelationKey.of("jwang", "multiIDB", "b");
 val c = RelationKey.of("jwang", "multiIDB", "c0");
-val builder = new JsonQueryBaseBuilder()
+val builder = new JsonQueryBaseBuilder().workers(Array(1,2,3))
 
-val iterateA = builder//
-        .scan(a).setName("scana")//
-        .shuffle(pfOn0).setName("sc2a")//
+val iterateA = builder
+        .scan(a).setName("scana")
+        .shuffle(pfOn0).setName("sc2a")
         .beginIterate();
 
-val iterateB = builder//
-        .scan(b).setName("scanb")//
-        .shuffle(pfOn0).setName("shuffle_b")//
+val iterateB = builder
+        .scan(b).setName("scanb")
+        .shuffle(pfOn0).setName("shuffle_b")
         .beginIterate();
 
-val iterateC = builde)//
-        .scan(c).setName("scanc")//
-        .shuffle(pfOn0).setName("shuffle_c")//
+val iterateC = builder
+        .scan(c).setName("scanc")
+        .shuffle(pfOn0).setName("shuffle_c")
         .beginIterate();
 
 iterateA.hashEquiJoin(iterateC.shuffle(pfOn1), Array(1), Array(0), Array(0), Array(1))

@@ -17,7 +17,7 @@ import edu.washington.escience.myria.client.JsonQueryBaseBuilder
 import edu.washington.escience.myria.RelationKey
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction
 
-val b = new JsonQueryBaseBuilder
+val b = new JsonQueryBaseBuilder().workers(Array(1,2,3))
 val pf = new SingleFieldHashPartitionFunction(null,0)
 val a = RelationKey.of("jwang","reachability","a0")
 val g = RelationKey.of("jwang","reachability","g")
