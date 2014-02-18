@@ -1456,4 +1456,25 @@ public final class Server {
       throw new RuntimeException(e);
     }
   }
+
+  public void removeWorker(final Integer workerId) {
+    SocketInfo workerAddr = workers.get(workerId);
+    while (connectionPool.isRemoteAlive(workerId)) {
+      // TODO add process kill
+      if (LOGGER.isInfoEnabled()) {
+        LOGGER.info("Shutting down #{} : {}", workerId, workerAddr);
+      }
+      connectionPool.sendShortMessage(workerId, IPCUtils.CONTROL_SHUTDOWN);
+
+      if (!connectionPool.isRemoteAlive(workerId)) {
+        try {
+          Thread.sleep(MyriaConstants.WAITING_INTERVAL_1_SECOND_IN_MS);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          break;
+        }
+      }
+    }
+    aliveWorkers.remove(workerId);
+  }
 }
