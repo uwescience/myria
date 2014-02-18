@@ -43,10 +43,27 @@ public class FileScanTest {
    * @throws FileNotFoundException if the specified file does not exist.
    * @throws InterruptedException
    */
-  private static int getRowCount(final String filename, final Schema schema, final String delimiter)
+  private static int getRowCount(final String filename, final Schema schema, final Character delimiter)
       throws DbException, InterruptedException {
     final String realFilename = Paths.get("testdata", "filescan", filename).toString();
     FileScan fileScan = new FileScan(realFilename, schema, delimiter);
+    return getRowCount(fileScan);
+  }
+
+  /**
+   * @param filename the file in which the relation is stored.
+   * @param schema the schema of the relation in the file.
+   * @param delimiter if non-null, an override file delimiter
+   * @param quote the user specified quotation mark
+   * @return the number of rows in the file.
+   * @throws DbException if the file does not match the given Schema.
+   * @throws FileNotFoundException if the specified file does not exist.
+   * @throws InterruptedException
+   */
+  private static int getRowCount(final String filename, final Schema schema, final Character delimiter,
+      final Character quote) throws DbException, InterruptedException {
+    final String realFilename = Paths.get("testdata", "filescan", filename).toString();
+    FileScan fileScan = new FileScan(realFilename, schema, delimiter, quote, null, null);
     return getRowCount(fileScan);
   }
 
@@ -75,9 +92,51 @@ public class FileScanTest {
 
   @Test(expected = DbException.class)
   public void testBadCommaTwoColumnInt() throws DbException, InterruptedException {
-    final String filename = "comma_two_col_int_unix.txt";
+    final String filename = "bad_comma_two_col_int_unix.txt";
     final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
     assertEquals(7, getRowCount(filename, schema));
+  }
+
+  @Test
+  public void testCsvEscape() throws DbException, InterruptedException {
+    final String filename = "escape_two_col_string.txt";
+    final Schema schema = new Schema(ImmutableList.of(Type.STRING_TYPE, Type.STRING_TYPE));
+    assertEquals(7, getRowCount(filename, schema));
+  }
+
+  @Test
+  public void testCsvNonDefaultEscape() throws DbException, InterruptedException {
+    final String filename = "escape_two_col_string_2.txt";
+    final Schema schema = new Schema(ImmutableList.of(Type.STRING_TYPE, Type.STRING_TYPE));
+    assertEquals(7, getRowCount(filename, schema));
+  }
+
+  @Test
+  public void testCsvNestedQuote() throws DbException, InterruptedException {
+    final String filename = "escape_quote_two_col_string.txt";
+    final Schema schema = new Schema(ImmutableList.of(Type.STRING_TYPE, Type.STRING_TYPE));
+    assertEquals(7, getRowCount(filename, schema));
+  }
+
+  @Test
+  public void testCsvSingleQuote() throws DbException, InterruptedException {
+    final String filename = "quote_two_col_string.txt";
+    final Schema schema = new Schema(ImmutableList.of(Type.STRING_TYPE, Type.STRING_TYPE));
+    assertEquals(7, getRowCount(filename, schema, ',', '\''));
+  }
+
+  @Test(expected = DbException.class)
+  public void testBadCsvEscape() throws DbException, InterruptedException {
+    final String filename = "escape_two_col_string.txt";
+    final Schema schema = new Schema(ImmutableList.of(Type.STRING_TYPE, Type.STRING_TYPE));
+    assertEquals(7, getRowCount(filename, schema, '\''));
+  }
+
+  @Test(expected = DbException.class)
+  public void testBadCsvQuoteEscape() throws DbException, InterruptedException {
+    final String filename = "bad_csv_quote.txt";
+    final Schema schema = new Schema(ImmutableList.of(Type.STRING_TYPE, Type.STRING_TYPE));
+    assertEquals(7, getRowCount(filename, schema, '\''));
   }
 
   @Test(expected = DbException.class)
@@ -105,35 +164,45 @@ public class FileScanTest {
   public void testCommaTwoColumnIntUnix() throws DbException, InterruptedException {
     final String filename = "comma_two_col_int_unix.txt";
     final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
-    assertEquals(7, getRowCount(filename, schema, ","));
+    assertEquals(7, getRowCount(filename, schema, ','));
   }
 
   @Test
   public void testCommaTwoColumnIntUnixNoTrailingNewline() throws DbException, InterruptedException {
     final String filename = "comma_two_col_int_unix_no_trailing_newline.txt";
     final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
-    assertEquals(7, getRowCount(filename, schema, ","));
+    assertEquals(7, getRowCount(filename, schema, ','));
   }
 
   @Test
   public void testCommaTwoColumnIntDos() throws DbException, InterruptedException {
     final String filename = "comma_two_col_int_dos.txt";
     final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
-    assertEquals(7, getRowCount(filename, schema, ","));
+    int countRow = getRowCount(filename, schema, ',');
+    assertEquals(7, countRow);
   }
 
   @Test
   public void testSimpleTwoColumnInt() throws DbException, InterruptedException {
     final String filename = "simple_two_col_int.txt";
     final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
-    assertEquals(7, getRowCount(filename, schema));
+    assertEquals(7, getRowCount(filename, schema, ' '));
   }
 
   @Test
   public void testSimpleTwoColumnFloat() throws Exception {
     final String filename = "simple_two_col_float.txt";
     final Schema schema = new Schema(ImmutableList.of(Type.FLOAT_TYPE, Type.FLOAT_TYPE));
-    assertEquals(7, getRowCount(filename, schema));
+    assertEquals(7, getRowCount(filename, schema, ' '));
+  }
+
+  @Test
+  public void testRandomCSV() throws Exception {
+    // file generated using:
+    // python testdata/generated/generate_csv.py 10000 --delimiter ' ' int int float str > testdata/filescan/random.csv
+    final String filename = "random.csv";
+    final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE, Type.FLOAT_TYPE, Type.STRING_TYPE));
+    assertEquals(10000, getRowCount(filename, schema, ' '));
   }
 
   @Test
@@ -158,6 +227,6 @@ public class FileScanTest {
     final Schema schema =
         new Schema(ImmutableList.of(Type.STRING_TYPE, Type.STRING_TYPE, Type.INT_TYPE, Type.INT_TYPE, Type.INT_TYPE,
             Type.INT_TYPE, Type.INT_TYPE));
-    assertEquals(100, getRowCount(filename, schema, "|"));
+    assertEquals(100, getRowCount(filename, schema, '|'));
   }
 }

@@ -232,9 +232,9 @@ public final class DatasetResource {
 
     String validFormat = validateFormat(format);
     if (validFormat.equals("csv")) {
-      dataset.delimiter = ",";
+      dataset.delimiter = ',';
     } else if (validFormat.equals("tsv")) {
-      dataset.delimiter = "\t";
+      dataset.delimiter = '\t';
     } else {
       throw new MyriaApiException(Status.BAD_REQUEST, "format must be 'csv', 'tsv'");
     }
@@ -295,7 +295,9 @@ public final class DatasetResource {
     }
 
     /* Do the work. */
-    Operator source = new FileScan(dataset.source, dataset.schema, dataset.delimiter);
+    Operator source =
+        new FileScan(dataset.source, dataset.schema, dataset.delimiter, dataset.quote, dataset.escape,
+            dataset.numberOfSkippedLines);
 
     DatasetStatus status = null;
     try {
