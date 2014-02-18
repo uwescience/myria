@@ -60,6 +60,36 @@ public final class WorkerCollection {
   }
 
   /**
+   * @param sWorkerId identifier of the worker, input string.
+   * @return the hostname and port number of the specified worker.
+   */
+  @GET
+  @Path("/add/worker-{workerId}")
+  public String addWorker(@PathParam("workerId") final String sWorkerId) {
+    Integer workerId;
+    try {
+      workerId = Integer.parseInt(sWorkerId);
+    } catch (final NumberFormatException e) {
+      /* Parsing failed, throw a 400 (Bad Request) */
+      throw new MyriaApiException(Status.BAD_REQUEST, e);
+    }
+    SocketInfo workerInfo = server.getWorkers().get(workerId);
+    if (workerInfo == null) {
+      /* Not found, throw a 404 (Not Found) */
+      throw new MyriaApiException(Status.NOT_FOUND, sWorkerId);
+    }
+
+    if (server.isWorkerAlive(workerId)) {
+      /* Worker already alive, throw a 400 (Bad Request) */
+      throw new MyriaApiException(Status.BAD_REQUEST, "Worker already alive");
+    }
+
+    /* Yay, worked! */
+    server.addWorker(workerId, workerInfo);
+    return "New worker " + workerInfo.toString() + " added";
+  }
+
+  /**
    * @return the set of workers (identifier : host-port string) known by this server.
    */
   @GET

@@ -161,7 +161,13 @@ public final class DeploymentUtils {
     String workerDir = description + "/" + "worker_" + workerId;
     String classpath = "'conf:libs/*'";
     String librarypath = "sqlite4java-282";
-    String heapSize = maxHeapSize;
+    String heapSize;
+    if (maxHeapSize != null) {
+      heapSize = maxHeapSize;
+    } else {
+      heapSize = "";
+    }
+
     if (description == null) {
       /* built in system test */
       path = workingDir;

@@ -1425,4 +1425,35 @@ public final class Server {
       throw new DbException(e);
     }
   }
+
+  /**
+   * 
+   * @param workerId the worker identification
+   * @return whether a worker is alive or not
+   */
+  public boolean isWorkerAlive(final Integer workerId) {
+    return aliveWorkers.containsKey(workerId);
+  }
+
+  public void addWorker(final Integer workerId, final SocketInfo workerInfo) {
+    try {
+      String configFileName = catalog.getConfigurationValue(MyriaSystemConfigKeys.DEPLOYMENT_FILE);
+      Map<String, Map<String, String>> config = READER.load(configFileName);
+
+      final String workingDir = config.get("paths").get(workerId + "");
+      final String description = catalog.getConfigurationValue(MyriaSystemConfigKeys.DESCRIPTION);
+      final String maxHeapSize = config.get("deployment").get("max_heap_size");
+      if (LOGGER.isInfoEnabled()) {
+        LOGGER.info("starting new worker " + workerInfo.getHost() + ":" + workerInfo.getPort() + ".");
+      }
+      boolean debug = config.get("deployment").get("debug_mode").equals("true");
+      DeploymentUtils.startWorker(workerInfo.getHost(), workingDir, description, maxHeapSize, workerId + "", workerInfo
+          .getPort(), debug);
+      aliveWorkers.put(workerId, System.currentTimeMillis());
+    } catch (CatalogException e) {
+      throw new RuntimeException(e);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
 }
