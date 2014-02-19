@@ -14,7 +14,7 @@ import edu.washington.escience.myria.parallel.Server;
 public class FileScanEncoding extends OperatorEncoding<FileScan> {
   public Schema schema;
   public DataSource source;
-  public String delimiter;
+  public Character delimiter;
   private static final List<String> requiredArguments = ImmutableList.of("schema", "source");
 
   @Override

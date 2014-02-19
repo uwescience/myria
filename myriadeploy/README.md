@@ -1,23 +1,16 @@
 #Preparing to use
 
-#### 0. Create symlinks
+#### 0. Build the Myria jar
+In Myria source (`../`), run `./gradlew jar`.
 
-The scripts copy the directories `conf` and `libs` to the deployment hosts. The easiest way to manage and update this is via symbolic links:
-
-    ln -s ../conf conf
-    ln -s ../build/libs libs
-
-#### 1. Build the Myria jar
-In Myria source (`../`), run `gradle jar`.
-
-#### 2. Myria needs Java 7
+#### 1. Myria needs Java 7
 Make sure `java -version` shows 7 on any machines in the cluster. 
 
 If not (e.g., support-managed machines have Java 6), you can put Java 7 in your directory, and let your `PATH` include it BEFORE the default `PATH`
 
     export PATH=(path to java7 bin folder):$PATH
 
-#### 3. You need passwordless SSH to the cluster
+#### 2. You need passwordless SSH to the cluster
 
 Better make sure you can access any machine in the cluster from your client side, using `ssh` with no password. Otherwise, you will need to enter them a lot of times.
 
@@ -36,13 +29,13 @@ Install `ssh-copy-id` if you don't have it on your machine.
 
 # Setting up a new cluster deployment
 
-#### 1. Create an updated deployment configuration file
+#### 0. Create an updated deployment configuration file
 
 Edit the template in `deployment.cfg.sample`
 
     cp deployment.cfg.sample deployment.cfg
     
-#### 2. Setup the cluster directories and catalogs and copy to nodes
+#### 1. Setup the cluster directories and catalogs and copy to nodes
 
 Use this script if you want to initialize (or re-initialize) a new Myria cluster configuration.
 
@@ -53,7 +46,7 @@ This will: Create a directory called `<description>` with all the catalog files,
 Notice this **overwrites** the cluster: no ingested relations in previous Myria instances will be inherited by this new one.
 
 # Running the cluster
-#### 1. Launch the cluster.
+#### 0. Launch the cluster.
 A. If you are lazy:
 
        ./launch_cluster.sh <deployment.cfg>
@@ -80,7 +73,7 @@ C. You can also launch the cluster using Eclipse.
 
    Edit the run configuration for `RunMyriaForProfiling` and set the working directory in *Arguments* to the Myria working directory (for example `/tmp/myria/twoNodeLocalParallel-files` if you are using `deployment.cfg.local`). When you hit run, the cluster is started.
 
-#### 2. Check the cluster status.
+#### 1. Check the cluster status.
 
 A. Query which workers the master knows about. They better match what's in `deployment.cfg`!
 
@@ -94,7 +87,7 @@ B. Query which workers are alive
 
    Replace `beijing` with your master's hostname.
     
-#### 3. Start using the cluster
+#### 2. Start using the cluster
 
 A. Ingest some data.
 
@@ -112,7 +105,7 @@ B. Run a query.
 
 The above steps are repeatable, until you are willing to let them go.
 
-#### 4. Shutdown the cluster.
+#### 3. Shutdown the cluster.
 
 A. Shutdown the whole cluster via the REST API:
 
