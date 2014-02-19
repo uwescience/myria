@@ -682,6 +682,14 @@ public class ApplyTest {
   }
 
   @Test(expected = IllegalArgumentException.class)
+  public void conditionalMismatchedTypes() throws IllegalArgumentException {
+    ConditionalExpression conditional =
+        new ConditionalExpression(new ConstantExpression(Type.BOOLEAN_TYPE, "true"), new ConstantExpression(
+            Type.INT_TYPE, "1"), new ConstantExpression(Type.STRING_TYPE, "foo"));
+    conditional.getOutputType(null, null);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
   public void moduloNeedsIntegers() throws IllegalArgumentException {
     ModuloExpression conditional =
         new ModuloExpression(new ConstantExpression(Type.FLOAT_TYPE, "1"), new ConstantExpression(Type.INT_TYPE, "2"));
