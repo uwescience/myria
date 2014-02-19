@@ -81,7 +81,8 @@ public final class MasterCatalog {
     + "    start_time TEXT, -- DATES IN ISO8601 FORMAT \n"
     + "    finish_time TEXT, -- DATES IN ISO8601 FORMAT \n"
     + "    elapsed_nanos INTEGER,\n"
-    + "    status TEXT NOT NULL);";
+    + "    status TEXT NOT NULL,\n"
+    + "    profiling_mode TEXT NOT NULL);";
   /** Create the relations table. */
   private static final String CREATE_RELATIONS =
       "CREATE TABLE relations (\n"
@@ -1116,7 +1117,7 @@ public final class MasterCatalog {
           try {
             SQLiteStatement statement =
                 sqliteConnection
-                    .prepare("INSERT INTO queries (raw_query, logical_ra, physical_plan, submit_time, start_time, finish_time, elapsed_nanos, status) VALUES (?,?,?,?,?,?,?,?);");
+                    .prepare("INSERT INTO queries (raw_query, logical_ra, physical_plan, submit_time, start_time, finish_time, elapsed_nanos, status, profiling_mode) VALUES (?,?,?,?,?,?,?,?,?);");
             statement.bind(1, queryStatus.rawQuery);
             statement.bind(2, queryStatus.logicalRa);
             statement.bind(3, physicalPlan);
@@ -1130,6 +1131,7 @@ public final class MasterCatalog {
               statement.bindNull(7);
             }
             statement.bind(8, queryStatus.status.toString());
+            statement.bind(9, queryStatus.profilingMode.toString());
             statement.stepThrough();
             statement.dispose();
             return sqliteConnection.getLastInsertId();
@@ -1164,7 +1166,7 @@ public final class MasterCatalog {
           try {
             SQLiteStatement statement =
                 sqliteConnection
-                    .prepare("SELECT query_id,raw_query,logical_ra,physical_plan,submit_time,start_time,finish_time,elapsed_nanos,status FROM queries WHERE query_id=?;");
+                    .prepare("SELECT query_id,raw_query,logical_ra,physical_plan,submit_time,start_time,finish_time,elapsed_nanos,status, profiling_mode FROM queries WHERE query_id=?;");
             statement.bind(1, queryId);
             statement.step();
             if (!statement.hasRow()) {
@@ -1230,6 +1232,7 @@ public final class MasterCatalog {
       queryStatus.elapsedNanos = statement.columnLong(7);
     }
     queryStatus.status = QueryStatusEncoding.Status.valueOf(statement.columnString(8));
+    queryStatus.profilingMode = Boolean.parseBoolean(statement.columnString(9));
     return queryStatus;
   }
 
@@ -1255,7 +1258,7 @@ public final class MasterCatalog {
             /* The base of the query */
             StringBuilder sb =
                 new StringBuilder(
-                    "SELECT query_id,raw_query,submit_time,start_time,finish_time,elapsed_nanos,status FROM queries");
+                    "SELECT query_id,raw_query,submit_time,start_time,finish_time,elapsed_nanos,status, profiling_mode FROM queries");
             /* The query arguments, if any. */
             List<Long> bound = Lists.newLinkedList();
             /* If there is a max query id, add the WHERE clause. */
