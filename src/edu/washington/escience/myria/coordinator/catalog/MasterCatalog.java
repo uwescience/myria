@@ -38,6 +38,7 @@ import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
 import edu.washington.escience.myria.parallel.SocketInfo;
+import edu.washington.escience.myria.util.DateTimeUtils;
 
 /**
  * This class is intended to store the configuration information for a Myria installation.
@@ -285,10 +286,11 @@ public final class MasterCatalog {
   public void createProfilingRelation() throws CatalogException {
     if (getSchema(MyriaConstants.PROFILING_RELATION) == null) {
       LOGGER.info("Create profiling data relation in catalog");
-      String query = "Create " + MyriaConstants.PROFILING_RELATION;
+      String query = "create " + MyriaConstants.PROFILING_RELATION;
       long queryId = newQuery(query, query, query, false);
       addRelationMetadata(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA, -1, queryId);
-      queryFinished(queryId, "0", "0", 0L, QueryStatusEncoding.Status.SUCCESS);
+      queryFinished(queryId, DateTimeUtils.nowInISO8601(), DateTimeUtils.nowInISO8601(), 0L,
+          QueryStatusEncoding.Status.SUCCESS);
     } else {
       LOGGER.info("Profiling relation already exists.");
     }

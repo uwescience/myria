@@ -225,7 +225,7 @@ public final class MyriaConstants {
   /**
    * The relation that stores profiling information.
    */
-  public static final RelationKey PROFILING_RELATION = new RelationKey("public", "logs", "profiling");
+  public static final RelationKey PROFILING_RELATION = new RelationKey("public", "logs", "Profiling");
 
   /**
    * The schema of the {@link #PROFILING_RELATION}.
