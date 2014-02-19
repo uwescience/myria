@@ -140,9 +140,23 @@ public abstract class BinaryExpression extends ExpressionOperator {
    * @return the default numeric type, based on the types of the children and Java type precedence.
    */
   protected final Type checkAndReturnDefaultNumericType(final Schema schema, final Schema stateSchema) {
+    return checkAndReturnDefaultNumericType(schema, stateSchema, ImmutableList.of(Type.DOUBLE_TYPE, Type.FLOAT_TYPE,
+        Type.LONG_TYPE, Type.INT_TYPE));
+  }
+
+  /**
+   * A function that could be used as the default type checker for a binary expression where both operands must be
+   * numeric.
+   * 
+   * @param schema the schema of the input tuples.
+   * @param stateSchema the schema of the state
+   * @param validTypes a list of valid types ordered by their precedence
+   * @return the default numeric type, based on the types of the children and Java type precedence.
+   */
+  protected final Type checkAndReturnDefaultNumericType(final Schema schema, final Schema stateSchema,
+      final List<Type> validTypes) {
     Type leftType = getLeft().getOutputType(schema, stateSchema);
     Type rightType = getRight().getOutputType(schema, stateSchema);
-    ImmutableList<Type> validTypes = ImmutableList.of(Type.DOUBLE_TYPE, Type.FLOAT_TYPE, Type.LONG_TYPE, Type.INT_TYPE);
     int leftIdx = validTypes.indexOf(leftType);
     int rightIdx = validTypes.indexOf(rightType);
     Preconditions.checkArgument(leftIdx != -1, "%s cannot handle left child [%s] of Type %s", getClass()

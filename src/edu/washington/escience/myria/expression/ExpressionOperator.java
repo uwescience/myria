@@ -34,9 +34,9 @@ import edu.washington.escience.myria.Schema;
     @Type(name = "GTEQ", value = GreaterThanOrEqualsExpression.class),
     @Type(name = "LTEQ", value = LessThanOrEqualsExpression.class),
     @Type(name = "LT", value = LessThanExpression.class), @Type(name = "MINUS", value = MinusExpression.class),
-    @Type(name = "NEQ", value = NotEqualsExpression.class), @Type(name = "OR", value = OrExpression.class),
-    @Type(name = "PLUS", value = PlusExpression.class), @Type(name = "POW", value = PowExpression.class),
-    @Type(name = "TIMES", value = TimesExpression.class),
+    @Type(name = "MODULO", value = ModuloExpression.class), @Type(name = "NEQ", value = NotEqualsExpression.class),
+    @Type(name = "OR", value = OrExpression.class), @Type(name = "PLUS", value = PlusExpression.class),
+    @Type(name = "POW", value = PowExpression.class), @Type(name = "TIMES", value = TimesExpression.class),
     /* Nary */
     @Type(name = "CONDITION", value = ConditionalExpression.class), })
 public abstract class ExpressionOperator implements Serializable {
@@ -44,6 +44,9 @@ public abstract class ExpressionOperator implements Serializable {
   private static final long serialVersionUID = 1L;
 
   /**
+   * Get the output type of the expression which might depend on the types of the children. Also, check whether the
+   * types of the children are correct.
+   * 
    * @param schema the schema of the tuples this expression references.
    * @param stateSchema the schema of the state if used.
    * @return the type of the output of this expression.

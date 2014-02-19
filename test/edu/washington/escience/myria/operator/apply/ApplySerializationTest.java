@@ -15,9 +15,9 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.expression.AbsExpression;
 import edu.washington.escience.myria.expression.AndExpression;
-import edu.washington.escience.myria.expression.ConditionalExpression;
 import edu.washington.escience.myria.expression.CastExpression;
 import edu.washington.escience.myria.expression.CeilExpression;
+import edu.washington.escience.myria.expression.ConditionalExpression;
 import edu.washington.escience.myria.expression.ConstantExpression;
 import edu.washington.escience.myria.expression.CosExpression;
 import edu.washington.escience.myria.expression.DivideExpression;
@@ -30,6 +30,7 @@ import edu.washington.escience.myria.expression.LessThanExpression;
 import edu.washington.escience.myria.expression.LessThanOrEqualsExpression;
 import edu.washington.escience.myria.expression.LogExpression;
 import edu.washington.escience.myria.expression.MinusExpression;
+import edu.washington.escience.myria.expression.ModuloExpression;
 import edu.washington.escience.myria.expression.NegateExpression;
 import edu.washington.escience.myria.expression.NotEqualsExpression;
 import edu.washington.escience.myria.expression.NotExpression;
@@ -95,8 +96,9 @@ public class ApplySerializationTest {
     GreaterThanOrEqualsExpression gte = new GreaterThanOrEqualsExpression(constant, variable);
     LessThanOrEqualsExpression lte = new LessThanOrEqualsExpression(constant, variable);
     CastExpression cast = new CastExpression(constant, typeof);
+    ModuloExpression modulo = new ModuloExpression(constant, variable);
     expressions.add(and).add(divide).add(eq).add(gt).add(gte).add(lt).add(lte).add(minus).add(ne).add(or).add(plus)
-        .add(pow).add(times).add(cast);
+        .add(pow).add(times).add(cast).add(modulo);
 
     /* NAry */
     VariableExpression variable2 = new VariableExpression(2);
