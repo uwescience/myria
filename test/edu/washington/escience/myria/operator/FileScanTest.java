@@ -63,7 +63,7 @@ public class FileScanTest {
   private static int getRowCount(final String filename, final Schema schema, final Character delimiter,
       final Character quote) throws DbException, InterruptedException {
     final String realFilename = Paths.get("testdata", "filescan", filename).toString();
-    FileScan fileScan = new FileScan(realFilename, schema, delimiter, quote);
+    FileScan fileScan = new FileScan(realFilename, schema, delimiter, quote, null, null);
     return getRowCount(fileScan);
   }
 

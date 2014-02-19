@@ -25,18 +25,25 @@ import edu.washington.escience.myria.io.FileSource;
 import edu.washington.escience.myria.util.DateTimeUtils;
 
 /**
- * Reads data from a file.
+ * Reads data from a file. For CSV files, the default parser follows the RFC 4180 (http://tools.ietf.org/html/rfc4180).
+ * However, this operator can be used to scan files with different delimiters, etc.
+ * 
+ * This operator assumes the input file is be comma-separated CSV files and have one record per line. For input files in
+ * other formats, delimiter need to be specified, e.g `\t` for tab delimited file, '|' for pipe delimited file. Each
+ * cell of the input can be enclosed by the default quotation mark '"'. Other quotation mark like '\'' can be specified
+ * by user as well. Note that the enclosure by quotation is not required in the input file.
+ * 
  */
 public final class FileScan extends LeafOperator {
   /** The Schema of the relation stored in this file. */
   private final Schema schema;
   /** Scanner used to parse the file. */
   private transient CSVReader scanner = null;
-  /** A user-provided file delimiter; if null, the system uses the default whitespace delimiter. */
+  /** A user-provided file delimiter; if null, the system uses the default comma as delimiter. */
   private final Character delimiter;
-  /** A user-provided quotation mark. */
+  /** A user-provided quotation mark, if null, the system uses '"'. */
   private final Character quote;
-  /** A user-provided escape character, if null, the system uses '/'. */
+  /** A user-provided escape character to escape quote and itself, if null, the system uses '/'. */
   private final Character escape;
   /** The data source that will generate the input stream to be read at initialization. */
   private final DataSource source;
@@ -56,8 +63,8 @@ public final class FileScan extends LeafOperator {
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(FileScan.class);
 
   /**
-   * Construct a new FileScan object to read from the specified file. This file is assumed to be whitespace-separated
-   * and have one record per line.
+   * Construct a new FileScan object to read from the specified file. This file is assumed to be comma-separated and
+   * have one record per line. '"' will be used as default quotation mark. `\` will be used as escape character.
    * 
    * @param filename file containing the data to be scanned.
    * @param schema the Schema of the relation contained in the file.
@@ -67,8 +74,8 @@ public final class FileScan extends LeafOperator {
   }
 
   /**
-   * Construct a new FileScan object to read from the specified file. This file is assumed to be whitespace-separated
-   * and have one record per line.
+   * Construct a new FileScan object to read from the specified file. This file is assumed to be comma-separated and
+   * have one record per line. '"' will be used as default quotation mark. `\` will be used as escape character.
    * 
    * @param source the data source containing the relation.
    * @param schema the Schema of the relation contained in the file.
@@ -78,22 +85,24 @@ public final class FileScan extends LeafOperator {
   }
 
   /**
-   * Construct a new FileScan object to read from the specified file. This file is assumed to be whitespace-separated
-   * and have one record per line.
+   * Construct a new FileScan object to read from the specified file. This file is assumed to be comma-separated and
+   * have one record per line. If delimiter is non-null, the system uses its value as a delimiter. '"' will be used as
+   * default quotation mark. `\` will be used as escape character.
    * 
    * @param filename file containing the data to be scanned.
    * @param schema the Schema of the relation contained in the file.
    * @param delimiter An optional override file delimiter.
    */
   public FileScan(final String filename, final Schema schema, final Character delimiter) {
-    this(filename, schema, delimiter, null, null, null);
+    this(new FileSource(filename), schema, delimiter, null, null, null);
   }
 
   /**
-   * Construct a new FileScan object to read from the specified file. This file is assumed to be whitespace-separated
-   * and have one record per line.
+   * Construct a new FileScan object to read from the specified file. This file is assumed to be comma-separated and
+   * have one record per line. If delimiter is non-null, the system uses its value as a delimiter. '"' will be used as
+   * default quotation mark. `\` will be used as escape character.
    * 
-   * @param source the data source containing the relation.
+   * @param source file containing the data to be scanned.
    * @param schema the Schema of the relation contained in the file.
    * @param delimiter An optional override file delimiter.
    */
@@ -102,64 +111,10 @@ public final class FileScan extends LeafOperator {
   }
 
   /**
-   * Construct a new FileScan object to read from the specified file. This file is assumed to be whitespace-separated
-   * and have one record per line.
-   * 
-   * @param filename file containing the data to be scanned.
-   * @param schema the Schema of the relation contained in the file.
-   * @param delimiter An optional override file delimiter.
-   * @param quote An optional quote character
-   */
-  public FileScan(final String filename, final Schema schema, final Character delimiter, final Character quote) {
-    this(filename, schema, delimiter, quote, null, null);
-  }
-
-  /**
-   * Construct a new FileScan object to read from the specified file. This file is assumed to be whitespace-separated
-   * and have one record per line. If delimiter is non-null, the system uses its value as a delimiter.
-   * 
-   * @param source the data source containing the relation.
-   * @param schema the Schema of the relation contained in the file.
-   * @param delimiter An optional override file delimiter.
-   * @param quote An optional quote character
-   */
-  public FileScan(final DataSource source, final Schema schema, final Character delimiter, final Character quote) {
-    this(source, schema, delimiter, quote, null, null);
-  }
-
-  /**
-   * Construct a new FileScan object to read from the specified file. This file is assumed to be whitespace-separated
-   * and have one record per line.
-   * 
-   * @param filename file containing the data to be scanned.
-   * @param schema the Schema of the relation contained in the file.
-   * @param delimiter An optional override file delimiter.
-   * @param quote An optional quote character
-   * @param escape An optional escape character.
-   */
-  public FileScan(final String filename, final Schema schema, final Character delimiter, final Character quote,
-      final Character escape) {
-    this(filename, schema, delimiter, quote, escape, null);
-  }
-
-  /**
-   * Construct a new FileScan object to read from the specified file. This file is assumed to be whitespace-separated
-   * and have one record per line. If delimiter is non-null, the system uses its value as a delimiter.
-   * 
-   * @param source the data source containing the relation.
-   * @param schema the Schema of the relation contained in the file.
-   * @param delimiter An optional override file delimiter.
-   * @param quote An optional quote character
-   * @param escape An optional escape character.
-   */
-  public FileScan(final DataSource source, final Schema schema, final Character delimiter, final Character quote,
-      final Character escape) {
-    this(source, schema, delimiter, quote, escape, null);
-  }
-
-  /**
-   * Construct a new FileScan object to read from the specified file. This file is assumed to be whitespace-separated
-   * and have one record per line. If delimiter is non-null, the system uses its value as a delimiter.
+   * Construct a new FileScan object to read from the specified file. This file is assumed to be comma-separated and
+   * have one record per line. If delimiter is non-null, the system uses its value as a delimiter. If quote is null, '"'
+   * will be used as default quotation mark. If escape is null, `\` will be used as escape character. If
+   * numberOfSkippedLines is null, no line will be skipped.
    * 
    * @param filename file containing the data to be scanned.
    * @param schema the Schema of the relation contained in the file.
@@ -174,8 +129,10 @@ public final class FileScan extends LeafOperator {
   }
 
   /**
-   * Construct a new FileScan object to read from the specified file. This file is assumed to be whitespace-separated
-   * and have one record per line. If delimiter is non-null, the system uses its value as a delimiter.
+   * Construct a new FileScan object to read from the specified file. This file is assumed to be comma-separated and
+   * have one record per line. If delimiter is non-null, the system uses its value as a delimiter. If quote is null, '"'
+   * will be used as default quotation mark. If escape is null, `\` will be used as escape character. If
+   * numberOfSkippedLines is null, no line will be skipped.
    * 
    * @param source the data source containing the relation.
    * @param schema the Schema of the relation contained in the file.
@@ -186,8 +143,8 @@ public final class FileScan extends LeafOperator {
    */
   public FileScan(final DataSource source, final Schema schema, final Character delimiter,
       @Nullable final Character quote, final Character escape, final Integer numberOfSkippedLines) {
-    this.source = Preconditions.checkNotNull(source, "Datasoure should not be null.");
-    this.schema = Preconditions.checkNotNull(schema, "Schema should not be null.");
+    this.source = Preconditions.checkNotNull(source, "source");
+    this.schema = Preconditions.checkNotNull(schema, "schema");
     this.delimiter = Objects.firstNonNull(delimiter, CSVParser.DEFAULT_SEPARATOR);
     this.quote = Objects.firstNonNull(quote, CSVParser.DEFAULT_QUOTE_CHARACTER);
     this.escape = Objects.firstNonNull(escape, CSVParser.DEFAULT_ESCAPE_CHARACTER);
@@ -252,7 +209,7 @@ public final class FileScan extends LeafOperator {
       }
     }
 
-    LOGGER.debug("Scanned " + (lineNumber - lineNumberBegin) + " input lines");
+    LOGGER.debug("Scanned {} input lines", lineNumber - lineNumberBegin);
 
     return buffer.popAny();
   }
