@@ -273,8 +273,7 @@ public abstract class Operator implements Serializable {
     }
 
     if (isProfilingMode()) {
-      PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:live", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
-          getOpName(), getFragmentId(), System.nanoTime(), 0);
+      PROFILING_LOGGER.info("{},{},{},{},,live", getQueryId(), getOpName(), getFragmentId(), System.nanoTime());
     }
 
     TupleBatch result = null;
@@ -290,12 +289,12 @@ public abstract class Operator implements Serializable {
       throw new DbException(e);
     }
     if (isProfilingMode() && !eos()) {
-      int numberOfTupleReturned = 0;
+      int numberOfTupleReturned = -1;
       if (result != null) {
         numberOfTupleReturned = result.numTuples();
       }
-      PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:hang", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
-          getOpName(), getFragmentId(), System.nanoTime(), numberOfTupleReturned);
+      PROFILING_LOGGER.info("{},{},{},{},{},hang", getQueryId(), getOpName(), getFragmentId(), System.nanoTime(),
+          numberOfTupleReturned);
     }
     if (result == null) {
       checkEOSAndEOI();
@@ -407,8 +406,7 @@ public abstract class Operator implements Serializable {
       return;
     }
     if (isProfilingMode()) {
-      PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:end", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
-          getOpName(), getFragmentId(), System.nanoTime());
+      PROFILING_LOGGER.info("{},{},{},{},,eos", getQueryId(), getOpName(), getFragmentId(), System.nanoTime());
     }
     eos = true;
   }
