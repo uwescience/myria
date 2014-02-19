@@ -3,6 +3,8 @@ package edu.washington.escience.myria.api;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.net.URI;
 import java.util.HashSet;
 import java.util.List;
@@ -32,10 +34,12 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.base.Objects;
 
+import edu.washington.escience.myria.CsvTupleWriter;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
+import edu.washington.escience.myria.TupleWriter;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
@@ -262,6 +266,45 @@ public final class QueryResource {
       status.url = getCanonicalResourcePath(uriInfo, status.queryId);
     }
     return Response.ok().cacheControl(MyriaApiUtils.doNotCache()).entity(queries).build();
+  }
+
+  @GET
+  @Produces({ MediaType.TEXT_PLAIN })
+  @Path("logs/query-{queryId:\\d+}")
+  public Response getProfileLogs(@PathParam("queryId") final long queryId, @Context final UriInfo uriInfo)
+      throws CatalogException, IOException, DbException {
+    /* Start building the response. */
+    ResponseBuilder response = Response.ok();
+    response.type(MediaType.TEXT_PLAIN);
+    /*
+     * Allocate the pipes by which the {@link DataOutput} operator will talk to the {@link StreamingOutput} object that
+     * will stream data to the client.
+     */
+    PipedOutputStream writerOutput = new PipedOutputStream();
+    PipedInputStream input;
+    try {
+      input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
+    } catch (IOException e) {
+      throw new DbException(e);
+    }
+
+    /* Create a {@link PipedStreamingOutput} object that will stream the serialized results to the client. */
+    PipedStreamingOutput entity = new PipedStreamingOutput(input);
+    /* .. and make it the entity of the response. */
+    response.entity(entity);
+
+    /* Set up the TupleWriter and the Response MediaType based on the format choices. */
+    TupleWriter writer = new CsvTupleWriter(writerOutput);
+
+    /* Start streaming tuples into the TupleWriter, and through the pipes to the PipedStreamingOutput. */
+    try {
+      server.startLogDataStream(queryId, writer);
+    } catch (IllegalArgumentException e) {
+      throw new MyriaApiException(Status.BAD_REQUEST, e);
+    }
+
+    /* Yay, worked! Ensure the file has the correct filename. */
+    return response.build();
   }
 
   /**

@@ -25,6 +25,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.annotation.Nullable;
+
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
@@ -42,6 +44,7 @@ import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleWriter;
+import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
@@ -922,6 +925,8 @@ public final class Server {
 
   /**
    * 
+   * Can be only used in test.
+   * 
    * @return true if the query plan is accepted and scheduled for execution.
    * @param masterRoot the root operator of the master plan
    * @param workerRoots the roots of the worker part of the plan, {workerID -> RootOperator[]}
@@ -936,7 +941,7 @@ public final class Server {
       workerPlans.put(entry.getKey(), new SingleQueryPlanWithArgs(entry.getValue()));
     }
     return submitQuery(catalogInfoPlaceHolder, catalogInfoPlaceHolder, catalogInfoPlaceHolder,
-        new SingleQueryPlanWithArgs(masterRoot), workerPlans);
+        new SingleQueryPlanWithArgs(masterRoot), workerPlans, false);
   }
 
   /**
@@ -948,18 +953,19 @@ public final class Server {
    * @param physicalPlan the Myria physical plan for the query.
    * @param workerPlans the physical parallel plan fragments for each worker.
    * @param masterPlan the physical parallel plan fragment for the master.
+   * @param profilingMode is the profiling mode of the query on.
    * @throws DbException if any error in non-catalog data processing
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
    * */
   public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final String physicalPlan,
-      final SingleQueryPlanWithArgs masterPlan, final Map<Integer, SingleQueryPlanWithArgs> workerPlans)
-      throws DbException, CatalogException {
+      final SingleQueryPlanWithArgs masterPlan, final Map<Integer, SingleQueryPlanWithArgs> workerPlans,
+      @Nullable final Boolean profilingMode) throws DbException, CatalogException {
     /* First check whether there are too many active queries. */
     if (!canSubmitQuery()) {
       return null;
     }
-    final long queryID = catalog.newQuery(rawQuery, logicalRa, physicalPlan);
+    final long queryID = catalog.newQuery(rawQuery, logicalRa, physicalPlan, profilingMode);
     return submitQuery(queryID, masterPlan, workerPlans);
   }
 
@@ -983,7 +989,7 @@ public final class Server {
     if (!canSubmitQuery()) {
       return null;
     }
-    final long queryID = catalog.newQuery(rawQuery, logicalRa, physicalPlan);
+    final long queryID = catalog.newQuery(rawQuery, logicalRa, physicalPlan, physicalPlan.profilingMode);
     return submitQuery(queryID, masterPlan, workerPlans);
   }
 
@@ -1136,7 +1142,8 @@ public final class Server {
       /* Start the workers */
       QueryFuture qf =
           submitQuery("ingest " + relationKey.toString("sqlite"), "ingest " + relationKey.toString("sqlite"),
-              "ingest " + relationKey.toString("sqlite"), new SingleQueryPlanWithArgs(scatter), workerPlans).sync();
+              "ingest " + relationKey.toString("sqlite"), new SingleQueryPlanWithArgs(scatter), workerPlans, false)
+              .sync();
       if (qf == null) {
         return null;
       }
@@ -1182,7 +1189,7 @@ public final class Server {
       QueryFuture qf =
           submitQuery("import " + relationKey.toString("sqlite"), "import " + relationKey.toString("sqlite"),
               "import " + relationKey.toString("sqlite"), new SingleQueryPlanWithArgs(new SinkRoot(new EOSSource())),
-              workerPlans).sync();
+              workerPlans, false).sync();
 
       if (qf == null) {
         throw new DbException("Cannot import dataset right now, server is overloaded.");
@@ -1420,7 +1427,61 @@ public final class Server {
     /* Submit the plan for the download. */
     String planString = "download " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE);
     try {
-      return submitQuery(planString, planString, planString, masterPlan, workerPlans);
+      return submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
+
+  public QueryFuture startLogDataStream(final long queryId, final TupleWriter writer) throws DbException {
+    /* Get the relation's schema, to make sure it exists. */
+    final QueryStatusEncoding queryStatus;
+    try {
+      queryStatus = catalog.getQuery(queryId);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+    if (queryStatus.status != QueryStatusEncoding.Status.SUCCESS) {
+      throw new IllegalArgumentException("the requested query is was not found or succesfully finished.");
+    }
+    if (!queryStatus.profilingMode) {
+      throw new IllegalArgumentException("the requested query do not have profiling logs.");
+    }
+
+    /* get relation key and schema */
+    RelationKey relationKey = MyriaConstants.PROFLILING_RELATION_KEY;
+    Schema schema = MyriaConstants.PROFILING_SCHEMA;
+
+    /* Get the workers. */
+    Set<Integer> actualWorkers = getAliveWorkers();
+
+    /* get DBMS type. */
+    ConnectionInfo connectionInfo = (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
+    String dbms = connectionInfo.getDbms();
+
+    /* Construct the operators that go elsewhere. */
+    DbQueryScan scan =
+        new DbQueryScan("SELECT * FROM " + relationKey.toString(dbms) + " WHERE queryId=" + queryId, schema);
+    final ExchangePairID operatorId = ExchangePairID.newID();
+    CollectProducer producer = new CollectProducer(scan, operatorId, MyriaConstants.MASTER_ID);
+
+    /* Construct the workers' {@link SingleQueryPlanWithArgs}. */
+    SingleQueryPlanWithArgs workerPlan = new SingleQueryPlanWithArgs(producer);
+    Map<Integer, SingleQueryPlanWithArgs> workerPlans =
+        new HashMap<Integer, SingleQueryPlanWithArgs>(actualWorkers.size());
+    for (Integer worker : actualWorkers) {
+      workerPlans.put(worker, workerPlan);
+    }
+
+    /* Construct the master plan. */
+    final CollectConsumer consumer = new CollectConsumer(schema, operatorId, ImmutableSet.copyOf(actualWorkers));
+    DataOutput output = new DataOutput(consumer, writer);
+    final SingleQueryPlanWithArgs masterPlan = new SingleQueryPlanWithArgs(output);
+
+    /* Submit the plan for the download. */
+    String planString = "download " + relationKey.toString(dbms);
+    try {
+      return submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
     } catch (CatalogException e) {
       throw new DbException(e);
     }

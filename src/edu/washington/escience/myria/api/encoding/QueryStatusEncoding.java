@@ -26,11 +26,13 @@ public class QueryStatusEncoding {
    * @return a QueryStatusEncoding object containing the submitted query, with the submit time set to
    *         DateTimeUtils.nowInISO8601().
    */
-  public static QueryStatusEncoding submitted(final String rawQuery, final String logicalRa, final Object physicalPlan) {
+  public static QueryStatusEncoding submitted(final String rawQuery, final String logicalRa, final Object physicalPlan,
+      final Boolean profilingMode) {
     QueryStatusEncoding ret = new QueryStatusEncoding();
     ret.rawQuery = rawQuery;
     ret.logicalRa = logicalRa;
     ret.physicalPlan = physicalPlan;
+    ret.profilingMode = profilingMode;
     ret.submitTime = DateTimeUtils.nowInISO8601();
     ret.status = Status.ACCEPTED;
     return ret;
@@ -56,6 +58,8 @@ public class QueryStatusEncoding {
   public Long elapsedNanos;
   /** The status of the query. */
   public Status status;
+  /** The profilingMode of the query. */
+  public Boolean profilingMode;
 
   /** The current status of the query. */
   public static enum Status {

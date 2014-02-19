@@ -23,6 +23,7 @@ import com.almworks.sqlite4java.SQLiteJob;
 import com.almworks.sqlite4java.SQLiteQueue;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -1062,7 +1063,7 @@ public final class MasterCatalog {
     } catch (JsonProcessingException e) {
       throw new CatalogException(e);
     }
-    return newQuery(rawQuery, logicalRa, physicalString);
+    return newQuery(rawQuery, logicalRa, physicalString, physicalPlan.profilingMode);
   }
 
   /**
@@ -1071,11 +1072,12 @@ public final class MasterCatalog {
    * @param rawQuery the original user data of the query.
    * @param logicalRa the compiled logical relational algebra plan of the query.
    * @param physicalPlan a String describing the physical execution plan for the query.
+   * @param profilingMode is the profiling mode of the query on.
    * @return the newly generated ID of this query.
    * @throws CatalogException if there is an error adding the new query.
    */
-  public Long newQuery(final String rawQuery, final String logicalRa, final String physicalPlan)
-      throws CatalogException {
+  public Long newQuery(final String rawQuery, final String logicalRa, final String physicalPlan,
+      final Boolean profilingMode) throws CatalogException {
     Objects.requireNonNull(rawQuery);
     Objects.requireNonNull(logicalRa);
     Objects.requireNonNull(physicalPlan);
@@ -1083,7 +1085,9 @@ public final class MasterCatalog {
       throw new CatalogException("Catalog is closed.");
     }
 
-    final QueryStatusEncoding queryStatus = QueryStatusEncoding.submitted(rawQuery, logicalRa, physicalPlan);
+    final QueryStatusEncoding queryStatus =
+        QueryStatusEncoding.submitted(rawQuery, logicalRa, physicalPlan, Preconditions.checkNotNull(profilingMode,
+            false));
 
     try {
       return queue.execute(new SQLiteJob<Long>() {
