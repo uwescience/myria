@@ -83,7 +83,7 @@ public class ApplyTest {
 
       ExpressionOperator squareRoot = new SqrtExpression(vara);
 
-      Expression expr = new Expression("first", squareRoot);
+      Expression expr = new Expression("sqrt", squareRoot);
 
       Expressions.add(expr);
     }
@@ -96,7 +96,7 @@ public class ApplyTest {
 
       ExpressionOperator times = new TimesExpression(plus, minus);
 
-      Expression expr = new Expression("second", times);
+      Expression expr = new Expression("simpleNestedExpression", times);
       Expressions.add(expr);
     }
 
@@ -111,7 +111,7 @@ public class ApplyTest {
 
       ExpressionOperator sqrt = new SqrtExpression(plus);
 
-      Expression expr = new Expression("third", sqrt);
+      Expression expr = new Expression("distance", sqrt);
       Expressions.add(expr);
     }
 
@@ -120,7 +120,7 @@ public class ApplyTest {
 
       ExpressionOperator upper = new ToUpperCaseExpression(vard);
 
-      Expression expr = new Expression("fourth", upper);
+      Expression expr = new Expression("upper", upper);
       Expressions.add(expr);
     }
 
@@ -129,7 +129,7 @@ public class ApplyTest {
 
       ExpressionOperator abs = new AbsExpression(new MinusExpression(varb, vara));
 
-      Expression expr = new Expression("fifth", abs);
+      Expression expr = new Expression("absolute", abs);
       Expressions.add(expr);
     }
 
@@ -141,7 +141,7 @@ public class ApplyTest {
       ExpressionOperator ceil = new CeilExpression(squareRoot);
       ExpressionOperator plus = new PlusExpression(floor, ceil);
 
-      Expression expr = new Expression("sixth", plus);
+      Expression expr = new Expression("floorCeil", plus);
 
       Expressions.add(expr);
     }
@@ -284,12 +284,12 @@ public class ApplyTest {
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(14));
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(15));
 
-        assertEquals("first", result.getSchema().getColumnName(0));
-        assertEquals("second", result.getSchema().getColumnName(1));
-        assertEquals("third", result.getSchema().getColumnName(2));
-        assertEquals("fourth", result.getSchema().getColumnName(3));
-        assertEquals("fifth", result.getSchema().getColumnName(4));
-        assertEquals("sixth", result.getSchema().getColumnName(5));
+        assertEquals("sqrt", result.getSchema().getColumnName(0));
+        assertEquals("simpleNestedExpression", result.getSchema().getColumnName(1));
+        assertEquals("distance", result.getSchema().getColumnName(2));
+        assertEquals("upper", result.getSchema().getColumnName(3));
+        assertEquals("absolute", result.getSchema().getColumnName(4));
+        assertEquals("floorCeil", result.getSchema().getColumnName(5));
         assertEquals("trig", result.getSchema().getColumnName(6));
         assertEquals("boolean", result.getSchema().getColumnName(7));
         assertEquals("copy", result.getSchema().getColumnName(8));
