@@ -989,7 +989,7 @@ public final class Server {
     if (!canSubmitQuery()) {
       return null;
     }
-    final long queryID = catalog.newQuery(rawQuery, logicalRa, physicalPlan, physicalPlan.profilingMode);
+    final long queryID = catalog.newQuery(rawQuery, logicalRa, physicalPlan);
     return submitQuery(queryID, masterPlan, workerPlans);
   }
 
@@ -1433,6 +1433,12 @@ public final class Server {
     }
   }
 
+  /**
+   * @param queryId query id.
+   * @param writer writer to get data.
+   * @return profiling logs for the query.
+   * @throws DbException if there is an error when accessing profiling logs.
+   */
   public QueryFuture startLogDataStream(final long queryId, final TupleWriter writer) throws DbException {
     /* Get the relation's schema, to make sure it exists. */
     final QueryStatusEncoding queryStatus;

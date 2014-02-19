@@ -268,11 +268,19 @@ public final class QueryResource {
     return Response.ok().cacheControl(MyriaApiUtils.doNotCache()).entity(queries).build();
   }
 
+  /**
+   * Get profiling logs of a query.
+   * 
+   * @param queryId query id.
+   * @param uriInfo the URL of the current request.
+   * @return the profiling logs of the query across all workers
+   * @throws DbException if there is an error in the database.
+   */
   @GET
   @Produces({ MediaType.TEXT_PLAIN })
   @Path("logs/query-{queryId:\\d+}")
   public Response getProfileLogs(@PathParam("queryId") final long queryId, @Context final UriInfo uriInfo)
-      throws CatalogException, IOException, DbException {
+      throws DbException {
     /* Start building the response. */
     ResponseBuilder response = Response.ok();
     response.type(MediaType.TEXT_PLAIN);
