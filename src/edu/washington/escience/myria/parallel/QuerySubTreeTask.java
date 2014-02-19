@@ -36,11 +36,6 @@ public final class QuerySubTreeTask {
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(QuerySubTreeTask.class.getName());
 
   /**
-   * The logger for profiler.
-   */
-  private static final org.slf4j.Logger PROFILING_LOGGER = org.slf4j.LoggerFactory.getLogger("profile");
-
-  /**
    * The root operator.
    * */
   private final RootOperator root;
@@ -102,13 +97,18 @@ public final class QuerySubTreeTask {
 
   /**
    * The lock mainly to make operator memory consistency.
-   * */
+   */
   private final Object executionLock = new Object();
 
   /**
    * resource manager.
-   * */
+   */
   private volatile TaskResourceManager resourceManager;
+
+  /**
+   * loggers for profiling.
+   */
+  private ProfilingLogger profilingLogger;
 
   /**
    * @return the task execution future.
@@ -360,9 +360,12 @@ public final class QuerySubTreeTask {
    * @return always null. The return value is unused.
    * */
   private Object executeActually() {
-
-    PROFILING_LOGGER.info("{},{},{},{},{},", root.getQueryId(), "startTime", root.getFragmentId(), System.nanoTime(),
-        System.currentTimeMillis());
+    // try {
+    // profilingLogger.recordEvent(root.getQueryId(), "startTime", root.getFragmentId(), System.nanoTime(), System
+    // .currentTimeMillis(), "");
+    // } catch (DbException e) {
+    // LOGGER.error("Failed to write profiling data:", e);
+    // }
 
     if (executionCondition.compareAndSet(EXECUTION_READY | STATE_EXECUTION_REQUESTED, EXECUTION_READY
         | STATE_EXECUTION_REQUESTED | STATE_IN_EXECUTION)) {
@@ -632,6 +635,14 @@ public final class QuerySubTreeTask {
       cleanup(true);
       taskExecutionFuture.setFailure(e);
     }
+
+    // try {
+    // profilingLogger = new ProfilingLogger(execEnvVars);
+    // } catch (DbException e) {
+    // if (LOGGER.isErrorEnabled()) {
+    // LOGGER.error("Failed to initialize profiling logger:", e);
+    // }
+    // }
   }
 
   /**

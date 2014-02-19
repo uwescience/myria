@@ -9,6 +9,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
+import edu.washington.escience.myria.parallel.ProfilingLogger;
 import edu.washington.escience.myria.parallel.QuerySubTreeTask;
 import edu.washington.escience.myria.parallel.TaskResourceManager;
 import edu.washington.escience.myria.parallel.WorkerQueryPartition;
@@ -30,10 +31,6 @@ public abstract class Operator implements Serializable {
    * logger for this class.
    * */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Operator.class);
-  /**
-   * loggers for profiling.
-   */
-  private static final org.slf4j.Logger PROFILING_LOGGER = org.slf4j.LoggerFactory.getLogger("profile");
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -74,6 +71,11 @@ public abstract class Operator implements Serializable {
   public ImmutableMap<String, Object> getExecEnvVars() {
     return execEnvVars;
   }
+
+  /**
+   * loggers for profiling.
+   */
+  private ProfilingLogger profilingLogger;
 
   /**
    * @return return query id.
@@ -273,7 +275,7 @@ public abstract class Operator implements Serializable {
     }
 
     if (isProfilingMode()) {
-      PROFILING_LOGGER.info("{},{},{},{},,live", getQueryId(), getOpName(), getFragmentId(), System.nanoTime());
+      profilingLogger.recordEvent(getQueryId(), getOpName(), getFragmentId(), System.nanoTime(), 0, "live");
     }
 
     TupleBatch result = null;
@@ -293,8 +295,8 @@ public abstract class Operator implements Serializable {
       if (result != null) {
         numberOfTupleReturned = result.numTuples();
       }
-      PROFILING_LOGGER.info("{},{},{},{},{},hang", getQueryId(), getOpName(), getFragmentId(), System.nanoTime(),
-          numberOfTupleReturned);
+      profilingLogger.recordEvent(getQueryId(), getOpName(), getFragmentId(), System.nanoTime(), numberOfTupleReturned,
+          "hang");
     }
     if (result == null) {
       checkEOSAndEOI();
@@ -350,6 +352,10 @@ public abstract class Operator implements Serializable {
       throw new DbException(e);
     }
     open = true;
+
+    if (isProfilingMode()) {
+      profilingLogger = new ProfilingLogger(execEnvVars);
+    }
   }
 
   /**
@@ -406,7 +412,11 @@ public abstract class Operator implements Serializable {
       return;
     }
     if (isProfilingMode()) {
-      PROFILING_LOGGER.info("{},{},{},{},,eos", getQueryId(), getOpName(), getFragmentId(), System.nanoTime());
+      try {
+        profilingLogger.recordEvent(getQueryId(), getOpName(), getFragmentId(), System.nanoTime(), 0, "eos");
+      } catch (Exception e) {
+        LOGGER.error("Failed to write profiling data:", e);
+      }
     }
     eos = true;
   }

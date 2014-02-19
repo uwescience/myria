@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
+import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -273,6 +274,22 @@ public final class MasterCatalog {
       }).get();
     } catch (InterruptedException | ExecutionException e) {
       throw new CatalogException(e);
+    }
+  }
+
+  /**
+   * Creates the relation that stores profiling data.
+   *
+   * @throws CatalogException if the relation cannot be created
+   */
+  public void createProfilingRelation() throws CatalogException {
+    if (getSchema(MyriaConstants.PROFILING_RELATION) == null) {
+      LOGGER.info("Create profiling data relation in catalog");
+      long queryId = newQuery("create log", "create log", "create log");
+      addRelationMetadata(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA, -1, queryId);
+      queryFinished(queryId, "0", "0", 0L, QueryStatusEncoding.Status.SUCCESS);
+    } else {
+      LOGGER.info("Profiling relation already exists.");
     }
   }
 

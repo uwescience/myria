@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableMap;
 
+import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.TupleBatch;
@@ -36,11 +37,6 @@ public class WorkerQueryPartition implements QueryPartition {
    * logger.
    * */
   private static final Logger LOGGER = LoggerFactory.getLogger(WorkerQueryPartition.class);
-
-  /**
-   * logger for profile.
-   */
-  private static final org.slf4j.Logger PROFILING_LOGGER = org.slf4j.LoggerFactory.getLogger("profile");
 
   /**
    * The query ID.
@@ -96,6 +92,11 @@ public class WorkerQueryPartition implements QueryPartition {
    * Current alive worker set.
    * */
   private final Set<Integer> missingWorkers;
+
+  /**
+   * loggers for profiling.
+   */
+  private ProfilingLogger profilingLogger;
 
   /**
    * The future listener for processing the complete events of the execution of all the query's tasks.
@@ -232,6 +233,14 @@ public class WorkerQueryPartition implements QueryPartition {
         new TaskResourceManager(ownerWorker.getIPCConnectionPool(), t, ownerWorker.getQueryExecutionMode());
     ImmutableMap.Builder<String, Object> b = ImmutableMap.builder();
     t.init(resourceManager, b.putAll(ownerWorker.getExecEnvVars()).build());
+
+    if (isProfilingMode()) {
+      try {
+        profilingLogger = new ProfilingLogger(ImmutableMap.copyOf(ownerWorker.getExecEnvVars()));
+      } catch (DbException e) {
+        LOGGER.error("Failed to initialize profiling logger:", e);
+      }
+    }
   }
 
   @Override
@@ -264,8 +273,11 @@ public class WorkerQueryPartition implements QueryPartition {
     }
 
     if (isProfilingMode()) {
-      PROFILING_LOGGER.info("{},{},{},{},{},", getQueryID(), "startTime", null, System.nanoTime(), System
-          .currentTimeMillis());
+      try {
+        profilingLogger.recordEvent(getQueryID(), "startTime", -1, System.nanoTime(), System.currentTimeMillis(), "");
+      } catch (DbException e) {
+        LOGGER.error("Failed to write profiling data:", e);
+      }
     }
 
     queryStatistics.markQueryStart();

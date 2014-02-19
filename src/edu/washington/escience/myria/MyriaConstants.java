@@ -223,16 +223,16 @@ public final class MyriaConstants {
   public static final int MAX_ACTIVE_QUERIES = 5;
 
   /**
-   * The schema used for table storing profiling logs.
+   * The relation that stores profiling information.
    */
-  public static final Schema PROFILING_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE,
-      Type.STRING_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("queryId",
-      "workerId", "opName", "fragmentId", "nanoTime", "intData", "stringData"));
+  public static final RelationKey PROFILING_RELATION = new RelationKey("public", "logs", "profiling");
 
   /**
-   * The relation key used for table storing profiling logs. TODO: please correct this
+   * The schema of the {@link #PROFILING_RELATION}.
    */
-  public static final RelationKey PROFLILING_RELATION_KEY = new RelationKey("public", "logs", "profiling");
+  public static final Schema PROFILING_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.INT_TYPE,
+      Type.STRING_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("queryId",
+      "workerId", "opName", "fragmentId", "nanoTime", "intData", "stringData"));
 
   /** Private constructor to disallow building utility class. */
   private MyriaConstants() {

@@ -1139,6 +1139,8 @@ public final class Server {
     }
 
     try {
+      catalog.createProfilingRelation();
+
       /* Start the workers */
       QueryFuture qf =
           submitQuery("ingest " + relationKey.toString("sqlite"), "ingest " + relationKey.toString("sqlite"),
@@ -1182,6 +1184,8 @@ public final class Server {
     }
 
     try {
+      catalog.createProfilingRelation();
+
       Map<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
       for (Integer workerId : actualWorkers) {
         workerPlans.put(workerId, new SingleQueryPlanWithArgs(new SinkRoot(new EOSSource())));
