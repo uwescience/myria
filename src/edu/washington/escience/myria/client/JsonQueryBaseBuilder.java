@@ -907,7 +907,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * @param delimeter .
    * @param outputSchema schema
    * */
-  public JsonQueryBaseBuilder fileScan(final String fileName, final String delimeter, final Schema outputSchema) {
+  public JsonQueryBaseBuilder fileScan(final String fileName, final Character delimeter, final Schema outputSchema) {
     JsonQueryBaseBuilder scan = buildOperator(FileScanEncoding.class, ALL_WORKERS);
     ((FileScanEncoding) scan.op).delimiter = delimeter;
     ((FileScanEncoding) scan.op).source = new FileSource(fileName);

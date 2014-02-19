@@ -60,7 +60,7 @@ public final class JsonIngestBuilder {
    * @param ingestInto where the data should be ingested
    * @return the encoding of the data set ingest API call this builder is going to build.
    * */
-  public DatasetEncoding buildIngest(final String filename, final String delimiter, final Schema dataSchema,
+  public DatasetEncoding buildIngest(final String filename, final Character delimiter, final Schema dataSchema,
       final RelationKey ingestInto) {
 
     DatasetEncoding de = new DatasetEncoding();
@@ -82,7 +82,7 @@ public final class JsonIngestBuilder {
    * @param ingestInto where the data should be ingested
    * @return the Json encoding of the data set ingest API call this builder is going to build.
    * */
-  public String buildJson(final String filename, final String delimiter, final Schema dataSchema,
+  public String buildJson(final String filename, final Character delimiter, final Schema dataSchema,
       final RelationKey ingestInto) {
     return toJson(buildIngest(filename, delimiter, dataSchema, ingestInto));
   }
