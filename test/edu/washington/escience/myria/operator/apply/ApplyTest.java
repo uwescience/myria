@@ -673,4 +673,18 @@ public class ApplyTest {
     assertEquals(SMALL_NUM_TUPLES, resultSize);
     apply.close();
   }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void conditionalNeedsBooleancondition() throws IllegalArgumentException {
+    ExpressionOperator a = new ConstantExpression(Type.INT_TYPE, "1");
+    ConditionalExpression conditional = new ConditionalExpression(a, a, a);
+    conditional.getOutputType(null, null);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void moduloNeedsIntegers() throws IllegalArgumentException {
+    ModuloExpression conditional =
+        new ModuloExpression(new ConstantExpression(Type.FLOAT_TYPE, "1"), new ConstantExpression(Type.INT_TYPE, "2"));
+    conditional.getOutputType(null, null);
+  }
 }
