@@ -290,6 +290,7 @@ public final class MasterCatalog {
       String query = "create " + MyriaConstants.PROFILING_RELATION;
       long queryId = newQuery(query, query, query, false);
       addRelationMetadata(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA, -1, queryId);
+      addStoredRelation(MyriaConstants.PROFILING_RELATION, getAliveWorkers(), "workerId");
       queryFinished(queryId, DateTimeUtils.nowInISO8601(), DateTimeUtils.nowInISO8601(), 0L,
           QueryStatusEncoding.Status.SUCCESS);
     } else {
