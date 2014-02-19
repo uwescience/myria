@@ -251,13 +251,13 @@ public class ConnectedComponentTest extends SystemTestBase {
     SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
 
     if (!failure) {
-      server.submitQuery("", "", "", serverPlan, workerPlans).sync();
+      server.submitQuery("", "", "", serverPlan, workerPlans, false).sync();
     } else {
       workerPlans.get(workerIDs[0]).setFTMode(FTMODE.valueOf("rejoin"));
       workerPlans.get(workerIDs[1]).setFTMode(FTMODE.valueOf("rejoin"));
       serverPlan.setFTMode(FTMODE.valueOf("rejoin"));
 
-      QueryFuture qf = server.submitQuery("", "", "", serverPlan, workerPlans);
+      QueryFuture qf = server.submitQuery("", "", "", serverPlan, workerPlans, false);
       Thread.sleep(1000);
       LOGGER.info("killing worker " + workerIDs[1] + "!");
       workerProcess[1].destroy();
