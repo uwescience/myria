@@ -1459,7 +1459,7 @@ public final class Server {
     }
 
     /* get relation key and schema */
-    RelationKey relationKey = MyriaConstants.PROFLILING_RELATION_KEY;
+    RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
     Schema schema = MyriaConstants.PROFILING_SCHEMA;
 
     /* Get the workers. */

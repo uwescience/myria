@@ -279,13 +279,14 @@ public final class MasterCatalog {
 
   /**
    * Creates the relation that stores profiling data.
-   *
+   * 
    * @throws CatalogException if the relation cannot be created
    */
   public void createProfilingRelation() throws CatalogException {
     if (getSchema(MyriaConstants.PROFILING_RELATION) == null) {
       LOGGER.info("Create profiling data relation in catalog");
-      long queryId = newQuery("create log", "create log", "create log");
+      String query = "Create " + MyriaConstants.PROFILING_RELATION;
+      long queryId = newQuery(query, query, query, false);
       addRelationMetadata(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA, -1, queryId);
       queryFinished(queryId, "0", "0", 0L, QueryStatusEncoding.Status.SUCCESS);
     } else {
