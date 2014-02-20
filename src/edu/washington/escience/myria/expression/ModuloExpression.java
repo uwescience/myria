@@ -1,12 +1,14 @@
 package edu.washington.escience.myria.expression;
 
+import com.google.common.collect.ImmutableList;
+
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 
 /**
- * Boolean and in an expression tree.
+ * Modulo of two operands in an expression tree.
  */
-public class AndExpression extends BinaryExpression {
+public class ModuloExpression extends BinaryExpression {
   /***/
   private static final long serialVersionUID = 1L;
 
@@ -14,27 +16,26 @@ public class AndExpression extends BinaryExpression {
    * This is not really unused, it's used automagically by Jackson deserialization.
    */
   @SuppressWarnings("unused")
-  private AndExpression() {
+  private ModuloExpression() {
   }
 
   /**
-   * True if left and right are true.
+   * Add the two operands together.
    * 
    * @param left the left operand.
    * @param right the right operand.
    */
-  public AndExpression(final ExpressionOperator left, final ExpressionOperator right) {
+  public ModuloExpression(final ExpressionOperator left, final ExpressionOperator right) {
     super(left, right);
   }
 
   @Override
   public Type getOutputType(final Schema schema, final Schema stateSchema) {
-    checkBooleanType(schema, stateSchema);
-    return Type.BOOLEAN_TYPE;
+    return checkAndReturnDefaultNumericType(schema, stateSchema, ImmutableList.of(Type.LONG_TYPE, Type.INT_TYPE));
   }
 
   @Override
   public String getJavaString(final Schema schema, final Schema stateSchema) {
-    return getInfixBinaryString("&&", schema, stateSchema);
+    return getInfixBinaryString("%", schema, stateSchema);
   }
 }
