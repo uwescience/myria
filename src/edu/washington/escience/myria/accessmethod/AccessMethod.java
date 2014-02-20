@@ -121,7 +121,7 @@ public abstract class AccessMethod {
    * @param relationKey the relation name
    * @return the insert statement string
    */
-  protected abstract String insertStatementFromSchema(Schema schema, RelationKey relationKey);
+  public abstract String insertStatementFromSchema(Schema schema, RelationKey relationKey);
 
   /**
    * Generates the create table statement string for a relation in the database.
