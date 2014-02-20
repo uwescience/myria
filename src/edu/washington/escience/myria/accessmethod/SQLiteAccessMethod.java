@@ -13,6 +13,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import scala.NotImplementedError;
+
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteJob;
@@ -24,6 +26,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.Tuple;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
@@ -424,6 +427,11 @@ public final class SQLiteAccessMethod extends AccessMethod {
 
       execute(statement.toString());
     }
+  }
+
+  @Override
+  public void tupleInsert(final RelationKey relationKey, final Schema schema, final Tuple tuple) throws DbException {
+    throw new NotImplementedError();
   }
 }
 

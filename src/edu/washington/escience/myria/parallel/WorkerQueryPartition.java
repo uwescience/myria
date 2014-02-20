@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableMap;
 
-import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.TupleBatch;
@@ -235,11 +234,7 @@ public class WorkerQueryPartition implements QueryPartition {
     t.init(resourceManager, b.putAll(ownerWorker.getExecEnvVars()).build());
 
     if (isProfilingMode()) {
-      try {
-        profilingLogger = new ProfilingLogger(ImmutableMap.copyOf(ownerWorker.getExecEnvVars()));
-      } catch (DbException e) {
-        LOGGER.error("Failed to initialize profiling logger:", e);
-      }
+      profilingLogger = ProfilingLogger.getLogger(ImmutableMap.copyOf(ownerWorker.getExecEnvVars()));
     }
   }
 
@@ -273,12 +268,8 @@ public class WorkerQueryPartition implements QueryPartition {
     }
 
     if (isProfilingMode()) {
-      try {
-        profilingLogger.recordEvent(getQueryID(), "WorkerQueryPartition", -1, System.nanoTime(), System
-            .currentTimeMillis(), "startTime");
-      } catch (DbException e) {
-        LOGGER.error("Failed to write profiling data:", e);
-      }
+      profilingLogger.recordSync(getQueryID(), "WorkerQueryPartition", -1, System.nanoTime(), System
+          .currentTimeMillis(), "startTime");
     }
 
     queryStatistics.markQueryStart();

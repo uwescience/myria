@@ -180,6 +180,9 @@ public abstract class Operator implements Serializable {
         throw (DbException) errors;
       }
     }
+    if (isProfilingMode()) {
+      profilingLogger.flush();
+    }
   }
 
   /**
@@ -354,7 +357,7 @@ public abstract class Operator implements Serializable {
     open = true;
 
     if (isProfilingMode()) {
-      profilingLogger = new ProfilingLogger(execEnvVars);
+      profilingLogger = ProfilingLogger.getLogger(execEnvVars);
     }
   }
 

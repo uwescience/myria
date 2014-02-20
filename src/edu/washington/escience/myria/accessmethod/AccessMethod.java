@@ -15,6 +15,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.Tuple;
 import edu.washington.escience.myria.TupleBatch;
 
 /**
@@ -74,6 +75,9 @@ public abstract class AccessMethod {
    * @throws DbException if there is an error inserting the tuples.
    */
   public abstract void tupleBatchInsert(final RelationKey relationKey, final Schema schema, final TupleBatch tupleBatch)
+      throws DbException;
+
+  public abstract void tupleInsert(final RelationKey relationKey, final Schema schema, final Tuple tuple)
       throws DbException;
 
   /**
