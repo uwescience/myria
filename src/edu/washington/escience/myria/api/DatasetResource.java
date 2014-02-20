@@ -25,6 +25,7 @@ import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
 import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.LoggerFactory;
 
 import com.sun.jersey.core.header.ContentDisposition;
@@ -95,33 +96,6 @@ public final class DatasetResource {
   }
 
   /**
-   * Helper function to parse a format string, with default value "csv".
-   * 
-   * @param format the format string, with default value "csv".
-   * @return the cleaned-up format string.
-   */
-  private String validateFormat(final String format) {
-    String cleanFormat = format;
-    if (cleanFormat == null) {
-      cleanFormat = "csv";
-    }
-    cleanFormat = cleanFormat.trim().toLowerCase();
-    /* CSV is legal */
-    if (cleanFormat.equals("csv")) {
-      return cleanFormat;
-    }
-    /* TSV is legal */
-    if (cleanFormat.equals("tsv")) {
-      return cleanFormat;
-    }
-    /* JSON is legal */
-    if (cleanFormat.equals("json")) {
-      return cleanFormat;
-    }
-    throw new MyriaApiException(Status.BAD_REQUEST, "format must be 'csv', 'tsv', or 'json'");
-  }
-
-  /**
    * @param userName the user who owns the target relation.
    * @param programName the program to which the target relation belongs.
    * @param relationName the name of the target relation.
@@ -143,7 +117,10 @@ public final class DatasetResource {
     RelationKey relationKey = RelationKey.of(userName, programName, relationName);
 
     /* Validate the request format. This will throw a MyriaApiException if format is invalid. */
-    String validFormat = validateFormat(format);
+    DatasetFormat validFormat = DatasetFormat.validateFormat(format);
+    if (validFormat == null) {
+      throw new MyriaApiException(Status.BAD_REQUEST, "format must be " + StringUtils.join(DatasetFormat.values()));
+    }
 
     /*
      * Allocate the pipes by which the {@link DataOutput} operator will talk to the {@link StreamingOutput} object that
@@ -164,12 +141,12 @@ public final class DatasetResource {
 
     /* Set up the TupleWriter and the Response MediaType based on the format choices. */
     TupleWriter writer;
-    if (validFormat.equals("csv") || validFormat.equals("tsv")) {
+    if (validFormat == DatasetFormat.CSV || validFormat == DatasetFormat.TSV) {
       /* CSV or TSV : set application/octet-stream, attachment, and filename. */
-      if (validFormat.equals("csv")) {
-        writer = new CsvTupleWriter(writerOutput);
+      if (validFormat == DatasetFormat.CSV) {
+        writer = new CsvTupleWriter(DatasetFormat.CSV.getColumnDelimiter(), writerOutput);
       } else {
-        writer = new CsvTupleWriter('\t', writerOutput);
+        writer = new CsvTupleWriter(DatasetFormat.TSV.getColumnDelimiter(), writerOutput);
       }
       ContentDisposition contentDisposition =
           ContentDisposition.type("attachment").fileName(
@@ -177,7 +154,7 @@ public final class DatasetResource {
 
       response.header("Content-Disposition", contentDisposition);
       response.type(MediaType.APPLICATION_OCTET_STREAM);
-    } else if (validFormat.equals("json")) {
+    } else if (validFormat == DatasetFormat.JSON) {
       /* JSON: set application/json. */
       response.type(MediaType.APPLICATION_JSON);
       writer = new JsonTupleWriter(writerOutput);
@@ -230,11 +207,11 @@ public final class DatasetResource {
       throw new MyriaApiException(Status.NOT_FOUND, "The dataset was not found: " + relationKey.toString());
     }
 
-    String validFormat = validateFormat(format);
-    if (validFormat.equals("csv")) {
-      dataset.delimiter = ',';
-    } else if (validFormat.equals("tsv")) {
-      dataset.delimiter = '\t';
+    DatasetFormat validFormat = DatasetFormat.validateFormat(format);
+    if (validFormat == DatasetFormat.CSV) {
+      dataset.delimiter = DatasetFormat.CSV.getColumnDelimiter();
+    } else if (validFormat == DatasetFormat.TSV) {
+      dataset.delimiter = DatasetFormat.TSV.getColumnDelimiter();
     } else {
       throw new MyriaApiException(Status.BAD_REQUEST, "format must be 'csv', 'tsv'");
     }
