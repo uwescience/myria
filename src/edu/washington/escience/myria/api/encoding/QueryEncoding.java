@@ -355,4 +355,11 @@ public class QueryEncoding extends MyriaApiEncoding {
     instantiatedFragments.put(planFragment, fragmentRoot);
     return fragmentRoot;
   }
+
+  /**
+   * @return true if the query runs in profiling mode.
+   */
+  public boolean isProfilingMode() {
+    return profilingMode;
+  }
 }

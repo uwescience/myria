@@ -885,6 +885,13 @@ public final class Server {
   }
 
   /**
+   * @return the dbms from {@link #execEnvVars}.
+   */
+  private String getDBMS() {
+    return (String) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM);
+  }
+
+  /**
    * @return the input capacity.
    * */
   int getInputBufferCapacity() {
@@ -966,9 +973,11 @@ public final class Server {
   public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final String physicalPlan,
       final SingleQueryPlanWithArgs masterPlan, final Map<Integer, SingleQueryPlanWithArgs> workerPlans,
       @Nullable final Boolean profilingMode) throws DbException, CatalogException {
-    /* First check whether there are too many active queries. */
     if (!canSubmitQuery()) {
       return null;
+    }
+    if (profilingMode && getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_SQLITE)) {
+      throw new DbException("Profiling mode is not supported when using SQLite as the storage system.");
     }
     final long queryID = catalog.newQuery(rawQuery, logicalRa, physicalPlan, profilingMode);
     return submitQuery(queryID, masterPlan, workerPlans);
@@ -990,9 +999,11 @@ public final class Server {
   public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final QueryEncoding physicalPlan,
       final SingleQueryPlanWithArgs masterPlan, final Map<Integer, SingleQueryPlanWithArgs> workerPlans)
       throws DbException, CatalogException {
-    /* First check whether there are too many active queries. */
     if (!canSubmitQuery()) {
       return null;
+    }
+    if (physicalPlan.isProfilingMode() && getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_SQLITE)) {
+      throw new DbException("Profiling mode is not supported when using SQLite as the storage system.");
     }
     final long queryID = catalog.newQuery(rawQuery, logicalRa, physicalPlan);
     return submitQuery(queryID, masterPlan, workerPlans);
@@ -1466,12 +1477,9 @@ public final class Server {
     /* Get the workers. */
     Set<Integer> actualWorkers = getAliveWorkers();
 
-    /* get DBMS type. */
-    String dbms = (String) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM);
-
     /* Construct the operators that go elsewhere. */
     DbQueryScan scan =
-        new DbQueryScan("SELECT * FROM " + relationKey.toString(dbms) + " WHERE queryId=" + queryId, schema);
+        new DbQueryScan("SELECT * FROM " + relationKey.toString(getDBMS()) + " WHERE queryId=" + queryId, schema);
     final ExchangePairID operatorId = ExchangePairID.newID();
     CollectProducer producer = new CollectProducer(scan, operatorId, MyriaConstants.MASTER_ID);
 
@@ -1489,7 +1497,7 @@ public final class Server {
     final SingleQueryPlanWithArgs masterPlan = new SingleQueryPlanWithArgs(output);
 
     /* Submit the plan for the download. */
-    String planString = "download " + relationKey.toString(dbms);
+    String planString = "download " + relationKey.toString(getDBMS());
     try {
       return submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
     } catch (CatalogException e) {
