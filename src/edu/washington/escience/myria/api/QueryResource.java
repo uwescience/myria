@@ -4,10 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -32,20 +29,12 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.base.Objects;
 
-import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
-import edu.washington.escience.myria.operator.EOSSource;
-import edu.washington.escience.myria.operator.RootOperator;
-import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.parallel.QueryFuture;
-import edu.washington.escience.myria.parallel.QueryFutureListener;
 import edu.washington.escience.myria.parallel.Server;
-import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 
 /**
  * Class that handles queries.
@@ -105,68 +94,31 @@ public final class QueryResource {
     }
     query.validate();
 
-    /* Deserialize the three arguments we need */
-    Map<Integer, SingleQueryPlanWithArgs> queryPlan;
+    /* Make sure that the requested workers are alive. */
+    if (!server.getAliveWorkers().containsAll(query.getRunningWorkers())) {
+      /* Throw a 503 (Service Unavailable) */
+      throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "Not all requested workers are alive");
+    }
+
+    /* Start the query, and get its Server-assigned Query ID */
+    QueryFuture qf;
     try {
-      queryPlan = query.instantiate(server);
-    } catch (CatalogException e) {
-      /* CatalogException means something went wrong interfacing with the Catalog. */
-      throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, e);
+      qf = server.submitQuery(query);
     } catch (MyriaApiException e) {
       /* Passthrough MyriaApiException. */
       throw e;
     } catch (Exception e) {
       /* Other exceptions mean that the request itself was likely bad. */
       throw new MyriaApiException(Status.BAD_REQUEST, e);
-    }
 
-    Set<Integer> usingWorkers = new HashSet<Integer>();
-    usingWorkers.addAll(queryPlan.keySet());
-    /* Remove the server plan if present */
-    usingWorkers.remove(MyriaConstants.MASTER_ID);
-    /* Make sure that the requested workers are alive. */
-    if (!server.getAliveWorkers().containsAll(usingWorkers)) {
-      /* Throw a 503 (Service Unavailable) */
-      throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "Not all requested workers are alive");
     }
-
-    SingleQueryPlanWithArgs masterPlan = queryPlan.get(MyriaConstants.MASTER_ID);
-    if (masterPlan == null) {
-      masterPlan = new SingleQueryPlanWithArgs(new SinkRoot(new EOSSource()));
-      masterPlan.setFTMode(FTMODE.valueOf(query.ftMode));
-    } else {
-      queryPlan.remove(MyriaConstants.MASTER_ID);
-    }
-    final RootOperator masterRoot = masterPlan.getRootOps().get(0);
-
-    /* Start the query, and get its Server-assigned Query ID */
-    QueryFuture qf;
-    try {
-      qf = server.submitQuery(query.rawDatalog, query.logicalRa, query, masterPlan, queryPlan);
-    } catch (IllegalArgumentException e) {
-      throw new MyriaApiException(Status.BAD_REQUEST, e);
-    } catch (DbException | CatalogException e) {
-      throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, e);
-    }
-
     /* Check to see if the query was submitted successfully. */
     if (qf == null) {
       throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "The server cannot accept new queries right now.");
     }
 
     long queryId = qf.getQuery().getQueryID();
-    qf.addListener(new QueryFutureListener() {
 
-      @Override
-      public void operationComplete(final QueryFuture future) throws Exception {
-        if (masterRoot instanceof SinkRoot && query.expectedResultSize != null) {
-          if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("Expected num tuples: {}; but actually: {}", query.expectedResultSize, ((SinkRoot) masterRoot)
-                .getCount());
-          }
-        }
-      }
-    });
     /* And return the queryStatus as it is now. */
     QueryStatusEncoding qs = server.getQueryStatus(queryId);
     URI queryUri = getCanonicalResourcePath(uriInfo, queryId);

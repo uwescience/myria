@@ -213,7 +213,7 @@ public final class DatasetResource {
     } else if (validFormat == DatasetFormat.TSV) {
       dataset.delimiter = DatasetFormat.TSV.getColumnDelimiter();
     } else {
-      throw new MyriaApiException(Status.BAD_REQUEST, "format must be 'csv', 'tsv'");
+      throw new MyriaApiException(Status.BAD_REQUEST, "format must be " + DatasetFormat.CSV + "," + DatasetFormat.TSV);
     }
 
     dataset.relationKey = relationKey;

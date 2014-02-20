@@ -64,6 +64,18 @@ public class QueryEncoding extends MyriaApiEncoding {
   }
 
   @JsonIgnore
+  public Set<Integer> getRunningWorkers() {
+    Set<Integer> runningWorkers = new HashSet<Integer>();
+    for (PlanFragmentEncoding f : fragments) {
+      if (f.workers != null) {
+        runningWorkers.addAll(f.workers);
+      }
+    }
+    runningWorkers.remove(MyriaConstants.MASTER_ID);
+    return runningWorkers;
+  }
+
+  @JsonIgnore
   public Map<Integer, SingleQueryPlanWithArgs> instantiate(final Server server) throws CatalogException {
     /* First, we need to know which workers run on each plan. */
     setupWorkersForFragments(server);

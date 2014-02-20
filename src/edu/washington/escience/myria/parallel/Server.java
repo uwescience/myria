@@ -988,24 +988,43 @@ public final class Server {
    * Submit a query for execution. The workerPlans may be removed in the future if the query compiler and schedulers are
    * ready. Returns null if there are too many active queries.
    * 
-   * @param rawQuery the raw user-defined query. E.g., the source Datalog program.
-   * @param logicalRa the logical relational algebra of the compiled plan.
-   * @param physicalPlan the Myria physical plan for the query.
-   * @param workerPlans the physical parallel plan fragments for each worker.
-   * @param masterPlan the physical parallel plan fragment for the master.
+   * @param query the Myria json query plan.
    * @throws DbException if any error in non-catalog data processing
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
-   */
-  public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final QueryEncoding physicalPlan,
-      final SingleQueryPlanWithArgs masterPlan, final Map<Integer, SingleQueryPlanWithArgs> workerPlans)
-      throws DbException, CatalogException {
+   * */
+  public QueryFuture submitQuery(final QueryEncoding query) throws DbException, CatalogException {
     /* First check whether there are too many active queries. */
     if (!canSubmitQuery()) {
       return null;
     }
-    final long queryID = catalog.newQuery(rawQuery, logicalRa, physicalPlan);
-    return submitQuery(queryID, masterPlan, workerPlans);
+    /* Deserialize the three arguments we need */
+    Map<Integer, SingleQueryPlanWithArgs> queryPlan;
+    queryPlan = query.instantiate(this);
+
+    SingleQueryPlanWithArgs masterPlan = queryPlan.get(MyriaConstants.MASTER_ID);
+    if (masterPlan == null) {
+      masterPlan = new SingleQueryPlanWithArgs(new SinkRoot(new EOSSource()));
+      masterPlan.setFTMode(FTMODE.valueOf(query.ftMode));
+    } else {
+      queryPlan.remove(MyriaConstants.MASTER_ID);
+    }
+
+    final long queryID = catalog.newQuery(query.rawDatalog, query.logicalRa, query);
+
+    final RootOperator masterRoot = masterPlan.getRootOps().get(0);
+    return submitQuery(queryID, masterPlan, queryPlan).addListener(new QueryFutureListener() {
+
+      @Override
+      public void operationComplete(final QueryFuture future) throws Exception {
+        if (masterRoot instanceof SinkRoot && query.expectedResultSize != null) {
+          if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("Expected num tuples: {}; but actually: {}", query.expectedResultSize, ((SinkRoot) masterRoot)
+                .getCount());
+          }
+        }
+      }
+    });
   }
 
   /**
