@@ -274,7 +274,8 @@ public class WorkerQueryPartition implements QueryPartition {
 
     if (isProfilingMode()) {
       try {
-        profilingLogger.recordEvent(getQueryID(), "startTime", -1, System.nanoTime(), System.currentTimeMillis(), "");
+        profilingLogger.recordEvent(getQueryID(), "WorkerQueryPartition", -1, System.nanoTime(), System
+            .currentTimeMillis(), "startTime");
       } catch (DbException e) {
         LOGGER.error("Failed to write profiling data:", e);
       }

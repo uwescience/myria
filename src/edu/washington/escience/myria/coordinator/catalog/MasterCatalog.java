@@ -28,7 +28,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
-import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -38,7 +37,6 @@ import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
 import edu.washington.escience.myria.parallel.SocketInfo;
-import edu.washington.escience.myria.util.DateTimeUtils;
 
 /**
  * This class is intended to store the configuration information for a Myria installation.
@@ -276,25 +274,6 @@ public final class MasterCatalog {
       }).get();
     } catch (InterruptedException | ExecutionException e) {
       throw new CatalogException(e);
-    }
-  }
-
-  /**
-   * Creates the relation that stores profiling data.
-   * 
-   * @throws CatalogException if the relation cannot be created
-   */
-  public void createProfilingRelation() throws CatalogException {
-    if (getSchema(MyriaConstants.PROFILING_RELATION) == null) {
-      LOGGER.info("Create profiling data relation in catalog");
-      String query = "create " + MyriaConstants.PROFILING_RELATION;
-      long queryId = newQuery(query, query, query, false);
-      addRelationMetadata(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA, -1, queryId);
-      addStoredRelation(MyriaConstants.PROFILING_RELATION, getAliveWorkers(), "workerId");
-      queryFinished(queryId, DateTimeUtils.nowInISO8601(), DateTimeUtils.nowInISO8601(), 0L,
-          QueryStatusEncoding.Status.SUCCESS);
-    } else {
-      LOGGER.info("Profiling relation already exists.");
     }
   }
 

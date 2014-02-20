@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.ImmutableMap;
 
+import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.operator.IDBController;
 import edu.washington.escience.myria.operator.Operator;
@@ -360,12 +361,16 @@ public final class QuerySubTreeTask {
    * @return always null. The return value is unused.
    * */
   private Object executeActually() {
-    // try {
-    // profilingLogger.recordEvent(root.getQueryId(), "startTime", root.getFragmentId(), System.nanoTime(), System
-    // .currentTimeMillis(), "");
-    // } catch (DbException e) {
-    // LOGGER.error("Failed to write profiling data:", e);
-    // }
+
+    // profilingLogger could be null on the master
+    if (profilingLogger != null) {
+      try {
+        profilingLogger.recordEvent(root.getQueryId(), "QuerySubTreeTask", root.getFragmentId(), System.nanoTime(),
+            System.currentTimeMillis(), "startTime");
+      } catch (DbException e) {
+        LOGGER.error("Failed to write profiling data:", e);
+      }
+    }
 
     if (executionCondition.compareAndSet(EXECUTION_READY | STATE_EXECUTION_REQUESTED, EXECUTION_READY
         | STATE_EXECUTION_REQUESTED | STATE_IN_EXECUTION)) {
@@ -636,13 +641,16 @@ public final class QuerySubTreeTask {
       taskExecutionFuture.setFailure(e);
     }
 
-    // try {
-    // profilingLogger = new ProfilingLogger(execEnvVars);
-    // } catch (DbException e) {
-    // if (LOGGER.isErrorEnabled()) {
-    // LOGGER.error("Failed to initialize profiling logger:", e);
-    // }
-    // }
+    // the master does not have the database connection information
+    if (execEnvVars.containsKey(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO)) {
+      try {
+        profilingLogger = new ProfilingLogger(execEnvVars);
+      } catch (DbException e) {
+        if (LOGGER.isErrorEnabled()) {
+          LOGGER.error("Failed to initialize profiling logger:", e);
+        }
+      }
+    }
   }
 
   /**

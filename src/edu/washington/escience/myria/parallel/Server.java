@@ -877,6 +877,10 @@ public final class Server {
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("Server started on {}", masterSocketInfo.toString());
     }
+
+    if (getSchema(MyriaConstants.PROFILING_RELATION) == null) {
+      importDataset(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA, null);
+    }
   }
 
   /**
@@ -1139,8 +1143,6 @@ public final class Server {
     }
 
     try {
-      catalog.createProfilingRelation();
-
       /* Start the workers */
       QueryFuture qf =
           submitQuery("ingest " + relationKey.toString("sqlite"), "ingest " + relationKey.toString("sqlite"),
@@ -1177,15 +1179,13 @@ public final class Server {
   public void importDataset(final RelationKey relationKey, final Schema schema, final Set<Integer> workersToImportFrom)
       throws DbException, InterruptedException {
 
-    /* Figure out the workers we will use. If workersToIngest is null, use all active workers. */
+    /* Figure out the workers we will use. If workersToImportFrom is null, use all active workers. */
     Set<Integer> actualWorkers = workersToImportFrom;
     if (workersToImportFrom == null) {
       actualWorkers = getWorkers().keySet();
     }
 
     try {
-      catalog.createProfilingRelation();
-
       Map<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
       for (Integer workerId : actualWorkers) {
         workerPlans.put(workerId, new SingleQueryPlanWithArgs(new SinkRoot(new EOSSource())));
