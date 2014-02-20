@@ -162,9 +162,13 @@ public class Expression implements Serializable {
   }
 
   /**
+   * An expression is a constant expression when it has to be evaluated only once. This means that an expression with
+   * variables, state or random is likely not a constant.
+   * 
    * @return if this expression evaluates to a constant
    */
   public boolean isConstant() {
-    return !hasOperator(VariableExpression.class) && !hasOperator(StateExpression.class);
+    return !hasOperator(VariableExpression.class) && !hasOperator(StateExpression.class)
+        && !hasOperator(RandomExpression.class);
   }
 }

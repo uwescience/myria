@@ -1,7 +1,5 @@
 package edu.washington.escience.myria.expression;
 
-import com.google.common.base.Objects;
-
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 
@@ -37,19 +35,5 @@ public class NotExpression extends UnaryExpression {
   @Override
   public String getJavaString(final Schema schema, final Schema stateSchema) {
     return getFunctionCallUnaryString("!", schema, stateSchema);
-  }
-
-  @Override
-  public int hashCode() {
-    return defaultHashCode();
-  }
-
-  @Override
-  public boolean equals(final Object other) {
-    if (other == null || !(other instanceof NotExpression)) {
-      return false;
-    }
-    NotExpression otherExpr = (NotExpression) other;
-    return Objects.equal(getOperand(), otherExpr.getOperand());
   }
 }
