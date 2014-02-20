@@ -44,7 +44,6 @@ import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleWriter;
-import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
@@ -465,6 +464,8 @@ public final class Server {
     scheduledTaskExecutor =
         Executors.newSingleThreadScheduledExecutor(new RenamingThreadFactory("Master global timer"));
 
+    final String databaseSystem = catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_SYSTEM);
+    execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM, databaseSystem);
   }
 
   /**
@@ -1466,8 +1467,7 @@ public final class Server {
     Set<Integer> actualWorkers = getAliveWorkers();
 
     /* get DBMS type. */
-    ConnectionInfo connectionInfo = (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
-    String dbms = connectionInfo.getDbms();
+    String dbms = (String) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM);
 
     /* Construct the operators that go elsewhere. */
     DbQueryScan scan =
