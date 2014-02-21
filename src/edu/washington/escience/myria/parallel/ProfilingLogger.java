@@ -133,13 +133,14 @@ public class ProfilingLogger {
       final long longData, final String stringData) throws DbException {
 
     try {
+
       statement.setLong(1, queryId);
-      statement.setInt(2, 1);
-      statement.setString(3, operatorName);
-      statement.setLong(4, fragmentId);
-      statement.setLong(5, System.nanoTime());
-      statement.setLong(6, longData);
-      statement.setString(7, stringData);
+      statement.setString(2, operatorName);
+      statement.setLong(3, fragmentId);
+      statement.setLong(4, System.nanoTime());
+      statement.setLong(5, longData);
+      statement.setString(6, stringData);
+
       statement.addBatch();
       batchSize++;
     } catch (final SQLException e) {
@@ -183,13 +184,14 @@ public class ProfilingLogger {
       final PreparedStatement singleStatement =
           connection.prepareStatement(accessMethod.insertStatementFromSchema(MyriaConstants.PROFILING_SCHEMA,
               MyriaConstants.PROFILING_RELATION));
+
       singleStatement.setLong(1, queryId);
-      singleStatement.setInt(2, 1);
-      singleStatement.setString(3, className);
-      singleStatement.setLong(4, fragmentId);
-      singleStatement.setLong(5, System.nanoTime());
-      singleStatement.setLong(6, longData);
-      singleStatement.setString(7, stringData);
+      singleStatement.setString(2, className);
+      singleStatement.setLong(3, fragmentId);
+      singleStatement.setLong(4, System.nanoTime());
+      singleStatement.setLong(5, longData);
+      singleStatement.setString(6, stringData);
+
       singleStatement.executeUpdate();
       singleStatement.close();
     } catch (final SQLException e) {

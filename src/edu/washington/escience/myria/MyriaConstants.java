@@ -230,9 +230,9 @@ public final class MyriaConstants {
   /**
    * The schema of the {@link #PROFILING_RELATION}.
    */
-  public static final Schema PROFILING_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.INT_TYPE,
-      Type.STRING_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("queryId",
-      "workerId", "opName", "fragmentId", "nanoTime", "intData", "stringData"));
+  public static final Schema PROFILING_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE,
+      Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("queryId", "opName",
+      "fragmentId", "nanoTime", "intData", "stringData"));
 
   /** Private constructor to disallow building utility class. */
   private MyriaConstants() {

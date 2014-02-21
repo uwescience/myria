@@ -34,6 +34,7 @@ import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
@@ -51,6 +52,10 @@ import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.CatalogMaker;
 import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
+import edu.washington.escience.myria.expression.Expression;
+import edu.washington.escience.myria.expression.VariableExpression;
+import edu.washington.escience.myria.expression.WorkerIdExpression;
+import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
@@ -1467,21 +1472,33 @@ public final class Server {
       throw new IllegalArgumentException("the requested query is was not found or succesfully finished.");
     }
     if (!queryStatus.profilingMode) {
-      throw new IllegalArgumentException("the requested query do not have profiling logs.");
+      throw new IllegalArgumentException("the requested query does not have profiling logs.");
     }
 
     /* get relation key and schema */
     RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
-    Schema schema = MyriaConstants.PROFILING_SCHEMA;
 
     /* Get the workers. */
     Set<Integer> actualWorkers = getAliveWorkers();
 
     /* Construct the operators that go elsewhere. */
     DbQueryScan scan =
-        new DbQueryScan("SELECT * FROM " + relationKey.toString(getDBMS()) + " WHERE queryId=" + queryId, schema);
+        new DbQueryScan("SELECT * FROM " + relationKey.toString(getDBMS()) + " WHERE queryId=" + queryId,
+            MyriaConstants.PROFILING_SCHEMA);
     final ExchangePairID operatorId = ExchangePairID.newID();
-    CollectProducer producer = new CollectProducer(scan, operatorId, MyriaConstants.MASTER_ID);
+
+    ImmutableList.Builder<Expression> emitExpressions = ImmutableList.builder();
+
+    emitExpressions.add(new Expression("workerId", new WorkerIdExpression()));
+
+    for (int column = 0; column < MyriaConstants.PROFILING_SCHEMA.numColumns(); column++) {
+      VariableExpression copy = new VariableExpression(column);
+      emitExpressions.add(new Expression(MyriaConstants.PROFILING_SCHEMA.getColumnName(column), copy));
+    }
+
+    Apply addWorkerId = new Apply(scan, emitExpressions.build());
+
+    CollectProducer producer = new CollectProducer(addWorkerId, operatorId, MyriaConstants.MASTER_ID);
 
     /* Construct the workers' {@link SingleQueryPlanWithArgs}. */
     SingleQueryPlanWithArgs workerPlan = new SingleQueryPlanWithArgs(producer);
@@ -1492,7 +1509,8 @@ public final class Server {
     }
 
     /* Construct the master plan. */
-    final CollectConsumer consumer = new CollectConsumer(schema, operatorId, ImmutableSet.copyOf(actualWorkers));
+    final CollectConsumer consumer =
+        new CollectConsumer(addWorkerId.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
     DataOutput output = new DataOutput(consumer, writer);
     final SingleQueryPlanWithArgs masterPlan = new SingleQueryPlanWithArgs(output);
 
