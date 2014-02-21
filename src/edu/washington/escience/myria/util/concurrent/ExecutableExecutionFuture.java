@@ -218,4 +218,10 @@ public class ExecutableExecutionFuture<T> extends OperationFutureBase<T> impleme
       throw new Error(e);
     }
   }
+
+  @Override
+  public OperationFuture addPreListener(final OperationFutureListener listener) {
+    super.addPreListener0(listener);
+    return this;
+  }
 }
