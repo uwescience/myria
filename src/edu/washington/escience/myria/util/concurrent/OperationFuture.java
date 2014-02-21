@@ -142,6 +142,19 @@ public interface OperationFuture extends Attachmentable {
   OperationFuture addListener(OperationFutureListener listener);
 
   /**
+   * A pre-notify listener will get executed right after the operation is completed and before the threads who are
+   * waiting on this future are wakedup. If the future is already completed, the specified listener is notified
+   * immediately.
+   * 
+   * Adds the specified listener to this future. If the future is already completed, the specified listener is notified
+   * immediately.
+   * 
+   * @param listener the listener.
+   * @return this {@link OperationFuture}
+   * */
+  OperationFuture addPreListener(OperationFutureListener listener);
+
+  /**
    * Removes the specified listener from this future. The specified listener is no longer notified when this future is
    * {@linkplain #isDone() done}. If the specified listener is not associated with this future, this method does nothing
    * and returns silently.
