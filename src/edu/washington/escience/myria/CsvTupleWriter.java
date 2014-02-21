@@ -6,6 +6,9 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.List;
 
+import org.supercsv.io.CsvListWriter;
+import org.supercsv.prefs.CsvPreference;
+
 import au.com.bytecode.opencsv.CSVWriter;
 
 /**
@@ -22,7 +25,7 @@ import au.com.bytecode.opencsv.CSVWriter;
 public class CsvTupleWriter implements TupleWriter {
 
   /** The CSVWriter used to write the output. */
-  private final CSVWriter csvWriter;
+  private final CsvListWriter csvWriter;
 
   /**
    * Constructs a {@link CsvTupleWriter} object that will produce an Excel-compatible comma-separated value (CSV) file
@@ -31,7 +34,7 @@ public class CsvTupleWriter implements TupleWriter {
    * @param out the {@link OutputStream} to which the data will be written.
    */
   public CsvTupleWriter(final OutputStream out) {
-    csvWriter = new CSVWriter(new BufferedWriter(new OutputStreamWriter(out)));
+    csvWriter = new CsvListWriter(new BufferedWriter(new OutputStreamWriter(out)), CsvPreference.STANDARD_PREFERENCE);
   }
 
   /**
@@ -42,11 +45,14 @@ public class CsvTupleWriter implements TupleWriter {
    * @param out the {@link OutputStream} to which the data will be written.
    */
   public CsvTupleWriter(final char separator, final OutputStream out) {
-    csvWriter = new CSVWriter(new BufferedWriter(new OutputStreamWriter(out)), separator);
+    final CsvPreference sepratorPreference =
+        new CsvPreference.Builder(Character.toChars(CsvPreference.STANDARD_PREFERENCE.getQuoteChar())[0], separator,
+            CsvPreference.STANDARD_PREFERENCE.getEndOfLineSymbols()).build();
+    csvWriter = new CsvListWriter(new BufferedWriter(new OutputStreamWriter(out)), sepratorPreference);
   }
 
   @Override
-  public void writeColumnHeaders(final List<String> columnNames) {
+  public void writeColumnHeaders(final List<String> columnNames) throws IOException {
     /* Begin by writing out the column names */
     final String[] row = new String[columnNames.size()];
     int headerCol = 0;
@@ -54,18 +60,18 @@ public class CsvTupleWriter implements TupleWriter {
       row[headerCol] = s;
       ++headerCol;
     }
-    csvWriter.writeNext(row);
+    csvWriter.write(row);
   }
 
   @Override
-  public void writeTuples(final ReadableTable tuples) {
+  public void writeTuples(final ReadableTable tuples) throws IOException {
     final String[] row = new String[tuples.numColumns()];
     /* Serialize every row into the output stream. */
     for (int i = 0; i < tuples.numTuples(); ++i) {
       for (int j = 0; j < tuples.numColumns(); ++j) {
         row[j] = tuples.getObject(j, i).toString();
       }
-      csvWriter.writeNext(row);
+      csvWriter.write(row);
     }
   }
 
