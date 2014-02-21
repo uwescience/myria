@@ -3,8 +3,8 @@ package edu.washington.escience.myria.expression;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 
 /**
  * Return the upper case representation of the operand.
@@ -31,8 +31,8 @@ public class ToUpperCaseExpression extends UnaryExpression {
   }
 
   @Override
-  public Type getOutputType(final Schema schema, final Schema stateSchema) {
-    Type operandType = getOperand().getOutputType(schema, stateSchema);
+  public Type getOutputType(final ExpressionOperatorParameter parameters) {
+    Type operandType = getOperand().getOutputType(parameters);
     ImmutableList<Type> validTypes = ImmutableList.of(Type.STRING_TYPE);
     int operandIdx = validTypes.indexOf(operandType);
     Preconditions.checkArgument(operandIdx != -1, "%s cannot handle operand [%s] of Type %s", getClass()
@@ -41,7 +41,7 @@ public class ToUpperCaseExpression extends UnaryExpression {
   }
 
   @Override
-  public String getJavaString(final Schema schema, final Schema stateSchema) {
-    return getDotFunctionCallUnaryString(".toUpperCase()", schema, stateSchema);
+  public String getJavaString(final ExpressionOperatorParameter parameters) {
+    return getDotFunctionCallUnaryString(".toUpperCase()", parameters);
   }
 }

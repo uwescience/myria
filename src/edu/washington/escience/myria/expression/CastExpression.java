@@ -2,8 +2,8 @@ package edu.washington.escience.myria.expression;
 
 import com.google.common.base.Preconditions;
 
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 
 /**
  * Cast the output from an expression to another type.
@@ -31,10 +31,10 @@ public class CastExpression extends BinaryExpression {
   }
 
   @Override
-  public Type getOutputType(final Schema schema, final Schema stateSchema) {
+  public Type getOutputType(final ExpressionOperatorParameter parameters) {
     // TODO support more than just casting from object, i.e. from string to int
-    final Type castFrom = getLeft().getOutputType(schema, stateSchema);
-    final Type castTo = getRight().getOutputType(schema, stateSchema);
+    final Type castFrom = getLeft().getOutputType(parameters);
+    final Type castTo = getRight().getOutputType(parameters);
     if (isSimpleCast(castFrom, castTo)) {
       return castTo;
     } else {
@@ -53,10 +53,10 @@ public class CastExpression extends BinaryExpression {
   }
 
   @Override
-  public String getJavaString(final Schema schema, final Schema stateSchema) {
+  public String getJavaString(final ExpressionOperatorParameter parameters) {
     // final Type castFrom = getLeft().getOutputType(schema, stateSchema);
-    final Type castTo = getRight().getOutputType(schema, stateSchema);
+    final Type castTo = getRight().getOutputType(parameters);
     return new StringBuilder().append("(").append(castTo.toJavaObjectType().getSimpleName()).append(".valueOf(")
-        .append(getLeft().getJavaString(schema, stateSchema)).append("))").toString();
+        .append(getLeft().getJavaString(parameters)).append("))").toString();
   }
 }

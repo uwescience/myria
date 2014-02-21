@@ -1,7 +1,7 @@
 package edu.washington.escience.myria.expression;
 
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 
 /**
  * Take the {@link Math.cos} of the operand.
@@ -28,13 +28,13 @@ public class CosExpression extends UnaryExpression {
   }
 
   @Override
-  public Type getOutputType(final Schema schema, final Schema stateSchema) {
-    checkAndReturnDefaultNumericType(schema, stateSchema);
+  public Type getOutputType(final ExpressionOperatorParameter parameters) {
+    checkAndReturnDefaultNumericType(parameters);
     return Type.DOUBLE_TYPE;
   }
 
   @Override
-  public String getJavaString(final Schema schema, final Schema stateSchema) {
-    return getFunctionCallUnaryString("Math.cos", schema, stateSchema);
+  public String getJavaString(final ExpressionOperatorParameter parameters) {
+    return getFunctionCallUnaryString("Math.cos", parameters);
   }
 }

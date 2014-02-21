@@ -7,9 +7,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.SimplePredicate;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 
 /**
  * An ExpressionOperator with two children.
@@ -68,13 +68,12 @@ public abstract class BinaryExpression extends ExpressionOperator {
    * <code>infix</code> is <code>"+"</code>.
    * 
    * @param infix the string representation of the Operator.
-   * @param schema the input schema
-   * @param stateSchema the schema of the state
+   * @param parameters parameters that are needed to create the java expression
    * @return the Java string for this operator.
    */
-  protected final String getInfixBinaryString(final String infix, final Schema schema, final Schema stateSchema) {
-    return new StringBuilder("(").append(getLeft().getJavaString(schema, stateSchema)).append(infix).append(
-        getRight().getJavaString(schema, stateSchema)).append(')').toString();
+  protected final String getInfixBinaryString(final String infix, final ExpressionOperatorParameter parameters) {
+    return new StringBuilder("(").append(getLeft().getJavaString(parameters)).append(infix).append(
+        getRight().getJavaString(parameters)).append(')').toString();
   }
 
   /**
@@ -82,15 +81,13 @@ public abstract class BinaryExpression extends ExpressionOperator {
    * {@link EqualsExpression}, <code>op</code> is <code>LIKE</code> and <code>value</code> is <code>0</code>.
    * 
    * @param op integer comparison operator >, <, ==, >=, <=.
-   * @param schema the input schema
-   * @param stateSchema the schema of the state
+   * @param parameters parameters that are needed to create the java expression
    * @return the Java string for this operator.
    */
-  protected final String getObjectComparisonString(final SimplePredicate.Op op, final Schema schema,
-      final Schema stateSchema) {
-    return new StringBuilder("(").append(getRight().getJavaString(schema, stateSchema)).append(".compareTo(").append(
-        getLeft().getJavaString(schema, stateSchema)).append(')').append(op.toJavaString()).append(0).append(")")
-        .toString();
+  protected final String getObjectComparisonString(final SimplePredicate.Op op,
+      final ExpressionOperatorParameter parameters) {
+    return new StringBuilder("(").append(getRight().getJavaString(parameters)).append(".compareTo(").append(
+        getLeft().getJavaString(parameters)).append(')').append(op.toJavaString()).append(0).append(")").toString();
   }
 
   /**
@@ -98,14 +95,13 @@ public abstract class BinaryExpression extends ExpressionOperator {
    * {@link PowExpression}, <code>functionName</code> is <code>"Math.pow"</code>.
    * 
    * @param functionName the string representation of the Java function name.
-   * @param schema the input schema
-   * @param stateSchema the schema of the state
+   * @param parameters parameters that are needed to create the java expression
    * @return the Java string for this operator.
    */
-  protected final String getFunctionCallBinaryString(final String functionName, final Schema schema,
-      final Schema stateSchema) {
-    return new StringBuilder(functionName).append('(').append(getLeft().getJavaString(schema, stateSchema)).append(',')
-        .append(getRight().getJavaString(schema, stateSchema)).append(')').toString();
+  protected final String getFunctionCallBinaryString(final String functionName,
+      final ExpressionOperatorParameter parameters) {
+    return new StringBuilder(functionName).append('(').append(getLeft().getJavaString(parameters)).append(',').append(
+        getRight().getJavaString(parameters)).append(')').toString();
   }
 
   /**
@@ -135,13 +131,12 @@ public abstract class BinaryExpression extends ExpressionOperator {
    * A function that could be used as the default type checker for a binary expression where both operands must be
    * numeric.
    * 
-   * @param schema the schema of the input tuples.
-   * @param stateSchema the schema of the state
+   * @param parameters parameters that are needed to determine the output type
    * @return the default numeric type, based on the types of the children and Java type precedence.
    */
-  protected final Type checkAndReturnDefaultNumericType(final Schema schema, final Schema stateSchema) {
-    Type leftType = getLeft().getOutputType(schema, stateSchema);
-    Type rightType = getRight().getOutputType(schema, stateSchema);
+  protected final Type checkAndReturnDefaultNumericType(final ExpressionOperatorParameter parameters) {
+    Type leftType = getLeft().getOutputType(parameters);
+    Type rightType = getRight().getOutputType(parameters);
     ImmutableList<Type> validTypes = ImmutableList.of(Type.DOUBLE_TYPE, Type.FLOAT_TYPE, Type.LONG_TYPE, Type.INT_TYPE);
     int leftIdx = validTypes.indexOf(leftType);
     int rightIdx = validTypes.indexOf(rightType);
@@ -156,12 +151,11 @@ public abstract class BinaryExpression extends ExpressionOperator {
    * A function that could be used as the default type checker for a binary expression where both operands must be
    * boolean.
    * 
-   * @param schema the schema of the input tuples.
-   * @param stateSchema the schema of the state
+   * @param parameters parameters that are needed to determine the output type
    */
-  protected final void checkBooleanType(final Schema schema, final Schema stateSchema) {
-    Type leftType = getLeft().getOutputType(schema, stateSchema);
-    Type rightType = getRight().getOutputType(schema, stateSchema);
+  protected final void checkBooleanType(final ExpressionOperatorParameter parameters) {
+    Type leftType = getLeft().getOutputType(parameters);
+    Type rightType = getRight().getOutputType(parameters);
     Preconditions.checkArgument(leftType == Type.BOOLEAN_TYPE, "%s cannot handle left child [%s] of Type %s",
         getClass().getSimpleName(), getLeft(), leftType);
     Preconditions.checkArgument(rightType == Type.BOOLEAN_TYPE, "%s cannot handle right child [%s] of Type %s",
