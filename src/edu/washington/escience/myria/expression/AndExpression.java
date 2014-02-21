@@ -39,18 +39,4 @@ public class AndExpression extends BinaryExpression {
   public String getJavaString(final ExpressionOperatorParameter parameters) {
     return getInfixBinaryString("&&", parameters);
   }
-
-  @Override
-  public int hashCode() {
-    return defaultHashCode();
-  }
-
-  @Override
-  public boolean equals(final Object other) {
-    if (other == null || !(other instanceof AndExpression)) {
-      return false;
-    }
-    AndExpression bOther = (AndExpression) other;
-    return Objects.equal(getLeft(), bOther.getLeft()) && Objects.equal(getRight(), bOther.getRight());
-  }
 }

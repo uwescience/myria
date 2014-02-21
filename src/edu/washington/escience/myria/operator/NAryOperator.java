@@ -1,6 +1,5 @@
 package edu.washington.escience.myria.operator;
 
-
 /**
  * 
  * @author dominik
@@ -13,7 +12,7 @@ public abstract class NAryOperator extends Operator {
 
   /**
    * The children of the n-ary operator.
-   * */
+   */
   private Operator[] children;
 
   /**

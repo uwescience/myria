@@ -18,9 +18,10 @@ import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParam
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
     /* Zeroary */
-    @Type(name = "CONSTANT", value = ConstantExpression.class), @Type(name = "STATE", value = StateExpression.class),
-    @Type(name = "TYPE", value = TypeExpression.class), @Type(name = "TYPEOF", value = TypeOfExpression.class),
-    @Type(name = "VARIABLE", value = VariableExpression.class),
+    @Type(name = "CONSTANT", value = ConstantExpression.class), @Type(name = "RANDOM", value = RandomExpression.class),
+    @Type(name = "STATE", value = StateExpression.class), @Type(name = "TYPE", value = TypeExpression.class),
+    @Type(name = "TYPEOF", value = TypeOfExpression.class), @Type(name = "VARIABLE", value = VariableExpression.class),
+    @Type(name = "WORKERID", value = WorkerIdExpression.class),
     /* Unary */
     @Type(name = "ABS", value = AbsExpression.class), @Type(name = "CAST", value = CastExpression.class),
     @Type(name = "CEIL", value = CeilExpression.class), @Type(name = "COS", value = CosExpression.class),
@@ -34,14 +35,19 @@ import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParam
     @Type(name = "GTEQ", value = GreaterThanOrEqualsExpression.class),
     @Type(name = "LTEQ", value = LessThanOrEqualsExpression.class),
     @Type(name = "LT", value = LessThanExpression.class), @Type(name = "MINUS", value = MinusExpression.class),
-    @Type(name = "NEQ", value = NotEqualsExpression.class), @Type(name = "OR", value = OrExpression.class),
-    @Type(name = "PLUS", value = PlusExpression.class), @Type(name = "POW", value = PowExpression.class),
-    @Type(name = "TIMES", value = TimesExpression.class), })
+    @Type(name = "MODULO", value = ModuloExpression.class), @Type(name = "NEQ", value = NotEqualsExpression.class),
+    @Type(name = "OR", value = OrExpression.class), @Type(name = "PLUS", value = PlusExpression.class),
+    @Type(name = "POW", value = PowExpression.class), @Type(name = "TIMES", value = TimesExpression.class),
+    /* Nary */
+    @Type(name = "CONDITION", value = ConditionalExpression.class), })
 public abstract class ExpressionOperator implements Serializable {
   /***/
   private static final long serialVersionUID = 1L;
 
   /**
+   * Get the output type of the expression which might depend on the types of the children. Also, check whether the
+   * types of the children are correct.
+   * 
    * @param parameters parameters that are needed to determine the output type
    * @return the type of the output of this expression.
    */

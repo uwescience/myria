@@ -438,4 +438,11 @@ public class WorkerQueryPartition implements QueryPartition {
       }
     }.start();
   }
+
+  /**
+   * @return the owner worker
+   */
+  public Worker getOwnerWorker() {
+    return ownerWorker;
+  }
 }

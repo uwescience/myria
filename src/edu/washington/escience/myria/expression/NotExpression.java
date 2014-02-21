@@ -38,18 +38,4 @@ public class NotExpression extends UnaryExpression {
   public String getJavaString(final ExpressionOperatorParameter parameters) {
     return getFunctionCallUnaryString("!", parameters);
   }
-
-  @Override
-  public int hashCode() {
-    return defaultHashCode();
-  }
-
-  @Override
-  public boolean equals(final Object other) {
-    if (other == null || !(other instanceof NotExpression)) {
-      return false;
-    }
-    NotExpression otherExpr = (NotExpression) other;
-    return Objects.equal(getOperand(), otherExpr.getOperand());
-  }
 }

@@ -26,6 +26,12 @@ import edu.washington.escience.myria.operator.StatefulApply;
  * An Expression evaluator for generic expressions. Used in {@link Apply} and {@link StatefulApply}.
  */
 public class GenericEvaluator extends Evaluator {
+
+  /**
+   * logger for this class.
+   * */
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(GenericEvaluator.class);
+
   /**
    * Expression evaluator.
    */
@@ -56,14 +62,18 @@ public class GenericEvaluator extends Evaluator {
   public void compile() throws DbException {
     Preconditions.checkArgument(needsCompiling(), "This expression does not need to be compiled.");
 
+    String javaExpression = "";
+
     try {
+      javaExpression = getJavaExpression();
       IScriptEvaluator se = CompilerFactoryFactory.getDefaultCompilerFactory().newExpressionEvaluator();
 
       evaluator =
-          (EvalInterface) se.createFastEvaluator(getJavaExpression(), EvalInterface.class, new String[] {
+          (EvalInterface) se.createFastEvaluator(javaExpression, EvalInterface.class, new String[] {
               Expression.TB, Expression.ROW, Expression.RESULT, Expression.STATE });
     } catch (Exception e) {
-      throw new DbException("Error when compiling expression " + this, e);
+      LOGGER.debug("Expression: %s", javaExpression);
+      throw new DbException("Error when compiling expression", e);
     }
   }
 
