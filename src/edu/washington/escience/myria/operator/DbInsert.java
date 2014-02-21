@@ -77,6 +77,21 @@ public class DbInsert extends RootOperator {
    * 
    * @param child the source of tuples to be inserted.
    * @param relationKey the key of the table the tuples should be inserted into.
+   * @param overwriteTable whether to overwrite a table that already exists.
+   * @param indexes indexes created.
+   */
+  public DbInsert(final Operator child, final RelationKey relationKey, final boolean overwriteTable,
+      final List<List<IndexRef>> indexes) {
+    this(child, relationKey, null, overwriteTable, indexes);
+  }
+
+  /**
+   * Constructs an insertion operator to store the tuples from the specified child into the specified database. If the
+   * table does not exist, it will be created. If <code>overwriteTable</code> is <code>true</code>, any existing data
+   * will be dropped.
+   * 
+   * @param child the source of tuples to be inserted.
+   * @param relationKey the key of the table the tuples should be inserted into.
    * @param connectionInfo the parameters of the database connection.
    * @param overwriteTable whether to overwrite a table that already exists.
    */
