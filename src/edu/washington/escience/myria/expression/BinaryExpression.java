@@ -131,12 +131,11 @@ public abstract class BinaryExpression extends ExpressionOperator {
    * A function that could be used as the default type checker for a binary expression where both operands must be
    * numeric.
    * 
-   * @param schema the schema of the input tuples.
-   * @param stateSchema the schema of the state
+   * @param parameters parameters that are needed to determine the output type
    * @return the default numeric type, based on the types of the children and Java type precedence.
    */
-  protected final Type checkAndReturnDefaultNumericType(final Schema schema, final Schema stateSchema) {
-    return checkAndReturnDefaultNumericType(schema, stateSchema, ImmutableList.of(Type.DOUBLE_TYPE, Type.FLOAT_TYPE,
+  protected final Type checkAndReturnDefaultNumericType(final ExpressionOperatorParameter parameters) {
+    return checkAndReturnDefaultNumericType(parameters, ImmutableList.of(Type.DOUBLE_TYPE, Type.FLOAT_TYPE,
         Type.LONG_TYPE, Type.INT_TYPE));
   }
 
@@ -148,7 +147,8 @@ public abstract class BinaryExpression extends ExpressionOperator {
    * @param validTypes a list of valid types ordered by their precedence
    * @return the default numeric type, based on the types of the children and type precedence.
    */
-  protected final Type checkAndReturnDefaultNumericType(final ExpressionOperatorParameter parameters, final List<Type> validTypes) {
+  protected final Type checkAndReturnDefaultNumericType(final ExpressionOperatorParameter parameters,
+      final List<Type> validTypes) {
     Type leftType = getLeft().getOutputType(parameters);
     Type rightType = getRight().getOutputType(parameters);
     int leftIdx = validTypes.indexOf(leftType);

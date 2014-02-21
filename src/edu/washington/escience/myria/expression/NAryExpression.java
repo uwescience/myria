@@ -10,8 +10,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 
 /**
  * 
@@ -52,14 +52,13 @@ public abstract class NAryExpression extends ExpressionOperator {
    * A function that could be used as the default type checker for an expression where all operands must be numeric or
    * have the same type.
    * 
-   * @param schema the schema of the input tuples.
-   * @param stateSchema the schema of the state
+   * @param parameters parameters that are needed to determine the output type
    * @return the default numeric type, based on the types of the children and Java type precedence.
    */
-  protected Type checkAndReturnDefaultType(final Schema schema, final Schema stateSchema) {
+  protected Type checkAndReturnDefaultType(final ExpressionOperatorParameter parameters) {
     List<Type> types = Lists.newArrayListWithCapacity(getChildren().size());
     for (ExpressionOperator child : getChildren()) {
-      types.add(child.getOutputType(schema, stateSchema));
+      types.add(child.getOutputType(parameters));
     }
 
     // if all types are the same, we can just return it

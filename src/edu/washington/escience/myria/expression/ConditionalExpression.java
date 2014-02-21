@@ -3,8 +3,8 @@ package edu.washington.escience.myria.expression;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 
 /**
  * A conditional expression that uses the ternary operator.
@@ -34,14 +34,14 @@ public class ConditionalExpression extends NAryExpression {
   }
 
   @Override
-  public Type getOutputType(final Schema schema, final Schema stateSchema) {
-    final Type type = getChild(0).getOutputType(schema, stateSchema);
+  public Type getOutputType(final ExpressionOperatorParameter parameters) {
+    final Type type = getChild(0).getOutputType(parameters);
     Preconditions.checkArgument(type == Type.BOOLEAN_TYPE,
         "%s requires the first child [%s] to be a boolean expression but it is a %s", getClass().getSimpleName(),
         getChild(1), type);
 
-    Type firstType = getChild(1).getOutputType(schema, stateSchema);
-    Type secondType = getChild(2).getOutputType(schema, stateSchema);
+    Type firstType = getChild(1).getOutputType(parameters);
+    Type secondType = getChild(2).getOutputType(parameters);
 
     if (firstType == secondType) {
       return firstType;
@@ -58,9 +58,9 @@ public class ConditionalExpression extends NAryExpression {
   }
 
   @Override
-  public String getJavaString(final Schema schema, final Schema stateSchema) {
-    return new StringBuilder("(").append(getChild(0).getJavaString(schema, stateSchema)).append("?").append(
-        getChild(1).getJavaString(schema, stateSchema)).append(":").append(
-        getChild(2).getJavaString(schema, stateSchema)).append(")").toString();
+  public String getJavaString(final ExpressionOperatorParameter parameters) {
+    return new StringBuilder("(").append(getChild(0).getJavaString(parameters)).append("?").append(
+        getChild(1).getJavaString(parameters)).append(":").append(getChild(2).getJavaString(parameters)).append(")")
+        .toString();
   }
 }

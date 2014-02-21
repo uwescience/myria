@@ -867,4 +867,11 @@ public final class Worker {
       return null;
     }
   }
+
+  /**
+   * @return This worker's ID.
+   */
+  public int getID() {
+    return myID;
+  }
 }

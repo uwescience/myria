@@ -179,11 +179,12 @@ public class ApplyTest {
       Expressions.add(expr);
     }
 
+    final ExpressionOperatorParameter parameters = new ExpressionOperatorParameter(tbb.getSchema(), -1);
     {
       // Expression (just copy/ rename): a;
       Expression expr = new Expression("copy", vara);
 
-      GenericEvaluator eval = new GenericEvaluator(expr, new ExpressionOperatorParameter(tbb.getSchema(), -1));
+      GenericEvaluator eval = new GenericEvaluator(expr, parameters);
       assertTrue(!eval.needsCompiling());
       Expressions.add(expr);
     }
@@ -192,7 +193,7 @@ public class ApplyTest {
       // Expression: (a constant value of 5);
       Expression expr = new Expression("constant5", new ConstantExpression(Type.INT_TYPE, "5"));
 
-      GenericEvaluator eval = new ConstantEvaluator(expr, new ExpressionOperatorParameter(tbb.getSchema(), -1));
+      GenericEvaluator eval = new ConstantEvaluator(expr, parameters);
       assertTrue(!eval.needsCompiling());
       Expressions.add(expr);
     }
@@ -201,7 +202,7 @@ public class ApplyTest {
       // Expression: (a constant value of 5.0 float);
       Expression expr = new Expression("constant5f", new ConstantExpression(Type.FLOAT_TYPE, "5"));
 
-      GenericEvaluator eval = new ConstantEvaluator(expr, new ExpressionOperatorParameter(tbb.getSchema(), -1));
+      GenericEvaluator eval = new ConstantEvaluator(expr, parameters);
       assertTrue(!eval.needsCompiling());
       Expressions.add(expr);
     }
@@ -210,7 +211,7 @@ public class ApplyTest {
       // Expression: (a constant value of 5.0 double);
       Expression expr = new Expression("constant5d", new ConstantExpression(Type.DOUBLE_TYPE, "5"));
 
-      GenericEvaluator eval = new ConstantEvaluator(expr, new ExpressionOperatorParameter(tbb.getSchema(), -1));
+      GenericEvaluator eval = new ConstantEvaluator(expr, parameters);
       assertTrue(!eval.needsCompiling());
       Expressions.add(expr);
     }
@@ -219,7 +220,7 @@ public class ApplyTest {
       // Expression: (a random double);
       Expression expr = new Expression("random", new RandomExpression());
 
-      GenericEvaluator eval = new GenericEvaluator(expr, tbb.getSchema(), null);
+      GenericEvaluator eval = new GenericEvaluator(expr, parameters);
       assertTrue(eval.needsCompiling());
       Expressions.add(expr);
     }
@@ -229,7 +230,7 @@ public class ApplyTest {
       Expression expr =
           new Expression("modulo", new ModuloExpression(new VariableExpression(2), new VariableExpression(1)));
 
-      GenericEvaluator eval = new GenericEvaluator(expr, tbb.getSchema(), null);
+      GenericEvaluator eval = new GenericEvaluator(expr, parameters);
       assertTrue(eval.needsCompiling());
       Expressions.add(expr);
     }
@@ -240,7 +241,7 @@ public class ApplyTest {
           new Expression("conditional", new ConditionalExpression(new VariableExpression(4), new VariableExpression(0),
               new VariableExpression(2)));
 
-      GenericEvaluator eval = new GenericEvaluator(expr, tbb.getSchema(), null);
+      GenericEvaluator eval = new GenericEvaluator(expr, parameters);
       assertTrue(eval.needsCompiling());
       Expressions.add(expr);
     }
@@ -254,7 +255,7 @@ public class ApplyTest {
               Type.INT_TYPE, "0")), new ConditionalExpression(new VariableExpression(4), new VariableExpression(0),
               new VariableExpression(1)), new VariableExpression(2)));
 
-      GenericEvaluator eval = new GenericEvaluator(expr, tbb.getSchema(), null);
+      GenericEvaluator eval = new GenericEvaluator(expr, parameters);
       assertTrue(eval.needsCompiling());
       Expressions.add(expr);
     }
@@ -268,7 +269,6 @@ public class ApplyTest {
       assertEquals(eval.getJavaExpression(), "result.appendInt(42)");
       Expressions.add(expr);
     }
-
 
     Apply apply = new Apply(new TupleSource(tbb), Expressions.build());
 
@@ -694,7 +694,7 @@ public class ApplyTest {
   public void conditionalNeedsBooleancondition() throws IllegalArgumentException {
     ExpressionOperator a = new ConstantExpression(Type.INT_TYPE, "1");
     ConditionalExpression conditional = new ConditionalExpression(a, a, a);
-    conditional.getOutputType(null, null);
+    conditional.getOutputType(new ExpressionOperatorParameter());
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -702,13 +702,13 @@ public class ApplyTest {
     ConditionalExpression conditional =
         new ConditionalExpression(new ConstantExpression(Type.BOOLEAN_TYPE, "true"), new ConstantExpression(
             Type.INT_TYPE, "1"), new ConstantExpression(Type.STRING_TYPE, "foo"));
-    conditional.getOutputType(null, null);
+    conditional.getOutputType(new ExpressionOperatorParameter());
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void moduloNeedsIntegers() throws IllegalArgumentException {
     ModuloExpression conditional =
         new ModuloExpression(new ConstantExpression(Type.FLOAT_TYPE, "1"), new ConstantExpression(Type.INT_TYPE, "2"));
-    conditional.getOutputType(null, null);
+    conditional.getOutputType(new ExpressionOperatorParameter());
   }
 }

@@ -21,6 +21,7 @@ import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParam
     @Type(name = "CONSTANT", value = ConstantExpression.class), @Type(name = "RANDOM", value = RandomExpression.class),
     @Type(name = "STATE", value = StateExpression.class), @Type(name = "TYPE", value = TypeExpression.class),
     @Type(name = "TYPEOF", value = TypeOfExpression.class), @Type(name = "VARIABLE", value = VariableExpression.class),
+    @Type(name = "WORKERID", value = WorkerIdExpression.class),
     /* Unary */
     @Type(name = "ABS", value = AbsExpression.class), @Type(name = "CAST", value = CastExpression.class),
     @Type(name = "CEIL", value = CeilExpression.class), @Type(name = "COS", value = CosExpression.class),
@@ -46,6 +47,7 @@ public abstract class ExpressionOperator implements Serializable {
   /**
    * Get the output type of the expression which might depend on the types of the children. Also, check whether the
    * types of the children are correct.
+   * 
    * @param parameters parameters that are needed to determine the output type
    * @return the type of the output of this expression.
    */
