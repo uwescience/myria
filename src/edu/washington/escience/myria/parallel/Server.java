@@ -42,6 +42,7 @@ import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleWriter;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
+import edu.washington.escience.myria.api.DatasetFormat;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
@@ -1422,11 +1423,11 @@ public final class Server {
    * Start a query that streams tuples from the specified relation to the specified {@link TupleWriter}.
    * 
    * @param relationKey the relation to be downloaded.
-   * @param writer the {@link TupleWriter} which will serialize the tuples.
+   * @param type the {@link DatasetFormat} the data stream should be.
    * @return the query future from which the query status can be looked up.
    * @throws DbException if there is an error in the system.
    */
-  public QueryFuture startDataStream(final RelationKey relationKey, final TupleWriter writer) throws DbException {
+  public QueryFuture startDataStream(final RelationKey relationKey, final DatasetFormat type) throws DbException {
     /* Get the relation's schema, to make sure it exists. */
     final Schema schema;
     try {
@@ -1461,7 +1462,7 @@ public final class Server {
 
     /* Construct the master plan. */
     final CollectConsumer consumer = new CollectConsumer(schema, operatorId, ImmutableSet.copyOf(scanWorkers));
-    DataOutput output = new DataOutput(consumer, writer);
+    DataOutput output = new DataOutput(consumer, type);
     final SingleQueryPlanWithArgs masterPlan = new SingleQueryPlanWithArgs(output);
 
     /* Submit the plan for the download. */

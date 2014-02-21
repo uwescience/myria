@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.parallel;
 
+import java.io.InputStream;
+import java.io.PipedInputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -23,7 +25,9 @@ import com.google.common.collect.ImmutableMap;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
+import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.parallel.ipc.FlowControlBagInputBuffer;
@@ -320,6 +324,25 @@ public class MasterQueryPartition implements QueryPartition {
   }
 
   /**
+   * @return the schema of streaming out results.
+   * */
+  public final Schema getResultSchema() {
+    return root.getSchema();
+  }
+
+  /**
+   * @return the result stream.
+   * */
+  public final InputStream getResultStream() {
+    return resultStream;
+  }
+
+  /**
+   * The result stream of the query.
+   * */
+  private final PipedInputStream resultStream;
+
+  /**
    * @return the set of workers get assigned to run the query.
    * */
   final Set<Integer> getWorkerAssigned() {
@@ -396,6 +419,16 @@ public class MasterQueryPartition implements QueryPartition {
   public MasterQueryPartition(final SingleQueryPlanWithArgs masterPlan,
       final Map<Integer, SingleQueryPlanWithArgs> workerPlans, final long queryID, final Server master) {
     root = masterPlan.getRootOps().get(0);
+    if (root instanceof DataOutput) {
+      /*
+       * Allocate the pipes by which the {@link DataOutput} operator will talk to the {@link StreamingOutput} object
+       * that will stream data to the client.
+       */
+      resultStream = new PipedInputStream(MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
+      ((DataOutput) root).connectSink(resultStream);
+    } else {
+      resultStream = null;
+    }
     this.queryID = queryID;
     this.master = master;
     profilingMode = masterPlan.isProfilingMode();

@@ -1,9 +1,7 @@
 package edu.washington.escience.myria.api;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
 import java.net.URI;
 import java.util.List;
 import java.util.Set;
@@ -34,13 +32,10 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
 
-import edu.washington.escience.myria.CsvTupleWriter;
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.JsonTupleWriter;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleWriter;
 import edu.washington.escience.myria.api.encoding.DatasetEncoding;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.TipsyDatasetEncoding;
@@ -49,6 +44,7 @@ import edu.washington.escience.myria.io.InputStreamSource;
 import edu.washington.escience.myria.operator.FileScan;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.TipsyFileScan;
+import edu.washington.escience.myria.parallel.MasterQueryPartition;
 import edu.washington.escience.myria.parallel.Server;
 
 /**
@@ -122,32 +118,8 @@ public final class DatasetResource {
       throw new MyriaApiException(Status.BAD_REQUEST, "format must be " + StringUtils.join(DatasetFormat.values()));
     }
 
-    /*
-     * Allocate the pipes by which the {@link DataOutput} operator will talk to the {@link StreamingOutput} object that
-     * will stream data to the client.
-     */
-    PipedOutputStream writerOutput = new PipedOutputStream();
-    PipedInputStream input;
-    try {
-      input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
-    } catch (IOException e) {
-      throw new DbException(e);
-    }
-
-    /* Create a {@link PipedStreamingOutput} object that will stream the serialized results to the client. */
-    PipedStreamingOutput entity = new PipedStreamingOutput(input);
-    /* .. and make it the entity of the response. */
-    response.entity(entity);
-
-    /* Set up the TupleWriter and the Response MediaType based on the format choices. */
-    TupleWriter writer;
     if (validFormat == DatasetFormat.CSV || validFormat == DatasetFormat.TSV) {
       /* CSV or TSV : set application/octet-stream, attachment, and filename. */
-      if (validFormat == DatasetFormat.CSV) {
-        writer = new CsvTupleWriter(DatasetFormat.CSV.getColumnDelimiter(), writerOutput);
-      } else {
-        writer = new CsvTupleWriter(DatasetFormat.TSV.getColumnDelimiter(), writerOutput);
-      }
       ContentDisposition contentDisposition =
           ContentDisposition.type("attachment").fileName(
               relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE) + '.' + validFormat).build();
@@ -157,18 +129,25 @@ public final class DatasetResource {
     } else if (validFormat == DatasetFormat.JSON) {
       /* JSON: set application/json. */
       response.type(MediaType.APPLICATION_JSON);
-      writer = new JsonTupleWriter(writerOutput);
     } else {
       /* Should not be possible to get here. */
       throw new IllegalStateException("format should have been validated by now, and yet we got here");
     }
 
+    PipedInputStream writerOutput = null;
     /* Start streaming tuples into the TupleWriter, and through the pipes to the PipedStreamingOutput. */
     try {
-      server.startDataStream(relationKey, writer);
+      writerOutput =
+          (PipedInputStream) ((MasterQueryPartition) server.startDataStream(relationKey, validFormat).getQuery())
+              .getResultStream();
     } catch (IllegalArgumentException e) {
       throw new MyriaApiException(Status.BAD_REQUEST, e);
     }
+
+    /* Create a {@link PipedStreamingOutput} object that will stream the serialized results to the client. */
+    PipedStreamingOutput entity = new PipedStreamingOutput(writerOutput);
+    /* .. and make it the entity of the response. */
+    response.entity(entity);
 
     /* Yay, worked! Ensure the file has the correct filename. */
     return response.build();
