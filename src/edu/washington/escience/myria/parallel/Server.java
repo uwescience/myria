@@ -884,7 +884,7 @@ public final class Server {
       LOGGER.info("Server started on {}", masterSocketInfo.toString());
     }
 
-    if (getSchema(MyriaConstants.PROFILING_RELATION) == null) {
+    if (getSchema(MyriaConstants.PROFILING_RELATION) == null && !getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_SQLITE)) {
       importDataset(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA, null);
     }
   }
