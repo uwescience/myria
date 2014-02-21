@@ -4,25 +4,10 @@ import java.util.HashMap;
 
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
-
-import edu.washington.escience.myria.RelationKey;
-import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.api.DatasetFormat;
-import edu.washington.escience.myria.operator.DataOutput;
-import edu.washington.escience.myria.operator.DbQueryScan;
-import edu.washington.escience.myria.operator.RootOperator;
-import edu.washington.escience.myria.operator.SymmetricHashJoin;
-import edu.washington.escience.myria.parallel.CollectConsumer;
-import edu.washington.escience.myria.parallel.CollectProducer;
-import edu.washington.escience.myria.parallel.ExchangePairID;
-import edu.washington.escience.myria.parallel.FixValuePartitionFunction;
-import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
-import edu.washington.escience.myria.parallel.GenericShuffleProducer;
+import edu.washington.escience.myria.api.encoding.QueryEncoding;
+import edu.washington.escience.myria.client.JsonQueryBaseBuilder;
 import edu.washington.escience.myria.parallel.MasterQueryPartition;
-import edu.washington.escience.myria.parallel.QueryFuture;
-import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 import edu.washington.escience.myria.util.TestUtils;
 import edu.washington.escience.myria.util.Tuple;
 
@@ -46,50 +31,19 @@ public class BroadcastTest extends SystemTestBase {
     /* use some tables generated in simpleRandomJoinTestBase */
     final HashMap<Tuple, Integer> expectedResult = simpleRandomJoinTestBase();
 
-    final ImmutableList<Type> types = ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE);
-    final ImmutableList<String> columnNames = ImmutableList.of("id", "name");
-    final Schema schema = new Schema(types, columnNames);
+    JsonQueryBaseBuilder builder = new JsonQueryBaseBuilder().workers(workerIDs);
 
-    /* Reuse tables created in SystemTestBase */
-    final RelationKey testtable1Key = RelationKey.of("test", "test", "testtable1");
-    final RelationKey testtable2Key = RelationKey.of("test", "test", "testtable2");
+    QueryEncoding query = builder.scan(JOIN_TEST_TABLE_2)//
+        .hashEquiJoin(//
+            builder.scan(JOIN_TEST_TABLE_1).broadcast()//
+            , new int[] { 0 }, new int[] { 0, 1 }, new int[] { 0 }, new int[] { 0, 1 })//
+        .masterCollect()//
+        .export(DatasetFormat.TSV)//
+        .build();
 
-    final ExchangePairID broadcastID = ExchangePairID.newID(); // for BroadcastOperator
-    final ExchangePairID serverReceiveID = ExchangePairID.newID(); // for CollectOperator
-
-    /* Set producer */
-    final DbQueryScan scan1 = new DbQueryScan(testtable1Key, schema);
-    final GenericShuffleProducer bp =
-
-        new GenericShuffleProducer(scan1, broadcastID, new int[][] { { 0, 1 } },
-            new int[] { workerIDs[0], workerIDs[1] }, new FixValuePartitionFunction(0));
-
-    /* Set consumer */
-    final GenericShuffleConsumer bs =
-        new GenericShuffleConsumer(schema, broadcastID, new int[] { workerIDs[0], workerIDs[1] });
-
-    /* Set collect producer which will send data inner-joined */
-    final DbQueryScan scan2 = new DbQueryScan(testtable2Key, schema);
-
-    final ImmutableList<String> outputColumnNames = ImmutableList.of("id1", "name1", "id2", "name2");
-    final SymmetricHashJoin localjoin =
-        new SymmetricHashJoin(outputColumnNames, bs, scan2, new int[] { 0 }, new int[] { 0 });
-
-    final CollectProducer cp = new CollectProducer(localjoin, serverReceiveID, MASTER_ID);
-
-    final HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
-
-    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(new RootOperator[] { cp, bp }));
-    workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(new RootOperator[] { cp, bp }));
-
-    final CollectConsumer serverCollect = new CollectConsumer(cp.getSchema(), serverReceiveID, workerIDs);
-    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new DataOutput(serverCollect, DatasetFormat.TSV));
-
-    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans);
-
-    TestUtils.assertTupleBagEqual(expectedResult, TestUtils.tupleBatchToTupleBag(TestUtils.parseTSV(
-        ((MasterQueryPartition) qf.getQuery()).getResultStream(), ((MasterQueryPartition) qf.getQuery())
-            .getResultSchema())));
-
+    MasterQueryPartition qf = (MasterQueryPartition) server.submitQuery(query).getQuery();
+    TestUtils.assertTupleBagEqual(expectedResult, TestUtils.tupleBatchToTupleBag(TestUtils.parseTSV(qf
+        .getResultStream(), qf.getResultSchema())));
   }
+
 }

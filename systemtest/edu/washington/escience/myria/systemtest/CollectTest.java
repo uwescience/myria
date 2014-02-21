@@ -4,23 +4,11 @@ import java.util.HashMap;
 
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
-
-import edu.washington.escience.myria.RelationKey;
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
-import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.api.DatasetFormat;
-import edu.washington.escience.myria.operator.DataOutput;
-import edu.washington.escience.myria.operator.DbQueryScan;
-import edu.washington.escience.myria.operator.RootOperator;
-import edu.washington.escience.myria.parallel.CollectConsumer;
-import edu.washington.escience.myria.parallel.CollectProducer;
-import edu.washington.escience.myria.parallel.ExchangePairID;
+import edu.washington.escience.myria.api.encoding.QueryEncoding;
+import edu.washington.escience.myria.client.JsonQueryBaseBuilder;
 import edu.washington.escience.myria.parallel.MasterQueryPartition;
-import edu.washington.escience.myria.parallel.QueryFuture;
-import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 import edu.washington.escience.myria.util.TestUtils;
 import edu.washington.escience.myria.util.Tuple;
 
@@ -28,50 +16,15 @@ public class CollectTest extends SystemTestBase {
 
   @Test
   public void collectTest() throws Exception {
-    final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
-    createTable(workerIDs[0], testtableKey, "id long, name varchar(20)");
-    createTable(workerIDs[1], testtableKey, "id long, name varchar(20)");
+    HashMap<Tuple, Integer> expectedResults =
+        TestUtils.tupleBatchToTupleBag(simpleSingleTableTestBase(TupleBatch.BATCH_SIZE * 2));
+    JsonQueryBaseBuilder builder = new JsonQueryBaseBuilder().workers(workerIDs);
 
-    final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, 200, 20);
-    final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
+    QueryEncoding qe = builder.scan(SINGLE_TEST_TABLE).masterCollect().export(DatasetFormat.TSV).build();
 
-    final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
-
-    final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
-    for (int i = 0; i < names.length; i++) {
-      tbb.putLong(0, ids[i]);
-      tbb.putString(1, names[i]);
-    }
-
-    final TupleBatchBuffer resultTBB = new TupleBatchBuffer(schema);
-    resultTBB.unionAll(tbb);
-    resultTBB.unionAll(tbb);
-    final HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleBag(resultTBB);
-
-    TupleBatch tb = null;
-    while ((tb = tbb.popAny()) != null) {
-      insert(workerIDs[0], testtableKey, schema, tb);
-      insert(workerIDs[1], testtableKey, schema, tb);
-    }
-
-    final ExchangePairID serverReceiveID = ExchangePairID.newID();
-
-    final DbQueryScan scanTable = new DbQueryScan(testtableKey, schema);
-
-    final HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
-    final CollectProducer cp1 = new CollectProducer(scanTable, serverReceiveID, MASTER_ID);
-    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(new RootOperator[] { cp1 }));
-    workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(new RootOperator[] { cp1 }));
-
-    final CollectConsumer serverCollect = new CollectConsumer(schema, serverReceiveID, workerIDs);
-    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new DataOutput(serverCollect, DatasetFormat.TSV));
-
-    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans);
-
-    TestUtils.assertTupleBagEqual(expectedResult, TestUtils.tupleBatchToTupleBag(TestUtils.parseTSV(
-        ((MasterQueryPartition) qf.getQuery()).getResultStream(), ((MasterQueryPartition) qf.getQuery())
-            .getResultSchema())));
+    MasterQueryPartition qf = (MasterQueryPartition) server.submitQuery(qe).getQuery();
+    TestUtils.assertTupleBagEqual(expectedResults, TestUtils.tupleBatchToTupleBag(TestUtils.parseTSV(qf
+        .getResultStream(), SINGLE_TEST_SCHEMA)));
 
   }
 }

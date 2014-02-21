@@ -4,10 +4,10 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
@@ -19,6 +19,8 @@ import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.api.DatasetFormat;
+import edu.washington.escience.myria.api.encoding.QueryEncoding;
+import edu.washington.escience.myria.client.JsonQueryBaseBuilder;
 import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
@@ -29,7 +31,6 @@ import edu.washington.escience.myria.operator.RightHashJoin;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.StreamingStateWrapper;
 import edu.washington.escience.myria.operator.SymmetricHashCountingJoin;
-import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
@@ -49,51 +50,15 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
   @Test
   public void dupElimTest() throws Exception {
-    final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
-    createTable(workerIDs[0], testtableKey, "id long, name varchar(20)");
-    createTable(workerIDs[1], testtableKey, "id long, name varchar(20)");
 
-    final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, 200, 20);
-    final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
-
-    final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
-
-    final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
-    for (int i = 0; i < names.length; i++) {
-      tbb.putLong(0, ids[i]);
-      tbb.putString(1, names[i]);
-    }
-
-    final HashMap<Tuple, Integer> expectedResult = TestUtils.distinct(tbb);
-
-    TupleBatch tb = null;
-    while ((tb = tbb.popAny()) != null) {
-      insert(workerIDs[0], testtableKey, schema, tb);
-      insert(workerIDs[1], testtableKey, schema, tb);
-    }
-
-    final ExchangePairID serverReceiveID = ExchangePairID.newID();
-    final ExchangePairID collectID = ExchangePairID.newID();
-
-    final DbQueryScan scanTable = new DbQueryScan(testtableKey, schema);
-
-    final StreamingStateWrapper dupElimOnScan = new StreamingStateWrapper(scanTable, new DupElim());
-    final HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
-    final CollectProducer cp1 = new CollectProducer(dupElimOnScan, collectID, workerIDs[0]);
-    final CollectConsumer cc1 = new CollectConsumer(cp1.getSchema(), collectID, workerIDs);
-    final StreamingStateWrapper dumElim3 = new StreamingStateWrapper(cc1, new DupElim());
-    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(new RootOperator[] {
-        cp1, new CollectProducer(dumElim3, serverReceiveID, MASTER_ID) }));
-    workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(new RootOperator[] { cp1 }));
-
-    final CollectConsumer serverCollect = new CollectConsumer(schema, serverReceiveID, new int[] { workerIDs[0] });
-    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new DataOutput(serverCollect, DatasetFormat.TSV));
-
-    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans);
-
+    final HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleSet(simpleSingleTableTestBase(1000));
+    JsonQueryBaseBuilder builder = new JsonQueryBaseBuilder().workers(workerIDs);
+    QueryEncoding query =
+        builder.scan(SINGLE_TEST_TABLE).dupElim().collect(workerIDs[0]).dupElim().masterCollect().export(
+            DatasetFormat.TSV).build();
+    QueryFuture qf = server.submitQuery(query);
     TestUtils.assertTupleBagEqual(expectedResult, TestUtils.tupleBatchToTupleBag(TestUtils.parseTSV(
-        ((MasterQueryPartition) qf.getQuery()).getResultStream(), ((MasterQueryPartition) qf.getQuery())
+        ((MasterQueryPartition) qf.getQuery()).getResultStream(), (((MasterQueryPartition) qf.getQuery()))
             .getResultSchema())));
 
   }
@@ -133,70 +98,39 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(new RootOperator[] { cp1 }));
 
     final CollectConsumer serverCollect = new CollectConsumer(schema, serverReceiveID, new int[] { workerIDs[0] });
-    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new DataOutput(serverCollect, DatasetFormat.TSV));
+
+    final SingleQueryPlanWithArgs serverPlan =
+        new SingleQueryPlanWithArgs(new DataOutput(serverCollect, DatasetFormat.TSV));
 
     QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans);
 
     TestUtils.assertTupleBagEqual(expectedResult, TestUtils.tupleBatchToTupleBag(TestUtils.parseTSV(
         ((MasterQueryPartition) qf.getQuery()).getResultStream(), ((MasterQueryPartition) qf.getQuery())
             .getResultSchema())));
-
   }
 
   @Test
   public void joinTest() throws Exception {
-    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
-    Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
     final HashMap<Tuple, Integer> expectedResult = simpleRandomJoinTestBase();
 
-    final ExchangePairID serverReceiveID = ExchangePairID.newID();
-    final ExchangePairID table1ShuffleID = ExchangePairID.newID();
-    final ExchangePairID table2ShuffleID = ExchangePairID.newID();
+    JsonQueryBaseBuilder builder = new JsonQueryBaseBuilder().workers(workerIDs);
     final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(2, 0);
 
-    final ImmutableList<Type> outputTypes =
-        ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE, Type.LONG_TYPE, Type.STRING_TYPE);
-    final ImmutableList<String> outputColumnNames = ImmutableList.of("id1", "name1", "id2", "name2");
-    final Schema outputSchema = new Schema(outputTypes, outputColumnNames);
-
-    final DbQueryScan scan1 = new DbQueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA_1);
-    final DbQueryScan scan2 = new DbQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA_2);
-
-    final GenericShuffleProducer sp1 =
-        new GenericShuffleProducer(scan1, table1ShuffleID, new int[] { workerIDs[0], workerIDs[1] }, pf);
-    final GenericShuffleConsumer sc1 =
-        new GenericShuffleConsumer(sp1.getSchema(), table1ShuffleID, new int[] { workerIDs[0], workerIDs[1] });
-    final GenericShuffleProducer sp2 =
-        new GenericShuffleProducer(scan2, table2ShuffleID, new int[] { workerIDs[0], workerIDs[1] }, pf);
-    final GenericShuffleConsumer sc2 =
-        new GenericShuffleConsumer(sp2.getSchema(), table2ShuffleID, new int[] { workerIDs[0], workerIDs[1] });
-
-    final SymmetricHashJoin localjoin =
-        new SymmetricHashJoin(outputColumnNames, sc1, sc2, new int[] { 0 }, new int[] { 0 });
-
-    final CollectProducer cp1 = new CollectProducer(localjoin, serverReceiveID, MASTER_ID);
-    final HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
-    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(new RootOperator[] { sp1, sp2, cp1 }));
-    workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(new RootOperator[] { sp1, sp2, cp1 }));
-
-    final CollectConsumer serverCollect =
-        new CollectConsumer(outputSchema, serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
-    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new DataOutput(serverCollect, DatasetFormat.TSV));
-
-    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
+    JsonQueryBaseBuilder scan1 = builder.scan(JOIN_TEST_TABLE_1).setName("scan1").shuffle(pf);
+    JsonQueryBaseBuilder scan2 = builder.scan(JOIN_TEST_TABLE_2).setName("scan2").shuffle(pf);
+    QueryEncoding query =
+        scan1.hashEquiJoin(scan2, new int[] { 0 }, new int[] { 0, 1 }, new int[] { 0 }, new int[] { 0, 1 })
+            .masterCollect().export(DatasetFormat.TSV).build();
+    QueryFuture qf = server.submitQuery(query);
 
     TestUtils.assertTupleBagEqual(expectedResult, TestUtils.tupleBatchToTupleBag(TestUtils.parseTSV(
         ((MasterQueryPartition) qf.getQuery()).getResultStream(), ((MasterQueryPartition) qf.getQuery())
             .getResultSchema())));
-
   }
 
   @Test
   public void rightHashJoinTest() throws Exception {
-
-    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
-    Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
     final HashMap<Tuple, Integer> expectedResult = simpleRandomJoinTestBase();
 
@@ -231,10 +165,11 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
     final CollectConsumer serverCollect =
         new CollectConsumer(outputSchema, serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
-    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new DataOutput(serverCollect, DatasetFormat.TSV));
 
-    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
+    final SingleQueryPlanWithArgs serverPlan =
+        new SingleQueryPlanWithArgs(new DataOutput(serverCollect, DatasetFormat.TSV));
 
+    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans);
     TestUtils.assertTupleBagEqual(expectedResult, TestUtils.tupleBatchToTupleBag(TestUtils.parseTSV(
         ((MasterQueryPartition) qf.getQuery()).getResultStream(), ((MasterQueryPartition) qf.getQuery())
             .getResultSchema())));
@@ -242,44 +177,18 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
   @Test
   public void simpleJoinTest() throws Exception {
-    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
-    Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
     final HashMap<Tuple, Integer> expectedResult = simpleFixedJoinTestBase();
 
-    final ExchangePairID serverReceiveID = ExchangePairID.newID();
-    final ExchangePairID table1ShuffleID = ExchangePairID.newID();
-    final ExchangePairID table2ShuffleID = ExchangePairID.newID();
     final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(2, 0);
 
-    final DbQueryScan scan1 = new DbQueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA_1);
-    final DbQueryScan scan2 = new DbQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA_2);
-
-    final GenericShuffleProducer sp1 =
-        new GenericShuffleProducer(scan1, table1ShuffleID, new int[] { workerIDs[0], workerIDs[1] }, pf);
-    final GenericShuffleConsumer sc1 =
-        new GenericShuffleConsumer(sp1.getSchema(), table1ShuffleID, new int[] { workerIDs[0], workerIDs[1] });
-
-    final GenericShuffleProducer sp2 =
-        new GenericShuffleProducer(scan2, table2ShuffleID, new int[] { workerIDs[0], workerIDs[1] }, pf);
-    final GenericShuffleConsumer sc2 =
-        new GenericShuffleConsumer(sp2.getSchema(), table2ShuffleID, new int[] { workerIDs[0], workerIDs[1] });
-
-    final List<String> joinOutputColumnNames = ImmutableList.of("id_1", "name_1", "id_2", "name_2");
-    final SymmetricHashJoin localjoin =
-        new SymmetricHashJoin(joinOutputColumnNames, sc1, sc2, new int[] { 0 }, new int[] { 0 });
-
-    final CollectProducer cp1 = new CollectProducer(localjoin, serverReceiveID, MASTER_ID);
-    final HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
-    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(new RootOperator[] { sp1, sp2, cp1 }));
-    workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(new RootOperator[] { sp1, sp2, cp1 }));
-
-    final CollectConsumer serverCollect =
-        new CollectConsumer(cp1.getSchema(), serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
-    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new DataOutput(serverCollect, DatasetFormat.TSV));
-
-    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
-
+    JsonQueryBaseBuilder builder = new JsonQueryBaseBuilder().workers(workerIDs);
+    JsonQueryBaseBuilder scan1 = builder.scan(JOIN_TEST_TABLE_1).setName("scan1").shuffle(pf);
+    JsonQueryBaseBuilder scan2 = builder.scan(JOIN_TEST_TABLE_2).setName("scan2").shuffle(pf);
+    QueryEncoding query =
+        scan1.hashEquiJoin(scan2, new int[] { 0 }, new int[] { 0, 1 }, new int[] { 0 }, new int[] { 0, 1 })
+            .masterCollect().export(DatasetFormat.TSV).build();
+    QueryFuture qf = server.submitQuery(query);
     TestUtils.assertTupleBagEqual(expectedResult, TestUtils.tupleBatchToTupleBag(TestUtils.parseTSV(
         ((MasterQueryPartition) qf.getQuery()).getResultStream(), ((MasterQueryPartition) qf.getQuery())
             .getResultSchema())));
@@ -288,8 +197,6 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
   @Test
   public void simpleRightHashJoinTest() throws Exception {
-    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
-    Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
     final HashMap<Tuple, Integer> expectedResult = simpleFixedJoinTestBase();
 
@@ -322,20 +229,24 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
     final CollectConsumer serverCollect =
         new CollectConsumer(cp1.getSchema(), serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
-    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new DataOutput(serverCollect, DatasetFormat.TSV));
 
-    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
+    final SingleQueryPlanWithArgs serverPlan =
+        new SingleQueryPlanWithArgs(new DataOutput(serverCollect, DatasetFormat.TSV));
 
+    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans);
     TestUtils.assertTupleBagEqual(expectedResult, TestUtils.tupleBatchToTupleBag(TestUtils.parseTSV(
         ((MasterQueryPartition) qf.getQuery()).getResultStream(), ((MasterQueryPartition) qf.getQuery())
             .getResultSchema())));
+  }
 
+  @Before
+  public void init() {
+    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
+    Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
   }
 
   @Test
   public void countingJoinTest() throws Exception {
-    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
-    Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
     final HashMap<Tuple, Integer> expectedResult = simpleRandomJoinTestBase();
     int expectedCount = 0;
@@ -372,15 +283,16 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
     final CollectConsumer serverCollect =
         new CollectConsumer(cp1.getSchema(), serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
-    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new DataOutput(serverCollect, DatasetFormat.TSV));
-    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
 
-    Map<Tuple, Integer> result =
+    final SingleQueryPlanWithArgs serverPlan =
+        new SingleQueryPlanWithArgs(new DataOutput(serverCollect, DatasetFormat.TSV));
+    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans);
+
+    HashMap<Tuple, Integer> actualR =
         TestUtils.tupleBatchToTupleBag(TestUtils.parseTSV(((MasterQueryPartition) qf.getQuery()).getResultStream(),
             ((MasterQueryPartition) qf.getQuery()).getResultSchema()));
-
     long actual = 0;
-    for (Tuple t : result.keySet()) {
+    for (Tuple t : actualR.keySet()) {
       actual += (Long) t.get(0);
     }
 
@@ -389,8 +301,6 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
   @Test
   public void unbalancedCountingJoinTest() throws Exception {
-    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
-    Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
     final HashMap<Tuple, Integer> expectedResult = simpleRandomJoinTestBase();
     int expectedCount = 0;
@@ -426,24 +336,24 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
     final CollectConsumer serverCollect =
         new CollectConsumer(cp1.getSchema(), serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
-    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new DataOutput(serverCollect, DatasetFormat.TSV));
-    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
 
-    Map<Tuple, Integer> result =
+    final SingleQueryPlanWithArgs serverPlan =
+        new SingleQueryPlanWithArgs(new DataOutput(serverCollect, DatasetFormat.TSV));
+    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans);
+
+    HashMap<Tuple, Integer> actualR =
         TestUtils.tupleBatchToTupleBag(TestUtils.parseTSV(((MasterQueryPartition) qf.getQuery()).getResultStream(),
             ((MasterQueryPartition) qf.getQuery()).getResultSchema()));
-
     long actual = 0;
-    for (Tuple t : result.keySet()) {
+    for (Tuple t : actualR.keySet()) {
       actual += (Long) t.get(0);
     }
+
     assertEquals(expectedCount, actual);
   }
 
   @Test
   public void mergeJoinTest() throws Exception {
-    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
-    Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
     final HashMap<Tuple, Integer> expectedResult = simpleFixedJoinTestBase();
 
@@ -494,10 +404,9 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
         new CollectConsumer(cp1.getSchema(), serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
     SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new DataOutput(serverCollect, DatasetFormat.TSV));
 
-    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
+    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans);
     TestUtils.assertTupleBagEqual(expectedResult, TestUtils.tupleBatchToTupleBag(TestUtils.parseTSV(
         ((MasterQueryPartition) qf.getQuery()).getResultStream(), ((MasterQueryPartition) qf.getQuery())
             .getResultSchema())));
   }
-
 }
