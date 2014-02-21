@@ -3,22 +3,20 @@ package edu.washington.escience.myria.sp2bench;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.api.DatasetFormat;
 import edu.washington.escience.myria.operator.ColumnSelect;
+import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.RootOperator;
-import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.StreamingStateWrapper;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
-import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
@@ -150,8 +148,7 @@ public class ErdosExtraVerbose {
     final ColumnSelect projCoAuthorPubsID = new ColumnSelect(new int[] { 1 }, coAuthorPubsShuffleC);
     // schema: (pubName string)
 
-    final StreamingStateWrapper coAuthorPubsGlobalDE =
-        new StreamingStateWrapper(projCoAuthorPubsID, new DupElim());
+    final StreamingStateWrapper coAuthorPubsGlobalDE = new StreamingStateWrapper(projCoAuthorPubsID, new DupElim());
     // schema: (pubName string)
 
     final DbQueryScan allPubsAuthorNames = new DbQueryScan(//
@@ -197,8 +194,7 @@ public class ErdosExtraVerbose {
     // schema: (authorName string)
   }
 
-  public static StreamingStateWrapper erdosN(int n, int[] allWorkers, ArrayList<Producer> producers)
-      throws DbException {
+  public static StreamingStateWrapper erdosN(int n, int[] allWorkers, ArrayList<Producer> producers) throws DbException {
     StreamingStateWrapper erdos1 = erdosOne(allWorkers, producers);
     if (n <= 1) {
       return erdos1;
@@ -224,12 +220,9 @@ public class ErdosExtraVerbose {
     return result;
   }
 
-  public static RootOperator getMasterPlan(int[] allWorkers, final LinkedBlockingQueue<TupleBatch> receivedTupleBatches)
-      throws Exception {
-    // TODO Auto-generated method stub
+  public static RootOperator getMasterPlan(int[] allWorkers) throws Exception {
     final CollectConsumer serverCollect = new CollectConsumer(outputSchema, sendToMasterID, allWorkers);
-    TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
-    SinkRoot serverPlan = new SinkRoot(queueStore);
+    final DataOutput serverPlan = new DataOutput(serverCollect, DatasetFormat.TSV);
     return serverPlan;
   }
 

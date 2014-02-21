@@ -8,7 +8,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.commons.io.FilenameUtils;
 import org.junit.Test;
@@ -16,16 +15,17 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
+import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.api.DatasetFormat;
 import edu.washington.escience.myria.operator.ColumnSelect;
+import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.StreamingStateWrapper;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
-import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.operator.agg.Aggregate;
 import edu.washington.escience.myria.operator.agg.Aggregator;
 import edu.washington.escience.myria.parallel.CollectConsumer;
@@ -33,10 +33,13 @@ import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
 import edu.washington.escience.myria.parallel.GenericShuffleProducer;
+import edu.washington.escience.myria.parallel.MasterQueryPartition;
 import edu.washington.escience.myria.parallel.PartitionFunction;
+import edu.washington.escience.myria.parallel.QueryFuture;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 import edu.washington.escience.myria.systemtest.SystemTestBase;
+import edu.washington.escience.myria.util.TestUtils;
 
 // 15s on Jingjing's desktop
 // about 44s on DanH's laptop
@@ -123,13 +126,15 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final Schema collectSchema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("COUNT"));
     final CollectConsumer collectCounts = new CollectConsumer(collectSchema, serverReceiveID, workerIDs);
     Aggregate sumCount = new Aggregate(collectCounts, new int[] { 0 }, new int[] { Aggregator.AGG_OP_SUM });
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
-    TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, sumCount);
-    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
+    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new DataOutput(sumCount, DatasetFormat.TSV));
 
-    server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
+    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans);
+
+    TupleBatchBuffer resultTBB =
+        TestUtils.parseTSV(((MasterQueryPartition) qf.getQuery()).getResultStream(), ((MasterQueryPartition) qf
+            .getQuery()).getResultSchema());
     /* Make sure the count matches the known result. */
-    assertEquals(3361461, receivedTupleBatches.take().getLong(0, 0));
+    assertEquals(3361461, resultTBB.popAny().getLong(0, 0));
 
   }
 

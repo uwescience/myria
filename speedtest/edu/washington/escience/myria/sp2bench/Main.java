@@ -8,18 +8,18 @@ import java.io.InputStreamReader;
 import java.lang.ProcessBuilder.Redirect;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FilenameUtils;
 
 import edu.washington.escience.myria.TupleBatch;
+import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
+import edu.washington.escience.myria.parallel.MasterQueryPartition;
 import edu.washington.escience.myria.parallel.QueryFuture;
-import edu.washington.escience.myria.parallel.QueryFutureListener;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 import edu.washington.escience.myria.util.DateTimeUtils;
+import edu.washington.escience.myria.util.TestUtils;
 
 public class Main {
 
@@ -97,27 +97,19 @@ public class Main {
     }
 
     final Map<Integer, SingleQueryPlanWithArgs> workerPlans = qpg.getWorkerPlan(allWorkers);
-    final LinkedBlockingQueue<TupleBatch> resultStore = new LinkedBlockingQueue<TupleBatch>();
-    final SingleQueryPlanWithArgs masterPlan = new SingleQueryPlanWithArgs(qpg.getMasterPlan(allWorkers, resultStore));
+    final SingleQueryPlanWithArgs masterPlan = new SingleQueryPlanWithArgs(qpg.getMasterPlan(allWorkers));
 
     long start = System.nanoTime();
 
-    QueryFuture qf = server.submitQueryPlan("", "", "", masterPlan, workerPlans).addListener(new QueryFutureListener() {
-      @Override
-      public void operationComplete(final QueryFuture future) throws Exception {
-        TupleBatch tb = null;
-        while (!resultStore.isEmpty()) {
-          tb = resultStore.poll();
-          System.out.print(tb);
-        }
-      }
-    });
+    QueryFuture qf = server.submitQueryPlan("", "", "", masterPlan, workerPlans);
+
+    TupleBatchBuffer resultTBB =
+        TestUtils.parseTSV(((MasterQueryPartition) qf.getQuery()).getResultStream(), ((MasterQueryPartition) qf
+            .getQuery()).getResultSchema());
 
     TupleBatch tb = null;
-    int numResult = 0;
-    while (!qf.isDone()) {
-      tb = resultStore.poll(100, TimeUnit.MILLISECONDS);
-      System.out.print(tb);
+    long numResult = 0;
+    while ((tb = resultTBB.popAny()) != null) {
       numResult += tb.numTuples();
     }
 

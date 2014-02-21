@@ -1,7 +1,6 @@
 package edu.washington.escience.myria.systemtest;
 
 import java.util.HashMap;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import org.junit.Test;
 
@@ -12,13 +11,15 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.api.DatasetFormat;
+import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.RootOperator;
-import edu.washington.escience.myria.operator.SinkRoot;
-import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
+import edu.washington.escience.myria.parallel.MasterQueryPartition;
+import edu.washington.escience.myria.parallel.QueryFuture;
 import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 import edu.washington.escience.myria.util.TestUtils;
 import edu.washington.escience.myria.util.Tuple;
@@ -46,7 +47,7 @@ public class CollectTest extends SystemTestBase {
     final TupleBatchBuffer resultTBB = new TupleBatchBuffer(schema);
     resultTBB.unionAll(tbb);
     resultTBB.unionAll(tbb);
-    final HashMap<Tuple, Integer> expectedResults = TestUtils.tupleBatchToTupleBag(resultTBB);
+    final HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleBag(resultTBB);
 
     TupleBatch tb = null;
     while ((tb = tbb.popAny()) != null) {
@@ -64,21 +65,13 @@ public class CollectTest extends SystemTestBase {
     workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(new RootOperator[] { cp1 }));
 
     final CollectConsumer serverCollect = new CollectConsumer(schema, serverReceiveID, workerIDs);
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
-    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
-    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
+    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new DataOutput(serverCollect, DatasetFormat.TSV));
 
-    server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
+    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans);
 
-    TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
-    while (!receivedTupleBatches.isEmpty()) {
-      tb = receivedTupleBatches.poll();
-      if (tb != null) {
-        tb.compactInto(actualResult);
-      }
-    }
-    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
-    TestUtils.assertTupleBagEqual(expectedResults, resultBag);
+    TestUtils.assertTupleBagEqual(expectedResult, TestUtils.tupleBatchToTupleBag(TestUtils.parseTSV(
+        ((MasterQueryPartition) qf.getQuery()).getResultStream(), ((MasterQueryPartition) qf.getQuery())
+            .getResultSchema())));
 
   }
 }

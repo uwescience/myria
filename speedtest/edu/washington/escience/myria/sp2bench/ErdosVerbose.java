@@ -3,22 +3,20 @@ package edu.washington.escience.myria.sp2bench;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.api.DatasetFormat;
 import edu.washington.escience.myria.operator.ColumnSelect;
+import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.RootOperator;
-import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.StreamingStateWrapper;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
-import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
@@ -216,11 +214,9 @@ public class ErdosVerbose {
     return result;
   }
 
-  public static RootOperator getMasterPlan(int[] allWorkers, final LinkedBlockingQueue<TupleBatch> receivedTupleBatches)
-      throws Exception {
+  public static RootOperator getMasterPlan(int[] allWorkers) throws Exception {
     final CollectConsumer serverCollect = new CollectConsumer(outputSchema, sendToMasterID, allWorkers);
-    TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
-    SinkRoot serverPlan = new SinkRoot(queueStore);
+    DataOutput serverPlan = new DataOutput(serverCollect, DatasetFormat.TSV);
     return serverPlan;
   }
 

@@ -12,7 +12,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -28,20 +27,22 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.api.DatasetFormat;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
+import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.InMemoryOrderBy;
 import edu.washington.escience.myria.operator.LeapFrogJoin;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
-import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
-import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
 import edu.washington.escience.myria.parallel.GenericShuffleProducer;
+import edu.washington.escience.myria.parallel.MasterQueryPartition;
+import edu.washington.escience.myria.parallel.QueryFuture;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 import edu.washington.escience.myria.util.JsonAPIUtils;
@@ -146,27 +147,20 @@ public class MultiwayJoinTest extends SystemTestBase {
     workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(new RootOperator[] { cp1 }));
     final CollectConsumer serverCollect =
         new CollectConsumer(cp1.getSchema(), serverReceiveID, new int[] { workerIDs[0] });
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
-    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
-    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
 
-    server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
+    final SingleQueryPlanWithArgs serverPlan =
+        new SingleQueryPlanWithArgs(new DataOutput(serverCollect, DatasetFormat.TSV));
 
-    TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
-    TupleBatch tb = null;
-    while (!receivedTupleBatches.isEmpty()) {
-      tb = receivedTupleBatches.poll();
-      if (tb != null) {
-        tb.compactInto(actualResult);
-      }
-    }
-    final HashMap<Tuple, Integer> pipelineJoinResultBag = TestUtils.tupleBatchToTupleBag(actualResult);
+    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans);
+    final HashMap<Tuple, Integer> pipelineJoinResultBag =
+        TestUtils.tupleBatchToTupleBag(TestUtils.parseTSV(((MasterQueryPartition) qf.getQuery()).getResultStream(),
+            ((MasterQueryPartition) qf.getQuery()).getResultSchema()));
 
     /* 2. get result by local leapfrog join */
     File queryJson = new File("./jsonQueries/multiwayJoin_shumo/twitterTriangleJoinSystemTest.json");
     HttpURLConnection conn = JsonAPIUtils.submitQuery("localhost", masterDaemonPort, queryJson);
     if (null != conn.getErrorStream()) {
-      throw new IllegalStateException(getContents(conn));
+      throw new IllegalStateException(JsonAPIUtils.getHttpResponseContents(conn));
     }
     assertEquals(HttpURLConnection.HTTP_ACCEPTED, conn.getResponseCode());
     conn.disconnect();
@@ -185,23 +179,14 @@ public class MultiwayJoinTest extends SystemTestBase {
 
     final CollectConsumer serverCollectMJ =
         new CollectConsumer(cp2.getSchema(), serverReceiveIDMJ, new int[] { workerIDs[0] });
-    final LinkedBlockingQueue<TupleBatch> receivedMJTB = new LinkedBlockingQueue<TupleBatch>();
-    final TBQueueExporter queueStoreMJ = new TBQueueExporter(receivedMJTB, serverCollectMJ);
-    final SingleQueryPlanWithArgs serverPlanMJ = new SingleQueryPlanWithArgs(new SinkRoot(queueStoreMJ));
 
-    server.submitQueryPlan("", "", "", serverPlanMJ, workerPlansMJ).sync();
+    final SingleQueryPlanWithArgs serverPlanMJ =
+        new SingleQueryPlanWithArgs(new DataOutput(serverCollectMJ, DatasetFormat.TSV));
 
-    TupleBatchBuffer multiwayJoinResult = new TupleBatchBuffer(queueStoreMJ.getSchema());
-    tb = null;
-    while (!receivedMJTB.isEmpty()) {
-      tb = receivedMJTB.poll();
-      if (tb != null) {
-        tb.compactInto(multiwayJoinResult);
-      }
-    }
-    final HashMap<Tuple, Integer> multiwayJoinResultBag = TestUtils.tupleBatchToTupleBag(multiwayJoinResult);
-
-    TestUtils.assertTupleBagEqual(pipelineJoinResultBag, multiwayJoinResultBag);
+    qf = server.submitQueryPlan("", "", "", serverPlanMJ, workerPlansMJ);
+    TestUtils.assertTupleBagEqual(pipelineJoinResultBag, TestUtils.tupleBatchToTupleBag(TestUtils.parseTSV(
+        ((MasterQueryPartition) qf.getQuery()).getResultStream(), ((MasterQueryPartition) qf.getQuery())
+            .getResultSchema())));
 
   }
 
@@ -213,16 +198,11 @@ public class MultiwayJoinTest extends SystemTestBase {
     /* Step 1: generate test data */
     final HashMap<Tuple, Integer> expectedResult = simpleRandomJoinTestBase();
 
-    server.importDataset(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA, new HashSet<Integer>(Arrays.asList(workerIDs[0],
-        workerIDs[1])));
-    server.importDataset(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA, new HashSet<Integer>(Arrays.asList(workerIDs[0],
-        workerIDs[1])));
-
     /* Step 2: submit JSON query plan */
     File queryJson = new File("./jsonQueries/multiwayJoin_shumo/twoWayJoinSystemTest.json");
     HttpURLConnection conn = JsonAPIUtils.submitQuery("localhost", masterDaemonPort, queryJson);
     if (null != conn.getErrorStream()) {
-      throw new IllegalStateException(getContents(conn));
+      throw new IllegalStateException(JsonAPIUtils.getHttpResponseContents(conn));
     }
     assertEquals(HttpURLConnection.HTTP_ACCEPTED, conn.getResponseCode());
     conn.disconnect();
@@ -244,22 +224,14 @@ public class MultiwayJoinTest extends SystemTestBase {
     workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(new RootOperator[] { cp1 }));
     final CollectConsumer serverCollect =
         new CollectConsumer(outputSchema, serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
-    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
-    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
-    server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
 
-    /* Step 4: verify the result. */
-    TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
-    TupleBatch tb = null;
-    while (!receivedTupleBatches.isEmpty()) {
-      tb = receivedTupleBatches.poll();
-      if (tb != null) {
-        tb.compactInto(actualResult);
-      }
-    }
-    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
-    TestUtils.assertTupleBagEqual(expectedResult, resultBag);
+    final SingleQueryPlanWithArgs serverPlan =
+        new SingleQueryPlanWithArgs(new DataOutput(serverCollect, DatasetFormat.TSV));
+    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans);
+    TestUtils.assertTupleBagEqual(expectedResult, TestUtils.tupleBatchToTupleBag(TestUtils.parseTSV(
+        ((MasterQueryPartition) qf.getQuery()).getResultStream(), ((MasterQueryPartition) qf.getQuery())
+            .getResultSchema())));
+
   }
 
   @Test
@@ -269,17 +241,17 @@ public class MultiwayJoinTest extends SystemTestBase {
 
     /* Step 1: ingetst data */
     /* Table 1 */
-    createTable(workerIDs[0], JOIN_TEST_TABLE_1, "id long, name varchar(20)");
-    createTable(workerIDs[1], JOIN_TEST_TABLE_1, "id long, name varchar(20)");
+    createTable(workerIDs[0], JOIN_TEST_TABLE_1, "id1 long, name1 varchar(20)");
+    createTable(workerIDs[1], JOIN_TEST_TABLE_1, "id1 long, name1 varchar(20)");
 
     /* Table 2 */
-    createTable(workerIDs[0], JOIN_TEST_TABLE_2, "id long, name varchar(20)");
-    createTable(workerIDs[1], JOIN_TEST_TABLE_2, "id long, name varchar(20)");
+    createTable(workerIDs[0], JOIN_TEST_TABLE_2, "id2 long, name2 varchar(20)");
+    createTable(workerIDs[1], JOIN_TEST_TABLE_2, "id2 long, name2 varchar(20)");
 
-    final TupleBatchBuffer tb1w1 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
-    final TupleBatchBuffer tb2w1 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
-    final TupleBatchBuffer tb1w2 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
-    final TupleBatchBuffer tb2w2 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
+    final TupleBatchBuffer tb1w1 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA_1);
+    final TupleBatchBuffer tb2w1 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA_1);
+    final TupleBatchBuffer tb1w2 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA_1);
+    final TupleBatchBuffer tb2w2 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA_1);
 
     Path table1Worker1FilePath = Paths.get("testdata", "multiwayjoin", "testtable1_worker1.csv");
     Path table2Worker1FilePath = Paths.get("testdata", "multiwayjoin", "testtable2_worker1.csv");
@@ -317,11 +289,11 @@ public class MultiwayJoinTest extends SystemTestBase {
     }
     csv4.close();
 
-    final TupleBatchBuffer table1 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
+    final TupleBatchBuffer table1 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA_1);
     table1.unionAll(tb1w1);
     table1.unionAll(tb1w2);
 
-    final TupleBatchBuffer table2 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
+    final TupleBatchBuffer table2 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA_2);
     table2.unionAll(tb2w1);
     table2.unionAll(tb2w2);
 
@@ -329,22 +301,22 @@ public class MultiwayJoinTest extends SystemTestBase {
 
     TupleBatch tb = null;
     while ((tb = tb1w1.popAny()) != null) {
-      insert(workerIDs[0], JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA, tb);
+      insert(workerIDs[0], JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA_1, tb);
     }
     while ((tb = tb2w1.popAny()) != null) {
-      insert(workerIDs[0], JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA, tb);
+      insert(workerIDs[0], JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA_2, tb);
     }
     while ((tb = tb1w2.popAny()) != null) {
-      insert(workerIDs[1], JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA, tb);
+      insert(workerIDs[1], JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA_1, tb);
     }
     while ((tb = tb2w2.popAny()) != null) {
-      insert(workerIDs[1], JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA, tb);
+      insert(workerIDs[1], JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA_2, tb);
     }
 
     /* import dataset to catalog */
-    server.importDataset(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA, new HashSet<Integer>(Arrays.asList(workerIDs[0],
+    server.importDataset(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA_1, new HashSet<Integer>(Arrays.asList(workerIDs[0],
         workerIDs[1])));
-    server.importDataset(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA, new HashSet<Integer>(Arrays.asList(workerIDs[0],
+    server.importDataset(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA_2, new HashSet<Integer>(Arrays.asList(workerIDs[0],
         workerIDs[1])));
 
     /* Step 2: do the query */
@@ -358,8 +330,8 @@ public class MultiwayJoinTest extends SystemTestBase {
     final ImmutableList<String> outputColumnNames = ImmutableList.of("id1", "name1", "id2", "name2");
     final Schema outputSchema = new Schema(outputTypes, outputColumnNames);
 
-    final DbQueryScan scan1 = new DbQueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA);
-    final DbQueryScan scan2 = new DbQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA);
+    final DbQueryScan scan1 = new DbQueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA_1);
+    final DbQueryScan scan2 = new DbQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA_2);
 
     final GenericShuffleProducer sp1 =
         new GenericShuffleProducer(scan1, table1ShuffleID, new int[] { workerIDs[0], workerIDs[1] }, pf);
@@ -385,22 +357,14 @@ public class MultiwayJoinTest extends SystemTestBase {
 
     final CollectConsumer serverCollect =
         new CollectConsumer(outputSchema, serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
-    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
-    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
 
-    server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
-    TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
-    tb = null;
-    while (!receivedTupleBatches.isEmpty()) {
-      tb = receivedTupleBatches.poll();
-      if (tb != null) {
-        tb.compactInto(actualResult);
-      }
-    }
+    final SingleQueryPlanWithArgs serverPlan =
+        new SingleQueryPlanWithArgs(new DataOutput(serverCollect, DatasetFormat.TSV));
 
-    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
-    TestUtils.assertTupleBagEqual(expectedResult, resultBag);
+    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans);
+    TestUtils.assertTupleBagEqual(expectedResult, TestUtils.tupleBatchToTupleBag(TestUtils.parseTSV(
+        ((MasterQueryPartition) qf.getQuery()).getResultStream(), ((MasterQueryPartition) qf.getQuery())
+            .getResultSchema())));
+
   }
-
 }

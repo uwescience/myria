@@ -57,7 +57,7 @@ public class JsonQuerySubmitTest extends SystemTestBase {
   public void emptySubmitTest() throws Exception {
     HttpURLConnection conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, emptyIngest());
     if (null != conn.getErrorStream()) {
-      throw new IllegalStateException(getContents(conn));
+      throw new IllegalStateException(JsonAPIUtils.getHttpResponseContents(conn));
     }
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
     conn.disconnect();
@@ -68,7 +68,7 @@ public class JsonQuerySubmitTest extends SystemTestBase {
 
     HttpURLConnection conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, emptyIngest());
     if (null != conn.getErrorStream()) {
-      throw new IllegalStateException(getContents(conn));
+      throw new IllegalStateException(JsonAPIUtils.getHttpResponseContents(conn));
     }
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
     conn.disconnect();
@@ -91,7 +91,6 @@ public class JsonQuerySubmitTest extends SystemTestBase {
 
   @Test
   public void jsonQuerySubmitTest() throws Exception {
-    // DeploymentUtils.ensureMasterStart("localhost", masterDaemonPort);
 
     File queryJson = new File("./jsonQueries/sample_queries/single_join.json");
     File ingestJson = new File("./jsonQueries/globalJoin_jwang/ingest_smallTable.json");
@@ -102,18 +101,19 @@ public class JsonQuerySubmitTest extends SystemTestBase {
 
     conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestJson);
     if (null != conn.getErrorStream()) {
-      throw new IllegalStateException(getContents(conn));
+      throw new IllegalStateException(JsonAPIUtils.getHttpResponseContents(conn));
     }
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
     conn.disconnect();
 
+    System.out.println("#####################################");
     String data = JsonAPIUtils.download("localhost", masterDaemonPort, "jwang", "global_join", "smallTable", "json");
     String subStr = "{\"follower\":46,\"followee\":17}";
     assertTrue(data.contains(subStr));
 
     conn = JsonAPIUtils.submitQuery("localhost", masterDaemonPort, queryJson);
     if (null != conn.getErrorStream()) {
-      throw new IllegalStateException(getContents(conn));
+      throw new IllegalStateException(JsonAPIUtils.getHttpResponseContents(conn));
     }
     assertEquals(HttpURLConnection.HTTP_ACCEPTED, conn.getResponseCode());
     conn.disconnect();
@@ -131,10 +131,10 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     HttpURLConnection conn;
     conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestA0);
     if (null != conn.getErrorStream()) {
-      throw new IllegalStateException(getContents(conn));
+      throw new IllegalStateException(JsonAPIUtils.getHttpResponseContents(conn));
     }
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
-    LOGGER.info(getContents(conn));
+    LOGGER.info(JsonAPIUtils.getHttpResponseContents(conn));
     /* make sure the ingestion is done. */
     while (!server.queryCompleted(1)) {
       Thread.sleep(100);
@@ -142,30 +142,30 @@ public class JsonQuerySubmitTest extends SystemTestBase {
 
     conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestB0);
     if (null != conn.getErrorStream()) {
-      throw new IllegalStateException(getContents(conn));
+      throw new IllegalStateException(JsonAPIUtils.getHttpResponseContents(conn));
     }
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
-    LOGGER.info(getContents(conn));
+    LOGGER.info(JsonAPIUtils.getHttpResponseContents(conn));
     while (!server.queryCompleted(2)) {
       Thread.sleep(100);
     }
 
     conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestC0);
     if (null != conn.getErrorStream()) {
-      throw new IllegalStateException(getContents(conn));
+      throw new IllegalStateException(JsonAPIUtils.getHttpResponseContents(conn));
     }
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
-    LOGGER.info(getContents(conn));
+    LOGGER.info(JsonAPIUtils.getHttpResponseContents(conn));
     while (!server.queryCompleted(3)) {
       Thread.sleep(100);
     }
 
     conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestR);
     if (null != conn.getErrorStream()) {
-      throw new IllegalStateException(getContents(conn));
+      throw new IllegalStateException(JsonAPIUtils.getHttpResponseContents(conn));
     }
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
-    LOGGER.info(getContents(conn));
+    LOGGER.info(JsonAPIUtils.getHttpResponseContents(conn));
     while (!server.queryCompleted(4)) {
       Thread.sleep(100);
     }
@@ -173,10 +173,10 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     File queryJson = new File("./jsonQueries/multiIDB_jwang/joinChain.json");
     conn = JsonAPIUtils.submitQuery("localhost", masterDaemonPort, queryJson);
     if (null != conn.getErrorStream()) {
-      throw new IllegalStateException(getContents(conn));
+      throw new IllegalStateException(JsonAPIUtils.getHttpResponseContents(conn));
     }
     assertEquals(HttpURLConnection.HTTP_ACCEPTED, conn.getResponseCode());
-    LOGGER.info(getContents(conn));
+    LOGGER.info(JsonAPIUtils.getHttpResponseContents(conn));
     while (!server.queryCompleted(5)) {
       Thread.sleep(100);
     }

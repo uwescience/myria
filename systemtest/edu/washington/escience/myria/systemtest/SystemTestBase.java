@@ -5,13 +5,12 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.ProcessBuilder.Redirect;
-import java.net.HttpURLConnection;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -38,7 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import com.almworks.sqlite4java.SQLiteException;
 import com.google.common.collect.ImmutableList;
-import com.google.protobuf.ByteString;
+import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
@@ -85,10 +84,13 @@ public class SystemTestBase {
   /** The logger for this class. */
   protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(SystemTestBase.class);
 
-  public static final Schema JOIN_INPUT_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE),
-      ImmutableList.of("id", "name"));
+  public static final Schema JOIN_INPUT_SCHEMA_1 = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE),
+      ImmutableList.of("id1", "name1"));
+  public static final Schema JOIN_INPUT_SCHEMA_2 = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE),
+      ImmutableList.of("id2", "name2"));
   public static final RelationKey JOIN_TEST_TABLE_1 = RelationKey.of("test", "test", "testtable1");
   public static final RelationKey JOIN_TEST_TABLE_2 = RelationKey.of("test", "test", "testtable2");
+  public static final Schema JOIN_RESULT_SCHEMA = Schema.merge(JOIN_INPUT_SCHEMA_1, JOIN_INPUT_SCHEMA_2);
 
   public static final int MASTER_ID = 0;
 
@@ -135,38 +137,6 @@ public class SystemTestBase {
     final File ret = new File(sqliteInfo.getDatabaseFilename());
     wc.close();
     return ret;
-  }
-
-  protected static String getContents(HttpURLConnection conn) {
-    /* If there was any content returned, get it. */
-    String content = null;
-    try {
-      InputStream is = conn.getInputStream();
-      if (is != null) {
-        content = ByteString.readFrom(is).toStringUtf8();
-      }
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-
-    /* If there was any error returned, get it. */
-    String error = null;
-    try {
-      InputStream is = conn.getErrorStream();
-      if (is != null) {
-        error = ByteString.readFrom(is).toStringUtf8();
-      }
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-    StringBuilder ret = new StringBuilder();
-    if (content != null) {
-      ret.append("Content:\n").append(content);
-    }
-    if (error != null) {
-      ret.append("Error:\n").append(error);
-    }
-    return ret.toString();
   }
 
   /**
@@ -330,15 +300,57 @@ public class SystemTestBase {
         schema, data);
   }
 
-  protected HashMap<Tuple, Integer> simpleRandomJoinTestBase() throws CatalogException, IOException, DbException {
+  protected static final RelationKey SINGLE_TEST_TABLE = RelationKey.of("test", "test", "testtable");
+  protected static final Schema SINGLE_TEST_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE),
+      ImmutableList.of("id", "name"));
+
+  protected TupleBatchBuffer simpleSingleTableTestBase(final int numTuples) throws Exception {
+    createTable(workerIDs[0], SINGLE_TEST_TABLE, "id long, name varchar(20)");
+    createTable(workerIDs[1], SINGLE_TEST_TABLE, "id long, name varchar(20)");
+
+    String[] names = TestUtils.randomFixedLengthNumericString(1000, 2000, numTuples / 2, 20);
+    long[] ids = TestUtils.randomLong(0, 1000, names.length);
+
+    final TupleBatchBuffer tbb = new TupleBatchBuffer(SINGLE_TEST_SCHEMA);
+    final TupleBatchBuffer resultTBB = new TupleBatchBuffer(SINGLE_TEST_SCHEMA);
+    for (int i = 0; i < names.length; i++) {
+      tbb.putLong(0, ids[i]);
+      tbb.putString(1, names[i]);
+    }
+    resultTBB.unionAll(tbb);
+    TupleBatch tb = null;
+    while ((tb = tbb.popAny()) != null) {
+      insert(workerIDs[0], SINGLE_TEST_TABLE, SINGLE_TEST_SCHEMA, tb);
+    }
+
+    names = TestUtils.randomFixedLengthNumericString(1000, 2000, numTuples - names.length, 20);
+    ids = TestUtils.randomLong(0, 1000, names.length);
+
+    for (int i = 0; i < names.length; i++) {
+      tbb.putLong(0, ids[i]);
+      tbb.putString(1, names[i]);
+    }
+    resultTBB.unionAll(tbb);
+    while ((tb = tbb.popAny()) != null) {
+      insert(workerIDs[1], SINGLE_TEST_TABLE, SINGLE_TEST_SCHEMA, tb);
+    }
+
+    server.importDataset(SINGLE_TEST_TABLE, SINGLE_TEST_SCHEMA, ImmutableSet.<Integer> builder().addAll(
+        Arrays.asList(ArrayUtils.toObject(workerIDs))).build());
+
+    return resultTBB;
+  }
+
+  protected HashMap<Tuple, Integer> simpleRandomJoinTestBase() throws CatalogException, IOException, DbException,
+      InterruptedException {
     /* worker 1 partition of table1 */
-    createTable(workerIDs[0], JOIN_TEST_TABLE_1, "id long, name varchar(20)");
+    createTable(workerIDs[0], JOIN_TEST_TABLE_1, "id1 long, name1 varchar(20)");
     /* worker 1 partition of table2 */
-    createTable(workerIDs[0], JOIN_TEST_TABLE_2, "id long, name varchar(20)");
+    createTable(workerIDs[0], JOIN_TEST_TABLE_2, "id2 long, name2 varchar(20)");
     /* worker 2 partition of table1 */
-    createTable(workerIDs[1], JOIN_TEST_TABLE_1, "id long, name varchar(20)");
+    createTable(workerIDs[1], JOIN_TEST_TABLE_1, "id1 long, name1 varchar(20)");
     /* worker 2 partition of table2 */
-    createTable(workerIDs[1], JOIN_TEST_TABLE_2, "id long, name varchar(20)");
+    createTable(workerIDs[1], JOIN_TEST_TABLE_2, "id2 long, name2 varchar(20)");
 
     final String[] tbl1NamesWorker1 = TestUtils.randomFixedLengthNumericString(1000, 2000, 2, 20);
     final String[] tbl1NamesWorker2 = TestUtils.randomFixedLengthNumericString(1000, 2000, 2, 20);
@@ -353,10 +365,10 @@ public class SystemTestBase {
     final long[] idsCommon = TestUtils.randomLong(1, 1, 20);
     final String[] namesCommon = TestUtils.randomFixedLengthNumericString(1, 1, 20, 20);
 
-    final TupleBatchBuffer tbl1Worker1 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
-    final TupleBatchBuffer tbl1Worker2 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
-    final TupleBatchBuffer tbl2Worker1 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
-    final TupleBatchBuffer tbl2Worker2 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
+    final TupleBatchBuffer tbl1Worker1 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA_1);
+    final TupleBatchBuffer tbl1Worker2 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA_2);
+    final TupleBatchBuffer tbl2Worker1 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA_1);
+    final TupleBatchBuffer tbl2Worker2 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA_2);
 
     for (int i = 0; i < tbl1NamesWorker1.length; i++) {
       tbl1Worker1.putLong(0, tbl1IDsWorker1[i]);
@@ -382,11 +394,11 @@ public class SystemTestBase {
       tbl2Worker2.putString(1, namesCommon[i]);
     }
 
-    final TupleBatchBuffer table1 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
+    final TupleBatchBuffer table1 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA_1);
     table1.unionAll(tbl1Worker1);
     table1.unionAll(tbl1Worker2);
 
-    final TupleBatchBuffer table2 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
+    final TupleBatchBuffer table2 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA_2);
     table2.unionAll(tbl2Worker1);
     table2.unionAll(tbl2Worker2);
 
@@ -394,43 +406,32 @@ public class SystemTestBase {
 
     TupleBatch tb = null;
     while ((tb = tbl1Worker1.popAny()) != null) {
-      insert(workerIDs[0], JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA, tb);
+      insert(workerIDs[0], JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA_1, tb);
     }
     while ((tb = tbl1Worker2.popAny()) != null) {
-      insert(workerIDs[1], JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA, tb);
+      insert(workerIDs[1], JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA_1, tb);
     }
     while ((tb = tbl2Worker1.popAny()) != null) {
-      insert(workerIDs[0], JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA, tb);
+      insert(workerIDs[0], JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA_2, tb);
     }
     while ((tb = tbl2Worker2.popAny()) != null) {
-      insert(workerIDs[1], JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA, tb);
+      insert(workerIDs[1], JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA_2, tb);
     }
 
+    server.importDataset(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA_1, ImmutableSet.<Integer> builder().addAll(
+        Arrays.asList(ArrayUtils.toObject(workerIDs))).build());
+    server.importDataset(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA_2, ImmutableSet.<Integer> builder().addAll(
+        Arrays.asList(ArrayUtils.toObject(workerIDs))).build());
     return expectedResult;
 
   }
 
-  protected HashMap<Tuple, Integer> simpleFixedJoinTestBase() throws CatalogException, IOException, DbException {
-    createTable(workerIDs[0], JOIN_TEST_TABLE_1, "id long, name varchar(20)"); // worker
-                                                                               // 1
-                                                                               // partition
-                                                                               // of
-    // table1
-    createTable(workerIDs[0], JOIN_TEST_TABLE_2, "id long, name varchar(20)"); // worker
-                                                                               // 1
-                                                                               // partition
-                                                                               // of
-    // table2
-    createTable(workerIDs[1], JOIN_TEST_TABLE_1, "id long, name varchar(20)");// worker
-                                                                              // 2
-                                                                              // partition
-                                                                              // of
-    // table1
-    createTable(workerIDs[1], JOIN_TEST_TABLE_2, "id long, name varchar(20)");// worker
-                                                                              // 2
-                                                                              // partition
-                                                                              // of
-    // table2
+  protected HashMap<Tuple, Integer> simpleFixedJoinTestBase() throws CatalogException, IOException, DbException,
+      InterruptedException {
+    createTable(workerIDs[0], JOIN_TEST_TABLE_1, "id1 long, name1 varchar(20)"); // worker 1 partition of table1
+    createTable(workerIDs[0], JOIN_TEST_TABLE_2, "id2 long, name2 varchar(20)"); // worker 1 partition of table2
+    createTable(workerIDs[1], JOIN_TEST_TABLE_1, "id1 long, name1 varchar(20)");// worker 2 partition of table1
+    createTable(workerIDs[1], JOIN_TEST_TABLE_2, "id2 long, name2 varchar(20)");// worker 2 partition of table2
 
     final String[] tbl1NamesWorker1 = new String[] { "tb1_111", "tb1_222", "tb1_333" };
     final String[] tbl1NamesWorker2 = new String[] { "tb1_444", "tb1_555", "tb1_666" };
@@ -443,10 +444,10 @@ public class SystemTestBase {
     final long[] tbl2IDsWorker1 = new long[] { 444, 555, 666 };
     final long[] tbl2IDsWorker2 = new long[] { 111, 222, 333 };
 
-    final TupleBatchBuffer tbl1Worker1 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
-    final TupleBatchBuffer tbl1Worker2 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
-    final TupleBatchBuffer tbl2Worker1 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
-    final TupleBatchBuffer tbl2Worker2 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
+    final TupleBatchBuffer tbl1Worker1 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA_1);
+    final TupleBatchBuffer tbl1Worker2 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA_1);
+    final TupleBatchBuffer tbl2Worker1 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA_2);
+    final TupleBatchBuffer tbl2Worker2 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA_2);
 
     for (int i = 0; i < tbl1NamesWorker1.length; i++) {
       tbl1Worker1.putLong(0, tbl1IDsWorker1[i]);
@@ -465,11 +466,11 @@ public class SystemTestBase {
       tbl2Worker2.putString(1, tbl2NamesWorker2[i]);
     }
 
-    final TupleBatchBuffer table1 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
+    final TupleBatchBuffer table1 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA_1);
     table1.unionAll(tbl1Worker1);
     table1.unionAll(tbl1Worker2);
 
-    final TupleBatchBuffer table2 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
+    final TupleBatchBuffer table2 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA_2);
     table2.unionAll(tbl2Worker1);
     table2.unionAll(tbl2Worker2);
 
@@ -477,17 +478,22 @@ public class SystemTestBase {
 
     TupleBatch tb = null;
     while ((tb = tbl1Worker1.popAny()) != null) {
-      insert(workerIDs[0], JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA, tb);
+      insert(workerIDs[0], JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA_1, tb);
     }
     while ((tb = tbl1Worker2.popAny()) != null) {
-      insert(workerIDs[1], JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA, tb);
+      insert(workerIDs[1], JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA_1, tb);
     }
     while ((tb = tbl2Worker1.popAny()) != null) {
-      insert(workerIDs[0], JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA, tb);
+      insert(workerIDs[0], JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA_2, tb);
     }
     while ((tb = tbl2Worker2.popAny()) != null) {
-      insert(workerIDs[1], JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA, tb);
+      insert(workerIDs[1], JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA_2, tb);
     }
+
+    server.importDataset(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA_1, ImmutableSet.<Integer> builder().addAll(
+        Arrays.asList(ArrayUtils.toObject(workerIDs))).build());
+    server.importDataset(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA_2, ImmutableSet.<Integer> builder().addAll(
+        Arrays.asList(ArrayUtils.toObject(workerIDs))).build());
 
     return expectedResult;
 
@@ -602,4 +608,5 @@ public class SystemTestBase {
       ++workerCount;
     }
   }
+
 }

@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
@@ -18,15 +17,15 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.api.DatasetFormat;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.IDBController;
 import edu.washington.escience.myria.operator.KeepMinValue;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
-import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
-import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.operator.UnionAll;
 import edu.washington.escience.myria.operator.agg.Aggregator;
 import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
@@ -40,6 +39,7 @@ import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
 import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.LocalMultiwayConsumer;
 import edu.washington.escience.myria.parallel.LocalMultiwayProducer;
+import edu.washington.escience.myria.parallel.MasterQueryPartition;
 import edu.washington.escience.myria.parallel.PartitionFunction;
 import edu.washington.escience.myria.parallel.QueryFuture;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
@@ -246,38 +246,29 @@ public class ConnectedComponentTest extends SystemTestBase {
     workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(plan2.toArray(new RootOperator[plan2.size()])));
 
     final CollectConsumer serverCollect = new CollectConsumer(table1Schema, serverOpId, workerIDs);
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
-    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
-    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
-
+    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new DataOutput(serverCollect, DatasetFormat.TSV));
+    QueryFuture qf = null;
     if (!failure) {
-      server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
+      qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans);
     } else {
       workerPlans.get(workerIDs[0]).setFTMode(FTMODE.valueOf("rejoin"));
       workerPlans.get(workerIDs[1]).setFTMode(FTMODE.valueOf("rejoin"));
       serverPlan.setFTMode(FTMODE.valueOf("rejoin"));
 
-      QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans);
+      qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans);
       Thread.sleep(1000);
       LOGGER.info("killing worker " + workerIDs[1] + "!");
       workerProcess[1].destroy();
-      qf.sync();
-      while (!server.queryCompleted(1)) {
+      while (!server.queryCompleted(qf.getQuery().getQueryID())) {
         Thread.sleep(100);
       }
       LOGGER.info("query 1 finished.");
       Preconditions.checkArgument(qf.isSuccess());
     }
 
-    TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
-    while (!receivedTupleBatches.isEmpty()) {
-      tb = receivedTupleBatches.poll();
-      if (tb != null) {
-        tb.compactInto(actualResult);
-      }
-    }
-    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
-    TestUtils.assertTupleBagEqual(expectedResult, resultBag);
+    TestUtils.assertTupleBagEqual(expectedResult, TestUtils.tupleBatchToTupleBag(TestUtils.parseTSV(
+        ((MasterQueryPartition) qf.getQuery()).getResultStream(), ((MasterQueryPartition) qf.getQuery())
+            .getResultSchema())));
   }
 
   @Test

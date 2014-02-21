@@ -4,7 +4,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -18,6 +18,8 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.api.DatasetFormat;
+import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.InMemoryOrderBy;
@@ -25,16 +27,16 @@ import edu.washington.escience.myria.operator.MergeJoin;
 import edu.washington.escience.myria.operator.RightHashCountingJoin;
 import edu.washington.escience.myria.operator.RightHashJoin;
 import edu.washington.escience.myria.operator.RootOperator;
-import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.StreamingStateWrapper;
 import edu.washington.escience.myria.operator.SymmetricHashCountingJoin;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
-import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
 import edu.washington.escience.myria.parallel.GenericShuffleProducer;
+import edu.washington.escience.myria.parallel.MasterQueryPartition;
+import edu.washington.escience.myria.parallel.QueryFuture;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 import edu.washington.escience.myria.util.TestUtils;
@@ -63,7 +65,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
       tbb.putString(1, names[i]);
     }
 
-    final HashMap<Tuple, Integer> expectedResults = TestUtils.distinct(tbb);
+    final HashMap<Tuple, Integer> expectedResult = TestUtils.distinct(tbb);
 
     TupleBatch tb = null;
     while ((tb = tbb.popAny()) != null) {
@@ -86,20 +88,13 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(new RootOperator[] { cp1 }));
 
     final CollectConsumer serverCollect = new CollectConsumer(schema, serverReceiveID, new int[] { workerIDs[0] });
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
-    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
-    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
+    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new DataOutput(serverCollect, DatasetFormat.TSV));
 
-    server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
-    TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
-    while (!receivedTupleBatches.isEmpty()) {
-      tb = receivedTupleBatches.poll();
-      if (tb != null) {
-        tb.compactInto(actualResult);
-      }
-    }
-    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
-    TestUtils.assertTupleBagEqual(expectedResults, resultBag);
+    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans);
+
+    TestUtils.assertTupleBagEqual(expectedResult, TestUtils.tupleBatchToTupleBag(TestUtils.parseTSV(
+        ((MasterQueryPartition) qf.getQuery()).getResultStream(), ((MasterQueryPartition) qf.getQuery())
+            .getResultSchema())));
 
   }
 
@@ -120,7 +115,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
       tbb.putString(1, names[i]);
     }
 
-    final HashMap<Tuple, Integer> expectedResults = TestUtils.distinct(tbb);
+    final HashMap<Tuple, Integer> expectedResult = TestUtils.distinct(tbb);
 
     TupleBatch tb = null;
     while ((tb = tbb.popAny()) != null) {
@@ -138,20 +133,13 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(new RootOperator[] { cp1 }));
 
     final CollectConsumer serverCollect = new CollectConsumer(schema, serverReceiveID, new int[] { workerIDs[0] });
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
-    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
-    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
+    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new DataOutput(serverCollect, DatasetFormat.TSV));
 
-    server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
-    TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
-    while (!receivedTupleBatches.isEmpty()) {
-      tb = receivedTupleBatches.poll();
-      if (tb != null) {
-        tb.compactInto(actualResult);
-      }
-    }
-    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
-    TestUtils.assertTupleBagEqual(expectedResults, resultBag);
+    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans);
+
+    TestUtils.assertTupleBagEqual(expectedResult, TestUtils.tupleBatchToTupleBag(TestUtils.parseTSV(
+        ((MasterQueryPartition) qf.getQuery()).getResultStream(), ((MasterQueryPartition) qf.getQuery())
+            .getResultSchema())));
 
   }
 
@@ -172,8 +160,8 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final ImmutableList<String> outputColumnNames = ImmutableList.of("id1", "name1", "id2", "name2");
     final Schema outputSchema = new Schema(outputTypes, outputColumnNames);
 
-    final DbQueryScan scan1 = new DbQueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA);
-    final DbQueryScan scan2 = new DbQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA);
+    final DbQueryScan scan1 = new DbQueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA_1);
+    final DbQueryScan scan2 = new DbQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA_2);
 
     final GenericShuffleProducer sp1 =
         new GenericShuffleProducer(scan1, table1ShuffleID, new int[] { workerIDs[0], workerIDs[1] }, pf);
@@ -194,21 +182,13 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
     final CollectConsumer serverCollect =
         new CollectConsumer(outputSchema, serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
-    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
-    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
+    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new DataOutput(serverCollect, DatasetFormat.TSV));
 
-    server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
-    TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
-    TupleBatch tb = null;
-    while (!receivedTupleBatches.isEmpty()) {
-      tb = receivedTupleBatches.poll();
-      if (tb != null) {
-        tb.compactInto(actualResult);
-      }
-    }
-    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
-    TestUtils.assertTupleBagEqual(expectedResult, resultBag);
+    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
+
+    TestUtils.assertTupleBagEqual(expectedResult, TestUtils.tupleBatchToTupleBag(TestUtils.parseTSV(
+        ((MasterQueryPartition) qf.getQuery()).getResultStream(), ((MasterQueryPartition) qf.getQuery())
+            .getResultSchema())));
 
   }
 
@@ -230,8 +210,8 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final ImmutableList<String> outputColumnNames = ImmutableList.of("id1", "name1", "id2", "name2");
     final Schema outputSchema = new Schema(outputTypes, outputColumnNames);
 
-    final DbQueryScan scan1 = new DbQueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA);
-    final DbQueryScan scan2 = new DbQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA);
+    final DbQueryScan scan1 = new DbQueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA_1);
+    final DbQueryScan scan2 = new DbQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA_2);
 
     final GenericShuffleProducer sp1 =
         new GenericShuffleProducer(scan1, table1ShuffleID, new int[] { workerIDs[0], workerIDs[1] }, pf);
@@ -251,21 +231,13 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
     final CollectConsumer serverCollect =
         new CollectConsumer(outputSchema, serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
-    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
-    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
+    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new DataOutput(serverCollect, DatasetFormat.TSV));
 
-    server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
-    TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
-    TupleBatch tb = null;
-    while (!receivedTupleBatches.isEmpty()) {
-      tb = receivedTupleBatches.poll();
-      if (tb != null) {
-        tb.compactInto(actualResult);
-      }
-    }
-    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
-    TestUtils.assertTupleBagEqual(expectedResult, resultBag);
+    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
+
+    TestUtils.assertTupleBagEqual(expectedResult, TestUtils.tupleBatchToTupleBag(TestUtils.parseTSV(
+        ((MasterQueryPartition) qf.getQuery()).getResultStream(), ((MasterQueryPartition) qf.getQuery())
+            .getResultSchema())));
   }
 
   @Test
@@ -280,8 +252,8 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final ExchangePairID table2ShuffleID = ExchangePairID.newID();
     final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(2, 0);
 
-    final DbQueryScan scan1 = new DbQueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA);
-    final DbQueryScan scan2 = new DbQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA);
+    final DbQueryScan scan1 = new DbQueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA_1);
+    final DbQueryScan scan2 = new DbQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA_2);
 
     final GenericShuffleProducer sp1 =
         new GenericShuffleProducer(scan1, table1ShuffleID, new int[] { workerIDs[0], workerIDs[1] }, pf);
@@ -304,21 +276,13 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
     final CollectConsumer serverCollect =
         new CollectConsumer(cp1.getSchema(), serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
-    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
-    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
+    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new DataOutput(serverCollect, DatasetFormat.TSV));
 
-    server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
-    TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
-    TupleBatch tb = null;
-    while (!receivedTupleBatches.isEmpty()) {
-      tb = receivedTupleBatches.poll();
-      if (tb != null) {
-        tb.compactInto(actualResult);
-      }
-    }
-    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
-    TestUtils.assertTupleBagEqual(expectedResult, resultBag);
+    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
+
+    TestUtils.assertTupleBagEqual(expectedResult, TestUtils.tupleBatchToTupleBag(TestUtils.parseTSV(
+        ((MasterQueryPartition) qf.getQuery()).getResultStream(), ((MasterQueryPartition) qf.getQuery())
+            .getResultSchema())));
 
   }
 
@@ -334,8 +298,8 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final ExchangePairID table2ShuffleID = ExchangePairID.newID();
     final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(2, 0);
 
-    final DbQueryScan scan1 = new DbQueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA);
-    final DbQueryScan scan2 = new DbQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA);
+    final DbQueryScan scan1 = new DbQueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA_1);
+    final DbQueryScan scan2 = new DbQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA_2);
 
     final GenericShuffleProducer sp1 =
         new GenericShuffleProducer(scan1, table1ShuffleID, new int[] { workerIDs[0], workerIDs[1] }, pf);
@@ -358,21 +322,13 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
     final CollectConsumer serverCollect =
         new CollectConsumer(cp1.getSchema(), serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
-    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
-    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
+    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new DataOutput(serverCollect, DatasetFormat.TSV));
 
-    server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
-    TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
-    TupleBatch tb = null;
-    while (!receivedTupleBatches.isEmpty()) {
-      tb = receivedTupleBatches.poll();
-      if (tb != null) {
-        tb.compactInto(actualResult);
-      }
-    }
-    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
-    TestUtils.assertTupleBagEqual(expectedResult, resultBag);
+    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
+
+    TestUtils.assertTupleBagEqual(expectedResult, TestUtils.tupleBatchToTupleBag(TestUtils.parseTSV(
+        ((MasterQueryPartition) qf.getQuery()).getResultStream(), ((MasterQueryPartition) qf.getQuery())
+            .getResultSchema())));
 
   }
 
@@ -392,8 +348,8 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final ExchangePairID table2ShuffleID = ExchangePairID.newID();
     final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(2, 0);
 
-    final DbQueryScan scan1 = new DbQueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA);
-    final DbQueryScan scan2 = new DbQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA);
+    final DbQueryScan scan1 = new DbQueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA_1);
+    final DbQueryScan scan2 = new DbQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA_2);
 
     final GenericShuffleProducer sp1 =
 
@@ -416,19 +372,18 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
     final CollectConsumer serverCollect =
         new CollectConsumer(cp1.getSchema(), serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
-    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
-    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
-    server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
+    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new DataOutput(serverCollect, DatasetFormat.TSV));
+    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
 
-    TupleBatch tb = null;
+    Map<Tuple, Integer> result =
+        TestUtils.tupleBatchToTupleBag(TestUtils.parseTSV(((MasterQueryPartition) qf.getQuery()).getResultStream(),
+            ((MasterQueryPartition) qf.getQuery()).getResultSchema()));
+
     long actual = 0;
-    while (!receivedTupleBatches.isEmpty()) {
-      tb = receivedTupleBatches.poll();
-      if (tb != null) {
-        actual += tb.getLong(0, 0);
-      }
+    for (Tuple t : result.keySet()) {
+      actual += (Long) t.get(0);
     }
+
     assertEquals(expectedCount, actual);
   }
 
@@ -448,8 +403,8 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final ExchangePairID table2ShuffleID = ExchangePairID.newID();
     final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(2, 0);
 
-    final DbQueryScan scan1 = new DbQueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA);
-    final DbQueryScan scan2 = new DbQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA);
+    final DbQueryScan scan1 = new DbQueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA_1);
+    final DbQueryScan scan2 = new DbQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA_2);
 
     final GenericShuffleProducer sp1 =
 
@@ -471,18 +426,16 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
     final CollectConsumer serverCollect =
         new CollectConsumer(cp1.getSchema(), serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
-    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
-    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
-    server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
+    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new DataOutput(serverCollect, DatasetFormat.TSV));
+    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
 
-    TupleBatch tb = null;
+    Map<Tuple, Integer> result =
+        TestUtils.tupleBatchToTupleBag(TestUtils.parseTSV(((MasterQueryPartition) qf.getQuery()).getResultStream(),
+            ((MasterQueryPartition) qf.getQuery()).getResultSchema()));
+
     long actual = 0;
-    while (!receivedTupleBatches.isEmpty()) {
-      tb = receivedTupleBatches.poll();
-      if (tb != null) {
-        actual += tb.getLong(0, 0);
-      }
+    for (Tuple t : result.keySet()) {
+      actual += (Long) t.get(0);
     }
     assertEquals(expectedCount, actual);
   }
@@ -499,8 +452,8 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final ExchangePairID table2ShuffleID = ExchangePairID.newID();
     final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(2, 0);
 
-    final DbQueryScan scan1 = new DbQueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA);
-    final DbQueryScan scan2 = new DbQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA);
+    final DbQueryScan scan1 = new DbQueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA_1);
+    final DbQueryScan scan2 = new DbQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA_2);
 
     final GenericShuffleProducer sp1 =
         new GenericShuffleProducer(scan1, table1ShuffleID, new int[] { workerIDs[0], workerIDs[1] }, pf);
@@ -539,22 +492,12 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
     final CollectConsumer serverCollect =
         new CollectConsumer(cp1.getSchema(), serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
-    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
-    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
+    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new DataOutput(serverCollect, DatasetFormat.TSV));
 
-    server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
-    TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
-    TupleBatch tb = null;
-    while (!receivedTupleBatches.isEmpty()) {
-      tb = receivedTupleBatches.poll();
-      if (tb != null) {
-        tb.compactInto(actualResult);
-      }
-    }
-
-    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
-    TestUtils.assertTupleBagEqual(expectedResult, resultBag);
+    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
+    TestUtils.assertTupleBagEqual(expectedResult, TestUtils.tupleBatchToTupleBag(TestUtils.parseTSV(
+        ((MasterQueryPartition) qf.getQuery()).getResultStream(), ((MasterQueryPartition) qf.getQuery())
+            .getResultSchema())));
   }
 
 }

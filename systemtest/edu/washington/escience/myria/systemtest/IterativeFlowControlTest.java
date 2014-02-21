@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import org.junit.Test;
 
@@ -20,16 +19,16 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.api.DatasetFormat;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
+import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.IDBController;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
-import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
-import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.operator.UnionAll;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
@@ -40,7 +39,9 @@ import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
 import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.LocalMultiwayConsumer;
 import edu.washington.escience.myria.parallel.LocalMultiwayProducer;
+import edu.washington.escience.myria.parallel.MasterQueryPartition;
 import edu.washington.escience.myria.parallel.PartitionFunction;
+import edu.washington.escience.myria.parallel.QueryFuture;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 import edu.washington.escience.myria.util.TestUtils;
@@ -338,22 +339,14 @@ public class IterativeFlowControlTest extends SystemTestBase {
     workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(workerPlan.get(1)));
 
     final CollectConsumer serverCollect = new CollectConsumer(tableSchema, serverReceiveID, workerIDs);
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
-    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
-    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
 
-    server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
+    final SingleQueryPlanWithArgs serverPlan =
+        new SingleQueryPlanWithArgs(new DataOutput(serverCollect, DatasetFormat.TSV));
 
-    TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
-    TupleBatch tb = null;
-    while (!receivedTupleBatches.isEmpty()) {
-      tb = receivedTupleBatches.poll();
-      if (tb != null) {
-        tb.compactInto(actualResult);
-      }
-    }
-    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
-    TestUtils.assertTupleBagEqual(expectedResult, resultBag);
+    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans);
+    TestUtils.assertTupleBagEqual(expectedResult, TestUtils.tupleBatchToTupleBag(TestUtils.parseTSV(
+        ((MasterQueryPartition) qf.getQuery()).getResultStream(), ((MasterQueryPartition) qf.getQuery())
+            .getResultSchema())));
 
   }
 
@@ -494,23 +487,14 @@ public class IterativeFlowControlTest extends SystemTestBase {
     workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(workerPlan.get(1)));
 
     final CollectConsumer serverCollect = new CollectConsumer(tableSchema, serverReceiveID, workerIDs);
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
-    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
-    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
 
-    server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
+    final SingleQueryPlanWithArgs serverPlan =
+        new SingleQueryPlanWithArgs(new DataOutput(serverCollect, DatasetFormat.TSV));
 
-    TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
-    TupleBatch tb = null;
-    while (!receivedTupleBatches.isEmpty()) {
-      tb = receivedTupleBatches.poll();
-      if (tb != null) {
-        tb.compactInto(actualResult);
-      }
-    }
-    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
-    TestUtils.assertTupleBagEqual(expectedResult, resultBag);
+    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans);
+    TestUtils.assertTupleBagEqual(expectedResult, TestUtils.tupleBatchToTupleBag(TestUtils.parseTSV(
+        ((MasterQueryPartition) qf.getQuery()).getResultStream(), ((MasterQueryPartition) qf.getQuery())
+            .getResultSchema())));
 
   }
-
 }

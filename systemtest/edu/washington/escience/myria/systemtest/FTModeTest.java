@@ -6,7 +6,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
@@ -21,8 +20,10 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.api.DatasetFormat;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
+import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
@@ -32,7 +33,6 @@ import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
-import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.operator.UnionAll;
 import edu.washington.escience.myria.operator.failures.DelayInjector;
 import edu.washington.escience.myria.parallel.CollectConsumer;
@@ -44,6 +44,7 @@ import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
 import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.LocalMultiwayConsumer;
 import edu.washington.escience.myria.parallel.LocalMultiwayProducer;
+import edu.washington.escience.myria.parallel.MasterQueryPartition;
 import edu.washington.escience.myria.parallel.PartitionFunction;
 import edu.washington.escience.myria.parallel.QueryFuture;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
@@ -447,9 +448,8 @@ public class FTModeTest extends SystemTestBase {
     }
 
     final CollectConsumer serverCollect = new CollectConsumer(tableSchema, serverReceiveID, workerIDs);
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
-    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
-    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
+    final DataOutput export = new DataOutput(serverCollect, DatasetFormat.TSV);
+    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(export);
     serverPlan.setFTMode(FTMODE.valueOf("abandon"));
 
     QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans);
@@ -457,17 +457,9 @@ public class FTModeTest extends SystemTestBase {
     /* kill the one without EOSController */
     LOGGER.info("killing worker " + workerIDs[1]);
     workerProcess[1].destroy();
-    qf.sync();
-    Preconditions.checkArgument(qf.isSuccess());
-    TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
-    while (!receivedTupleBatches.isEmpty()) {
-      TupleBatch tb = receivedTupleBatches.poll();
-      if (tb != null) {
-        tb.compactInto(actualResult);
-      }
-    }
-    LOGGER.info("actual: " + actualResult.numTuples() + " expected: " + expectedResult.numTuples());
-    Preconditions.checkState(actualResult.numTuples() < expectedResult.numTuples());
+
+    Preconditions.checkState(TestUtils.parseTSV(((MasterQueryPartition) qf.getQuery()).getResultStream(),
+        ((MasterQueryPartition) qf.getQuery()).getResultSchema()).numTuples() < expectedResult.numTuples());
   }
 
   @Test
@@ -564,7 +556,7 @@ public class FTModeTest extends SystemTestBase {
     workerProcess[1].destroy();
     qf.sync();
 
-    while (!server.queryCompleted(1)) {
+    while (!server.queryCompleted(qf.getQuery().getQueryID())) {
       Thread.sleep(100);
     }
     LOGGER.info("query 1 finished.");
@@ -573,26 +565,17 @@ public class FTModeTest extends SystemTestBase {
     final ExchangePairID serverReceiveID1 = ExchangePairID.newID();
     final CollectConsumer serverCollect = new CollectConsumer(tableSchema, serverReceiveID1, workerIDs);
     serverCollect.setOpName("serverCollect");
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
-    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
-    serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
+    final DataOutput root = new DataOutput(serverCollect, DatasetFormat.TSV);
+    serverPlan = new SingleQueryPlanWithArgs(root);
     final DbQueryScan scan1 = new DbQueryScan(RelationKey.of("test", "test", "output"), tableSchema);
     final CollectProducer send2server = new CollectProducer(scan1, serverReceiveID1, MASTER_ID);
     send2server.setOpName("send2server query 2");
     workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(send2server));
     workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(send2server));
     qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans);
-    qf.sync();
 
-    TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
-    while (!receivedTupleBatches.isEmpty()) {
-      TupleBatch tb = receivedTupleBatches.poll();
-      if (tb != null) {
-        tb.compactInto(actualResult);
-      }
-    }
-    LOGGER.info(actualResult.numTuples() + " " + expectedResult.numTuples());
     TestUtils.assertTupleBagEqual(TestUtils.tupleBatchToTupleBag(expectedResult), TestUtils
-        .tupleBatchToTupleBag(actualResult));
+        .tupleBatchToTupleBag(TestUtils.parseTSV(((MasterQueryPartition) qf.getQuery()).getResultStream(),
+            ((MasterQueryPartition) qf.getQuery()).getResultSchema())));
   }
 }

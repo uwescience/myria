@@ -10,6 +10,8 @@ import java.net.URL;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
+import com.google.protobuf.ByteString;
+
 /**
  * Util methods for handling of Json API stuff.
  * */
@@ -97,7 +99,8 @@ public final class JsonAPIUtils {
     conn.setRequestMethod("GET");
 
     if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
-      throw new IOException("Failed to download result:" + conn.getResponseCode());
+      throw new IOException("Failed to download result, response code:" + conn.getResponseCode() + "\nError: "
+          + getHttpResponseContents(conn));
     }
 
     try {
@@ -178,5 +181,41 @@ public final class JsonAPIUtils {
     conn.connect();
     conn.getResponseCode();
     return conn;
+  }
+
+  /**
+   * @param conn the HTTP connection, from which the contents should be read
+   * @return the contents in the response
+   * */
+  public static String getHttpResponseContents(final HttpURLConnection conn) {
+    /* If there was any content returned, get it. */
+    String content = null;
+    try {
+      InputStream is = conn.getInputStream();
+      if (is != null) {
+        content = ByteString.readFrom(is).toStringUtf8();
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
+    /* If there was any error returned, get it. */
+    String error = null;
+    try {
+      InputStream is = conn.getErrorStream();
+      if (is != null) {
+        error = ByteString.readFrom(is).toStringUtf8();
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    StringBuilder ret = new StringBuilder();
+    if (content != null) {
+      ret.append(content);
+    }
+    if (error != null) {
+      ret.append(error);
+    }
+    return ret.toString();
   }
 }

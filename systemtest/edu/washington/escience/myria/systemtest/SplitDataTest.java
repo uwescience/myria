@@ -3,7 +3,6 @@ package edu.washington.escience.myria.systemtest;
 import static org.junit.Assert.assertEquals;
 
 import java.util.HashMap;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import org.junit.Test;
 
@@ -15,11 +14,11 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.api.DatasetFormat;
+import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.RootOperator;
-import edu.washington.escience.myria.operator.SinkRoot;
-import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.operator.TupleSource;
 import edu.washington.escience.myria.operator.agg.Aggregate;
 import edu.washington.escience.myria.operator.agg.Aggregator;
@@ -28,8 +27,11 @@ import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
 import edu.washington.escience.myria.parallel.GenericShuffleProducer;
+import edu.washington.escience.myria.parallel.MasterQueryPartition;
+import edu.washington.escience.myria.parallel.QueryFuture;
 import edu.washington.escience.myria.parallel.RoundRobinPartitionFunction;
 import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
+import edu.washington.escience.myria.util.TestUtils;
 
 public class SplitDataTest extends SystemTestBase {
 
@@ -87,14 +89,17 @@ public class SplitDataTest extends SystemTestBase {
     final CollectConsumer receive = new CollectConsumer(countResultSchema, collectId, workerIDs);
     Aggregate sumCount =
         new Aggregate(receive, new int[] { 0 }, new int[] { Aggregator.AGG_OP_SUM | Aggregator.AGG_OP_COUNT });
-    final LinkedBlockingQueue<TupleBatch> aggResult = new LinkedBlockingQueue<TupleBatch>();
-    final TBQueueExporter queueStore = new TBQueueExporter(aggResult, sumCount);
-    serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
+
+    serverPlan = new SingleQueryPlanWithArgs(new DataOutput(sumCount, DatasetFormat.TSV));
 
     /* Actually dispatch the worker plans. */
     /* Start the query and collect the results. */
-    server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
-    TupleBatch result = aggResult.take();
+    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans);
+
+    TupleBatchBuffer resultTBB =
+        TestUtils.parseTSV(((MasterQueryPartition) qf.getQuery()).getResultStream(), ((MasterQueryPartition) qf
+            .getQuery()).getResultSchema());
+    TupleBatch result = resultTBB.popAny();
 
     /* Sanity-check the results, sum them, then confirm. */
     assertEquals(workerIDs.length, result.getLong(0, 0));

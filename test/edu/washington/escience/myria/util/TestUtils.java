@@ -1,5 +1,11 @@
 package edu.washington.escience.myria.util;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
+import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -12,8 +18,12 @@ import org.junit.Assert;
 
 import com.google.common.collect.ImmutableList;
 
+import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.io.InputStreamSource;
+import edu.washington.escience.myria.operator.FileScan;
 
 public final class TestUtils {
 
@@ -500,4 +510,28 @@ public final class TestUtils {
     return sourceListBuilder;
   }
 
+  public static TupleBatchBuffer parseTSV(final InputStream is, final Schema resultSchema) throws Exception {
+
+    FileScan fs = new FileScan(new InputStreamSource(is), resultSchema, '\t', '"', '\\', 1);
+    fs.open(null);
+    TupleBatchBuffer tbb = new TupleBatchBuffer(resultSchema);
+    while (!fs.eos()) {
+      TupleBatch tb = fs.nextReady();
+      if (tb != null) {
+        tb.compactInto(tbb);
+      };
+    }
+
+    return tbb;
+  }
+
+  public static void printTSV(final PipedOutputStream p, final Schema resultSchema, final PrintStream outputPrinter)
+      throws Exception {
+    try (BufferedReader br = new BufferedReader(new InputStreamReader(new PipedInputStream(p)))) {
+      String line = null;
+      while ((line = br.readLine()) != null) {
+        outputPrinter.print(line);
+      }
+    }
+  }
 }

@@ -14,7 +14,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 
-public class TestCounter {
+public class CounterTest {
 
   @Test
   public void test() throws DbException {

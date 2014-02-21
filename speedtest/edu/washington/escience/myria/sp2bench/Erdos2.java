@@ -2,14 +2,12 @@ package edu.washington.escience.myria.sp2bench;
 
 import java.util.ArrayList;
 import java.util.Map;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.StreamingStateWrapper;
@@ -56,9 +54,8 @@ public class Erdos2 implements QueryPlanGenerator {
   }
 
   @Override
-  public RootOperator getMasterPlan(int[] allWorkers, final LinkedBlockingQueue<TupleBatch> receivedTupleBatches)
-      throws Exception {
-    return Erdos.getMasterPlan(allWorkers, null);
+  public RootOperator getMasterPlan(int[] allWorkers) throws Exception {
+    return Erdos.getMasterPlan(allWorkers);
   }
 
   @Test

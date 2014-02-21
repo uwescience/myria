@@ -2,18 +2,16 @@ package edu.washington.escience.myria.sp2bench;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.api.DatasetFormat;
+import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.RootOperator;
-import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
-import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.operator.agg.Aggregate;
 import edu.washington.escience.myria.operator.agg.Aggregator;
 import edu.washington.escience.myria.parallel.CollectConsumer;
@@ -90,11 +88,10 @@ public class Q3 implements QueryPlanGenerator {
   }
 
   @Override
-  public RootOperator getMasterPlan(int[] allWorkers, final LinkedBlockingQueue<TupleBatch> receivedTupleBatches) {
+  public RootOperator getMasterPlan(int[] allWorkers) {
     final CollectConsumer serverCollect =
         new CollectConsumer(outputSchema, sendToMasterID, new int[] { allWorkers[0] });
-    TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
-    SinkRoot serverPlan = new SinkRoot(queueStore);
+    DataOutput serverPlan = new DataOutput(serverCollect, DatasetFormat.TSV);
     return serverPlan;
   }
 }
