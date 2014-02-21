@@ -15,6 +15,7 @@ import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.StreamingStateWrapper;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.Producer;
+import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 
 public class Erdos2 implements QueryPlanGenerator {
 
@@ -48,7 +49,7 @@ public class Erdos2 implements QueryPlanGenerator {
    * 
    * */
   @Override
-  public Map<Integer, RootOperator[]> getWorkerPlan(int[] allWorkers) throws Exception {
+  public Map<Integer, SingleQueryPlanWithArgs> getWorkerPlan(int[] allWorkers) throws Exception {
     ArrayList<Producer> producers = new ArrayList<Producer>();
     StreamingStateWrapper e2 = Erdos.erdosN(2, allWorkers, producers);
     return Erdos.getWorkerPlan(allWorkers, Erdos.extractName(e2), producers);
@@ -62,7 +63,7 @@ public class Erdos2 implements QueryPlanGenerator {
 
   @Test
   public void test() throws Exception {
-    System.out.println(new Erdos2().getWorkerPlan(new int[] { 0, 1, 2, 3, 4 }).get(0)[0]);
+    System.out.println(new Erdos2().getWorkerPlan(new int[] { 0, 1, 2, 3, 4 }).get(0).getRootOps().get(0));
   }
 
 }

@@ -35,6 +35,7 @@ import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
 import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.PartitionFunction;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
+import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 import edu.washington.escience.myria.systemtest.SystemTestBase;
 
 // 15s on Jingjing's desktop
@@ -114,9 +115,9 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final CollectProducer cp = new CollectProducer(count, serverReceiveID, MASTER_ID);
 
     /* Send the worker plans, rooted by CP, to the workers. Note that the plans are identical. */
-    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    workerPlans.put(workerIDs[0], new RootOperator[] { cp, sp1, sp2, sp0 });
-    workerPlans.put(workerIDs[1], new RootOperator[] { cp, sp1, sp2, sp0 });
+    final HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
+    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(new RootOperator[] { cp, sp1, sp2, sp0 }));
+    workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(new RootOperator[] { cp, sp1, sp2, sp0 }));
 
     /* The server plan. Basically, collect and count tuples. */
     final Schema collectSchema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("COUNT"));
@@ -124,9 +125,9 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     Aggregate sumCount = new Aggregate(collectCounts, new int[] { 0 }, new int[] { Aggregator.AGG_OP_SUM });
     final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
     TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, sumCount);
-    SinkRoot serverPlan = new SinkRoot(queueStore);
+    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
 
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
     /* Make sure the count matches the known result. */
     assertEquals(3361461, receivedTupleBatches.take().getLong(0, 0));
 
@@ -180,17 +181,17 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final CollectProducer cp = new CollectProducer(dupelim, serverReceiveID, MASTER_ID);
 
     /* Send the worker plans, rooted by CP, to the workers. Note that the plans are identical. */
-    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    workerPlans.put(workerIDs[0], new RootOperator[] { cp, sp1, sp2, sp0 });
-    workerPlans.put(workerIDs[1], new RootOperator[] { cp, sp1, sp2, sp0 });
+    final HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
+    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(new RootOperator[] { cp, sp1, sp2, sp0 }));
+    workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(new RootOperator[] { cp, sp1, sp2, sp0 }));
 
     /* The server plan. Basically, collect and count tuples. */
     final CollectConsumer collect = new CollectConsumer(cp.getSchema(), serverReceiveID, workerIDs);
-    final SinkRoot serverPlan = new SinkRoot(collect);
+    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(collect));
 
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
     /* Make sure the count matches the known result. */
-    assertEquals(3361461, serverPlan.getCount());
+    assertEquals(3361461, ((SinkRoot) serverPlan.getRootOps()).getCount());
 
   }
 
@@ -240,17 +241,17 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final CollectProducer cp = new CollectProducer(dupelim, serverReceiveID, MASTER_ID);
 
     /* Send the worker plans, rooted by CP, to the workers. Note that the plans are identical. */
-    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    workerPlans.put(workerIDs[0], new RootOperator[] { cp, sp1, sp2, sp0 });
-    workerPlans.put(workerIDs[1], new RootOperator[] { cp, sp1, sp2, sp0 });
+    final HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
+    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(new RootOperator[] { cp, sp1, sp2, sp0 }));
+    workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(new RootOperator[] { cp, sp1, sp2, sp0 }));
 
     /* The server plan. Basically, collect and count tuples. */
     final CollectConsumer collect = new CollectConsumer(cp.getSchema(), serverReceiveID, workerIDs);
-    final SinkRoot serverPlan = new SinkRoot(collect);
+    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(collect));
 
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
     /* Make sure the count matches the known result. */
-    assertEquals(3361461, serverPlan.getCount());
+    assertEquals(3361461, ((SinkRoot) serverPlan.getRootOps().get(0)).getCount());
 
   }
 }

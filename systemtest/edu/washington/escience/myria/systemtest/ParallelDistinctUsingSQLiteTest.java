@@ -23,6 +23,7 @@ import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
+import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 import edu.washington.escience.myria.util.TestUtils;
 import edu.washington.escience.myria.util.Tuple;
 
@@ -73,16 +74,16 @@ public class ParallelDistinctUsingSQLiteTest extends SystemTestBase {
         new SQLiteSQLProcessor("select distinct * from " + temptableKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE),
             schema, new Operator[] { block2 });
     final CollectProducer cp22 = new CollectProducer(scan22, serverReceiveID, MASTER_ID);
-    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    workerPlans.put(workerIDs[0], new RootOperator[] { cp });
-    workerPlans.put(workerIDs[1], new RootOperator[] { cp, cp22 });
+    final HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
+    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(new RootOperator[] { cp }));
+    workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(new RootOperator[] { cp, cp22 }));
 
     final CollectConsumer serverCollect = new CollectConsumer(schema, serverReceiveID, new int[] { workerIDs[1] });
     final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
-    final SinkRoot serverPlan = new SinkRoot(queueStore);
+    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
 
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
     TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
     while (!receivedTupleBatches.isEmpty()) {
       tb = receivedTupleBatches.poll();

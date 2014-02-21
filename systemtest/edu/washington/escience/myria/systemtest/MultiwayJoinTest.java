@@ -43,6 +43,7 @@ import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
 import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
+import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 import edu.washington.escience.myria.util.JsonAPIUtils;
 import edu.washington.escience.myria.util.TestUtils;
 import edu.washington.escience.myria.util.Tuple;
@@ -141,15 +142,15 @@ public class MultiwayJoinTest extends SystemTestBase {
             0, 1 }, new int[] { 1 });
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final CollectProducer cp1 = new CollectProducer(joinSecondStep, serverReceiveID, MASTER_ID);
-    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    workerPlans.put(workerIDs[0], new RootOperator[] { cp1 });
+    final HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
+    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(new RootOperator[] { cp1 }));
     final CollectConsumer serverCollect =
         new CollectConsumer(cp1.getSchema(), serverReceiveID, new int[] { workerIDs[0] });
     final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
-    SinkRoot serverPlan = new SinkRoot(queueStore);
+    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
 
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
 
     TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
     TupleBatch tb = null;
@@ -179,16 +180,16 @@ public class MultiwayJoinTest extends SystemTestBase {
     final ExchangePairID serverReceiveIDMJ = ExchangePairID.newID();
     final DbQueryScan scan = new DbQueryScan(triangleKey, triangleSchema);
     final CollectProducer cp2 = new CollectProducer(scan, serverReceiveIDMJ, MASTER_ID);
-    final HashMap<Integer, RootOperator[]> workerPlansMJ = new HashMap<Integer, RootOperator[]>();
-    workerPlansMJ.put(workerIDs[0], new RootOperator[] { cp2 });
+    final HashMap<Integer, SingleQueryPlanWithArgs> workerPlansMJ = new HashMap<Integer, SingleQueryPlanWithArgs>();
+    workerPlansMJ.put(workerIDs[0], new SingleQueryPlanWithArgs(new RootOperator[] { cp2 }));
 
     final CollectConsumer serverCollectMJ =
         new CollectConsumer(cp2.getSchema(), serverReceiveIDMJ, new int[] { workerIDs[0] });
     final LinkedBlockingQueue<TupleBatch> receivedMJTB = new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStoreMJ = new TBQueueExporter(receivedMJTB, serverCollectMJ);
-    SinkRoot serverPlanMJ = new SinkRoot(queueStoreMJ);
+    final SingleQueryPlanWithArgs serverPlanMJ = new SingleQueryPlanWithArgs(new SinkRoot(queueStoreMJ));
 
-    server.submitQueryPlan(serverPlanMJ, workerPlansMJ).sync();
+    server.submitQueryPlan("", "", "", serverPlanMJ, workerPlansMJ).sync();
 
     TupleBatchBuffer multiwayJoinResult = new TupleBatchBuffer(queueStoreMJ.getSchema());
     tb = null;
@@ -238,15 +239,15 @@ public class MultiwayJoinTest extends SystemTestBase {
     final RelationKey JOIN_TEST_RESULT = RelationKey.of("test", "test", "two_way_join_test");
     final DbQueryScan scan = new DbQueryScan(JOIN_TEST_RESULT, outputSchema);
     final CollectProducer cp1 = new CollectProducer(scan, serverReceiveID, MASTER_ID);
-    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    workerPlans.put(workerIDs[0], new RootOperator[] { cp1 });
-    workerPlans.put(workerIDs[1], new RootOperator[] { cp1 });
+    final HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
+    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(new RootOperator[] { cp1 }));
+    workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(new RootOperator[] { cp1 }));
     final CollectConsumer serverCollect =
         new CollectConsumer(outputSchema, serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
     final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
-    SinkRoot serverPlan = new SinkRoot(queueStore);
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
+    server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
 
     /* Step 4: verify the result. */
     TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
@@ -378,17 +379,17 @@ public class MultiwayJoinTest extends SystemTestBase {
     final LeapFrogJoin localjoin = new LeapFrogJoin(new Operator[] { o1, o2 }, fieldMap, outputMap, outputColumnNames);
     localjoin.getSchema();
     final CollectProducer cp1 = new CollectProducer(localjoin, serverReceiveID, MASTER_ID);
-    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    workerPlans.put(workerIDs[0], new RootOperator[] { sp1, sp2, cp1 });
-    workerPlans.put(workerIDs[1], new RootOperator[] { sp1, sp2, cp1 });
+    final HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
+    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(new RootOperator[] { sp1, sp2, cp1 }));
+    workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(new RootOperator[] { sp1, sp2, cp1 }));
 
     final CollectConsumer serverCollect =
         new CollectConsumer(outputSchema, serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
     final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
-    SinkRoot serverPlan = new SinkRoot(queueStore);
+    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
 
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
     TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
     tb = null;
     while (!receivedTupleBatches.isEmpty()) {

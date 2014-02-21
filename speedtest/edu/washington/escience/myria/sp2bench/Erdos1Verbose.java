@@ -12,6 +12,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.Producer;
+import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 
 public class Erdos1Verbose implements QueryPlanGenerator {
 
@@ -38,7 +39,7 @@ public class Erdos1Verbose implements QueryPlanGenerator {
    * 
    * */
   @Override
-  public Map<Integer, RootOperator[]> getWorkerPlan(int[] allWorkers) throws Exception {
+  public Map<Integer, SingleQueryPlanWithArgs> getWorkerPlan(int[] allWorkers) throws Exception {
     ArrayList<Producer> producers = new ArrayList<Producer>();
     return ErdosVerbose.getWorkerPlan(allWorkers, ErdosVerbose.erdosOne(allWorkers, producers), producers);
   }

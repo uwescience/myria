@@ -22,6 +22,7 @@ import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.QueryFuture;
 import edu.washington.escience.myria.parallel.QueryKilledException;
+import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 import edu.washington.escience.myria.util.TestUtils;
 
 public class QueryKillTest extends SystemTestBase {
@@ -59,21 +60,21 @@ public class QueryKillTest extends SystemTestBase {
 
     final DbQueryScan scanTable = new DbQueryScan(testtableKey, schema);
 
-    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
+    final HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
     final CollectProducer cp1 = new CollectProducer(scanTable, serverReceiveID, MASTER_ID);
-    workerPlans.put(workerIDs[0], new RootOperator[] { cp1 });
+    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(new RootOperator[] { cp1 }));
 
     final DelayInjector di = new DelayInjector(1, TimeUnit.SECONDS, scanTable); // totally delay 10 seconds.
     final CollectProducer cp2 = new CollectProducer(di, serverReceiveID, MASTER_ID);
 
-    workerPlans.put(workerIDs[1], new RootOperator[] { cp2 });
+    workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(new RootOperator[] { cp2 }));
 
     final CollectConsumer serverCollect =
         new CollectConsumer(schema, serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
 
-    final SinkRoot serverPlan = new SinkRoot(serverCollect);
+    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(serverCollect));
 
-    QueryFuture qf = server.submitQueryPlan(serverPlan, workerPlans);
+    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans);
     qf.awaitUninterruptibly(5, TimeUnit.SECONDS); // wait 5 seconds,
                                                   // worker0 should have
                                                   // completed.

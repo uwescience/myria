@@ -16,6 +16,7 @@ import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
+import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 
 public class SelectQueryMonetDB implements QueryPlanGenerator {
 
@@ -40,7 +41,7 @@ public class SelectQueryMonetDB implements QueryPlanGenerator {
   public static final JdbcInfo jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, password);
 
   @Override
-  public Map<Integer, RootOperator[]> getWorkerPlan(int[] allWorkers) throws Exception {
+  public Map<Integer, SingleQueryPlanWithArgs> getWorkerPlan(int[] allWorkers) throws Exception {
 
     // SELECT pageURL, pageRank FROM Rankings WHERE pageRank > X;
     DbQueryScan selectPageRank =
@@ -50,9 +51,9 @@ public class SelectQueryMonetDB implements QueryPlanGenerator {
 
     final CollectProducer sendToMaster = new CollectProducer(selectPageRank, sendToMasterID, 0);
 
-    final Map<Integer, RootOperator[]> result = new HashMap<Integer, RootOperator[]>();
+    final Map<Integer, SingleQueryPlanWithArgs> result = new HashMap<Integer, SingleQueryPlanWithArgs>();
     for (int worker : allWorkers) {
-      result.put(worker, new RootOperator[] { sendToMaster });
+      result.put(worker, new SingleQueryPlanWithArgs(new RootOperator[] { sendToMaster }));
     }
 
     return result;

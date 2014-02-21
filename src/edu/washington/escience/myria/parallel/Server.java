@@ -47,12 +47,11 @@ import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
+import edu.washington.escience.myria.client.JsonQueryBaseBuilder;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.CatalogMaker;
 import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
-import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbInsert;
-import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.EOSSource;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
@@ -943,25 +942,6 @@ public final class Server {
   }
 
   /**
-   * 
-   * @return true if the query plan is accepted and scheduled for execution.
-   * @param masterRoot the root operator of the master plan
-   * @param workerRoots the roots of the worker part of the plan, {workerID -> RootOperator[]}
-   * @throws DbException if any error occurs.
-   * @throws CatalogException catalog errors.
-   */
-  public QueryFuture submitQueryPlan(final RootOperator masterRoot, final Map<Integer, RootOperator[]> workerRoots)
-      throws DbException, CatalogException {
-    String catalogInfoPlaceHolder = "MasterPlan: " + masterRoot + "; WorkerPlan: " + workerRoots;
-    Map<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
-    for (Entry<Integer, RootOperator[]> entry : workerRoots.entrySet()) {
-      workerPlans.put(entry.getKey(), new SingleQueryPlanWithArgs(entry.getValue()));
-    }
-    return submitQuery(catalogInfoPlaceHolder, catalogInfoPlaceHolder, catalogInfoPlaceHolder,
-        new SingleQueryPlanWithArgs(masterRoot), workerPlans);
-  }
-
-  /**
    * Submit a query for execution. The workerPlans may be removed in the future if the query compiler and schedulers are
    * ready. Returns null if there are too many active queries.
    * 
@@ -973,16 +953,15 @@ public final class Server {
    * @throws DbException if any error in non-catalog data processing
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
-   */
-  public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final String physicalPlan,
+   * */
+  public QueryFuture submitQueryPlan(final String rawQuery, final String logicalRa, final String physicalPlan,
       final SingleQueryPlanWithArgs masterPlan, final Map<Integer, SingleQueryPlanWithArgs> workerPlans)
       throws DbException, CatalogException {
     /* First check whether there are too many active queries. */
     if (!canSubmitQuery()) {
       return null;
     }
-    final long queryID = catalog.newQuery(rawQuery, logicalRa, physicalPlan);
-    return submitQuery(queryID, masterPlan, workerPlans);
+    return submitQuery(catalog.newQuery(rawQuery, logicalRa, physicalPlan), masterPlan, workerPlans);
   }
 
   /**
@@ -1182,9 +1161,12 @@ public final class Server {
 
     try {
       /* Start the workers */
+
       QueryFuture qf =
-          submitQuery("ingest " + relationKey.toString("sqlite"), "ingest " + relationKey.toString("sqlite"),
-              "ingest " + relationKey.toString("sqlite"), new SingleQueryPlanWithArgs(scatter), workerPlans).sync();
+          submitQuery(
+              catalog.newQuery("ingest " + relationKey.toString("sqlite"), "ingest " + relationKey.toString("sqlite"),
+                  "ingest " + relationKey.toString("sqlite")), new SingleQueryPlanWithArgs(scatter), workerPlans)
+              .sync();
       if (qf == null) {
         return null;
       }
@@ -1228,9 +1210,10 @@ public final class Server {
         workerPlans.put(workerId, new SingleQueryPlanWithArgs(new SinkRoot(new EOSSource())));
       }
       QueryFuture qf =
-          submitQuery("import " + relationKey.toString("sqlite"), "import " + relationKey.toString("sqlite"),
-              "import " + relationKey.toString("sqlite"), new SingleQueryPlanWithArgs(new SinkRoot(new EOSSource())),
-              workerPlans).sync();
+          submitQuery(
+              catalog.newQuery("import " + relationKey.toString("sqlite"), "import " + relationKey.toString("sqlite"),
+                  "import " + relationKey.toString("sqlite")),
+              new SingleQueryPlanWithArgs(new SinkRoot(new EOSSource())), workerPlans).sync();
 
       if (qf == null) {
         throw new DbException("Cannot import dataset right now, server is overloaded.");
@@ -1428,47 +1411,15 @@ public final class Server {
    * @throws DbException if there is an error in the system.
    */
   public QueryFuture startDataStream(final RelationKey relationKey, final DatasetFormat type) throws DbException {
-    /* Get the relation's schema, to make sure it exists. */
-    final Schema schema;
-    try {
-      schema = catalog.getSchema(relationKey);
-    } catch (CatalogException e) {
-      throw new DbException(e);
-    }
-    if (schema == null) {
-      throw new IllegalArgumentException("the requested relation was not found.");
-    }
-
-    /* Get the workers that store it. */
-    List<Integer> scanWorkers;
-    try {
-      scanWorkers = getWorkersForRelation(relationKey, null);
-    } catch (CatalogException e) {
-      throw new DbException(e);
-    }
-
-    /* Construct the operators that go elsewhere. */
-    DbQueryScan scan = new DbQueryScan(relationKey, schema);
-    final ExchangePairID operatorId = ExchangePairID.newID();
-    CollectProducer producer = new CollectProducer(scan, operatorId, MyriaConstants.MASTER_ID);
-
-    /* Construct the workers' {@link SingleQueryPlanWithArgs}. */
-    SingleQueryPlanWithArgs workerPlan = new SingleQueryPlanWithArgs(producer);
-    Map<Integer, SingleQueryPlanWithArgs> workerPlans =
-        new HashMap<Integer, SingleQueryPlanWithArgs>(scanWorkers.size());
-    for (Integer worker : scanWorkers) {
-      workerPlans.put(worker, workerPlan);
-    }
-
-    /* Construct the master plan. */
-    final CollectConsumer consumer = new CollectConsumer(schema, operatorId, ImmutableSet.copyOf(scanWorkers));
-    DataOutput output = new DataOutput(consumer, type);
-    final SingleQueryPlanWithArgs masterPlan = new SingleQueryPlanWithArgs(output);
+    JsonQueryBaseBuilder builder = new JsonQueryBaseBuilder();
+    QueryEncoding qe = builder.scan(relationKey).masterCollect().export(type).build();
 
     /* Submit the plan for the download. */
     String planString = "download " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE);
+    qe.rawDatalog = planString;
+    qe.logicalRa = planString;
     try {
-      return submitQuery(planString, planString, planString, masterPlan, workerPlans);
+      return submitQuery(qe);
     } catch (CatalogException e) {
       throw new DbException(e);
     }

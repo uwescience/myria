@@ -42,6 +42,7 @@ import edu.washington.escience.myria.parallel.LocalMultiwayConsumer;
 import edu.washington.escience.myria.parallel.LocalMultiwayProducer;
 import edu.washington.escience.myria.parallel.PartitionFunction;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
+import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 import edu.washington.escience.myria.util.TestUtils;
 import edu.washington.escience.myria.util.Tuple;
 
@@ -332,23 +333,16 @@ public class IterativeFlowControlTest extends SystemTestBase {
             eosReceiverOpID_idb1, eosReceiverOpID_idb2, eosReceiverOpID_idb3 }, workerIDs);
     workerPlan.get(0).add(eosController);
 
-    HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-
-    workerPlans.put(workerIDs[0], new RootOperator[workerPlan.get(0).size()]);
-    workerPlans.put(workerIDs[1], new RootOperator[workerPlan.get(1).size()]);
-    for (int i = 0; i < workerPlan.get(0).size(); ++i) {
-      workerPlans.get(workerIDs[0])[i] = workerPlan.get(0).get(i);
-    }
-    for (int i = 0; i < workerPlan.get(1).size(); ++i) {
-      workerPlans.get(workerIDs[1])[i] = workerPlan.get(1).get(i);
-    }
+    final HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
+    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(workerPlan.get(0)));
+    workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(workerPlan.get(1)));
 
     final CollectConsumer serverCollect = new CollectConsumer(tableSchema, serverReceiveID, workerIDs);
     final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
-    SinkRoot serverPlan = new SinkRoot(queueStore);
+    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
 
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
 
     TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
     TupleBatch tb = null;
@@ -495,22 +489,16 @@ public class IterativeFlowControlTest extends SystemTestBase {
             eosReceiverOpID_idb1, eosReceiverOpID_idb2, eosReceiverOpID_idb3 }, workerIDs);
     workerPlan.get(0).add(eosController);
 
-    HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    workerPlans.put(workerIDs[0], new RootOperator[workerPlan.get(0).size()]);
-    workerPlans.put(workerIDs[1], new RootOperator[workerPlan.get(1).size()]);
-    for (int i = 0; i < workerPlan.get(0).size(); ++i) {
-      workerPlans.get(workerIDs[0])[i] = workerPlan.get(0).get(i);
-    }
-    for (int i = 0; i < workerPlan.get(1).size(); ++i) {
-      workerPlans.get(workerIDs[1])[i] = workerPlan.get(1).get(i);
-    }
+    final HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
+    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(workerPlan.get(0)));
+    workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(workerPlan.get(1)));
 
     final CollectConsumer serverCollect = new CollectConsumer(tableSchema, serverReceiveID, workerIDs);
     final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
-    SinkRoot serverPlan = new SinkRoot(queueStore);
+    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
 
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
 
     TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
     TupleBatch tb = null;

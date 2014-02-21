@@ -21,6 +21,7 @@ import edu.washington.escience.myria.operator.UnionAll;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
+import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 import edu.washington.escience.myria.util.TestUtils;
 
 public class UnionAllTest extends SystemTestBase {
@@ -71,14 +72,14 @@ public class UnionAllTest extends SystemTestBase {
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final CollectProducer cp = new CollectProducer(unionAll, serverReceiveID, MASTER_ID);
 
-    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    workerPlans.put(workerIDs[0], new RootOperator[] { cp });
+    final HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
+    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(new RootOperator[] { cp }));
 
     final CollectConsumer serverCollect = new CollectConsumer(tableSchema, serverReceiveID, new int[] { workerIDs[0] });
 
-    final SinkRoot serverPlan = new SinkRoot(serverCollect);
+    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(serverCollect));
 
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
-    assertEquals(numTbl1 + numTbl2, serverPlan.getCount());
+    server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
+    assertEquals(numTbl1 + numTbl2, ((SinkRoot) serverPlan.getRootOps().get(0)).getCount());
   }
 }

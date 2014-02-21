@@ -24,6 +24,7 @@ import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.QueryFuture;
+import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 import edu.washington.escience.myria.util.TestUtils;
 
 public class QueryFailureTest extends SystemTestBase {
@@ -61,23 +62,23 @@ public class QueryFailureTest extends SystemTestBase {
 
     final DbQueryScan scanTable = new DbQueryScan(testtableKey, schema);
 
-    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
+    final HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
 
     final DelayInjector di = new DelayInjector(10, TimeUnit.SECONDS, scanTable); // totally delay 100 seconds.
     final CollectProducer cp1 = new CollectProducer(di, serverReceiveID, MASTER_ID);
-    workerPlans.put(workerIDs[0], new RootOperator[] { cp1 });
+    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(new RootOperator[] { cp1 }));
 
     final InitFailureInjector srfi = new InitFailureInjector(scanTable);
     final CollectProducer cp2 = new CollectProducer(srfi, serverReceiveID, MASTER_ID);
 
-    workerPlans.put(workerIDs[1], new RootOperator[] { cp2 });
+    workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(new RootOperator[] { cp2 }));
 
     final CollectConsumer serverCollect =
         new CollectConsumer(schema, serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
 
-    final SinkRoot serverPlan = new SinkRoot(serverCollect);
+    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(serverCollect));
 
-    QueryFuture qf = server.submitQueryPlan(serverPlan, workerPlans);
+    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans);
     qf.awaitUninterruptibly(50, TimeUnit.SECONDS); // wait 50 seconds,
                                                    // worker0 should have
                                                    // completed.
@@ -122,20 +123,20 @@ public class QueryFailureTest extends SystemTestBase {
 
     final DbQueryScan scanTable = new DbQueryScan(testtableKey, schema);
 
-    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
+    final HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
     final DelayInjector di = new DelayInjector(10, TimeUnit.SECONDS, scanTable); // totally delay 100 seconds.
     final CollectProducer cp1 = new CollectProducer(di, serverReceiveID, MASTER_ID);
-    workerPlans.put(workerIDs[0], new RootOperator[] { cp1 });
-    workerPlans.put(workerIDs[1], new RootOperator[] { cp1 });
+    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(new RootOperator[] { cp1 }));
+    workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(new RootOperator[] { cp1 }));
 
     final CollectConsumer serverCollect =
         new CollectConsumer(schema, serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
 
     final InitFailureInjector srfi = new InitFailureInjector(serverCollect);
 
-    final SinkRoot serverPlan = new SinkRoot(srfi);
+    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(srfi));
 
-    QueryFuture qf = server.submitQueryPlan(serverPlan, workerPlans);
+    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans);
     qf.awaitUninterruptibly(50, TimeUnit.SECONDS); // wait 50 seconds,
                                                    // worker0 should have
                                                    // completed.
@@ -180,25 +181,25 @@ public class QueryFailureTest extends SystemTestBase {
 
     final DbQueryScan scanTable = new DbQueryScan(testtableKey, schema);
 
-    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
+    final HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
     final DelayInjector di = new DelayInjector(10, TimeUnit.SECONDS, scanTable); // totally delay 100 seconds.
 
     final CollectProducer cp1 = new CollectProducer(di, serverReceiveID, MASTER_ID);
-    workerPlans.put(workerIDs[0], new RootOperator[] { cp1 });
+    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(new RootOperator[] { cp1 }));
 
     final InitFailureInjector srfi = new InitFailureInjector(scanTable);
     final CollectProducer cp2 = new CollectProducer(srfi, serverReceiveID, MASTER_ID);
 
-    workerPlans.put(workerIDs[1], new RootOperator[] { cp2 });
+    workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(new RootOperator[] { cp2 }));
 
     final CollectConsumer serverCollect =
         new CollectConsumer(schema, serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
 
     final InitFailureInjector srfiMaster = new InitFailureInjector(serverCollect);
 
-    final SinkRoot serverPlan = new SinkRoot(srfiMaster);
+    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(srfiMaster));
 
-    QueryFuture qf = server.submitQueryPlan(serverPlan, workerPlans);
+    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans);
 
     qf.awaitUninterruptibly(50, TimeUnit.SECONDS); // wait 50 seconds,
                                                    // worker0 should have
@@ -244,23 +245,23 @@ public class QueryFailureTest extends SystemTestBase {
 
     final DbQueryScan scanTable = new DbQueryScan(testtableKey, schema);
 
-    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
+    final HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
     final DelayInjector di = new DelayInjector(10, TimeUnit.SECONDS, scanTable); // totally delay 100 seconds.
 
     final CollectProducer cp1 = new CollectProducer(di, serverReceiveID, MASTER_ID);
-    workerPlans.put(workerIDs[0], new RootOperator[] { cp1 });
+    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(new RootOperator[] { cp1 }));
 
     final CleanupFailureInjector srfi = new CleanupFailureInjector(scanTable);
     final CollectProducer cp2 = new CollectProducer(srfi, serverReceiveID, MASTER_ID);
 
-    workerPlans.put(workerIDs[1], new RootOperator[] { cp2 });
+    workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(new RootOperator[] { cp2 }));
 
     final CollectConsumer serverCollect =
         new CollectConsumer(schema, serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
 
-    final SinkRoot serverPlan = new SinkRoot(serverCollect);
+    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(serverCollect));
 
-    QueryFuture qf = server.submitQueryPlan(serverPlan, workerPlans);
+    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans);
     qf.awaitUninterruptibly(50, TimeUnit.SECONDS); // wait 50 seconds,
                                                    // worker0 should have
                                                    // completed.
@@ -305,20 +306,20 @@ public class QueryFailureTest extends SystemTestBase {
 
     final DbQueryScan scanTable = new DbQueryScan(testtableKey, schema);
 
-    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
+    final HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
 
     final CollectProducer cp1 = new CollectProducer(scanTable, serverReceiveID, MASTER_ID);
-    workerPlans.put(workerIDs[0], new RootOperator[] { cp1 });
-    workerPlans.put(workerIDs[1], new RootOperator[] { cp1 });
+    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(new RootOperator[] { cp1 }));
+    workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(new RootOperator[] { cp1 }));
 
     final CollectConsumer serverCollect =
         new CollectConsumer(schema, serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
 
     final CleanupFailureInjector srfi = new CleanupFailureInjector(serverCollect);
 
-    final SinkRoot serverPlan = new SinkRoot(srfi);
+    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(srfi));
 
-    QueryFuture qf = server.submitQueryPlan(serverPlan, workerPlans);
+    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans);
     qf.awaitUninterruptibly(50, TimeUnit.SECONDS); // wait 50 seconds,
                                                    // worker0 should have
                                                    // completed.
@@ -363,25 +364,25 @@ public class QueryFailureTest extends SystemTestBase {
 
     final DbQueryScan scanTable = new DbQueryScan(testtableKey, schema);
 
-    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
+    final HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
     final DelayInjector di = new DelayInjector(10, TimeUnit.SECONDS, scanTable); // totally delay 100 seconds.
 
     final CollectProducer cp1 = new CollectProducer(di, serverReceiveID, MASTER_ID);
-    workerPlans.put(workerIDs[0], new RootOperator[] { cp1 });
+    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(new RootOperator[] { cp1 }));
 
     final CleanupFailureInjector srfi = new CleanupFailureInjector(scanTable);
     final CollectProducer cp2 = new CollectProducer(srfi, serverReceiveID, MASTER_ID);
 
-    workerPlans.put(workerIDs[1], new RootOperator[] { cp2 });
+    workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(new RootOperator[] { cp2 }));
 
     final CollectConsumer serverCollect =
         new CollectConsumer(schema, serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
 
     final CleanupFailureInjector srfiMaster = new CleanupFailureInjector(serverCollect);
 
-    final SinkRoot serverPlan = new SinkRoot(srfiMaster);
+    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(srfiMaster));
 
-    QueryFuture qf = server.submitQueryPlan(serverPlan, workerPlans);
+    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans);
 
     qf.awaitUninterruptibly(50, TimeUnit.SECONDS); // wait 50 seconds,
                                                    // worker0 should have
@@ -427,23 +428,23 @@ public class QueryFailureTest extends SystemTestBase {
 
     final DbQueryScan scanTable = new DbQueryScan(testtableKey, schema);
 
-    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
+    final HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
     final DelayInjector di = new DelayInjector(10, TimeUnit.SECONDS, scanTable); // totally delay 100 seconds.
 
     final CollectProducer cp1 = new CollectProducer(di, serverReceiveID, MASTER_ID);
-    workerPlans.put(workerIDs[0], new RootOperator[] { cp1 });
+    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(new RootOperator[] { cp1 }));
 
     final SingleRandomFailureInjector srfi = new SingleRandomFailureInjector(0, TimeUnit.SECONDS, 1.0, scanTable);
     final CollectProducer cp2 = new CollectProducer(srfi, serverReceiveID, MASTER_ID);
 
-    workerPlans.put(workerIDs[1], new RootOperator[] { cp2 });
+    workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(new RootOperator[] { cp2 }));
 
     final CollectConsumer serverCollect =
         new CollectConsumer(schema, serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
 
-    final SinkRoot serverPlan = new SinkRoot(serverCollect);
+    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(serverCollect));
 
-    QueryFuture qf = server.submitQueryPlan(serverPlan, workerPlans);
+    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans);
     qf.awaitUninterruptibly(50, TimeUnit.SECONDS); // wait 5 seconds,
                                                    // worker0 should have
                                                    // completed.
@@ -489,21 +490,21 @@ public class QueryFailureTest extends SystemTestBase {
 
     final DbQueryScan scanTable = new DbQueryScan(testtableKey, schema);
 
-    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
+    final HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
     final DelayInjector di = new DelayInjector(1, TimeUnit.SECONDS, scanTable); // totally delay 10 seconds.
     final CollectProducer cp1 = new CollectProducer(di, serverReceiveID, MASTER_ID);
 
-    workerPlans.put(workerIDs[0], new RootOperator[] { cp1 });
-    workerPlans.put(workerIDs[1], new RootOperator[] { cp1 });
+    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(new RootOperator[] { cp1 }));
+    workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(new RootOperator[] { cp1 }));
 
     final CollectConsumer serverCollect =
         new CollectConsumer(schema, serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
 
     final SingleRandomFailureInjector srfi = new SingleRandomFailureInjector(2, TimeUnit.SECONDS, 1.0, serverCollect);
 
-    final SinkRoot serverPlan = new SinkRoot(srfi);
+    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(srfi));
 
-    QueryFuture qf = server.submitQueryPlan(serverPlan, workerPlans);
+    QueryFuture qf = server.submitQueryPlan("", "", "", serverPlan, workerPlans);
     qf.awaitUninterruptibly(50, TimeUnit.SECONDS); // wait 5 seconds,
                                                    // workers should have
                                                    // completed.

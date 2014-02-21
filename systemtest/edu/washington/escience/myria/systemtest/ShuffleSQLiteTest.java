@@ -27,6 +27,7 @@ import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
 import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.PartitionFunction;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
+import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 import edu.washington.escience.myria.util.TestUtils;
 import edu.washington.escience.myria.util.Tuple;
 
@@ -99,19 +100,19 @@ public class ShuffleSQLiteTest extends SystemTestBase {
     final CollectProducer cp = new CollectProducer(ssp, serverReceiveID, MASTER_ID);
 
     /* Set worker plans */
-    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    workerPlans.put(workerIDs[0], new RootOperator[] { cp, sp1, sp2 });
-    workerPlans.put(workerIDs[1], new RootOperator[] { cp, sp1, sp2 });
+    final HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
+    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(new RootOperator[] { cp, sp1, sp2 }));
+    workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(new RootOperator[] { cp, sp1, sp2 }));
 
     /* Prepare collect consumers */
     final CollectConsumer serverCollect =
         new CollectConsumer(outputSchema, serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
     final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
-    final SinkRoot serverPlan = new SinkRoot(queueStore);
+    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
 
     /* Submit and execute worker plans */
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
     TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
     TupleBatch tb = null;
     while (!receivedTupleBatches.isEmpty()) {

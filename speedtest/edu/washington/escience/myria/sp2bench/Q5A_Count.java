@@ -25,6 +25,7 @@ import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
 import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
+import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 import edu.washington.escience.myria.parallel.WholeTupleHashPartitionFunction;
 
 public class Q5A_Count implements QueryPlanGenerator {
@@ -36,7 +37,7 @@ public class Q5A_Count implements QueryPlanGenerator {
   final ExchangePairID sendToMasterID = ExchangePairID.newID();
 
   @Override
-  public Map<Integer, RootOperator[]> getWorkerPlan(int[] allWorkers) throws Exception {
+  public Map<Integer, SingleQueryPlanWithArgs> getWorkerPlan(int[] allWorkers) throws Exception {
 
     final ExchangePairID allArticlesShuffleID = ExchangePairID.newID();
     final ExchangePairID allProceedingsShuffleID = ExchangePairID.newID();
@@ -81,8 +82,7 @@ public class Q5A_Count implements QueryPlanGenerator {
     final ColumnSelect projArticleCreatorsID = new ColumnSelect(new int[] { 2 }, joinArticleCreator);
     // schema: (articleAuthorIDs long)
 
-    final StreamingStateWrapper deArticleAuthors =
-        new StreamingStateWrapper(projArticleCreatorsID, new DupElim());
+    final StreamingStateWrapper deArticleAuthors = new StreamingStateWrapper(projArticleCreatorsID, new DupElim());
     // schema: (articleAuthorIDs long)
 
     final GenericShuffleProducer shuffleArticleCreatorsP =
@@ -126,8 +126,7 @@ public class Q5A_Count implements QueryPlanGenerator {
     final ColumnSelect projProceedingsID = new ColumnSelect(new int[] { 2 }, joinProceedingsCreator);
     // schema: (proceedingAuthorID long)
 
-    final StreamingStateWrapper deProceedingAuthors =
-        new StreamingStateWrapper(projProceedingsID, new DupElim());
+    final StreamingStateWrapper deProceedingAuthors = new StreamingStateWrapper(projProceedingsID, new DupElim());
 
     final GenericShuffleProducer shuffleProceedingsCreatorsP =
         new GenericShuffleProducer(deProceedingAuthors, proceedingsCreatorsShuffleID, allWorkers, pfOn0);
@@ -179,15 +178,15 @@ public class Q5A_Count implements QueryPlanGenerator {
 
     final CollectProducer sendToMaster = new CollectProducer(aggSumCount, sendToMasterID, 0);
 
-    final Map<Integer, RootOperator[]> result = new HashMap<Integer, RootOperator[]>();
-    result.put(allWorkers[0], new RootOperator[] {
+    final Map<Integer, SingleQueryPlanWithArgs> result = new HashMap<Integer, SingleQueryPlanWithArgs>();
+    result.put(allWorkers[0], new SingleQueryPlanWithArgs(new RootOperator[] {
         sendToMaster, shuffleArticlesP, collectCountP, shuffleCreatorsP, shuffleArticleCreatorsP, shuffleProceedingsP,
-        shuffleCreators2P, shuffleProceedingsCreatorsP, shuffleFOAF2P, forDupElimShuffleP });
+        shuffleCreators2P, shuffleProceedingsCreatorsP, shuffleFOAF2P, forDupElimShuffleP }));
 
     for (int i = 1; i < allWorkers.length; i++) {
-      result.put(allWorkers[i], new RootOperator[] {
+      result.put(allWorkers[i], new SingleQueryPlanWithArgs(new RootOperator[] {
           shuffleArticlesP, collectCountP, shuffleCreatorsP, shuffleArticleCreatorsP, shuffleProceedingsP,
-          shuffleCreators2P, shuffleProceedingsCreatorsP, shuffleFOAF2P, forDupElimShuffleP });
+          shuffleCreators2P, shuffleProceedingsCreatorsP, shuffleFOAF2P, forDupElimShuffleP }));
     }
 
     return result;
@@ -203,6 +202,6 @@ public class Q5A_Count implements QueryPlanGenerator {
   }
 
   public static void main(String[] args) throws Exception {
-    System.out.println(new Q5A_Count().getWorkerPlan(new int[] { 0, 1, 2, 3, 4 }).get(0)[0]);
+    System.out.println(new Q5A_Count().getWorkerPlan(new int[] { 0, 1, 2, 3, 4 }).get(0).getRootOps().get(0));
   }
 }

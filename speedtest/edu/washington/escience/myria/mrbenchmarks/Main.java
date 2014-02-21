@@ -18,10 +18,10 @@ import org.apache.commons.io.FilenameUtils;
 
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
-import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.parallel.QueryFuture;
 import edu.washington.escience.myria.parallel.Server;
+import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.util.DateTimeUtils;
 
@@ -118,14 +118,15 @@ public class Main {
     System.out.println("Num computing workers is" + allQueryWorkers.length);
     System.out.println("All computing workers are: " + computingWorkers);
 
-    final Map<Integer, RootOperator[]> workerPlans = qpg.getWorkerPlan(allQueryWorkers);
+    final Map<Integer, SingleQueryPlanWithArgs> workerPlans = qpg.getWorkerPlan(allQueryWorkers);
     final LinkedBlockingQueue<TupleBatch> resultStore = new LinkedBlockingQueue<TupleBatch>();
-    final SinkRoot masterPlan = qpg.getMasterPlan(allQueryWorkers, resultStore);
+    final SingleQueryPlanWithArgs masterPlan =
+        new SingleQueryPlanWithArgs(qpg.getMasterPlan(allQueryWorkers, resultStore));
 
     long start = System.nanoTime();
     System.out.println("start at : " + start);
 
-    QueryFuture qf = server.submitQueryPlan(masterPlan, workerPlans).sync();
+    QueryFuture qf = server.submitQueryPlan("", "", "", masterPlan, workerPlans).sync();
     // System.out.println("Query delay:"
     // + DateTimeUtils.nanoElapseToHumanReadable(qf.getQuery().getExecutionStatistics().getQueryDelay()));
     // System.out.println("Query init elapse:"
@@ -134,7 +135,7 @@ public class Main {
         + DateTimeUtils.nanoElapseToHumanReadable(qf.getQuery().getExecutionStatistics().getQueryExecutionElapse()));
 
     System.out.println("Time spent: " + DateTimeUtils.nanoElapseToHumanReadable(System.nanoTime() - start));
-    System.out.println("Total " + masterPlan.getCount() + " tuples.");
+    System.out.println("Total " + ((SinkRoot) masterPlan.getRootOps().get(0)).getCount() + " tuples.");
     server.shutdown();
 
   }

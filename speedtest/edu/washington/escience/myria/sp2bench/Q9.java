@@ -27,6 +27,7 @@ import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.LocalMultiwayConsumer;
 import edu.washington.escience.myria.parallel.LocalMultiwayProducer;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
+import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 
 public class Q9 implements QueryPlanGenerator {
 
@@ -37,7 +38,7 @@ public class Q9 implements QueryPlanGenerator {
   final ExchangePairID sendToMasterID = ExchangePairID.newID();
 
   @Override
-  public Map<Integer, RootOperator[]> getWorkerPlan(int[] allWorkers) throws Exception {
+  public Map<Integer, SingleQueryPlanWithArgs> getWorkerPlan(int[] allWorkers) throws Exception {
 
     final ExchangePairID allPersonsShuffleID = ExchangePairID.newID();
     final ExchangePairID allPersonsOutLocalMultiWayID = ExchangePairID.newID();
@@ -108,11 +109,11 @@ public class Q9 implements QueryPlanGenerator {
 
     final CollectProducer sendToMaster = new CollectProducer(localDE, sendToMasterID, 0);
 
-    final Map<Integer, RootOperator[]> result = new HashMap<Integer, RootOperator[]>();
+    final Map<Integer, SingleQueryPlanWithArgs> result = new HashMap<Integer, SingleQueryPlanWithArgs>();
 
     for (int allWorker : allWorkers) {
-      result.put(allWorker, new RootOperator[] {
-          shuffleAllPersonsP, multiPersonProducer, multiTriplesProducer, sendToMaster });
+      result.put(allWorker, new SingleQueryPlanWithArgs(new RootOperator[] {
+          shuffleAllPersonsP, multiPersonProducer, multiTriplesProducer, sendToMaster }));
     }
 
     return result;
@@ -127,6 +128,6 @@ public class Q9 implements QueryPlanGenerator {
   }
 
   public static void main(String[] args) throws Exception {
-    System.out.println(new Q9().getWorkerPlan(new int[] { 0, 1, 2, 3, 4 }).get(0)[0]);
+    System.out.println(new Q9().getWorkerPlan(new int[] { 0, 1, 2, 3, 4 }).get(0).getRootOps().get(0));
   }
 }

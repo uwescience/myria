@@ -54,6 +54,16 @@ public class SingleQueryPlanWithArgs implements Serializable {
   }
 
   /**
+   * Constructor.
+   * 
+   * @param ops a list of root operators.
+   * */
+  public SingleQueryPlanWithArgs(final List<RootOperator> ops) {
+    this();
+    addRootOp(ops);
+  }
+
+  /**
    * Return RootOperators.
    * 
    * @return the rootOps.
@@ -77,6 +87,17 @@ public class SingleQueryPlanWithArgs implements Serializable {
    * @param ops operators.
    * */
   public void addRootOp(final RootOperator[] ops) {
+    for (RootOperator op : ops) {
+      addRootOp(op);
+    }
+  }
+
+  /**
+   * Add a list of RootOperator.
+   * 
+   * @param ops operators.
+   * */
+  public void addRootOp(final List<RootOperator> ops) {
     for (RootOperator op : ops) {
       addRootOp(op);
     }

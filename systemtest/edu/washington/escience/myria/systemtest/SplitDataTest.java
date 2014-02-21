@@ -29,6 +29,7 @@ import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
 import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.RoundRobinPartitionFunction;
+import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 
 public class SplitDataTest extends SystemTestBase {
 
@@ -61,12 +62,13 @@ public class SplitDataTest extends SystemTestBase {
     /* Create the Insert operator */
     final DbInsert insert = new DbInsert(gather, tuplesRRKey, true);
 
-    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
+    final HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
     for (final int i : workerIDs) {
-      workerPlans.put(i, new RootOperator[] { insert });
+      workerPlans.put(i, new SingleQueryPlanWithArgs(new RootOperator[] { insert }));
     }
+    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(scatter);
 
-    server.submitQueryPlan(scatter, workerPlans).sync();
+    server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
 
     /*** TEST PHASE 2: Count them up, make sure the answer agrees. ***/
     /* Create the worker plan: DbQueryScan with count, then send it to master. */
@@ -79,7 +81,7 @@ public class SplitDataTest extends SystemTestBase {
     final CollectProducer send = new CollectProducer(scanCount, collectId, 0);
     workerPlans.clear();
     for (final int i : workerIDs) {
-      workerPlans.put(i, new RootOperator[] { send });
+      workerPlans.put(i, new SingleQueryPlanWithArgs(new RootOperator[] { send }));
     }
     /* Create the Server plan: CollectConsumer and Sum. */
     final CollectConsumer receive = new CollectConsumer(countResultSchema, collectId, workerIDs);
@@ -87,11 +89,11 @@ public class SplitDataTest extends SystemTestBase {
         new Aggregate(receive, new int[] { 0 }, new int[] { Aggregator.AGG_OP_SUM | Aggregator.AGG_OP_COUNT });
     final LinkedBlockingQueue<TupleBatch> aggResult = new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(aggResult, sumCount);
-    final SinkRoot serverPlan = new SinkRoot(queueStore);
+    serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
 
     /* Actually dispatch the worker plans. */
     /* Start the query and collect the results. */
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
     TupleBatch result = aggResult.take();
 
     /* Sanity-check the results, sum them, then confirm. */

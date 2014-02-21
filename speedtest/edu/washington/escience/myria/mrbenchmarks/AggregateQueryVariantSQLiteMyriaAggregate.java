@@ -21,6 +21,7 @@ import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
 import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.PartitionFunction;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
+import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 
 public class AggregateQueryVariantSQLiteMyriaAggregate implements QueryPlanGenerator {
 
@@ -39,7 +40,7 @@ public class AggregateQueryVariantSQLiteMyriaAggregate implements QueryPlanGener
   final ExchangePairID sendToMasterID = ExchangePairID.newID();
 
   @Override
-  public Map<Integer, RootOperator[]> getWorkerPlan(int[] allWorkers) throws Exception {
+  public Map<Integer, SingleQueryPlanWithArgs> getWorkerPlan(int[] allWorkers) throws Exception {
 
     final DbQueryScan localScan =
         new DbQueryScan("select substr(sourceIPAddr, 1, 7), adRevenue from UserVisits", scanSchema);
@@ -61,9 +62,9 @@ public class AggregateQueryVariantSQLiteMyriaAggregate implements QueryPlanGener
 
     final CollectProducer sendToMaster = new CollectProducer(globalAgg, sendToMasterID, 0);
 
-    final Map<Integer, RootOperator[]> result = new HashMap<Integer, RootOperator[]>();
+    final Map<Integer, SingleQueryPlanWithArgs> result = new HashMap<Integer, SingleQueryPlanWithArgs>();
     for (int worker : allWorkers) {
-      result.put(worker, new RootOperator[] { shuffleLocalGroupBy, sendToMaster });
+      result.put(worker, new SingleQueryPlanWithArgs(new RootOperator[] { shuffleLocalGroupBy, sendToMaster }));
     }
 
     return result;

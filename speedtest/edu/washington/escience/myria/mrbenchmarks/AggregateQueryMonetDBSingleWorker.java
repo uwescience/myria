@@ -15,6 +15,7 @@ import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
+import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 
 public class AggregateQueryMonetDBSingleWorker implements QueryPlanGenerator {
 
@@ -30,16 +31,16 @@ public class AggregateQueryMonetDBSingleWorker implements QueryPlanGenerator {
   final ExchangePairID sendToMasterID = ExchangePairID.newID();
 
   @Override
-  public Map<Integer, RootOperator[]> getWorkerPlan(int[] allWorkers) throws Exception {
+  public Map<Integer, SingleQueryPlanWithArgs> getWorkerPlan(int[] allWorkers) throws Exception {
 
     final DbQueryScan localGroupBy =
         new DbQueryScan("select sourceIPAddr, SUM(adRevenue) from UserVisits group by sourceIPAddr", outputSchema);
 
     final CollectProducer sendToMaster = new CollectProducer(localGroupBy, sendToMasterID, 0);
 
-    final Map<Integer, RootOperator[]> result = new HashMap<Integer, RootOperator[]>();
+    final Map<Integer, SingleQueryPlanWithArgs> result = new HashMap<Integer, SingleQueryPlanWithArgs>();
     for (int worker : allWorkers) {
-      result.put(worker, new RootOperator[] { sendToMaster });
+      result.put(worker, new SingleQueryPlanWithArgs(new RootOperator[] { sendToMaster }));
     }
 
     return result;

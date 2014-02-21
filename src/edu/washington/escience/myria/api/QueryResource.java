@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.base.Objects;
 
+import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
@@ -104,13 +105,14 @@ public final class QueryResource {
     QueryFuture qf;
     try {
       qf = server.submitQuery(query);
+    } catch (DbException | CatalogException e) {
+      throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, e);
     } catch (MyriaApiException e) {
       /* Passthrough MyriaApiException. */
       throw e;
     } catch (Exception e) {
       /* Other exceptions mean that the request itself was likely bad. */
       throw new MyriaApiException(Status.BAD_REQUEST, e);
-
     }
     /* Check to see if the query was submitted successfully. */
     if (qf == null) {

@@ -23,6 +23,7 @@ import edu.washington.escience.myria.operator.failures.DelayInjector;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
+import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 import edu.washington.escience.myria.util.TestUtils;
 
 public class FlowControlTest extends SystemTestBase {
@@ -64,22 +65,22 @@ public class FlowControlTest extends SystemTestBase {
     final ExchangePairID worker1ReceiveID = ExchangePairID.newID();
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
 
-    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
+    final HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
     final CollectProducer cp1 = new CollectProducer(ts, worker1ReceiveID, workerIDs[1]);
-    workerPlans.put(workerIDs[0], new RootOperator[] { cp1 });
+    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(new RootOperator[] { cp1 }));
 
     final CollectConsumer cc1 = new CollectConsumer(schema, worker1ReceiveID, new int[] { workerIDs[0] });
     final DelayInjector di = new DelayInjector(1, TimeUnit.SECONDS, cc1);
     final CollectProducer cp2 = new CollectProducer(di, serverReceiveID, MASTER_ID);
 
-    workerPlans.put(workerIDs[0], new RootOperator[] { cp1 });
-    workerPlans.put(workerIDs[1], new RootOperator[] { cp2 });
+    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(new RootOperator[] { cp1 }));
+    workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(new RootOperator[] { cp2 }));
 
     final CollectConsumer serverCollect = new CollectConsumer(schema, serverReceiveID, new int[] { workerIDs[1] });
-    final SinkRoot serverPlan = new SinkRoot(serverCollect);
+    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(serverCollect));
 
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
-    assertEquals(numTuples, serverPlan.getCount());
+    server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
+    assertEquals(numTuples, ((SinkRoot) serverPlan.getRootOps().get(0)).getCount());
 
   }
 }

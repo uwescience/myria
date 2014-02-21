@@ -25,6 +25,7 @@ import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
 import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.PartitionFunction;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
+import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 
 public class JoinQueryPostgres implements QueryPlanGenerator, Serializable {
 
@@ -46,7 +47,7 @@ public class JoinQueryPostgres implements QueryPlanGenerator, Serializable {
   final ExchangePairID sendToMasterID = ExchangePairID.newID();
 
   @Override
-  public Map<Integer, RootOperator[]> getWorkerPlan(int[] allWorkers) throws Exception {
+  public Map<Integer, SingleQueryPlanWithArgs> getWorkerPlan(int[] allWorkers) throws Exception {
 
     final DbQueryScan localScan =
         new DbQueryScan( //
@@ -80,9 +81,9 @@ public class JoinQueryPostgres implements QueryPlanGenerator, Serializable {
     topRevenue.setChildren(new Operator[] { globalAvg });
     final CollectProducer sendToMaster = new CollectProducer(topRevenue, sendToMasterID, 0);
 
-    final Map<Integer, RootOperator[]> result = new HashMap<Integer, RootOperator[]>();
+    final Map<Integer, SingleQueryPlanWithArgs> result = new HashMap<Integer, SingleQueryPlanWithArgs>();
     for (int worker : allWorkers) {
-      result.put(worker, new RootOperator[] { spLocalScan, sendToMaster });
+      result.put(worker, new SingleQueryPlanWithArgs(new RootOperator[] { spLocalScan, sendToMaster }));
     }
 
     return result;

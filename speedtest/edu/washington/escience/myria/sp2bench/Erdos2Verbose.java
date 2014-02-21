@@ -13,6 +13,7 @@ import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.StreamingStateWrapper;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.Producer;
+import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 
 public class Erdos2Verbose implements QueryPlanGenerator {
 
@@ -39,7 +40,7 @@ public class Erdos2Verbose implements QueryPlanGenerator {
    * 
    * */
   @Override
-  public Map<Integer, RootOperator[]> getWorkerPlan(int[] allWorkers) throws Exception {
+  public Map<Integer, SingleQueryPlanWithArgs> getWorkerPlan(int[] allWorkers) throws Exception {
     ArrayList<Producer> producers = new ArrayList<Producer>();
     StreamingStateWrapper e2 = ErdosVerbose.erdosN(2, allWorkers, producers);
     return ErdosVerbose.getWorkerPlan(allWorkers, e2, producers);

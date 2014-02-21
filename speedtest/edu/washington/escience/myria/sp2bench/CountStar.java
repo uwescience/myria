@@ -10,15 +10,16 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.DbQueryScan;
-import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.operator.agg.Aggregate;
 import edu.washington.escience.myria.operator.agg.Aggregator;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
+import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 
 public class CountStar implements QueryPlanGenerator {
 
@@ -33,13 +34,14 @@ public class CountStar implements QueryPlanGenerator {
   final ExchangePairID sendToMasterID = ExchangePairID.newID();
 
   @Override
-  public Map<Integer, RootOperator[]> getWorkerPlan(int[] allWorkers) throws Exception {
+  public Map<Integer, SingleQueryPlanWithArgs> getWorkerPlan(int[] allWorkers) throws Exception {
     final ExchangePairID collectCountID = ExchangePairID.newID();
 
     final DbQueryScan countDictionary = new DbQueryScan("select count(*),0 from Dictionary", countSchema);
     final DbQueryScan countTriples = new DbQueryScan("select count(*),0 from Triples", countSchema);
 
-    final SymmetricHashJoin countMergeJoin = new SymmetricHashJoin(countDictionary, countTriples, new int[] { 1 }, new int[] { 1 });
+    final SymmetricHashJoin countMergeJoin =
+        new SymmetricHashJoin(countDictionary, countTriples, new int[] { 1 }, new int[] { 1 });
 
     final CollectProducer collectCountP = new CollectProducer(countMergeJoin, collectCountID, allWorkers[0]);
     final CollectConsumer collectCountC = new CollectConsumer(collectCountP.getSchema(), collectCountID, allWorkers);
@@ -49,11 +51,11 @@ public class CountStar implements QueryPlanGenerator {
 
     final CollectProducer sendToMaster = new CollectProducer(agg, sendToMasterID, 0);
 
-    final Map<Integer, RootOperator[]> result = new HashMap<Integer, RootOperator[]>();
-    result.put(allWorkers[0], new RootOperator[] { sendToMaster, collectCountP });
+    final Map<Integer, SingleQueryPlanWithArgs> result = new HashMap<Integer, SingleQueryPlanWithArgs>();
+    result.put(allWorkers[0], new SingleQueryPlanWithArgs(new RootOperator[] { sendToMaster, collectCountP }));
 
     for (int i = 1; i < allWorkers.length; i++) {
-      result.put(allWorkers[i], new RootOperator[] { collectCountP });
+      result.put(allWorkers[i], new SingleQueryPlanWithArgs(new RootOperator[] { collectCountP }));
     }
 
     return result;

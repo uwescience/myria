@@ -15,10 +15,10 @@ import org.apache.commons.io.FilenameUtils;
 
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
-import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.parallel.QueryFuture;
 import edu.washington.escience.myria.parallel.QueryFutureListener;
 import edu.washington.escience.myria.parallel.Server;
+import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 import edu.washington.escience.myria.util.DateTimeUtils;
 
 public class Main {
@@ -96,13 +96,13 @@ public class Main {
       allWorkers[idx++] = wID;
     }
 
-    final Map<Integer, RootOperator[]> workerPlans = qpg.getWorkerPlan(allWorkers);
+    final Map<Integer, SingleQueryPlanWithArgs> workerPlans = qpg.getWorkerPlan(allWorkers);
     final LinkedBlockingQueue<TupleBatch> resultStore = new LinkedBlockingQueue<TupleBatch>();
-    final RootOperator masterPlan = qpg.getMasterPlan(allWorkers, resultStore);
+    final SingleQueryPlanWithArgs masterPlan = new SingleQueryPlanWithArgs(qpg.getMasterPlan(allWorkers, resultStore));
 
     long start = System.nanoTime();
 
-    QueryFuture qf = server.submitQueryPlan(masterPlan, workerPlans).addListener(new QueryFutureListener() {
+    QueryFuture qf = server.submitQueryPlan("", "", "", masterPlan, workerPlans).addListener(new QueryFutureListener() {
       @Override
       public void operationComplete(final QueryFuture future) throws Exception {
         TupleBatch tb = null;

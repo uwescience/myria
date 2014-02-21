@@ -41,6 +41,7 @@ import edu.washington.escience.myria.parallel.LocalMultiwayConsumer;
 import edu.washington.escience.myria.parallel.LocalMultiwayProducer;
 import edu.washington.escience.myria.parallel.PartitionFunction;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
+import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 import edu.washington.escience.myria.util.TestUtils;
 
 public class IterativeFailureTest extends SystemTestBase {
@@ -311,22 +312,15 @@ public class IterativeFailureTest extends SystemTestBase {
 
     workerPlan.get(0).add(eosController);
 
-    HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-
-    workerPlans.put(workerIDs[0], new RootOperator[workerPlan.get(0).size()]);
-    workerPlans.put(workerIDs[1], new RootOperator[workerPlan.get(1).size()]);
-    for (int i = 0; i < workerPlan.get(0).size(); ++i) {
-      workerPlans.get(workerIDs[0])[i] = workerPlan.get(0).get(i);
-    }
-    for (int i = 0; i < workerPlan.get(1).size(); ++i) {
-      workerPlans.get(workerIDs[1])[i] = workerPlan.get(1).get(i);
-    }
+    final HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
+    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(workerPlan.get(0)));
+    workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(workerPlan.get(1)));
 
     final CollectConsumer serverCollect = new CollectConsumer(tableSchema, serverReceiveID, workerIDs);
-    SinkRoot serverPlan = new SinkRoot(serverCollect);
+    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(serverCollect));
 
     try {
-      server.submitQueryPlan(serverPlan, workerPlans).sync();
+      server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
     } catch (DbException e) {
       throw e.getCause();
     }
@@ -453,16 +447,10 @@ public class IterativeFailureTest extends SystemTestBase {
             eosReceiverOpID_idb1, eosReceiverOpID_idb2, eosReceiverOpID_idb3 }, workerIDs);
     workerPlan.get(0).add(eosController);
 
-    HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
+    final HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
 
-    workerPlans.put(workerIDs[0], new RootOperator[workerPlan.get(0).size()]);
-    workerPlans.put(workerIDs[1], new RootOperator[workerPlan.get(1).size()]);
-    for (int i = 0; i < workerPlan.get(0).size(); ++i) {
-      workerPlans.get(workerIDs[0])[i] = workerPlan.get(0).get(i);
-    }
-    for (int i = 0; i < workerPlan.get(1).size(); ++i) {
-      workerPlans.get(workerIDs[1])[i] = workerPlan.get(1).get(i);
-    }
+    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(workerPlan.get(0)));
+    workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(workerPlan.get(1)));
 
     final CollectConsumer serverCollect = new CollectConsumer(tableSchema, serverReceiveID, workerIDs);
 
@@ -470,10 +458,10 @@ public class IterativeFailureTest extends SystemTestBase {
     // trigger a failure at the first tuple retrieval
     final SingleRandomFailureInjector srfi = new SingleRandomFailureInjector(0, TimeUnit.SECONDS, 1.0, di);
 
-    SinkRoot serverPlan = new SinkRoot(srfi);
+    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(srfi));
 
     try {
-      server.submitQueryPlan(serverPlan, workerPlans).sync();
+      server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
     } catch (DbException e) {
       throw e.getCause();
     }
@@ -537,21 +525,15 @@ public class IterativeFailureTest extends SystemTestBase {
       worker0Root.setChildren(worker0RootChildren);
     }
 
-    HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    workerPlans.put(workerIDs[0], new RootOperator[workerPlan.get(0).size()]);
-    workerPlans.put(workerIDs[1], new RootOperator[workerPlan.get(1).size()]);
-    for (int i = 0; i < workerPlan.get(0).size(); ++i) {
-      workerPlans.get(workerIDs[0])[i] = workerPlan.get(0).get(i);
-    }
-    for (int i = 0; i < workerPlan.get(1).size(); ++i) {
-      workerPlans.get(workerIDs[1])[i] = workerPlan.get(1).get(i);
-    }
+    final HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
+    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(workerPlan.get(0)));
+    workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(workerPlan.get(1)));
 
     final CollectConsumer serverCollect = new CollectConsumer(tableSchema, serverReceiveID, workerIDs);
-    SinkRoot serverPlan = new SinkRoot(serverCollect);
+    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(serverCollect));
 
     try {
-      server.submitQueryPlan(serverPlan, workerPlans).sync();
+      server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
     } catch (DbException e) {
       throw e.getCause();
     }
@@ -604,24 +586,18 @@ public class IterativeFailureTest extends SystemTestBase {
             eosReceiverOpID_idb1, eosReceiverOpID_idb2, eosReceiverOpID_idb3 }, workerIDs);
     workerPlan.get(0).add(eosController);
 
-    HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    workerPlans.put(workerIDs[0], new RootOperator[workerPlan.get(0).size()]);
-    workerPlans.put(workerIDs[1], new RootOperator[workerPlan.get(1).size()]);
-    for (int i = 0; i < workerPlan.get(0).size(); ++i) {
-      workerPlans.get(workerIDs[0])[i] = workerPlan.get(0).get(i);
-    }
-    for (int i = 0; i < workerPlan.get(1).size(); ++i) {
-      workerPlans.get(workerIDs[1])[i] = workerPlan.get(1).get(i);
-    }
+    final HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
+    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(workerPlan.get(0)));
+    workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(workerPlan.get(1)));
 
     final CollectConsumer serverCollect = new CollectConsumer(tableSchema, serverReceiveID, workerIDs);
     final DelayInjector di = new DelayInjector(1, TimeUnit.SECONDS, serverCollect);
     // trigger a failure at the first tuple retrieval
     final SingleRandomFailureInjector srfi = new SingleRandomFailureInjector(0, TimeUnit.SECONDS, 1.0, di);
-    SinkRoot serverPlan = new SinkRoot(srfi);
+    final SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(srfi));
 
     try {
-      server.submitQueryPlan(serverPlan, workerPlans).sync();
+      server.submitQueryPlan("", "", "", serverPlan, workerPlans).sync();
     } catch (DbException e) {
       throw e.getCause();
     }

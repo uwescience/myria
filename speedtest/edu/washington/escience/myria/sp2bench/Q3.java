@@ -22,6 +22,7 @@ import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
 import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
+import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 
 public class Q3 implements QueryPlanGenerator {
 
@@ -36,7 +37,7 @@ public class Q3 implements QueryPlanGenerator {
   final ExchangePairID sendToMasterID = ExchangePairID.newID();
 
   @Override
-  public Map<Integer, RootOperator[]> getWorkerPlan(int[] allWorkers) throws Exception {
+  public Map<Integer, SingleQueryPlanWithArgs> getWorkerPlan(int[] allWorkers) throws Exception {
     final ExchangePairID allArticlesShuffleID = ExchangePairID.newID();
     final ExchangePairID allSwrcPagesShuffleID = ExchangePairID.newID();
     final ExchangePairID collectCountID = ExchangePairID.newID();
@@ -76,11 +77,13 @@ public class Q3 implements QueryPlanGenerator {
 
     final CollectProducer sendToMaster = new CollectProducer(aggSumCount, sendToMasterID, 0);
 
-    final Map<Integer, RootOperator[]> result = new HashMap<Integer, RootOperator[]>();
-    result.put(allWorkers[0], new RootOperator[] { sendToMaster, shuffleArticlesP, shuffleSwrcPagesP, collectCountP });
+    final Map<Integer, SingleQueryPlanWithArgs> result = new HashMap<Integer, SingleQueryPlanWithArgs>();
+    result.put(allWorkers[0], new SingleQueryPlanWithArgs(new RootOperator[] {
+        sendToMaster, shuffleArticlesP, shuffleSwrcPagesP, collectCountP }));
 
     for (int i = 1; i < allWorkers.length; i++) {
-      result.put(allWorkers[i], new RootOperator[] { shuffleArticlesP, shuffleSwrcPagesP, collectCountP });
+      result.put(allWorkers[i], new SingleQueryPlanWithArgs(new RootOperator[] {
+          shuffleArticlesP, shuffleSwrcPagesP, collectCountP }));
     }
 
     return result;

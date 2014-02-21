@@ -26,6 +26,7 @@ import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
 import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.Producer;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
+import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 
 public class ErdosVerbose {
 
@@ -134,8 +135,7 @@ public class ErdosVerbose {
     final ColumnSelect projCoAuthorPubsID = new ColumnSelect(new int[] { 1 }, joinCoAuthorPubs);
     // schema: (pubName string)
 
-    final StreamingStateWrapper coAuthorPubsLocalDE =
-        new StreamingStateWrapper(projCoAuthorPubsID, new DupElim());
+    final StreamingStateWrapper coAuthorPubsLocalDE = new StreamingStateWrapper(projCoAuthorPubsID, new DupElim());
     // schema: (pubName string)
 
     ExchangePairID coAuthorPubsShuffleID = ExchangePairID.newID();
@@ -145,8 +145,7 @@ public class ErdosVerbose {
         new GenericShuffleConsumer(coAuthorPubsShuffleP.getSchema(), coAuthorPubsShuffleID, allWorkers);
     // schema: (pubName string)
 
-    final StreamingStateWrapper coAuthorPubsGlobalDE =
-        new StreamingStateWrapper(coAuthorPubsShuffleC, new DupElim());
+    final StreamingStateWrapper coAuthorPubsGlobalDE = new StreamingStateWrapper(coAuthorPubsShuffleC, new DupElim());
     // schema: (pubName string)
 
     final DbQueryScan allPubsAuthorNames = new DbQueryScan(//
@@ -173,8 +172,7 @@ public class ErdosVerbose {
     final ColumnSelect projCoCoAuthorName = new ColumnSelect(new int[] { 2 }, joinCoCoAuthorPubs);
     // schema: (authorName string)
 
-    final StreamingStateWrapper coCoAuthorNameLocalDE =
-        new StreamingStateWrapper(projCoCoAuthorName, new DupElim());
+    final StreamingStateWrapper coCoAuthorNameLocalDE = new StreamingStateWrapper(projCoCoAuthorName, new DupElim());
     // schema: (authorName string)
 
     ExchangePairID coCoAuthorNameShuffleID = ExchangePairID.newID();
@@ -192,8 +190,7 @@ public class ErdosVerbose {
     // schema: (authorName string)
   }
 
-  public static StreamingStateWrapper erdosN(int n, int[] allWorkers, ArrayList<Producer> producers)
-      throws DbException {
+  public static StreamingStateWrapper erdosN(int n, int[] allWorkers, ArrayList<Producer> producers) throws DbException {
     StreamingStateWrapper erdos1 = erdosOne(allWorkers, producers);
     if (n <= 1) {
       return erdos1;
@@ -206,15 +203,15 @@ public class ErdosVerbose {
     }
   }
 
-  public static Map<Integer, RootOperator[]> getWorkerPlan(int[] allWorkers, StreamingStateWrapper de,
+  public static Map<Integer, SingleQueryPlanWithArgs> getWorkerPlan(int[] allWorkers, StreamingStateWrapper de,
       ArrayList<Producer> producers) throws Exception {
 
     final CollectProducer sendToMaster = new CollectProducer(de, sendToMasterID, 0);
 
-    final Map<Integer, RootOperator[]> result = new HashMap<Integer, RootOperator[]>();
+    final Map<Integer, SingleQueryPlanWithArgs> result = new HashMap<Integer, SingleQueryPlanWithArgs>();
     producers.add(sendToMaster);
     for (int allWorker : allWorkers) {
-      result.put(allWorker, producers.toArray(new RootOperator[] {}));
+      result.put(allWorker, new SingleQueryPlanWithArgs(producers.toArray(new RootOperator[] {})));
     }
     return result;
   }
