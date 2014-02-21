@@ -268,8 +268,7 @@ public class WorkerQueryPartition implements QueryPartition {
     }
 
     if (isProfilingMode()) {
-      profilingLogger.recordSync(getQueryID(), "WorkerQueryPartition", -1, System.nanoTime(), System
-          .currentTimeMillis(), "startTime");
+      profilingLogger.recordSync(getQueryID(), "WorkerQueryPartition", -1, System.currentTimeMillis(), "startTime");
     }
 
     queryStatistics.markQueryStart();

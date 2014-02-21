@@ -282,7 +282,7 @@ public abstract class Operator implements Serializable {
     }
 
     if (isProfilingMode()) {
-      profilingLogger.recordEvent(getQueryId(), getOpName(), getFragmentId(), System.nanoTime(), 0, "live");
+      profilingLogger.recordEvent(getQueryId(), getOpName(), getFragmentId(), 0, "live");
     }
 
     TupleBatch result = null;
@@ -302,8 +302,7 @@ public abstract class Operator implements Serializable {
       if (result != null) {
         numberOfTupleReturned = result.numTuples();
       }
-      profilingLogger.recordEvent(getQueryId(), getOpName(), getFragmentId(), System.nanoTime(), numberOfTupleReturned,
-          "hang");
+      profilingLogger.recordEvent(getQueryId(), getOpName(), getFragmentId(), numberOfTupleReturned, "hang");
     }
     if (result == null) {
       checkEOSAndEOI();
@@ -420,7 +419,7 @@ public abstract class Operator implements Serializable {
     }
     if (isProfilingMode()) {
       try {
-        profilingLogger.recordEvent(getQueryId(), getOpName(), getFragmentId(), System.nanoTime(), 0, "eos");
+        profilingLogger.recordEvent(getQueryId(), getOpName(), getFragmentId(), 0, "eos");
       } catch (Exception e) {
         LOGGER.error("Failed to write profiling data:", e);
       }

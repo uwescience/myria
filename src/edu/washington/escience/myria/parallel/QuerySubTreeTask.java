@@ -363,7 +363,7 @@ public final class QuerySubTreeTask {
 
     // profilingLogger could be null on the master
     if (profilingLogger != null) {
-      profilingLogger.recordSync(root.getQueryId(), "QuerySubTreeTask", root.getFragmentId(), System.nanoTime(), System
+      profilingLogger.recordSync(root.getQueryId(), "QuerySubTreeTask", root.getFragmentId(), System
           .currentTimeMillis(), "startTime");
     }
 

@@ -125,20 +125,19 @@ public class ProfilingLogger {
    * @param queryId the query id
    * @param operatorName the operator name
    * @param fragmentId the fragment id
-   * @param nanoTime the time in nanoseconds
    * @param longData integer payload
    * @param stringData string payload
    * @throws DbException if insertion in the database fails
    */
   public synchronized void recordEvent(final long queryId, final String operatorName, final long fragmentId,
-      final long nanoTime, final long longData, final String stringData) throws DbException {
+      final long longData, final String stringData) throws DbException {
 
     try {
       statement.setLong(1, queryId);
       statement.setInt(2, 1);
       statement.setString(3, operatorName);
       statement.setLong(4, fragmentId);
-      statement.setLong(5, nanoTime);
+      statement.setLong(5, System.nanoTime());
       statement.setLong(6, longData);
       statement.setString(7, stringData);
       statement.addBatch();
@@ -175,12 +174,11 @@ public class ProfilingLogger {
    * @param queryId the query id
    * @param className the operator name
    * @param fragmentId the fragment id
-   * @param nanoTime the time in nanoseconds
    * @param longData integer payload
    * @param stringData string payload
    */
   public synchronized void recordSync(final long queryId, final String className, final long fragmentId,
-      final long nanoTime, final long longData, final String stringData) {
+      final long longData, final String stringData) {
     try {
       final PreparedStatement singleStatement =
           connection.prepareStatement(accessMethod.insertStatementFromSchema(MyriaConstants.PROFILING_SCHEMA,
@@ -189,7 +187,7 @@ public class ProfilingLogger {
       singleStatement.setInt(2, 1);
       singleStatement.setString(3, className);
       singleStatement.setLong(4, fragmentId);
-      singleStatement.setLong(5, nanoTime);
+      singleStatement.setLong(5, System.nanoTime());
       singleStatement.setLong(6, longData);
       singleStatement.setString(7, stringData);
       singleStatement.executeUpdate();
