@@ -87,8 +87,12 @@ public abstract class Operator implements Serializable {
    * @return worker query partition.
    */
   public WorkerQueryPartition getWorkerQueryPartition() {
-    return (WorkerQueryPartition) ((TaskResourceManager) execEnvVars
-        .get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER)).getOwnerTask().getOwnerQuery();
+    if (execEnvVars == null) {
+      return null;
+    } else {
+      return (WorkerQueryPartition) ((TaskResourceManager) execEnvVars
+          .get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER)).getOwnerTask().getOwnerQuery();
+    }
   }
 
   /**
@@ -480,4 +484,16 @@ public abstract class Operator implements Serializable {
     return opName;
   }
 
+  /**
+   * @return The id of the worker that is running this operator.
+   */
+  protected int getWorkerID() {
+    final WorkerQueryPartition wqp = getWorkerQueryPartition();
+    if (wqp == null) {
+      return -1;
+    } else {
+      return wqp.getOwnerWorker().getID();
+    }
+
+  }
 }

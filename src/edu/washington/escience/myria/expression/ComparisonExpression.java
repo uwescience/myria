@@ -2,10 +2,10 @@ package edu.washington.escience.myria.expression;
 
 import com.google.common.base.Preconditions;
 
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.SimplePredicate;
 import edu.washington.escience.myria.SimplePredicate.Op;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 
 /**
  * Comparison in expression tree.
@@ -50,25 +50,25 @@ public abstract class ComparisonExpression extends BinaryExpression {
   }
 
   @Override
-  public Type getOutputType(final Schema schema, final Schema stateSchema) {
-    Type leftType = getLeft().getOutputType(schema, stateSchema);
-    Type rightType = getRight().getOutputType(schema, stateSchema);
+  public Type getOutputType(final ExpressionOperatorParameter parameters) {
+    Type leftType = getLeft().getOutputType(parameters);
+    Type rightType = getRight().getOutputType(parameters);
 
     if (leftType == Type.STRING_TYPE || leftType == Type.DATETIME_TYPE) {
       Preconditions.checkArgument(rightType == leftType,
           "If the type of the left child is %s, %s requires right child [%s] of Type %s to be %s as well.", leftType,
           getClass().getSimpleName(), getRight(), rightType, leftType);
     } else {
-      checkAndReturnDefaultNumericType(schema, stateSchema);
+      checkAndReturnDefaultNumericType(parameters);
     }
     return Type.BOOLEAN_TYPE;
   }
 
   @Override
-  public String getJavaString(final Schema schema, final Schema stateSchema) {
-    if (getLeft().getOutputType(schema, stateSchema) == Type.STRING_TYPE) {
-      return getObjectComparisonString(getOperation(), schema, stateSchema);
+  public String getJavaString(final ExpressionOperatorParameter parameters) {
+    if (getLeft().getOutputType(parameters) == Type.STRING_TYPE) {
+      return getObjectComparisonString(getOperation(), parameters);
     }
-    return getInfixBinaryString(getOperation().toJavaString(), schema, stateSchema);
+    return getInfixBinaryString(getOperation().toJavaString(), parameters);
   }
 }

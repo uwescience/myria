@@ -1,7 +1,9 @@
 package edu.washington.escience.myria.expression;
 
-import edu.washington.escience.myria.Schema;
+import com.google.common.base.Objects;
+
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 
 /**
  * Negate (boolean not) the operand.
@@ -27,13 +29,13 @@ public class NotExpression extends UnaryExpression {
   }
 
   @Override
-  public Type getOutputType(final Schema schema, final Schema stateSchema) {
-    checkBooleanType(schema, stateSchema);
+  public Type getOutputType(final ExpressionOperatorParameter parameters) {
+    checkBooleanType(parameters);
     return Type.BOOLEAN_TYPE;
   }
 
   @Override
-  public String getJavaString(final Schema schema, final Schema stateSchema) {
-    return getFunctionCallUnaryString("!", schema, stateSchema);
+  public String getJavaString(final ExpressionOperatorParameter parameters) {
+    return getFunctionCallUnaryString("!", parameters);
   }
 }

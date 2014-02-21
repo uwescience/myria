@@ -44,7 +44,9 @@ import edu.washington.escience.myria.expression.TimesExpression;
 import edu.washington.escience.myria.expression.ToUpperCaseExpression;
 import edu.washington.escience.myria.expression.TypeExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
+import edu.washington.escience.myria.expression.WorkerIdExpression;
 import edu.washington.escience.myria.expression.evaluate.ConstantEvaluator;
+import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.StatefulApply;
@@ -181,7 +183,7 @@ public class ApplyTest {
       // Expression (just copy/ rename): a;
       Expression expr = new Expression("copy", vara);
 
-      GenericEvaluator eval = new GenericEvaluator(expr, tbb.getSchema(), null);
+      GenericEvaluator eval = new GenericEvaluator(expr, new ExpressionOperatorParameter(tbb.getSchema(), -1));
       assertTrue(!eval.needsCompiling());
       Expressions.add(expr);
     }
@@ -190,7 +192,7 @@ public class ApplyTest {
       // Expression: (a constant value of 5);
       Expression expr = new Expression("constant5", new ConstantExpression(Type.INT_TYPE, "5"));
 
-      GenericEvaluator eval = new ConstantEvaluator(expr, tbb.getSchema(), null);
+      GenericEvaluator eval = new ConstantEvaluator(expr, new ExpressionOperatorParameter(tbb.getSchema(), -1));
       assertTrue(!eval.needsCompiling());
       Expressions.add(expr);
     }
@@ -199,7 +201,7 @@ public class ApplyTest {
       // Expression: (a constant value of 5.0 float);
       Expression expr = new Expression("constant5f", new ConstantExpression(Type.FLOAT_TYPE, "5"));
 
-      GenericEvaluator eval = new ConstantEvaluator(expr, tbb.getSchema(), null);
+      GenericEvaluator eval = new ConstantEvaluator(expr, new ExpressionOperatorParameter(tbb.getSchema(), -1));
       assertTrue(!eval.needsCompiling());
       Expressions.add(expr);
     }
@@ -208,7 +210,7 @@ public class ApplyTest {
       // Expression: (a constant value of 5.0 double);
       Expression expr = new Expression("constant5d", new ConstantExpression(Type.DOUBLE_TYPE, "5"));
 
-      GenericEvaluator eval = new ConstantEvaluator(expr, tbb.getSchema(), null);
+      GenericEvaluator eval = new ConstantEvaluator(expr, new ExpressionOperatorParameter(tbb.getSchema(), -1));
       assertTrue(!eval.needsCompiling());
       Expressions.add(expr);
     }
@@ -257,6 +259,17 @@ public class ApplyTest {
       Expressions.add(expr);
     }
 
+    {
+      // Expression that returns the worker id (-1);
+      Expression expr = new Expression("workerID", new WorkerIdExpression());
+
+      GenericEvaluator eval = new ConstantEvaluator(expr, new ExpressionOperatorParameter(tbb.getSchema(), 42));
+      assertTrue(!eval.needsCompiling());
+      assertEquals(eval.getJavaExpression(), "result.appendInt(42)");
+      Expressions.add(expr);
+    }
+
+
     Apply apply = new Apply(new TupleSource(tbb), Expressions.build());
 
     apply.open(null);
@@ -266,7 +279,7 @@ public class ApplyTest {
     while (!apply.eos()) {
       result = apply.nextReady();
       if (result != null) {
-        assertEquals(16, result.getSchema().numColumns());
+        assertEquals(17, result.getSchema().numColumns());
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(0));
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(1));
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(2));
@@ -283,6 +296,7 @@ public class ApplyTest {
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(13));
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(14));
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(15));
+        assertEquals(Type.INT_TYPE, result.getSchema().getColumnType(16));
 
         assertEquals("sqrt", result.getSchema().getColumnName(0));
         assertEquals("simpleNestedExpression", result.getSchema().getColumnName(1));
@@ -300,6 +314,7 @@ public class ApplyTest {
         assertEquals("modulo", result.getSchema().getColumnName(13));
         assertEquals("conditional", result.getSchema().getColumnName(14));
         assertEquals("nestedconditional", result.getSchema().getColumnName(15));
+        assertEquals("workerID", result.getSchema().getColumnName(16));
 
         for (int curI = 0; curI < result.numTuples(); curI++) {
           long i = curI + resultSize;
@@ -325,6 +340,7 @@ public class ApplyTest {
           assertEquals(c % b, result.getLong(13, curI));
           assertEquals(e ? a : c, result.getLong(14, curI));
           assertEquals((b % 2 == 0) ? (e ? a : b) : c, result.getLong(15, curI));
+          assertEquals(-1, result.getInt(16, curI));
         }
         resultSize += result.numTuples();
       }

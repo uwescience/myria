@@ -4,8 +4,8 @@ import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 
 /**
  * Represents a reference to the type of a child field in an expression tree.
@@ -36,12 +36,12 @@ public class TypeOfExpression extends ZeroaryExpression {
   }
 
   @Override
-  public Type getOutputType(final Schema schema, final Schema stateSchema) {
-    return schema.getColumnType(columnIdx);
+  public Type getOutputType(final ExpressionOperatorParameter parameters) {
+    return parameters.getSchema().getColumnType(columnIdx);
   }
 
   @Override
-  public String getJavaString(final Schema schema, final Schema stateSchema) {
+  public String getJavaString(final ExpressionOperatorParameter parameters) {
     throw new UnsupportedOperationException("This expression operator does not have a java string representation.");
   }
 

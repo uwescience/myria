@@ -9,7 +9,6 @@ import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.ReadableTable;
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
@@ -36,19 +35,19 @@ public final class ConstantEvaluator extends GenericEvaluator {
    * Default constructor.
    * 
    * @param expression the expression for the evaluator
-   * @param inputSchema the schema that the expression expects if it operates on a schema
-   * @param stateSchema the schema of the state
+   * @param parameters parameters that are passed to the expression
    * @throws DbException if there is an error compiling the expression
    */
-  public ConstantEvaluator(final Expression expression, final Schema inputSchema, final Schema stateSchema)
+  public ConstantEvaluator(final Expression expression, final ExpressionOperatorParameter parameters)
       throws DbException {
-    super(expression, inputSchema, stateSchema);
+    super(expression, parameters);
     Preconditions.checkArgument(!expression.hasOperator(VariableExpression.class)
         && !expression.hasOperator(StateExpression.class), "Expression %s does not evaluate to a constant", expression);
-    type = expression.getOutputType(inputSchema, stateSchema);
+    type = expression.getOutputType(parameters);
     try {
       evaluator =
-          new ExpressionEvaluator(expression.getJavaExpression(), type.toJavaType(), new String[] {}, new Class<?>[] {});
+          new ExpressionEvaluator(expression.getJavaExpression(parameters), type.toJavaType(), new String[] {},
+              new Class<?>[] {});
       value = evaluator.evaluate(NO_ARGS);
     } catch (CompileException e) {
       throw new DbException("Error when compiling expression " + this, e);

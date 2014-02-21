@@ -6,9 +6,9 @@ import java.util.LinkedList;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Lists;
 
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
+import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 
 /**
  * An expression that can be applied to a tuple.
@@ -97,44 +97,31 @@ public class Expression implements Serializable {
   }
 
   /**
-   * @param inputSchema the schema of the input relation
-   * @param stateSchema the schema of the state
+   * @param parameters parameters that are needed to create the java expression
    * @return the Java form of this expression.
    */
-  public String getJavaExpression(final Schema inputSchema, final Schema stateSchema) {
+  public String getJavaExpression(final ExpressionOperatorParameter parameters) {
     if (javaExpression == null) {
-      return rootExpressionOperator.getJavaString(inputSchema, stateSchema);
+      return rootExpressionOperator.getJavaString(parameters);
     }
     return javaExpression;
   }
 
   /**
-   * @param inputSchema the schema of the input relation
-   * @param stateSchema the schema of the state
-   * @return the type of the output
-   */
-  public Type getOutputType(final Schema inputSchema, final Schema stateSchema) {
-    return rootExpressionOperator.getOutputType(inputSchema, stateSchema);
-  }
-
-  /**
-   * @return the Java form of this expression.
-   */
-  public String getJavaExpression() {
-    if (javaExpression == null) {
-      return rootExpressionOperator.getJavaString(null, null);
-    }
-    return javaExpression;
-  }
-
-  /**
-   * @param inputSchema the schema of the input relation
-   * @param stateSchema the schema of the state
+   * @param parameters parameters that are needed to create the java expression
    * @return the Java form of this expression that also writes the results to a {@link ColumnBuilder}.
    */
-  public String getJavaExpressionWithAppend(final Schema inputSchema, final Schema stateSchema) {
-    return new StringBuilder(RESULT).append(".append").append(getOutputType(inputSchema, stateSchema).getName())
-        .append("(").append(getJavaExpression(inputSchema, stateSchema)).append(")").toString();
+  public String getJavaExpressionWithAppend(final ExpressionOperatorParameter parameters) {
+    return new StringBuilder(RESULT).append(".append").append(getOutputType(parameters).getName()).append("(").append(
+        getJavaExpression(parameters)).append(")").toString();
+  }
+
+  /**
+   * @param parameters parameters that are needed to determine the output type
+   * @return the type of the output
+   */
+  public Type getOutputType(final ExpressionOperatorParameter parameters) {
+    return rootExpressionOperator.getOutputType(parameters);
   }
 
   /**
