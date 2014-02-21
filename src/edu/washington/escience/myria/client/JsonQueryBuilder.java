@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.client;
 
+import edu.washington.escience.myria.api.DatasetFormat;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.StreamingStateEncoding;
 import edu.washington.escience.myria.operator.IDBController;
@@ -24,11 +25,10 @@ public interface JsonQueryBuilder {
   /**
    * Send data back to user client.
    * 
-   * TODO
-   * 
+   * @param format the data export format
    * @return builder.
    * */
-  JsonQueryBuilder export();
+  JsonQueryBuilder export(final DatasetFormat format);
 
   /**
    * Begin iterate, denoting an {@link IDBController}. All iterations built are currently governed by a single

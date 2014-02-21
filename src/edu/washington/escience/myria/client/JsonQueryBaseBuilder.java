@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableSet;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.api.DatasetFormat;
 import edu.washington.escience.myria.api.MyriaApiException;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.AbstractConsumerEncoding;
@@ -35,6 +36,7 @@ import edu.washington.escience.myria.api.encoding.CollectConsumerEncoding;
 import edu.washington.escience.myria.api.encoding.CollectProducerEncoding;
 import edu.washington.escience.myria.api.encoding.ColumnSelectEncoding;
 import edu.washington.escience.myria.api.encoding.ConsumerEncoding;
+import edu.washington.escience.myria.api.encoding.DataOutputEncoding;
 import edu.washington.escience.myria.api.encoding.DbInsertEncoding;
 import edu.washington.escience.myria.api.encoding.DupElimEncoding;
 import edu.washington.escience.myria.api.encoding.DupElimStateEncoding;
@@ -116,6 +118,11 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     private final Random rand = new Random();
 
     /**
+     * Export query result format.
+     * */
+    private DatasetFormat exportFormat = null;
+
+    /**
      * Constructor.
      * */
     private SharedData() {
@@ -191,6 +198,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     OPERATOR_PREFICES.put(FileScanEncoding.class, "file");
     OPERATOR_PREFICES.put(FilterEncoding.class, "filter");
     OPERATOR_PREFICES.put(ColumnSelectEncoding.class, "project");
+    OPERATOR_PREFICES.put(DataOutputEncoding.class, "export");
   }
 
   /**
@@ -328,9 +336,9 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * @param op the operator to check
    * @return the check result.
    * */
-  private boolean isRootOp(final JsonQueryBaseBuilder op) {
+  private static boolean isRootOp(final JsonQueryBaseBuilder op) {
     if (op.op instanceof AbstractProducerEncoding || op.op instanceof DbInsertEncoding
-        || op.op instanceof SinkRootEncoding) {
+        || op.op instanceof SinkRootEncoding || op.op instanceof DataOutputEncoding) {
       return true;
     }
     return false;
@@ -343,10 +351,14 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * @param op the op to check.
    * */
   private static boolean isSinkRootOp(final JsonQueryBaseBuilder op) {
-    if (op.op instanceof DbInsertEncoding || op.op instanceof SinkRootEncoding) {
-      return true;
+    if (!isRootOp(op)) {
+      return false;
     }
-    return false;
+
+    if (op.op instanceof AbstractProducerEncoding) {
+      return false;
+    }
+    return true;
   }
 
   /**
@@ -496,7 +508,13 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
   public final QueryEncoding build() {
     if (!isRootOp(this)) {
       // add a SinkRoot if the current op is not a root op.
-      return buildOperator(SinkRootEncoding.class, "argChild", this, NO_PREFERENCE).build();
+      if (sharedData.exportFormat == null) {
+        return buildOperator(SinkRootEncoding.class, "argChild", this, NO_PREFERENCE).build();
+      } else {
+        JsonQueryBaseBuilder b = buildOperator(DataOutputEncoding.class, "argChild", this, NO_PREFERENCE);
+        ((DataOutputEncoding) (b.op)).format = sharedData.exportFormat.toString();
+        return b.build();
+      }
     } else {
 
       processLocalStreamForks();
@@ -530,7 +548,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
         result.validate();
       } catch (MyriaApiException e) {
         throw new IllegalArgumentException("Invalid query built by: " + this.getClass().getCanonicalName()
-            + ". Cause: " + e.getResponse().getEntity().toString(), e.getCause());
+            + ". Cause: " + e.getResponse().getEntity().toString(), e);
       }
 
       return result;
@@ -976,9 +994,9 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
   }
 
   @Override
-  public JsonQueryBaseBuilder export() {
-    // TODO
-    return this.collect(MyriaConstants.MASTER_ID);
+  public JsonQueryBaseBuilder export(final DatasetFormat format) {
+    sharedData.exportFormat = format;
+    return this;
   }
 
   /**
@@ -988,7 +1006,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * */
   public JsonQueryBaseBuilder broadcast() {
     JsonQueryBaseBuilder p = buildOperator(BroadcastProducerEncoding.class, "argChild", this, NO_PREFERENCE);
-    return buildOperator(BroadcastProducerEncoding.class, "argOperatorId", p, NO_PREFERENCE);
+    return buildOperator(BroadcastConsumerEncoding.class, "argOperatorId", p, NO_PREFERENCE);
   }
 
   /**
