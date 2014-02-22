@@ -45,10 +45,10 @@ public class CsvTupleWriter implements TupleWriter {
    * @param out the {@link OutputStream} to which the data will be written.
    */
   public CsvTupleWriter(final char separator, final OutputStream out) {
-    final CsvPreference sepratorPreference =
+    final CsvPreference separatorPreference =
         new CsvPreference.Builder(Character.toChars(CsvPreference.STANDARD_PREFERENCE.getQuoteChar())[0], separator,
             CsvPreference.STANDARD_PREFERENCE.getEndOfLineSymbols()).build();
-    csvWriter = new CsvListWriter(new BufferedWriter(new OutputStreamWriter(out)), sepratorPreference);
+    csvWriter = new CsvListWriter(new BufferedWriter(new OutputStreamWriter(out)), separatorPreference);
   }
 
   @Override
