@@ -1015,7 +1015,7 @@ public final class Server {
        * Add the DatasetMetadataUpdater, which will update the catalog with the set of workers created when the query
        * succeeds.
        */
-      queryExecutionFuture.addListener(new DatasetMetadataUpdater(catalog, workerPlans, queryID));
+      queryExecutionFuture.addPreListener(new DatasetMetadataUpdater(catalog, workerPlans, queryID));
 
       queryExecutionFuture.addListener(new QueryFutureListener() {
         @Override

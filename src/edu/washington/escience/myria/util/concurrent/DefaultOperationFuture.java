@@ -38,6 +38,12 @@ public class DefaultOperationFuture extends OperationFutureBase<Void> {
   }
 
   @Override
+  public OperationFuture addPreListener(final OperationFutureListener listener) {
+    super.addPreListener0(listener);
+    return this;
+  }
+
+  @Override
   public OperationFuture removeListener(final OperationFutureListener listener) {
     super.removeListener0(listener);
     return this;
