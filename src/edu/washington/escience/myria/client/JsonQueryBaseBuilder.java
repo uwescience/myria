@@ -147,7 +147,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
   /**
    * The workers on which the current operator is going to run, i.e. the operator partition.
    * */
-  private final Set<Integer> runnOnWorkers;
+  private final Set<Integer> runOnWorkers;
   /**
    * An operator is going to run on any single worker.
    * */
@@ -288,15 +288,15 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
 
     Set<Integer> childrenWorkers = NO_PREFERENCE;
     for (final JsonQueryBaseBuilder c : children) {
-      childrenWorkers = workerSetAlgebra(childrenWorkers, c.runnOnWorkers);
+      childrenWorkers = workerSetAlgebra(childrenWorkers, c.runOnWorkers);
       if (childrenWorkers == null) {
         throw new IllegalArgumentException("Workers of a child are not compatible with other children. Current op: "
             + getOpName(this) + ", conflicting child: " + getOpName(c));
       }
     }
     if (compatibleWithChildrenWorkers) {
-      runnOnWorkers = workerSetAlgebra(childrenWorkers, runningWorkers);
-      if (runnOnWorkers == null) {
+      runOnWorkers = workerSetAlgebra(childrenWorkers, runningWorkers);
+      if (runOnWorkers == null) {
         String[] childrenNames = new String[children.length];
         for (int i = 0; i < children.length; i++) {
           childrenNames[i] = getOpName(children[i]);
@@ -305,7 +305,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
             + getOpName(this) + ", children: " + StringUtils.join(childrenNames, ','));
       }
     } else {
-      runnOnWorkers = runningWorkers;
+      runOnWorkers = runningWorkers;
     }
   }
 
@@ -317,7 +317,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     op = null;
     children = new JsonQueryBaseBuilder[] {};
     childrenFields = new String[] {};
-    runnOnWorkers = new HashSet<Integer>();
+    runOnWorkers = new HashSet<Integer>();
     parents = new HashSet<JsonQueryBaseBuilder>();
     sharedData = new SharedData();
   }
@@ -647,7 +647,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     if (fragments.get(root) != null) {
       return;
     }
-    Preconditions.checkNotNull(root.runnOnWorkers);
+    Preconditions.checkNotNull(root.runOnWorkers);
 
     ArrayList<JsonQueryBaseBuilder> operators = new ArrayList<JsonQueryBaseBuilder>();
     PlanFragmentEncoding fragment = new PlanFragmentEncoding();
@@ -658,19 +658,19 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
       fragment.operators.add(obb.op);
     }
 
-    if (root.runnOnWorkers == ANY_SINGLE_WORKER) {
+    if (root.runOnWorkers == ANY_SINGLE_WORKER) {
       Preconditions.checkArgument(sharedData.globalWorkers.size() > 0,
           "A set of workers must be provided if a query contains a fragment which must be run on a single worker.");
       fragment.workers =
           Arrays.asList(new Integer[] { sharedData.globalWorkers.toArray(new Integer[] {})[sharedData.rand
               .nextInt(sharedData.globalWorkers.size())] });
-    } else if (root.runnOnWorkers == ALL_WORKERS || root.runnOnWorkers == NO_PREFERENCE) {
+    } else if (root.runOnWorkers == ALL_WORKERS || root.runOnWorkers == NO_PREFERENCE) {
       fragment.workers = null;
-    } else if (root.runnOnWorkers.size() <= 0) {
+    } else if (root.runOnWorkers.size() <= 0) {
       throw new IllegalArgumentException("Number of workers of a fragment must be positive. Root: " + getOpName(root)
-          + ". " + root.runnOnWorkers.getClass());
+          + ". " + root.runOnWorkers.getClass());
     } else {
-      fragment.workers = Arrays.asList(root.runnOnWorkers.toArray(new Integer[] {}));
+      fragment.workers = Arrays.asList(root.runOnWorkers.toArray(new Integer[] {}));
     }
 
     fragments.put(root, fragment);
@@ -1118,7 +1118,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     ((IterateEndPlaceHolder) ieJBB.op).iterationBeginPoint = (JsonQueryBaseBuilder) iterateBeginner;
 
     // initial input and iterate input must be compatible in workers.
-    if (workerSetAlgebra(((JsonQueryBaseBuilder) iterateBeginner).runnOnWorkers, ieJBB.runnOnWorkers) == null) {
+    if (workerSetAlgebra(((JsonQueryBaseBuilder) iterateBeginner).runOnWorkers, ieJBB.runOnWorkers) == null) {
       throw new IllegalArgumentException("Workers of initial input must be compatible with workers of iterate input.");
     }
 
