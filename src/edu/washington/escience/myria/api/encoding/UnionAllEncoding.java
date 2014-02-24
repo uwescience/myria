@@ -1,17 +1,14 @@
 package edu.washington.escience.myria.api.encoding;
 
-import java.util.List;
 import java.util.Map;
 
-import com.google.common.collect.ImmutableList;
-
-import edu.washington.escience.myria.operator.UnionAll;
 import edu.washington.escience.myria.operator.Operator;
+import edu.washington.escience.myria.operator.UnionAll;
 import edu.washington.escience.myria.parallel.Server;
 
 public class UnionAllEncoding extends OperatorEncoding<UnionAll> {
+  @Required
   public String[] argChildren;
-  private static final List<String> requiredArguments = ImmutableList.of("argChildren");
 
   @Override
   public UnionAll construct(final Server server) {
@@ -27,8 +24,4 @@ public class UnionAllEncoding extends OperatorEncoding<UnionAll> {
     current.setChildren(tmp);
   }
 
-  @Override
-  protected List<String> getRequiredArguments() {
-    return requiredArguments;
-  }
 }

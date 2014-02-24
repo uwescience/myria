@@ -4,18 +4,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import com.google.common.collect.ImmutableList;
-
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.agg.Aggregate;
 import edu.washington.escience.myria.operator.agg.Aggregator;
 import edu.washington.escience.myria.parallel.Server;
 
 public class AggregateEncoding extends OperatorEncoding<Aggregate> {
+  @Required
   public List<List<String>> argAggOperators;
+  @Required
   public int[] argAggFields;
+  @Required
   public String argChild;
-  private static final List<String> requiredFields = ImmutableList.of("argChild", "argAggOperators", "argAggFields");
 
   @Override
   public Aggregate construct(Server server) {
@@ -26,11 +26,6 @@ public class AggregateEncoding extends OperatorEncoding<Aggregate> {
   @Override
   public void connect(Operator current, Map<String, Operator> operators) {
     current.setChildren(new Operator[] { operators.get(argChild) });
-  }
-
-  @Override
-  protected List<String> getRequiredArguments() {
-    return requiredFields;
   }
 
   /**

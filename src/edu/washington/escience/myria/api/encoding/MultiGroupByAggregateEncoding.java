@@ -3,8 +3,6 @@ package edu.washington.escience.myria.api.encoding;
 import java.util.List;
 import java.util.Map;
 
-import com.google.common.collect.ImmutableList;
-
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.agg.Aggregator;
 import edu.washington.escience.myria.operator.agg.MultiGroupByAggregate;
@@ -12,12 +10,14 @@ import edu.washington.escience.myria.parallel.Server;
 
 public class MultiGroupByAggregateEncoding extends OperatorEncoding<MultiGroupByAggregate> {
 
+  @Required
   public String argChild;
+  @Required
   public int[] argAggFields;
+  @Required
   public List<List<String>> argAggOperators;
+  @Required
   public int[] argGroupFields;
-  private static final List<String> requiredArguments = ImmutableList.of("argChild", "argAggFields", "argAggOperators",
-      "argGroupFields");
 
   @Override
   public void connect(Operator operator, Map<String, Operator> operators) {
@@ -28,11 +28,6 @@ public class MultiGroupByAggregateEncoding extends OperatorEncoding<MultiGroupBy
   public MultiGroupByAggregate construct(Server server) {
     int[] ops = deserializeAggregateOperator(argAggOperators);
     return new MultiGroupByAggregate(null, argAggFields, argGroupFields, ops);
-  }
-
-  @Override
-  protected List<String> getRequiredArguments() {
-    return requiredArguments;
   }
 
   /**

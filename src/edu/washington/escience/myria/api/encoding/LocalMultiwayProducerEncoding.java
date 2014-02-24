@@ -3,8 +3,6 @@ package edu.washington.escience.myria.api.encoding;
 import java.util.List;
 import java.util.Map;
 
-import com.google.common.collect.ImmutableList;
-
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.LocalMultiwayProducer;
@@ -15,8 +13,8 @@ import edu.washington.escience.myria.parallel.Server;
  * 
  */
 public class LocalMultiwayProducerEncoding extends AbstractProducerEncoding<LocalMultiwayProducer> {
+  @Required
   public String argChild;
-  private static final List<String> requiredArguments = ImmutableList.of("argChild");
 
   @Override
   public void connect(Operator current, Map<String, Operator> operators) {
@@ -28,10 +26,4 @@ public class LocalMultiwayProducerEncoding extends AbstractProducerEncoding<Loca
     List<ExchangePairID> ids = getRealOperatorIds();
     return new LocalMultiwayProducer(null, ids.toArray(new ExchangePairID[ids.size()]));
   }
-
-  @Override
-  protected List<String> getRequiredArguments() {
-    return requiredArguments;
-  }
-
 }

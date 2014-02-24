@@ -1,11 +1,8 @@
 package edu.washington.escience.myria.api.encoding;
 
-import java.util.List;
 import java.util.Map;
 
 import javax.ws.rs.core.Response.Status;
-
-import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
@@ -18,9 +15,9 @@ import edu.washington.escience.myria.parallel.Server;
 
 public class TableScanEncoding extends OperatorEncoding<DbQueryScan> {
   /** The name of the relation to be scanned. */
+  @Required
   public RelationKey relationKey;
   public Integer storedRelationId;
-  private static final List<String> requiredArguments = ImmutableList.of("relationKey");
 
   @Override
   public void connect(final Operator current, final Map<String, Operator> operators) {
@@ -42,8 +39,4 @@ public class TableScanEncoding extends OperatorEncoding<DbQueryScan> {
     return new DbQueryScan(relationKey, schema);
   }
 
-  @Override
-  protected List<String> getRequiredArguments() {
-    return requiredArguments;
-  }
 }

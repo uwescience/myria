@@ -1,20 +1,18 @@
 package edu.washington.escience.myria.api.encoding;
 
-import java.util.List;
 import java.util.Map;
-
-import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.TipsyFileScan;
 import edu.washington.escience.myria.parallel.Server;
 
 public class TipsyFileScanEncoding extends OperatorEncoding<TipsyFileScan> {
+  @Required
   public String tipsyFilename;
+  @Required
   public String grpFilename;
+  @Required
   public String iorderFilename;
-  private static final List<String> requiredArguments = ImmutableList.of("tipsyFilename", "grpFilename",
-      "iorderFilename");
 
   @Override
   public TipsyFileScan construct(final Server server) {
@@ -26,8 +24,4 @@ public class TipsyFileScanEncoding extends OperatorEncoding<TipsyFileScan> {
     /* Do nothing; no children. */
   }
 
-  @Override
-  protected List<String> getRequiredArguments() {
-    return requiredArguments;
-  }
 }

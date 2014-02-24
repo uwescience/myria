@@ -1,11 +1,8 @@
 package edu.washington.escience.myria.api.encoding;
 
-import java.util.List;
 import java.util.Map;
 
 import javax.ws.rs.core.Response.Status;
-
-import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.api.MyriaApiException;
 import edu.washington.escience.myria.operator.Operator;
@@ -23,13 +20,14 @@ import edu.washington.escience.myria.util.MyriaUtils;
  */
 public class HyperShuffleProducerEncoding extends AbstractProducerEncoding<GenericShuffleProducer> {
 
+  @Required
   public String argChild;
+  @Required
   public int[] indexes;
+  @Required
   public int[] hyperCubeDimensions;
+  @Required
   public int[][] cellPartition;
-
-  private static final List<String> requiredArguments = ImmutableList.of("argChild", "indexes", "hyperCubeDimensions",
-      "cellPartition");
 
   @Override
   public void connect(final Operator current, final Map<String, Operator> operators) {
@@ -58,11 +56,6 @@ public class HyperShuffleProducerEncoding extends AbstractProducerEncoding<Gener
 
     return new GenericShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), cellPartition,
         MyriaUtils.integerCollectionToIntArray(getRealWorkerIds()), pf);
-  }
-
-  @Override
-  protected List<String> getRequiredArguments() {
-    return requiredArguments;
   }
 
   @Override
