@@ -5,27 +5,22 @@ import java.util.Set;
 
 import javax.ws.rs.core.Response.Status;
 
-import com.google.common.collect.ImmutableList;
-
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.api.MyriaApiException;
 import edu.washington.escience.myria.util.FSUtils;
 
 public class TipsyDatasetEncoding extends MyriaApiEncoding {
+  @Required
   public RelationKey relationKey;
+  @Required
   public String tipsyFilename;
+  @Required
   public String grpFilename;
+  @Required
   public String iorderFilename;
   public Set<Integer> workers;
   public List<List<IndexRef>> indexes;
-  private static final List<String> requiredFields = ImmutableList.of("relationKey", "tipsyFilename", "grpFilename",
-      "iorderFilename");
-
-  @Override
-  protected List<String> getRequiredFields() {
-    return requiredFields;
-  }
 
   @Override
   public void validateExtra() {

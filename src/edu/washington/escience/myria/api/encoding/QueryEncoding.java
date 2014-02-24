@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.MyriaConstants;
@@ -40,26 +39,22 @@ import edu.washington.escience.myria.util.MyriaUtils;
 @JsonIgnoreProperties({ "expected_result" })
 public class QueryEncoding extends MyriaApiEncoding {
   /** The raw Datalog. */
+  @Required
   public String rawDatalog;
   /** The logical relation algebra plan. */
+  @Required
   public String logicalRa;
   /** The query plan encoding. */
+  @Required
   public List<PlanFragmentEncoding> fragments;
   /** Set whether this query needs profiling. (default is false) */
   public boolean profilingMode = false;
   /** The expected number of results (for testing). */
   public Long expectedResultSize;
-  /** The list of required fields. */
-  private static List<String> requiredFields = ImmutableList.of("rawDatalog", "logicalRa", "fragments");
   /** The logger for this class. */
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(QueryEncoding.class);
   /** The fault-tolerance mode used in this query, default: none. */
   public String ftMode = "none";
-
-  @Override
-  protected List<String> getRequiredFields() {
-    return requiredFields;
-  }
 
   @Override
   protected void validateExtra() throws MyriaApiException {

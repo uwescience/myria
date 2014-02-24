@@ -1,5 +1,8 @@
 package edu.washington.escience.myria.api.encoding;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.ws.rs.core.Response.Status;
@@ -21,7 +24,17 @@ public abstract class MyriaApiEncoding {
    * @return the list of names of required fields.
    */
   @JsonIgnore
-  protected abstract List<String> getRequiredFields();
+  private final List<String> getRequiredFields() {
+    Field[] fs = this.getClass().getFields();
+    List<String> requiredFields = new ArrayList<String>(5);
+    for (Field f : fs) {
+      Annotation a = f.getAnnotation(Required.class);
+      if (a != null) {
+        requiredFields.add(f.getName());
+      }
+    }
+    return requiredFields;
+  }
 
   /**
    * Checks that this deserialized instance passes input validation. First, it enforces that all required fields
@@ -65,5 +78,12 @@ public abstract class MyriaApiEncoding {
    * fields.
    */
   protected void validateExtra() throws MyriaApiException {
+  }
+
+  public static void main(String[] args) {
+    List<String> rf = ((MyriaApiEncoding) (new FileScanEncoding())).getRequiredFields();
+    for (String r : rf) {
+      System.out.println(r);
+    }
   }
 }
