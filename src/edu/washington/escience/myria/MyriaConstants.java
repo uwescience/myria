@@ -232,7 +232,30 @@ public final class MyriaConstants {
    */
   public static final Schema PROFILING_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE,
       Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("queryId", "opName",
-      "fragmentId", "nanoTime", "intData", "stringData"));
+      "fragmentId", "time", "numTuples", "eventType"));
+
+  /**
+   * The relation that stores profiling information.
+   */
+  public static final RelationKey LOG_SENT_RELATION = new RelationKey("public", "logs", "Sending");
+
+  /**
+   * The schema of the {@link #LOG_SENT_RELATION}.
+   */
+  public static final Schema LOG_SENT_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE,
+      Type.LONG_TYPE, Type.LONG_TYPE, Type.BOOLEAN_TYPE, Type.LONG_TYPE, Type.INT_TYPE), ImmutableList.of("queryId",
+      "opName", "fragmentId", "time", "isEOS", "numTuples", "destinationWorkerId"));
+
+  /**
+   * Relation to store sync events to normalize times between workers.
+   */
+  public static final RelationKey SYNC_TIME_RELATION = new RelationKey("public", "logs", "Sync");
+
+  /**
+   * The schema of the {@link #SYNC_TIME_RELATION}.
+   */
+  public static final Schema SYNC_TIME_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE),
+      ImmutableList.of("queryId", "msTime"));
 
   /** Private constructor to disallow building utility class. */
   private MyriaConstants() {

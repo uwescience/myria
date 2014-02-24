@@ -10,9 +10,6 @@ import edu.washington.escience.myria.util.MyriaArrayUtils;
 /**
  * GenericShuffleProducer, which support json encoding of 1. Broadcast Shuffle 2. One to one Shuffle (Shuffle) 3. Hyper
  * Cube Join Shuffle (HyperJoinShuffle)
- * 
- * @author Shumo Chu <chushumo@cs.washington.edu>
- * 
  */
 public class GenericShuffleProducer extends Producer {
 
@@ -25,9 +22,14 @@ public class GenericShuffleProducer extends Producer {
   private final PartitionFunction partitionFunction;
 
   /**
-   * partition of cells.
+   * Partition of cells.
    */
   private final int[][] partitionToChannel;
+
+  /**
+   * Mapping from channel to worker id.
+   */
+  private final int[] workerIDs;
 
   /**
    * Shuffle to the same operator ID on multiple workers. (The old "ShuffleProducer")
@@ -78,6 +80,7 @@ public class GenericShuffleProducer extends Producer {
     super(child, operatorIDs, workerIDs, isOneToOneMapping);
     Preconditions.checkArgument(partitionToChannel.length == pf.numPartition());
     partitionFunction = pf;
+    this.workerIDs = workerIDs;
     setNumOfPartition(pf.numPartition());
     this.partitionToChannel = partitionToChannel;
   }
@@ -92,6 +95,19 @@ public class GenericShuffleProducer extends Producer {
   @Override
   protected final void consumeTuples(final TupleBatch tup) throws DbException {
     TupleBatch[] partitions = getTupleBatchPartitions(tup);
+
+    if (isProfilingMode()) {
+      for (int partitionId = 0; partitionId < partitions.length; partitionId++) {
+        for (int channelId = 0; channelId < partitionToChannel[partitionId].length; channelId++) {
+          int destWorkerId = workerIDs[partitionToChannel[partitionId][channelId]];
+          if (partitions[partitionId] == null) {
+            getProfilingLogger().recordSend(this, true, 0, destWorkerId);
+          } else {
+            getProfilingLogger().recordSend(this, false, partitions[partitionId].numTuples(), destWorkerId);
+          }
+        }
+      }
+    }
     writePartitionsIntoChannels(true, partitionToChannel, partitions);
   }
 

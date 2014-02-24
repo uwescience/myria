@@ -106,9 +106,9 @@ public final class QuerySubTreeTask {
   private volatile TaskResourceManager resourceManager;
 
   /**
-   * loggers for profiling.
+   * Record nanoseconds so that we can normalize the time in {@link ProfilingLogger}.
    */
-  private ProfilingLogger profilingLogger;
+  private long beginNanoseconds;
 
   /**
    * @return the task execution future.
@@ -360,12 +360,7 @@ public final class QuerySubTreeTask {
    * @return always null. The return value is unused.
    * */
   private Object executeActually() {
-
-    // profilingLogger could be null on the master
-    if (profilingLogger != null) {
-      profilingLogger.recordSync(root.getQueryId(), "QuerySubTreeTask", root.getFragmentId(), System
-          .currentTimeMillis(), "startTime");
-    }
+    beginNanoseconds = System.nanoTime();
 
     if (executionCondition.compareAndSet(EXECUTION_READY | STATE_EXECUTION_REQUESTED, EXECUTION_READY
         | STATE_EXECUTION_REQUESTED | STATE_IN_EXECUTION)) {
@@ -635,13 +630,6 @@ public final class QuerySubTreeTask {
       cleanup(true);
       taskExecutionFuture.setFailure(e);
     }
-
-    if (root.isProfilingMode()) {
-      // the master does not have the database connection information
-      if (execEnvVars.containsKey(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO)) {
-        profilingLogger = ProfilingLogger.getLogger(execEnvVars);
-      }
-    }
   }
 
   /**
@@ -681,5 +669,12 @@ public final class QuerySubTreeTask {
    */
   public TaskResourceManager getResourceManager() {
     return resourceManager;
+  }
+
+  /**
+   * @return the nanosecond counter when this task is executed.
+   */
+  public long getBeginNanoseconds() {
+    return beginNanoseconds;
   }
 }

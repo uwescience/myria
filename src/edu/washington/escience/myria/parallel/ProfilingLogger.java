@@ -20,6 +20,7 @@ import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.JdbcAccessMethod;
 import edu.washington.escience.myria.accessmethod.SQLiteAccessMethod;
 import edu.washington.escience.myria.accessmethod.SQLiteInfo;
+import edu.washington.escience.myria.operator.Operator;
 
 /**
  * A logger for profiling data.
@@ -80,6 +81,8 @@ public class ProfilingLogger {
     accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
 
     accessMethod.createTableIfNotExists(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA);
+    accessMethod.createTableIfNotExists(MyriaConstants.LOG_SENT_RELATION, MyriaConstants.LOG_SENT_SCHEMA);
+    accessMethod.createTableIfNotExists(MyriaConstants.SYNC_TIME_RELATION, MyriaConstants.SYNC_TIME_SCHEMA);
 
     if (accessMethod instanceof JdbcAccessMethod) {
       connection = ((JdbcAccessMethod) accessMethod).getConnection();
@@ -122,24 +125,22 @@ public class ProfilingLogger {
   /**
    * Inserts in batches. Call {@link #flush()}.
    * 
-   * @param queryId the query id
-   * @param operatorName the operator name
-   * @param fragmentId the fragment id
-   * @param longData integer payload
-   * @param stringData string payload
+   * @param operator the operator where this record was logged
+   * @param numTuples the number of tuples
+   * @param eventType the type of the event to be logged
    * @throws DbException if insertion in the database fails
    */
-  public synchronized void recordEvent(final long queryId, final String operatorName, final long fragmentId,
-      final long longData, final String stringData) throws DbException {
+  public synchronized void recordEvent(final Operator operator, final long numTuples, final String eventType)
+      throws DbException {
 
     try {
 
-      statement.setLong(1, queryId);
-      statement.setString(2, operatorName);
-      statement.setLong(3, fragmentId);
-      statement.setLong(4, System.nanoTime());
-      statement.setLong(5, longData);
-      statement.setString(6, stringData);
+      statement.setLong(1, operator.getQueryId());
+      statement.setString(2, operator.getOpName());
+      statement.setLong(3, operator.getFragmentId());
+      statement.setLong(4, getTime(operator));
+      statement.setLong(5, numTuples);
+      statement.setString(6, eventType);
 
       statement.addBatch();
       batchSize++;
@@ -150,6 +151,17 @@ public class ProfilingLogger {
     if (batchSize > TupleBatch.BATCH_SIZE) {
       flush();
     }
+  }
+
+  /**
+   * Returns the execution time in nanoseconds.
+   * 
+   * @param operator the operator
+   * @return the time to record
+   */
+  private long getTime(final Operator operator) {
+    return operator.getWorkerQueryPartition().getBeginMilliseconds() + System.nanoTime()
+        - operator.getSubTreeTask().getBeginNanoseconds();
   }
 
   /**
@@ -170,32 +182,53 @@ public class ProfilingLogger {
   }
 
   /**
-   * Directly inserts entry.
+   * Record that data was sent to a worker.
    * 
-   * @param queryId the query id
-   * @param className the operator name
-   * @param fragmentId the fragment id
-   * @param longData integer payload
-   * @param stringData string payload
+   * @param operator the operator where this record was logged
+   * @param isEos true if the worker sent an EOS
+   * @param numTuples the number of tuples sent. Only set if eos is false
+   * @param destWorkerId the worker if that we send the data to
    */
-  public synchronized void recordSync(final long queryId, final String className, final long fragmentId,
-      final long longData, final String stringData) {
+  public void recordSend(final Operator operator, final boolean isEos, final int numTuples, final int destWorkerId) {
     try {
       final PreparedStatement singleStatement =
-          connection.prepareStatement(accessMethod.insertStatementFromSchema(MyriaConstants.PROFILING_SCHEMA,
-              MyriaConstants.PROFILING_RELATION));
+          connection.prepareStatement(accessMethod.insertStatementFromSchema(MyriaConstants.LOG_SENT_SCHEMA,
+              MyriaConstants.LOG_SENT_RELATION));
 
-      singleStatement.setLong(1, queryId);
-      singleStatement.setString(2, className);
-      singleStatement.setLong(3, fragmentId);
-      singleStatement.setLong(4, System.nanoTime());
-      singleStatement.setLong(5, longData);
-      singleStatement.setString(6, stringData);
+      singleStatement.setLong(1, operator.getQueryId());
+      singleStatement.setString(2, operator.getOpName());
+      singleStatement.setLong(3, operator.getFragmentId());
+      singleStatement.setLong(4, getTime(operator));
+      singleStatement.setBoolean(5, isEos);
+      singleStatement.setLong(6, numTuples);
+      singleStatement.setInt(7, destWorkerId);
 
       singleStatement.executeUpdate();
       singleStatement.close();
     } catch (final SQLException e) {
       LOGGER.error("Failed to write profiling data:", e);
+    }
+  }
+
+  /**
+   * Log the time in milliseconds so that we can sync the time between workers.
+   * 
+   * @param queryID the query id
+   * @param startMilliseconds the current time in milliseconds
+   */
+  public void recordSync(final long queryID, final long startMilliseconds) {
+    try {
+      final PreparedStatement singleStatement =
+          connection.prepareStatement(accessMethod.insertStatementFromSchema(MyriaConstants.SYNC_TIME_SCHEMA,
+              MyriaConstants.SYNC_TIME_RELATION));
+
+      singleStatement.setLong(1, queryID);
+      singleStatement.setLong(2, startMilliseconds);
+
+      singleStatement.executeUpdate();
+      singleStatement.close();
+    } catch (final SQLException e) {
+      LOGGER.error("Failed to log sync:", e);
     }
   }
 }

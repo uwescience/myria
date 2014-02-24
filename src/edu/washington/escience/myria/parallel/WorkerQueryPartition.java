@@ -93,9 +93,9 @@ public class WorkerQueryPartition implements QueryPartition {
   private final Set<Integer> missingWorkers;
 
   /**
-   * loggers for profiling.
+   * Record milliseconds so that we can normalize the time in {@link ProfilingLogger}.
    */
-  private ProfilingLogger profilingLogger;
+  private long startMilliseconds;
 
   /**
    * The future listener for processing the complete events of the execution of all the query's tasks.
@@ -232,10 +232,6 @@ public class WorkerQueryPartition implements QueryPartition {
         new TaskResourceManager(ownerWorker.getIPCConnectionPool(), t, ownerWorker.getQueryExecutionMode());
     ImmutableMap.Builder<String, Object> b = ImmutableMap.builder();
     t.init(resourceManager, b.putAll(ownerWorker.getExecEnvVars()).build());
-
-    if (isProfilingMode()) {
-      profilingLogger = ProfilingLogger.getLogger(ImmutableMap.copyOf(ownerWorker.getExecEnvVars()));
-    }
   }
 
   @Override
@@ -267,13 +263,23 @@ public class WorkerQueryPartition implements QueryPartition {
       LOGGER.info("Query : " + getQueryID() + " start processing.");
     }
 
-    if (isProfilingMode()) {
-      profilingLogger.recordSync(getQueryID(), "WorkerQueryPartition", -1, System.currentTimeMillis(), "startTime");
-    }
+    recordMilliseconds();
 
     queryStatistics.markQueryStart();
     for (QuerySubTreeTask t : tasks) {
       t.execute();
+    }
+  }
+
+  /**
+   * 
+   */
+  private void recordMilliseconds() {
+    startMilliseconds = System.currentTimeMillis();
+    if (isProfilingMode()) {
+      ProfilingLogger profilingLogger =
+          ProfilingLogger.getLogger(ImmutableMap.copyOf(getOwnerWorker().getExecEnvVars()));
+      profilingLogger.recordSync(getQueryID(), startMilliseconds);
     }
   }
 
@@ -443,5 +449,12 @@ public class WorkerQueryPartition implements QueryPartition {
    */
   public Worker getOwnerWorker() {
     return ownerWorker;
+  }
+
+  /**
+   * @return the time in milliseconds when the partition was initialized.
+   */
+  public long getBeginMilliseconds() {
+    return startMilliseconds;
   }
 }

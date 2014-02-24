@@ -3,6 +3,7 @@ package edu.washington.escience.myria.operator;
 import java.io.Serializable;
 import java.util.Arrays;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
@@ -73,9 +74,17 @@ public abstract class Operator implements Serializable {
   }
 
   /**
-   * loggers for profiling.
+   * Logger for profiling.
    */
   private ProfilingLogger profilingLogger;
+
+  /**
+   * @return the profilingLogger
+   */
+  public ProfilingLogger getProfilingLogger() {
+    Preconditions.checkNotNull(profilingLogger);
+    return profilingLogger;
+  }
 
   /**
    * @return return query id.
@@ -86,14 +95,25 @@ public abstract class Operator implements Serializable {
   }
 
   /**
-   * @return worker query partition.
+   * @return worker query partition
    */
   public WorkerQueryPartition getWorkerQueryPartition() {
+    QuerySubTreeTask qstt = getSubTreeTask();
+    if (qstt == null) {
+      return null;
+    } else {
+      return (WorkerQueryPartition) qstt.getOwnerQuery();
+    }
+  }
+
+  /**
+   * @return query subtree task
+   */
+  public QuerySubTreeTask getSubTreeTask() {
     if (execEnvVars == null) {
       return null;
     } else {
-      return (WorkerQueryPartition) ((TaskResourceManager) execEnvVars
-          .get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER)).getOwnerTask().getOwnerQuery();
+      return ((TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER)).getOwnerTask();
     }
   }
 
@@ -282,7 +302,7 @@ public abstract class Operator implements Serializable {
     }
 
     if (isProfilingMode()) {
-      profilingLogger.recordEvent(getQueryId(), getOpName(), getFragmentId(), 0, "live");
+      profilingLogger.recordEvent(this, 0, "live");
     }
 
     TupleBatch result = null;
@@ -302,7 +322,7 @@ public abstract class Operator implements Serializable {
       if (result != null) {
         numberOfTupleReturned = result.numTuples();
       }
-      profilingLogger.recordEvent(getQueryId(), getOpName(), getFragmentId(), numberOfTupleReturned, "hang");
+      profilingLogger.recordEvent(this, numberOfTupleReturned, "hang");
     }
     if (result == null) {
       checkEOSAndEOI();
@@ -419,7 +439,7 @@ public abstract class Operator implements Serializable {
     }
     if (isProfilingMode()) {
       try {
-        profilingLogger.recordEvent(getQueryId(), getOpName(), getFragmentId(), 0, "eos");
+        profilingLogger.recordEvent(this, 0, "eos");
       } catch (Exception e) {
         LOGGER.error("Failed to write profiling data:", e);
       }
