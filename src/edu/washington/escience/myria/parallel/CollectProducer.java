@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.parallel;
 
+import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.operator.Operator;
 
@@ -20,8 +21,8 @@ public class CollectProducer extends GenericShuffleProducer {
    * @param collectConsumerWorkerID destination worker the data goes.
    * */
   public CollectProducer(final Operator child, final ExchangePairID operatorID, final int collectConsumerWorkerID) {
-    super(child, new ExchangePairID[] { operatorID }, new int[][] { { 0 } }, new int[] { collectConsumerWorkerID },
-        new FixValuePartitionFunction(0), true);
+    super(child, new ExchangePairID[] { operatorID }, new int[][] { { MyriaConstants.MASTER_ID } },
+        new int[] { collectConsumerWorkerID }, new FixValuePartitionFunction(0), true);
   }
 
   @Override
