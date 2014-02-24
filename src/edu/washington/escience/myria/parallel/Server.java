@@ -45,6 +45,7 @@ import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleWriter;
+import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
@@ -1044,7 +1045,7 @@ public final class Server {
        * Add the DatasetMetadataUpdater, which will update the catalog with the set of workers created when the query
        * succeeds.
        */
-      queryExecutionFuture.addListener(new DatasetMetadataUpdater(catalog, workerPlans, queryID));
+      queryExecutionFuture.addPreListener(new DatasetMetadataUpdater(catalog, workerPlans, queryID));
 
       queryExecutionFuture.addListener(new QueryFutureListener() {
         @Override
@@ -1132,13 +1133,14 @@ public final class Server {
    * 
    * @param relationKey the name of the dataset.
    * @param workersToIngest restrict the workers to ingest data (null for all)
+   * @param indexes the indexes created.
    * @param source the source of tuples to be ingested.
    * @return the status of the ingested dataset.
    * @throws InterruptedException interrupted
    * @throws DbException if there is an error
    */
   public DatasetStatus ingestDataset(final RelationKey relationKey, final Set<Integer> workersToIngest,
-      final Operator source) throws InterruptedException, DbException {
+      final List<List<IndexRef>> indexes, final Operator source) throws InterruptedException, DbException {
     /* Figure out the workers we will use. If workersToIngest is null, use all active workers. */
     Set<Integer> actualWorkers = workersToIngest;
     if (workersToIngest == null) {
@@ -1155,7 +1157,7 @@ public final class Server {
     /* The workers' plan */
     GenericShuffleConsumer gather =
         new GenericShuffleConsumer(source.getSchema(), scatterId, new int[] { MyriaConstants.MASTER_ID });
-    DbInsert insert = new DbInsert(gather, relationKey, true);
+    DbInsert insert = new DbInsert(gather, relationKey, true, indexes);
     Map<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
     for (Integer workerId : workersArray) {
       workerPlans.put(workerId, new SingleQueryPlanWithArgs(insert));

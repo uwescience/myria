@@ -2,6 +2,9 @@
 import org.gradle.plugins.ide.eclipse.model.SourceFolder
 apply plugin: "java"
 apply plugin: "eclipse"
+/* Coveralls with JaCoCo */
+apply plugin: 'jacoco'
+apply plugin: 'coveralls'
 
 /* Set up group and version info for myria */
 archivesBaseName = "myria"
@@ -15,6 +18,24 @@ task wrapper(type: Wrapper) {
 /* We use Java 1.7 */
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
+
+/* Gradle's build script */
+buildscript {
+  repositories {
+    mavenCentral()
+  }
+
+  dependencies {
+    classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:0.2.5'
+  }
+}
+/* Coveralls */
+jacocoTestReport {
+  reports {
+    xml.enabled = true // coveralls plugin depends on xml format report
+    html.enabled = true
+  }
+}
 
 /* Tell gradle where the source code is located. */
 sourceSets {

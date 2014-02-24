@@ -67,6 +67,17 @@ public abstract class OperationFutureBase<T> extends AttachmentableAdapter imple
   private List<OperationFutureListener> otherListeners;
 
   /**
+   * The first pre-notify listener of all the list of listeners. A pre-notify listener will get executed right after the
+   * operation is completed and before the threads who are waiting on this future are wakedup.
+   * */
+  private OperationFutureListener firstPreListener;
+
+  /**
+   * All other pre-notify listeners.
+   * */
+  private List<OperationFutureListener> otherPreListeners;
+
+  /**
    * Listeners for progress events.
    * */
   private List<OperationFutureProgressListener> progressListeners;
@@ -137,6 +148,7 @@ public abstract class OperationFutureBase<T> extends AttachmentableAdapter imple
    * Wake up all waiters and notify listeners.
    * */
   protected final void wakeupWaitersAndNotifyListeners() {
+    notifyPreListeners();
     synchronized (this) {
       // Allow only once.
       if (waiters > 0) {
@@ -231,6 +243,47 @@ public abstract class OperationFutureBase<T> extends AttachmentableAdapter imple
           }
           progressListeners.add((OperationFutureProgressListener) listener);
         }
+      }
+    }
+
+    if (notifyNow) {
+      notifyListener(listener);
+    }
+  }
+
+  /**
+   * A pre-notify listener will get executed right after the operation is completed and before the threads who are
+   * waiting on this future are wakedup. If the future is already completed, the specified listener is notified
+   * immediately.
+   * 
+   * Adds the specified listener to this future. If the future is already completed, the specified listener is notified
+   * immediately.
+   * 
+   * @param listener the listener.
+   * */
+  protected final void addPreListener0(final OperationFutureListener listener) {
+    if (listener == null) {
+      throw new NullPointerException("listener");
+    }
+    if (listener instanceof OperationFutureProgressListener) {
+      throw new IllegalArgumentException(OperationFutureProgressListener.class.getCanonicalName()
+          + " can only be added by addListener");
+    }
+
+    boolean notifyNow = false;
+    synchronized (this) {
+      if (isDone()) {
+        notifyNow = true;
+      } else {
+        if (firstPreListener == null) {
+          firstPreListener = listener;
+        } else {
+          if (otherPreListeners == null) {
+            otherPreListeners = new ArrayList<OperationFutureListener>(1);
+          }
+          otherPreListeners.add(listener);
+        }
+
       }
     }
 
@@ -507,6 +560,28 @@ public abstract class OperationFutureBase<T> extends AttachmentableAdapter imple
           notifyListener(l);
         }
         otherListeners = null;
+      }
+    }
+  }
+
+  /**
+   * notify the listeners.
+   * */
+  private void notifyPreListeners() {
+    // This method doesn't need synchronization because:
+    // 1) This method is always called after synchronized (this) block.
+    // Hence any listener list modification happens-before this method.
+    // 2) This method is called only when 'done' is true. Once 'done'
+    // becomes true, the listener list is never modified - see add/removeListener()
+    if (firstPreListener != null) {
+      notifyListener(firstPreListener);
+      firstPreListener = null;
+
+      if (otherPreListeners != null) {
+        for (OperationFutureListener l : otherPreListeners) {
+          notifyListener(l);
+        }
+        otherPreListeners = null;
       }
     }
   }
