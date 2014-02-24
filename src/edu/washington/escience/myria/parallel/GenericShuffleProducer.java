@@ -99,11 +99,11 @@ public class GenericShuffleProducer extends Producer {
    * call partition function to partition this tuple batch as an array of shallow copies of TupleBatch. subclasses can
    * override this method to have smarter partition approach.
    * 
-   * @param tup the tuple batch to be partitioned.
+   * @param tb the tuple batch to be partitioned.
    * @return partitions.
    */
-  protected TupleBatch[] getTupleBatchPartitions(final TupleBatch tup) {
-    return tup.partition(partitionFunction);
+  protected TupleBatch[] getTupleBatchPartitions(final TupleBatch tb) {
+    return tb.partition(partitionFunction);
   }
 
   @Override
