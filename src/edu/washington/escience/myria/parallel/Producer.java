@@ -321,8 +321,9 @@ public abstract class Producer extends RootOperator {
   /**
    * Pop tuple batches from each of the buffers and try to write them to corresponding channels, if possible.
    * 
-   * @param usingTimeout use popAny() or popAnyUsingTimeout() when poping
-   * @param channelIndices the same as GenericShuffleProducer's cellPartition
+   * @param usingTimeout use {@link TupleBatchBuffer#popAny()} or {@link TupleBatchBuffer#popAnyUsingTimeout()} when
+   *          popping
+   * @param channelIndices the same as {@link GenericShuffleProducer#cellPartition}.
    * @param partitions the list of partitions as tuple batches.
    * */
   protected final void writePartitionsIntoChannels(final boolean usingTimeout, final int[][] channelIndices,
