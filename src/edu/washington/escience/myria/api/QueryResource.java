@@ -34,6 +34,8 @@ import edu.washington.escience.myria.CsvTupleWriter;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.RelationKey;
+import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleWriter;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
@@ -273,9 +275,36 @@ public final class QueryResource {
    */
   @GET
   @Produces({ MediaType.TEXT_PLAIN })
-  @Path("logs/query-{queryId:\\d+}")
+  @Path("logs-profile/query-{queryId:\\d+}")
   public Response getProfileLogs(@PathParam("queryId") final long queryId, @Context final UriInfo uriInfo)
       throws DbException {
+    return getLogs(queryId, MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA);
+  }
+
+  /**
+   * Get sent logs of a query.
+   * 
+   * @param queryId query id.
+   * @param uriInfo the URL of the current request.
+   * @return the profiling logs of the query across all workers
+   * @throws DbException if there is an error in the database.
+   */
+  @GET
+  @Produces({ MediaType.TEXT_PLAIN })
+  @Path("logs-sent/query-{queryId:\\d+}")
+  public Response getSentLogs(@PathParam("queryId") final long queryId, @Context final UriInfo uriInfo)
+      throws DbException {
+    return getLogs(queryId, MyriaConstants.LOG_SENT_RELATION, MyriaConstants.LOG_SENT_SCHEMA);
+  }
+
+  /**
+   * @param queryId query id
+   * @param relationKey the relation to stream from
+   * @param schema the schema of the relation to stream from
+   * @return the profiling logs of the query across all workers
+   * @throws DbException if there is an error in the database.
+   */
+  private Response getLogs(final long queryId, final RelationKey relationKey, final Schema schema) throws DbException {
     /* Start building the response. */
     ResponseBuilder response = Response.ok();
     response.type(MediaType.TEXT_PLAIN);
@@ -301,7 +330,7 @@ public final class QueryResource {
 
     /* Start streaming tuples into the TupleWriter, and through the pipes to the PipedStreamingOutput. */
     try {
-      server.startLogDataStream(queryId, writer);
+      server.startLogDataStream(queryId, writer, relationKey, schema);
     } catch (IllegalArgumentException e) {
       throw new MyriaApiException(Status.BAD_REQUEST, e);
     }

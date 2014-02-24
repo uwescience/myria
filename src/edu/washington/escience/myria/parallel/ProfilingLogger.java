@@ -82,7 +82,6 @@ public class ProfilingLogger {
 
     accessMethod.createTableIfNotExists(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA);
     accessMethod.createTableIfNotExists(MyriaConstants.LOG_SENT_RELATION, MyriaConstants.LOG_SENT_SCHEMA);
-    accessMethod.createTableIfNotExists(MyriaConstants.SYNC_TIME_RELATION, MyriaConstants.SYNC_TIME_SCHEMA);
 
     if (accessMethod instanceof JdbcAccessMethod) {
       connection = ((JdbcAccessMethod) accessMethod).getConnection();
@@ -154,14 +153,26 @@ public class ProfilingLogger {
   }
 
   /**
-   * Returns the execution time in nanoseconds.
+   * Returns the relative time to the beginning on the query in nanoseconds.
+   * 
+   * The time that we log is the relative time to the beginning of the query in nanoseconds (workerStartTimeMillis). We
+   * assume that all workers get initialized at the same time so that the time in ms recorded on the workers can be
+   * considered 0. The time in nanoseconds is only a relative time with regard to some arbitrary beginning and it is
+   * different of different threads. This means we have to calculate the difference on the thread and add it to the
+   * difference in ms between the worker and the thread (startupTimeMillis).
    * 
    * @param operator the operator
    * @return the time to record
    */
   private long getTime(final Operator operator) {
-    return operator.getWorkerQueryPartition().getBeginMilliseconds() + System.nanoTime()
-        - operator.getSubTreeTask().getBeginNanoseconds();
+    final long workerStartTimeMillis = operator.getWorkerQueryPartition().getBeginMilliseconds();
+    final long threadStartTimeMillis = operator.getSubTreeTask().getBeginMilliseconds();
+    final long startupTimeMillis = threadStartTimeMillis - workerStartTimeMillis;
+    Preconditions.checkArgument(startupTimeMillis >= 0);
+    final long threadStartNanos = operator.getSubTreeTask().getBeginNanoseconds();
+    final long activeTimeNanos = System.nanoTime() - threadStartNanos;
+
+    return startupTimeMillis * MyriaConstants.MILLI_TO_NANO + activeTimeNanos;
   }
 
   /**
@@ -207,28 +218,6 @@ public class ProfilingLogger {
       singleStatement.close();
     } catch (final SQLException e) {
       LOGGER.error("Failed to write profiling data:", e);
-    }
-  }
-
-  /**
-   * Log the time in milliseconds so that we can sync the time between workers.
-   * 
-   * @param queryID the query id
-   * @param startMilliseconds the current time in milliseconds
-   */
-  public void recordSync(final long queryID, final long startMilliseconds) {
-    try {
-      final PreparedStatement singleStatement =
-          connection.prepareStatement(accessMethod.insertStatementFromSchema(MyriaConstants.SYNC_TIME_SCHEMA,
-              MyriaConstants.SYNC_TIME_RELATION));
-
-      singleStatement.setLong(1, queryID);
-      singleStatement.setLong(2, startMilliseconds);
-
-      singleStatement.executeUpdate();
-      singleStatement.close();
-    } catch (final SQLException e) {
-      LOGGER.error("Failed to log sync:", e);
     }
   }
 }

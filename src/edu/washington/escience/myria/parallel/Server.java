@@ -888,7 +888,6 @@ public final class Server {
     if (getSchema(MyriaConstants.PROFILING_RELATION) == null && !getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_SQLITE)) {
       importDataset(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA, null);
       importDataset(MyriaConstants.LOG_SENT_RELATION, MyriaConstants.LOG_SENT_SCHEMA, null);
-      importDataset(MyriaConstants.SYNC_TIME_RELATION, MyriaConstants.SYNC_TIME_SCHEMA, null);
     }
   }
 
@@ -1461,10 +1460,13 @@ public final class Server {
   /**
    * @param queryId query id.
    * @param writer writer to get data.
+   * @param relationKey the relation to stream from
+   * @param schema the schema of the relation to stream from
    * @return profiling logs for the query.
    * @throws DbException if there is an error when accessing profiling logs.
    */
-  public QueryFuture startLogDataStream(final long queryId, final TupleWriter writer) throws DbException {
+  public QueryFuture startLogDataStream(final long queryId, final TupleWriter writer, final RelationKey relationKey,
+      final Schema schema) throws DbException {
     /* Get the relation's schema, to make sure it exists. */
     final QueryStatusEncoding queryStatus;
     try {
@@ -1479,25 +1481,21 @@ public final class Server {
       throw new IllegalArgumentException("the requested query does not have profiling logs.");
     }
 
-    /* get relation key and schema */
-    RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
-
     /* Get the workers. */
     Set<Integer> actualWorkers = getAliveWorkers();
 
     /* Construct the operators that go elsewhere. */
     DbQueryScan scan =
-        new DbQueryScan("SELECT * FROM " + relationKey.toString(getDBMS()) + " WHERE queryId=" + queryId,
-            MyriaConstants.PROFILING_SCHEMA);
+        new DbQueryScan("SELECT * FROM " + relationKey.toString(getDBMS()) + " WHERE queryId=" + queryId, schema);
     final ExchangePairID operatorId = ExchangePairID.newID();
 
     ImmutableList.Builder<Expression> emitExpressions = ImmutableList.builder();
 
     emitExpressions.add(new Expression("workerId", new WorkerIdExpression()));
 
-    for (int column = 0; column < MyriaConstants.PROFILING_SCHEMA.numColumns(); column++) {
+    for (int column = 0; column < schema.numColumns(); column++) {
       VariableExpression copy = new VariableExpression(column);
-      emitExpressions.add(new Expression(MyriaConstants.PROFILING_SCHEMA.getColumnName(column), copy));
+      emitExpressions.add(new Expression(schema.getColumnName(column), copy));
     }
 
     Apply addWorkerId = new Apply(scan, emitExpressions.build());

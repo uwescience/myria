@@ -111,6 +111,12 @@ public final class QuerySubTreeTask {
   private long beginNanoseconds;
 
   /**
+   * Record the milliseconds so that we can calculate the difference to the worker initialization in
+   * {@link ProfilingLogger}.
+   */
+  private long beginMilliseconds;
+
+  /**
    * @return the task execution future.
    */
   TaskFuture getExecutionFuture() {
@@ -361,6 +367,7 @@ public final class QuerySubTreeTask {
    * */
   private Object executeActually() {
     beginNanoseconds = System.nanoTime();
+    beginMilliseconds = System.currentTimeMillis();
 
     if (executionCondition.compareAndSet(EXECUTION_READY | STATE_EXECUTION_REQUESTED, EXECUTION_READY
         | STATE_EXECUTION_REQUESTED | STATE_IN_EXECUTION)) {
@@ -676,5 +683,9 @@ public final class QuerySubTreeTask {
    */
   public long getBeginNanoseconds() {
     return beginNanoseconds;
+  }
+
+  public long getBeginMilliseconds() {
+    return beginMilliseconds;
   }
 }

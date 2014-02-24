@@ -263,23 +263,11 @@ public class WorkerQueryPartition implements QueryPartition {
       LOGGER.info("Query : " + getQueryID() + " start processing.");
     }
 
-    recordMilliseconds();
+    startMilliseconds = System.currentTimeMillis();
 
     queryStatistics.markQueryStart();
     for (QuerySubTreeTask t : tasks) {
       t.execute();
-    }
-  }
-
-  /**
-   * 
-   */
-  private void recordMilliseconds() {
-    startMilliseconds = System.currentTimeMillis();
-    if (isProfilingMode()) {
-      ProfilingLogger profilingLogger =
-          ProfilingLogger.getLogger(ImmutableMap.copyOf(getOwnerWorker().getExecEnvVars()));
-      profilingLogger.recordSync(getQueryID(), startMilliseconds);
     }
   }
 

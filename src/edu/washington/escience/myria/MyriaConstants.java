@@ -247,15 +247,9 @@ public final class MyriaConstants {
       "opName", "fragmentId", "time", "isEOS", "numTuples", "destinationWorkerId"));
 
   /**
-   * Relation to store sync events to normalize times between workers.
+   * Convert milliseconds to nanoseconds.
    */
-  public static final RelationKey SYNC_TIME_RELATION = new RelationKey("public", "logs", "Sync");
-
-  /**
-   * The schema of the {@link #SYNC_TIME_RELATION}.
-   */
-  public static final Schema SYNC_TIME_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE),
-      ImmutableList.of("queryId", "msTime"));
+  public static final long MILLI_TO_NANO = 1000000;
 
   /** Private constructor to disallow building utility class. */
   private MyriaConstants() {
