@@ -5,6 +5,7 @@ apply plugin: "eclipse"
 /* Coveralls with JaCoCo */
 apply plugin: 'jacoco'
 apply plugin: 'coveralls'
+apply plugin: 'gradleProtobufPlugin'
 
 /* Set up group and version info for myria */
 archivesBaseName = "myria"
@@ -27,6 +28,7 @@ buildscript {
 
   dependencies {
     classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:0.2.5'
+    classpath 'com.tomcawley:gradle-protobuf-plugin:0.2'
   }
 }
 /* Coveralls */
@@ -35,6 +37,38 @@ jacocoTestReport {
     xml.enabled = true // coveralls plugin depends on xml format report
     html.enabled = true
   }
+}
+
+protoBuf{
+  protoc {
+    'Mac OS X' {
+      path = "protoc"
+    }
+    'Mac OS' {
+      path = "protoc"
+    }
+    'Linux' {
+      path = "protoc"
+    }
+    'FreeBSD' {
+      path = "protoc"
+    }
+	}
+ 
+  sourceSets {
+    proto {
+      srcDir = 'protobuf/src'
+    }
+  }
+
+  lang {
+    java {
+      genDir = 'protobuf/java'
+    }
+    python {
+      genDir = 'protobuf/python'
+    }
+  } 
 }
 
 /* Tell gradle where the source code is located. */
@@ -78,6 +112,7 @@ check.dependsOn testsuitesClasses
  * we'll want to use Eclipse to debug it. */
 test.dependsOn eclipseClasspath
 tasks.eclipseClasspath.dependsOn cleanEclipseClasspath
+tasks.eclipseClasspath.dependsOn compileProto
 
 /*
  * List the compile and runtime dependencies of all the tests.
