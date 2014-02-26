@@ -391,6 +391,13 @@ public abstract class Operator implements Serializable {
    */
   public final void setEOI(final boolean eoi) {
     this.eoi = eoi;
+    if (isProfilingMode()) {
+      try {
+        profilingLogger.recordEvent(this, -1, "eoi");
+      } catch (Exception e) {
+        LOGGER.error("Failed to write profiling data:", e);
+      }
+    }
   }
 
   /**
@@ -436,13 +443,6 @@ public abstract class Operator implements Serializable {
   protected final void setEOS() {
     if (eos()) {
       return;
-    }
-    if (isProfilingMode()) {
-      try {
-        profilingLogger.recordEvent(this, -1, "eos");
-      } catch (Exception e) {
-        LOGGER.error("Failed to write profiling data:", e);
-      }
     }
     eos = true;
   }
