@@ -302,7 +302,7 @@ public abstract class Operator implements Serializable {
     }
 
     if (isProfilingMode()) {
-      profilingLogger.recordEvent(this, 0, "live");
+      profilingLogger.recordEvent(this, -1, "call");
     }
 
     TupleBatch result = null;
@@ -322,7 +322,7 @@ public abstract class Operator implements Serializable {
       if (result != null) {
         numberOfTupleReturned = result.numTuples();
       }
-      profilingLogger.recordEvent(this, numberOfTupleReturned, "hang");
+      profilingLogger.recordEvent(this, numberOfTupleReturned, "return");
     }
     if (result == null) {
       checkEOSAndEOI();
@@ -439,7 +439,7 @@ public abstract class Operator implements Serializable {
     }
     if (isProfilingMode()) {
       try {
-        profilingLogger.recordEvent(this, 0, "eos");
+        profilingLogger.recordEvent(this, -1, "eos");
       } catch (Exception e) {
         LOGGER.error("Failed to write profiling data:", e);
       }

@@ -232,7 +232,7 @@ public final class MyriaConstants {
    */
   public static final Schema PROFILING_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE,
       Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("queryId", "opName",
-      "fragmentId", "time", "numTuples", "eventType"));
+      "fragmentId", "nanoTime", "numTuples", "eventType"));
 
   /**
    * The relation that stores profiling information.
@@ -243,8 +243,8 @@ public final class MyriaConstants {
    * The schema of the {@link #LOG_SENT_RELATION}.
    */
   public static final Schema LOG_SENT_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE,
-      Type.LONG_TYPE, Type.LONG_TYPE, Type.BOOLEAN_TYPE, Type.LONG_TYPE, Type.INT_TYPE), ImmutableList.of("queryId",
-      "opName", "fragmentId", "time", "isEOS", "numTuples", "destinationWorkerId"));
+      Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.INT_TYPE), ImmutableList.of("queryId", "opName",
+      "fragmentId", "nanoTime", "numTuples", "destWorkerId"));
 
   /**
    * Convert milliseconds to nanoseconds.

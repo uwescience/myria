@@ -196,11 +196,10 @@ public class ProfilingLogger {
    * Record that data was sent to a worker.
    * 
    * @param operator the operator where this record was logged
-   * @param isEos true if the worker sent an EOS
-   * @param numTuples the number of tuples sent. Only set if eos is false
+   * @param numTuples the number of tuples sent.
    * @param destWorkerId the worker if that we send the data to
    */
-  public void recordSend(final Operator operator, final boolean isEos, final int numTuples, final int destWorkerId) {
+  public void recordSend(final Operator operator, final int numTuples, final int destWorkerId) {
     try {
       final PreparedStatement singleStatement =
           connection.prepareStatement(accessMethod.insertStatementFromSchema(MyriaConstants.LOG_SENT_SCHEMA,
@@ -210,9 +209,8 @@ public class ProfilingLogger {
       singleStatement.setString(2, operator.getOpName());
       singleStatement.setLong(3, operator.getFragmentId());
       singleStatement.setLong(4, getTime(operator));
-      singleStatement.setBoolean(5, isEos);
-      singleStatement.setLong(6, numTuples);
-      singleStatement.setInt(7, destWorkerId);
+      singleStatement.setLong(5, numTuples);
+      singleStatement.setInt(6, destWorkerId);
 
       singleStatement.executeUpdate();
       singleStatement.close();
