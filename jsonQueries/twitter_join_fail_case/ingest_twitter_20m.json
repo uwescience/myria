@@ -1,0 +1,16 @@
+{
+  "relationKey" : {
+    "userName" : "chushumo",
+    "programName" : "multiway_join",
+    "relationName" : "twitter_20m"
+  },
+  "schema" : {
+    "columnTypes" : ["INT_TYPE", "INT_TYPE"],
+    "columnNames" : ["follower", "followee"]
+  },
+  "source":{
+    "dataType": "File",
+    "filename" : "/disk1/t_20000000"
+  },
+  "delimiter": " "
+}
