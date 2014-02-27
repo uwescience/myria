@@ -246,11 +246,6 @@ public final class MyriaConstants {
       Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.INT_TYPE), ImmutableList.of("queryId", "opName",
       "fragmentId", "nanoTime", "numTuples", "destWorkerId"));
 
-  /**
-   * Convert milliseconds to nanoseconds.
-   */
-  public static final long MILLI_TO_NANO = 1000000;
-
   /** Private constructor to disallow building utility class. */
   private MyriaConstants() {
   }

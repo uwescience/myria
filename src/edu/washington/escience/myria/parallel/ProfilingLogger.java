@@ -4,6 +4,7 @@ import java.io.File;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.concurrent.TimeUnit;
 
 import scala.NotImplementedError;
 
@@ -172,7 +173,7 @@ public class ProfilingLogger {
     final long threadStartNanos = operator.getSubTreeTask().getBeginNanoseconds();
     final long activeTimeNanos = System.nanoTime() - threadStartNanos;
 
-    return startupTimeMillis * MyriaConstants.MILLI_TO_NANO + activeTimeNanos;
+    return TimeUnit.MILLISECONDS.toNanos(startupTimeMillis) + activeTimeNanos;
   }
 
   /**
