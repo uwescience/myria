@@ -45,6 +45,7 @@ import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleWriter;
+import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
@@ -1459,14 +1460,15 @@ public final class Server {
 
   /**
    * @param queryId query id.
+   * @param fragmentId the fragment id to return data for. All fragments, if < 0.
    * @param writer writer to get data.
    * @param relationKey the relation to stream from
    * @param schema the schema of the relation to stream from
    * @return profiling logs for the query.
    * @throws DbException if there is an error when accessing profiling logs.
    */
-  public QueryFuture startLogDataStream(final long queryId, final TupleWriter writer, final RelationKey relationKey,
-      final Schema schema) throws DbException {
+  public QueryFuture startLogDataStream(final long queryId, final long fragmentId, final TupleWriter writer,
+      final RelationKey relationKey, final Schema schema) throws DbException {
     /* Get the relation's schema, to make sure it exists. */
     final QueryStatusEncoding queryStatus;
     try {
@@ -1484,11 +1486,16 @@ public final class Server {
     /* Get the workers. */
     Set<Integer> actualWorkers = getAliveWorkers();
 
+    String fragmentWhere = "";
+    if (fragmentId >= 0) {
+      fragmentWhere = " AND fragmentId=" + fragmentId;
+    }
+
     /* Construct the operators that go elsewhere. */
     // TODO: replace this with some kind of query construction
     DbQueryScan scan =
         new DbQueryScan("SELECT * FROM " + relationKey.toString(getDBMS()) + " WHERE queryId=" + queryId
-            + " ORDER BY fragmentid, nanotime", schema);
+            + fragmentWhere + " ORDER BY fragmentid, nanotime", schema);
     final ExchangePairID operatorId = ExchangePairID.newID();
 
     ImmutableList.Builder<Expression> emitExpressions = ImmutableList.builder();
@@ -1500,6 +1507,83 @@ public final class Server {
       if (schema.getColumnName(column).toLowerCase().equals("queryid")) {
         continue;
       }
+      VariableExpression copy = new VariableExpression(column);
+      emitExpressions.add(new Expression(schema.getColumnName(column), copy));
+    }
+
+    Apply addWorkerId = new Apply(scan, emitExpressions.build());
+
+    CollectProducer producer = new CollectProducer(addWorkerId, operatorId, MyriaConstants.MASTER_ID);
+
+    /* Construct the workers' {@link SingleQueryPlanWithArgs}. */
+    SingleQueryPlanWithArgs workerPlan = new SingleQueryPlanWithArgs(producer);
+    Map<Integer, SingleQueryPlanWithArgs> workerPlans =
+        new HashMap<Integer, SingleQueryPlanWithArgs>(actualWorkers.size());
+    for (Integer worker : actualWorkers) {
+      workerPlans.put(worker, workerPlan);
+    }
+
+    /* Construct the master plan. */
+    final CollectConsumer consumer =
+        new CollectConsumer(addWorkerId.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
+    DataOutput output = new DataOutput(consumer, writer);
+    final SingleQueryPlanWithArgs masterPlan = new SingleQueryPlanWithArgs(output);
+
+    /* Submit the plan for the download. */
+    String planString = "download " + relationKey.toString(getDBMS());
+    try {
+      return submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
+
+  /**
+   * @param queryId query id.
+   * @param fragmentId the fragment id to return data for. All fragments, if < 0.
+   * @param writer writer to get data.
+   * @return profiling logs for the query.
+   * 
+   * @throws DbException if there is an error when accessing profiling logs.
+   */
+  public QueryFuture startProfilingLogDataStream(final long queryId, final long fragmentId, final TupleWriter writer)
+      throws DbException {
+    /* Get the relation's schema, to make sure it exists. */
+    final QueryStatusEncoding queryStatus;
+    try {
+      queryStatus = catalog.getQuery(queryId);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+    if (queryStatus.status != QueryStatusEncoding.Status.SUCCESS) {
+      throw new IllegalArgumentException("the requested query is was not found or succesfully finished.");
+    }
+    if (!queryStatus.profilingMode) {
+      throw new IllegalArgumentException("the requested query does not have profiling logs.");
+    }
+
+    final Schema schema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("fragmentId",
+            "nanoTime", "eventType"));
+    final RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
+
+    /* Get the workers. */
+    Set<Integer> actualWorkers = getAliveWorkers();
+
+    /* Construct the operators that go elsewhere. */
+    // TODO: replace this with some kind of query construction
+    DbQueryScan scan =
+        new DbQueryScan("select fragmentid, nanotime, eventtype  from " + relationKey.toString(getDBMS())
+            + " p where opname = (select opname from " + relationKey.toString(getDBMS())
+            + " where p.fragmentid=fragmentid and p.queryid=queryid order by nanotime limit 1) and fragmentid="
+            + fragmentId + " and queryid=" + queryId + " order by fragmentid, nanotime", schema);
+    final ExchangePairID operatorId = ExchangePairID.newID();
+
+    ImmutableList.Builder<Expression> emitExpressions = ImmutableList.builder();
+
+    emitExpressions.add(new Expression("workerId", new WorkerIdExpression()));
+
+    for (int column = 0; column < schema.numColumns(); column++) {
       VariableExpression copy = new VariableExpression(column);
       emitExpressions.add(new Expression(schema.getColumnName(column), copy));
     }
