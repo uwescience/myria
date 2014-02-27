@@ -685,6 +685,9 @@ public final class QuerySubTreeTask {
     return beginNanoseconds;
   }
 
+  /**
+   * @return the time when this task is executed.
+   */
   public long getBeginMilliseconds() {
     return beginMilliseconds;
   }
