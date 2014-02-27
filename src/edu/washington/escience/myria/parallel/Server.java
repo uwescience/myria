@@ -1485,8 +1485,10 @@ public final class Server {
     Set<Integer> actualWorkers = getAliveWorkers();
 
     /* Construct the operators that go elsewhere. */
+    // TODO: replace this with some kind of query construction
     DbQueryScan scan =
-        new DbQueryScan("SELECT * FROM " + relationKey.toString(getDBMS()) + " WHERE queryId=" + queryId, schema);
+        new DbQueryScan("SELECT * FROM " + relationKey.toString(getDBMS()) + " WHERE queryId=" + queryId
+            + " ORDER BY fragmentid, nanotime", schema);
     final ExchangePairID operatorId = ExchangePairID.newID();
 
     ImmutableList.Builder<Expression> emitExpressions = ImmutableList.builder();
@@ -1494,6 +1496,10 @@ public final class Server {
     emitExpressions.add(new Expression("workerId", new WorkerIdExpression()));
 
     for (int column = 0; column < schema.numColumns(); column++) {
+      // we don't need the query id since it is in the query
+      if (schema.getColumnName(column).toLowerCase().equals("queryid")) {
+        continue;
+      }
       VariableExpression copy = new VariableExpression(column);
       emitExpressions.add(new Expression(schema.getColumnName(column), copy));
     }
