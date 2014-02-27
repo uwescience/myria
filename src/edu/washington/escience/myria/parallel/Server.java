@@ -62,6 +62,7 @@ import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.EOSSource;
+import edu.washington.escience.myria.operator.InMemoryOrderBy;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
@@ -1546,8 +1547,8 @@ public final class Server {
    * 
    * @throws DbException if there is an error when accessing profiling logs.
    */
-  public QueryFuture startProfilingLogDataStream(final long queryId, final long fragmentId, final TupleWriter writer)
-      throws DbException {
+  public QueryFuture startProfilingRootsLogDataStream(final long queryId, final long fragmentId,
+      final TupleWriter writer) throws DbException {
     /* Get the relation's schema, to make sure it exists. */
     final QueryStatusEncoding queryStatus;
     try {
@@ -1563,8 +1564,7 @@ public final class Server {
     }
 
     final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("fragmentId",
-            "nanoTime", "eventType"));
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("nanoTime", "eventType"));
     final RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
 
     /* Get the workers. */
@@ -1573,7 +1573,7 @@ public final class Server {
     /* Construct the operators that go elsewhere. */
     // TODO: replace this with some kind of query construction
     DbQueryScan scan =
-        new DbQueryScan("select fragmentid, nanotime, eventtype  from " + relationKey.toString(getDBMS())
+        new DbQueryScan("select nanotime, eventtype  from " + relationKey.toString(getDBMS())
             + " p where opname = (select opname from " + relationKey.toString(getDBMS())
             + " where p.fragmentid=fragmentid and p.queryid=queryid order by nanotime limit 1) and fragmentid="
             + fragmentId + " and queryid=" + queryId + " order by fragmentid, nanotime", schema);
@@ -1603,7 +1603,8 @@ public final class Server {
     /* Construct the master plan. */
     final CollectConsumer consumer =
         new CollectConsumer(addWorkerId.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
-    DataOutput output = new DataOutput(consumer, writer);
+    final InMemoryOrderBy order = new InMemoryOrderBy(consumer, new int[] { 1 }, new boolean[] { true });
+    DataOutput output = new DataOutput(order, writer);
     final SingleQueryPlanWithArgs masterPlan = new SingleQueryPlanWithArgs(output);
 
     /* Submit the plan for the download. */

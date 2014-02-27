@@ -174,7 +174,7 @@ public final class LogResource {
 
     /* Start streaming tuples into the TupleWriter, and through the pipes to the PipedStreamingOutput. */
     try {
-      server.startProfilingLogDataStream(queryId, fragmentId, writer);
+      server.startProfilingRootsLogDataStream(queryId, fragmentId, writer);
     } catch (IllegalArgumentException e) {
       throw new MyriaApiException(Status.BAD_REQUEST, e);
     }
