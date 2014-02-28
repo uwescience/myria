@@ -1504,8 +1504,9 @@ public final class Server {
     emitExpressions.add(new Expression("workerId", new WorkerIdExpression()));
 
     for (int column = 0; column < schema.numColumns(); column++) {
-      // we don't need the query id since it is in the query
-      if (schema.getColumnName(column).toLowerCase().equals("queryid")) {
+      // we don't need the query id and sometimes the fragment id since they are in the query
+      if (schema.getColumnName(column).toLowerCase().equals("queryid") || fragmentId >= 0
+          && schema.getColumnName(column).toLowerCase().equals("fragmentid")) {
         continue;
       }
       VariableExpression copy = new VariableExpression(column);
@@ -1575,8 +1576,8 @@ public final class Server {
     DbQueryScan scan =
         new DbQueryScan("select nanotime, eventtype  from " + relationKey.toString(getDBMS())
             + " p where opname = (select opname from " + relationKey.toString(getDBMS())
-            + " where p.fragmentid=fragmentid and p.queryid=queryid order by nanotime limit 1) and fragmentid="
-            + fragmentId + " and queryid=" + queryId + " order by fragmentid, nanotime", schema);
+            + " where p.fragmentid=fragmentid and p.queryid=queryid order by nanotime asc limit 1) and fragmentid="
+            + fragmentId + " and queryid=" + queryId + " order by nanotime asc", schema);
     final ExchangePairID operatorId = ExchangePairID.newID();
 
     ImmutableList.Builder<Expression> emitExpressions = ImmutableList.builder();

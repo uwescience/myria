@@ -79,6 +79,11 @@ public abstract class Operator implements Serializable {
   private ProfilingLogger profilingLogger;
 
   /**
+   * Cache for profiling mode.
+   */
+  private Boolean profilingMode;
+
+  /**
    * @return the profilingLogger
    */
   public ProfilingLogger getProfilingLogger() {
@@ -144,15 +149,20 @@ public abstract class Operator implements Serializable {
     if (execEnvVars == null) {
       return false;
     }
-    TaskResourceManager trm = (TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
-    if (trm == null) {
-      return false;
+
+    if (profilingMode == null) {
+      TaskResourceManager trm =
+          (TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
+      if (trm == null) {
+        return false;
+      }
+      QuerySubTreeTask task = trm.getOwnerTask();
+      if (task == null) {
+        return false;
+      }
+      profilingMode = task.getOwnerQuery().isProfilingMode();
     }
-    QuerySubTreeTask task = trm.getOwnerTask();
-    if (task == null) {
-      return false;
-    }
-    return task.getOwnerQuery().isProfilingMode();
+    return profilingMode;
   }
 
   /**
@@ -317,12 +327,15 @@ public abstract class Operator implements Serializable {
     } catch (Exception e) {
       throw new DbException(e);
     }
-    if (isProfilingMode() && !eos()) {
+    if (isProfilingMode()) {
       int numberOfTupleReturned = -1;
       if (result != null) {
         numberOfTupleReturned = result.numTuples();
       }
       profilingLogger.recordEvent(this, numberOfTupleReturned, "return");
+      if (eos()) {
+        profilingLogger.recordEvent(this, numberOfTupleReturned, "eos");
+      }
     }
     if (result == null) {
       checkEOSAndEOI();
