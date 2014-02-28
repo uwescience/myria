@@ -1022,10 +1022,11 @@ public class LeapFrogJoin extends NAryOperator {
    */
   private void addToAns() {
     for (int i = 0; i < outputFieldMapping.size(); ++i) {
+      TupleBuffer hashTable = tables[outputFieldMapping.get(i).tableIndex];
       int row = iterators[outputFieldMapping.get(i).tableIndex].getRowOfCurrentField();
-      ReadableColumn sourceColumn =
-          tables[outputFieldMapping.get(i).tableIndex].getColumns(row)[outputFieldMapping.get(i).fieldIndex];
-      ansTBB.put(i, sourceColumn, row);
+      int rowInTB = hashTable.getTupleIndexInContainingTB(row);
+      ReadableColumn sourceColumn = hashTable.getColumns(row)[outputFieldMapping.get(i).fieldIndex];
+      ansTBB.put(i, sourceColumn, rowInTB);
     }
   }
 

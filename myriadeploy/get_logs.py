@@ -20,7 +20,7 @@ def get_host_port_path(node, default_path):
         else:
             path = default_path
     else:
-        (hostname, port, path) = node
+        (hostname, port, path) = node[0:3]
     return (hostname, port, path)
 
 
