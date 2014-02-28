@@ -1477,7 +1477,7 @@ public final class Server {
     } catch (CatalogException e) {
       throw new DbException(e);
     }
-    if (queryStatus.status != QueryStatusEncoding.Status.SUCCESS) {
+    if (queryStatus == null || queryStatus.status != QueryStatusEncoding.Status.SUCCESS) {
       throw new IllegalArgumentException("the requested query is was not found or succesfully finished.");
     }
     if (!queryStatus.profilingMode) {
@@ -1557,7 +1557,7 @@ public final class Server {
     } catch (CatalogException e) {
       throw new DbException(e);
     }
-    if (queryStatus.status != QueryStatusEncoding.Status.SUCCESS) {
+    if (queryStatus == null || queryStatus.status != QueryStatusEncoding.Status.SUCCESS) {
       throw new IllegalArgumentException("the requested query is was not found or succesfully finished.");
     }
     if (!queryStatus.profilingMode) {
