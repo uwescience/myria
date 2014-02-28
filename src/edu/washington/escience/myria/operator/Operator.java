@@ -317,11 +317,10 @@ public abstract class Operator implements Serializable {
 
     TupleBatch result = null;
     try {
-      result = fetchNextReady();
-      while (result != null && result.numTuples() <= 0) {
-        // XXX while or not while? For a single thread operator, while sounds more efficient generally
+      do {
         result = fetchNextReady();
-      }
+        // XXX while or not while? For a single thread operator, while sounds more efficient generally
+      } while (result != null && result.numTuples() <= 0);
     } catch (RuntimeException | DbException e) {
       throw e;
     } catch (Exception e) {
