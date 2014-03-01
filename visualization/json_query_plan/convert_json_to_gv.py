@@ -119,7 +119,7 @@ def get_graph(unified_plan):
         #    out_pipes[pipe_id].append(op_id)
     pipe_edges = []
     for producing_op_id in in_pipes:
-        pipe_edges.extend([(producing_op_id,y,str(producing_op_id)+"->"+str(y)) for y in in_pipes[producing_op_id]])
+        pipe_edges.extend([(producing_op_id,y,"") for y in in_pipes[producing_op_id]])
     return (unified_plan, local_edges, pipe_edges)
 
 def export_dot(nodes, edges, pipe_edges, filename=""):

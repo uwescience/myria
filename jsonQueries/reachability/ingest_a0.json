@@ -1,0 +1,15 @@
+{
+  "relationKey" : {
+    "userName" : "jwang",
+    "programName" : "reachability",
+    "relationName" : "a0"
+  },
+  "schema" : {
+    "columnTypes" : ["LONG_TYPE"],
+    "columnNames" : ["follower"]
+  },
+  "source" : {
+    "dataType" : "Bytes",
+	"bytes" : "MTIK"
+  }
+}

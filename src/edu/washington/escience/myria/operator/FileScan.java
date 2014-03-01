@@ -204,7 +204,8 @@ public final class FileScan extends LeafOperator {
               break;
           }
         } catch (final IllegalArgumentException e) {
-          throw new DbException("Error parsing column " + column + " of row " + lineNumber + ": ", e);
+          throw new DbException("Error parsing column " + column + " of row " + lineNumber + ", expected type: "
+              + schema.getColumnType(column) + ", scanned value: " + nextLine[column], e);
         }
       }
     }
