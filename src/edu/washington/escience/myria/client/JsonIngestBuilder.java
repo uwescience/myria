@@ -129,7 +129,7 @@ public final class JsonIngestBuilder {
           .getCause());
     }
 
-    ObjectMapper ow = MyriaJsonMapperProvider.newMapper();
+    ObjectMapper ow = MyriaJsonMapperProvider.getMapper();
     try {
       return ow.writerWithDefaultPrettyPrinter().writeValueAsString(de);
     } catch (IOException e) {

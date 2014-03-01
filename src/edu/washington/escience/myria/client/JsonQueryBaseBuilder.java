@@ -542,7 +542,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * */
   @Override
   public final String buildJson() {
-    ObjectMapper ow = MyriaJsonMapperProvider.newMapper();
+    ObjectMapper ow = MyriaJsonMapperProvider.getMapper();
 
     QueryEncoding qe = build();
     try {
