@@ -73,7 +73,7 @@ public final class Filter extends UnaryOperator {
 
     Schema inputSchema = getChild().getSchema();
 
-    final ExpressionOperatorParameter parameters = new ExpressionOperatorParameter(inputSchema, getWorkerID());
+    final ExpressionOperatorParameter parameters = new ExpressionOperatorParameter(inputSchema, getNodeID());
 
     evaluator = new BooleanEvaluator(predicate, parameters);
     if (evaluator.needsCompiling()) {

@@ -51,6 +51,7 @@ import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.StatefulApply;
 import edu.washington.escience.myria.operator.TupleSource;
+import edu.washington.escience.myria.util.TestEnvVars;
 import edu.washington.escience.myria.util.TestUtils;
 
 public class ApplyTest {
@@ -272,7 +273,8 @@ public class ApplyTest {
 
     Apply apply = new Apply(new TupleSource(tbb), Expressions.build());
 
-    apply.open(null);
+    final int nodeId = 3;
+    apply.open(TestEnvVars.get(nodeId));
     TupleBatch result;
     int resultSize = 0;
     final double tolerance = 0.0000001;
@@ -340,7 +342,7 @@ public class ApplyTest {
           assertEquals(c % b, result.getLong(13, curI));
           assertEquals(e ? a : c, result.getLong(14, curI));
           assertEquals((b % 2 == 0) ? (e ? a : b) : c, result.getLong(15, curI));
-          assertEquals(-1, result.getInt(16, curI));
+          assertEquals(nodeId, result.getInt(16, curI));
         }
         resultSize += result.numTuples();
       }
@@ -418,7 +420,7 @@ public class ApplyTest {
 
     Apply apply = new Apply(new TupleSource(tbb), Expressions.build());
 
-    apply.open(null);
+    apply.open(TestEnvVars.get());
     TupleBatch result;
     int resultSize = 0;
     while (!apply.eos()) {
@@ -519,7 +521,7 @@ public class ApplyTest {
 
     Apply apply = new Apply(new TupleSource(tbb), Expressions.build());
 
-    apply.open(null);
+    apply.open(TestEnvVars.get());
     TupleBatch result;
     int resultSize = 0;
     while (!apply.eos()) {
@@ -572,7 +574,7 @@ public class ApplyTest {
 
     Apply apply = new Apply(new TupleSource(tbb), Expressions.build());
 
-    apply.open(null);
+    apply.open(TestEnvVars.get());
     TupleBatch result;
     int resultSize = 0;
     while (!apply.eos()) {
@@ -616,7 +618,7 @@ public class ApplyTest {
     StatefulApply apply =
         new StatefulApply(new TupleSource(tbb), Expressions.build(), Initializers.build(), Updaters.build());
 
-    apply.open(null);
+    apply.open(TestEnvVars.get());
     TupleBatch result;
     int resultSize = 0;
     while (!apply.eos()) {
@@ -667,7 +669,7 @@ public class ApplyTest {
     StatefulApply apply =
         new StatefulApply(new TupleSource(tbb), Expressions.build(), Initializers.build(), Updaters.build());
 
-    apply.open(null);
+    apply.open(TestEnvVars.get());
     TupleBatch result;
     int resultSize = 0;
     while (!apply.eos()) {

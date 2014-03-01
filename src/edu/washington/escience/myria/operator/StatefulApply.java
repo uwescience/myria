@@ -154,7 +154,7 @@ public class StatefulApply extends Apply {
     evaluators.ensureCapacity(getEmitExpressions().size());
     for (Expression expr : getEmitExpressions()) {
       GenericEvaluator evaluator =
-          new GenericEvaluator(expr, new ExpressionOperatorParameter(inputSchema, getStateSchema(), getWorkerID()));
+          new GenericEvaluator(expr, new ExpressionOperatorParameter(inputSchema, getStateSchema(), getNodeID()));
       if (evaluator.needsCompiling()) {
         evaluator.compile();
       }
@@ -170,14 +170,14 @@ public class StatefulApply extends Apply {
     for (int columnIdx = 0; columnIdx < getStateSchema().numColumns(); columnIdx++) {
       Expression expr = initExpressions.get(columnIdx);
       ConstantEvaluator evaluator =
-          new ConstantEvaluator(expr, new ExpressionOperatorParameter(inputSchema, getWorkerID()));
+          new ConstantEvaluator(expr, new ExpressionOperatorParameter(inputSchema, getNodeID()));
       evaluator.compile();
       state.set(columnIdx, evaluator.eval());
     }
 
     for (Expression expr : updateExpressions) {
       GenericEvaluator evaluator =
-          new GenericEvaluator(expr, new ExpressionOperatorParameter(inputSchema, getStateSchema(), getWorkerID()));
+          new GenericEvaluator(expr, new ExpressionOperatorParameter(inputSchema, getStateSchema(), getNodeID()));
       evaluator.compile();
       updateEvaluators.add(evaluator);
     }
@@ -203,7 +203,7 @@ public class StatefulApply extends Apply {
     ImmutableList.Builder<String> namesBuilder = ImmutableList.builder();
 
     for (Expression expr : initExpressions) {
-      typesBuilder.add(expr.getOutputType(new ExpressionOperatorParameter(getChild().getSchema(), getWorkerID())));
+      typesBuilder.add(expr.getOutputType(new ExpressionOperatorParameter(getChild().getSchema(), getNodeID())));
       namesBuilder.add(expr.getOutputName());
     }
     stateSchema = new Schema(typesBuilder.build(), namesBuilder.build());
@@ -231,8 +231,7 @@ public class StatefulApply extends Apply {
     ImmutableList.Builder<String> namesBuilder = ImmutableList.builder();
 
     for (Expression expr : getEmitExpressions()) {
-      typesBuilder.add(expr
-          .getOutputType(new ExpressionOperatorParameter(inputSchema, getStateSchema(), getWorkerID())));
+      typesBuilder.add(expr.getOutputType(new ExpressionOperatorParameter(inputSchema, getStateSchema(), getNodeID())));
       namesBuilder.add(expr.getOutputName());
     }
     return new Schema(typesBuilder.build(), namesBuilder.build());

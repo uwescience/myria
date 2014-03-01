@@ -97,7 +97,7 @@ public class Apply extends UnaryOperator {
     Schema inputSchema = Objects.requireNonNull(getChild().getSchema());
 
     emitEvaluators = new ArrayList<>(emitExpressions.size());
-    final ExpressionOperatorParameter parameters = new ExpressionOperatorParameter(inputSchema, getWorkerID());
+    final ExpressionOperatorParameter parameters = new ExpressionOperatorParameter(inputSchema, getNodeID());
     for (Expression expr : emitExpressions) {
       GenericEvaluator evaluator;
       if (expr.isConstant()) {
@@ -138,7 +138,7 @@ public class Apply extends UnaryOperator {
     ImmutableList.Builder<String> namesBuilder = ImmutableList.builder();
 
     for (Expression expr : emitExpressions) {
-      typesBuilder.add(expr.getOutputType(new ExpressionOperatorParameter(inputSchema, getWorkerID())));
+      typesBuilder.add(expr.getOutputType(new ExpressionOperatorParameter(inputSchema, getNodeID())));
       namesBuilder.add(expr.getOutputName());
     }
     return new Schema(typesBuilder.build(), namesBuilder.build());
