@@ -59,6 +59,18 @@ public final class EclipseClasspathReader {
   }
 
   /**
+   * @return if the provided path is an absolute path
+   * @param path .
+   * */
+  public static boolean isAbsolutePath(final String path) {
+    if (System.getProperty("os.name").startsWith("Windows")) {
+      return path.toUpperCase().matches("[A-Z]:.*");
+    } else {
+      return path.startsWith("/");
+    }
+  }
+
+  /**
    * @param eclipseClasspathXMLFile the eclipse .classpath file.
    * @return [0] is the classpath and [1] is the lib path.
    * @throws IOException if any IO errors.
@@ -96,7 +108,7 @@ public final class EclipseClasspathReader {
         final String kind = e.getAttribute("kind");
         if (kind.equals("output")) {
           String path = e.getAttribute("path");
-          if (path.startsWith(File.separator)) {
+          if (isAbsolutePath(path)) {
             classpathSB.append(new File(path).getAbsolutePath() + separator);
           } else {
             classpathSB.append(new File(projectRoot, path).getAbsolutePath() + separator);
@@ -104,7 +116,7 @@ public final class EclipseClasspathReader {
         }
         if (kind.equals("lib")) {
           String path = e.getAttribute("path");
-          if (path.startsWith(File.separator)) {
+          if (isAbsolutePath(path)) {
             classpathSB.append(new File(path).getAbsolutePath() + separator);
           } else {
             classpathSB.append(new File(projectRoot, path).getAbsolutePath() + separator);
@@ -112,7 +124,7 @@ public final class EclipseClasspathReader {
         }
         if (kind.equals("src")) {
           String path = e.getAttribute("output");
-          if (path.startsWith(File.separator)) {
+          if (isAbsolutePath(path)) {
             classpathSB.append(new File(path).getAbsoluteFile() + separator);
           } else {
             classpathSB.append(new File(projectRoot, path).getAbsoluteFile() + separator);

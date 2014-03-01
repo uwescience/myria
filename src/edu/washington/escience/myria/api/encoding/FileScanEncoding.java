@@ -15,11 +15,14 @@ public class FileScanEncoding extends OperatorEncoding<FileScan> {
   public Schema schema;
   public DataSource source;
   public Character delimiter;
+  public Character quote;
+  public Character escape;
+  public Integer skip;
   private static final List<String> requiredArguments = ImmutableList.of("schema", "source");
 
   @Override
   public FileScan construct(final Server server) {
-    return new FileScan(source, schema, delimiter);
+    return new FileScan(source, schema, delimiter, quote, escape, skip);
   }
 
   @Override

@@ -5,8 +5,6 @@ import java.util.List;
 import javax.ws.rs.core.Response.Status;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy.PropertyNamingStrategyBase;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.api.MyriaApiException;
@@ -46,8 +44,6 @@ public abstract class MyriaApiEncoding {
       throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, e);
     } catch (final NullPointerException e1) {
       /* Some field is missing; throw a 400 (BAD REQUEST) exception with the list of required fields. */
-      final PropertyNamingStrategyBase translator =
-          (PropertyNamingStrategyBase) PropertyNamingStrategy.CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES;
       final StringBuilder sb = new StringBuilder(getClass().getName()).append(" has required fields: ");
       boolean first = true;
       for (final String f : fields) {
@@ -55,10 +51,10 @@ public abstract class MyriaApiEncoding {
           sb.append(", ");
         }
         first = false;
-        sb.append(translator.translate(f));
+        sb.append(f);
       }
       sb.append(". Error on ");
-      sb.append(translator.translate(current));
+      sb.append(current);
       throw new MyriaApiException(Status.BAD_REQUEST, sb.toString());
     }
     validateExtra();
