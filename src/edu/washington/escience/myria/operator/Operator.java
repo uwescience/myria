@@ -2,6 +2,7 @@ package edu.washington.escience.myria.operator;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Map;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -362,13 +363,17 @@ public abstract class Operator implements Serializable {
    * 
    * @throws DbException if any error occurs
    * */
-  public final void open(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+  public final void open(final Map<String, Object> execEnvVars) throws DbException {
     // open the children first
     if (open) {
       // XXX Do some error handling to multi-open?
       throw new DbException("Operator (opName=" + getOpName() + ") already open.");
     }
-    this.execEnvVars = execEnvVars;
+    if (execEnvVars == null) {
+      this.execEnvVars = null;
+    } else {
+      this.execEnvVars = ImmutableMap.copyOf(execEnvVars);
+    }
     final Operator[] children = getChildren();
     if (children != null) {
       for (final Operator child : children) {
@@ -383,7 +388,7 @@ public abstract class Operator implements Serializable {
     numOutputTuples = 0;
     // do my initialization
     try {
-      init(execEnvVars);
+      init(this.execEnvVars);
     } catch (DbException | RuntimeException e) {
       throw e;
     } catch (Exception e) {
@@ -527,15 +532,9 @@ public abstract class Operator implements Serializable {
   }
 
   /**
-   * @return The id of the worker that is running this operator.
+   * @return The id of the node (worker or master) that is running this operator.
    */
-  protected int getWorkerID() {
-    final WorkerQueryPartition wqp = getWorkerQueryPartition();
-    if (wqp == null) {
-      return -1;
-    } else {
-      return wqp.getOwnerWorker().getID();
-    }
-
+  protected int getNodeID() {
+    return (Integer) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_NODE_ID);
   }
 }
