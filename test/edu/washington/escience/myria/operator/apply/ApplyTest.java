@@ -262,12 +262,8 @@ public class ApplyTest {
     }
 
     {
-      // Expression that returns the worker id (-1);
+      // Expression that returns the worker id (set below as nodeId)
       Expression expr = new Expression("workerID", new WorkerIdExpression());
-
-      GenericEvaluator eval = new ConstantEvaluator(expr, new ExpressionOperatorParameter(tbb.getSchema(), 42));
-      assertTrue(!eval.needsCompiling());
-      assertEquals(eval.getJavaExpression(), "result.appendInt(42)");
       Expressions.add(expr);
     }
 
