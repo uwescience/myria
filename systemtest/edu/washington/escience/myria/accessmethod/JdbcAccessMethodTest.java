@@ -64,7 +64,7 @@ public class JdbcAccessMethodTest {
 
     /* First, insert tuples into the database. */
     final int expectedNumResults = 250;
-    TupleRangeSource source = new TupleRangeSource(expectedNumResults, Type.INT_TYPE);
+    TupleRangeSource source = new TupleRangeSource(expectedNumResults, Type.DOUBLE_TYPE);
     final Schema schema = source.getSchema();
     final RelationKey relation = RelationKey.of("myria", "test", dbms);
     DbInsert insert = new DbInsert(source, relation, jdbcInfo, true);
