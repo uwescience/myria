@@ -222,7 +222,7 @@ public final class CatalogMaker {
       final String dbms = config.get("deployment").get("dbms");
       configurationValues.put(MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_SYSTEM, dbms);
       final String description = config.get("deployment").get("name");
-      final String host = wc.getWorkers().get(Integer.parseInt(workerId)).getHost();
+      final String host = "localhost";
       final String databaseName = config.get("databaseNames").get(workerId);
       final String databasePassword = config.get("deployment").get("database_password");
       final String jsonConnInfo =
