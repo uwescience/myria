@@ -6,8 +6,8 @@ import org.apache.commons.lang.StringEscapeUtils;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 
 /**
  * An expression that returns a constant value.
@@ -44,12 +44,12 @@ public class ConstantExpression extends ZeroaryExpression {
   }
 
   @Override
-  public Type getOutputType(final Schema schema, final Schema stateSchema) {
+  public Type getOutputType(final ExpressionOperatorParameter parameters) {
     return valueType;
   }
 
   @Override
-  public String getJavaString(final Schema schema, final Schema stateSchema) {
+  public String getJavaString(final ExpressionOperatorParameter parameters) {
     switch (valueType) {
       case BOOLEAN_TYPE:
       case DOUBLE_TYPE:

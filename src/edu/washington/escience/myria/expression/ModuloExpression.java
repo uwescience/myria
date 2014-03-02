@@ -2,8 +2,8 @@ package edu.washington.escience.myria.expression;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 
 /**
  * Modulo of two operands in an expression tree.
@@ -30,12 +30,12 @@ public class ModuloExpression extends BinaryExpression {
   }
 
   @Override
-  public Type getOutputType(final Schema schema, final Schema stateSchema) {
-    return checkAndReturnDefaultNumericType(schema, stateSchema, ImmutableList.of(Type.LONG_TYPE, Type.INT_TYPE));
+  public Type getOutputType(final ExpressionOperatorParameter parameters) {
+    return checkAndReturnDefaultNumericType(parameters, ImmutableList.of(Type.LONG_TYPE, Type.INT_TYPE));
   }
 
   @Override
-  public String getJavaString(final Schema schema, final Schema stateSchema) {
-    return getInfixBinaryString("%", schema, stateSchema);
+  public String getJavaString(final ExpressionOperatorParameter parameters) {
+    return getInfixBinaryString("%", parameters);
   }
 }

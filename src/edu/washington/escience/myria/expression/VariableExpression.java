@@ -4,8 +4,8 @@ import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 
 /**
  * Represents a reference to a child field in an expression tree.
@@ -36,14 +36,14 @@ public class VariableExpression extends ZeroaryExpression {
   }
 
   @Override
-  public Type getOutputType(final Schema schema, final Schema stateSchema) {
-    return schema.getColumnType(columnIdx);
+  public Type getOutputType(final ExpressionOperatorParameter parameters) {
+    return parameters.getSchema().getColumnType(columnIdx);
   }
 
   @Override
-  public String getJavaString(final Schema schema, final Schema stateSchema) {
+  public String getJavaString(final ExpressionOperatorParameter parameters) {
     // We generate a variable access into the tuple buffer.
-    return new StringBuilder(Expression.TB).append(".get").append(getOutputType(schema, stateSchema).getName()).append(
+    return new StringBuilder(Expression.TB).append(".get").append(getOutputType(parameters).getName()).append(
         "(").append(columnIdx).append(", ").append(Expression.ROW).append(")").toString();
   }
 

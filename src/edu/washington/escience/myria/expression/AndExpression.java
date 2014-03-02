@@ -1,7 +1,9 @@
 package edu.washington.escience.myria.expression;
 
-import edu.washington.escience.myria.Schema;
+import com.google.common.base.Objects;
+
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 
 /**
  * Boolean and in an expression tree.
@@ -28,13 +30,13 @@ public class AndExpression extends BinaryExpression {
   }
 
   @Override
-  public Type getOutputType(final Schema schema, final Schema stateSchema) {
-    checkBooleanType(schema, stateSchema);
+  public Type getOutputType(final ExpressionOperatorParameter parameters) {
+    checkBooleanType(parameters);
     return Type.BOOLEAN_TYPE;
   }
 
   @Override
-  public String getJavaString(final Schema schema, final Schema stateSchema) {
-    return getInfixBinaryString("&&", schema, stateSchema);
+  public String getJavaString(final ExpressionOperatorParameter parameters) {
+    return getInfixBinaryString("&&", parameters);
   }
 }

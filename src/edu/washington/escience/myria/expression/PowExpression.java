@@ -1,7 +1,7 @@
 package edu.washington.escience.myria.expression;
 
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 
 /**
  * Exponentiate left^right for two operands in an expression tree. Always evaluates to a double.
@@ -28,13 +28,13 @@ public class PowExpression extends BinaryExpression {
   }
 
   @Override
-  public Type getOutputType(final Schema schema, final Schema stateSchema) {
-    checkAndReturnDefaultNumericType(schema, stateSchema);
+  public Type getOutputType(final ExpressionOperatorParameter parameters) {
+    checkAndReturnDefaultNumericType(parameters);
     return Type.DOUBLE_TYPE;
   }
 
   @Override
-  public String getJavaString(final Schema schema, final Schema stateSchema) {
-    return getFunctionCallBinaryString("Math.pow", schema, stateSchema);
+  public String getJavaString(final ExpressionOperatorParameter parameters) {
+    return getFunctionCallBinaryString("Math.pow", parameters);
   }
 }

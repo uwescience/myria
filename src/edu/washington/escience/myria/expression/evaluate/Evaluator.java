@@ -19,66 +19,46 @@ public abstract class Evaluator {
   private final Expression expression;
 
   /**
-   * The schema of the input tuples to this expression.
+   * Parameters passed for creating the java expression and getting the output type.
    */
-  private Schema inputSchema;
+  private final ExpressionOperatorParameter parameters;
 
   /**
-   * The schema of the state.
+   * @param expression the expression to be evaluated
+   * @param parameters parameters that are passed to the expression
    */
-  private Schema stateSchema;
-
-  /**
-   * @param expression the expression for the evaluator
-   * @param inputSchema the schema of the input relation
-   * @param stateSchema the schema of the state
-   */
-  public Evaluator(final Expression expression, final Schema inputSchema, final Schema stateSchema) {
+  public Evaluator(final Expression expression, final ExpressionOperatorParameter parameters) {
     this.expression = expression;
-    Preconditions.checkNotNull(inputSchema);
-    this.inputSchema = inputSchema;
-    this.stateSchema = stateSchema;
+    Preconditions.checkNotNull(parameters.getSchema());
+    this.parameters = parameters;
   }
 
   /**
    * @return the inputSchema
    */
   protected Schema getInputSchema() {
-    return inputSchema;
-  }
-
-  /**
-   * Set the schema of the input tuples to this expression.
-   * 
-   * @param inputSchema schema the schema that the expression expects if it operates on a schema.
-   */
-  public void setInputSchema(final Schema inputSchema) {
-    this.inputSchema = inputSchema;
-    getExpression().resetJavaExpression();
-  }
-
-  /**
-   * Set the schema of the state.
-   * 
-   * @param stateSchema schema the schema that the expression expects if it operates on a schema.
-   */
-  public void setStateSchema(final Schema stateSchema) {
-    this.stateSchema = stateSchema;
-    getExpression().resetJavaExpression();
-  }
-
-  /**
-   * @return the type of the output
-   */
-  public Type getOutputType() {
-    return getExpression().getOutputType(getInputSchema(), getStateSchema());
+    return parameters.getSchema();
   }
 
   /**
    * @return the schema of the state
    */
   public Schema getStateSchema() {
-    return stateSchema;
+    return parameters.getStateSchema();
+  }
+
+  /**
+   * @return the parameters that are passed down the expression tree
+   */
+  public ExpressionOperatorParameter getParameters() {
+    return parameters;
+  }
+
+  /**
+   * @return the type of the output
+   */
+  public Type getOutputType() {
+    return getExpression().getOutputType(parameters);
   }
 
   /**
@@ -100,7 +80,7 @@ public abstract class Evaluator {
    * @return the Java form of this expression.
    */
   public String getJavaExpression() {
-    return getExpression().getJavaExpression(getInputSchema(), getStateSchema());
+    return getExpression().getJavaExpression(parameters);
   }
 
   /**

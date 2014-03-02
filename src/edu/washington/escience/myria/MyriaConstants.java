@@ -53,6 +53,11 @@ public final class MyriaConstants {
   public static final String EXEC_ENV_VAR_DRIVING_TASK = "drivingTask";
 
   /**
+   * Node ID.
+   */
+  public static final String EXEC_ENV_VAR_NODE_ID = "nodeId";
+
+  /**
    * Task resource manager.
    * */
   public static final String EXEC_ENV_VAR_TASK_RESOURCE_MANAGER = "taskResourceManager";

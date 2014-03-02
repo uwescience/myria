@@ -1,7 +1,7 @@
 package edu.washington.escience.myria.expression;
 
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 
 /**
  * Take the absolute value of the operand.
@@ -28,12 +28,12 @@ public class AbsExpression extends UnaryExpression {
   }
 
   @Override
-  public Type getOutputType(final Schema schema, final Schema stateSchema) {
-    return checkAndReturnDefaultNumericType(schema, stateSchema);
+  public Type getOutputType(final ExpressionOperatorParameter parameters) {
+    return checkAndReturnDefaultNumericType(parameters);
   }
 
   @Override
-  public String getJavaString(final Schema schema, final Schema stateSchema) {
-    return getFunctionCallUnaryString("Math.abs", schema, stateSchema);
+  public String getJavaString(final ExpressionOperatorParameter parameters) {
+    return getFunctionCallUnaryString("Math.abs", parameters);
   }
 }

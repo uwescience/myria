@@ -4,8 +4,8 @@ import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 import edu.washington.escience.myria.operator.StatefulApply;
 
 /**
@@ -37,14 +37,14 @@ public class StateExpression extends ZeroaryExpression {
   }
 
   @Override
-  public Type getOutputType(final Schema schema, final Schema stateSchema) {
-    return stateSchema.getColumnType(getColumnIdx());
+  public Type getOutputType(final ExpressionOperatorParameter parameters) {
+    return parameters.getStateSchema().getColumnType(getColumnIdx());
   }
 
   @Override
-  public String getJavaString(final Schema schema, final Schema stateSchema) {
+  public String getJavaString(final ExpressionOperatorParameter parameters) {
     // We generate a variable access into the state tuple.
-    return new StringBuilder(Expression.STATE).append(".get").append(getOutputType(schema, stateSchema).getName())
+    return new StringBuilder(Expression.STATE).append(".get").append(getOutputType(parameters).getName())
         .append("(").append(getColumnIdx()).append(", 0)").toString();
   }
 

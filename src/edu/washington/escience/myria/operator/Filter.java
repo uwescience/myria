@@ -11,6 +11,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.evaluate.BooleanEvaluator;
+import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 
 /**
  * Filter is an operator that implements a relational select.
@@ -72,7 +73,9 @@ public final class Filter extends UnaryOperator {
 
     Schema inputSchema = getChild().getSchema();
 
-    evaluator = new BooleanEvaluator(predicate, inputSchema, null);
+    final ExpressionOperatorParameter parameters = new ExpressionOperatorParameter(inputSchema, getNodeID());
+
+    evaluator = new BooleanEvaluator(predicate, parameters);
     if (evaluator.needsCompiling()) {
       evaluator.compile();
     }

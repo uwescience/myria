@@ -9,7 +9,6 @@ import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.ReadableTable;
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
@@ -47,11 +46,10 @@ public class GenericEvaluator extends Evaluator {
    * Default constructor.
    * 
    * @param expression the expression for the evaluator
-   * @param inputSchema the schema that the expression expects
-   * @param stateSchema the schema of the state
+   * @param parameters parameters that are passed to the expression
    */
-  public GenericEvaluator(final Expression expression, final Schema inputSchema, final Schema stateSchema) {
-    super(expression, inputSchema, stateSchema);
+  public GenericEvaluator(final Expression expression, final ExpressionOperatorParameter parameters) {
+    super(expression, parameters);
     needsState = getExpression().hasOperator(StateExpression.class);
   }
 
@@ -101,7 +99,7 @@ public class GenericEvaluator extends Evaluator {
    */
   @Override
   public String getJavaExpression() {
-    return getExpression().getJavaExpressionWithAppend(getInputSchema(), getStateSchema());
+    return getExpression().getJavaExpressionWithAppend(getParameters());
   }
 
   /**

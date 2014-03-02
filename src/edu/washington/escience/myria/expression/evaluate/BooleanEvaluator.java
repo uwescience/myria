@@ -8,7 +8,6 @@ import org.codehaus.commons.compiler.IScriptEvaluator;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.Expression;
@@ -26,11 +25,10 @@ public class BooleanEvaluator extends Evaluator {
    * Default constructor.
    * 
    * @param expression the expression for the evaluator
-   * @param inoutSchema the schema that the expression expects
-   * @param stateSchema the schema of the state
+   * @param parameters parameters that are passed to the expression
    */
-  public BooleanEvaluator(final Expression expression, final Schema inoutSchema, final Schema stateSchema) {
-    super(expression, inoutSchema, stateSchema);
+  public BooleanEvaluator(final Expression expression, final ExpressionOperatorParameter parameters) {
+    super(expression, parameters);
     Preconditions.checkArgument(getOutputType().equals(Type.BOOLEAN_TYPE));
   }
 

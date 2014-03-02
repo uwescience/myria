@@ -17,6 +17,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.evaluate.ConstantEvaluator;
+import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
 
 /**
@@ -96,12 +97,13 @@ public class Apply extends UnaryOperator {
     Schema inputSchema = Objects.requireNonNull(getChild().getSchema());
 
     emitEvaluators = new ArrayList<>(emitExpressions.size());
+    final ExpressionOperatorParameter parameters = new ExpressionOperatorParameter(inputSchema, getNodeID());
     for (Expression expr : emitExpressions) {
       GenericEvaluator evaluator;
       if (expr.isConstant()) {
-        evaluator = new ConstantEvaluator(expr, inputSchema, null);
+        evaluator = new ConstantEvaluator(expr, parameters);
       } else {
-        evaluator = new GenericEvaluator(expr, inputSchema, null);
+        evaluator = new GenericEvaluator(expr, parameters);
       }
       if (evaluator.needsCompiling()) {
         evaluator.compile();
@@ -136,7 +138,7 @@ public class Apply extends UnaryOperator {
     ImmutableList.Builder<String> namesBuilder = ImmutableList.builder();
 
     for (Expression expr : emitExpressions) {
-      typesBuilder.add(expr.getOutputType(inputSchema, null));
+      typesBuilder.add(expr.getOutputType(new ExpressionOperatorParameter(inputSchema, getNodeID())));
       namesBuilder.add(expr.getOutputName());
     }
     return new Schema(typesBuilder.build(), namesBuilder.build());

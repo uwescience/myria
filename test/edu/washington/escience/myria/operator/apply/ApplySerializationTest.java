@@ -47,6 +47,7 @@ import edu.washington.escience.myria.expression.ToUpperCaseExpression;
 import edu.washington.escience.myria.expression.TypeExpression;
 import edu.washington.escience.myria.expression.TypeOfExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
+import edu.washington.escience.myria.expression.WorkerIdExpression;
 
 public class ApplySerializationTest {
 
@@ -64,7 +65,8 @@ public class ApplySerializationTest {
     TypeExpression type = new TypeExpression(Type.INT_TYPE);
     TypeOfExpression typeof = new TypeOfExpression(2);
     VariableExpression variable = new VariableExpression(1);
-    expressions.add(constant).add(random).add(state).add(type).add(typeof).add(variable);
+    WorkerIdExpression worker = new WorkerIdExpression();
+    expressions.add(constant).add(random).add(state).add(type).add(typeof).add(variable).add(worker);
 
     /* Unary */
     AbsExpression abs = new AbsExpression(constant);

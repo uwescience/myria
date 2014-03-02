@@ -18,6 +18,7 @@ import edu.washington.escience.myria.expression.LessThanExpression;
 import edu.washington.escience.myria.expression.MinusExpression;
 import edu.washington.escience.myria.expression.PlusExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
+import edu.washington.escience.myria.util.TestEnvVars;
 
 public class FilterTest {
 
@@ -143,7 +144,7 @@ public class FilterTest {
    * helper method for getting the row count
    */
   private static int getRowCount(Operator operator) throws DbException {
-    operator.open(null);
+    operator.open(TestEnvVars.get());
     int count = 0;
     TupleBatch tb = null;
     while (!operator.eos()) {

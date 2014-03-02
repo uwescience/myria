@@ -19,6 +19,7 @@ import edu.washington.escience.myria.expression.EqualsExpression;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.VariableExpression;
+import edu.washington.escience.myria.util.TestEnvVars;
 
 /**
  * 
@@ -32,7 +33,7 @@ public class TipsyFileScanTest {
   private static final int NUM_COLUMN_STAR = 11;
 
   private static int getRowCount(Operator fileScan) throws DbException {
-    fileScan.open(null);
+    fileScan.open(TestEnvVars.get());
 
     int count = 0;
     TupleBatch tb = null;
