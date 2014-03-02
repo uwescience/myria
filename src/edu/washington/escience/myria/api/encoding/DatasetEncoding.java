@@ -13,7 +13,6 @@ import edu.washington.escience.myria.io.DataSource;
 public class DatasetEncoding extends MyriaApiEncoding {
   public RelationKey relationKey;
   public Schema schema;
-  public String fileName;
   public Set<Integer> workers;
   public DataSource source;
   public Character delimiter;
