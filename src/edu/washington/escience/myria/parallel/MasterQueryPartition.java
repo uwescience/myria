@@ -304,7 +304,8 @@ public class MasterQueryPartition implements QueryPartition {
   /**
    * @return query future for the worker receiving query action.
    * */
-  final QueryFuture getQueryExecutionFuture() {
+  @Override
+  public final QueryFuture getExecutionFuture() {
     return queryExecutionFuture;
   }
 

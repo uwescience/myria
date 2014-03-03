@@ -80,4 +80,9 @@ public interface QueryPartition extends Comparable<QueryPartition> {
    * @return the set of workers that are currently dead.
    */
   Set<Integer> getMissingWorkers();
+
+  /**
+   * @return the future for the query's execution.
+   * */
+  QueryFuture getExecutionFuture();
 }

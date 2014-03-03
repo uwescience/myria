@@ -1011,7 +1011,7 @@ public final class Server {
       final MasterQueryPartition mqp = new MasterQueryPartition(masterPlan, workerPlans, queryID, this);
       activeQueries.put(queryID, mqp);
 
-      final QueryFuture queryExecutionFuture = mqp.getQueryExecutionFuture();
+      final QueryFuture queryExecutionFuture = mqp.getExecutionFuture();
 
       /*
        * Add the DatasetMetadataUpdater, which will update the catalog with the set of workers created when the query
@@ -1066,7 +1066,7 @@ public final class Server {
         }
       });
 
-      return mqp.getQueryExecutionFuture();
+      return mqp.getExecutionFuture();
     } catch (DbException | CatalogException | RuntimeException e) {
       catalog.queryFinished(queryID, "error during submission", null, null, Status.KILLED);
       activeQueries.remove(queryID);

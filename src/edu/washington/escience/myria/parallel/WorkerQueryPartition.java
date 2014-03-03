@@ -211,7 +211,8 @@ public class WorkerQueryPartition implements QueryPartition {
   /**
    * @return the future for the query's execution.
    * */
-  final QueryFuture getExecutionFuture() {
+  @Override
+  public final QueryFuture getExecutionFuture() {
     return executionFuture;
   }
 
