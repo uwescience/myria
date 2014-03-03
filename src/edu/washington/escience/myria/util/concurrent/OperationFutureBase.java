@@ -538,9 +538,19 @@ public abstract class OperationFutureBase<T> extends AttachmentableAdapter imple
     if (!this.setDoneState(CANCELL)) {
       return false;
     }
+    boolean canceled = doCancel();
     this.wakeupWaitersAndNotifyListeners();
-    return true;
+    return canceled;
   }
+
+  /**
+   * Do the actual cancel operations.
+   * 
+   * @return true if cancellation is successful.
+   * */
+  protected boolean doCancel() {
+    return true;
+  };
 
   /**
    * notify the listeners.
