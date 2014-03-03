@@ -337,10 +337,10 @@ public final class Worker {
    * */
   private static HashMap<String, Object> processArgs(final String[] args) {
     HashMap<String, Object> options = new HashMap<String, Object>();
-    if (args.length > 2) {
-      LOGGER.warn("Invalid number of arguments.\n" + USAGE);
-      JVMUtils.shutdownVM();
-    }
+    // if (args.length > 2) {
+    // LOGGER.warn("Invalid number of arguments.\n" + USAGE);
+    // JVMUtils.shutdownVM();
+    // }
 
     String workingDirTmp = System.getProperty("user.dir");
     if (args.length >= 2) {
