@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableSet;
 import java.util.Set;
-import java.util.TimerTask;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -71,6 +70,7 @@ import edu.washington.escience.myria.util.DateTimeUtils;
 import edu.washington.escience.myria.util.DeploymentUtils;
 import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.MyriaUtils;
+import edu.washington.escience.myria.util.concurrent.ErrorLoggingTimerTask;
 import edu.washington.escience.myria.util.concurrent.RenamingThreadFactory;
 
 /**
@@ -474,7 +474,7 @@ public final class Server {
   /**
    * This class presents only for the purpose of debugging. No other usage.
    * */
-  private class DebugHelper extends TimerTask {
+  private class DebugHelper extends ErrorLoggingTimerTask {
 
     /**
      * Interval of execution.
@@ -482,7 +482,7 @@ public final class Server {
     public static final int INTERVAL = MyriaConstants.WAITING_INTERVAL_1_SECOND_IN_MS;
 
     @Override
-    public final synchronized void run() {
+    public final synchronized void runInner() {
       System.currentTimeMillis();
     }
   }
@@ -555,10 +555,10 @@ public final class Server {
    * Check worker livenesses periodically. If a worker is detected as dead, its queries will be notified, it will be
    * removed from connection pools, and a new worker will be scheduled.
    * */
-  private class WorkerLivenessChecker extends TimerTask {
+  private class WorkerLivenessChecker extends ErrorLoggingTimerTask {
 
     @Override
-    public final synchronized void run() {
+    public final synchronized void runInner() {
       for (Integer workerId : aliveWorkers.keySet()) {
         long currentTime = System.currentTimeMillis();
         if (currentTime - aliveWorkers.get(workerId) >= MyriaConstants.WORKER_IS_DEAD_INTERVAL) {

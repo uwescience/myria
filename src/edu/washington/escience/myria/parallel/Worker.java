@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -41,9 +40,9 @@ import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.JVMUtils;
+import edu.washington.escience.myria.util.concurrent.ErrorLoggingTimerTask;
 import edu.washington.escience.myria.util.concurrent.RenamingThreadFactory;
 import edu.washington.escience.myria.util.concurrent.ThreadAffinityFixedRoundRobinExecutionPool;
-import edu.washington.escience.myria.util.concurrent.TimerTaskThreadFactory;
 
 /**
  * Workers do the real query execution. A query received by the server will be pre-processed and then dispatched to the
@@ -176,9 +175,9 @@ public final class Worker {
   }
 
   /** Send heartbeats to server periodically. */
-  private class HeartbeatReporter extends TimerTask {
+  private class HeartbeatReporter extends ErrorLoggingTimerTask {
     @Override
-    public synchronized void run() {
+    public synchronized void runInner() {
       if (LOGGER.isTraceEnabled()) {
         LOGGER.trace("sending heartbeat to server");
       }
@@ -191,9 +190,9 @@ public final class Worker {
    * If the server got killed because of any reason, the workers will be terminated. 2) it detects whether a shutdown
    * message is received.
    * */
-  private class ShutdownChecker extends TimerTask {
+  private class ShutdownChecker extends ErrorLoggingTimerTask {
     @Override
-    public final synchronized void run() {
+    public final synchronized void runInner() {
       try {
         if (!connectionPool.isRemoteAlive(MyriaConstants.MASTER_ID)) {
           if (LOGGER.isInfoEnabled()) {
@@ -847,7 +846,7 @@ public final class Worker {
     // Periodically detect if the server (i.e., coordinator)
     // is still running. IF the server goes down, the
     // worker will stop itself
-    scheduledTaskExecutor = Executors.newScheduledThreadPool(2, new TimerTaskThreadFactory("Worker global timer"));
+    scheduledTaskExecutor = Executors.newScheduledThreadPool(2, new RenamingThreadFactory("Worker global timer"));
     scheduledTaskExecutor.scheduleAtFixedRate(new ShutdownChecker(), MyriaConstants.WORKER_SHUTDOWN_CHECKER_INTERVAL,
         MyriaConstants.WORKER_SHUTDOWN_CHECKER_INTERVAL, TimeUnit.MILLISECONDS);
     scheduledTaskExecutor.scheduleAtFixedRate(new HeartbeatReporter(), 0, MyriaConstants.HEARTBEAT_INTERVAL,
