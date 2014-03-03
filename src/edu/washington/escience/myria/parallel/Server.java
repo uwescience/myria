@@ -716,6 +716,15 @@ public final class Server {
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("Send shutdown requests to the workers, please wait");
     }
+
+    while (scheduledWorkers.size() > 0) {
+      try {
+        Thread.sleep(MyriaConstants.WAITING_INTERVAL_1_SECOND_IN_MS);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        break;
+      }
+    }
     messageProcessingExecutor.shutdownNow();
     scheduledTaskExecutor.shutdownNow();
 
