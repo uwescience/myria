@@ -397,7 +397,7 @@ public abstract class Operator implements Serializable {
     open = true;
 
     if (isProfilingMode()) {
-      profilingLogger = ProfilingLogger.getLogger(execEnvVars);
+      profilingLogger = ProfilingLogger.getLogger(this.execEnvVars);
     }
   }
 
