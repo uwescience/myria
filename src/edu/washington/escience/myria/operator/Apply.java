@@ -138,7 +138,7 @@ public class Apply extends UnaryOperator {
     ImmutableList.Builder<String> namesBuilder = ImmutableList.builder();
 
     for (Expression expr : emitExpressions) {
-      typesBuilder.add(expr.getOutputType(new ExpressionOperatorParameter(inputSchema, getNodeID())));
+      typesBuilder.add(expr.getOutputType(new ExpressionOperatorParameter(inputSchema)));
       namesBuilder.add(expr.getOutputName());
     }
     return new Schema(typesBuilder.build(), namesBuilder.build());
