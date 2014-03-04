@@ -116,6 +116,11 @@ public abstract class QueryPartitionBase implements QueryPartition {
   private volatile int priority;
 
   /**
+   * Store the current pause future if the query is in pause, otherwise null.
+   * */
+  private DefaultQueryFuture pauseFuture = null;
+
+  /**
    * record all failed tasks.
    * */
   private final ConcurrentLinkedQueue<QuerySubTreeTask> failTasks = new ConcurrentLinkedQueue<QuerySubTreeTask>();
@@ -266,6 +271,82 @@ public abstract class QueryPartitionBase implements QueryPartition {
     return priority;
   }
 
+  /**
+   * Pause the worker query partition. If the query is currently paused, do nothing.
+   * 
+   * @param pauseFuture the future instance of the pause action. The future will be set as done if and only if all the
+   *          tasks in this query have stopped execution. During a pause of the query, all call to this method returns
+   *          the same future instance. Two pause calls when the query is not paused at either of the calls return two
+   *          different instances.
+   * */
+  protected abstract void pause(final DefaultQueryFuture pauseFuture);
+
+  @Override
+  public final QueryFuture pause() {
+    synchronized (stateLock) {
+      switch (state) {
+        case STATE_KILLED:
+          return DefaultQueryFuture.failedFuture(this, new IllegalStateException("Query #" + getQueryID()
+              + "already gets killed"));
+        case STATE_COMPLETED:
+          return DefaultQueryFuture.failedFuture(this, new IllegalStateException("Query #" + getQueryID()
+              + "already completed."));
+        case STATE_START:
+        case STATE_INITIALIZED:
+          return DefaultQueryFuture.failedFuture(this, new IllegalStateException("Query #" + getQueryID()
+              + "not yet started."));
+        case STATE_PAUSED:
+          return pauseFuture;
+        case STATE_RUNNING:
+          state = STATE_PAUSED;
+          pauseFuture = new DefaultQueryFuture(this, true);
+          break;
+        default:
+          return DefaultQueryFuture.failedFuture(this, new IllegalStateException("Unknown query state: " + state));
+      }
+    }
+    pause(pauseFuture);
+    return pauseFuture;
+  }
+
+  /**
+   * Resume the worker query partition.
+   * 
+   * @param resumeFuture the future instance of the resume action.
+   * */
+  protected abstract void resume(final DefaultQueryFuture resumeFuture);
+
+  @Override
+  public final QueryFuture resume() {
+    DefaultQueryFuture resumeFuture = null;
+    synchronized (stateLock) {
+      switch (state) {
+        case STATE_KILLED:
+          return DefaultQueryFuture.failedFuture(this, new IllegalStateException("Query #" + getQueryID()
+              + "already gets killed"));
+        case STATE_COMPLETED:
+          return DefaultQueryFuture.failedFuture(this, new IllegalStateException("Query #" + getQueryID()
+              + "already completed."));
+        case STATE_START:
+        case STATE_INITIALIZED:
+          return DefaultQueryFuture.failedFuture(this, new IllegalStateException("Query #" + getQueryID()
+              + "not yet started."));
+        case STATE_PAUSED:
+          state = STATE_RUNNING;
+          resumeFuture = new DefaultQueryFuture(this, false);
+          break;
+        case STATE_RUNNING:
+          return DefaultQueryFuture.succeededFuture(this);
+        default:
+          return DefaultQueryFuture.failedFuture(this, new IllegalStateException("Query #" + getQueryID()
+              + " Unknown query state: " + state));
+      }
+    }
+
+    resume(resumeFuture);
+    return resumeFuture;
+  }
+
   @Override
   public DefaultQueryFuture getExecutionFuture() {
     return executionFuture;
@@ -349,6 +430,13 @@ public abstract class QueryPartitionBase implements QueryPartition {
    * @param future the future object representing the kill action.
    * */
   protected abstract void kill(final DefaultQueryFuture future);
+
+  @Override
+  public final boolean isPaused() {
+    synchronized (stateLock) {
+      return state == STATE_PAUSED;
+    }
+  }
 
   @Override
   public final QueryExecutionStatistics getExecutionStatistics() {

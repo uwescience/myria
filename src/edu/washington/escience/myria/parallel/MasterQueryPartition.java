@@ -9,7 +9,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
@@ -161,7 +160,7 @@ public class MasterQueryPartition extends QueryPartitionBase {
   /**
    * The execution task for the master side query partition.
    * */
-  private volatile QuerySubTreeTask rootTask;
+  private final QuerySubTreeTask rootTask;
 
   /**
    * The root operator of the master query partition.
@@ -192,11 +191,6 @@ public class MasterQueryPartition extends QueryPartitionBase {
    * The future object denoting the worker receive query plan operation.
    * */
   private final DefaultQueryFuture workerReceiveFuture = new DefaultQueryFuture(this, false);
-
-  /**
-   * Store the current pause future if the query is in pause, otherwise null.
-   * */
-  private final AtomicReference<QueryFuture> pauseFuture = new AtomicReference<QueryFuture>(null);
 
   /**
    * record all failed query partitions.
@@ -371,11 +365,7 @@ public class MasterQueryPartition extends QueryPartitionBase {
     root = masterPlan.getRootOps().get(0);
     this.master = master;
     createInitialTasks();
-    for (final QuerySubTreeTask t : getTasks()) {
-      rootTask = t;
-      break;
-    }
-    rootTask.getExecutionFuture().addListener(taskExecutionListener);
+    rootTask = getTasks().iterator().next().getExecutionFuture().addListener(taskExecutionListener).getTask();
     workerExecutionInfo = new ConcurrentHashMap<Integer, WorkerExecutionInfo>(workerPlans.size());
 
     for (Entry<Integer, SingleQueryPlanWithArgs> workerInfo : workerPlans.entrySet()) {
@@ -391,31 +381,22 @@ public class MasterQueryPartition extends QueryPartitionBase {
     rootTask.execute();
   }
 
+  /**
+   * Pause the master query partition.
+   * 
+   * @param future the future instance of the pause action. The future will be set as done if and only if all the tasks
+   *          in this query have stopped execution. During a pause of the query, all call to this method returns the
+   *          same future instance. Two pause calls when the query is not paused at either of the calls return two
+   *          different instances.
+   */
   @Override
-  public final QueryFuture pause() {
-    final QueryFuture pauseF = new DefaultQueryFuture(this, true);
-    while (!pauseFuture.compareAndSet(null, pauseF)) {
-      QueryFuture current = pauseFuture.get();
-      if (current != null) {
-        // already paused by some other threads, do not do the actual pause
-        return current;
-      }
-    }
-    return pauseF;
+  public final void pause(final DefaultQueryFuture future) {
+    // TODO implement actual pause.
   }
 
   @Override
-  public final QueryFuture resume() {
-    QueryFuture pf = pauseFuture.getAndSet(null);
-    DefaultQueryFuture rf = new DefaultQueryFuture(this, true);
-
-    if (pf == null) {
-      rf.setSuccess();
-      return rf;
-    }
-
-    // TODO do the resume stuff
-    return rf;
+  public final void resume(final DefaultQueryFuture future) {
+    // TODO implement actual resume.
   }
 
   @Override
@@ -437,11 +418,6 @@ public class MasterQueryPartition extends QueryPartitionBase {
         LOGGER.error("Send kill query message to workers failed.");
       }
     }
-  }
-
-  @Override
-  public final boolean isPaused() {
-    return pauseFuture.get() != null;
   }
 
   @Override

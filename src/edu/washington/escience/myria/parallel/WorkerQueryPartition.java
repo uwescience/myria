@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,11 +40,6 @@ public class WorkerQueryPartition extends QueryPartitionBase {
    * Number of finished tasks.
    * */
   private final AtomicInteger numFinishedTasks;
-
-  /**
-   * Store the current pause future if the query is in pause, otherwise null.
-   * */
-  private final AtomicReference<QueryFuture> pauseFuture = new AtomicReference<QueryFuture>(null);
 
   /**
    * The future listener for processing the complete events of the execution of all the query's tasks.
@@ -172,30 +166,13 @@ public class WorkerQueryPartition extends QueryPartitionBase {
   }
 
   @Override
-  public final QueryFuture pause() {
-    final QueryFuture pauseF = new DefaultQueryFuture(this, true);
-    while (!pauseFuture.compareAndSet(null, pauseF)) {
-      QueryFuture current = pauseFuture.get();
-      if (current != null) {
-        // already paused by some other threads, do not do the actual pause
-        return current;
-      }
-    }
-    return pauseF;
+  protected final void pause(final DefaultQueryFuture future) {
+    // TODO
   }
 
   @Override
-  public final QueryFuture resume() {
-    QueryFuture pf = pauseFuture.getAndSet(null);
-    DefaultQueryFuture rf = new DefaultQueryFuture(this, true);
-
-    if (pf == null) {
-      // query is not in pause, return success directly.
-      rf.setSuccess();
-      return rf;
-    }
+  public final void resume(final DefaultQueryFuture future) {
     // TODO do the resume stuff
-    return rf;
   }
 
   @Override
@@ -203,11 +180,6 @@ public class WorkerQueryPartition extends QueryPartitionBase {
     for (QuerySubTreeTask task : getTasks()) {
       task.kill();
     }
-  }
-
-  @Override
-  public final boolean isPaused() {
-    return pauseFuture.get() != null;
   }
 
   /**
