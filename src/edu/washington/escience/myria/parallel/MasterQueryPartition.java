@@ -335,11 +335,25 @@ public class MasterQueryPartition extends QueryPartitionBase {
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("Received query complete (fail) message from worker: {}, cause: {}", workerID, cause.toString());
     }
-    if (getFTMode().equals(FTMODE.rejoin) && cause.toString().endsWith("LostHeartbeatException")) {
-      /* for rejoin, don't set it to be completed since this worker is expected to be launched again. */
-      return;
+    if (cause instanceof LostHeartbeatException) {
+      switch (getFTMode()) {
+        case abandon:
+          getMissingWorkers().add(workerID);
+          updateProducerChannels(workerID, false);
+          triggerTasks();
+          wei.workerCompleteQuery.setSuccess();
+          break;
+        case rejoin:
+          getMissingWorkers().add(workerID);
+          updateProducerChannels(workerID, false);
+          break;
+        case none:
+          wei.workerCompleteQuery.setFailure(cause);
+          break;
+      }
+    } else {
+      wei.workerCompleteQuery.setFailure(cause);
     }
-    wei.workerCompleteQuery.setFailure(cause);
   }
 
   @Override
