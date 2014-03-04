@@ -1,7 +1,5 @@
 package edu.washington.escience.myria.expression;
 
-import com.google.common.base.Objects;
-
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 
