@@ -1,11 +1,12 @@
 package edu.washington.escience.myria.parallel;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicInteger;
 
+import org.jboss.netty.util.internal.ConcurrentIdentityWeakKeyHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,9 +38,46 @@ public class WorkerQueryPartition extends QueryPartitionBase {
   private final Worker ownerWorker;
 
   /**
-   * Number of finished tasks.
+   * Completed non-recovery tasks.
    * */
-  private final AtomicInteger numFinishedTasks;
+  private final Set<QuerySubTreeTask> completedTasks = Collections
+      .newSetFromMap(new ConcurrentIdentityWeakKeyHashMap<QuerySubTreeTask, Boolean>());
+
+  /**
+   * Process task success.
+   * 
+   * @param future the task future.
+   * */
+  private void taskSucceed(final TaskFuture future) {
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("Task succeeded, root op = " + future.getTask().getRootOp().getOpName());
+    }
+  }
+
+  /**
+   * Process task failure.
+   * 
+   * @param future the task future.
+   * */
+  private void taskFail(final TaskFuture future) {
+    QuerySubTreeTask drivingTask = future.getTask();
+    Throwable failureReason = future.getCause();
+    if (!future.isSuccess()) {
+      getFailTasks().add(drivingTask);
+      if (!(failureReason instanceof QueryKilledException)) {
+        // The task is a failure, not killed.
+        if (LOGGER.isDebugEnabled()) {
+          LOGGER.debug("Task failed, root op = " + drivingTask.getRootOp().getOpName() + ", cause ", failureReason);
+        }
+        for (QuerySubTreeTask t : getTasks()) {
+          // kill other tasks
+          if (drivingTask != t) {
+            t.kill();
+          }
+        }
+      }
+    }
+  }
 
   /**
    * The future listener for processing the complete events of the execution of all the query's tasks.
@@ -48,27 +86,23 @@ public class WorkerQueryPartition extends QueryPartitionBase {
 
     @Override
     public void operationComplete(final TaskFuture future) throws Exception {
-      QuerySubTreeTask drivingTask = future.getTask();
-      int currentNumFinished = numFinishedTasks.incrementAndGet();
-
-      getExecutionFuture().setProgress(1, currentNumFinished, getTasks().size());
-      Throwable failureReason = future.getCause();
-      if (!future.isSuccess()) {
-        getFailTasks().add(drivingTask);
-        if (!(failureReason instanceof QueryKilledException)) {
-          // The task is a failure, not killed.
-          if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("got a failed task, root op = " + drivingTask.getRootOp().getOpName() + ", cause ",
-                failureReason);
-          }
-          for (QuerySubTreeTask t : getTasks()) {
-            // kill other tasks
-            t.kill();
-          }
+      QuerySubTreeTask task = future.getTask();
+      if (getTasks().contains(task)) {
+        completedTasks.add(task);
+        int currentNumFinished = completedTasks.size();
+        if (LOGGER.isInfoEnabled()) {
+          LOGGER.info("Current finished tasks: {}/{}", currentNumFinished, getTasks().size());
         }
+        getExecutionFuture().setProgress(1, completedTasks.size(), getTasks().size());
       }
 
-      if (currentNumFinished >= getTasks().size()) {
+      if (future.isSuccess()) {
+        WorkerQueryPartition.this.taskSucceed(future);
+      } else {
+        WorkerQueryPartition.this.taskFail(future);
+      }
+
+      if (completedTasks.size() >= getTasks().size()) {
         getExecutionStatistics().markQueryEnd();
         if (LOGGER.isInfoEnabled()) {
           LOGGER.info("Query #" + getQueryID() + " executed for "
@@ -85,13 +119,8 @@ public class WorkerQueryPartition extends QueryPartitionBase {
             existingCause.addSuppressed(newCause);
           }
         }
-      } else {
-        if (LOGGER.isDebugEnabled()) {
-          LOGGER.debug("New finished task: {}. {} remain.", drivingTask, (getTasks().size() - currentNumFinished));
-        }
       }
     }
-
   };
 
   @Override
@@ -112,7 +141,6 @@ public class WorkerQueryPartition extends QueryPartitionBase {
    * */
   public WorkerQueryPartition(final SingleQueryPlanWithArgs plan, final long queryID, final Worker ownerWorker) {
     super(plan, queryID, ownerWorker.getIPCConnectionPool());
-    numFinishedTasks = new AtomicInteger(0);
     this.ownerWorker = ownerWorker;
     createInitialTasks();
     for (final QuerySubTreeTask t : getTasks()) {
