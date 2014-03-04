@@ -13,9 +13,8 @@ public class WorkerIdExpression extends ZeroaryExpression {
   private static final long serialVersionUID = 1L;
 
   /**
-   * This is not really unused, it's used automagically by Jackson deserialization.
+   * An expressions that returns the worker (or master) id.
    */
-  @SuppressWarnings("unused")
   public WorkerIdExpression() {
   }
 
