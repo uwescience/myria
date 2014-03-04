@@ -98,7 +98,7 @@ public abstract class QueryPartitionBase implements QueryPartition {
   /**
    * All tasks in the query, not including recovery tasks.
    * */
-  protected final Set<QuerySubTreeTask> tasks;
+  private final Set<QuerySubTreeTask> tasks;
 
   /**
    * The ftMode.
@@ -153,6 +153,17 @@ public abstract class QueryPartitionBase implements QueryPartition {
     this.ipcPool = ipcPool;
     tasks = new HashSet<QuerySubTreeTask>(rootOps.size());
     missingWorkers = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
+  }
+
+  /**
+   * Create initial query tasks.
+   * */
+  protected void createInitialTasks() {
+    if (tasks.size() <= 0) {
+      for (final RootOperator taskRootOp : rootOps) {
+        tasks.add(createTask(taskRootOp));
+      }
+    }
   }
 
   /**
@@ -260,6 +271,85 @@ public abstract class QueryPartitionBase implements QueryPartition {
     return executionFuture;
   }
 
+  /**
+   * @param executionFuture the future object representing the execution of the whole query partition.
+   * */
+  protected abstract void startExecution(final QueryFuture executionFuture);
+
+  @Override
+  public QueryFuture startExecution() {
+    synchronized (stateLock) {
+      switch (state) {
+        case STATE_START:
+          return DefaultQueryFuture.failedFuture(this, new IllegalStateException("Query #" + getQueryID()
+              + " not yet initialized"));
+        case STATE_KILLED:
+        case STATE_COMPLETED:
+        case STATE_RUNNING:
+        case STATE_PAUSED:
+          return getExecutionFuture();
+        case STATE_INITIALIZED:
+          state = STATE_RUNNING;
+          getExecutionFuture().addListener(new QueryFutureListener() {
+
+            @Override
+            public void operationComplete(final QueryFuture future) throws Exception {
+              synchronized (stateLock) {
+                if (state != STATE_KILLED) {
+                  state = STATE_COMPLETED;
+                }
+              }
+            }
+          });
+          break;
+        default:
+          return DefaultQueryFuture.failedFuture(this, new IllegalStateException("Query #" + getQueryID()
+              + " Unknown query state: " + state));
+      }
+    }
+    startExecution(executionFuture);
+    return executionFuture;
+  }
+
+  @Override
+  public final QueryFuture kill() {
+    DefaultQueryFuture killFuture;
+    synchronized (stateLock) {
+      switch (state) {
+        case STATE_START:
+          state = STATE_KILLED;
+          getExecutionFuture().setFailure(new QueryKilledException());
+        case STATE_KILLED:
+        case STATE_COMPLETED:
+          return DefaultQueryFuture.succeededFuture(this);
+        case STATE_INITIALIZED:
+        case STATE_PAUSED:
+        case STATE_RUNNING:
+          state = STATE_KILLED;
+          final DefaultQueryFuture killFuture0 = new DefaultQueryFuture(this, false);
+          killFuture = killFuture0;
+          getExecutionFuture().addListener(new QueryFutureListener() {
+
+            @Override
+            public void operationComplete(final QueryFuture future) throws Exception {
+              killFuture0.setSuccess();
+            }
+          });
+          break;
+        default:
+          return DefaultQueryFuture.failedFuture(this, new IllegalStateException("Query #" + getQueryID()
+              + " Unknown query state: " + state));
+      }
+    }
+    kill(killFuture);
+    return killFuture;
+  }
+
+  /**
+   * @param future the future object representing the kill action.
+   * */
+  protected abstract void kill(final DefaultQueryFuture future);
+
   @Override
   public final QueryExecutionStatistics getExecutionStatistics() {
     return queryStatistics;
@@ -321,6 +411,15 @@ public abstract class QueryPartitionBase implements QueryPartition {
    * */
   protected final ConcurrentLinkedQueue<QuerySubTreeTask> getFailTasks() {
     return failTasks;
+  }
+
+  /**
+   * @return If the query has been asked to get killed (the kill event may not have completed).
+   * */
+  public final boolean isKilled() {
+    synchronized (stateLock) {
+      return state == STATE_KILLED;
+    }
   }
 
 }

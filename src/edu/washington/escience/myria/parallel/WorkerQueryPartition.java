@@ -118,11 +118,11 @@ public class WorkerQueryPartition extends QueryPartitionBase {
    * */
   public WorkerQueryPartition(final SingleQueryPlanWithArgs plan, final long queryID, final Worker ownerWorker) {
     super(plan, queryID, ownerWorker.getIPCConnectionPool());
-    List<RootOperator> operators = plan.getRootOps();
     numFinishedTasks = new AtomicInteger(0);
     this.ownerWorker = ownerWorker;
-    for (final RootOperator taskRootOp : operators) {
-      tasks.add(createTask(taskRootOp).getExecutionFuture().addListener(taskExecutionListener).getTask());
+    createInitialTasks();
+    for (final QuerySubTreeTask t : getTasks()) {
+      t.getExecutionFuture().addListener(taskExecutionListener);
     }
   }
 
@@ -153,7 +153,7 @@ public class WorkerQueryPartition extends QueryPartitionBase {
   }
 
   @Override
-  public final void startExecution() {
+  public final void startExecution(final QueryFuture executionFuture) {
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("Query : " + getQueryID() + " start processing.");
     }
@@ -199,7 +199,7 @@ public class WorkerQueryPartition extends QueryPartitionBase {
   }
 
   @Override
-  public final void kill() {
+  public final void kill(final DefaultQueryFuture future) {
     for (QuerySubTreeTask task : getTasks()) {
       task.kill();
     }

@@ -100,7 +100,7 @@ public class MasterQueryPartition extends QueryPartitionBase {
                   + DateTimeUtils.nanoElapseToHumanReadable(getExecutionStatistics().getQueryExecutionElapse()));
             }
 
-            if (!killed && failedQueryPartitions.isEmpty()) {
+            if (!isKilled() && failedQueryPartitions.isEmpty()) {
               getExecutionFuture().setSuccess();
             } else {
               if (failedQueryPartitions.isEmpty()) {
@@ -370,6 +370,12 @@ public class MasterQueryPartition extends QueryPartitionBase {
     super(masterPlan, queryID, master.getIPCConnectionPool());
     root = masterPlan.getRootOps().get(0);
     this.master = master;
+    createInitialTasks();
+    for (final QuerySubTreeTask t : getTasks()) {
+      rootTask = t;
+      break;
+    }
+    rootTask.getExecutionFuture().addListener(taskExecutionListener);
     workerExecutionInfo = new ConcurrentHashMap<Integer, WorkerExecutionInfo>(workerPlans.size());
 
     for (Entry<Integer, SingleQueryPlanWithArgs> workerInfo : workerPlans.entrySet()) {
@@ -377,12 +383,10 @@ public class MasterQueryPartition extends QueryPartitionBase {
     }
     WorkerExecutionInfo masterPart = new WorkerExecutionInfo(MyriaConstants.MASTER_ID, masterPlan);
     workerExecutionInfo.put(MyriaConstants.MASTER_ID, masterPart);
-    rootTask = createTask(root).getExecutionFuture().addListener(taskExecutionListener).getTask();
-    tasks.add(rootTask);
   }
 
   @Override
-  public final void startExecution() {
+  public final void startExecution(final QueryFuture future) {
     getExecutionStatistics().markQueryStart();
     rootTask.execute();
   }
@@ -415,11 +419,7 @@ public class MasterQueryPartition extends QueryPartitionBase {
   }
 
   @Override
-  public final void kill() {
-    if (killed) {
-      return;
-    }
-    killed = true;
+  protected final void kill(final DefaultQueryFuture future) {
     rootTask.kill();
     Set<Integer> workers = getWorkersUnfinished();
     ChannelFuture[] cfs = new ChannelFuture[workers.size()];
@@ -458,21 +458,9 @@ public class MasterQueryPartition extends QueryPartitionBase {
   }
 
   /**
-   * If the query has been asked to get killed (the kill event may not have completed).
-   * */
-  private volatile boolean killed = false;
-
-  /**
    * Describes the cause of the query's death.
    */
   private volatile String message = null;
-
-  /**
-   * @return If the query has been asked to get killed (the kill event may not have completed).
-   * */
-  public final boolean isKilled() {
-    return killed;
-  }
 
   /**
    * @return the message describing the cause of the query's death. Nullable.
