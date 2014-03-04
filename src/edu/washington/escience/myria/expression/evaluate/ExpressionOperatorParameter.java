@@ -11,7 +11,7 @@ public class ExpressionOperatorParameter {
   /** The schema of the state. */
   private final Schema stateSchema;
   /** The id of the worker that is running the expression. */
-  private final int workerID;
+  private final Integer workerID;
 
   /**
    * Simple constructor.
@@ -19,7 +19,16 @@ public class ExpressionOperatorParameter {
   public ExpressionOperatorParameter() {
     schema = null;
     stateSchema = null;
-    workerID = -1;
+    workerID = null;
+  }
+
+  /**
+   * @param schema the input schema
+   */
+  public ExpressionOperatorParameter(final Schema schema) {
+    this.schema = schema;
+    stateSchema = null;
+    workerID = null;
   }
 
   /**
