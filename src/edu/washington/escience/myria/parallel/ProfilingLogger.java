@@ -207,11 +207,10 @@ public class ProfilingLogger {
               MyriaConstants.LOG_SENT_RELATION));
 
       singleStatement.setLong(1, operator.getQueryId());
-      singleStatement.setString(2, operator.getOpName());
-      singleStatement.setLong(3, operator.getFragmentId());
-      singleStatement.setLong(4, getTime(operator));
-      singleStatement.setLong(5, numTuples);
-      singleStatement.setInt(6, destWorkerId);
+      singleStatement.setLong(2, operator.getFragmentId());
+      singleStatement.setLong(3, getTime(operator));
+      singleStatement.setLong(4, numTuples);
+      singleStatement.setInt(5, destWorkerId);
 
       singleStatement.executeUpdate();
       singleStatement.close();
