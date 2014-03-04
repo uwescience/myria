@@ -16,7 +16,6 @@ package edu.washington.escience.myria.parallel;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.util.Attachmentable;
-import edu.washington.escience.myria.util.concurrent.OperationFuture;
 import edu.washington.escience.myria.util.concurrent.OperationFutureBase;
 import edu.washington.escience.myria.util.concurrent.OperationFutureListener;
 import edu.washington.escience.myria.util.concurrent.OperationFutureProgressListener;
@@ -118,7 +117,7 @@ class DefaultQueryFuture extends OperationFutureBase<Void> implements Attachment
   }
 
   @Override
-  public OperationFuture addPreListener(final OperationFutureListener listener) {
+  public QueryFuture addPreListener(final OperationFutureListener listener) {
     super.addPreListener0(listener);
     return this;
   }
