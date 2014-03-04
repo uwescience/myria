@@ -2,6 +2,7 @@ package edu.washington.escience.myria.parallel;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -32,19 +33,14 @@ public class WorkerQueryPartition extends QueryPartitionBase {
   private static final Logger LOGGER = LoggerFactory.getLogger(WorkerQueryPartition.class);
 
   /**
-   * logger for profile.
-   */
-  private static final org.slf4j.Logger PROFILING_LOGGER = org.slf4j.LoggerFactory.getLogger("profile");
+   * The owner {@link Worker}.
+   * */
+  private final Worker ownerWorker;
 
   /**
    * Number of finished tasks.
    * */
   private final AtomicInteger numFinishedTasks;
-
-  /**
-   * The owner {@link Worker}.
-   * */
-  private final Worker ownerWorker;
 
   /**
    * Store the current pause future if the query is in pause, otherwise null.
@@ -61,7 +57,7 @@ public class WorkerQueryPartition extends QueryPartitionBase {
       QuerySubTreeTask drivingTask = future.getTask();
       int currentNumFinished = numFinishedTasks.incrementAndGet();
 
-      getExecutionFuture().setProgress(1, currentNumFinished, tasks.size());
+      getExecutionFuture().setProgress(1, currentNumFinished, getTasks().size());
       Throwable failureReason = future.getCause();
       if (!future.isSuccess()) {
         getFailTasks().add(drivingTask);
@@ -71,14 +67,14 @@ public class WorkerQueryPartition extends QueryPartitionBase {
             LOGGER.debug("got a failed task, root op = " + drivingTask.getRootOp().getOpName() + ", cause ",
                 failureReason);
           }
-          for (QuerySubTreeTask t : tasks) {
+          for (QuerySubTreeTask t : getTasks()) {
             // kill other tasks
             t.kill();
           }
         }
       }
 
-      if (currentNumFinished >= tasks.size()) {
+      if (currentNumFinished >= getTasks().size()) {
         getExecutionStatistics().markQueryEnd();
         if (LOGGER.isInfoEnabled()) {
           LOGGER.info("Query #" + getQueryID() + " executed for "
@@ -97,7 +93,7 @@ public class WorkerQueryPartition extends QueryPartitionBase {
         }
       } else {
         if (LOGGER.isDebugEnabled()) {
-          LOGGER.debug("New finished task: {}. {} remain.", drivingTask, (tasks.size() - currentNumFinished));
+          LOGGER.debug("New finished task: {}. {} remain.", drivingTask, (getTasks().size() - currentNumFinished));
         }
       }
     }
@@ -131,10 +127,17 @@ public class WorkerQueryPartition extends QueryPartitionBase {
   }
 
   @Override
-  public final void init() {
-    for (QuerySubTreeTask t : tasks) {
-      init(t);
+  public final void init(final DefaultQueryFuture initFuture) {
+    final Set<QuerySubTreeTask> initialTasks = getTasks();
+    for (final QuerySubTreeTask t : initialTasks) {
+      try {
+        initTask(t);
+      } catch (final Throwable e) {
+        initFuture.setFailure(e);
+      }
     }
+    // safe to just setSuccess because if the init is already failed, the setSuccess won't change the result
+    initFuture.setSuccess();
   }
 
   /**
@@ -142,7 +145,7 @@ public class WorkerQueryPartition extends QueryPartitionBase {
    * 
    * @param t the task
    * */
-  public final void init(final QuerySubTreeTask t) {
+  private void initTask(final QuerySubTreeTask t) {
     TaskResourceManager resourceManager =
         new TaskResourceManager(ownerWorker.getIPCConnectionPool(), t, ownerWorker.getQueryExecutionMode());
     ImmutableMap.Builder<String, Object> b = ImmutableMap.builder();
@@ -163,7 +166,7 @@ public class WorkerQueryPartition extends QueryPartitionBase {
     }
 
     getExecutionStatistics().markQueryStart();
-    for (QuerySubTreeTask t : tasks) {
+    for (QuerySubTreeTask t : getTasks()) {
       t.execute();
     }
   }
@@ -197,7 +200,7 @@ public class WorkerQueryPartition extends QueryPartitionBase {
 
   @Override
   public final void kill() {
-    for (QuerySubTreeTask task : tasks) {
+    for (QuerySubTreeTask task : getTasks()) {
       task.kill();
     }
   }
@@ -214,7 +217,7 @@ public class WorkerQueryPartition extends QueryPartitionBase {
    */
   public void addRecoveryTasks(final int workerId) {
     List<RootOperator> recoveryTasks = new ArrayList<RootOperator>();
-    for (QuerySubTreeTask task : tasks) {
+    for (QuerySubTreeTask task : getTasks()) {
       if (task.getRootOp() instanceof Producer) {
         if (LOGGER.isTraceEnabled()) {
           LOGGER.trace("adding recovery task for " + task.getRootOp().getOpName());
@@ -249,7 +252,7 @@ public class WorkerQueryPartition extends QueryPartitionBase {
           if (ownerWorker.getIPCConnectionPool().isRemoteAlive(workerId)) {
             /* waiting for ADD_WORKER to be received */
             for (QuerySubTreeTask task : list) {
-              init(task);
+              initTask(task);
               /* input might be null but we still need it to run */
               task.notifyNewInput();
             }

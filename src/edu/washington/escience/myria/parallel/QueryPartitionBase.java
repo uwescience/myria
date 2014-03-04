@@ -50,7 +50,7 @@ public abstract class QueryPartitionBase implements QueryPartition {
   /**
    * Query state.
    * */
-  private final int state = STATE_START;
+  private int state = STATE_START;
 
   /**
    * Query state lock.
@@ -192,6 +192,40 @@ public abstract class QueryPartitionBase implements QueryPartition {
 
     return drivingTask;
   }
+
+  @Override
+  public final QueryFuture init() {
+    DefaultQueryFuture future = null;
+    synchronized (stateLock) {
+      switch (state) {
+        case STATE_KILLED:
+          return DefaultQueryFuture.failedFuture(this, new IllegalStateException("Query #" + getQueryID()
+              + "already gets killed"));
+        case STATE_COMPLETED:
+          return DefaultQueryFuture.failedFuture(this, new IllegalStateException("Query #" + getQueryID()
+              + "already completed."));
+        case STATE_INITIALIZED:
+        case STATE_PAUSED:
+        case STATE_RUNNING:
+          return DefaultQueryFuture.succeededFuture(this);
+        case STATE_START:
+          state = STATE_INITIALIZED;
+          future = new DefaultQueryFuture(this, false);
+          break;
+        default:
+          return DefaultQueryFuture.failedFuture(this, new IllegalStateException("Unknown query state: " + state));
+      }
+    }
+    init(future);
+    return future;
+  }
+
+  /**
+   * Do the actual initialization.
+   * 
+   * @param future the future object representing the init action.
+   * */
+  protected abstract void init(final DefaultQueryFuture future);
 
   @Override
   public final long getQueryID() {

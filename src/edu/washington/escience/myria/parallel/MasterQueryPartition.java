@@ -96,7 +96,7 @@ public class MasterQueryPartition extends QueryPartitionBase {
           if (current >= total) {
             getExecutionStatistics().markQueryEnd();
             if (LOGGER.isInfoEnabled()) {
-              LOGGER.info("Query #" + getQueryID() + " executed for "
+              LOGGER.info("Query #" + queryID + " executed for "
                   + DateTimeUtils.nanoElapseToHumanReadable(getExecutionStatistics().getQueryExecutionElapse()));
             }
 
@@ -445,11 +445,16 @@ public class MasterQueryPartition extends QueryPartitionBase {
   }
 
   @Override
-  public final void init() {
+  public final void init(final DefaultQueryFuture initFuture) {
     ImmutableMap.Builder<String, Object> b = ImmutableMap.builder();
     TaskResourceManager resourceManager =
         new TaskResourceManager(master.getIPCConnectionPool(), rootTask, master.getExecutionMode());
-    rootTask.init(resourceManager, b.putAll(master.getExecEnvVars()).build());
+    try {
+      rootTask.init(resourceManager, b.putAll(master.getExecEnvVars()).build());
+    } catch (Throwable e) {
+      initFuture.setFailure(e);
+    }
+    initFuture.setSuccess();
   }
 
   /**

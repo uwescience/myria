@@ -1085,8 +1085,15 @@ public final class Server {
       dispatchWorkerQueryPlans(mqp).addListener(new QueryFutureListener() {
         @Override
         public void operationComplete(final QueryFuture future) throws Exception {
-          mqp.init();
-          mqp.startExecution();
+          mqp.init().addListener(new QueryFutureListener() {
+
+            @Override
+            public void operationComplete(final QueryFuture future) throws Exception {
+              if (future.isSuccess()) {
+                mqp.startExecution();
+              }
+            }
+          });
           Server.this.startWorkerQuery(future.getQuery().getQueryID());
         }
       });
