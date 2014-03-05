@@ -1617,4 +1617,12 @@ public final class Server {
       throw new DbException(e);
     }
   }
+
+  /**
+   * @return number of queries.
+   * @throws CatalogException if an error occurs
+   */
+  public int getNumQueries() throws CatalogException {
+    return activeQueries.size() + catalog.getNumQueries();
+  }
 }
