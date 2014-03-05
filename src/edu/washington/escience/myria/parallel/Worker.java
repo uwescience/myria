@@ -702,6 +702,10 @@ public final class Worker {
       LOGGER.info("Shutdown requested. Please wait when cleaning up...");
     }
 
+    for (WorkerQueryPartition p : activeQueries.values()) {
+      p.kill();
+    }
+
     if (!connectionPool.isShutdown()) {
       if (!abruptShutdown) {
         connectionPool.shutdown();

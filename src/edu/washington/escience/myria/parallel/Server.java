@@ -727,6 +727,11 @@ public final class Server {
         }
       }
     }
+
+    for (MasterQueryPartition p : activeQueries.values()) {
+      p.kill();
+    }
+
     messageProcessingExecutor.shutdownNow();
     scheduledTaskExecutor.shutdownNow();
 
