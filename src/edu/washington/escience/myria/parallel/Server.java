@@ -1038,13 +1038,19 @@ public final class Server {
           final String endTime = stats.getEndTime();
           final long elapsedNanos = stats.getQueryExecutionElapse();
           final QueryStatusEncoding.Status status;
+          String message = null;
           if (mqp.isKilled()) {
             /* This is a catch-all for both ERROR and KILLED, right? */
-            status = Status.KILLED;
+            message = mqp.getMessage();
+            if (message == null) {
+              status = Status.KILLED;
+            } else {
+              status = Status.ERROR;
+            }
           } else {
             status = Status.SUCCESS;
           }
-          catalog.queryFinished(queryID, startTime, endTime, elapsedNanos, status);
+          catalog.queryFinished(queryID, startTime, endTime, elapsedNanos, status, message);
           activeQueries.remove(queryID);
 
           if (future.isSuccess()) {
@@ -1077,7 +1083,7 @@ public final class Server {
 
       return mqp.getExecutionFuture();
     } catch (DbException | CatalogException | RuntimeException e) {
-      catalog.queryFinished(queryID, "error during submission", null, null, Status.KILLED);
+      catalog.queryFinished(queryID, "error during submission", null, null, Status.ERROR, e.toString());
       activeQueries.remove(queryID);
       throw e;
     }
