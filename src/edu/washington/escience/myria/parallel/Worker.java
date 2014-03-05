@@ -439,7 +439,7 @@ public final class Worker {
 
   /**
    * @param cmdlineOptions command line options
-   * */
+   */
   private static void bootupWorker(final HashMap<String, Object> cmdlineOptions) {
     final String workingDir = (String) cmdlineOptions.get("workingDir");
     if (LOGGER.isInfoEnabled()) {

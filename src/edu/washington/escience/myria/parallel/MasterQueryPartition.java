@@ -37,7 +37,7 @@ import edu.washington.escience.myria.util.IPCUtils;
  * partition can only have a single task.
  * 
  * */
-public class MasterQueryPartition implements QueryPartition {
+public class MasterQueryPartition extends QueryPartitionBase {
 
   /**
    * Record worker execution info.

@@ -30,7 +30,7 @@ import edu.washington.escience.myria.util.DateTimeUtils;
 /**
  * A {@link WorkerQueryPartition} is a partition of a query plan at a single worker.
  * */
-public class WorkerQueryPartition implements QueryPartition {
+public class WorkerQueryPartition extends QueryPartitionBase {
 
   /**
    * logger.
