@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableSet;
 import java.util.Set;
-import java.util.TimerTask;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -71,6 +70,7 @@ import edu.washington.escience.myria.util.DateTimeUtils;
 import edu.washington.escience.myria.util.DeploymentUtils;
 import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.MyriaUtils;
+import edu.washington.escience.myria.util.concurrent.ErrorLoggingTimerTask;
 import edu.washington.escience.myria.util.concurrent.RenamingThreadFactory;
 
 /**
@@ -474,7 +474,7 @@ public final class Server {
   /**
    * This class presents only for the purpose of debugging. No other usage.
    * */
-  private class DebugHelper extends TimerTask {
+  private class DebugHelper extends ErrorLoggingTimerTask {
 
     /**
      * Interval of execution.
@@ -482,7 +482,7 @@ public final class Server {
     public static final int INTERVAL = MyriaConstants.WAITING_INTERVAL_1_SECOND_IN_MS;
 
     @Override
-    public final synchronized void run() {
+    public final synchronized void runInner() {
       System.currentTimeMillis();
     }
   }
@@ -555,10 +555,10 @@ public final class Server {
    * Check worker livenesses periodically. If a worker is detected as dead, its queries will be notified, it will be
    * removed from connection pools, and a new worker will be scheduled.
    * */
-  private class WorkerLivenessChecker extends TimerTask {
+  private class WorkerLivenessChecker extends ErrorLoggingTimerTask {
 
     @Override
-    public final synchronized void run() {
+    public final synchronized void runInner() {
       for (Integer workerId : aliveWorkers.keySet()) {
         long currentTime = System.currentTimeMillis();
         if (currentTime - aliveWorkers.get(workerId) >= MyriaConstants.WORKER_IS_DEAD_INTERVAL) {
@@ -715,6 +715,15 @@ public final class Server {
     }
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("Send shutdown requests to the workers, please wait");
+    }
+
+    while (scheduledWorkers.size() > 0) {
+      try {
+        Thread.sleep(MyriaConstants.WAITING_INTERVAL_1_SECOND_IN_MS);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        break;
+      }
     }
     messageProcessingExecutor.shutdownNow();
     scheduledTaskExecutor.shutdownNow();
@@ -1011,7 +1020,7 @@ public final class Server {
       final MasterQueryPartition mqp = new MasterQueryPartition(masterPlan, workerPlans, queryID, this);
       activeQueries.put(queryID, mqp);
 
-      final QueryFuture queryExecutionFuture = mqp.getQueryExecutionFuture();
+      final QueryFuture queryExecutionFuture = mqp.getExecutionFuture();
 
       /*
        * Add the DatasetMetadataUpdater, which will update the catalog with the set of workers created when the query
@@ -1066,7 +1075,7 @@ public final class Server {
         }
       });
 
-      return mqp.getQueryExecutionFuture();
+      return mqp.getExecutionFuture();
     } catch (DbException | CatalogException | RuntimeException e) {
       catalog.queryFinished(queryID, "error during submission", null, null, Status.KILLED);
       activeQueries.remove(queryID);

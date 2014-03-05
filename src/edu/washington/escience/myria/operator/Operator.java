@@ -10,9 +10,9 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
+import edu.washington.escience.myria.parallel.QueryPartition;
 import edu.washington.escience.myria.parallel.QuerySubTreeTask;
 import edu.washington.escience.myria.parallel.TaskResourceManager;
-import edu.washington.escience.myria.parallel.WorkerQueryPartition;
 
 /**
  * Abstract class for implementing operators.
@@ -85,15 +85,14 @@ public abstract class Operator implements Serializable {
   }
 
   /**
-   * @return worker query partition.
+   * @return worker/master query partition.
    */
-  public WorkerQueryPartition getWorkerQueryPartition() {
+  public final QueryPartition getQueryPartition() {
     if (execEnvVars == null) {
       return null;
-    } else {
-      return (WorkerQueryPartition) ((TaskResourceManager) execEnvVars
-          .get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER)).getOwnerTask().getOwnerQuery();
     }
+    return ((TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER)).getOwnerTask()
+        .getOwnerQuery();
   }
 
   /**

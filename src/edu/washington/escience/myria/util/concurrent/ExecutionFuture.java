@@ -37,6 +37,9 @@ public interface ExecutionFuture<T> extends Attachmentable, Future<T>, Operation
   ExecutionFuture<T> addListener(OperationFutureListener listener);
 
   @Override
+  ExecutionFuture<T> addPreListener(OperationFutureListener listener);
+
+  @Override
   ExecutionFuture<T> removeListener(final OperationFutureListener listener);
 
   @Override

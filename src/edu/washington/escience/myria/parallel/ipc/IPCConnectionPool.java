@@ -48,10 +48,10 @@ import com.google.common.collect.ImmutableSet;
 import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.parallel.ipc.ChannelContext.RegisteredChannelContext;
 import edu.washington.escience.myria.util.IPCUtils;
+import edu.washington.escience.myria.util.concurrent.ErrorLoggingTimerTask;
 import edu.washington.escience.myria.util.concurrent.OrderedExecutorService;
 import edu.washington.escience.myria.util.concurrent.RenamingThreadFactory;
 import edu.washington.escience.myria.util.concurrent.ThreadStackDump;
-import edu.washington.escience.myria.util.concurrent.TimerTaskThreadFactory;
 
 /**
  * IPCConnectionPool is the hub of inter-process communication. It is consisted of an IPC server (typically a server
@@ -83,9 +83,9 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   /**
    * Channel disconnecter, in charge of checking if the channels in the trash bin are qualified for closing.
    * */
-  private class ChannelDisconnecter implements Runnable {
+  private class ChannelDisconnecter extends ErrorLoggingTimerTask {
     @Override
-    public final synchronized void run() {
+    public final synchronized void runInner() {
       final Iterator<Channel> channels = channelTrashBin.iterator();
       while (channels.hasNext()) {
         final Channel c = channels.next();
@@ -140,9 +140,9 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   /**
    * Check the registration of new connections.
    * */
-  private class ChannelIDChecker implements Runnable {
+  private class ChannelIDChecker extends ErrorLoggingTimerTask {
     @Override
-    public final synchronized void run() {
+    public final synchronized void runInner() {
       synchronized (unregisteredChannelSetLock) {
         final Iterator<Channel> it = unregisteredChannels.keySet().iterator();
         while (it.hasNext()) {
@@ -162,9 +162,9 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   /**
    * Recycle unused connections.
    * */
-  private class ChannelRecycler implements Runnable {
+  private class ChannelRecycler extends ErrorLoggingTimerTask {
     @Override
-    public final synchronized void run() {
+    public final synchronized void runInner() {
       final Iterator<Channel> it = recyclableRegisteredChannels.keySet().iterator();
       while (it.hasNext()) {
         final Channel c = it.next();
@@ -485,7 +485,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
     channelTrashBin = new DefaultChannelGroup();
 
     scheduledTaskExecutor =
-        Executors.newSingleThreadScheduledExecutor(new TimerTaskThreadFactory("IPC connection pool global timer"));
+        Executors.newSingleThreadScheduledExecutor(new RenamingThreadFactory("IPC connection pool global timer"));
     disconnecter = new ChannelDisconnecter();
     idChecker = new ChannelIDChecker();
     recycler = new ChannelRecycler();

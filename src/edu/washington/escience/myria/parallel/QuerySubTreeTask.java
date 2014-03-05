@@ -155,6 +155,11 @@ public final class QuerySubTreeTask {
           synchronized (executionLock) {
             QuerySubTreeTask.this.executeActually();
           }
+        } catch (RuntimeException ee) {
+          if (LOGGER.isErrorEnabled()) {
+            LOGGER.error("Unexpected Error: ", ee);
+          }
+          throw ee;
         } finally {
           executionHandle = null;
         }
@@ -361,14 +366,14 @@ public final class QuerySubTreeTask {
    * */
   private Object executeActually() {
 
-    PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:set time", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, root.getQueryId(),
-        "startTimeInMS", root.getFragmentId(), System.currentTimeMillis(), 0);
-    PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:set time", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, root.getQueryId(),
-        "startTimeInNS", root.getFragmentId(), System.nanoTime(), 0);
+    PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:set time", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, ownerQuery
+        .getQueryID(), "startTimeInMS", root.getFragmentId(), System.currentTimeMillis(), 0);
+    PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:set time", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, ownerQuery
+        .getQueryID(), "startTimeInNS", root.getFragmentId(), System.nanoTime(), 0);
 
+    Throwable failureCause = null;
     if (executionCondition.compareAndSet(EXECUTION_READY | STATE_EXECUTION_REQUESTED, EXECUTION_READY
         | STATE_EXECUTION_REQUESTED | STATE_IN_EXECUTION)) {
-      Throwable failureCause = null;
       EXECUTE : while (true) {
         if (Thread.interrupted()) {
           Thread.currentThread().interrupt();
@@ -441,19 +446,24 @@ public final class QuerySubTreeTask {
 
       // clear interrupted
       AtomicUtils.unsetBitByValue(executionCondition, STATE_INTERRUPTED);
+      Thread.interrupted();
 
-      if ((executionCondition.get() & STATE_FAIL) == STATE_FAIL) {
-        // failed
+    }
+
+    if ((executionCondition.get() & STATE_FAIL) == STATE_FAIL) {
+      // failed
+      if (taskExecutionFuture.setFailure(failureCause)) {
         cleanup(true);
-        taskExecutionFuture.setFailure(failureCause);
-      } else if (root.eos()) {
-        AtomicUtils.setBitByValue(executionCondition, STATE_EOS);
+      }
+    } else if (root.eos()) {
+      if (AtomicUtils.setBitIfUnsetByValue(executionCondition, STATE_EOS)) {
         cleanup(false);
         taskExecutionFuture.setSuccess();
-      } else if ((executionCondition.get() & STATE_KILLED) == STATE_KILLED) {
-        // killed
+      }
+    } else if ((executionCondition.get() & STATE_KILLED) == STATE_KILLED) {
+      // killed
+      if (taskExecutionFuture.setFailure(new QueryKilledException("Task gets killed"))) {
         cleanup(true);
-        taskExecutionFuture.setFailure(new QueryKilledException("Task gets killed"));
       }
     }
     return null;
@@ -499,7 +509,7 @@ public final class QuerySubTreeTask {
   /**
    * @return if the task is already get killed.
    * */
-  private boolean isKilled() {
+  public boolean isKilled() {
     return (executionCondition.get() & STATE_KILLED) == STATE_KILLED;
   }
 
@@ -570,32 +580,17 @@ public final class QuerySubTreeTask {
    * 
    * */
   void kill() {
-    if (isKilled()) {
+    if (!AtomicUtils.setBitIfUnsetByValue(executionCondition, STATE_KILLED)) {
       return;
     }
-    while (!isKilled()) {
 
-      int oldV = executionCondition.get();
-      int notKilledInExec = (oldV & ~STATE_KILLED) | STATE_IN_EXECUTION;
-      int killed = oldV | STATE_KILLED;
-      if (executionCondition.compareAndSet(notKilledInExec, killed)) {
-        // in execution, try to interrupt the execution thread, and let the execution thread to take care of the killing
-
-        final Future<Void> executionHandleLocal = executionHandle;
-        if (executionHandleLocal != null) {
-          // Abruptly cancel the execution
-          executionHandleLocal.cancel(true);
-        }
-      }
-      oldV = executionCondition.get();
-      int notKilledNotInExec = oldV & ~(STATE_KILLED | STATE_IN_EXECUTION);
-      killed = oldV | STATE_KILLED;
-      if (executionCondition.compareAndSet(notKilledNotInExec, killed)) {
-        // not in execution, kill the query here
-        cleanup(true);
-        taskExecutionFuture.setFailure(new QueryKilledException("Task gets killed"));
-      }
+    final Future<Void> executionHandleLocal = executionHandle;
+    if (executionHandleLocal != null) {
+      // Abruptly cancel the execution
+      executionHandleLocal.cancel(true);
     }
+
+    myExecutor.submit(executionTask);
 
   }
 
@@ -631,8 +626,9 @@ public final class QuerySubTreeTask {
         LOGGER.error("Task failed to open because of exception:", e);
       }
       AtomicUtils.setBitByValue(executionCondition, STATE_FAIL);
-      cleanup(true);
-      taskExecutionFuture.setFailure(e);
+      if (taskExecutionFuture.setFailure(e)) {
+        cleanup(true);
+      }
     }
   }
 
