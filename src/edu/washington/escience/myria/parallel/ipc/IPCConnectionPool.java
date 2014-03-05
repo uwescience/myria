@@ -672,24 +672,9 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
         final ChannelContext cc = new ChannelContext(channel);
         channel.setAttachment(cc);
         cc.connected();
-        final ChannelFuture idWriteFuture = channel.write(myIDMsg);
-        idWriteFuture.awaitUninterruptibly(DATA_TRANSFER_TIMEOUT_IN_MS);
-        // tell the remote part my id
-        if (!idWriteFuture.isSuccess()) {
-          cc.idCheckingTimeout(unregisteredChannels);
-          throw new ChannelException("ID checking timeout, failed to write my ID");
-        }
+        cc.awaitRemoteRegister(myIDMsg, remote.id, CONNECTION_ID_CHECK_TIMEOUT_IN_MS, remote.registeredChannels,
+            unregisteredChannels);
 
-        if (!cc.waitForRemoteReply(CONNECTION_ID_CHECK_TIMEOUT_IN_MS)) {
-          throw new ChannelException("ID checking timeout, failed to get the remote ID");
-        }
-
-        if (cc.remoteReplyID() == null || !(remote.id == (cc.remoteReplyID()))) {
-          cc.idCheckingTimeout(unregisteredChannels);
-          throw new ChannelException("ID checking timeout, remote ID doesn't match");
-        }
-
-        cc.registerNormal(remote.id, remote.registeredChannels, unregisteredChannels);
         if (LOGGER.isTraceEnabled()) {
           LOGGER.trace("Created a new registered channel from: " + myID + ", to: " + remote.id + ". Channel: "
               + channel);
@@ -1453,10 +1438,10 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
           IPCRemote remote = channelPool.get(rcc.getRemoteID());
           if (remote != null) {
             cc.errorEncountered(unregisteredChannels, recyclableRegisteredChannels, channelTrashBin,
-                remote.registeredChannels);
+                remote.registeredChannels, cause);
           }
         } else {
-          cc.errorEncountered(unregisteredChannels, recyclableRegisteredChannels, channelTrashBin, null);
+          cc.errorEncountered(unregisteredChannels, recyclableRegisteredChannels, channelTrashBin, null, cause);
         }
       }
     } finally {
