@@ -1434,6 +1434,6 @@ public final class Server {
    * @throws CatalogException if an error occurs
    */
   public int getNumQueries() throws CatalogException {
-    return activeQueries.size() + catalog.getNumQueries();
+    return catalog.getNumQueries();
   }
 }

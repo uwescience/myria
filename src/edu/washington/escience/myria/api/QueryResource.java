@@ -261,7 +261,7 @@ public final class QueryResource {
     for (QueryStatusEncoding status : queries) {
       status.url = getCanonicalResourcePath(uriInfo, status.queryId);
     }
-    return Response.ok().cacheControl(MyriaApiUtils.doNotCache()).header("Count", server.getNumQueries()).entity(
+    return Response.ok().cacheControl(MyriaApiUtils.doNotCache()).header("X-Count", server.getNumQueries()).entity(
         queries).build();
   }
 
