@@ -1146,7 +1146,7 @@ public final class MasterCatalog {
           try {
             SQLiteStatement statement =
                 sqliteConnection
-                    .prepare("SELECT query_id,raw_query,logical_ra,physical_plan,submit_time,start_time,finish_time,elapsed_nanos,status, profiling_mode FROM queries WHERE query_id=?;");
+                    .prepare("SELECT query_id,raw_query,logical_ra,physical_plan,submit_time,start_time,finish_time,elapsed_nanos,status,profiling_mode FROM queries WHERE query_id=?;");
             statement.bind(1, queryId);
             statement.step();
             if (!statement.hasRow()) {
