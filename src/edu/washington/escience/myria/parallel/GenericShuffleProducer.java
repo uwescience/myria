@@ -27,11 +27,6 @@ public class GenericShuffleProducer extends Producer {
   private final int[][] partitionToChannel;
 
   /**
-   * Mapping from channel to worker id.
-   */
-  private final int[] workerIDs;
-
-  /**
    * Shuffle to the same operator ID on multiple workers. (The old "ShuffleProducer")
    * 
    * @param child the child who provides data for this producer to distribute.
@@ -80,7 +75,6 @@ public class GenericShuffleProducer extends Producer {
     super(child, operatorIDs, workerIDs, isOneToOneMapping);
     Preconditions.checkArgument(partitionToChannel.length == pf.numPartition());
     partitionFunction = pf;
-    this.workerIDs = workerIDs;
     setNumOfPartition(pf.numPartition());
     this.partitionToChannel = partitionToChannel;
   }
@@ -97,11 +91,12 @@ public class GenericShuffleProducer extends Producer {
     TupleBatch[] partitions = getTupleBatchPartitions(tup);
 
     if (isProfilingMode()) {
-      for (int partitionId = 0; partitionId < partitions.length; partitionId++) {
-        for (int channelId = 0; channelId < partitionToChannel[partitionId].length; channelId++) {
-          int destWorkerId = workerIDs[partitionToChannel[partitionId][channelId]];
-          if (partitions[partitionId] != null) {
-            getProfilingLogger().recordSend(this, partitions[partitionId].numTuples(), destWorkerId);
+      for (int partitionIdx = 0; partitionIdx < partitions.length; partitionIdx++) {
+        final int numTuples = partitions[partitionIdx].numTuples();
+        for (int channelIdx = 0; channelIdx < partitionToChannel[partitionIdx].length; channelIdx++) {
+          if (partitions[partitionIdx] != null) {
+            int destWorkerId = partitionToChannel[partitionIdx][channelIdx];
+            getProfilingLogger().recordSend(this, numTuples, destWorkerId);
           }
         }
       }
