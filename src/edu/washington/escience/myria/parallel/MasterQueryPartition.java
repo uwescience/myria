@@ -301,9 +301,6 @@ public class MasterQueryPartition implements QueryPartition {
     return workerReceiveFuture;
   }
 
-  /**
-   * @return query future for the worker receiving query action.
-   * */
   @Override
   public final QueryFuture getExecutionFuture() {
     return queryExecutionFuture;
@@ -462,14 +459,6 @@ public class MasterQueryPartition implements QueryPartition {
     return priority;
   }
 
-  /**
-   * Pause the master query partition.
-   * 
-   * @return the future instance of the pause action. The future will be set as done if and only if all the tasks in
-   *         this query have stopped execution. During a pause of the query, all call to this method returns the same
-   *         future instance. Two pause calls when the query is not paused at either of the calls return two different
-   *         instances.
-   */
   @Override
   public final QueryFuture pause() {
     final QueryFuture pauseF = new DefaultQueryFuture(this, true);
@@ -483,11 +472,6 @@ public class MasterQueryPartition implements QueryPartition {
     return pauseF;
   }
 
-  /**
-   * Resume the master query partition.
-   * 
-   * @return the future instance of the resume action.
-   * */
   @Override
   public final QueryFuture resume() {
     QueryFuture pf = pauseFuture.getAndSet(null);
@@ -502,10 +486,6 @@ public class MasterQueryPartition implements QueryPartition {
     return rf;
   }
 
-  /**
-   * Kill the master query partition.
-   * 
-   * */
   @Override
   public final void kill() {
     if (killed) {
