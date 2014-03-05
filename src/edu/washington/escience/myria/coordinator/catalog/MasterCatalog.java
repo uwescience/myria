@@ -1423,4 +1423,36 @@ public final class MasterCatalog {
       throw new CatalogException(e);
     }
   }
+
+  /**
+   * @return number of queries in catalog.
+   * @throws CatalogException if an error occurs
+   */
+  public int getNumQueries() throws CatalogException {
+    try {
+      return queue.execute(new SQLiteJob<Integer>() {
+        @Override
+        protected Integer job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+          try {
+            /* Getting this out is a simple query, which does not need to be cached. */
+            final SQLiteStatement statement = sqliteConnection.prepare("SELECT count(*) FROM queries;", false);
+            if (!statement.step()) {
+              /* If step() returns false, there's no data. Return null. */
+              return null;
+            }
+            final Integer ret = statement.columnInt(0);
+            statement.dispose();
+            return ret;
+          } catch (final SQLiteException e) {
+            if (LOGGER.isErrorEnabled()) {
+              LOGGER.error(e.toString());
+            }
+            throw new CatalogException(e);
+          }
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
 }
