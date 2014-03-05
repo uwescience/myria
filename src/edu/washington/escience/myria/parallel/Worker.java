@@ -1,7 +1,10 @@
 package edu.washington.escience.myria.parallel;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.channels.FileLock;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -382,9 +385,57 @@ public final class Worker {
   }
 
   /**
+   * A file lock hold by a worker process throughout its lifetime to make sure no other worker instances start.
+   * 
+   * Access this file lock ONLY by the main thread.
+   */
+  private static FileLock workerInstanceLock;
+
+  /**
    * @param cmdlineOptions command line options
+   * @return if a worker instance using the same working directory is already running
+   */
+  private static boolean workerExists(final HashMap<String, Object> cmdlineOptions) {
+    final String workingDir = (String) cmdlineOptions.get("workingDir");
+    File file = new File(workingDir + "/workerInstance.lock");
+    file.deleteOnExit();
+    try (RandomAccessFile raf = new RandomAccessFile(file, "rw")) {
+      workerInstanceLock = raf.getChannel().tryLock();
+    } catch (Throwable e) {
+      LOGGER.error("Error in locking worker instance lock", e);
+      return true;
+    }
+    return workerInstanceLock == null;
+  }
+
+  /**
+   * Cleanup system resources.
+   */
+  private static void systemCleanup() {
+    Throwable err = null;
+    if (workerInstanceLock != null) {
+      try {
+        workerInstanceLock.release();
+      } catch (Throwable t) {
+        err = t;
+      } finally {
+        try {
+          workerInstanceLock.channel().close();
+        } catch (Throwable t) {
+          err = t;
+        }
+      }
+    }
+    if (err != null) {
+      LOGGER.error("Error in system cleanup: ", err);
+    }
+  }
+
+  /**
+   * @param cmdlineOptions command line options
+   * @return Myria Worker thread.
    * */
-  private static void bootupWorker(final HashMap<String, Object> cmdlineOptions) {
+  private static Thread bootupWorker(final HashMap<String, Object> cmdlineOptions) {
     final String workingDir = (String) cmdlineOptions.get("workingDir");
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("workingDir: " + workingDir);
@@ -416,6 +467,7 @@ public final class Worker {
       }
     };
     myriaWorkerMain.start();
+    return myriaWorkerMain;
   }
 
   /**
@@ -426,8 +478,12 @@ public final class Worker {
   public static void main(final String[] args) {
     try {
       HashMap<String, Object> cmdlineOptions = processArgs(args);
+      if (workerExists(cmdlineOptions)) {
+        throw new Exception("Another worker instance with the same configurations already running. Exit directly.");
+      }
       systemSetup(cmdlineOptions);
-      bootupWorker(cmdlineOptions);
+      bootupWorker(cmdlineOptions).join();
+      systemCleanup();
     } catch (Throwable e) {
       if (LOGGER.isErrorEnabled()) {
         LOGGER.error("Unknown error occurs at Worker. Quit directly.", e);
