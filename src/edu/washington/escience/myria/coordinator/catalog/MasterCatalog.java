@@ -1443,10 +1443,7 @@ public final class MasterCatalog {
           try {
             /* Getting this out is a simple query, which does not need to be cached. */
             final SQLiteStatement statement = sqliteConnection.prepare("SELECT count(*) FROM queries;", false);
-            if (!statement.step()) {
-              /* If step() returns false, there's no data. Return null. */
-              return null;
-            }
+            Preconditions.checkArgument(statement.step(), "Count should return a row");
             final Integer ret = statement.columnInt(0);
             statement.dispose();
             return ret;
