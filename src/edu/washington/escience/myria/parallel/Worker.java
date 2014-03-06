@@ -679,7 +679,7 @@ public final class Worker {
     ExecutorService bossExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("IPC boss"));
     ExecutorService workerExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("IPC worker"));
     pipelineExecutor =
-        new OrderedMemoryAwareThreadPoolExecutor(3, 5 * MyriaConstants.MB, 5 * MyriaConstants.MB,
+        new OrderedMemoryAwareThreadPoolExecutor(3, 5 * MyriaConstants.MB, 0,
             MyriaConstants.THREAD_POOL_KEEP_ALIVE_TIME_IN_MS, TimeUnit.MILLISECONDS, new RenamingThreadFactory(
                 "Pipeline executor"));
 

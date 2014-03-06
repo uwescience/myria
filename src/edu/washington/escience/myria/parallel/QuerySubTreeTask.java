@@ -366,10 +366,12 @@ public final class QuerySubTreeTask {
    * */
   private Object executeActually() {
 
-    PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:set time", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, ownerQuery
-        .getQueryID(), "startTimeInMS", root.getFragmentId(), System.currentTimeMillis(), 0);
-    PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:set time", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, ownerQuery
-        .getQueryID(), "startTimeInNS", root.getFragmentId(), System.nanoTime(), 0);
+    if (getOwnerQuery().isProfilingMode()) {
+      PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:set time", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, ownerQuery
+          .getQueryID(), "startTimeInMS", root.getFragmentId(), System.currentTimeMillis(), 0);
+      PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:set time", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, ownerQuery
+          .getQueryID(), "startTimeInNS", root.getFragmentId(), System.nanoTime(), 0);
+    }
 
     Throwable failureCause = null;
     if (executionCondition.compareAndSet(EXECUTION_READY | STATE_EXECUTION_REQUESTED, EXECUTION_READY
