@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
+import edu.washington.escience.myria.memorydb.MemoryStoreInfo;
 
 /**
  * @author valmeida
@@ -37,6 +38,8 @@ public abstract class ConnectionInfo {
         case MyriaConstants.STORAGE_SYSTEM_MYSQL:
         case MyriaConstants.STORAGE_SYSTEM_POSTGRESQL:
           return mapper.readValue(jsonConnInfo, JdbcInfo.class);
+        case MyriaConstants.STORAGE_SYSTEM_MEMORYSTORE:
+          return mapper.readValue(jsonConnInfo, MemoryStoreInfo.class);
         default:
           throw new IllegalArgumentException("Invalid storage system " + dbms);
       }
@@ -132,6 +135,7 @@ public abstract class ConnectionInfo {
         jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, databasePassword);
         result = jdbcInfo.toJson();
         break;
+
     }
     return result;
   }

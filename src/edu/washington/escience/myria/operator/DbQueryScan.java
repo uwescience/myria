@@ -13,6 +13,9 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.accessmethod.AccessMethod;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
+import edu.washington.escience.myria.accessmethod.MemoryStoreAccessMethod;
+import edu.washington.escience.myria.memorydb.MemoryStore;
+import edu.washington.escience.myria.memorydb.MemoryStoreInfo;
 
 /**
  * Push a select query down into a JDBC based database and scan over the query result.
@@ -33,6 +36,12 @@ public class DbQueryScan extends LeafOperator {
    * Iterate over data from the JDBC database.
    * */
   private transient Iterator<TupleBatch> tuples;
+
+  /**
+   * The access method.
+   * */
+  private transient AccessMethod accessMethod;
+
   /**
    * The result schema.
    * */
@@ -171,9 +180,11 @@ public class DbQueryScan extends LeafOperator {
   protected final TupleBatch fetchNextReady() throws DbException {
     Objects.requireNonNull(connectionInfo);
     if (tuples == null) {
-      tuples =
-          AccessMethod.of(connectionInfo.getDbms(), connectionInfo, true).tupleBatchIteratorFromQuery(baseSQL,
-              outputSchema);
+      if (accessMethod instanceof MemoryStoreAccessMethod) {
+        tuples = ((MemoryStoreAccessMethod) accessMethod).tupleBatchIterator(relationKey);
+      } else {
+        tuples = accessMethod.tupleBatchIteratorFromQuery(baseSQL, outputSchema);
+      }
     }
     if (tuples.hasNext()) {
       final TupleBatch tb = tuples.next();
@@ -206,6 +217,12 @@ public class DbQueryScan extends LeafOperator {
         throw new DbException(
             "Unable to instantiate DbQueryScan: database system does not conform with connection information");
       }
+    }
+    if (connectionInfo instanceof MemoryStoreInfo) {
+      MemoryStore memoryStore = (MemoryStore) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_MEMORY_STORE);
+      accessMethod = memoryStore.getAccessMethod((MemoryStoreInfo) connectionInfo, false);
+    } else {
+      accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, true);
     }
 
     if (relationKey != null) {

@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
+import net.jcip.annotations.Immutable;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
 
@@ -12,6 +14,7 @@ import com.google.common.base.Preconditions;
  * 
  * @author dhalperi
  */
+@Immutable
 public final class RelationKey implements Serializable {
 
   /** Required for Java serialization. */
@@ -137,6 +140,7 @@ public final class RelationKey implements Serializable {
         return toString('[', '#', ']');
       case MyriaConstants.STORAGE_SYSTEM_POSTGRESQL:
       case MyriaConstants.STORAGE_SYSTEM_MONETDB:
+      case MyriaConstants.STORAGE_SYSTEM_MEMORYSTORE:
         return toString('\"', ' ', '\"');
       case MyriaConstants.STORAGE_SYSTEM_MYSQL:
         return toString('`', ' ', '`');

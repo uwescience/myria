@@ -33,6 +33,7 @@ import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.WorkerCatalog;
+import edu.washington.escience.myria.memorydb.MemoryStore;
 import edu.washington.escience.myria.parallel.ipc.FlowControlBagInputBuffer;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.InJVMLoopbackChannelSink;
@@ -372,6 +373,11 @@ public final class Worker {
   private final ConcurrentHashMap<String, Object> execEnvVars;
 
   /**
+   * In memory data holder.
+   * */
+  private final MemoryStore memoryDB;
+
+  /**
    * The thread group of the main thread.
    * */
   private static volatile ThreadGroup mainThreadGroup;
@@ -669,6 +675,11 @@ public final class Worker {
     }
     LOGGER.info("Worker: Connection info " + jsonConnInfo);
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO, ConnectionInfo.of(databaseSystem, jsonConnInfo));
+
+    memoryDB = new MemoryStore();
+
+    execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_MEMORY_STORE, memoryDB);
+
   }
 
   /**

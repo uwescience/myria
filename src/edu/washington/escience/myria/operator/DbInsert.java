@@ -22,6 +22,8 @@ import edu.washington.escience.myria.accessmethod.AccessMethod;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.SQLiteInfo;
+import edu.washington.escience.myria.memorydb.MemoryStore;
+import edu.washington.escience.myria.memorydb.MemoryStoreInfo;
 
 /**
  * @author valmeida
@@ -186,9 +188,13 @@ public class DbInsert extends RootOperator {
       }
       conn.dispose();
     }
-
-    /* open the database connection */
-    accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
+    if (connectionInfo instanceof MemoryStoreInfo) {
+      MemoryStore memoryStore = (MemoryStore) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_MEMORY_STORE);
+      accessMethod = memoryStore.getAccessMethod((MemoryStoreInfo) connectionInfo, false);
+    } else {
+      /* open the database connection */
+      accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
+    }
 
     if (overwriteTable) {
       /* If overwriting, we insert into a temp table and then on success we drop the old and rename. */
