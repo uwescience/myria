@@ -590,13 +590,30 @@ public final class QuerySubTreeTask {
       return;
     }
 
-    final Future<Void> executionHandleLocal = executionHandle;
-    if (executionHandleLocal != null) {
-      // Abruptly cancel the execution
-      executionHandleLocal.cancel(true);
-    }
+    if ((executionCondition.get() & STATE_INITIALIZED) != 0) {
+      // already initialized
+      initFuture.addListener(new TaskFutureListener() {
 
-    resourceManager.getExecutor().submit(executionTask);
+        @Override
+        public void operationComplete(final TaskFuture future) throws Exception {
+          if (resourceManager.getExecutor().inTaskExecutor()) {
+            taskExecutionFuture.setFailure(new QueryKilledException());
+            cleanup();
+          } else {
+            final Future<Void> executionHandleLocal = executionHandle;
+            if (executionHandleLocal != null) {
+              // Abruptly cancel the execution
+              executionHandleLocal.cancel(true);
+            }
+            resourceManager.getExecutor().submit(executionTask);
+          }
+        }
+
+      });
+    } else {
+      // STATE_KILL is already set, init won't get called. It's safe not to call cleanup.
+      taskExecutionFuture.setFailure(new QueryKilledException());
+    }
   }
 
   /**
