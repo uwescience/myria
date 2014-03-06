@@ -10,13 +10,7 @@ import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
 
 /**
- * Non-blocking driving code of a sub-query.
- * 
- * Task state could be:<br>
- * 1) In execution.<br>
- * 2) In dormant.<br>
- * 3) Already finished.<br>
- * 4) Has not started.
+ * This class manages system resources consumed by a task.
  * */
 public final class TaskResourceManager {
 
@@ -44,16 +38,23 @@ public final class TaskResourceManager {
   private final QueryExecutionMode executionMode;
 
   /**
+   * Task code executor.
+   */
+  private final TaskExecutor executionResource;
+
+  /**
    * @param connectionPool connection pool.
    * @param ownerTask owner task
    * @param executionMode the task execution mode.
+   * @param executor Task code executor.
    */
   public TaskResourceManager(final IPCConnectionPool connectionPool, final QuerySubTreeTask ownerTask,
-      final QueryExecutionMode executionMode) {
+      final QueryExecutionMode executionMode, final TaskExecutor executor) {
     ipcPool = connectionPool;
     outputChannels = Sets.newSetFromMap(new ConcurrentHashMap<StreamOutputChannel<TupleBatch>, Boolean>());
     this.ownerTask = ownerTask;
     this.executionMode = executionMode;
+    executionResource = executor;
   }
 
   /**
@@ -98,6 +99,7 @@ public final class TaskResourceManager {
     for (StreamOutputChannel<TupleBatch> out : outputChannels) {
       out.release();
     }
+    executionResource.release();
   }
 
   /**
@@ -121,4 +123,10 @@ public final class TaskResourceManager {
     return executionMode;
   }
 
+  /**
+   * @return task code executor.
+   * */
+  public TaskExecutor getExecutor() {
+    return executionResource;
+  }
 }

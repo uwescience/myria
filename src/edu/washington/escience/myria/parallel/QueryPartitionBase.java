@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutorService;
 
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.TupleBatch;
@@ -172,12 +171,6 @@ public abstract class QueryPartitionBase implements QueryPartition {
   }
 
   /**
-   * @return the executor for running the operator tree rooted by the root
-   * @param root the RootOperator of the task.
-   * */
-  protected abstract ExecutorService getTaskExecutor(final RootOperator root);
-
-  /**
    * @param root the RootOperator of the task to which the Consumer belongs
    * @param c the consumer operator
    * @return the {@link StreamInputBuffer} that the data for the consumer should be put into.
@@ -191,7 +184,7 @@ public abstract class QueryPartitionBase implements QueryPartition {
    * @return the task.
    */
   protected final QuerySubTreeTask createTask(final RootOperator root) {
-    final QuerySubTreeTask drivingTask = new QuerySubTreeTask(ipcPool.getMyIPCID(), this, root, getTaskExecutor(root));
+    final QuerySubTreeTask drivingTask = new QuerySubTreeTask(ipcPool.getMyIPCID(), this, root);
 
     HashSet<Consumer> consumerSet = new HashSet<Consumer>();
     consumerSet.addAll(drivingTask.getInputChannels().values());

@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.netty.channel.ChannelFuture;
@@ -359,11 +358,6 @@ public class MasterQueryPartition extends QueryPartitionBase {
   }
 
   @Override
-  protected ExecutorService getTaskExecutor(final RootOperator root) {
-    return master.getQueryExecutor();
-  }
-
-  @Override
   protected StreamInputBuffer<TupleBatch> getInputBuffer(final RootOperator root, final Consumer c) {
     return new FlowControlBagInputBuffer<TupleBatch>(getIPCPool(), c.getInputChannelIDs(getIPCPool().getMyIPCID()),
         master.getInputBufferCapacity(), master.getInputBufferRecoverTrigger(), getIPCPool());
@@ -440,7 +434,8 @@ public class MasterQueryPartition extends QueryPartitionBase {
   public final void init(final DefaultQueryFuture initFuture) {
     ImmutableMap.Builder<String, Object> b = ImmutableMap.builder();
     TaskResourceManager resourceManager =
-        new TaskResourceManager(master.getIPCConnectionPool(), rootTask, master.getExecutionMode());
+        new TaskResourceManager(master.getIPCConnectionPool(), rootTask, master.getExecutionMode(), master
+            .getQueryExecutor().nextTaskExecutor(rootTask));
     rootTask.init(resourceManager, b.putAll(master.getExecEnvVars()).build()).addListener(
         new OperationFutureListener() {
           @Override

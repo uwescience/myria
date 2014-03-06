@@ -42,7 +42,6 @@ import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.JVMUtils;
 import edu.washington.escience.myria.util.concurrent.ErrorLoggingTimerTask;
 import edu.washington.escience.myria.util.concurrent.RenamingThreadFactory;
-import edu.washington.escience.myria.util.concurrent.ThreadAffinityFixedRoundRobinExecutionPool;
 
 /**
  * Workers do the real query execution. A query received by the server will be pre-processed and then dispatched to the
@@ -275,12 +274,12 @@ public final class Worker {
   /**
    * {@link ExecutorService} for query executions.
    * */
-  private volatile ExecutorService queryExecutor;
+  private final QueryExecutor queryExecutor;
 
   /**
    * @return the query executor used in this worker.
    * */
-  ExecutorService getQueryExecutor() {
+  QueryExecutor getQueryExecutor() {
     return queryExecutor;
   }
 
@@ -444,11 +443,11 @@ public final class Worker {
    */
   private static boolean workerExists(final HashMap<String, Object> cmdlineOptions) {
     final String workingDir = (String) cmdlineOptions.get("workingDir");
-    File file = new File(workingDir + "/workerInstance.lock");
-    file.deleteOnExit();
+    File instanceLockFile = new File(workingDir + "/workerInstance.lock");
+    instanceLockFile.deleteOnExit();
     try {
       @SuppressWarnings("resource")
-      RandomAccessFile raf = new RandomAccessFile(file, "rw");
+      RandomAccessFile raf = new RandomAccessFile(instanceLockFile, "rw");
       workerInstanceLock = raf.getChannel().tryLock();
     } catch (Throwable e) {
       LOGGER.error("Error in locking worker instance lock", e);
@@ -475,6 +474,7 @@ public final class Worker {
         }
       }
     }
+
     if (err != null) {
       LOGGER.error("Error in system cleanup: ", err);
     }
@@ -623,6 +623,15 @@ public final class Worker {
     this.workingDirectory = workingDirectory;
     myID = Integer.parseInt(catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_IDENTIFIER));
 
+    if (queryExecutionMode == QueryExecutionMode.NON_BLOCKING) {
+      int numCPU = Runtime.getRuntime().availableProcessors();
+      queryExecutor =
+          new ThreadAffinityFixedSizeQueryExecutor(numCPU, new RenamingThreadFactory("Nonblocking query executor"));
+    } else {
+      // blocking query execution
+      queryExecutor = new ThreadPoolQueryExecutor(new RenamingThreadFactory("Blocking query executor"));
+    }
+
     controlMessageQueue = new LinkedBlockingQueue<ControlMessage>();
     queryQueue = new PriorityBlockingQueue<WorkerQueryPartition>();
 
@@ -700,8 +709,9 @@ public final class Worker {
       LOGGER.info("Shutdown requested. Please wait when cleaning up...");
     }
 
-    for (WorkerQueryPartition p : activeQueries.values()) {
-      p.kill();
+    WorkerQueryPartition[] qs = activeQueries.values().toArray(new WorkerQueryPartition[] {});
+    for (final WorkerQueryPartition q : qs) {
+      q.kill();
     }
 
     if (!connectionPool.isShutdown()) {
@@ -763,17 +773,8 @@ public final class Worker {
     connectionPool.start(serverChannelFactory, serverPipelineFactory, clientChannelFactory, clientPipelineFactory,
         workerInJVMPipelineFactory, new InJVMLoopbackChannelSink());
 
-    if (queryExecutionMode == QueryExecutionMode.NON_BLOCKING) {
-      int numCPU = Runtime.getRuntime().availableProcessors();
-      queryExecutor =
-      // new ThreadPoolExecutor(numCPU, numCPU, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(),
-      // new RenamingThreadFactory("Nonblocking query executor"));
-          new ThreadAffinityFixedRoundRobinExecutionPool(numCPU,
-              new RenamingThreadFactory("Nonblocking query executor"));
-    } else {
-      // blocking query execution
-      queryExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("Blocking query executor"));
-    }
+    queryExecutor.start();
+
     messageProcessingExecutor =
         Executors.newCachedThreadPool(new RenamingThreadFactory("Control/Query message processor"));
     messageProcessingExecutor.submit(new QueryMessageProcessor());

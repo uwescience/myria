@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.netty.util.internal.ConcurrentIdentityWeakKeyHashMap;
@@ -127,11 +126,6 @@ public class WorkerQueryPartition extends QueryPartitionBase {
   };
 
   @Override
-  protected ExecutorService getTaskExecutor(final RootOperator root) {
-    return ownerWorker.getQueryExecutor();
-  }
-
-  @Override
   protected StreamInputBuffer<TupleBatch> getInputBuffer(final RootOperator root, final Consumer c) {
     return new FlowControlBagInputBuffer<TupleBatch>(getIPCPool(), c.getInputChannelIDs(getIPCPool().getMyIPCID()),
         ownerWorker.getInputBufferCapacity(), ownerWorker.getInputBufferRecoverTrigger(), getIPCPool());
@@ -183,7 +177,8 @@ public class WorkerQueryPartition extends QueryPartitionBase {
    * */
   private OperationFuture initTask(final QuerySubTreeTask t) {
     TaskResourceManager resourceManager =
-        new TaskResourceManager(ownerWorker.getIPCConnectionPool(), t, ownerWorker.getQueryExecutionMode());
+        new TaskResourceManager(ownerWorker.getIPCConnectionPool(), t, ownerWorker.getQueryExecutionMode(), ownerWorker
+            .getQueryExecutor().nextTaskExecutor(t));
     ImmutableMap.Builder<String, Object> b = ImmutableMap.builder();
     return t.init(resourceManager, b.putAll(ownerWorker.getExecEnvVars()).build());
   }
@@ -202,6 +197,7 @@ public class WorkerQueryPartition extends QueryPartitionBase {
     }
 
     getExecutionStatistics().markQueryStart();
+
     for (QuerySubTreeTask t : getTasks()) {
       t.execute();
     }

@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -48,11 +47,6 @@ public final class QuerySubTreeTask {
    * The root operator.
    * */
   private final RootOperator root;
-
-  /**
-   * The executor who is responsible for executing the task.
-   * */
-  private final ExecutorService myExecutor;
 
   /**
    * Each bit for each output channel. Currently, if a single output channel is not writable, the whole task stops.
@@ -125,14 +119,11 @@ public final class QuerySubTreeTask {
    * @param ipcEntityID the IPC ID of the owner worker/master.
    * @param ownerQuery the owner query of this task.
    * @param root the root operator this task will run.
-   * @param executor the executor who provides the execution service for the task to run on
    */
-  QuerySubTreeTask(final int ipcEntityID, final QueryPartition ownerQuery, final RootOperator root,
-      final ExecutorService executor) {
+  QuerySubTreeTask(final int ipcEntityID, final QueryPartition ownerQuery, final RootOperator root) {
     this.ipcEntityID = ipcEntityID;
     executionCondition = new AtomicInteger(STATE_OUTPUT_AVAILABLE | STATE_INPUT_AVAILABLE);
     this.root = root;
-    myExecutor = executor;
     this.ownerQuery = ownerQuery;
     taskExecutionFuture = new DefaultTaskFuture(this, true);
     idbControllerSet = new HashSet<IDBController>();
@@ -596,8 +587,7 @@ public final class QuerySubTreeTask {
       executionHandleLocal.cancel(true);
     }
 
-    myExecutor.submit(executionTask);
-
+    resourceManager.getExecutor().submit(executionTask);
   }
 
   /**
@@ -607,7 +597,7 @@ public final class QuerySubTreeTask {
 
     if (executionCondition.compareAndSet(EXECUTION_READY, EXECUTION_READY | STATE_EXECUTION_REQUESTED)) {
       // set in execution.
-      executionHandle = myExecutor.submit(executionTask);
+      executionHandle = resourceManager.getExecutor().submit(executionTask);
     }
   }
 
@@ -642,6 +632,7 @@ public final class QuerySubTreeTask {
   public OperationFuture init(final TaskResourceManager resourceManager, final ImmutableMap<String, Object> execEnvVars) {
     try {
       if (shouldInit()) {
+        assert !resourceManager.getExecutor().inTaskExecutor();
         this.resourceManager = resourceManager;
         try {
           ExecutableExecutionFuture<Void> initTask = new ExecutableExecutionFuture<Void>(new Callable<Void>() {
@@ -673,7 +664,7 @@ public final class QuerySubTreeTask {
               }
             }
           });
-          myExecutor.submit((Callable<Void>) initTask);
+          resourceManager.getExecutor().submit(initTask);
         } catch (final CancellationException e) {
           // init is not cancelable, should never reach here
           initFuture.setFailure(e);

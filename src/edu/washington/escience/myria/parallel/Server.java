@@ -267,13 +267,13 @@ public final class Server {
 
   /**
    * The {@link ExecutorService} who executes the master-side query partitions.
-   */
-  private volatile ExecutorService serverQueryExecutor;
+   * */
+  private final QueryExecutor serverQueryExecutor;
 
   /**
    * @return the query executor used in this worker.
-   */
-  ExecutorService getQueryExecutor() {
+   * */
+  QueryExecutor getQueryExecutor() {
     return serverQueryExecutor;
   }
 
@@ -425,6 +425,10 @@ public final class Server {
       throw new RuntimeException("Unexpected number of masters: expected 1, got " + masters.size());
     }
     masterSocketInfo = masters.get(MyriaConstants.MASTER_ID);
+
+    int numCPU = Runtime.getRuntime().availableProcessors();
+    serverQueryExecutor =
+        new ThreadAffinityFixedSizeQueryExecutor(numCPU, new RenamingThreadFactory("Master query executor"));
 
     workers = new ConcurrentHashMap<Integer, SocketInfo>(catalog.getWorkers());
     final ImmutableMap<String, String> allConfigurations = catalog.getAllConfigurations();
@@ -720,8 +724,9 @@ public final class Server {
       }
     }
 
-    for (MasterQueryPartition p : activeQueries.values()) {
-      p.kill();
+    MasterQueryPartition[] qs = activeQueries.values().toArray(new MasterQueryPartition[] {});
+    for (final MasterQueryPartition q : qs) {
+      q.kill();
     }
 
     messageProcessingExecutor.shutdownNow();
@@ -842,7 +847,7 @@ public final class Server {
         TimeUnit.MILLISECONDS);
 
     messageProcessingExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("Master message processor"));
-    serverQueryExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("Master query executor"));
+    serverQueryExecutor.start();
 
     /**
      * The {@link Executor} who deals with IPC connection setup/cleanup.
