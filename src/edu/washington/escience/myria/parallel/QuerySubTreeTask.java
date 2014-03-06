@@ -449,19 +449,16 @@ public final class QuerySubTreeTask {
 
     if ((executionCondition.get() & STATE_FAIL) == STATE_FAIL) {
       // failed
-      if (taskExecutionFuture.setFailure(failureCause)) {
-        cleanup(true);
-      }
+      taskExecutionFuture.setFailure(failureCause);
+      cleanup();
     } else if (root.eos()) {
-      if (AtomicUtils.setBitIfUnsetByValue(executionCondition, STATE_EOS)) {
-        cleanup(false);
-        taskExecutionFuture.setSuccess();
-      }
+      AtomicUtils.setBitIfUnsetByValue(executionCondition, STATE_EOS);
+      cleanup();
+      taskExecutionFuture.setSuccess();
     } else if ((executionCondition.get() & STATE_KILLED) == STATE_KILLED) {
       // killed
-      if (taskExecutionFuture.setFailure(new QueryKilledException("Task gets killed"))) {
-        cleanup(true);
-      }
+      taskExecutionFuture.setFailure(new QueryKilledException("Task gets killed"));
+      cleanup();
     }
     return null;
   }
@@ -546,30 +543,30 @@ public final class QuerySubTreeTask {
   public static final int EXECUTION_CONTINUE = EXECUTION_READY | STATE_EXECUTION_REQUESTED | STATE_IN_EXECUTION;
 
   /**
-   * clean up the task, release resources, etc.
+   * clean up the task, release resources, etc. This method should always called by the task executor thread(s).
    * 
-   * @param failed if the task execution is already failed.
+   * @return if the cleanup succeeds without exceptions.
    * */
-  private void cleanup(final boolean failed) {
+  private boolean cleanup() {
+    // Only cleanup if initialized.
     if (AtomicUtils.unsetBitIfSetByValue(executionCondition, STATE_INITIALIZED)) {
-      // Only cleanup if initialized.
+      assert resourceManager.getExecutor().inTaskExecutor();
       try {
-        synchronized (executionLock) {
-          root.close();
-        }
+        root.close();
       } catch (Throwable ee) {
         if (LOGGER.isErrorEnabled()) {
           LOGGER.error("Unknown exception at operator close. Root operator: " + root + ".", ee);
         }
-        if (!failed) {
-          taskExecutionFuture.setFailure(ee);
-        }
+        taskExecutionFuture.setFailure(ee);
+        return false;
       } finally {
         if (resourceManager != null) {
           resourceManager.cleanup();
         }
       }
+      return true;
     }
+    return true;
   }
 
   /**
@@ -658,7 +655,7 @@ public final class QuerySubTreeTask {
                 }
                 AtomicUtils.setBitByValue(executionCondition, STATE_FAIL);
                 taskExecutionFuture.setFailure(future.getCause());
-                cleanup(true);
+                cleanup();
               } else {
                 initFuture.setSuccess();
               }
