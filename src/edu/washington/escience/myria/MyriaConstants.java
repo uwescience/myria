@@ -234,4 +234,15 @@ public final class MyriaConstants {
     /** three FT modes are supported. */
     none, abandon, rejoin
   };
+
+  /**
+   * Memory DB storage.
+   * */
+  public static final String STORAGE_SYSTEM_MEMORYSTORE = "memorystore";
+
+  /**
+   * memory db instance.
+   * */
+  public static final String EXEC_ENV_VAR_MEMORY_STORE = "memorystore";
+
 }
