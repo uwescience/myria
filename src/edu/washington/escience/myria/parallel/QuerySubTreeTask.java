@@ -141,7 +141,7 @@ public final class QuerySubTreeTask {
 
     executionTask = new Callable<Void>() {
       @Override
-      public Void call() throws Exception {
+      public Void call() {
         // synchronized to keep memory consistency
         if (LOGGER.isTraceEnabled()) {
           LOGGER.trace("Start task execution: " + QuerySubTreeTask.this);
@@ -223,7 +223,7 @@ public final class QuerySubTreeTask {
   /**
    * @return if the task is finished
    * */
-  public boolean isFinished() {
+  boolean isFinished() {
     return taskExecutionFuture.isDone();
   }
 
@@ -259,7 +259,7 @@ public final class QuerySubTreeTask {
    * call this method if a new TupleBatch arrived at a Consumer operator belonging to this task. This method is always
    * called by Netty Upstream IO worker threads.
    */
-  public void notifyNewInput() {
+  void notifyNewInput() {
     AtomicUtils.setBitByValue(executionCondition, STATE_INPUT_AVAILABLE);
     execute();
   }
@@ -269,7 +269,7 @@ public final class QuerySubTreeTask {
    * 
    * @param outputChannelID the logical output channel ID.
    */
-  public void notifyOutputDisabled(final StreamIOChannelID outputChannelID) {
+  void notifyOutputDisabled(final StreamIOChannelID outputChannelID) {
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("Output disabled: " + outputChannelID);
     }
@@ -289,7 +289,7 @@ public final class QuerySubTreeTask {
    * 
    * @param outputChannelID the down channel ID.
    * */
-  public void notifyOutputEnabled(final StreamIOChannelID outputChannelID) {
+  void notifyOutputEnabled(final StreamIOChannelID outputChannelID) {
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("Output enabled: " + outputChannelID);
     }
@@ -316,42 +316,8 @@ public final class QuerySubTreeTask {
     long queryID = ownerQuery.getQueryID();
     Operator rootOp = root;
 
-    StringBuilder stateS = new StringBuilder();
-    int state = executionCondition.get();
-    String splitter = "";
-    if ((state & QuerySubTreeTask.STATE_INITIALIZED) == STATE_INITIALIZED) {
-      stateS.append(splitter + "Initialized");
-      splitter = " | ";
-    }
-    if ((state & QuerySubTreeTask.STATE_INPUT_AVAILABLE) == STATE_INPUT_AVAILABLE) {
-      stateS.append(splitter + "Input_Available");
-      splitter = " | ";
-    }
-    if ((state & QuerySubTreeTask.STATE_EOS) == STATE_EOS) {
-      stateS.append(splitter + "EOS");
-      splitter = " | ";
-    }
-    if ((state & QuerySubTreeTask.STATE_EXECUTION_REQUESTED) == STATE_EXECUTION_REQUESTED) {
-      stateS.append(splitter + "Execution_Requested");
-      splitter = " | ";
-    }
-    if ((state & QuerySubTreeTask.STATE_IN_EXECUTION) == STATE_IN_EXECUTION) {
-      stateS.append(splitter + "In_Execution");
-      splitter = " | ";
-    }
-    if ((state & QuerySubTreeTask.STATE_KILLED) == STATE_KILLED) {
-      stateS.append(splitter + "Killed");
-      splitter = " | ";
-    }
-    if ((state & QuerySubTreeTask.STATE_PAUSED) == STATE_PAUSED) {
-      stateS.append(splitter + "Paused");
-      splitter = " | ";
-    }
-    if ((state & QuerySubTreeTask.STATE_OUTPUT_AVAILABLE) == STATE_OUTPUT_AVAILABLE) {
-      stateS.append(splitter + "Output_Available");
-      splitter = " | ";
-    }
-    return String.format("Task: { Owner QID: %d, Root Op: %s, State: %s }", queryID, rootOp, stateS.toString());
+    return String.format("Task: { Owner QID: %d, Root Op: %s, State: %s }", queryID, rootOp,
+        stateToString(executionCondition.get()));
   }
 
   /**
@@ -371,8 +337,10 @@ public final class QuerySubTreeTask {
     Throwable failureCause = null;
     if (executionCondition.compareAndSet(EXECUTION_READY | STATE_EXECUTION_REQUESTED, EXECUTION_READY
         | STATE_EXECUTION_REQUESTED | STATE_IN_EXECUTION)) {
+
       EXECUTE : while (true) {
         if (Thread.interrupted()) {
+
           Thread.currentThread().interrupt();
           if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Operator task execution interrupted. Root operator: " + root + ". Close directly.");
@@ -503,7 +471,7 @@ public final class QuerySubTreeTask {
   /**
    * @return if the task is already get killed.
    * */
-  public boolean isKilled() {
+  boolean isKilled() {
     return (executionCondition.get() & STATE_KILLED) == STATE_KILLED;
   }
 
@@ -531,6 +499,50 @@ public final class QuerySubTreeTask {
    * The task is in execution.
    * */
   private static final int STATE_IN_EXECUTION = 0x400;
+
+  /**
+   * convert state integer into human readable String.
+   * 
+   * @param state the state integer
+   * @return human readable String.
+   * */
+  public static String stateToString(final int state) {
+    String splitter = "";
+    StringBuilder stateS = new StringBuilder();
+    if ((state & QuerySubTreeTask.STATE_INITIALIZED) == STATE_INITIALIZED) {
+      stateS.append(splitter + "Initialized");
+      splitter = " | ";
+    }
+    if ((state & QuerySubTreeTask.STATE_INPUT_AVAILABLE) == STATE_INPUT_AVAILABLE) {
+      stateS.append(splitter + "Input_Available");
+      splitter = " | ";
+    }
+    if ((state & QuerySubTreeTask.STATE_EOS) == STATE_EOS) {
+      stateS.append(splitter + "EOS");
+      splitter = " | ";
+    }
+    if ((state & QuerySubTreeTask.STATE_EXECUTION_REQUESTED) == STATE_EXECUTION_REQUESTED) {
+      stateS.append(splitter + "Execution_Requested");
+      splitter = " | ";
+    }
+    if ((state & QuerySubTreeTask.STATE_IN_EXECUTION) == STATE_IN_EXECUTION) {
+      stateS.append(splitter + "In_Execution");
+      splitter = " | ";
+    }
+    if ((state & QuerySubTreeTask.STATE_KILLED) == STATE_KILLED) {
+      stateS.append(splitter + "Killed");
+      splitter = " | ";
+    }
+    if ((state & QuerySubTreeTask.STATE_PAUSED) == STATE_PAUSED) {
+      stateS.append(splitter + "Paused");
+      splitter = " | ";
+    }
+    if ((state & QuerySubTreeTask.STATE_OUTPUT_AVAILABLE) == STATE_OUTPUT_AVAILABLE) {
+      stateS.append(splitter + "Output_Available");
+      splitter = " | ";
+    }
+    return stateS.toString();
+  }
 
   /**
    * Non-blocking ready condition.
@@ -690,7 +702,7 @@ public final class QuerySubTreeTask {
    * @param workerId the worker that changed its status.
    * @param enable enable/disable all the channels that belong to the worker.
    * */
-  public void updateProducerChannels(final int workerId, final boolean enable) {
+  void updateProducerChannels(final int workerId, final boolean enable) {
     if (root instanceof Producer) {
       ((Producer) root).updateChannelAvailability(workerId, enable);
     }
@@ -710,7 +722,7 @@ public final class QuerySubTreeTask {
    * 
    * @return the resource manager.
    */
-  public TaskResourceManager getResourceManager() {
+  TaskResourceManager getResourceManager() {
     return resourceManager;
   }
 }
