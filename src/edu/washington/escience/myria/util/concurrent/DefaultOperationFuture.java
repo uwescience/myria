@@ -107,4 +107,22 @@ public class DefaultOperationFuture extends OperationFutureBase<Void> {
     return super.setFailure0(cause);
   }
 
+  /**
+   * @param cause the cause of a failure
+   * @return an already failed future
+   * */
+  public static DefaultOperationFuture failedFuture(final Throwable cause) {
+    DefaultOperationFuture f = new DefaultOperationFuture(false);
+    f.setFailure(cause);
+    return f;
+  }
+
+  /**
+   * @return an already succeeded future
+   * */
+  public static DefaultOperationFuture succeededFuture() {
+    DefaultOperationFuture f = new DefaultOperationFuture(false);
+    f.setSuccess();
+    return f;
+  }
 }

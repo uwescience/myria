@@ -183,4 +183,14 @@ public class ThreadAffinityFixedRoundRobinExecutionPool extends AbstractExecutor
   public ThreadAffinityExecutor getExecutor(final Callable<?> task) {
     return getExecutor0(task);
   }
+
+  @Override
+  public ThreadAffinityExecutor clearExecutor(final Runnable task) {
+    return childExecutors.remove(task);
+  }
+
+  @Override
+  public ThreadAffinityExecutor clearExecutor(final Callable<?> task) {
+    return childExecutors.remove(task);
+  }
 }

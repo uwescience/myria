@@ -55,4 +55,15 @@ public interface ThreadAffinityExecutorService extends ExecutorService {
    * */
   ThreadAffinityExecutor nextExecutor();
 
+  /**
+   * @param task find the executor for the task.
+   * @return the old executor, null if it doesn't exist
+   * */
+  ThreadAffinityExecutor clearExecutor(final Runnable task);
+
+  /**
+   * @param task find the executor for the task.
+   * @return the old executor, null if it doesn't exist
+   * */
+  ThreadAffinityExecutor clearExecutor(final Callable<?> task);
 }
