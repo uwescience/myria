@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.netty.util.internal.ConcurrentIdentityWeakKeyHashMap;
 import org.slf4j.Logger;
@@ -21,6 +22,8 @@ import edu.washington.escience.myria.parallel.ipc.FlowControlBagInputBuffer;
 import edu.washington.escience.myria.parallel.ipc.StreamInputBuffer;
 import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myria.util.DateTimeUtils;
+import edu.washington.escience.myria.util.concurrent.OperationFuture;
+import edu.washington.escience.myria.util.concurrent.OperationFutureListener;
 
 /**
  * A {@link WorkerQueryPartition} is a partition of a query plan at a single worker.
@@ -151,12 +154,22 @@ public class WorkerQueryPartition extends QueryPartitionBase {
   @Override
   public final void init(final DefaultQueryFuture initFuture) {
     final Set<QuerySubTreeTask> initialTasks = getTasks();
+    final AtomicInteger numInitialized = new AtomicInteger();
+    final int numInitTasks = initialTasks.size();
     for (final QuerySubTreeTask t : initialTasks) {
-      try {
-        initTask(t);
-      } catch (final Throwable e) {
-        initFuture.setFailure(e);
-      }
+      initTask(t).addListener(new OperationFutureListener() {
+        @Override
+        public void operationComplete(final OperationFuture future) throws Exception {
+          int now = numInitialized.incrementAndGet();
+          if (!future.isSuccess()) {
+            initFuture.setFailure(future.getCause());
+          }
+          if (now >= numInitTasks) {
+            // safe to just setSuccess because if the init is already failed, the setSuccess won't change the result
+            initFuture.setSuccess();
+          }
+        }
+      });
     }
     // safe to just setSuccess because if the init is already failed, the setSuccess won't change the result
     initFuture.setSuccess();
@@ -166,12 +179,13 @@ public class WorkerQueryPartition extends QueryPartitionBase {
    * initialize a task.
    * 
    * @param t the task
+   * @return the task init operation future.
    * */
-  private void initTask(final QuerySubTreeTask t) {
+  private OperationFuture initTask(final QuerySubTreeTask t) {
     TaskResourceManager resourceManager =
         new TaskResourceManager(ownerWorker.getIPCConnectionPool(), t, ownerWorker.getQueryExecutionMode());
     ImmutableMap.Builder<String, Object> b = ImmutableMap.builder();
-    t.init(resourceManager, b.putAll(ownerWorker.getExecEnvVars()).build());
+    return t.init(resourceManager, b.putAll(ownerWorker.getExecEnvVars()).build());
   }
 
   @Override
@@ -251,10 +265,16 @@ public class WorkerQueryPartition extends QueryPartitionBase {
         while (true) {
           if (ownerWorker.getIPCConnectionPool().isRemoteAlive(workerId)) {
             /* waiting for ADD_WORKER to be received */
-            for (QuerySubTreeTask task : list) {
-              initTask(task);
-              /* input might be null but we still need it to run */
-              task.notifyNewInput();
+            for (final QuerySubTreeTask task : list) {
+              initTask(task).addListener(new OperationFutureListener() {
+                @Override
+                public void operationComplete(final OperationFuture future) throws Exception {
+                  if (future.isSuccess()) {
+                    /* input might be null but we still need it to run */
+                    task.notifyNewInput();
+                  }
+                }
+              });
             }
             break;
           }

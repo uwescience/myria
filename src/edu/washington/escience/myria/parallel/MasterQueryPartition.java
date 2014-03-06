@@ -29,6 +29,8 @@ import edu.washington.escience.myria.parallel.ipc.FlowControlBagInputBuffer;
 import edu.washington.escience.myria.parallel.ipc.StreamInputBuffer;
 import edu.washington.escience.myria.util.DateTimeUtils;
 import edu.washington.escience.myria.util.IPCUtils;
+import edu.washington.escience.myria.util.concurrent.OperationFuture;
+import edu.washington.escience.myria.util.concurrent.OperationFutureListener;
 
 /**
  * A {@link MasterQueryPartition} is the partition of a query plan at the Master side. Currently, a master query
@@ -439,12 +441,17 @@ public class MasterQueryPartition extends QueryPartitionBase {
     ImmutableMap.Builder<String, Object> b = ImmutableMap.builder();
     TaskResourceManager resourceManager =
         new TaskResourceManager(master.getIPCConnectionPool(), rootTask, master.getExecutionMode());
-    try {
-      rootTask.init(resourceManager, b.putAll(master.getExecEnvVars()).build());
-    } catch (Throwable e) {
-      initFuture.setFailure(e);
-    }
-    initFuture.setSuccess();
+    rootTask.init(resourceManager, b.putAll(master.getExecEnvVars()).build()).addListener(
+        new OperationFutureListener() {
+          @Override
+          public void operationComplete(final OperationFuture future) throws Exception {
+            if (!future.isSuccess()) {
+              initFuture.setFailure(future.getCause());
+            } else {
+              initFuture.setSuccess();
+            }
+          }
+        });
   }
 
   /**

@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -19,6 +20,9 @@ import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.parallel.ipc.StreamIOChannelID;
 import edu.washington.escience.myria.util.AtomicUtils;
+import edu.washington.escience.myria.util.concurrent.ExecutableExecutionFuture;
+import edu.washington.escience.myria.util.concurrent.OperationFuture;
+import edu.washington.escience.myria.util.concurrent.OperationFutureListener;
 import edu.washington.escience.myria.util.concurrent.ReentrantSpinLock;
 
 /**
@@ -608,30 +612,79 @@ public final class QuerySubTreeTask {
   }
 
   /**
-   * Initialize the task.
+   * Task init future.
+   * */
+  private final DefaultTaskFuture initFuture = new DefaultTaskFuture(this, false);
+
+  /**
+   * @return check if init should be run.
+   */
+  private boolean shouldInit() {
+    boolean setInit = (AtomicUtils.setBitIfUnsetByValue(executionCondition, STATE_INITIALIZED));
+    if (!setInit) {
+      // If already initialized
+      return false;
+    }
+    // Check if already completed
+    return (executionCondition.get() & (STATE_EOS | STATE_FAIL | STATE_KILLED)) == 0;
+  }
+
+  /**
+   * Initialize the task. This method should always called by Non-task-execution threads.
    * 
    * @param execEnvVars execution environment variable.
    * @param resourceManager resource manager.
+   * 
+   * @return the future representing the init operations. The return of the init method does not mean the init
+   *         operations are completed. The completeness should be checked through the future object
+   * 
    * */
-  public void init(final TaskResourceManager resourceManager, final ImmutableMap<String, Object> execEnvVars) {
+  public OperationFuture init(final TaskResourceManager resourceManager, final ImmutableMap<String, Object> execEnvVars) {
     try {
-      synchronized (executionLock) {
-        ImmutableMap.Builder<String, Object> b = ImmutableMap.builder();
-        b.put(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER, resourceManager);
-        b.putAll(execEnvVars);
+      if (shouldInit()) {
         this.resourceManager = resourceManager;
-        root.open(b.build());
+        try {
+          ExecutableExecutionFuture<Void> initTask = new ExecutableExecutionFuture<Void>(new Callable<Void>() {
+            @Override
+            public Void call() throws Exception {
+              synchronized (executionLock) {
+                ImmutableMap.Builder<String, Object> b = ImmutableMap.builder();
+                b.put(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER, resourceManager);
+                b.putAll(execEnvVars);
+                root.open(b.build());
+                AtomicUtils.setBitByValue(executionCondition, STATE_INITIALIZED);
+              }
+              return null;
+            }
+          }, false);
+          initTask.addPreListener(new OperationFutureListener() {
+            @Override
+            public void operationComplete(final OperationFuture future) {
+              if (!future.isSuccess()) {
+                initFuture.setFailure(future.getCause());
+                if (LOGGER.isErrorEnabled()) {
+                  LOGGER.error("Task failed to open because of exception:", future.getCause());
+                }
+                AtomicUtils.setBitByValue(executionCondition, STATE_FAIL);
+                taskExecutionFuture.setFailure(future.getCause());
+                cleanup(true);
+              } else {
+                initFuture.setSuccess();
+              }
+            }
+          });
+          myExecutor.submit((Callable<Void>) initTask);
+        } catch (final CancellationException e) {
+          // init is not cancelable, should never reach here
+          initFuture.setFailure(e);
+        }
+      } else {
+        initFuture.setFailure(new IllegalStateException("Already initialized"));
       }
-      AtomicUtils.setBitByValue(executionCondition, STATE_INITIALIZED);
     } catch (Throwable e) {
-      if (LOGGER.isErrorEnabled()) {
-        LOGGER.error("Task failed to open because of exception:", e);
-      }
-      AtomicUtils.setBitByValue(executionCondition, STATE_FAIL);
-      if (taskExecutionFuture.setFailure(e)) {
-        cleanup(true);
-      }
+      initFuture.setFailure(e);
     }
+    return initFuture;
   }
 
   /**

@@ -121,4 +121,25 @@ class DefaultTaskFuture extends OperationFutureBase<Void> implements Attachmenta
     super.addPreListener0(listener);
     return this;
   }
+
+  /**
+   * @param task the owner task
+   * @param cause the cause of a failure
+   * @return an already failed future
+   * */
+  public static DefaultTaskFuture failedFuture(final QuerySubTreeTask task, final Throwable cause) {
+    DefaultTaskFuture f = new DefaultTaskFuture(task, false);
+    f.setFailure(cause);
+    return f;
+  }
+
+  /**
+   * @param task the owner task
+   * @return an already succeeded query future
+   * */
+  public static DefaultTaskFuture succeededFuture(final QuerySubTreeTask task) {
+    DefaultTaskFuture f = new DefaultTaskFuture(task, false);
+    f.setSuccess();
+    return f;
+  }
 }
