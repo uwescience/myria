@@ -1,28 +1,19 @@
 package edu.washington.escience.myria.api.encoding;
 
 import java.util.List;
-import java.util.Map;
 
-import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.agg.Aggregator;
 import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
 import edu.washington.escience.myria.parallel.Server;
 
-public class SingleGroupByAggregateEncoding extends OperatorEncoding<SingleGroupByAggregate> {
+public class SingleGroupByAggregateEncoding extends UnaryOperatorEncoding<SingleGroupByAggregate> {
 
-  @Required
-  public String argChild;
   @Required
   public int[] argAggFields;
   @Required
   public List<List<String>> argAggOperators;
   @Required
   public int argGroupField;
-
-  @Override
-  public void connect(Operator operator, Map<String, Operator> operators) {
-    operator.setChildren(new Operator[] { operators.get(argChild) });
-  }
 
   @Override
   public SingleGroupByAggregate construct(Server server) {

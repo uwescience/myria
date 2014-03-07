@@ -216,7 +216,7 @@ public class QueryEncoding extends MyriaApiEncoding {
     for (PlanFragmentEncoding fragment : fragments) {
       for (OperatorEncoding<?> operator : fragment.operators) {
         if (operator instanceof ExchangeEncoding) {
-          ExchangeEncoding<?> exchange = (ExchangeEncoding<?>) operator;
+          ExchangeEncoding exchange = (ExchangeEncoding) operator;
           ImmutableSet.Builder<Integer> workers = ImmutableSet.builder();
           for (ExchangePairID id : exchange.getRealOperatorIds()) {
             if (exchange instanceof AbstractConsumerEncoding) {

@@ -1,9 +1,7 @@
 package edu.washington.escience.myria.api.encoding;
 
-import java.util.Map;
 import java.util.Set;
 
-import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.PartitionFunction;
 import edu.washington.escience.myria.parallel.Server;
@@ -15,15 +13,8 @@ import edu.washington.escience.myria.util.MyriaUtils;
  */
 public class ShuffleProducerEncoding extends AbstractProducerEncoding<GenericShuffleProducer> {
   @Required
-  public String argChild;
-  @Required
   public PartitionFunction argPf;
   public StreamingStateEncoding<?> argBufferStateType;
-
-  @Override
-  public void connect(final Operator current, final Map<String, Operator> operators) {
-    current.setChildren(new Operator[] { operators.get(argChild) });
-  }
 
   @Override
   public GenericShuffleProducer construct(Server server) {

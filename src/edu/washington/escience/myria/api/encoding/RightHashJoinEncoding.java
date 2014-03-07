@@ -1,9 +1,7 @@
 package edu.washington.escience.myria.api.encoding;
 
 import java.util.List;
-import java.util.Map;
 
-import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RightHashJoin;
 import edu.washington.escience.myria.parallel.Server;
 
@@ -14,11 +12,7 @@ import edu.washington.escience.myria.parallel.Server;
  * @author Shumo Chu <chushumo@cs.washington.edu>
  * 
  */
-public class RightHashJoinEncoding extends OperatorEncoding<RightHashJoin> {
-  @Required
-  public String argChild1;
-  @Required
-  public String argChild2;
+public class RightHashJoinEncoding extends BinaryOperatorEncoding<RightHashJoin> {
   public List<String> argColumnNames;
   @Required
   public int[] argColumns1;
@@ -28,11 +22,6 @@ public class RightHashJoinEncoding extends OperatorEncoding<RightHashJoin> {
   public int[] argSelect1;
   @Required
   public int[] argSelect2;
-
-  @Override
-  public void connect(final Operator current, final Map<String, Operator> operators) {
-    current.setChildren(new Operator[] { operators.get(argChild1), operators.get(argChild2) });
-  }
 
   @Override
   public RightHashJoin construct(Server server) {

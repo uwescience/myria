@@ -2,30 +2,21 @@ package edu.washington.escience.myria.api.encoding;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
-import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.agg.Aggregate;
 import edu.washington.escience.myria.operator.agg.Aggregator;
 import edu.washington.escience.myria.parallel.Server;
 
-public class AggregateEncoding extends OperatorEncoding<Aggregate> {
+public class AggregateEncoding extends UnaryOperatorEncoding<Aggregate> {
   @Required
   public List<List<String>> argAggOperators;
   @Required
   public int[] argAggFields;
-  @Required
-  public String argChild;
 
   @Override
   public Aggregate construct(Server server) {
     int[] ops = deserializeAggregateOperator(argAggOperators);
     return new Aggregate(null, argAggFields, ops);
-  }
-
-  @Override
-  public void connect(Operator current, Map<String, Operator> operators) {
-    current.setChildren(new Operator[] { operators.get(argChild) });
   }
 
   /**

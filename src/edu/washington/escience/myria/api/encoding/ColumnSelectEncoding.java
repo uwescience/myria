@@ -1,10 +1,7 @@
 package edu.washington.escience.myria.api.encoding;
 
-import java.util.Map;
-
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.operator.ColumnSelect;
-import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.parallel.Server;
 
 /**
@@ -13,17 +10,10 @@ import edu.washington.escience.myria.parallel.Server;
  * @author leelee
  * 
  */
-public class ColumnSelectEncoding extends OperatorEncoding<ColumnSelect> {
+public class ColumnSelectEncoding extends UnaryOperatorEncoding<ColumnSelect> {
 
   @Required
   public int[] argFieldList;
-  @Required
-  public String argChild;
-
-  @Override
-  public void connect(Operator current, Map<String, Operator> operators) {
-    current.setChildren(new Operator[] { operators.get(argChild) });
-  }
 
   @Override
   public ColumnSelect construct(Server server) {

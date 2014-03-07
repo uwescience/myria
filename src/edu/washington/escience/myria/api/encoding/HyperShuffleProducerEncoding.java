@@ -1,11 +1,8 @@
 package edu.washington.escience.myria.api.encoding;
 
-import java.util.Map;
-
 import javax.ws.rs.core.Response.Status;
 
 import edu.washington.escience.myria.api.MyriaApiException;
-import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.MFMDHashPartitionFunction;
 import edu.washington.escience.myria.parallel.Server;
@@ -21,18 +18,11 @@ import edu.washington.escience.myria.util.MyriaUtils;
 public class HyperShuffleProducerEncoding extends AbstractProducerEncoding<GenericShuffleProducer> {
 
   @Required
-  public String argChild;
-  @Required
   public int[] indexes;
   @Required
   public int[] hyperCubeDimensions;
   @Required
   public int[][] cellPartition;
-
-  @Override
-  public void connect(final Operator current, final Map<String, Operator> operators) {
-    current.setChildren(new Operator[] { operators.get(argChild) });
-  }
 
   @Override
   public GenericShuffleProducer construct(Server server) throws MyriaApiException {

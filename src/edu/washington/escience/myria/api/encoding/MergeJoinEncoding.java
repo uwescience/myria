@@ -1,17 +1,11 @@
 package edu.washington.escience.myria.api.encoding;
 
 import java.util.List;
-import java.util.Map;
 
 import edu.washington.escience.myria.operator.MergeJoin;
-import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.parallel.Server;
 
-public class MergeJoinEncoding extends OperatorEncoding<MergeJoin> {
-  @Required
-  public String argChild1;
-  @Required
-  public String argChild2;
+public class MergeJoinEncoding extends BinaryOperatorEncoding<MergeJoin> {
   public List<String> argColumnNames;
   @Required
   public int[] argColumns1;
@@ -23,11 +17,6 @@ public class MergeJoinEncoding extends OperatorEncoding<MergeJoin> {
   public int[] argSelect2;
   @Required
   public boolean[] acending;
-
-  @Override
-  public void connect(final Operator current, final Map<String, Operator> operators) {
-    current.setChildren(new Operator[] { operators.get(argChild1), operators.get(argChild2) });
-  }
 
   @Override
   public MergeJoin construct(Server server) {
