@@ -16,9 +16,6 @@ public class DbInsertEncoding extends UnaryOperatorEncoding<DbInsert> {
   /** The name under which the dataset will be stored. */
   @Required
   public RelationKey relationKey;
-  /** The source of tuples to be inserted. */
-  @Required
-  public String argChild;
   /** Whether to overwrite an existing dataset. */
   public Boolean argOverwriteTable;
   /** Indexes created. */
