@@ -23,6 +23,7 @@ import com.almworks.sqlite4java.SQLiteJob;
 import com.almworks.sqlite4java.SQLiteQueue;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -1415,6 +1416,35 @@ public final class MasterCatalog {
             statement.dispose();
             return new DatasetStatus(relationKey, schema, numTuples, queryId, created);
           } catch (final SQLiteException e) {
+            throw new CatalogException(e);
+          }
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
+   * @return number of queries in catalog.
+   * @throws CatalogException if an error occurs
+   */
+  public int getNumQueries() throws CatalogException {
+    try {
+      return queue.execute(new SQLiteJob<Integer>() {
+        @Override
+        protected Integer job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+          try {
+            /* Getting this out is a simple query, which does not need to be cached. */
+            final SQLiteStatement statement = sqliteConnection.prepare("SELECT count(*) FROM queries;", false);
+            Preconditions.checkArgument(statement.step(), "Count should return a row");
+            final Integer ret = statement.columnInt(0);
+            statement.dispose();
+            return ret;
+          } catch (final SQLiteException e) {
+            if (LOGGER.isErrorEnabled()) {
+              LOGGER.error(e.toString());
+            }
             throw new CatalogException(e);
           }
         }
