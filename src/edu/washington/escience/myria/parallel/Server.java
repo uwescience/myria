@@ -863,8 +863,8 @@ public final class Server {
 
     ipcPipelineExecutor =
         new OrderedMemoryAwareThreadPoolExecutor(Runtime.getRuntime().availableProcessors() * 2 + 1,
-            5 * MyriaConstants.MB, 5 * MyriaConstants.MB, MyriaConstants.THREAD_POOL_KEEP_ALIVE_TIME_IN_MS,
-            TimeUnit.MILLISECONDS, new RenamingThreadFactory("Master Pipeline executor"));
+            5 * MyriaConstants.MB, 0, MyriaConstants.THREAD_POOL_KEEP_ALIVE_TIME_IN_MS, TimeUnit.MILLISECONDS,
+            new RenamingThreadFactory("Master Pipeline executor"));
 
     /**
      * The {@link ChannelFactory} for creating client side connections.
@@ -1048,13 +1048,19 @@ public final class Server {
           final String endTime = stats.getEndTime();
           final long elapsedNanos = stats.getQueryExecutionElapse();
           final QueryStatusEncoding.Status status;
+          String message = null;
           if (mqp.isKilled()) {
             /* This is a catch-all for both ERROR and KILLED, right? */
-            status = Status.KILLED;
+            message = mqp.getMessage();
+            if (message == null) {
+              status = Status.KILLED;
+            } else {
+              status = Status.ERROR;
+            }
           } else {
             status = Status.SUCCESS;
           }
-          catalog.queryFinished(queryID, startTime, endTime, elapsedNanos, status);
+          catalog.queryFinished(queryID, startTime, endTime, elapsedNanos, status, message);
           activeQueries.remove(queryID);
 
           if (future.isSuccess()) {
@@ -1087,7 +1093,7 @@ public final class Server {
 
       return mqp.getExecutionFuture();
     } catch (DbException | CatalogException | RuntimeException e) {
-      catalog.queryFinished(queryID, "error during submission", null, null, Status.KILLED);
+      catalog.queryFinished(queryID, "error during submission", null, null, Status.ERROR, e.toString());
       activeQueries.remove(queryID);
       throw e;
     }
@@ -1446,5 +1452,13 @@ public final class Server {
     } catch (CatalogException e) {
       throw new DbException(e);
     }
+  }
+
+  /**
+   * @return number of queries.
+   * @throws CatalogException if an error occurs
+   */
+  public int getNumQueries() throws CatalogException {
+    return catalog.getNumQueries();
   }
 }
