@@ -17,6 +17,7 @@ import org.jboss.netty.channel.group.DefaultChannelGroupFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
@@ -71,12 +72,17 @@ public class MasterQueryPartition implements QueryPartition {
           int current = nowCompleted.incrementAndGet();
           queryExecutionFuture.setProgress(1, current, workerExecutionInfo.size());
           if (!future.isSuccess()) {
-            if (!(future.getCause() instanceof QueryKilledException)) {
+            Throwable cause = future.getCause();
+            if (!(cause instanceof QueryKilledException)) {
               // Only record non-killed exceptions
               if (ftMode.equals(FTMODE.none)) {
-                failedQueryPartitions.put(workerID, future.getCause());
+                failedQueryPartitions.put(workerID, cause);
                 // if any worker fails because of some exception, kill the query.
                 kill();
+                /* Record the reason for failure. */
+                if (cause != null) {
+                  message = Objects.firstNonNull(message, cause.toString());
+                }
               } else if (ftMode.equals(FTMODE.abandon)) {
                 LOGGER.debug("(Abandon) ignoring failed query future on query #{}", queryID);
                 // do nothing
@@ -535,6 +541,11 @@ public class MasterQueryPartition implements QueryPartition {
   private volatile boolean killed = false;
 
   /**
+   * Describes the cause of the query's death.
+   */
+  private volatile String message = null;
+
+  /**
    * @return If the query has been asked to get killed (the kill event may not have completed).
    * */
   public final boolean isKilled() {
@@ -572,5 +583,12 @@ public class MasterQueryPartition implements QueryPartition {
    * */
   public void updateProducerChannels(final int workerId, final boolean enable) {
     rootTask.updateProducerChannels(workerId, enable);
+  }
+
+  /**
+   * @return the message describing the cause of the query's death. Nullable.
+   */
+  public String getMessage() {
+    return message;
   }
 }

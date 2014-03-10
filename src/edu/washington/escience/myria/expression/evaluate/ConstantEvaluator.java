@@ -44,22 +44,26 @@ public final class ConstantEvaluator extends GenericEvaluator {
     Preconditions.checkArgument(!expression.hasOperator(VariableExpression.class)
         && !expression.hasOperator(StateExpression.class), "Expression %s does not evaluate to a constant", expression);
     type = expression.getOutputType(parameters);
+    String java;
     try {
-      evaluator =
-          new ExpressionEvaluator(expression.getJavaExpression(parameters), type.toJavaType(), new String[] {},
-              new Class<?>[] {});
+      java = expression.getJavaExpression(parameters);
+    } catch (Exception e) {
+      throw new DbException("Error when generating Java expression " + this, e);
+    }
+    try {
+      evaluator = new ExpressionEvaluator(java, type.toJavaType(), new String[] {}, new Class<?>[] {});
       value = evaluator.evaluate(NO_ARGS);
     } catch (CompileException e) {
-      throw new DbException("Error when compiling expression " + this, e);
+      throw new DbException("Error when compiling expression " + java, e);
     } catch (InvocationTargetException e) {
-      throw new DbException("Error when evaluating expression " + this, e);
+      throw new DbException("Error when evaluating expression " + java, e);
     }
   }
 
   /**
    * Expression evaluator.
    */
-  private ExpressionEvaluator evaluator;
+  private final ExpressionEvaluator evaluator;
 
   /**
    * Creates an {@link ExpressionEvaluator} from the {@link #javaExpression}. This does not really compile the
