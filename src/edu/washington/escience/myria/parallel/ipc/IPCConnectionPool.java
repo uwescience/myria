@@ -48,10 +48,10 @@ import com.google.common.collect.ImmutableSet;
 import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.parallel.ipc.ChannelContext.RegisteredChannelContext;
 import edu.washington.escience.myria.util.IPCUtils;
+import edu.washington.escience.myria.util.concurrent.ErrorLoggingTimerTask;
 import edu.washington.escience.myria.util.concurrent.OrderedExecutorService;
 import edu.washington.escience.myria.util.concurrent.RenamingThreadFactory;
 import edu.washington.escience.myria.util.concurrent.ThreadStackDump;
-import edu.washington.escience.myria.util.concurrent.TimerTaskThreadFactory;
 
 /**
  * IPCConnectionPool is the hub of inter-process communication. It is consisted of an IPC server (typically a server
@@ -83,9 +83,9 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   /**
    * Channel disconnecter, in charge of checking if the channels in the trash bin are qualified for closing.
    * */
-  private class ChannelDisconnecter implements Runnable {
+  private class ChannelDisconnecter extends ErrorLoggingTimerTask {
     @Override
-    public final synchronized void run() {
+    public final synchronized void runInner() {
       final Iterator<Channel> channels = channelTrashBin.iterator();
       while (channels.hasNext()) {
         final Channel c = channels.next();
@@ -140,9 +140,9 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   /**
    * Check the registration of new connections.
    * */
-  private class ChannelIDChecker implements Runnable {
+  private class ChannelIDChecker extends ErrorLoggingTimerTask {
     @Override
-    public final synchronized void run() {
+    public final synchronized void runInner() {
       synchronized (unregisteredChannelSetLock) {
         final Iterator<Channel> it = unregisteredChannels.keySet().iterator();
         while (it.hasNext()) {
@@ -162,9 +162,9 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   /**
    * Recycle unused connections.
    * */
-  private class ChannelRecycler implements Runnable {
+  private class ChannelRecycler extends ErrorLoggingTimerTask {
     @Override
-    public final synchronized void run() {
+    public final synchronized void runInner() {
       final Iterator<Channel> it = recyclableRegisteredChannels.keySet().iterator();
       while (it.hasNext()) {
         final Channel c = it.next();
@@ -485,7 +485,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
     channelTrashBin = new DefaultChannelGroup();
 
     scheduledTaskExecutor =
-        Executors.newSingleThreadScheduledExecutor(new TimerTaskThreadFactory("IPC connection pool global timer"));
+        Executors.newSingleThreadScheduledExecutor(new RenamingThreadFactory("IPC connection pool global timer"));
     disconnecter = new ChannelDisconnecter();
     idChecker = new ChannelIDChecker();
     recycler = new ChannelRecycler();
@@ -672,24 +672,9 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
         final ChannelContext cc = new ChannelContext(channel);
         channel.setAttachment(cc);
         cc.connected();
-        final ChannelFuture idWriteFuture = channel.write(myIDMsg);
-        idWriteFuture.awaitUninterruptibly(DATA_TRANSFER_TIMEOUT_IN_MS);
-        // tell the remote part my id
-        if (!idWriteFuture.isSuccess()) {
-          cc.idCheckingTimeout(unregisteredChannels);
-          throw new ChannelException("ID checking timeout, failed to write my ID");
-        }
+        cc.awaitRemoteRegister(myIDMsg, remote.id, CONNECTION_ID_CHECK_TIMEOUT_IN_MS, remote.registeredChannels,
+            unregisteredChannels);
 
-        if (!cc.waitForRemoteReply(CONNECTION_ID_CHECK_TIMEOUT_IN_MS)) {
-          throw new ChannelException("ID checking timeout, failed to get the remote ID");
-        }
-
-        if (cc.remoteReplyID() == null || !(remote.id == (cc.remoteReplyID()))) {
-          cc.idCheckingTimeout(unregisteredChannels);
-          throw new ChannelException("ID checking timeout, remote ID doesn't match");
-        }
-
-        cc.registerNormal(remote.id, remote.registeredChannels, unregisteredChannels);
         if (LOGGER.isTraceEnabled()) {
           LOGGER.trace("Created a new registered channel from: " + myID + ", to: " + remote.id + ". Channel: "
               + channel);
@@ -1453,10 +1438,10 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
           IPCRemote remote = channelPool.get(rcc.getRemoteID());
           if (remote != null) {
             cc.errorEncountered(unregisteredChannels, recyclableRegisteredChannels, channelTrashBin,
-                remote.registeredChannels);
+                remote.registeredChannels, cause);
           }
         } else {
-          cc.errorEncountered(unregisteredChannels, recyclableRegisteredChannels, channelTrashBin, null);
+          cc.errorEncountered(unregisteredChannels, recyclableRegisteredChannels, channelTrashBin, null, cause);
         }
       }
     } finally {

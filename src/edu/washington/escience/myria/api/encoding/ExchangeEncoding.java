@@ -3,27 +3,15 @@ package edu.washington.escience.myria.api.encoding;
 import java.util.List;
 import java.util.Set;
 
-import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 
-public abstract class ExchangeEncoding<E extends Operator> extends OperatorEncoding<E> {
+public interface ExchangeEncoding {
 
-  private Set<Integer> realWorkerIds;
-  private List<ExchangePairID> realOperatorIds;
+  Set<Integer> getRealWorkerIds();
 
-  protected final Set<Integer> getRealWorkerIds() {
-    return realWorkerIds;
-  }
+  void setRealWorkerIds(Set<Integer> w);
 
-  protected final void setRealWorkerIds(Set<Integer> w) {
-    realWorkerIds = w;
-  }
+  List<ExchangePairID> getRealOperatorIds();
 
-  protected final List<ExchangePairID> getRealOperatorIds() {
-    return realOperatorIds;
-  }
-
-  protected final void setRealOperatorIds(List<ExchangePairID> operatorIds) {
-    realOperatorIds = operatorIds;
-  }
+  void setRealOperatorIds(List<ExchangePairID> operatorIds);
 }

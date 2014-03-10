@@ -1152,10 +1152,6 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
       throw new UnsupportedOperationException();
     }
 
-    @Override
-    protected List<String> getRequiredArguments() {
-      throw new UnsupportedOperationException();
-    }
   }
 
   /**
@@ -1185,10 +1181,6 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
       throw new UnsupportedOperationException();
     }
 
-    @Override
-    protected List<String> getRequiredArguments() {
-      throw new UnsupportedOperationException();
-    }
   }
 
   /**

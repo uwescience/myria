@@ -125,9 +125,25 @@ public class ExecutableExecutionFuture<T> extends OperationFutureBase<T> impleme
   }
 
   @Override
+  protected boolean doCancel() {
+    return this.cancel(true);
+  }
+
+  @Override
   public T get() throws InterruptedException, ExecutionException {
     this.await();
+    this.checkFailure();
     return getResult();
+  }
+
+  /**
+   * @throws ExecutionException if there's any error occurred during the execution of the {@link Runnable} or
+   *           {@link Callable}
+   * */
+  private void checkFailure() throws ExecutionException {
+    if (isDone() && !isSuccess()) {
+      throw new ExecutionException(getCause());
+    }
   }
 
   @Override
@@ -135,6 +151,7 @@ public class ExecutableExecutionFuture<T> extends OperationFutureBase<T> impleme
       TimeoutException {
     this.await(timeout, unit);
     if (isDone()) {
+      this.checkFailure();
       return getResult();
     }
     return null;
@@ -161,7 +178,7 @@ public class ExecutableExecutionFuture<T> extends OperationFutureBase<T> impleme
   public T call() throws Exception {
     if (!compareAndSetState(READY, RUNNING)) {
       if (isDone()) {
-        return this.get();
+        return getResult();
       } else {
         throw new RejectedExecutionException("Another thread (" + this.executingThread + ") is executing this task");
       }
@@ -196,7 +213,7 @@ public class ExecutableExecutionFuture<T> extends OperationFutureBase<T> impleme
       if (e instanceof Exception) {
         throw e;
       }
-      return this.get();
+      return getResult();
     } finally {
 
       synchronized (interruptedCheckingLock) {
@@ -220,7 +237,7 @@ public class ExecutableExecutionFuture<T> extends OperationFutureBase<T> impleme
   }
 
   @Override
-  public OperationFuture addPreListener(final OperationFutureListener listener) {
+  public ExecutableExecutionFuture<T> addPreListener(final OperationFutureListener listener) {
     super.addPreListener0(listener);
     return this;
   }

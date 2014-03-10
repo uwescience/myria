@@ -80,7 +80,8 @@ public final class MasterCatalog {
     + "    finish_time TEXT, -- DATES IN ISO8601 FORMAT \n"
     + "    elapsed_nanos INTEGER,\n"
     + "    status TEXT NOT NULL,\n"
-    + "    profiling_mode TEXT NOT NULL);";
+    + "    profiling_mode TEXT NOT NULL,\n"
+    + "    message TEXT);";
   /** Create the relations table. */
   private static final String CREATE_RELATIONS =
       "CREATE TABLE relations (\n"
@@ -1146,7 +1147,7 @@ public final class MasterCatalog {
           try {
             SQLiteStatement statement =
                 sqliteConnection
-                    .prepare("SELECT query_id,raw_query,logical_ra,physical_plan,submit_time,start_time,finish_time,elapsed_nanos,status,profiling_mode FROM queries WHERE query_id=?;");
+                    .prepare("SELECT query_id,raw_query,logical_ra,physical_plan,submit_time,start_time,finish_time,elapsed_nanos,status,message FROM queries WHERE query_id=?;");
             statement.bind(1, queryId);
             statement.step();
             if (!statement.hasRow()) {
@@ -1183,6 +1184,7 @@ public final class MasterCatalog {
       queryStatus.elapsedNanos = statement.columnLong(5);
     }
     queryStatus.status = QueryStatusEncoding.Status.valueOf(statement.columnString(6));
+    queryStatus.message = statement.columnString(7);
     return queryStatus;
   }
 
@@ -1212,7 +1214,7 @@ public final class MasterCatalog {
       queryStatus.elapsedNanos = statement.columnLong(7);
     }
     queryStatus.status = QueryStatusEncoding.Status.valueOf(statement.columnString(8));
-    queryStatus.profilingMode = Boolean.parseBoolean(statement.columnString(9));
+    queryStatus.message = statement.columnString(9);
     return queryStatus;
   }
 
@@ -1238,7 +1240,7 @@ public final class MasterCatalog {
             /* The base of the query */
             StringBuilder sb =
                 new StringBuilder(
-                    "SELECT query_id,raw_query,submit_time,start_time,finish_time,elapsed_nanos,status, profiling_mode FROM queries");
+                    "SELECT query_id,raw_query,submit_time,start_time,finish_time,elapsed_nanos,status,message FROM queries");
             /* The query arguments, if any. */
             List<Long> bound = Lists.newLinkedList();
             /* If there is a max query id, add the WHERE clause. */
@@ -1349,10 +1351,11 @@ public final class MasterCatalog {
    * @param endTime when that query finished.
    * @param elapsedNanos how long the query executed for, in nanoseconds.
    * @param status the status of the query when finished.
+   * @param message a message describing the cause of the query's death, or null.
    * @throws CatalogException if there is an error in the MasterCatalog.
    */
   public void queryFinished(final long queryId, final String startTime, final String endTime, final Long elapsedNanos,
-      final Status status) throws CatalogException {
+      final Status status, final String message) throws CatalogException {
     Objects.requireNonNull(status);
     if (isClosed) {
       throw new CatalogException("MasterCatalog is closed.");
@@ -1365,7 +1368,7 @@ public final class MasterCatalog {
           try {
             SQLiteStatement statement =
                 sqliteConnection
-                    .prepare("UPDATE queries SET start_time=?, finish_time=?, elapsed_nanos=?, status=? WHERE query_id=?;");
+                    .prepare("UPDATE queries SET start_time=?, finish_time=?, elapsed_nanos=?, status=?, message=? WHERE query_id=?;");
             statement.bind(1, startTime);
             statement.bind(2, endTime);
             if (elapsedNanos == null) {
@@ -1374,7 +1377,8 @@ public final class MasterCatalog {
               statement.bind(3, elapsedNanos);
             }
             statement.bind(4, status.toString());
-            statement.bind(5, queryId);
+            statement.bind(5, message);
+            statement.bind(6, queryId);
             statement.stepThrough();
             statement.dispose();
             return null;

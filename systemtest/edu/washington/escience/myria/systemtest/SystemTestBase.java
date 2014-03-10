@@ -24,10 +24,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.mina.util.AvailablePortFinder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.rules.TestName;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.rules.Timeout;
@@ -77,6 +79,8 @@ public class SystemTestBase {
   private final int SYSTEM_TEST_TIMEOUT_MILLIS = 120 * 1000;
   @Rule
   public TestRule globalTimeout = new Timeout(SYSTEM_TEST_TIMEOUT_MILLIS);
+  @Rule
+  public TestName name = new TestName();
 
   /** The logger for this class. */
   protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(SystemTestBase.class);
@@ -514,6 +518,7 @@ public class SystemTestBase {
   void startWorkers() throws IOException {
     int workerCount = 0;
 
+    LOGGER.info("Workers for test [" + name.getMethodName() + "] are " + ArrayUtils.toString(workerIDs));
     for (int i = 0; i < workerIDs.length; i++) {
       final int workerID = workerIDs[i];
       final String workingDir = getWorkerFolder(workerID);
@@ -523,28 +528,30 @@ public class SystemTestBase {
 
       ProcessBuilder tpb;
       if (DEBUG) {
-        tpb = new ProcessBuilder("java", "-ea", // enable assertion
-            "-Djava.library.path=" + lp, "-Dorg.jboss.netty.debug", "-Xdebug",
-            // Now eclipse is able to debug remotely the worker processes
-            // following the steps:
-            // 1. Set a breakpoint at the beginning of a JUnit test method.
-            // 2. start debug the JUnit test method. The test method should stop
-            // at the preset breakpoint.
-            // But now, the worker processes are already started.
-            // 3. Create an Eclipse remote debugger and set to attach to localhost
-            // 10001 for worker1 and localhost
-            // 10002 for worker2
-            // 4. Now, you are able to debug the worker processes. All the Java
-            // debugging methods are supported such
-            // as breakpoints.
-            "-Xrunjdwp:transport=dt_socket,address=" + (workerPorts[i] + 1000) + ",server=y,suspend=n", //
-            "-Xmx" + MEMORY, // memory limit to MEMORY
-            "-classpath", cp, Worker.class.getCanonicalName(), "--workingDir", workingDir);
+        tpb =
+            new ProcessBuilder("java", "-ea", // enable assertion
+                "-Djava.library.path=" + lp, "-Dorg.jboss.netty.debug", "-Xdebug",
+                // Now eclipse is able to debug remotely the worker processes
+                // following the steps:
+                // 1. Set a breakpoint at the beginning of a JUnit test method.
+                // 2. start debug the JUnit test method. The test method should stop
+                // at the preset breakpoint.
+                // But now, the worker processes are already started.
+                // 3. Create an Eclipse remote debugger and set to attach to localhost
+                // 10001 for worker1 and localhost
+                // 10002 for worker2
+                // 4. Now, you are able to debug the worker processes. All the Java
+                // debugging methods are supported such
+                // as breakpoints.
+                "-Xrunjdwp:transport=dt_socket,address=" + (workerPorts[i] + 1000) + ",server=y,suspend=n", //
+                "-Xmx" + MEMORY, // memory limit to MEMORY
+                "-classpath", cp, Worker.class.getCanonicalName(), "--workingDir", workingDir, "--testMethod", name
+                    .getMethodName());
       } else {
         tpb = new ProcessBuilder("java", "-ea", // enable assertion
             "-Djava.library.path=" + lp, "-classpath", cp, // paths
             "-Xmx" + MEMORY, // memory limit to MEMORY
-            Worker.class.getCanonicalName(), "--workingDir", workingDir);
+            Worker.class.getCanonicalName(), "--workingDir", workingDir, "--testMethod", name.getMethodName());
       }
       final ProcessBuilder pb = tpb;
 
@@ -580,7 +587,8 @@ public class SystemTestBase {
               if (line == null) {
                 break;
               }
-              LOGGER.info("localhost:" + workerPorts[myWorkerIdx] + "$ " + line);
+
+              LOGGER.info("[" + name.getMethodName() + "]" + "@localhost:" + workerPorts[myWorkerIdx] + "$ " + line);
             }
           } catch (final IOException e) {
             // remote has shutdown. Not an exception.
@@ -588,7 +596,7 @@ public class SystemTestBase {
         }
       };
 
-      workerStdoutReader[wc].setName("WorkerStdoutReader-" + wc);
+      workerStdoutReader[wc].setName("WorkerStdoutReader-" + workerIDs[wc]);
       workerStdoutReader[wc].start();
 
       ++workerCount;

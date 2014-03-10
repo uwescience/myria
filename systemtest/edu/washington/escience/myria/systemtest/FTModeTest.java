@@ -455,7 +455,7 @@ public class FTModeTest extends SystemTestBase {
     QueryFuture qf = server.submitQuery("", "", "", serverPlan, workerPlans, false);
     Thread.sleep(2000);
     /* kill the one without EOSController */
-    LOGGER.info("killing worker 2!");
+    LOGGER.info("killing worker " + workerIDs[1]);
     workerProcess[1].destroy();
     qf.sync();
     Preconditions.checkArgument(qf.isSuccess());
@@ -560,7 +560,7 @@ public class FTModeTest extends SystemTestBase {
     QueryFuture qf = server.submitQuery("", "", "", serverPlan, workerPlans, false);
     Thread.sleep(3000);
     /* kill the one without EOSController */
-    LOGGER.info("killing worker 2!");
+    LOGGER.info("killing worker " + workerIDs[1]);
     workerProcess[1].destroy();
     qf.sync();
 

@@ -54,6 +54,8 @@ public class QueryStatusEncoding {
   public String startTime;
   /** The finish time of this query. */
   public String finishTime;
+  /** The error message of this query. */
+  public String message;
   /** The execution time of this query (in nanoseconds). */
   public Long elapsedNanos;
   /** The status of the query. */

@@ -1,14 +1,8 @@
 package edu.washington.escience.myria.api.encoding;
 
-import java.util.List;
-import java.util.Map;
-
 import javax.ws.rs.core.Response.Status;
 
-import com.google.common.collect.ImmutableList;
-
 import edu.washington.escience.myria.api.MyriaApiException;
-import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.MFMDHashPartitionFunction;
 import edu.washington.escience.myria.parallel.Server;
@@ -23,18 +17,12 @@ import edu.washington.escience.myria.util.MyriaUtils;
  */
 public class HyperShuffleProducerEncoding extends AbstractProducerEncoding<GenericShuffleProducer> {
 
-  public String argChild;
+  @Required
   public int[] indexes;
+  @Required
   public int[] hyperCubeDimensions;
+  @Required
   public int[][] cellPartition;
-
-  private static final List<String> requiredArguments = ImmutableList.of("argChild", "indexes", "hyperCubeDimensions",
-      "cellPartition");
-
-  @Override
-  public void connect(final Operator current, final Map<String, Operator> operators) {
-    current.setChildren(new Operator[] { operators.get(argChild) });
-  }
 
   @Override
   public GenericShuffleProducer construct(Server server) throws MyriaApiException {
@@ -58,11 +46,6 @@ public class HyperShuffleProducerEncoding extends AbstractProducerEncoding<Gener
 
     return new GenericShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), cellPartition,
         MyriaUtils.integerCollectionToIntArray(getRealWorkerIds()), pf);
-  }
-
-  @Override
-  protected List<String> getRequiredArguments() {
-    return requiredArguments;
   }
 
   @Override

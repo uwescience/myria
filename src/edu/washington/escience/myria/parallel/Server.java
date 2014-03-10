@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableSet;
 import java.util.Set;
-import java.util.TimerTask;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -80,16 +79,17 @@ import edu.washington.escience.myria.util.DateTimeUtils;
 import edu.washington.escience.myria.util.DeploymentUtils;
 import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.MyriaUtils;
+import edu.washington.escience.myria.util.concurrent.ErrorLoggingTimerTask;
 import edu.washington.escience.myria.util.concurrent.RenamingThreadFactory;
 
 /**
  * The master entrance.
- * */
+ */
 public final class Server {
 
   /**
    * Master message processor.
-   * */
+   */
   private final class MessageProcessor implements Runnable {
 
     /** Constructor, set the thread name. */
@@ -204,54 +204,54 @@ public final class Server {
 
   /**
    * Initial worker list.
-   * */
+   */
   private final ConcurrentHashMap<Integer, SocketInfo> workers;
 
   /**
    * Queries currently in execution.
-   * */
+   */
   private final ConcurrentHashMap<Long, MasterQueryPartition> activeQueries;
 
   /**
    * Results of succeeded queries, currently the number of tuples received by the SinkRoot.
-   * */
+   */
   private final ConcurrentHashMap<Long, Long> succeededQueryResults;
 
   /**
    * Current alive worker set.
-   * */
+   */
   private final ConcurrentHashMap<Integer, Long> aliveWorkers;
 
   /**
    * Scheduled new workers, when a scheduled worker sends the first heartbeat, it'll be removed from this set.
-   * */
+   */
   private final ConcurrentHashMap<Integer, SocketInfo> scheduledWorkers;
 
   /**
    * The time when new workers were scheduled.
-   * */
+   */
   private final ConcurrentHashMap<Integer, Long> scheduledWorkersTime;
 
   /**
    * Execution environment variables for operators.
-   * */
+   */
   private final ConcurrentHashMap<String, Object> execEnvVars;
 
   /**
    * All message queue.
    * 
    * @TODO remove this queue as in {@link Worker}s.
-   * */
+   */
   private final LinkedBlockingQueue<IPCMessage.Data<TransportMessage>> messageQueue;
 
   /**
    * The IPC Connection Pool.
-   * */
+   */
   private final IPCConnectionPool connectionPool;
 
   /**
    * {@link ExecutorService} for message processing.
-   * */
+   */
   private volatile ExecutorService messageProcessingExecutor;
 
   /** The Catalog stores the metadata about the Myria instance. */
@@ -259,36 +259,36 @@ public final class Server {
 
   /**
    * Default input buffer capacity for {@link Consumer} input buffers.
-   * */
+   */
   private final int inputBufferCapacity;
 
   /**
    * @return the system wide default inuput buffer recover event trigger.
    * @see FlowControlBagInputBuffer#INPUT_BUFFER_RECOVER
-   * */
+   */
   private final int inputBufferRecoverTrigger;
 
   /**
    * The {@link OrderedMemoryAwareThreadPoolExecutor} who gets messages from {@link workerExecutor} and further process
    * them using application specific message handlers, e.g. {@link MasterShortMessageProcessor}.
-   * */
+   */
   private volatile OrderedMemoryAwareThreadPoolExecutor ipcPipelineExecutor;
 
   /**
    * The {@link ExecutorService} who executes the master-side query partitions.
-   * */
+   */
   private volatile ExecutorService serverQueryExecutor;
 
   /**
    * @return the query executor used in this worker.
-   * */
+   */
   ExecutorService getQueryExecutor() {
     return serverQueryExecutor;
   }
 
   /**
    * max number of seconds for elegant cleanup.
-   * */
+   */
   public static final int NUM_SECONDS_FOR_ELEGANT_CLEANUP = 10;
 
   /** for each worker id, record the set of workers which REMOVE_WORKER_ACK have been received. */
@@ -301,7 +301,7 @@ public final class Server {
    * 
    * @param args the command line arguments.
    * @throws IOException if there's any error in reading catalog file.
-   * */
+   */
   public static void main(final String[] args) throws IOException {
     try {
 
@@ -389,14 +389,14 @@ public final class Server {
 
   /**
    * @return my connection pool for IPC.
-   * */
+   */
   IPCConnectionPool getIPCConnectionPool() {
     return connectionPool;
   }
 
   /**
    * @return my pipeline executor.
-   * */
+   */
   OrderedMemoryAwareThreadPoolExecutor getPipelineExecutor() {
     return ipcPipelineExecutor;
   }
@@ -406,14 +406,14 @@ public final class Server {
 
   /**
    * @return my execution environment variables for init of operators.
-   * */
+   */
   ConcurrentHashMap<String, Object> getExecEnvVars() {
     return execEnvVars;
   }
 
   /**
    * @return execution mode.
-   * */
+   */
   QueryExecutionMode getExecutionMode() {
     return QueryExecutionMode.NON_BLOCKING;
   }
@@ -479,21 +479,21 @@ public final class Server {
 
   /**
    * timer task executor.
-   * */
+   */
   private final ScheduledExecutorService scheduledTaskExecutor;
 
   /**
    * This class presents only for the purpose of debugging. No other usage.
-   * */
-  private class DebugHelper extends TimerTask {
+   */
+  private class DebugHelper extends ErrorLoggingTimerTask {
 
     /**
      * Interval of execution.
-     * */
+     */
     public static final int INTERVAL = MyriaConstants.WAITING_INTERVAL_1_SECOND_IN_MS;
 
     @Override
-    public final synchronized void run() {
+    public final synchronized void runInner() {
       System.currentTimeMillis();
     }
   }
@@ -523,7 +523,7 @@ public final class Server {
      * @param workerID the removed worker id.
      * @param socketInfo the new worker's socket info.
      * @param numOfAck the number of REMOVE_WORKER_ACK to receive.
-     * */
+     */
     SendAddWorker(final int workerID, final SocketInfo socketInfo, final int numOfAck) {
       this.workerID = workerID;
       this.socketInfo = socketInfo;
@@ -550,7 +550,7 @@ public final class Server {
 
   /**
    * @param workerID the worker to get updated
-   * */
+   */
   private void updateHeartbeat(final int workerID) {
     if (scheduledWorkers.containsKey(workerID)) {
       SocketInfo newWorker = scheduledWorkers.remove(workerID);
@@ -565,11 +565,11 @@ public final class Server {
   /**
    * Check worker livenesses periodically. If a worker is detected as dead, its queries will be notified, it will be
    * removed from connection pools, and a new worker will be scheduled.
-   * */
-  private class WorkerLivenessChecker extends TimerTask {
+   */
+  private class WorkerLivenessChecker extends ErrorLoggingTimerTask {
 
     @Override
-    public final synchronized void run() {
+    public final synchronized void runInner() {
       for (Integer workerId : aliveWorkers.keySet()) {
         long currentTime = System.currentTimeMillis();
         if (currentTime - aliveWorkers.get(workerId) >= MyriaConstants.WORKER_IS_DEAD_INTERVAL) {
@@ -719,14 +719,30 @@ public final class Server {
 
   /**
    * Master cleanup.
-   * */
+   */
   private void cleanup() {
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info(MyriaConstants.SYSTEM_NAME + " is going to shutdown");
     }
-    if (LOGGER.isInfoEnabled()) {
-      LOGGER.info("Send shutdown requests to the workers, please wait");
+
+    if (scheduledWorkers.size() > 0) {
+      if (LOGGER.isInfoEnabled()) {
+        LOGGER.info("Waiting for scheduled recovery workers, please wait");
+      }
+      while (scheduledWorkers.size() > 0) {
+        try {
+          Thread.sleep(MyriaConstants.WAITING_INTERVAL_1_SECOND_IN_MS);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          break;
+        }
+      }
     }
+
+    for (MasterQueryPartition p : activeQueries.values()) {
+      p.kill();
+    }
+
     messageProcessingExecutor.shutdownNow();
     scheduledTaskExecutor.shutdownNow();
 
@@ -738,6 +754,9 @@ public final class Server {
 
     while (aliveWorkers.size() > 0) {
       // TODO add process kill
+      if (LOGGER.isInfoEnabled()) {
+        LOGGER.info("Send shutdown requests to the workers, please wait");
+      }
       for (final Integer workerId : aliveWorkers.keySet()) {
         SocketInfo workerAddr = workers.get(workerId);
         if (LOGGER.isInfoEnabled()) {
@@ -781,7 +800,7 @@ public final class Server {
    * @param mqp the master query
    * @return the query dispatch {@link QueryFuture}.
    * @throws DbException if any error occurs.
-   * */
+   */
   private QueryFuture dispatchWorkerQueryPlans(final MasterQueryPartition mqp) throws DbException {
     // directly set the master part as already received.
     mqp.queryReceivedByWorker(MyriaConstants.MASTER_ID);
@@ -806,21 +825,21 @@ public final class Server {
   /**
    * @return if a query is running.
    * @param queryId queryID.
-   * */
+   */
   public boolean queryCompleted(final long queryId) {
     return !activeQueries.containsKey(queryId);
   }
 
   /**
    * @return if no query is running.
-   * */
+   */
   public boolean allQueriesCompleted() {
     return activeQueries.isEmpty();
   }
 
   /**
    * Shutdown the master.
-   * */
+   */
   public void shutdown() {
     cleanup();
   }
@@ -846,28 +865,28 @@ public final class Server {
 
     /**
      * The {@link Executor} who deals with IPC connection setup/cleanup.
-     * */
+     */
     ExecutorService ipcBossExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("Master IPC boss"));
     /**
      * The {@link Executor} who deals with IPC message delivering and transformation.
-     * */
+     */
     ExecutorService ipcWorkerExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("Master IPC worker"));
 
     ipcPipelineExecutor =
         new OrderedMemoryAwareThreadPoolExecutor(Runtime.getRuntime().availableProcessors() * 2 + 1,
-            5 * MyriaConstants.MB, 5 * MyriaConstants.MB, MyriaConstants.THREAD_POOL_KEEP_ALIVE_TIME_IN_MS,
-            TimeUnit.MILLISECONDS, new RenamingThreadFactory("Master Pipeline executor"));
+            5 * MyriaConstants.MB, 0, MyriaConstants.THREAD_POOL_KEEP_ALIVE_TIME_IN_MS, TimeUnit.MILLISECONDS,
+            new RenamingThreadFactory("Master Pipeline executor"));
 
     /**
      * The {@link ChannelFactory} for creating client side connections.
-     * */
+     */
     ChannelFactory clientChannelFactory =
         new NioClientSocketChannelFactory(ipcBossExecutor, ipcWorkerExecutor, Runtime.getRuntime()
             .availableProcessors() * 2 + 1);
 
     /**
      * The {@link ChannelFactory} for creating server side accepted connections.
-     * */
+     */
     ChannelFactory serverChannelFactory =
         new NioServerSocketChannelFactory(ipcBossExecutor, ipcWorkerExecutor, Runtime.getRuntime()
             .availableProcessors() * 2 + 1);
@@ -903,7 +922,7 @@ public final class Server {
 
   /**
    * @return the input capacity.
-   * */
+   */
   int getInputBufferCapacity() {
     return inputBufferCapacity;
   }
@@ -911,7 +930,7 @@ public final class Server {
   /**
    * @return the system wide default inuput buffer recover event trigger.
    * @see FlowControlBagInputBuffer#INPUT_BUFFER_RECOVER
-   * */
+   */
   int getInputBufferRecoverTrigger() {
     return inputBufferRecoverTrigger;
   }
@@ -921,7 +940,7 @@ public final class Server {
    * 
    * @param queryID the queryID.
    * @return the future instance of the pause action.
-   * */
+   */
   public QueryFuture pauseQuery(final long queryID) {
     return activeQueries.get(queryID).pause();
   }
@@ -930,7 +949,7 @@ public final class Server {
    * Pause a query with queryID.
    * 
    * @param queryID the queryID.
-   * */
+   */
   public void killQuery(final long queryID) {
     activeQueries.get(queryID).kill();
   }
@@ -940,7 +959,7 @@ public final class Server {
    * 
    * @param queryID the queryID.
    * @return the future instance of the resume action.
-   * */
+   */
   public QueryFuture resumeQuery(final long queryID) {
     return activeQueries.get(queryID).resume();
   }
@@ -954,7 +973,7 @@ public final class Server {
    * @param workerRoots the roots of the worker part of the plan, {workerID -> RootOperator[]}
    * @throws DbException if any error occurs.
    * @throws CatalogException catalog errors.
-   * */
+   */
   public QueryFuture submitQueryPlan(final RootOperator masterRoot, final Map<Integer, RootOperator[]> workerRoots)
       throws DbException, CatalogException {
     String catalogInfoPlaceHolder = "MasterPlan: " + masterRoot + "; WorkerPlan: " + workerRoots;
@@ -979,7 +998,7 @@ public final class Server {
    * @throws DbException if any error in non-catalog data processing
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
-   * */
+   */
   public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final String physicalPlan,
       final SingleQueryPlanWithArgs masterPlan, final Map<Integer, SingleQueryPlanWithArgs> workerPlans,
       @Nullable final Boolean profilingMode) throws DbException, CatalogException {
@@ -1005,7 +1024,7 @@ public final class Server {
    * @throws DbException if any error in non-catalog data processing
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
-   * */
+   */
   public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final QueryEncoding physicalPlan,
       final SingleQueryPlanWithArgs masterPlan, final Map<Integer, SingleQueryPlanWithArgs> workerPlans)
       throws DbException, CatalogException {
@@ -1029,7 +1048,7 @@ public final class Server {
    * @throws DbException if any error in non-catalog data processing
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
-   * */
+   */
   private QueryFuture submitQuery(final long queryID, final SingleQueryPlanWithArgs masterPlan,
       final Map<Integer, SingleQueryPlanWithArgs> workerPlans) throws DbException, CatalogException {
     /* First check whether there are too many active queries. */
@@ -1041,7 +1060,7 @@ public final class Server {
       final MasterQueryPartition mqp = new MasterQueryPartition(masterPlan, workerPlans, queryID, this);
       activeQueries.put(queryID, mqp);
 
-      final QueryFuture queryExecutionFuture = mqp.getQueryExecutionFuture();
+      final QueryFuture queryExecutionFuture = mqp.getExecutionFuture();
 
       /*
        * Add the DatasetMetadataUpdater, which will update the catalog with the set of workers created when the query
@@ -1059,13 +1078,19 @@ public final class Server {
           final String endTime = stats.getEndTime();
           final long elapsedNanos = stats.getQueryExecutionElapse();
           final QueryStatusEncoding.Status status;
+          String message = null;
           if (mqp.isKilled()) {
             /* This is a catch-all for both ERROR and KILLED, right? */
-            status = Status.KILLED;
+            message = mqp.getMessage();
+            if (message == null) {
+              status = Status.KILLED;
+            } else {
+              status = Status.ERROR;
+            }
           } else {
             status = Status.SUCCESS;
           }
-          catalog.queryFinished(queryID, startTime, endTime, elapsedNanos, status);
+          catalog.queryFinished(queryID, startTime, endTime, elapsedNanos, status, message);
           activeQueries.remove(queryID);
 
           if (future.isSuccess()) {
@@ -1096,9 +1121,9 @@ public final class Server {
         }
       });
 
-      return mqp.getQueryExecutionFuture();
+      return mqp.getExecutionFuture();
     } catch (DbException | CatalogException | RuntimeException e) {
-      catalog.queryFinished(queryID, "error during submission", null, null, Status.KILLED);
+      catalog.queryFinished(queryID, "error during submission", null, null, Status.ERROR, e.toString());
       activeQueries.remove(queryID);
       throw e;
     }
@@ -1256,7 +1281,7 @@ public final class Server {
   /**
    * @param configKey config key.
    * @return master configuration.
-   * */
+   */
   public String getConfiguration(final String configKey) {
     try {
       return catalog.getConfigurationValue(configKey);

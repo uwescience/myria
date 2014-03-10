@@ -47,9 +47,12 @@ public interface QueryPartition extends Comparable<QueryPartition> {
   void init();
 
   /**
-   * Pause the query.
+   * Pause the query. If the query is currently paused, do nothing.
    * 
-   * @return the future instance of the pause action.
+   * @return the future instance of the pause action. The future will be set as done if and only if all the tasks in
+   *         this query have stopped execution. During a pause of the query, all call to this method returns the same
+   *         future instance. Two pause calls when the query is not paused at either of the calls return two different
+   *         instances.
    * */
   QueryFuture pause();
 
@@ -80,4 +83,9 @@ public interface QueryPartition extends Comparable<QueryPartition> {
    * @return the set of workers that are currently dead.
    */
   Set<Integer> getMissingWorkers();
+
+  /**
+   * @return the future for the query's execution.
+   * */
+  QueryFuture getExecutionFuture();
 }

@@ -1,11 +1,7 @@
 package edu.washington.escience.myria.api.encoding;
 
 import java.util.List;
-import java.util.Map;
 
-import com.google.common.collect.ImmutableList;
-
-import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RightHashJoin;
 import edu.washington.escience.myria.parallel.Server;
 
@@ -16,29 +12,19 @@ import edu.washington.escience.myria.parallel.Server;
  * @author Shumo Chu <chushumo@cs.washington.edu>
  * 
  */
-public class RightHashJoinEncoding extends OperatorEncoding<RightHashJoin> {
-  public String argChild1;
-  public String argChild2;
+public class RightHashJoinEncoding extends BinaryOperatorEncoding<RightHashJoin> {
   public List<String> argColumnNames;
+  @Required
   public int[] argColumns1;
+  @Required
   public int[] argColumns2;
+  @Required
   public int[] argSelect1;
+  @Required
   public int[] argSelect2;
-  private static final List<String> requiredArguments = ImmutableList.of("argChild1", "argChild2", "argColumns1",
-      "argColumns2", "argSelect1", "argSelect2");
-
-  @Override
-  public void connect(final Operator current, final Map<String, Operator> operators) {
-    current.setChildren(new Operator[] { operators.get(argChild1), operators.get(argChild2) });
-  }
 
   @Override
   public RightHashJoin construct(Server server) {
     return new RightHashJoin(argColumnNames, null, null, argColumns1, argColumns2, argSelect1, argSelect2);
-  }
-
-  @Override
-  protected List<String> getRequiredArguments() {
-    return requiredArguments;
   }
 }

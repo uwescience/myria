@@ -106,6 +106,7 @@ public final class JdbcAccessMethod extends AccessMethod {
   @Override
   public void tupleBatchInsert(final RelationKey relationKey, final Schema schema, final TupleBatch tupleBatch)
       throws DbException {
+    LOGGER.debug("Inserting batch of size {}", tupleBatch.numTuples());
     Objects.requireNonNull(jdbcConnection);
     if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
       // Use the postgres COPY command which is much faster
@@ -118,8 +119,11 @@ public final class JdbcAccessMethod extends AccessMethod {
         tw.done();
 
         Reader reader = new InputStreamReader(new ByteArrayInputStream(baos.toByteArray()));
-        cpManager.copyIn("COPY " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)
-            + " FROM STDIN WITH CSV", reader);
+        long inserted =
+            cpManager.copyIn("COPY " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)
+                + " FROM STDIN WITH CSV", reader);
+        Preconditions.checkState(inserted == tupleBatch.numTuples(),
+            "Error: inserted a batch of size %s but only actually inserted %s rows", tupleBatch.numTuples(), inserted);
       } catch (final SQLException | IOException e) {
         LOGGER.error(e.getMessage(), e);
         throw new DbException(e);
@@ -139,6 +143,7 @@ public final class JdbcAccessMethod extends AccessMethod {
         throw new DbException(e);
       }
     }
+    LOGGER.debug(".. done inserting batch of size {}", tupleBatch.numTuples());
   }
 
   @Override
@@ -209,6 +214,7 @@ public final class JdbcAccessMethod extends AccessMethod {
   @Override
   public void execute(final String ddlCommand) throws DbException {
     Objects.requireNonNull(jdbcConnection);
+    LOGGER.debug("Executing command {}", ddlCommand);
     Statement statement;
     try {
       statement = jdbcConnection.createStatement();
@@ -549,7 +555,6 @@ class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
       return new TupleBatch(schema, columns, numTuples);
     } else {
       return null;
-
     }
   }
 

@@ -1,12 +1,13 @@
 package edu.washington.escience.myria.parallel;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.channels.FileLock;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
-import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -25,8 +26,6 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 
-import com.google.common.collect.Sets;
-
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
@@ -41,9 +40,9 @@ import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.JVMUtils;
+import edu.washington.escience.myria.util.concurrent.ErrorLoggingTimerTask;
 import edu.washington.escience.myria.util.concurrent.RenamingThreadFactory;
 import edu.washington.escience.myria.util.concurrent.ThreadAffinityFixedRoundRobinExecutionPool;
-import edu.washington.escience.myria.util.concurrent.TimerTaskThreadFactory;
 
 /**
  * Workers do the real query execution. A query received by the server will be pre-processed and then dispatched to the
@@ -176,9 +175,9 @@ public final class Worker {
   }
 
   /** Send heartbeats to server periodically. */
-  private class HeartbeatReporter extends TimerTask {
+  private class HeartbeatReporter extends ErrorLoggingTimerTask {
     @Override
-    public synchronized void run() {
+    public synchronized void runInner() {
       if (LOGGER.isTraceEnabled()) {
         LOGGER.trace("sending heartbeat to server");
       }
@@ -191,9 +190,9 @@ public final class Worker {
    * If the server got killed because of any reason, the workers will be terminated. 2) it detects whether a shutdown
    * message is received.
    * */
-  private class ShutdownChecker extends TimerTask {
+  private class ShutdownChecker extends ErrorLoggingTimerTask {
     @Override
-    public final synchronized void run() {
+    public final synchronized void runInner() {
       try {
         if (!connectionPool.isRemoteAlive(MyriaConstants.MASTER_ID)) {
           if (LOGGER.isInfoEnabled()) {
@@ -219,125 +218,6 @@ public final class Worker {
             }
           } finally {
             JVMUtils.shutdownVM();
-          }
-        }
-      }
-    }
-  }
-
-  /**
-   * This class manages all currently running user threads. It waits all these threads to finish within some given
-   * timeout. If timeout, try interrupting them. If any thread is interrupted for a given number of times, stop waiting
-   * and kill it directly.
-   * */
-  private class ShutdownThreadCleaner extends Thread {
-
-    /**
-     * In wait state for at most 5 seconds.
-     * */
-    static final int WAIT_MAXIMUM_MS = 5 * 1000;
-    /**
-     * Interrupt an unresponding thread for at most 3 times.
-     * */
-    static final int MAX_INTERRUPT_TIMES = 3;
-
-    /**
-     * for setting not daemon.
-     * */
-    ShutdownThreadCleaner() {
-      super.setDaemon(true);
-    }
-
-    /**
-     * How many milliseconds a thread have been waited to get finish.
-     * */
-    private final HashMap<Thread, Integer> waitedForMS = new HashMap<Thread, Integer>();
-    /**
-     * How many times a thread has been interrupted.
-     * */
-    private final HashMap<Thread, Integer> interruptTimes = new HashMap<Thread, Integer>();
-    /**
-     * The set of threads we have been waiting for the maximum MS, and so have decided to kill them directly.
-     * */
-    private final Set<Thread> abandonThreads = Sets.newSetFromMap(new HashMap<Thread, Boolean>());
-
-    /**
-     * utility method, add an integer v to the value of m[t] and return the new value. null key and value are taken ca
-     * of.
-     * 
-     * @return the new value
-     * @param m a map
-     * @param t a thread
-     * @param v the value
-     * */
-    private int addToMap(final Map<Thread, Integer> m, final Thread t, final int v) {
-      Integer tt = m.get(t);
-      if (tt == null) {
-        tt = 0;
-      }
-      m.put(t, tt + v);
-      return tt + v;
-    }
-
-    /**
-     * utility method, get the value of m[t] . null key and value are taken care of.
-     * 
-     * @param m a map
-     * @param t a thread
-     * @return the value
-     * */
-    private int getFromMap(final Map<Thread, Integer> m, final Thread t) {
-      Integer tt = m.get(t);
-      if (tt == null) {
-        tt = 0;
-      }
-      return tt;
-    }
-
-    @Override
-    public final void run() {
-
-      while (true) {
-        Set<Thread> allThreads = Thread.getAllStackTraces().keySet();
-        HashMap<Thread, Integer> nonSystemThreads = new HashMap<Thread, Integer>();
-        for (final Thread t : allThreads) {
-          if (t.getThreadGroup() != null && t.getThreadGroup() != mainThreadGroup
-              && t.getThreadGroup() != mainThreadGroup.getParent() && t != Thread.currentThread()
-              && !abandonThreads.contains(t)) {
-            nonSystemThreads.put(t, 0);
-          }
-        }
-
-        if (nonSystemThreads.isEmpty()) {
-          if (abandonThreads.isEmpty()) {
-            return;
-          } else {
-            JVMUtils.shutdownVM();
-          }
-        }
-
-        try {
-          Thread.sleep(MyriaConstants.SHORT_WAITING_INTERVAL_100_MS);
-        } catch (InterruptedException e) {
-          JVMUtils.shutdownVM();
-        }
-
-        for (final Thread t : nonSystemThreads.keySet()) {
-          if (addToMap(waitedForMS, t, MyriaConstants.SHORT_WAITING_INTERVAL_100_MS) > WAIT_MAXIMUM_MS) {
-            waitedForMS.put(t, 0);
-            if (addToMap(interruptTimes, t, 1) > MAX_INTERRUPT_TIMES) {
-              if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Thread {} have been interrupted for {} times. Kill it directly.", t, getFromMap(
-                    interruptTimes, t) - 1);
-              }
-              abandonThreads.add(t);
-            } else {
-              if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Waited Thread {} to finish for {} seconds. I'll try interrupting it.", t,
-                    TimeUnit.MILLISECONDS.toSeconds(WAIT_MAXIMUM_MS) * getFromMap(interruptTimes, t));
-              }
-              t.interrupt();
-            }
           }
         }
       }
@@ -460,10 +340,10 @@ public final class Worker {
    * */
   private static HashMap<String, Object> processArgs(final String[] args) {
     HashMap<String, Object> options = new HashMap<String, Object>();
-    if (args.length > 2) {
-      LOGGER.warn("Invalid number of arguments.\n" + USAGE);
-      JVMUtils.shutdownVM();
-    }
+    // if (args.length > 2) {
+    // LOGGER.warn("Invalid number of arguments.\n" + USAGE);
+    // JVMUtils.shutdownVM();
+    // }
 
     String workingDirTmp = System.getProperty("user.dir");
     if (args.length >= 2) {
@@ -500,8 +380,61 @@ public final class Worker {
         }
       }
     });
+    Runtime.getRuntime().addShutdownHook(new Thread() {
+      @Override
+      public void run() {
+        systemCleanup();
+      }
+    });
 
     mainThreadGroup = Thread.currentThread().getThreadGroup();
+  }
+
+  /**
+   * A file lock hold by a worker process throughout its lifetime to make sure no other worker instances start.
+   */
+  private static volatile FileLock workerInstanceLock;
+
+  /**
+   * @param cmdlineOptions command line options
+   * @return if a worker instance using the same working directory is already running
+   */
+  private static boolean workerExists(final HashMap<String, Object> cmdlineOptions) {
+    final String workingDir = (String) cmdlineOptions.get("workingDir");
+    File file = new File(workingDir + "/workerInstance.lock");
+    file.deleteOnExit();
+    try {
+      @SuppressWarnings("resource")
+      RandomAccessFile raf = new RandomAccessFile(file, "rw");
+      workerInstanceLock = raf.getChannel().tryLock();
+    } catch (Throwable e) {
+      LOGGER.error("Error in locking worker instance lock", e);
+      return true;
+    }
+    return workerInstanceLock == null;
+  }
+
+  /**
+   * Cleanup system resources.
+   */
+  private static void systemCleanup() {
+    Throwable err = null;
+    if (workerInstanceLock != null) {
+      try {
+        workerInstanceLock.release();
+      } catch (Throwable t) {
+        err = t;
+      } finally {
+        try {
+          workerInstanceLock.channel().close();
+        } catch (Throwable t) {
+          err = t;
+        }
+      }
+    }
+    if (err != null) {
+      LOGGER.error("Error in system cleanup: ", err);
+    }
   }
 
   /**
@@ -549,6 +482,9 @@ public final class Worker {
   public static void main(final String[] args) {
     try {
       HashMap<String, Object> cmdlineOptions = processArgs(args);
+      if (workerExists(cmdlineOptions)) {
+        throw new Exception("Another worker instance with the same configurations already running. Exit directly.");
+      }
       systemSetup(cmdlineOptions);
       bootupWorker(cmdlineOptions);
     } catch (Throwable e) {
@@ -762,38 +698,38 @@ public final class Worker {
    * 
    */
   void shutdown() {
-    try {
-      if (LOGGER.isInfoEnabled()) {
-        LOGGER.info("Shutdown requested. Please wait when cleaning up...");
-      }
+    if (LOGGER.isInfoEnabled()) {
+      LOGGER.info("Shutdown requested. Please wait when cleaning up...");
+    }
 
-      if (!connectionPool.isShutdown()) {
-        if (!abruptShutdown) {
-          connectionPool.shutdown();
-        } else {
-          connectionPool.shutdownNow();
-        }
-      }
-      connectionPool.releaseExternalResources();
+    for (WorkerQueryPartition p : activeQueries.values()) {
+      p.kill();
+    }
 
-      if (pipelineExecutor != null && !pipelineExecutor.isShutdown()) {
-        pipelineExecutor.shutdown();
+    if (!connectionPool.isShutdown()) {
+      if (!abruptShutdown) {
+        connectionPool.shutdown();
+      } else {
+        connectionPool.shutdownNow();
       }
+    }
+    connectionPool.releaseExternalResources();
 
-      if (LOGGER.isInfoEnabled()) {
-        LOGGER.info("shutdown IPC completed");
-      }
-      // must use shutdownNow here because the query queue processor and the control message processor are both
-      // blocking.
-      // We have to interrupt them at shutdown.
-      messageProcessingExecutor.shutdownNow();
-      queryExecutor.shutdown();
-      scheduledTaskExecutor.shutdown();
-      if (LOGGER.isInfoEnabled()) {
-        LOGGER.info("Worker #" + myID + " shutdown completed");
-      }
-    } finally {
-      new Thread(mainThreadGroup, new ShutdownThreadCleaner(), "ShutdownThreadCleaner").start();
+    if (pipelineExecutor != null && !pipelineExecutor.isShutdown()) {
+      pipelineExecutor.shutdown();
+    }
+
+    if (LOGGER.isInfoEnabled()) {
+      LOGGER.info("shutdown IPC completed");
+    }
+    // must use shutdownNow here because the query queue processor and the control message processor are both
+    // blocking.
+    // We have to interrupt them at shutdown.
+    messageProcessingExecutor.shutdownNow();
+    queryExecutor.shutdown();
+    scheduledTaskExecutor.shutdown();
+    if (LOGGER.isInfoEnabled()) {
+      LOGGER.info("Worker #" + myID + " shutdown completed");
     }
   }
 
@@ -806,7 +742,7 @@ public final class Worker {
     ExecutorService bossExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("IPC boss"));
     ExecutorService workerExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("IPC worker"));
     pipelineExecutor =
-        new OrderedMemoryAwareThreadPoolExecutor(3, 5 * MyriaConstants.MB, 5 * MyriaConstants.MB,
+        new OrderedMemoryAwareThreadPoolExecutor(3, 5 * MyriaConstants.MB, 0,
             MyriaConstants.THREAD_POOL_KEEP_ALIVE_TIME_IN_MS, TimeUnit.MILLISECONDS, new RenamingThreadFactory(
                 "Pipeline executor"));
 
@@ -847,7 +783,7 @@ public final class Worker {
     // Periodically detect if the server (i.e., coordinator)
     // is still running. IF the server goes down, the
     // worker will stop itself
-    scheduledTaskExecutor = Executors.newScheduledThreadPool(2, new TimerTaskThreadFactory("Worker global timer"));
+    scheduledTaskExecutor = Executors.newScheduledThreadPool(2, new RenamingThreadFactory("Worker global timer"));
     scheduledTaskExecutor.scheduleAtFixedRate(new ShutdownChecker(), MyriaConstants.WORKER_SHUTDOWN_CHECKER_INTERVAL,
         MyriaConstants.WORKER_SHUTDOWN_CHECKER_INTERVAL, TimeUnit.MILLISECONDS);
     scheduledTaskExecutor.scheduleAtFixedRate(new HeartbeatReporter(), 0, MyriaConstants.HEARTBEAT_INTERVAL,
