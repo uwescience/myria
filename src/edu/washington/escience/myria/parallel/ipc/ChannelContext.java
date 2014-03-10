@@ -1,11 +1,15 @@
 package edu.washington.escience.myria.parallel.ipc;
 
+import java.nio.channels.ClosedChannelException;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelException;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.MessageEvent;
@@ -13,8 +17,12 @@ import org.jboss.netty.channel.group.ChannelGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import edu.washington.escience.myria.parallel.ipc.IPCMessage.Meta.CONNECT;
 import edu.washington.escience.myria.util.AttachmentableAdapter;
 import edu.washington.escience.myria.util.IPCUtils;
+import edu.washington.escience.myria.util.concurrent.DefaultOperationFuture;
+import edu.washington.escience.myria.util.concurrent.OperationFuture;
+import edu.washington.escience.myria.util.concurrent.OperationFutureListener;
 import edu.washington.escience.myria.util.concurrent.ThreadStackDump;
 
 /**
@@ -146,11 +154,6 @@ class ChannelContext extends AttachmentableAdapter {
             }
             connected = false;
             unregisteredNewChannels.remove(ownerChannel);
-
-            synchronized (channelRegisterLock) {
-              channelRegisterLock.notifyAll();
-            }
-
           } else {
             return false;
           }
@@ -418,14 +421,10 @@ class ChannelContext extends AttachmentableAdapter {
   private volatile Integer remoteReplyID = null;
 
   /**
-   * The lock for remote ID reply condition.
+   * For channels initiated by this IPC entity, the registration process is that this IPC entity creates a connection,
+   * send my IPC ID, and wait for the remote IPC entity sending back its IPC ID within a timeout.
    * */
-  private final Object remoteReplyLock = new Object();
-
-  /**
-   * The lock for channel registration condition.
-   * */
-  private final Object channelRegisterLock = new Object();
+  private final DefaultOperationFuture remoteReply;
 
   /**
    * last IO timestamp. 0 or negative means the channel is connected by not used. If the channel is assigned to do some
@@ -493,6 +492,7 @@ class ChannelContext extends AttachmentableAdapter {
     registeredContext = null;
     registerConditionFutures = new HashSet<EqualityCloseFuture<Integer>>();
     delayedEvents = new ConcurrentLinkedQueue<DelayedTransitionEvent>();
+    remoteReply = new DefaultOperationFuture(false);
   }
 
   /**
@@ -544,7 +544,7 @@ class ChannelContext extends AttachmentableAdapter {
   }
 
   /**
-   * Any error encoutered, cleanup state, close the channel directly.
+   * Any error encountered, cleanup state, close the channel directly.
    * 
    * @param unregisteredNewChannels Set of new channels who have not identified there worker IDs yet (i.e. not
    *          registered).
@@ -553,10 +553,11 @@ class ChannelContext extends AttachmentableAdapter {
    * @param channelPool the channel pool in which the channel resides. may be null if the channel is not registered yet
    * @param recycleBin channel recycle bin. The place where currently-unused-but-waiting-for-possible-reuse channels
    *          reside.
+   * @param cause the error
    */
   final void errorEncountered(final ConcurrentHashMap<Channel, Channel> unregisteredNewChannels,
       final ConcurrentHashMap<Channel, Channel> recycleBin, final ChannelGroup trashBin,
-      final ChannelPrioritySet channelPool) {
+      final ChannelPrioritySet channelPool, final Throwable cause) {
     synchronized (stateMachineLock) {
       if (connected) {
         unregisteredNewChannels.remove(ownerChannel);
@@ -573,13 +574,7 @@ class ChannelContext extends AttachmentableAdapter {
         newConnection = false;
         closeRequested = false;
         if (ownerChannel.getParent() == null) {
-          synchronized (channelRegisterLock) {
-            channelRegisterLock.notifyAll();
-          }
-
-          synchronized (remoteReplyLock) {
-            remoteReplyLock.notifyAll();
-          }
+          remoteReply.setFailure(cause);
         }
       }
     }
@@ -625,12 +620,8 @@ class ChannelContext extends AttachmentableAdapter {
         closeRequested = false;
 
         if (ownerChannel.getParent() == null) {
-          synchronized (channelRegisterLock) {
-            channelRegisterLock.notifyAll();
-          }
-          synchronized (remoteReplyLock) {
-            remoteReplyLock.notifyAll();
-          }
+          remoteReply.setFailure(new ChannelException("Channel " + ownerChannel + " closed",
+              new ClosedChannelException()));
         }
 
       }
@@ -944,9 +935,7 @@ class ChannelContext extends AttachmentableAdapter {
         unregisteredNewChannels.remove(ownerChannel);
         inTrashBin = true;
         trashBin.add(ownerChannel);
-        synchronized (channelRegisterLock) {
-          channelRegisterLock.notifyAll();
-        }
+        remoteReply.setFailure(new ChannelException(new IllegalStateException("Remote removed")));
         synchronized (stateMachineLock) {
           for (final EqualityCloseFuture<Integer> ecf : registerConditionFutures) {
             ecf.setActual(remoteID);
@@ -993,9 +982,6 @@ class ChannelContext extends AttachmentableAdapter {
         registeredContext.incReference();
         channelPool.add(ownerChannel);
         unregisteredNewChannels.remove(ownerChannel);
-        synchronized (channelRegisterLock) {
-          channelRegisterLock.notifyAll();
-        }
         synchronized (stateMachineLock) {
           for (final EqualityCloseFuture<Integer> ecf : registerConditionFutures) {
             ecf.setActual(remoteID);
@@ -1057,18 +1043,7 @@ class ChannelContext extends AttachmentableAdapter {
    * */
   final void setRemoteReplyID(final int remoteID) {
     remoteReplyID = remoteID;
-    synchronized (remoteReplyLock) {
-      remoteReplyLock.notifyAll();
-    }
-    synchronized (channelRegisterLock) {
-      while (newConnection) {
-        try {
-          channelRegisterLock.wait();
-        } catch (final InterruptedException e) {
-          Thread.currentThread().interrupt();
-        }
-      }
-    }
+    remoteReply.setSuccess();
   }
 
   /**
@@ -1087,16 +1062,58 @@ class ChannelContext extends AttachmentableAdapter {
    * @param timeoutInMillis the time out
    * @return true if remote replied in time.
    * */
-  final boolean waitForRemoteReply(final long timeoutInMillis) {
-    if (remoteReplyID == null) {
-      synchronized (remoteReplyLock) {
-        try {
-          remoteReplyLock.wait(timeoutInMillis);
-        } catch (final InterruptedException e) {
-          Thread.currentThread().interrupt();
+  private boolean waitForRemoteReply(final long timeoutInMillis) {
+    if (!remoteReply.isDone()) {
+      try {
+        if (!remoteReply.await(timeoutInMillis, TimeUnit.MILLISECONDS)) {
+          remoteReply.setFailure(new ChannelException(new TimeoutException()));
         }
+      } catch (final InterruptedException e) {
+        remoteReply.setFailure(e);
+        Thread.currentThread().interrupt();
+      } catch (Throwable ee) {
+        remoteReply.setFailure(ee);
       }
     }
-    return remoteReplyID != null;
+    return remoteReply.isSuccess();
+  }
+
+  /**
+   * Do remote channel register
+   * 
+   * For channels initiated by this IPC entity, the registration process is that this IPC entity creates a connection,
+   * send my IPC ID, and wait for the remote IPC entity sending back its IPC ID within a timeout.
+   * 
+   * @param myIDMsg the msg encoding my IPC ID to send to remote
+   * @param remoteID the remote IPC ID
+   * @param timeoutMS timeout in milliseconds
+   * @param registeredChannels registered channels
+   * @param unregisteredNewChannels unregistered channels
+   * @throws ChannelException if the remote channel registration fails
+   */
+  final void awaitRemoteRegister(final CONNECT myIDMsg, final int remoteID, final long timeoutMS,
+      final ChannelPrioritySet registeredChannels, final ConcurrentHashMap<Channel, Channel> unregisteredNewChannels)
+      throws ChannelException {
+    remoteReply.addPreListener(new OperationFutureListener() {
+
+      @Override
+      public void operationComplete(final OperationFuture future) throws Exception {
+        if (remoteReplyID == null || remoteID != remoteReplyID) {
+          idCheckingTimeout(unregisteredNewChannels);
+        } else {
+          registerNormal(remoteID, registeredChannels, unregisteredNewChannels);
+        }
+      }
+    });
+    ownerChannel.write(myIDMsg);
+
+    if (!waitForRemoteReply(timeoutMS)) {
+      throw new ChannelException("ID checking timeout, failed to get the remote ID", remoteReply.getCause());
+    }
+
+    if (remoteReplyID == null || remoteID != remoteReplyID) {
+      throw new ChannelException("ID checking timeout, remote ID doesn't match");
+    }
+
   }
 }
