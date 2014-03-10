@@ -2,7 +2,7 @@ package edu.washington.escience.myria.api.encoding;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import javax.ws.rs.core.Response.Status;
@@ -26,7 +26,7 @@ public abstract class MyriaApiEncoding {
   @JsonIgnore
   private final List<String> getRequiredFields() {
     Field[] fs = this.getClass().getFields();
-    List<String> requiredFields = new ArrayList<String>(5);
+    List<String> requiredFields = new LinkedList<>();
     for (Field f : fs) {
       Annotation a = f.getAnnotation(Required.class);
       if (a != null) {
@@ -80,10 +80,4 @@ public abstract class MyriaApiEncoding {
   protected void validateExtra() throws MyriaApiException {
   }
 
-  public static void main(String[] args) {
-    List<String> rf = ((MyriaApiEncoding) (new FileScanEncoding())).getRequiredFields();
-    for (String r : rf) {
-      System.out.println(r);
-    }
-  }
 }
