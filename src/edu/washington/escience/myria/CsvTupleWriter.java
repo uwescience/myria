@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.List;
 
+import org.supercsv.encoder.DefaultCsvEncoder;
 import org.supercsv.io.CsvListWriter;
 import org.supercsv.prefs.CsvPreference;
 
@@ -47,7 +48,7 @@ public class CsvTupleWriter implements TupleWriter {
   public CsvTupleWriter(final char separator, final OutputStream out) {
     final CsvPreference separatorPreference =
         new CsvPreference.Builder(Character.toChars(CsvPreference.STANDARD_PREFERENCE.getQuoteChar())[0], separator,
-            CsvPreference.STANDARD_PREFERENCE.getEndOfLineSymbols()).build();
+            CsvPreference.STANDARD_PREFERENCE.getEndOfLineSymbols()).useEncoder(new DefaultCsvEncoder()).build();
     csvWriter = new CsvListWriter(new BufferedWriter(new OutputStreamWriter(out)), separatorPreference);
   }
 
