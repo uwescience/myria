@@ -1520,8 +1520,7 @@ public final class Server {
 
     /* Construct the workers' {@link SingleQueryPlanWithArgs}. */
     SingleQueryPlanWithArgs workerPlan = new SingleQueryPlanWithArgs(producer);
-    Map<Integer, SingleQueryPlanWithArgs> workerPlans =
-        new HashMap<Integer, SingleQueryPlanWithArgs>(actualWorkers.size());
+    Map<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<>(actualWorkers.size());
     for (Integer worker : actualWorkers) {
       workerPlans.put(worker, workerPlan);
     }
@@ -1596,8 +1595,7 @@ public final class Server {
 
     /* Construct the workers' {@link SingleQueryPlanWithArgs}. */
     SingleQueryPlanWithArgs workerPlan = new SingleQueryPlanWithArgs(producer);
-    Map<Integer, SingleQueryPlanWithArgs> workerPlans =
-        new HashMap<Integer, SingleQueryPlanWithArgs>(actualWorkers.size());
+    Map<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<>(actualWorkers.size());
     for (Integer worker : actualWorkers) {
       workerPlans.put(worker, workerPlan);
     }
