@@ -54,13 +54,7 @@ public class CsvTupleWriter implements TupleWriter {
   @Override
   public void writeColumnHeaders(final List<String> columnNames) throws IOException {
     /* Begin by writing out the column names */
-    final String[] row = new String[columnNames.size()];
-    int headerCol = 0;
-    for (String s : columnNames) {
-      row[headerCol] = s;
-      ++headerCol;
-    }
-    csvWriter.write(row);
+    csvWriter.write(columnNames);
   }
 
   @Override
