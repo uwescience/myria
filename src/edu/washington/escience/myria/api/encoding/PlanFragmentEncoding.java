@@ -17,6 +17,7 @@ public final class PlanFragmentEncoding extends MyriaApiEncoding {
   /** Which workers execute this plan. */
   public List<Integer> workers;
   /** The Operators in this plan fragment. */
+  @Required
   public List<OperatorEncoding<?>> operators;
   /** Index of this fragment. */
   public long fragmentIndex = -1;
@@ -25,11 +26,6 @@ public final class PlanFragmentEncoding extends MyriaApiEncoding {
 
   public void setFragmentIndex(long fragmentIndex) {
     this.fragmentIndex = fragmentIndex;
-  }
-
-  @Override
-  protected List<String> getRequiredFields() {
-    return requiredFields;
   }
 
   @Override

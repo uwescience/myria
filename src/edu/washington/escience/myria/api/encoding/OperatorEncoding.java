@@ -1,13 +1,10 @@
 package edu.washington.escience.myria.api.encoding;
 
-import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.api.MyriaApiException;
 import edu.washington.escience.myria.operator.Operator;
@@ -63,6 +60,7 @@ import edu.washington.escience.myria.parallel.Server;
     @Type(name = "Difference", value = DifferenceEncoding.class) })
 public abstract class OperatorEncoding<T extends Operator> extends MyriaApiEncoding {
 
+  @Required
   public String opName;
 
   /**
@@ -76,14 +74,4 @@ public abstract class OperatorEncoding<T extends Operator> extends MyriaApiEncod
    */
   public abstract T construct(Server server) throws MyriaApiException;
 
-  /**
-   * @return the list of arguments required for this OperatorEncoding.
-   */
-  @JsonIgnore
-  protected abstract List<String> getRequiredArguments();
-
-  @Override
-  protected final List<String> getRequiredFields() {
-    return new ImmutableList.Builder<String>().add("opName").addAll(getRequiredArguments()).build();
-  }
 }

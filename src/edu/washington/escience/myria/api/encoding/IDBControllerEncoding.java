@@ -1,10 +1,8 @@
 package edu.washington.escience.myria.api.encoding;
 
-import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.operator.IDBController;
 import edu.washington.escience.myria.operator.Operator;
@@ -13,20 +11,23 @@ import edu.washington.escience.myria.parallel.Server;
 
 public class IDBControllerEncoding extends OperatorEncoding<IDBController> {
   @JsonProperty
+  @Required
   public Integer argSelfIdbId;
   @JsonProperty
+  @Required
   public String argInitialInput;
   @JsonProperty
+  @Required
   public String argIterationInput;
   @JsonProperty
+  @Required
   public String argEosControllerInput;
 
   private ExchangePairID realControllerOperatorId;
   public Integer realControllerWorkerId;
 
+  @Required
   public StreamingStateEncoding<?> argState;
-  private static final List<String> requiredArguments = ImmutableList.of("argSelfIdbId", "argInitialInput",
-      "argIterationInput", "argEosControllerInput", "argState");
 
   @Override
   public IDBController construct(Server server) {
@@ -38,11 +39,6 @@ public class IDBControllerEncoding extends OperatorEncoding<IDBController> {
   public void connect(Operator current, Map<String, Operator> operators) {
     current.setChildren(new Operator[] {
         operators.get(argInitialInput), operators.get(argIterationInput), operators.get(argEosControllerInput) });
-  }
-
-  @Override
-  protected List<String> getRequiredArguments() {
-    return requiredArguments;
   }
 
   protected void setRealControllerOperatorID(final ExchangePairID realControllerOperatorId) {
