@@ -166,7 +166,8 @@ public class ProfilingLogger {
    * @return the time to record
    */
   private long getTime(final Operator operator) {
-    final long workerStartTimeMillis = operator.getWorkerQueryPartition().getBeginMilliseconds();
+    final WorkerQueryPartition workerQueryPartition = (WorkerQueryPartition) operator.getQueryPartition();
+    final long workerStartTimeMillis = workerQueryPartition.getBeginMilliseconds();
     final long threadStartTimeMillis = operator.getSubTreeTask().getBeginMilliseconds();
     final long startupTimeMillis = threadStartTimeMillis - workerStartTimeMillis;
     Preconditions.checkArgument(startupTimeMillis >= 0);

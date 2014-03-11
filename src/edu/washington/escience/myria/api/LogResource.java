@@ -76,7 +76,7 @@ public final class LogResource {
       @DefaultValue("-1") @QueryParam("fragmentId") final long fragmentId, @Context final UriInfo uriInfo)
       throws DbException {
     if (queryId == null) {
-      throw new WebApplicationException(Response.status(HttpURLConnection.HTTP_BAD_REQUEST).entity("queryId missing ")
+      throw new WebApplicationException(Response.status(HttpURLConnection.HTTP_BAD_REQUEST).entity("queryId missing")
           .build());
     }
     return getLogs(queryId, fragmentId, MyriaConstants.LOG_SENT_RELATION, MyriaConstants.LOG_SENT_SCHEMA);
@@ -141,7 +141,7 @@ public final class LogResource {
   public Response getProfileLogsRoot(@QueryParam("queryId") final Long queryId,
       @QueryParam("fragmentId") final Long fragmentId, @Context final UriInfo uriInfo) throws DbException {
     if (queryId == null) {
-      throw new WebApplicationException(Response.status(HttpURLConnection.HTTP_BAD_REQUEST).entity("queryId missing ")
+      throw new WebApplicationException(Response.status(HttpURLConnection.HTTP_BAD_REQUEST).entity("queryId missing")
           .build());
     }
     if (fragmentId == null) {
