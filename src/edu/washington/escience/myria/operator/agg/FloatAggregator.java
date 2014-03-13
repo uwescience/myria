@@ -1,6 +1,9 @@
 package edu.washington.escience.myria.operator.agg;
 
+import java.util.Objects;
+
 import com.google.common.collect.ImmutableList;
+import com.google.common.math.LongMath;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
@@ -26,10 +29,12 @@ public final class FloatAggregator implements Aggregator<Float> {
    * */
   private final int aggOps;
 
-  /**
-   * min, max and sum, keeps the same data type as the aggregating column.
-   * */
-  private float min, max, sum;
+  /** The minimum value in the aggregated column. */
+  private float min;
+  /** The maximum value in the aggregated column. */
+  private float max;
+  /** The sum of values in the aggregated column. */
+  private double sum;
 
   /** private temp variables for computing stdev. */
   private double sumSquared;
@@ -85,7 +90,7 @@ public final class FloatAggregator implements Aggregator<Float> {
     this.aggOps = aggOps;
     min = Float.MAX_VALUE;
     max = Float.MIN_VALUE;
-    sum = 0.0f;
+    sum = 0.0;
     count = 0;
     sumSquared = 0.0;
     final ImmutableList.Builder<Type> types = ImmutableList.builder();
@@ -103,7 +108,7 @@ public final class FloatAggregator implements Aggregator<Float> {
       names.add("max_" + aFieldName);
     }
     if ((aggOps & Aggregator.AGG_OP_SUM) != 0) {
-      types.add(Type.FLOAT_TYPE);
+      types.add(Type.DOUBLE_TYPE);
       names.add("sum_" + aFieldName);
     }
     if ((aggOps & Aggregator.AGG_OP_AVG) != 0) {
@@ -119,39 +124,51 @@ public final class FloatAggregator implements Aggregator<Float> {
 
   @Override
   public void add(final TupleBatch tup) {
-
     final int numTuples = tup.numTuples();
-    if (numTuples > 0) {
-      count += numTuples;
-      for (int i = 0; i < numTuples; i++) {
-        final float x = tup.getFloat(aColumn, i);
-        sum += x;
-        sumSquared += x * x;
-        if (Float.compare(x, min) < 0) {
-          min = x;
-        }
-        if (Float.compare(x, max) > 0) {
-          max = x;
-        }
-        // computing the standard deviation
-      }
+    if (numTuples == 0) {
+      return;
+    }
+
+    if (AggUtils.needsCount(aggOps)) {
+      count = LongMath.checkedAdd(count, numTuples);
+    }
+
+    if (!AggUtils.needsStats(aggOps)) {
+      return;
+    }
+    for (int i = 0; i < numTuples; i++) {
+      addFloatStats(tup.getFloat(aColumn, i));
+    }
+  }
+
+  /**
+   * Helper function to add value to this aggregator. Note this does NOT update count.
+   * 
+   * @param value the value to be added
+   */
+  private void addFloatStats(final float value) {
+    if (AggUtils.needsSum(aggOps)) {
+      sum += value;
+    }
+    if (AggUtils.needsSumSq(aggOps)) {
+      sumSquared += value * value;
+    }
+    if (AggUtils.needsMin(aggOps)) {
+      min = Math.min(min, value);
+    }
+    if (AggUtils.needsMax(aggOps)) {
+      max = Math.max(max, value);
     }
   }
 
   @Override
   public void add(final Float value) {
-    if (value != null) {
-      count++;
-      // temp variables for stdev streaming computation
-      final float x = value;
-      sum += x;
-      sumSquared += x * x;
-      if (Float.compare(x, min) < 0) {
-        min = x;
-      }
-      if (Float.compare(x, max) > 0) {
-        max = x;
-      }
+    Objects.requireNonNull(value, "value");
+    if (AggUtils.needsCount(aggOps)) {
+      count = LongMath.checkedAdd(count, 1);
+    }
+    if (AggUtils.needsStats(aggOps)) {
+      addFloatStats(value);
     }
   }
 
@@ -186,7 +203,7 @@ public final class FloatAggregator implements Aggregator<Float> {
       idx++;
     }
     if ((aggOps & AGG_OP_SUM) != 0) {
-      buffer.putFloat(idx, sum);
+      buffer.putDouble(idx, sum);
       idx++;
     }
     if ((aggOps & AGG_OP_AVG) != 0) {
@@ -194,7 +211,7 @@ public final class FloatAggregator implements Aggregator<Float> {
       idx++;
     }
     if ((aggOps & AGG_OP_STDEV) != 0) {
-      double stdev = Math.sqrt((sumSquared / count) - ((double) (sum) / count * sum / count));
+      double stdev = Math.sqrt((sumSquared / count) - ((sum) / count * sum / count));
       buffer.putDouble(idx, stdev);
       idx++;
     }
