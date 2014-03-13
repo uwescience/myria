@@ -95,31 +95,47 @@ public final class JdbcAccessMethod extends AccessMethod {
     }
   }
 
+  /**
+   * Helper function to copy data into PostgreSQL using the COPY command.
+   * 
+   * @param relationKey the destination relation
+   * @param tupleBatch the tuples to be inserted.
+   * @throws DbException if there is an error.
+   */
+  private void postgresCopyInsert(final RelationKey relationKey, final TupleBatch tupleBatch) throws DbException {
+    // Use the postgres COPY command which is much faster
+    try {
+      CopyManager cpManager = ((PGConnection) jdbcConnection).getCopyAPI();
+
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      TupleWriter tw = new CsvTupleWriter(',', baos);
+      tw.writeTuples(tupleBatch);
+      tw.done();
+
+      Reader reader = new InputStreamReader(new ByteArrayInputStream(baos.toByteArray()));
+      long inserted =
+          cpManager.copyIn("COPY " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)
+              + " FROM STDIN WITH CSV", reader);
+      Preconditions.checkState(inserted == tupleBatch.numTuples(),
+          "Error: inserted a batch of size %s but only actually inserted %s rows", tupleBatch.numTuples(), inserted);
+    } catch (final SQLException | IOException e) {
+      LOGGER.error(e.getMessage(), e);
+      throw new DbException(e);
+    }
+  }
+
   @Override
   public void tupleBatchInsert(final RelationKey relationKey, final Schema schema, final TupleBatch tupleBatch)
       throws DbException {
     LOGGER.debug("Inserting batch of size {}", tupleBatch.numTuples());
     Objects.requireNonNull(jdbcConnection);
-    if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
-      // Use the postgres COPY command which is much faster
-      try {
-        CopyManager cpManager = ((PGConnection) jdbcConnection).getCopyAPI();
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        TupleWriter tw = new CsvTupleWriter(',', baos);
-        tw.writeTuples(tupleBatch);
-        tw.done();
-
-        Reader reader = new InputStreamReader(new ByteArrayInputStream(baos.toByteArray()));
-        long inserted =
-            cpManager.copyIn("COPY " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)
-                + " FROM STDIN WITH CSV", reader);
-        Preconditions.checkState(inserted == tupleBatch.numTuples(),
-            "Error: inserted a batch of size %s but only actually inserted %s rows", tupleBatch.numTuples(), inserted);
-      } catch (final SQLException | IOException e) {
-        LOGGER.error(e.getMessage(), e);
-        throw new DbException(e);
-      }
+    if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)
+        && !schema.getColumnTypes().contains(Type.FLOAT_TYPE) && !schema.getColumnTypes().contains(Type.DOUBLE_TYPE)) {
+      /*
+       * There are bugs when using the COPY command to store doubles and floats into PostgreSQL. See
+       * uwescience/myria-web#48
+       */
+      postgresCopyInsert(relationKey, tupleBatch);
     } else {
       try {
         /* Set up and execute the query */
