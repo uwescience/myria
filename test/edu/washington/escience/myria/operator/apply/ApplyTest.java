@@ -602,10 +602,10 @@ public class ApplyTest {
       tbb.putString(0, "Foo" + i);
     }
 
-    Expression initializer = new Expression("counter", new ConstantExpression(Type.INT_TYPE, "-1"));
+    Expression initializer = new Expression("counter", new ConstantExpression(Type.LONG_TYPE, "-1"));
     Expression expression = new Expression("index", new StateExpression(0));
     Expression increment =
-        new Expression(new PlusExpression(new StateExpression(0), new ConstantExpression(Type.INT_TYPE, "1")));
+        new Expression(new PlusExpression(new StateExpression(0), new ConstantExpression(Type.LONG_TYPE, "1")));
 
     ImmutableList.Builder<Expression> Initializers = ImmutableList.builder();
     Initializers.add(initializer);
@@ -626,11 +626,11 @@ public class ApplyTest {
       result = apply.nextReady();
       if (result != null) {
         assertEquals(1, result.getSchema().numColumns());
-        assertEquals(Type.INT_TYPE, result.getSchema().getColumnType(0));
+        assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(0));
 
         for (int curI = 0; curI < result.numTuples(); curI++) {
           long i = curI + resultSize;
-          assertEquals(i, result.getInt(0, curI));
+          assertEquals(i, result.getLong(0, curI));
         }
         resultSize += result.numTuples();
       }
