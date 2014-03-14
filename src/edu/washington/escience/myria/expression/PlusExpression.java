@@ -29,11 +29,15 @@ public class PlusExpression extends BinaryExpression {
 
   @Override
   public Type getOutputType(final ExpressionOperatorParameter parameters) {
-    return checkAndReturnDefaultNumericType(parameters);
+    return checkAndReturnUpcastNumericType(parameters);
   }
 
   @Override
   public String getJavaString(final ExpressionOperatorParameter parameters) {
-    return getInfixBinaryString("+", parameters);
+    Type t = getOutputType(parameters);
+    if (t == Type.LONG_TYPE) {
+      return getFunctionCallBinaryString("com.google.common.math.LongMath.checkedAdd", parameters);
+    }
+    return getInfixCastBinaryString("+", t, parameters);
   }
 }

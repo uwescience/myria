@@ -36,7 +36,6 @@ public class DivideExpression extends BinaryExpression {
 
   @Override
   public String getJavaString(final ExpressionOperatorParameter parameters) {
-    return new StringBuilder("(((double)").append(getLeft().getJavaString(parameters)).append(")/").append(
-        getRight().getJavaString(parameters)).append(')').toString();
+    return getInfixCastBinaryString("/", Type.DOUBLE_TYPE, parameters);
   }
 }
