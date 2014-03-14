@@ -96,7 +96,12 @@ public class GenericEvaluator extends Evaluator {
       throws InvocationTargetException {
     Preconditions.checkArgument(evaluator != null,
         "Call compile first or copy the data if it is the same in the input.");
-    evaluator.evaluate(tb, rowIdx, result, state);
+    try {
+      evaluator.evaluate(tb, rowIdx, result, state);
+    } catch (Exception e) {
+      LOGGER.error(getJavaExpression(), e);
+      throw e;
+    }
   }
 
   /**
