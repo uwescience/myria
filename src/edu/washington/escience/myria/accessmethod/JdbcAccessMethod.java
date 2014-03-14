@@ -129,14 +129,26 @@ public final class JdbcAccessMethod extends AccessMethod {
       throws DbException {
     LOGGER.debug("Inserting batch of size {}", tupleBatch.numTuples());
     Objects.requireNonNull(jdbcConnection);
-    if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)
-        && !schema.getColumnTypes().contains(Type.FLOAT_TYPE) && !schema.getColumnTypes().contains(Type.DOUBLE_TYPE)) {
+    boolean writeSucceeds = false;
+    if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
       /*
        * There are bugs when using the COPY command to store doubles and floats into PostgreSQL. See
        * uwescience/myria-web#48
        */
-      postgresCopyInsert(relationKey, tupleBatch);
-    } else {
+      try {
+        postgresCopyInsert(relationKey, tupleBatch);
+        writeSucceeds = true;
+      } catch (DbException e) {
+        LOGGER.error("Error inserting batch via PostgreSQL COPY", e);
+        /*
+         * TODO - should we do a VACUUM now? The bad rows will not be visible to the DB, however, so the write did not
+         * partially happen.
+         * 
+         * http://www.postgresql.org/docs/9.2/static/sql-copy.html
+         */
+      }
+    }
+    if (!writeSucceeds) {
       try {
         /* Set up and execute the query */
         final PreparedStatement statement =
