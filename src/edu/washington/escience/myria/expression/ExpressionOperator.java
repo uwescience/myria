@@ -33,6 +33,7 @@ import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParam
     @Type(name = "AND", value = AndExpression.class), @Type(name = "DIVIDE", value = DivideExpression.class),
     @Type(name = "EQ", value = EqualsExpression.class), @Type(name = "GT", value = GreaterThanExpression.class),
     @Type(name = "GTEQ", value = GreaterThanOrEqualsExpression.class),
+    @Type(name = "IDIVIDE", value = IntDivideExpression.class),
     @Type(name = "LTEQ", value = LessThanOrEqualsExpression.class),
     @Type(name = "LT", value = LessThanExpression.class), @Type(name = "MINUS", value = MinusExpression.class),
     @Type(name = "MODULO", value = ModuloExpression.class), @Type(name = "NEQ", value = NotEqualsExpression.class),

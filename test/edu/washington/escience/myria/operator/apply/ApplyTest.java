@@ -26,6 +26,7 @@ import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.FloorExpression;
 import edu.washington.escience.myria.expression.GreaterThanExpression;
 import edu.washington.escience.myria.expression.GreaterThanOrEqualsExpression;
+import edu.washington.escience.myria.expression.IntDivideExpression;
 import edu.washington.escience.myria.expression.LessThanExpression;
 import edu.washington.escience.myria.expression.LessThanOrEqualsExpression;
 import edu.washington.escience.myria.expression.MinusExpression;
@@ -652,7 +653,7 @@ public class ApplyTest {
         new Expression(new PlusExpression(new StateExpression(0), new ConstantExpression(Type.LONG_TYPE, "1")));
     Expression updateSum = new Expression(new PlusExpression(new StateExpression(1), new VariableExpression(0)));
 
-    Expression avg = new Expression("average", new DivideExpression(new StateExpression(1), new StateExpression(0)));
+    Expression avg = new Expression("average", new IntDivideExpression(new StateExpression(1), new StateExpression(0)));
 
     ImmutableList.Builder<Expression> Initializers = ImmutableList.builder();
     Initializers.add(initializeCounter);
