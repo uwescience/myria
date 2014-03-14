@@ -77,23 +77,6 @@ public abstract class BinaryExpression extends ExpressionOperator {
   }
 
   /**
-   * Returns the infix binary string: "(((" + type + ")" + left + ")" + infix + right + ")". E.g, for
-   * {@link PlusExpression} and {@link Type.LONG_TYPE}, <code>infix</code> is <code>"+"</code> and the output is
-   * "(((long)left)+right)".
-   * 
-   * @param infix the string representation of the Operator
-   * @param type the type that parameters should be cast to
-   * @param parameters parameters that are needed to create the java expression
-   * @return the Java string for this operator.
-   */
-  protected final String getInfixCastBinaryString(final String infix, final Type type,
-      final ExpressionOperatorParameter parameters) {
-    String javaType = type.toJavaType().getName();
-    return new StringBuilder("(((").append(javaType).append(')').append(getLeft().getJavaString(parameters))
-        .append(')').append(infix).append(getRight().getJavaString(parameters)).append(')').toString();
-  }
-
-  /**
    * Returns the object comparison string: right + ".compareTo(" + left + ")" + op + "0". E.g, for
    * {@link EqualsExpression}, <code>op</code> is <code>LIKE</code> and <code>value</code> is <code>0</code>.
    * 
@@ -154,26 +137,6 @@ public abstract class BinaryExpression extends ExpressionOperator {
   protected final Type checkAndReturnDefaultNumericType(final ExpressionOperatorParameter parameters) {
     return checkAndReturnDefaultNumericType(parameters, ImmutableList.of(Type.DOUBLE_TYPE, Type.FLOAT_TYPE,
         Type.LONG_TYPE, Type.INT_TYPE));
-  }
-
-  /**
-   * A function that could be used as the default type checker for a binary expression where both operands must be
-   * numeric. This variant upcasts to the widest variant of primitive types. E.g., int + int -> long. Thus, it can ONLY
-   * return {@link Type.LONG_TYPE} or {@link Type.DOUBLE_TYPE}.
-   * 
-   * @param parameters parameters that are needed to determine the output type
-   * @return the default numeric type, based on the types of the children and Java type precedence.
-   */
-  protected final Type checkAndReturnUpcastNumericType(final ExpressionOperatorParameter parameters) {
-    Type t =
-        checkAndReturnDefaultNumericType(parameters, ImmutableList.of(Type.DOUBLE_TYPE, Type.FLOAT_TYPE,
-            Type.LONG_TYPE, Type.INT_TYPE));
-    if (t == Type.INT_TYPE) {
-      return Type.LONG_TYPE;
-    } else if (t == Type.FLOAT_TYPE) {
-      return Type.DOUBLE_TYPE;
-    }
-    return t;
   }
 
   /**

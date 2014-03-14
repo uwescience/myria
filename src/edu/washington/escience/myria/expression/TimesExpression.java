@@ -29,15 +29,11 @@ public class TimesExpression extends BinaryExpression {
 
   @Override
   public Type getOutputType(final ExpressionOperatorParameter parameters) {
-    return checkAndReturnUpcastNumericType(parameters);
+    return checkAndReturnDefaultNumericType(parameters);
   }
 
   @Override
   public String getJavaString(final ExpressionOperatorParameter parameters) {
-    Type t = getOutputType(parameters);
-    if (t == Type.LONG_TYPE) {
-      return getFunctionCallBinaryString("com.google.common.math.LongMath.checkedMultiply", parameters);
-    }
-    return getInfixCastBinaryString("*", t, parameters);
+    return getInfixBinaryString("*", parameters);
   }
 }
