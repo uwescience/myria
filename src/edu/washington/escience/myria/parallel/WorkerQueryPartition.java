@@ -126,6 +126,7 @@ public class WorkerQueryPartition implements QueryPartition {
 
       if (currentNumFinished >= tasks.size()) {
         queryStatistics.markQueryEnd();
+        System.gc();
         if (LOGGER.isInfoEnabled()) {
           LOGGER.info("Query #" + queryID + " executed for "
               + DateTimeUtils.nanoElapseToHumanReadable(queryStatistics.getQueryExecutionElapse()));

@@ -128,6 +128,12 @@ public class MasterQueryPartition implements QueryPartition {
           }
         }
       });
+      workerCompleteQuery.addListener(new QueryFutureListener() {
+        @Override
+        public void operationComplete(final QueryFuture future) throws Exception {
+          System.gc();
+        }
+      });
     }
 
     /**
