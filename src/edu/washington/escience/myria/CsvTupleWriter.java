@@ -35,7 +35,9 @@ public class CsvTupleWriter implements TupleWriter {
    * @param out the {@link OutputStream} to which the data will be written.
    */
   public CsvTupleWriter(final OutputStream out) {
-    csvWriter = new CsvListWriter(new BufferedWriter(new OutputStreamWriter(out)), CsvPreference.STANDARD_PREFERENCE);
+    final CsvPreference pref =
+        new CsvPreference.Builder(CsvPreference.STANDARD_PREFERENCE).useEncoder(new DefaultCsvEncoder()).build();
+    csvWriter = new CsvListWriter(new BufferedWriter(new OutputStreamWriter(out)), pref);
   }
 
   /**
