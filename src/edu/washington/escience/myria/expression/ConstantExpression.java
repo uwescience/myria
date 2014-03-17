@@ -36,11 +36,61 @@ public class ConstantExpression extends ZeroaryExpression {
 
   /**
    * @param type the type of this object.
-   * @param value the value of this object.
+   * @param value the value of this constant.
    */
   public ConstantExpression(final Type type, final String value) {
     valueType = type;
     this.value = value;
+  }
+
+  /**
+   * Construct integer constant.
+   * 
+   * @param value the value of this constant.
+   */
+  public ConstantExpression(final int value) {
+    valueType = Type.INT_TYPE;
+    this.value = String.valueOf(value);
+  }
+
+  /**
+   * Construct long constant.
+   * 
+   * @param value the value of this constant.
+   */
+  public ConstantExpression(final long value) {
+    valueType = Type.LONG_TYPE;
+    this.value = String.valueOf(value);
+  }
+
+  /**
+   * Construct float constant.
+   * 
+   * @param value the value of this constant.
+   */
+  public ConstantExpression(final float value) {
+    valueType = Type.FLOAT_TYPE;
+    this.value = String.valueOf(value) + "f";
+  }
+
+  /**
+   * Construct double constant.
+   * 
+   * @param value the value of this constant.
+   */
+  public ConstantExpression(final double value) {
+    valueType = Type.DOUBLE_TYPE;
+    this.value = String.valueOf(value);
+  }
+
+  /**
+   * Construct boolean constant.
+   * 
+   * @param value the value of this constant.
+   */
+  public ConstantExpression(final boolean value) {
+    valueType = Type.BOOLEAN_TYPE;
+    this.value = String.valueOf(value);
   }
 
   @Override

@@ -106,7 +106,7 @@ public class ApplyTest {
     {
       // Expression: Math.sqrt(Math.pow(a, 2) + Math.pow(b, 2))
 
-      ExpressionOperator two = new ConstantExpression(Type.INT_TYPE, "2");
+      ExpressionOperator two = new ConstantExpression(2);
       ExpressionOperator pow1 = new PowExpression(vara, two);
       ExpressionOperator pow2 = new PowExpression(varb, two);
 
@@ -155,13 +155,10 @@ public class ApplyTest {
 
       ExpressionOperator angle =
           new DivideExpression(new TimesExpression(vara, new ConstantExpression(Type.DOUBLE_TYPE, "Math.PI")),
-              new ConstantExpression(Type.INT_TYPE, "180"));
-      ExpressionOperator cos =
-          new TimesExpression(new CosExpression(angle), new ConstantExpression(Type.INT_TYPE, "2"));
-      ExpressionOperator sin =
-          new TimesExpression(new SinExpression(angle), new ConstantExpression(Type.INT_TYPE, "3"));
-      ExpressionOperator tan =
-          new TimesExpression(new TanExpression(angle), new ConstantExpression(Type.INT_TYPE, "4"));
+              new ConstantExpression(180));
+      ExpressionOperator cos = new TimesExpression(new CosExpression(angle), new ConstantExpression(2));
+      ExpressionOperator sin = new TimesExpression(new SinExpression(angle), new ConstantExpression(3));
+      ExpressionOperator tan = new TimesExpression(new TanExpression(angle), new ConstantExpression(4));
       ExpressionOperator add = new PlusExpression(new PlusExpression(cos, sin), tan);
 
       Expression expr = new Expression("trig", add);
@@ -172,8 +169,8 @@ public class ApplyTest {
     {
       // Expression: !(false || e && true);
 
-      ExpressionOperator and = new AndExpression(vare, new ConstantExpression(Type.BOOLEAN_TYPE, "true"));
-      ExpressionOperator or = new OrExpression(new ConstantExpression(Type.BOOLEAN_TYPE, "false"), and);
+      ExpressionOperator and = new AndExpression(vare, new ConstantExpression(true));
+      ExpressionOperator or = new OrExpression(new ConstantExpression(false), and);
       ExpressionOperator not = new NotExpression(or);
       Expression expr = new Expression("boolean", not);
 
@@ -192,7 +189,7 @@ public class ApplyTest {
 
     {
       // Expression: (a constant value of 5);
-      Expression expr = new Expression("constant5", new ConstantExpression(Type.INT_TYPE, "5"));
+      Expression expr = new Expression("constant5", new ConstantExpression(5));
 
       GenericEvaluator eval = new ConstantEvaluator(expr, parameters);
       assertTrue(!eval.needsCompiling());
@@ -201,7 +198,7 @@ public class ApplyTest {
 
     {
       // Expression: (a constant value of 5.0 float);
-      Expression expr = new Expression("constant5f", new ConstantExpression(Type.FLOAT_TYPE, "5"));
+      Expression expr = new Expression("constant5f", new ConstantExpression(5.0f));
 
       GenericEvaluator eval = new ConstantEvaluator(expr, parameters);
       assertTrue(!eval.needsCompiling());
@@ -210,7 +207,7 @@ public class ApplyTest {
 
     {
       // Expression: (a constant value of 5.0 double);
-      Expression expr = new Expression("constant5d", new ConstantExpression(Type.DOUBLE_TYPE, "5"));
+      Expression expr = new Expression("constant5d", new ConstantExpression(5d));
 
       GenericEvaluator eval = new ConstantEvaluator(expr, parameters);
       assertTrue(!eval.needsCompiling());
@@ -251,10 +248,11 @@ public class ApplyTest {
       // Nested case
       // Expression: (b % 2 == 0) ? (e: a : b) : c;
       Expression expr =
-          new Expression("nestedconditional", new ConditionalExpression(new EqualsExpression(new ModuloExpression(
-              new VariableExpression(1), new ConstantExpression(Type.INT_TYPE, "2")), new ConstantExpression(
-              Type.INT_TYPE, "0")), new ConditionalExpression(new VariableExpression(4), new VariableExpression(0),
-              new VariableExpression(1)), new VariableExpression(2)));
+          new Expression("nestedconditional",
+              new ConditionalExpression(new EqualsExpression(new ModuloExpression(new VariableExpression(1),
+                  new ConstantExpression(2)), new ConstantExpression(0)), new ConditionalExpression(
+                  new VariableExpression(4), new VariableExpression(0), new VariableExpression(1)),
+                  new VariableExpression(2)));
 
       GenericEvaluator eval = new GenericEvaluator(expr, parameters);
       assertTrue(eval.needsCompiling());
