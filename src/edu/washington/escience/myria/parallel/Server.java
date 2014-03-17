@@ -53,7 +53,13 @@ import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.CatalogMaker;
 import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
+import edu.washington.escience.myria.expression.ConditionalExpression;
+import edu.washington.escience.myria.expression.ConstantExpression;
+import edu.washington.escience.myria.expression.EqualsExpression;
 import edu.washington.escience.myria.expression.Expression;
+import edu.washington.escience.myria.expression.MinusExpression;
+import edu.washington.escience.myria.expression.PlusExpression;
+import edu.washington.escience.myria.expression.StateExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.expression.WorkerIdExpression;
 import edu.washington.escience.myria.operator.Apply;
@@ -65,6 +71,7 @@ import edu.washington.escience.myria.operator.InMemoryOrderBy;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.StatefulApply;
 import edu.washington.escience.myria.parallel.ipc.FlowControlBagInputBuffer;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.IPCMessage;
@@ -1573,8 +1580,8 @@ public final class Server {
    * 
    * @throws DbException if there is an error when accessing profiling logs.
    */
-  public QueryFuture startProfilingRootsLogDataStream(final long queryId, final long fragmentId,
-      final TupleWriter writer) throws DbException {
+  public QueryFuture startHistorgramDataStream(final long queryId, final long fragmentId, final TupleWriter writer)
+      throws DbException {
     /* Get the relation's schema, to make sure it exists. */
     final QueryStatusEncoding queryStatus;
     try {
@@ -1614,9 +1621,7 @@ public final class Server {
       emitExpressions.add(new Expression(schema.getColumnName(column), copy));
     }
 
-    Apply addWorkerId = new Apply(scan, emitExpressions.build());
-
-    CollectProducer producer = new CollectProducer(addWorkerId, operatorId, MyriaConstants.MASTER_ID);
+    CollectProducer producer = new CollectProducer(scan, operatorId, MyriaConstants.MASTER_ID);
 
     /* Construct the workers' {@link SingleQueryPlanWithArgs}. */
     SingleQueryPlanWithArgs workerPlan = new SingleQueryPlanWithArgs(producer);
@@ -1627,9 +1632,31 @@ public final class Server {
 
     /* Construct the master plan. */
     final CollectConsumer consumer =
-        new CollectConsumer(addWorkerId.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
-    final InMemoryOrderBy order = new InMemoryOrderBy(consumer, new int[] { 1 }, new boolean[] { true });
-    DataOutput output = new DataOutput(order, writer);
+        new CollectConsumer(scan.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
+    final InMemoryOrderBy order = new InMemoryOrderBy(consumer, new int[] { 0 }, new boolean[] { true });
+
+    /* Use stateful apply to build histogram */
+
+    // increment on call, decrement on return, else do nothing
+    Expression conditionalIncrementDecrement =
+        new Expression(new ConditionalExpression(new EqualsExpression(new VariableExpression(1),
+            new ConstantExpression(Type.STRING_TYPE, "call")), new PlusExpression(new StateExpression(0),
+            new ConstantExpression(1)), new ConditionalExpression(new EqualsExpression(new VariableExpression(1),
+            new ConstantExpression(Type.STRING_TYPE, "return")), new MinusExpression(new StateExpression(0),
+            new ConstantExpression(1)), new StateExpression(0))));
+
+    ImmutableList.Builder<Expression> ib = ImmutableList.builder();
+    ib.add(new Expression("numWorkers", new ConstantExpression(0)));
+
+    ImmutableList.Builder<Expression> eb = ImmutableList.builder();
+    eb.add(new Expression("time", new VariableExpression(0)));
+    eb.add(new Expression("numWorkers", new StateExpression(0)));
+
+    ImmutableList.Builder<Expression> ub = ImmutableList.builder();
+    ub.add(conditionalIncrementDecrement);
+
+    final StatefulApply hist = new StatefulApply(order, eb.build(), ib.build(), ub.build());
+    DataOutput output = new DataOutput(hist, writer);
     final SingleQueryPlanWithArgs masterPlan = new SingleQueryPlanWithArgs(output);
 
     /* Submit the plan for the download. */

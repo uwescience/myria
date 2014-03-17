@@ -127,7 +127,7 @@ public final class LogResource {
   }
 
   /**
-   * Get profiling logs of a query for the root operators.
+   * Get the number of workers working on a fragment based on profiling logs of a query for the root operators.
    * 
    * @param queryId query id.
    * @param fragmentId the fragment id.
@@ -137,8 +137,8 @@ public final class LogResource {
    */
   @GET
   @Produces({ MediaType.TEXT_PLAIN })
-  @Path("profilingroots")
-  public Response getProfileLogsRoot(@QueryParam("queryId") final Long queryId,
+  @Path("histogram")
+  public Response getHistogram(@QueryParam("queryId") final Long queryId,
       @QueryParam("fragmentId") final Long fragmentId, @Context final UriInfo uriInfo) throws DbException {
     if (queryId == null) {
       throw new WebApplicationException(Response.status(HttpURLConnection.HTTP_BAD_REQUEST).entity("queryId missing")
@@ -174,7 +174,7 @@ public final class LogResource {
 
     /* Start streaming tuples into the TupleWriter, and through the pipes to the PipedStreamingOutput. */
     try {
-      server.startProfilingRootsLogDataStream(queryId, fragmentId, writer);
+      server.startHistorgramDataStream(queryId, fragmentId, writer);
     } catch (IllegalArgumentException e) {
       throw new MyriaApiException(Status.BAD_REQUEST, e);
     }
