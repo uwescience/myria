@@ -1609,7 +1609,8 @@ public final class Server {
         new DbQueryScan("select nanotime, eventtype  from " + relationKey.toString(getDBMS())
             + " p where opname = (select opname from " + relationKey.toString(getDBMS())
             + " where p.fragmentid=fragmentid and p.queryid=queryid order by nanotime asc limit 1) and fragmentid="
-            + fragmentId + " and queryid=" + queryId + " order by nanotime asc", schema);
+            + fragmentId + " and queryid=" + queryId + " and eventtype IN ('call', 'return') order by nanotime asc",
+            schema);
     final ExchangePairID operatorId = ExchangePairID.newID();
 
     ImmutableList.Builder<Expression> emitExpressions = ImmutableList.builder();
@@ -1641,9 +1642,7 @@ public final class Server {
     Expression conditionalIncrementDecrement =
         new Expression(new ConditionalExpression(new EqualsExpression(new VariableExpression(1),
             new ConstantExpression(Type.STRING_TYPE, "call")), new PlusExpression(new StateExpression(0),
-            new ConstantExpression(1)), new ConditionalExpression(new EqualsExpression(new VariableExpression(1),
-            new ConstantExpression(Type.STRING_TYPE, "return")), new MinusExpression(new StateExpression(0),
-            new ConstantExpression(1)), new StateExpression(0))));
+            new ConstantExpression(1)), new MinusExpression(new StateExpression(0), new ConstantExpression(1))));
 
     ImmutableList.Builder<Expression> ib = ImmutableList.builder();
     ib.add(new Expression("numWorkers", new ConstantExpression(0)));
