@@ -3,6 +3,7 @@ package edu.washington.escience.myria.expression;
 import java.util.Objects;
 
 import org.apache.commons.lang.StringEscapeUtils;
+import org.joda.time.DateTime;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -90,6 +91,16 @@ public class ConstantExpression extends ZeroaryExpression {
    */
   public ConstantExpression(final boolean value) {
     valueType = Type.BOOLEAN_TYPE;
+    this.value = String.valueOf(value);
+  }
+
+  /**
+   * Construct datetime constant.
+   * 
+   * @param value the value of this constant.
+   */
+  public ConstantExpression(final DateTime value) {
+    valueType = Type.DATETIME_TYPE;
     this.value = String.valueOf(value);
   }
 
