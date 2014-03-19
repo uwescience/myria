@@ -48,6 +48,14 @@ public final class MemoryStoreInfo extends ConnectionInfo implements Serializabl
   /**
    * Creates a new JdbcInfo object.
    * 
+   */
+  public MemoryStoreInfo() {
+    memoryTableImpl = TupleBatchTable.class;
+  }
+
+  /**
+   * Creates a new JdbcInfo object.
+   * 
    * @param memoryTableImpl the choice of table implementation.
    */
   public MemoryStoreInfo(final Class<? extends MemoryTable> memoryTableImpl) {

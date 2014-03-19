@@ -8,9 +8,6 @@ import java.util.Objects;
 
 import javax.annotation.concurrent.NotThreadSafe;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
@@ -27,8 +24,6 @@ import edu.washington.escience.myria.memorydb.MemoryStoreInfo;
 @NotThreadSafe
 public final class MemoryStoreAccessMethod extends AccessMethod {
 
-  /** The logger for this class. */
-  private static final Logger LOGGER = LoggerFactory.getLogger(MemoryStoreAccessMethod.class);
   /** The connection information. **/
   private MemoryStoreInfo memoryDBInfo;
   /** Flag that identifies the connection type (read-only or not). **/
