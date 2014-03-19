@@ -1038,7 +1038,7 @@ public final class Server {
     if (!canSubmitQuery()) {
       return null;
     }
-    if (physicalPlan.isProfilingMode() && getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_SQLITE)) {
+    if (physicalPlan.profilingMode && getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_SQLITE)) {
       throw new DbException("Profiling mode is not supported when using SQLite as the storage system.");
     }
     final long queryID = catalog.newQuery(rawQuery, logicalRa, physicalPlan);
@@ -1580,7 +1580,7 @@ public final class Server {
    * 
    * @throws DbException if there is an error when accessing profiling logs.
    */
-  public QueryFuture startHistorgramDataStream(final long queryId, final long fragmentId, final TupleWriter writer)
+  public QueryFuture startHistogramDataStream(final long queryId, final long fragmentId, final TupleWriter writer)
       throws DbException {
     /* Get the relation's schema, to make sure it exists. */
     final QueryStatusEncoding queryStatus;

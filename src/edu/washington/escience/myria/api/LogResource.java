@@ -154,7 +154,7 @@ public final class LogResource {
     TupleWriter writer = new CsvTupleWriter(writerOutput);
 
     try {
-      server.startHistorgramDataStream(queryId, fragmentId, writer);
+      server.startHistogramDataStream(queryId, fragmentId, writer);
     } catch (IllegalArgumentException e) {
       throw new MyriaApiException(Status.BAD_REQUEST, e);
     }
