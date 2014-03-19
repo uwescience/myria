@@ -48,7 +48,7 @@ public final class LogResource {
    * @throws DbException if there is an error in the database.
    */
   @GET
-  @Produces({ MediaType.TEXT_PLAIN })
+  @Produces(MediaType.TEXT_PLAIN)
   @Path("profiling")
   public Response getProfileLogs(@QueryParam("queryId") final Long queryId,
       @DefaultValue("-1") @QueryParam("fragmentId") final long fragmentId, @Context final UriInfo uriInfo)
@@ -70,7 +70,7 @@ public final class LogResource {
    * @throws DbException if there is an error in the database.
    */
   @GET
-  @Produces({ MediaType.TEXT_PLAIN })
+  @Produces(MediaType.TEXT_PLAIN)
   @Path("sent")
   public Response getSentLogs(@QueryParam("queryId") final Long queryId,
       @DefaultValue("-1") @QueryParam("fragmentId") final long fragmentId, @Context final UriInfo uriInfo)
@@ -136,7 +136,7 @@ public final class LogResource {
    * @throws DbException if there is an error in the database.
    */
   @GET
-  @Produces({ MediaType.TEXT_PLAIN })
+  @Produces(MediaType.TEXT_PLAIN)
   @Path("histogram")
   public Response getHistogram(@QueryParam("queryId") final Long queryId,
       @QueryParam("fragmentId") final Long fragmentId, @Context final UriInfo uriInfo) throws DbException {
