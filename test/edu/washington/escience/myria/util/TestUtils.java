@@ -69,8 +69,8 @@ public final class TestUtils {
     }
   }
 
-  public static void assertTupleBagEqual(final HashMap<Tuple, Integer> expectedResult,
-      final HashMap<Tuple, Integer> actualResult) {
+  public static void assertTupleBagEqual(final Map<Tuple, Integer> expectedResult,
+      final Map<Tuple, Integer> actualResult) {
     final StringBuilder errorMessageHolder = new StringBuilder();
     assertEqualsToStringBuilder(errorMessageHolder, "Number of unique tuples", expectedResult.size(), actualResult
         .size());

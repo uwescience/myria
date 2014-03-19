@@ -330,16 +330,7 @@ public class SystemTestBase {
         schema, data);
   }
 
-  protected HashMap<Tuple, Integer> simpleRandomJoinTestBase() throws CatalogException, IOException, DbException {
-    /* worker 1 partition of table1 */
-    createTable(workerIDs[0], JOIN_TEST_TABLE_1, "id long, name varchar(20)");
-    /* worker 1 partition of table2 */
-    createTable(workerIDs[0], JOIN_TEST_TABLE_2, "id long, name varchar(20)");
-    /* worker 2 partition of table1 */
-    createTable(workerIDs[1], JOIN_TEST_TABLE_1, "id long, name varchar(20)");
-    /* worker 2 partition of table2 */
-    createTable(workerIDs[1], JOIN_TEST_TABLE_2, "id long, name varchar(20)");
-
+  protected static TupleBatchBuffer[] simpleRandomJoinTestBaseData() throws CatalogException, IOException, DbException {
     final String[] tbl1NamesWorker1 = TestUtils.randomFixedLengthNumericString(1000, 2000, 2, 20);
     final String[] tbl1NamesWorker2 = TestUtils.randomFixedLengthNumericString(1000, 2000, 2, 20);
     final long[] tbl1IDsWorker1 = TestUtils.randomLong(1000, 2000, 2);
@@ -389,7 +380,26 @@ public class SystemTestBase {
     final TupleBatchBuffer table2 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
     table2.unionAll(tbl2Worker1);
     table2.unionAll(tbl2Worker2);
+    return new TupleBatchBuffer[] { tbl1Worker1, tbl1Worker2, tbl2Worker1, tbl2Worker2, table1, table2 };
+  }
 
+  protected HashMap<Tuple, Integer> simpleRandomJoinTestBase() throws CatalogException, IOException, DbException {
+    /* worker 1 partition of table1 */
+    createTable(workerIDs[0], JOIN_TEST_TABLE_1, "id long, name varchar(20)");
+    /* worker 1 partition of table2 */
+    createTable(workerIDs[0], JOIN_TEST_TABLE_2, "id long, name varchar(20)");
+    /* worker 2 partition of table1 */
+    createTable(workerIDs[1], JOIN_TEST_TABLE_1, "id long, name varchar(20)");
+    /* worker 2 partition of table2 */
+    createTable(workerIDs[1], JOIN_TEST_TABLE_2, "id long, name varchar(20)");
+
+    TupleBatchBuffer[] tbbs = simpleRandomJoinTestBaseData();
+    TupleBatchBuffer tbl1Worker1 = tbbs[0];
+    TupleBatchBuffer tbl1Worker2 = tbbs[1];
+    TupleBatchBuffer tbl2Worker1 = tbbs[2];
+    TupleBatchBuffer tbl2Worker2 = tbbs[3];
+    TupleBatchBuffer table1 = tbbs[4];
+    TupleBatchBuffer table2 = tbbs[5];
     final HashMap<Tuple, Integer> expectedResult = TestUtils.naturalJoin(table1, table2, 0, 0);
 
     TupleBatch tb = null;
@@ -407,31 +417,9 @@ public class SystemTestBase {
     }
 
     return expectedResult;
-
   }
 
-  protected HashMap<Tuple, Integer> simpleFixedJoinTestBase() throws CatalogException, IOException, DbException {
-    createTable(workerIDs[0], JOIN_TEST_TABLE_1, "id long, name varchar(20)"); // worker
-                                                                               // 1
-                                                                               // partition
-                                                                               // of
-    // table1
-    createTable(workerIDs[0], JOIN_TEST_TABLE_2, "id long, name varchar(20)"); // worker
-                                                                               // 1
-                                                                               // partition
-                                                                               // of
-    // table2
-    createTable(workerIDs[1], JOIN_TEST_TABLE_1, "id long, name varchar(20)");// worker
-                                                                              // 2
-                                                                              // partition
-                                                                              // of
-    // table1
-    createTable(workerIDs[1], JOIN_TEST_TABLE_2, "id long, name varchar(20)");// worker
-                                                                              // 2
-                                                                              // partition
-                                                                              // of
-    // table2
-
+  protected static TupleBatchBuffer[] simpleFixedJoinTestBaseData() throws CatalogException, IOException, DbException {
     final String[] tbl1NamesWorker1 = new String[] { "tb1_111", "tb1_222", "tb1_333" };
     final String[] tbl1NamesWorker2 = new String[] { "tb1_444", "tb1_555", "tb1_666" };
     final long[] tbl1IDsWorker1 = new long[] { 111, 222, 333 };
@@ -472,6 +460,23 @@ public class SystemTestBase {
     final TupleBatchBuffer table2 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
     table2.unionAll(tbl2Worker1);
     table2.unionAll(tbl2Worker2);
+
+    return new TupleBatchBuffer[] { tbl1Worker1, tbl1Worker2, tbl2Worker1, tbl2Worker2, table1, table2 };
+  }
+
+  protected HashMap<Tuple, Integer> simpleFixedJoinTestBase() throws CatalogException, IOException, DbException {
+    createTable(workerIDs[0], JOIN_TEST_TABLE_1, "id long, name varchar(20)");
+    createTable(workerIDs[0], JOIN_TEST_TABLE_2, "id long, name varchar(20)");
+    createTable(workerIDs[1], JOIN_TEST_TABLE_1, "id long, name varchar(20)");
+    createTable(workerIDs[1], JOIN_TEST_TABLE_2, "id long, name varchar(20)");
+
+    TupleBatchBuffer[] tbbs = simpleFixedJoinTestBaseData();
+    TupleBatchBuffer tbl1Worker1 = tbbs[0];
+    TupleBatchBuffer tbl1Worker2 = tbbs[1];
+    TupleBatchBuffer tbl2Worker1 = tbbs[2];
+    TupleBatchBuffer tbl2Worker2 = tbbs[3];
+    TupleBatchBuffer table1 = tbbs[4];
+    TupleBatchBuffer table2 = tbbs[5];
 
     final HashMap<Tuple, Integer> expectedResult = TestUtils.naturalJoin(table1, table2, 0, 0);
 
