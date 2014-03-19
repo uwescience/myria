@@ -27,7 +27,7 @@ public final class RelationKey implements Serializable {
   private final String relationName;
 
   /**
-   * This is not really unused, it's used automatically by Jackson deserialization.
+   * This is not really unused, it's used automagically by Jackson deserialization.
    */
   @SuppressWarnings("unused")
   private RelationKey() {
