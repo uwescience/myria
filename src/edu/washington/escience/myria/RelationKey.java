@@ -4,8 +4,6 @@ import java.io.Serializable;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang3.builder.HashCodeBuilder;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
 
@@ -149,11 +147,7 @@ public final class RelationKey implements Serializable {
 
   @Override
   public int hashCode() {
-    HashCodeBuilder hcb = new HashCodeBuilder();
-    hcb.append(programName);
-    hcb.append(relationName);
-    hcb.append(userName);
-    return hcb.toHashCode();
+    return Objects.hash(userName, programName, relationName);
   }
 
   @Override
@@ -162,6 +156,7 @@ public final class RelationKey implements Serializable {
       return false;
     }
     RelationKey o = (RelationKey) other;
-    return programName.equals(o.programName) && relationName.equals(o.relationName) && userName.equals(o.userName);
+    return Objects.equals(userName, o.userName) && Objects.equals(programName, o.programName)
+        && Objects.equals(relationName, o.relationName);
   }
 }
