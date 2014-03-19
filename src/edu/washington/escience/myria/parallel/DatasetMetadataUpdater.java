@@ -82,7 +82,7 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
       Set<Integer> workers = meta.getWorkers();
       Schema schema = meta.getSchema();
       if (catalog.getSchema(relation) == null) {
-        catalog.addRelationMetadata(relation, schema, -1, queryId);
+        catalog.addRelationMetadata(relation, schema, meta.isInMemory(), -1, queryId);
       }
       catalog.addStoredRelation(relation, workers, "unknown");
       LOGGER.debug("Query #{} - adding {} to store shard of {}", queryId, workers, relation
@@ -118,6 +118,7 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
             meta = new RelationMetadata();
             meta.setWorkers(new TreeSet<Integer>());
             ret.put(relationKey, meta);
+            meta.setInMemory(((DbInsert) op).isInsertedIntoMemory());
           }
           meta.getWorkers().add(workerId);
           Schema newSchema = op.getSchema();
@@ -141,12 +142,28 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
     private Set<Integer> workers;
     /** The schema of the relation. */
     private Schema schema;
+    /** If the relation is stored in memory. */
+    private boolean inMemory;
 
     /**
      * @return the workers.
      */
     public Set<Integer> getWorkers() {
       return workers;
+    }
+
+    /**
+     * @return If the dataset in memory.
+     * */
+    public boolean isInMemory() {
+      return inMemory;
+    }
+
+    /**
+     * @param isInMemory if the dataset is in memory.
+     * */
+    public void setInMemory(final boolean isInMemory) {
+      inMemory = isInMemory;
     }
 
     /**

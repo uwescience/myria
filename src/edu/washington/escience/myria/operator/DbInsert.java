@@ -231,4 +231,11 @@ public class DbInsert extends RootOperator {
     return relationKey;
   }
 
+  /**
+   * @return If the insert destination is memory.
+   * */
+  public boolean isInsertedIntoMemory() {
+    return connectionInfo != null && connectionInfo instanceof MemoryStoreInfo;
+  }
+
 }

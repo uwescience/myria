@@ -1222,7 +1222,7 @@ public final class Server {
 
       /* Now that the query has finished, add the metadata about this relation to the dataset. */
       /* TODO(dhalperi) -- figure out how to populate the numTuples column. */
-      catalog.addRelationMetadata(relationKey, schema, -1, qf.getQuery().getQueryID());
+      catalog.addRelationMetadata(relationKey, schema, false, -1, qf.getQuery().getQueryID());
       /* Add the round robin-partitioned shard. */
       catalog.addStoredRelation(relationKey, actualWorkers, "RoundRobin");
     } catch (CatalogException e) {

@@ -87,6 +87,7 @@ public final class MasterCatalog {
     + "    user_name STRING NOT NULL,\n"
     + "    program_name STRING NOT NULL,\n"
     + "    relation_name STRING NOT NULL,\n"
+    + "    in_memory SHORT NOT NULL,\n"
     + "    num_tuples LONG NOT NULL,\n"
     + "    query_id LONG NOT NULL REFERENCES queries(query_id),\n"
     + "    PRIMARY KEY (user_name,program_name,relation_name));";
@@ -357,10 +358,11 @@ public final class MasterCatalog {
    * @param schema the schema of the relation.
    * @param numTuples the number of tuples in the relation.
    * @param queryId the query that created the relation.
+   * @param inMemory if the relation is stored in memory.
    * @throws CatalogException if the relation is already in the catalog or there is an error in the database.
    */
-  public void addRelationMetadata(final RelationKey relation, final Schema schema, final long numTuples,
-      final long queryId) throws CatalogException {
+  public void addRelationMetadata(final RelationKey relation, final Schema schema, final boolean inMemory,
+      final long numTuples, final long queryId) throws CatalogException {
     Objects.requireNonNull(relation);
     Objects.requireNonNull(schema);
     if (isClosed) {
@@ -379,12 +381,13 @@ public final class MasterCatalog {
             /* First, insert the relation name. */
             SQLiteStatement statement =
                 sqliteConnection
-                    .prepare("INSERT INTO relations (user_name,program_name,relation_name,num_tuples,query_id) VALUES (?,?,?,?,?);");
+                    .prepare("INSERT INTO relations (user_name,program_name,relation_name,in_memory,num_tuples,query_id) VALUES (?,?,?,?,?,?);");
             statement.bind(1, relation.getUserName());
             statement.bind(2, relation.getProgramName());
             statement.bind(3, relation.getRelationName());
-            statement.bind(4, numTuples);
-            statement.bind(5, queryId);
+            statement.bind(4, inMemory ? 1 : 0);
+            statement.bind(5, numTuples);
+            statement.bind(6, queryId);
             statement.stepThrough();
             statement.dispose();
             statement = null;
