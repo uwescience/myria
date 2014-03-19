@@ -3,7 +3,6 @@ package edu.washington.escience.myria.expression;
 import java.util.Objects;
 
 import org.apache.commons.lang.StringEscapeUtils;
-import org.joda.time.DateTime;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -50,8 +49,7 @@ public class ConstantExpression extends ZeroaryExpression {
    * @param value the value of this constant.
    */
   public ConstantExpression(final int value) {
-    valueType = Type.INT_TYPE;
-    this.value = String.valueOf(value);
+    this(Type.INT_TYPE, String.valueOf(value));
   }
 
   /**
@@ -60,8 +58,7 @@ public class ConstantExpression extends ZeroaryExpression {
    * @param value the value of this constant.
    */
   public ConstantExpression(final long value) {
-    valueType = Type.LONG_TYPE;
-    this.value = String.valueOf(value);
+    this(Type.LONG_TYPE, String.valueOf(value));
   }
 
   /**
@@ -70,8 +67,7 @@ public class ConstantExpression extends ZeroaryExpression {
    * @param value the value of this constant.
    */
   public ConstantExpression(final float value) {
-    valueType = Type.FLOAT_TYPE;
-    this.value = String.valueOf(value) + "f";
+    this(Type.FLOAT_TYPE, String.valueOf(value) + 'f');
   }
 
   /**
@@ -80,8 +76,7 @@ public class ConstantExpression extends ZeroaryExpression {
    * @param value the value of this constant.
    */
   public ConstantExpression(final double value) {
-    valueType = Type.DOUBLE_TYPE;
-    this.value = String.valueOf(value);
+    this(Type.DOUBLE_TYPE, String.valueOf(value));
   }
 
   /**
@@ -90,18 +85,16 @@ public class ConstantExpression extends ZeroaryExpression {
    * @param value the value of this constant.
    */
   public ConstantExpression(final boolean value) {
-    valueType = Type.BOOLEAN_TYPE;
-    this.value = String.valueOf(value);
+    this(Type.BOOLEAN_TYPE, String.valueOf(value));
   }
 
   /**
-   * Construct datetime constant.
+   * Construct string constant.
    * 
    * @param value the value of this constant.
    */
-  public ConstantExpression(final DateTime value) {
-    valueType = Type.DATETIME_TYPE;
-    this.value = String.valueOf(value);
+  public ConstantExpression(final String value) {
+    this(Type.STRING_TYPE, value);
   }
 
   @Override
