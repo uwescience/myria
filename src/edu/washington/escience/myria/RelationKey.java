@@ -6,6 +6,8 @@ import java.util.regex.Pattern;
 
 import net.jcip.annotations.Immutable;
 
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
 
@@ -30,7 +32,7 @@ public final class RelationKey implements Serializable {
   private final String relationName;
 
   /**
-   * This is not really unused, it's used automagically by Jackson deserialization.
+   * This is not really unused, it's used automatically by Jackson deserialization.
    */
   @SuppressWarnings("unused")
   private RelationKey() {
@@ -147,5 +149,23 @@ public final class RelationKey implements Serializable {
       default:
         throw new IllegalArgumentException("Unsupported dbms " + dbms);
     }
+  }
+
+  @Override
+  public int hashCode() {
+    HashCodeBuilder hcb = new HashCodeBuilder();
+    hcb.append(programName);
+    hcb.append(relationName);
+    hcb.append(userName);
+    return hcb.toHashCode();
+  }
+
+  @Override
+  public boolean equals(final Object other) {
+    if (other == null || !(other instanceof RelationKey)) {
+      return false;
+    }
+    RelationKey o = (RelationKey) other;
+    return programName.equals(o.programName) && relationName.equals(o.relationName) && userName.equals(o.userName);
   }
 }
