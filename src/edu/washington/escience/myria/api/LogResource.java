@@ -54,8 +54,7 @@ public final class LogResource {
       @DefaultValue("-1") @QueryParam("fragmentId") final long fragmentId, @Context final UriInfo uriInfo)
       throws DbException {
     if (queryId == null) {
-      throw new WebApplicationException(Response.status(HttpURLConnection.HTTP_BAD_REQUEST).entity("queryId missing ")
-          .build());
+      throw new MyriaApiException(Status.BAD_REQUEST, "Query ID missing.");
     }
     return getLogs(queryId, fragmentId, MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA);
   }
@@ -92,13 +91,9 @@ public final class LogResource {
    */
   private Response getLogs(final long queryId, final long fragmentId, final RelationKey relationKey, final Schema schema)
       throws DbException {
-    /* Start building the response. */
     ResponseBuilder response = Response.ok();
     response.type(MediaType.TEXT_PLAIN);
-    /*
-     * Allocate the pipes by which the {@link DataOutput} operator will talk to the {@link StreamingOutput} object that
-     * will stream data to the client.
-     */
+
     PipedOutputStream writerOutput = new PipedOutputStream();
     PipedInputStream input;
     try {
@@ -107,22 +102,17 @@ public final class LogResource {
       throw new DbException(e);
     }
 
-    /* Create a {@link PipedStreamingOutput} object that will stream the serialized results to the client. */
     PipedStreamingOutput entity = new PipedStreamingOutput(input);
-    /* .. and make it the entity of the response. */
     response.entity(entity);
 
-    /* Set up the TupleWriter and the Response MediaType based on the format choices. */
     TupleWriter writer = new CsvTupleWriter(writerOutput);
 
-    /* Start streaming tuples into the TupleWriter, and through the pipes to the PipedStreamingOutput. */
     try {
       server.startLogDataStream(queryId, fragmentId, writer, relationKey, schema);
     } catch (IllegalArgumentException e) {
       throw new MyriaApiException(Status.BAD_REQUEST, e);
     }
 
-    /* Yay, worked! Ensure the file has the correct filename. */
     return response.build();
   }
 
@@ -141,21 +131,15 @@ public final class LogResource {
   public Response getHistogram(@QueryParam("queryId") final Long queryId,
       @QueryParam("fragmentId") final Long fragmentId, @Context final UriInfo uriInfo) throws DbException {
     if (queryId == null) {
-      throw new WebApplicationException(Response.status(HttpURLConnection.HTTP_BAD_REQUEST).entity("queryId missing")
-          .build());
+      throw new MyriaApiException(Status.BAD_REQUEST, "Query ID missing.");
     }
     if (fragmentId == null) {
-      throw new WebApplicationException(Response.status(HttpURLConnection.HTTP_BAD_REQUEST)
-          .entity("fragmentId missing").build());
+      throw new MyriaApiException(Status.BAD_REQUEST, "Fragment ID missing.");
     }
 
-    /* Start building the response. */
     ResponseBuilder response = Response.ok();
     response.type(MediaType.TEXT_PLAIN);
-    /*
-     * Allocate the pipes by which the {@link DataOutput} operator will talk to the {@link StreamingOutput} object that
-     * will stream data to the client.
-     */
+
     PipedOutputStream writerOutput = new PipedOutputStream();
     PipedInputStream input;
     try {
@@ -164,22 +148,17 @@ public final class LogResource {
       throw new DbException(e);
     }
 
-    /* Create a {@link PipedStreamingOutput} object that will stream the serialized results to the client. */
     PipedStreamingOutput entity = new PipedStreamingOutput(input);
-    /* .. and make it the entity of the response. */
     response.entity(entity);
 
-    /* Set up the TupleWriter and the Response MediaType based on the format choices. */
     TupleWriter writer = new CsvTupleWriter(writerOutput);
 
-    /* Start streaming tuples into the TupleWriter, and through the pipes to the PipedStreamingOutput. */
     try {
       server.startHistorgramDataStream(queryId, fragmentId, writer);
     } catch (IllegalArgumentException e) {
       throw new MyriaApiException(Status.BAD_REQUEST, e);
     }
 
-    /* Yay, worked! Ensure the file has the correct filename. */
     return response.build();
   }
 }
