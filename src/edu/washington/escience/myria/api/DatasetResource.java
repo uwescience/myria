@@ -301,7 +301,9 @@ public final class DatasetResource {
 
     DatasetStatus status = null;
     try {
-      status = server.ingestDataset(dataset.relationKey, dataset.workers, dataset.indexes, source);
+      status =
+          (DatasetStatus) server.ingestDataset(dataset.relationKey, dataset.workers, dataset.indexes, source)
+              .getAttachment();
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
     }

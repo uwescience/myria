@@ -49,6 +49,7 @@ import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.CatalogMaker;
 import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
+import edu.washington.escience.myria.memorydb.MemoryStoreInfo;
 import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
@@ -1130,7 +1131,7 @@ public final class Server {
   }
 
   /**
-   * Ingest the given dataset.
+   * Ingest the given dataset into memory store.
    * 
    * @param relationKey the name of the dataset.
    * @param workersToIngest restrict the workers to ingest data (null for all)
@@ -1140,8 +1141,42 @@ public final class Server {
    * @throws InterruptedException interrupted
    * @throws DbException if there is an error
    */
-  public DatasetStatus ingestDataset(final RelationKey relationKey, final Set<Integer> workersToIngest,
+  public QueryFuture ingestDatasetMemory(final RelationKey relationKey, final Set<Integer> workersToIngest,
       final List<List<IndexRef>> indexes, final Operator source) throws InterruptedException, DbException {
+    return this.ingestDataset(relationKey, workersToIngest, indexes, source, true);
+  }
+
+  /**
+   * Ingest the given dataset into default data storage.
+   * 
+   * @param relationKey the name of the dataset.
+   * @param workersToIngest restrict the workers to ingest data (null for all)
+   * @param indexes the indexes created.
+   * @param source the source of tuples to be ingested.
+   * @return the status of the ingested dataset.
+   * @throws InterruptedException interrupted
+   * @throws DbException if there is an error
+   */
+  public QueryFuture ingestDataset(final RelationKey relationKey, final Set<Integer> workersToIngest,
+      final List<List<IndexRef>> indexes, final Operator source) throws InterruptedException, DbException {
+    return this.ingestDataset(relationKey, workersToIngest, indexes, source, false);
+  }
+
+  /**
+   * Ingest the given dataset.
+   * 
+   * @param relationKey the name of the dataset.
+   * @param workersToIngest restrict the workers to ingest data (null for all)
+   * @param indexes the indexes created.
+   * @param source the source of tuples to be ingested.
+   * @param toMemory if the dataset is ingested to memory
+   * @return the status of the ingested dataset.
+   * @throws InterruptedException interrupted
+   * @throws DbException if there is an error
+   */
+  private QueryFuture ingestDataset(final RelationKey relationKey, final Set<Integer> workersToIngest,
+      final List<List<IndexRef>> indexes, final Operator source, final boolean toMemory) throws InterruptedException,
+      DbException {
     /* Figure out the workers we will use. If workersToIngest is null, use all active workers. */
     Set<Integer> actualWorkers = workersToIngest;
     if (workersToIngest == null) {
@@ -1158,7 +1193,12 @@ public final class Server {
     /* The workers' plan */
     GenericShuffleConsumer gather =
         new GenericShuffleConsumer(source.getSchema(), scatterId, new int[] { MyriaConstants.MASTER_ID });
-    DbInsert insert = new DbInsert(gather, relationKey, true, indexes);
+    DbInsert insert = null;
+    if (!toMemory) {
+      insert = new DbInsert(gather, relationKey, true, indexes);
+    } else {
+      insert = new DbInsert(gather, relationKey, new MemoryStoreInfo());
+    }
     Map<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
     for (Integer workerId : workersArray) {
       workerPlans.put(workerId, new SingleQueryPlanWithArgs(insert));
@@ -1176,8 +1216,8 @@ public final class Server {
       DatasetStatus status =
           new DatasetStatus(relationKey, source.getSchema(), -1, qf.getQuery().getQueryID(), qf.getQuery()
               .getExecutionStatistics().getEndTime());
-
-      return status;
+      qf.setAttachment(status);
+      return qf;
     } catch (CatalogException e) {
       throw new DbException(e);
     }
