@@ -29,7 +29,6 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.Tuple;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleWriter;
 import edu.washington.escience.myria.Type;
@@ -144,21 +143,6 @@ public final class JdbcAccessMethod extends AccessMethod {
       }
     }
     LOGGER.debug(".. done inserting batch of size {}", tupleBatch.numTuples());
-  }
-
-  @Override
-  public void tupleInsert(final RelationKey relationKey, final Schema schema, final Tuple tuple) throws DbException {
-    try {
-      /* Set up and execute the query */
-      final PreparedStatement statement =
-          jdbcConnection.prepareStatement(insertStatementFromSchema(schema, relationKey));
-      tuple.getIntoJdbc(statement);
-      statement.executeUpdate();
-      statement.close();
-    } catch (final SQLException e) {
-      LOGGER.error(e.getMessage(), e);
-      throw new DbException(e);
-    }
   }
 
   @Override
