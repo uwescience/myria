@@ -20,8 +20,6 @@ import au.com.bytecode.opencsv.CSVWriter;
  * 
  * CSV files should be compatible with Microsoft Excel.
  * 
- * @author dhalperi
- * 
  */
 public class CsvTupleWriter implements TupleWriter {
 
@@ -35,9 +33,7 @@ public class CsvTupleWriter implements TupleWriter {
    * @param out the {@link OutputStream} to which the data will be written.
    */
   public CsvTupleWriter(final OutputStream out) {
-    final CsvPreference pref =
-        new CsvPreference.Builder(CsvPreference.STANDARD_PREFERENCE).useEncoder(new DefaultCsvEncoder()).build();
-    csvWriter = new CsvListWriter(new BufferedWriter(new OutputStreamWriter(out)), pref);
+    this(out, CsvPreference.STANDARD_PREFERENCE);
   }
 
   /**
@@ -48,10 +44,17 @@ public class CsvTupleWriter implements TupleWriter {
    * @param out the {@link OutputStream} to which the data will be written.
    */
   public CsvTupleWriter(final char separator, final OutputStream out) {
-    final CsvPreference separatorPreference =
-        new CsvPreference.Builder(Character.toChars(CsvPreference.STANDARD_PREFERENCE.getQuoteChar())[0], separator,
-            CsvPreference.STANDARD_PREFERENCE.getEndOfLineSymbols()).useEncoder(new DefaultCsvEncoder()).build();
-    csvWriter = new CsvListWriter(new BufferedWriter(new OutputStreamWriter(out)), separatorPreference);
+    this(out, new CsvPreference.Builder(Character.toChars(CsvPreference.STANDARD_PREFERENCE.getQuoteChar())[0],
+        separator, CsvPreference.STANDARD_PREFERENCE.getEndOfLineSymbols()).build());
+  }
+
+  /**
+   * @param out the {@link OutputStream} to which the data will be written.
+   * @param csvPref the CSV preference.
+   */
+  private CsvTupleWriter(final OutputStream out, final CsvPreference csvPref) {
+    final CsvPreference pref = new CsvPreference.Builder(csvPref).useEncoder(new DefaultCsvEncoder()).build();
+    csvWriter = new CsvListWriter(new BufferedWriter(new OutputStreamWriter(out)), pref);
   }
 
   @Override
