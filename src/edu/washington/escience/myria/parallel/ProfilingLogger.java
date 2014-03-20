@@ -4,6 +4,7 @@ import java.io.File;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import scala.NotImplementedError;
@@ -11,12 +12,14 @@ import scala.NotImplementedError;
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.accessmethod.AccessMethod;
+import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.JdbcAccessMethod;
 import edu.washington.escience.myria.accessmethod.SQLiteAccessMethod;
@@ -84,6 +87,9 @@ public class ProfilingLogger {
     accessMethod.createTableIfNotExists(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA);
     accessMethod.createTableIfNotExists(MyriaConstants.LOG_SENT_RELATION, MyriaConstants.LOG_SENT_SCHEMA);
 
+    createProfilingIndexes();
+    createSentIndex();
+
     if (accessMethod instanceof JdbcAccessMethod) {
       connection = ((JdbcAccessMethod) accessMethod).getConnection();
       try {
@@ -93,11 +99,46 @@ public class ProfilingLogger {
       } catch (SQLException e) {
         throw new DbException(e);
       }
-
     } else if (accessMethod instanceof SQLiteAccessMethod) {
       throw new NotImplementedError();
-    } else {
-      throw new NotImplementedError();
+    }
+  }
+
+  /**
+   * @throws DbException if index cannot be created
+   */
+  private void createSentIndex() throws DbException {
+    // query id, fragment index: faster filtering
+    List<String> columnNames = MyriaConstants.LOG_SENT_SCHEMA.getColumnNames();
+
+    ImmutableList.Builder<List<IndexRef>> index = ImmutableList.builder();
+    index.add(ImmutableList.of(IndexRef.of(columnNames.indexOf("queryId")), IndexRef.of(columnNames
+        .indexOf("fragmentId"))));
+
+    try {
+      accessMethod.createIndexes(MyriaConstants.LOG_SENT_RELATION, MyriaConstants.LOG_SENT_SCHEMA, index.build());
+    } catch (DbException e) {
+      LOGGER.info(String.format("Tried to create index for profiling logs: %s", e.getMessage()));
+    }
+  }
+
+  /**
+   * @throws DbException if index cannot be created
+   */
+  private void createProfilingIndexes() throws DbException {
+    // query id, fragment index: faster filtering
+    // operator name index: faster matching with roots
+    List<String> columnNames = MyriaConstants.PROFILING_SCHEMA.getColumnNames();
+
+    ImmutableList.Builder<List<IndexRef>> index = ImmutableList.builder();
+    index.add(ImmutableList.of(IndexRef.of(columnNames.indexOf("queryId")), IndexRef.of(columnNames
+        .indexOf("fragmentId"))));
+    index.add(ImmutableList.of(IndexRef.of(columnNames.indexOf("opName"))));
+
+    try {
+      accessMethod.createIndexes(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA, index.build());
+    } catch (DbException e) {
+      LOGGER.info(String.format("Tried to create index for profiling logs: %s", e.getMessage()));
     }
   }
 
