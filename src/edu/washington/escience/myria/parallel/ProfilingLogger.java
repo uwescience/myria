@@ -170,7 +170,8 @@ public class ProfilingLogger {
     final long workerStartTimeMillis = workerQueryPartition.getBeginMilliseconds();
     final long threadStartTimeMillis = operator.getSubTreeTask().getBeginMilliseconds();
     final long startupTimeMillis = threadStartTimeMillis - workerStartTimeMillis;
-    Preconditions.checkArgument(startupTimeMillis >= 0);
+    Preconditions.checkArgument(startupTimeMillis >= 0,
+        "Thread that works on fragment cannot run before query is initialized.");
     final long threadStartNanos = operator.getSubTreeTask().getBeginNanoseconds();
     final long activeTimeNanos = System.nanoTime() - threadStartNanos;
 
