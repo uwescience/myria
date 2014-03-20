@@ -88,14 +88,14 @@ public class GenericShuffleProducer extends Producer {
 
   @Override
   protected final void consumeTuples(final TupleBatch tup) throws DbException {
-    TupleBatch[] partitions = getTupleBatchPartitions(tup);
+    final TupleBatch[] partitions = getTupleBatchPartitions(tup);
 
     if (isProfilingMode()) {
       for (int partitionIdx = 0; partitionIdx < partitions.length; partitionIdx++) {
         if (partitions[partitionIdx] != null) {
           final int numTuples = partitions[partitionIdx].numTuples();
-          for (int channelIdx = 0; channelIdx < partitionToChannel[partitionIdx].length; channelIdx++) {
-            int destWorkerId = getOutputIDs()[partitionToChannel[partitionIdx][channelIdx]].getRemoteID();
+          for (int channelId : partitionToChannel[partitionIdx]) {
+            final int destWorkerId = getOutputIDs()[channelId].getRemoteID();
             getProfilingLogger().recordSend(this, numTuples, destWorkerId);
           }
         }
