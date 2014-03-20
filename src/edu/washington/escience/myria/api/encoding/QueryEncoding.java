@@ -350,4 +350,12 @@ public class QueryEncoding extends MyriaApiEncoding {
     instantiatedFragments.put(planFragment, fragmentRoot);
     return fragmentRoot;
   }
+
+  public Set<Integer> getWorkers() {
+    ImmutableSet.Builder<Integer> workers = ImmutableSet.builder();
+    for (final PlanFragmentEncoding fragment : fragments) {
+      workers.addAll(fragment.workers);
+    }
+    return workers.build();
+  }
 }

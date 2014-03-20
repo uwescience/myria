@@ -1518,7 +1518,7 @@ public final class Server {
     }
 
     /* Get the workers. */
-    Set<Integer> actualWorkers = getAliveWorkers();
+    Set<Integer> actualWorkers = ((QueryEncoding) queryStatus.physicalPlan).getWorkers();;
 
     String fragmentWhere = "";
     if (fragmentId >= 0) {
@@ -1601,7 +1601,7 @@ public final class Server {
     final RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
 
     /* Get the workers. */
-    Set<Integer> actualWorkers = getAliveWorkers();
+    Set<Integer> actualWorkers = ((QueryEncoding) queryStatus.physicalPlan).getWorkers();
 
     /* Construct the operators that go elsewhere. */
     // TODO: replace this with some kind of query construction
