@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
 
@@ -27,16 +28,6 @@ public final class RelationKey implements Serializable {
   private final String relationName;
 
   /**
-   * This is not really unused, it's used automagically by Jackson deserialization.
-   */
-  @SuppressWarnings("unused")
-  private RelationKey() {
-    userName = null;
-    programName = null;
-    relationName = null;
-  }
-
-  /**
    * Static function to create a RelationKey object.
    * 
    * @param userName the user who owns/creates this relation.
@@ -44,7 +35,9 @@ public final class RelationKey implements Serializable {
    * @param relationName the name of the relation.
    * @return a new RelationKey reference to the specified relation.
    */
-  public static RelationKey of(final String userName, final String programName, final String relationName) {
+  @JsonCreator
+  public static RelationKey of(@JsonProperty("userName") final String userName,
+      @JsonProperty("programName") final String programName, @JsonProperty("relationName") final String relationName) {
     return new RelationKey(userName, programName, relationName);
   }
 
@@ -58,13 +51,14 @@ public final class RelationKey implements Serializable {
    * {@link #VALID_NAME_REGEX}.
    * 
    * @param name the candidate user, program, or relation name.
+   * @param whichName 'user', 'program', or 'relation'.
    * @return the supplied name, if it is valid.
    * @throws IllegalArgumentException if the name does not match the regex {@link #VALID_NAME_REGEX}.
    */
-  private static String checkName(final String name) {
-    Objects.requireNonNull(name);
+  private static String checkName(final String name, final String whichName) {
+    Objects.requireNonNull(name, whichName);
     Preconditions.checkArgument(VALID_NAME_PATTERN.matcher(name).matches(),
-        "supplied name %s does not match the valid name regex %s", name, VALID_NAME_REGEX);
+        "supplied %s %s does not match the valid name regex %s", whichName, name, VALID_NAME_REGEX);
     return name;
   }
 
@@ -76,9 +70,9 @@ public final class RelationKey implements Serializable {
    * @param relationName the name of the relation.
    */
   public RelationKey(final String userName, final String programName, final String relationName) {
-    checkName(userName);
-    checkName(programName);
-    checkName(relationName);
+    checkName(userName, "userName");
+    checkName(programName, "programName");
+    checkName(relationName, "relationName");
     this.userName = userName;
     this.programName = programName;
     this.relationName = relationName;
