@@ -183,7 +183,7 @@ public abstract class Producer extends RootOperator {
   /**
    * @return the outputIDs
    */
-  public StreamIOChannelID[] getOutputIDs() {
+  protected StreamIOChannelID[] getOutputIDs() {
     return outputIDs;
   }
 
