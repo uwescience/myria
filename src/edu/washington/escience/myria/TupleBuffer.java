@@ -8,6 +8,9 @@ import java.util.Objects;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Preconditions;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hasher;
+import com.google.common.hash.Hashing;
 
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.BooleanColumnBuilder;
@@ -27,10 +30,11 @@ import edu.washington.escience.myria.column.mutable.IntMutableColumn;
 import edu.washington.escience.myria.column.mutable.LongMutableColumn;
 import edu.washington.escience.myria.column.mutable.MutableColumn;
 import edu.washington.escience.myria.column.mutable.StringMutableColumn;
+import edu.washington.escience.myria.util.TypeFunnel;
 
 /** A simplified TupleBatchBuffer which supports random access. Designed for hash tables to use. */
 
-public class TupleBuffer implements ReadableTable, Cloneable {
+public class TupleBuffer extends ReadableTable implements Cloneable {
   /** Format of the emitted tuples. */
   private final Schema schema;
   /** Convenience constant; must match schema.numColumns() and currentColumns.size(). */
@@ -45,6 +49,10 @@ public class TupleBuffer implements ReadableTable, Cloneable {
   private int numColumnsReady;
   /** Internal state representing the number of tuples in the in-progress TupleBatch. */
   private int currentInProgressTuples;
+  /** Class-specific magic number used to generate the hash code. */
+  private static final int MAGIC_HASHCODE = 243;
+  /** The hash function for this class. */
+  private static final HashFunction HASH_FUNCTION = Hashing.murmur3_32(MAGIC_HASHCODE);
 
   /**
    * Constructs an empty TupleBuffer to hold tuples matching the specified Schema.
@@ -87,6 +95,35 @@ public class TupleBuffer implements ReadableTable, Cloneable {
     readyTuples.add(buildingColumns);
     currentBuildingColumns = ColumnFactory.allocateColumns(schema).toArray(new ColumnBuilder<?>[] {});
     currentInProgressTuples = 0;
+  }
+
+  /**
+   * 
+   * get hashCode of the data on specific row and columnIdx.
+   * 
+   * @param row the row number of the data
+   * @param columnIdx the column index of the data
+   * @return hashcode
+   */
+  public final int hashCode(final int row, final int columnIdx) {
+    Hasher hasher = HASH_FUNCTION.newHasher();
+    switch (getSchema().getColumnType(columnIdx)) {
+      case INT_TYPE:
+        hasher.putInt(getInt(row, columnIdx));
+      case LONG_TYPE:
+        hasher.putLong(getLong(row, columnIdx));
+      case BOOLEAN_TYPE:
+        hasher.putBoolean(getBoolean(row, columnIdx));
+      case DOUBLE_TYPE:
+        hasher.putDouble(getDouble(row, columnIdx));
+      case FLOAT_TYPE:
+        hasher.putFloat(getFloat(row, columnIdx));
+      case DATETIME_TYPE:
+        hasher.putObject(getDateTime(row, columnIdx), TypeFunnel.INSTANCE);
+      case STRING_TYPE:
+        hasher.putObject(getString(row, columnIdx), TypeFunnel.INSTANCE);
+    }
+    return hasher.hashCode();
   }
 
   @Override
@@ -354,48 +391,6 @@ public class TupleBuffer implements ReadableTable, Cloneable {
         finishBatch();
       }
     }
-  }
-
-  /**
-   * Compare two cells in two TupleBuffers.
-   * 
-   * @param columnInThisTB column index of the cell in this TupleBuffer.
-   * @param rowInThisTB row index of the cell in this TupleBuffer.
-   * @param columnInComparedTB column index of the compared cell in compared TupleBuffer.
-   * @param rowInComparedTB row index of the compared cell in compared TupleBuffer.
-   * @param comparedTB the compared TupleBuffer.
-   * 
-   * @return compared result.
-   */
-  public final int compare(final int columnInThisTB, final int rowInThisTB, final TupleBuffer comparedTB,
-      final int columnInComparedTB, final int rowInComparedTB) {
-    Preconditions.checkArgument(getSchema().getColumnType(columnInThisTB).equals(
-        comparedTB.getSchema().getColumnType(columnInComparedTB)), "The types of comparing cells are not matched.");
-    switch (getSchema().getColumnType(columnInThisTB)) {
-      case BOOLEAN_TYPE:
-        return Type.compareRaw(getBoolean(columnInThisTB, rowInThisTB), comparedTB.getBoolean(columnInComparedTB,
-            rowInComparedTB));
-      case DOUBLE_TYPE:
-        return Type.compareRaw(getDouble(columnInThisTB, rowInThisTB), comparedTB.getDouble(columnInComparedTB,
-            rowInComparedTB));
-      case FLOAT_TYPE:
-        return Type.compareRaw(getFloat(columnInThisTB, rowInThisTB), comparedTB.getFloat(columnInComparedTB,
-            rowInComparedTB));
-      case INT_TYPE:
-        return Type.compareRaw(getInt(columnInThisTB, rowInThisTB), comparedTB.getInt(columnInComparedTB,
-            rowInComparedTB));
-      case LONG_TYPE:
-        return Type.compareRaw(getLong(columnInThisTB, rowInThisTB), comparedTB.getLong(columnInComparedTB,
-            rowInComparedTB));
-      case STRING_TYPE:
-        return Type.compareRaw(getString(columnInThisTB, rowInThisTB), comparedTB.getString(columnInComparedTB,
-            rowInComparedTB));
-      case DATETIME_TYPE:
-        return Type.compareRaw(getDateTime(columnInThisTB, rowInThisTB), comparedTB.getDateTime(columnInComparedTB,
-            rowInComparedTB));
-    }
-
-    throw new IllegalStateException("Invalid type in TupleBuffer.");
   }
 
   /**

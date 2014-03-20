@@ -30,7 +30,7 @@ import edu.washington.escience.myria.util.IPCUtils;
  * 
  */
 @ThreadSafe
-public class TupleBatch implements ReadableTable, Serializable {
+public class TupleBatch extends ReadableTable implements Serializable {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** The hard-coded number of tuples in a batch. */
@@ -583,45 +583,6 @@ public class TupleBatch implements ReadableTable, Serializable {
       }
     }
     return true;
-  }
-
-  /**
-   * Compares two cells from this and another tuple batch.
-   * 
-   * @param columnIdx column to compare
-   * @param rowIdx row in this tb
-   * @param otherColumnIndex the column to compare in the other tb
-   * @param otherTb other tb
-   * @param otherRowIdx row in other tb
-   * @return the result of compare
-   */
-  public int cellCompare(final int columnIdx, final int rowIdx, final ReadableTable otherTb,
-      final int otherColumnIndex, final int otherRowIdx) {
-    Type columnType = schema.getColumnType(columnIdx);
-    switch (columnType) {
-      case INT_TYPE:
-        return Type.compareRaw(getInt(columnIdx, rowIdx), otherTb.getInt(otherColumnIndex, otherRowIdx));
-
-      case FLOAT_TYPE:
-        return Type.compareRaw(getFloat(columnIdx, rowIdx), otherTb.getFloat(otherColumnIndex, otherRowIdx));
-
-      case LONG_TYPE:
-        return Type.compareRaw(getLong(columnIdx, rowIdx), otherTb.getLong(otherColumnIndex, otherRowIdx));
-
-      case DOUBLE_TYPE:
-        return Type.compareRaw(getDouble(columnIdx, rowIdx), otherTb.getDouble(otherColumnIndex, otherRowIdx));
-
-      case BOOLEAN_TYPE:
-        return Type.compareRaw(getBoolean(columnIdx, rowIdx), otherTb.getBoolean(otherColumnIndex, otherRowIdx));
-
-      case STRING_TYPE:
-        return Type.compareRaw(getString(columnIdx, rowIdx), otherTb.getString(otherColumnIndex, otherRowIdx));
-
-      case DATETIME_TYPE:
-        return Type.compareRaw(getDateTime(columnIdx, rowIdx), otherTb.getDateTime(otherColumnIndex, otherRowIdx));
-    }
-
-    throw new IllegalStateException("We should not be here.");
   }
 
   /**
