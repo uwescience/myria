@@ -180,6 +180,13 @@ public abstract class Producer extends RootOperator {
     setBackupBufferAsAppender();
   }
 
+  /**
+   * @return the outputIDs
+   */
+  public StreamIOChannelID[] getOutputIDs() {
+    return outputIDs;
+  }
+
   @SuppressWarnings("unchecked")
   @Override
   public final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {

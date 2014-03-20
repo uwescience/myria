@@ -95,7 +95,7 @@ public class GenericShuffleProducer extends Producer {
         if (partitions[partitionIdx] != null) {
           final int numTuples = partitions[partitionIdx].numTuples();
           for (int channelIdx = 0; channelIdx < partitionToChannel[partitionIdx].length; channelIdx++) {
-            int destWorkerId = partitionToChannel[partitionIdx][channelIdx];
+            int destWorkerId = getOutputIDs()[partitionToChannel[partitionIdx][channelIdx]].getRemoteID();
             getProfilingLogger().recordSend(this, numTuples, destWorkerId);
           }
         }
