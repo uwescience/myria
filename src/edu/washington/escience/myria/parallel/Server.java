@@ -1097,12 +1097,10 @@ public final class Server {
           } else {
             status = Status.SUCCESS;
           }
-          catalog.queryFinished(queryID, startTime, endTime, elapsedNanos, status, message);
-          activeQueries.remove(queryID);
 
           if (future.isSuccess()) {
             if (LOGGER.isInfoEnabled()) {
-              LOGGER.info("The query #{} succeeds. Time elapse: {}.", queryID, DateTimeUtils
+              LOGGER.info("Query #{} succeeded. Time elapsed: {}.", queryID, DateTimeUtils
                   .nanoElapseToHumanReadable(elapsedNanos));
             }
             if (mqp.getRootOperator() instanceof SinkRoot) {
@@ -1111,11 +1109,18 @@ public final class Server {
             // TODO success management.
           } else {
             if (LOGGER.isInfoEnabled()) {
-              LOGGER.info("The query #{} failes. Time elapse: {}. Failure cause is {}.", queryID, DateTimeUtils
+              LOGGER.info("Query #{} failed. Time elapsed: {}. Failure cause is {}.", queryID, DateTimeUtils
                   .nanoElapseToHumanReadable(elapsedNanos), future.getCause());
             }
             // TODO failure management.
           }
+
+          catalog.queryFinished(queryID, startTime, endTime, elapsedNanos, status, message);
+          /*
+           * This should be the last line of code -- the query should not be removed from activeQueries until all the
+           * metadata is up to date.
+           */
+          activeQueries.remove(queryID);
         }
       });
 
