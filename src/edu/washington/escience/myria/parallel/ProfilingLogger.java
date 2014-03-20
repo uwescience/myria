@@ -118,7 +118,7 @@ public class ProfilingLogger {
     try {
       accessMethod.createIndexes(MyriaConstants.LOG_SENT_RELATION, MyriaConstants.LOG_SENT_SCHEMA, index.build());
     } catch (DbException e) {
-      LOGGER.info(String.format("Tried to create index for profiling logs: %s", e.getMessage()));
+      LOGGER.error("Couldn't create index for profiling logs:", e);
     }
   }
 
@@ -138,7 +138,7 @@ public class ProfilingLogger {
     try {
       accessMethod.createIndexes(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA, index.build());
     } catch (DbException e) {
-      LOGGER.info(String.format("Tried to create index for profiling logs: %s", e.getMessage()));
+      LOGGER.error("Couldn't create index for profiling logs:", e);
     }
   }
 
