@@ -421,6 +421,39 @@ public class OperatorTest {
   }
 
   @Test
+  public void testInMemoryOrderBy2() throws DbException {
+    // we had a bug where ordering by certain subsets of the columns caused index out of bound exceptions. in other
+    // cases only the results were wrong.
+    TupleBatchBuffer randomTuples = generateRandomTuples(52300, 5000, false);
+
+    TupleSource child = new TupleSource(randomTuples);
+
+    InMemoryOrderBy order = new InMemoryOrderBy(child, new int[] { 1 }, new boolean[] { false });
+    order.open(null);
+    TupleBatch tb;
+    final ArrayList<String> entries = new ArrayList<String>();
+    while (!order.eos()) {
+      tb = order.nextReady();
+      if (tb != null) {
+        for (int i = 0; i < tb.numTuples(); i++) {
+          entries.add(tb.getString(1, i));
+        }
+      }
+    }
+    order.close();
+
+    assertEquals(52300, entries.size());
+
+    String previous = null;
+    for (String entry : entries) {
+      if (previous != null) {
+        assertTrue(previous.compareTo(entry) >= 0);
+      }
+      previous = entry;
+    }
+  }
+
+  @Test
   public void testOrderByAndMergeJoin() throws DbException {
     final Schema leftSchema =
         new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
