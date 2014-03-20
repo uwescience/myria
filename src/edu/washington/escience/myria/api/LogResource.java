@@ -3,7 +3,6 @@ package edu.washington.escience.myria.api;
 import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
-import java.net.HttpURLConnection;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
@@ -11,7 +10,6 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -75,8 +73,7 @@ public final class LogResource {
       @DefaultValue("-1") @QueryParam("fragmentId") final long fragmentId, @Context final UriInfo uriInfo)
       throws DbException {
     if (queryId == null) {
-      throw new WebApplicationException(Response.status(HttpURLConnection.HTTP_BAD_REQUEST).entity("queryId missing")
-          .build());
+      throw new MyriaApiException(Status.BAD_REQUEST, "Query ID missing.");
     }
     return getLogs(queryId, fragmentId, MyriaConstants.LOG_SENT_RELATION, MyriaConstants.LOG_SENT_SCHEMA);
   }
