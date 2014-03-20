@@ -1,9 +1,6 @@
 package edu.washington.escience.myria;
 
 import java.io.Serializable;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.util.List;
 
 import org.joda.time.DateTime;
@@ -133,39 +130,5 @@ public class Tuple implements Serializable, ReadableTable {
    */
   public void set(final int columnIdx, final Object value) {
     getColumn(columnIdx).appendObject(value);
-  }
-
-  /**
-   * Insert tuple into JDBC database.
-   *
-   * @param statement the JDBC statement
-   * @throws SQLException when setting values in the statement fails
-   */
-  public void getIntoJdbc(final PreparedStatement statement) throws SQLException {
-    for (int column = 0; column < numColumns(); column++) {
-      switch (getSchema().getColumnType(column)) {
-        case BOOLEAN_TYPE:
-          statement.setBoolean(column + 1, getBoolean(column, 0));
-          break;
-        case INT_TYPE:
-          statement.setInt(column + 1, getInt(column, 0));
-          break;
-        case LONG_TYPE:
-          statement.setLong(column + 1, getLong(column, 0));
-          break;
-        case FLOAT_TYPE:
-          statement.setFloat(column + 1, getFloat(column, 0));
-          break;
-        case DOUBLE_TYPE:
-          statement.setDouble(column + 1, getDouble(column, 0));
-          break;
-        case DATETIME_TYPE:
-          statement.setTimestamp(column + 1, new Timestamp(getDateTime(column, 0).getMillis()));
-          break;
-        case STRING_TYPE:
-          statement.setString(column + 1, getString(column, 0));
-          break;
-      }
-    }
   }
 }
