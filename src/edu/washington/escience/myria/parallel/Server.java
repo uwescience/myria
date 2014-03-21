@@ -33,6 +33,7 @@ import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -1458,9 +1459,7 @@ public final class Server {
     } catch (CatalogException e) {
       throw new DbException(e);
     }
-    if (schema == null) {
-      throw new IllegalArgumentException("the requested relation was not found.");
-    }
+    Preconditions.checkArgument(schema != null, "relation %s was not found", relationKey);
 
     /* Get the workers that store it. */
     List<Integer> scanWorkers;
@@ -1515,12 +1514,10 @@ public final class Server {
     } catch (CatalogException e) {
       throw new DbException(e);
     }
-    if (queryStatus == null || queryStatus.status != QueryStatusEncoding.Status.SUCCESS) {
-      throw new IllegalArgumentException("the requested query is was not found or succesfully finished.");
-    }
-    if (!queryStatus.profilingMode) {
-      throw new IllegalArgumentException("the requested query does not have profiling logs.");
-    }
+    Preconditions.checkArgument(queryStatus != null, "query %s not found", queryId);
+    Preconditions.checkArgument(queryStatus.status == QueryStatusEncoding.Status.SUCCESS,
+        "query %s did not succeed (%s)", queryId, queryStatus.status);
+    Preconditions.checkArgument(queryStatus.profilingMode, "query %s was not run with profiling enabled");
 
     /* Get the workers. */
     Set<Integer> actualWorkers = ((QueryEncoding) queryStatus.physicalPlan).getWorkers();;
@@ -1594,12 +1591,10 @@ public final class Server {
     } catch (CatalogException e) {
       throw new DbException(e);
     }
-    if (queryStatus == null || queryStatus.status != QueryStatusEncoding.Status.SUCCESS) {
-      throw new IllegalArgumentException("the requested query is was not found or succesfully finished.");
-    }
-    if (!queryStatus.profilingMode) {
-      throw new IllegalArgumentException("the requested query does not have profiling logs.");
-    }
+    Preconditions.checkArgument(queryStatus != null, "query %s not found", queryId);
+    Preconditions.checkArgument(queryStatus.status == QueryStatusEncoding.Status.SUCCESS,
+        "query %s did not succeed (%s)", queryId, queryStatus.status);
+    Preconditions.checkArgument(queryStatus.profilingMode, "query %s was not run with profiling enabled");
 
     final Schema schema =
         new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("nanoTime", "eventType"));
