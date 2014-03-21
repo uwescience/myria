@@ -153,9 +153,7 @@ public class ProfilingLogger {
       try {
         instance = new ProfilingLogger(execEnvVars);
       } catch (DbException e) {
-        if (LOGGER.isErrorEnabled()) {
-          LOGGER.error("Failed to initialize profiling logger:", e);
-        }
+        LOGGER.error("Failed to initialize profiling logger:", e);
       }
     }
     Preconditions.checkArgument(instance.connectionInfo == (ConnectionInfo) execEnvVars
