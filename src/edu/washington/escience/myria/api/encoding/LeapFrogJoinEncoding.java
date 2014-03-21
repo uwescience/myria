@@ -9,6 +9,7 @@ import edu.washington.escience.myria.parallel.Server;
 public class LeapFrogJoinEncoding extends NaryOperatorEncoding<LeapFrogJoin> {
 
   public List<String> argColumnNames;
+  public Boolean[] indexOnFirst;
   @Required
   public int[][][] joinFieldMapping;
   @Required
@@ -16,6 +17,6 @@ public class LeapFrogJoinEncoding extends NaryOperatorEncoding<LeapFrogJoin> {
 
   @Override
   public LeapFrogJoin construct(Server server) throws MyriaApiException {
-    return new LeapFrogJoin(null, joinFieldMapping, outputFieldMapping, argColumnNames);
+    return new LeapFrogJoin(null, joinFieldMapping, outputFieldMapping, argColumnNames, indexOnFirst);
   }
 }

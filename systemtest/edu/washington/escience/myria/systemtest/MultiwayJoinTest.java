@@ -215,7 +215,9 @@ public class MultiwayJoinTest extends SystemTestBase {
     int[][][] fieldMap = new int[][][] { { { 0, 0 }, { 1, 0 } } };
     int[][] outputMap = new int[][] { { 0, 0 }, { 0, 1 }, { 1, 0 }, { 1, 1 } };
 
-    final LeapFrogJoin localjoin = new LeapFrogJoin(new Operator[] { o1, o2 }, fieldMap, outputMap, outputColumnNames);
+    final LeapFrogJoin localjoin =
+        new LeapFrogJoin(new Operator[] { o1, o2 }, fieldMap, outputMap, outputColumnNames, new Boolean[] {
+            false, false });
     localjoin.getSchema();
     final CollectProducer cp1 = new CollectProducer(localjoin, serverReceiveID, MASTER_ID);
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
@@ -241,5 +243,4 @@ public class MultiwayJoinTest extends SystemTestBase {
     final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
     TestUtils.assertTupleBagEqual(expectedResult, resultBag);
   }
-
 }

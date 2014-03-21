@@ -13,56 +13,56 @@ public abstract class ReadableTable implements TupleTable {
    * @param row the row of the desired value.
    * @return the value in the specified column and row.
    */
-  abstract boolean getBoolean(final int column, final int row);
+  public abstract boolean getBoolean(final int column, final int row);
 
   /**
    * @param column the column of the desired value.
    * @param row the row of the desired value.
    * @return the value in the specified column and row.
    */
-  abstract DateTime getDateTime(final int column, final int row);
+  public abstract DateTime getDateTime(final int column, final int row);
 
   /**
    * @param column the column of the desired value.
    * @param row the row of the desired value.
    * @return the value in the specified column and row.
    */
-  abstract double getDouble(final int column, final int row);
+  public abstract double getDouble(final int column, final int row);
 
   /**
    * @param column the column of the desired value.
    * @param row the row of the desired value.
    * @return the value in the specified column and row.
    */
-  abstract float getFloat(final int column, final int row);
+  public abstract float getFloat(final int column, final int row);
 
   /**
    * @param column the column of the desired value.
    * @param row the row of the desired value.
    * @return the value in the specified column and row.
    */
-  abstract int getInt(final int column, final int row);
+  public abstract int getInt(final int column, final int row);
 
   /**
    * @param column the column of the desired value.
    * @param row the row of the desired value.
    * @return the value in the specified column and row.
    */
-  abstract long getLong(final int column, final int row);
+  public abstract long getLong(final int column, final int row);
 
   /**
    * @param column the column of the desired value.
    * @param row the row of the desired value.
    * @return the value in the specified column and row.
    */
-  abstract Object getObject(final int column, final int row);
+  public abstract Object getObject(final int column, final int row);
 
   /**
    * @param column the column of the desired value.
    * @param row the row of the desired value.
    * @return the value in the specified column and row.
    */
-  abstract String getString(final int column, final int row);
+  public abstract String getString(final int column, final int row);
 
   /**
    * Compare two cells in two ReadableTable.
