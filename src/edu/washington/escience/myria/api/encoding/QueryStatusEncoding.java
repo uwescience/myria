@@ -23,6 +23,7 @@ public class QueryStatusEncoding {
    * @param rawQuery the raw query submitted to the system.
    * @param logicalRa the logical plan of the query.
    * @param physicalPlan the physical execution plan.
+   * @param profilingMode whether the query executed with profiling on.
    * @return a QueryStatusEncoding object containing the submitted query, with the submit time set to
    *         DateTimeUtils.nowInISO8601().
    */
