@@ -481,7 +481,7 @@ public class IterativeFailureTest extends SystemTestBase {
   }
 
   @Test(expected = DbException.class)
-  public void joinCircleWorkerParititionFailureTest() throws Throwable {
+  public void joinCircleWorkerPartitionFailureTest() throws Throwable {
     // EDB: A0, B0, C0
     // A := A0
     // B := B0
