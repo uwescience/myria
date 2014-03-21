@@ -3,7 +3,7 @@ package edu.washington.escience.myria;
 import org.joda.time.DateTime;
 
 /**
- * An interface for a reable object holding a single column of tuples.
+ * An interface for a readable object holding a single column of tuples.
  */
 public interface ReadableColumn extends ColumnInterface {
   /**
@@ -66,7 +66,7 @@ public interface ReadableColumn extends ColumnInterface {
    * @param row row of element to return.
    * @return the element at the specified row in this column.
    */
-  Object getObject(int row);
+  Object getObject(final int row);
 
   /**
    * Returns the {@link String} value at the specified row in this column.
