@@ -81,7 +81,7 @@ public final class MasterCatalog {
     + "    elapsed_nanos INTEGER,\n"
     + "    status TEXT NOT NULL,\n"
     + "    message TEXT,\n"
-    + "    profiling_mode BOOLEAN NOT NULL);";
+    + "    profiling_mode BOOLEAN DEFAULT 0);";
   /** Create the relations table. */
   private static final String CREATE_RELATIONS =
       "CREATE TABLE relations (\n"
