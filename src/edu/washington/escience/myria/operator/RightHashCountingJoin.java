@@ -7,6 +7,7 @@ import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.util.ReadableTableUtil;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
@@ -108,7 +109,7 @@ public class RightHashCountingJoin extends BinaryOperator {
 
     @Override
     public boolean execute(final int index) {
-      if (inputTB.tupleEquals(row, joinAgainstHashTable, index, inputCmpColumns)) {
+      if (ReadableTableUtil.tupleEquals(inputTB, inputCmpColumns, row, joinAgainstHashTable, index)) {
         ans += occuredTimesOnJoinAgainstChild.get(index);
       }
       return true;
@@ -326,7 +327,7 @@ public class RightHashCountingJoin extends BinaryOperator {
     boolean found = false;
     for (int i = 0; i < tupleIndicesList.size(); ++i) {
       int index = tupleIndicesList.get(i);
-      if (tb.tupleEquals(row, hashTable, index, compareColumns)) {
+      if (ReadableTableUtil.tupleEquals(tb, compareColumns, row, hashTable, index)) {
         occuredTimes.set(index, occuredTimes.get(index) + 1);
         found = true;
         break;

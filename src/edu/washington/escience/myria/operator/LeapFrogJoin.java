@@ -20,6 +20,7 @@ import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.util.ReadableTableUtil;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 
@@ -425,8 +426,9 @@ public class LeapFrogJoin extends NAryOperator {
   private class JoinIteratorCompare implements Comparator<JoinField> {
     @Override
     public int compare(final JoinField o1, final JoinField o2) {
-      return tables[o1.tableIndex].cellCompare(o1.fieldIndex, iterators[o1.tableIndex].getRowOfCurrentField(),
-          tables[o2.tableIndex], o2.fieldIndex, iterators[o2.tableIndex].getRowOfCurrentField());
+      return ReadableTableUtil.cellCompare(tables[o1.tableIndex], o1.fieldIndex, iterators[o1.tableIndex]
+          .getRowOfCurrentField(), tables[o2.tableIndex], o2.fieldIndex, iterators[o2.tableIndex]
+          .getRowOfCurrentField());
     }
   }
 
@@ -748,7 +750,7 @@ public class LeapFrogJoin extends NAryOperator {
             thisRow = tables[childIndex].numTuples() - 1;
           }
           int lastRow = thisRow - 1;
-          if (lastRow == -1 || tables[childIndex].cellCompare(column, lastRow, tb, column, row) != 0) {
+          if (lastRow == -1 || ReadableTableUtil.cellCompare(tables[childIndex], column, lastRow, tb, column, row) != 0) {
             firstVarIndices[childIndex].add(thisRow);
           }
         }
@@ -1151,8 +1153,8 @@ public class LeapFrogJoin extends NAryOperator {
    * @return result of comparison
    */
   private int cellCompare(final CellPointer cp1, final CellPointer cp2) {
-    return tables[cp1.tableIndex].cellCompare(cp1.getFieldIndex(), cp1.getRow(), tables[cp2.getTableIndex()], cp2
-        .getFieldIndex(), cp2.getRow());
+    return ReadableTableUtil.cellCompare(tables[cp1.tableIndex], cp1.getFieldIndex(), cp1.getRow(), tables[cp2
+        .getTableIndex()], cp2.getFieldIndex(), cp2.getRow());
 
   }
 

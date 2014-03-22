@@ -15,6 +15,7 @@ import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
+import edu.washington.escience.myria.util.ReadableTableUtil;
 
 /**
  * This is an implementation of merge join that requires the tuples from the children to come in order.
@@ -263,8 +264,8 @@ public final class MergeJoin extends BinaryOperator {
    * @param rightRow in the right TB
    */
   protected void addToAns(final TupleBatch leftTb, final int leftRow, final TupleBatch rightTb, final int rightRow) {
-    Preconditions.checkArgument(leftTb.tupleCompare(leftCompareIndx, leftRow, rightTb, rightCompareIndx, rightRow,
-        ascending) == 0);
+    Preconditions.checkArgument(ReadableTableUtil.tupleCompare(leftTb, leftCompareIndx, leftRow, rightTb,
+        rightCompareIndx, rightRow, ascending) == 0);
 
     for (int i = 0; i < leftAnswerColumns.length; ++i) {
       ans.put(i, leftTb.getDataColumns().get(leftAnswerColumns[i]), leftRow);
@@ -317,14 +318,14 @@ public final class MergeJoin extends BinaryOperator {
 
     while (nexttb == null && !deferredEOS && !needData) {
       final int compared =
-          leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex, rightBatches.getLast(), rightCompareIndx,
-              rightRowIndex, ascending);
+          ReadableTableUtil.tupleCompare(leftBatches.getLast(), leftCompareIndx, leftRowIndex, rightBatches.getLast(),
+              rightCompareIndx, rightRowIndex, ascending);
 
       if (compared == 0) {
-        Preconditions.checkState(leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex,
+        Preconditions.checkState(ReadableTableUtil.tupleCompare(leftBatches.getLast(), leftCompareIndx, leftRowIndex,
             rightBatches.getLast(), rightCompareIndx, rightRowIndex, ascending) == 0);
-        Preconditions.checkState(leftBatches.getFirst().tupleCompare(leftCompareIndx, leftBeginIndex,
-            rightBatches.getFirst(), rightCompareIndx, rightBeginIndex, ascending) == 0);
+        Preconditions.checkState(ReadableTableUtil.tupleCompare(leftBatches.getFirst(), leftCompareIndx,
+            leftBeginIndex, rightBatches.getFirst(), rightCompareIndx, rightBeginIndex, ascending) == 0);
         leftAndRightEqual();
       } else if (compared > 0) {
         rightIsLess();
@@ -547,8 +548,8 @@ public final class MergeJoin extends BinaryOperator {
       }
 
       if (leftNotProcessed != null) {
-        if (leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex, leftNotProcessed, leftCompareIndx, 0,
-            ascending) == 0) {
+        if (ReadableTableUtil.tupleCompare(leftBatches.getLast(), leftCompareIndx, leftRowIndex, leftNotProcessed,
+            leftCompareIndx, 0, ascending) == 0) {
           leftBatches.add(leftNotProcessed);
           leftNotProcessed = null;
           leftRowIndex = 0;
@@ -560,7 +561,8 @@ public final class MergeJoin extends BinaryOperator {
       } else {
         return AdvanceResult.NOT_ENOUGH_DATA;
       }
-    } else if (leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex, leftRowIndex + 1, ascending) == 0) {
+    } else if (ReadableTableUtil.tupleCompare(leftBatches.getLast(), leftCompareIndx, leftRowIndex, leftRowIndex + 1,
+        ascending) == 0) {
       leftRowIndex++;
       joined = false;
       return AdvanceResult.OK;
@@ -585,8 +587,8 @@ public final class MergeJoin extends BinaryOperator {
       }
 
       if (rightNotProcessed != null) {
-        if (rightBatches.getLast().tupleCompare(rightCompareIndx, rightRowIndex, rightNotProcessed, rightCompareIndx,
-            0, ascending) == 0) {
+        if (ReadableTableUtil.tupleCompare(rightBatches.getLast(), rightCompareIndx, rightRowIndex, rightNotProcessed,
+            rightCompareIndx, 0, ascending) == 0) {
           rightBatches.add(rightNotProcessed);
           rightNotProcessed = null;
           rightRowIndex = 0;
@@ -598,7 +600,8 @@ public final class MergeJoin extends BinaryOperator {
       } else {
         return AdvanceResult.NOT_ENOUGH_DATA;
       }
-    } else if (rightBatches.getLast().tupleCompare(rightCompareIndx, rightRowIndex, rightRowIndex + 1, ascending) == 0) {
+    } else if (ReadableTableUtil.tupleCompare(rightBatches.getLast(), rightCompareIndx, rightRowIndex,
+        rightRowIndex + 1, ascending) == 0) {
       rightRowIndex++;
       joined = false;
       return AdvanceResult.OK;

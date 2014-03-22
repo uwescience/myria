@@ -4,6 +4,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.util.ReadableTableUtil;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
@@ -140,7 +141,7 @@ public final class DupElim extends StreamingState {
 
     @Override
     public boolean execute(final int index) {
-      if (inputTB.tupleEquals(row, uniqueTuples, index)) {
+      if (ReadableTableUtil.tupleEquals(inputTB, row, uniqueTuples, index)) {
         unique = false;
       }
       return unique;

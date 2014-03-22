@@ -11,7 +11,7 @@ import com.google.common.collect.Lists;
 /**
  * A single row relation.
  */
-public class Tuple extends ReadableTable implements Serializable {
+public class Tuple implements ReadableTable, Serializable {
   /***/
   private static final long serialVersionUID = 1L;
 

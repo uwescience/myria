@@ -10,6 +10,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.util.ReadableTableUtil;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
@@ -68,7 +69,7 @@ public final class Difference extends BinaryOperator {
 
     // Check whether we've seen this tuple before
     for (int i = 0; i < tupleIndexList.size(); i++) {
-      if (batch.tupleEquals(rowNum, tuplesToRemove, tupleIndexList.get(i))) {
+      if (ReadableTableUtil.tupleEquals(batch, rowNum, tuplesToRemove, tupleIndexList.get(i))) {
         return false;
       }
     }

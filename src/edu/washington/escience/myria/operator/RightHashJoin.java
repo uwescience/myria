@@ -9,6 +9,7 @@ import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
+import edu.washington.escience.myria.util.ReadableTableUtil;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
@@ -101,7 +102,8 @@ public final class RightHashJoin extends BinaryOperator {
 
     @Override
     public boolean execute(final int index) {
-      if (inputTB.tupleEquals(row, joinAgainstHashTable, index, inputCmpColumns, joinAgainstCmpColumns)) {
+      if (ReadableTableUtil.tupleEquals(inputTB, inputCmpColumns, row, joinAgainstHashTable, joinAgainstCmpColumns,
+          index)) {
         addToAns(inputTB, row, joinAgainstHashTable, index);
       }
       return true;

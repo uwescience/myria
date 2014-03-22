@@ -12,6 +12,7 @@ import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.parallel.QueryExecutionMode;
 import edu.washington.escience.myria.parallel.TaskResourceManager;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
+import edu.washington.escience.myria.util.ReadableTableUtil;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
@@ -108,7 +109,8 @@ public final class SymmetricHashJoin extends BinaryOperator {
 
     @Override
     public boolean execute(final int index) {
-      if (inputTB.tupleEquals(row, joinAgainstHashTable, index, inputCmpColumns, joinAgainstCmpColumns)) {
+      if (ReadableTableUtil.tupleEquals(inputTB, inputCmpColumns, row, joinAgainstHashTable, joinAgainstCmpColumns,
+          index)) {
         addToAns(inputTB, row, joinAgainstHashTable, index, fromLeft);
       }
       return true;
@@ -144,7 +146,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
 
     @Override
     public boolean execute(final int index) {
-      if (inputTB.tupleEquals(row, hashTable, index, keyColumns, keyColumns)) {
+      if (ReadableTableUtil.tupleEquals(inputTB, keyColumns, row, hashTable, keyColumns, index)) {
         replaced = true;
         List<Column<?>> columns = inputTB.getDataColumns();
         for (int j = 0; j < inputTB.numColumns(); ++j) {
