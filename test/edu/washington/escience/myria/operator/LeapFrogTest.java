@@ -66,7 +66,7 @@ public class LeapFrogTest {
     final Schema t_schema =
         new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("t_z", "t_x"));
     /* read data from files. */
-    final String realFilename = Paths.get("testdata", "twitter", "twitterK.csv").toString();
+    final String realFilename = Paths.get("testdata", "twitter", "TwitterK.csv").toString();
     FileScan fileScanR = new FileScan(realFilename, r_schema);
     FileScan fileScanS = new FileScan(realFilename, s_schema);
     FileScan fileScanT = new FileScan(realFilename, t_schema);
