@@ -1435,7 +1435,27 @@ public final class Server {
     return aliveWorkers.containsKey(workerId);
   }
 
-  public void addWorker(final Integer workerId, final SocketInfo workerInfo) {
+  /**
+   * Retrieves the worker info given the worker identification. Returns null if the worker does not exist on the worker
+   * list.
+   * 
+   * @param workerId the worker identification
+   * @return whether the worker information (host:port)
+   */
+  public SocketInfo getWorkerInfo(final Integer workerId) {
+    return workers.get(workerId);
+  }
+
+  /**
+   * Adds a worker turning it alive.
+   * 
+   * @param workerId the worker identification
+   */
+  public void addWorker(final Integer workerId) {
+    SocketInfo workerInfo = getWorkerInfo(workerId);
+    if (workerInfo == null) {
+      throw new RuntimeException("Worker id: " + workerId + " not found");
+    }
     try {
       String configFileName = catalog.getConfigurationValue(MyriaSystemConfigKeys.DEPLOYMENT_FILE);
       Map<String, Map<String, String>> config = READER.load(configFileName);
@@ -1457,12 +1477,20 @@ public final class Server {
     }
   }
 
+  /**
+   * Removes a worker, turning it dead.
+   * 
+   * @param workerId the worker identification
+   */
   public void removeWorker(final Integer workerId) {
-    SocketInfo workerAddr = workers.get(workerId);
+    SocketInfo workerInfo = getWorkerInfo(workerId);
+    if (workerInfo == null) {
+      throw new RuntimeException("Worker id: " + workerId + " not found");
+    }
     while (connectionPool.isRemoteAlive(workerId)) {
       // TODO add process kill
       if (LOGGER.isInfoEnabled()) {
-        LOGGER.info("Shutting down #{} : {}", workerId, workerAddr);
+        LOGGER.info("Shutting down #{} : {}", workerId, workerInfo);
       }
       connectionPool.sendShortMessage(workerId, IPCUtils.CONTROL_SHUTDOWN);
 

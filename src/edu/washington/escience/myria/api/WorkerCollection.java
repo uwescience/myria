@@ -73,20 +73,16 @@ public final class WorkerCollection {
       /* Parsing failed, throw a 400 (Bad Request) */
       throw new MyriaApiException(Status.BAD_REQUEST, e);
     }
-    SocketInfo workerInfo = server.getWorkers().get(workerId);
-    if (workerInfo == null) {
-      /* Not found, throw a 404 (Not Found) */
-      throw new MyriaApiException(Status.NOT_FOUND, sWorkerId);
-    }
-
     if (server.isWorkerAlive(workerId)) {
       /* Worker already alive, throw a 400 (Bad Request) */
       throw new MyriaApiException(Status.BAD_REQUEST, "Worker already alive");
     }
-
-    /* Yay, worked! */
-    server.addWorker(workerId, workerInfo);
-    return "New worker " + workerInfo.toString() + " added";
+    try {
+      server.addWorker(workerId);
+    } catch (final RuntimeException e) {
+      throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, e.getMessage());
+    }
+    return "New worker " + workerId.toString() + " added";
   }
 
   /**
