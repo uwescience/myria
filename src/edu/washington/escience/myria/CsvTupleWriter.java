@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.List;
 
+import org.supercsv.encoder.DefaultCsvEncoder;
 import org.supercsv.io.CsvListWriter;
 import org.supercsv.prefs.CsvPreference;
 
@@ -18,8 +19,6 @@ import au.com.bytecode.opencsv.CSVWriter;
  * escaped using the CSV-standard trick of replacing '"' with '""'.
  * 
  * CSV files should be compatible with Microsoft Excel.
- * 
- * @author dhalperi
  * 
  */
 public class CsvTupleWriter implements TupleWriter {
@@ -34,7 +33,7 @@ public class CsvTupleWriter implements TupleWriter {
    * @param out the {@link OutputStream} to which the data will be written.
    */
   public CsvTupleWriter(final OutputStream out) {
-    csvWriter = new CsvListWriter(new BufferedWriter(new OutputStreamWriter(out)), CsvPreference.STANDARD_PREFERENCE);
+    this(out, CsvPreference.STANDARD_PREFERENCE);
   }
 
   /**
@@ -45,22 +44,22 @@ public class CsvTupleWriter implements TupleWriter {
    * @param out the {@link OutputStream} to which the data will be written.
    */
   public CsvTupleWriter(final char separator, final OutputStream out) {
-    final CsvPreference separatorPreference =
-        new CsvPreference.Builder(Character.toChars(CsvPreference.STANDARD_PREFERENCE.getQuoteChar())[0], separator,
-            CsvPreference.STANDARD_PREFERENCE.getEndOfLineSymbols()).build();
-    csvWriter = new CsvListWriter(new BufferedWriter(new OutputStreamWriter(out)), separatorPreference);
+    this(out, new CsvPreference.Builder(Character.toChars(CsvPreference.STANDARD_PREFERENCE.getQuoteChar())[0],
+        separator, CsvPreference.STANDARD_PREFERENCE.getEndOfLineSymbols()).build());
+  }
+
+  /**
+   * @param out the {@link OutputStream} to which the data will be written.
+   * @param csvPref the CSV preference.
+   */
+  private CsvTupleWriter(final OutputStream out, final CsvPreference csvPref) {
+    final CsvPreference pref = new CsvPreference.Builder(csvPref).useEncoder(new DefaultCsvEncoder()).build();
+    csvWriter = new CsvListWriter(new BufferedWriter(new OutputStreamWriter(out)), pref);
   }
 
   @Override
   public void writeColumnHeaders(final List<String> columnNames) throws IOException {
-    /* Begin by writing out the column names */
-    final String[] row = new String[columnNames.size()];
-    int headerCol = 0;
-    for (String s : columnNames) {
-      row[headerCol] = s;
-      ++headerCol;
-    }
-    csvWriter.write(row);
+    csvWriter.write(columnNames);
   }
 
   @Override

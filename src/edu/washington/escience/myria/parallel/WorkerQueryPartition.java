@@ -38,11 +38,6 @@ public class WorkerQueryPartition implements QueryPartition {
   private static final Logger LOGGER = LoggerFactory.getLogger(WorkerQueryPartition.class);
 
   /**
-   * logger for profile.
-   */
-  private static final org.slf4j.Logger PROFILING_LOGGER = org.slf4j.LoggerFactory.getLogger("profile");
-
-  /**
    * The query ID.
    * */
   private final long queryID;
@@ -96,6 +91,11 @@ public class WorkerQueryPartition implements QueryPartition {
    * Current alive worker set.
    * */
   private final Set<Integer> missingWorkers;
+
+  /**
+   * Record milliseconds so that we can normalize the time in {@link ProfilingLogger}.
+   */
+  private long startMilliseconds;
 
   /**
    * The future listener for processing the complete events of the execution of all the query's tasks.
@@ -261,12 +261,7 @@ public class WorkerQueryPartition implements QueryPartition {
       LOGGER.info("Query : " + getQueryID() + " start processing.");
     }
 
-    if (isProfilingMode()) {
-      PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:set time", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryID(),
-          "startTimeInMS", "0", System.currentTimeMillis(), 0);
-      PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:set time", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryID(),
-          "startTimeInNS", "0", System.nanoTime(), 0);
-    }
+    startMilliseconds = System.currentTimeMillis();
 
     queryStatistics.markQueryStart();
     for (QuerySubTreeTask t : tasks) {
@@ -423,5 +418,12 @@ public class WorkerQueryPartition implements QueryPartition {
    */
   public Worker getOwnerWorker() {
     return ownerWorker;
+  }
+
+  /**
+   * @return the time in milliseconds when the partition was initialized.
+   */
+  public long getBeginMilliseconds() {
+    return startMilliseconds;
   }
 }

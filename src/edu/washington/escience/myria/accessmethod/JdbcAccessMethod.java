@@ -64,6 +64,13 @@ public final class JdbcAccessMethod extends AccessMethod {
     connect(jdbcInfo, readOnly);
   }
 
+  /**
+   * @return the jdbc connection.
+   */
+  public Connection getConnection() {
+    return jdbcConnection;
+  }
+
   @Override
   public void connect(final ConnectionInfo connectionInfo, final Boolean readOnly) throws DbException {
     Objects.requireNonNull(connectionInfo);

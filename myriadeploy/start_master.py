@@ -13,7 +13,7 @@ import urllib2
 def start_master(config_file):
     args = ["./using_deployment_utils.sh", config_file, "-start_master"]
     if subprocess.call(args):
-        raise Exception("Error starting workers");
+        raise Exception("Error starting master")
 
 def main(argv):
     "Start the Myria master in the specified deployment."
