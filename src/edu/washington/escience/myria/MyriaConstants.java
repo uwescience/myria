@@ -1,5 +1,7 @@
 package edu.washington.escience.myria;
 
+import com.google.common.collect.ImmutableList;
+
 /**
  * This class holds the constants for the Myria execution.
  * 
@@ -224,6 +226,30 @@ public final class MyriaConstants {
    * The maximum number of currently active (running, queued, paused, ...) queries at the master.
    */
   public static final int MAX_ACTIVE_QUERIES = 5;
+
+  /**
+   * The relation that stores profiling information.
+   */
+  public static final RelationKey PROFILING_RELATION = new RelationKey("public", "logs", "Profiling");
+
+  /**
+   * The schema of the {@link #PROFILING_RELATION}.
+   */
+  public static final Schema PROFILING_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE,
+      Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("queryId", "opName",
+      "fragmentId", "nanoTime", "numTuples", "eventType"));
+
+  /**
+   * The relation that stores profiling information.
+   */
+  public static final RelationKey LOG_SENT_RELATION = new RelationKey("public", "logs", "Sending");
+
+  /**
+   * The schema of the {@link #LOG_SENT_RELATION}.
+   */
+  public static final Schema LOG_SENT_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE,
+      Type.LONG_TYPE, Type.LONG_TYPE, Type.INT_TYPE), ImmutableList.of("queryId", "fragmentId", "nanoTime",
+      "numTuples", "destWorkerId"));
 
   /** Private constructor to disallow building utility class. */
   private MyriaConstants() {

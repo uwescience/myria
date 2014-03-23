@@ -74,9 +74,8 @@ public final class WorkerShortMessageProcessor extends AttachmentableAdapter imp
         q = ownerWorker.getActiveQueries().get(queryId);
         if (q == null) {
           if (LOGGER.isErrorEnabled()) {
-            LOGGER.error(
-                "In receiving message {}, unknown query id: {}, current active queries are: {}, query contained? {}",
-                qm, queryId, ownerWorker.getActiveQueries().keySet(), ownerWorker.getActiveQueries().get(queryId));
+            LOGGER.error("In receiving message {}, unknown query id: {}, current active queries are: {}", qm, queryId,
+                ownerWorker.getActiveQueries().keySet());
           }
         } else {
           switch (qm.getType()) {

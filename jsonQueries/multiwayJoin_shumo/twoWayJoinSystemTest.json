@@ -93,6 +93,6 @@
         }
     ],
     "logicalRa":"T(x,y,x,z) := S(x, y), R(y, z)",
-    "profilingMode":true,
+    "profilingMode":false,
     "rawDatalog":"T(x,y,x,z) := S(x, y), R(y, z)"
 } 

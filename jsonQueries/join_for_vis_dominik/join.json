@@ -6,14 +6,13 @@
                     "opName":"Scan(R)",
                     "opType":"TableScan",
                     "relationKey":{
-                        "programName":"join",
-                        "relationName":"TwitterK",
+                        "programName":"adhoc",
+                        "relationName":"TwitterSmall",
                         "userName":"public"
                     }
                 },
                 {
                     "argChild":"Scan(R)",
-                    "argOperatorId":"hash(followee)",
                     "argPf":{
                         "index":1,
                         "type":"SingleFieldHash"
@@ -29,14 +28,13 @@
                     "opName":"Scan(S)",
                     "opType":"TableScan",
                     "relationKey":{
-                        "programName":"join",
-                        "relationName":"TwitterK",
+                        "programName":"adhoc",
+                        "relationName":"TwitterSmall",
                         "userName":"public"
                     }
                 },
                 {
                     "argChild":"Scan(S)",
-                    "argOperatorId":"hash(follower)",
                     "argPf":{
                         "index":0,
                         "type":"SingleFieldHash"
@@ -96,8 +94,8 @@
                     "opName":"Insert",
                     "opType":"DbInsert",
                     "relationKey":{
-                        "programName":"join",
-                        "relationName":"twitterK_join",
+                        "programName":"adhoc",
+                        "relationName":"TwitterJoin",
                         "userName":"public"
                     }
                 }
@@ -107,7 +105,8 @@
             ]
         }
     ],
-    "logicalRa":"join",
+    "logicalRa":"Join Twitter",
     "profilingMode":true,
-    "rawDatalog":"join"
+    "rawDatalog":"Join Twitter"
 }
+

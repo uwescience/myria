@@ -11,7 +11,7 @@ import sys
 def start_workers(config_file):
     args = ["./using_deployment_utils.sh", config_file, "-start_workers"]
     if subprocess.call(args):
-        raise Exception("Error starting workers");
+        raise Exception("Error starting workers")
 
 def main(argv):
     "Start all Myria workers in the specified deployment."

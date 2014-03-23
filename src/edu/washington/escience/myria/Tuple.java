@@ -88,11 +88,6 @@ public class Tuple implements Serializable, ReadableTable {
   }
 
   @Override
-  public Object getObject(final int column, final int row) {
-    return getValue(column, row);
-  }
-
-  @Override
   public String getString(final int column, final int row) {
     Preconditions.checkArgument(getSchema().getColumnType(column) == Type.STRING_TYPE);
     return (String) getValue(column, row);
@@ -102,6 +97,11 @@ public class Tuple implements Serializable, ReadableTable {
   public DateTime getDateTime(final int column, final int row) {
     Preconditions.checkArgument(getSchema().getColumnType(column) == Type.DATETIME_TYPE);
     return (DateTime) getValue(column, row);
+  }
+
+  @Override
+  public Object getObject(final int column, final int row) {
+    return getValue(column, row);
   }
 
   @Override

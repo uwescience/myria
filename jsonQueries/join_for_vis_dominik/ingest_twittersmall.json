@@ -2,7 +2,7 @@
   "relationKey" : {
     "userName" : "public",
     "programName" : "adhoc",
-    "relationName" : "TwitterK"
+    "relationName" : "TwitterSmall"
   },
   "schema" : {
     "columnTypes" : ["LONG_TYPE", "LONG_TYPE"],
@@ -10,7 +10,7 @@
   },
   "source" : {
     "dataType" : "File",
-    "filename" : "/disk2/TwitterK.csv"
+    "filename" : "/disk2/TwitterSmall.csv"
   },
   "delimiter": ","
 }

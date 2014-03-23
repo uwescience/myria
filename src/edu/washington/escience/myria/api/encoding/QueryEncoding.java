@@ -47,7 +47,7 @@ public class QueryEncoding extends MyriaApiEncoding {
   /** The query plan encoding. */
   @Required
   public List<PlanFragmentEncoding> fragments;
-  /** Set whether this query needs profiling. (default is false) */
+  /** Set whether this query is run in profiling mode. (default is false) */
   public boolean profilingMode = false;
   /** The expected number of results (for testing). */
   public Long expectedResultSize;
@@ -349,5 +349,13 @@ public class QueryEncoding extends MyriaApiEncoding {
 
     instantiatedFragments.put(planFragment, fragmentRoot);
     return fragmentRoot;
+  }
+
+  public Set<Integer> getWorkers() {
+    ImmutableSet.Builder<Integer> workers = ImmutableSet.builder();
+    for (final PlanFragmentEncoding fragment : fragments) {
+      workers.addAll(fragment.workers);
+    }
+    return workers.build();
   }
 }

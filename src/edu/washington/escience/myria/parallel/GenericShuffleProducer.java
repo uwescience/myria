@@ -10,9 +10,6 @@ import edu.washington.escience.myria.util.MyriaArrayUtils;
 /**
  * GenericShuffleProducer, which support json encoding of 1. Broadcast Shuffle 2. One to one Shuffle (Shuffle) 3. Hyper
  * Cube Join Shuffle (HyperJoinShuffle)
- * 
- * @author Shumo Chu <chushumo@cs.washington.edu>
- * 
  */
 public class GenericShuffleProducer extends Producer {
 
@@ -25,7 +22,7 @@ public class GenericShuffleProducer extends Producer {
   private final PartitionFunction partitionFunction;
 
   /**
-   * partition of cells.
+   * Partition of cells.
    */
   private final int[][] partitionToChannel;
 
@@ -91,7 +88,19 @@ public class GenericShuffleProducer extends Producer {
 
   @Override
   protected final void consumeTuples(final TupleBatch tup) throws DbException {
-    TupleBatch[] partitions = getTupleBatchPartitions(tup);
+    final TupleBatch[] partitions = getTupleBatchPartitions(tup);
+
+    if (isProfilingMode()) {
+      for (int partitionIdx = 0; partitionIdx < partitions.length; partitionIdx++) {
+        if (partitions[partitionIdx] != null) {
+          final int numTuples = partitions[partitionIdx].numTuples();
+          for (int channelId : partitionToChannel[partitionIdx]) {
+            final int destWorkerId = getOutputIDs()[channelId].getRemoteID();
+            getProfilingLogger().recordSend(this, numTuples, destWorkerId);
+          }
+        }
+      }
+    }
     writePartitionsIntoChannels(true, partitionToChannel, partitions);
   }
 
@@ -99,11 +108,11 @@ public class GenericShuffleProducer extends Producer {
    * call partition function to partition this tuple batch as an array of shallow copies of TupleBatch. subclasses can
    * override this method to have smarter partition approach.
    * 
-   * @param tup the tuple batch to be partitioned.
+   * @param tb the tuple batch to be partitioned.
    * @return partitions.
    */
-  protected TupleBatch[] getTupleBatchPartitions(final TupleBatch tup) {
-    return tup.partition(partitionFunction);
+  protected TupleBatch[] getTupleBatchPartitions(final TupleBatch tb) {
+    return tb.partition(partitionFunction);
   }
 
   @Override
