@@ -38,11 +38,13 @@ import edu.washington.escience.myria.util.Tuple;
 public class AggregateTest {
 
   /**
-   * For ensure that the given Schema matches the expected numeric aggregate types for the given Type.
+   * Ensure that the given Schema matches the expected numeric aggregate types for the given Type.
    * 
    * All numeric aggs, in order: COUNT, MIN, MAX, SUM, AVG, STDEV
    * 
-   * MIN,MAX,SUM match the input type
+   * MIN,MAX match the input type
+   * 
+   * SUM is the big form (int->long) and (float->double) of the input type
    * 
    * COUNT is always long
    * 
@@ -128,8 +130,14 @@ public class AggregateTest {
         new int[] {
             Aggregator.AGG_OP_COUNT, Aggregator.AGG_OP_MIN, Aggregator.AGG_OP_MAX, Aggregator.AGG_OP_SUM,
             Aggregator.AGG_OP_AVG, Aggregator.AGG_OP_STDEV };
+    int[] justCount = new int[] { Aggregator.AGG_OP_COUNT };
+    int[] justMin = new int[] { Aggregator.AGG_OP_MIN };
+    int[] justMax = new int[] { Aggregator.AGG_OP_MAX };
+    int[] justSum = new int[] { Aggregator.AGG_OP_SUM };
+    int[] justAvg = new int[] { Aggregator.AGG_OP_AVG };
+    int[] justStdev = new int[] { Aggregator.AGG_OP_STDEV };
 
-    /* Ints */
+    /* Ints, all as a group */
     int[] ints = new int[] { 3, 5, 6 };
     builder = new IntColumnBuilder();
     for (int i : ints) {
@@ -144,6 +152,19 @@ public class AggregateTest {
     assertEquals((3 + 5 + 6) / 3.0, tb.getDouble(4, 0), 0.0001);
     // Wolfram Alpha: population standard deviation {3,5,6}
     assertEquals(1.2472, tb.getDouble(5, 0), 0.0001);
+    /* Ints, one aggregate at a time */
+    tb = doAggOpsToCol(builder, justCount);
+    assertEquals(ints.length, tb.getLong(0, 0));
+    tb = doAggOpsToCol(builder, justMin);
+    assertEquals(Ints.min(ints), tb.getInt(0, 0));
+    tb = doAggOpsToCol(builder, justMax);
+    assertEquals(Ints.max(ints), tb.getInt(0, 0));
+    tb = doAggOpsToCol(builder, justSum);
+    assertEquals(3 + 5 + 6, tb.getLong(0, 0));
+    tb = doAggOpsToCol(builder, justAvg);
+    assertEquals((3 + 5 + 6) / 3.0, tb.getDouble(0, 0), 0.0001);
+    tb = doAggOpsToCol(builder, justStdev);
+    assertEquals(1.2472, tb.getDouble(0, 0), 0.0001);
 
     /* Longs */
     long[] longs = new long[] { 3, 5, 9 };
@@ -160,6 +181,19 @@ public class AggregateTest {
     assertEquals((3 + 5 + 9) / 3.0, tb.getDouble(4, 0), 0.0001);
     // Wolfram Alpha: population standard deviation {3,5,9}
     assertEquals(2.4944, tb.getDouble(5, 0), 0.0001);
+    /* Longs, one aggregate at a time */
+    tb = doAggOpsToCol(builder, justCount);
+    assertEquals(longs.length, tb.getLong(0, 0));
+    tb = doAggOpsToCol(builder, justMin);
+    assertEquals(Longs.min(longs), tb.getLong(0, 0));
+    tb = doAggOpsToCol(builder, justMax);
+    assertEquals(Longs.max(longs), tb.getLong(0, 0));
+    tb = doAggOpsToCol(builder, justSum);
+    assertEquals(3 + 5 + 9, tb.getLong(0, 0));
+    tb = doAggOpsToCol(builder, justAvg);
+    assertEquals((3 + 5 + 9) / 3.0, tb.getDouble(0, 0), 0.0001);
+    tb = doAggOpsToCol(builder, justStdev);
+    assertEquals(2.4944, tb.getDouble(0, 0), 0.0001);
 
     /* Floats */
     float[] floats = new float[] { 3, 5, 11 };
@@ -176,6 +210,19 @@ public class AggregateTest {
     assertEquals((3 + 5 + 11) / 3.0, tb.getDouble(4, 0), 0.0001);
     // Wolfram Alpha: population standard deviation {3,5,11}
     assertEquals(3.3993, tb.getDouble(5, 0), 0.0001);
+    /* Floats, one aggregate at a time */
+    tb = doAggOpsToCol(builder, justCount);
+    assertEquals(floats.length, tb.getLong(0, 0));
+    tb = doAggOpsToCol(builder, justMin);
+    assertEquals(Floats.min(floats), tb.getFloat(0, 0), 0.000001);
+    tb = doAggOpsToCol(builder, justMax);
+    assertEquals(Floats.max(floats), tb.getFloat(0, 0), 0.000001);
+    tb = doAggOpsToCol(builder, justSum);
+    assertEquals(3f + 5f + 11f, tb.getDouble(0, 0), 0.000001);
+    tb = doAggOpsToCol(builder, justAvg);
+    assertEquals((3f + 5f + 11f) / 3.0, tb.getDouble(0, 0), 0.0001);
+    tb = doAggOpsToCol(builder, justStdev);
+    assertEquals(3.3993, tb.getDouble(0, 0), 0.0001);
 
     /* Double */
     double[] doubles = new double[] { 3, 5, 13 };
@@ -192,6 +239,19 @@ public class AggregateTest {
     assertEquals((3 + 5 + 13) / 3.0, tb.getDouble(4, 0), 0.0001);
     // Wolfram Alpha: population standard deviation {3,5,13}
     assertEquals(4.3205, tb.getDouble(5, 0), 0.0001);
+    /* Doubles, one aggregate at a time */
+    tb = doAggOpsToCol(builder, justCount);
+    assertEquals(doubles.length, tb.getLong(0, 0));
+    tb = doAggOpsToCol(builder, justMin);
+    assertEquals(Doubles.min(doubles), tb.getDouble(0, 0), 0.000001);
+    tb = doAggOpsToCol(builder, justMax);
+    assertEquals(Doubles.max(doubles), tb.getDouble(0, 0), 0.000001);
+    tb = doAggOpsToCol(builder, justSum);
+    assertEquals(3f + 5f + 13f, tb.getDouble(0, 0), 0.000001);
+    tb = doAggOpsToCol(builder, justAvg);
+    assertEquals((3f + 5f + 13f) / 3.0, tb.getDouble(0, 0), 0.0001);
+    tb = doAggOpsToCol(builder, justStdev);
+    assertEquals(4.3205, tb.getDouble(0, 0), 0.0001);
   }
 
   @Test
