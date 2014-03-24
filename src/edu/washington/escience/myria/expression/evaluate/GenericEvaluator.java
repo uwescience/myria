@@ -77,7 +77,7 @@ public class GenericEvaluator extends Evaluator {
           (EvalInterface) se.createFastEvaluator(javaExpression, EvalInterface.class, new String[] {
               Expression.TB, Expression.ROW, Expression.RESULT, Expression.STATE });
     } catch (CompileException e) {
-      LOGGER.error("Error when compiling expression: {}", javaExpression);
+      LOGGER.error("Error when compiling expression {}: {}", javaExpression, e);
       throw new DbException("Error when compiling expression: " + javaExpression, e);
     }
   }
