@@ -8,7 +8,8 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 
 /**
- * Divide two operands in an expression tree. In Myria, this expression always returns a {@link Type.DOUBLE_TYPE}.
+ * Divide two operands in an expression tree. The return value is of type {@link Type.INT_TYPE} if both operands are
+ * also INTs, and of type {@link Type.LONG_TYPE} otherwise.
  */
 public class IntDivideExpression extends BinaryExpression {
 
