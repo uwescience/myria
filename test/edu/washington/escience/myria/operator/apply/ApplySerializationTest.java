@@ -26,6 +26,7 @@ import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.FloorExpression;
 import edu.washington.escience.myria.expression.GreaterThanExpression;
 import edu.washington.escience.myria.expression.GreaterThanOrEqualsExpression;
+import edu.washington.escience.myria.expression.IntDivideExpression;
 import edu.washington.escience.myria.expression.LessThanExpression;
 import edu.washington.escience.myria.expression.LessThanOrEqualsExpression;
 import edu.washington.escience.myria.expression.LogExpression;
@@ -85,6 +86,7 @@ public class ApplySerializationTest {
 
     /* Binary */
     DivideExpression divide = new DivideExpression(constant, variable);
+    IntDivideExpression idivide = new IntDivideExpression(constant, variable);
     MinusExpression minus = new MinusExpression(constant, variable);
     PlusExpression plus = new PlusExpression(constant, variable);
     PowExpression pow = new PowExpression(constant, variable);
@@ -99,8 +101,8 @@ public class ApplySerializationTest {
     LessThanOrEqualsExpression lte = new LessThanOrEqualsExpression(constant, variable);
     CastExpression cast = new CastExpression(constant, typeof);
     ModuloExpression modulo = new ModuloExpression(constant, variable);
-    expressions.add(and).add(divide).add(eq).add(gt).add(gte).add(lt).add(lte).add(minus).add(ne).add(or).add(plus)
-        .add(pow).add(times).add(cast).add(modulo);
+    expressions.add(and).add(divide).add(idivide).add(eq).add(gt).add(gte).add(lt).add(lte).add(minus).add(ne).add(or)
+        .add(plus).add(pow).add(times).add(cast).add(modulo);
 
     /* NAry */
     VariableExpression variable2 = new VariableExpression(2);

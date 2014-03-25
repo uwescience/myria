@@ -58,7 +58,7 @@ public class ConstantExpression extends ZeroaryExpression {
    * @param value the value of this constant.
    */
   public ConstantExpression(final long value) {
-    this(Type.LONG_TYPE, String.valueOf(value));
+    this(Type.LONG_TYPE, String.valueOf(value) + 'L');
   }
 
   /**

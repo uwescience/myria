@@ -26,6 +26,7 @@ import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.FloorExpression;
 import edu.washington.escience.myria.expression.GreaterThanExpression;
 import edu.washington.escience.myria.expression.GreaterThanOrEqualsExpression;
+import edu.washington.escience.myria.expression.IntDivideExpression;
 import edu.washington.escience.myria.expression.LessThanExpression;
 import edu.washington.escience.myria.expression.LessThanOrEqualsExpression;
 import edu.washington.escience.myria.expression.MinusExpression;
@@ -599,10 +600,10 @@ public class ApplyTest {
       tbb.putString(0, "Foo" + i);
     }
 
-    Expression initializer = new Expression("counter", new ConstantExpression(Type.INT_TYPE, "-1"));
+    Expression initializer = new Expression("counter", new ConstantExpression(Type.LONG_TYPE, "-1"));
     Expression expression = new Expression("index", new StateExpression(0));
     Expression increment =
-        new Expression(new PlusExpression(new StateExpression(0), new ConstantExpression(Type.INT_TYPE, "1")));
+        new Expression(new PlusExpression(new StateExpression(0), new ConstantExpression(Type.LONG_TYPE, "1")));
 
     ImmutableList.Builder<Expression> Initializers = ImmutableList.builder();
     Initializers.add(initializer);
@@ -623,11 +624,11 @@ public class ApplyTest {
       result = apply.nextReady();
       if (result != null) {
         assertEquals(1, result.getSchema().numColumns());
-        assertEquals(Type.INT_TYPE, result.getSchema().getColumnType(0));
+        assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(0));
 
         for (int curI = 0; curI < result.numTuples(); curI++) {
           long i = curI + resultSize;
-          assertEquals(i, result.getInt(0, curI));
+          assertEquals(i, result.getLong(0, curI));
         }
         resultSize += result.numTuples();
       }
@@ -650,7 +651,7 @@ public class ApplyTest {
         new Expression(new PlusExpression(new StateExpression(0), new ConstantExpression(Type.LONG_TYPE, "1")));
     Expression updateSum = new Expression(new PlusExpression(new StateExpression(1), new VariableExpression(0)));
 
-    Expression avg = new Expression("average", new DivideExpression(new StateExpression(1), new StateExpression(0)));
+    Expression avg = new Expression("average", new IntDivideExpression(new StateExpression(1), new StateExpression(0)));
 
     ImmutableList.Builder<Expression> Initializers = ImmutableList.builder();
     Initializers.add(initializeCounter);

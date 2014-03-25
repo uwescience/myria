@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Objects;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
@@ -22,7 +23,7 @@ public final class TupleSource extends LeafOperator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** The tuples that this operator serves, exactly once. */
-  private final List<TupleBatch> data;
+  private List<TupleBatch> data;
   /**
    * the current TupleBatch index of this TupleSource. Does not remove the TupleBatches in execution so that it can
    * rewinded.
@@ -53,6 +54,15 @@ public final class TupleSource extends LeafOperator {
   }
 
   /**
+   * Constructs a TupleSource operator that will serve the tuples in the given TupleBatch.
+   * 
+   * @param data the tuples that this operator will serve. May not be null.
+   */
+  public TupleSource(final TupleBatch data) {
+    this(ImmutableList.of(Objects.requireNonNull(data, "data")), null);
+  }
+
+  /**
    * Constructs a TupleSource operator that will serve the tuples in the given List<TupleBatch>.
    * 
    * @param data the tuples that this operator will serve.
@@ -74,7 +84,7 @@ public final class TupleSource extends LeafOperator {
   @Override
   protected void cleanup() throws DbException {
     index = 0;
-    data.clear();
+    data = null;
   }
 
   @Override

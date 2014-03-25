@@ -34,6 +34,12 @@ public class TimesExpression extends BinaryExpression {
 
   @Override
   public String getJavaString(final ExpressionOperatorParameter parameters) {
+    Type t = getOutputType(parameters);
+    if (t == Type.INT_TYPE) {
+      return getFunctionCallBinaryString("com.google.common.math.IntMath.checkedMultiply", parameters);
+    } else if (t == Type.LONG_TYPE) {
+      return getFunctionCallBinaryString("com.google.common.math.LongMath.checkedMultiply", parameters);
+    }
     return getInfixBinaryString("*", parameters);
   }
 }

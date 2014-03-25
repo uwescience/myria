@@ -26,7 +26,7 @@ public interface Aggregator<COLUMN_TYPE> extends Serializable {
    * */
   int AGG_OP_MAX = 0x04;
   /**
-   * sum. Sum result is always of the same type as the computed column.
+   * sum. The sum is always the biggest similar type, e.g., INT->LONG and FLOAT->DOUBLE.
    * */
   int AGG_OP_SUM = 0x08;
   /**
@@ -87,5 +87,4 @@ public interface Aggregator<COLUMN_TYPE> extends Serializable {
    * 
    * */
   Schema getResultSchema();
-
 }

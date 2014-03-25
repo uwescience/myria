@@ -1,6 +1,9 @@
 package edu.washington.escience.myria.operator.agg;
 
+import java.util.Objects;
+
 import com.google.common.collect.ImmutableList;
+import com.google.common.math.LongMath;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
@@ -26,10 +29,12 @@ public final class DoubleAggregator implements Aggregator<Double> {
    * */
   private final int aggOps;
 
-  /**
-   * min, max and sum, keeps the same data type as the aggregating column.
-   * */
-  private double min, max, sum;
+  /** The minimum value in the aggregated column. */
+  private double min;
+  /** The maximum value in the aggregated column. */
+  private double max;
+  /** The sum of values in the aggregated column. */
+  private double sum;
 
   /** private temp variables for computing stdev. */
   private double sumSquared;
@@ -118,41 +123,51 @@ public final class DoubleAggregator implements Aggregator<Double> {
     resultSchema = new Schema(types, names);
   }
 
+  /**
+   * Helper function to add value to this aggregator. Note this does NOT update count.
+   * 
+   * @param value the value to be added
+   */
+  private void addDoubleStats(final double value) {
+    if (AggUtils.needsSum(aggOps)) {
+      sum += value;
+    }
+    if (AggUtils.needsSumSq(aggOps)) {
+      sumSquared += value * value;
+    }
+    if (AggUtils.needsMin(aggOps)) {
+      min = Math.min(min, value);
+    }
+    if (AggUtils.needsMax(aggOps)) {
+      max = Math.max(max, value);
+    }
+  }
+
   @Override
   public void add(final TupleBatch tup) {
-
     final int numTuples = tup.numTuples();
-    if (numTuples > 0) {
-      count += numTuples;
-      // temp variables for stdev streaming computation
-      for (int i = 0; i < numTuples; i++) {
-        final double x = tup.getDouble(aColumn, i);
-        sum += x;
-        sumSquared += x * x;
-        if (Double.compare(x, min) < 0) {
-          min = x;
-        }
-        if (Double.compare(x, max) > 0) {
-          max = x;
-        }
-      }
+    if (numTuples == 0) {
+      return;
+    }
+    if (AggUtils.needsCount(aggOps)) {
+      count = LongMath.checkedAdd(count, numTuples);
+    }
+    if (!AggUtils.needsStats(aggOps)) {
+      return;
+    }
+    for (int i = 0; i < numTuples; i++) {
+      addDoubleStats(tup.getDouble(aColumn, i));
     }
   }
 
   @Override
   public void add(final Double value) {
-    if (value != null) {
-      count++;
-      // temp variables for stdev streaming computation
-      final double x = value;
-      sum += x;
-      sumSquared += x * x;
-      if (Double.compare(x, min) < 0) {
-        min = x;
-      }
-      if (Double.compare(x, max) > 0) {
-        max = x;
-      }
+    Objects.requireNonNull(value, "value");
+    if (AggUtils.needsCount(aggOps)) {
+      count = LongMath.checkedAdd(count, 1);
+    }
+    if (AggUtils.needsStats(aggOps)) {
+      addDoubleStats(value);
     }
   }
 
@@ -195,7 +210,9 @@ public final class DoubleAggregator implements Aggregator<Double> {
       idx++;
     }
     if ((aggOps & AGG_OP_STDEV) != 0) {
-      double stdev = Math.sqrt((sumSquared / count) - ((sum) / count * sum / count));
+      double first = sumSquared / count;
+      double second = sum / count;
+      double stdev = Math.sqrt(first - second * second);
       buffer.putDouble(idx, stdev);
       idx++;
     }

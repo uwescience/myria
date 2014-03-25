@@ -34,6 +34,12 @@ public class PlusExpression extends BinaryExpression {
 
   @Override
   public String getJavaString(final ExpressionOperatorParameter parameters) {
+    Type t = getOutputType(parameters);
+    if (t == Type.INT_TYPE) {
+      return getFunctionCallBinaryString("com.google.common.math.IntMath.checkedAdd", parameters);
+    } else if (t == Type.LONG_TYPE) {
+      return getFunctionCallBinaryString("com.google.common.math.LongMath.checkedAdd", parameters);
+    }
     return getInfixBinaryString("+", parameters);
   }
 }
