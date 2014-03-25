@@ -47,8 +47,13 @@ public class IntDivideExpression extends BinaryExpression {
 
   @Override
   public String getJavaString(final ExpressionOperatorParameter parameters) {
-    return new StringBuilder("(((").append(getOutputType(parameters).toJavaType().getName()).append(")").append(
-        getLeft().getJavaString(parameters)).append(")/").append(getRight().getJavaString(parameters)).append(')')
-        .toString();
+    Type defaultType = checkAndReturnDefaultNumericType(parameters);
+    if (validTypes.contains(defaultType)) {
+      /* Default type is an Int or Long, so just use Java's default division. */
+      return getInfixBinaryString("/", parameters);
+    }
+    /* Default type if a Float or Double, so cast in a checked-way to a long. */
+    return new StringBuilder("com.google.common.math.DoubleMath.roundToLong(").append(
+        getInfixBinaryString("/", parameters)).append(", java.math.RoundingMode.DOWN)").toString();
   }
 }
