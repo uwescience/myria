@@ -250,16 +250,16 @@ public class ExpressionTest {
 
   @Test
   public void testIntDivideWithDoublesNotOverflow() throws Throwable {
-    ConstantExpression val1 = new ConstantExpression(Long.MAX_VALUE + 2.0);
+    ConstantExpression val1 = new ConstantExpression(-Math.pow(2, 64));
     ConstantExpression val2 = new ConstantExpression(2.0);
     ExpressionOperator expr = new IntDivideExpression(val1, val2);
     Object ans = evaluateConstantAndUnrollException(expr);
-    assertEquals(Long.MAX_VALUE / 2 + 1, ans);
+    assertEquals(Long.MIN_VALUE, ans);
   }
 
   @Test(expected = ArithmeticException.class)
   public void testIntDivideWithDoublesOverflow() throws Throwable {
-    ConstantExpression val1 = new ConstantExpression(Long.MAX_VALUE + 2.0);
+    ConstantExpression val1 = new ConstantExpression(Math.pow(2, 63)); /* Long.MAX_VALUE + 1 */
     ConstantExpression val2 = new ConstantExpression(1.0);
     ExpressionOperator expr = new IntDivideExpression(val1, val2);
     evaluateConstantAndUnrollException(expr);
@@ -267,7 +267,7 @@ public class ExpressionTest {
 
   @Test(expected = ArithmeticException.class)
   public void testIntDivideWithDoublesOverflow2() throws Throwable {
-    ConstantExpression val1 = new ConstantExpression(Long.MAX_VALUE);
+    ConstantExpression val1 = new ConstantExpression(Math.pow(2, 62)); /* (Long.MAX_VALUE + 1) >> 1 */
     ConstantExpression val2 = new ConstantExpression(0.5);
     ExpressionOperator expr = new IntDivideExpression(val1, val2);
     evaluateConstantAndUnrollException(expr);
