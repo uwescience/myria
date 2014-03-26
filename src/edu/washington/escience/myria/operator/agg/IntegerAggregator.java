@@ -7,6 +7,7 @@ import com.google.common.math.LongMath;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.storage.ReadableTable;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
@@ -18,10 +19,6 @@ public final class IntegerAggregator implements Aggregator<Integer> {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  /**
-   * Aggregate column.
-   * */
-  private final int aColumn;
   /**
    * Aggregate operations. An binary-or of all the applicable aggregate operations, i.e. those in
    * {@link IntegerAggregator#AVAILABLE_AGG}.
@@ -55,29 +52,10 @@ public final class IntegerAggregator implements Aggregator<Integer> {
       | Aggregator.AGG_OP_MIN | Aggregator.AGG_OP_AVG | Aggregator.AGG_OP_STDEV;
 
   /**
-   * This serves as the copy constructor.
-   * 
-   * @param afield the aggregate column.
-   * @param aggOps the aggregate operation to simultaneously compute.
-   * @param resultSchema the result schema.
-   * */
-  private IntegerAggregator(final int afield, final int aggOps, final Schema resultSchema) {
-    this.resultSchema = resultSchema;
-    aColumn = afield;
-    this.aggOps = aggOps;
-    sum = 0;
-    count = 0;
-    min = Integer.MAX_VALUE;
-    max = Integer.MIN_VALUE;
-    sumSquared = 0L;
-  }
-
-  /**
-   * @param afield the aggregate column.
    * @param aFieldName aggregate field name for use in output schema.
    * @param aggOps the aggregate operation to simultaneously compute.
    * */
-  public IntegerAggregator(final int afield, final String aFieldName, final int aggOps) {
+  public IntegerAggregator(final String aFieldName, final int aggOps) {
     if (aggOps <= 0) {
       throw new IllegalArgumentException("No aggregation operations are selected");
     }
@@ -85,7 +63,6 @@ public final class IntegerAggregator implements Aggregator<Integer> {
     if ((aggOps | AVAILABLE_AGG) != AVAILABLE_AGG) {
       throw new IllegalArgumentException("Unsupported aggregation on int column.");
     }
-    aColumn = afield;
     this.aggOps = aggOps;
     min = Integer.MAX_VALUE;
     max = Integer.MIN_VALUE;
@@ -143,8 +120,8 @@ public final class IntegerAggregator implements Aggregator<Integer> {
   }
 
   @Override
-  public void add(final ReadableTable tup) {
-    final int numTuples = tup.numTuples();
+  public void add(final ReadableTable from, final int fromColumn) {
+    final int numTuples = from.numTuples();
     if (numTuples == 0) {
       return;
     }
@@ -157,7 +134,7 @@ public final class IntegerAggregator implements Aggregator<Integer> {
       return;
     }
     for (int i = 0; i < numTuples; i++) {
-      addIntStats(tup.getInt(aColumn, i));
+      addIntStats(from.getInt(fromColumn, i));
     }
   }
 
@@ -188,11 +165,6 @@ public final class IntegerAggregator implements Aggregator<Integer> {
   @Override
   public int availableAgg() {
     return AVAILABLE_AGG;
-  }
-
-  @Override
-  public IntegerAggregator freshCopyYourself() {
-    return new IntegerAggregator(aColumn, aggOps, resultSchema);
   }
 
   @Override
@@ -235,5 +207,29 @@ public final class IntegerAggregator implements Aggregator<Integer> {
   @Override
   public void add(final ReadableTable t, final int column, final int row) {
     addInt(t.getInt(column, row));
+  }
+
+  @Override
+  public Type getType() {
+    return Type.INT_TYPE;
+  }
+
+  @Override
+  public void add(final ReadableColumn from) {
+    final int numTuples = from.size();
+    if (numTuples == 0) {
+      return;
+    }
+
+    if (AggUtils.needsCount(aggOps)) {
+      count = LongMath.checkedAdd(count, numTuples);
+    }
+
+    if (!AggUtils.needsStats(aggOps)) {
+      return;
+    }
+    for (int i = 0; i < numTuples; i++) {
+      addIntStats(from.getInt(i));
+    }
   }
 }

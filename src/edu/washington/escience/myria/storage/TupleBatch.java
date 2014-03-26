@@ -106,11 +106,13 @@ public class TupleBatch implements ReadableTable, Serializable {
    * @param isEOI whether this is an EOI TupleBatch.
    */
   public TupleBatch(final Schema schema, final List<Column<?>> columns, final int numTuples, final boolean isEOI) {
-    this.schema = Objects.requireNonNull(schema);
-    Objects.requireNonNull(columns);
+    this.schema = Objects.requireNonNull(schema, "schema");
+    this.columns = ImmutableList.copyOf(Objects.requireNonNull(columns, "columns"));
     Preconditions.checkArgument(columns.size() == schema.numColumns(),
         "Number of columns in data must equal the number of fields in schema");
-    this.columns = ImmutableList.copyOf(columns);
+    for (Column<?> column : columns) {
+      Preconditions.checkArgument(numTuples == column.size(), "Column %s != %s tuples", column.size(), numTuples);
+    }
     this.numTuples = numTuples;
     this.isEOI = isEOI;
   }
@@ -214,6 +216,8 @@ public class TupleBatch implements ReadableTable, Serializable {
 
   @Override
   public final long getLong(final int column, final int row) {
+    Preconditions.checkArgument(columns.get(column).size() >= numTuples, "numTuples %s columnsize %s", numTuples,
+        columns.get(column).size());
     return columns.get(column).getLong(row);
   }
 

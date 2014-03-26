@@ -7,6 +7,7 @@ import com.google.common.math.LongMath;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.storage.ReadableTable;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
@@ -17,11 +18,6 @@ public final class LongAggregator implements Aggregator<Long> {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
-
-  /**
-   * aggregate column.
-   * */
-  private final int afield;
 
   /**
    * Aggregate operations. An binary-or of all the applicable aggregate operations, i.e. those in
@@ -56,29 +52,10 @@ public final class LongAggregator implements Aggregator<Long> {
       | Aggregator.AGG_OP_MIN | Aggregator.AGG_OP_AVG | Aggregator.AGG_OP_STDEV;
 
   /**
-   * This serves as the copy constructor.
-   * 
-   * @param afield the aggregate column.
-   * @param aggOps the aggregate operation to simultaneously compute.
-   * @param resultSchema the result schema.
-   * */
-  private LongAggregator(final int afield, final int aggOps, final Schema resultSchema) {
-    this.resultSchema = resultSchema;
-    this.afield = afield;
-    this.aggOps = aggOps;
-    sum = 0;
-    count = 0;
-    min = Long.MAX_VALUE;
-    max = Long.MIN_VALUE;
-    sumSquared = 0;
-  }
-
-  /**
-   * @param afield the aggregate column.
    * @param aFieldName aggregate field name for use in output schema.
    * @param aggOps the aggregate operation to simultaneously compute.
    * */
-  public LongAggregator(final int afield, final String aFieldName, final int aggOps) {
+  public LongAggregator(final String aFieldName, final int aggOps) {
     if (aggOps <= 0) {
       throw new IllegalArgumentException("No aggregation operations are selected");
     }
@@ -86,7 +63,6 @@ public final class LongAggregator implements Aggregator<Long> {
     if ((aggOps | AVAILABLE_AGG) != AVAILABLE_AGG) {
       throw new IllegalArgumentException("Unsupported aggregation on long column.");
     }
-    this.afield = afield;
     this.aggOps = aggOps;
     min = Long.MAX_VALUE;
     max = Long.MIN_VALUE;
@@ -123,8 +99,8 @@ public final class LongAggregator implements Aggregator<Long> {
   }
 
   @Override
-  public void add(final ReadableTable tup) {
-    final int numTuples = tup.numTuples();
+  public void add(final ReadableTable from, final int fromColumn) {
+    final int numTuples = from.numTuples();
     if (numTuples == 0) {
       return;
     }
@@ -136,7 +112,7 @@ public final class LongAggregator implements Aggregator<Long> {
       return;
     }
     for (int i = 0; i < numTuples; i++) {
-      addLongStats(tup.getLong(afield, i));
+      addLongStats(from.getLong(fromColumn, i));
     }
   }
 
@@ -190,11 +166,6 @@ public final class LongAggregator implements Aggregator<Long> {
   }
 
   @Override
-  public LongAggregator freshCopyYourself() {
-    return new LongAggregator(afield, aggOps, resultSchema);
-  }
-
-  @Override
   public void getResult(final TupleBatchBuffer buffer, final int fromIndex) {
     int idx = fromIndex;
     if ((aggOps & AGG_OP_COUNT) != 0) {
@@ -234,5 +205,28 @@ public final class LongAggregator implements Aggregator<Long> {
   @Override
   public void add(final ReadableTable t, final int column, final int row) {
     addLong(t.getLong(column, row));
+  }
+
+  @Override
+  public Type getType() {
+    return Type.LONG_TYPE;
+  }
+
+  @Override
+  public void add(final ReadableColumn from) {
+    final int numTuples = from.size();
+    if (numTuples == 0) {
+      return;
+    }
+    if (AggUtils.needsCount(aggOps)) {
+      count = LongMath.checkedAdd(count, numTuples);
+    }
+
+    if (!AggUtils.needsStats(aggOps)) {
+      return;
+    }
+    for (int i = 0; i < numTuples; i++) {
+      addLongStats(from.getLong(i));
+    }
   }
 }

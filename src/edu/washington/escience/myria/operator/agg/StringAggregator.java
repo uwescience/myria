@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.storage.ReadableTable;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
@@ -14,11 +15,6 @@ public final class StringAggregator implements Aggregator<String> {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
-
-  /**
-   * aggregate field.
-   * */
-  private final int afield;
 
   /**
    * Aggregate operations. An binary-or of all the applicable aggregate operations, i.e. those in
@@ -56,32 +52,10 @@ public final class StringAggregator implements Aggregator<String> {
   public static final int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT | Aggregator.AGG_OP_MAX | Aggregator.AGG_OP_MIN;
 
   /**
-   * This serves as the copy constructor.
-   * 
-   * @param afield the aggregate column.
-   * @param aggOps the aggregate operation to simultaneously compute.
-   * @param resultSchema the result schema.
-   * @param computeMin if min is required
-   * @param computeMax if max is required
-   * */
-  private StringAggregator(final int afield, final int aggOps, final boolean computeMin, final boolean computeMax,
-      final Schema resultSchema) {
-    this.afield = afield;
-    this.aggOps = aggOps;
-    this.computeMax = computeMax;
-    this.computeMin = computeMin;
-    this.resultSchema = resultSchema;
-    min = null;
-    max = null;
-    count = 0;
-  }
-
-  /**
-   * @param afield the aggregate column.
    * @param aFieldName aggregate field name for use in output schema.
    * @param aggOps the aggregate operation to simultaneously compute.
    * */
-  public StringAggregator(final int afield, final String aFieldName, final int aggOps) {
+  public StringAggregator(final String aFieldName, final int aggOps) {
     if (aggOps <= 0) {
       throw new IllegalArgumentException("No aggregation operations are selected");
     }
@@ -91,7 +65,6 @@ public final class StringAggregator implements Aggregator<String> {
           "Unsupported aggregation on string column. Only count, min and max are supported");
     }
 
-    this.afield = afield;
     this.aggOps = aggOps;
     final ImmutableList.Builder<Type> types = ImmutableList.builder();
     final ImmutableList.Builder<String> names = ImmutableList.builder();
@@ -117,32 +90,31 @@ public final class StringAggregator implements Aggregator<String> {
   }
 
   @Override
-  public void add(final ReadableTable tup) {
-
-    final int numTuples = tup.numTuples();
-    if (numTuples > 0) {
-      count += numTuples;
-      if (computeMin || computeMax) {
-        for (int i = 0; i < numTuples; i++) {
-          final String r = tup.getString(afield, i);
-          if (computeMin) {
-            if (min == null) {
-              min = r;
-            } else if (r.compareTo(min) < 0) {
-              min = r;
-            }
+  public void add(final ReadableTable from, final int fromColumn) {
+    final int numTuples = from.numTuples();
+    if (numTuples == 0) {
+      return;
+    }
+    count += numTuples;
+    if (computeMin || computeMax) {
+      for (int i = 0; i < numTuples; i++) {
+        final String r = from.getString(fromColumn, i);
+        if (computeMin) {
+          if (min == null) {
+            min = r;
+          } else if (r.compareTo(min) < 0) {
+            min = r;
           }
-          if (computeMax) {
-            if (max == null) {
-              max = r;
-            } else if (r.compareTo(max) > 0) {
-              max = r;
-            }
+        }
+        if (computeMax) {
+          if (max == null) {
+            max = r;
+          } else if (r.compareTo(max) > 0) {
+            max = r;
           }
         }
       }
     }
-
   }
 
   @Override
@@ -182,11 +154,6 @@ public final class StringAggregator implements Aggregator<String> {
   }
 
   @Override
-  public StringAggregator freshCopyYourself() {
-    return new StringAggregator(afield, aggOps, computeMin, computeMax, resultSchema);
-  }
-
-  @Override
   public void getResult(final TupleBatchBuffer buffer, final int fromIndex) {
     int idx = fromIndex;
     if ((aggOps & AGG_OP_COUNT) != 0) {
@@ -210,5 +177,38 @@ public final class StringAggregator implements Aggregator<String> {
   @Override
   public void add(final ReadableTable t, final int column, final int row) {
     add(t.getString(column, row));
+  }
+
+  @Override
+  public Type getType() {
+    return Type.STRING_TYPE;
+  }
+
+  @Override
+  public void add(final ReadableColumn from) {
+    final int numTuples = from.size();
+    if (numTuples == 0) {
+      return;
+    }
+    count += numTuples;
+    if (computeMin || computeMax) {
+      for (int i = 0; i < numTuples; i++) {
+        final String r = from.getString(i);
+        if (computeMin) {
+          if (min == null) {
+            min = r;
+          } else if (r.compareTo(min) < 0) {
+            min = r;
+          }
+        }
+        if (computeMax) {
+          if (max == null) {
+            max = r;
+          } else if (r.compareTo(max) > 0) {
+            max = r;
+          }
+        }
+      }
+    }
   }
 }

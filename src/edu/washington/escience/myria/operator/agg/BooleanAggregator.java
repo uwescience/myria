@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.storage.ReadableTable;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
@@ -36,23 +37,10 @@ public final class BooleanAggregator implements Aggregator<Boolean> {
   public static final int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT;
 
   /**
-   * This serves as the copy constructor.
-   * 
-   * @param aggOps the aggregate operation to simultaneously compute.
-   * @param resultSchema the result schema.
-   * */
-  private BooleanAggregator(final int aggOps, final Schema resultSchema) {
-    this.resultSchema = resultSchema;
-    this.aggOps = aggOps;
-    count = 0;
-  }
-
-  /**
-   * @param afield only count is supported on boolean columns, so afield is actually useless.
    * @param aFieldName aggregate field name for use in output schema.
    * @param aggOps the aggregate operation to simultaneously compute.
    * */
-  public BooleanAggregator(final int afield, final String aFieldName, final int aggOps) {
+  public BooleanAggregator(final String aFieldName, final int aggOps) {
     if (aggOps <= 0) {
       throw new IllegalArgumentException("No aggregation operations are selected");
     }
@@ -73,8 +61,8 @@ public final class BooleanAggregator implements Aggregator<Boolean> {
   }
 
   @Override
-  public void add(final ReadableTable tup) {
-    count += tup.numTuples();
+  public void add(final ReadableTable from, final int fromColumn) {
+    count += from.numTuples();
   }
 
   /**
@@ -102,11 +90,6 @@ public final class BooleanAggregator implements Aggregator<Boolean> {
   }
 
   @Override
-  public BooleanAggregator freshCopyYourself() {
-    return new BooleanAggregator(aggOps, resultSchema);
-  }
-
-  @Override
   public void getResult(final TupleBatchBuffer outputBuffer, final int fromIndex) {
     int idx = fromIndex;
     if ((aggOps & AGG_OP_COUNT) != 0) {
@@ -123,5 +106,15 @@ public final class BooleanAggregator implements Aggregator<Boolean> {
   @Override
   public void add(final ReadableTable t, final int column, final int row) {
     add(t.getBoolean(column, row));
+  }
+
+  @Override
+  public Type getType() {
+    return Type.BOOLEAN_TYPE;
+  }
+
+  @Override
+  public void add(final ReadableColumn from) {
+    count += from.size();
   }
 }

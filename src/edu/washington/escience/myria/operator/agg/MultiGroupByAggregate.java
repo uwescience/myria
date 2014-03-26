@@ -152,10 +152,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
         if (!groupAggs.containsKey(grpFields)) {
           // if the aggregator for the key doesn't exists,
           // create a new array of operators and put it in the map
-          Aggregator<?>[] groupAgg = new Aggregator<?>[agg.length];
-          for (int j = 0; j < groupAgg.length; j++) {
-            groupAgg[j] = agg[j].freshCopyYourself();
-          }
+          Aggregator<?>[] groupAgg = AggUtils.allocate(getChild().getSchema(), afields, aggOps);
           groupAggs.put(grpFields, groupAgg);
         }
 
@@ -176,8 +173,10 @@ public final class MultiGroupByAggregate extends UnaryOperator {
         TupleBatchBuffer tbb = tmpMap.get(saw);
         TupleBatch filledTb = null;
         while ((filledTb = tbb.popAny()) != null) {
+          int i = 0;
           for (final Aggregator<?> aggLocal : aggs) {
-            aggLocal.add(filledTb);
+            aggLocal.add(filledTb, afields[i]);
+            ++i;
           }
         }
       }
@@ -255,31 +254,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
 
     int idx = 0;
     for (final int afield : afields) {
-      switch (childSchema.getColumnType(afield)) {
-        case BOOLEAN_TYPE:
-          agg[idx] = new BooleanAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        case INT_TYPE:
-          agg[idx] = new IntegerAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        case LONG_TYPE:
-          agg[idx] = new LongAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        case FLOAT_TYPE:
-          agg[idx] = new FloatAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        case DOUBLE_TYPE:
-          agg[idx] = new DoubleAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        case STRING_TYPE:
-          agg[idx] = new StringAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        case DATETIME_TYPE:
-          agg[idx] = new DateTimeAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        default:
-          throw new IllegalArgumentException("unsupported type: " + childSchema.getColumnType(afield));
-      }
+      agg[idx] = AggUtils.allocate(childSchema.getColumnType(afield), childSchema.getColumnName(afield), aggOps[idx]);
       outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
       idx++;
     }

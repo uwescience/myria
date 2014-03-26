@@ -72,11 +72,6 @@ public class SingleGroupByAggregate extends UnaryOperator {
   private Type gColumnType;
 
   /**
-   * aggregate column types.
-   */
-  private Type[] aColumnTypes;
-
-  /**
    * The buffer storing in-progress group by results. {groupby-column-value -> Aggregator Array} when the group key is
    * String
    */
@@ -152,43 +147,6 @@ public class SingleGroupByAggregate extends UnaryOperator {
   }
 
   /**
-   * add a value to group by.
-   * 
-   * @param tb source TB.
-   * @param row which row.
-   * @param aggFieldIdx which column.
-   * @param aggFieldType the type of the value
-   * @param agg the aggregator.
-   */
-  public static void addValue2Group(final TupleBatch tb, final int row, final int aggFieldIdx, final Type aggFieldType,
-      final Aggregator<?> agg) {
-    switch (aggFieldType) {
-      case BOOLEAN_TYPE:
-        ((BooleanAggregator) agg).add(tb.getBoolean(aggFieldIdx, row));
-        break;
-      case INT_TYPE:
-        ((IntegerAggregator) agg).add(tb.getInt(aggFieldIdx, row));
-        break;
-      case LONG_TYPE:
-        ((LongAggregator) agg).add(tb.getLong(aggFieldIdx, row));
-        break;
-      case FLOAT_TYPE:
-        ((FloatAggregator) agg).add(tb.getFloat(aggFieldIdx, row));
-        break;
-      case DOUBLE_TYPE:
-        ((DoubleAggregator) agg).add(tb.getDouble(aggFieldIdx, row));
-        break;
-      case STRING_TYPE:
-        ((StringAggregator) agg).add(tb.getString(aggFieldIdx, row));
-        break;
-      case DATETIME_TYPE:
-        ((DateTimeAggregator) agg).add(tb.getDateTime(aggFieldIdx, row));
-        break;
-
-    }
-  }
-
-  /**
    * @param tb the TupleBatch to be processed.
    */
   private void processTupleBatch(final TupleBatch tb) {
@@ -203,10 +161,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
             groupAgg = groupAggsBoolean[1];
           }
           if (groupAgg == null) {
-            groupAgg = new Aggregator<?>[agg.length];
-            for (int j = 0; j < agg.length; j++) {
-              groupAgg[j] = agg[j].freshCopyYourself();
-            }
+            groupAgg = AggUtils.allocate(getChild().getSchema(), afields, aggOps);
             if (groupByKey) {
               groupAggsBoolean[0] = groupAgg;
             } else {
@@ -214,7 +169,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
             }
           }
           for (int j = 0; j < afields.length; j++) {
-            addValue2Group(tb, i, afields[j], aColumnTypes[j], groupAgg[j]);
+            AggUtils.addValue2Group(tb, i, afields[j], groupAgg[j]);
           }
         }
         break;
@@ -223,14 +178,11 @@ public class SingleGroupByAggregate extends UnaryOperator {
           String groupByKey = tb.getString(gColumn, i);
           Aggregator<?>[] groupAgg = groupAggsString.get(groupByKey);
           if (groupAgg == null) {
-            groupAgg = new Aggregator<?>[agg.length];
-            for (int j = 0; j < agg.length; j++) {
-              groupAgg[j] = agg[j].freshCopyYourself();
-            }
+            groupAgg = AggUtils.allocate(getChild().getSchema(), afields, aggOps);
             groupAggsString.put(groupByKey, groupAgg);
           }
           for (int j = 0; j < afields.length; j++) {
-            addValue2Group(tb, i, afields[j], aColumnTypes[j], groupAgg[j]);
+            AggUtils.addValue2Group(tb, i, afields[j], groupAgg[j]);
           }
         }
         break;
@@ -239,14 +191,11 @@ public class SingleGroupByAggregate extends UnaryOperator {
           DateTime groupByKey = tb.getDateTime(gColumn, i);
           Aggregator<?>[] groupAgg = groupAggsDatetime.get(groupByKey);
           if (groupAgg == null) {
-            groupAgg = new Aggregator<?>[agg.length];
-            for (int j = 0; j < agg.length; j++) {
-              groupAgg[j] = agg[j].freshCopyYourself();
-            }
+            groupAgg = AggUtils.allocate(getChild().getSchema(), afields, aggOps);
             groupAggsDatetime.put(groupByKey, groupAgg);
           }
           for (int j = 0; j < afields.length; j++) {
-            addValue2Group(tb, i, afields[j], aColumnTypes[j], groupAgg[j]);
+            AggUtils.addValue2Group(tb, i, afields[j], groupAgg[j]);
           }
         }
         break;
@@ -255,14 +204,11 @@ public class SingleGroupByAggregate extends UnaryOperator {
           int groupByKey = tb.getInt(gColumn, i);
           Aggregator<?>[] groupAgg = groupAggsInt.get(groupByKey);
           if (groupAgg == null) {
-            groupAgg = new Aggregator<?>[agg.length];
-            for (int j = 0; j < agg.length; j++) {
-              groupAgg[j] = agg[j].freshCopyYourself();
-            }
+            groupAgg = AggUtils.allocate(getChild().getSchema(), afields, aggOps);
             groupAggsInt.put(groupByKey, groupAgg);
           }
           for (int j = 0; j < afields.length; j++) {
-            addValue2Group(tb, i, afields[j], aColumnTypes[j], groupAgg[j]);
+            AggUtils.addValue2Group(tb, i, afields[j], groupAgg[j]);
           }
         }
         break;
@@ -271,14 +217,11 @@ public class SingleGroupByAggregate extends UnaryOperator {
           long groupByKey = tb.getLong(gColumn, i);
           Aggregator<?>[] groupAgg = groupAggsLong.get(groupByKey);
           if (groupAgg == null) {
-            groupAgg = new Aggregator<?>[agg.length];
-            for (int j = 0; j < agg.length; j++) {
-              groupAgg[j] = agg[j].freshCopyYourself();
-            }
+            groupAgg = AggUtils.allocate(getChild().getSchema(), afields, aggOps);
             groupAggsLong.put(groupByKey, groupAgg);
           }
           for (int j = 0; j < afields.length; j++) {
-            addValue2Group(tb, i, afields[j], aColumnTypes[j], groupAgg[j]);
+            AggUtils.addValue2Group(tb, i, afields[j], groupAgg[j]);
           }
         }
         break;
@@ -287,14 +230,11 @@ public class SingleGroupByAggregate extends UnaryOperator {
           float groupByKey = tb.getFloat(gColumn, i);
           Aggregator<?>[] groupAgg = groupAggsFloat.get(groupByKey);
           if (groupAgg == null) {
-            groupAgg = new Aggregator<?>[agg.length];
-            for (int j = 0; j < agg.length; j++) {
-              groupAgg[j] = agg[j].freshCopyYourself();
-            }
+            groupAgg = AggUtils.allocate(getChild().getSchema(), afields, aggOps);
             groupAggsFloat.put(groupByKey, groupAgg);
           }
           for (int j = 0; j < afields.length; j++) {
-            addValue2Group(tb, i, afields[j], aColumnTypes[j], groupAgg[j]);
+            AggUtils.addValue2Group(tb, i, afields[j], groupAgg[j]);
           }
         }
         break;
@@ -303,14 +243,11 @@ public class SingleGroupByAggregate extends UnaryOperator {
           double groupByKey = tb.getDouble(gColumn, i);
           Aggregator<?>[] groupAgg = groupAggsDouble.get(groupByKey);
           if (groupAgg == null) {
-            groupAgg = new Aggregator<?>[agg.length];
-            for (int j = 0; j < agg.length; j++) {
-              groupAgg[j] = agg[j].freshCopyYourself();
-            }
+            groupAgg = AggUtils.allocate(getChild().getSchema(), afields, aggOps);
             groupAggsDouble.put(groupByKey, groupAgg);
           }
           for (int j = 0; j < afields.length; j++) {
-            addValue2Group(tb, i, afields[j], aColumnTypes[j], groupAgg[j]);
+            AggUtils.addValue2Group(tb, i, afields[j], groupAgg[j]);
           }
         }
         break;
@@ -508,38 +445,9 @@ public class SingleGroupByAggregate extends UnaryOperator {
             .getColumnName(gColumn)));
 
     gColumnType = childSchema.getColumnType(gColumn);
-    aColumnTypes = new Type[afields.length];
-
-    agg = new Aggregator<?>[aggOps.length];
-
-    int idx = 0;
-    for (final int afield : afields) {
-      aColumnTypes[idx] = childSchema.getColumnType(afield);
-      switch (aColumnTypes[idx]) {
-        case BOOLEAN_TYPE:
-          agg[idx] = new BooleanAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        case INT_TYPE:
-          agg[idx] = new IntegerAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        case LONG_TYPE:
-          agg[idx] = new LongAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        case FLOAT_TYPE:
-          agg[idx] = new FloatAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        case DOUBLE_TYPE:
-          agg[idx] = new DoubleAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        case STRING_TYPE:
-          agg[idx] = new StringAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        default:
-          throw new IllegalArgumentException("Unknown column type: " + aColumnTypes[idx]);
-      }
-
-      outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
-      idx++;
+    agg = AggUtils.allocate(childSchema, afields, aggOps);
+    for (Aggregator<?> a : agg) {
+      outputSchema = Schema.merge(outputSchema, a.getResultSchema());
     }
     return outputSchema;
   }
