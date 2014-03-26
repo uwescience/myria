@@ -123,7 +123,7 @@ public class TupleBuffer implements ReadableTable, Cloneable {
       throw new IndexOutOfBoundsException();
     }
     if (tupleBatchIndex < readyTuples.size()) {
-      return ((BooleanMutableColumn) (readyTuples.get(tupleBatchIndex)[column])).getBoolean(tupleIndex);
+      return readyTuples.get(tupleBatchIndex)[column].getBoolean(tupleIndex);
     }
     return currentBuildingColumns[column].getBoolean(tupleIndex);
   }
@@ -137,7 +137,7 @@ public class TupleBuffer implements ReadableTable, Cloneable {
       throw new IndexOutOfBoundsException();
     }
     if (tupleBatchIndex < readyTuples.size()) {
-      return ((DoubleMutableColumn) (readyTuples.get(tupleBatchIndex)[column])).getDouble(tupleIndex);
+      return readyTuples.get(tupleBatchIndex)[column].getDouble(tupleIndex);
     }
     return currentBuildingColumns[column].getDouble(tupleIndex);
   }
@@ -151,7 +151,7 @@ public class TupleBuffer implements ReadableTable, Cloneable {
       throw new IndexOutOfBoundsException();
     }
     if (tupleBatchIndex < readyTuples.size()) {
-      return ((FloatMutableColumn) (readyTuples.get(tupleBatchIndex)[column])).getFloat(tupleIndex);
+      return readyTuples.get(tupleBatchIndex)[column].getFloat(tupleIndex);
     }
     return currentBuildingColumns[column].getFloat(tupleIndex);
   }
@@ -165,7 +165,7 @@ public class TupleBuffer implements ReadableTable, Cloneable {
       throw new IndexOutOfBoundsException();
     }
     if (tupleBatchIndex < readyTuples.size()) {
-      return ((LongMutableColumn) (readyTuples.get(tupleBatchIndex)[column])).getLong(tupleIndex);
+      return readyTuples.get(tupleBatchIndex)[column].getLong(tupleIndex);
     }
     return currentBuildingColumns[column].getLong(tupleIndex);
   }
@@ -179,7 +179,7 @@ public class TupleBuffer implements ReadableTable, Cloneable {
       throw new IndexOutOfBoundsException();
     }
     if (tupleBatchIndex < readyTuples.size()) {
-      return ((IntMutableColumn) (readyTuples.get(tupleBatchIndex)[column])).getInt(tupleIndex);
+      return readyTuples.get(tupleBatchIndex)[column].getInt(tupleIndex);
     }
     return currentBuildingColumns[column].getInt(tupleIndex);
   }
@@ -193,7 +193,7 @@ public class TupleBuffer implements ReadableTable, Cloneable {
       throw new IndexOutOfBoundsException();
     }
     if (tupleBatchIndex < readyTuples.size()) {
-      return ((StringMutableColumn) (readyTuples.get(tupleBatchIndex)[column])).getString(tupleIndex);
+      return readyTuples.get(tupleBatchIndex)[column].getString(tupleIndex);
     }
     return currentBuildingColumns[column].getString(tupleIndex);
   }
@@ -207,7 +207,7 @@ public class TupleBuffer implements ReadableTable, Cloneable {
       throw new IndexOutOfBoundsException();
     }
     if (tupleBatchIndex < readyTuples.size()) {
-      return ((DateTimeMutableColumn) (readyTuples.get(tupleBatchIndex)[column])).getDateTime(tupleIndex);
+      return readyTuples.get(tupleBatchIndex)[column].getDateTime(tupleIndex);
     }
     return ((DateTimeColumnBuilder) (currentBuildingColumns[column])).getDateTime(tupleIndex);
   }
