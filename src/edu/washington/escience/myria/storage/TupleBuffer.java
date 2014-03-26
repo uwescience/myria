@@ -247,49 +247,49 @@ public class TupleBuffer implements ReadableTable, AppendableTable, Cloneable {
   @Override
   public final void putBoolean(final int column, final boolean value) {
     checkPutIndex(column);
-    ((BooleanColumnBuilder) currentBuildingColumns[column]).appendBoolean(value);
+    currentBuildingColumns[column].appendBoolean(value);
     columnPut(column);
   }
 
   @Override
   public final void putDateTime(final int column, final DateTime value) {
     checkPutIndex(column);
-    ((DateTimeColumnBuilder) currentBuildingColumns[column]).appendDateTime(value);
+    currentBuildingColumns[column].appendDateTime(value);
     columnPut(column);
   }
 
   @Override
   public final void putDouble(final int column, final double value) {
     checkPutIndex(column);
-    ((DoubleColumnBuilder) currentBuildingColumns[column]).appendDouble(value);
+    currentBuildingColumns[column].appendDouble(value);
     columnPut(column);
   }
 
   @Override
   public final void putFloat(final int column, final float value) {
     checkPutIndex(column);
-    ((FloatColumnBuilder) currentBuildingColumns[column]).appendFloat(value);
+    currentBuildingColumns[column].appendFloat(value);
     columnPut(column);
   }
 
   @Override
   public final void putInt(final int column, final int value) {
     checkPutIndex(column);
-    ((IntColumnBuilder) currentBuildingColumns[column]).appendInt(value);
+    currentBuildingColumns[column].appendInt(value);
     columnPut(column);
   }
 
   @Override
   public final void putLong(final int column, final long value) {
     checkPutIndex(column);
-    ((LongColumnBuilder) currentBuildingColumns[column]).appendLong(value);
+    currentBuildingColumns[column].appendLong(value);
     columnPut(column);
   }
 
   @Override
   public final void putString(final int column, final String value) {
     checkPutIndex(column);
-    ((StringColumnBuilder) currentBuildingColumns[column]).appendString(value);
+    currentBuildingColumns[column].appendString(value);
     columnPut(column);
   }
 
@@ -373,32 +373,7 @@ public class TupleBuffer implements ReadableTable, AppendableTable, Cloneable {
    * @param sourceRow the row in the source column from which data will be retrieved.
    */
   public final void put(final int destColumn, final Column<?> sourceColumn, final int sourceRow) {
-    checkPutIndex(destColumn);
-    ColumnBuilder<?> dest = currentBuildingColumns[destColumn];
-    switch (dest.getType()) {
-      case BOOLEAN_TYPE:
-        dest.appendBoolean(sourceColumn.getBoolean(sourceRow));
-        break;
-      case DATETIME_TYPE:
-        dest.appendDateTime(sourceColumn.getDateTime(sourceRow));
-        break;
-      case DOUBLE_TYPE:
-        dest.appendDouble(sourceColumn.getDouble(sourceRow));
-        break;
-      case FLOAT_TYPE:
-        dest.appendFloat(sourceColumn.getFloat(sourceRow));
-        break;
-      case INT_TYPE:
-        dest.appendInt(sourceColumn.getInt(sourceRow));
-        break;
-      case LONG_TYPE:
-        dest.appendLong(sourceColumn.getLong(sourceRow));
-        break;
-      case STRING_TYPE:
-        dest.appendString(sourceColumn.getString(sourceRow));
-        break;
-    }
-    columnPut(destColumn);
+    TupleUtils.copyValue(sourceColumn, sourceRow, this, destColumn);
   }
 
   /**
