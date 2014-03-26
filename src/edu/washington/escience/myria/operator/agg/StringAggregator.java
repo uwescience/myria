@@ -4,9 +4,9 @@ import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.storage.AppendableTable;
 import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.storage.ReadableTable;
-import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 /**
  * Knows how to compute some aggregate over a StringColumn.
@@ -154,18 +154,18 @@ public final class StringAggregator implements Aggregator<String> {
   }
 
   @Override
-  public void getResult(final TupleBatchBuffer buffer, final int fromIndex) {
-    int idx = fromIndex;
+  public void getResult(final AppendableTable dest, final int destColumn) {
+    int idx = destColumn;
     if ((aggOps & AGG_OP_COUNT) != 0) {
-      buffer.putLong(idx, count);
+      dest.putLong(idx, count);
       idx++;
     }
     if (computeMin) {
-      buffer.putString(idx, min);
+      dest.putString(idx, min);
       idx++;
     }
     if (computeMax) {
-      buffer.putString(idx, max);
+      dest.putString(idx, max);
     }
   }
 

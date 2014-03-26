@@ -7,9 +7,9 @@ import com.google.common.math.LongMath;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.storage.AppendableTable;
 import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.storage.ReadableTable;
-import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 /**
  * Knows how to compute some aggregates over a LongColumn.
@@ -166,33 +166,33 @@ public final class LongAggregator implements Aggregator<Long> {
   }
 
   @Override
-  public void getResult(final TupleBatchBuffer buffer, final int fromIndex) {
-    int idx = fromIndex;
+  public void getResult(final AppendableTable dest, final int destColumn) {
+    int idx = destColumn;
     if ((aggOps & AGG_OP_COUNT) != 0) {
-      buffer.putLong(idx, count);
+      dest.putLong(idx, count);
       idx++;
     }
     if ((aggOps & AGG_OP_MIN) != 0) {
-      buffer.putLong(idx, min);
+      dest.putLong(idx, min);
       idx++;
     }
     if ((aggOps & AGG_OP_MAX) != 0) {
-      buffer.putLong(idx, max);
+      dest.putLong(idx, max);
       idx++;
     }
     if ((aggOps & AGG_OP_SUM) != 0) {
-      buffer.putLong(idx, sum);
+      dest.putLong(idx, sum);
       idx++;
     }
     if ((aggOps & AGG_OP_AVG) != 0) {
-      buffer.putDouble(idx, ((double) sum) / count);
+      dest.putDouble(idx, ((double) sum) / count);
       idx++;
     }
     if ((aggOps & AGG_OP_STDEV) != 0) {
       double first = ((double) sumSquared) / count;
       double second = ((double) sum) / count;
       double stdev = Math.sqrt(first - second * second);
-      buffer.putDouble(idx, stdev);
+      dest.putDouble(idx, stdev);
       idx++;
     }
   }

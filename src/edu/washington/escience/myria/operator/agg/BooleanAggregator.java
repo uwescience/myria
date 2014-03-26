@@ -6,9 +6,9 @@ import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.storage.AppendableTable;
 import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.storage.ReadableTable;
-import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 /**
  * Knows how to compute some aggregates over a BooleanColumn.
@@ -90,8 +90,8 @@ public final class BooleanAggregator implements Aggregator<Boolean> {
   }
 
   @Override
-  public void getResult(final TupleBatchBuffer outputBuffer, final int fromIndex) {
-    int idx = fromIndex;
+  public void getResult(final AppendableTable outputBuffer, final int destColumn) {
+    int idx = destColumn;
     if ((aggOps & AGG_OP_COUNT) != 0) {
       outputBuffer.putLong(idx, count);
       idx++;

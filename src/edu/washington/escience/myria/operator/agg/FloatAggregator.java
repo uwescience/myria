@@ -7,9 +7,9 @@ import com.google.common.math.LongMath;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.storage.AppendableTable;
 import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.storage.ReadableTable;
-import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 /**
  * Knows how to compute some aggregates over a FloatColumn.
@@ -167,31 +167,31 @@ public final class FloatAggregator implements Aggregator<Float> {
   }
 
   @Override
-  public void getResult(final TupleBatchBuffer buffer, final int fromIndex) {
-    int idx = fromIndex;
+  public void getResult(final AppendableTable dest, final int destColumn) {
+    int idx = destColumn;
     if ((aggOps & AGG_OP_COUNT) != 0) {
-      buffer.putLong(idx, count);
+      dest.putLong(idx, count);
       idx++;
     }
     if ((aggOps & AGG_OP_MIN) != 0) {
-      buffer.putFloat(idx, min);
+      dest.putFloat(idx, min);
       idx++;
     }
     if ((aggOps & AGG_OP_MAX) != 0) {
-      buffer.putFloat(idx, max);
+      dest.putFloat(idx, max);
       idx++;
     }
     if ((aggOps & AGG_OP_SUM) != 0) {
-      buffer.putDouble(idx, sum);
+      dest.putDouble(idx, sum);
       idx++;
     }
     if ((aggOps & AGG_OP_AVG) != 0) {
-      buffer.putDouble(idx, sum * 1.0 / count);
+      dest.putDouble(idx, sum * 1.0 / count);
       idx++;
     }
     if ((aggOps & AGG_OP_STDEV) != 0) {
       double stdev = Math.sqrt((sumSquared / count) - ((sum) / count * sum / count));
-      buffer.putDouble(idx, stdev);
+      dest.putDouble(idx, stdev);
       idx++;
     }
   }
