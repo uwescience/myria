@@ -30,7 +30,7 @@ import edu.washington.escience.myria.column.mutable.StringMutableColumn;
 
 /** A simplified TupleBatchBuffer which supports random access. Designed for hash tables to use. */
 
-public class TupleBuffer implements ReadableTable, Cloneable {
+public class TupleBuffer implements ReadableTable, AppendableTable, Cloneable {
   /** Format of the emitted tuples. */
   private final Schema schema;
   /** Convenience constant; must match schema.numColumns() and currentColumns.size(). */
@@ -242,84 +242,49 @@ public class TupleBuffer implements ReadableTable, Cloneable {
     return numColumns;
   }
 
-  /**
-   * Append the specified value to the specified column.
-   * 
-   * @param column index of the column.
-   * @param value value to be appended.
-   */
+  @Override
   public final void putBoolean(final int column, final boolean value) {
     checkPutIndex(column);
     ((BooleanColumnBuilder) currentBuildingColumns[column]).appendBoolean(value);
     columnPut(column);
   }
 
-  /**
-   * Append the specified value to the specified column.
-   * 
-   * @param column index of the column.
-   * @param value value to be appended.
-   */
+  @Override
   public final void putDateTime(final int column, final DateTime value) {
     checkPutIndex(column);
     ((DateTimeColumnBuilder) currentBuildingColumns[column]).appendDateTime(value);
     columnPut(column);
   }
 
-  /**
-   * Append the specified value to the specified column.
-   * 
-   * @param column index of the column.
-   * @param value value to be appended.
-   */
+  @Override
   public final void putDouble(final int column, final double value) {
     checkPutIndex(column);
     ((DoubleColumnBuilder) currentBuildingColumns[column]).appendDouble(value);
     columnPut(column);
   }
 
-  /**
-   * Append the specified value to the specified column.
-   * 
-   * @param column index of the column.
-   * @param value value to be appended.
-   */
+  @Override
   public final void putFloat(final int column, final float value) {
     checkPutIndex(column);
     ((FloatColumnBuilder) currentBuildingColumns[column]).appendFloat(value);
     columnPut(column);
   }
 
-  /**
-   * Append the specified value to the specified column.
-   * 
-   * @param column index of the column.
-   * @param value value to be appended.
-   */
+  @Override
   public final void putInt(final int column, final int value) {
     checkPutIndex(column);
     ((IntColumnBuilder) currentBuildingColumns[column]).appendInt(value);
     columnPut(column);
   }
 
-  /**
-   * Append the specified value to the specified column.
-   * 
-   * @param column index of the column.
-   * @param value value to be appended.
-   */
+  @Override
   public final void putLong(final int column, final long value) {
     checkPutIndex(column);
     ((LongColumnBuilder) currentBuildingColumns[column]).appendLong(value);
     columnPut(column);
   }
 
-  /**
-   * Append the specified value to the specified column.
-   * 
-   * @param column index of the column.
-   * @param value value to be appended.
-   */
+  @Override
   public final void putString(final int column, final String value) {
     checkPutIndex(column);
     ((StringColumnBuilder) currentBuildingColumns[column]).appendString(value);
@@ -367,7 +332,7 @@ public class TupleBuffer implements ReadableTable, Cloneable {
    * 
    * @return compared result.
    */
-  public final int compare(final int columnInThisTB, final int rowInThisTB, final TupleBuffer comparedTB,
+  public final int compare(final int columnInThisTB, final int rowInThisTB, final ReadableTable comparedTB,
       final int columnInComparedTB, final int rowInComparedTB) {
     Preconditions.checkArgument(getSchema().getColumnType(columnInThisTB).equals(
         comparedTB.getSchema().getColumnType(columnInComparedTB)), "The types of comparing cells are not matched.");
