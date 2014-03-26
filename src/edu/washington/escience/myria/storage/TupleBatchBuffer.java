@@ -84,9 +84,8 @@ public class TupleBatchBuffer implements AppendableTable {
    */
   private void checkPutIndex(final int column) {
     Preconditions.checkElementIndex(column, numColumns);
-    if (columnsReady.get(column)) {
-      throw new RuntimeException("Need to fill up one row of TupleBatchBuffer before starting new one");
-    }
+    Preconditions.checkState(!columnsReady.get(column),
+        "need to fill up one row of TupleBatchBuffer before starting new one");
   }
 
   /**
