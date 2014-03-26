@@ -5,8 +5,8 @@ import java.util.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.math.LongMath;
 
+import edu.washington.escience.myria.ReadableTable;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 
@@ -123,7 +123,7 @@ public final class FloatAggregator implements Aggregator<Float> {
   }
 
   @Override
-  public void add(final TupleBatch tup) {
+  public void add(final ReadableTable tup) {
     final int numTuples = tup.numTuples();
     if (numTuples == 0) {
       return;
@@ -163,7 +163,15 @@ public final class FloatAggregator implements Aggregator<Float> {
 
   @Override
   public void add(final Float value) {
-    Objects.requireNonNull(value, "value");
+    addFloat(Objects.requireNonNull(value, "value"));
+  }
+
+  /**
+   * Add the specified value to this aggregator.
+   * 
+   * @param value the value to be added
+   */
+  public void addFloat(final float value) {
     if (AggUtils.needsCount(aggOps)) {
       count = LongMath.checkedAdd(count, 1);
     }
@@ -220,5 +228,10 @@ public final class FloatAggregator implements Aggregator<Float> {
   @Override
   public Schema getResultSchema() {
     return resultSchema;
+  }
+
+  @Override
+  public void add(final ReadableTable t, final int column, final int row) {
+    addFloat(t.getFloat(column, row));
   }
 }

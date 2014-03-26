@@ -2,8 +2,8 @@ package edu.washington.escience.myria.operator.agg;
 
 import java.io.Serializable;
 
+import edu.washington.escience.myria.ReadableTable;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 
 /**
@@ -39,11 +39,21 @@ public interface Aggregator<COLUMN_TYPE> extends Serializable {
   int AGG_OP_STDEV = 0x20;
 
   /**
-   * Add a new TupleBatch into the aggregate.
+   * Add the entire contents of {@link ReadableTable} into the aggregate.
    * 
-   * @param t TupleBatch
+   * @param t the source {@link ReadableTable}
    */
-  void add(TupleBatch t);
+  void add(ReadableTable t);
+
+  /**
+   * Add the value in the specified <code>column</code> and <code>row</code> in the given {@link ReadableTable} into the
+   * aggregate.
+   * 
+   * @param t the source {@link ReadableTable}
+   * @param column the column in <code>t</code> containing the value
+   * @param row the row in <code>t</code> containing the value
+   */
+  void add(ReadableTable t, int column, int row);
 
   /**
    * Add a new value into the aggregate.

@@ -4,8 +4,8 @@ import org.joda.time.DateTime;
 
 import com.google.common.collect.ImmutableList;
 
+import edu.washington.escience.myria.ReadableTable;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 
@@ -119,7 +119,7 @@ public final class DateTimeAggregator implements Aggregator<DateTime> {
   }
 
   @Override
-  public void add(final TupleBatch tup) {
+  public void add(final ReadableTable tup) {
 
     final int numTuples = tup.numTuples();
     if (numTuples > 0) {
@@ -207,5 +207,10 @@ public final class DateTimeAggregator implements Aggregator<DateTime> {
   @Override
   public Schema getResultSchema() {
     return resultSchema;
+  }
+
+  @Override
+  public void add(final ReadableTable t, final int column, final int row) {
+    add(t.getDateTime(column, row));
   }
 }

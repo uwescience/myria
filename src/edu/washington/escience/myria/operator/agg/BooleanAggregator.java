@@ -1,9 +1,11 @@
 package edu.washington.escience.myria.operator.agg;
 
+import java.util.Objects;
+
 import com.google.common.collect.ImmutableList;
 
+import edu.washington.escience.myria.ReadableTable;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 
@@ -71,15 +73,22 @@ public final class BooleanAggregator implements Aggregator<Boolean> {
   }
 
   @Override
-  public void add(final TupleBatch tup) {
+  public void add(final ReadableTable tup) {
     count += tup.numTuples();
+  }
+
+  /**
+   * Add the specified value to this aggregator.
+   * 
+   * @param value the value to be added
+   */
+  public void addBoolean(final boolean value) {
+    count++;
   }
 
   @Override
   public void add(final Boolean value) {
-    if (value != null) {
-      count++;
-    }
+    addBoolean(Objects.requireNonNull(value, "value"));
   }
 
   @Override
@@ -109,5 +118,10 @@ public final class BooleanAggregator implements Aggregator<Boolean> {
   @Override
   public Schema getResultSchema() {
     return resultSchema;
+  }
+
+  @Override
+  public void add(final ReadableTable t, final int column, final int row) {
+    add(t.getBoolean(column, row));
   }
 }
