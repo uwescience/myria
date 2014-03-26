@@ -18,7 +18,7 @@ public class MultiGroupByAggregateEncoding extends UnaryOperatorEncoding<MultiGr
   @Override
   public MultiGroupByAggregate construct(Server server) {
     int[] ops = deserializeAggregateOperator(argAggOperators);
-    return new MultiGroupByAggregate(null, argAggFields, argGroupFields, ops);
+    return new MultiGroupByAggregate(null, argGroupFields, argAggFields, ops);
   }
 
   /**

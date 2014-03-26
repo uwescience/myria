@@ -82,11 +82,12 @@ public final class MultiGroupByAggregate extends UnaryOperator {
    * 
    * 
    * @param child The Operator that is feeding us tuples.
-   * @param afields The columns over which we are computing an aggregate.
-   * @param gfields The columns over which we are grouping the result, or -1 if there is no grouping
-   * @param aggOps The aggregation operator to use
+   * @param gfields The columns over which we are grouping the result.
+   * @param afields The columns over which we are computing an aggregate, corresponding to the aggregate operations we
+   *          are performing.
+   * @param aggOps The aggregation operator to use for each column in <code>aFields</code>.
    */
-  public MultiGroupByAggregate(final Operator child, final int[] afields, final int[] gfields, final int[] aggOps) {
+  public MultiGroupByAggregate(final Operator child, final int[] gfields, final int[] afields, final int[] aggOps) {
     super(child);
     Objects.requireNonNull(afields);
     Objects.requireNonNull(gfields);
