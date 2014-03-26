@@ -19,7 +19,7 @@ import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
-import edu.washington.escience.myria.storage.TupleBuffer;
+import edu.washington.escience.myria.storage.MutableTupleBuffer;
 
 /**
  * 
@@ -82,7 +82,7 @@ public class LeapFrogJoin extends NAryOperator {
   /**
    * The buffer holding the valid tuples from children.
    */
-  private transient TupleBuffer[] tables;
+  private transient MutableTupleBuffer[] tables;
 
   /**
    * An internal state to record how many children have EOSed.
@@ -522,7 +522,7 @@ public class LeapFrogJoin extends NAryOperator {
     }
     /* handle the case that one of input tables is empty. */
     if (currentDepth == -1) {
-      for (TupleBuffer table : tables) {
+      for (MutableTupleBuffer table : tables) {
         if (table.numTuples() == 0) {
           joinFinished = true;
           checkEOSAndEOI();
@@ -653,9 +653,9 @@ public class LeapFrogJoin extends NAryOperator {
 
     /* Initiate hash tables */
 
-    tables = new TupleBuffer[children.length];
+    tables = new MutableTupleBuffer[children.length];
     for (int i = 0; i < children.length; ++i) {
-      tables[i] = new TupleBuffer(children[i].getSchema());
+      tables[i] = new MutableTupleBuffer(children[i].getSchema());
     }
     /* Initiate iterators */
     iterators = new TableIterator[children.length];
@@ -1022,7 +1022,7 @@ public class LeapFrogJoin extends NAryOperator {
    */
   private void addToAns() {
     for (int i = 0; i < outputFieldMapping.size(); ++i) {
-      TupleBuffer hashTable = tables[outputFieldMapping.get(i).tableIndex];
+      MutableTupleBuffer hashTable = tables[outputFieldMapping.get(i).tableIndex];
       int row = iterators[outputFieldMapping.get(i).tableIndex].getRowOfCurrentField();
       int rowInTB = hashTable.getTupleIndexInContainingTB(row);
       ReadableColumn sourceColumn = hashTable.getColumns(row)[outputFieldMapping.get(i).fieldIndex];

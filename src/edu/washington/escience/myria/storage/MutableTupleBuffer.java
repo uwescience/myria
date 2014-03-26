@@ -32,7 +32,7 @@ import edu.washington.escience.myria.column.mutable.StringMutableColumn;
 
 /** A simplified TupleBatchBuffer which supports random access. Designed for hash tables to use. */
 
-public class TupleBuffer implements ReadableTable, AppendableTable, Cloneable {
+public class MutableTupleBuffer implements ReadableTable, AppendableTable, Cloneable {
   /** Format of the emitted tuples. */
   private final Schema schema;
   /** Convenience constant; must match schema.numColumns() and currentColumns.size(). */
@@ -53,7 +53,7 @@ public class TupleBuffer implements ReadableTable, AppendableTable, Cloneable {
    * 
    * @param schema specified the columns of the emitted TupleBatch objects.
    */
-  public TupleBuffer(final Schema schema) {
+  public MutableTupleBuffer(final Schema schema) {
     this.schema = Objects.requireNonNull(schema);
     readyTuples = new ArrayList<MutableColumn<?>[]>();
     currentBuildingColumns = ColumnFactory.allocateColumns(schema).toArray(new ColumnBuilder<?>[] {});
@@ -714,8 +714,8 @@ public class TupleBuffer implements ReadableTable, AppendableTable, Cloneable {
   }
 
   @Override
-  public TupleBuffer clone() {
-    TupleBuffer ret = new TupleBuffer(getSchema());
+  public MutableTupleBuffer clone() {
+    MutableTupleBuffer ret = new MutableTupleBuffer(getSchema());
     ret.columnsReady = (BitSet) columnsReady.clone();
     ret.numColumnsReady = numColumnsReady;
     ret.currentInProgressTuples = currentInProgressTuples;
