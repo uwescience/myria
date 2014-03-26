@@ -13,13 +13,13 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.ReadableColumn;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
-import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.storage.ReadableColumn;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.TupleBuffer;
 
 /**
  * 

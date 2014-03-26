@@ -13,9 +13,9 @@ import com.google.protobuf.CodedInputStream;
 
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.parallel.ipc.PayloadSerializer;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
+import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.util.IPCUtils;
 
 /**

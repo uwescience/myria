@@ -2,10 +2,10 @@ package edu.washington.escience.myria.operator.agg;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myria.ReadableTable;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.storage.ReadableTable;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 /**
  * Knows how to compute some aggregate over a StringColumn.

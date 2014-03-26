@@ -4,8 +4,8 @@ import java.util.Queue;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 /**
  * Transparently export the data from child to a {@link Queue<TupleBatch>}.

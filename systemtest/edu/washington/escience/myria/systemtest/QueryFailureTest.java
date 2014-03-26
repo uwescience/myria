@@ -10,8 +10,6 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.RootOperator;
@@ -24,6 +22,8 @@ import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.QueryFuture;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestUtils;
 
 public class QueryFailureTest extends SystemTestBase {

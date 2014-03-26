@@ -2,9 +2,9 @@ package edu.washington.escience.myria.operator.agg;
 
 import java.io.Serializable;
 
-import edu.washington.escience.myria.ReadableTable;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.ReadableTable;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 /**
  * Single column aggregator.

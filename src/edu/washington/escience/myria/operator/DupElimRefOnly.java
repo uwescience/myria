@@ -9,8 +9,8 @@ import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * A simple implementation of duplicate eliminate. It keeps the references to all the TupleBatches which contain unique

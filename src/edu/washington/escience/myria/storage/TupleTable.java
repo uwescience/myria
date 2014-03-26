@@ -1,4 +1,6 @@
-package edu.washington.escience.myria;
+package edu.washington.escience.myria.storage;
+
+import edu.washington.escience.myria.Schema;
 
 /**
  * Any object that is a table (2-D) of tuples.

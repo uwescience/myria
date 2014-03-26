@@ -17,7 +17,6 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
@@ -31,6 +30,7 @@ import edu.washington.escience.myria.operator.StreamingStateWrapper;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.parallel.QueryExecutionMode;
 import edu.washington.escience.myria.parallel.TaskResourceManager;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 public class TwitterSingleNodeJoinSpeedTest {
   /**

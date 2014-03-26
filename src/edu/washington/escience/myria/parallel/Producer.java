@@ -12,8 +12,6 @@ import com.google.common.collect.ImmutableMap;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.KeepAndSortOnMinValue;
 import edu.washington.escience.myria.operator.KeepMinValue;
@@ -26,6 +24,8 @@ import edu.washington.escience.myria.parallel.ipc.IPCEvent;
 import edu.washington.escience.myria.parallel.ipc.IPCEventListener;
 import edu.washington.escience.myria.parallel.ipc.StreamIOChannelID;
 import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
 
 /**

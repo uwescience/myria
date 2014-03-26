@@ -14,8 +14,8 @@ import com.google.common.io.LittleEndianDataInputStream;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 /**
  * Reads data from binary file. This class is written base on the code from FileScan.java

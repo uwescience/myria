@@ -1,4 +1,4 @@
-package edu.washington.escience.myria;
+package edu.washington.escience.myria.storage;
 
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -9,6 +9,8 @@ import org.joda.time.DateTime;
 
 import com.google.common.base.Preconditions;
 
+import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.BooleanColumnBuilder;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;

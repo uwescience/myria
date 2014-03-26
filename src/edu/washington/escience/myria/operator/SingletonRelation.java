@@ -3,9 +3,9 @@ package edu.washington.escience.myria.operator;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 /**
  * A relation of exactly one row. In principle, it should have no columns, but we require there to be at least one.

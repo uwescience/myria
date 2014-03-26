@@ -1,4 +1,4 @@
-package edu.washington.escience.myria;
+package edu.washington.escience.myria.storage;
 
 import org.joda.time.DateTime;
 

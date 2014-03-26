@@ -2,11 +2,11 @@ package edu.washington.escience.myria.operator;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
-import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.TupleBuffer;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;

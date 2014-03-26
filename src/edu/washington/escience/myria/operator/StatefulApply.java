@@ -11,8 +11,6 @@ import com.google.common.collect.Lists;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.Tuple;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
@@ -21,6 +19,8 @@ import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.evaluate.ConstantEvaluator;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
+import edu.washington.escience.myria.storage.Tuple;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * Apply operator that has to be initialized and carries a state while new tuples are generated.

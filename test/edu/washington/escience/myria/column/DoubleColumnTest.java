@@ -6,9 +6,9 @@ import java.nio.BufferOverflowException;
 
 import org.junit.Test;
 
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.column.builder.DoubleColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 public class DoubleColumnTest {
 

@@ -12,16 +12,16 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.ExchangeTupleBatch;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.operator.LeafOperator;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.IPCMessage;
 import edu.washington.escience.myria.parallel.ipc.StreamIOChannelID;
 import edu.washington.escience.myria.parallel.ipc.StreamInputBuffer;
+import edu.washington.escience.myria.storage.ExchangeTupleBatch;
+import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
 import gnu.trove.impl.unmodifiable.TUnmodifiableIntIntMap;
 import gnu.trove.map.TIntIntMap;

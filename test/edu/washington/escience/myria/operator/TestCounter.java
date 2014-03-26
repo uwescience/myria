@@ -11,8 +11,8 @@ import com.google.common.collect.Sets;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 public class TestCounter {
 

@@ -17,7 +17,6 @@ import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.accessmethod.AccessMethod;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
@@ -25,6 +24,7 @@ import edu.washington.escience.myria.accessmethod.JdbcAccessMethod;
 import edu.washington.escience.myria.accessmethod.SQLiteAccessMethod;
 import edu.washington.escience.myria.accessmethod.SQLiteInfo;
 import edu.washington.escience.myria.operator.Operator;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * A logger for profiling data.

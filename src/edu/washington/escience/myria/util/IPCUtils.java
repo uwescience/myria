@@ -14,7 +14,6 @@ import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnFactory;
 import edu.washington.escience.myria.parallel.QueryExecutionStatistics;
@@ -28,6 +27,7 @@ import edu.washington.escience.myria.proto.QueryProto;
 import edu.washington.escience.myria.proto.QueryProto.QueryMessage;
 import edu.washington.escience.myria.proto.QueryProto.QueryReport;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * A bunch of utility methods for IPC layer.

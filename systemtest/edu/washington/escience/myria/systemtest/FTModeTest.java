@@ -18,8 +18,6 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
@@ -48,6 +46,8 @@ import edu.washington.escience.myria.parallel.PartitionFunction;
 import edu.washington.escience.myria.parallel.QueryFuture;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestUtils;
 
 public class FTModeTest extends SystemTestBase {

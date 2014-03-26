@@ -1,4 +1,4 @@
-package edu.washington.escience.myria;
+package edu.washington.escience.myria.storage;
 
 import java.io.Serializable;
 import java.sql.PreparedStatement;
@@ -20,6 +20,8 @@ import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 
+import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.parallel.PartitionFunction;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;

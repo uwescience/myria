@@ -26,8 +26,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.SocketInfo;
@@ -40,6 +38,8 @@ import edu.washington.escience.myria.parallel.ipc.StreamIOChannelID;
 import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.TestUtils;
 import edu.washington.escience.myria.util.Tuple;

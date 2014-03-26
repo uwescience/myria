@@ -1,4 +1,4 @@
-package edu.washington.escience.myria;
+package edu.washington.escience.myria.storage;
 
 import java.io.Serializable;
 import java.nio.BufferOverflowException;

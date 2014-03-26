@@ -9,8 +9,6 @@ import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.AbsExpression;
 import edu.washington.escience.myria.expression.AndExpression;
@@ -52,6 +50,8 @@ import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.StatefulApply;
 import edu.washington.escience.myria.operator.TupleSource;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestEnvVars;
 import edu.washington.escience.myria.util.TestUtils;
 

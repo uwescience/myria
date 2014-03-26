@@ -11,13 +11,13 @@ import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.ColumnFactory;
 import edu.washington.escience.myria.column.builder.IntColumnBuilder;
 import edu.washington.escience.myria.column.builder.StringColumnBuilder;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 public class RenameTest {
 

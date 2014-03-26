@@ -16,8 +16,6 @@ import com.google.common.primitives.Longs;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
@@ -31,6 +29,8 @@ import edu.washington.escience.myria.operator.agg.Aggregate;
 import edu.washington.escience.myria.operator.agg.Aggregator;
 import edu.washington.escience.myria.operator.agg.MultiGroupByAggregate;
 import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestEnvVars;
 import edu.washington.escience.myria.util.TestUtils;
 import edu.washington.escience.myria.util.Tuple;

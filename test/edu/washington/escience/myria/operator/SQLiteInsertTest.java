@@ -21,9 +21,9 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.accessmethod.SQLiteInfo;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.FSUtils;
 
 public class SQLiteInsertTest {

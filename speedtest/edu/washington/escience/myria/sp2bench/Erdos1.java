@@ -7,11 +7,11 @@ import java.util.concurrent.LinkedBlockingQueue;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.Producer;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 public class Erdos1 implements QueryPlanGenerator {
 

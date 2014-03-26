@@ -5,8 +5,6 @@ import java.util.HashMap;
 
 import com.google.common.collect.ImmutableSet;
 
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.ipc.IPCTestUtil;
 import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.parallel.TransportMessageSerializer;
@@ -14,6 +12,8 @@ import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.IPCMessage;
 import edu.washington.escience.myria.parallel.ipc.SimpleBagInputBuffer;
 import edu.washington.escience.myria.parallel.ipc.StreamIOChannelID;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 public class TenGBTupleBatchReceiverUsingConnectionPool {
 

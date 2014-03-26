@@ -1,4 +1,6 @@
-package edu.washington.escience.myria;
+package edu.washington.escience.myria.storage;
+
+import edu.washington.escience.myria.Type;
 
 
 /**
