@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import edu.washington.escience.myria.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * A partition function that simply sends one tuple to each output in turn.

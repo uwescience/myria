@@ -10,11 +10,11 @@ import com.google.common.collect.ImmutableMap;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.parallel.ProfilingLogger;
 import edu.washington.escience.myria.parallel.QueryPartition;
 import edu.washington.escience.myria.parallel.QuerySubTreeTask;
 import edu.washington.escience.myria.parallel.TaskResourceManager;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * Abstract class for implementing operators.

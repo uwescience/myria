@@ -2,11 +2,11 @@ package edu.washington.escience.myria.operator;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
-import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.MutableTupleBuffer;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
@@ -38,9 +38,9 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
   /** A hash table for tuples from right child. {Hashcode -> List of tuple indices with the same hash code} */
   private transient TIntObjectMap<TIntList> rightHashTableIndices;
   /** The buffer holding the valid tuples from left. */
-  private transient TupleBuffer leftHashTable;
+  private transient MutableTupleBuffer leftHashTable;
   /** The buffer holding the valid tuples from right. */
-  private transient TupleBuffer rightHashTable;
+  private transient MutableTupleBuffer rightHashTable;
   /** How many times each key occurred from left. */
   private transient TIntList occuredTimesOnLeft;
   /** How many times each key occurred from right. */
@@ -69,7 +69,7 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
     /**
      * Hash table.
      * */
-    private TupleBuffer joinAgainstHashTable;
+    private MutableTupleBuffer joinAgainstHashTable;
 
     /**
      * times of occure of a key.
@@ -284,8 +284,8 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
     rightHashTableIndices = new TIntObjectHashMap<TIntList>();
     occuredTimesOnLeft = new TIntArrayList();
     occuredTimesOnRight = new TIntArrayList();
-    leftHashTable = new TupleBuffer(getLeft().getSchema().getSubSchema(leftCompareIndx));
-    rightHashTable = new TupleBuffer(getRight().getSchema().getSubSchema(rightCompareIndx));
+    leftHashTable = new MutableTupleBuffer(getLeft().getSchema().getSubSchema(leftCompareIndx));
+    rightHashTable = new MutableTupleBuffer(getRight().getSchema().getSubSchema(rightCompareIndx));
     ans = 0;
     ansTBB = new TupleBatchBuffer(getSchema());
     doCountingJoin = new CountingJoinProcedure();
@@ -300,7 +300,7 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
     final Operator left = getLeft();
     final Operator right = getRight();
 
-    TupleBuffer hashTable1Local = null;
+    MutableTupleBuffer hashTable1Local = null;
     TIntObjectMap<TIntList> hashTable1IndicesLocal = null;
     TIntObjectMap<TIntList> hashTable2IndicesLocal = null;
     TIntList ownOccuredTimes = null;
@@ -375,7 +375,7 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
    * @param occuredTimes occuredTimes array to be updated
    * */
   private void updateHashTableAndOccureTimes(final TupleBatch tb, final int row, final int hashCode,
-      final TupleBuffer hashTable, final TIntObjectMap<TIntList> hashTableIndices, final int[] compareColumns,
+      final MutableTupleBuffer hashTable, final TIntObjectMap<TIntList> hashTableIndices, final int[] compareColumns,
       final TIntList occuredTimes) {
 
     /* get the index of the tuple's hash code corresponding to */

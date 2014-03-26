@@ -9,8 +9,6 @@ import org.codehaus.commons.compiler.IScriptEvaluator;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.ReadableTable;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
@@ -22,6 +20,8 @@ import edu.washington.escience.myria.expression.StateExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.StatefulApply;
+import edu.washington.escience.myria.storage.ReadableTable;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * An Expression evaluator for generic expressions. Used in {@link Apply} and {@link StatefulApply}.

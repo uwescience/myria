@@ -2,11 +2,11 @@ package edu.washington.escience.myria.operator;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
-import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.MutableTupleBuffer;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
@@ -51,7 +51,7 @@ public class RightHashCountingJoin extends BinaryOperator {
   /**
    * The buffer holding the valid tuples from right.
    */
-  private transient TupleBuffer hashTable;
+  private transient MutableTupleBuffer hashTable;
   /**
    * How many times each key occurred from right.
    */
@@ -85,7 +85,7 @@ public class RightHashCountingJoin extends BinaryOperator {
     /**
      * Hash table.
      * */
-    private TupleBuffer joinAgainstHashTable;
+    private MutableTupleBuffer joinAgainstHashTable;
 
     /**
      * times of occure of a key.
@@ -251,7 +251,7 @@ public class RightHashCountingJoin extends BinaryOperator {
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     final Operator right = getRight();
     hashTableIndices = new TIntObjectHashMap<TIntList>();
-    hashTable = new TupleBuffer(right.getSchema().getSubSchema(rightCompareIndx));
+    hashTable = new MutableTupleBuffer(right.getSchema().getSubSchema(rightCompareIndx));
     occurredTimes = new TIntArrayList();
     doCountingJoin = new CountingJoinProcedure();
     ans = 0;
@@ -306,7 +306,7 @@ public class RightHashCountingJoin extends BinaryOperator {
    * @param occuredTimes occuredTimes array to be updated
    * */
   private void updateHashTableAndOccureTimes(final TupleBatch tb, final int row, final int hashCode,
-      final TupleBuffer hashTable, final TIntObjectMap<TIntList> hashTableIndices, final int[] compareColumns,
+      final MutableTupleBuffer hashTable, final TIntObjectMap<TIntList> hashTableIndices, final int[] compareColumns,
       final TIntList occuredTimes) {
 
     /* get the index of the tuple's hash code corresponding to */

@@ -7,7 +7,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.ColumnSelect;
 import edu.washington.escience.myria.operator.DbQueryScan;
@@ -26,6 +25,7 @@ import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
 import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.parallel.WholeTupleHashPartitionFunction;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 public class Q5A_Count implements QueryPlanGenerator {
 

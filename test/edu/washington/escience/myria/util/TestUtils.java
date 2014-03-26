@@ -12,8 +12,8 @@ import org.junit.Assert;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 public final class TestUtils {
 

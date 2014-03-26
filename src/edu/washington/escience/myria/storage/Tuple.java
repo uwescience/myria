@@ -1,4 +1,4 @@
-package edu.washington.escience.myria;
+package edu.washington.escience.myria.storage;
 
 import java.io.Serializable;
 import java.util.List;
@@ -7,6 +7,9 @@ import org.joda.time.DateTime;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+
+import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.Type;
 
 /**
  * A single row relation.

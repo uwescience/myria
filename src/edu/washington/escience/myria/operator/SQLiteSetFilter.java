@@ -11,10 +11,10 @@ import com.google.common.collect.ImmutableMap;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.accessmethod.SQLiteAccessMethod;
 import edu.washington.escience.myria.accessmethod.SQLiteInfo;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * This operator implements set selection from a underlying database.<br>

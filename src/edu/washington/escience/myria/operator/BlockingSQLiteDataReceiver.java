@@ -6,8 +6,8 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.accessmethod.SQLiteInfo;
+import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.util.SQLiteUtils;
 
 /**

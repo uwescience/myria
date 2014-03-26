@@ -10,8 +10,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.ipc.IPCTestUtil;
 import edu.washington.escience.myria.parallel.SocketInfo;
@@ -19,6 +17,8 @@ import edu.washington.escience.myria.parallel.TransportMessageSerializer;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.IPCMessage;
 import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestUtils;
 
 public class TenGBTupleBatchSenderUsingConnectionPool {

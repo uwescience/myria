@@ -8,7 +8,7 @@ import javax.annotation.Nullable;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * A Duplicate Elimination Operator that works on ordered input.

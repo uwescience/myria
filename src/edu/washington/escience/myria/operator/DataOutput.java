@@ -5,8 +5,8 @@ import java.io.IOException;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleWriter;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * DataOutput is a {@link RootOperator} that can be used to serialize data in a streaming fashion. It consumes

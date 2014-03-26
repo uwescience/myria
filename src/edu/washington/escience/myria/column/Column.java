@@ -13,7 +13,6 @@ import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.hash.Hasher;
 import com.google.protobuf.ByteString;
 
-import edu.washington.escience.myria.ReadableColumn;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.BooleanColumnMessage;
@@ -24,6 +23,7 @@ import edu.washington.escience.myria.proto.DataProto.FloatColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.IntColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.LongColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.StringColumnMessage;
+import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.util.ImmutableIntArray;
 
 /**

@@ -5,9 +5,9 @@ import com.google.common.collect.ImmutableMap;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.accessmethod.JdbcAccessMethod;
 import edu.washington.escience.myria.accessmethod.JdbcInfo;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * Blocking when receiving data from children.

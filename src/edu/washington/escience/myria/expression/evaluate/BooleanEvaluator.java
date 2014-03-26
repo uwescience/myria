@@ -8,9 +8,9 @@ import org.codehaus.commons.compiler.IScriptEvaluator;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.Expression;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * An Expression evaluator for stateless boolean expressions.

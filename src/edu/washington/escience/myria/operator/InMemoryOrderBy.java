@@ -8,13 +8,13 @@ import java.util.List;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 
-import edu.washington.escience.myria.ReadableColumn;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
-import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.storage.ReadableColumn;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.MutableTupleBuffer;
 
 /**
  * Orders tuples in memory.
@@ -44,7 +44,7 @@ public final class InMemoryOrderBy extends UnaryOperator {
   /**
    * Tuple data stored as columns until it is sorted.
    */
-  private TupleBuffer table;
+  private MutableTupleBuffer table;
 
   /**
    * @param child the source of the tuples.
@@ -73,7 +73,7 @@ public final class InMemoryOrderBy extends UnaryOperator {
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws Exception {
     Preconditions.checkArgument(sortColumns.length == ascending.length);
     ans = new TupleBatchBuffer(getSchema());
-    table = new TupleBuffer(getSchema());
+    table = new MutableTupleBuffer(getSchema());
   }
 
   @Override

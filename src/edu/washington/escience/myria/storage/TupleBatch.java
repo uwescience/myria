@@ -1,4 +1,4 @@
-package edu.washington.escience.myria;
+package edu.washington.escience.myria.storage;
 
 import java.io.Serializable;
 import java.sql.PreparedStatement;
@@ -20,6 +20,8 @@ import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 
+import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.parallel.PartitionFunction;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
@@ -104,11 +106,13 @@ public class TupleBatch implements ReadableTable, Serializable {
    * @param isEOI whether this is an EOI TupleBatch.
    */
   public TupleBatch(final Schema schema, final List<Column<?>> columns, final int numTuples, final boolean isEOI) {
-    this.schema = Objects.requireNonNull(schema);
-    Objects.requireNonNull(columns);
+    this.schema = Objects.requireNonNull(schema, "schema");
+    this.columns = ImmutableList.copyOf(Objects.requireNonNull(columns, "columns"));
     Preconditions.checkArgument(columns.size() == schema.numColumns(),
         "Number of columns in data must equal the number of fields in schema");
-    this.columns = ImmutableList.copyOf(columns);
+    for (Column<?> column : columns) {
+      Preconditions.checkArgument(numTuples == column.size(), "Column %s != %s tuples", column.size(), numTuples);
+    }
     this.numTuples = numTuples;
     this.isEOI = isEOI;
   }
@@ -212,6 +216,8 @@ public class TupleBatch implements ReadableTable, Serializable {
 
   @Override
   public final long getLong(final int column, final int row) {
+    Preconditions.checkArgument(columns.get(column).size() >= numTuples, "numTuples %s columnsize %s", numTuples,
+        columns.get(column).size());
     return columns.get(column).getLong(row);
   }
 
@@ -417,63 +423,6 @@ public class TupleBatch implements ReadableTable, Serializable {
    * */
   public final boolean isEOI() {
     return isEOI;
-  }
-
-  /**
-   * Check if a tuple in uniqueTuples equals to the comparing tuple (cntTuple).
-   * 
-   * @param hashTable the TupleBatchBuffer holding the tuples to compare against
-   * @param index the index in the hashTable
-   * @param row row number of the tuple to compare
-   * @param compareColumns1 the comparing list of columns of cntTuple
-   * @param compareColumns2 the comparing list of columns of hashTable
-   * @return true if equals.
-   */
-  public boolean tupleEquals(final int row, final ReadableTable hashTable, final int index,
-      final int[] compareColumns1, final int[] compareColumns2) {
-    if (compareColumns1.length != compareColumns2.length) {
-      return false;
-    }
-    for (int i = 0; i < compareColumns1.length; ++i) {
-      switch (schema.getColumnType(compareColumns1[i])) {
-        case BOOLEAN_TYPE:
-          if (getBoolean(compareColumns1[i], row) != hashTable.getBoolean(compareColumns2[i], index)) {
-            return false;
-          }
-          break;
-        case DOUBLE_TYPE:
-          if (getDouble(compareColumns1[i], row) != hashTable.getDouble(compareColumns2[i], index)) {
-            return false;
-          }
-          break;
-        case FLOAT_TYPE:
-          if (getFloat(compareColumns1[i], row) != hashTable.getFloat(compareColumns2[i], index)) {
-            return false;
-          }
-          break;
-        case INT_TYPE:
-          if (getInt(compareColumns1[i], row) != hashTable.getInt(compareColumns2[i], index)) {
-            return false;
-          }
-          break;
-        case LONG_TYPE:
-          if (getLong(compareColumns1[i], row) != hashTable.getLong(compareColumns2[i], index)) {
-            return false;
-          }
-          break;
-        case STRING_TYPE:
-          if (!getString(compareColumns1[i], row).equals(hashTable.getString(compareColumns2[i], index))) {
-            return false;
-          }
-          break;
-        case DATETIME_TYPE:
-          if (!getDateTime(compareColumns1[i], row).equals(hashTable.getDateTime(compareColumns2[i], index))) {
-            return false;
-          }
-          break;
-      }
-    }
-    return true;
   }
 
   /**

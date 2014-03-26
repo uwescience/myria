@@ -17,11 +17,11 @@ import com.google.common.collect.ImmutableSet;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.accessmethod.AccessMethod;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.SQLiteInfo;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * @author valmeida

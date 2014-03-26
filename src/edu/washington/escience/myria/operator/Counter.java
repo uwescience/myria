@@ -3,9 +3,9 @@ package edu.washington.escience.myria.operator;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.builder.LongColumnBuilder;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * Counter appends a Column<Long> to the incoming tuples.

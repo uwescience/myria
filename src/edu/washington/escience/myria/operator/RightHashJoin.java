@@ -1,13 +1,14 @@
 package edu.washington.escience.myria.operator;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.ReadableColumn;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
-import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.storage.ReadableColumn;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.MutableTupleBuffer;
+import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
@@ -60,7 +61,7 @@ public final class RightHashJoin extends BinaryOperator {
   /**
    * The buffer holding the valid tuples from right.
    */
-  private transient TupleBuffer rightHashTable;
+  private transient MutableTupleBuffer rightHashTable;
   /**
    * The buffer holding the results.
    */
@@ -78,7 +79,7 @@ public final class RightHashJoin extends BinaryOperator {
     /**
      * Hash table.
      * */
-    private TupleBuffer joinAgainstHashTable;
+    private MutableTupleBuffer joinAgainstHashTable;
 
     /**
      * 
@@ -101,7 +102,7 @@ public final class RightHashJoin extends BinaryOperator {
 
     @Override
     public boolean execute(final int index) {
-      if (inputTB.tupleEquals(row, joinAgainstHashTable, index, inputCmpColumns, joinAgainstCmpColumns)) {
+      if (TupleUtils.equalSubRows(inputTB, row, inputCmpColumns, joinAgainstHashTable, index, joinAgainstCmpColumns)) {
         addToAns(inputTB, row, joinAgainstHashTable, index);
       }
       return true;
@@ -243,7 +244,7 @@ public final class RightHashJoin extends BinaryOperator {
    * @param hashTable the buffer holding the tuples to join against
    * @param index the index of hashTable, which the cntTuple is to join with
    */
-  protected void addToAns(final TupleBatch cntTB, final int row, final TupleBuffer hashTable, final int index) {
+  protected void addToAns(final TupleBatch cntTB, final int row, final MutableTupleBuffer hashTable, final int index) {
     List<Column<?>> tbColumns = cntTB.getDataColumns();
     ReadableColumn[] hashTblColumns = hashTable.getColumns(index);
     int tupleIdx = hashTable.getTupleIndexInContainingTB(index);
@@ -366,7 +367,7 @@ public final class RightHashJoin extends BinaryOperator {
     final Operator right = getRight();
     rightHashTableIndices = new TIntObjectHashMap<TIntList>();
 
-    rightHashTable = new TupleBuffer(right.getSchema());
+    rightHashTable = new MutableTupleBuffer(right.getSchema());
     ans = new TupleBatchBuffer(getSchema());
     doJoin = new JoinProcedure();
   }
@@ -414,7 +415,7 @@ public final class RightHashJoin extends BinaryOperator {
    * @param hashTable1IndicesLocal hash table 1 indices local
    * @param hashCode the hashCode of the tb.
    * */
-  private void addToHashTable(final TupleBatch tb, final int row, final TupleBuffer hashTable,
+  private void addToHashTable(final TupleBatch tb, final int row, final MutableTupleBuffer hashTable,
       final TIntObjectMap<TIntList> hashTable1IndicesLocal, final int hashCode) {
     final int nextIndex = hashTable.numTuples();
     TIntList tupleIndicesList = hashTable1IndicesLocal.get(hashCode);

@@ -15,11 +15,11 @@ import com.google.common.io.LittleEndianDataInputStream;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.io.FileSource;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 /**
  * Read a SeaFlow EVT/OPP file. See the formats in https://github.com/fribalet/flowPhyto/blob/master/R/Globals.R

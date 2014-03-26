@@ -5,7 +5,7 @@ import java.util.List;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * Rename operator is a UnaryOperator that makes a shallow modification to child TupleBatches: it merely changes their

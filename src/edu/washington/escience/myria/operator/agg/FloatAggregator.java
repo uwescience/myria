@@ -6,9 +6,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.math.LongMath;
 
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.storage.AppendableTable;
+import edu.washington.escience.myria.storage.ReadableColumn;
+import edu.washington.escience.myria.storage.ReadableTable;
 
 /**
  * Knows how to compute some aggregates over a FloatColumn.
@@ -17,11 +18,6 @@ public final class FloatAggregator implements Aggregator<Float> {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
-
-  /**
-   * aggregate column.
-   * */
-  private final int aColumn;
 
   /**
    * Aggregate operations. An binary-or of all the applicable aggregate operations, i.e. those in
@@ -56,29 +52,10 @@ public final class FloatAggregator implements Aggregator<Float> {
       | Aggregator.AGG_OP_MIN | Aggregator.AGG_OP_AVG | Aggregator.AGG_OP_STDEV;
 
   /**
-   * This serves as the copy constructor.
-   * 
-   * @param afield the aggregate column.
-   * @param aggOps the aggregate operation to simultaneously compute.
-   * @param resultSchema the result schema.
-   * */
-  private FloatAggregator(final int afield, final int aggOps, final Schema resultSchema) {
-    this.resultSchema = resultSchema;
-    aColumn = afield;
-    this.aggOps = aggOps;
-    sum = 0;
-    count = 0;
-    min = Float.MAX_VALUE;
-    max = Float.MIN_VALUE;
-    sumSquared = 0.0;
-  }
-
-  /**
-   * @param afield the aggregate column.
    * @param aFieldName aggregate field name for use in output schema.
    * @param aggOps the aggregate operation to simultaneously compute.
    * */
-  public FloatAggregator(final int afield, final String aFieldName, final int aggOps) {
+  public FloatAggregator(final String aFieldName, final int aggOps) {
     if (aggOps <= 0) {
       throw new IllegalArgumentException("No aggregation operations are selected");
     }
@@ -86,7 +63,6 @@ public final class FloatAggregator implements Aggregator<Float> {
     if ((aggOps | AVAILABLE_AGG) != AVAILABLE_AGG) {
       throw new IllegalArgumentException("Unsupported aggregation on float column.");
     }
-    aColumn = afield;
     this.aggOps = aggOps;
     min = Float.MAX_VALUE;
     max = Float.MIN_VALUE;
@@ -123,8 +99,8 @@ public final class FloatAggregator implements Aggregator<Float> {
   }
 
   @Override
-  public void add(final TupleBatch tup) {
-    final int numTuples = tup.numTuples();
+  public void add(final ReadableTable from, final int fromColumn) {
+    final int numTuples = from.numTuples();
     if (numTuples == 0) {
       return;
     }
@@ -137,7 +113,7 @@ public final class FloatAggregator implements Aggregator<Float> {
       return;
     }
     for (int i = 0; i < numTuples; i++) {
-      addFloatStats(tup.getFloat(aColumn, i));
+      addFloatStats(from.getFloat(fromColumn, i));
     }
   }
 
@@ -163,7 +139,15 @@ public final class FloatAggregator implements Aggregator<Float> {
 
   @Override
   public void add(final Float value) {
-    Objects.requireNonNull(value, "value");
+    addFloat(Objects.requireNonNull(value, "value"));
+  }
+
+  /**
+   * Add the specified value to this aggregator.
+   * 
+   * @param value the value to be added
+   */
+  public void addFloat(final float value) {
     if (AggUtils.needsCount(aggOps)) {
       count = LongMath.checkedAdd(count, 1);
     }
@@ -183,36 +167,31 @@ public final class FloatAggregator implements Aggregator<Float> {
   }
 
   @Override
-  public FloatAggregator freshCopyYourself() {
-    return new FloatAggregator(aColumn, aggOps, resultSchema);
-  }
-
-  @Override
-  public void getResult(final TupleBatchBuffer buffer, final int fromIndex) {
-    int idx = fromIndex;
+  public void getResult(final AppendableTable dest, final int destColumn) {
+    int idx = destColumn;
     if ((aggOps & AGG_OP_COUNT) != 0) {
-      buffer.putLong(idx, count);
+      dest.putLong(idx, count);
       idx++;
     }
     if ((aggOps & AGG_OP_MIN) != 0) {
-      buffer.putFloat(idx, min);
+      dest.putFloat(idx, min);
       idx++;
     }
     if ((aggOps & AGG_OP_MAX) != 0) {
-      buffer.putFloat(idx, max);
+      dest.putFloat(idx, max);
       idx++;
     }
     if ((aggOps & AGG_OP_SUM) != 0) {
-      buffer.putDouble(idx, sum);
+      dest.putDouble(idx, sum);
       idx++;
     }
     if ((aggOps & AGG_OP_AVG) != 0) {
-      buffer.putDouble(idx, sum * 1.0 / count);
+      dest.putDouble(idx, sum * 1.0 / count);
       idx++;
     }
     if ((aggOps & AGG_OP_STDEV) != 0) {
       double stdev = Math.sqrt((sumSquared / count) - ((sum) / count * sum / count));
-      buffer.putDouble(idx, stdev);
+      dest.putDouble(idx, stdev);
       idx++;
     }
   }
@@ -220,5 +199,34 @@ public final class FloatAggregator implements Aggregator<Float> {
   @Override
   public Schema getResultSchema() {
     return resultSchema;
+  }
+
+  @Override
+  public void add(final ReadableTable t, final int column, final int row) {
+    addFloat(t.getFloat(column, row));
+  }
+
+  @Override
+  public Type getType() {
+    return Type.FLOAT_TYPE;
+  }
+
+  @Override
+  public void add(final ReadableColumn from) {
+    final int numTuples = from.size();
+    if (numTuples == 0) {
+      return;
+    }
+
+    if (AggUtils.needsCount(aggOps)) {
+      count = LongMath.checkedAdd(count, numTuples);
+    }
+
+    if (!AggUtils.needsStats(aggOps)) {
+      return;
+    }
+    for (int i = 0; i < numTuples; i++) {
+      addFloatStats(from.getFloat(i));
+    }
   }
 }

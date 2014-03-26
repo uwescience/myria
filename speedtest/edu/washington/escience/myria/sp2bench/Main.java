@@ -13,12 +13,12 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FilenameUtils;
 
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.parallel.QueryFuture;
 import edu.washington.escience.myria.parallel.QueryFutureListener;
 import edu.washington.escience.myria.parallel.Server;
+import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.util.DateTimeUtils;
 
 public class Main {

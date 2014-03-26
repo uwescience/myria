@@ -3,7 +3,7 @@ package edu.washington.escience.myria.operator;
 import java.util.Objects;
 
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * An empty relation with the given Schema.

@@ -2,7 +2,7 @@ package edu.washington.escience.myria.parallel;
 
 import javax.annotation.Nonnull;
 
-import edu.washington.escience.myria.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * 

@@ -3,7 +3,7 @@ package edu.washington.escience.myria.operator;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * A root operator that simply count the number of results and drop them.

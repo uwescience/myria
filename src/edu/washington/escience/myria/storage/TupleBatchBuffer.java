@@ -1,4 +1,4 @@
-package edu.washington.escience.myria;
+package edu.washington.escience.myria.storage;
 
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -10,6 +10,8 @@ import org.joda.time.DateTime;
 
 import com.google.common.base.Preconditions;
 
+import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.ColumnFactory;
@@ -21,7 +23,7 @@ import edu.washington.escience.myria.column.builder.ColumnFactory;
  * @author dhalperi
  * 
  */
-public class TupleBatchBuffer {
+public class TupleBatchBuffer implements AppendableTable {
   /** Format of the emitted tuples. */
   private final Schema schema;
   /** Convenience constant; must match schema.numColumns() and currentColumns.size(). */
@@ -82,9 +84,8 @@ public class TupleBatchBuffer {
    */
   private void checkPutIndex(final int column) {
     Preconditions.checkElementIndex(column, numColumns);
-    if (columnsReady.get(column)) {
-      throw new RuntimeException("Need to fill up one row of TupleBatchBuffer before starting new one");
-    }
+    Preconditions.checkState(!columnsReady.get(column),
+        "need to fill up one row of TupleBatchBuffer before starting new one");
   }
 
   /**
@@ -359,32 +360,7 @@ public class TupleBatchBuffer {
    * @param sourceRow the row in the source column from which data will be retrieved.
    */
   public final void put(final int destColumn, final ReadableColumn sourceColumn, final int sourceRow) {
-    checkPutIndex(destColumn);
-    ColumnBuilder<?> dest = currentBuildingColumns.get(destColumn);
-    switch (dest.getType()) {
-      case BOOLEAN_TYPE:
-        dest.appendBoolean(sourceColumn.getBoolean(sourceRow));
-        break;
-      case DATETIME_TYPE:
-        dest.appendDateTime(sourceColumn.getDateTime(sourceRow));
-        break;
-      case DOUBLE_TYPE:
-        dest.appendDouble(sourceColumn.getDouble(sourceRow));
-        break;
-      case FLOAT_TYPE:
-        dest.appendFloat(sourceColumn.getFloat(sourceRow));
-        break;
-      case INT_TYPE:
-        dest.appendInt(sourceColumn.getInt(sourceRow));
-        break;
-      case LONG_TYPE:
-        dest.appendLong(sourceColumn.getLong(sourceRow));
-        break;
-      case STRING_TYPE:
-        dest.appendString(sourceColumn.getString(sourceRow));
-        break;
-    }
-    columnPut(destColumn);
+    TupleUtils.copyValue(sourceColumn, sourceRow, this, destColumn);
   }
 
   /**
@@ -400,84 +376,49 @@ public class TupleBatchBuffer {
     }
   }
 
-  /**
-   * Append the specified value to the specified column.
-   * 
-   * @param column index of the column.
-   * @param value value to be appended.
-   */
+  @Override
   public final void putBoolean(final int column, final boolean value) {
     checkPutIndex(column);
     currentBuildingColumns.get(column).appendBoolean(value);
     columnPut(column);
   }
 
-  /**
-   * Append the specified value to the specified column.
-   * 
-   * @param column index of the column.
-   * @param value value to be appended.
-   */
+  @Override
   public final void putDateTime(final int column, final DateTime value) {
     checkPutIndex(column);
     currentBuildingColumns.get(column).appendDateTime(value);
     columnPut(column);
   }
 
-  /**
-   * Append the specified value to the specified column.
-   * 
-   * @param column index of the column.
-   * @param value value to be appended.
-   */
+  @Override
   public final void putDouble(final int column, final double value) {
     checkPutIndex(column);
     currentBuildingColumns.get(column).appendDouble(value);
     columnPut(column);
   }
 
-  /**
-   * Append the specified value to the specified column.
-   * 
-   * @param column index of the column.
-   * @param value value to be appended.
-   */
+  @Override
   public final void putFloat(final int column, final float value) {
     checkPutIndex(column);
     currentBuildingColumns.get(column).appendFloat(value);
     columnPut(column);
   }
 
-  /**
-   * Append the specified value to the specified column.
-   * 
-   * @param column index of the column.
-   * @param value value to be appended.
-   */
+  @Override
   public final void putInt(final int column, final int value) {
     checkPutIndex(column);
     currentBuildingColumns.get(column).appendInt(value);
     columnPut(column);
   }
 
-  /**
-   * Append the specified value to the specified column.
-   * 
-   * @param column index of the column.
-   * @param value value to be appended.
-   */
+  @Override
   public final void putLong(final int column, final long value) {
     checkPutIndex(column);
     currentBuildingColumns.get(column).appendLong(value);
     columnPut(column);
   }
 
-  /**
-   * Append the specified value to the specified column.
-   * 
-   * @param column index of the column.
-   * @param value value to be appended.
-   */
+  @Override
   public final void putString(final int column, final String value) {
     checkPutIndex(column);
     currentBuildingColumns.get(column).appendString(value);

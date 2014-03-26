@@ -5,9 +5,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.common.collect.Sets;
 
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * Non-blocking driving code of a sub-query.
