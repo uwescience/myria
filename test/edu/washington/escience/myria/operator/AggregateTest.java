@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.operator;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
 import java.util.HashMap;
@@ -615,6 +616,7 @@ public class AggregateTest {
             new int[] { Aggregator.AGG_OP_SUM });
     mga.open(null);
     TupleBatch result = mga.nextReady();
+    assertNotNull(result);
     assertEquals(1, result.numTuples());
     assertEquals(expectedFirst, result.getLong(result.numColumns() - 1, 0));
     mga.close();
@@ -626,6 +628,7 @@ public class AggregateTest {
             new int[] { Aggregator.AGG_OP_SUM });
     mgaTwo.open(null);
     TupleBatch resultTwo = mgaTwo.nextReady();
+    assertNotNull(result);
     assertEquals(2, resultTwo.numTuples());
     assertEquals(expectedSecond, resultTwo.getLong(resultTwo.numColumns() - 1, 0));
     assertEquals(expectedSecond, resultTwo.getLong(resultTwo.numColumns() - 1, 1));
@@ -658,6 +661,7 @@ public class AggregateTest {
             new int[] { Aggregator.AGG_OP_AVG });
     mga.open(null);
     TupleBatch result = mga.nextReady();
+    assertNotNull(result);
     assertEquals(2, result.numTuples());
     assertEquals(expected, result.getDouble(result.numColumns() - 1, 0), 0.000001);
     mga.close();
@@ -687,6 +691,7 @@ public class AggregateTest {
             new int[] { Aggregator.AGG_OP_MIN });
     mga.open(null);
     TupleBatch result = mga.nextReady();
+    assertNotNull(result);
     assertEquals(1, result.numTuples());
     assertEquals(expected, result.getLong(result.numColumns() - 1, 0));
     mga.close();
@@ -716,6 +721,7 @@ public class AggregateTest {
             new int[] { Aggregator.AGG_OP_MAX });
     mga.open(null);
     TupleBatch result = mga.nextReady();
+    assertNotNull(result);
     assertEquals(1, result.numTuples());
     assertEquals(expected, result.getLong(result.numColumns() - 1, 0));
     mga.close();
@@ -747,8 +753,8 @@ public class AggregateTest {
             Aggregator.AGG_OP_MAX, Aggregator.AGG_OP_MIN });
     mga.open(null);
     TupleBatch result = mga.nextReady();
+    assertNotNull(result);
     assertEquals(1, result.numTuples());
-
     assertEquals(4, result.getSchema().numColumns());
     assertEquals(expectedMin, result.getLong(result.numColumns() - 1, 0));
     assertEquals(expectedMax, result.getLong(result.numColumns() - 2, 0));
@@ -778,6 +784,7 @@ public class AggregateTest {
             new int[] { Aggregator.AGG_OP_COUNT });
     mga.open(null);
     TupleBatch result = mga.nextReady();
+    assertNotNull(result);
     assertEquals(1, result.numTuples());
     assertEquals(3, result.getSchema().numColumns());
     assertEquals(numTuples, result.getLong(result.numColumns() - 1, 0));
