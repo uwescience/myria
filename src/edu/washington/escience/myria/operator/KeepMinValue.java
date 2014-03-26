@@ -5,6 +5,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBuffer;
+import edu.washington.escience.myria.storage.TupleUtils;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
@@ -179,7 +180,7 @@ public final class KeepMinValue extends StreamingState {
 
     @Override
     public boolean execute(final int index) {
-      if (inputTB.tupleEquals(row, uniqueTuples, index, keyColIndices, keyColIndices)) {
+      if (TupleUtils.equalSubRows(inputTB, row, keyColIndices, uniqueTuples, index, keyColIndices)) {
         unique = false;
         Column<?> valueColumn = inputTB.getDataColumns().get(valueColIndex);
         if (shouldReplace(index, valueColumn, row)) {
