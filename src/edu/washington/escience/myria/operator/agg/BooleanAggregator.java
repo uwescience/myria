@@ -80,16 +80,6 @@ public final class BooleanAggregator implements Aggregator<Boolean> {
   }
 
   @Override
-  public void addObj(final Object obj) {
-    this.add((Boolean) obj);
-  }
-
-  @Override
-  public int availableAgg() {
-    return AVAILABLE_AGG;
-  }
-
-  @Override
   public void getResult(final AppendableTable outputBuffer, final int destColumn) {
     int idx = destColumn;
     if ((aggOps & AGG_OP_COUNT) != 0) {

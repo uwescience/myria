@@ -121,16 +121,6 @@ public final class StringAggregator implements Aggregator<String> {
   }
 
   @Override
-  public void addObj(final Object value) {
-    add((String) value);
-  }
-
-  @Override
-  public int availableAgg() {
-    return AVAILABLE_AGG;
-  }
-
-  @Override
   public void getResult(final AppendableTable dest, final int destColumn) {
     int idx = destColumn;
     if ((aggOps & AGG_OP_COUNT) != 0) {

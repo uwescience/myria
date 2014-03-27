@@ -73,18 +73,6 @@ public interface Aggregator<COLUMN_TYPE> extends Serializable {
   void add(COLUMN_TYPE value);
 
   /**
-   * Add an object.
-   * 
-   * @param obj the object value.
-   */
-  void addObj(Object obj);
-
-  /**
-   * @return available aggregates this Aggregator supports.
-   */
-  int availableAgg();
-
-  /**
    * Output the aggregate result. Store the output to buffer.
    * 
    * @param dest the buffer to store the aggregate result.

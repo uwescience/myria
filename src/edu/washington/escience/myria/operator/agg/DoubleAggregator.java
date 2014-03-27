@@ -144,16 +144,6 @@ public final class DoubleAggregator implements Aggregator<Double> {
   }
 
   @Override
-  public void addObj(final Object obj) {
-    this.add((Double) obj);
-  }
-
-  @Override
-  public int availableAgg() {
-    return AVAILABLE_AGG;
-  }
-
-  @Override
   public void getResult(final AppendableTable dest, final int destColumn) {
     int idx = destColumn;
     if ((aggOps & AGG_OP_COUNT) != 0) {

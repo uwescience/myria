@@ -143,16 +143,6 @@ public final class LongAggregator implements Aggregator<Long> {
   }
 
   @Override
-  public void addObj(final Object value) {
-    add((Long) value);
-  }
-
-  @Override
-  public int availableAgg() {
-    return AVAILABLE_AGG;
-  }
-
-  @Override
   public void getResult(final AppendableTable dest, final int destColumn) {
     int idx = destColumn;
     if ((aggOps & AGG_OP_COUNT) != 0) {

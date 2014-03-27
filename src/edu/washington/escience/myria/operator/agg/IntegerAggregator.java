@@ -144,16 +144,6 @@ public final class IntegerAggregator implements Aggregator<Integer> {
   }
 
   @Override
-  public void addObj(final Object value) {
-    add((Integer) value);
-  }
-
-  @Override
-  public int availableAgg() {
-    return AVAILABLE_AGG;
-  }
-
-  @Override
   public void getResult(final AppendableTable dest, final int destColumn) {
     int idx = destColumn;
     if ((aggOps & AGG_OP_COUNT) != 0) {

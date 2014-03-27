@@ -143,16 +143,6 @@ public final class FloatAggregator implements Aggregator<Float> {
   }
 
   @Override
-  public void addObj(final Object obj) {
-    this.add((Float) obj);
-  }
-
-  @Override
-  public int availableAgg() {
-    return AVAILABLE_AGG;
-  }
-
-  @Override
   public void getResult(final AppendableTable dest, final int destColumn) {
     int idx = destColumn;
     if ((aggOps & AGG_OP_COUNT) != 0) {
