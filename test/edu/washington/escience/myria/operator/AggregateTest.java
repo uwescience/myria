@@ -19,6 +19,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.column.builder.BooleanColumnBuilder;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.DateTimeColumnBuilder;
 import edu.washington.escience.myria.column.builder.DoubleColumnBuilder;
@@ -286,6 +287,18 @@ public class AggregateTest {
     assertEquals(strings.length, tb.getLong(0, 0));
     assertEquals("abc", tb.getString(1, 0));
     assertEquals("fghij1", tb.getString(2, 0));
+
+    /* Booleans */
+    int[] booleanAggs = new int[] { Aggregator.AGG_OP_COUNT };
+    boolean[] booleans = new boolean[] { true, false, true };
+    builder = new BooleanColumnBuilder();
+    for (boolean b : booleans) {
+      builder.appendBoolean(b);
+    }
+    tb = doAggOpsToCol(builder, booleanAggs);
+    assertEquals(1, tb.getSchema().numColumns());
+    assertEquals(Type.LONG_TYPE, tb.getSchema().getColumnType(0));
+    assertEquals(booleans.length, tb.getLong(0, 0));
   }
 
   public TupleBatchBuffer generateRandomTuples(final int numTuples) {
