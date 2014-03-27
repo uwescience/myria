@@ -91,30 +91,7 @@ public final class StringAggregator implements Aggregator<String> {
 
   @Override
   public void add(final ReadableTable from, final int fromColumn) {
-    final int numTuples = from.numTuples();
-    if (numTuples == 0) {
-      return;
-    }
-    count += numTuples;
-    if (computeMin || computeMax) {
-      for (int i = 0; i < numTuples; i++) {
-        final String r = from.getString(fromColumn, i);
-        if (computeMin) {
-          if (min == null) {
-            min = r;
-          } else if (r.compareTo(min) < 0) {
-            min = r;
-          }
-        }
-        if (computeMax) {
-          if (max == null) {
-            max = r;
-          } else if (r.compareTo(max) > 0) {
-            max = r;
-          }
-        }
-      }
-    }
+    add(from.asColumn(fromColumn));
   }
 
   @Override

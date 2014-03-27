@@ -62,7 +62,7 @@ public final class BooleanAggregator implements Aggregator<Boolean> {
 
   @Override
   public void add(final ReadableTable from, final int fromColumn) {
-    count += from.numTuples();
+    add(from.asColumn(fromColumn));
   }
 
   /**

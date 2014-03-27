@@ -121,21 +121,7 @@ public final class IntegerAggregator implements Aggregator<Integer> {
 
   @Override
   public void add(final ReadableTable from, final int fromColumn) {
-    final int numTuples = from.numTuples();
-    if (numTuples == 0) {
-      return;
-    }
-
-    if (AggUtils.needsCount(aggOps)) {
-      count = LongMath.checkedAdd(count, numTuples);
-    }
-
-    if (!AggUtils.needsStats(aggOps)) {
-      return;
-    }
-    for (int i = 0; i < numTuples; i++) {
-      addIntStats(from.getInt(fromColumn, i));
-    }
+    add(from.asColumn(fromColumn));
   }
 
   @Override

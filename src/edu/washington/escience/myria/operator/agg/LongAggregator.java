@@ -100,20 +100,7 @@ public final class LongAggregator implements Aggregator<Long> {
 
   @Override
   public void add(final ReadableTable from, final int fromColumn) {
-    final int numTuples = from.numTuples();
-    if (numTuples == 0) {
-      return;
-    }
-    if (AggUtils.needsCount(aggOps)) {
-      count = LongMath.checkedAdd(count, numTuples);
-    }
-
-    if (!AggUtils.needsStats(aggOps)) {
-      return;
-    }
-    for (int i = 0; i < numTuples; i++) {
-      addLongStats(from.getLong(fromColumn, i));
-    }
+    add(from.asColumn(fromColumn));
   }
 
   /**
