@@ -3,6 +3,7 @@ package edu.washington.escience.myria.operator.agg;
 import java.util.Objects;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.math.LongMath;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -41,6 +42,7 @@ public final class BooleanAggregator implements Aggregator<Boolean> {
    * @param aggOps the aggregate operation to simultaneously compute.
    * */
   public BooleanAggregator(final String aFieldName, final int aggOps) {
+    Objects.requireNonNull(aFieldName, "aFieldName");
     if (aggOps <= 0) {
       throw new IllegalArgumentException("No aggregation operations are selected");
     }
@@ -62,6 +64,7 @@ public final class BooleanAggregator implements Aggregator<Boolean> {
 
   @Override
   public void add(final ReadableTable from, final int fromColumn) {
+    Objects.requireNonNull(from, "from");
     add(from.asColumn(fromColumn));
   }
 
@@ -71,7 +74,9 @@ public final class BooleanAggregator implements Aggregator<Boolean> {
    * @param value the value to be added
    */
   public void addBoolean(final boolean value) {
-    count++;
+    if (AggUtils.needsCount(aggOps)) {
+      count = LongMath.checkedAdd(count, 1);
+    }
   }
 
   @Override
@@ -80,10 +85,11 @@ public final class BooleanAggregator implements Aggregator<Boolean> {
   }
 
   @Override
-  public void getResult(final AppendableTable outputBuffer, final int destColumn) {
+  public void getResult(final AppendableTable dest, final int destColumn) {
+    Objects.requireNonNull(dest, "dest");
     int idx = destColumn;
     if ((aggOps & AGG_OP_COUNT) != 0) {
-      outputBuffer.putLong(idx, count);
+      dest.putLong(idx, count);
       idx++;
     }
   }
@@ -95,6 +101,7 @@ public final class BooleanAggregator implements Aggregator<Boolean> {
 
   @Override
   public void add(final ReadableTable table, final int column, final int row) {
+    Objects.requireNonNull(table, "table");
     add(table.getBoolean(column, row));
   }
 
@@ -105,6 +112,9 @@ public final class BooleanAggregator implements Aggregator<Boolean> {
 
   @Override
   public void add(final ReadableColumn from) {
-    count += from.size();
+    Objects.requireNonNull(from, "from");
+    if (AggUtils.needsCount(aggOps)) {
+      count = LongMath.checkedAdd(count, from.size());
+    }
   }
 }
