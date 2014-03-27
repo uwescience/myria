@@ -79,6 +79,43 @@ public final class DateTimeAggregator implements Aggregator<DateTime> {
     resultSchema = new Schema(types, names);
   }
 
+  @Override
+  public void add(final DateTime value) {
+    Objects.requireNonNull(value, "value");
+    if (AggUtils.needsCount(aggOps)) {
+      count = LongMath.checkedAdd(count, 1);
+    }
+    if (AggUtils.needsStats(aggOps)) {
+      addDateTimeStats(value);
+    }
+  }
+
+  @Override
+  public void add(final ReadableColumn from) {
+    final int numTuples = from.size();
+    if (numTuples == 0) {
+      return;
+    }
+    if (AggUtils.needsCount(aggOps)) {
+      count = LongMath.checkedAdd(count, numTuples);
+    }
+    if (AggUtils.needsStats(aggOps)) {
+      for (int row = 0; row < numTuples; ++row) {
+        addDateTimeStats(from.getDateTime(row));
+      }
+    }
+  }
+
+  @Override
+  public void add(final ReadableTable from, final int fromColumn) {
+    add(from.asColumn(Objects.requireNonNull(fromColumn, "fromColumn")));
+  }
+
+  @Override
+  public void add(final ReadableTable table, final int column, final int row) {
+    add(Objects.requireNonNull(table, "table").getDateTime(column, row));
+  }
+
   /**
    * Helper function to add value to this aggregator. Note this does NOT update count.
    * 
@@ -94,33 +131,6 @@ public final class DateTimeAggregator implements Aggregator<DateTime> {
       if ((max == null) || (max.compareTo(value) < 0)) {
         max = value;
       }
-    }
-  }
-
-  @Override
-  public void add(final ReadableTable from, final int fromColumn) {
-    final int numTuples = from.numTuples();
-    if (numTuples == 0) {
-      return;
-    }
-    if (AggUtils.needsCount(aggOps)) {
-      count = LongMath.checkedAdd(count, numTuples);
-    }
-    if (AggUtils.needsStats(aggOps)) {
-      for (int row = 0; row < numTuples; ++row) {
-        addDateTimeStats(from.getDateTime(fromColumn, row));
-      }
-    }
-  }
-
-  @Override
-  public void add(final DateTime value) {
-    Objects.requireNonNull(value, "value");
-    if (AggUtils.needsCount(aggOps)) {
-      count = LongMath.checkedAdd(count, 1);
-    }
-    if (AggUtils.needsStats(aggOps)) {
-      addDateTimeStats(value);
     }
   }
 
@@ -156,28 +166,7 @@ public final class DateTimeAggregator implements Aggregator<DateTime> {
   }
 
   @Override
-  public void add(final ReadableTable t, final int column, final int row) {
-    add(t.getDateTime(column, row));
-  }
-
-  @Override
   public Type getType() {
     return Type.DATETIME_TYPE;
-  }
-
-  @Override
-  public void add(final ReadableColumn from) {
-    final int numTuples = from.size();
-    if (numTuples == 0) {
-      return;
-    }
-    if (AggUtils.needsCount(aggOps)) {
-      count = LongMath.checkedAdd(count, numTuples);
-    }
-    if (AggUtils.needsStats(aggOps)) {
-      for (int row = 0; row < numTuples; ++row) {
-        addDateTimeStats(from.getDateTime(row));
-      }
-    }
   }
 }
