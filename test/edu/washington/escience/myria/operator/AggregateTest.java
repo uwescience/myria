@@ -318,8 +318,7 @@ public class AggregateTest {
 
   @Test
   public void testSingleGroupAvg() throws DbException, InterruptedException {
-    final int maxValue = 200000;
-    final int numTuples = (int) (Math.random() * maxValue);
+    final int numTuples = 2 * TupleBatch.BATCH_SIZE + 1;
 
     final TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     // group by name, aggregate on id
@@ -341,8 +340,7 @@ public class AggregateTest {
 
   @Test
   public void testSingleGroupMax() throws DbException, InterruptedException {
-    final int maxValue = 200000;
-    final int numTuples = (int) (Math.random() * maxValue);
+    final int numTuples = 2 * TupleBatch.BATCH_SIZE + 1;
 
     final TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     // group by name, aggregate on id
@@ -379,8 +377,7 @@ public class AggregateTest {
 
   @Test
   public void testSingleGroupMin() throws DbException, InterruptedException {
-    final int maxValue = 200000;
-    final int numTuples = (int) (Math.random() * maxValue);
+    final int numTuples = 2 * TupleBatch.BATCH_SIZE + 1;
 
     final TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     // group by name, aggregate on id
@@ -417,8 +414,7 @@ public class AggregateTest {
 
   @Test
   public void testSingleGroupSum() throws DbException, InterruptedException {
-    final int maxValue = 200000;
-    final int numTuples = (int) (Math.random() * maxValue);
+    final int numTuples = 2 * TupleBatch.BATCH_SIZE + 1;
 
     final TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     // group by name, aggregate on id
@@ -482,7 +478,7 @@ public class AggregateTest {
 
   @Test
   public void testMultiGroupSum() throws DbException {
-    final int numTuples = 1000000;
+    final int numTuples = 2 * TupleBatch.BATCH_SIZE + 2;
     final Schema schema =
         new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of(
             "a", "b", "c", "d"));
