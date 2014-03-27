@@ -13,18 +13,15 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.DbQueryScan;
-import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.InMemoryOrderBy;
 import edu.washington.escience.myria.operator.MergeJoin;
 import edu.washington.escience.myria.operator.RightHashCountingJoin;
 import edu.washington.escience.myria.operator.RightHashJoin;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
-import edu.washington.escience.myria.operator.StreamingStateWrapper;
 import edu.washington.escience.myria.operator.SymmetricHashCountingJoin;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
@@ -43,116 +40,6 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
   /** The logger for this class. */
   @SuppressWarnings("unused")
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(OperatorTestUsingSQLiteStorage.class);
-
-  @Test
-  public void dupElimTest() throws Exception {
-    final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
-    createTable(workerIDs[0], testtableKey, "id long, name varchar(20)");
-    createTable(workerIDs[1], testtableKey, "id long, name varchar(20)");
-
-    final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, 200, 20);
-    final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
-
-    final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
-
-    final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
-    for (int i = 0; i < names.length; i++) {
-      tbb.putLong(0, ids[i]);
-      tbb.putString(1, names[i]);
-    }
-
-    final HashMap<Tuple, Integer> expectedResults = TestUtils.distinct(tbb);
-
-    TupleBatch tb = null;
-    while ((tb = tbb.popAny()) != null) {
-      insert(workerIDs[0], testtableKey, schema, tb);
-      insert(workerIDs[1], testtableKey, schema, tb);
-    }
-
-    final ExchangePairID serverReceiveID = ExchangePairID.newID();
-    final ExchangePairID collectID = ExchangePairID.newID();
-
-    final DbQueryScan scanTable = new DbQueryScan(testtableKey, schema);
-
-    final StreamingStateWrapper dupElimOnScan = new StreamingStateWrapper(scanTable, new DupElim());
-    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    final CollectProducer cp1 = new CollectProducer(dupElimOnScan, collectID, workerIDs[0]);
-    final CollectConsumer cc1 = new CollectConsumer(cp1.getSchema(), collectID, workerIDs);
-    final StreamingStateWrapper dumElim3 = new StreamingStateWrapper(cc1, new DupElim());
-    workerPlans
-        .put(workerIDs[0], new RootOperator[] { cp1, new CollectProducer(dumElim3, serverReceiveID, MASTER_ID) });
-    workerPlans.put(workerIDs[1], new RootOperator[] { cp1 });
-
-    final CollectConsumer serverCollect = new CollectConsumer(schema, serverReceiveID, new int[] { workerIDs[0] });
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
-    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
-    SinkRoot serverPlan = new SinkRoot(queueStore);
-
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
-    TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
-    while (!receivedTupleBatches.isEmpty()) {
-      tb = receivedTupleBatches.poll();
-      if (tb != null) {
-        tb.compactInto(actualResult);
-      }
-    }
-    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
-    TestUtils.assertTupleBagEqual(expectedResults, resultBag);
-
-  }
-
-  @Test
-  public void dupElimTestSingleWorker() throws Exception {
-    final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
-    createTable(workerIDs[0], testtableKey, "id long, name varchar(20)");
-
-    final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, 200, 20);
-    final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
-
-    final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
-
-    final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
-    for (int i = 0; i < names.length; i++) {
-      tbb.putLong(0, ids[i]);
-      tbb.putString(1, names[i]);
-    }
-
-    final HashMap<Tuple, Integer> expectedResults = TestUtils.distinct(tbb);
-
-    TupleBatch tb = null;
-    while ((tb = tbb.popAny()) != null) {
-      insert(workerIDs[0], testtableKey, schema, tb);
-    }
-
-    final ExchangePairID serverReceiveID = ExchangePairID.newID();
-
-    final DbQueryScan scanTable = new DbQueryScan(testtableKey, schema);
-
-    final StreamingStateWrapper dupElimOnScan = new StreamingStateWrapper(scanTable, new DupElim());
-    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-
-    final CollectProducer cp1 = new CollectProducer(dupElimOnScan, serverReceiveID, MASTER_ID);
-    workerPlans.put(workerIDs[0], new RootOperator[] { cp1 });
-
-    final CollectConsumer serverCollect = new CollectConsumer(schema, serverReceiveID, new int[] { workerIDs[0] });
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
-    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
-    SinkRoot serverPlan = new SinkRoot(queueStore);
-
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
-    TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
-    while (!receivedTupleBatches.isEmpty()) {
-      tb = receivedTupleBatches.poll();
-      if (tb != null) {
-        tb.compactInto(actualResult);
-      }
-    }
-    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
-    TestUtils.assertTupleBagEqual(expectedResults, resultBag);
-
-  }
 
   @Test
   public void joinTest() throws Exception {
