@@ -399,6 +399,38 @@ public class OperatorTest {
     join.close();
   }
 
+  @Test
+  public void testMergeJoinCross() throws DbException {
+    final Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("id"));
+    TupleBatchBuffer[] randomTuples = new TupleBatchBuffer[2];
+    randomTuples[0] = new TupleBatchBuffer(schema);
+    randomTuples[1] = new TupleBatchBuffer(schema);
+    for (int i = 0; i < 5; i++) {
+      randomTuples[0].putLong(0, 42);
+      randomTuples[1].putLong(0, 42);
+    }
+
+    // we need to rename the columns from the second tuples
+    ImmutableList.Builder<String> sb = ImmutableList.builder();
+    sb.add("id2");
+    TupleSource[] children = new TupleSource[2];
+    children[0] = new TupleSource(randomTuples[0]);
+    children[1] = new TupleSource(randomTuples[1]);
+    UnaryOperator rename = new Rename(children[1], sb.build());
+
+    BinaryOperator join = new MergeJoin(children[0], rename, new int[] { 0 }, new int[] { 0 }, new boolean[] { true });
+    join.open(null);
+    TupleBatch tb = null;
+    int count = 0;
+    while (!join.eos()) {
+      tb = join.nextReady();
+      if (tb != null) {
+        count += tb.numTuples();
+      }
+    }
+
+    assertEquals(25, count);
+
     join.close();
   }
 
