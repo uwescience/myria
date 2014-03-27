@@ -99,7 +99,6 @@ public final class InMemoryOrderBy extends UnaryOperator {
             table.put(column, inputColumns.get(column), row);
           }
         }
-
       } else if (!getChild().eos()) {
         return null;
       }
@@ -108,16 +107,6 @@ public final class InMemoryOrderBy extends UnaryOperator {
     Preconditions.checkState(getChild().eos());
 
     sort();
-
-    final int numTuples = table.numTuples();
-    for (int rowIdx = 0; rowIdx < numTuples; rowIdx++) {
-      for (int columnIdx = 0; columnIdx < getSchema().numColumns(); columnIdx++) {
-        int sourceRow = indexes.get(rowIdx);
-        int tupleIdx = table.getTupleIndexInContainingTB(sourceRow);
-        ReadableColumn hashTblColumn = table.getColumns(sourceRow)[columnIdx];
-        ans.put(columnIdx, hashTblColumn, tupleIdx);
-      }
-    }
 
     nexttb = ans.popFilled();
     if (nexttb == null && ans.numTuples() > 0) {
@@ -172,8 +161,7 @@ public final class InMemoryOrderBy extends UnaryOperator {
   }
 
   /**
-   * Sorts the tuples. First, we get an array of indexes by which we sort the data. Then we actually reorder the
-   * columns.
+   * Sorts the tuples. First, we get an array of indexes by which we sort the data. Then we actually reorder the rows.
    */
   public void sort() {
     final int numTuples = table.numTuples();
@@ -185,6 +173,15 @@ public final class InMemoryOrderBy extends UnaryOperator {
 
     TupleComparator comparator = new TupleComparator();
     Collections.sort(indexes, comparator);
+
+    for (int rowIdx = 0; rowIdx < numTuples; rowIdx++) {
+      for (int columnIdx = 0; columnIdx < getSchema().numColumns(); columnIdx++) {
+        int sourceRow = indexes.get(rowIdx);
+        int tupleIdx = table.getTupleIndexInContainingTB(sourceRow);
+        ReadableColumn hashTblColumn = table.getColumns(sourceRow)[columnIdx];
+        ans.put(columnIdx, hashTblColumn, tupleIdx);
+      }
+    }
   }
 
   @Override
