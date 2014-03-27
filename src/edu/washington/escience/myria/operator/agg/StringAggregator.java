@@ -1,6 +1,9 @@
 package edu.washington.escience.myria.operator.agg;
 
+import java.util.Objects;
+
 import com.google.common.collect.ImmutableList;
+import com.google.common.math.LongMath;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -33,15 +36,6 @@ public final class StringAggregator implements Aggregator<String> {
   private String min, max;
 
   /**
-   * avoid compute min if not required.
-   * */
-  private final boolean computeMin;
-  /**
-   * avoid compute max if not required.
-   * */
-  private final boolean computeMax;
-
-  /**
    * Result schema. It's automatically generated according to the {@link StringAggregator#aggOps}.
    * */
   private final Schema resultSchema;
@@ -56,6 +50,7 @@ public final class StringAggregator implements Aggregator<String> {
    * @param aggOps the aggregate operation to simultaneously compute.
    * */
   public StringAggregator(final String aFieldName, final int aggOps) {
+    Objects.requireNonNull(aFieldName, "aFieldName");
     if (aggOps <= 0) {
       throw new IllegalArgumentException("No aggregation operations are selected");
     }
@@ -73,51 +68,73 @@ public final class StringAggregator implements Aggregator<String> {
       names.add("count_" + aFieldName);
     }
     if ((aggOps & Aggregator.AGG_OP_MIN) != 0) {
-      computeMin = true;
       types.add(Type.STRING_TYPE);
       names.add("min_" + aFieldName);
-    } else {
-      computeMin = false;
     }
     if ((aggOps & Aggregator.AGG_OP_MAX) != 0) {
       types.add(Type.STRING_TYPE);
       names.add("max_" + aFieldName);
-      computeMax = true;
-    } else {
-      computeMax = false;
     }
     resultSchema = new Schema(types, names);
   }
 
   @Override
+  public void add(final ReadableColumn from) {
+    Objects.requireNonNull(from, "from");
+    final int numTuples = from.size();
+    if (numTuples == 0) {
+      return;
+    }
+    if (AggUtils.needsCount(aggOps)) {
+      count = LongMath.checkedAdd(count, numTuples);
+    }
+    if (AggUtils.needsStats(numTuples)) {
+      for (int i = 0; i < from.size(); ++i) {
+        addStringStats(from.getString(i));
+      }
+    }
+  }
+
+  @Override
   public void add(final ReadableTable from, final int fromColumn) {
+    Objects.requireNonNull(from, "from");
     add(from.asColumn(fromColumn));
   }
 
   @Override
-  public void add(final String value) {
+  public void add(final ReadableTable table, final int column, final int row) {
+    Objects.requireNonNull(table, "table");
+    add(table.getString(column, row));
+  }
 
-    if (value != null) {
-      count++;
-      if (computeMin || computeMax) {
-        final String r = value;
-        if (computeMin) {
-          if (min == null) {
-            min = r;
-          } else if (r.compareTo(min) < 0) {
-            min = r;
-          }
-        }
-        if (computeMax) {
-          if (max == null) {
-            max = r;
-          } else if (r.compareTo(max) > 0) {
-            max = r;
-          }
-        }
+  @Override
+  public void add(final String value) {
+    Objects.requireNonNull(value, "value");
+    if (AggUtils.needsCount(aggOps)) {
+      count = LongMath.checkedAdd(count, 1);
+    }
+    if (AggUtils.needsStats(aggOps)) {
+      addStringStats(value);
+    }
+  }
+
+  /**
+   * Helper function to add value to this aggregator. Note this does NOT update count.
+   * 
+   * @param value the value to be added
+   */
+  private void addStringStats(final String value) {
+    Objects.requireNonNull(value, "value");
+    if (AggUtils.needsMin(aggOps)) {
+      if ((min == null) || (min.compareTo(value) > 0)) {
+        min = value;
       }
     }
-
+    if (AggUtils.needsMax(aggOps)) {
+      if (max == null || max.compareTo(value) < 0) {
+        max = value;
+      }
+    }
   }
 
   @Override
@@ -127,11 +144,11 @@ public final class StringAggregator implements Aggregator<String> {
       dest.putLong(idx, count);
       idx++;
     }
-    if (computeMin) {
+    if ((aggOps & AGG_OP_MIN) != 0) {
       dest.putString(idx, min);
       idx++;
     }
-    if (computeMax) {
+    if ((aggOps & AGG_OP_MAX) != 0) {
       dest.putString(idx, max);
     }
   }
@@ -142,40 +159,7 @@ public final class StringAggregator implements Aggregator<String> {
   }
 
   @Override
-  public void add(final ReadableTable table, final int column, final int row) {
-    add(table.getString(column, row));
-  }
-
-  @Override
   public Type getType() {
     return Type.STRING_TYPE;
-  }
-
-  @Override
-  public void add(final ReadableColumn from) {
-    final int numTuples = from.size();
-    if (numTuples == 0) {
-      return;
-    }
-    count += numTuples;
-    if (computeMin || computeMax) {
-      for (int i = 0; i < numTuples; i++) {
-        final String r = from.getString(i);
-        if (computeMin) {
-          if (min == null) {
-            min = r;
-          } else if (r.compareTo(min) < 0) {
-            min = r;
-          }
-        }
-        if (computeMax) {
-          if (max == null) {
-            max = r;
-          } else if (r.compareTo(max) > 0) {
-            max = r;
-          }
-        }
-      }
-    }
   }
 }
