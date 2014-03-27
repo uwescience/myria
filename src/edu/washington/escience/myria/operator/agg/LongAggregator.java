@@ -203,8 +203,8 @@ public final class LongAggregator implements Aggregator<Long> {
   }
 
   @Override
-  public void add(final ReadableTable t, final int column, final int row) {
-    addLong(t.getLong(column, row));
+  public void add(final ReadableTable table, final int column, final int row) {
+    addLong(table.getLong(column, row));
   }
 
   @Override

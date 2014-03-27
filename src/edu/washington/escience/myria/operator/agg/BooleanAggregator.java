@@ -104,8 +104,8 @@ public final class BooleanAggregator implements Aggregator<Boolean> {
   }
 
   @Override
-  public void add(final ReadableTable t, final int column, final int row) {
-    add(t.getBoolean(column, row));
+  public void add(final ReadableTable table, final int column, final int row) {
+    add(table.getBoolean(column, row));
   }
 
   @Override

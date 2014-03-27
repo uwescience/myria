@@ -203,8 +203,8 @@ public final class DoubleAggregator implements Aggregator<Double> {
   }
 
   @Override
-  public void add(final ReadableTable t, final int column, final int row) {
-    addDouble(t.getDouble(column, row));
+  public void add(final ReadableTable table, final int column, final int row) {
+    addDouble(table.getDouble(column, row));
   }
 
   @Override

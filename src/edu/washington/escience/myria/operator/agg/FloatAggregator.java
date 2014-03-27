@@ -202,8 +202,8 @@ public final class FloatAggregator implements Aggregator<Float> {
   }
 
   @Override
-  public void add(final ReadableTable t, final int column, final int row) {
-    addFloat(t.getFloat(column, row));
+  public void add(final ReadableTable table, final int column, final int row) {
+    addFloat(table.getFloat(column, row));
   }
 
   @Override

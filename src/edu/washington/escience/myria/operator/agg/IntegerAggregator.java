@@ -205,8 +205,8 @@ public final class IntegerAggregator implements Aggregator<Integer> {
   }
 
   @Override
-  public void add(final ReadableTable t, final int column, final int row) {
-    addInt(t.getInt(column, row));
+  public void add(final ReadableTable table, final int column, final int row) {
+    addInt(table.getInt(column, row));
   }
 
   @Override

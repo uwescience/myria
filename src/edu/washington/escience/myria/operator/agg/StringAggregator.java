@@ -175,8 +175,8 @@ public final class StringAggregator implements Aggregator<String> {
   }
 
   @Override
-  public void add(final ReadableTable t, final int column, final int row) {
-    add(t.getString(column, row));
+  public void add(final ReadableTable table, final int column, final int row) {
+    add(table.getString(column, row));
   }
 
   @Override
