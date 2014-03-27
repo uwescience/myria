@@ -52,6 +52,7 @@ public final class DateTimeAggregator implements Aggregator<DateTime> {
    * @param aggOps the aggregate operation to simultaneously compute.
    * */
   public DateTimeAggregator(final String aFieldName, final int aggOps) {
+    Objects.requireNonNull(aFieldName, "aFieldName");
     if (aggOps <= 0) {
       throw new IllegalArgumentException("No aggregation operations are selected");
     }
@@ -92,6 +93,7 @@ public final class DateTimeAggregator implements Aggregator<DateTime> {
 
   @Override
   public void add(final ReadableColumn from) {
+    Objects.requireNonNull(from, "from");
     final int numTuples = from.size();
     if (numTuples == 0) {
       return;
@@ -122,6 +124,7 @@ public final class DateTimeAggregator implements Aggregator<DateTime> {
    * @param value the value to be added
    */
   private void addDateTimeStats(final DateTime value) {
+    Objects.requireNonNull(value, "value");
     if (AggUtils.needsMin(aggOps)) {
       if ((min == null) || (min.compareTo(value) > 0)) {
         min = value;
@@ -136,6 +139,7 @@ public final class DateTimeAggregator implements Aggregator<DateTime> {
 
   @Override
   public void getResult(final AppendableTable dest, final int destColumn) {
+    Objects.requireNonNull(dest, "dest");
     int idx = destColumn;
     if ((aggOps & AGG_OP_COUNT) != 0) {
       dest.putLong(idx, count);
