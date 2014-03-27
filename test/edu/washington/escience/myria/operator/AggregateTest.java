@@ -327,28 +327,6 @@ public class AggregateTest {
   }
 
   @Test
-  public void testSingleGroupAvgNonBlocking() throws DbException, InterruptedException {
-    final int maxValue = 200000;
-    final int numTuples = (int) (Math.random() * maxValue);
-
-    final TupleBatchBuffer testBase = generateRandomTuples(numTuples);
-    // group by name, aggregate on id
-    final SingleGroupByAggregate agg =
-        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 0 }, 1, new int[] { Aggregator.AGG_OP_AVG });
-    agg.open(null);
-    final TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
-    while (!agg.eos()) {
-      TupleBatch tb = agg.nextReady();
-      if (tb != null) {
-        tb.compactInto(result);
-      }
-    }
-    agg.close();
-    final HashMap<Tuple, Integer> actualResult = TestUtils.tupleBatchToTupleBag(result);
-    TestUtils.assertTupleBagEqual(TestUtils.groupByAvgLongColumn(testBase, 1, 0), actualResult);
-  }
-
-  @Test
   public void testSingleGroupMax() throws DbException, InterruptedException {
     final int maxValue = 200000;
     final int numTuples = (int) (Math.random() * maxValue);
@@ -377,42 +355,6 @@ public class AggregateTest {
     result = new TupleBatchBuffer(agg.getSchema());
     while (!agg.eos()) {
       tb = agg.nextReady();
-      if (tb != null) {
-        tb.compactInto(result);
-      }
-    }
-    agg.close();
-    actualResult = TestUtils.tupleBatchToTupleBag(result);
-    TestUtils.assertTupleBagEqual(TestUtils.groupByMax(testBase, 0, 1), actualResult);
-  }
-
-  @Test
-  public void testSingleGroupMaxNonBlocking() throws DbException, InterruptedException {
-    final int maxValue = 200000;
-    final int numTuples = (int) (Math.random() * maxValue);
-
-    final TupleBatchBuffer testBase = generateRandomTuples(numTuples);
-    // group by name, aggregate on id
-    SingleGroupByAggregate agg =
-        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 0 }, 1, new int[] { Aggregator.AGG_OP_MAX });
-    agg.open(null);
-    TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
-    while (!agg.eos()) {
-      TupleBatch tb = agg.nextReady();
-      if (tb != null) {
-        tb.compactInto(result);
-      }
-    }
-    agg.close();
-    HashMap<Tuple, Integer> actualResult = TestUtils.tupleBatchToTupleBag(result);
-    TestUtils.assertTupleBagEqual(TestUtils.groupByMax(testBase, 1, 0), actualResult);
-
-    agg =
-        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 1 }, 0, new int[] { Aggregator.AGG_OP_MAX });
-    agg.open(null);
-    result = new TupleBatchBuffer(agg.getSchema());
-    while (!agg.eos()) {
-      TupleBatch tb = agg.nextReady();
       if (tb != null) {
         tb.compactInto(result);
       }
@@ -461,42 +403,6 @@ public class AggregateTest {
   }
 
   @Test
-  public void testSingleGroupMinNonBlocking() throws DbException, InterruptedException {
-    final int maxValue = 200000;
-    final int numTuples = (int) (Math.random() * maxValue);
-
-    final TupleBatchBuffer testBase = generateRandomTuples(numTuples);
-    // group by name, aggregate on id
-    SingleGroupByAggregate agg =
-        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 0 }, 1, new int[] { Aggregator.AGG_OP_MIN });
-    agg.open(null);
-    TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
-    while (!agg.eos()) {
-      TupleBatch tb = agg.nextReady();
-      if (tb != null) {
-        tb.compactInto(result);
-      }
-    }
-    agg.close();
-    HashMap<Tuple, Integer> actualResult = TestUtils.tupleBatchToTupleBag(result);
-    TestUtils.assertTupleBagEqual(TestUtils.groupByMin(testBase, 1, 0), actualResult);
-
-    agg =
-        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 1 }, 0, new int[] { Aggregator.AGG_OP_MIN });
-    agg.open(null);
-    result = new TupleBatchBuffer(agg.getSchema());
-    while (!agg.eos()) {
-      TupleBatch tb = agg.nextReady();
-      if (tb != null) {
-        tb.compactInto(result);
-      }
-    }
-    agg.close();
-    actualResult = TestUtils.tupleBatchToTupleBag(result);
-    TestUtils.assertTupleBagEqual(TestUtils.groupByMin(testBase, 0, 1), actualResult);
-  }
-
-  @Test
   public void testSingleGroupSum() throws DbException, InterruptedException {
     final int maxValue = 200000;
     final int numTuples = (int) (Math.random() * maxValue);
@@ -510,28 +416,6 @@ public class AggregateTest {
     final TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
     while (!agg.eos()) {
       tb = agg.nextReady();
-      if (tb != null) {
-        tb.compactInto(result);
-      }
-    }
-    agg.close();
-    final HashMap<Tuple, Integer> actualResult = TestUtils.tupleBatchToTupleBag(result);
-    TestUtils.assertTupleBagEqual(TestUtils.groupBySumLongColumn(testBase, 1, 0), actualResult);
-  }
-
-  @Test
-  public void testSingleGroupSumNonBlocking() throws DbException, InterruptedException {
-    final int maxValue = 200000;
-    final int numTuples = (int) (Math.random() * maxValue);
-
-    final TupleBatchBuffer testBase = generateRandomTuples(numTuples);
-    // group by name, aggregate on id
-    final SingleGroupByAggregate agg =
-        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 0 }, 1, new int[] { Aggregator.AGG_OP_SUM });
-    agg.open(null);
-    final TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
-    while (!agg.eos()) {
-      TupleBatch tb = agg.nextReady();
       if (tb != null) {
         tb.compactInto(result);
       }
