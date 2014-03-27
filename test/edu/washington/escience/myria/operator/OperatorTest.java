@@ -51,10 +51,10 @@ public class OperatorTest {
   public TupleBatchBuffer generateRandomTuples(final int numTuples, final int sampleSize, boolean sorted) {
     final ArrayList<Entry<Long, String>> entries = new ArrayList<Entry<Long, String>>();
 
+    final long[] ids = TestUtils.randomLong(0, sampleSize, numTuples);
     final String[] names = TestUtils.randomFixedLengthNumericString(0, sampleSize, numTuples, 20);
-    final long[] ids = TestUtils.randomLong(0, sampleSize, names.length);
 
-    for (int i = 0; i < names.length; i++) {
+    for (int i = 0; i < numTuples; i++) {
       entries.add(new SimpleEntry<Long, String>(ids[i], names[i]));
     }
 
@@ -69,7 +69,6 @@ public class OperatorTest {
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
 
     for (Entry<Long, String> entry : entries) {
-      // System.out.println(entry.getKey());
       tbb.putLong(0, entry.getKey());
       tbb.putString(1, entry.getValue());
     }
@@ -378,13 +377,28 @@ public class OperatorTest {
     BinaryOperator join = new MergeJoin(children[0], rename, new int[] { 0 }, new int[] { 0 }, new boolean[] { true });
     join.open(null);
     TupleBatch tb;
-    final ArrayList<TupleBatch> batches = new ArrayList<TupleBatch>();
+    final ArrayList<Entry<Long, String>> entries = new ArrayList<Entry<Long, String>>();
     while (!join.eos()) {
       tb = join.nextReady();
       if (tb != null) {
-        batches.add(tb);
+        for (int i = 0; i < tb.numTuples(); i++) {
+          entries.add(new SimpleEntry<Long, String>(tb.getLong(0, i), tb.getString(1, i)));
+        }
       }
     }
+
+    // output should be sorted by join keys
+    Entry<Long, String> previous = null;
+    for (Entry<Long, String> entry : entries) {
+      if (previous != null) {
+        assertTrue(previous.getKey() <= entry.getKey());
+      }
+      previous = entry;
+    }
+
+    join.close();
+  }
+
     join.close();
   }
 
