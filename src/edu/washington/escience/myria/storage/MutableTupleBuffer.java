@@ -731,4 +731,9 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
     }
     return ret;
   }
+
+  @Override
+  public ReadableColumn asColumn(final int column) {
+    return new ReadableSubColumn(this, Preconditions.checkElementIndex(column, numColumns));
+  }
 }

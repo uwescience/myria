@@ -1,8 +1,11 @@
 package edu.washington.escience.myria.operator.agg;
 
+import java.util.Objects;
+
 import org.joda.time.DateTime;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.math.LongMath;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -33,15 +36,6 @@ public final class DateTimeAggregator implements Aggregator<DateTime> {
    * min and max keeps the same data type as the aggregating column.
    * */
   private DateTime min, max;
-
-  /**
-   * avoid compute min if not required.
-   * */
-  private final boolean computeMin;
-  /**
-   * avoid compute max if not required.
-   * */
-  private final boolean computeMax;
 
   /**
    * Result schema. It's automatically generated according to the {@link DateTimeAggregator#aggOps}.
@@ -75,75 +69,59 @@ public final class DateTimeAggregator implements Aggregator<DateTime> {
       names.add("count_" + aFieldName);
     }
     if ((aggOps & Aggregator.AGG_OP_MIN) != 0) {
-      computeMin = true;
       types.add(Type.DATETIME_TYPE);
       names.add("min_" + aFieldName);
-    } else {
-      computeMin = false;
     }
     if ((aggOps & Aggregator.AGG_OP_MAX) != 0) {
       types.add(Type.DATETIME_TYPE);
       names.add("max_" + aFieldName);
-      computeMax = true;
-    } else {
-      computeMax = false;
     }
     resultSchema = new Schema(types, names);
   }
 
-  @Override
-  public void add(final ReadableTable from, final int fromColumn) {
-
-    final int numTuples = from.numTuples();
-    if (numTuples > 0) {
-      count += numTuples;
-      if (computeMin || computeMax) {
-        for (int i = 0; i < numTuples; i++) {
-          final DateTime r = from.getDateTime(fromColumn, i);
-          if (computeMin) {
-            if (min == null) {
-              min = r;
-            } else if (r.compareTo(min) < 0) {
-              min = r;
-            }
-          }
-          if (computeMax) {
-            if (max == null) {
-              max = r;
-            } else if (r.compareTo(max) > 0) {
-              max = r;
-            }
-          }
-        }
+  /**
+   * Helper function to add value to this aggregator. Note this does NOT update count.
+   * 
+   * @param value the value to be added
+   */
+  private void addDateTimeStats(final DateTime value) {
+    if (AggUtils.needsMin(aggOps)) {
+      if ((min == null) || (min.compareTo(value) > 0)) {
+        min = value;
       }
     }
+    if (AggUtils.needsMax(aggOps)) {
+      if ((max == null) || (max.compareTo(value) < 0)) {
+        max = value;
+      }
+    }
+  }
 
+  @Override
+  public void add(final ReadableTable from, final int fromColumn) {
+    final int numTuples = from.numTuples();
+    if (numTuples == 0) {
+      return;
+    }
+    if (AggUtils.needsCount(aggOps)) {
+      count = LongMath.checkedAdd(count, numTuples);
+    }
+    if (AggUtils.needsStats(aggOps)) {
+      for (int row = 0; row < numTuples; ++row) {
+        addDateTimeStats(from.getDateTime(fromColumn, row));
+      }
+    }
   }
 
   @Override
   public void add(final DateTime value) {
-
-    if (value != null) {
-      count++;
-      if (computeMin || computeMax) {
-        final DateTime r = value;
-        if (computeMin) {
-          if (min == null) {
-            min = r;
-          } else if (r.compareTo(min) < 0) {
-            min = r;
-          }
-        }
-        if (computeMax) {
-          if (max == null) {
-            max = r;
-          } else if (r.compareTo(max) > 0) {
-            max = r;
-          }
-        }
-      }
+    Objects.requireNonNull(value, "value");
+    if (AggUtils.needsCount(aggOps)) {
+      count = LongMath.checkedAdd(count, 1);
     }
-
+    if (AggUtils.needsStats(aggOps)) {
+      addDateTimeStats(value);
+    }
   }
 
   @Override
@@ -163,11 +141,11 @@ public final class DateTimeAggregator implements Aggregator<DateTime> {
       dest.putLong(idx, count);
       idx++;
     }
-    if (computeMin) {
+    if ((aggOps & AGG_OP_MIN) != 0) {
       dest.putDateTime(idx, min);
       idx++;
     }
-    if (computeMax) {
+    if ((aggOps & AGG_OP_MAX) != 0) {
       dest.putDateTime(idx, max);
     }
   }
@@ -193,24 +171,12 @@ public final class DateTimeAggregator implements Aggregator<DateTime> {
     if (numTuples == 0) {
       return;
     }
-    count += numTuples;
-    if (computeMin || computeMax) {
-      for (int i = 0; i < numTuples; i++) {
-        final DateTime r = from.getDateTime(i);
-        if (computeMin) {
-          if (min == null) {
-            min = r;
-          } else if (r.compareTo(min) < 0) {
-            min = r;
-          }
-        }
-        if (computeMax) {
-          if (max == null) {
-            max = r;
-          } else if (r.compareTo(max) > 0) {
-            max = r;
-          }
-        }
+    if (AggUtils.needsCount(aggOps)) {
+      count = LongMath.checkedAdd(count, numTuples);
+    }
+    if (AggUtils.needsStats(aggOps)) {
+      for (int row = 0; row < numTuples; ++row) {
+        addDateTimeStats(from.getDateTime(row));
       }
     }
   }

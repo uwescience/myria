@@ -631,4 +631,9 @@ public class TupleBatch implements ReadableTable, Serializable {
     List<Column<?>> newColumns = ImmutableList.<Column<?>> builder().addAll(columns).add(column).build();
     return new TupleBatch(newSchema, newColumns, numTuples, isEOI);
   }
+
+  @Override
+  public ReadableColumn asColumn(final int column) {
+    return columns.get(column);
+  }
 }
