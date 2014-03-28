@@ -16,8 +16,6 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.DbQueryScan;
-import edu.washington.escience.myria.operator.InMemoryOrderBy;
-import edu.washington.escience.myria.operator.MergeJoin;
 import edu.washington.escience.myria.operator.RightHashCountingJoin;
 import edu.washington.escience.myria.operator.RightHashJoin;
 import edu.washington.escience.myria.operator.RootOperator;
