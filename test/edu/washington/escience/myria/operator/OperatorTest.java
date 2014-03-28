@@ -401,18 +401,21 @@ public class OperatorTest {
 
   @Test
   public void testMergeJoinCross() throws DbException {
-    final Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("id"));
+    final Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("id", "value"));
     TupleBatchBuffer[] randomTuples = new TupleBatchBuffer[2];
     randomTuples[0] = new TupleBatchBuffer(schema);
     randomTuples[1] = new TupleBatchBuffer(schema);
     for (int i = 0; i < 5; i++) {
       randomTuples[0].putLong(0, 42);
+      randomTuples[0].putLong(1, i);
       randomTuples[1].putLong(0, 42);
+      randomTuples[1].putLong(1, 100 + i);
     }
 
     // we need to rename the columns from the second tuples
     ImmutableList.Builder<String> sb = ImmutableList.builder();
     sb.add("id2");
+    sb.add("value2");
     TupleSource[] children = new TupleSource[2];
     children[0] = new TupleSource(randomTuples[0]);
     children[1] = new TupleSource(randomTuples[1]);
@@ -422,11 +425,22 @@ public class OperatorTest {
     join.open(null);
     TupleBatch tb = null;
     int count = 0;
+    Multiset<Long> left = HashMultiset.create();
+    Multiset<Long> right = HashMultiset.create();
     while (!join.eos()) {
       tb = join.nextReady();
       if (tb != null) {
         count += tb.numTuples();
+        for (int i = 0; i < tb.numTuples(); i++) {
+          left.add(tb.getLong(1, i));
+          right.add(tb.getLong(3, i));
+        }
       }
+    }
+
+    for (long i = 0; i < 5; i++) {
+      assertEquals(5, left.count(i));
+      assertEquals(5, right.count(i + 100));
     }
 
     assertEquals(25, count);
