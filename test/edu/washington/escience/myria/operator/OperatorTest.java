@@ -51,10 +51,10 @@ public class OperatorTest {
   public TupleBatchBuffer generateRandomTuples(final int numTuples, final int sampleSize, boolean sorted) {
     final ArrayList<Entry<Long, String>> entries = new ArrayList<Entry<Long, String>>();
 
+    final long[] ids = TestUtils.randomLong(0, sampleSize, numTuples);
     final String[] names = TestUtils.randomFixedLengthNumericString(0, sampleSize, numTuples, 20);
-    final long[] ids = TestUtils.randomLong(0, sampleSize, names.length);
 
-    for (int i = 0; i < names.length; i++) {
+    for (int i = 0; i < numTuples; i++) {
       entries.add(new SimpleEntry<Long, String>(ids[i], names[i]));
     }
 
@@ -69,7 +69,6 @@ public class OperatorTest {
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
 
     for (Entry<Long, String> entry : entries) {
-      // System.out.println(entry.getKey());
       tbb.putLong(0, entry.getKey());
       tbb.putString(1, entry.getValue());
     }
@@ -378,13 +377,74 @@ public class OperatorTest {
     BinaryOperator join = new MergeJoin(children[0], rename, new int[] { 0 }, new int[] { 0 }, new boolean[] { true });
     join.open(null);
     TupleBatch tb;
-    final ArrayList<TupleBatch> batches = new ArrayList<TupleBatch>();
+    final ArrayList<Entry<Long, String>> entries = new ArrayList<Entry<Long, String>>();
     while (!join.eos()) {
       tb = join.nextReady();
       if (tb != null) {
-        batches.add(tb);
+        for (int i = 0; i < tb.numTuples(); i++) {
+          entries.add(new SimpleEntry<Long, String>(tb.getLong(0, i), tb.getString(1, i)));
+        }
       }
     }
+
+    // output should be sorted by join keys
+    Entry<Long, String> previous = null;
+    for (Entry<Long, String> entry : entries) {
+      if (previous != null) {
+        assertTrue(previous.getKey() <= entry.getKey());
+      }
+      previous = entry;
+    }
+
+    join.close();
+  }
+
+  @Test
+  public void testMergeJoinCross() throws DbException {
+    final Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("id", "value"));
+    TupleBatchBuffer[] randomTuples = new TupleBatchBuffer[2];
+    randomTuples[0] = new TupleBatchBuffer(schema);
+    randomTuples[1] = new TupleBatchBuffer(schema);
+    for (int i = 0; i < 5; i++) {
+      randomTuples[0].putLong(0, 42);
+      randomTuples[0].putLong(1, i);
+      randomTuples[1].putLong(0, 42);
+      randomTuples[1].putLong(1, 100 + i);
+    }
+
+    // we need to rename the columns from the second tuples
+    ImmutableList.Builder<String> sb = ImmutableList.builder();
+    sb.add("id2");
+    sb.add("value2");
+    TupleSource[] children = new TupleSource[2];
+    children[0] = new TupleSource(randomTuples[0]);
+    children[1] = new TupleSource(randomTuples[1]);
+    UnaryOperator rename = new Rename(children[1], sb.build());
+
+    BinaryOperator join = new MergeJoin(children[0], rename, new int[] { 0 }, new int[] { 0 }, new boolean[] { true });
+    join.open(null);
+    TupleBatch tb = null;
+    int count = 0;
+    Multiset<Long> left = HashMultiset.create();
+    Multiset<Long> right = HashMultiset.create();
+    while (!join.eos()) {
+      tb = join.nextReady();
+      if (tb != null) {
+        count += tb.numTuples();
+        for (int i = 0; i < tb.numTuples(); i++) {
+          left.add(tb.getLong(1, i));
+          right.add(tb.getLong(3, i));
+        }
+      }
+    }
+
+    for (long i = 0; i < 5; i++) {
+      assertEquals(5, left.count(i));
+      assertEquals(5, right.count(i + 100));
+    }
+
+    assertEquals(25, count);
+
     join.close();
   }
 

@@ -491,7 +491,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
-    final HashMap<Tuple, Integer> expectedResult = simpleFixedJoinTestBase();
+    final HashMap<Tuple, Integer> expectedResult = simpleRandomJoinTestBase();
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final ExchangePairID table1ShuffleID = ExchangePairID.newID();
@@ -506,14 +506,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final GenericShuffleConsumer sc1 =
         new GenericShuffleConsumer(sp1.getSchema(), table1ShuffleID, new int[] { workerIDs[0], workerIDs[1] });
 
-    // final String schema = "id long, name varchar(20)";
-
     final InMemoryOrderBy order1 = new InMemoryOrderBy(sc1, new int[] { 0 }, new boolean[] { true });
-    /*
-     * RelationKey tmp0 = RelationKey.of("test", "test", "tmp0"); createTable(workerIDs[0], tmp0, schema);
-     * createTable(workerIDs[1], tmp0, schema); final DbInsert ins1 = new DbInsert(sc1, tmp0, true); final DbQueryScan
-     * order1 = new DbQueryScan(tmp0, sp1.getSchema(), new int[] { 0 }, new boolean[] { true });
-     */
 
     final GenericShuffleProducer sp2 =
         new GenericShuffleProducer(scan2, table2ShuffleID, new int[] { workerIDs[0], workerIDs[1] }, pf);
@@ -521,11 +514,6 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
         new GenericShuffleConsumer(sp2.getSchema(), table2ShuffleID, new int[] { workerIDs[0], workerIDs[1] });
 
     final InMemoryOrderBy order2 = new InMemoryOrderBy(sc2, new int[] { 0 }, new boolean[] { true });
-    /*
-     * RelationKey tmp1 = RelationKey.of("test", "test", "tmp1"); createTable(workerIDs[0], tmp1, schema);
-     * createTable(workerIDs[1], tmp1, schema); final DbInsert ins2 = new DbInsert(sc2, tmp1, true); final DbQueryScan
-     * order2 = new DbQueryScan(tmp1, sp1.getSchema(), new int[] { 0 }, new boolean[] { true });
-     */
 
     final List<String> joinOutputColumnNames = ImmutableList.of("id_1", "name_1", "id_2", "name_2");
     final MergeJoin localjoin =
