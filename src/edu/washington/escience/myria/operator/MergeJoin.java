@@ -264,7 +264,7 @@ public final class MergeJoin extends BinaryOperator {
    */
   protected void addToAns(final TupleBatch leftTb, final int leftRow, final TupleBatch rightTb, final int rightRow) {
     Preconditions.checkArgument(leftTb.tupleCompare(leftCompareIndx, leftRow, rightTb, rightCompareIndx, rightRow,
-        ascending) == 0);
+        ascending) == 0, "Joined tuples do not match.");
 
     for (int i = 0; i < leftAnswerColumns.length; ++i) {
       ans.put(i, leftTb.getDataColumns().get(leftAnswerColumns[i]), leftRow);
@@ -284,10 +284,13 @@ public final class MergeJoin extends BinaryOperator {
   }
 
   /**
-   * True if a join tuple has been created for the tuples that {@link #leftRowIndex} and {@link #rightRowIndex} point
-   * to.
+   * True if a join tuple has been created for the tuples that {@link #leftRowIndex} points to.
    */
-  private boolean joined;
+  private boolean joinedLeft;
+  /**
+   * True if a join tuple has been created for the tuples that {@link #rightRowIndex} points to.
+   */
+  private boolean joinedRight;
 
   /**
    * Set EOS the next time null is returned from {@link #fetchNextReady()}.
@@ -319,7 +322,6 @@ public final class MergeJoin extends BinaryOperator {
       final int compared =
           leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex, rightBatches.getLast(), rightCompareIndx,
               rightRowIndex, ascending);
-
       if (compared == 0) {
         Preconditions.checkState(leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex,
             rightBatches.getLast(), rightCompareIndx, rightRowIndex, ascending) == 0);
@@ -354,24 +356,25 @@ public final class MergeJoin extends BinaryOperator {
     final Operator left = getLeft();
     final Operator right = getRight();
 
+    if (!joinedLeft & !joinedRight) {
+      addAllToAns(leftBatches.getLast(), rightBatches, leftRowIndex, leftCompareIndx, rightBeginIndex, rightRowIndex);
+      joinedLeft = true;
+      joinedRight = true;
+    } else if (!joinedLeft) {
+      addAllToAns(leftBatches.getLast(), rightBatches, leftRowIndex, leftCompareIndx, rightBeginIndex, rightRowIndex);
+      joinedLeft = true;
+    } else if (!joinedRight) {
+      addAllToAns(rightBatches.getLast(), leftBatches, rightRowIndex, rightCompareIndx, leftBeginIndex, leftRowIndex);
+      joinedRight = true;
+    }
+
     // advance the one with the larger set of equal tuples because this produces fewer join tuples
     // not exact but good approximation
     final int leftSizeOfGroupOfEqualTuples =
         leftRowIndex + TupleBatch.BATCH_SIZE * (leftBatches.size() - 1) - leftBeginIndex;
     final int rightSizeOfGroupOfEqualTuples =
         rightRowIndex + TupleBatch.BATCH_SIZE * (rightBatches.size() - 1) - rightBeginIndex;
-    final boolean joinFromLeft = leftSizeOfGroupOfEqualTuples > rightSizeOfGroupOfEqualTuples;
-
-    if (!joined) {
-      if (joinFromLeft) {
-        addAllToAns(leftBatches.getLast(), rightBatches, leftRowIndex, leftCompareIndx, rightBeginIndex, rightRowIndex);
-      } else {
-        addAllToAns(rightBatches.getLast(), leftBatches, rightRowIndex, rightCompareIndx, leftBeginIndex, leftRowIndex);
-      }
-    }
-    joined = true;
-
-    final boolean advanceLeftFirst = joinFromLeft;
+    final boolean advanceLeftFirst = leftSizeOfGroupOfEqualTuples > rightSizeOfGroupOfEqualTuples;
 
     AdvanceResult r1, r2 = AdvanceResult.INVALID;
     if (advanceLeftFirst) {
@@ -424,7 +427,8 @@ public final class MergeJoin extends BinaryOperator {
         }
         rightBeginIndex = rightRowIndex;
 
-        joined = false;
+        joinedLeft = false;
+        joinedRight = false;
       } else if (r1 == AdvanceResult.NOT_EQUAL && child2.eos() || r2 == AdvanceResult.NOT_EQUAL && child1.eos()
           || left.eos() && right.eos()) {
         deferredEOS = true;
@@ -552,7 +556,7 @@ public final class MergeJoin extends BinaryOperator {
           leftBatches.add(leftNotProcessed);
           leftNotProcessed = null;
           leftRowIndex = 0;
-          joined = false;
+          joinedLeft = false;
           return AdvanceResult.OK;
         } else {
           return AdvanceResult.NOT_EQUAL;
@@ -562,7 +566,7 @@ public final class MergeJoin extends BinaryOperator {
       }
     } else if (leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex, leftRowIndex + 1, ascending) == 0) {
       leftRowIndex++;
-      joined = false;
+      joinedLeft = false;
       return AdvanceResult.OK;
     } else {
       return AdvanceResult.NOT_EQUAL;
@@ -590,7 +594,7 @@ public final class MergeJoin extends BinaryOperator {
           rightBatches.add(rightNotProcessed);
           rightNotProcessed = null;
           rightRowIndex = 0;
-          joined = false;
+          joinedRight = false;
           return AdvanceResult.OK;
         } else {
           return AdvanceResult.NOT_EQUAL;
@@ -600,7 +604,7 @@ public final class MergeJoin extends BinaryOperator {
       }
     } else if (rightBatches.getLast().tupleCompare(rightCompareIndx, rightRowIndex, rightRowIndex + 1, ascending) == 0) {
       rightRowIndex++;
-      joined = false;
+      joinedRight = false;
       return AdvanceResult.OK;
     } else {
       return AdvanceResult.NOT_EQUAL;
@@ -664,7 +668,8 @@ public final class MergeJoin extends BinaryOperator {
 
     deferredEOS = false;
 
-    joined = false;
+    joinedLeft = false;
+    joinedRight = false;
 
     leftNotProcessed = null;
     rightNotProcessed = null;
