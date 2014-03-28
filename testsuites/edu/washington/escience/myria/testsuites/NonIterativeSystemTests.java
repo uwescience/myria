@@ -16,14 +16,12 @@ import edu.washington.escience.myria.systemtest.QueryFailureTest;
 import edu.washington.escience.myria.systemtest.QueryKillTest;
 import edu.washington.escience.myria.systemtest.ShuffleSQLiteTest;
 import edu.washington.escience.myria.systemtest.SplitDataTest;
-import edu.washington.escience.myria.systemtest.UnionAllTest;
 
 @RunWith(Suite.class)
 @SuiteClasses({ CollectTest.class,//
     FlowControlTest.class, //
     IterativeSelfJoinTest.class, //
     LocalMultiwayProducerTest.class, //
-    UnionAllTest.class, //
     MultithreadScanTest.class, //
     OperatorTestUsingSQLiteStorage.class, //
     ParallelDistinctUsingSQLiteTest.class, //
