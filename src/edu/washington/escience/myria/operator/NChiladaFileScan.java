@@ -133,7 +133,6 @@ public class NChiladaFileScan extends LeafOperator {
   private static final int INT_CODE = 5;
   /** Holds the tuples that are ready for release. */
   private transient TupleBatchBuffer buffer;
-  /** The file stream for the star */
 
   /** The full path of the directory that contains star, dark and gas directories. */
   private final String particleDirectoryPath;
