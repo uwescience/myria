@@ -2,14 +2,13 @@ package edu.washington.escience.myria.expression.evaluate;
 
 import java.lang.reflect.InvocationTargetException;
 
+import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.commons.compiler.CompilerFactoryFactory;
 import org.codehaus.commons.compiler.IScriptEvaluator;
 
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.ReadableTable;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
@@ -21,6 +20,8 @@ import edu.washington.escience.myria.expression.StateExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.StatefulApply;
+import edu.washington.escience.myria.storage.ReadableTable;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * An Expression evaluator for generic expressions. Used in {@link Apply} and {@link StatefulApply}.
@@ -62,18 +63,22 @@ public class GenericEvaluator extends Evaluator {
   public void compile() throws DbException {
     Preconditions.checkArgument(needsCompiling(), "This expression does not need to be compiled.");
 
-    String javaExpression = "";
+    String javaExpression = getJavaExpression();
+    IScriptEvaluator se;
+    try {
+      se = CompilerFactoryFactory.getDefaultCompilerFactory().newExpressionEvaluator();
+    } catch (Exception e) {
+      LOGGER.error("Could not create expression evaluator", e);
+      throw new DbException("Could not create expression evaluator", e);
+    }
 
     try {
-      javaExpression = getJavaExpression();
-      IScriptEvaluator se = CompilerFactoryFactory.getDefaultCompilerFactory().newExpressionEvaluator();
-
       evaluator =
           (EvalInterface) se.createFastEvaluator(javaExpression, EvalInterface.class, new String[] {
               Expression.TB, Expression.ROW, Expression.RESULT, Expression.STATE });
-    } catch (Exception e) {
-      LOGGER.debug("Expression: %s", javaExpression);
-      throw new DbException("Error when compiling expression", e);
+    } catch (CompileException e) {
+      LOGGER.error("Error when compiling expression {}: {}", javaExpression, e);
+      throw new DbException("Error when compiling expression: " + javaExpression, e);
     }
   }
 
@@ -91,7 +96,12 @@ public class GenericEvaluator extends Evaluator {
       throws InvocationTargetException {
     Preconditions.checkArgument(evaluator != null,
         "Call compile first or copy the data if it is the same in the input.");
-    evaluator.evaluate(tb, rowIdx, result, state);
+    try {
+      evaluator.evaluate(tb, rowIdx, result, state);
+    } catch (Exception e) {
+      LOGGER.error(getJavaExpression(), e);
+      throw e;
+    }
   }
 
   /**

@@ -3,7 +3,7 @@ package edu.washington.escience.myria.operator;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  */

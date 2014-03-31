@@ -12,7 +12,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 
-import edu.washington.escience.myria.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * The ShuffleProducer class uses an instance of the PartitionFunction class to decide which worker a tuple should be

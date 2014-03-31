@@ -1,10 +1,10 @@
 package edu.washington.escience.myria.operator;
 
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.util.ReadableTableUtil;
+import edu.washington.escience.myria.storage.MutableTupleBuffer;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleUtils;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
@@ -41,7 +41,7 @@ public final class DupElim extends StreamingState {
   /**
    * The buffer for storing unique tuples.
    * */
-  private transient TupleBuffer uniqueTuples = null;
+  private transient MutableTupleBuffer uniqueTuples = null;
 
   @Override
   public void cleanup() {
@@ -97,7 +97,7 @@ public final class DupElim extends StreamingState {
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) {
     uniqueTupleIndices = new TIntObjectHashMap<TIntList>();
-    uniqueTuples = new TupleBuffer(getSchema());
+    uniqueTuples = new MutableTupleBuffer(getSchema());
     checkUniqueness = new CheckUniquenessProcedure();
   }
 
@@ -141,7 +141,7 @@ public final class DupElim extends StreamingState {
 
     @Override
     public boolean execute(final int index) {
-      if (ReadableTableUtil.tupleEquals(inputTB, row, uniqueTuples, index)) {
+      if (TupleUtils.tupleEquals(inputTB, row, uniqueTuples, index)) {
         unique = false;
       }
       return unique;

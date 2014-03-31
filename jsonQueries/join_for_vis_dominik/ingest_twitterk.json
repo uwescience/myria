@@ -1,13 +1,16 @@
 {
   "relationKey" : {
     "userName" : "public",
-    "programName" : "join",
+    "programName" : "adhoc",
     "relationName" : "TwitterK"
   },
   "schema" : {
     "columnTypes" : ["LONG_TYPE", "LONG_TYPE"],
     "columnNames" : ["follower", "followee"]
   },
-  "file_name" : "/Users/dominik/Developer/Workspace/myria/data_nocommit/TwitterK.csv",
+  "source" : {
+    "dataType" : "File",
+    "filename" : "/disk2/TwitterK.csv"
+  },
   "delimiter": ","
 }

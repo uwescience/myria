@@ -1,11 +1,11 @@
 package edu.washington.escience.myria.operator;
 
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.util.ReadableTableUtil;
+import edu.washington.escience.myria.storage.MutableTupleBuffer;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleUtils;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
@@ -42,7 +42,7 @@ public final class KeepAndSortOnMinValue extends StreamingState {
   /**
    * The buffer for stroing unique tuples.
    * */
-  private transient TupleBuffer uniqueTuples = null;
+  private transient MutableTupleBuffer uniqueTuples = null;
 
   /** column indices of the key. */
   private final int[] keyColIndices;
@@ -138,7 +138,7 @@ public final class KeepAndSortOnMinValue extends StreamingState {
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) {
     uniqueTupleIndices = new TIntObjectHashMap<TIntList>();
-    uniqueTuples = new TupleBuffer(getSchema());
+    uniqueTuples = new MutableTupleBuffer(getSchema());
     doReplace = new ReplaceProcedure();
   }
 
@@ -153,7 +153,7 @@ public final class KeepAndSortOnMinValue extends StreamingState {
 
   @Override
   public List<TupleBatch> exportState() {
-    TupleBuffer tmp = uniqueTuples.clone();
+    MutableTupleBuffer tmp = uniqueTuples.clone();
     sortOn(tmp, valueColIndex);
     return tmp.getAll();
   }
@@ -182,7 +182,7 @@ public final class KeepAndSortOnMinValue extends StreamingState {
 
     @Override
     public boolean execute(final int index) {
-      if (ReadableTableUtil.tupleEquals(inputTB, keyColIndices, row, uniqueTuples, keyColIndices, index)) {
+      if (TupleUtils.tupleEquals(inputTB, keyColIndices, row, uniqueTuples, keyColIndices, index)) {
         unique = false;
         Column<?> valueColumn = inputTB.getDataColumns().get(valueColIndex);
         if (shouldReplace(index, valueColumn, row)) {
@@ -200,7 +200,7 @@ public final class KeepAndSortOnMinValue extends StreamingState {
    * @param tuples tuples
    * @param col column index
    */
-  private void sortOn(final TupleBuffer tuples, final int col) {
+  private void sortOn(final MutableTupleBuffer tuples, final int col) {
     quicksort(tuples, col, 0, tuples.numTuples() - 1);
   }
 
@@ -212,7 +212,7 @@ public final class KeepAndSortOnMinValue extends StreamingState {
    * @param low lower bound
    * @param high upper bound
    */
-  private void quicksort(final TupleBuffer tuples, final int col, final int low, final int high) {
+  private void quicksort(final MutableTupleBuffer tuples, final int col, final int low, final int high) {
     int i = low, j = high;
     int pivot = low + (high - low) / 2;
 
@@ -255,7 +255,7 @@ public final class KeepAndSortOnMinValue extends StreamingState {
    * @param pivot the index of the pivot value
    * @return if the value is smaller than (-1), equal to (0) or bigger than (1) pivot
    */
-  public int compare(final TupleBuffer tuples, final int column, final int row, final int pivot) {
+  public int compare(final MutableTupleBuffer tuples, final int column, final int row, final int pivot) {
     Type t = getSchema().getColumnType(column);
     switch (t) {
       case LONG_TYPE: {

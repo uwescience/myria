@@ -4,15 +4,17 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Map;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
+import edu.washington.escience.myria.parallel.ProfilingLogger;
 import edu.washington.escience.myria.parallel.QueryPartition;
 import edu.washington.escience.myria.parallel.QuerySubTreeTask;
 import edu.washington.escience.myria.parallel.TaskResourceManager;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * Abstract class for implementing operators.
@@ -31,10 +33,6 @@ public abstract class Operator implements Serializable {
    * logger for this class.
    * */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Operator.class);
-  /**
-   * loggers for profiling.
-   */
-  private static final org.slf4j.Logger PROFILING_LOGGER = org.slf4j.LoggerFactory.getLogger("profile");
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -77,6 +75,24 @@ public abstract class Operator implements Serializable {
   }
 
   /**
+   * Logger for profiling.
+   */
+  private ProfilingLogger profilingLogger;
+
+  /**
+   * Cache for profiling mode.
+   */
+  private Boolean profilingMode;
+
+  /**
+   * @return the profilingLogger
+   */
+  public ProfilingLogger getProfilingLogger() {
+    Preconditions.checkNotNull(profilingLogger);
+    return profilingLogger;
+  }
+
+  /**
    * @return return query id.
    */
   public long getQueryId() {
@@ -88,11 +104,23 @@ public abstract class Operator implements Serializable {
    * @return worker/master query partition.
    */
   public final QueryPartition getQueryPartition() {
+    QuerySubTreeTask qstt = getSubTreeTask();
+    if (qstt == null) {
+      return null;
+    } else {
+      return qstt.getOwnerQuery();
+    }
+  }
+
+  /**
+   * @return query subtree task
+   */
+  public QuerySubTreeTask getSubTreeTask() {
     if (execEnvVars == null) {
       return null;
+    } else {
+      return ((TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER)).getOwnerTask();
     }
-    return ((TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER)).getOwnerTask()
-        .getOwnerQuery();
   }
 
   /**
@@ -122,15 +150,20 @@ public abstract class Operator implements Serializable {
     if (execEnvVars == null) {
       return false;
     }
-    TaskResourceManager trm = (TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
-    if (trm == null) {
-      return false;
+
+    if (profilingMode == null) {
+      TaskResourceManager trm =
+          (TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
+      if (trm == null) {
+        return false;
+      }
+      QuerySubTreeTask task = trm.getOwnerTask();
+      if (task == null) {
+        return false;
+      }
+      profilingMode = task.getOwnerQuery().isProfilingMode();
     }
-    QuerySubTreeTask task = trm.getOwnerTask();
-    if (task == null) {
-      return false;
-    }
-    return task.getOwnerQuery().isProfilingMode();
+    return profilingMode;
   }
 
   /**
@@ -181,6 +214,9 @@ public abstract class Operator implements Serializable {
       } else {
         throw (DbException) errors;
       }
+    }
+    if (isProfilingMode()) {
+      profilingLogger.flush();
     }
   }
 
@@ -277,29 +313,29 @@ public abstract class Operator implements Serializable {
     }
 
     if (isProfilingMode()) {
-      PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:live", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
-          getOpName(), getFragmentId(), System.nanoTime(), 0);
+      profilingLogger.recordEvent(this, -1, "call");
     }
 
     TupleBatch result = null;
     try {
-      result = fetchNextReady();
-      while (result != null && result.numTuples() <= 0) {
-        // XXX while or not while? For a single thread operator, while sounds more efficient generally
+      do {
         result = fetchNextReady();
-      }
+        // XXX while or not while? For a single thread operator, while sounds more efficient generally
+      } while (result != null && result.numTuples() <= 0);
     } catch (RuntimeException | DbException e) {
       throw e;
     } catch (Exception e) {
       throw new DbException(e);
     }
-    if (isProfilingMode() && !eos()) {
-      int numberOfTupleReturned = 0;
+    if (isProfilingMode()) {
+      int numberOfTupleReturned = -1;
       if (result != null) {
         numberOfTupleReturned = result.numTuples();
       }
-      PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:hang", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
-          getOpName(), getFragmentId(), System.nanoTime(), numberOfTupleReturned);
+      profilingLogger.recordEvent(this, numberOfTupleReturned, "return");
+      if (eos()) {
+        profilingLogger.recordEvent(this, numberOfTupleReturned, "eos");
+      }
     }
     if (result == null) {
       checkEOSAndEOI();
@@ -359,6 +395,10 @@ public abstract class Operator implements Serializable {
       throw new DbException(e);
     }
     open = true;
+
+    if (isProfilingMode()) {
+      profilingLogger = ProfilingLogger.getLogger(this.execEnvVars);
+    }
   }
 
   /**
@@ -368,6 +408,13 @@ public abstract class Operator implements Serializable {
    */
   public final void setEOI(final boolean eoi) {
     this.eoi = eoi;
+    if (isProfilingMode()) {
+      try {
+        profilingLogger.recordEvent(this, -1, "eoi");
+      } catch (Exception e) {
+        LOGGER.error("Failed to write profiling data:", e);
+      }
+    }
   }
 
   /**
@@ -413,10 +460,6 @@ public abstract class Operator implements Serializable {
   protected final void setEOS() {
     if (eos()) {
       return;
-    }
-    if (isProfilingMode()) {
-      PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:end", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
-          getOpName(), getFragmentId(), System.nanoTime());
     }
     eos = true;
   }

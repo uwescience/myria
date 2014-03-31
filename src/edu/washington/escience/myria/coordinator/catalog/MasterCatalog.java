@@ -80,7 +80,8 @@ public final class MasterCatalog {
     + "    finish_time TEXT, -- DATES IN ISO8601 FORMAT \n"
     + "    elapsed_nanos INTEGER,\n"
     + "    status TEXT NOT NULL,\n"
-    + "    message TEXT);";
+    + "    message TEXT,\n"
+    + "    profiling_mode BOOLEAN DEFAULT 0);";
   /** Create the relations table. */
   private static final String CREATE_RELATIONS =
       "CREATE TABLE relations (\n"
@@ -1064,7 +1065,7 @@ public final class MasterCatalog {
     } catch (JsonProcessingException e) {
       throw new CatalogException(e);
     }
-    return newQuery(rawQuery, logicalRa, physicalString);
+    return newQuery(rawQuery, logicalRa, physicalString, physicalPlan.profilingMode);
   }
 
   /**
@@ -1073,11 +1074,12 @@ public final class MasterCatalog {
    * @param rawQuery the original user data of the query.
    * @param logicalRa the compiled logical relational algebra plan of the query.
    * @param physicalPlan a String describing the physical execution plan for the query.
+   * @param profilingMode is the profiling mode of the query on.
    * @return the newly generated ID of this query.
    * @throws CatalogException if there is an error adding the new query.
    */
-  public Long newQuery(final String rawQuery, final String logicalRa, final String physicalPlan)
-      throws CatalogException {
+  public Long newQuery(final String rawQuery, final String logicalRa, final String physicalPlan,
+      final Boolean profilingMode) throws CatalogException {
     Objects.requireNonNull(rawQuery);
     Objects.requireNonNull(logicalRa);
     Objects.requireNonNull(physicalPlan);
@@ -1085,7 +1087,9 @@ public final class MasterCatalog {
       throw new CatalogException("Catalog is closed.");
     }
 
-    final QueryStatusEncoding queryStatus = QueryStatusEncoding.submitted(rawQuery, logicalRa, physicalPlan);
+    final QueryStatusEncoding queryStatus =
+        QueryStatusEncoding.submitted(rawQuery, logicalRa, physicalPlan, Preconditions.checkNotNull(profilingMode,
+            false));
 
     try {
       return queue.execute(new SQLiteJob<Long>() {
@@ -1094,7 +1098,7 @@ public final class MasterCatalog {
           try {
             SQLiteStatement statement =
                 sqliteConnection
-                    .prepare("INSERT INTO queries (raw_query, logical_ra, physical_plan, submit_time, start_time, finish_time, elapsed_nanos, status) VALUES (?,?,?,?,?,?,?,?);");
+                    .prepare("INSERT INTO queries (raw_query, logical_ra, physical_plan, submit_time, start_time, finish_time, elapsed_nanos, status, profiling_mode) VALUES (?,?,?,?,?,?,?,?,?);");
             statement.bind(1, queryStatus.rawQuery);
             statement.bind(2, queryStatus.logicalRa);
             statement.bind(3, physicalPlan);
@@ -1108,6 +1112,7 @@ public final class MasterCatalog {
               statement.bindNull(7);
             }
             statement.bind(8, queryStatus.status.toString());
+            statement.bind(9, queryStatus.profilingMode ? 1 : 0);
             statement.stepThrough();
             statement.dispose();
             return sqliteConnection.getLastInsertId();
@@ -1142,7 +1147,7 @@ public final class MasterCatalog {
           try {
             SQLiteStatement statement =
                 sqliteConnection
-                    .prepare("SELECT query_id,raw_query,logical_ra,physical_plan,submit_time,start_time,finish_time,elapsed_nanos,status,message FROM queries WHERE query_id=?;");
+                    .prepare("SELECT query_id,raw_query,logical_ra,physical_plan,submit_time,start_time,finish_time,elapsed_nanos,status,message,profiling_mode FROM queries WHERE query_id=?;");
             statement.bind(1, queryId);
             statement.step();
             if (!statement.hasRow()) {
@@ -1180,6 +1185,7 @@ public final class MasterCatalog {
     }
     queryStatus.status = QueryStatusEncoding.Status.valueOf(statement.columnString(6));
     queryStatus.message = statement.columnString(7);
+    queryStatus.profilingMode = statement.columnInt(8) > 0;
     return queryStatus;
   }
 
@@ -1210,6 +1216,7 @@ public final class MasterCatalog {
     }
     queryStatus.status = QueryStatusEncoding.Status.valueOf(statement.columnString(8));
     queryStatus.message = statement.columnString(9);
+    queryStatus.profilingMode = statement.columnInt(10) > 0;
     return queryStatus;
   }
 
@@ -1235,7 +1242,7 @@ public final class MasterCatalog {
             /* The base of the query */
             StringBuilder sb =
                 new StringBuilder(
-                    "SELECT query_id,raw_query,submit_time,start_time,finish_time,elapsed_nanos,status,message FROM queries");
+                    "SELECT query_id,raw_query,submit_time,start_time,finish_time,elapsed_nanos,status,message,profiling_mode FROM queries");
             /* The query arguments, if any. */
             List<Long> bound = Lists.newLinkedList();
             /* If there is a max query id, add the WHERE clause. */

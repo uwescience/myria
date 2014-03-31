@@ -12,8 +12,6 @@ import com.google.common.collect.ImmutableMap;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.KeepAndSortOnMinValue;
 import edu.washington.escience.myria.operator.KeepMinValue;
@@ -26,6 +24,8 @@ import edu.washington.escience.myria.parallel.ipc.IPCEvent;
 import edu.washington.escience.myria.parallel.ipc.IPCEventListener;
 import edu.washington.escience.myria.parallel.ipc.StreamIOChannelID;
 import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
 
 /**
@@ -180,6 +180,13 @@ public abstract class Producer extends RootOperator {
     setBackupBufferAsAppender();
   }
 
+  /**
+   * @return the outputIDs
+   */
+  protected StreamIOChannelID[] getOutputIDs() {
+    return outputIDs;
+  }
+
   @SuppressWarnings("unchecked")
   @Override
   public final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
@@ -321,8 +328,9 @@ public abstract class Producer extends RootOperator {
   /**
    * Pop tuple batches from each of the buffers and try to write them to corresponding channels, if possible.
    * 
-   * @param usingTimeout use popAny() or popAnyUsingTimeout() when poping
-   * @param channelIndices the same as GenericShuffleProducer's cellPartition
+   * @param usingTimeout use {@link TupleBatchBuffer#popAny()} or {@link TupleBatchBuffer#popAnyUsingTimeout()} when
+   *          popping
+   * @param channelIndices the same as {@link GenericShuffleProducer#cellPartition}.
    * @param partitions the list of partitions as tuple batches.
    * */
   protected final void writePartitionsIntoChannels(final boolean usingTimeout, final int[][] channelIndices,

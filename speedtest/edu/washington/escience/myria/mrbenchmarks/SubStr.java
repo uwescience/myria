@@ -5,12 +5,12 @@ import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.StringColumn;
 import edu.washington.escience.myria.column.builder.StringColumnBuilder;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.UnaryOperator;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 public class SubStr extends UnaryOperator {
 

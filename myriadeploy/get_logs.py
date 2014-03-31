@@ -5,12 +5,6 @@ import myriadeploy
 import subprocess
 import argparse
 
-# parse args
-parser = argparse.ArgumentParser(description='collect logs from workers')
-parser.add_argument("--worker", type=int, help='worker id')
-parser.add_argument("config", metavar='C', type=str, help='configuration file')
-arguments = parser.parse_args()
-
 
 def get_host_port_path(node, default_path):
     if len(node) == 2:
@@ -51,19 +45,6 @@ def get_error_logs_from_worker(hostname, dirname, username,
         uri = "%s@%s:%s/worker_%s_stderr" % (
             username, hostname, dirname, worker_id)
     args = ["scp", uri, "%s/worker_%s_stderr"
-            % (description, worker_id,)]
-    return subprocess.call(args)
-
-
-def get_profiling_logs_from_worker(hostname, dirname,
-                                   username, worker_id, description):
-    mkdir_if_not_exists(description)
-    if hostname == 'localhost':
-        uri = "%s/profile.log" % (dirname)
-    else:
-        uri = "%s@%s:%s/profile.log" % (
-            username, hostname, dirname)
-    args = ["scp", uri, "%s/worker_%s_profile"
             % (description, worker_id,)]
     return subprocess.call(args)
 
@@ -124,13 +105,15 @@ def getlog(config_file, from_worker_id=None):
                % (path, description), username, worker_id, description):
                 raise Exception("Error on getting error logs from worker %d %s"
                                 % (worker_id, hostname))
-            if get_profiling_logs_from_worker(hostname, "%s/%s-files"
-               % (path, description), username, worker_id, description):
-                raise Exception("Error on getting profiling logs from \
-                 worker %d %s" % (worker_id, hostname))
 
 
 def main():
+    parser = argparse.ArgumentParser(description='collect logs from workers')
+    parser.add_argument("--worker", type=int, help='worker id')
+    parser.add_argument(
+        "config", metavar='C', type=str, help='configuration file')
+    arguments = parser.parse_args()
+
     if arguments.worker:
         getlog(arguments.config, arguments.worker)
     else:

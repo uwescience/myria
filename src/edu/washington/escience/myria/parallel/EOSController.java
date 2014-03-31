@@ -8,13 +8,13 @@ import java.util.Set;
 import org.apache.commons.lang.ArrayUtils;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.ExchangeTupleBatch;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.operator.IDBController;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.UnionAll;
+import edu.washington.escience.myria.storage.ExchangeTupleBatch;
+import edu.washington.escience.myria.storage.TupleBatch;
 import gnu.trove.impl.unmodifiable.TUnmodifiableIntIntMap;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;

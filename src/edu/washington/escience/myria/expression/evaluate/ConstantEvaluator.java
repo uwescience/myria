@@ -8,8 +8,6 @@ import org.codehaus.janino.ExpressionEvaluator;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.ReadableTable;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.ConstantValueColumn;
@@ -18,6 +16,8 @@ import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.StateExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.operator.StatefulApply;
+import edu.washington.escience.myria.storage.ReadableTable;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * An Expression evaluator for generic expressions that produces a constant such as the initial state in

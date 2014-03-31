@@ -1,21 +1,29 @@
 package edu.washington.escience.myria.operator.agg;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.UnaryOperator;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.TupleBuffer;
+import edu.washington.escience.myria.storage.TupleUtils;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
 
 /**
  * The Aggregation operator that computes an aggregate (e.g., sum, avg, max, min). We support aggregates over multiple
@@ -23,94 +31,61 @@ import edu.washington.escience.myria.operator.UnaryOperator;
  */
 public final class MultiGroupByAggregate extends UnaryOperator {
 
-  /**
-   * A simple implementation of multiple-field group key.
-   * */
-  private static class SimpleArrayWrapper {
-    /** the group fields. **/
-    private final Object[] groupFields;
-
-    /**
-     * Constructs a new group representation.
-     * 
-     * @param groupFields the group fields
-     */
-    public SimpleArrayWrapper(final Object[] groupFields) {
-      this.groupFields = groupFields;
-    }
-
-    @Override
-    public boolean equals(final Object another) {
-      if (another == null || !(another instanceof SimpleArrayWrapper)) {
-        return false;
-      }
-      return Arrays.equals(groupFields, ((SimpleArrayWrapper) another).groupFields);
-    }
-
-    @Override
-    public String toString() {
-      return Arrays.toString(groupFields);
-    }
-
-    @Override
-    public int hashCode() {
-      return Arrays.hashCode(groupFields);
-    }
-  }
-
   /** Java requires this. **/
   private static final long serialVersionUID = 1L;
-  /** The aggregators being used. **/
-  private final Aggregator<?>[] agg;
+
+  /** Holds the distinct grouping keys. */
+  private transient TupleBuffer groupKeys;
+  /** Final group keys. */
+  private List<TupleBatch> groupKeyList;
+  /** Holds the corresponding aggregators for each group key in {@link #groupKeys}. */
+  private transient List<Aggregator<?>[]> groupAggs;
+  /** Maps the hash of a grouping key to a list of indices in {@link #groupKeys}. */
+  private transient TIntObjectMap<TIntList> groupKeyMap;
+  /** The schema of the columns indicated by the group keys. */
+  private Schema groupSchema;
+  /** The schema of the aggregation result. */
+  private Schema aggSchema;
+
   /** Aggregate fields. **/
   private final int[] afields;
   /** Group fields. **/
   private final int[] gfields;
+  /** An array [0, 1, .., gfields.length-1] used for comparing tuples. */
+  private final int[] grpRange;
   /** Aggregate operators. */
   private final int[] aggOps;
 
-  /** The resulting buffer to return. **/
-  private TupleBatchBuffer resultBuffer = null;
-  /** Mapping between the group to the aggregators being used. **/
-  private final HashMap<SimpleArrayWrapper, Aggregator<?>[]> groupAggs;
-
   /**
-   * Constructor.
-   * 
-   * Implementation hint: depending on the type of afield, you will want to construct an {@link IntAggregator} or
-   * {@link StringAggregator} to help you with your implementation of readNext().
-   * 
+   * Groups the input tuples according to the specified grouping fields, then produces the specified aggregates over the
+   * specified aggregate fields.
    * 
    * @param child The Operator that is feeding us tuples.
-   * @param afields The columns over which we are computing an aggregate.
-   * @param gfields The columns over which we are grouping the result, or -1 if there is no grouping
-   * @param aggOps The aggregation operator to use
+   * @param gfields The columns over which we are grouping the result.
+   * @param afields The columns over which we are computing an aggregate, corresponding to the aggregate operations we
+   *          are performing.
+   * @param aggOps The aggregation operator to use for each column in <code>aFields</code>.
    */
-  public MultiGroupByAggregate(final Operator child, final int[] afields, final int[] gfields, final int[] aggOps) {
+  public MultiGroupByAggregate(final Operator child, final int[] gfields, final int[] afields, final int[] aggOps) {
     super(child);
-    Objects.requireNonNull(afields);
-    Objects.requireNonNull(gfields);
-    Objects.requireNonNull(aggOps);
-    Preconditions.checkArgument(gfields.length > 1);
-    Preconditions.checkArgument(afields.length != 0, "aggregation fields must not be empty");
-    this.afields = afields;
-    this.gfields = gfields;
-    this.aggOps = aggOps;
-    groupAggs = new HashMap<SimpleArrayWrapper, Aggregator<?>[]>();
-    agg = new Aggregator<?>[aggOps.length];
-  }
-
-  /**
-   * @return the aggregate field
-   * */
-  public int[] aggregateFields() {
-    return afields;
+    this.gfields = Objects.requireNonNull(gfields, "gfields");
+    this.afields = Objects.requireNonNull(afields, "afields");
+    this.aggOps = Objects.requireNonNull(aggOps, "aggOps");
+    Preconditions.checkArgument(gfields.length > 1, "to use MultiGroupByAggregate, must group over multiple fields");
+    Preconditions.checkArgument(afields.length != 0, "to use MultiGroupByAggregate, must specify some aggregates");
+    grpRange = new int[gfields.length];
+    for (int i = 0; i < gfields.length; ++i) {
+      grpRange[i] = i;
+    }
+    groupKeyList = null;
   }
 
   @Override
   protected void cleanup() throws DbException {
-    resultBuffer.clear();
-    groupAggs.clear();
+    groupKeys = null;
+    groupAggs = null;
+    groupKeyMap = null;
+    groupKeyList = null;
   }
 
   /**
@@ -124,79 +99,113 @@ public final class MultiGroupByAggregate extends UnaryOperator {
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
     final Operator child = getChild();
-    if (resultBuffer.numTuples() > 0) {
-      return resultBuffer.popAny();
+
+    if (child.eos()) {
+      return getResultBatch();
     }
 
-    if (child.eos() || child.eoi()) {
+    TupleBatch tb = child.nextReady();
+    while (tb != null) {
+      for (int row = 0; row < tb.numTuples(); ++row) {
+        int rowHash = tb.hashCode(row, gfields);
+        TIntList possibleGroupMatches = groupKeyMap.get(rowHash);
+        if (possibleGroupMatches == null) {
+          newGroup(tb, row, rowHash);
+          continue;
+        }
+        TIntIterator matches = possibleGroupMatches.iterator();
+        boolean found = false;
+        while (!found && matches.hasNext()) {
+          int curGrp = matches.next();
+          if (TupleUtils.tupleEquals(tb, gfields, row, groupKeys, grpRange, curGrp)) {
+            updateGroup(tb, row, groupAggs.get(curGrp));
+            found = true;
+          }
+        }
+        if (!found) {
+          newGroup(tb, row, rowHash);
+        }
+        Preconditions.checkState(groupKeys.numTuples() == groupAggs.size());
+      }
+      tb = child.nextReady();
+    }
+
+    /*
+     * We know that child.nextReady() has returned <code>null</code>, so we have processed all tuple we can. Child is
+     * either EOS or we have to wait for more data.
+     */
+    if (child.eos()) {
+      return getResultBatch();
+    }
+
+    return null;
+  }
+
+  /**
+   * Since row <code>row</code> in {@link TupleBatch} <code>tb</code> does not appear in {@link #groupKeys}, create a
+   * new group for it.
+   * 
+   * @param tb the source {@link TupleBatch}
+   * @param row the row in <code>tb</code> that contains the new group
+   * @param groupHash the hash of the group keys in the specified row
+   */
+  private void newGroup(final TupleBatch tb, final int row, final int groupHash) {
+    int newIndex = groupKeys.numTuples();
+    for (int column = 0; column < gfields.length; ++column) {
+      TupleUtils.copyValue(tb, gfields[column], row, groupKeys, column);
+    }
+    TIntList groupMatches = new TIntArrayList(1);
+    groupMatches.add(newIndex);
+    groupKeyMap.put(groupHash, groupMatches);
+    Aggregator<?>[] curAggs = AggUtils.allocate(getChild().getSchema(), afields, aggOps);
+    groupAggs.add(curAggs);
+    updateGroup(tb, row, curAggs);
+    Preconditions.checkState(groupKeys.numTuples() == groupAggs.size(), "groupKeys %s != groupAggs %s", groupKeys
+        .numTuples(), groupAggs.size());
+  }
+
+  /**
+   * Update the aggregators with the tuples in the specified row.
+   * 
+   * @param tb the source {@link TupleBatch}
+   * @param row the row in <code>tb</code> that contains the new values
+   * @param curAggs the aggregators to be updated.
+   */
+  private void updateGroup(final TupleBatch tb, final int row, final Aggregator<?>[] curAggs) {
+    for (int aggIdx = 0; aggIdx < afields.length; ++aggIdx) {
+      curAggs[aggIdx].add(tb, afields[aggIdx], row);
+    }
+  }
+
+  /**
+   * @return A batch's worth of result tuples from this aggregate.
+   */
+  private TupleBatch getResultBatch() {
+    Preconditions.checkState(getChild().eos(), "cannot extract results from an aggregate until child has reached EOS");
+    if (groupKeyList == null) {
+      groupKeyList = Lists.newLinkedList(groupKeys.finalResult());
+    }
+
+    if (groupKeyList.isEmpty()) {
       return null;
     }
 
-    // Actually perform the aggregation
-    TupleBatch tb = null;
-    while ((tb = child.nextReady()) != null) {
-      // get all the tuple batches from the child operator
-      // we want to get the value for each key.
-      HashMap<SimpleArrayWrapper, TupleBatchBuffer> tmpMap = new HashMap<SimpleArrayWrapper, TupleBatchBuffer>();
-      for (int i = 0; i < tb.numTuples(); i++) {
-        // generate the SimpleArrayWrapper
-        Object[] groupFields = new Object[gfields.length];
-        for (int j = 0; j < gfields.length; j++) {
-          Object val = tb.getObject(gfields[j], i);
-          groupFields[j] = val;
-        }
-        SimpleArrayWrapper grpFields = new SimpleArrayWrapper(groupFields);
-
-        // for each tuple try pulling a value from it
-        if (!groupAggs.containsKey(grpFields)) {
-          // if the aggregator for the key doesn't exists,
-          // create a new array of operators and put it in the map
-          Aggregator<?>[] groupAgg = new Aggregator<?>[agg.length];
-          for (int j = 0; j < groupAgg.length; j++) {
-            groupAgg[j] = agg[j].freshCopyYourself();
-          }
-          groupAggs.put(grpFields, groupAgg);
-        }
-
-        // foreach row, we need to put the tuples into its corresponding
-        // group
-        TupleBatchBuffer groupedTupleBatch = tmpMap.get(grpFields);
-        if (groupedTupleBatch == null) {
-          groupedTupleBatch = new TupleBatchBuffer(child.getSchema());
-          tmpMap.put(grpFields, groupedTupleBatch);
-        }
-        for (int j = 0; j < child.getSchema().numColumns(); j++) {
-          groupedTupleBatch.put(j, tb.getDataColumns().get(j), i);
-        }
-      }
-      // add the tuples into the aggregator
-      for (SimpleArrayWrapper saw : tmpMap.keySet()) {
-        Aggregator<?>[] aggs = groupAggs.get(saw);
-        TupleBatchBuffer tbb = tmpMap.get(saw);
-        TupleBatch filledTb = null;
-        while ((filledTb = tbb.popAny()) != null) {
-          for (final Aggregator<?> aggLocal : aggs) {
-            aggLocal.add(filledTb);
-          }
-        }
+    TupleBatch curGroupKeys = groupKeyList.remove(0);
+    TupleBatchBuffer curGroupAggs = new TupleBatchBuffer(aggSchema);
+    for (int row = 0; row < curGroupKeys.numTuples(); ++row) {
+      Aggregator<?>[] rowAggs = groupAggs.get(row);
+      for (int i = 0; i < rowAggs.length; ++i) {
+        rowAggs[i].getResult(curGroupAggs, i);
       }
     }
+    TupleBatch aggResults = curGroupAggs.popAny();
+    Preconditions.checkState(curGroupKeys.numTuples() == aggResults.numTuples(),
+        "curGroupKeys size %s != aggResults size %s", curGroupKeys.numTuples(), aggResults.numTuples());
 
-    if (child.eos() || child.eoi()) {
-      for (SimpleArrayWrapper groupByFields : groupAggs.keySet()) {
-        // populate the result tuple batch buffer
-        for (int i = 0; i < gfields.length; i++) {
-          resultBuffer.put(i, groupByFields.groupFields[i]);
-        }
-        Aggregator<?>[] value = groupAggs.get(groupByFields);
-        int currentIndex = gfields.length;
-        for (Aggregator<?> element : value) {
-          element.getResult(resultBuffer, currentIndex);
-          currentIndex += element.getResultSchema().numColumns();
-        }
-      }
-    }
-    return resultBuffer.popAny();
+    /* Note: as of Java7 sublists of sublists do what we want -- the sublists are at most one deep. */
+    groupAggs = groupAggs.subList(curGroupKeys.numTuples(), groupAggs.size());
+    return new TupleBatch(getSchema(), ImmutableList.<Column<?>> builder().addAll(curGroupKeys.getDataColumns())
+        .addAll(aggResults.getDataColumns()).build());
   }
 
   /**
@@ -206,82 +215,38 @@ public final class MultiGroupByAggregate extends UnaryOperator {
    */
   @Override
   public Schema generateSchema() {
-    return generateSchema(getChild(), groupAggs, gfields, afields, agg, aggOps);
-  }
+    Operator child = getChild();
+    if (child == null) {
+      return null;
+    }
+    Schema childSchema = child.getSchema();
+    if (childSchema == null) {
+      return null;
+    }
 
-  /**
-   * @return the group fields
-   */
-  public int[] groupFields() {
-    return Arrays.copyOf(gfields, gfields.length);
+    groupSchema = childSchema.getSubSchema(gfields);
+
+    /* Build the output schema from the group schema and the aggregates. */
+    final ImmutableList.Builder<Type> aggTypes = ImmutableList.<Type> builder();
+    final ImmutableList.Builder<String> aggNames = ImmutableList.<String> builder();
+
+    Aggregator<?>[] aggs = AggUtils.allocate(childSchema, afields, aggOps);
+    for (Aggregator<?> agg : aggs) {
+      Schema curAggSchema = agg.getResultSchema();
+      Preconditions.checkState(curAggSchema.numColumns() == 1, "aggSchema should only have 1 column, not %s",
+          curAggSchema.numColumns());
+      aggTypes.add(curAggSchema.getColumnType(0));
+      aggNames.add(curAggSchema.getColumnName(0));
+    }
+    aggSchema = new Schema(aggTypes, aggNames);
+    return Schema.merge(groupSchema, aggSchema);
   }
 
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    resultBuffer = new TupleBatchBuffer(getSchema());
-  }
-
-  /**
-   * Generates the schema for MultiGroupByAggregate.
-   * 
-   * @param child the child operator
-   * @param groupAggs the aggregator for each grouping
-   * @param gfields the group fields
-   * @param afields the aggregate fields
-   * @param agg the aggregators to be populated
-   * @param aggOps ints representing the aggregate operations
-   * 
-   * @return the schema based on the aggregate, if the child is null, will return null.
-   */
-  private static Schema generateSchema(final Operator child, final Map<SimpleArrayWrapper, Aggregator<?>[]> groupAggs,
-      final int[] gfields, final int[] afields, final Aggregator<?>[] agg, final int[] aggOps) {
-    if (child == null) {
-      return null;
-    }
-    Schema outputSchema = null;
-
-    final ImmutableList.Builder<Type> gTypes = ImmutableList.builder();
-    final ImmutableList.Builder<String> gNames = ImmutableList.builder();
-
-    final Schema childSchema = child.getSchema();
-    for (final int i : gfields) {
-      gTypes.add(childSchema.getColumnType(i));
-      gNames.add(childSchema.getColumnName(i));
-    }
-
-    // Generates the output schema
-    outputSchema = new Schema(gTypes, gNames);
-
-    int idx = 0;
-    for (final int afield : afields) {
-      switch (childSchema.getColumnType(afield)) {
-        case BOOLEAN_TYPE:
-          agg[idx] = new BooleanAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        case INT_TYPE:
-          agg[idx] = new IntegerAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        case LONG_TYPE:
-          agg[idx] = new LongAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        case FLOAT_TYPE:
-          agg[idx] = new FloatAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        case DOUBLE_TYPE:
-          agg[idx] = new DoubleAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        case STRING_TYPE:
-          agg[idx] = new StringAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        case DATETIME_TYPE:
-          agg[idx] = new DateTimeAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        default:
-          throw new IllegalArgumentException("unsupported type: " + childSchema.getColumnType(afield));
-      }
-      outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
-      idx++;
-    }
-    return outputSchema;
+    Objects.requireNonNull(getSchema(), "schema");
+    groupKeys = new TupleBuffer(groupSchema);
+    groupAggs = new ArrayList<>();
+    groupKeyMap = new TIntObjectHashMap<>();
   }
 }

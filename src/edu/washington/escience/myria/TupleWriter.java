@@ -3,6 +3,8 @@ package edu.washington.escience.myria;
 import java.io.IOException;
 import java.util.List;
 
+import edu.washington.escience.myria.storage.ReadableTable;
+
 /**
  * A {@link TupleWriter} is an object that can serialize a {@link ReadableTable}. The assumption is that most classes
  * that implement {@link TupleWriter} will write the data to an {@link java.io.OutputStream}, e.g.

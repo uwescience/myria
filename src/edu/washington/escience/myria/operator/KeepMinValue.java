@@ -1,11 +1,11 @@
 package edu.washington.escience.myria.operator;
 
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.util.ReadableTableUtil;
+import edu.washington.escience.myria.storage.MutableTupleBuffer;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleUtils;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
@@ -42,7 +42,7 @@ public final class KeepMinValue extends StreamingState {
   /**
    * The buffer for stroing unique tuples.
    * */
-  private transient TupleBuffer uniqueTuples = null;
+  private transient MutableTupleBuffer uniqueTuples = null;
 
   /** column indices of the key. */
   private final int[] keyColIndices;
@@ -138,7 +138,7 @@ public final class KeepMinValue extends StreamingState {
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) {
     uniqueTupleIndices = new TIntObjectHashMap<TIntList>();
-    uniqueTuples = new TupleBuffer(getSchema());
+    uniqueTuples = new MutableTupleBuffer(getSchema());
     doReplace = new ReplaceProcedure();
   }
 
@@ -180,7 +180,7 @@ public final class KeepMinValue extends StreamingState {
 
     @Override
     public boolean execute(final int index) {
-      if (ReadableTableUtil.tupleEquals(inputTB, keyColIndices, row, uniqueTuples, keyColIndices, index)) {
+      if (TupleUtils.tupleEquals(inputTB, keyColIndices, row, uniqueTuples, keyColIndices, index)) {
         unique = false;
         Column<?> valueColumn = inputTB.getDataColumns().get(valueColIndex);
         if (shouldReplace(index, valueColumn, row)) {

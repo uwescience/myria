@@ -2,17 +2,17 @@ package edu.washington.escience.myria.operator;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.ReadableColumn;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
-import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.parallel.QueryExecutionMode;
 import edu.washington.escience.myria.parallel.TaskResourceManager;
+import edu.washington.escience.myria.storage.MutableTupleBuffer;
+import edu.washington.escience.myria.storage.ReadableColumn;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
-import edu.washington.escience.myria.util.ReadableTableUtil;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
@@ -60,11 +60,11 @@ public final class SymmetricHashJoin extends BinaryOperator {
   /**
    * The buffer holding the valid tuples from left.
    */
-  private transient TupleBuffer hashTable1;
+  private transient MutableTupleBuffer hashTable1;
   /**
    * The buffer holding the valid tuples from right.
    */
-  private transient TupleBuffer hashTable2;
+  private transient MutableTupleBuffer hashTable2;
   /**
    * The buffer holding the results.
    */
@@ -82,7 +82,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
     /**
      * Hash table.
      * */
-    private TupleBuffer joinAgainstHashTable;
+    private MutableTupleBuffer joinAgainstHashTable;
 
     /**
      * 
@@ -109,8 +109,8 @@ public final class SymmetricHashJoin extends BinaryOperator {
 
     @Override
     public boolean execute(final int index) {
-      if (ReadableTableUtil.tupleEquals(inputTB, inputCmpColumns, row, joinAgainstHashTable, joinAgainstCmpColumns,
-          index)) {
+      if (TupleUtils.tupleEquals(inputTB, inputCmpColumns, row, joinAgainstHashTable, joinAgainstCmpColumns, index)) {
+
         addToAns(inputTB, row, joinAgainstHashTable, index, fromLeft);
       }
       return true;
@@ -125,7 +125,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
     /**
      * Hash table.
      * */
-    private TupleBuffer hashTable;
+    private MutableTupleBuffer hashTable;
 
     /**
      * the columns to compare against.
@@ -146,7 +146,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
 
     @Override
     public boolean execute(final int index) {
-      if (ReadableTableUtil.tupleEquals(inputTB, keyColumns, row, hashTable, keyColumns, index)) {
+      if (TupleUtils.tupleEquals(inputTB, keyColumns, row, hashTable, keyColumns, index)) {
         replaced = true;
         List<Column<?>> columns = inputTB.getDataColumns();
         for (int j = 0; j < inputTB.numColumns(); ++j) {
@@ -352,7 +352,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
    * @param index the index of hashTable, which the cntTuple is to join with
    * @param fromLeft if the tuple is from child 1
    */
-  protected void addToAns(final TupleBatch cntTB, final int row, final TupleBuffer hashTable, final int index,
+  protected void addToAns(final TupleBatch cntTB, final int row, final MutableTupleBuffer hashTable, final int index,
       final boolean fromLeft) {
     List<Column<?>> tbColumns = cntTB.getDataColumns();
     ReadableColumn[] hashTblColumns = hashTable.getColumns(index);
@@ -597,8 +597,8 @@ public final class SymmetricHashJoin extends BinaryOperator {
     leftHashTableIndices = new TIntObjectHashMap<TIntList>();
     rightHashTableIndices = new TIntObjectHashMap<TIntList>();
 
-    hashTable1 = new TupleBuffer(left.getSchema());
-    hashTable2 = new TupleBuffer(right.getSchema());
+    hashTable1 = new MutableTupleBuffer(left.getSchema());
+    hashTable2 = new MutableTupleBuffer(right.getSchema());
 
     ans = new TupleBatchBuffer(getSchema());
 
@@ -639,7 +639,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
     }
 
     final boolean useSetSemantics = fromLeft && setSemanticsLeft || !fromLeft && setSemanticsRight;
-    TupleBuffer hashTable1Local = null;
+    MutableTupleBuffer hashTable1Local = null;
     TIntObjectMap<TIntList> hashTable1IndicesLocal = null;
     TIntObjectMap<TIntList> hashTable2IndicesLocal = null;
     if (fromLeft) {
@@ -694,7 +694,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
    * @param hashCode the hashCode of the tb.
    * @param useSetSemantics if need to update the hash table using set semantics.
    * */
-  private void addToHashTable(final TupleBatch tb, final int row, final TupleBuffer hashTable,
+  private void addToHashTable(final TupleBatch tb, final int row, final MutableTupleBuffer hashTable,
       final TIntObjectMap<TIntList> hashTable1IndicesLocal, final int hashCode, final boolean useSetSemantics) {
 
     final int nextIndex = hashTable.numTuples();

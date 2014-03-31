@@ -1,8 +1,8 @@
 package edu.washington.escience.myria.parallel;
 
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
+import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
 
 /**

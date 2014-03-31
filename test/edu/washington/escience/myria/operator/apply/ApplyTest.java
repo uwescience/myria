@@ -9,8 +9,6 @@ import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.AbsExpression;
 import edu.washington.escience.myria.expression.AndExpression;
@@ -26,6 +24,7 @@ import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.FloorExpression;
 import edu.washington.escience.myria.expression.GreaterThanExpression;
 import edu.washington.escience.myria.expression.GreaterThanOrEqualsExpression;
+import edu.washington.escience.myria.expression.IntDivideExpression;
 import edu.washington.escience.myria.expression.LessThanExpression;
 import edu.washington.escience.myria.expression.LessThanOrEqualsExpression;
 import edu.washington.escience.myria.expression.MinusExpression;
@@ -51,6 +50,8 @@ import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.StatefulApply;
 import edu.washington.escience.myria.operator.TupleSource;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestEnvVars;
 import edu.washington.escience.myria.util.TestUtils;
 
@@ -106,7 +107,7 @@ public class ApplyTest {
     {
       // Expression: Math.sqrt(Math.pow(a, 2) + Math.pow(b, 2))
 
-      ExpressionOperator two = new ConstantExpression(Type.INT_TYPE, "2");
+      ExpressionOperator two = new ConstantExpression(2);
       ExpressionOperator pow1 = new PowExpression(vara, two);
       ExpressionOperator pow2 = new PowExpression(varb, two);
 
@@ -155,13 +156,10 @@ public class ApplyTest {
 
       ExpressionOperator angle =
           new DivideExpression(new TimesExpression(vara, new ConstantExpression(Type.DOUBLE_TYPE, "Math.PI")),
-              new ConstantExpression(Type.INT_TYPE, "180"));
-      ExpressionOperator cos =
-          new TimesExpression(new CosExpression(angle), new ConstantExpression(Type.INT_TYPE, "2"));
-      ExpressionOperator sin =
-          new TimesExpression(new SinExpression(angle), new ConstantExpression(Type.INT_TYPE, "3"));
-      ExpressionOperator tan =
-          new TimesExpression(new TanExpression(angle), new ConstantExpression(Type.INT_TYPE, "4"));
+              new ConstantExpression(180));
+      ExpressionOperator cos = new TimesExpression(new CosExpression(angle), new ConstantExpression(2));
+      ExpressionOperator sin = new TimesExpression(new SinExpression(angle), new ConstantExpression(3));
+      ExpressionOperator tan = new TimesExpression(new TanExpression(angle), new ConstantExpression(4));
       ExpressionOperator add = new PlusExpression(new PlusExpression(cos, sin), tan);
 
       Expression expr = new Expression("trig", add);
@@ -172,8 +170,8 @@ public class ApplyTest {
     {
       // Expression: !(false || e && true);
 
-      ExpressionOperator and = new AndExpression(vare, new ConstantExpression(Type.BOOLEAN_TYPE, "true"));
-      ExpressionOperator or = new OrExpression(new ConstantExpression(Type.BOOLEAN_TYPE, "false"), and);
+      ExpressionOperator and = new AndExpression(vare, new ConstantExpression(true));
+      ExpressionOperator or = new OrExpression(new ConstantExpression(false), and);
       ExpressionOperator not = new NotExpression(or);
       Expression expr = new Expression("boolean", not);
 
@@ -192,7 +190,7 @@ public class ApplyTest {
 
     {
       // Expression: (a constant value of 5);
-      Expression expr = new Expression("constant5", new ConstantExpression(Type.INT_TYPE, "5"));
+      Expression expr = new Expression("constant5", new ConstantExpression(5));
 
       GenericEvaluator eval = new ConstantEvaluator(expr, parameters);
       assertTrue(!eval.needsCompiling());
@@ -201,7 +199,7 @@ public class ApplyTest {
 
     {
       // Expression: (a constant value of 5.0 float);
-      Expression expr = new Expression("constant5f", new ConstantExpression(Type.FLOAT_TYPE, "5"));
+      Expression expr = new Expression("constant5f", new ConstantExpression(5.0f));
 
       GenericEvaluator eval = new ConstantEvaluator(expr, parameters);
       assertTrue(!eval.needsCompiling());
@@ -210,7 +208,7 @@ public class ApplyTest {
 
     {
       // Expression: (a constant value of 5.0 double);
-      Expression expr = new Expression("constant5d", new ConstantExpression(Type.DOUBLE_TYPE, "5"));
+      Expression expr = new Expression("constant5d", new ConstantExpression(5d));
 
       GenericEvaluator eval = new ConstantEvaluator(expr, parameters);
       assertTrue(!eval.needsCompiling());
@@ -251,10 +249,11 @@ public class ApplyTest {
       // Nested case
       // Expression: (b % 2 == 0) ? (e: a : b) : c;
       Expression expr =
-          new Expression("nestedconditional", new ConditionalExpression(new EqualsExpression(new ModuloExpression(
-              new VariableExpression(1), new ConstantExpression(Type.INT_TYPE, "2")), new ConstantExpression(
-              Type.INT_TYPE, "0")), new ConditionalExpression(new VariableExpression(4), new VariableExpression(0),
-              new VariableExpression(1)), new VariableExpression(2)));
+          new Expression("nestedconditional",
+              new ConditionalExpression(new EqualsExpression(new ModuloExpression(new VariableExpression(1),
+                  new ConstantExpression(2)), new ConstantExpression(0)), new ConditionalExpression(
+                  new VariableExpression(4), new VariableExpression(0), new VariableExpression(1)),
+                  new VariableExpression(2)));
 
       GenericEvaluator eval = new GenericEvaluator(expr, parameters);
       assertTrue(eval.needsCompiling());
@@ -601,10 +600,10 @@ public class ApplyTest {
       tbb.putString(0, "Foo" + i);
     }
 
-    Expression initializer = new Expression("counter", new ConstantExpression(Type.INT_TYPE, "-1"));
+    Expression initializer = new Expression("counter", new ConstantExpression(Type.LONG_TYPE, "-1"));
     Expression expression = new Expression("index", new StateExpression(0));
     Expression increment =
-        new Expression(new PlusExpression(new StateExpression(0), new ConstantExpression(Type.INT_TYPE, "1")));
+        new Expression(new PlusExpression(new StateExpression(0), new ConstantExpression(Type.LONG_TYPE, "1")));
 
     ImmutableList.Builder<Expression> Initializers = ImmutableList.builder();
     Initializers.add(initializer);
@@ -625,11 +624,11 @@ public class ApplyTest {
       result = apply.nextReady();
       if (result != null) {
         assertEquals(1, result.getSchema().numColumns());
-        assertEquals(Type.INT_TYPE, result.getSchema().getColumnType(0));
+        assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(0));
 
         for (int curI = 0; curI < result.numTuples(); curI++) {
           long i = curI + resultSize;
-          assertEquals(i, result.getInt(0, curI));
+          assertEquals(i, result.getLong(0, curI));
         }
         resultSize += result.numTuples();
       }
@@ -652,7 +651,7 @@ public class ApplyTest {
         new Expression(new PlusExpression(new StateExpression(0), new ConstantExpression(Type.LONG_TYPE, "1")));
     Expression updateSum = new Expression(new PlusExpression(new StateExpression(1), new VariableExpression(0)));
 
-    Expression avg = new Expression("average", new DivideExpression(new StateExpression(1), new StateExpression(0)));
+    Expression avg = new Expression("average", new IntDivideExpression(new StateExpression(1), new StateExpression(0)));
 
     ImmutableList.Builder<Expression> Initializers = ImmutableList.builder();
     Initializers.add(initializeCounter);

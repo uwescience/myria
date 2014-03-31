@@ -3,10 +3,10 @@ package edu.washington.escience.myria.parallel;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.TupleSource;
 import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * The producer part of the Collect Exchange operator.

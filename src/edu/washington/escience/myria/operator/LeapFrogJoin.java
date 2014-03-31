@@ -13,14 +13,14 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.ReadableColumn;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
-import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.util.ReadableTableUtil;
+import edu.washington.escience.myria.storage.MutableTupleBuffer;
+import edu.washington.escience.myria.storage.ReadableColumn;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.TupleUtils;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 
@@ -94,7 +94,7 @@ public class LeapFrogJoin extends NAryOperator {
   /**
    * The buffer holding the valid tuples from children.
    */
-  private transient TupleBuffer[] tables;
+  private transient MutableTupleBuffer[] tables;
 
   /**
    * An internal state to record how many children have EOSed.
@@ -426,7 +426,7 @@ public class LeapFrogJoin extends NAryOperator {
   private class JoinIteratorCompare implements Comparator<JoinField> {
     @Override
     public int compare(final JoinField o1, final JoinField o2) {
-      return ReadableTableUtil.cellCompare(tables[o1.tableIndex], o1.fieldIndex, iterators[o1.tableIndex]
+      return TupleUtils.cellCompare(tables[o1.tableIndex], o1.fieldIndex, iterators[o1.tableIndex]
           .getRowOfCurrentField(), tables[o2.tableIndex], o2.fieldIndex, iterators[o2.tableIndex]
           .getRowOfCurrentField());
     }
@@ -560,7 +560,7 @@ public class LeapFrogJoin extends NAryOperator {
 
     /* handle the case that one of input tables is empty. */
     if (currentDepth == -1) {
-      for (TupleBuffer table : tables) {
+      for (MutableTupleBuffer table : tables) {
         if (table.numTuples() == 0) {
           joinFinished = true;
           checkEOSAndEOI();
@@ -702,10 +702,10 @@ public class LeapFrogJoin extends NAryOperator {
     }
 
     /* Initiate hash tables and indices */
-    tables = new TupleBuffer[children.length];
+    tables = new MutableTupleBuffer[children.length];
     firstVarIndices = new TIntArrayList[children.length];
     for (int i = 0; i < children.length; ++i) {
-      tables[i] = new TupleBuffer(children[i].getSchema());
+      tables[i] = new MutableTupleBuffer(children[i].getSchema());
       firstVarIndices[i] = new TIntArrayList();
     }
     /* Initiate iterators */
@@ -750,7 +750,7 @@ public class LeapFrogJoin extends NAryOperator {
             thisRow = tables[childIndex].numTuples() - 1;
           }
           int lastRow = thisRow - 1;
-          if (lastRow == -1 || ReadableTableUtil.cellCompare(tables[childIndex], column, lastRow, tb, column, row) != 0) {
+          if (lastRow == -1 || TupleUtils.cellCompare(tables[childIndex], column, lastRow, tb, column, row) != 0) {
             firstVarIndices[childIndex].add(thisRow);
           }
         }
@@ -1139,7 +1139,7 @@ public class LeapFrogJoin extends NAryOperator {
    */
   private void addToAns() {
     for (int i = 0; i < outputFieldMapping.size(); ++i) {
-      TupleBuffer hashTable = tables[outputFieldMapping.get(i).tableIndex];
+      MutableTupleBuffer hashTable = tables[outputFieldMapping.get(i).tableIndex];
       int row = iterators[outputFieldMapping.get(i).tableIndex].getRowOfCurrentField();
       int rowInTB = hashTable.getTupleIndexInContainingTB(row);
       ReadableColumn sourceColumn = hashTable.getColumns(row)[outputFieldMapping.get(i).fieldIndex];
@@ -1153,8 +1153,8 @@ public class LeapFrogJoin extends NAryOperator {
    * @return result of comparison
    */
   private int cellCompare(final CellPointer cp1, final CellPointer cp2) {
-    return ReadableTableUtil.cellCompare(tables[cp1.tableIndex], cp1.getFieldIndex(), cp1.getRow(), tables[cp2
-        .getTableIndex()], cp2.getFieldIndex(), cp2.getRow());
+    return TupleUtils.cellCompare(tables[cp1.tableIndex], cp1.getFieldIndex(), cp1.getRow(),
+        tables[cp2.getTableIndex()], cp2.getFieldIndex(), cp2.getRow());
 
   }
 

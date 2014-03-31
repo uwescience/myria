@@ -1,11 +1,15 @@
 package edu.washington.escience.myria.operator.agg;
 
+import java.util.Objects;
+
 import com.google.common.collect.ImmutableList;
+import com.google.common.math.LongMath;
 
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.storage.AppendableTable;
+import edu.washington.escience.myria.storage.ReadableColumn;
+import edu.washington.escience.myria.storage.ReadableTable;
 
 /**
  * Knows how to compute some aggregates over a DoubleColumn.
@@ -16,20 +20,17 @@ public final class DoubleAggregator implements Aggregator<Double> {
   private static final long serialVersionUID = 1L;
 
   /**
-   * aggregate column.
-   * */
-  private final int aColumn;
-
-  /**
    * Aggregate operations. An binary-or of all the applicable aggregate operations, i.e. those in
    * {@link DoubleAggregator#AVAILABLE_AGG}.
    * */
   private final int aggOps;
 
-  /**
-   * min, max and sum, keeps the same data type as the aggregating column.
-   * */
-  private double min, max, sum;
+  /** The minimum value in the aggregated column. */
+  private double min;
+  /** The maximum value in the aggregated column. */
+  private double max;
+  /** The sum of values in the aggregated column. */
+  private double sum;
 
   /** private temp variables for computing stdev. */
   private double sumSquared;
@@ -51,29 +52,10 @@ public final class DoubleAggregator implements Aggregator<Double> {
       | Aggregator.AGG_OP_MIN | Aggregator.AGG_OP_AVG | Aggregator.AGG_OP_STDEV;
 
   /**
-   * This serves as the copy constructor.
-   * 
-   * @param afield the aggregate column.
-   * @param aggOps the aggregate operation to simultaneously compute.
-   * @param resultSchema the result schema.
-   * */
-  private DoubleAggregator(final int afield, final int aggOps, final Schema resultSchema) {
-    this.resultSchema = resultSchema;
-    aColumn = afield;
-    this.aggOps = aggOps;
-    count = 0;
-    max = Double.MIN_VALUE;
-    min = Double.MAX_VALUE;
-    sum = 0;
-    sumSquared = 0.0;
-  }
-
-  /**
-   * @param afield the aggregate column.
    * @param aFieldName aggregate field name for use in output schema.
    * @param aggOps the aggregate operation to simultaneously compute.
    * */
-  public DoubleAggregator(final int afield, final String aFieldName, final int aggOps) {
+  public DoubleAggregator(final String aFieldName, final int aggOps) {
     if (aggOps <= 0) {
       throw new IllegalArgumentException("No aggregation operations are selected");
     }
@@ -82,7 +64,6 @@ public final class DoubleAggregator implements Aggregator<Double> {
       throw new IllegalArgumentException("Unsupported aggregation on double column.");
     }
 
-    aColumn = afield;
     this.aggOps = aggOps;
     min = Double.MAX_VALUE;
     max = Double.MIN_VALUE;
@@ -118,42 +99,60 @@ public final class DoubleAggregator implements Aggregator<Double> {
     resultSchema = new Schema(types, names);
   }
 
-  @Override
-  public void add(final TupleBatch tup) {
+  /**
+   * Helper function to add value to this aggregator. Note this does NOT update count.
+   * 
+   * @param value the value to be added
+   */
+  private void addDoubleStats(final double value) {
+    if (AggUtils.needsSum(aggOps)) {
+      sum += value;
+    }
+    if (AggUtils.needsSumSq(aggOps)) {
+      sumSquared += value * value;
+    }
+    if (AggUtils.needsMin(aggOps)) {
+      min = Math.min(min, value);
+    }
+    if (AggUtils.needsMax(aggOps)) {
+      max = Math.max(max, value);
+    }
+  }
 
-    final int numTuples = tup.numTuples();
-    if (numTuples > 0) {
-      count += numTuples;
-      // temp variables for stdev streaming computation
-      for (int i = 0; i < numTuples; i++) {
-        final double x = tup.getDouble(aColumn, i);
-        sum += x;
-        sumSquared += x * x;
-        if (Double.compare(x, min) < 0) {
-          min = x;
-        }
-        if (Double.compare(x, max) > 0) {
-          max = x;
-        }
-      }
+  @Override
+  public void add(final ReadableTable from, final int fromColumn) {
+    final int numTuples = from.numTuples();
+    if (numTuples == 0) {
+      return;
+    }
+    if (AggUtils.needsCount(aggOps)) {
+      count = LongMath.checkedAdd(count, numTuples);
+    }
+    if (!AggUtils.needsStats(aggOps)) {
+      return;
+    }
+    for (int i = 0; i < numTuples; i++) {
+      addDoubleStats(from.getDouble(fromColumn, i));
+    }
+  }
+
+  /**
+   * Add the specified value to this aggregator.
+   * 
+   * @param value the value to be added
+   */
+  public void addDouble(final double value) {
+    if (AggUtils.needsCount(aggOps)) {
+      count = LongMath.checkedAdd(count, 1);
+    }
+    if (AggUtils.needsStats(aggOps)) {
+      addDoubleStats(value);
     }
   }
 
   @Override
   public void add(final Double value) {
-    if (value != null) {
-      count++;
-      // temp variables for stdev streaming computation
-      final double x = value;
-      sum += x;
-      sumSquared += x * x;
-      if (Double.compare(x, min) < 0) {
-        min = x;
-      }
-      if (Double.compare(x, max) > 0) {
-        max = x;
-      }
-    }
+    addDouble(Objects.requireNonNull(value, "value"));
   }
 
   @Override
@@ -167,36 +166,33 @@ public final class DoubleAggregator implements Aggregator<Double> {
   }
 
   @Override
-  public DoubleAggregator freshCopyYourself() {
-    return new DoubleAggregator(aColumn, aggOps, resultSchema);
-  }
-
-  @Override
-  public void getResult(final TupleBatchBuffer buffer, final int fromIndex) {
-    int idx = fromIndex;
+  public void getResult(final AppendableTable dest, final int destColumn) {
+    int idx = destColumn;
     if ((aggOps & AGG_OP_COUNT) != 0) {
-      buffer.putLong(idx, count);
+      dest.putLong(idx, count);
       idx++;
     }
     if ((aggOps & AGG_OP_MIN) != 0) {
-      buffer.putDouble(idx, min);
+      dest.putDouble(idx, min);
       idx++;
     }
     if ((aggOps & AGG_OP_MAX) != 0) {
-      buffer.putDouble(idx, max);
+      dest.putDouble(idx, max);
       idx++;
     }
     if ((aggOps & AGG_OP_SUM) != 0) {
-      buffer.putDouble(idx, sum);
+      dest.putDouble(idx, sum);
       idx++;
     }
     if ((aggOps & AGG_OP_AVG) != 0) {
-      buffer.putDouble(idx, sum * 1.0 / count);
+      dest.putDouble(idx, sum * 1.0 / count);
       idx++;
     }
     if ((aggOps & AGG_OP_STDEV) != 0) {
-      double stdev = Math.sqrt((sumSquared / count) - ((sum) / count * sum / count));
-      buffer.putDouble(idx, stdev);
+      double first = sumSquared / count;
+      double second = sum / count;
+      double stdev = Math.sqrt(first - second * second);
+      dest.putDouble(idx, stdev);
       idx++;
     }
   }
@@ -204,5 +200,32 @@ public final class DoubleAggregator implements Aggregator<Double> {
   @Override
   public Schema getResultSchema() {
     return resultSchema;
+  }
+
+  @Override
+  public void add(final ReadableTable t, final int column, final int row) {
+    addDouble(t.getDouble(column, row));
+  }
+
+  @Override
+  public Type getType() {
+    return Type.DOUBLE_TYPE;
+  }
+
+  @Override
+  public void add(final ReadableColumn from) {
+    final int numTuples = from.size();
+    if (numTuples == 0) {
+      return;
+    }
+    if (AggUtils.needsCount(aggOps)) {
+      count = LongMath.checkedAdd(count, numTuples);
+    }
+    if (!AggUtils.needsStats(aggOps)) {
+      return;
+    }
+    for (int i = 0; i < numTuples; i++) {
+      addDoubleStats(from.getDouble(i));
+    }
   }
 }

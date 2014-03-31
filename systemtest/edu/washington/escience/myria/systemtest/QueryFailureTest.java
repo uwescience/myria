@@ -10,8 +10,6 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.RootOperator;
@@ -24,12 +22,18 @@ import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.QueryFuture;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestUtils;
 
 public class QueryFailureTest extends SystemTestBase {
 
   @Test(expected = DbException.class, timeout = 50000)
   public void workerInitFailureTest() throws Throwable {
+    if (TestUtils.inTravis()) {
+      System.err.println("Skipping test because in Travis.");
+      throw new DbException("Skipping test because in Travis.");
+    }
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
     createTable(workerIDs[0], testtableKey, "id long, name varchar(20)");
     createTable(workerIDs[1], testtableKey, "id long, name varchar(20)");
@@ -91,6 +95,10 @@ public class QueryFailureTest extends SystemTestBase {
 
   @Test(expected = DbException.class, timeout = 50000)
   public void masterInitFailureTest() throws Throwable {
+    if (TestUtils.inTravis()) {
+      System.err.println("Skipping test because in Travis.");
+      throw new DbException("Skipping test because in Travis.");
+    }
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
     createTable(workerIDs[0], testtableKey, "id long, name varchar(20)");
     createTable(workerIDs[1], testtableKey, "id long, name varchar(20)");
@@ -149,6 +157,10 @@ public class QueryFailureTest extends SystemTestBase {
 
   @Test(expected = DbException.class, timeout = 50000)
   public void workerAndMasterInitFailureTest() throws Throwable {
+    if (TestUtils.inTravis()) {
+      System.err.println("Skipping test because in Travis.");
+      throw new DbException("Skipping test because in Travis.");
+    }
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
     createTable(workerIDs[0], testtableKey, "id long, name varchar(20)");
     createTable(workerIDs[1], testtableKey, "id long, name varchar(20)");
@@ -213,6 +225,10 @@ public class QueryFailureTest extends SystemTestBase {
 
   @Test(expected = DbException.class, timeout = 50000)
   public void workerCleanupFailureTest() throws Throwable {
+    if (TestUtils.inTravis()) {
+      System.err.println("Skipping test because in Travis.");
+      throw new DbException("Skipping test because in Travis.");
+    }
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
     createTable(workerIDs[0], testtableKey, "id long, name varchar(20)");
     createTable(workerIDs[1], testtableKey, "id long, name varchar(20)");
@@ -274,6 +290,10 @@ public class QueryFailureTest extends SystemTestBase {
 
   @Test(expected = DbException.class, timeout = 50000)
   public void masterCleanupFailureTest() throws Throwable {
+    if (TestUtils.inTravis()) {
+      System.err.println("Skipping test because in Travis.");
+      throw new DbException("Skipping test because in Travis.");
+    }
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
     createTable(workerIDs[0], testtableKey, "id long, name varchar(20)");
     createTable(workerIDs[1], testtableKey, "id long, name varchar(20)");
@@ -332,6 +352,10 @@ public class QueryFailureTest extends SystemTestBase {
 
   @Test(expected = DbException.class, timeout = 50000)
   public void workerAndMasterCleanupFailureTest() throws Throwable {
+    if (TestUtils.inTravis()) {
+      System.err.println("Skipping test because in Travis.");
+      throw new DbException("Skipping test because in Travis.");
+    }
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
     createTable(workerIDs[0], testtableKey, "id long, name varchar(20)");
     createTable(workerIDs[1], testtableKey, "id long, name varchar(20)");
@@ -396,6 +420,10 @@ public class QueryFailureTest extends SystemTestBase {
 
   @Test(expected = DbException.class, timeout = 50000)
   public void workerPartitionFailureTest() throws Throwable {
+    if (TestUtils.inTravis()) {
+      System.err.println("Skipping test because in Travis.");
+      throw new DbException("Skipping test because in Travis.");
+    }
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
     createTable(workerIDs[0], testtableKey, "id long, name varchar(20)");
     createTable(workerIDs[1], testtableKey, "id long, name varchar(20)");
@@ -458,6 +486,10 @@ public class QueryFailureTest extends SystemTestBase {
 
   @Test(expected = DbException.class, timeout = 50000)
   public void masterPartitionFailureTest() throws Throwable {
+    if (TestUtils.inTravis()) {
+      System.err.println("Skipping test because in Travis.");
+      throw new DbException("Skipping test because in Travis.");
+    }
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
     createTable(workerIDs[0], testtableKey, "id long, name varchar(20)");
     createTable(workerIDs[1], testtableKey, "id long, name varchar(20)");
