@@ -1,0 +1,9 @@
+{ 
+    	"nchiladaDirectoryName": "/projects/db8/leelee-testdata/nchiladafilescan/testsimple/",
+    	"groupFileName": "/projects/db8/leelee-testdata/nchiladafilescan/grpFile1",
+    	"relationKey": {
+        	"programName": "astro",
+        	"relationName": "test",
+        	"userName": "leelee"
+    	}
+	}
