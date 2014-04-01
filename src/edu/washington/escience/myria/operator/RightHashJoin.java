@@ -4,10 +4,10 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.storage.MutableTupleBuffer;
 import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
-import edu.washington.escience.myria.storage.MutableTupleBuffer;
 import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
 import gnu.trove.list.TIntList;
@@ -354,9 +354,6 @@ public final class RightHashJoin extends BinaryOperator {
 
     if (isEOIReady()) {
       nexttb = ans.popAny();
-      if (nexttb == null) {
-        checkEOSAndEOI();
-      }
     }
 
     return nexttb;
