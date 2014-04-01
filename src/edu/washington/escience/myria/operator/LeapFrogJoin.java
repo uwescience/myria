@@ -16,10 +16,10 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.storage.MutableTupleBuffer;
 import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
-import edu.washington.escience.myria.storage.MutableTupleBuffer;
 
 /**
  * 
@@ -536,14 +536,8 @@ public class LeapFrogJoin extends NAryOperator {
     }
     TupleBatch nexttb = ansTBB.popAny();
 
-    if (nexttb != null) {
-      return nexttb;
-    } else if (joinFinished) {
-      checkEOSAndEOI();
-      return null;
-    } else {
-      throw new RuntimeException("incorrect return.");
-    }
+    Preconditions.checkState(joinFinished || nexttb != null, "incorrect return");
+    return nexttb;
   }
 
   @Override
