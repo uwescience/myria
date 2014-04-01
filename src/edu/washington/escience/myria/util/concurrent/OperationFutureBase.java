@@ -88,7 +88,7 @@ public abstract class OperationFutureBase<T> extends AttachmentableAdapter imple
   private volatile T result;
 
   /**
-   * If the action failes, what's the cause.
+   * If the action fails, what's the cause.
    * */
   private volatile Throwable cause;
 
