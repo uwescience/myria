@@ -333,20 +333,28 @@ public final class MergeJoin extends BinaryOperator {
       } else {
         leftIsLess();
       }
-      nexttb = ans.popFilled();
+      nexttb = ans.popAnyUsingTimeout();
       if (nexttb != null) {
         return nexttb;
       }
     }
 
+    Preconditions.checkState(deferredEOS || !getLeft().eos() || !getRight().eos(),
+        "deferredEOS should be true if all children are eos");
+
     if (deferredEOS) {
       nexttb = ans.popAny();
-      if (nexttb == null) {
-        setEOS();
-      }
     }
 
     return nexttb;
+  }
+
+  @Override
+  public void checkEOSAndEOI() {
+    if (deferredEOS && ans.numTuples() == 0) {
+      setEOS();
+      return;
+    }
   }
 
   /**
