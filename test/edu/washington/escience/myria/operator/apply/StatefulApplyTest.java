@@ -127,7 +127,7 @@ public class StatefulApplyTest {
   }
 
   @Test
-  public void testCounter() throws DbException {
+  public void testCounterOnSingleton() throws DbException {
     SingletonRelation singleton = new SingletonRelation();
     Expression emitExpression = new Expression("x", new StateExpression(0));
     Expression initExpression = new Expression("cntr", new ConstantExpression(0));
