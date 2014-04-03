@@ -24,7 +24,6 @@ import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.FloorExpression;
 import edu.washington.escience.myria.expression.GreaterThanExpression;
 import edu.washington.escience.myria.expression.GreaterThanOrEqualsExpression;
-import edu.washington.escience.myria.expression.IntDivideExpression;
 import edu.washington.escience.myria.expression.LessThanExpression;
 import edu.washington.escience.myria.expression.LessThanOrEqualsExpression;
 import edu.washington.escience.myria.expression.MinusExpression;
@@ -37,7 +36,6 @@ import edu.washington.escience.myria.expression.PowExpression;
 import edu.washington.escience.myria.expression.RandomExpression;
 import edu.washington.escience.myria.expression.SinExpression;
 import edu.washington.escience.myria.expression.SqrtExpression;
-import edu.washington.escience.myria.expression.StateExpression;
 import edu.washington.escience.myria.expression.TanExpression;
 import edu.washington.escience.myria.expression.TimesExpression;
 import edu.washington.escience.myria.expression.ToUpperCaseExpression;
@@ -48,7 +46,6 @@ import edu.washington.escience.myria.expression.evaluate.ConstantEvaluator;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
 import edu.washington.escience.myria.operator.Apply;
-import edu.washington.escience.myria.operator.StatefulApply;
 import edu.washington.escience.myria.operator.TupleSource;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
@@ -584,105 +581,6 @@ public class ApplyTest {
 
         for (int row = 0; row < result.numTuples(); row++) {
           assertEquals(ids[row], result.getLong(0, row));
-        }
-        resultSize += result.numTuples();
-      }
-    }
-    assertEquals(SMALL_NUM_TUPLES, resultSize);
-    apply.close();
-  }
-
-  @Test
-  public void testStatefulApplyRange() throws DbException {
-    final Schema schema = new Schema(ImmutableList.of(Type.STRING_TYPE), ImmutableList.of("name"));
-    final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
-    for (long i = 0; i < NUM_TUPLES; i++) {
-      tbb.putString(0, "Foo" + i);
-    }
-
-    Expression initializer = new Expression("counter", new ConstantExpression(Type.LONG_TYPE, "-1"));
-    Expression expression = new Expression("index", new StateExpression(0));
-    Expression increment =
-        new Expression(new PlusExpression(new StateExpression(0), new ConstantExpression(Type.LONG_TYPE, "1")));
-
-    ImmutableList.Builder<Expression> Initializers = ImmutableList.builder();
-    Initializers.add(initializer);
-
-    ImmutableList.Builder<Expression> Expressions = ImmutableList.builder();
-    Expressions.add(expression);
-
-    ImmutableList.Builder<Expression> Updaters = ImmutableList.builder();
-    Updaters.add(increment);
-
-    StatefulApply apply =
-        new StatefulApply(new TupleSource(tbb), Expressions.build(), Initializers.build(), Updaters.build());
-
-    apply.open(TestEnvVars.get());
-    TupleBatch result;
-    int resultSize = 0;
-    while (!apply.eos()) {
-      result = apply.nextReady();
-      if (result != null) {
-        assertEquals(1, result.getSchema().numColumns());
-        assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(0));
-
-        for (int curI = 0; curI < result.numTuples(); curI++) {
-          long i = curI + resultSize;
-          assertEquals(i, result.getLong(0, curI));
-        }
-        resultSize += result.numTuples();
-      }
-    }
-    assertEquals(NUM_TUPLES, resultSize);
-    apply.close();
-  }
-
-  @Test
-  public void testStatefulApplyRunningMean() throws DbException {
-    final Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("salary"));
-    final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
-    for (long i = 0; i < SMALL_NUM_TUPLES; i++) {
-      tbb.putLong(0, i + 1);
-    }
-
-    Expression initializeCounter = new Expression("counter", new ConstantExpression(Type.LONG_TYPE, "0"));
-    Expression initializeSum = new Expression("sum", new ConstantExpression(Type.LONG_TYPE, "0"));
-    Expression updateCounter =
-        new Expression(new PlusExpression(new StateExpression(0), new ConstantExpression(Type.LONG_TYPE, "1")));
-    Expression updateSum = new Expression(new PlusExpression(new StateExpression(1), new VariableExpression(0)));
-
-    Expression avg = new Expression("average", new IntDivideExpression(new StateExpression(1), new StateExpression(0)));
-
-    ImmutableList.Builder<Expression> Initializers = ImmutableList.builder();
-    Initializers.add(initializeCounter);
-    Initializers.add(initializeSum);
-
-    ImmutableList.Builder<Expression> Updaters = ImmutableList.builder();
-    Updaters.add(updateCounter);
-    Updaters.add(updateSum);
-
-    ImmutableList.Builder<Expression> Expressions = ImmutableList.builder();
-    Expressions.add(avg);
-    Expressions.add(new Expression("number", new VariableExpression(0)));
-
-    StatefulApply apply =
-        new StatefulApply(new TupleSource(tbb), Expressions.build(), Initializers.build(), Updaters.build());
-
-    apply.open(TestEnvVars.get());
-    TupleBatch result;
-    int resultSize = 0;
-    while (!apply.eos()) {
-      result = apply.nextReady();
-      if (result != null) {
-        assertEquals(2, result.getSchema().numColumns());
-        assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(0));
-        assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(1));
-
-        for (int curI = 0; curI < result.numTuples(); curI++) {
-          long i = curI + resultSize + 1;
-          long sum = i * (i + 1) / 2;
-          long runningAverage = sum / i;
-          assertEquals(runningAverage, result.getLong(0, curI));
         }
         resultSize += result.numTuples();
       }
