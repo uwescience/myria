@@ -33,6 +33,16 @@ public class ExpressionOperatorParameter {
 
   /**
    * @param schema the input schema
+   * @param stateSchema the state schema
+   */
+  public ExpressionOperatorParameter(final Schema schema, final Schema stateSchema) {
+    this.schema = schema;
+    this.stateSchema = stateSchema;
+    workerID = null;
+  }
+
+  /**
+   * @param schema the input schema
    * @param workerID id of the worker that is running the expression
    */
   public ExpressionOperatorParameter(final Schema schema, final int workerID) {
