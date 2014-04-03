@@ -134,4 +134,9 @@ public class Tuple implements Serializable, ReadableTable {
   public void set(final int columnIdx, final Object value) {
     getColumn(columnIdx).appendObject(value);
   }
+
+  @Override
+  public ReadableColumn asColumn(final int column) {
+    return new ReadableSubColumn(this, Preconditions.checkElementIndex(column, schema.numColumns()));
+  }
 }

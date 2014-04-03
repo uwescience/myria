@@ -56,6 +56,7 @@ public final class DoubleAggregator implements Aggregator<Double> {
    * @param aggOps the aggregate operation to simultaneously compute.
    * */
   public DoubleAggregator(final String aFieldName, final int aggOps) {
+    Objects.requireNonNull(aFieldName, "aFieldName");
     if (aggOps <= 0) {
       throw new IllegalArgumentException("No aggregation operations are selected");
     }
@@ -99,6 +100,55 @@ public final class DoubleAggregator implements Aggregator<Double> {
     resultSchema = new Schema(types, names);
   }
 
+  @Override
+  public void add(final Double value) {
+    addDouble(Objects.requireNonNull(value, "value"));
+  }
+
+  @Override
+  public void add(final ReadableColumn from) {
+    Objects.requireNonNull(from, "from");
+    final int numTuples = from.size();
+    if (numTuples == 0) {
+      return;
+    }
+    if (AggUtils.needsCount(aggOps)) {
+      count = LongMath.checkedAdd(count, numTuples);
+    }
+    if (!AggUtils.needsStats(aggOps)) {
+      return;
+    }
+    for (int i = 0; i < numTuples; i++) {
+      addDoubleStats(from.getDouble(i));
+    }
+  }
+
+  @Override
+  public void add(final ReadableTable from, final int fromColumn) {
+    Objects.requireNonNull(from, "from");
+    add(from.asColumn(fromColumn));
+  }
+
+  @Override
+  public void add(final ReadableTable table, final int column, final int row) {
+    Objects.requireNonNull(table, "table");
+    addDouble(table.getDouble(column, row));
+  }
+
+  /**
+   * Add the specified value to this aggregator.
+   * 
+   * @param value the value to be added
+   */
+  public void addDouble(final double value) {
+    if (AggUtils.needsCount(aggOps)) {
+      count = LongMath.checkedAdd(count, 1);
+    }
+    if (AggUtils.needsStats(aggOps)) {
+      addDoubleStats(value);
+    }
+  }
+
   /**
    * Helper function to add value to this aggregator. Note this does NOT update count.
    * 
@@ -120,53 +170,8 @@ public final class DoubleAggregator implements Aggregator<Double> {
   }
 
   @Override
-  public void add(final ReadableTable from, final int fromColumn) {
-    final int numTuples = from.numTuples();
-    if (numTuples == 0) {
-      return;
-    }
-    if (AggUtils.needsCount(aggOps)) {
-      count = LongMath.checkedAdd(count, numTuples);
-    }
-    if (!AggUtils.needsStats(aggOps)) {
-      return;
-    }
-    for (int i = 0; i < numTuples; i++) {
-      addDoubleStats(from.getDouble(fromColumn, i));
-    }
-  }
-
-  /**
-   * Add the specified value to this aggregator.
-   * 
-   * @param value the value to be added
-   */
-  public void addDouble(final double value) {
-    if (AggUtils.needsCount(aggOps)) {
-      count = LongMath.checkedAdd(count, 1);
-    }
-    if (AggUtils.needsStats(aggOps)) {
-      addDoubleStats(value);
-    }
-  }
-
-  @Override
-  public void add(final Double value) {
-    addDouble(Objects.requireNonNull(value, "value"));
-  }
-
-  @Override
-  public void addObj(final Object obj) {
-    this.add((Double) obj);
-  }
-
-  @Override
-  public int availableAgg() {
-    return AVAILABLE_AGG;
-  }
-
-  @Override
   public void getResult(final AppendableTable dest, final int destColumn) {
+    Objects.requireNonNull(dest, "dest");
     int idx = destColumn;
     if ((aggOps & AGG_OP_COUNT) != 0) {
       dest.putLong(idx, count);
@@ -203,29 +208,7 @@ public final class DoubleAggregator implements Aggregator<Double> {
   }
 
   @Override
-  public void add(final ReadableTable t, final int column, final int row) {
-    addDouble(t.getDouble(column, row));
-  }
-
-  @Override
   public Type getType() {
     return Type.DOUBLE_TYPE;
-  }
-
-  @Override
-  public void add(final ReadableColumn from) {
-    final int numTuples = from.size();
-    if (numTuples == 0) {
-      return;
-    }
-    if (AggUtils.needsCount(aggOps)) {
-      count = LongMath.checkedAdd(count, numTuples);
-    }
-    if (!AggUtils.needsStats(aggOps)) {
-      return;
-    }
-    for (int i = 0; i < numTuples; i++) {
-      addDoubleStats(from.getDouble(i));
-    }
   }
 }

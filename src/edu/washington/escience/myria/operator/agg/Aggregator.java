@@ -59,11 +59,11 @@ public interface Aggregator<COLUMN_TYPE> extends Serializable {
    * Add the value in the specified <code>column</code> and <code>row</code> in the given {@link ReadableTable} into the
    * aggregate.
    * 
-   * @param t the source {@link ReadableTable}
+   * @param table the source {@link ReadableTable}
    * @param column the column in <code>t</code> containing the value
    * @param row the row in <code>t</code> containing the value
    */
-  void add(ReadableTable t, int column, int row);
+  void add(ReadableTable table, int column, int row);
 
   /**
    * Add a new value into the aggregate.
@@ -71,18 +71,6 @@ public interface Aggregator<COLUMN_TYPE> extends Serializable {
    * @param value the new value.
    */
   void add(COLUMN_TYPE value);
-
-  /**
-   * Add an object.
-   * 
-   * @param obj the object value.
-   */
-  void addObj(Object obj);
-
-  /**
-   * @return available aggregates this Aggregator supports.
-   */
-  int availableAgg();
 
   /**
    * Output the aggregate result. Store the output to buffer.
