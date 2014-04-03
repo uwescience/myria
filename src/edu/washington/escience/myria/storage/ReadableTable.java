@@ -62,4 +62,9 @@ public interface ReadableTable extends TupleTable {
    */
   String getString(final int column, final int row);
 
+  /**
+   * @param column the index of the column to be returned.
+   * @return a {@link ReadableColumn} representation of the specified column of this table.
+   */
+  ReadableColumn asColumn(final int column);
 }

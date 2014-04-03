@@ -285,4 +285,9 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
     finalized = true;
     return finalBatches;
   }
+
+  @Override
+  public ReadableColumn asColumn(final int column) {
+    return new ReadableSubColumn(this, Preconditions.checkElementIndex(column, numColumns));
+  }
 }

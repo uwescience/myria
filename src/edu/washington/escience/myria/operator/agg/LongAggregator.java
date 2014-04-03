@@ -56,6 +56,7 @@ public final class LongAggregator implements Aggregator<Long> {
    * @param aggOps the aggregate operation to simultaneously compute.
    * */
   public LongAggregator(final String aFieldName, final int aggOps) {
+    Objects.requireNonNull(aFieldName, "aFieldName");
     if (aggOps <= 0) {
       throw new IllegalArgumentException("No aggregation operations are selected");
     }
@@ -99,8 +100,14 @@ public final class LongAggregator implements Aggregator<Long> {
   }
 
   @Override
-  public void add(final ReadableTable from, final int fromColumn) {
-    final int numTuples = from.numTuples();
+  public void add(final Long value) {
+    addLong(Objects.requireNonNull(value, "value"));
+  }
+
+  @Override
+  public void add(final ReadableColumn from) {
+    Objects.requireNonNull(from, "from");
+    final int numTuples = from.size();
     if (numTuples == 0) {
       return;
     }
@@ -112,7 +119,33 @@ public final class LongAggregator implements Aggregator<Long> {
       return;
     }
     for (int i = 0; i < numTuples; i++) {
-      addLongStats(from.getLong(fromColumn, i));
+      addLongStats(from.getLong(i));
+    }
+  }
+
+  @Override
+  public void add(final ReadableTable from, final int fromColumn) {
+    Objects.requireNonNull(from, "from");
+    add(from.asColumn(fromColumn));
+  }
+
+  @Override
+  public void add(final ReadableTable table, final int column, final int row) {
+    Objects.requireNonNull(table, "table");
+    addLong(table.getLong(column, row));
+  }
+
+  /**
+   * Add the specified value to this aggregator.
+   * 
+   * @param value the value to be added
+   */
+  public void addLong(final long value) {
+    if (AggUtils.needsCount(aggOps)) {
+      count = LongMath.checkedAdd(count, 1);
+    }
+    if (AggUtils.needsStats(aggOps)) {
+      addLongStats(value);
     }
   }
 
@@ -137,36 +170,8 @@ public final class LongAggregator implements Aggregator<Long> {
   }
 
   @Override
-  public void add(final Long value) {
-    addLong(Objects.requireNonNull(value, "value"));
-  }
-
-  /**
-   * Add the specified value to this aggregator.
-   * 
-   * @param value the value to be added
-   */
-  public void addLong(final long value) {
-    if (AggUtils.needsCount(aggOps)) {
-      count = LongMath.checkedAdd(count, 1);
-    }
-    if (AggUtils.needsStats(aggOps)) {
-      addLongStats(value);
-    }
-  }
-
-  @Override
-  public void addObj(final Object value) {
-    add((Long) value);
-  }
-
-  @Override
-  public int availableAgg() {
-    return AVAILABLE_AGG;
-  }
-
-  @Override
   public void getResult(final AppendableTable dest, final int destColumn) {
+    Objects.requireNonNull(dest, "dest");
     int idx = destColumn;
     if ((aggOps & AGG_OP_COUNT) != 0) {
       dest.putLong(idx, count);
@@ -203,30 +208,7 @@ public final class LongAggregator implements Aggregator<Long> {
   }
 
   @Override
-  public void add(final ReadableTable t, final int column, final int row) {
-    addLong(t.getLong(column, row));
-  }
-
-  @Override
   public Type getType() {
     return Type.LONG_TYPE;
-  }
-
-  @Override
-  public void add(final ReadableColumn from) {
-    final int numTuples = from.size();
-    if (numTuples == 0) {
-      return;
-    }
-    if (AggUtils.needsCount(aggOps)) {
-      count = LongMath.checkedAdd(count, numTuples);
-    }
-
-    if (!AggUtils.needsStats(aggOps)) {
-      return;
-    }
-    for (int i = 0; i < numTuples; i++) {
-      addLongStats(from.getLong(i));
-    }
   }
 }

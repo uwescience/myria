@@ -319,7 +319,7 @@ public final class MergeJoin extends BinaryOperator {
 
     needData = false;
 
-    while (nexttb == null && !deferredEOS && !needData) {
+    while (!deferredEOS && !needData) {
       final int compared =
           TupleUtils.tupleCompare(leftBatches.getLast(), leftCompareIndx, leftRowIndex, rightBatches.getLast(),
               rightCompareIndx, rightRowIndex, ascending);
