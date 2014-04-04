@@ -203,7 +203,7 @@ public class StatefulApply extends Apply {
     ImmutableList.Builder<String> namesBuilder = ImmutableList.builder();
 
     for (Expression expr : initExpressions) {
-      typesBuilder.add(expr.getOutputType(new ExpressionOperatorParameter(getChild().getSchema(), getNodeID())));
+      typesBuilder.add(expr.getOutputType(new ExpressionOperatorParameter(getChild().getSchema())));
       namesBuilder.add(expr.getOutputName());
     }
     stateSchema = new Schema(typesBuilder.build(), namesBuilder.build());
@@ -231,7 +231,7 @@ public class StatefulApply extends Apply {
     ImmutableList.Builder<String> namesBuilder = ImmutableList.builder();
 
     for (Expression expr : getEmitExpressions()) {
-      typesBuilder.add(expr.getOutputType(new ExpressionOperatorParameter(inputSchema, getStateSchema(), getNodeID())));
+      typesBuilder.add(expr.getOutputType(new ExpressionOperatorParameter(inputSchema, getStateSchema())));
       namesBuilder.add(expr.getOutputName());
     }
     return new Schema(typesBuilder.build(), namesBuilder.build());

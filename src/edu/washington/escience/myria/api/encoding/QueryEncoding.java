@@ -147,7 +147,7 @@ public class QueryEncoding extends MyriaApiEncoding {
       /* No scans found: See if there's a CollectConsumer. */
       for (OperatorEncoding<?> operator : fragment.operators) {
         /* If the fragment has a CollectConsumer, it has to run on a single worker. */
-        if (operator instanceof CollectConsumerEncoding) {
+        if (operator instanceof CollectConsumerEncoding || operator instanceof SingletonEncoding) {
           /* Just pick the first alive worker. */
           fragment.workers.add(server.getAliveWorkers().iterator().next());
           break;
