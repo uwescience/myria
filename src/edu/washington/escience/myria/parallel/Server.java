@@ -457,6 +457,7 @@ public final class Server {
       execEnvVars.put(cE.getKey(), cE.getValue());
     }
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_NODE_ID, MyriaConstants.MASTER_ID);
+    execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE, getExecutionMode());
 
     aliveWorkers = new ConcurrentHashMap<Integer, Long>();
     scheduledWorkers = new ConcurrentHashMap<Integer, SocketInfo>();

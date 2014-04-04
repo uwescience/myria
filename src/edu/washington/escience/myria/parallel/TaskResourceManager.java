@@ -39,21 +39,13 @@ public final class TaskResourceManager {
   private final QuerySubTreeTask ownerTask;
 
   /**
-   * task execution mode.
-   * */
-  private final QueryExecutionMode executionMode;
-
-  /**
    * @param connectionPool connection pool.
    * @param ownerTask owner task
-   * @param executionMode the task execution mode.
    */
-  public TaskResourceManager(final IPCConnectionPool connectionPool, final QuerySubTreeTask ownerTask,
-      final QueryExecutionMode executionMode) {
+  public TaskResourceManager(final IPCConnectionPool connectionPool, final QuerySubTreeTask ownerTask) {
     ipcPool = connectionPool;
     outputChannels = Sets.newSetFromMap(new ConcurrentHashMap<StreamOutputChannel<TupleBatch>, Boolean>());
     this.ownerTask = ownerTask;
-    this.executionMode = executionMode;
   }
 
   /**
@@ -112,13 +104,6 @@ public final class TaskResourceManager {
    * */
   public QuerySubTreeTask getOwnerTask() {
     return ownerTask;
-  }
-
-  /**
-   * @return execution mode
-   * */
-  public QueryExecutionMode getExecutionMode() {
-    return executionMode;
   }
 
 }

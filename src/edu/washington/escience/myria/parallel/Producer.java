@@ -211,7 +211,8 @@ public abstract class Producer extends RootOperator {
       pendingTuplesToSend.add(i, new LinkedList<TupleBatch>());
       triedToSendTuples.get(i).init(execEnvVars);
     }
-    nonBlockingExecution = (taskResourceManager.getExecutionMode() == QueryExecutionMode.NON_BLOCKING);
+    nonBlockingExecution =
+        (execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE) == QueryExecutionMode.NON_BLOCKING);
   }
 
   /**

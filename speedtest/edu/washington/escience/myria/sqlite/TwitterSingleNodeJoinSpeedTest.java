@@ -48,8 +48,8 @@ public class TwitterSingleNodeJoinSpeedTest {
    * The environment execution variables.
    */
   private final static ImmutableMap<String, Object> execEnvVars = ImmutableMap.<String, Object> of(
-      MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER, new TaskResourceManager(null, null,
-          QueryExecutionMode.BLOCKING));
+      MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER, new TaskResourceManager(null, null),
+      MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE, QueryExecutionMode.BLOCKING);
 
   /** Whether we were able to copy the data. */
   private static boolean successfulSetup = false;
