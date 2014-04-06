@@ -7,10 +7,10 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.parallel.QueryExecutionMode;
 import edu.washington.escience.myria.parallel.TaskResourceManager;
+import edu.washington.escience.myria.storage.MutableTupleBuffer;
 import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
-import edu.washington.escience.myria.storage.MutableTupleBuffer;
 import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
 import gnu.trove.list.TIntList;
@@ -424,10 +424,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
       }
     }
     if (nexttb == null) {
-      if (ans.numTuples() > 0) {
-        nexttb = ans.popAny();
-      }
-      checkEOSAndEOI();
+      nexttb = ans.popAny();
     }
     return nexttb;
   }

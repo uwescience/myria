@@ -3,8 +3,8 @@ package edu.washington.escience.myria.operator;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.MutableTupleBuffer;
+import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleUtils;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ImmutableMap;
 
 /**
- * Keeps min vaule. It adds newly meet unique tuples into a buffer so that the source TupleBatches are not referenced.
+ * Keeps min value. It adds newly met unique tuples into a buffer so that the source TupleBatches are not referenced.
  * This implementation reduces memory consumption.
  * */
 public final class KeepAndSortOnMinValue extends StreamingState {
@@ -40,7 +40,7 @@ public final class KeepAndSortOnMinValue extends StreamingState {
   private transient TIntObjectMap<TIntList> uniqueTupleIndices;
 
   /**
-   * The buffer for stroing unique tuples.
+   * The buffer for storing unique tuples.
    * */
   private transient MutableTupleBuffer uniqueTuples = null;
 
