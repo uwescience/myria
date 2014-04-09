@@ -1,10 +1,12 @@
 package edu.washington.escience.myria.api;
 
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -12,6 +14,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.core.UriInfo;
 
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.parallel.SocketInfo;
@@ -61,11 +64,12 @@ public final class WorkerCollection {
 
   /**
    * @param sWorkerId identifier of the worker, input string.
-   * @return the hostname and port number of the specified worker.
+   * @param uriInfo information about the URL of the request.
+   * @return the URI of the worker added.
    */
-  @GET
+  @POST
   @Path("/add/worker-{workerId}")
-  public String addWorker(@PathParam("workerId") final String sWorkerId) {
+  public Response addWorker(@PathParam("workerId") final String sWorkerId, @Context final UriInfo uriInfo) {
     Integer workerId;
     try {
       workerId = Integer.parseInt(sWorkerId);
@@ -82,7 +86,9 @@ public final class WorkerCollection {
     } catch (final RuntimeException e) {
       throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, e.getMessage());
     }
-    return "New worker " + workerId.toString() + " added";
+
+    URI queryUri = uriInfo.getRequestUri();
+    return Response.status(Status.ACCEPTED).location(queryUri).build();
   }
 
   /**
@@ -92,27 +98,18 @@ public final class WorkerCollection {
   @GET
   @Path("/remove/worker-{workerId}")
   public String removeWorker(@PathParam("workerId") final String sWorkerId) {
-    Integer workerId;
-    try {
-      workerId = Integer.parseInt(sWorkerId);
-    } catch (final NumberFormatException e) {
-      /* Parsing failed, throw a 400 (Bad Request) */
-      throw new MyriaApiException(Status.BAD_REQUEST, e);
-    }
+    Integer workerId = Integer.parseInt(sWorkerId);
     SocketInfo workerInfo = server.getWorkers().get(workerId);
     if (workerInfo == null) {
-      /* Not found, throw a 404 (Not Found) */
-      throw new MyriaApiException(Status.NOT_FOUND, sWorkerId);
+      /* Worker not in catalog, throw a 400 (Bad Request) */
+      throw new MyriaApiException(Status.BAD_REQUEST, "Worker " + sWorkerId + " not deployed");
     }
-
     if (!server.isWorkerAlive(workerId)) {
-      /* Worker already alive, throw a 400 (Bad Request) */
-      throw new MyriaApiException(Status.BAD_REQUEST, "Worker not alive");
+      /* Worker not alive, throw a 400 (Bad Request) */
+      throw new MyriaApiException(Status.BAD_REQUEST, "Worker " + sWorkerId + " not alive");
     }
-
-    /* Yay, worked! */
     server.removeWorker(workerId);
-    return "Worker " + workerInfo.toString() + " removed";
+    return "Worker " + sWorkerId + " removed";
   }
 
   /**
