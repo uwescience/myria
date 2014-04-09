@@ -95,7 +95,7 @@ public class WorkerQueryPartition implements QueryPartition {
   /**
    * Record milliseconds so that we can normalize the time in {@link ProfilingLogger}.
    */
-  private long startMilliseconds;
+  private volatile long startMilliseconds;
 
   /**
    * The future listener for processing the complete events of the execution of all the query's tasks.
