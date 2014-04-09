@@ -108,13 +108,13 @@ public final class QuerySubTreeTask {
   /**
    * Record nanoseconds so that we can normalize the time in {@link ProfilingLogger}.
    */
-  private long beginNanoseconds;
+  private volatile long beginNanoseconds;
 
   /**
    * Record the milliseconds so that we can calculate the difference to the worker initialization in
    * {@link ProfilingLogger}.
    */
-  private long beginMilliseconds;
+  private volatile long beginMilliseconds;
 
   /**
    * @return the task execution future.
