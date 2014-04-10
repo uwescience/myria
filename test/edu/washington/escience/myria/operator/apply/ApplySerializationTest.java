@@ -27,9 +27,12 @@ import edu.washington.escience.myria.expression.FloorExpression;
 import edu.washington.escience.myria.expression.GreaterThanExpression;
 import edu.washington.escience.myria.expression.GreaterThanOrEqualsExpression;
 import edu.washington.escience.myria.expression.IntDivideExpression;
+import edu.washington.escience.myria.expression.LenExpression;
 import edu.washington.escience.myria.expression.LessThanExpression;
 import edu.washington.escience.myria.expression.LessThanOrEqualsExpression;
 import edu.washington.escience.myria.expression.LogExpression;
+import edu.washington.escience.myria.expression.GreaterExpression;
+import edu.washington.escience.myria.expression.LesserExpression;
 import edu.washington.escience.myria.expression.MinusExpression;
 import edu.washington.escience.myria.expression.ModuloExpression;
 import edu.washington.escience.myria.expression.NegateExpression;
@@ -81,8 +84,9 @@ public class ApplySerializationTest {
     TanExpression tan = new TanExpression(constant);
     ToUpperCaseExpression upper = new ToUpperCaseExpression(constant);
     NotExpression not = new NotExpression(constant);
+    LenExpression len = new LenExpression(constant);
     expressions.add(abs).add(ceil).add(cos).add(floor).add(log).add(negate).add(not).add(sin).add(sqrt).add(tan).add(
-        upper);
+        upper).add(len);
 
     /* Binary */
     DivideExpression divide = new DivideExpression(constant, variable);
@@ -101,8 +105,10 @@ public class ApplySerializationTest {
     LessThanOrEqualsExpression lte = new LessThanOrEqualsExpression(constant, variable);
     CastExpression cast = new CastExpression(constant, typeof);
     ModuloExpression modulo = new ModuloExpression(constant, variable);
+    LesserExpression min = new LesserExpression(constant, variable);
+    GreaterExpression max = new GreaterExpression(constant, variable);
     expressions.add(and).add(divide).add(idivide).add(eq).add(gt).add(gte).add(lt).add(lte).add(minus).add(ne).add(or)
-        .add(plus).add(pow).add(times).add(cast).add(modulo);
+        .add(plus).add(pow).add(times).add(cast).add(modulo).add(min).add(max);
 
     /* NAry */
     VariableExpression variable2 = new VariableExpression(2);
