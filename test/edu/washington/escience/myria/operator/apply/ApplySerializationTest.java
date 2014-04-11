@@ -24,15 +24,15 @@ import edu.washington.escience.myria.expression.DivideExpression;
 import edu.washington.escience.myria.expression.EqualsExpression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.FloorExpression;
+import edu.washington.escience.myria.expression.GreaterExpression;
 import edu.washington.escience.myria.expression.GreaterThanExpression;
 import edu.washington.escience.myria.expression.GreaterThanOrEqualsExpression;
 import edu.washington.escience.myria.expression.IntDivideExpression;
 import edu.washington.escience.myria.expression.LenExpression;
 import edu.washington.escience.myria.expression.LessThanExpression;
 import edu.washington.escience.myria.expression.LessThanOrEqualsExpression;
-import edu.washington.escience.myria.expression.LogExpression;
-import edu.washington.escience.myria.expression.GreaterExpression;
 import edu.washington.escience.myria.expression.LesserExpression;
+import edu.washington.escience.myria.expression.LogExpression;
 import edu.washington.escience.myria.expression.MinusExpression;
 import edu.washington.escience.myria.expression.ModuloExpression;
 import edu.washington.escience.myria.expression.NegateExpression;
@@ -45,6 +45,7 @@ import edu.washington.escience.myria.expression.RandomExpression;
 import edu.washington.escience.myria.expression.SinExpression;
 import edu.washington.escience.myria.expression.SqrtExpression;
 import edu.washington.escience.myria.expression.StateExpression;
+import edu.washington.escience.myria.expression.SubstrExpression;
 import edu.washington.escience.myria.expression.TanExpression;
 import edu.washington.escience.myria.expression.TimesExpression;
 import edu.washington.escience.myria.expression.ToUpperCaseExpression;
@@ -113,7 +114,8 @@ public class ApplySerializationTest {
     /* NAry */
     VariableExpression variable2 = new VariableExpression(2);
     ConditionalExpression conditional = new ConditionalExpression(variable, constant, variable2);
-    expressions.add(conditional);
+    SubstrExpression substr = new SubstrExpression(constant, constant, constant);
+    expressions.add(conditional).add(substr);
 
     /* Test serializing and deserializing all of them. */
     for (ExpressionOperator op : expressions.build()) {

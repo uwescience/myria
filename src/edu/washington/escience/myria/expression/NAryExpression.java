@@ -49,6 +49,28 @@ public abstract class NAryExpression extends ExpressionOperator {
   }
 
   /**
+   * Returns the function call string: child + functionName. E.g, for {@code substring(int beginIndex, int endIndex)},
+   * <code>functionName</code> is <code>".substring</code>.
+   * 
+   * @param functionName the string representation of the Java function name.
+   * @param parameters parameters that are needed to determine the output type
+   * @return the Java string for this operator.
+   */
+  protected final String getDotFunctionCallString(final String functionName,
+      final ExpressionOperatorParameter parameters) {
+    StringBuilder callString =
+        new StringBuilder(children.get(0).getJavaString(parameters)).append(functionName).append("(");
+    for (int i = 1; i < children.size(); ++i) {
+      callString.append(children.get(i).getJavaString(parameters));
+      if (i != children.size() - 1) {
+        callString.append(",");
+      }
+    }
+    callString.append(")");
+    return callString.toString();
+  }
+
+  /**
    * A function that could be used as the default type checker for an expression where all operands must be numeric or
    * have the same type.
    * 

@@ -42,7 +42,8 @@ import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParam
     @Type(name = "OR", value = OrExpression.class), @Type(name = "PLUS", value = PlusExpression.class),
     @Type(name = "POW", value = PowExpression.class), @Type(name = "TIMES", value = TimesExpression.class),
     /* Nary */
-    @Type(name = "CONDITION", value = ConditionalExpression.class), })
+    @Type(name = "CONDITION", value = ConditionalExpression.class),
+    @Type(name = "SUBSTR", value = SubstrExpression.class) })
 public abstract class ExpressionOperator implements Serializable {
   /***/
   private static final long serialVersionUID = 1L;
