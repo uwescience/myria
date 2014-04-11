@@ -303,7 +303,6 @@ public final class SQLiteAccessMethod extends AccessMethod {
       sb.append('?');
     }
     sb.append(");");
-    System.out.println("sb: " + sb.toString());
     return sb.toString();
   }
 
