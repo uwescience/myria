@@ -303,6 +303,7 @@ public final class SQLiteAccessMethod extends AccessMethod {
       sb.append('?');
     }
     sb.append(");");
+    System.out.println("sb: " + sb.toString());
     return sb.toString();
   }
 
@@ -423,6 +424,50 @@ public final class SQLiteAccessMethod extends AccessMethod {
           columns.toString());
 
       execute(statement.toString());
+    }
+  }
+
+  @Override
+  public String deleteStatementFromSchema(final Schema schema, final RelationKey relationKey) {
+    final StringBuilder sb = new StringBuilder();
+    sb.append("DELETE FROM ").append(relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)).append(" WHERE (")
+        .append(schema.getColumnName(0)).append("=?");
+    for (int col = 1; col < schema.numColumns(); col++) {
+      sb.append(" AND ").append(schema.getColumnName(col)).append("=?");
+    }
+    sb.append(");");
+    return sb.toString();
+  }
+
+  @Override
+  public void tupleBatchDelete(final RelationKey relationKey, final TupleBatch tuples) throws DbException {
+    /* populate the statement and execute the deletion */
+    try {
+      sqliteQueue.execute(new SQLiteJob<Object>() {
+        @Override
+        protected Object job(final SQLiteConnection sqliteConnection) throws DbException {
+          SQLiteStatement statement = null;
+          try {
+            /* BEGIN TRANSACTION */
+            sqliteConnection.exec("BEGIN TRANSACTION");
+            /* Set up and execute the query */
+            statement = sqliteConnection.prepare(deleteStatementFromSchema(tuples.getSchema(), relationKey));
+            tuples.getIntoSQLite(statement);
+            /* COMMIT TRANSACTION */
+            sqliteConnection.exec("COMMIT TRANSACTION");
+          } catch (final SQLiteException e) {
+            LOGGER.error(e.getMessage());
+            throw new DbException(e);
+          } finally {
+            if (statement != null && !statement.isDisposed()) {
+              statement.dispose();
+            }
+          }
+          return null;
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new DbException(e);
     }
   }
 }
