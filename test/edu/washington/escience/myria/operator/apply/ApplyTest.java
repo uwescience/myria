@@ -293,7 +293,7 @@ public class ApplyTest {
     }
 
     {
-      // Expression: d.substring(a,c);
+      // Expression: d.substring(0,4);
       SubstrExpression substr = new SubstrExpression(vard, new ConstantExpression(0), new ConstantExpression(4));
       Expression expr = new Expression("substr", substr);
       Expressions.add(expr);
