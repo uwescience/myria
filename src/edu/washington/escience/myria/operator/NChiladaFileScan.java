@@ -118,12 +118,12 @@ public class NChiladaFileScan extends LeafOperator {
       Type.FLOAT_TYPE, Type.FLOAT_TYPE, Type.FLOAT_TYPE, Type.FLOAT_TYPE, Type.FLOAT_TYPE, Type.FLOAT_TYPE,
       Type.FLOAT_TYPE, Type.FLOAT_TYPE, Type.FLOAT_TYPE, Type.FLOAT_TYPE, Type.FLOAT_TYPE, Type.FLOAT_TYPE,
       Type.FLOAT_TYPE, Type.FLOAT_TYPE, Type.FLOAT_TYPE, Type.FLOAT_TYPE, Type.FLOAT_TYPE, Type.FLOAT_TYPE,
-      Type.FLOAT_TYPE, Type.FLOAT_TYPE, Type.INT_TYPE, Type.STRING_TYPE, Type.INT_TYPE);
+      Type.FLOAT_TYPE, Type.FLOAT_TYPE, Type.INT_TYPE, Type.STRING_TYPE);
   /** The column names for NChilada schema. */
   private static final List<String> NCHILADA_COLUMN_NAMES = ImmutableList.of(IORD, IGASORD, ESN_RATE, FE_MASS_FRAC,
       FE_MASS_FRACDOT, GAS_DENSITY, H_I, HE_I, HE_I_I, METALSDOT, OX_MASS_FRAC, OX_MASS_FRACDOT, COOLONTIME, DEN, MASS,
       METALS, POS_X, POS_Y, POS_Z, POT, SMOOTHLENGTH, SOFT, VEL_X, VEL_Y, VEL_Z, MASSFORM, TFORM, TEMPERATURE, "grp",
-      "type", "time");
+      "type");
   /** Schema for all NChilada files. */
   private static final Schema NCHILADA_SCHEMA = new Schema(NCHILADA_COLUMN_TYPES, NCHILADA_COLUMN_NAMES);
 
@@ -142,8 +142,6 @@ public class NChiladaFileScan extends LeafOperator {
   private String particleDirectoryPath;
   /** The full path of the file that contains groupNumber in the order of gas, dark, star. */
   private String groupFilePath;
-  /** The timestep that this nchilada relation belongs to. */
-  private final int timeStep;
   /** The group input stream. */
   private InputStream groupInputStream;
   /** Contains matching from file name to DataInput object for star particles attributes. */
@@ -176,12 +174,10 @@ public class NChiladaFileScan extends LeafOperator {
    * 
    * @param particleDirectoryPath The full path of the directory that contains gas, star, dark directories.
    * @param groupFilePath The full path of the file that contains groupNumber in the order of gas, dark, star.
-   * @param timeStep The timestep that this nchilada relation belongs to.
    */
-  public NChiladaFileScan(final String particleDirectoryPath, final String groupFilePath, final int timeStep) {
+  public NChiladaFileScan(final String particleDirectoryPath, final String groupFilePath) {
     Objects.requireNonNull(particleDirectoryPath);
     Objects.requireNonNull(groupFilePath);
-    this.timeStep = timeStep;
     this.particleDirectoryPath = particleDirectoryPath;
     this.groupFilePath = groupFilePath;
   }
@@ -189,21 +185,19 @@ public class NChiladaFileScan extends LeafOperator {
   /**
    * Construct a new NChiladaFileScanObject. This constructor is only meant to be called from test.
    * 
-   * @param groupInputStream
-   * @param gasAttributeFilesToDataInput
-   * @param starAttributeFilesToDataInput
-   * @param darkAttributeFilesToDataInput
-   * @param timeStep
+   * @param groupInputStream The InputStream object for group.
+   * @param gasAttributeFilesToDataInput A mapping from gas attribute file names to their respective DataInput object.
+   * @param starAttributeFilesToDataInput A mapping from star attribute file names to their respective DataInput object.
+   * @param darkAttributeFilesToDataInput A mapping from dark attribute file names to their respective DataInput object.
    */
   private NChiladaFileScan(final InputStream groupInputStream,
       final Map<String, DataInput> gasAttributeFilesToDataInput,
       final Map<String, DataInput> starAttributeFilesToDataInput,
-      final Map<String, DataInput> darkAttributeFilesToDataInput, final int timeStep) {
+      final Map<String, DataInput> darkAttributeFilesToDataInput) {
     Objects.requireNonNull(groupInputStream);
     Objects.requireNonNull(gasAttributeFilesToDataInput);
     Objects.requireNonNull(starAttributeFilesToDataInput);
     Objects.requireNonNull(darkAttributeFilesToDataInput);
-    this.timeStep = timeStep;
     this.darkAttributeFilesToDataInput = darkAttributeFilesToDataInput;
     this.gasAttributeFilesToDataInput = gasAttributeFilesToDataInput;
     this.starAttributeFilesToDataInput = starAttributeFilesToDataInput;
@@ -429,8 +423,8 @@ public class NChiladaFileScan extends LeafOperator {
     while (numRows > 0 && buffer.numTuples() < TupleBatch.BATCH_SIZE) {
       lineNumber++;
       int column = 0;
-      // -3 to exclude grp, type and time.
-      for (int i = 0; i < NCHILADA_COLUMN_NAMES.size() - 3; i++) {
+      // -2 to exclude grp, and type.
+      for (int i = 0; i < NCHILADA_COLUMN_NAMES.size() - 2; i++) {
         String columnNames = NCHILADA_COLUMN_NAMES.get(i);
         DataInput dataInputStream = fileNameToDataInput.get(columnNames);
         Type type = NCHILADA_COLUMN_TYPES.get(i);
@@ -461,7 +455,6 @@ public class NChiladaFileScan extends LeafOperator {
       }
       buffer.putInt(column++, groupScanner.nextInt());
       buffer.putString(column++, pType.toString().toLowerCase());
-      buffer.putInt(column++, timeStep);
       final String groupRest = groupScanner.nextLine().trim();
       if (groupRest.length() > 0) {
         throw new DbException("groupFile: Unexpected output at the end of line " + lineNumber + ": " + groupRest);

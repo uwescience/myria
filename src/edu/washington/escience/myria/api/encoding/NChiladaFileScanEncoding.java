@@ -10,11 +10,9 @@ public class NChiladaFileScanEncoding extends LeafOperatorEncoding<NChiladaFileS
   public String nchiladaDirectoryName;
   @Required
   public String groupFileName;
-  @Required
-  public int timeStep;
 
   @Override
   public NChiladaFileScan construct(Server server) throws MyriaApiException {
-    return new NChiladaFileScan(nchiladaDirectoryName, groupFileName, timeStep);
+    return new NChiladaFileScan(nchiladaDirectoryName, groupFileName);
   }
 }

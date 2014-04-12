@@ -86,11 +86,11 @@ public class NChiladaFileScanTest {
     String dir = "testdata" + File.separatorChar + "nchiladafilescan" + File.separatorChar + "testsimple";
     String groupFile = "testdata" + File.separatorChar + "nchiladafilescan" + File.separatorChar + "grpFile1";
     Constructor<NChiladaFileScan> c =
-        NChiladaFileScan.class.getDeclaredConstructor(InputStream.class, Map.class, Map.class, Map.class, int.class);
+        NChiladaFileScan.class.getDeclaredConstructor(InputStream.class, Map.class, Map.class, Map.class);
     c.setAccessible(true);
     NChiladaFileScan fileScan =
         c.newInstance(getGroupFileStream(groupFile), getFilesToDataInput(dir + GAS_DIR), getFilesToDataInput(dir
-            + STAR_DIR), getFilesToDataInput(dir + DARK_DIR), 0);
+            + STAR_DIR), getFilesToDataInput(dir + DARK_DIR));
     return fileScan;
   }
 

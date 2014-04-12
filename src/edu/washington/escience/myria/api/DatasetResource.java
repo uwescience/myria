@@ -440,7 +440,7 @@ public final class DatasetResource {
     /* Do the work. */
     try {
       server.ingestDataset(dataset.relationKey, dataset.workers, dataset.indexes, new NChiladaFileScan(
-          dataset.nchiladaDirectoryName, dataset.groupFileName, dataset.timeStep));
+          dataset.nchiladaDirectoryName, dataset.groupFileName));
     } catch (InterruptedException ee) {
       Thread.currentThread().interrupt();
       ee.printStackTrace();

@@ -10,7 +10,6 @@ public class NChiladaDatasetEncoding extends MyriaApiEncoding {
   public RelationKey relationKey;
   public String nchiladaDirectoryName;
   public String groupFileName;
-  public int timeStep;
   public Set<Integer> workers;
   public List<List<IndexRef>> indexes;
 }
