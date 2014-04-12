@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.expression;
 
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
@@ -53,17 +54,20 @@ public abstract class NAryExpression extends ExpressionOperator {
    * <code>functionName</code> is <code>".substring</code>.
    * 
    * @param functionName the string representation of the Java function name.
-   * @param parameters parameters that are needed to determine the output type
+   * @param parameters parameters that are needed to determine the java string
    * @return the Java string for this operator.
    */
   protected final String getDotFunctionCallString(final String functionName,
       final ExpressionOperatorParameter parameters) {
     StringBuilder callString =
         new StringBuilder(children.get(0).getJavaString(parameters)).append(functionName).append("(");
-    for (int i = 1; i < children.size(); ++i) {
-      callString.append(children.get(i).getJavaString(parameters));
-      if (i != children.size() - 1) {
+    Iterator<ExpressionOperator> it = children.iterator();
+    it.next(); // skip first child because it is what we call
+    if (it.hasNext()) {
+      callString.append(it.next().getJavaString(parameters));
+      while (it.hasNext()) {
         callString.append(",");
+        callString.append(it.next().getJavaString(parameters));
       }
     }
     callString.append(")");
