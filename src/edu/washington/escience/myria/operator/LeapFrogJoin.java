@@ -42,7 +42,7 @@ public class LeapFrogJoin extends NAryOperator {
   private static final long serialVersionUID = 1L;
 
   /**
-   * {@code #userJoinFieldMapping}[i] represents the list of JoinFiled of i-th join variable.
+   * {@code {@link #userJoinFieldMapping}[i]} represents the list of JoinFiled of i-th join variable.
    */
   private final int[][][] userJoinFieldMapping;
 
@@ -52,23 +52,23 @@ public class LeapFrogJoin extends NAryOperator {
   private transient boolean[] indexOnFirst;
 
   /**
-   * {@code joinFieldMapping[i]} is the list of JoinFields of i-th join variable.
+   * {@code {@link #joinFieldMapping}[i]} is the list of JoinFields of i-th join variable.
    */
   private transient List<List<JoinField>> joinFieldMapping;
 
   /**
-   * {@code joinFieldLocalOrder[i][j]} stores join field order of j-th field of i-th child's table.
+   * {@code {@link #joinFieldLocalOrder}[i][j]} stores join field order of j-th field of i-th child's table.
    */
   private transient List<List<JoinFieldOrder>> joinFieldLocalOrder;
 
   /**
-   * {@code joinFieldGlobalOrder[i][j]} stores global order of j-th field of i-th child's table (-1 means not a joining
-   * field).
+   * {@code {@link #joinFieldGlobalOrder}[i][j]} stores global order of j-th field of i-th child's table (-1 means not
+   * a joining field).
    */
   private transient List<List<JoinFieldOrder>> joinFieldGlobalOrder;
 
   /**
-   * {@code localOrderedJoinField[i][j]} stores the join field (locally) ordered j of i-th child's table.
+   * {@code {@link #localOrderedJoinField}[i][j]} stores the join field (locally) ordered j of i-th child's table.
    */
   private transient List<List<JoinField>> localOrderedJoinField;
 
