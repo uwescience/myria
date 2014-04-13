@@ -42,7 +42,7 @@ public class LeapFrogJoin extends NAryOperator {
   private static final long serialVersionUID = 1L;
 
   /**
-   * {@code {@link #userJoinFieldMapping}[i]} represents the list of JoinFiled of i-th join variable.
+   * {@code {@link #userJoinFieldMapping}[i]} represents the list of JoinField of i-th join variable.
    */
   private final int[][][] userJoinFieldMapping;
 
@@ -464,7 +464,7 @@ public class LeapFrogJoin extends NAryOperator {
 
     /**
      * @param order order of this join field.
-     * @param fieldIndex index of this join filed.
+     * @param fieldIndex index of this join field.
      */
     public JoinFieldOrder(final int order, final int fieldIndex) {
       this.order = order;
