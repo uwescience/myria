@@ -43,7 +43,7 @@ public class LeapFrogTest {
     int[][][] fieldMap = new int[][][] { { { 0, 0 }, { 1, 0 } } };
     int[][] outputMap = new int[][] { { 0, 0 }, { 0, 1 }, { 1, 0 }, { 1, 1 } };
     NAryOperator join =
-        new LeapFrogJoin(children, fieldMap, outputMap, outputColumnNames, new Boolean[] { false, false });
+        new LeapFrogJoin(children, fieldMap, outputMap, outputColumnNames, new boolean[] { false, false });
     join.open(null);
     TupleBatch tb;
     TupleBatchBuffer batches = new TupleBatchBuffer(outputSchema);
@@ -82,7 +82,7 @@ public class LeapFrogTest {
         new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE), outputColumnNames);
     LeapFrogJoin join =
         new LeapFrogJoin(new Operator[] { orderR, orderS, orderT }, fieldMap, outputMap, outputColumnNames,
-            new Boolean[] { true, true, false });
+            new boolean[] { true, true, false });
     join.open(null);
     TupleBatch tb;
     TupleBatchBuffer batches = new TupleBatchBuffer(outputSchema);

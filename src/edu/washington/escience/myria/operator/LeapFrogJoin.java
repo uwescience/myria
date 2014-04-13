@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -41,24 +42,14 @@ public class LeapFrogJoin extends NAryOperator {
   private static final long serialVersionUID = 1L;
 
   /**
-   * {@code joinFieldMappingInit[i]} represents the list of JoinFiled of i-th join variable.
+   * {@code #userJoinFieldMapping}[i] represents the list of JoinFiled of i-th join variable.
    */
-  private final int[][][] joinFieldMappingInit;
-
-  /**
-   * {@code outputFieldMappingInit[i]} represents the join field that i-th output column maps to.
-   */
-  private final int[][] outputFieldMappingInit;
+  private final int[][][] userJoinFieldMapping;
 
   /**
    * whether to create an index on the first joined field in each relation.
    */
-  private final Boolean[] indexOnFirstInit;
-
-  /**
-   * whether to create an index on the first joined field in each relation.
-   */
-  private transient Boolean[] indexOnFirst;
+  private transient boolean[] indexOnFirst;
 
   /**
    * {@code joinFieldMapping[i]} is the list of JoinFields of i-th join variable.
@@ -494,15 +485,14 @@ public class LeapFrogJoin extends NAryOperator {
    * @param indexOnFirst whether the first join field of a child is indexed or not
    */
   public LeapFrogJoin(final Operator[] children, final int[][][] joinFieldMapping, final int[][] outputFieldMapping,
-      final List<String> outputColumnNames, final Boolean[] indexOnFirst) {
+      final List<String> outputColumnNames, final boolean[] indexOnFirst) {
+    super(children);
+    userJoinFieldMapping = Objects.requireNonNull(joinFieldMapping, "joinFieldMapping");
+    Objects.requireNonNull(outputFieldMapping, "outputFieldMapping");
     if (outputColumnNames != null) {
       Preconditions.checkArgument(outputFieldMapping.length == outputColumnNames.size(),
           "outputColumns and outputFieldMapping should have the same cardinality.");
     }
-    /* set children */
-    setChildren(children);
-    joinFieldMappingInit = joinFieldMapping;
-    outputFieldMappingInit = outputFieldMapping;
 
     /* set output schema */
     if (outputColumnNames != null) {
@@ -515,15 +505,14 @@ public class LeapFrogJoin extends NAryOperator {
 
     /* set output field */
     this.outputFieldMapping = new ArrayList<JoinField>();
-    for (int[] element : outputFieldMappingInit) {
+    for (int[] element : outputFieldMapping) {
       Preconditions.checkArgument(element.length == 2,
           "An array representing join field must be at length of 2. ([tableIndex,fieldIndex])");
       this.outputFieldMapping.add(new JoinField(element[0], element[1]));
     }
 
     /* init indexOnFirst */
-    indexOnFirstInit = indexOnFirst;
-
+    this.indexOnFirst = indexOnFirst;
   }
 
   @Override
@@ -609,9 +598,8 @@ public class LeapFrogJoin extends NAryOperator {
     Operator[] children = getChildren();
 
     /* check indexOnFirst. */
-    indexOnFirst = indexOnFirstInit;
-    if (indexOnFirstInit == null) {
-      indexOnFirst = new Boolean[children.length];
+    if (indexOnFirst == null) {
+      indexOnFirst = new boolean[children.length];
       for (int i = 0; i < children.length; ++i) {
         indexOnFirst[i] = false;
       }
@@ -636,19 +624,19 @@ public class LeapFrogJoin extends NAryOperator {
     }
 
     /* set join field mapping and field local order */
-    for (int i = 0; i < joinFieldMappingInit.length; ++i) {
+    for (int i = 0; i < userJoinFieldMapping.length; ++i) {
       List<JoinField> joinedFieldList = new ArrayList<JoinField>();
-      for (int j = 0; j < joinFieldMappingInit[i].length; ++j) {
+      for (int j = 0; j < userJoinFieldMapping[i].length; ++j) {
         // get table index and field index of each join field
-        Preconditions.checkArgument(joinFieldMappingInit[i][j].length == 2,
+        Preconditions.checkArgument(userJoinFieldMapping[i][j].length == 2,
             "the inner arrary of JoinFieldMapping must have the length of 2");
-        int tableIndex = joinFieldMappingInit[i][j][0];
-        int fieldIndex = joinFieldMappingInit[i][j][1];
+        int tableIndex = userJoinFieldMapping[i][j][0];
+        int fieldIndex = userJoinFieldMapping[i][j][1];
         // update joinFieldMapping and reverseJoinFieldMapping
         Preconditions.checkPositionIndex(tableIndex, children.length,
             "table index cannot exceed the number of children.");
         Preconditions.checkPositionIndex(fieldIndex, children[tableIndex].getSchema().numColumns(),
-            "filed index cannot exceed the number of columns.");
+            "field index cannot exceed the number of columns.");
         joinedFieldList.add(new JoinField(tableIndex, fieldIndex));
         joinFieldLocalOrder.get(tableIndex).get(fieldIndex).setOrder(i);
         joinFieldGlobalOrder.get(tableIndex).get(fieldIndex).setOrder(i);

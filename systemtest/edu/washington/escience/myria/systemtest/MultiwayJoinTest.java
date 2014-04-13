@@ -216,7 +216,7 @@ public class MultiwayJoinTest extends SystemTestBase {
     int[][] outputMap = new int[][] { { 0, 0 }, { 0, 1 }, { 1, 0 }, { 1, 1 } };
 
     final LeapFrogJoin localjoin =
-        new LeapFrogJoin(new Operator[] { o1, o2 }, fieldMap, outputMap, outputColumnNames, new Boolean[] {
+        new LeapFrogJoin(new Operator[] { o1, o2 }, fieldMap, outputMap, outputColumnNames, new boolean[] {
             false, false });
     localjoin.getSchema();
     final CollectProducer cp1 = new CollectProducer(localjoin, serverReceiveID, MASTER_ID);
