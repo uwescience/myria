@@ -22,10 +22,13 @@ import edu.washington.escience.myria.expression.EqualsExpression;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.FloorExpression;
+import edu.washington.escience.myria.expression.GreaterExpression;
 import edu.washington.escience.myria.expression.GreaterThanExpression;
 import edu.washington.escience.myria.expression.GreaterThanOrEqualsExpression;
+import edu.washington.escience.myria.expression.LenExpression;
 import edu.washington.escience.myria.expression.LessThanExpression;
 import edu.washington.escience.myria.expression.LessThanOrEqualsExpression;
+import edu.washington.escience.myria.expression.LesserExpression;
 import edu.washington.escience.myria.expression.MinusExpression;
 import edu.washington.escience.myria.expression.ModuloExpression;
 import edu.washington.escience.myria.expression.NotEqualsExpression;
@@ -36,6 +39,7 @@ import edu.washington.escience.myria.expression.PowExpression;
 import edu.washington.escience.myria.expression.RandomExpression;
 import edu.washington.escience.myria.expression.SinExpression;
 import edu.washington.escience.myria.expression.SqrtExpression;
+import edu.washington.escience.myria.expression.SubstrExpression;
 import edu.washington.escience.myria.expression.TanExpression;
 import edu.washington.escience.myria.expression.TimesExpression;
 import edu.washington.escience.myria.expression.ToUpperCaseExpression;
@@ -267,6 +271,34 @@ public class ApplyTest {
       Expressions.add(expr);
     }
 
+    {
+      // Expression: d.length()
+      ExpressionOperator len = new LenExpression(vard);
+      Expression expr = new Expression("len", len);
+      Expressions.add(expr);
+    }
+
+    {
+      // Expression: max(a,c)
+      GreaterExpression max = new GreaterExpression(vara, varc);
+      Expression expr = new Expression("max", max);
+      Expressions.add(expr);
+    }
+
+    {
+      // Expression: min(a,c)
+      LesserExpression min = new LesserExpression(vara, varc);
+      Expression expr = new Expression("min", min);
+      Expressions.add(expr);
+    }
+
+    {
+      // Expression: d.substring(0,4);
+      SubstrExpression substr = new SubstrExpression(vard, new ConstantExpression(0), new ConstantExpression(4));
+      Expression expr = new Expression("substr", substr);
+      Expressions.add(expr);
+    }
+
     Apply apply = new Apply(new TupleSource(tbb), Expressions.build());
 
     final int nodeId = 3;
@@ -277,7 +309,7 @@ public class ApplyTest {
     while (!apply.eos()) {
       result = apply.nextReady();
       if (result != null) {
-        assertEquals(17, result.getSchema().numColumns());
+        assertEquals(21, result.getSchema().numColumns());
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(0));
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(1));
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(2));
@@ -295,6 +327,10 @@ public class ApplyTest {
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(14));
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(15));
         assertEquals(Type.INT_TYPE, result.getSchema().getColumnType(16));
+        assertEquals(Type.INT_TYPE, result.getSchema().getColumnType(17));
+        assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(18));
+        assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(19));
+        assertEquals(Type.STRING_TYPE, result.getSchema().getColumnType(20));
 
         assertEquals("sqrt", result.getSchema().getColumnName(0));
         assertEquals("simpleNestedExpression", result.getSchema().getColumnName(1));
@@ -313,18 +349,22 @@ public class ApplyTest {
         assertEquals("conditional", result.getSchema().getColumnName(14));
         assertEquals("nestedconditional", result.getSchema().getColumnName(15));
         assertEquals("workerID", result.getSchema().getColumnName(16));
+        assertEquals("len", result.getSchema().getColumnName(17));
+        assertEquals("max", result.getSchema().getColumnName(18));
+        assertEquals("min", result.getSchema().getColumnName(19));
+        assertEquals("substr", result.getSchema().getColumnName(20));
 
         for (int curI = 0; curI < result.numTuples(); curI++) {
           long i = curI + resultSize;
           long a = (long) Math.pow(i, 2);
           long b = i + 1;
           int c = (int) i;
-          String d = ("Foo" + i).toUpperCase();
+          String d = "Foo" + i;
           boolean e = i % 2 == 0;
           assertEquals(i, result.getDouble(0, curI), tolerance);
           assertEquals((b + c) * (b - c), result.getLong(1, curI));
           assertEquals(Math.sqrt(Math.pow(a, 2) + Math.pow(b, 2)), result.getDouble(2, curI), tolerance);
-          assertEquals(d, result.getString(3, curI));
+          assertEquals(d.toUpperCase(), result.getString(3, curI));
           assertEquals(Math.abs(b - a), result.getLong(4, curI));
           assertEquals(Math.floor(Math.sqrt(a)) + Math.ceil(Math.sqrt(a)), result.getDouble(5, curI), tolerance);
           assertEquals(Math.cos(a * Math.PI / 180) * 2 + Math.sin(a * Math.PI / 180) * 3 + Math.tan(a * Math.PI / 180)
@@ -339,6 +379,10 @@ public class ApplyTest {
           assertEquals(e ? a : c, result.getLong(14, curI));
           assertEquals((b % 2 == 0) ? (e ? a : b) : c, result.getLong(15, curI));
           assertEquals(nodeId, result.getInt(16, curI));
+          assertEquals(d.length(), result.getInt(17, curI));
+          assertEquals(Math.max(a, c), result.getLong(18, curI));
+          assertEquals(Math.min(a, c), result.getLong(19, curI));
+          assertEquals(d.substring(0, 4), result.getString(20, curI));
         }
         resultSize += result.numTuples();
       }
