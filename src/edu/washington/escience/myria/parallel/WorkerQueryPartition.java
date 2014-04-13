@@ -226,8 +226,7 @@ public class WorkerQueryPartition implements QueryPartition {
    * @param t the task
    * */
   public final void init(final QuerySubTreeTask t) {
-    TaskResourceManager resourceManager =
-        new TaskResourceManager(ownerWorker.getIPCConnectionPool(), t, ownerWorker.getQueryExecutionMode());
+    TaskResourceManager resourceManager = new TaskResourceManager(ownerWorker.getIPCConnectionPool(), t);
     ImmutableMap.Builder<String, Object> b = ImmutableMap.builder();
     t.init(resourceManager, b.putAll(ownerWorker.getExecEnvVars()).build());
   }

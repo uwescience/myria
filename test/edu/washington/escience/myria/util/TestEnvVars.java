@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.parallel.QueryExecutionMode;
 
 public final class TestEnvVars {
   /** Utility classes cannot be constructed. */
@@ -31,6 +32,7 @@ public final class TestEnvVars {
     Map<String, Object> vars = new HashMap<>();
 
     vars.put(MyriaConstants.EXEC_ENV_VAR_NODE_ID, nodeId);
+    vars.put(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE, QueryExecutionMode.NON_BLOCKING);
 
     return vars;
   }
