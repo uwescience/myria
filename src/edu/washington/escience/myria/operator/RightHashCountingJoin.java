@@ -236,7 +236,6 @@ public class RightHashCountingJoin extends BinaryOperator {
      * EOS, return answer first, then at the next round set EOS
      */
     if (isEOIReady()) {
-      checkEOSAndEOI();
       if (left.eos() && right.eos() && (!hasReturnedAnswer)) {
         ansTBB.putLong(0, ans);
         hasReturnedAnswer = true;

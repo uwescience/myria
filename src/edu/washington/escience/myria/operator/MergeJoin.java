@@ -341,14 +341,22 @@ public final class MergeJoin extends BinaryOperator {
       }
     }
 
+    Preconditions.checkState(deferredEOS || !getLeft().eos() || !getRight().eos(),
+        "deferredEOS should be true if all children are eos");
+
     if (deferredEOS) {
       nexttb = ans.popAny();
-      if (nexttb == null) {
-        setEOS();
-      }
     }
 
     return nexttb;
+  }
+
+  @Override
+  public void checkEOSAndEOI() {
+    if (deferredEOS && ans.numTuples() == 0) {
+      setEOS();
+      return;
+    }
   }
 
   /**
@@ -449,16 +457,18 @@ public final class MergeJoin extends BinaryOperator {
 
     final boolean atLast = leftRowIndex == leftBatches.getLast().numTuples() - 1;
     if (atLast) {
-      if (!left.eos() && leftNotProcessed == null) {
-        TupleBatch tb = left.nextReady();
-        if (tb != null) {
-          leftNotProcessed = tb;
-        } else if (left.eos()) {
-          deferredEOS = true;
-        }
-      }
       if (leftNotProcessed != null) {
         leftMoveFromNotProcessed();
+      } else {
+        if (!left.eos()) {
+          TupleBatch tb = left.nextReady();
+          if (tb != null) {
+            leftNotProcessed = tb;
+          }
+        }
+        if (left.eos()) {
+          deferredEOS = true;
+        }
       }
     } else {
       leftRowIndex++;
@@ -474,16 +484,18 @@ public final class MergeJoin extends BinaryOperator {
 
     final boolean atLast = rightRowIndex == rightBatches.getLast().numTuples() - 1;
     if (atLast) {
-      if (!right.eos() && rightNotProcessed == null) {
-        TupleBatch tb = right.nextReady();
-        if (tb != null) {
-          rightNotProcessed = tb;
-        } else if (right.eos()) {
-          deferredEOS = true;
-        }
-      }
       if (rightNotProcessed != null) {
         rightMoveFromNotProcessed();
+      } else {
+        if (!right.eos()) {
+          TupleBatch tb = right.nextReady();
+          if (tb != null) {
+            rightNotProcessed = tb;
+          }
+        }
+        if (right.eos()) {
+          deferredEOS = true;
+        }
       }
     } else {
       rightRowIndex++;

@@ -425,10 +425,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
       }
     }
     if (nexttb == null) {
-      if (ans.numTuples() > 0) {
-        nexttb = ans.popAny();
-      }
-      checkEOSAndEOI();
+      nexttb = ans.popAny();
     }
     return nexttb;
   }

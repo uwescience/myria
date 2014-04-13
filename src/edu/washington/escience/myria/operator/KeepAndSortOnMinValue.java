@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ImmutableMap;
 
 /**
- * Keeps min vaule. It adds newly meet unique tuples into a buffer so that the source TupleBatches are not referenced.
+ * Keeps min value. It adds newly met unique tuples into a buffer so that the source TupleBatches are not referenced.
  * This implementation reduces memory consumption.
  * */
 public final class KeepAndSortOnMinValue extends StreamingState {
@@ -40,7 +40,7 @@ public final class KeepAndSortOnMinValue extends StreamingState {
   private transient TIntObjectMap<TIntList> uniqueTupleIndices;
 
   /**
-   * The buffer for stroing unique tuples.
+   * The buffer for storing unique tuples.
    * */
   private transient MutableTupleBuffer uniqueTuples = null;
 

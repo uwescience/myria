@@ -574,14 +574,8 @@ public class LeapFrogJoin extends NAryOperator {
     }
     TupleBatch nexttb = ansTBB.popAny();
 
-    if (nexttb != null) {
-      return nexttb;
-    } else if (joinFinished) {
-      checkEOSAndEOI();
-      return null;
-    } else {
-      throw new RuntimeException("incorrect return.");
-    }
+    Preconditions.checkState(joinFinished || nexttb != null, "incorrect return");
+    return nexttb;
   }
 
   @Override

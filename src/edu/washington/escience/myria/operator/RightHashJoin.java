@@ -354,9 +354,6 @@ public final class RightHashJoin extends BinaryOperator {
 
     if (isEOIReady()) {
       nexttb = ans.popAny();
-      if (nexttb == null) {
-        checkEOSAndEOI();
-      }
     }
 
     return nexttb;
