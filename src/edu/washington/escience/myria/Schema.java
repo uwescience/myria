@@ -268,7 +268,7 @@ public final class Schema implements Serializable {
    * 
    * @param first first Schema
    * @param second second Schema
-   * */
+   */
   private Schema(final Schema first, final Schema second) {
     final ImmutableList.Builder<Type> types = ImmutableList.builder();
     final ImmutableList.Builder<String> names = ImmutableList.builder();
@@ -439,7 +439,33 @@ public final class Schema implements Serializable {
 
   /**
    * The empty schema.
-   * */
+   */
   public static final Schema EMPTY_SCHEMA = Schema.of(Arrays.asList(new Type[] {}), Arrays.asList(new String[] {}));
 
+  /**
+   * Construct a Schema from a list of {@link Type} and {@link String} objects. The types and names may be interleaved
+   * in any order; ordering within types and within names is preserved. If there are no {@link String} objects given,
+   * then the {@link #Schema(List)} constructor is used.
+   * 
+   * @param fields any number of {@link Type} or {@link String} objects.
+   * @return the {@link Schema} containing these objects.
+   */
+  public static Schema ofFields(final Object... fields) {
+    ImmutableList.Builder<Type> typesB = ImmutableList.builder();
+    ImmutableList.Builder<String> namesB = ImmutableList.builder();
+    for (Object o : fields) {
+      Objects.requireNonNull(o);
+      if (o instanceof Type) {
+        typesB.add((Type) o);
+      } else if (o instanceof String) {
+        namesB.add((String) o);
+      }
+    }
+    List<Type> types = typesB.build();
+    List<String> names = namesB.build();
+    if (names.isEmpty()) {
+      return new Schema(types);
+    }
+    return Schema.of(types, names);
+  }
 }

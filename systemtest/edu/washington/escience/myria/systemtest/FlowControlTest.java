@@ -73,7 +73,7 @@ public class FlowControlTest extends SystemTestBase {
     workerPlans.put(workerIDs[0], new RootOperator[] { cp1 });
 
     final CollectConsumer cc1 = new CollectConsumer(schema, worker1ReceiveID, new int[] { workerIDs[0] });
-    final DelayInjector di = new DelayInjector(1, TimeUnit.SECONDS, cc1);
+    final DelayInjector di = new DelayInjector(50, TimeUnit.MILLISECONDS, cc1);
     final CollectProducer cp2 = new CollectProducer(di, serverReceiveID, MASTER_ID);
 
     workerPlans.put(workerIDs[0], new RootOperator[] { cp1 });

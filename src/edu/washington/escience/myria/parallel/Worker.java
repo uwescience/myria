@@ -611,6 +611,7 @@ public final class Worker {
     final String databaseSystem = catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_SYSTEM);
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM, databaseSystem);
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_NODE_ID, getID());
+    execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE, queryExecutionMode);
     LOGGER.info("Worker: Database system " + databaseSystem);
     String jsonConnInfo = catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_CONN_INFO);
     if (jsonConnInfo == null) {

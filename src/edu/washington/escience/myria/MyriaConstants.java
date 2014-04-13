@@ -55,6 +55,11 @@ public final class MyriaConstants {
   public static final String EXEC_ENV_VAR_DRIVING_TASK = "drivingTask";
 
   /**
+   * Execution mode, see {@link edu.washington.escience.myria.parallel.QueryExecutionMode}.
+   */
+  public static final String EXEC_ENV_VAR_EXECUTION_MODE = "executionMode";
+
+  /**
    * Node ID.
    */
   public static final String EXEC_ENV_VAR_NODE_ID = "nodeId";
