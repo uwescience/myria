@@ -20,4 +20,5 @@ env:
   global:
     secure: Lmgc+vaExgGEQvjZ1MWWLQkJi9EEtE2QPQKpWi1AzSPTRaPO+wTOF0doeM983z9H2TCFolrRinQDjN5cnFsHTjuzNsY7mt0uQLx4Jny0NK+wt4M6j7FgA09HYw2Q79hvMoAZr9O2M1GIX049sapW+sWUuUK2ii/42ZvDeRNTNgs=
 cache:
-- $HOME/.gradle
+  directories:
+  - $HOME/.gradle
