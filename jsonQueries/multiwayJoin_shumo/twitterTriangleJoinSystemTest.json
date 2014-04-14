@@ -3,7 +3,7 @@
         {
             "operators":[
                 {
-                    "opName":"Scan(R)",
+                    "opId":"Scan(R)",
                     "opType":"TableScan",
                     "relationKey":{
                         "programName":"triangleJoin",
@@ -12,7 +12,7 @@
                     }
                 },
                 {
-                    "opName":"Scan(S)",
+                    "opId":"Scan(S)",
                     "opType":"TableScan",
                     "relationKey":{
                         "programName":"triangleJoin",
@@ -21,7 +21,7 @@
                     }
                 },
                 {
-                    "opName":"Scan(T)",
+                    "opId":"Scan(T)",
                     "opType":"TableScan",
                     "relationKey":{
                         "programName":"triangleJoin",
@@ -30,28 +30,28 @@
                     }
                 },
                 {
-                    "opName":"Order(R)",
+                    "opId":"Order(R)",
                     "opType":"InMemoryOrderBy",
                     "argChild": "Scan(R)",
                     "argSortColumns": [0,1],
                     "argAscending": [true, true]
                 },
                 {
-                    "opName":"Order(S)",
+                    "opId":"Order(S)",
                     "opType":"InMemoryOrderBy",
                     "argChild": "Scan(S)",
                     "argSortColumns": [0,1],
                     "argAscending": [true, true]
                 },
                 {
-                    "opName":"Order(T)",
+                    "opId":"Order(T)",
                     "opType":"InMemoryOrderBy",
                     "argChild": "Scan(T)",
                     "argSortColumns": [0,1],
                     "argAscending": [true, true]
                 },
                 {
-                    "opName":"Join",
+                    "opId":"Join",
                     "opType":"LeapFrogJoin",
                     "argChildren": ["Order(R)", "Order(S)", "Order(T)"],
                     "argColumnNames": ["x","y","z"],
@@ -62,7 +62,7 @@
                 {
                     "argChild":"Join",
                     "argOverwriteTable":true,
-                    "opName":"insert_result",
+                    "opId":"insert_result",
                     "opType":"DbInsert",
                     "relationKey":{
                         "programName":"triangleJoin",

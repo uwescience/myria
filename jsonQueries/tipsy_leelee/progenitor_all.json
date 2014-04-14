@@ -3,7 +3,7 @@
         {
             "operators": [
                 {
-                    "opName": "Scan_512",
+                    "opId": "Scan_512",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -20,7 +20,7 @@
                     "sql": "SELECT iOrder, grp, 0 FROM [leelee#astro#cosmo512] WHERE grp<>0"
                 },
                 {
-                    "opName": "Scan_504",
+                    "opId": "Scan_504",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -37,7 +37,7 @@
                     "sql": "SELECT iOrder, grp, 1 FROM [leelee#astro#cosmo504] WHERE grp<>0"
                 },
                 {
-                    "opName": "Scan_480",
+                    "opId": "Scan_480",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -54,7 +54,7 @@
                     "sql": "SELECT iOrder, grp, 2 FROM [leelee#astro#cosmo480] WHERE grp<>0"
                 },
                 {
-                    "opName": "Scan_466",
+                    "opId": "Scan_466",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -71,7 +71,7 @@
                     "sql": "SELECT iOrder, grp, 3 FROM [leelee#astro#cosmo466] WHERE grp<>0"
                 },
                 {
-                    "opName": "Scan_456",
+                    "opId": "Scan_456",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -88,7 +88,7 @@
                     "sql": "SELECT iOrder, grp, 4 FROM [leelee#astro#cosmo456] WHERE grp<>0"
                 },
                 {
-                    "opName": "Scan_455",
+                    "opId": "Scan_455",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -105,7 +105,7 @@
                     "sql": "SELECT iOrder, grp, 5 FROM [leelee#astro#cosmo455] WHERE grp<>0"
                 },
                 {
-                    "opName": "Scan_432",
+                    "opId": "Scan_432",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -122,7 +122,7 @@
                     "sql": "SELECT iOrder, grp, 6 FROM [leelee#astro#cosmo432] WHERE grp<>0"
                 },
                 {
-                    "opName": "Scan_408",
+                    "opId": "Scan_408",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -139,7 +139,7 @@
                     "sql": "SELECT iOrder, grp, 7 FROM [leelee#astro#cosmo408] WHERE grp<>0"
                 },
                 {
-                    "opName": "Scan_406",
+                    "opId": "Scan_406",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -156,7 +156,7 @@
                     "sql": "SELECT iOrder, grp, 8 FROM [leelee#astro#cosmo406] WHERE grp<>0"
                 },
                 {
-                    "opName": "Scan_384",
+                    "opId": "Scan_384",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -173,7 +173,7 @@
                     "sql": "SELECT iOrder, grp, 9 FROM [leelee#astro#cosmo384] WHERE grp<>0"
                 },
                 {
-                    "opName": "Scan_336",
+                    "opId": "Scan_336",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -190,7 +190,7 @@
                     "sql": "SELECT iOrder, grp, 10 FROM [leelee#astro#cosmo336] WHERE grp<>0"
                 },
                 {
-                    "opName": "Scan_328",
+                    "opId": "Scan_328",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -207,7 +207,7 @@
                     "sql": "SELECT iOrder, grp, 11 FROM [leelee#astro#cosmo328] WHERE grp<>0"
                 },
                 {
-                    "opName": "Scan_312",
+                    "opId": "Scan_312",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -224,7 +224,7 @@
                     "sql": "SELECT iOrder, grp, 12 FROM [leelee#astro#cosmo312] WHERE grp<>0"
                 },
                 {
-                    "opName": "Scan_288",
+                    "opId": "Scan_288",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -241,7 +241,7 @@
                     "sql": "SELECT iOrder, grp, 13 FROM [leelee#astro#cosmo288] WHERE grp<>0"
                 },
                 {
-                    "opName": "Scan_264",
+                    "opId": "Scan_264",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -258,7 +258,7 @@
                     "sql": "SELECT iOrder, grp, 14 FROM [leelee#astro#cosmo264] WHERE grp<>0"
                 },
                 {
-                    "opName": "Scan_240",
+                    "opId": "Scan_240",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -275,7 +275,7 @@
                     "sql": "SELECT iOrder, grp, 15 FROM [leelee#astro#cosmo240] WHERE grp<>0"
                 },
                 {
-                    "opName": "Scan_226",
+                    "opId": "Scan_226",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -292,7 +292,7 @@
                     "sql": "SELECT iOrder, grp, 16 FROM [leelee#astro#cosmo226] WHERE grp<>0"
                 },
                 {
-                    "opName": "Scan_216",
+                    "opId": "Scan_216",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -309,7 +309,7 @@
                     "sql": "SELECT iOrder, grp, 17 FROM [leelee#astro#cosmo216] WHERE grp<>0"
                 },
                 {
-                    "opName": "Scan_192",
+                    "opId": "Scan_192",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -326,7 +326,7 @@
                     "sql": "SELECT iOrder, grp, 18 FROM [leelee#astro#cosmo192] WHERE grp<>0"
                 },
                 {
-                    "opName": "Scan_168",
+                    "opId": "Scan_168",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -343,7 +343,7 @@
                     "sql": "SELECT iOrder, grp, 19 FROM [leelee#astro#cosmo168] WHERE grp<>0"
                 },
                 {
-                    "opName": "Scan_144",
+                    "opId": "Scan_144",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -360,7 +360,7 @@
                     "sql": "SELECT iOrder, grp, 20 FROM [leelee#astro#cosmo144] WHERE grp<>0"
                 },
                 {
-                    "opName": "Scan_128",
+                    "opId": "Scan_128",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -377,7 +377,7 @@
                     "sql": "SELECT iOrder, grp, 21 FROM [leelee#astro#cosmo128] WHERE grp<>0"
                 },
                 {
-                    "opName": "Scan_096",
+                    "opId": "Scan_096",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -394,7 +394,7 @@
                     "sql": "SELECT iOrder, grp, 22 FROM [leelee#astro#cosmo096] WHERE grp<>0"
                 },
                 {
-                    "opName": "Scan_084",
+                    "opId": "Scan_084",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -411,7 +411,7 @@
                     "sql": "SELECT iOrder, grp, 23 FROM [leelee#astro#cosmo084] WHERE grp<>0"
                 },
                 {
-                    "opName": "Scan_072",
+                    "opId": "Scan_072",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -428,7 +428,7 @@
                     "sql": "SELECT iOrder, grp, 24 FROM [leelee#astro#cosmo072] WHERE grp<>0"
                 },
                 {
-                    "opName": "Scan_048",
+                    "opId": "Scan_048",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -445,7 +445,7 @@
                     "sql": "SELECT iOrder, grp, 25 FROM [leelee#astro#cosmo048] WHERE grp<>0"
                 },
                 {
-                    "opName": "Scan_024",
+                    "opId": "Scan_024",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -491,7 +491,7 @@
                         "Scan_048",
                         "Scan_024"
                     ],
-                    "opName": "unionAll",
+                    "opId": "unionAll",
                     "opType": "UnionAll"
                 },
                 {
@@ -500,7 +500,7 @@
                         "index": "0",
                         "type": "SingleFieldHash"
                     },
-                    "opName": "SP_unionAll",
+                    "opId": "SP_unionAll",
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -508,7 +508,7 @@
         {
             "operators": [
                 {
-                    "opName": "Scan_base",
+                    "opId": "Scan_base",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -528,7 +528,7 @@
                         "index": "1",
                         "type": "SingleFieldHash"
                     },
-                    "opName": "SP_Scan_base",
+                    "opId": "SP_Scan_base",
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -536,7 +536,7 @@
         {
             "operators": [
                 {
-                    "opName": "Scan_grps_of_interest",
+                    "opId": "Scan_grps_of_interest",
                     "opType": "TableScan",
                     "relationKey": {
                         "programName": "astro",
@@ -550,7 +550,7 @@
                         "index": "0",
                         "type": "SingleFieldHash"
                     },
-                    "opName": "SP_grps_of_interest",
+                    "opId": "SP_grps_of_interest",
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -559,11 +559,11 @@
             "operators": [
                 {
                     "argOperatorId": "SP_Scan_base",
-                    "opName": "SC_Scan_base",
+                    "opId": "SC_Scan_base",
                     "opType": "ShuffleConsumer"
                 },
                 {
-                    "opName": "SC_Scan_base_Rename",
+                    "opId": "SC_Scan_base_Rename",
                     "argChild": "SC_Scan_base",
                     "columnNames": [
                         "base_iOrder",
@@ -573,7 +573,7 @@
                 },
                 {
                     "argOperatorId": "SP_grps_of_interest",
-                    "opName": "SC4",
+                    "opId": "SC4",
                     "opType": "ShuffleConsumer"
                 },
                 {
@@ -592,7 +592,7 @@
                     "argSelect2": [
                         "0"
                     ],
-                    "opName": "AllWithGrpsOfInterestOnIOrder",
+                    "opId": "AllWithGrpsOfInterestOnIOrder",
                     "opType": "SymmetricHashJoin"
                 },
                 {
@@ -601,7 +601,7 @@
                         "index": "0",
                         "type": "SingleFieldHash"
                     },
-                    "opName": "SP_AllWithGrpsOfInterestOnIOrder",
+                    "opId": "SP_AllWithGrpsOfInterestOnIOrder",
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -610,11 +610,11 @@
             "operators":[
                 {
                     "argOperatorId": "SP_unionAll",
-                    "opName": "SC_unionAll",
+                    "opId": "SC_unionAll",
                     "opType": "ShuffleConsumer"
                 },
                 {
-                    "opName": "SC_unionAll_Rename",
+                    "opId": "SC_unionAll_Rename",
                     "argChild": "SC_unionAll",
                     "columnNames": [
                         "all_iOrder",
@@ -625,7 +625,7 @@
                 },
                 {
                     "argOperatorId": "SP_AllWithGrpsOfInterestOnIOrder",
-                    "opName": "SC_AllWithGrpsOfInterestOnIOrder",
+                    "opId": "SC_AllWithGrpsOfInterestOnIOrder",
                     "opType": "ShuffleConsumer"
                 },
                 {
@@ -645,7 +645,7 @@
                         "1",
                         "2"
                     ],
-                    "opName": "AllSelfJoinOnIorder",
+                    "opId": "AllSelfJoinOnIorder",
                     "opType": "SymmetricHashJoin"
                 },
                 {
@@ -658,7 +658,7 @@
                         ],
                         "type": "MultiFieldHash"
                     },
-                    "opName": "SP_AllSelfJoinOnIOrder",
+                    "opId": "SP_AllSelfJoinOnIOrder",
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -667,7 +667,7 @@
             "operators": [
                 {
                     "argOperatorId": "SP_AllSelfJoinOnIOrder",
-                    "opName": "SC_AllSelfJoinOnIOrder",
+                    "opId": "SC_AllSelfJoinOnIOrder",
                     "opType": "ShuffleConsumer"
                 },
                 {
@@ -685,12 +685,12 @@
                         "2",
                         "3"
                     ],
-                    "opName": "PotentialProgenitorGroup",
+                    "opId": "PotentialProgenitorGroup",
                     "opType": "MultiGroupByAggregate"
                 },
                 {
                     "argChild": "PotentialProgenitorGroup",
-                    "opName": "PotPro",
+                    "opId": "PotPro",
                     "opType": "LocalMultiwayProducer"
                 }
             ]
@@ -699,12 +699,12 @@
             "operators":[
                 {
                     "argOperatorId": "PotPro",
-                    "opName": "PotPro1",
+                    "opId": "PotPro1",
                     "opType": "LocalMultiwayConsumer"
                 },
                 {
                     "opType": "Rename",
-                    "opName": "PotPro1-Rename",
+                    "opId": "PotPro1-Rename",
                     "argChild": "PotPro1",
                     "columnNames": [
                         "potpro1_grp",
@@ -722,7 +722,7 @@
                         ],
                         "type": "MultiFieldHash"
                     },
-                    "opName": "SP_PotPro1-Rename",
+                    "opId": "SP_PotPro1-Rename",
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -731,7 +731,7 @@
             "operators": [
                 {
                     "argOperatorId": "SP_PotPro1-Rename",
-                    "opName": "SC_PotPro1-Rename",
+                    "opId": "SC_PotPro1-Rename",
                     "opType": "ShuffleConsumer"
                 },
                 {
@@ -748,7 +748,7 @@
                         "0",
                         "2"
                     ],
-                    "opName": "GrpsWithMaxVals",
+                    "opId": "GrpsWithMaxVals",
                     "opType": "MultiGroupByAggregate"
                 },
                 {
@@ -761,7 +761,7 @@
                         ],
                         "type": "MultiFieldHash"
                     },
-                    "opName": "SP_GrpsWithMaxVals",
+                    "opId": "SP_GrpsWithMaxVals",
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -770,12 +770,12 @@
             "operators":[
                 {
                     "argOperatorId": "PotPro",
-                    "opName": "PotPro2",
+                    "opId": "PotPro2",
                     "opType": "LocalMultiwayConsumer"
                 },
                 {
                     "opType": "Rename",
-                    "opName": "PotPro2-Rename",
+                    "opId": "PotPro2-Rename",
                     "argChild": "PotPro2",
                     "columnNames": [
                         "potpro2_grp",
@@ -794,7 +794,7 @@
                         ],
                         "type": "MultiFieldHash"
                     },
-                    "opName": "SP_PotPro2",
+                    "opId": "SP_PotPro2",
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -803,12 +803,12 @@
             "operators":[
                 {
                     "argOperatorId": "SP_GrpsWithMaxVals",
-                    "opName": "SC_GrpsWithMaxVals",
+                    "opId": "SC_GrpsWithMaxVals",
                     "opType": "ShuffleConsumer"
                 },
                 {
                     "argOperatorId": "SP_PotPro2",
-                    "opName": "SC_PotPro2",
+                    "opId": "SC_PotPro2",
                     "opType": "ShuffleConsumer"
                 },
                 {
@@ -832,7 +832,7 @@
                     "argSelect2": [
                         "0"
                     ],
-                    "opName": "SelectedProgenitorJoined",
+                    "opId": "SelectedProgenitorJoined",
                     "opType": "SymmetricHashJoin"
                 },
                 {
@@ -849,7 +849,7 @@
                         "0",
                         "2"
                     ],
-                    "opName": "SelectedProgenitorGroupedBy",
+                    "opId": "SelectedProgenitorGroupedBy",
                     "opType": "MultiGroupByAggregate"
                 },
                 {
@@ -861,7 +861,7 @@
                         ],
                         "type": "MultiFieldHash"
                     },
-                    "opName": "SP_SelectedProgenitorGroupedBy",
+                    "opId": "SP_SelectedProgenitorGroupedBy",
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -869,7 +869,7 @@
         {
             "operators": [
                 {
-                    "opName": "Scan_masstable512",
+                    "opId": "Scan_masstable512",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -886,7 +886,7 @@
                     "sql": "SELECT grp, tot_mass, 0 FROM [leelee#astro#masstable512]"
                 },
                 {
-                    "opName": "Scan_masstable504",
+                    "opId": "Scan_masstable504",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -903,7 +903,7 @@
                     "sql": "SELECT grp, tot_mass, 1 FROM [leelee#astro#masstable504]"
                 },
                 {
-                    "opName": "Scan_masstable480",
+                    "opId": "Scan_masstable480",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -920,7 +920,7 @@
                     "sql": "SELECT grp, tot_mass, 2 FROM [leelee#astro#masstable480]"
                 },
                 {
-                    "opName": "Scan_masstable466",
+                    "opId": "Scan_masstable466",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -937,7 +937,7 @@
                     "sql": "SELECT grp, tot_mass, 3 FROM [leelee#astro#masstable466]"
                 },
                 {
-                    "opName": "Scan_masstable456",
+                    "opId": "Scan_masstable456",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -954,7 +954,7 @@
                     "sql": "SELECT grp, tot_mass, 4 FROM [leelee#astro#masstable456]"
                 },
                 {
-                    "opName": "Scan_masstable455",
+                    "opId": "Scan_masstable455",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -971,7 +971,7 @@
                     "sql": "SELECT grp, tot_mass, 5 FROM [leelee#astro#masstable455]"
                 },
                 {
-                    "opName": "Scan_masstable432",
+                    "opId": "Scan_masstable432",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -988,7 +988,7 @@
                     "sql": "SELECT grp, tot_mass, 6 FROM [leelee#astro#masstable432]"
                 },
                 {
-                    "opName": "Scan_masstable408",
+                    "opId": "Scan_masstable408",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -1005,7 +1005,7 @@
                     "sql": "SELECT grp, tot_mass, 7 FROM [leelee#astro#masstable408]"
                 },
                 {
-                    "opName": "Scan_masstable406",
+                    "opId": "Scan_masstable406",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -1022,7 +1022,7 @@
                     "sql": "SELECT grp, tot_mass, 8 FROM [leelee#astro#masstable406]"
                 },
                 {
-                    "opName": "Scan_masstable384",
+                    "opId": "Scan_masstable384",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -1039,7 +1039,7 @@
                     "sql": "SELECT grp, tot_mass, 9 FROM [leelee#astro#masstable384]"
                 },
                 {
-                    "opName": "Scan_masstable336",
+                    "opId": "Scan_masstable336",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -1056,7 +1056,7 @@
                     "sql": "SELECT grp, tot_mass, 10 FROM [leelee#astro#masstable336]"
                 },
                 {
-                    "opName": "Scan_masstable328",
+                    "opId": "Scan_masstable328",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -1073,7 +1073,7 @@
                     "sql": "SELECT grp, tot_mass, 11 FROM [leelee#astro#masstable328]"
                 },
                 {
-                    "opName": "Scan_masstable312",
+                    "opId": "Scan_masstable312",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -1090,7 +1090,7 @@
                     "sql": "SELECT grp, tot_mass, 12 FROM [leelee#astro#masstable312]"
                 },
                 {
-                    "opName": "Scan_masstable288",
+                    "opId": "Scan_masstable288",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -1107,7 +1107,7 @@
                     "sql": "SELECT grp, tot_mass, 13 FROM [leelee#astro#masstable288]"
                 },
                 {
-                    "opName": "Scan_masstable264",
+                    "opId": "Scan_masstable264",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -1124,7 +1124,7 @@
                     "sql": "SELECT grp, tot_mass, 14 FROM [leelee#astro#masstable264]"
                 },
                 {
-                    "opName": "Scan_masstable240",
+                    "opId": "Scan_masstable240",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -1141,7 +1141,7 @@
                     "sql": "SELECT grp, tot_mass, 15 FROM [leelee#astro#masstable240]"
                 },
                 {
-                    "opName": "Scan_masstable226",
+                    "opId": "Scan_masstable226",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -1158,7 +1158,7 @@
                     "sql": "SELECT grp, tot_mass, 16 FROM [leelee#astro#masstable226]"
                 },
                 {
-                    "opName": "Scan_masstable216",
+                    "opId": "Scan_masstable216",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -1175,7 +1175,7 @@
                     "sql": "SELECT grp, tot_mass, 17 FROM [leelee#astro#masstable216]"
                 },
                 {
-                    "opName": "Scan_masstable192",
+                    "opId": "Scan_masstable192",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -1192,7 +1192,7 @@
                     "sql": "SELECT grp, tot_mass, 18 FROM [leelee#astro#masstable192]"
                 },
                 {
-                    "opName": "Scan_masstable168",
+                    "opId": "Scan_masstable168",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -1209,7 +1209,7 @@
                     "sql": "SELECT grp, tot_mass, 19 FROM [leelee#astro#masstable168]"
                 },
                 {
-                    "opName": "Scan_masstable144",
+                    "opId": "Scan_masstable144",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -1226,7 +1226,7 @@
                     "sql": "SELECT grp, tot_mass, 20 FROM [leelee#astro#masstable144]"
                 },
                 {
-                    "opName": "Scan_masstable128",
+                    "opId": "Scan_masstable128",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -1243,7 +1243,7 @@
                     "sql": "SELECT grp, tot_mass, 21 FROM [leelee#astro#masstable128]"
                 },
                 {
-                    "opName": "Scan_masstable096",
+                    "opId": "Scan_masstable096",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -1260,7 +1260,7 @@
                     "sql": "SELECT grp, tot_mass, 22 FROM [leelee#astro#masstable096]"
                 },
                 {
-                    "opName": "Scan_masstable084",
+                    "opId": "Scan_masstable084",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -1277,7 +1277,7 @@
                     "sql": "SELECT grp, tot_mass, 23 FROM [leelee#astro#masstable084]"
                 },
                 {
-                    "opName": "Scan_masstable072",
+                    "opId": "Scan_masstable072",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -1294,7 +1294,7 @@
                     "sql": "SELECT grp, tot_mass, 24 FROM [leelee#astro#masstable072]"
                 },
                 {
-                    "opName": "Scan_masstable048",
+                    "opId": "Scan_masstable048",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -1311,7 +1311,7 @@
                     "sql": "SELECT grp, tot_mass, 25 FROM [leelee#astro#masstable048]"
                 },
                 {
-                    "opName": "Scan_masstable024",
+                    "opId": "Scan_masstable024",
                     "opType": "DbQueryScan",
                     "schema": {
                         "columnNames": [
@@ -1357,7 +1357,7 @@
                         "Scan_masstable048",
                         "Scan_masstable024"
                     ],
-                    "opName": "UnionAllMassTable",
+                    "opId": "UnionAllMassTable",
                     "opType": "UnionAll"
                 },
                 {
@@ -1369,7 +1369,7 @@
                         ],
                         "type": "MultiFieldHash"
                     },
-                    "opName": "SP_UnionAllMassTable",
+                    "opId": "SP_UnionAllMassTable",
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -1378,12 +1378,12 @@
             "operators":[
                 {
                     "argOperatorId": "SP_SelectedProgenitorGroupedBy",
-                    "opName": "SC_SelectedProgenitorGroupedBy",
+                    "opId": "SC_SelectedProgenitorGroupedBy",
                     "opType": "ShuffleConsumer"
                 },
                 {
                     "argOperatorId": "SP_UnionAllMassTable",
-                    "opName": "SC_UnionAllMassTable",
+                    "opId": "SC_UnionAllMassTable",
                     "opType": "ShuffleConsumer"
                 },
                 {
@@ -1405,12 +1405,12 @@
                     "argSelect2": [
                         "1"
                     ],
-                    "opName": "result",
+                    "opId": "result",
                     "opType": "SymmetricHashJoin"
                 },
                 {
                     "argChild":"result",
-                    "opName":"SendResult",
+                    "opId":"SendResult",
                     "opType":"CollectProducer"
                 }
             ]
@@ -1419,13 +1419,13 @@
             "operators":[
                 {
                     "argOperatorId":"SendResult",
-                    "opName":"CollectResult",
+                    "opId":"CollectResult",
                     "opType":"CollectConsumer"
                 },
                 {
                     "argChild":"CollectResult",
                     "argOverwriteTable":false,
-                    "opName":"Insert",
+                    "opId":"Insert",
                     "opType":"DbInsert",
                     "relationKey":{
                         "programName":"astro",

@@ -21,7 +21,7 @@ def connection_info(host):
 def scan_broadcast(relation_key):
     
     scan = {
-        "opName": "ScanR",
+        "opId": "ScanR",
         "opType": "TableScan",
         "relationKey": relation_key,
         "connectionInfo": connection_info("localhost")
@@ -30,7 +30,7 @@ def scan_broadcast(relation_key):
     broadcast = {
         "argChild": "ScanR",
         "argOperatorId": "broadcast",
-        "opName": "broadcast",
+        "opId": "broadcast",
         "opType": "BroadcastProducer"
     }
 
@@ -42,7 +42,7 @@ def scan_broadcast(relation_key):
 
 def scan_join(relation_key):
     scan = {
-        "opName": "ScanU",
+        "opId": "ScanU",
         "opType": "TableScan",
         "relationKey": {
             "programName": "broadcastjoin",
@@ -57,7 +57,7 @@ def scan_join(relation_key):
             "columnTypes" : ["LONG_TYPE","STRING_TYPE","LONG_TYPE"],
             "columnNames" : ["pageRank","pageURL","avgDuration"]
         },
-        "opName": "receive",
+        "opId": "receive",
         "opType": "BroadcastConsumer"
     }
     join = {
@@ -67,12 +67,12 @@ def scan_join(relation_key):
         "argColumns2": [ 1 ],
         "argSelect1": [ 0 ],
         "argSelect2": [ 1 ],                
-        "opName": "Join",
+        "opId": "Join",
         "opType": "SymmetricHashJoin"
     }
     insert = {
         "argChild": "Join",
-        "opName": "Insert",
+        "opId": "Insert",
         "opType": "DbInsert",
         "relationKey": relation_key,
         "argOverwriteTable": True,
@@ -109,7 +109,7 @@ def generate_broadcastjoin():
 
 def scan_and_shuffle(relation_key, relation_name):
     scan = {
-        "opName": "Scan("+relation_name+")",
+        "opId": "Scan("+relation_name+")",
         "opType": "TableScan",
         "relationKey": relation_key,
         "connectionInfo": connection_info("localhost")
@@ -117,7 +117,7 @@ def scan_and_shuffle(relation_key, relation_name):
     shuffle = {
         "argChild": "Scan("+relation_name+")",
         "argOperatorId": "Shuffle("+relation_name+")",
-        "opName": "Shuffle("+relation_name+")",
+        "opId": "Shuffle("+relation_name+")",
         "opType": "ShuffleProducer",
         "argPf": {
             "index": 1,
@@ -141,7 +141,7 @@ def receive_and_join(relation_key):
                 "LONG_TYPE","STRING_TYPE","LONG_TYPE"
             ]
         },
-        "opName": "Gather(R)",
+        "opId": "Gather(R)",
         "opType": "ShuffleConsumer"
     }
 
@@ -155,7 +155,7 @@ def receive_and_join(relation_key):
                 "STRING_TYPE","STRING_TYPE","DATETIME_TYPE","FLOAT_TYPE","STRING_TYPE","STRING_TYPE","STRING_TYPE","STRING_TYPE","LONG_TYPE"
             ]
         },
-        "opName": "Gather(S)",
+        "opId": "Gather(S)",
         "opType": "ShuffleConsumer"
     }
 
@@ -174,12 +174,12 @@ def receive_and_join(relation_key):
             "argSelect2": [
                 1
             ],
-            "opName": "Join",
+            "opId": "Join",
             "opType": "SymmetricHashJoin"
     }
     insert = {
         "argChild": "Join",
-        "opName": "InsertResult",
+        "opId": "InsertResult",
         "opType": "DbInsert",
         "relationKey": relation_key,
         "argOverwriteTable": True,
@@ -223,7 +223,7 @@ def generate_partition_join():
 
 def scan_collect(relation_key):
     scan = {
-        "opName": "ScanR",
+        "opId": "ScanR",
         "opType": "TableScan",
         "relationKey": relation_key,
         "connectionInfo": connection_info("localhost")
@@ -231,7 +231,7 @@ def scan_collect(relation_key):
     collect_producer = {
         "argChild": "ScanR",
         "argOperatorId": "Collect",
-        "opName": "CollectProducer",
+        "opId": "CollectProducer",
         "opType": "CollectProducer"
     }
     fragment = {
@@ -243,12 +243,12 @@ def collect_insert(relation_key, schema, worker_id):
     collect_consumer = {
         "argOperatorId": "Collect",
         "arg_schema": schema,
-        "opName": "Gather",
+        "opId": "Gather",
         "opType": "CollectConsumer"
     }
     insert = {
         "argChild": "Gather",
-        "opName": "Insert",
+        "opId": "Insert",
         "opType": "DbInsert",
         "relationKey": relation_key,
         "argOverwriteTable": True,

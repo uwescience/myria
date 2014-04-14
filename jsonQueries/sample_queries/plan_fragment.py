@@ -8,7 +8,7 @@ def pretty_json(obj):
 def scan_then_insert():
     query_scan = {
         'opType' : 'TableScan',
-        'opName' : 'Scan',
+        'opId' : 'Scan',
         'relationKey' : {
             'userName' : 'jwang',
             'programName' : 'global_join',
@@ -18,7 +18,7 @@ def scan_then_insert():
 
     insert = {
         'opType' : 'DbInsert',
-        'opName' : 'Insert',
+        'opId' : 'Insert',
         'argChild' : 'Scan',
         'argOverwriteTable' : True,
         'relationKey' : {
@@ -41,7 +41,7 @@ def scan_then_insert():
 def repartition_on_x():
     query_scan = {
         'opType' : 'TableScan',
-        'opName' : 'Scan',
+        'opId' : 'Scan',
         'relationKey' : {
             'userName' : 'jwang',
             'programName' : 'global_join',
@@ -50,7 +50,7 @@ def repartition_on_x():
     }
     scatter = {
         'opType' : 'ShuffleProducer',
-        'opName' : 'Scatter',
+        'opId' : 'Scatter',
         'argChild' : 'Scan',
         'argOperatorId' : 'hash(follower)',
         'argPf' : {
@@ -60,7 +60,7 @@ def repartition_on_x():
     }
     gather = {
         'opType' : 'ShuffleConsumer',
-        'opName' : 'Gather',
+        'opId' : 'Gather',
         'argOperatorId' : 'hash(follower)',
         "arg_schema" : {
             "columnTypes" : ["LONG_TYPE", "LONG_TYPE"],
@@ -69,7 +69,7 @@ def repartition_on_x():
     }
     insert = {
         'opType' : 'DbInsert',
-        'opName' : 'Insert',
+        'opId' : 'Insert',
         'argChild' : 'Gather',
         'argOverwriteTable' : True,
         'relationKey' : {
@@ -95,7 +95,7 @@ def repartition_on_x():
 def single_join():
     scan0 = {
         'opType' : 'TableScan',
-        'opName' : 'Scan0',
+        'opId' : 'Scan0',
         'relationKey' : {
             'userName' : 'jwang',
             'programName' : 'global_join',
@@ -104,7 +104,7 @@ def single_join():
     }
     scatter0 = {
         'opType' : 'ShuffleProducer',
-        'opName' : 'Scatter0',
+        'opId' : 'Scatter0',
         'argChild' : 'Scan0',
         'argOperatorId' : 'hash(x)',
         'argPf' : {
@@ -114,7 +114,7 @@ def single_join():
     }
     gather0 = {
         'opType' : 'ShuffleConsumer',
-        'opName' : 'Gather0',
+        'opId' : 'Gather0',
         'argOperatorId' : 'hash(x)',
         "arg_schema" : {
             "columnTypes" : ["LONG_TYPE", "LONG_TYPE"],
@@ -124,7 +124,7 @@ def single_join():
 
     scan1 = {
         'opType' : 'TableScan',
-        'opName' : 'Scan1',
+        'opId' : 'Scan1',
         'relationKey' : {
             'userName' : 'jwang',
             'programName' : 'global_join',
@@ -133,7 +133,7 @@ def single_join():
     }
     scatter1 = {
         'opType' : 'ShuffleProducer',
-        'opName' : 'Scatter1',
+        'opId' : 'Scatter1',
         'argChild' : 'Scan1',
         'argOperatorId' : 'hash(y)',
         'argPf' : {
@@ -143,7 +143,7 @@ def single_join():
     }
     gather1 = {
         'opType' : 'ShuffleConsumer',
-        'opName' : 'Gather1',
+        'opId' : 'Gather1',
         'argOperatorId' : 'hash(y)',
         "arg_schema" : {
             "columnTypes" : ["LONG_TYPE", "LONG_TYPE"],
@@ -153,7 +153,7 @@ def single_join():
 
     join = {
         'opType' : 'SymmetricHashJoin',
-        'opName' : 'Join',
+        'opId' : 'Join',
         'argChild1' : 'Gather1',
         'argChild2' : 'Gather0',
         'argColumns1' : [1],
@@ -163,7 +163,7 @@ def single_join():
     }
     insert = {
         'opType' : 'DbInsert',
-        'opName' : 'Insert',
+        'opId' : 'Insert',
         'argChild' : 'Join',
         'argOverwriteTable' : True,
         'relationKey' : {
@@ -208,14 +208,14 @@ def ingest_tipsy_rr():
     BASE_FILE = '/disk2/dhalperi'
     tipsy_scan = {
         "opType" : 'TipsyFileScan',
-        'opName' : 'Scan',
+        'opId' : 'Scan',
         "tipsyFilename": BASE_FILE+"/cosmo50cmb.256g2MbwK.00512",
         "iorderFilename": BASE_FILE+"/cosmo50cmb.256g2MbwK.00512.iord",
         "grpFilename": BASE_FILE+"/cosmo50cmb.256g2MbwK.00512.amiga.grp"
     }
     scatter = {
         'opType' : 'ShuffleProducer',
-        'opName' : 'Scatter',
+        'opId' : 'Scatter',
         'argChild' : 'Scan',
         'argOperatorId' : 'RoundRobin',
         'argPf' : {
@@ -228,13 +228,13 @@ def ingest_tipsy_rr():
 
     gather = {
         'opType' : 'ShuffleConsumer',
-        'opName' : 'Gather',
+        'opId' : 'Gather',
         'argOperatorId' : 'RoundRobin',
         "arg_schema" : tipsy_schema()
     }
     insert = {
         'opType' : 'DbInsert',
-        'opName' : 'Insert',
+        'opId' : 'Insert',
         'argChild' : 'Gather',
         'argOverwriteTable' : True,
         'relationKey' : {
@@ -258,14 +258,14 @@ def ingest_tipsy_hash_iorder():
     BASE_FILE = '/disk2/dhalperi'
     tipsy_scan = {
         "opType" : 'TipsyFileScan',
-        'opName' : 'Scan',
+        'opId' : 'Scan',
         "tipsyFilename": BASE_FILE+"/cosmo50cmb.256g2MbwK.00512",
         "iorderFilename": BASE_FILE+"/cosmo50cmb.256g2MbwK.00512.iord",
         "grpFilename": BASE_FILE+"/cosmo50cmb.256g2MbwK.00512.amiga.grp"
     }
     scatter = {
         'opType' : 'ShuffleProducer',
-        'opName' : 'Scatter',
+        'opId' : 'Scatter',
         'argChild' : 'Scan',
         'argOperatorId' : 'hash(iorder)',
         'argPf' : {
@@ -279,13 +279,13 @@ def ingest_tipsy_hash_iorder():
 
     gather = {
         'opType' : 'ShuffleConsumer',
-        'opName' : 'Gather',
+        'opId' : 'Gather',
         'argOperatorId' : 'hash(iorder)',
         "arg_schema" : tipsy_schema()
     }
     insert = {
         'opType' : 'DbInsert',
-        'opName' : 'Insert',
+        'opId' : 'Insert',
         'argChild' : 'Gather',
         'argOverwriteTable' : True,
         'relationKey' : {

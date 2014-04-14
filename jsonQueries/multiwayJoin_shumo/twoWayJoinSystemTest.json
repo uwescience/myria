@@ -3,7 +3,7 @@
         {
             "operators":[
                 {
-                    "opName":"scan_r",
+                    "opId":"scan_r",
                     "opType":"TableScan",
                     "relationKey":{
                         "programName":"test",
@@ -17,7 +17,7 @@
                         "index":0,
                         "type":"SingleFieldHash"
                     },
-                    "opName":"shuffle_r",
+                    "opId":"shuffle_r",
                     "opType":"ShuffleProducer"
                 }
             ]
@@ -25,7 +25,7 @@
         {
             "operators":[
                 {
-                    "opName":"scan_s",
+                    "opId":"scan_s",
                     "opType":"TableScan",
                     "relationKey":{
                         "programName":"test",
@@ -39,7 +39,7 @@
                         "index":0,
                         "type":"SingleFieldHash"
                     },
-                    "opName":"shuffle_s",
+                    "opId":"shuffle_s",
                     "opType":"ShuffleProducer"
                 }
             ]
@@ -48,11 +48,11 @@
             "operators":[
                 {
                     "argOperatorId":"shuffle_r",
-                    "opName":"gather_r",
+                    "opId":"gather_r",
                     "opType":"ShuffleConsumer"
                 },
                 {
-                    "opName":"order_r",
+                    "opId":"order_r",
                     "opType":"InMemoryOrderBy",
                     "argChild": "gather_r",
                     "argSortColumns": [0,1],
@@ -60,18 +60,18 @@
                 },
                 {
                     "argOperatorId":"shuffle_s",
-                    "opName":"gather_s",
+                    "opId":"gather_s",
                     "opType":"ShuffleConsumer"
                 },
                 {
-                    "opName":"order_s",
+                    "opId":"order_s",
                     "opType":"InMemoryOrderBy",
                     "argChild": "gather_s",
                     "argSortColumns": [0,1],
                     "argAscending": [true,true]
                 },
                 {
-                    "opName":"join",
+                    "opId":"join",
                     "opType":"LeapFrogJoin",
                     "argChildren": ["order_r","order_s"],
                     "argColumnNames": ["id1", "name1", "id2", "name2"],
@@ -81,7 +81,7 @@
                 {
                     "argChild":"join",
                     "argOverwriteTable":true,
-                    "opName":"insert_result",
+                    "opId":"insert_result",
                     "opType":"DbInsert",
                     "relationKey":{
                         "programName":"test",
