@@ -102,7 +102,7 @@ public final class RightHashJoin extends BinaryOperator {
 
     @Override
     public boolean execute(final int index) {
-      if (TupleUtils.equalSubRows(inputTB, row, inputCmpColumns, joinAgainstHashTable, index, joinAgainstCmpColumns)) {
+      if (TupleUtils.tupleEquals(inputTB, inputCmpColumns, row, joinAgainstHashTable, joinAgainstCmpColumns, index)) {
         addToAns(inputTB, row, joinAgainstHashTable, index);
       }
       return true;

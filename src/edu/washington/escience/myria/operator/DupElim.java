@@ -2,8 +2,9 @@ package edu.washington.escience.myria.operator;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.MutableTupleBuffer;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleUtils;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
@@ -140,7 +141,7 @@ public final class DupElim extends StreamingState {
 
     @Override
     public boolean execute(final int index) {
-      if (inputTB.tupleEquals(row, uniqueTuples, index)) {
+      if (TupleUtils.tupleEquals(inputTB, row, uniqueTuples, index)) {
         unique = false;
       }
       return unique;

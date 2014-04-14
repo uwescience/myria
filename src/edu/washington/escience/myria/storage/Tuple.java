@@ -14,7 +14,7 @@ import edu.washington.escience.myria.Type;
 /**
  * A single row relation.
  */
-public class Tuple implements Serializable, ReadableTable {
+public class Tuple implements ReadableTable, Serializable {
   /***/
   private static final long serialVersionUID = 1L;
 

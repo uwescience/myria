@@ -108,7 +108,8 @@ public final class SymmetricHashJoin extends BinaryOperator {
 
     @Override
     public boolean execute(final int index) {
-      if (TupleUtils.equalSubRows(inputTB, row, inputCmpColumns, joinAgainstHashTable, index, joinAgainstCmpColumns)) {
+      if (TupleUtils.tupleEquals(inputTB, inputCmpColumns, row, joinAgainstHashTable, joinAgainstCmpColumns, index)) {
+
         addToAns(inputTB, row, joinAgainstHashTable, index, fromLeft);
       }
       return true;
@@ -144,7 +145,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
 
     @Override
     public boolean execute(final int index) {
-      if (TupleUtils.equalSubRows(inputTB, row, keyColumns, hashTable, index, keyColumns)) {
+      if (TupleUtils.tupleEquals(inputTB, keyColumns, row, hashTable, keyColumns, index)) {
         replaced = true;
         List<Column<?>> columns = inputTB.getDataColumns();
         for (int j = 0; j < inputTB.numColumns(); ++j) {

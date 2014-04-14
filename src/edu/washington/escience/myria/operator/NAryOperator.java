@@ -16,13 +16,6 @@ public abstract class NAryOperator extends Operator {
   private Operator[] children;
 
   /**
-   * Default, empty constructor.
-   */
-  public NAryOperator() {
-    super();
-  }
-
-  /**
    * @param children the children of this operator
    */
   public NAryOperator(final Operator[] children) {

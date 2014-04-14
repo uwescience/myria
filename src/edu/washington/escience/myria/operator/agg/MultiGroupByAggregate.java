@@ -117,7 +117,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
         boolean found = false;
         while (!found && matches.hasNext()) {
           int curGrp = matches.next();
-          if (TupleUtils.equalSubRows(tb, row, gfields, groupKeys, curGrp, grpRange)) {
+          if (TupleUtils.tupleEquals(tb, gfields, row, groupKeys, grpRange, curGrp)) {
             updateGroup(tb, row, groupAggs.get(curGrp));
             found = true;
           }

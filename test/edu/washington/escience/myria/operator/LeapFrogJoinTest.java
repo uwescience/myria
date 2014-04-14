@@ -40,7 +40,7 @@ public class LeapFrogJoinTest {
 
     int[][][] fieldMap = new int[][][] { { { 0, 0 }, { 1, 0 } } };
     int[][] outputMap = new int[][] { { 0, 0 }, { 0, 1 }, { 1, 0 }, { 1, 1 } };
-    NAryOperator join = new LeapFrogJoin(children, fieldMap, outputMap, outputColumnNames);
+    NAryOperator join = new LeapFrogJoin(children, fieldMap, outputMap, outputColumnNames, null);
     join.open(null);
     TupleBatch tb;
     TupleBatchBuffer batches = new TupleBatchBuffer(outputSchema);

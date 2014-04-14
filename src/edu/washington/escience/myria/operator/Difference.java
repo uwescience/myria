@@ -8,8 +8,9 @@ import com.google.common.collect.ImmutableMap;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.MutableTupleBuffer;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleUtils;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
@@ -68,7 +69,7 @@ public final class Difference extends BinaryOperator {
 
     // Check whether we've seen this tuple before
     for (int i = 0; i < tupleIndexList.size(); i++) {
-      if (batch.tupleEquals(rowNum, tuplesToRemove, tupleIndexList.get(i))) {
+      if (TupleUtils.tupleEquals(batch, rowNum, tuplesToRemove, tupleIndexList.get(i))) {
         return false;
       }
     }

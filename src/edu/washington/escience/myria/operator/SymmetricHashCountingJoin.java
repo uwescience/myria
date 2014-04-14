@@ -98,7 +98,7 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
 
     @Override
     public boolean execute(final int index) {
-      if (TupleUtils.equalSubRows(inputTB, row, inputCmpColumns, joinAgainstHashTable, index, otherCmpColumns)) {
+      if (TupleUtils.tupleEquals(inputTB, inputCmpColumns, row, joinAgainstHashTable, otherCmpColumns, index)) {
         ans += occuredTimesOnJoinAgainstChild.get(index);
       }
       return true;
@@ -402,7 +402,7 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
     boolean found = false;
     for (int i = 0; i < tupleIndicesList.size(); ++i) {
       int index = tupleIndicesList.get(i);
-      if (tb.tupleEquals(row, hashTable, index, compareColumns)) {
+      if (TupleUtils.tupleEquals(tb, compareColumns, row, hashTable, index)) {
         occuredTimes.set(index, occuredTimes.get(index) + 1);
         found = true;
         break;
