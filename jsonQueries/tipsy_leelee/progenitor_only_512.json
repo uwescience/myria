@@ -3,7 +3,7 @@
         {
             "operators": [
                 {
-                    "opName": "Scan_base",
+                    "opId": "Scan_base",
                     "opType": "QueryScan",
                     "schema": {
                         "columnNames": [
@@ -23,7 +23,7 @@
                         "index": "0",
                         "type": "SingleFieldHash"
                     },
-                    "opName": "SP_base",
+                    "opId": "SP_base",
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -31,7 +31,7 @@
         {
             "operators": [
                 {
-                    "opName": "Scan_pgtr",
+                    "opId": "Scan_pgtr",
                     "opType": "QueryScan",
                     "schema": {
                         "columnNames": [
@@ -51,7 +51,7 @@
                         "index": "0",
                         "type": "SingleFieldHash"
                     },
-                    "opName": "SP_pgtr",
+                    "opId": "SP_pgtr",
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -60,12 +60,12 @@
             "operators": [
                 {
                     "argOperatorId": "SP_base",
-                    "opName": "SC1",
+                    "opId": "SC1",
                     "opType": "ShuffleConsumer"
                 },
                 {
                     "argOperatorId": "SP_pgtr",
-                    "opName": "SC2",
+                    "opId": "SC2",
                     "opType": "ShuffleConsumer"
                 },
                 {
@@ -84,7 +84,7 @@
                     "argSelect2": [
                         "1"
                     ],
-                    "opName": "JoinOnIOrder",
+                    "opId": "JoinOnIOrder",
                     "opType": "SymmetricHashJoin"
                 },
                 {
@@ -93,7 +93,7 @@
                         "index": "1",
                         "type": "SingleFieldHash"
                     },
-                    "opName": "SP_JoinOnIOrder",
+                    "opId": "SP_JoinOnIOrder",
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -101,7 +101,7 @@
         {
             "operators": [
                 {
-                    "opName": "Scan_grps_of_interest",
+                    "opId": "Scan_grps_of_interest",
                     "opType": "TableScan",
                     "relationKey": {
                         "programName": "astro",
@@ -115,7 +115,7 @@
                         "index": "0",
                         "type": "SingleFieldHash"
                     },
-                    "opName": "SP_grps_of_interest",
+                    "opId": "SP_grps_of_interest",
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -124,12 +124,12 @@
             "operators": [
                 {
                     "argOperatorId": "SP_JoinOnIOrder",
-                    "opName": "SC3",
+                    "opId": "SC3",
                     "opType": "ShuffleConsumer"
                 },
                 {
                     "argOperatorId": "SP_grps_of_interest",
-                    "opName": "SC4",
+                    "opId": "SC4",
                     "opType": "ShuffleConsumer"
                 },
                 {
@@ -149,7 +149,7 @@
                     "argSelect2": [
                         "0"
                     ],
-                    "opName": "JoinOnIOrderWihGroupsOfInterest",
+                    "opId": "JoinOnIOrderWihGroupsOfInterest",
                     "opType": "SymmetricHashJoin"
                 },
                 {
@@ -161,7 +161,7 @@
                         ],
                         "type": "MultiFieldHash"
                     },
-                    "opName": "SP_JoinOnIOrderWithGroupsOfInterest",
+                    "opId": "SP_JoinOnIOrderWithGroupsOfInterest",
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -170,7 +170,7 @@
             "operators": [
                 {
                     "argOperatorId": "SP_JoinOnIOrderWithGroupsOfInterest",
-                    "opName": "SC_JoinOnIOrderWithGroupsOfInterest",
+                    "opId": "SC_JoinOnIOrderWithGroupsOfInterest",
                     "opType": "ShuffleConsumer"
                 },
                 {
@@ -187,12 +187,12 @@
                         "1",
                         "2"
                     ],
-                    "opName": "PotentialProgenitorGroup",
+                    "opId": "PotentialProgenitorGroup",
                     "opType": "MultiGroupByAggregate"
                 },
                 {
                     "argChild": "PotentialProgenitorGroup",
-                    "opName": "PotPro",
+                    "opId": "PotPro",
                     "opType": "LocalMultiwayProducer"
                 }
             ]
@@ -200,7 +200,7 @@
         {
             "operators": [
                 {
-                    "opName": "Scan_masstable",
+                    "opId": "Scan_masstable",
                     "opType": "TableScan",
                     "relationKey": {
                         "programName": "astro",
@@ -214,7 +214,7 @@
                         "index": "0",
                         "type": "SingleFieldHash"
                     },
-                    "opName": "SP_masstable",
+                    "opId": "SP_masstable",
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -223,12 +223,12 @@
             "operators": [
                 {
                     "argOperatorId": "SP_masstable",
-                    "opName": "SC_masstable",
+                    "opId": "SC_masstable",
                     "opType": "ShuffleConsumer"
                 },
                 {
                     "argOperatorId": "PotPro",
-                    "opName": "PotPro1",
+                    "opId": "PotPro1",
                     "opType": "LocalMultiwayConsumer"
                 },
                 {
@@ -242,12 +242,12 @@
                     ],
                     "argChild": "PotPro1",
                     "argGroupField": 0,
-                    "opName": "GrpsWithMaxVals",
+                    "opId": "GrpsWithMaxVals",
                     "opType": "SingleGroupByAggregate"
                 },
                 {
                     "argOperatorId": "PotPro",
-                    "opName": "PotPro2",
+                    "opId": "PotPro2",
                     "opType": "LocalMultiwayConsumer"
                 },
                 {
@@ -269,7 +269,7 @@
                     "argSelect2": [
                         "0"
                     ],
-                    "opName": "SelectedProgenitorJoined",
+                    "opId": "SelectedProgenitorJoined",
                     "opType": "SymmetricHashJoin"
                 },
                 {
@@ -283,7 +283,7 @@
                     ],
                     "argChild": "SelectedProgenitorJoined",
                     "argGroupField": 0,
-                    "opName": "SelectedProgenitorGroupedBy",
+                    "opId": "SelectedProgenitorGroupedBy",
                     "opType": "SingleGroupByAggregate"
                 },
                 {
@@ -302,13 +302,13 @@
                     "argSelect2": [
                         "1"
                     ],
-                    "opName": "result",
+                    "opId": "result",
                     "opType": "SymmetricHashJoin"
                 },
                 {
                     "argChild": "result",
                     "argOverwriteTable": true,
-                    "opName": "INSERT",
+                    "opId": "INSERT",
                     "opType": "DbInsert",
                     "relationKey": {
                         "programName": "astro",

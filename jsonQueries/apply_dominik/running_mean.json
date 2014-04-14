@@ -9,7 +9,7 @@
                         "relationName": "TwitterK",
                         "userName": "public"
                     },
-                    "opName": "V1",
+                    "opId": "V1",
                     "opType": "TableScan"
                 },
                 {
@@ -79,7 +79,7 @@
                             "outputName": "avg"
                         }
                     ],
-                    "opName": "V0",
+                    "opId": "V0",
                     "opType": "StatefulApply"
                 },
                 {
@@ -90,7 +90,7 @@
                         "relationName": "RunningMean",
                         "userName": "public"
                     },
-                    "opName": "Store",
+                    "opId": "Store",
                     "opType": "DbInsert"
                 }
             ]

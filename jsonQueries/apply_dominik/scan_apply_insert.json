@@ -3,7 +3,7 @@
         {
             "operators": [
                 {
-                    "opName": "Scan",
+                    "opId": "Scan",
                     "opType": "TableScan",
                     "relationKey": {
                         "programName": "adhoc",
@@ -33,13 +33,13 @@
                             }
                         }
                     ],
-                    "opName": "Apply",
+                    "opId": "Apply",
                     "opType": "Apply"
                 },
                 {
                     "argChild": "Apply",
                     "argOverwriteTable": true,
-                    "opName": "Insert",
+                    "opId": "Insert",
                     "opType": "DbInsert",
                     "relationKey": {
                         "programName": "adhoc",
