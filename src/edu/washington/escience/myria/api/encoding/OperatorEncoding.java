@@ -61,6 +61,8 @@ import edu.washington.escience.myria.parallel.Server;
 public abstract class OperatorEncoding<T extends Operator> extends MyriaApiEncoding {
 
   @Required
+  public String opID;
+
   public String opName;
 
   /**

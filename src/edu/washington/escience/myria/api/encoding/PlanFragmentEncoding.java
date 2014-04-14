@@ -33,10 +33,10 @@ public final class PlanFragmentEncoding extends MyriaApiEncoding {
     Set<String> opNames = new HashSet<String>();
     for (OperatorEncoding<?> op : operators) {
       op.validate();
-      if (!opNames.contains(op.opName)) {
-        opNames.add(op.opName);
+      if (!opNames.contains(op.opID)) {
+        opNames.add(op.opID);
       } else {
-        throw new MyriaApiException(Status.BAD_REQUEST, "duplicate operator names in a fragment: " + op.opName);
+        throw new MyriaApiException(Status.BAD_REQUEST, "duplicate operator names in a fragment: " + op.opID);
       }
     }
   }
