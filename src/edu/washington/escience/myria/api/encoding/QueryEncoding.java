@@ -75,7 +75,7 @@ public class QueryEncoding extends MyriaApiEncoding {
     for (PlanFragmentEncoding fragment : fragments) {
       fragment.setFragmentIndex(idx++);
       for (OperatorEncoding<?> op : fragment.operators) {
-        op2OwnerFragmentMapping.put(op.opName, fragment);
+        op2OwnerFragmentMapping.put(op.opId, fragment);
       }
     }
 
@@ -190,27 +190,27 @@ public class QueryEncoding extends MyriaApiEncoding {
 
         } else if (operator instanceof AbstractProducerEncoding) {
           AbstractProducerEncoding<?> producer = (AbstractProducerEncoding<?>) operator;
-          List<ExchangePairID> sourceProducerOutputChannels = producerOutputChannels.get(producer.opName);
+          List<ExchangePairID> sourceProducerOutputChannels = producerOutputChannels.get(producer.opId);
           if (sourceProducerOutputChannels == null) {
             sourceProducerOutputChannels = new ArrayList<ExchangePairID>();
-            producerOutputChannels.put(producer.opName, sourceProducerOutputChannels);
+            producerOutputChannels.put(producer.opId, sourceProducerOutputChannels);
           }
           producer.setRealOperatorIds(sourceProducerOutputChannels);
-          producerWorkerMap.put(producer.opName, ImmutableSet.<Integer> builder().addAll(fragment.workers).build());
+          producerWorkerMap.put(producer.opId, ImmutableSet.<Integer> builder().addAll(fragment.workers).build());
         } else if (operator instanceof IDBControllerEncoding) {
           IDBControllerEncoding idbInput = (IDBControllerEncoding) operator;
           idbInputs.add(idbInput);
-          List<ExchangePairID> sourceProducerOutputChannels = producerOutputChannels.get(idbInput.opName);
+          List<ExchangePairID> sourceProducerOutputChannels = producerOutputChannels.get(idbInput.opId);
           if (sourceProducerOutputChannels == null) {
             sourceProducerOutputChannels = new ArrayList<ExchangePairID>();
-            producerOutputChannels.put(idbInput.opName, sourceProducerOutputChannels);
+            producerOutputChannels.put(idbInput.opId, sourceProducerOutputChannels);
           }
-          producerWorkerMap.put(idbInput.opName, new HashSet<Integer>(fragment.workers));
+          producerWorkerMap.put(idbInput.opId, new HashSet<Integer>(fragment.workers));
         }
       }
     }
     for (IDBControllerEncoding idbInput : idbInputs) {
-      idbInput.setRealControllerOperatorID(producerOutputChannels.get(idbInput.opName).get(0));
+      idbInput.setRealControllerOperatorID(producerOutputChannels.get(idbInput.opId).get(0));
     }
     /* Pass 2: Populate the right fields in producers and consumers. */
     for (PlanFragmentEncoding fragment : fragments) {
@@ -223,7 +223,7 @@ public class QueryEncoding extends MyriaApiEncoding {
               try {
                 workers.addAll(producerWorkerMap.get(((AbstractConsumerEncoding<?>) exchange).getOperatorId()));
               } catch (NullPointerException ee) {
-                System.err.println("Consumer: " + ((AbstractConsumerEncoding<?>) exchange).opName);
+                System.err.println("Consumer: " + ((AbstractConsumerEncoding<?>) exchange).opId);
                 System.err.println("Producer: " + ((AbstractConsumerEncoding<?>) exchange).argOperatorId);
                 System.err.println("producerWorkerMap: " + producerWorkerMap);
                 throw ee;
@@ -276,18 +276,18 @@ public class QueryEncoding extends MyriaApiEncoding {
         idbs.add((IDBControllerEncoding) encoding);
       }
       if (encoding instanceof AbstractConsumerEncoding<?>) {
-        nonIterativeConsumers.put(encoding.opName, (AbstractConsumerEncoding<?>) encoding);
+        nonIterativeConsumers.put(encoding.opId, (AbstractConsumerEncoding<?>) encoding);
       }
 
       Operator op = encoding.construct(server);
       /* helpful for debugging. */
-      op.setOpName(encoding.opName);
+      op.setOpName(encoding.opId);
       op.setFragmentId(planFragment.fragmentIndex);
-      myOperators.put(encoding.opName, op);
+      myOperators.put(encoding.opId, op);
       if (op instanceof RootOperator) {
         if (fragmentRoot != null) {
           throw new MyriaApiException(Status.BAD_REQUEST, "Multiple " + RootOperator.class.getSimpleName()
-              + " detected in the fragment: " + fragmentRoot.getOpName() + ", and " + encoding.opName);
+              + " detected in the fragment: " + fragmentRoot.getOpName() + ", and " + encoding.opId);
         }
         fragmentRoot = (RootOperator) op;
       }
@@ -312,7 +312,7 @@ public class QueryEncoding extends MyriaApiEncoding {
     }
 
     for (AbstractConsumerEncoding<?> c : nonIterativeConsumers.values()) {
-      Consumer consumer = (Consumer) myOperators.get(c.opName);
+      Consumer consumer = (Consumer) myOperators.get(c.opId);
       String producingOpName = c.argOperatorId;
       Operator producingOp = allOperators.get(producingOpName);
       if (producingOp instanceof IDBController) {
@@ -324,11 +324,11 @@ public class QueryEncoding extends MyriaApiEncoding {
 
     /* Connect all the operators. */
     for (OperatorEncoding<?> encoding : planFragment.operators) {
-      encoding.connect(myOperators.get(encoding.opName), myOperators);
+      encoding.connect(myOperators.get(encoding.opId), myOperators);
     }
 
     for (IDBControllerEncoding idb : idbs) {
-      IDBController idbOp = (IDBController) myOperators.get(idb.opName);
+      IDBController idbOp = (IDBController) myOperators.get(idb.opId);
       Operator initialInput = idbOp.getChildren()[IDBController.CHILDREN_IDX_INITIAL_IDB_INPUT];
       Consumer iterativeInput = (Consumer) idbOp.getChildren()[IDBController.CHILDREN_IDX_ITERATION_INPUT];
       Consumer eosControllerInput = (Consumer) idbOp.getChildren()[IDBController.CHILDREN_IDX_EOS_CONTROLLER_INPUT];

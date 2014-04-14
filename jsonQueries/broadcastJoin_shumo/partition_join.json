@@ -12,7 +12,7 @@
                         "port": "15433",
                         "username": "dbadmin"
                     },
-                    "opName": "Scan(R)",
+                    "opId": "Scan(R)",
                     "opType": "TableScan",
                     "relationKey": {
                         "programName": "broadcastjoin",
@@ -26,7 +26,7 @@
                         "index": 1,
                         "type": "SingleFieldHash"
                     },
-                    "opName": "Shuffle(R)",
+                    "opId": "Shuffle(R)",
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -43,7 +43,7 @@
                         "port": "15433",
                         "username": "dbadmin"
                     },
-                    "opName": "Scan(S)",
+                    "opId": "Scan(S)",
                     "opType": "TableScan",
                     "relationKey": {
                         "programName": "broadcastjoin",
@@ -57,7 +57,7 @@
                         "index": 1,
                         "type": "SingleFieldHash"
                     },
-                    "opName": "Shuffle(S)",
+                    "opId": "Shuffle(S)",
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -66,12 +66,12 @@
             "operators": [
                 {
                     "argOperatorId": "Shuffle(R)",
-                    "opName": "Gather(R)",
+                    "opId": "Gather(R)",
                     "opType": "ShuffleConsumer"
                 },
                 {
                     "argOperatorId": "Shuffle(S)",
-                    "opName": "Gather(S)",
+                    "opId": "Gather(S)",
                     "opType": "ShuffleConsumer"
                 },
                 {
@@ -89,7 +89,7 @@
                     "argSelect2": [
                         1
                     ],
-                    "opName": "Join",
+                    "opId": "Join",
                     "opType": "SymmetricHashJoin"
                 },
                 {
@@ -104,7 +104,7 @@
                         "port": "15433",
                         "username": "dbadmin"
                     },
-                    "opName": "InsertResult",
+                    "opId": "InsertResult",
                     "opType": "DbInsert",
                     "relationKey": {
                         "programName": "broadcastjoin",

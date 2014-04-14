@@ -3,7 +3,7 @@
         {
             "operators": [
                 {
-                    "opName": "Scan0",
+                    "opId": "Scan0",
                     "opType": "TableScan",
                     "relationKey": {
                         "programName": "global_join",
@@ -17,7 +17,7 @@
                         "index": 0,
                         "type": "SingleFieldHash"
                     },
-                    "opName": "Scatter0",
+                    "opId": "Scatter0",
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -25,7 +25,7 @@
         {
             "operators": [
                 {
-                    "opName": "Scan1",
+                    "opId": "Scan1",
                     "opType": "TableScan",
                     "relationKey": {
                         "programName": "global_join",
@@ -39,7 +39,7 @@
                         "index": 1,
                         "type": "SingleFieldHash"
                     },
-                    "opName": "Scatter1",
+                    "opId": "Scatter1",
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -48,12 +48,12 @@
             "operators": [
                 {
                     "argOperatorId": "Scatter0",
-                    "opName": "Gather0",
+                    "opId": "Gather0",
                     "opType": "ShuffleConsumer"
                 },
                 {
                     "argOperatorId": "Scatter1",
-                    "opName": "Gather1",
+                    "opId": "Gather1",
                     "opType": "ShuffleConsumer"
                 },
                 {
@@ -71,13 +71,13 @@
                     "argSelect2": [
                         1
                     ],
-                    "opName": "Join",
+                    "opId": "Join",
                     "opType": "SymmetricHashJoin"
                 },
                 {
                     "argChild": "Join",
                     "argOverwriteTable": true,
-                    "opName": "Insert",
+                    "opId": "Insert",
                     "opType": "DbInsert",
                     "relationKey": {
                         "programName": "global_join",

@@ -6,7 +6,7 @@
 			"operators": 
 			[
 			{
-			  "opName" : "cc",
+			  "opId" : "cc",
 			  "opType" : "CollectConsumer",
 			  "argOperatorId" : "cpc"
 			}
@@ -20,17 +20,17 @@
 			"operators": 
 			[
 			{
-				"opName" : "eoiReceiverA",
+				"opId" : "eoiReceiverA",
 				"opType" : "Consumer",
 				"argOperatorId" : "idbinputa"
 			},
 			{
-				"opName" : "merge",
+				"opId" : "merge",
 				"opType" : "UnionAll",
 				"argChildren" : ["eoiReceiverA"]
 			},
 			{
-				"opName" : "eosController",
+				"opId" : "eosController",
 				"opType" : "EOSController",
 				"argChild" : "merge"
 			}
@@ -44,7 +44,7 @@
 			"operators": 
 			[
 			{
-				"opName" : "scan2a",
+				"opId" : "scan2a",
 				"opType" : "TableScan",
 				"relationKey" : {
 					"userName" : "jwang",
@@ -53,7 +53,7 @@
 				}
 			},
 			{
-				"opName" : "sp2a",
+				"opId" : "sp2a",
 				"opType" : "ShuffleProducer",
 				"argChild" : "scan2a",
 				"argPf" : {
@@ -67,7 +67,7 @@
 			"operators": 
 			[
 			{
-				"opName" : "scan2g",
+				"opId" : "scan2g",
 				"opType" : "TableScan",
 				"relationKey" : {
 					"userName" : "jwang",
@@ -76,7 +76,7 @@
 				}
 			},
 			{
-				"opName" : "sp2g",
+				"opId" : "sp2g",
 				"opType" : "ShuffleProducer",
 				"argChild" : "scan2g",
 				"argPf" : {
@@ -90,22 +90,22 @@
 			"operators": 
 			[
 			{
-				"opName" : "sc2a",
+				"opId" : "sc2a",
 				"opType" : "ShuffleConsumer",
 				"argOperatorId" : "sp2a"
 			},
 			{
-				"opName" : "sc3a",
+				"opId" : "sc3a",
 				"opType" : "ShuffleConsumer",
 				"argOperatorId" : "sp3a"
 			},
 			{
-				"opName" : "eosReceivera",
+				"opId" : "eosReceivera",
 				"opType" : "Consumer",
 				"argOperatorId" : "eosController"
 			},
 			{
-				"opName" : "idbinputa",
+				"opId" : "idbinputa",
 				"opType" : "IDBController",
 				"argSelfIdbId" : "0",
 				"argInitialInput" : "sc2a",
@@ -117,7 +117,7 @@
 				"argEosControllerInput" : "eosReceivera"
 			},
 			{
-				"opName" : "mpa",
+				"opId" : "mpa",
 				"opType" : "LocalMultiwayProducer",
 				"argChild" : "idbinputa"
 			}
@@ -127,17 +127,17 @@
 			"operators": 
 			[
 			{
-				"opName" : "send2joina",
+				"opId" : "send2joina",
 				"opType" : "LocalMultiwayConsumer",
 				"argOperatorId" : "mpa"
 			},
 			{
-				"opName" : "sc1g",
+				"opId" : "sc1g",
 				"opType" : "ShuffleConsumer",
 				"argOperatorId" : "sp2g"
 			},
 			{
-				"opName" : "joina",
+				"opId" : "joina",
 				"opType" : "SymmetricHashJoin",
 				"argChild1" : "send2joina",
 				"argChild2" : "sc1g",
@@ -147,7 +147,7 @@
 				"argSelect2" : ["1"]
 			},
 			{
-				"opName" : "sp3a",
+				"opId" : "sp3a",
 				"opType" : "ShuffleProducer",
 				"argChild" : "joina",
 				"argPf" : {
@@ -161,19 +161,19 @@
 			"operators": 
 			[
 			{
-				"opName" : "send2server",
+				"opId" : "send2server",
 				"opType" : "LocalMultiwayConsumer",
 				"argOperatorId" : "mpa"
 			},
 			{
-				"opName" : "count",
+				"opId" : "count",
 				"opType" : "Aggregate",
 				"argChild" : "send2server",
 				"argAggFields" : ["0"],
 				"argAggOperators" : [["AGG_OP_COUNT"]]
 			},
 			{
-				"opName" : "cpc",
+				"opId" : "cpc",
 				"opType" : "CollectProducer",
 				"argChild" : "count"
 			}

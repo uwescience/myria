@@ -413,18 +413,18 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
                 new JsonQueryBaseBuilder[] { fakeScan }, NO_PREFERENCE);
 
         eoiReceivers[i].setName("eoiReceiver#" + i);
-        eoiReceivers[i].op.opName = "eoiReceiver#" + i;
+        eoiReceivers[i].op.opId = "eoiReceiver#" + i;
         sharedData.allOperators.add(eoiReceivers[i]);
 
       }
 
       JsonQueryBaseBuilder eoiInput = buildOperator(UnionAllEncoding.class, "argChildren", eoiReceivers, NO_PREFERENCE);
       eoiInput.setName("allEOIReports");
-      eoiInput.op.opName = "allEOIReports";
+      eoiInput.op.opId = "allEOIReports";
 
       JsonQueryBaseBuilder eosC = buildOperator(EOSControllerEncoding.class, "argChild", eoiInput, ANY_SINGLE_WORKER);
       eosC.setName("eosController");
-      eosC.op.opName = "eosController";
+      eosC.op.opId = "eosController";
 
       for (int i = 0; i < iterationEndPoints.length; i++) {
         JsonQueryBaseBuilder iterationEndPoint = iterationEndPoints[i];
@@ -449,7 +449,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
             buildOperator(IDBControllerEncoding.class, new String[] {
                 "argInitialInput", "argIterationInput", "argEosControllerInput" }, new JsonQueryBaseBuilder[] {
                 initialInput, iterationInput, eosReceiver }, NO_PREFERENCE);
-        idbC.op.opName = "idbInput#" + i;
+        idbC.op.opId = "idbInput#" + i;
         ((IDBControllerEncoding) idbC.op).argSelfIdbId = i;
         ((IDBControllerEncoding) idbC.op).argState =
             ((IterateBeginPlaceHolder) (iterationBeginPoint.op)).idbStateProcessor;
@@ -480,13 +480,13 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * @return the operator name.
    * */
   private String getOpName(final JsonQueryBaseBuilder b) {
-    if (b.op.opName != null) {
-      return b.op.opName;
+    if (b.op.opId != null) {
+      return b.op.opId;
     }
     for (JsonQueryBaseBuilder opp : sharedData.allOperators) {
       setOpNames(opp);
     }
-    return b.op.opName;
+    return b.op.opId;
   }
 
   /**
@@ -687,7 +687,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     String[] childrenNames = new String[currentOp.children.length];
     int idx = 0;
     for (JsonQueryBaseBuilder c : currentOp.children) {
-      childrenNames[idx++] = c.op.opName;
+      childrenNames[idx++] = c.op.opId;
     }
 
     if (currentOp.childrenFields.length == 1) {
@@ -730,12 +730,12 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * @param namedOperators record the name to op mapping.
    * */
   private void setOpNames(final JsonQueryBaseBuilder root, final HashMap<String, JsonQueryBaseBuilder> namedOperators) {
-    if (root.op.opName != null) {
+    if (root.op.opId != null) {
       return;
     } else {
       String opName = sharedData.op2UserDefinedNameMap.get(root);
       if (opName != null) {
-        root.op.opName = opName;
+        root.op.opId = opName;
         return;
       } else {
         for (JsonQueryBaseBuilder f : root.children) {
@@ -758,7 +758,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     String[] childrenNames = new String[currentOp.children.length];
     int idx = 0;
     for (JsonQueryBaseBuilder c : currentOp.children) {
-      childrenNames[idx++] = c.op.opName;
+      childrenNames[idx++] = c.op.opId;
     }
 
     String namePrefix = null;
@@ -776,7 +776,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     if (currentOp.op instanceof AbstractConsumerEncoding) {
       // for consumers, do not include the child producer's XXXProducer prefix
       opNameBuilder.append('(');
-      opNameBuilder.append(currentOp.children[0].children[0].op.opName);
+      opNameBuilder.append(currentOp.children[0].children[0].op.opId);
       opNameBuilder.append(')');
     } else {
       if (currentOp.children.length > 0) {
@@ -795,7 +795,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     }
     name = name + suffix;
     namedOperators.put(name, currentOp);
-    currentOp.op.opName = name;
+    currentOp.op.opId = name;
 
   }
 
