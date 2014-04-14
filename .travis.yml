@@ -18,6 +18,6 @@ after_success:
 - gradle jacocoTestReport coveralls
 env:
   global:
-  - secure: satqdwI1HCuQYwD9NmGzTJ0bDnNTb4UlBwyULRqm+grGARt3ocv47SmS2lwlouDN4IsmSzs8sO4l9Pzi6cJeZpxsFlI/P5+dfv022H5RHQtqP0DKARO/y0lt8qQbeTkSVJQ+OlWXaw8YMnzz7u9Ktf8VEL6g32Vj3ApLjryBizE=
+    secure: Lmgc+vaExgGEQvjZ1MWWLQkJi9EEtE2QPQKpWi1AzSPTRaPO+wTOF0doeM983z9H2TCFolrRinQDjN5cnFsHTjuzNsY7mt0uQLx4Jny0NK+wt4M6j7FgA09HYw2Q79hvMoAZr9O2M1GIX049sapW+sWUuUK2ii/42ZvDeRNTNgs=
 cache:
-  - $HOME/.gradle
+- $HOME/.gradle
