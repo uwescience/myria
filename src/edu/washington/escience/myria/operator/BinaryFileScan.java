@@ -3,7 +3,7 @@ package edu.washington.escience.myria.operator;
 import java.io.BufferedInputStream;
 import java.io.DataInput;
 import java.io.DataInputStream;
-import java.io.FileInputStream;
+import java.io.EOFException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,6 +14,7 @@ import com.google.common.io.LittleEndianDataInputStream;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
@@ -30,16 +31,14 @@ public class BinaryFileScan extends LeafOperator {
   private static final long serialVersionUID = 1L;
   /** The schema for the relation stored in this file. */
   private final Schema schema;
-  /** The filename of the input. */
-  private final String fileName;
+  /** The source of the input data. */
+  private final DataSource source;
   /** Holds the tuples that are ready for release. */
   private transient TupleBatchBuffer buffer;
   /** Indicates the endianess of the bin file to read. */
   private final boolean isLittleEndian;
   /** Data input to read data from the bin file. */
   private transient DataInput dataInput;
-  /** Keeps track of the file size. */
-  private long fileLength;
   /** The sum of all column sizes in bytes. */
   private int tupleSize = 0;
 
@@ -48,14 +47,12 @@ public class BinaryFileScan extends LeafOperator {
    * has the given schema. The endianess of the binary file is indicated by the isLittleEndian flag.
    * 
    * @param schema The tuple schema to be used for creating tuple from the binary file's data.
-   * @param fileName The binary file name.
+   * @param source The source of the binary input data.
    * @param isLittleEndian The flag that indicates the endianess of the binary file.
    */
-  public BinaryFileScan(final Schema schema, final String fileName, final boolean isLittleEndian) {
-    Objects.requireNonNull(schema);
-    Objects.requireNonNull(fileName);
-    this.schema = schema;
-    this.fileName = fileName;
+  public BinaryFileScan(final Schema schema, final DataSource source, final boolean isLittleEndian) {
+    this.schema = Objects.requireNonNull(schema, "schema");
+    this.source = Objects.requireNonNull(source, "source");
     this.isLittleEndian = isLittleEndian;
   }
 
@@ -64,16 +61,17 @@ public class BinaryFileScan extends LeafOperator {
    * has the given schema. The default endianess is big endian.
    * 
    * @param schema The tuple schema to be used for creating tuple from the binary file's data.
-   * @param fileName The binary file name.
+   * @param source The source of the binary input data.
    */
-  public BinaryFileScan(final Schema schema, final String fileName) {
-    this(schema, fileName, false);
+  public BinaryFileScan(final Schema schema, final DataSource source) {
+    this(schema, source, false);
   }
 
   @Override
   protected final TupleBatch fetchNextReady() throws DbException {
+    boolean building = false;
     try {
-      while (fileLength > 0 && buffer.numTuples() < TupleBatch.BATCH_SIZE) {
+      while (buffer.numTuples() < TupleBatch.BATCH_SIZE) {
         for (int count = 0; count < schema.numColumns(); ++count) {
           switch (schema.getColumnType(count)) {
             case DOUBLE_TYPE:
@@ -94,8 +92,16 @@ public class BinaryFileScan extends LeafOperator {
               throw new UnsupportedOperationException(
                   "BinaryFileScan only support reading fixed width type from the binary file.");
           }
+          building = true;
         }
-        fileLength -= tupleSize;
+        building = false;
+      }
+    } catch (EOFException e) {
+      if (!building) {
+        /* Do nothing -- we got an exception because the data ran out at the right place. */
+        ;
+      } else {
+        throw new DbException("Ran out of binary data in the middle of a row", e);
       }
     } catch (IOException e) {
       throw new DbException(e);
@@ -116,9 +122,7 @@ public class BinaryFileScan extends LeafOperator {
     buffer = new TupleBatchBuffer(getSchema());
     InputStream inputStream;
     try {
-      FileInputStream fStream = new FileInputStream(Objects.requireNonNull(fileName));
-      fileLength = fStream.getChannel().size();
-      inputStream = new BufferedInputStream(fStream);
+      inputStream = new BufferedInputStream(source.getInputStream());
     } catch (FileNotFoundException e) {
       throw new DbException(e);
     } catch (IOException e) {
