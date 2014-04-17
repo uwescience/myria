@@ -29,6 +29,7 @@ import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParam
     @Type(name = "LOG", value = LogExpression.class), @Type(name = "NEG", value = NegateExpression.class),
     @Type(name = "NOT", value = NotExpression.class), @Type(name = "SIN", value = SinExpression.class),
     @Type(name = "SQRT", value = SqrtExpression.class), @Type(name = "TAN", value = TanExpression.class),
+    @Type(name = "TOINT", value = ToIntExpression.class), @Type(name = "TOLONG", value = ToLongExpression.class),
     @Type(name = "UPPER", value = ToUpperCaseExpression.class),
     /* Binary */
     @Type(name = "AND", value = AndExpression.class), @Type(name = "DIVIDE", value = DivideExpression.class),
