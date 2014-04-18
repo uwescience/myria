@@ -42,6 +42,8 @@ import edu.washington.escience.myria.expression.SqrtExpression;
 import edu.washington.escience.myria.expression.SubstrExpression;
 import edu.washington.escience.myria.expression.TanExpression;
 import edu.washington.escience.myria.expression.TimesExpression;
+import edu.washington.escience.myria.expression.ToIntExpression;
+import edu.washington.escience.myria.expression.ToLongExpression;
 import edu.washington.escience.myria.expression.ToUpperCaseExpression;
 import edu.washington.escience.myria.expression.TypeExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
@@ -64,9 +66,8 @@ public class ApplyTest {
   @Test
   public void testApply() throws DbException {
     final Schema schema =
-        new Schema(
-            ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.INT_TYPE, Type.STRING_TYPE, Type.BOOLEAN_TYPE),
-            ImmutableList.of("a", "b", "c", "d", "e"));
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.INT_TYPE, Type.STRING_TYPE, Type.BOOLEAN_TYPE,
+            Type.STRING_TYPE, Type.STRING_TYPE), ImmutableList.of("a", "b", "c", "d", "e", "f", "g"));
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (long i = 0; i < NUM_TUPLES; i++) {
       tbb.putLong(0, (long) Math.pow(i, 2));
@@ -74,6 +75,8 @@ public class ApplyTest {
       tbb.putInt(2, (int) i);
       tbb.putString(3, "Foo" + i);
       tbb.putBoolean(4, i % 2 == 0);
+      tbb.putString(5, "" + (Integer.MAX_VALUE - i));
+      tbb.putString(6, "" + (Long.MAX_VALUE - i));
     }
     ImmutableList.Builder<Expression> Expressions = ImmutableList.builder();
 
@@ -82,6 +85,8 @@ public class ApplyTest {
     ExpressionOperator varc = new VariableExpression(2);
     ExpressionOperator vard = new VariableExpression(3);
     ExpressionOperator vare = new VariableExpression(4);
+    ExpressionOperator varf = new VariableExpression(5);
+    ExpressionOperator varg = new VariableExpression(6);
 
     {
       // Expression: Math.sqrt(a);
@@ -299,6 +304,20 @@ public class ApplyTest {
       Expressions.add(expr);
     }
 
+    {
+      // Expression: toInt(f)
+      ToIntExpression toInt = new ToIntExpression(varf);
+      Expression expr = new Expression("toInt", toInt);
+      Expressions.add(expr);
+    }
+
+    {
+      // Expression: toLong(g)
+      ToLongExpression toLong = new ToLongExpression(varg);
+      Expression expr = new Expression("toLong", toLong);
+      Expressions.add(expr);
+    }
+
     Apply apply = new Apply(new TupleSource(tbb), Expressions.build());
 
     final int nodeId = 3;
@@ -309,7 +328,7 @@ public class ApplyTest {
     while (!apply.eos()) {
       result = apply.nextReady();
       if (result != null) {
-        assertEquals(21, result.getSchema().numColumns());
+        assertEquals(23, result.getSchema().numColumns());
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(0));
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(1));
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(2));
@@ -331,6 +350,8 @@ public class ApplyTest {
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(18));
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(19));
         assertEquals(Type.STRING_TYPE, result.getSchema().getColumnType(20));
+        assertEquals(Type.INT_TYPE, result.getSchema().getColumnType(21));
+        assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(22));
 
         assertEquals("sqrt", result.getSchema().getColumnName(0));
         assertEquals("simpleNestedExpression", result.getSchema().getColumnName(1));
@@ -353,6 +374,8 @@ public class ApplyTest {
         assertEquals("max", result.getSchema().getColumnName(18));
         assertEquals("min", result.getSchema().getColumnName(19));
         assertEquals("substr", result.getSchema().getColumnName(20));
+        assertEquals("toInt", result.getSchema().getColumnName(21));
+        assertEquals("toLong", result.getSchema().getColumnName(22));
 
         for (int curI = 0; curI < result.numTuples(); curI++) {
           long i = curI + resultSize;
@@ -361,6 +384,8 @@ public class ApplyTest {
           int c = (int) i;
           String d = "Foo" + i;
           boolean e = i % 2 == 0;
+          int f = Integer.MAX_VALUE - (int) i;
+          long g = Long.MAX_VALUE - i;
           assertEquals(i, result.getDouble(0, curI), tolerance);
           assertEquals((b + c) * (b - c), result.getLong(1, curI));
           assertEquals(Math.sqrt(Math.pow(a, 2) + Math.pow(b, 2)), result.getDouble(2, curI), tolerance);
@@ -383,6 +408,8 @@ public class ApplyTest {
           assertEquals(Math.max(a, c), result.getLong(18, curI));
           assertEquals(Math.min(a, c), result.getLong(19, curI));
           assertEquals(d.substring(0, 4), result.getString(20, curI));
+          assertEquals(f, result.getInt(21, curI));
+          assertEquals(g, result.getLong(22, curI));
         }
         resultSize += result.numTuples();
       }
