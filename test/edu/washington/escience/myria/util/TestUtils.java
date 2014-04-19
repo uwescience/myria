@@ -457,7 +457,7 @@ public final class TestUtils {
     final long[] result = new long[size];
     final long top = max - min + 1;
     for (int i = 0; i < size; i++) {
-      result[i] = getRandom().nextLong() % top + min;
+      result[i] = Math.abs(getRandom().nextLong() % top) + min;
     }
     return result;
   }
