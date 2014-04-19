@@ -129,12 +129,14 @@ public class CastExpression extends BinaryExpression {
   }
 
   /**
-   * @param toTypeStr string of the type converted to.
-   * @param parameters parameters.
-   * @return string that used for numeric type convert.
+   * Returns the string for a primitive cast: '((' + targetType + ')' + left + ')'.
+   * 
+   * @param targetType string of the type to be casted to.
+   * @param parameters parameters that are needed to determine the output type.
+   * @return string that used for numeric type cast.
    */
-  private String getNumTypeConvertStr(final String toTypeStr, final ExpressionOperatorParameter parameters) {
-    return new StringBuilder().append("((").append(toTypeStr).append(")(").append(getLeft().getJavaString(parameters))
+  private String getPrimitiveTypeCastString(final String targetType, final ExpressionOperatorParameter parameters) {
+    return new StringBuilder().append("((").append(targetType).append(")(").append(getLeft().getJavaString(parameters))
         .append("))").toString();
   }
 
@@ -145,13 +147,13 @@ public class CastExpression extends BinaryExpression {
     // use primitive type conversion for efficiency.
     switch (getCastType(castFrom, castTo)) {
       case NUMTOINT:
-        return getNumTypeConvertStr("int", parameters);
+        return getPrimitiveTypeCastString("int", parameters);
       case NUMTOFLOAT:
-        return getNumTypeConvertStr("float", parameters);
+        return getPrimitiveTypeCastString("float", parameters);
       case NUMTODOUBLE:
-        return getNumTypeConvertStr("double", parameters);
+        return getPrimitiveTypeCastString("double", parameters);
       case NUMTOLONG:
-        return getNumTypeConvertStr("long", parameters);
+        return getPrimitiveTypeCastString("long", parameters);
       case TOSTR:
         return getLeftFunctionCallString("String.valueOf", parameters);
       case STRTOINT:
