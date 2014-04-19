@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.expression;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
@@ -12,6 +13,52 @@ public class CastExpression extends BinaryExpression {
 
   /***/
   private static final long serialVersionUID = 1L;
+
+  /**
+   * Type of casting.
+   */
+  private enum CastType {
+    /**
+     * from number to int.
+     */
+    NUMTOINT,
+    /**
+     * from number to float.
+     */
+    NUMTOFLOAT,
+    /**
+     * from number to double.
+     */
+    NUMTODOUBLE,
+    /**
+     * from number to long.
+     */
+    NUMTOLONG,
+    /**
+     * from anything to string.
+     */
+    TOSTR,
+    /**
+     * from string to int.
+     */
+    STRTOINT,
+    /**
+     * from string to float.
+     */
+    STRTOFLOAT,
+    /**
+     * from string to double.
+     */
+    STRTODOUBLE,
+    /**
+     * from string to long.
+     */
+    STRTOLONG,
+    /**
+     * unsupported cast.
+     */
+    UNSUPPORTED,
+  }
 
   /**
    * This is not really unused, it's used automagically by Jackson deserialization.
@@ -32,31 +79,77 @@ public class CastExpression extends BinaryExpression {
 
   @Override
   public Type getOutputType(final ExpressionOperatorParameter parameters) {
-    // TODO support more than just casting from object, i.e. from string to int
     final Type castFrom = getLeft().getOutputType(parameters);
     final Type castTo = getRight().getOutputType(parameters);
-    if (isSimpleCast(castFrom, castTo)) {
+    if (getCastType(castFrom, castTo) != CastType.UNSUPPORTED) {
       return castTo;
     } else {
-      throw new IllegalStateException(String.format("Cannot cast from %s to %s", castFrom, castTo));
+      throw new IllegalStateException(String.format("Cast from %s to %s is not supported.", castFrom, castTo));
     }
   }
 
   /**
    * @param castTo the type that we cast to
    * @param castFrom the type that we cast from
-   * @return true if the cast can be done using value of
+   * @return type of cast
    */
-  private boolean isSimpleCast(final Type castFrom, final Type castTo) {
-    return (castFrom == Type.INT_TYPE || castFrom == Type.FLOAT_TYPE || castFrom == Type.DOUBLE_TYPE || castFrom == Type.LONG_TYPE)
-        && (castTo == Type.INT_TYPE || castTo == Type.FLOAT_TYPE || castTo == Type.DOUBLE_TYPE || castTo == Type.LONG_TYPE);
+  private CastType getCastType(final Type castFrom, final Type castTo) {
+    ImmutableList<Type> numericTypes =
+        ImmutableList.of(Type.INT_TYPE, Type.FLOAT_TYPE, Type.DOUBLE_TYPE, Type.LONG_TYPE);
+    if (castTo == Type.STRING_TYPE) {
+      return CastType.TOSTR;
+    } else if (numericTypes.contains(castFrom)) {
+      switch (castTo) {
+        case INT_TYPE:
+          return CastType.NUMTOINT;
+        case FLOAT_TYPE:
+          return CastType.NUMTOFLOAT;
+        case DOUBLE_TYPE:
+          return CastType.NUMTODOUBLE;
+        case LONG_TYPE:
+          return CastType.NUMTOLONG;
+        default:
+          break;
+      }
+    }
+    return CastType.UNSUPPORTED;
   }
 
   @Override
   public String getJavaString(final ExpressionOperatorParameter parameters) {
-    // final Type castFrom = getLeft().getOutputType(schema, stateSchema);
+    final Type castFrom = getLeft().getOutputType(parameters);
     final Type castTo = getRight().getOutputType(parameters);
-    return new StringBuilder().append("(").append(castTo.toJavaObjectType().getSimpleName()).append(".valueOf(")
-        .append(getLeft().getJavaString(parameters)).append("))").toString();
+    // use primitive type conversion for efficiency.
+    switch (getCastType(castFrom, castTo)) {
+      case NUMTOINT:
+        return new StringBuilder().append("((int)(").append(getLeft().getJavaString(parameters)).append("))")
+            .toString();
+      case NUMTOFLOAT:
+        return new StringBuilder().append("((float)(").append(getLeft().getJavaString(parameters)).append("))")
+            .toString();
+      case NUMTODOUBLE:
+        return new StringBuilder().append("((double)(").append(getLeft().getJavaString(parameters)).append("))")
+            .toString();
+      case NUMTOLONG:
+        return new StringBuilder().append("((long)(").append(getLeft().getJavaString(parameters)).append("))")
+            .toString();
+      case TOSTR:
+        return new StringBuilder().append(getLeft().getJavaString(parameters)).append(".toString()").toString();
+      case STRTOINT:
+        return new StringBuilder().append("Integer.parseInt(").append(getLeft().getJavaString(parameters)).append(")")
+            .toString();
+      case STRTOFLOAT:
+        return new StringBuilder().append("Float.parseFloat(").append(getLeft().getJavaString(parameters)).append(")")
+            .toString();
+      case STRTODOUBLE:
+        return new StringBuilder().append("Double.parseDouble(").append(getLeft().getJavaString(parameters))
+            .append(")").toString();
+      case STRTOLONG:
+        return new StringBuilder().append("Long.parseLong(").append(getLeft().getJavaString(parameters)).append(")")
+            .toString();
+      default:
+        throw new IllegalStateException("should not reach here.");
+    }
+
   }
 }
