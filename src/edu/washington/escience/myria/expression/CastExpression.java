@@ -128,6 +128,16 @@ public class CastExpression extends BinaryExpression {
     return CastType.UNSUPPORTED;
   }
 
+  /**
+   * @param toTypeStr string of the type converted to.
+   * @param parameters parameters.
+   * @return string that used for numeric type convert.
+   */
+  private String getNumTypeConvertStr(final String toTypeStr, final ExpressionOperatorParameter parameters) {
+    return new StringBuilder().append("((").append(toTypeStr).append(")(").append(getLeft().getJavaString(parameters))
+        .append("))").toString();
+  }
+
   @Override
   public String getJavaString(final ExpressionOperatorParameter parameters) {
     final Type castFrom = getLeft().getOutputType(parameters);
@@ -135,32 +145,23 @@ public class CastExpression extends BinaryExpression {
     // use primitive type conversion for efficiency.
     switch (getCastType(castFrom, castTo)) {
       case NUMTOINT:
-        return new StringBuilder().append("((int)(").append(getLeft().getJavaString(parameters)).append("))")
-            .toString();
+        return getNumTypeConvertStr("int", parameters);
       case NUMTOFLOAT:
-        return new StringBuilder().append("((float)(").append(getLeft().getJavaString(parameters)).append("))")
-            .toString();
+        return getNumTypeConvertStr("float", parameters);
       case NUMTODOUBLE:
-        return new StringBuilder().append("((double)(").append(getLeft().getJavaString(parameters)).append("))")
-            .toString();
+        return getNumTypeConvertStr("double", parameters);
       case NUMTOLONG:
-        return new StringBuilder().append("((long)(").append(getLeft().getJavaString(parameters)).append("))")
-            .toString();
+        return getNumTypeConvertStr("long", parameters);
       case TOSTR:
-        return new StringBuilder().append("String.valueOf(").append(getLeft().getJavaString(parameters)).append(")")
-            .toString();
+        return getLeftFunctionCallString("String.valueOf", parameters);
       case STRTOINT:
-        return new StringBuilder().append("Integer.parseInt(").append(getLeft().getJavaString(parameters)).append(")")
-            .toString();
+        return getLeftFunctionCallString("Integer.parseInt", parameters);
       case STRTOFLOAT:
-        return new StringBuilder().append("Float.parseFloat(").append(getLeft().getJavaString(parameters)).append(")")
-            .toString();
+        return getLeftFunctionCallString("Float.parseFloat", parameters);
       case STRTODOUBLE:
-        return new StringBuilder().append("Double.parseDouble(").append(getLeft().getJavaString(parameters))
-            .append(")").toString();
+        return getLeftFunctionCallString("Double.parseDouble", parameters);
       case STRTOLONG:
-        return new StringBuilder().append("Long.parseLong(").append(getLeft().getJavaString(parameters)).append(")")
-            .toString();
+        return getLeftFunctionCallString("Long.parseLong", parameters);
       default:
         throw new IllegalStateException("should not reach here.");
     }
