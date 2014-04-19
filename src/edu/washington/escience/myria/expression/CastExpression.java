@@ -111,6 +111,19 @@ public class CastExpression extends BinaryExpression {
         default:
           break;
       }
+    } else if (castFrom == Type.STRING_TYPE) {
+      switch (castTo) {
+        case INT_TYPE:
+          return CastType.STRTOINT;
+        case FLOAT_TYPE:
+          return CastType.STRTOFLOAT;
+        case DOUBLE_TYPE:
+          return CastType.STRTODOUBLE;
+        case LONG_TYPE:
+          return CastType.STRTOLONG;
+        default:
+          break;
+      }
     }
     return CastType.UNSUPPORTED;
   }
@@ -134,7 +147,8 @@ public class CastExpression extends BinaryExpression {
         return new StringBuilder().append("((long)(").append(getLeft().getJavaString(parameters)).append("))")
             .toString();
       case TOSTR:
-        return new StringBuilder().append(getLeft().getJavaString(parameters)).append(".toString()").toString();
+        return new StringBuilder().append("String.valueOf(").append(getLeft().getJavaString(parameters)).append(")")
+            .toString();
       case STRTOINT:
         return new StringBuilder().append("Integer.parseInt(").append(getLeft().getJavaString(parameters)).append(")")
             .toString();
