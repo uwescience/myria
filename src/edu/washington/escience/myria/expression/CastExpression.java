@@ -81,11 +81,9 @@ public class CastExpression extends BinaryExpression {
   public Type getOutputType(final ExpressionOperatorParameter parameters) {
     final Type castFrom = getLeft().getOutputType(parameters);
     final Type castTo = getRight().getOutputType(parameters);
-    if (getCastType(castFrom, castTo) != CastType.UNSUPPORTED) {
-      return castTo;
-    } else {
-      throw new IllegalStateException(String.format("Cast from %s to %s is not supported.", castFrom, castTo));
-    }
+    Preconditions.checkArgument(getCastType(castFrom, castTo) != CastType.UNSUPPORTED,
+        "Cast from %s to %s is not supported.", castFrom, castTo);
+    return castTo;
   }
 
   /**

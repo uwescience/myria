@@ -735,6 +735,12 @@ public class ApplyTest {
   }
 
   @Test(expected = IllegalArgumentException.class)
+  public void unsupportedCast() throws IllegalArgumentException {
+    ExpressionOperator cast = new CastExpression(new ConstantExpression(12), new TypeExpression(Type.DATETIME_TYPE));
+    cast.getOutputType(new ExpressionOperatorParameter());
+  }
+
+  @Test(expected = IllegalArgumentException.class)
   public void conditionalNeedsBooleancondition() throws IllegalArgumentException {
     ExpressionOperator a = new ConstantExpression(Type.INT_TYPE, "1");
     ConditionalExpression conditional = new ConditionalExpression(a, a, a);
