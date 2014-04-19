@@ -596,41 +596,148 @@ public class ApplyTest {
 
   @Test
   public void testCast() throws DbException {
-    final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE), ImmutableList.of("number"));
+    final Schema schema =
+        new Schema(ImmutableList.of(Type.INT_TYPE, Type.LONG_TYPE, Type.FLOAT_TYPE, Type.DOUBLE_TYPE, Type.STRING_TYPE,
+            Type.STRING_TYPE, Type.STRING_TYPE, Type.STRING_TYPE), ImmutableList.of("int", "long", "float", "double",
+            "intstr", "longstr", "floatstr", "doublestr"));
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
 
-    final int[] ids = TestUtils.randomInt(0, 1000, SMALL_NUM_TUPLES);
+    final int[] ints = TestUtils.randomInt(0, Integer.MAX_VALUE - 1, SMALL_NUM_TUPLES);
+    final long[] longs = TestUtils.randomLong(0, Long.MAX_VALUE - 1, SMALL_NUM_TUPLES);
+    final float[] floats = TestUtils.randomFloat(0, 1000, SMALL_NUM_TUPLES);
+    final double[] doubles = TestUtils.randomDouble(0, 1000, SMALL_NUM_TUPLES);
 
     for (int i = 0; i < SMALL_NUM_TUPLES; i++) {
-      tbb.putInt(0, ids[i]);
+      tbb.putInt(0, ints[i]);
+      tbb.putLong(1, longs[i]);
+      tbb.putFloat(2, floats[i]);
+      tbb.putDouble(3, doubles[i]);
+      tbb.putString(4, String.valueOf(ints[i]));
+      tbb.putString(5, String.valueOf(longs[i]));
+      tbb.putString(6, String.valueOf(floats[i]));
+      tbb.putString(7, String.valueOf(doubles[i]));
     }
 
     ImmutableList.Builder<Expression> Expressions = ImmutableList.builder();
 
-    Expression expr =
-        new Expression("castedNumber",
-            new CastExpression(new VariableExpression(0), new TypeExpression(Type.LONG_TYPE)));
-    Expressions.add(expr);
+    ExpressionOperator vara = new VariableExpression(0);
+    ExpressionOperator varb = new VariableExpression(1);
+    ExpressionOperator varc = new VariableExpression(2);
+    ExpressionOperator vard = new VariableExpression(3);
+    ExpressionOperator vare = new VariableExpression(4);
+    ExpressionOperator varf = new VariableExpression(5);
+    ExpressionOperator varg = new VariableExpression(6);
+    ExpressionOperator varh = new VariableExpression(7);
+    {
+      // cast int to long.
+      Expression expr = new Expression("intToLong", new CastExpression(vara, new TypeExpression(Type.LONG_TYPE)));
+      Expressions.add(expr);
+    }
+    {
+      // cast long to int.
+      Expression expr = new Expression("LongToInt", new CastExpression(varb, new TypeExpression(Type.INT_TYPE)));
+      Expressions.add(expr);
+    }
 
+    {
+      // cast double to float.
+      Expression expr = new Expression("doubleToFloat", new CastExpression(vard, new TypeExpression(Type.FLOAT_TYPE)));
+      Expressions.add(expr);
+    }
+    {
+      // cast float to double
+      Expression expr = new Expression("FloatToDouble", new CastExpression(varc, new TypeExpression(Type.DOUBLE_TYPE)));
+      Expressions.add(expr);
+    }
+    {
+      // cast int to string.
+      Expression expr = new Expression("intToStr", new CastExpression(vara, new TypeExpression(Type.STRING_TYPE)));
+      Expressions.add(expr);
+    }
+    {
+      // cast long to string.
+      Expression expr = new Expression("longToStr", new CastExpression(varb, new TypeExpression(Type.STRING_TYPE)));
+      Expressions.add(expr);
+    }
+    {
+      // cast float to string.
+      Expression expr = new Expression("floatToStr", new CastExpression(varc, new TypeExpression(Type.STRING_TYPE)));
+      Expressions.add(expr);
+    }
+    {
+      // cast double to string.
+      Expression expr = new Expression("doubleToStr", new CastExpression(vard, new TypeExpression(Type.STRING_TYPE)));
+      Expressions.add(expr);
+    }
+    {
+      // cast string to int.
+      Expression expr = new Expression("strToInt", new CastExpression(vare, new TypeExpression(Type.INT_TYPE)));
+      Expressions.add(expr);
+    }
+    {
+      // cast string to long.
+      Expression expr = new Expression("strToLong", new CastExpression(varf, new TypeExpression(Type.LONG_TYPE)));
+      Expressions.add(expr);
+    }
+    {
+      // cast string to float.
+      Expression expr = new Expression("strToFloat", new CastExpression(varg, new TypeExpression(Type.FLOAT_TYPE)));
+      Expressions.add(expr);
+    }
+    {
+      // cast string to double.
+      Expression expr = new Expression("strToDouble", new CastExpression(varh, new TypeExpression(Type.DOUBLE_TYPE)));
+      Expressions.add(expr);
+    }
     Apply apply = new Apply(new TupleSource(tbb), Expressions.build());
 
     apply.open(TestEnvVars.get());
     TupleBatch result;
     int resultSize = 0;
+    double doubleTolerance = 0.0000001;
+    float floatTolerance = (float) 0.00001;
     while (!apply.eos()) {
       result = apply.nextReady();
       if (result != null) {
-        assertEquals(1, result.getSchema().numColumns());
+        assertEquals(12, result.getSchema().numColumns());
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(0));
+        assertEquals(Type.INT_TYPE, result.getSchema().getColumnType(1));
+        assertEquals(Type.FLOAT_TYPE, result.getSchema().getColumnType(2));
+        assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(3));
+        assertEquals(Type.STRING_TYPE, result.getSchema().getColumnType(4));
+        assertEquals(Type.STRING_TYPE, result.getSchema().getColumnType(5));
+        assertEquals(Type.STRING_TYPE, result.getSchema().getColumnType(6));
+        assertEquals(Type.STRING_TYPE, result.getSchema().getColumnType(7));
+        assertEquals(Type.INT_TYPE, result.getSchema().getColumnType(8));
+        assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(9));
+        assertEquals(Type.FLOAT_TYPE, result.getSchema().getColumnType(10));
+        assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(11));
 
         for (int row = 0; row < result.numTuples(); row++) {
-          assertEquals(ids[row], result.getLong(0, row));
+          assertEquals(ints[row], result.getLong(0, row));
+          assertEquals((int) longs[row], result.getInt(1, row));
+          assertEquals((float) doubles[row], result.getFloat(2, row), floatTolerance);
+          assertEquals(floats[row], result.getDouble(3, row), doubleTolerance);
+          assertEquals(String.valueOf(ints[row]), result.getString(4, row));
+          assertEquals(String.valueOf(longs[row]), result.getString(5, row));
+          assertEquals(String.valueOf(floats[row]), result.getString(6, row));
+          assertEquals(String.valueOf(doubles[row]), result.getString(7, row));
+          assertEquals(ints[row], result.getInt(8, row));
+          assertEquals(longs[row], result.getLong(9, row));
+          assertEquals(floats[row], result.getFloat(10, row), floatTolerance);
+          assertEquals(doubles[row], result.getDouble(11, row), doubleTolerance);
         }
         resultSize += result.numTuples();
       }
     }
     assertEquals(SMALL_NUM_TUPLES, resultSize);
     apply.close();
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void unsupportedCast() throws IllegalArgumentException {
+    ExpressionOperator cast = new CastExpression(new ConstantExpression(12), new TypeExpression(Type.DATETIME_TYPE));
+    cast.getOutputType(new ExpressionOperatorParameter());
   }
 
   @Test(expected = IllegalArgumentException.class)

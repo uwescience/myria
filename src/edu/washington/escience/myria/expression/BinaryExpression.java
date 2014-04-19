@@ -91,7 +91,7 @@ public abstract class BinaryExpression extends ExpressionOperator {
   }
 
   /**
-   * Returns the function call binary string: functionName + '(' + left + ',' + right + ")". E.g, for
+   * Returns the function call binary string: functionName + '(' + left + ',' + right + ')'. E.g, for
    * {@link PowExpression}, <code>functionName</code> is <code>"Math.pow"</code>.
    * 
    * @param functionName the string representation of the Java function name.
@@ -102,6 +102,19 @@ public abstract class BinaryExpression extends ExpressionOperator {
       final ExpressionOperatorParameter parameters) {
     return new StringBuilder(functionName).append('(').append(getLeft().getJavaString(parameters)).append(',').append(
         getRight().getJavaString(parameters)).append(')').toString();
+  }
+
+  /**
+   * Returns the left function call string: functionName + '(' + left+ ')'.
+   * 
+   * @param functionName the string representation of the Java function name.
+   * @param parameters parameters that are needed to create the java expression
+   * @return the Java string for this operator.
+   */
+  protected final String getLeftFunctionCallString(final String functionName,
+      final ExpressionOperatorParameter parameters) {
+    return new StringBuilder(functionName).append('(').append(getLeft().getJavaString(parameters)).append(')')
+        .toString();
   }
 
   /**

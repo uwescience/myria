@@ -457,7 +457,7 @@ public final class TestUtils {
     final long[] result = new long[size];
     final long top = max - min + 1;
     for (int i = 0; i < size; i++) {
-      result[i] = getRandom().nextInt((int) top) + min;
+      result[i] = Math.abs(getRandom().nextLong() % top) + min;
     }
     return result;
   }
@@ -467,6 +467,15 @@ public final class TestUtils {
     final float range = max - min;
     for (int i = 0; i < size; i++) {
       result[i] = getRandom().nextFloat() * range + min;
+    }
+    return result;
+  }
+
+  public static double[] randomDouble(final double min, final double max, final int size) {
+    final double[] result = new double[size];
+    final double range = max - min;
+    for (int i = 0; i < size; i++) {
+      result[i] = getRandom().nextDouble() * range + min;
     }
     return result;
   }
