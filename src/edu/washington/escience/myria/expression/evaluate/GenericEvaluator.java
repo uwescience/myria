@@ -15,6 +15,7 @@ import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.ColumnFactory;
 import edu.washington.escience.myria.column.builder.WritableColumn;
 import edu.washington.escience.myria.expression.Expression;
+import edu.washington.escience.myria.expression.ExpressionClassLoader;
 import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.StateExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
@@ -67,6 +68,8 @@ public class GenericEvaluator extends Evaluator {
     IScriptEvaluator se;
     try {
       se = CompilerFactoryFactory.getDefaultCompilerFactory().newExpressionEvaluator();
+      System.err.println("here 2");
+      se.setParentClassLoader(ExpressionClassLoader.getInstance());
     } catch (Exception e) {
       LOGGER.error("Could not create expression evaluator", e);
       throw new DbException("Could not create expression evaluator", e);

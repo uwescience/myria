@@ -10,6 +10,7 @@ import com.google.common.base.Preconditions;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.Expression;
+import edu.washington.escience.myria.expression.ExpressionClassLoader;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
@@ -41,7 +42,7 @@ public class BooleanEvaluator extends Evaluator {
   public void compile() throws DbException {
     try {
       IScriptEvaluator se = CompilerFactoryFactory.getDefaultCompilerFactory().newExpressionEvaluator();
-
+      se.setParentClassLoader(ExpressionClassLoader.getInstance());
       evaluator =
           (BooleanEvalInterface) se.createFastEvaluator(getJavaExpression(), BooleanEvalInterface.class, new String[] {
               Expression.TB, Expression.ROW });
