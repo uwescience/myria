@@ -114,7 +114,7 @@ public final class QuerySubTreeTask {
    * Record the milliseconds so that we can calculate the difference to the worker initialization in
    * {@link ProfilingLogger}.
    */
-  private volatile long beginMilliseconds;
+  private volatile long beginMilliseconds = 0;
 
   /**
    * @return the task execution future.
