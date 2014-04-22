@@ -4,9 +4,9 @@ import java.io.Serializable;
 
 import org.joda.time.DateTime;
 
-import edu.washington.escience.myria.ReadableColumn;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.storage.ReadableColumn;
 
 /**
  * A mutable column of a batch of tuples.

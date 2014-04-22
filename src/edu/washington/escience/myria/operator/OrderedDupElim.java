@@ -8,7 +8,8 @@ import javax.annotation.Nullable;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleUtils;
 
 /**
  * A Duplicate Elimination Operator that works on ordered input.
@@ -90,7 +91,8 @@ public final class OrderedDupElim extends UnaryOperator {
 
     BitSet output = new BitSet(tb.numTuples());
     for (int row = 0; row < tb.numTuples(); ++row) {
-      if (lastTupleBatch == null || !tb.tupleMatches(row, invSortColumns, lastTupleBatch, lastTupleRow, invSortColumns)) {
+      if (lastTupleBatch == null
+          || !TupleUtils.tupleEquals(tb, invSortColumns, row, lastTupleBatch, invSortColumns, lastTupleRow)) {
         output.set(row);
         lastTupleBatch = tb;
         lastTupleRow = row;

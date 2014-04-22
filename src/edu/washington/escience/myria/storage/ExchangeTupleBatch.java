@@ -1,7 +1,8 @@
-package edu.washington.escience.myria;
+package edu.washington.escience.myria.storage;
 
 import com.google.common.collect.ImmutableList;
 
+import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.column.Column;
 
 /**

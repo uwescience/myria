@@ -13,6 +13,7 @@ import org.joda.time.DateTime;
 import com.google.common.collect.ImmutableList;
 import com.sun.jersey.json.impl.writer.JsonEncoder;
 
+import edu.washington.escience.myria.storage.ReadableTable;
 import edu.washington.escience.myria.util.DateTimeUtils;
 
 /**

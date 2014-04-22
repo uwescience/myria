@@ -39,6 +39,7 @@ def rm_deployment(config):
         raise Exception("Error removing directory on master %s" \
                 % (hostname,))
 
+
     for (i, worker) in enumerate(workers):
         # Workers are numbered from 1, not 0
         worker_id = i + 1
@@ -49,6 +50,7 @@ def rm_deployment(config):
                 % (path, description), username):
             raise Exception("Error removing directory on worker %d %s" \
                     % (worker_id, hostname))
+
 
 def main(argv):
     # Usage

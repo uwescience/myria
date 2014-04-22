@@ -1,11 +1,15 @@
 package edu.washington.escience.myria.operator.agg;
 
+import java.util.Objects;
+
 import com.google.common.collect.ImmutableList;
+import com.google.common.math.LongMath;
 
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.storage.AppendableTable;
+import edu.washington.escience.myria.storage.ReadableColumn;
+import edu.washington.escience.myria.storage.ReadableTable;
 
 /**
  * Knows how to compute some aggregates over a BooleanColumn.
@@ -34,23 +38,11 @@ public final class BooleanAggregator implements Aggregator<Boolean> {
   public static final int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT;
 
   /**
-   * This serves as the copy constructor.
-   * 
-   * @param aggOps the aggregate operation to simultaneously compute.
-   * @param resultSchema the result schema.
-   * */
-  private BooleanAggregator(final int aggOps, final Schema resultSchema) {
-    this.resultSchema = resultSchema;
-    this.aggOps = aggOps;
-    count = 0;
-  }
-
-  /**
-   * @param afield only count is supported on boolean columns, so afield is actually useless.
    * @param aFieldName aggregate field name for use in output schema.
    * @param aggOps the aggregate operation to simultaneously compute.
    * */
-  public BooleanAggregator(final int afield, final String aFieldName, final int aggOps) {
+  public BooleanAggregator(final String aFieldName, final int aggOps) {
+    Objects.requireNonNull(aFieldName, "aFieldName");
     if (aggOps <= 0) {
       throw new IllegalArgumentException("No aggregation operations are selected");
     }
@@ -71,37 +63,33 @@ public final class BooleanAggregator implements Aggregator<Boolean> {
   }
 
   @Override
-  public void add(final TupleBatch tup) {
-    count += tup.numTuples();
+  public void add(final ReadableTable from, final int fromColumn) {
+    Objects.requireNonNull(from, "from");
+    add(from.asColumn(fromColumn));
   }
 
-  @Override
-  public void add(final Boolean value) {
-    if (value != null) {
-      count++;
+  /**
+   * Add the specified value to this aggregator.
+   * 
+   * @param value the value to be added
+   */
+  public void addBoolean(final boolean value) {
+    if (AggUtils.needsCount(aggOps)) {
+      count = LongMath.checkedAdd(count, 1);
     }
   }
 
   @Override
-  public void addObj(final Object obj) {
-    this.add((Boolean) obj);
+  public void add(final Boolean value) {
+    addBoolean(Objects.requireNonNull(value, "value"));
   }
 
   @Override
-  public int availableAgg() {
-    return AVAILABLE_AGG;
-  }
-
-  @Override
-  public BooleanAggregator freshCopyYourself() {
-    return new BooleanAggregator(aggOps, resultSchema);
-  }
-
-  @Override
-  public void getResult(final TupleBatchBuffer outputBuffer, final int fromIndex) {
-    int idx = fromIndex;
+  public void getResult(final AppendableTable dest, final int destColumn) {
+    Objects.requireNonNull(dest, "dest");
+    int idx = destColumn;
     if ((aggOps & AGG_OP_COUNT) != 0) {
-      outputBuffer.putLong(idx, count);
+      dest.putLong(idx, count);
       idx++;
     }
   }
@@ -109,5 +97,24 @@ public final class BooleanAggregator implements Aggregator<Boolean> {
   @Override
   public Schema getResultSchema() {
     return resultSchema;
+  }
+
+  @Override
+  public void add(final ReadableTable table, final int column, final int row) {
+    Objects.requireNonNull(table, "table");
+    add(table.getBoolean(column, row));
+  }
+
+  @Override
+  public Type getType() {
+    return Type.BOOLEAN_TYPE;
+  }
+
+  @Override
+  public void add(final ReadableColumn from) {
+    Objects.requireNonNull(from, "from");
+    if (AggUtils.needsCount(aggOps)) {
+      count = LongMath.checkedAdd(count, from.size());
+    }
   }
 }

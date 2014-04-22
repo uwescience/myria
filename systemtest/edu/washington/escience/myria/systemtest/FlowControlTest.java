@@ -13,8 +13,6 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
@@ -23,6 +21,8 @@ import edu.washington.escience.myria.operator.failures.DelayInjector;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestUtils;
 
 public class FlowControlTest extends SystemTestBase {
@@ -45,6 +45,10 @@ public class FlowControlTest extends SystemTestBase {
 
   @Test
   public void flowControlTest() throws Exception {
+    if (TestUtils.inTravis()) {
+      System.err.println("Skipping test because in Travis.");
+      return;
+    }
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
     createTable(workerIDs[0], testtableKey, "id long, name varchar(20)");
 
@@ -69,7 +73,7 @@ public class FlowControlTest extends SystemTestBase {
     workerPlans.put(workerIDs[0], new RootOperator[] { cp1 });
 
     final CollectConsumer cc1 = new CollectConsumer(schema, worker1ReceiveID, new int[] { workerIDs[0] });
-    final DelayInjector di = new DelayInjector(1, TimeUnit.SECONDS, cc1);
+    final DelayInjector di = new DelayInjector(50, TimeUnit.MILLISECONDS, cc1);
     final CollectProducer cp2 = new CollectProducer(di, serverReceiveID, MASTER_ID);
 
     workerPlans.put(workerIDs[0], new RootOperator[] { cp1 });

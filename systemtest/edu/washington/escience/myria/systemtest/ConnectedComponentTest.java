@@ -15,8 +15,6 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.operator.DbQueryScan;
@@ -44,6 +42,8 @@ import edu.washington.escience.myria.parallel.PartitionFunction;
 import edu.washington.escience.myria.parallel.QueryFuture;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestUtils;
 import edu.washington.escience.myria.util.Tuple;
 
@@ -251,13 +251,13 @@ public class ConnectedComponentTest extends SystemTestBase {
     SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
 
     if (!failure) {
-      server.submitQuery("", "", "", serverPlan, workerPlans).sync();
+      server.submitQuery("", "", "", serverPlan, workerPlans, false).sync();
     } else {
       workerPlans.get(workerIDs[0]).setFTMode(FTMODE.valueOf("rejoin"));
       workerPlans.get(workerIDs[1]).setFTMode(FTMODE.valueOf("rejoin"));
       serverPlan.setFTMode(FTMODE.valueOf("rejoin"));
 
-      QueryFuture qf = server.submitQuery("", "", "", serverPlan, workerPlans);
+      QueryFuture qf = server.submitQuery("", "", "", serverPlan, workerPlans, false);
       Thread.sleep(1000);
       LOGGER.info("killing worker " + workerIDs[1] + "!");
       workerProcess[1].destroy();

@@ -1,4 +1,4 @@
-package edu.washington.escience.myria;
+package edu.washington.escience.myria.storage;
 
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -9,6 +9,8 @@ import org.joda.time.DateTime;
 
 import com.google.common.base.Preconditions;
 
+import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.BooleanColumnBuilder;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
@@ -30,7 +32,7 @@ import edu.washington.escience.myria.column.mutable.StringMutableColumn;
 
 /** A simplified TupleBatchBuffer which supports random access. Designed for hash tables to use. */
 
-public class TupleBuffer implements ReadableTable, Cloneable {
+public class MutableTupleBuffer implements ReadableTable, AppendableTable, Cloneable {
   /** Format of the emitted tuples. */
   private final Schema schema;
   /** Convenience constant; must match schema.numColumns() and currentColumns.size(). */
@@ -51,7 +53,7 @@ public class TupleBuffer implements ReadableTable, Cloneable {
    * 
    * @param schema specified the columns of the emitted TupleBatch objects.
    */
-  public TupleBuffer(final Schema schema) {
+  public MutableTupleBuffer(final Schema schema) {
     this.schema = Objects.requireNonNull(schema);
     readyTuples = new ArrayList<MutableColumn<?>[]>();
     currentBuildingColumns = ColumnFactory.allocateColumns(schema).toArray(new ColumnBuilder<?>[] {});
@@ -123,7 +125,7 @@ public class TupleBuffer implements ReadableTable, Cloneable {
       throw new IndexOutOfBoundsException();
     }
     if (tupleBatchIndex < readyTuples.size()) {
-      return ((BooleanMutableColumn) (readyTuples.get(tupleBatchIndex)[column])).getBoolean(tupleIndex);
+      return readyTuples.get(tupleBatchIndex)[column].getBoolean(tupleIndex);
     }
     return currentBuildingColumns[column].getBoolean(tupleIndex);
   }
@@ -137,7 +139,7 @@ public class TupleBuffer implements ReadableTable, Cloneable {
       throw new IndexOutOfBoundsException();
     }
     if (tupleBatchIndex < readyTuples.size()) {
-      return ((DoubleMutableColumn) (readyTuples.get(tupleBatchIndex)[column])).getDouble(tupleIndex);
+      return readyTuples.get(tupleBatchIndex)[column].getDouble(tupleIndex);
     }
     return currentBuildingColumns[column].getDouble(tupleIndex);
   }
@@ -151,7 +153,7 @@ public class TupleBuffer implements ReadableTable, Cloneable {
       throw new IndexOutOfBoundsException();
     }
     if (tupleBatchIndex < readyTuples.size()) {
-      return ((FloatMutableColumn) (readyTuples.get(tupleBatchIndex)[column])).getFloat(tupleIndex);
+      return readyTuples.get(tupleBatchIndex)[column].getFloat(tupleIndex);
     }
     return currentBuildingColumns[column].getFloat(tupleIndex);
   }
@@ -165,7 +167,7 @@ public class TupleBuffer implements ReadableTable, Cloneable {
       throw new IndexOutOfBoundsException();
     }
     if (tupleBatchIndex < readyTuples.size()) {
-      return ((LongMutableColumn) (readyTuples.get(tupleBatchIndex)[column])).getLong(tupleIndex);
+      return readyTuples.get(tupleBatchIndex)[column].getLong(tupleIndex);
     }
     return currentBuildingColumns[column].getLong(tupleIndex);
   }
@@ -179,7 +181,7 @@ public class TupleBuffer implements ReadableTable, Cloneable {
       throw new IndexOutOfBoundsException();
     }
     if (tupleBatchIndex < readyTuples.size()) {
-      return ((IntMutableColumn) (readyTuples.get(tupleBatchIndex)[column])).getInt(tupleIndex);
+      return readyTuples.get(tupleBatchIndex)[column].getInt(tupleIndex);
     }
     return currentBuildingColumns[column].getInt(tupleIndex);
   }
@@ -193,7 +195,7 @@ public class TupleBuffer implements ReadableTable, Cloneable {
       throw new IndexOutOfBoundsException();
     }
     if (tupleBatchIndex < readyTuples.size()) {
-      return ((StringMutableColumn) (readyTuples.get(tupleBatchIndex)[column])).getString(tupleIndex);
+      return readyTuples.get(tupleBatchIndex)[column].getString(tupleIndex);
     }
     return currentBuildingColumns[column].getString(tupleIndex);
   }
@@ -207,7 +209,7 @@ public class TupleBuffer implements ReadableTable, Cloneable {
       throw new IndexOutOfBoundsException();
     }
     if (tupleBatchIndex < readyTuples.size()) {
-      return ((DateTimeMutableColumn) (readyTuples.get(tupleBatchIndex)[column])).getDateTime(tupleIndex);
+      return readyTuples.get(tupleBatchIndex)[column].getDateTime(tupleIndex);
     }
     return ((DateTimeColumnBuilder) (currentBuildingColumns[column])).getDateTime(tupleIndex);
   }
@@ -242,87 +244,52 @@ public class TupleBuffer implements ReadableTable, Cloneable {
     return numColumns;
   }
 
-  /**
-   * Append the specified value to the specified column.
-   * 
-   * @param column index of the column.
-   * @param value value to be appended.
-   */
+  @Override
   public final void putBoolean(final int column, final boolean value) {
     checkPutIndex(column);
-    ((BooleanColumnBuilder) currentBuildingColumns[column]).appendBoolean(value);
+    currentBuildingColumns[column].appendBoolean(value);
     columnPut(column);
   }
 
-  /**
-   * Append the specified value to the specified column.
-   * 
-   * @param column index of the column.
-   * @param value value to be appended.
-   */
+  @Override
   public final void putDateTime(final int column, final DateTime value) {
     checkPutIndex(column);
-    ((DateTimeColumnBuilder) currentBuildingColumns[column]).appendDateTime(value);
+    currentBuildingColumns[column].appendDateTime(value);
     columnPut(column);
   }
 
-  /**
-   * Append the specified value to the specified column.
-   * 
-   * @param column index of the column.
-   * @param value value to be appended.
-   */
+  @Override
   public final void putDouble(final int column, final double value) {
     checkPutIndex(column);
-    ((DoubleColumnBuilder) currentBuildingColumns[column]).appendDouble(value);
+    currentBuildingColumns[column].appendDouble(value);
     columnPut(column);
   }
 
-  /**
-   * Append the specified value to the specified column.
-   * 
-   * @param column index of the column.
-   * @param value value to be appended.
-   */
+  @Override
   public final void putFloat(final int column, final float value) {
     checkPutIndex(column);
-    ((FloatColumnBuilder) currentBuildingColumns[column]).appendFloat(value);
+    currentBuildingColumns[column].appendFloat(value);
     columnPut(column);
   }
 
-  /**
-   * Append the specified value to the specified column.
-   * 
-   * @param column index of the column.
-   * @param value value to be appended.
-   */
+  @Override
   public final void putInt(final int column, final int value) {
     checkPutIndex(column);
-    ((IntColumnBuilder) currentBuildingColumns[column]).appendInt(value);
+    currentBuildingColumns[column].appendInt(value);
     columnPut(column);
   }
 
-  /**
-   * Append the specified value to the specified column.
-   * 
-   * @param column index of the column.
-   * @param value value to be appended.
-   */
+  @Override
   public final void putLong(final int column, final long value) {
     checkPutIndex(column);
-    ((LongColumnBuilder) currentBuildingColumns[column]).appendLong(value);
+    currentBuildingColumns[column].appendLong(value);
     columnPut(column);
   }
 
-  /**
-   * Append the specified value to the specified column.
-   * 
-   * @param column index of the column.
-   * @param value value to be appended.
-   */
+  @Override
   public final void putString(final int column, final String value) {
     checkPutIndex(column);
-    ((StringColumnBuilder) currentBuildingColumns[column]).appendString(value);
+    currentBuildingColumns[column].appendString(value);
     columnPut(column);
   }
 
@@ -357,48 +324,6 @@ public class TupleBuffer implements ReadableTable, Cloneable {
   }
 
   /**
-   * Compare two cells in two TupleBuffers.
-   * 
-   * @param columnInThisTB column index of the cell in this TupleBuffer.
-   * @param rowInThisTB row index of the cell in this TupleBuffer.
-   * @param columnInComparedTB column index of the compared cell in compared TupleBuffer.
-   * @param rowInComparedTB row index of the compared cell in compared TupleBuffer.
-   * @param comparedTB the compared TupleBuffer.
-   * 
-   * @return compared result.
-   */
-  public final int compare(final int columnInThisTB, final int rowInThisTB, final TupleBuffer comparedTB,
-      final int columnInComparedTB, final int rowInComparedTB) {
-    Preconditions.checkArgument(getSchema().getColumnType(columnInThisTB).equals(
-        comparedTB.getSchema().getColumnType(columnInComparedTB)), "The types of comparing cells are not matched.");
-    switch (getSchema().getColumnType(columnInThisTB)) {
-      case BOOLEAN_TYPE:
-        return Type.compareRaw(getBoolean(columnInThisTB, rowInThisTB), comparedTB.getBoolean(columnInComparedTB,
-            rowInComparedTB));
-      case DOUBLE_TYPE:
-        return Type.compareRaw(getDouble(columnInThisTB, rowInThisTB), comparedTB.getDouble(columnInComparedTB,
-            rowInComparedTB));
-      case FLOAT_TYPE:
-        return Type.compareRaw(getFloat(columnInThisTB, rowInThisTB), comparedTB.getFloat(columnInComparedTB,
-            rowInComparedTB));
-      case INT_TYPE:
-        return Type.compareRaw(getInt(columnInThisTB, rowInThisTB), comparedTB.getInt(columnInComparedTB,
-            rowInComparedTB));
-      case LONG_TYPE:
-        return Type.compareRaw(getLong(columnInThisTB, rowInThisTB), comparedTB.getLong(columnInComparedTB,
-            rowInComparedTB));
-      case STRING_TYPE:
-        return Type.compareRaw(getString(columnInThisTB, rowInThisTB), comparedTB.getString(columnInComparedTB,
-            rowInComparedTB));
-      case DATETIME_TYPE:
-        return Type.compareRaw(getDateTime(columnInThisTB, rowInThisTB), comparedTB.getDateTime(columnInComparedTB,
-            rowInComparedTB));
-    }
-
-    throw new IllegalStateException("Invalid type in TupleBuffer.");
-  }
-
-  /**
    * Append the specified value to the specified destination column in this TupleBatchBuffer from the source column.
    * 
    * @param destColumn which column in this TB the value will be inserted.
@@ -406,32 +331,7 @@ public class TupleBuffer implements ReadableTable, Cloneable {
    * @param sourceRow the row in the source column from which data will be retrieved.
    */
   public final void put(final int destColumn, final Column<?> sourceColumn, final int sourceRow) {
-    checkPutIndex(destColumn);
-    ColumnBuilder<?> dest = currentBuildingColumns[destColumn];
-    switch (dest.getType()) {
-      case BOOLEAN_TYPE:
-        dest.appendBoolean(sourceColumn.getBoolean(sourceRow));
-        break;
-      case DATETIME_TYPE:
-        dest.appendDateTime(sourceColumn.getDateTime(sourceRow));
-        break;
-      case DOUBLE_TYPE:
-        dest.appendDouble(sourceColumn.getDouble(sourceRow));
-        break;
-      case FLOAT_TYPE:
-        dest.appendFloat(sourceColumn.getFloat(sourceRow));
-        break;
-      case INT_TYPE:
-        dest.appendInt(sourceColumn.getInt(sourceRow));
-        break;
-      case LONG_TYPE:
-        dest.appendLong(sourceColumn.getLong(sourceRow));
-        break;
-      case STRING_TYPE:
-        dest.appendString(sourceColumn.getString(sourceRow));
-        break;
-    }
-    columnPut(destColumn);
+    TupleUtils.copyValue(sourceColumn, sourceRow, this, destColumn);
   }
 
   /**
@@ -772,8 +672,8 @@ public class TupleBuffer implements ReadableTable, Cloneable {
   }
 
   @Override
-  public TupleBuffer clone() {
-    TupleBuffer ret = new TupleBuffer(getSchema());
+  public MutableTupleBuffer clone() {
+    MutableTupleBuffer ret = new MutableTupleBuffer(getSchema());
     ret.columnsReady = (BitSet) columnsReady.clone();
     ret.numColumnsReady = numColumnsReady;
     ret.currentInProgressTuples = currentInProgressTuples;
@@ -788,5 +688,10 @@ public class TupleBuffer implements ReadableTable, Cloneable {
       ret.currentBuildingColumns[i] = currentBuildingColumns[i].forkNewBuilder();
     }
     return ret;
+  }
+
+  @Override
+  public ReadableColumn asColumn(final int column) {
+    return new ReadableSubColumn(this, Preconditions.checkElementIndex(column, numColumns));
   }
 }

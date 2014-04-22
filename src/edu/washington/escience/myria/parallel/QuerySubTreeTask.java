@@ -36,11 +36,6 @@ public final class QuerySubTreeTask {
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(QuerySubTreeTask.class.getName());
 
   /**
-   * The logger for profiler.
-   */
-  private static final org.slf4j.Logger PROFILING_LOGGER = org.slf4j.LoggerFactory.getLogger("profile");
-
-  /**
    * The root operator.
    * */
   private final RootOperator root;
@@ -102,13 +97,24 @@ public final class QuerySubTreeTask {
 
   /**
    * The lock mainly to make operator memory consistency.
-   * */
+   */
   private final Object executionLock = new Object();
 
   /**
    * resource manager.
-   * */
+   */
   private volatile TaskResourceManager resourceManager;
+
+  /**
+   * Record nanoseconds so that we can normalize the time in {@link ProfilingLogger}.
+   */
+  private volatile long beginNanoseconds;
+
+  /**
+   * Record the milliseconds so that we can calculate the difference to the worker initialization in
+   * {@link ProfilingLogger}.
+   */
+  private volatile long beginMilliseconds = 0;
 
   /**
    * @return the task execution future.
@@ -365,13 +371,8 @@ public final class QuerySubTreeTask {
    * @return always null. The return value is unused.
    * */
   private Object executeActually() {
-
-    if (getOwnerQuery().isProfilingMode()) {
-      PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:set time", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, ownerQuery
-          .getQueryID(), "startTimeInMS", root.getFragmentId(), System.currentTimeMillis(), 0);
-      PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:set time", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, ownerQuery
-          .getQueryID(), "startTimeInNS", root.getFragmentId(), System.nanoTime(), 0);
-    }
+    beginNanoseconds = System.nanoTime();
+    beginMilliseconds = System.currentTimeMillis();
 
     Throwable failureCause = null;
     if (executionCondition.compareAndSet(EXECUTION_READY | STATE_EXECUTION_REQUESTED, EXECUTION_READY
@@ -671,5 +672,19 @@ public final class QuerySubTreeTask {
    */
   public TaskResourceManager getResourceManager() {
     return resourceManager;
+  }
+
+  /**
+   * @return the nanosecond counter when this task is executed.
+   */
+  public long getBeginNanoseconds() {
+    return beginNanoseconds;
+  }
+
+  /**
+   * @return the time when this task is executed.
+   */
+  public long getBeginMilliseconds() {
+    return beginMilliseconds;
   }
 }

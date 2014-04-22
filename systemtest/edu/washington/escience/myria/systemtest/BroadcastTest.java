@@ -9,8 +9,6 @@ import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
@@ -23,6 +21,8 @@ import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.FixValuePartitionFunction;
 import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
 import edu.washington.escience.myria.parallel.GenericShuffleProducer;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestUtils;
 import edu.washington.escience.myria.util.Tuple;
 

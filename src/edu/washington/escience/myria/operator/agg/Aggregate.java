@@ -8,11 +8,11 @@ import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.UnaryOperator;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 /**
  * The Aggregation operator that computes an aggregate.
@@ -25,7 +25,7 @@ public final class Aggregate extends UnaryOperator {
   private static final long serialVersionUID = 1L;
 
   /** Does the actual aggregation work. */
-  private final Aggregator<?>[] agg;
+  private Aggregator<?>[] agg;
   /** Which fields the aggregate is computed over. */
   private final int[] afields;
   /** Aggregate operators. */
@@ -98,13 +98,6 @@ public final class Aggregate extends UnaryOperator {
   }
 
   @Override
-  protected void cleanup() throws DbException {
-    for (int i = 0; i < agg.length; i++) {
-      agg[i] = agg[i].freshCopyYourself();
-    }
-  }
-
-  @Override
   protected TupleBatch fetchNextReady() throws DbException {
     TupleBatch tb = null;
     final Operator child = getChild();
@@ -114,8 +107,8 @@ public final class Aggregate extends UnaryOperator {
     }
 
     while ((tb = child.nextReady()) != null) {
-      for (final Aggregator<?> ag : agg) {
-        ag.add(tb);
+      for (int i = 0; i < agg.length; ++i) {
+        agg[i].add(tb, afields[i]);
       }
     }
 
@@ -148,34 +141,10 @@ public final class Aggregate extends UnaryOperator {
     final ImmutableList.Builder<Type> gTypes = ImmutableList.builder();
     final ImmutableList.Builder<String> gNames = ImmutableList.builder();
 
-    int idx = 0;
-    for (final int afield : afields) {
-      switch (childSchema.getColumnType(afield)) {
-        case BOOLEAN_TYPE:
-          agg[idx] = new BooleanAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        case INT_TYPE:
-          agg[idx] = new IntegerAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        case LONG_TYPE:
-          agg[idx] = new LongAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        case FLOAT_TYPE:
-          agg[idx] = new FloatAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        case DOUBLE_TYPE:
-          agg[idx] = new DoubleAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        case STRING_TYPE:
-          agg[idx] = new StringAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        case DATETIME_TYPE:
-          agg[idx] = new DateTimeAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-      }
-      gTypes.addAll(agg[idx].getResultSchema().getColumnTypes());
-      gNames.addAll(agg[idx].getResultSchema().getColumnNames());
-      idx++;
+    agg = AggUtils.allocate(childSchema, afields, aggOps);
+    for (final Aggregator<?> a : agg) {
+      gTypes.addAll(a.getResultSchema().getColumnTypes());
+      gNames.addAll(a.getResultSchema().getColumnNames());
     }
     return new Schema(gTypes, gNames);
   }

@@ -13,9 +13,9 @@ import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.io.ByteArraySource;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 public class FileScanTest {
 

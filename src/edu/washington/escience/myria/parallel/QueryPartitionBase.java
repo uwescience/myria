@@ -9,13 +9,13 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.parallel.ipc.FlowControlBagInputBuffer;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.IPCEvent;
 import edu.washington.escience.myria.parallel.ipc.IPCEventListener;
 import edu.washington.escience.myria.parallel.ipc.StreamInputBuffer;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * Implemented basic life cycle management of query partitions and other common stuff.

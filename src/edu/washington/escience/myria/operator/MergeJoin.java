@@ -11,9 +11,10 @@ import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
 
 /**
@@ -263,8 +264,8 @@ public final class MergeJoin extends BinaryOperator {
    * @param rightRow in the right TB
    */
   protected void addToAns(final TupleBatch leftTb, final int leftRow, final TupleBatch rightTb, final int rightRow) {
-    Preconditions.checkArgument(leftTb.tupleCompare(leftCompareIndx, leftRow, rightTb, rightCompareIndx, rightRow,
-        ascending) == 0);
+    Preconditions.checkArgument(TupleUtils.tupleCompare(leftTb, leftCompareIndx, leftRow, rightTb, rightCompareIndx,
+        rightRow, ascending) == 0);
 
     for (int i = 0; i < leftAnswerColumns.length; ++i) {
       ans.put(i, leftTb.getDataColumns().get(leftAnswerColumns[i]), leftRow);
@@ -284,10 +285,13 @@ public final class MergeJoin extends BinaryOperator {
   }
 
   /**
-   * True if a join tuple has been created for the tuples that {@link #leftRowIndex} and {@link #rightRowIndex} point
-   * to.
+   * True if a join tuple has been created for the tuples that {@link #leftRowIndex} points to.
    */
-  private boolean joined;
+  private boolean joinedLeft;
+  /**
+   * True if a join tuple has been created for the tuples that {@link #rightRowIndex} points to.
+   */
+  private boolean joinedRight;
 
   /**
    * Set EOS the next time null is returned from {@link #fetchNextReady()}.
@@ -315,15 +319,15 @@ public final class MergeJoin extends BinaryOperator {
 
     needData = false;
 
-    while (nexttb == null && !deferredEOS && !needData) {
+    while (!deferredEOS && !needData) {
       final int compared =
-          leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex, rightBatches.getLast(), rightCompareIndx,
-              rightRowIndex, ascending);
+          TupleUtils.tupleCompare(leftBatches.getLast(), leftCompareIndx, leftRowIndex, rightBatches.getLast(),
+              rightCompareIndx, rightRowIndex, ascending);
 
       if (compared == 0) {
-        Preconditions.checkState(leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex,
+        Preconditions.checkState(TupleUtils.tupleCompare(leftBatches.getLast(), leftCompareIndx, leftRowIndex,
             rightBatches.getLast(), rightCompareIndx, rightRowIndex, ascending) == 0);
-        Preconditions.checkState(leftBatches.getFirst().tupleCompare(leftCompareIndx, leftBeginIndex,
+        Preconditions.checkState(TupleUtils.tupleCompare(leftBatches.getFirst(), leftCompareIndx, leftBeginIndex,
             rightBatches.getFirst(), rightCompareIndx, rightBeginIndex, ascending) == 0);
         leftAndRightEqual();
       } else if (compared > 0) {
@@ -337,14 +341,22 @@ public final class MergeJoin extends BinaryOperator {
       }
     }
 
+    Preconditions.checkState(deferredEOS || !getLeft().eos() || !getRight().eos(),
+        "deferredEOS should be true if all children are eos");
+
     if (deferredEOS) {
       nexttb = ans.popAny();
-      if (nexttb == null) {
-        setEOS();
-      }
     }
 
     return nexttb;
+  }
+
+  @Override
+  public void checkEOSAndEOI() {
+    if (deferredEOS && ans.numTuples() == 0) {
+      setEOS();
+      return;
+    }
   }
 
   /**
@@ -354,24 +366,25 @@ public final class MergeJoin extends BinaryOperator {
     final Operator left = getLeft();
     final Operator right = getRight();
 
+    if (!joinedLeft & !joinedRight) {
+      addAllToAns(leftBatches.getLast(), rightBatches, leftRowIndex, leftCompareIndx, rightBeginIndex, rightRowIndex);
+      joinedLeft = true;
+      joinedRight = true;
+    } else if (!joinedLeft) {
+      addAllToAns(leftBatches.getLast(), rightBatches, leftRowIndex, leftCompareIndx, rightBeginIndex, rightRowIndex);
+      joinedLeft = true;
+    } else if (!joinedRight) {
+      addAllToAns(rightBatches.getLast(), leftBatches, rightRowIndex, rightCompareIndx, leftBeginIndex, leftRowIndex);
+      joinedRight = true;
+    }
+
     // advance the one with the larger set of equal tuples because this produces fewer join tuples
     // not exact but good approximation
     final int leftSizeOfGroupOfEqualTuples =
         leftRowIndex + TupleBatch.BATCH_SIZE * (leftBatches.size() - 1) - leftBeginIndex;
     final int rightSizeOfGroupOfEqualTuples =
         rightRowIndex + TupleBatch.BATCH_SIZE * (rightBatches.size() - 1) - rightBeginIndex;
-    final boolean joinFromLeft = leftSizeOfGroupOfEqualTuples > rightSizeOfGroupOfEqualTuples;
-
-    if (!joined) {
-      if (joinFromLeft) {
-        addAllToAns(leftBatches.getLast(), rightBatches, leftRowIndex, leftCompareIndx, rightBeginIndex, rightRowIndex);
-      } else {
-        addAllToAns(rightBatches.getLast(), leftBatches, rightRowIndex, rightCompareIndx, leftBeginIndex, leftRowIndex);
-      }
-    }
-    joined = true;
-
-    final boolean advanceLeftFirst = joinFromLeft;
+    final boolean advanceLeftFirst = leftSizeOfGroupOfEqualTuples > rightSizeOfGroupOfEqualTuples;
 
     AdvanceResult r1, r2 = AdvanceResult.INVALID;
     if (advanceLeftFirst) {
@@ -424,7 +437,8 @@ public final class MergeJoin extends BinaryOperator {
         }
         rightBeginIndex = rightRowIndex;
 
-        joined = false;
+        joinedLeft = false;
+        joinedRight = false;
       } else if (r1 == AdvanceResult.NOT_EQUAL && child2.eos() || r2 == AdvanceResult.NOT_EQUAL && child1.eos()
           || left.eos() && right.eos()) {
         deferredEOS = true;
@@ -443,16 +457,18 @@ public final class MergeJoin extends BinaryOperator {
 
     final boolean atLast = leftRowIndex == leftBatches.getLast().numTuples() - 1;
     if (atLast) {
-      if (!left.eos() && leftNotProcessed == null) {
-        TupleBatch tb = left.nextReady();
-        if (tb != null) {
-          leftNotProcessed = tb;
-        } else if (left.eos()) {
-          deferredEOS = true;
-        }
-      }
       if (leftNotProcessed != null) {
         leftMoveFromNotProcessed();
+      } else {
+        if (!left.eos()) {
+          TupleBatch tb = left.nextReady();
+          if (tb != null) {
+            leftNotProcessed = tb;
+          }
+        }
+        if (left.eos()) {
+          deferredEOS = true;
+        }
       }
     } else {
       leftRowIndex++;
@@ -468,16 +484,18 @@ public final class MergeJoin extends BinaryOperator {
 
     final boolean atLast = rightRowIndex == rightBatches.getLast().numTuples() - 1;
     if (atLast) {
-      if (!right.eos() && rightNotProcessed == null) {
-        TupleBatch tb = right.nextReady();
-        if (tb != null) {
-          rightNotProcessed = tb;
-        } else if (right.eos()) {
-          deferredEOS = true;
-        }
-      }
       if (rightNotProcessed != null) {
         rightMoveFromNotProcessed();
+      } else {
+        if (!right.eos()) {
+          TupleBatch tb = right.nextReady();
+          if (tb != null) {
+            rightNotProcessed = tb;
+          }
+        }
+        if (right.eos()) {
+          deferredEOS = true;
+        }
       }
     } else {
       rightRowIndex++;
@@ -547,12 +565,12 @@ public final class MergeJoin extends BinaryOperator {
       }
 
       if (leftNotProcessed != null) {
-        if (leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex, leftNotProcessed, leftCompareIndx, 0,
-            ascending) == 0) {
+        if (TupleUtils.tupleCompare(leftBatches.getLast(), leftCompareIndx, leftRowIndex, leftNotProcessed,
+            leftCompareIndx, 0, ascending) == 0) {
           leftBatches.add(leftNotProcessed);
           leftNotProcessed = null;
           leftRowIndex = 0;
-          joined = false;
+          joinedLeft = false;
           return AdvanceResult.OK;
         } else {
           return AdvanceResult.NOT_EQUAL;
@@ -560,9 +578,10 @@ public final class MergeJoin extends BinaryOperator {
       } else {
         return AdvanceResult.NOT_ENOUGH_DATA;
       }
-    } else if (leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex, leftRowIndex + 1, ascending) == 0) {
+    } else if (TupleUtils.tupleCompare(leftBatches.getLast(), leftCompareIndx, leftRowIndex, leftRowIndex + 1,
+        ascending) == 0) {
       leftRowIndex++;
-      joined = false;
+      joinedLeft = false;
       return AdvanceResult.OK;
     } else {
       return AdvanceResult.NOT_EQUAL;
@@ -585,12 +604,12 @@ public final class MergeJoin extends BinaryOperator {
       }
 
       if (rightNotProcessed != null) {
-        if (rightBatches.getLast().tupleCompare(rightCompareIndx, rightRowIndex, rightNotProcessed, rightCompareIndx,
-            0, ascending) == 0) {
+        if (TupleUtils.tupleCompare(rightBatches.getLast(), rightCompareIndx, rightRowIndex, rightNotProcessed,
+            rightCompareIndx, 0, ascending) == 0) {
           rightBatches.add(rightNotProcessed);
           rightNotProcessed = null;
           rightRowIndex = 0;
-          joined = false;
+          joinedRight = false;
           return AdvanceResult.OK;
         } else {
           return AdvanceResult.NOT_EQUAL;
@@ -598,9 +617,10 @@ public final class MergeJoin extends BinaryOperator {
       } else {
         return AdvanceResult.NOT_ENOUGH_DATA;
       }
-    } else if (rightBatches.getLast().tupleCompare(rightCompareIndx, rightRowIndex, rightRowIndex + 1, ascending) == 0) {
+    } else if (TupleUtils.tupleCompare(rightBatches.getLast(), rightCompareIndx, rightRowIndex, rightRowIndex + 1,
+        ascending) == 0) {
       rightRowIndex++;
-      joined = false;
+      joinedRight = false;
       return AdvanceResult.OK;
     } else {
       return AdvanceResult.NOT_EQUAL;
@@ -664,7 +684,8 @@ public final class MergeJoin extends BinaryOperator {
 
     deferredEOS = false;
 
-    joined = false;
+    joinedLeft = false;
+    joinedRight = false;
 
     leftNotProcessed = null;
     rightNotProcessed = null;

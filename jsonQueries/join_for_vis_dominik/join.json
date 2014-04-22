@@ -3,22 +3,21 @@
         {
             "operators":[
                 {
-                    "opName":"Scan(R)",
+                    "opId":"Scan(R)",
                     "opType":"TableScan",
                     "relationKey":{
-                        "programName":"join",
+                        "programName":"adhoc",
                         "relationName":"TwitterK",
                         "userName":"public"
                     }
                 },
                 {
                     "argChild":"Scan(R)",
-                    "argOperatorId":"hash(followee)",
                     "argPf":{
                         "index":1,
                         "type":"SingleFieldHash"
                     },
-                    "opName":"Shuffle(R)",
+                    "opId":"Shuffle(R)",
                     "opType":"ShuffleProducer"
                 }
             ]
@@ -26,22 +25,21 @@
         {
             "operators":[
                 {
-                    "opName":"Scan(S)",
+                    "opId":"Scan(S)",
                     "opType":"TableScan",
                     "relationKey":{
-                        "programName":"join",
+                        "programName":"adhoc",
                         "relationName":"TwitterK",
                         "userName":"public"
                     }
                 },
                 {
                     "argChild":"Scan(S)",
-                    "argOperatorId":"hash(follower)",
                     "argPf":{
                         "index":0,
                         "type":"SingleFieldHash"
                     },
-                    "opName":"Shuffle(S)",
+                    "opId":"Shuffle(S)",
                     "opType":"ShuffleProducer"
                 }
             ]
@@ -50,12 +48,12 @@
             "operators":[
                 {
                     "argOperatorId":"Shuffle(R)",
-                    "opName":"GatherR",
+                    "opId":"GatherR",
                     "opType":"ShuffleConsumer"
                 },
                 {
                     "argOperatorId":"Shuffle(S)",
-                    "opName":"GatherS",
+                    "opId":"GatherS",
                     "opType":"ShuffleConsumer"
                 },
                 {
@@ -73,12 +71,12 @@
                     "argSelect2":[
                         1
                     ],
-                    "opName":"Join",
+                    "opId":"Join",
                     "opType":"SymmetricHashJoin"
                 },
                 {
                     "argChild":"Join",
-                    "opName":"SendResult",
+                    "opId":"SendResult",
                     "opType":"CollectProducer"
                 }
             ]
@@ -87,17 +85,17 @@
             "operators":[
                 {
                     "argOperatorId":"SendResult",
-                    "opName":"CollectResult",
+                    "opId":"CollectResult",
                     "opType":"CollectConsumer"
                 },
                 {
                     "argChild":"CollectResult",
                     "argOverwriteTable":true,
-                    "opName":"Insert",
+                    "opId":"Insert",
                     "opType":"DbInsert",
                     "relationKey":{
-                        "programName":"join",
-                        "relationName":"twitterK_join",
+                        "programName":"adhoc",
+                        "relationName":"TwitterJoin",
                         "userName":"public"
                     }
                 }
@@ -107,7 +105,8 @@
             ]
         }
     ],
-    "logicalRa":"join",
+    "logicalRa":"Join Twitter",
     "profilingMode":true,
-    "rawDatalog":"join"
+    "rawDatalog":"Join Twitter"
 }
+

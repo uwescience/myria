@@ -1,4 +1,4 @@
-package edu.washington.escience.myria;
+package edu.washington.escience.myria.storage;
 
 import java.io.Serializable;
 import java.util.List;
@@ -8,10 +8,13 @@ import org.joda.time.DateTime;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 
+import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.Type;
+
 /**
  * A single row relation.
  */
-public class Tuple implements Serializable, ReadableTable {
+public class Tuple implements ReadableTable, Serializable {
   /***/
   private static final long serialVersionUID = 1L;
 
@@ -88,11 +91,6 @@ public class Tuple implements Serializable, ReadableTable {
   }
 
   @Override
-  public Object getObject(final int column, final int row) {
-    return getValue(column, row);
-  }
-
-  @Override
   public String getString(final int column, final int row) {
     Preconditions.checkArgument(getSchema().getColumnType(column) == Type.STRING_TYPE);
     return (String) getValue(column, row);
@@ -102,6 +100,11 @@ public class Tuple implements Serializable, ReadableTable {
   public DateTime getDateTime(final int column, final int row) {
     Preconditions.checkArgument(getSchema().getColumnType(column) == Type.DATETIME_TYPE);
     return (DateTime) getValue(column, row);
+  }
+
+  @Override
+  public Object getObject(final int column, final int row) {
+    return getValue(column, row);
   }
 
   @Override
@@ -130,5 +133,10 @@ public class Tuple implements Serializable, ReadableTable {
    */
   public void set(final int columnIdx, final Object value) {
     getColumn(columnIdx).appendObject(value);
+  }
+
+  @Override
+  public ReadableColumn asColumn(final int column) {
+    return new ReadableSubColumn(this, Preconditions.checkElementIndex(column, schema.numColumns()));
   }
 }

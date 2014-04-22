@@ -8,13 +8,13 @@ import java.util.List;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 
-import edu.washington.escience.myria.ReadableColumn;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
-import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.storage.ReadableColumn;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.MutableTupleBuffer;
 
 /**
  * Orders tuples in memory.
@@ -44,7 +44,7 @@ public final class InMemoryOrderBy extends UnaryOperator {
   /**
    * Tuple data stored as columns until it is sorted.
    */
-  private TupleBuffer table;
+  private MutableTupleBuffer table;
 
   /**
    * @param child the source of the tuples.
@@ -73,7 +73,7 @@ public final class InMemoryOrderBy extends UnaryOperator {
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws Exception {
     Preconditions.checkArgument(sortColumns.length == ascending.length);
     ans = new TupleBatchBuffer(getSchema());
-    table = new TupleBuffer(getSchema());
+    table = new MutableTupleBuffer(getSchema());
   }
 
   @Override
@@ -99,7 +99,6 @@ public final class InMemoryOrderBy extends UnaryOperator {
             table.put(column, inputColumns.get(column), row);
           }
         }
-
       } else if (!getChild().eos()) {
         return null;
       }
@@ -108,16 +107,6 @@ public final class InMemoryOrderBy extends UnaryOperator {
     Preconditions.checkState(getChild().eos());
 
     sort();
-
-    final int numTuples = table.numTuples();
-    for (int rowIdx = 0; rowIdx < numTuples; rowIdx++) {
-      for (int columnIdx = 0; columnIdx < getSchema().numColumns(); columnIdx++) {
-        int sourceRow = indexes.get(rowIdx);
-        int tupleIdx = table.getTupleIndexInContainingTB(sourceRow);
-        ReadableColumn hashTblColumn = table.getColumns(sourceRow)[columnIdx];
-        ans.put(columnIdx, hashTblColumn, tupleIdx);
-      }
-    }
 
     nexttb = ans.popFilled();
     if (nexttb == null && ans.numTuples() > 0) {
@@ -132,6 +121,7 @@ public final class InMemoryOrderBy extends UnaryOperator {
   class TupleComparator implements Comparator<Integer> {
     @Override
     public int compare(final Integer rowIdx, final Integer otherRowIdx) {
+      int i = 0;
       for (int columnIdx : sortColumns) {
         int compared = 0;
         switch (getSchema().getColumnType(columnIdx)) {
@@ -158,20 +148,20 @@ public final class InMemoryOrderBy extends UnaryOperator {
             break;
         }
         if (compared != 0) {
-          if (ascending[columnIdx]) {
+          if (ascending[i]) {
             return compared;
           } else {
             return -compared;
           }
         }
+        i++;
       }
       return 0;
     }
   }
 
   /**
-   * Sorts the tuples. First, we get an array of indexes by which we sort the data. Then we actually reorder the
-   * columns.
+   * Sorts the tuples. First, we get an array of indexes by which we sort the data. Then we actually reorder the rows.
    */
   public void sort() {
     final int numTuples = table.numTuples();
@@ -183,6 +173,15 @@ public final class InMemoryOrderBy extends UnaryOperator {
 
     TupleComparator comparator = new TupleComparator();
     Collections.sort(indexes, comparator);
+
+    for (int rowIdx = 0; rowIdx < numTuples; rowIdx++) {
+      for (int columnIdx = 0; columnIdx < getSchema().numColumns(); columnIdx++) {
+        int sourceRow = indexes.get(rowIdx);
+        int tupleIdx = table.getTupleIndexInContainingTB(sourceRow);
+        ReadableColumn hashTblColumn = table.getColumns(sourceRow)[columnIdx];
+        ans.put(columnIdx, hashTblColumn, tupleIdx);
+      }
+    }
   }
 
   @Override

@@ -5,7 +5,7 @@
       "operators": [
         {
           "opType": "TableScan",
-          "opName": "V0",
+          "opId": "V0",
           "relationKey": {
             "userName": "public",
             "relationName": "TwitterK",
@@ -14,7 +14,7 @@
         },
         {
           "opType": "Apply",
-          "opName": "V1",
+          "opId": "V1",
           "emitExpressions": [
             {
               "outputName": "log",
@@ -39,7 +39,7 @@
         },
         {
           "opType": "DbInsert",
-          "opName": "root",
+          "opId": "root",
           "relationKey": {
             "userName": "public",
             "relationName": "JustX",

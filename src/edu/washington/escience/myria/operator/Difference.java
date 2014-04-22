@@ -7,9 +7,10 @@ import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.storage.MutableTupleBuffer;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleUtils;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
@@ -31,7 +32,7 @@ public final class Difference extends BinaryOperator {
   /**
    * This buffer stores tuples to remove from the left operator.
    */
-  private transient TupleBuffer tuplesToRemove = null;
+  private transient MutableTupleBuffer tuplesToRemove = null;
 
   /**
    * Mapping from tuple hash code to indices in the tuplesToRemove buffer.
@@ -68,7 +69,7 @@ public final class Difference extends BinaryOperator {
 
     // Check whether we've seen this tuple before
     for (int i = 0; i < tupleIndexList.size(); i++) {
-      if (batch.tupleEquals(rowNum, tuplesToRemove, tupleIndexList.get(i))) {
+      if (TupleUtils.tupleEquals(batch, rowNum, tuplesToRemove, tupleIndexList.get(i))) {
         return false;
       }
     }
@@ -162,7 +163,7 @@ public final class Difference extends BinaryOperator {
     }
 
     tupleIndices = new TIntObjectHashMap<TIntList>();
-    tuplesToRemove = new TupleBuffer(getSchema());
+    tuplesToRemove = new MutableTupleBuffer(getSchema());
   }
 
   @Override

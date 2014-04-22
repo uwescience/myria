@@ -7,10 +7,10 @@ import java.nio.BufferOverflowException;
 import org.joda.time.DateTime;
 import org.junit.Test;
 
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.column.DateTimeColumn;
 import edu.washington.escience.myria.column.builder.DateTimeColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
+import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.util.DateTimeUtils;
 
 public class DateTimeColumnTest {

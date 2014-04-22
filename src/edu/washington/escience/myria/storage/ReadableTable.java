@@ -1,4 +1,4 @@
-package edu.washington.escience.myria;
+package edu.washington.escience.myria.storage;
 
 import org.joda.time.DateTime;
 
@@ -61,4 +61,10 @@ public interface ReadableTable extends TupleTable {
    * @return the value in the specified column and row.
    */
   String getString(final int column, final int row);
+
+  /**
+   * @param column the index of the column to be returned.
+   * @return a {@link ReadableColumn} representation of the specified column of this table.
+   */
+  ReadableColumn asColumn(final int column);
 }

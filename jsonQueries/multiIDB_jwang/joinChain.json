@@ -4,7 +4,7 @@
             "operators": [
                 {
                     "argOperatorId": "cpc",
-                    "opName": "cc",
+                    "opId": "cc",
                     "opType": "CollectConsumer"
                 }
             ],
@@ -16,17 +16,17 @@
             "operators": [
                 {
                     "argOperatorId": "idbinputa",
-                    "opName": "eoiReceiverA",
+                    "opId": "eoiReceiverA",
                     "opType": "Consumer"
                 },
                 {
                     "argOperatorId": "idbinputb",
-                    "opName": "eoiReceiverB",
+                    "opId": "eoiReceiverB",
                     "opType": "Consumer"
                 },
                 {
                     "argOperatorId": "idbinputc",
-                    "opName": "eoiReceiverC",
+                    "opId": "eoiReceiverC",
                     "opType": "Consumer"
                 },
                 {
@@ -35,12 +35,12 @@
                         "eoiReceiverB",
                         "eoiReceiverC"
                     ],
-                    "opName": "unionAll",
+                    "opId": "unionAll",
                     "opType": "UnionAll"
                 },
                 {
                     "argChild": "unionAll",
-                    "opName": "eosController",
+                    "opId": "eosController",
                     "opType": "EOSController"
                 }
             ],
@@ -51,7 +51,7 @@
         {
             "operators": [
                 {
-                    "opName": "scan2a",
+                    "opId": "scan2a",
                     "opType": "TableScan",
                     "relationKey": {
                         "programName": "multiIDB",
@@ -65,7 +65,7 @@
                         "index": "0",
                         "type": "SingleFieldHash"
                     },
-                    "opName": "sp2a",
+                    "opId": "sp2a",
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -74,17 +74,17 @@
             "operators": [
                 {
                     "argOperatorId": "sp2a",
-                    "opName": "sc2a",
+                    "opId": "sc2a",
                     "opType": "ShuffleConsumer"
                 },
                 {
                     "argOperatorId": "sp3a",
-                    "opName": "sc3a",
+                    "opId": "sc3a",
                     "opType": "ShuffleConsumer"
                 },
                 {
                     "argOperatorId": "eosController",
-                    "opName": "eosReceivera",
+                    "opId": "eosReceivera",
                     "opType": "Consumer"
                 },
                 {
@@ -96,12 +96,12 @@
                     },
                     "argIterationInput": "sc3a",
                     "argSelfIdbId": "0",
-                    "opName": "idbinputa",
+                    "opId": "idbinputa",
                     "opType": "IDBController"
                 },
                 {
                     "argChild": "idbinputa",
-                    "opName": "mpa",
+                    "opId": "mpa",
                     "opType": "LocalMultiwayProducer"
                 }
             ]
@@ -109,7 +109,7 @@
         {
             "operators": [
                 {
-                    "opName": "scanr",
+                    "opId": "scanr",
                     "opType": "TableScan",
                     "relationKey": {
                         "programName": "multiIDB",
@@ -123,7 +123,7 @@
                         "index": "1",
                         "type": "SingleFieldHash"
                     },
-                    "opName": "spr",
+                    "opId": "spr",
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -132,12 +132,12 @@
             "operators": [
                 {
                     "argOperatorId": "spr",
-                    "opName": "sc1a",
+                    "opId": "sc1a",
                     "opType": "ShuffleConsumer"
                 },
                 {
                     "argOperatorId": "mpa",
-                    "opName": "send2joina",
+                    "opId": "send2joina",
                     "opType": "LocalMultiwayConsumer"
                 },
                 {
@@ -155,7 +155,7 @@
                     "argSelect2": [
                         "1"
                     ],
-                    "opName": "joina",
+                    "opId": "joina",
                     "opType": "SymmetricHashJoin"
                 },
                 {
@@ -164,7 +164,7 @@
                         "index": "0",
                         "type": "SingleFieldHash"
                     },
-                    "opName": "sp3a",
+                    "opId": "sp3a",
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -173,7 +173,7 @@
             "operators": [
                 {
                     "argOperatorId": "mpa",
-                    "opName": "send2othersa",
+                    "opId": "send2othersa",
                     "opType": "LocalMultiwayConsumer"
                 },
                 {
@@ -182,7 +182,7 @@
                         "index": "1",
                         "type": "SingleFieldHash"
                     },
-                    "opName": "spOthersa",
+                    "opId": "spOthersa",
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -190,7 +190,7 @@
         {
             "operators": [
                 {
-                    "opName": "scan2b",
+                    "opId": "scan2b",
                     "opType": "TableScan",
                     "relationKey": {
                         "programName": "multiIDB",
@@ -204,7 +204,7 @@
                         "index": "0",
                         "type": "SingleFieldHash"
                     },
-                    "opName": "sp2b",
+                    "opId": "sp2b",
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -213,17 +213,17 @@
             "operators": [
                 {
                     "argOperatorId": "sp2b",
-                    "opName": "sc2b",
+                    "opId": "sc2b",
                     "opType": "ShuffleConsumer"
                 },
                 {
                     "argOperatorId": "sp3b",
-                    "opName": "sc3b",
+                    "opId": "sc3b",
                     "opType": "ShuffleConsumer"
                 },
                 {
                     "argOperatorId": "eosController",
-                    "opName": "eosReceiverb",
+                    "opId": "eosReceiverb",
                     "opType": "Consumer"
                 },
                 {
@@ -235,12 +235,12 @@
                     },
                     "argIterationInput": "sc3b",
                     "argSelfIdbId": "1",
-                    "opName": "idbinputb",
+                    "opId": "idbinputb",
                     "opType": "IDBController"
                 },
                 {
                     "argChild": "idbinputb",
-                    "opName": "mpb",
+                    "opId": "mpb",
                     "opType": "LocalMultiwayProducer"
                 }
             ]
@@ -249,12 +249,12 @@
             "operators": [
                 {
                     "argOperatorId": "spOthersa",
-                    "opName": "sc1b",
+                    "opId": "sc1b",
                     "opType": "ShuffleConsumer"
                 },
                 {
                     "argOperatorId": "mpb",
-                    "opName": "send2joinb",
+                    "opId": "send2joinb",
                     "opType": "LocalMultiwayConsumer"
                 },
                 {
@@ -272,7 +272,7 @@
                     "argSelect2": [
                         "1"
                     ],
-                    "opName": "joinb",
+                    "opId": "joinb",
                     "opType": "SymmetricHashJoin"
                 },
                 {
@@ -281,7 +281,7 @@
                         "index": "0",
                         "type": "SingleFieldHash"
                     },
-                    "opName": "sp3b",
+                    "opId": "sp3b",
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -290,7 +290,7 @@
             "operators": [
                 {
                     "argOperatorId": "mpb",
-                    "opName": "send2othersb",
+                    "opId": "send2othersb",
                     "opType": "LocalMultiwayConsumer"
                 },
                 {
@@ -299,7 +299,7 @@
                         "index": "1",
                         "type": "SingleFieldHash"
                     },
-                    "opName": "spOthersb",
+                    "opId": "spOthersb",
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -307,7 +307,7 @@
         {
             "operators": [
                 {
-                    "opName": "scan2c",
+                    "opId": "scan2c",
                     "opType": "TableScan",
                     "relationKey": {
                         "programName": "multiIDB",
@@ -321,7 +321,7 @@
                         "index": "0",
                         "type": "SingleFieldHash"
                     },
-                    "opName": "sp2c",
+                    "opId": "sp2c",
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -330,17 +330,17 @@
             "operators": [
                 {
                     "argOperatorId": "sp2c",
-                    "opName": "sc2c",
+                    "opId": "sc2c",
                     "opType": "ShuffleConsumer"
                 },
                 {
                     "argOperatorId": "sp3c",
-                    "opName": "sc3c",
+                    "opId": "sc3c",
                     "opType": "ShuffleConsumer"
                 },
                 {
                     "argOperatorId": "eosController",
-                    "opName": "eosReceiverc",
+                    "opId": "eosReceiverc",
                     "opType": "Consumer"
                 },
                 {
@@ -352,12 +352,12 @@
                     },
                     "argIterationInput": "sc3c",
                     "argSelfIdbId": "2",
-                    "opName": "idbinputc",
+                    "opId": "idbinputc",
                     "opType": "IDBController"
                 },
                 {
                     "argChild": "idbinputc",
-                    "opName": "mpc",
+                    "opId": "mpc",
                     "opType": "LocalMultiwayProducer"
                 }
             ]
@@ -366,12 +366,12 @@
             "operators": [
                 {
                     "argOperatorId": "spOthersb",
-                    "opName": "sc1c",
+                    "opId": "sc1c",
                     "opType": "ShuffleConsumer"
                 },
                 {
                     "argOperatorId": "mpc",
-                    "opName": "send2joinc",
+                    "opId": "send2joinc",
                     "opType": "LocalMultiwayConsumer"
                 },
                 {
@@ -389,7 +389,7 @@
                     "argSelect2": [
                         "1"
                     ],
-                    "opName": "joinc",
+                    "opId": "joinc",
                     "opType": "SymmetricHashJoin"
                 },
                 {
@@ -398,7 +398,7 @@
                         "index": "0",
                         "type": "SingleFieldHash"
                     },
-                    "opName": "sp3c",
+                    "opId": "sp3c",
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -407,12 +407,12 @@
             "operators": [
                 {
                     "argOperatorId": "mpc",
-                    "opName": "send2serverc",
+                    "opId": "send2serverc",
                     "opType": "LocalMultiwayConsumer"
                 },
                 {
                     "argChild": "send2serverc",
-                    "opName": "cpc",
+                    "opId": "cpc",
                     "opType": "CollectProducer"
                 }
             ]

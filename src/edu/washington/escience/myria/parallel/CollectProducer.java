@@ -1,7 +1,7 @@
 package edu.washington.escience.myria.parallel;
 
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.operator.Operator;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * The producer part of the Collect Exchange operator.
@@ -10,6 +10,9 @@ import edu.washington.escience.myria.operator.Operator;
  * 
  */
 public class CollectProducer extends GenericShuffleProducer {
+
+  /** A collector always has one partition, no replication, and exactly one outgoing channel of index 0. */
+  private static final int[][] COLLECTOR_PARTITION_TO_CHANNEL = new int[][] { { 0 } };
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -20,8 +23,8 @@ public class CollectProducer extends GenericShuffleProducer {
    * @param collectConsumerWorkerID destination worker the data goes.
    * */
   public CollectProducer(final Operator child, final ExchangePairID operatorID, final int collectConsumerWorkerID) {
-    super(child, new ExchangePairID[] { operatorID }, new int[][] { { 0 } }, new int[] { collectConsumerWorkerID },
-        new FixValuePartitionFunction(0), true);
+    super(child, new ExchangePairID[] { operatorID }, COLLECTOR_PARTITION_TO_CHANNEL,
+        new int[] { collectConsumerWorkerID }, new FixValuePartitionFunction(0), true);
   }
 
   @Override

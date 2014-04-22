@@ -12,13 +12,13 @@ import java.io.PrintStream;
 import org.junit.Test;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.ConstantExpression;
 import edu.washington.escience.myria.expression.EqualsExpression;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.VariableExpression;
+import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.util.TestEnvVars;
 
 /**

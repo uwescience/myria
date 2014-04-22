@@ -1,13 +1,17 @@
 package edu.washington.escience.myria.operator.agg;
 
+import java.util.Objects;
+
 import org.joda.time.DateTime;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.math.LongMath;
 
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.storage.AppendableTable;
+import edu.washington.escience.myria.storage.ReadableColumn;
+import edu.washington.escience.myria.storage.ReadableTable;
 
 /**
  * Knows how to compute some aggregate over a DateTimeColumn.
@@ -16,11 +20,6 @@ public final class DateTimeAggregator implements Aggregator<DateTime> {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
-
-  /**
-   * aggregate field.
-   * */
-  private final int afield;
 
   /**
    * Aggregate operations. An binary-or of all the applicable aggregate operations, i.e. those in
@@ -39,15 +38,6 @@ public final class DateTimeAggregator implements Aggregator<DateTime> {
   private DateTime min, max;
 
   /**
-   * avoid compute min if not required.
-   * */
-  private final boolean computeMin;
-  /**
-   * avoid compute max if not required.
-   * */
-  private final boolean computeMax;
-
-  /**
    * Result schema. It's automatically generated according to the {@link DateTimeAggregator#aggOps}.
    * */
   private final Schema resultSchema;
@@ -58,32 +48,11 @@ public final class DateTimeAggregator implements Aggregator<DateTime> {
   public static final int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT | Aggregator.AGG_OP_MAX | Aggregator.AGG_OP_MIN;
 
   /**
-   * This serves as the copy constructor.
-   * 
-   * @param afield the aggregate column.
-   * @param aggOps the aggregate operation to simultaneously compute.
-   * @param resultSchema the result schema.
-   * @param computeMin if min is required
-   * @param computeMax if max is required
-   * */
-  private DateTimeAggregator(final int afield, final int aggOps, final boolean computeMin, final boolean computeMax,
-      final Schema resultSchema) {
-    this.afield = afield;
-    this.aggOps = aggOps;
-    this.computeMax = computeMax;
-    this.computeMin = computeMin;
-    this.resultSchema = resultSchema;
-    min = null;
-    max = null;
-    count = 0;
-  }
-
-  /**
-   * @param afield the aggregate column.
    * @param aFieldName aggregate field name for use in output schema.
    * @param aggOps the aggregate operation to simultaneously compute.
    * */
-  public DateTimeAggregator(final int afield, final String aFieldName, final int aggOps) {
+  public DateTimeAggregator(final String aFieldName, final int aggOps) {
+    Objects.requireNonNull(aFieldName, "aFieldName");
     if (aggOps <= 0) {
       throw new IllegalArgumentException("No aggregation operations are selected");
     }
@@ -93,7 +62,6 @@ public final class DateTimeAggregator implements Aggregator<DateTime> {
           "Unsupported aggregation on string column. Only count, min and max are supported");
     }
 
-    this.afield = afield;
     this.aggOps = aggOps;
     final ImmutableList.Builder<Type> types = ImmutableList.builder();
     final ImmutableList.Builder<String> names = ImmutableList.builder();
@@ -102,110 +70,97 @@ public final class DateTimeAggregator implements Aggregator<DateTime> {
       names.add("count_" + aFieldName);
     }
     if ((aggOps & Aggregator.AGG_OP_MIN) != 0) {
-      computeMin = true;
       types.add(Type.DATETIME_TYPE);
       names.add("min_" + aFieldName);
-    } else {
-      computeMin = false;
     }
     if ((aggOps & Aggregator.AGG_OP_MAX) != 0) {
       types.add(Type.DATETIME_TYPE);
       names.add("max_" + aFieldName);
-      computeMax = true;
-    } else {
-      computeMax = false;
     }
     resultSchema = new Schema(types, names);
   }
 
   @Override
-  public void add(final TupleBatch tup) {
-
-    final int numTuples = tup.numTuples();
-    if (numTuples > 0) {
-      count += numTuples;
-      if (computeMin || computeMax) {
-        for (int i = 0; i < numTuples; i++) {
-          final DateTime r = tup.getDateTime(afield, i);
-          if (computeMin) {
-            if (min == null) {
-              min = r;
-            } else if (r.compareTo(min) < 0) {
-              min = r;
-            }
-          }
-          if (computeMax) {
-            if (max == null) {
-              max = r;
-            } else if (r.compareTo(max) > 0) {
-              max = r;
-            }
-          }
-        }
-      }
-    }
-
-  }
-
-  @Override
   public void add(final DateTime value) {
+    Objects.requireNonNull(value, "value");
+    if (AggUtils.needsCount(aggOps)) {
+      count = LongMath.checkedAdd(count, 1);
+    }
+    if (AggUtils.needsStats(aggOps)) {
+      addDateTimeStats(value);
+    }
+  }
 
-    if (value != null) {
-      count++;
-      if (computeMin || computeMax) {
-        final DateTime r = value;
-        if (computeMin) {
-          if (min == null) {
-            min = r;
-          } else if (r.compareTo(min) < 0) {
-            min = r;
-          }
-        }
-        if (computeMax) {
-          if (max == null) {
-            max = r;
-          } else if (r.compareTo(max) > 0) {
-            max = r;
-          }
-        }
+  @Override
+  public void add(final ReadableColumn from) {
+    Objects.requireNonNull(from, "from");
+    final int numTuples = from.size();
+    if (numTuples == 0) {
+      return;
+    }
+    if (AggUtils.needsCount(aggOps)) {
+      count = LongMath.checkedAdd(count, numTuples);
+    }
+    if (AggUtils.needsStats(aggOps)) {
+      for (int row = 0; row < numTuples; ++row) {
+        addDateTimeStats(from.getDateTime(row));
       }
     }
-
   }
 
   @Override
-  public void addObj(final Object value) {
-    add((DateTime) value);
+  public void add(final ReadableTable from, final int fromColumn) {
+    add(from.asColumn(Objects.requireNonNull(fromColumn, "fromColumn")));
   }
 
   @Override
-  public int availableAgg() {
-    return AVAILABLE_AGG;
+  public void add(final ReadableTable table, final int column, final int row) {
+    add(Objects.requireNonNull(table, "table").getDateTime(column, row));
+  }
+
+  /**
+   * Helper function to add value to this aggregator. Note this does NOT update count.
+   * 
+   * @param value the value to be added
+   */
+  private void addDateTimeStats(final DateTime value) {
+    Objects.requireNonNull(value, "value");
+    if (AggUtils.needsMin(aggOps)) {
+      if ((min == null) || (min.compareTo(value) > 0)) {
+        min = value;
+      }
+    }
+    if (AggUtils.needsMax(aggOps)) {
+      if ((max == null) || (max.compareTo(value) < 0)) {
+        max = value;
+      }
+    }
   }
 
   @Override
-  public DateTimeAggregator freshCopyYourself() {
-    return new DateTimeAggregator(afield, aggOps, computeMin, computeMax, resultSchema);
-  }
-
-  @Override
-  public void getResult(final TupleBatchBuffer buffer, final int fromIndex) {
-    int idx = fromIndex;
+  public void getResult(final AppendableTable dest, final int destColumn) {
+    Objects.requireNonNull(dest, "dest");
+    int idx = destColumn;
     if ((aggOps & AGG_OP_COUNT) != 0) {
-      buffer.putLong(idx, count);
+      dest.putLong(idx, count);
       idx++;
     }
-    if (computeMin) {
-      buffer.putDateTime(idx, min);
+    if ((aggOps & AGG_OP_MIN) != 0) {
+      dest.putDateTime(idx, min);
       idx++;
     }
-    if (computeMax) {
-      buffer.putDateTime(idx, max);
+    if ((aggOps & AGG_OP_MAX) != 0) {
+      dest.putDateTime(idx, max);
     }
   }
 
   @Override
   public Schema getResultSchema() {
     return resultSchema;
+  }
+
+  @Override
+  public Type getType() {
+    return Type.DATETIME_TYPE;
   }
 }

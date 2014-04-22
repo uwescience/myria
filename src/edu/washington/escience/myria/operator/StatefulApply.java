@@ -11,8 +11,6 @@ import com.google.common.collect.Lists;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.Tuple;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
@@ -21,6 +19,8 @@ import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.evaluate.ConstantEvaluator;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
+import edu.washington.escience.myria.storage.Tuple;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * Apply operator that has to be initialized and carries a state while new tuples are generated.
@@ -203,7 +203,7 @@ public class StatefulApply extends Apply {
     ImmutableList.Builder<String> namesBuilder = ImmutableList.builder();
 
     for (Expression expr : initExpressions) {
-      typesBuilder.add(expr.getOutputType(new ExpressionOperatorParameter(getChild().getSchema(), getNodeID())));
+      typesBuilder.add(expr.getOutputType(new ExpressionOperatorParameter(getChild().getSchema())));
       namesBuilder.add(expr.getOutputName());
     }
     stateSchema = new Schema(typesBuilder.build(), namesBuilder.build());
@@ -231,7 +231,7 @@ public class StatefulApply extends Apply {
     ImmutableList.Builder<String> namesBuilder = ImmutableList.builder();
 
     for (Expression expr : getEmitExpressions()) {
-      typesBuilder.add(expr.getOutputType(new ExpressionOperatorParameter(inputSchema, getStateSchema(), getNodeID())));
+      typesBuilder.add(expr.getOutputType(new ExpressionOperatorParameter(inputSchema, getStateSchema())));
       namesBuilder.add(expr.getOutputName());
     }
     return new Schema(typesBuilder.build(), namesBuilder.build());

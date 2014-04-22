@@ -15,7 +15,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * Interface for Database Access Methods.
@@ -117,7 +117,7 @@ public abstract class AccessMethod {
    * @param relationKey the relation name
    * @return the insert statement string
    */
-  protected abstract String insertStatementFromSchema(Schema schema, RelationKey relationKey);
+  public abstract String insertStatementFromSchema(Schema schema, RelationKey relationKey);
 
   /**
    * Generates the create table statement string for a relation in the database.

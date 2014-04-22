@@ -30,6 +30,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
+import edu.washington.escience.myria.accessmethod.AccessMethod;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.WorkerCatalog;
@@ -653,6 +654,7 @@ public final class Worker {
     final String databaseSystem = catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_SYSTEM);
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM, databaseSystem);
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_NODE_ID, getID());
+    execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE, queryExecutionMode);
     LOGGER.info("Worker: Database system " + databaseSystem);
     String jsonConnInfo = catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_CONN_INFO);
     if (jsonConnInfo == null) {
@@ -786,6 +788,13 @@ public final class Worker {
         MyriaConstants.WORKER_SHUTDOWN_CHECKER_INTERVAL, TimeUnit.MILLISECONDS);
     scheduledTaskExecutor.scheduleAtFixedRate(new HeartbeatReporter(), 0, MyriaConstants.HEARTBEAT_INTERVAL,
         TimeUnit.MILLISECONDS);
+
+    ConnectionInfo connectionInfo = (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
+    if (!connectionInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_SQLITE)) {
+      final AccessMethod accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
+      accessMethod.createTableIfNotExists(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA);
+      accessMethod.createTableIfNotExists(MyriaConstants.LOG_SENT_RELATION, MyriaConstants.LOG_SENT_SCHEMA);
+    }
   }
 
   /**

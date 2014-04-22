@@ -9,9 +9,9 @@ import org.joda.time.DateTime;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
-import edu.washington.escience.myria.ReadableColumn;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.mutable.MutableColumn;
+import edu.washington.escience.myria.storage.ReadableColumn;
 
 /**
  * @param <T> type of the objects in this column.

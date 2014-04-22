@@ -22,11 +22,11 @@ import com.google.common.collect.ImmutableMap;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.parallel.ipc.FlowControlBagInputBuffer;
 import edu.washington.escience.myria.parallel.ipc.StreamInputBuffer;
+import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.util.DateTimeUtils;
 import edu.washington.escience.myria.util.IPCUtils;
 
@@ -437,8 +437,7 @@ public class MasterQueryPartition extends QueryPartitionBase {
   @Override
   public final void init(final DefaultQueryFuture initFuture) {
     ImmutableMap.Builder<String, Object> b = ImmutableMap.builder();
-    TaskResourceManager resourceManager =
-        new TaskResourceManager(master.getIPCConnectionPool(), rootTask, master.getExecutionMode());
+    TaskResourceManager resourceManager = new TaskResourceManager(master.getIPCConnectionPool(), rootTask);
     try {
       rootTask.init(resourceManager, b.putAll(master.getExecEnvVars()).build());
     } catch (Throwable e) {

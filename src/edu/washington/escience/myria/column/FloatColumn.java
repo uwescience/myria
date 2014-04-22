@@ -8,10 +8,10 @@ import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
 import com.google.common.hash.Hasher;
 
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.FloatColumnBuilder;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * A column of {@link Float} values.

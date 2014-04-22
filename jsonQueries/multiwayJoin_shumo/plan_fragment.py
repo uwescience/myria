@@ -17,13 +17,13 @@ def twitter_small_relation_key():
 def scan_R_then_shuffle():
     scan = {
         "opType" : "TableScan",
-        "opName" : "Scan(R)",
+        "opId" : "Scan(R)",
         "relationKey" : twitter_small_relation_key()
     }
 
     hyper_shuffle = {
         "opType" : "HyperShuffleProducer",
-        "opName" : "HyperShuffle(R)",
+        "opId" : "HyperShuffle(R)",
         "argChild" : "Scan(R)",
         "argOperatorId" : "hash(follower)",
         "fieldIndexes" : [0],
@@ -40,13 +40,13 @@ def scan_R_then_shuffle():
 def scan_S_then_shuffle():
     scan = {
         "opType" : "TableScan",
-        "opName" : "Scan(S)",
+        "opId" : "Scan(S)",
         "relationKey" : twitter_small_relation_key()
     }
 
     hyper_shuffle = {
         "opType" : "HyperShuffleProducer",
-        "opName" : "HyperShuffle(S)",
+        "opId" : "HyperShuffle(S)",
         "argChild" : "Scan(S)",
         "argOperatorId" : "hash(followee)",
         "fieldIndexes" : [1],
@@ -61,7 +61,7 @@ def scan_S_then_shuffle():
 def receive_then_join():
     gatherR = {
         "opType" : "HyperShuffleConsumer",
-        "opName" : "GatherR",
+        "opId" : "GatherR",
         "argOperatorId" : "hash(follower)",
         "arg_schema" : {
             "columnTypes" : ["LONG_TYPE", "LONG_TYPE"],
@@ -70,7 +70,7 @@ def receive_then_join():
     }
     gatherS = {
         "opType" : "HyperShuffleConsumer",
-        "opName" : "GatherS",
+        "opId" : "GatherS",
         "argOperatorId" : "hash(followee)",
         "arg_schema" : {
             "columnTypes" : ["LONG_TYPE", "LONG_TYPE"],
@@ -79,7 +79,7 @@ def receive_then_join():
     }
     join = {
         "opType" : "SymmetricHashJoin",
-        "opName" : "Join",
+        "opId" : "Join",
         "argChild1" : "GatherR",
         "argChild2" : "GatherS",
         "argColumns1" : [1],
@@ -90,7 +90,7 @@ def receive_then_join():
     collect = {
         "argChild": "Join",
         "argOperatorId": "collect",
-        "opName": "SendResult",
+        "opId": "SendResult",
         "opType": "CollectProducer"
     }
     fragment = {
@@ -111,13 +111,13 @@ def collect_result():
                 "LONG_TYPE"
             ]
         },
-        "opName": "CollectResult",
+        "opId": "CollectResult",
         "opType": "CollectConsumer"                       
     }
     insert = {
         "argChild": "CollectResult",
         "argOverwriteTable": True,
-        "opName": "Insert",
+        "opId": "Insert",
         "opType": "DbInsert",
         "relationKey": {
             "programName": "multiway_join",
@@ -143,12 +143,12 @@ def two_dimension_multiway_join():
 def scan_R_then_partition():
     scan = {
         "opType" : "TableScan",
-        "opName" : "Scan(R)",
+        "opId" : "Scan(R)",
         "relationKey" : twitter_small_relation_key()
     }
     shuffle = {
         "opType" : "ShuffleProducer",
-        "opName" : "Shuffle(R)",
+        "opId" : "Shuffle(R)",
         "argChild" : "Scan(R)",
         "argOperatorId" : "hash(followee)",
         "argPf" : 
@@ -166,13 +166,13 @@ def scan_R_then_partition():
 def scan_S_then_partition():
     scan = {
         "opType" : "TableScan",
-        "opName" : "Scan(S)",
+        "opId" : "Scan(S)",
         "relationKey" : twitter_small_relation_key()
     }
 
     shuffle = {
         "opType" : "ShuffleProducer",
-        "opName" : "Shuffle(S)",
+        "opId" : "Shuffle(S)",
         "argChild" : "Scan(S)",
         "argOperatorId" : "hash(follower)",
         "argPf" : 
@@ -189,7 +189,7 @@ def scan_S_then_partition():
 def receive_partition_then_join():
     gatherR = {
         "opType" : "ShuffleConsumer",
-        "opName" : "GatherR",
+        "opId" : "GatherR",
         "argOperatorId" : "hash(followee)",
         "arg_schema" : {
             "columnTypes" : ["LONG_TYPE", "LONG_TYPE"],
@@ -198,7 +198,7 @@ def receive_partition_then_join():
     }
     gatherS = {
         "opType" : "ShuffleConsumer",
-        "opName" : "GatherS",
+        "opId" : "GatherS",
         "argOperatorId" : "hash(follower)",
         "arg_schema" : {
             "columnTypes" : ["LONG_TYPE", "LONG_TYPE"],
@@ -207,7 +207,7 @@ def receive_partition_then_join():
     }
     join = {
         "opType" : "SymmetricHashJoin",
-        "opName" : "Join",
+        "opId" : "Join",
         "argChild1" : "GatherR",
         "argChild2" : "GatherS",
         "argColumns1" : [1],
@@ -218,7 +218,7 @@ def receive_partition_then_join():
     collect = {
         "argChild": "Join",
         "argOperatorId": "collect",
-        "opName": "SendResult",
+        "opId": "SendResult",
         "opType": "CollectProducer"
     }
     fragment = {
@@ -239,13 +239,13 @@ def collect_partition_join_result():
                 "LONG_TYPE"
             ]
         },
-        "opName": "CollectResult",
+        "opId": "CollectResult",
         "opType": "CollectConsumer"                       
     }
     insert = {
         "argChild": "CollectResult",
         "argOverwriteTable": True,
-        "opName": "Insert",
+        "opId": "Insert",
         "opType": "DbInsert",
         "relationKey": {
             "programName": "multiway_join",

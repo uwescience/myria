@@ -13,13 +13,13 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.StreamingState;
 import edu.washington.escience.myria.operator.TupleSource;
 import edu.washington.escience.myria.parallel.ipc.FlowControlBagInputBuffer;
 import edu.washington.escience.myria.parallel.ipc.StreamInputBuffer;
 import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
+import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.util.DateTimeUtils;
 
 /**
@@ -78,6 +78,11 @@ public class WorkerQueryPartition extends QueryPartitionBase {
       }
     }
   }
+
+  /**
+   * Record milliseconds so that we can normalize the time in {@link ProfilingLogger}.
+   */
+  private volatile long startMilliseconds = 0;
 
   /**
    * The future listener for processing the complete events of the execution of all the query's tasks.
@@ -168,8 +173,7 @@ public class WorkerQueryPartition extends QueryPartitionBase {
    * @param t the task
    * */
   private void initTask(final QuerySubTreeTask t) {
-    TaskResourceManager resourceManager =
-        new TaskResourceManager(ownerWorker.getIPCConnectionPool(), t, ownerWorker.getQueryExecutionMode());
+    TaskResourceManager resourceManager = new TaskResourceManager(ownerWorker.getIPCConnectionPool(), t);
     ImmutableMap.Builder<String, Object> b = ImmutableMap.builder();
     t.init(resourceManager, b.putAll(ownerWorker.getExecEnvVars()).build());
   }
@@ -180,12 +184,7 @@ public class WorkerQueryPartition extends QueryPartitionBase {
       LOGGER.info("Query : " + getQueryID() + " start processing.");
     }
 
-    if (isProfilingMode()) {
-      PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:set time", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryID(),
-          "startTimeInMS", "0", System.currentTimeMillis(), 0);
-      PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:set time", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryID(),
-          "startTimeInNS", "0", System.nanoTime(), 0);
-    }
+    startMilliseconds = System.currentTimeMillis();
 
     getExecutionStatistics().markQueryStart();
     for (QuerySubTreeTask t : getTasks()) {
@@ -274,5 +273,12 @@ public class WorkerQueryPartition extends QueryPartitionBase {
    */
   public Worker getOwnerWorker() {
     return ownerWorker;
+  }
+
+  /**
+   * @return the time in milliseconds when the partition was initialized.
+   */
+  public long getBeginMilliseconds() {
+    return startMilliseconds;
   }
 }

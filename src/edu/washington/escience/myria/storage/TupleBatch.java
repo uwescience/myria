@@ -1,4 +1,4 @@
-package edu.washington.escience.myria;
+package edu.washington.escience.myria.storage;
 
 import java.io.Serializable;
 import java.sql.PreparedStatement;
@@ -20,6 +20,8 @@ import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 
+import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.parallel.PartitionFunction;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
@@ -104,11 +106,13 @@ public class TupleBatch implements ReadableTable, Serializable {
    * @param isEOI whether this is an EOI TupleBatch.
    */
   public TupleBatch(final Schema schema, final List<Column<?>> columns, final int numTuples, final boolean isEOI) {
-    this.schema = Objects.requireNonNull(schema);
-    Objects.requireNonNull(columns);
+    this.schema = Objects.requireNonNull(schema, "schema");
+    this.columns = ImmutableList.copyOf(Objects.requireNonNull(columns, "columns"));
     Preconditions.checkArgument(columns.size() == schema.numColumns(),
         "Number of columns in data must equal the number of fields in schema");
-    this.columns = ImmutableList.copyOf(columns);
+    for (Column<?> column : columns) {
+      Preconditions.checkArgument(numTuples == column.size(), "Column %s != %s tuples", column.size(), numTuples);
+    }
     this.numTuples = numTuples;
     this.isEOI = isEOI;
   }
@@ -212,6 +216,8 @@ public class TupleBatch implements ReadableTable, Serializable {
 
   @Override
   public final long getLong(final int column, final int row) {
+    Preconditions.checkArgument(columns.get(column).size() >= numTuples, "numTuples %s columnsize %s", numTuples,
+        columns.get(column).size());
     return columns.get(column).getLong(row);
   }
 
@@ -375,27 +381,6 @@ public class TupleBatch implements ReadableTable, Serializable {
   }
 
   /**
-   * Check whether left (in this tuple batch) and right (in the tuple batch rightTb) tuples match w.r.t. columns in
-   * leftCompareIndx and rightCompareIndex. This method is used in equi-join operators.
-   * 
-   * @param leftIdx the index of the left tuple in this tuple batch
-   * @param leftCompareIdx an array specifying the columns of the left tuple to be used in the comparison
-   * @param rightTb the tuple batch containing the right tuple
-   * @param rightIdx the index of the right tuple in the rightTb tuple batch
-   * @param rightCompareIdx an array specifying the columns of the right tuple to be used in the comparison
-   * @return true if the tuples match
-   * */
-  public final boolean tupleMatches(final int leftIdx, final int[] leftCompareIdx, final TupleBatch rightTb,
-      final int rightIdx, final int[] rightCompareIdx) {
-    for (int i = 0; i < leftCompareIdx.length; ++i) {
-      if (!columns.get(leftCompareIdx[i]).equals(leftIdx, rightTb.columns.get(rightCompareIdx[i]), rightIdx)) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  /**
    * @return a TransportMessage encoding the TupleBatch.
    * */
   public final TransportMessage toTransportMessage() {
@@ -420,254 +405,6 @@ public class TupleBatch implements ReadableTable, Serializable {
   }
 
   /**
-   * Check if a tuple in uniqueTuples equals to the comparing tuple (cntTuple).
-   * 
-   * @param hashTable the TupleBatchBuffer holding the tuples to compare against
-   * @param index the index in the hashTable
-   * @param row row number of the tuple to compare
-   * @param compareColumns1 the comparing list of columns of cntTuple
-   * @param compareColumns2 the comparing list of columns of hashTable
-   * @return true if equals.
-   */
-  public boolean tupleEquals(final int row, final ReadableTable hashTable, final int index,
-      final int[] compareColumns1, final int[] compareColumns2) {
-    if (compareColumns1.length != compareColumns2.length) {
-      return false;
-    }
-    for (int i = 0; i < compareColumns1.length; ++i) {
-      switch (schema.getColumnType(compareColumns1[i])) {
-        case BOOLEAN_TYPE:
-          if (getBoolean(compareColumns1[i], row) != hashTable.getBoolean(compareColumns2[i], index)) {
-            return false;
-          }
-          break;
-        case DOUBLE_TYPE:
-          if (getDouble(compareColumns1[i], row) != hashTable.getDouble(compareColumns2[i], index)) {
-            return false;
-          }
-          break;
-        case FLOAT_TYPE:
-          if (getFloat(compareColumns1[i], row) != hashTable.getFloat(compareColumns2[i], index)) {
-            return false;
-          }
-          break;
-        case INT_TYPE:
-          if (getInt(compareColumns1[i], row) != hashTable.getInt(compareColumns2[i], index)) {
-            return false;
-          }
-          break;
-        case LONG_TYPE:
-          if (getLong(compareColumns1[i], row) != hashTable.getLong(compareColumns2[i], index)) {
-            return false;
-          }
-          break;
-        case STRING_TYPE:
-          if (!getString(compareColumns1[i], row).equals(hashTable.getString(compareColumns2[i], index))) {
-            return false;
-          }
-          break;
-        case DATETIME_TYPE:
-          if (!getDateTime(compareColumns1[i], row).equals(hashTable.getDateTime(compareColumns2[i], index))) {
-            return false;
-          }
-          break;
-      }
-    }
-    return true;
-  }
-
-  /**
-   * Compare tb use compareColumns against a hashtable only containing columns which need to be compared.
-   * 
-   * @param row number of the tuple to compare
-   * @param hashTable the TupleBatchBuffer holding the tuples to compare against
-   * @param index the index in the hashTable
-   * @param compareColumns the columns of the tuple which will compare
-   * @return true if equals
-   */
-  public boolean tupleEquals(final int row, final ReadableTable hashTable, final int index, final int[] compareColumns) {
-    if (compareColumns.length != hashTable.numColumns()) {
-      return false;
-    }
-    for (int i = 0; i < compareColumns.length; ++i) {
-      switch (schema.getColumnType(i)) {
-        case BOOLEAN_TYPE:
-          if (getBoolean(compareColumns[i], row) != hashTable.getBoolean(i, index)) {
-            return false;
-          }
-          break;
-        case DOUBLE_TYPE:
-          if (getDouble(compareColumns[i], row) != hashTable.getDouble(i, index)) {
-            return false;
-          }
-          break;
-        case FLOAT_TYPE:
-          if (getFloat(compareColumns[i], row) != hashTable.getFloat(i, index)) {
-            return false;
-          }
-          break;
-        case INT_TYPE:
-          if (getInt(compareColumns[i], row) != hashTable.getInt(i, index)) {
-            return false;
-          }
-          break;
-        case LONG_TYPE:
-          if (getLong(compareColumns[i], row) != hashTable.getLong(i, index)) {
-            return false;
-          }
-          break;
-        case STRING_TYPE:
-          if (!getString(compareColumns[i], row).equals(hashTable.getString(i, index))) {
-            return false;
-          }
-          break;
-        case DATETIME_TYPE:
-          if (!getDateTime(compareColumns[i], row).equals(hashTable.getDateTime(i, index))) {
-            return false;
-          }
-          break;
-      }
-    }
-    return true;
-  }
-
-  /**
-   * Compare tb against a hash table on all columns.
-   * 
-   * @param row number of the tuple to compare
-   * @param hashTable the TupleBatchBuffer holding the tuples to compare against
-   * @param index the index in the hashTable
-   * @return true if equals
-   */
-  public boolean tupleEquals(final int row, final ReadableTable hashTable, final int index) {
-    if (numColumns() != hashTable.numColumns()) {
-      return false;
-    }
-    for (int i = 0; i < numColumns(); ++i) {
-      switch (schema.getColumnType(i)) {
-        case BOOLEAN_TYPE:
-          if (getBoolean(i, row) != hashTable.getBoolean(i, index)) {
-            return false;
-          }
-          break;
-        case DOUBLE_TYPE:
-          if (getDouble(i, row) != hashTable.getDouble(i, index)) {
-            return false;
-          }
-          break;
-        case FLOAT_TYPE:
-          if (getFloat(i, row) != hashTable.getFloat(i, index)) {
-            return false;
-          }
-          break;
-        case INT_TYPE:
-          if (getInt(i, row) != hashTable.getInt(i, index)) {
-            return false;
-          }
-          break;
-        case LONG_TYPE:
-          if (getLong(i, row) != hashTable.getLong(i, index)) {
-            return false;
-          }
-          break;
-        case STRING_TYPE:
-          if (!getString(i, row).equals(hashTable.getString(i, index))) {
-            return false;
-          }
-          break;
-        case DATETIME_TYPE:
-          if (!getDateTime(i, row).equals(hashTable.getDateTime(i, index))) {
-            return false;
-          }
-          break;
-      }
-    }
-    return true;
-  }
-
-  /**
-   * Compares two cells from this and another tuple batch.
-   * 
-   * @param columnIdx column to compare
-   * @param rowIdx row in this tb
-   * @param otherColumnIndex the column to compare in the other tb
-   * @param otherTb other tb
-   * @param otherRowIdx row in other tb
-   * @return the result of compare
-   */
-  public int cellCompare(final int columnIdx, final int rowIdx, final ReadableTable otherTb,
-      final int otherColumnIndex, final int otherRowIdx) {
-    Type columnType = schema.getColumnType(columnIdx);
-    switch (columnType) {
-      case INT_TYPE:
-        return Type.compareRaw(getInt(columnIdx, rowIdx), otherTb.getInt(otherColumnIndex, otherRowIdx));
-
-      case FLOAT_TYPE:
-        return Type.compareRaw(getFloat(columnIdx, rowIdx), otherTb.getFloat(otherColumnIndex, otherRowIdx));
-
-      case LONG_TYPE:
-        return Type.compareRaw(getLong(columnIdx, rowIdx), otherTb.getLong(otherColumnIndex, otherRowIdx));
-
-      case DOUBLE_TYPE:
-        return Type.compareRaw(getDouble(columnIdx, rowIdx), otherTb.getDouble(otherColumnIndex, otherRowIdx));
-
-      case BOOLEAN_TYPE:
-        return Type.compareRaw(getBoolean(columnIdx, rowIdx), otherTb.getBoolean(otherColumnIndex, otherRowIdx));
-
-      case STRING_TYPE:
-        return Type.compareRaw(getString(columnIdx, rowIdx), otherTb.getString(otherColumnIndex, otherRowIdx));
-
-      case DATETIME_TYPE:
-        return Type.compareRaw(getDateTime(columnIdx, rowIdx), otherTb.getDateTime(otherColumnIndex, otherRowIdx));
-    }
-
-    throw new IllegalStateException("We should not be here.");
-  }
-
-  /**
-   * Compares a whole tuple with a tuple from another batch. The columns from the two compare indexes are compared in
-   * order.
-   * 
-   * @param columnCompareIndexes the columns from this TB that should be compared with the column of the other TB
-   * @param rowIdx row in this TB
-   * @param otherTb other TB
-   * @param otherCompareIndexes the columns from the other TB that should be compared with the column of this TB
-   * @param otherRowIdx row in other TB
-   * @param ascending true if the column is ordered ascending
-   * @return a negative integer, zero, or a positive integer as the first argument is less than, equal to, or greater
-   *         than the second
-   */
-  public int tupleCompare(final int[] columnCompareIndexes, final int rowIdx, final ReadableTable otherTb,
-      final int[] otherCompareIndexes, final int otherRowIdx, final boolean[] ascending) {
-    for (int i = 0; i < columnCompareIndexes.length; i++) {
-      int compared = cellCompare(columnCompareIndexes[i], rowIdx, otherTb, otherCompareIndexes[i], otherRowIdx);
-      if (compared != 0) {
-        if (!ascending[i]) {
-          return -compared;
-        } else {
-          return compared;
-        }
-      }
-    }
-    return 0;
-  }
-
-  /**
-   * Same as {@link #tupleCompare(int[], int, TupleBatch, int[], int, boolean[])} but comparison within the same TB.
-   * 
-   * @param columnCompareIndexes the columns from this TB that should be compared with the column of the other TB
-   * @param rowIdx row in this TB
-   * @param rowIdx2 row in this TB that should be compared to the first one
-   * @param ascending true if the column is ordered ascending
-   * @return a negative integer, zero, or a positive integer as the first argument is less than, equal to, or greater
-   *         than the second
-   */
-  public int tupleCompare(final int[] columnCompareIndexes, final int rowIdx, final int rowIdx2,
-      final boolean[] ascending) {
-    return tupleCompare(columnCompareIndexes, rowIdx, this, columnCompareIndexes, rowIdx2, ascending);
-  }
-
-  /**
    * Construct a new TupleBatch that equals the current batch with the specified column appended. The number of valid
    * tuples in this batch must be the same as the size of the other batch. If this batch is not dense, then
    * 
@@ -681,5 +418,10 @@ public class TupleBatch implements ReadableTable, Serializable {
     Schema newSchema = Schema.appendColumn(schema, column.getType(), columnName);
     List<Column<?>> newColumns = ImmutableList.<Column<?>> builder().addAll(columns).add(column).build();
     return new TupleBatch(newSchema, newColumns, numTuples, isEOI);
+  }
+
+  @Override
+  public ReadableColumn asColumn(final int column) {
+    return columns.get(column);
   }
 }

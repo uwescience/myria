@@ -17,7 +17,6 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
@@ -31,6 +30,7 @@ import edu.washington.escience.myria.operator.StreamingStateWrapper;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.parallel.QueryExecutionMode;
 import edu.washington.escience.myria.parallel.TaskResourceManager;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 public class TwitterSingleNodeJoinSpeedTest {
   /**
@@ -48,8 +48,8 @@ public class TwitterSingleNodeJoinSpeedTest {
    * The environment execution variables.
    */
   private final static ImmutableMap<String, Object> execEnvVars = ImmutableMap.<String, Object> of(
-      MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER, new TaskResourceManager(null, null,
-          QueryExecutionMode.BLOCKING));
+      MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER, new TaskResourceManager(null, null),
+      MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE, QueryExecutionMode.BLOCKING);
 
   /** Whether we were able to copy the data. */
   private static boolean successfulSetup = false;

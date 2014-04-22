@@ -14,9 +14,9 @@ import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.BinaryFileScan;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * To test BinaryFileScan, and it is based on the code from FileScanTest

@@ -3,7 +3,7 @@
         {
             "operators": [
                 {
-                    "opName": "Scan",
+                    "opId": "Scan",
                     "opType": "TableScan",
                     "relationKey": {
                         "programName": "global_join",
@@ -17,7 +17,7 @@
                         "index": 0,
                         "type": "SingleFieldHash"
                     },
-                    "opName": "Scatter",
+                    "opId": "Scatter",
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -26,13 +26,13 @@
             "operators": [
                 {
                     "argOperatorId": "Scatter",
-                    "opName": "Gather",
+                    "opId": "Gather",
                     "opType": "ShuffleConsumer"
                 },
                 {
                     "argChild": "Gather",
                     "argOverwriteTable": true,
-                    "opName": "Insert",
+                    "opId": "Insert",
                     "opType": "DbInsert",
                     "relationKey": {
                         "programName": "global_join",

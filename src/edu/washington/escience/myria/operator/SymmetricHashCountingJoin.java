@@ -2,11 +2,12 @@ package edu.washington.escience.myria.operator;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
-import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.storage.MutableTupleBuffer;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.TupleUtils;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
@@ -24,7 +25,7 @@ import com.google.common.collect.ImmutableMap;
 /**
  * This is an implementation of hash equal join. The same as in DupElim, this implementation does not keep the
  * references to the incoming TupleBatches in order to get better memory performance.
- * */
+ */
 public final class SymmetricHashCountingJoin extends BinaryOperator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -38,9 +39,9 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
   /** A hash table for tuples from right child. {Hashcode -> List of tuple indices with the same hash code} */
   private transient TIntObjectMap<TIntList> rightHashTableIndices;
   /** The buffer holding the valid tuples from left. */
-  private transient TupleBuffer leftHashTable;
+  private transient MutableTupleBuffer leftHashTable;
   /** The buffer holding the valid tuples from right. */
-  private transient TupleBuffer rightHashTable;
+  private transient MutableTupleBuffer rightHashTable;
   /** How many times each key occurred from left. */
   private transient TIntList occuredTimesOnLeft;
   /** How many times each key occurred from right. */
@@ -53,46 +54,51 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
   private final String columnName;
   /**
    * Traverse through the list of tuples.
-   * */
+   */
   private transient CountingJoinProcedure doCountingJoin;
 
   /**
    * Whether this operator has returned answer or not.
-   * */
+   */
   private boolean hasReturnedAnswer = false;
 
   /**
    * Traverse through the list of tuples with the same hash code.
-   * */
+   */
   private final class CountingJoinProcedure implements TIntProcedure {
 
     /**
      * Hash table.
-     * */
-    private TupleBuffer joinAgainstHashTable;
+     */
+    private MutableTupleBuffer joinAgainstHashTable;
 
     /**
      * times of occure of a key.
-     * */
+     */
     private TIntList occuredTimesOnJoinAgainstChild;
     /**
-     * 
-     * */
+     * Join columns in the input.
+     */
     private int[] inputCmpColumns;
 
     /**
+     * Join columns in the other table.
+     */
+    private int[] otherCmpColumns;
+
+    /**
      * row index of the tuple.
-     * */
+     */
     private int row;
 
     /**
      * input TupleBatch.
-     * */
+     */
     private TupleBatch inputTB;
 
     @Override
     public boolean execute(final int index) {
-      if (inputTB.tupleEquals(row, joinAgainstHashTable, index, inputCmpColumns)) {
+      if (TupleUtils.tupleEquals(inputTB, inputCmpColumns, row, joinAgainstHashTable, otherCmpColumns, index)) {
         ans += occuredTimesOnJoinAgainstChild.get(index);
       }
       return true;
@@ -193,7 +199,7 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
 
   /**
    * Recording the EOI status of the children.
-   * */
+   */
   private final boolean[] childrenEOI = new boolean[2];
 
   @Override
@@ -202,7 +208,7 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
     /**
      * There is no distinction between synchronous EOI and asynchronous EOI
      * 
-     * */
+     */
 
     final Operator left = getLeft();
     final Operator right = getRight();
@@ -268,7 +274,6 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
      * EOS, return answer first, then at the next round set EOS
      */
     if (isEOIReady()) {
-      checkEOSAndEOI();
       if (left.eos() && right.eos() && (!hasReturnedAnswer)) {
         hasReturnedAnswer = true;
         ansTBB.putLong(0, ans);
@@ -284,8 +289,8 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
     rightHashTableIndices = new TIntObjectHashMap<TIntList>();
     occuredTimesOnLeft = new TIntArrayList();
     occuredTimesOnRight = new TIntArrayList();
-    leftHashTable = new TupleBuffer(getLeft().getSchema().getSubSchema(leftCompareIndx));
-    rightHashTable = new TupleBuffer(getRight().getSchema().getSubSchema(rightCompareIndx));
+    leftHashTable = new MutableTupleBuffer(getLeft().getSchema().getSubSchema(leftCompareIndx));
+    rightHashTable = new MutableTupleBuffer(getRight().getSchema().getSubSchema(rightCompareIndx));
     ans = 0;
     ansTBB = new TupleBatchBuffer(getSchema());
     doCountingJoin = new CountingJoinProcedure();
@@ -294,13 +299,13 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
   /**
    * @param tb the incoming TupleBatch for processing join.
    * @param fromLeft if the tb is from left.
-   * */
+   */
   protected void processChildTB(final TupleBatch tb, final boolean fromLeft) {
 
     final Operator left = getLeft();
     final Operator right = getRight();
 
-    TupleBuffer hashTable1Local = null;
+    MutableTupleBuffer hashTable1Local = null;
     TIntObjectMap<TIntList> hashTable1IndicesLocal = null;
     TIntObjectMap<TIntList> hashTable2IndicesLocal = null;
     TIntList ownOccuredTimes = null;
@@ -310,6 +315,7 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
       hashTable1IndicesLocal = leftHashTableIndices;
       hashTable2IndicesLocal = rightHashTableIndices;
       doCountingJoin.inputCmpColumns = leftCompareIndx;
+      doCountingJoin.otherCmpColumns = rightCompareIndx;
       doCountingJoin.occuredTimesOnJoinAgainstChild = occuredTimesOnRight;
       ownOccuredTimes = occuredTimesOnLeft;
     } else {
@@ -318,6 +324,7 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
       hashTable1IndicesLocal = rightHashTableIndices;
       hashTable2IndicesLocal = leftHashTableIndices;
       doCountingJoin.inputCmpColumns = rightCompareIndx;
+      doCountingJoin.otherCmpColumns = leftCompareIndx;
       doCountingJoin.occuredTimesOnJoinAgainstChild = occuredTimesOnLeft;
       ownOccuredTimes = occuredTimesOnRight;
     }
@@ -373,9 +380,9 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
    * @param hashTableIndices the hash indices to be updated
    * @param compareColumns compareColumns of input tuple
    * @param occuredTimes occuredTimes array to be updated
-   * */
+   */
   private void updateHashTableAndOccureTimes(final TupleBatch tb, final int row, final int hashCode,
-      final TupleBuffer hashTable, final TIntObjectMap<TIntList> hashTableIndices, final int[] compareColumns,
+      final MutableTupleBuffer hashTable, final TIntObjectMap<TIntList> hashTableIndices, final int[] compareColumns,
       final TIntList occuredTimes) {
 
     /* get the index of the tuple's hash code corresponding to */
@@ -395,7 +402,7 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
     boolean found = false;
     for (int i = 0; i < tupleIndicesList.size(); ++i) {
       int index = tupleIndicesList.get(i);
-      if (tb.tupleEquals(row, hashTable, index, compareColumns)) {
+      if (TupleUtils.tupleEquals(tb, compareColumns, row, hashTable, index)) {
         occuredTimes.set(index, occuredTimes.get(index) + 1);
         found = true;
         break;

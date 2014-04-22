@@ -12,7 +12,7 @@
                         "port": "15433",
                         "username": "dbadmin"
                     },
-                    "opName": "ScanR",
+                    "opId": "ScanR",
                     "opType": "TableScan",
                     "relationKey": {
                         "programName": "broadcastjoin",
@@ -22,7 +22,7 @@
                 },
                 {
                     "argChild": "ScanR",
-                    "opName": "broadcast",
+                    "opId": "broadcast",
                     "opType": "BroadcastProducer"
                 }
             ]
@@ -39,7 +39,7 @@
                         "port": "15433",
                         "username": "dbadmin"
                     },
-                    "opName": "ScanU",
+                    "opId": "ScanU",
                     "opType": "TableScan",
                     "relationKey": {
                         "programName": "broadcastjoin",
@@ -49,7 +49,7 @@
                 },
                 {
                     "argOperatorId": "broadcast",
-                    "opName": "receive",
+                    "opId": "receive",
                     "opType": "BroadcastConsumer"
                 },
                 {
@@ -67,14 +67,14 @@
                     "argSelect2": [
                         1
                     ],
-                    "opName": "Join",
+                    "opId": "Join",
                     "opType": "SymmetricHashJoin"
                 },
                 {
                     "argChild": "Join",
                     "argOverwriteTable": true,
                     "connectionInfo": "localhost",
-                    "opName": "Insert",
+                    "opId": "Insert",
                     "opType": "DbInsert",
                     "relationKey": {
                         "programName": "broadcastjoin",

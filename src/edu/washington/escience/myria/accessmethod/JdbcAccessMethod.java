@@ -29,12 +29,12 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleWriter;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.ColumnFactory;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * Access method for a JDBC database. Exposes data as TupleBatches.
@@ -62,6 +62,13 @@ public final class JdbcAccessMethod extends AccessMethod {
     Objects.requireNonNull(jdbcInfo);
     this.jdbcInfo = jdbcInfo;
     connect(jdbcInfo, readOnly);
+  }
+
+  /**
+   * @return the jdbc connection.
+   */
+  public Connection getConnection() {
+    return jdbcConnection;
   }
 
   @Override
@@ -95,32 +102,60 @@ public final class JdbcAccessMethod extends AccessMethod {
     }
   }
 
+  /**
+   * Helper function to copy data into PostgreSQL using the COPY command.
+   * 
+   * @param relationKey the destination relation
+   * @param tupleBatch the tuples to be inserted.
+   * @throws DbException if there is an error.
+   */
+  private void postgresCopyInsert(final RelationKey relationKey, final TupleBatch tupleBatch) throws DbException {
+    // Use the postgres COPY command which is much faster
+    try {
+      CopyManager cpManager = ((PGConnection) jdbcConnection).getCopyAPI();
+
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      TupleWriter tw = new CsvTupleWriter(',', baos);
+      tw.writeTuples(tupleBatch);
+      tw.done();
+
+      Reader reader = new InputStreamReader(new ByteArrayInputStream(baos.toByteArray()));
+      long inserted =
+          cpManager.copyIn("COPY " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)
+              + " FROM STDIN WITH CSV", reader);
+      Preconditions.checkState(inserted == tupleBatch.numTuples(),
+          "Error: inserted a batch of size %s but only actually inserted %s rows", tupleBatch.numTuples(), inserted);
+    } catch (final SQLException | IOException e) {
+      LOGGER.error(e.getMessage(), e);
+      throw new DbException(e);
+    }
+  }
+
   @Override
   public void tupleBatchInsert(final RelationKey relationKey, final Schema schema, final TupleBatch tupleBatch)
       throws DbException {
     LOGGER.debug("Inserting batch of size {}", tupleBatch.numTuples());
     Objects.requireNonNull(jdbcConnection);
+    boolean writeSucceeds = false;
     if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
-      // Use the postgres COPY command which is much faster
+      /*
+       * There are bugs when using the COPY command to store doubles and floats into PostgreSQL. See
+       * uwescience/myria-web#48
+       */
       try {
-        CopyManager cpManager = ((PGConnection) jdbcConnection).getCopyAPI();
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        TupleWriter tw = new CsvTupleWriter(',', baos);
-        tw.writeTuples(tupleBatch);
-        tw.done();
-
-        Reader reader = new InputStreamReader(new ByteArrayInputStream(baos.toByteArray()));
-        long inserted =
-            cpManager.copyIn("COPY " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)
-                + " FROM STDIN WITH CSV", reader);
-        Preconditions.checkState(inserted == tupleBatch.numTuples(),
-            "Error: inserted a batch of size %s but only actually inserted %s rows", tupleBatch.numTuples(), inserted);
-      } catch (final SQLException | IOException e) {
-        LOGGER.error(e.getMessage(), e);
-        throw new DbException(e);
+        postgresCopyInsert(relationKey, tupleBatch);
+        writeSucceeds = true;
+      } catch (DbException e) {
+        LOGGER.error("Error inserting batch via PostgreSQL COPY", e);
+        /*
+         * TODO - should we do a VACUUM now? The bad rows will not be visible to the DB, however, so the write did not
+         * partially happen.
+         * 
+         * http://www.postgresql.org/docs/9.2/static/sql-copy.html
+         */
       }
-    } else {
+    }
+    if (!writeSucceeds) {
       try {
         /* Set up and execute the query */
         final PreparedStatement statement =

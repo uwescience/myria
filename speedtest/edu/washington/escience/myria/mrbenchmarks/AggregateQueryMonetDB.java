@@ -7,7 +7,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.RootOperator;
@@ -21,6 +20,7 @@ import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
 import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.PartitionFunction;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 public class AggregateQueryMonetDB implements QueryPlanGenerator {
 

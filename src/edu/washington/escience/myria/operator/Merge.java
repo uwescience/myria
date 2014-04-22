@@ -11,8 +11,9 @@ import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.TupleUtils;
 
 /**
  * Merges the sorted output of a set of operators.
@@ -66,7 +67,7 @@ public final class Merge extends NAryOperator {
       Preconditions.checkArgument(leftTb.numTuples() > leftPointer);
       Preconditions.checkArgument(rightTb.numTuples() > rightPointer);
       for (int columnIndex = 0; columnIndex < sortedColumns.length; columnIndex++) {
-        int compared = leftTb.cellCompare(columnIndex, leftPointer, rightTb, columnIndex, rightPointer);
+        int compared = TupleUtils.cellCompare(leftTb, columnIndex, leftPointer, rightTb, columnIndex, rightPointer);
         if (compared != 0) {
           if (ascending[columnIndex]) {
             return compared;
