@@ -27,7 +27,9 @@ import javax.ws.rs.core.UriInfo;
 import org.apache.commons.httpclient.HttpStatus;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Objects;
 import com.sun.jersey.core.header.ContentDisposition;
+import com.sun.jersey.multipart.FormDataParam;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiResponse;
@@ -45,6 +47,7 @@ import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.TipsyDatasetEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.io.InputStreamSource;
+import edu.washington.escience.myria.operator.BinaryFileScan;
 import edu.washington.escience.myria.operator.FileScan;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.TipsyFileScan;
@@ -271,6 +274,70 @@ public final class DatasetResource {
     URI datasetUri = getCanonicalResourcePath(uriInfo, dataset.relationKey);
     ResponseBuilder builder = Response.created(datasetUri);
     return doIngest(dataset, builder);
+  }
+
+  /**
+   * An endpoint for creating new datasets with streaming data.
+   * 
+   * @param relationKey the name of the dataset to be ingested.
+   * @param schema the {@link Schema} of the data.
+   * @param binary optional: if <code>true</code>, indicates that supplied data should be interpreted as a packed binary
+   *          object. (default, <code>false</code>)
+   * @param delimiter optional: the delimiter of the data, if a plaintext file is ingested. (<code>binary</code> is
+   *          missing or false).
+   * @param isLittleEndian optional: indicates whether the data is in big-Endian (default, <code>false</code>) or
+   *          little-Endian format. Only applicable when <code>binary</code> is set.
+   * @param overwrite optional: indicates that an existing relation should be overwritten. If <code>false</code>, then a
+   *          409 Conflict response will be thrown if <code>relationKey</code> already exists in the catalog.
+   * @param data optional: the source of bytes to be loaded.
+   * @return the created dataset resource.
+   * @throws DbException if there is an error in the database.
+   */
+  @POST
+  @Consumes(MediaType.MULTIPART_FORM_DATA)
+  public Response newDatasetMultipart(@FormDataParam("relationKey") final RelationKey relationKey,
+      @FormDataParam("schema") final Schema schema, @FormDataParam("delimiter") final Character delimiter,
+      @FormDataParam("binary") final Boolean binary, @FormDataParam("isLittleEndian") final Boolean isLittleEndian,
+      @FormDataParam("overwrite") final Boolean overwrite, @FormDataParam("data") final InputStream data)
+      throws DbException {
+    /* Required parameters. */
+    if (relationKey == null) {
+      throw new MyriaApiException(Status.BAD_REQUEST, "Missing required field relationKey.");
+    } else if (schema == null) {
+      throw new MyriaApiException(Status.BAD_REQUEST, "Missing required field schema.");
+    } else if (data == null) {
+      throw new MyriaApiException(Status.BAD_REQUEST, "Missing required field data.");
+    }
+
+    /* If we already have a dataset by this name, tell the user there's a conflict. */
+    try {
+      if (!Objects.firstNonNull(overwrite, false) && server.getSchema(relationKey) != null) {
+        /* Found, throw a 409 (Conflict) */
+        throw new MyriaApiException(Status.CONFLICT, "That dataset already exists.");
+      }
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+
+    Operator scan;
+    if (Objects.firstNonNull(binary, false)) {
+      scan = new BinaryFileScan(schema, new InputStreamSource(data), Objects.firstNonNull(isLittleEndian, false));
+    } else {
+      scan = new FileScan(new InputStreamSource(data), schema, delimiter);
+    }
+
+    DatasetStatus status = null;
+    try {
+      status = server.ingestDataset(relationKey, null, null, scan);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
+
+    /* In the response, tell the client the path to the relation. */
+    URI datasetUri = getCanonicalResourcePath(uriInfo, relationKey);
+    status.setUri(datasetUri);
+    ResponseBuilder builder = Response.created(datasetUri);
+    return builder.entity(status).build();
   }
 
   /**

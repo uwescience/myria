@@ -15,6 +15,7 @@ import com.carrotsearch.junitbenchmarks.BenchmarkOptions;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.io.FileSource;
 import edu.washington.escience.myria.operator.BinaryFileScan;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.tipsy.TipsyFileScanSpeedTest;
@@ -45,7 +46,7 @@ public class BinaryFileScanSpeedTest extends AbstractBenchmark {
     };
     Schema schema = new Schema(Arrays.asList(typeAr));
 
-    BinaryFileScan scan = new BinaryFileScan(schema, binaryFile.getAbsolutePath());
+    BinaryFileScan scan = new BinaryFileScan(schema, new FileSource(binaryFile.getAbsolutePath()));
     SinkRoot sink = new SinkRoot(scan);
     sink.open(null);
     while (!sink.eos()) {
