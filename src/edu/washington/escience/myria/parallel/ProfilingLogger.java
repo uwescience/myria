@@ -37,7 +37,7 @@ public class ProfilingLogger {
   private final AccessMethod accessMethod;
 
   /** The information for the database connection. */
-  private ConnectionInfo connectionInfo;
+  private final ConnectionInfo connectionInfo;
 
   /** The jdbc connection. */
   private Connection connection;
@@ -49,7 +49,7 @@ public class ProfilingLogger {
   private int batchSize = 0;
 
   /** The singleton instance. */
-  private static ProfilingLogger instance = null;
+  private static volatile ProfilingLogger instance = null;
 
   /**
    * Default constructor.
@@ -60,9 +60,8 @@ public class ProfilingLogger {
    */
   protected ProfilingLogger(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     /* retrieve connection information from the environment variables, if not already set */
-    if (connectionInfo == null && execEnvVars != null) {
-      connectionInfo = (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
-    }
+    Preconditions.checkNotNull(execEnvVars, "execEnvVars");
+    connectionInfo = (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
 
     if (connectionInfo == null) {
       throw new DbException("Unable to instantiate DbInsert: connection information unknown");
