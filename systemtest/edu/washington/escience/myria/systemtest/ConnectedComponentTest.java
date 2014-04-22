@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.base.Preconditions;
@@ -286,6 +287,7 @@ public class ConnectedComponentTest extends SystemTestBase {
   }
 
   @Test
+  @Ignore
   public void connectedComponentsFailureTest() throws Exception {
     connectedComponents(true, false);
   }
@@ -296,6 +298,7 @@ public class ConnectedComponentTest extends SystemTestBase {
   }
 
   @Test
+  @Ignore
   public void connectedComponentsFailurePrioritizedTest() throws Exception {
     connectedComponents(true, true);
   }
