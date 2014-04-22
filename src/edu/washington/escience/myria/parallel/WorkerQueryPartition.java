@@ -264,7 +264,7 @@ public class WorkerQueryPartition implements QueryPartition {
 
     queryStatistics.markQueryStart();
     for (QuerySubTreeTask t : tasks) {
-      t.start();
+      t.execute();
     }
   }
 

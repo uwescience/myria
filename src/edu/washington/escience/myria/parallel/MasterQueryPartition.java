@@ -457,7 +457,7 @@ public class MasterQueryPartition implements QueryPartition {
   @Override
   public final void startExecution() {
     queryStatistics.markQueryStart();
-    rootTask.start();
+    rootTask.execute();
   }
 
   @Override
