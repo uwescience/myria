@@ -39,8 +39,6 @@ public class BinaryFileScan extends LeafOperator {
   private final boolean isLittleEndian;
   /** Data input to read data from the bin file. */
   private transient DataInput dataInput;
-  /** The sum of all column sizes in bytes. */
-  private int tupleSize = 0;
 
   /**
    * Construct a new BinaryFileScan object that reads the given binary file and create tuples from the file data that
@@ -133,27 +131,6 @@ public class BinaryFileScan extends LeafOperator {
       dataInput = new LittleEndianDataInputStream(inputStream);
     } else {
       dataInput = new DataInputStream(inputStream);
-    }
-
-    tupleSize = 0;
-    for (int count = 0; count < schema.numColumns(); ++count) {
-      switch (schema.getColumnType(count)) {
-        case DOUBLE_TYPE:
-          tupleSize += 8;
-          break;
-        case FLOAT_TYPE:
-          tupleSize += 4;
-          break;
-        case INT_TYPE:
-          tupleSize += 4;
-          break;
-        case LONG_TYPE:
-          tupleSize += 8;
-          break;
-        default:
-          throw new UnsupportedOperationException(
-              "BinaryFileScan only supports reading fixed-width types from the binary file.");
-      }
     }
   }
 
