@@ -38,13 +38,17 @@ public interface QueryPartition extends Comparable<QueryPartition> {
 
   /**
    * Start execution.
+   * 
+   * @return the query partition execution future;
    * */
-  void startExecution();
+  QueryFuture startExecution();
 
   /**
    * Prepare to execute, reserve resources, allocate data structures to be used in execution, etc.
+   * 
+   * @return the init operation future
    * */
-  void init();
+  QueryFuture init();
 
   /**
    * Pause the query. If the query is currently paused, do nothing.
@@ -66,8 +70,9 @@ public interface QueryPartition extends Comparable<QueryPartition> {
   /**
    * Kill the query.
    * 
+   * @return the kill operation future;
    * */
-  void kill();
+  QueryFuture kill();
 
   /**
    * @return if the query is paused.

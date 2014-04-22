@@ -1,15 +1,14 @@
 package edu.washington.escience.myria.parallel;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
@@ -26,8 +25,7 @@ import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.parallel.ipc.FlowControlBagInputBuffer;
-import edu.washington.escience.myria.parallel.ipc.IPCEvent;
-import edu.washington.escience.myria.parallel.ipc.IPCEventListener;
+import edu.washington.escience.myria.parallel.ipc.StreamInputBuffer;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.util.DateTimeUtils;
 import edu.washington.escience.myria.util.IPCUtils;
@@ -37,7 +35,7 @@ import edu.washington.escience.myria.util.IPCUtils;
  * partition can only have a single task.
  * 
  * */
-public class MasterQueryPartition implements QueryPartition {
+public class MasterQueryPartition extends QueryPartitionBase {
 
   /**
    * Record worker execution info.
@@ -70,7 +68,9 @@ public class MasterQueryPartition implements QueryPartition {
         public void operationComplete(final QueryFuture future) throws Exception {
           int total = workerExecutionInfo.size();
           int current = nowCompleted.incrementAndGet();
-          queryExecutionFuture.setProgress(1, current, workerExecutionInfo.size());
+          getExecutionFuture().setProgress(1, current, workerExecutionInfo.size());
+          long queryID = getQueryID();
+          FTMODE ftMode = getFTMode();
           if (!future.isSuccess()) {
             Throwable cause = future.getCause();
             if (!(cause instanceof QueryKilledException)) {
@@ -86,25 +86,25 @@ public class MasterQueryPartition implements QueryPartition {
               } else if (ftMode.equals(FTMODE.abandon)) {
                 LOGGER.debug("(Abandon) ignoring failed query future on query #{}", queryID);
                 // do nothing
-              } else if (ftMode.equals(FTMODE.rejoin)) {
-                LOGGER.debug("(Rejoin) ignoring failed query future on query #{}", queryID);
+              } else if (getFTMode().equals(FTMODE.rejoin)) {
+                LOGGER.debug("(Rejoin) ignoring failed query future on query #{}", getQueryID());
                 // do nothing
               }
             }
           }
           if (current >= total) {
-            queryStatistics.markQueryEnd();
+            getExecutionStatistics().markQueryEnd();
             if (LOGGER.isInfoEnabled()) {
               LOGGER.info("Query #" + queryID + " executed for "
-                  + DateTimeUtils.nanoElapseToHumanReadable(queryStatistics.getQueryExecutionElapse()));
+                  + DateTimeUtils.nanoElapseToHumanReadable(getExecutionStatistics().getQueryExecutionElapse()));
             }
 
-            if (!killed && failedQueryPartitions.isEmpty()) {
-              queryExecutionFuture.setSuccess();
+            if (!isKilled() && failedQueryPartitions.isEmpty()) {
+              getExecutionFuture().setSuccess();
             } else {
               if (failedQueryPartitions.isEmpty()) {
                 // query gets killed.
-                queryExecutionFuture.setFailure(new QueryKilledException());
+                getExecutionFuture().setFailure(new QueryKilledException());
               } else {
                 DbException composedException =
                     new DbException("Query #" + future.getQuery().getQueryID() + " failed.");
@@ -122,7 +122,7 @@ public class MasterQueryPartition implements QueryPartition {
                     composedException.addSuppressed(workerException);
                   }
                 }
-                queryExecutionFuture.setFailure(composedException);
+                getExecutionFuture().setFailure(composedException);
               }
             }
           }
@@ -158,19 +158,9 @@ public class MasterQueryPartition implements QueryPartition {
   private static final Logger LOGGER = LoggerFactory.getLogger(MasterQueryPartition.class);
 
   /**
-   * The query ID.
-   * */
-  private final long queryID;
-
-  /**
    * The execution task for the master side query partition.
    * */
-  private volatile QuerySubTreeTask rootTask;
-
-  /***
-   * Statistics of this query partition.
-   */
-  private final QueryExecutionStatistics queryStatistics = new QueryExecutionStatistics();
+  private final QuerySubTreeTask rootTask;
 
   /**
    * The root operator of the master query partition.
@@ -181,21 +171,6 @@ public class MasterQueryPartition implements QueryPartition {
    * The owner master.
    * */
   private final Server master;
-
-  /**
-   * The FT mode.
-   * */
-  private final FTMODE ftMode;
-
-  /**
-   * The profiling mode.
-   */
-  private final boolean profilingMode;
-
-  /**
-   * The priority.
-   * */
-  private volatile int priority;
 
   /**
    * The data structure denoting the query dispatching/execution status of each worker.
@@ -216,21 +191,6 @@ public class MasterQueryPartition implements QueryPartition {
    * The future object denoting the worker receive query plan operation.
    * */
   private final DefaultQueryFuture workerReceiveFuture = new DefaultQueryFuture(this, false);
-
-  /**
-   * The future object denoting the query execution progress.
-   * */
-  private final DefaultQueryFuture queryExecutionFuture = new DefaultQueryFuture(this, false);
-
-  /**
-   * Current alive worker set.
-   * */
-  private final Set<Integer> missingWorkers;
-
-  /**
-   * Store the current pause future if the query is in pause, otherwise null.
-   * */
-  private final AtomicReference<QueryFuture> pauseFuture = new AtomicReference<QueryFuture>(null);
 
   /**
    * record all failed query partitions.
@@ -267,18 +227,18 @@ public class MasterQueryPartition implements QueryPartition {
   final void queryReceivedByWorker(final int workerID) {
     WorkerExecutionInfo wei = workerExecutionInfo.get(workerID);
     if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug("Worker #{} received query#{}", workerID, queryID);
+      LOGGER.debug("Worker #{} received query#{}", workerID, getQueryID());
     }
     if (wei.workerReceiveQuery.isSuccess()) {
       /* a recovery worker */
-      master.getIPCConnectionPool().sendShortMessage(workerID, IPCUtils.startQueryTM(queryID));
+      master.getIPCConnectionPool().sendShortMessage(workerID, IPCUtils.startQueryTM(getQueryID()));
       for (Entry<Integer, WorkerExecutionInfo> e : workerExecutionInfo.entrySet()) {
         if (e.getKey() == workerID) {
           /* the new worker doesn't need to start recovery tasks */
           continue;
         }
         if (!e.getValue().workerCompleteQuery.isDone() && e.getKey() != MyriaConstants.MASTER_ID) {
-          master.getIPCConnectionPool().sendShortMessage(e.getKey(), IPCUtils.recoverQueryTM(queryID, workerID));
+          master.getIPCConnectionPool().sendShortMessage(e.getKey(), IPCUtils.recoverQueryTM(getQueryID(), workerID));
         }
       }
     } else {
@@ -305,11 +265,6 @@ public class MasterQueryPartition implements QueryPartition {
    * */
   final QueryFuture getWorkerReceiveFuture() {
     return workerReceiveFuture;
-  }
-
-  @Override
-  public final QueryFuture getExecutionFuture() {
-    return queryExecutionFuture;
   }
 
   /**
@@ -354,7 +309,7 @@ public class MasterQueryPartition implements QueryPartition {
     final WorkerExecutionInfo wei = workerExecutionInfo.get(workerID);
     if (wei == null) {
       LOGGER.warn("Got a QUERY_COMPLETE (succeed) message from worker " + workerID + " who is not assigned to query"
-          + queryID);
+          + getQueryID());
       return;
     }
     if (LOGGER.isDebugEnabled()) {
@@ -373,18 +328,43 @@ public class MasterQueryPartition implements QueryPartition {
     final WorkerExecutionInfo wei = workerExecutionInfo.get(workerID);
     if (wei == null) {
       LOGGER.warn("Got a QUERY_COMPLETE (fail) message from worker " + workerID + " who is not assigned to query"
-          + queryID);
+          + getQueryID());
       return;
     }
 
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("Received query complete (fail) message from worker: {}, cause: {}", workerID, cause.toString());
     }
-    if (ftMode.equals(FTMODE.rejoin) && cause.toString().endsWith("LostHeartbeatException")) {
-      /* for rejoin, don't set it to be completed since this worker is expected to be launched again. */
-      return;
+    if (cause instanceof LostHeartbeatException) {
+      switch (getFTMode()) {
+        case abandon:
+          getMissingWorkers().add(workerID);
+          updateProducerChannels(workerID, false);
+          triggerTasks();
+          wei.workerCompleteQuery.setSuccess();
+          break;
+        case rejoin:
+          getMissingWorkers().add(workerID);
+          updateProducerChannels(workerID, false);
+          break;
+        case none:
+          wei.workerCompleteQuery.setFailure(cause);
+          break;
+      }
+    } else {
+      wei.workerCompleteQuery.setFailure(cause);
     }
-    wei.workerCompleteQuery.setFailure(cause);
+  }
+
+  @Override
+  protected ExecutorService getTaskExecutor(final RootOperator root) {
+    return master.getQueryExecutor();
+  }
+
+  @Override
+  protected StreamInputBuffer<TupleBatch> getInputBuffer(final RootOperator root, final Consumer c) {
+    return new FlowControlBagInputBuffer<TupleBatch>(getIPCPool(), c.getInputChannelIDs(getIPCPool().getMyIPCID()),
+        master.getInputBufferCapacity(), master.getInputBufferRecoverTrigger(), getIPCPool());
   }
 
   /**
@@ -395,11 +375,11 @@ public class MasterQueryPartition implements QueryPartition {
    * */
   public MasterQueryPartition(final SingleQueryPlanWithArgs masterPlan,
       final Map<Integer, SingleQueryPlanWithArgs> workerPlans, final long queryID, final Server master) {
+    super(masterPlan, queryID, master.getIPCConnectionPool());
     root = masterPlan.getRootOps().get(0);
-    this.queryID = queryID;
     this.master = master;
-    profilingMode = masterPlan.isProfilingMode();
-    ftMode = masterPlan.getFTMode();
+    createInitialTasks();
+    rootTask = getTasks().iterator().next().getExecutionFuture().addListener(taskExecutionListener).getTask();
     workerExecutionInfo = new ConcurrentHashMap<Integer, WorkerExecutionInfo>(workerPlans.size());
 
     for (Entry<Integer, SingleQueryPlanWithArgs> workerInfo : workerPlans.entrySet()) {
@@ -407,97 +387,34 @@ public class MasterQueryPartition implements QueryPartition {
     }
     WorkerExecutionInfo masterPart = new WorkerExecutionInfo(MyriaConstants.MASTER_ID, masterPlan);
     workerExecutionInfo.put(MyriaConstants.MASTER_ID, masterPart);
-
-    missingWorkers = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
-
-    rootTask = new QuerySubTreeTask(MyriaConstants.MASTER_ID, this, root, master.getQueryExecutor());
-    rootTask.getExecutionFuture().addListener(taskExecutionListener);
-    HashSet<Consumer> consumerSet = new HashSet<Consumer>();
-    consumerSet.addAll(rootTask.getInputChannels().values());
-
-    for (final Consumer operator : consumerSet) {
-      FlowControlBagInputBuffer<TupleBatch> inputBuffer =
-          new FlowControlBagInputBuffer<TupleBatch>(this.master.getIPCConnectionPool(), operator
-              .getInputChannelIDs(this.master.getIPCConnectionPool().getMyIPCID()), master.getInputBufferCapacity(),
-              master.getInputBufferRecoverTrigger(), this.master.getIPCConnectionPool());
-      operator.setInputBuffer(inputBuffer);
-      inputBuffer.addListener(FlowControlBagInputBuffer.NEW_INPUT_DATA, new IPCEventListener() {
-
-        @Override
-        public void triggered(final IPCEvent event) {
-          rootTask.notifyNewInput();
-        }
-      });
-    }
   }
 
   @Override
-  public final long getQueryID() {
-    return queryID;
-  }
-
-  @Override
-  public final int compareTo(final QueryPartition o) {
-    if (o == null) {
-      return -1;
-    }
-    return priority - o.getPriority();
-  }
-
-  @Override
-  public final void setPriority(final int priority) {
-    this.priority = priority;
-  }
-
-  @Override
-  public final String toString() {
-    return rootTask + ", priority:" + priority;
-  }
-
-  @Override
-  public final void startExecution() {
-    queryStatistics.markQueryStart();
+  public final void startExecution(final QueryFuture future) {
+    getExecutionStatistics().markQueryStart();
     rootTask.execute();
   }
 
+  /**
+   * Pause the master query partition.
+   * 
+   * @param future the future instance of the pause action. The future will be set as done if and only if all the tasks
+   *          in this query have stopped execution. During a pause of the query, all call to this method returns the
+   *          same future instance. Two pause calls when the query is not paused at either of the calls return two
+   *          different instances.
+   */
   @Override
-  public final int getPriority() {
-    return priority;
+  public final void pause(final DefaultQueryFuture future) {
+    // TODO implement actual pause.
   }
 
   @Override
-  public final QueryFuture pause() {
-    final QueryFuture pauseF = new DefaultQueryFuture(this, true);
-    while (!pauseFuture.compareAndSet(null, pauseF)) {
-      QueryFuture current = pauseFuture.get();
-      if (current != null) {
-        // already paused by some other threads, do not do the actual pause
-        return current;
-      }
-    }
-    return pauseF;
+  public final void resume(final DefaultQueryFuture future) {
+    // TODO implement actual resume.
   }
 
   @Override
-  public final QueryFuture resume() {
-    QueryFuture pf = pauseFuture.getAndSet(null);
-    DefaultQueryFuture rf = new DefaultQueryFuture(this, true);
-
-    if (pf == null) {
-      rf.setSuccess();
-      return rf;
-    }
-
-    // TODO do the resume stuff
-    return rf;
-  }
-
-  @Override
-  public final void kill() {
-    if (killed) {
-      return;
-    }
-    killed = true;
+  protected final void kill(final DefaultQueryFuture future) {
     rootTask.kill();
     Set<Integer> workers = getWorkersUnfinished();
     ChannelFuture[] cfs = new ChannelFuture[workers.size()];
@@ -518,71 +435,21 @@ public class MasterQueryPartition implements QueryPartition {
   }
 
   @Override
-  public final boolean isPaused() {
-    return pauseFuture.get() != null;
-  }
-
-  @Override
-  public final void init() {
+  public final void init(final DefaultQueryFuture initFuture) {
     ImmutableMap.Builder<String, Object> b = ImmutableMap.builder();
     TaskResourceManager resourceManager = new TaskResourceManager(master.getIPCConnectionPool(), rootTask);
-    rootTask.init(resourceManager, b.putAll(master.getExecEnvVars()).build());
+    try {
+      rootTask.init(resourceManager, b.putAll(master.getExecEnvVars()).build());
+    } catch (Throwable e) {
+      initFuture.setFailure(e);
+    }
+    initFuture.setSuccess();
   }
-
-  @Override
-  public final QueryExecutionStatistics getExecutionStatistics() {
-    return queryStatistics;
-  }
-
-  /**
-   * If the query has been asked to get killed (the kill event may not have completed).
-   * */
-  private volatile boolean killed = false;
 
   /**
    * Describes the cause of the query's death.
    */
   private volatile String message = null;
-
-  /**
-   * @return If the query has been asked to get killed (the kill event may not have completed).
-   * */
-  public final boolean isKilled() {
-    return killed;
-  }
-
-  @Override
-  public FTMODE getFTMode() {
-    return ftMode;
-  }
-
-  @Override
-  public boolean isProfilingMode() {
-    return profilingMode;
-  }
-
-  @Override
-  public Set<Integer> getMissingWorkers() {
-    return missingWorkers;
-  }
-
-  /**
-   * when a REMOVE_WORKER message is received, give tasks another chance to decide if they are ready to generate
-   * EOS/EOI.
-   */
-  public void triggerTasks() {
-    rootTask.notifyNewInput();
-  }
-
-  /**
-   * enable/disable output channels of the root(producer) of each task.
-   * 
-   * @param workerId the worker that changed its status.
-   * @param enable enable/disable all the channels that belong to the worker.
-   * */
-  public void updateProducerChannels(final int workerId, final boolean enable) {
-    rootTask.updateProducerChannels(workerId, enable);
-  }
 
   /**
    * @return the message describing the cause of the query's death. Nullable.
