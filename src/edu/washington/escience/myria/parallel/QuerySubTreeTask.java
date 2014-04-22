@@ -480,12 +480,17 @@ public final class QuerySubTreeTask {
   /**
    * The task is initialized.
    */
-  private static final int STATE_INITIALIZED = 0x01;
+  private static final int STATE_INITIALIZED = (1 << 0);
+
+  /**
+   * The task has actually been started.
+   * */
+  private static final int STATE_STARTED = (1 << 1);
 
   /**
    * All output of the task are available.
    */
-  private static final int STATE_OUTPUT_AVAILABLE = 0x02;
+  private static final int STATE_OUTPUT_AVAILABLE = (1 << 2);
 
   /**
    * @return if the output channels are available for writing.
@@ -497,17 +502,57 @@ public final class QuerySubTreeTask {
   /**
    * Any input of the task is available.
    */
-  private static final int STATE_INPUT_AVAILABLE = 0x08;
+  private static final int STATE_INPUT_AVAILABLE = (1 << 3);
 
   /**
    * The task is paused.
    */
-  private static final int STATE_PAUSED = 0x10;
+  private static final int STATE_PAUSED = (1 << 4);
 
   /**
    * The task is killed.
    */
-  private static final int STATE_KILLED = 0x20;
+  private static final int STATE_KILLED = (1 << 5);
+
+  /**
+   * The task is not EOS.
+   * */
+  private static final int STATE_EOS = (1 << 6);
+
+  /**
+   * The task is currently not in execution.
+   * */
+  private static final int STATE_EXECUTION_REQUESTED = (1 << 7);
+
+  /**
+   * The task fails because of uncaught exception.
+   * */
+  private static final int STATE_FAIL = (1 << 8);
+
+  /**
+   * The task execution thread is interrupted.
+   * */
+  private static final int STATE_INTERRUPTED = (1 << 9);
+
+  /**
+   * The task is in execution.
+   * */
+  private static final int STATE_IN_EXECUTION = (1 << 10);
+
+  /**
+   * Non-blocking ready condition.
+   */
+  public static final int EXECUTION_PRE_START = STATE_INITIALIZED | STATE_OUTPUT_AVAILABLE | STATE_INPUT_AVAILABLE;
+
+  /**
+   * Non-blocking ready condition.
+   */
+  public static final int EXECUTION_READY = EXECUTION_PRE_START | STATE_STARTED;
+
+  /**
+   * Non-blocking continue execution condition.
+   */
+  public static final int EXECUTION_CONTINUE = EXECUTION_READY | STATE_EXECUTION_REQUESTED | STATE_IN_EXECUTION;
 
   /**
    * @return if the task is already get killed.
@@ -515,41 +560,6 @@ public final class QuerySubTreeTask {
   public boolean isKilled() {
     return (executionCondition.get() & STATE_KILLED) == STATE_KILLED;
   }
-
-  /**
-   * The task is not EOS.
-   * */
-  private static final int STATE_EOS = 0x40;
-
-  /**
-   * The task is currently not in execution.
-   * */
-  private static final int STATE_EXECUTION_REQUESTED = 0x80;
-
-  /**
-   * The task fails because of uncaught exception.
-   * */
-  private static final int STATE_FAIL = 0x100;
-
-  /**
-   * The task execution thread is interrupted.
-   * */
-  private static final int STATE_INTERRUPTED = 0x200;
-
-  /**
-   * The task is in execution.
-   * */
-  private static final int STATE_IN_EXECUTION = 0x400;
-
-  /**
-   * Non-blocking ready condition.
-   */
-  public static final int EXECUTION_READY = STATE_INITIALIZED | STATE_OUTPUT_AVAILABLE | STATE_INPUT_AVAILABLE;
-
-  /**
-   * Non-blocking continue execution condition.
-   */
-  public static final int EXECUTION_CONTINUE = EXECUTION_READY | STATE_EXECUTION_REQUESTED | STATE_IN_EXECUTION;
 
   /**
    * clean up the task, release resources, etc.
@@ -598,9 +608,17 @@ public final class QuerySubTreeTask {
   }
 
   /**
+   * Start this task.
+   * */
+  public void start() {
+    AtomicUtils.setBitByValue(executionCondition, STATE_STARTED);
+    execute();
+  }
+
+  /**
    * Execute this task.
    * */
-  public void execute() {
+  private void execute() {
 
     if (executionCondition.compareAndSet(EXECUTION_READY, EXECUTION_READY | STATE_EXECUTION_REQUESTED)) {
       // set in execution.
