@@ -156,7 +156,6 @@ public class CastExpression extends BinaryExpression {
   public String getJavaString(final ExpressionOperatorParameter parameters) {
     final Type castFrom = getLeft().getOutputType(parameters);
     final Type castTo = getRight().getOutputType(parameters);
-    // use primitive type conversion for efficiency.
     switch (getCastType(castFrom, castTo)) {
       case LONGTOINT:
         return getLeftFunctionCallString("com.google.common.primitives.Ints.checkedCast", parameters);
