@@ -15,7 +15,7 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.operator.BinaryFileScan;
+import edu.washington.escience.myria.io.FileSource;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
@@ -36,7 +36,7 @@ public class BinaryFileScanTest {
   public void testSimple() throws DbException {
     Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
     String filename = "testdata" + File.separatorChar + "binaryfilescan" + File.separatorChar + "testSimple";
-    BinaryFileScan bfs = new BinaryFileScan(schema, filename);
+    BinaryFileScan bfs = new BinaryFileScan(schema, new FileSource(filename));
     assertEquals(2, getRowCount(bfs));
   }
 
@@ -68,7 +68,7 @@ public class BinaryFileScanTest {
     Schema schema = new Schema(Arrays.asList(typeAr));
     String filename =
         "testdata" + File.separatorChar + "binaryfilescan" + File.separatorChar + "testWithAstronomySchema";
-    BinaryFileScan bfs = new BinaryFileScan(schema, filename);
+    BinaryFileScan bfs = new BinaryFileScan(schema, new FileSource(filename));
     assertEquals(8, getRowCount(bfs));
   }
 
@@ -93,7 +93,7 @@ public class BinaryFileScanTest {
     Schema schema = new Schema(Arrays.asList(typeAr));
     String filename =
         "testdata" + File.separatorChar + "binaryfilescan" + File.separatorChar + "cosmo50cmb.256g2bwK.00024.star.bin";
-    BinaryFileScan bfs = new BinaryFileScan(schema, filename, true);
+    BinaryFileScan bfs = new BinaryFileScan(schema, new FileSource(filename), true);
     assertEquals(1291, getRowCount(bfs));
   }
 
