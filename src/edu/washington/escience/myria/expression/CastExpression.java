@@ -14,6 +14,60 @@ public class CastExpression extends BinaryExpression {
   private static final long serialVersionUID = 1L;
 
   /**
+   * Type of casting.
+   */
+  private enum CastType {
+    /**
+     * from long to int.
+     */
+    LONGTOINT,
+    /**
+     * from float or double to int.
+     */
+    FLOATSTOINT,
+    /**
+     * from number to float.
+     */
+    NUMTOFLOAT,
+    /**
+     * from number to double.
+     */
+    NUMTODOUBLE,
+    /**
+     * from int to long.
+     */
+    INTTOLONG,
+    /**
+     * from float or double to long.
+     */
+    FLOATSTOLONG,
+    /**
+     * from anything to string.
+     */
+    TOSTR,
+    /**
+     * from string to int.
+     */
+    STRTOINT,
+    /**
+     * from string to float.
+     */
+    STRTOFLOAT,
+    /**
+     * from string to double.
+     */
+    STRTODOUBLE,
+    /**
+     * from string to long.
+     */
+    STRTOLONG,
+    /**
+     * unsupported cast.
+     */
+    UNSUPPORTED,
+  }
+
+  /**
    * This is not really unused, it's used automagically by Jackson deserialization.
    */
   @SuppressWarnings("unused")
@@ -32,14 +86,11 @@ public class CastExpression extends BinaryExpression {
 
   @Override
   public Type getOutputType(final ExpressionOperatorParameter parameters) {
-    // TODO support more than just casting from object, i.e. from string to int
     final Type castFrom = getLeft().getOutputType(parameters);
     final Type castTo = getRight().getOutputType(parameters);
-    if (isSimpleCast(castFrom, castTo)) {
-      return castTo;
-    } else {
-      throw new IllegalStateException(String.format("Cannot cast from %s to %s", castFrom, castTo));
-    }
+    Preconditions.checkArgument(getCastType(castFrom, castTo) != CastType.UNSUPPORTED,
+        "Cast from %s to %s is not supported.", castFrom, castTo);
+    return castTo;
   }
 
   /**
@@ -47,16 +98,92 @@ public class CastExpression extends BinaryExpression {
    * @param castFrom the type that we cast from
    * @return true if the cast can be done using value of
    */
-  private boolean isSimpleCast(final Type castFrom, final Type castTo) {
-    return (castFrom == Type.INT_TYPE || castFrom == Type.FLOAT_TYPE || castFrom == Type.DOUBLE_TYPE || castFrom == Type.LONG_TYPE)
-        && (castTo == Type.INT_TYPE || castTo == Type.FLOAT_TYPE || castTo == Type.DOUBLE_TYPE || castTo == Type.LONG_TYPE);
+  private CastType getCastType(final Type castFrom, final Type castTo) {
+
+    String cast = castFrom + " " + castTo;
+    switch (cast) {
+      case "INT_TYPE STRING_TYPE":
+      case "FLOAT_TYPE STRING_TYPE":
+      case "DOUBLE_TYPE STRING_TYPE":
+      case "LONG_TYPE STRING_TYPE":
+      case "DATETIME_TYPE STRING_TYPE":
+        return CastType.TOSTR;
+      case "LONG_TYPE INT_TYPE":
+        return CastType.LONGTOINT;
+      case "FLOAT_TYPE INT_TYPE":
+      case "DOUBLE_TYPE INT_TYPE":
+        return CastType.FLOATSTOINT;
+      case "INT_TYPE FLOAT_TYPE":
+      case "LONG_TYPE FLOAT_TYPE":
+      case "DOUBLE_TYPE FLOAT_TYPE":
+        return CastType.NUMTOFLOAT;
+      case "INT_TYPE DOUBLE_TYPE":
+      case "LONG_TYPE DOUBLE_TYPE":
+      case "FLOAT_TYPE DOUBLE_TYPE":
+        return CastType.NUMTODOUBLE;
+      case "INT_TYPE LONG_TYPE":
+        return CastType.INTTOLONG;
+      case "FLOAT_TYPE LONG_TYPE":
+      case "DOUBLE_TYPE LONG_TYPE":
+        return CastType.FLOATSTOLONG;
+      case "STRING_TYPE INT_TYPE":
+        return CastType.STRTOINT;
+      case "STRING_TYPE FLOAT_TYPE":
+        return CastType.STRTOFLOAT;
+      case "STRING_TYPE DOUBLE_TYPE":
+        return CastType.STRTODOUBLE;
+      case "STRING_TYPE LONG_TYPE":
+        return CastType.STRTOLONG;
+      default:
+        break;
+    }
+    return CastType.UNSUPPORTED;
+  }
+
+  /**
+   * Returns the string for a primitive cast: '((' + targetType + ')' + left + ')'.
+   * 
+   * @param targetType string of the type to be casted to.
+   * @param parameters parameters that are needed to determine the output type.
+   * @return string that used for numeric type cast.
+   */
+  private String getPrimitiveTypeCastString(final String targetType, final ExpressionOperatorParameter parameters) {
+    return new StringBuilder().append("((").append(targetType).append(")(").append(getLeft().getJavaString(parameters))
+        .append("))").toString();
   }
 
   @Override
   public String getJavaString(final ExpressionOperatorParameter parameters) {
-    // final Type castFrom = getLeft().getOutputType(schema, stateSchema);
+    final Type castFrom = getLeft().getOutputType(parameters);
     final Type castTo = getRight().getOutputType(parameters);
-    return new StringBuilder().append("(").append(castTo.toJavaObjectType().getSimpleName()).append(".valueOf(")
-        .append(getLeft().getJavaString(parameters)).append("))").toString();
+    // use primitive type conversion for efficiency.
+    switch (getCastType(castFrom, castTo)) {
+      case LONGTOINT:
+        return getLeftFunctionCallString("com.google.common.primitives.Ints.checkedCast", parameters);
+      case FLOATSTOINT:
+        return getLeftFunctionCallWithParemeterString("com.google.common.math.DoubleMath.roundToInt", parameters,
+            "java.math.RoundingMode.DOWN");
+      case NUMTOFLOAT:
+        return getPrimitiveTypeCastString("float", parameters);
+      case NUMTODOUBLE:
+        return getPrimitiveTypeCastString("double", parameters);
+      case INTTOLONG:
+        return getPrimitiveTypeCastString("long", parameters);
+      case FLOATSTOLONG:
+        return getLeftFunctionCallWithParemeterString("com.google.common.math.DoubleMath.roundToLong", parameters,
+            "java.math.RoundingMode.DOWN");
+      case TOSTR:
+        return getLeftFunctionCallString("String.valueOf", parameters);
+      case STRTOINT:
+        return getLeftFunctionCallString("Integer.parseInt", parameters);
+      case STRTOFLOAT:
+        return getLeftFunctionCallString("Float.parseFloat", parameters);
+      case STRTODOUBLE:
+        return getLeftFunctionCallString("Double.parseDouble", parameters);
+      case STRTOLONG:
+        return getLeftFunctionCallString("Long.parseLong", parameters);
+      default:
+        throw new IllegalStateException("should not reach here.");
+    }
   }
 }

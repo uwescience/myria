@@ -105,6 +105,33 @@ public abstract class BinaryExpression extends ExpressionOperator {
   }
 
   /**
+   * Returns the left function call string: functionName + '(' + left+ ')'.
+   * 
+   * @param functionName the string representation of the Java function name.
+   * @param parameters parameters that are needed to create the java expression
+   * @return the Java string for this operator.
+   */
+  protected final String getLeftFunctionCallString(final String functionName,
+      final ExpressionOperatorParameter parameters) {
+    return new StringBuilder(functionName).append('(').append(getLeft().getJavaString(parameters)).append(')')
+        .toString();
+  }
+
+  /**
+   * Returns the left function call string with additional parameter: functionName+'('+left+','+'parameter'+')'.
+   * 
+   * @param functionName the string representation of the Java function name.
+   * @param parameters parameters that are needed to create the java expression
+   * @param additionalParameter user specified additional parameter.
+   * @return the Java string for this operator.
+   */
+  protected final String getLeftFunctionCallWithParemeterString(final String functionName,
+      final ExpressionOperatorParameter parameters, final String additionalParameter) {
+    return new StringBuilder(functionName).append('(').append(getLeft().getJavaString(parameters)).append(",").append(
+        additionalParameter).append(')').toString();
+  }
+
+  /**
    * A function that could be used as the default hash code for a binary expression.
    * 
    * @return a hash of (getClass().getCanonicalName(), left, right).
