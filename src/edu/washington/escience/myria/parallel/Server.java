@@ -1186,6 +1186,7 @@ public final class Server {
     if (workersToIngest == null) {
       actualWorkers = getAliveWorkers();
     }
+    Preconditions.checkArgument(actualWorkers.size() > 0, "Must use > 0 workers");
     int[] workersArray = MyriaUtils.integerCollectionToIntArray(actualWorkers);
 
     /* The master plan: send the tuples out. */
