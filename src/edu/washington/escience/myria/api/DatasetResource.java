@@ -42,6 +42,7 @@ import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleWriter;
+import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.api.encoding.DatasetEncoding;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.TipsyDatasetEncoding;
@@ -219,8 +220,6 @@ public final class DatasetResource {
       @PathParam("programName") final String programName, @PathParam("relationName") final String relationName,
       @QueryParam("format") final String format) throws DbException {
     RelationKey relationKey = RelationKey.of(userName, programName, relationName);
-    DatasetEncoding dataset = new DatasetEncoding();
-
     Schema schema;
     try {
       schema = server.getSchema(relationKey);
@@ -234,21 +233,19 @@ public final class DatasetResource {
     }
 
     String validFormat = validateFormat(format);
+    Character delimiter;
     if (validFormat.equals("csv")) {
-      dataset.delimiter = ',';
+      delimiter = ',';
     } else if (validFormat.equals("tsv")) {
-      dataset.delimiter = '\t';
+      delimiter = '\t';
     } else {
       throw new MyriaApiException(Status.BAD_REQUEST, "format must be 'csv', 'tsv'");
     }
 
-    dataset.relationKey = relationKey;
-    dataset.schema = schema;
-    dataset.source = new InputStreamSource(is);
-    dataset.workers = null;
+    Operator source = new FileScan(new InputStreamSource(is), schema, delimiter);
 
     ResponseBuilder builder = Response.ok();
-    return doIngest(dataset, builder);
+    return doIngest(relationKey, source, null, null, true, builder);
   }
 
   /**
@@ -261,19 +258,10 @@ public final class DatasetResource {
   public Response newDataset(final DatasetEncoding dataset) throws DbException {
     dataset.validate();
 
-    /* If we already have a dataset by this name, tell the user there's a conflict. */
-    try {
-      if (server.getSchema(dataset.relationKey) != null) {
-        /* Found, throw a 409 (Conflict) */
-        throw new MyriaApiException(Status.CONFLICT, "That dataset already exists.");
-      }
-    } catch (CatalogException e) {
-      throw new DbException(e);
-    }
-
     URI datasetUri = getCanonicalResourcePath(uriInfo, dataset.relationKey);
     ResponseBuilder builder = Response.created(datasetUri);
-    return doIngest(dataset, builder);
+    return doIngest(dataset.relationKey, new FileScan(dataset.source, dataset.schema, dataset.delimiter, dataset.quote,
+        dataset.escape, dataset.numberOfSkippedLines), dataset.workers, dataset.indexes, dataset.overwrite, builder);
   }
 
   /**
@@ -309,16 +297,6 @@ public final class DatasetResource {
       throw new MyriaApiException(Status.BAD_REQUEST, "Missing required field data.");
     }
 
-    /* If we already have a dataset by this name, tell the user there's a conflict. */
-    try {
-      if (!Objects.firstNonNull(overwrite, false) && server.getSchema(relationKey) != null) {
-        /* Found, throw a 409 (Conflict) */
-        throw new MyriaApiException(Status.CONFLICT, "That dataset already exists.");
-      }
-    } catch (CatalogException e) {
-      throw new DbException(e);
-    }
-
     Operator scan;
     if (Objects.firstNonNull(binary, false)) {
       scan = new BinaryFileScan(schema, new InputStreamSource(data), Objects.firstNonNull(isLittleEndian, false));
@@ -326,55 +304,61 @@ public final class DatasetResource {
       scan = new FileScan(new InputStreamSource(data), schema, delimiter);
     }
 
+    /* In the response, tell the client the path to the relation. */
+    URI datasetUri = getCanonicalResourcePath(uriInfo, relationKey);
+    ResponseBuilder builder = Response.created(datasetUri);
+
+    return doIngest(relationKey, scan, null, null, overwrite, builder);
+  }
+
+  /**
+   * Ingest a dataset; replace any previous version.
+   * 
+   * @param relationKey the destination relation for the data
+   * @param source the source of tuples to be loaded
+   * @param workers the workers on which the data will be stored
+   * @param indexes any user-requested indexes to be created
+   * @param overwrite whether an existing relation should be overwritten
+   * @param builder the template response
+   * @return the created dataset resource
+   * @throws DbException on any error
+   */
+  private Response doIngest(final RelationKey relationKey, final Operator source, final Set<Integer> workers,
+      final List<List<IndexRef>> indexes, final Boolean overwrite, final ResponseBuilder builder) throws DbException {
+
+    /* Validate the workers that will ingest this dataset. */
+    if (server.getAliveWorkers().size() == 0) {
+      throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "There are no alive workers to receive this dataset.");
+    }
+    if (workers != null) {
+      if (workers.size() == 0) {
+        throw new MyriaApiException(Status.BAD_REQUEST, "User-specified workers (optional) cannot be null.");
+      }
+      if (!server.getAliveWorkers().containsAll(workers)) {
+        throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "Not all requested workers are alive");
+      }
+    }
+    Set<Integer> actualWorkers = Objects.firstNonNull(workers, server.getAliveWorkers());
+
+    /* Check overwriting existing dataset. */
+    try {
+      if (!Objects.firstNonNull(overwrite, false) && server.getSchema(relationKey) != null) {
+        throw new MyriaApiException(Status.CONFLICT, "That dataset already exists.");
+      }
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+
+    /* Do the ingest, blocking until complete. */
     DatasetStatus status = null;
     try {
-      status = server.ingestDataset(relationKey, null, null, scan);
+      status = server.ingestDataset(relationKey, actualWorkers, indexes, source);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
     }
 
     /* In the response, tell the client the path to the relation. */
     URI datasetUri = getCanonicalResourcePath(uriInfo, relationKey);
-    status.setUri(datasetUri);
-    ResponseBuilder builder = Response.created(datasetUri);
-    return builder.entity(status).build();
-  }
-
-  /**
-   * Ingest a dataset; replace any previous version.
-   * 
-   * @param dataset description of the dataset to ingest
-   * @param builder the template response
-   * @return the created dataset resource
-   * @throws DbException on any error
-   */
-  private Response doIngest(final DatasetEncoding dataset, final ResponseBuilder builder) throws DbException {
-    /* If we don't have any workers alive right now, tell the user we're busy. */
-    if (server.getAliveWorkers().size() == 0) {
-      /* Throw a 503 (Service Unavailable) */
-      throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "There are no alive workers to receive this dataset.");
-    }
-
-    /* Check whether all requested workers are alive. */
-    if (dataset.workers != null && !server.getAliveWorkers().containsAll(dataset.workers)) {
-      /* Throw a 503 (Service Unavailable) */
-      throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "Not all requested workers are alive");
-    }
-
-    /* Do the work. */
-    Operator source =
-        new FileScan(dataset.source, dataset.schema, dataset.delimiter, dataset.quote, dataset.escape,
-            dataset.numberOfSkippedLines);
-
-    DatasetStatus status = null;
-    try {
-      status = server.ingestDataset(dataset.relationKey, dataset.workers, dataset.indexes, source);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-    }
-
-    /* In the response, tell the client the path to the relation. */
-    URI datasetUri = getCanonicalResourcePath(uriInfo, dataset.relationKey);
     status.setUri(datasetUri);
     return builder.entity(status).build();
   }
@@ -430,40 +414,9 @@ public final class DatasetResource {
       throws DbException {
     dataset.validate();
 
-    /* If we already have a dataset by this name, tell the user there's a conflict. */
-    try {
-      if (server.getSchema(dataset.relationKey) != null) {
-        /* Found, throw a 409 (Conflict) */
-        throw new MyriaApiException(Status.CONFLICT, "That dataset already exists.");
-      }
-    } catch (CatalogException e) {
-      throw new DbException(e);
-    }
-
-    /* If we don't have any workers alive right now, tell the user we're busy. */
-    Set<Integer> workers = server.getAliveWorkers();
-    if (workers.size() == 0) {
-      /* Throw a 503 (Service Unavailable) */
-      throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "There are no alive workers to receive this dataset.");
-    }
-
-    /* Moreover, check whether all requested workers are alive. */
-    if (dataset.workers != null && !server.getAliveWorkers().containsAll(dataset.workers)) {
-      /* Throw a 503 (Service Unavailable) */
-      throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "Not all requested workers are alive");
-    }
-
-    /* Do the work. */
-    try {
-      server.ingestDataset(dataset.relationKey, dataset.workers, dataset.indexes, new TipsyFileScan(
-          dataset.tipsyFilename, dataset.iorderFilename, dataset.grpFilename));
-    } catch (InterruptedException ee) {
-      Thread.currentThread().interrupt();
-      ee.printStackTrace();
-    }
-
-    /* In the response, tell the client the path to the relation. */
-    return Response.created(getCanonicalResourcePath(uriInfo, dataset.relationKey)).build();
+    ResponseBuilder builder = Response.created(getCanonicalResourcePath(uriInfo, dataset.relationKey));
+    Operator tipsyScan = new TipsyFileScan(dataset.tipsyFilename, dataset.iorderFilename, dataset.grpFilename);
+    return doIngest(dataset.relationKey, tipsyScan, dataset.workers, dataset.indexes, false, builder);
   }
 
   /**

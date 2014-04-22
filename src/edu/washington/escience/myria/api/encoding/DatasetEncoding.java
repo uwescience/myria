@@ -20,6 +20,7 @@ public class DatasetEncoding extends MyriaApiEncoding {
   public Character escape;
   public Integer numberOfSkippedLines;
   public Character quote;
-  public Boolean importFromDatabase = false;
+  public Boolean importFromDatabase;
   public List<List<IndexRef>> indexes;
+  public Boolean overwrite;
 }
