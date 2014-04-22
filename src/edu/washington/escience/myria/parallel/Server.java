@@ -599,14 +599,6 @@ public final class Server {
             if (mqp.getWorkerAssigned().contains(workerId)) {
               mqp.workerFail(workerId, new LostHeartbeatException());
             }
-            if (mqp.getFTMode().equals(FTMODE.abandon)) {
-              mqp.getMissingWorkers().add(workerId);
-              mqp.updateProducerChannels(workerId, false);
-              mqp.triggerTasks();
-            } else if (mqp.getFTMode().equals(FTMODE.rejoin)) {
-              mqp.getMissingWorkers().add(workerId);
-              mqp.updateProducerChannels(workerId, false);
-            }
           }
 
           removeWorkerAckReceived.put(workerId, Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>()));
@@ -1129,8 +1121,15 @@ public final class Server {
       dispatchWorkerQueryPlans(mqp).addListener(new QueryFutureListener() {
         @Override
         public void operationComplete(final QueryFuture future) throws Exception {
-          mqp.init();
-          mqp.startExecution();
+          mqp.init().addListener(new QueryFutureListener() {
+
+            @Override
+            public void operationComplete(final QueryFuture future) throws Exception {
+              if (future.isSuccess()) {
+                mqp.startExecution();
+              }
+            }
+          });
           Server.this.startWorkerQuery(future.getQuery().getQueryID());
         }
       });

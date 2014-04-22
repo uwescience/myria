@@ -122,4 +122,24 @@ class DefaultQueryFuture extends OperationFutureBase<Void> implements Attachment
     return this;
   }
 
+  /**
+   * @param query the owner query
+   * @param cause the cause of a failure
+   * @return an already failed future
+   * */
+  public static DefaultQueryFuture failedFuture(final QueryPartition query, final Throwable cause) {
+    DefaultQueryFuture f = new DefaultQueryFuture(query, false);
+    f.setFailure(cause);
+    return f;
+  }
+
+  /**
+   * @param query the owner query
+   * @return an already succeeded query future
+   * */
+  public static DefaultQueryFuture succeededFuture(final QueryPartition query) {
+    DefaultQueryFuture f = new DefaultQueryFuture(query, false);
+    f.setSuccess();
+    return f;
+  }
 }
