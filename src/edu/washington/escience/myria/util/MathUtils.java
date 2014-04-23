@@ -22,6 +22,20 @@ public final class MathUtils {
   }
 
   /**
+   * Safely cast a double to a float.
+   * 
+   * @param v the double
+   * @return the casted float of <code>v</code>
+   * @throws ArithmeticException if the <code> v </code> is out of range.
+   */
+  public static float castDoubleToFloat(final double v) throws ArithmeticException {
+    if (Math.abs(v) > Float.MAX_VALUE) {
+      throw new ArithmeticException("casted value is out of the range of float");
+    }
+    return (float) v;
+  }
+
+  /**
    * util classes are not instantiable.
    * */
   private MathUtils() {

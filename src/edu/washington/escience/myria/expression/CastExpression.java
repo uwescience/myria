@@ -20,47 +20,51 @@ public class CastExpression extends BinaryExpression {
     /**
      * from long to int.
      */
-    LONGTOINT,
+    LONG_TO_INT,
     /**
      * from float or double to int.
      */
-    FLOATSTOINT,
+    FLOATS_TO_INT,
     /**
-     * from number to float.
+     * int or long to float.
      */
-    NUMTOFLOAT,
+    INT_OR_LONG_TO_FLOAT,
+    /**
+     * from double to float.
+     */
+    DOUBLE_TO_FLOAT,
     /**
      * from number to double.
      */
-    NUMTODOUBLE,
+    NUM_TO_DOUBLE,
     /**
      * from int to long.
      */
-    INTTOLONG,
+    INT_TO_LONG,
     /**
      * from float or double to long.
      */
-    FLOATSTOLONG,
+    FLOATS_TO_LONG,
     /**
      * from anything to string.
      */
-    TOSTR,
+    TO_STR,
     /**
      * from string to int.
      */
-    STRTOINT,
+    STR_TO_INT,
     /**
      * from string to float.
      */
-    STRTOFLOAT,
+    STR_TO_FLOAT,
     /**
      * from string to double.
      */
-    STRTODOUBLE,
+    STR_TO_DOUBLE,
     /**
      * from string to long.
      */
-    STRTOLONG,
+    STR_TO_LONG,
     /**
      * unsupported cast.
      */
@@ -100,40 +104,46 @@ public class CastExpression extends BinaryExpression {
    */
   private CastType getCastType(final Type castFrom, final Type castTo) {
 
-    String cast = castFrom + " " + castTo;
-    switch (cast) {
-      case "INT_TYPE STRING_TYPE":
-      case "FLOAT_TYPE STRING_TYPE":
-      case "DOUBLE_TYPE STRING_TYPE":
-      case "LONG_TYPE STRING_TYPE":
-      case "DATETIME_TYPE STRING_TYPE":
-        return CastType.TOSTR;
-      case "LONG_TYPE INT_TYPE":
-        return CastType.LONGTOINT;
-      case "FLOAT_TYPE INT_TYPE":
-      case "DOUBLE_TYPE INT_TYPE":
-        return CastType.FLOATSTOINT;
-      case "INT_TYPE FLOAT_TYPE":
-      case "LONG_TYPE FLOAT_TYPE":
-      case "DOUBLE_TYPE FLOAT_TYPE":
-        return CastType.NUMTOFLOAT;
-      case "INT_TYPE DOUBLE_TYPE":
-      case "LONG_TYPE DOUBLE_TYPE":
-      case "FLOAT_TYPE DOUBLE_TYPE":
-        return CastType.NUMTODOUBLE;
-      case "INT_TYPE LONG_TYPE":
-        return CastType.INTTOLONG;
-      case "FLOAT_TYPE LONG_TYPE":
-      case "DOUBLE_TYPE LONG_TYPE":
-        return CastType.FLOATSTOLONG;
-      case "STRING_TYPE INT_TYPE":
-        return CastType.STRTOINT;
-      case "STRING_TYPE FLOAT_TYPE":
-        return CastType.STRTOFLOAT;
-      case "STRING_TYPE DOUBLE_TYPE":
-        return CastType.STRTODOUBLE;
-      case "STRING_TYPE LONG_TYPE":
-        return CastType.STRTOLONG;
+    switch (castFrom + "|" + castTo) {
+    /* any type to string. */
+      case "INT_TYPE|STRING_TYPE":
+      case "FLOAT_TYPE|STRING_TYPE":
+      case "DOUBLE_TYPE|STRING_TYPE":
+      case "LONG_TYPE|STRING_TYPE":
+      case "DATETIME_TYPE|STRING_TYPE":
+        return CastType.TO_STR;
+        /* numeric type to int. */
+      case "LONG_TYPE|INT_TYPE":
+        return CastType.LONG_TO_INT;
+      case "FLOAT_TYPE|INT_TYPE":
+      case "DOUBLE_TYPE|INT_TYPE":
+        return CastType.FLOATS_TO_INT;
+        /* numeric type to float. */
+      case "INT_TYPE|FLOAT_TYPE":
+      case "LONG_TYPE|FLOAT_TYPE":
+        return CastType.INT_OR_LONG_TO_FLOAT;
+      case "DOUBLE_TYPE|FLOAT_TYPE":
+        return CastType.DOUBLE_TO_FLOAT;
+        /* numeric type to double. */
+      case "INT_TYPE|DOUBLE_TYPE":
+      case "LONG_TYPE|DOUBLE_TYPE":
+      case "FLOAT_TYPE|DOUBLE_TYPE":
+        return CastType.NUM_TO_DOUBLE;
+        /* numeric type to long. */
+      case "INT_TYPE|LONG_TYPE":
+        return CastType.INT_TO_LONG;
+      case "FLOAT_TYPE|LONG_TYPE":
+      case "DOUBLE_TYPE|LONG_TYPE":
+        return CastType.FLOATS_TO_LONG;
+        /* String to numeric */
+      case "STRING_TYPE|INT_TYPE":
+        return CastType.STR_TO_INT;
+      case "STRING_TYPE|FLOAT_TYPE":
+        return CastType.STR_TO_FLOAT;
+      case "STRING_TYPE|DOUBLE_TYPE":
+        return CastType.STR_TO_DOUBLE;
+      case "STRING_TYPE|LONG_TYPE":
+        return CastType.STR_TO_LONG;
       default:
         break;
     }
@@ -157,29 +167,31 @@ public class CastExpression extends BinaryExpression {
     final Type castFrom = getLeft().getOutputType(parameters);
     final Type castTo = getRight().getOutputType(parameters);
     switch (getCastType(castFrom, castTo)) {
-      case LONGTOINT:
+      case LONG_TO_INT:
         return getLeftFunctionCallString("com.google.common.primitives.Ints.checkedCast", parameters);
-      case FLOATSTOINT:
+      case FLOATS_TO_INT:
         return getLeftFunctionCallWithParemeterString("com.google.common.math.DoubleMath.roundToInt", parameters,
             "java.math.RoundingMode.DOWN");
-      case NUMTOFLOAT:
+      case INT_OR_LONG_TO_FLOAT:
         return getPrimitiveTypeCastString("float", parameters);
-      case NUMTODOUBLE:
+      case DOUBLE_TO_FLOAT:
+        return getLeftFunctionCallString("edu.washington.escience.myria.util.MathUtils.castDoubleToFloat", parameters);
+      case NUM_TO_DOUBLE:
         return getPrimitiveTypeCastString("double", parameters);
-      case INTTOLONG:
+      case INT_TO_LONG:
         return getPrimitiveTypeCastString("long", parameters);
-      case FLOATSTOLONG:
+      case FLOATS_TO_LONG:
         return getLeftFunctionCallWithParemeterString("com.google.common.math.DoubleMath.roundToLong", parameters,
             "java.math.RoundingMode.DOWN");
-      case TOSTR:
+      case TO_STR:
         return getLeftFunctionCallString("String.valueOf", parameters);
-      case STRTOINT:
+      case STR_TO_INT:
         return getLeftFunctionCallString("Integer.parseInt", parameters);
-      case STRTOFLOAT:
+      case STR_TO_FLOAT:
         return getLeftFunctionCallString("Float.parseFloat", parameters);
-      case STRTODOUBLE:
+      case STR_TO_DOUBLE:
         return getLeftFunctionCallString("Double.parseDouble", parameters);
-      case STRTOLONG:
+      case STR_TO_LONG:
         return getLeftFunctionCallString("Long.parseLong", parameters);
       default:
         throw new IllegalStateException("should not reach here.");
