@@ -76,4 +76,9 @@ public class SchemaTest {
   public void testOfFieldsNoTypes() {
     Schema.ofFields("Mycol0");
   }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testOfFieldsBadType() {
+    Schema.ofFields(Type.INT_TYPE, Type.LONG_TYPE, 1, "Mycol0", "Mycol1");
+  }
 }

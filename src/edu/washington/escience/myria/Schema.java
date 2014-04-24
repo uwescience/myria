@@ -454,11 +454,14 @@ public final class Schema implements Serializable {
     ImmutableList.Builder<Type> typesB = ImmutableList.builder();
     ImmutableList.Builder<String> namesB = ImmutableList.builder();
     for (Object o : fields) {
-      Objects.requireNonNull(o);
+      Objects.requireNonNull(o, "field cannot be null");
       if (o instanceof Type) {
         typesB.add((Type) o);
       } else if (o instanceof String) {
         namesB.add((String) o);
+      } else {
+        throw new IllegalArgumentException("fields must be either " + Type.class.getCanonicalName() + " or "
+            + String.class.getCanonicalName() + ", not " + o.getClass().getCanonicalName());
       }
     }
     List<Type> types = typesB.build();
