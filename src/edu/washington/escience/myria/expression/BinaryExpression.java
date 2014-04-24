@@ -125,7 +125,7 @@ public abstract class BinaryExpression extends ExpressionOperator {
    * @param additionalParameter user specified additional parameter.
    * @return the Java string for this operator.
    */
-  protected final String getLeftFunctionCallWithParemeterString(final String functionName,
+  protected final String getLeftFunctionCallWithParameterString(final String functionName,
       final ExpressionOperatorParameter parameters, final String additionalParameter) {
     return new StringBuilder(functionName).append('(').append(getLeft().getJavaString(parameters)).append(",").append(
         additionalParameter).append(')').toString();

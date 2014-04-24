@@ -170,7 +170,7 @@ public class CastExpression extends BinaryExpression {
       case LONG_TO_INT:
         return getLeftFunctionCallString("com.google.common.primitives.Ints.checkedCast", parameters);
       case FLOATS_TO_INT:
-        return getLeftFunctionCallWithParemeterString("com.google.common.math.DoubleMath.roundToInt", parameters,
+        return getLeftFunctionCallWithParameterString("com.google.common.math.DoubleMath.roundToInt", parameters,
             "java.math.RoundingMode.DOWN");
       case INT_OR_LONG_TO_FLOAT:
         return getPrimitiveTypeCastString("float", parameters);
@@ -181,7 +181,7 @@ public class CastExpression extends BinaryExpression {
       case INT_TO_LONG:
         return getPrimitiveTypeCastString("long", parameters);
       case FLOATS_TO_LONG:
-        return getLeftFunctionCallWithParemeterString("com.google.common.math.DoubleMath.roundToLong", parameters,
+        return getLeftFunctionCallWithParameterString("com.google.common.math.DoubleMath.roundToLong", parameters,
             "java.math.RoundingMode.DOWN");
       case TO_STR:
         return getLeftFunctionCallString("String.valueOf", parameters);
