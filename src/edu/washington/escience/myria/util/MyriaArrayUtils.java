@@ -131,7 +131,7 @@ public final class MyriaArrayUtils extends org.apache.commons.lang3.ArrayUtils {
     }
     ImmutableSet<E> r = builder.build();
     if (r.size() != maybeSetArray.length) {
-      throw new IllegalArgumentException("The array is not a set");
+      throw new IllegalArgumentException("The array " + Arrays.toString(maybeSetArray) + " is not a set");
     }
     return r;
   }
@@ -146,7 +146,7 @@ public final class MyriaArrayUtils extends org.apache.commons.lang3.ArrayUtils {
   public static int[] checkSet(final int[] maybeSetArray) {
     Set<Integer> tmp = Sets.newHashSet(Ints.asList(maybeSetArray));
     if (maybeSetArray.length != tmp.size()) {
-      throw new IllegalArgumentException("The array is not a set");
+      throw new IllegalArgumentException("The array " + Arrays.toString(maybeSetArray) + " is not a set");
     }
     return maybeSetArray;
   }
