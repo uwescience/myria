@@ -7,6 +7,7 @@ import java.util.List;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 public class SchemaTest {
 
@@ -28,6 +29,24 @@ public class SchemaTest {
     assertEquals(types, schema.getColumnTypes());
     assertEquals(types.size(), schema.numColumns());
     assertEquals(names, schema.getColumnNames());
+  }
+
+  @Test(expected = NullPointerException.class)
+  public void testConstructionNullTypeInTypes() {
+    List<Type> types = Lists.newLinkedList();
+    types.add(Type.INT_TYPE);
+    types.add(null);
+    List<String> names = ImmutableList.of("Mycol0", "Mycol1");
+    new Schema(types, names);
+  }
+
+  @Test(expected = NullPointerException.class)
+  public void testConstructionNullNameInNames() {
+    List<Type> types = ImmutableList.of(Type.INT_TYPE, Type.LONG_TYPE);
+    List<String> names = Lists.newLinkedList();
+    names.add(null);
+    names.add("Mycol1");
+    new Schema(types, names);
   }
 
   @Test
