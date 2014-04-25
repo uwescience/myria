@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 import net.jcip.annotations.Immutable;
 
@@ -29,6 +30,25 @@ public final class Schema implements Serializable {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
+
+  /** The regular expression specifying what names are valid. */
+  public static final String VALID_NAME_REGEX = "^[a-zA-Z_]\\w*$";
+  /** The regular expression matcher for {@link #VALID_NAME_REGEX}. */
+  private static final Pattern VALID_NAME_PATTERN = Pattern.compile(VALID_NAME_REGEX);
+
+  /**
+   * Validate a potential column name for use in a Schema. Valid names are given by {@link #VALID_NAME_REGEX}.
+   * 
+   * @param name the candidate column name.
+   * @return the supplied name, if it is valid.
+   * @throws IllegalArgumentException if the name does not match the regex {@link #VALID_NAME_REGEX}.
+   */
+  private static String checkName(final String name) {
+    Objects.requireNonNull(name, "name");
+    Preconditions.checkArgument(VALID_NAME_PATTERN.matcher(name).matches(),
+        "supplied column name %s does not match the valid name regex %s", name, VALID_NAME_REGEX);
+    return name;
+  }
 
   /**
    * Converts a JDBC ResultSetMetaData object into a Schema.
@@ -261,9 +281,12 @@ public final class Schema implements Serializable {
     }
     MyriaUtils.checkHasNoNulls(columnTypes, "columnTypes may not contain null elements");
     MyriaUtils.checkHasNoNulls(columnNames, "columnNames may not contain null elements");
-    HashSet<String> uniqueNames = new HashSet<String>(columnNames);
-    if (uniqueNames.size() != columnNames.size()) {
-      throw new IllegalArgumentException("column names must be unique.");
+    HashSet<String> uniqueNames = new HashSet<>();
+    for (String name : columnNames) {
+      checkName(name);
+      if (!uniqueNames.add(name)) {
+        throw new IllegalArgumentException("schema has duplicated column name " + name);
+      }
     }
     this.columnTypes = ImmutableList.copyOf(columnTypes);
     this.columnNames = ImmutableList.copyOf(columnNames);
