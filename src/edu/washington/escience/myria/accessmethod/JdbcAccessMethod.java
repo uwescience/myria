@@ -106,10 +106,12 @@ public final class JdbcAccessMethod extends AccessMethod {
    * Helper function to copy data into PostgreSQL using the COPY command.
    * 
    * @param relationKey the destination relation
+   * @param schema the schema of the relation
    * @param tupleBatch the tuples to be inserted.
    * @throws DbException if there is an error.
    */
-  private void postgresCopyInsert(final RelationKey relationKey, final TupleBatch tupleBatch) throws DbException {
+  private void postgresCopyInsert(final RelationKey relationKey, final Schema schema, final TupleBatch tupleBatch)
+      throws DbException {
     // Use the postgres COPY command which is much faster
     try {
       CopyManager cpManager = ((PGConnection) jdbcConnection).getCopyAPI();
@@ -120,9 +122,13 @@ public final class JdbcAccessMethod extends AccessMethod {
       tw.done();
 
       Reader reader = new InputStreamReader(new ByteArrayInputStream(baos.toByteArray()));
-      long inserted =
-          cpManager.copyIn("COPY " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)
-              + " FROM STDIN WITH CSV", reader);
+      StringBuilder copyString =
+          new StringBuilder().append("COPY ").append(relationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL))
+              .append(" FROM STDIN WITH CSV");
+      for (String s : schema.getColumnNames()) {
+        copyString.append(" FORCE NOT NULL").append(s);
+      }
+      long inserted = cpManager.copyIn(copyString.toString(), reader);
       Preconditions.checkState(inserted == tupleBatch.numTuples(),
           "Error: inserted a batch of size %s but only actually inserted %s rows", tupleBatch.numTuples(), inserted);
     } catch (final SQLException | IOException e) {
@@ -143,7 +149,7 @@ public final class JdbcAccessMethod extends AccessMethod {
        * uwescience/myria-web#48
        */
       try {
-        postgresCopyInsert(relationKey, tupleBatch);
+        postgresCopyInsert(relationKey, schema, tupleBatch);
         writeSucceeds = true;
       } catch (DbException e) {
         LOGGER.error("Error inserting batch via PostgreSQL COPY", e);
