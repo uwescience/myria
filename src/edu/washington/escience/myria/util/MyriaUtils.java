@@ -78,4 +78,18 @@ public final class MyriaUtils {
     }
     return ret;
   }
+
+  /**
+   * Throws an {@link IllegalArgumentException} if the specified collection contains a null value.
+   * 
+   * @param iter the iterable
+   * @param message a message to be included with the exception
+   * @return {@link IllegalArgumentException} if the iterable contains a null element.
+   */
+  public static Iterable<?> checkHasNoNulls(final Iterable<?> iter, final String message) {
+    for (Object o : iter) {
+      Preconditions.checkNotNull(o, message);
+    }
+    return iter;
+  }
 }

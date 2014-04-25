@@ -66,6 +66,21 @@ public class RelationKeyTest {
     RelationKey.of(" ", "b", "c");
   }
 
+  @Test(expected = IllegalArgumentException.class)
+  public void testBadFieldNameHasSpace2() {
+    RelationKey.of(" a", "b", "c");
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testBadFieldNameHasSpace3() {
+    RelationKey.of("a ", "b", "c");
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testBadFieldNameHasSpace4() {
+    RelationKey.of(" a ", "b", "c");
+  }
+
   @Test(expected = NullPointerException.class)
   public void testBadFieldIsNull() {
     RelationKey.of("a", null, "c");

@@ -7,6 +7,7 @@ import java.util.List;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 public class SchemaTest {
 
@@ -28,6 +29,24 @@ public class SchemaTest {
     assertEquals(types, schema.getColumnTypes());
     assertEquals(types.size(), schema.numColumns());
     assertEquals(names, schema.getColumnNames());
+  }
+
+  @Test(expected = NullPointerException.class)
+  public void testConstructionNullTypeInTypes() {
+    List<Type> types = Lists.newLinkedList();
+    types.add(Type.INT_TYPE);
+    types.add(null);
+    List<String> names = ImmutableList.of("Mycol0", "Mycol1");
+    new Schema(types, names);
+  }
+
+  @Test(expected = NullPointerException.class)
+  public void testConstructionNullNameInNames() {
+    List<Type> types = ImmutableList.of(Type.INT_TYPE, Type.LONG_TYPE);
+    List<String> names = Lists.newLinkedList();
+    names.add(null);
+    names.add("Mycol1");
+    new Schema(types, names);
   }
 
   @Test
@@ -75,5 +94,55 @@ public class SchemaTest {
   @Test(expected = IllegalArgumentException.class)
   public void testOfFieldsNoTypes() {
     Schema.ofFields("Mycol0");
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testOfFieldsBadType() {
+    Schema.ofFields(Type.INT_TYPE, Type.LONG_TYPE, 1, "Mycol0", "Mycol1");
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testBadNameWithSpace() {
+    Schema.ofFields(Type.INT_TYPE, Type.LONG_TYPE, " Mycol0", "Mycol1");
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testBadNameWithSpace2() {
+    Schema.ofFields(Type.INT_TYPE, Type.LONG_TYPE, "Mycol0 ", "Mycol1");
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testBadNameWithSpace3() {
+    Schema.ofFields(Type.INT_TYPE, Type.LONG_TYPE, " Mycol0 ", "Mycol1");
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testBadNameWithSpace4() {
+    Schema.ofFields(Type.INT_TYPE, Type.LONG_TYPE, " ", "Mycol1");
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testBadNameStartsNumber() {
+    Schema.ofFields(Type.INT_TYPE, Type.LONG_TYPE, "0col", "Mycol1");
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testBadNameHasHyphen() {
+    Schema.ofFields(Type.INT_TYPE, Type.LONG_TYPE, "col-0", "Mycol1");
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testBadNameHasSymbol() {
+    Schema.ofFields(Type.INT_TYPE, Type.LONG_TYPE, "col$0", "Mycol1");
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testBadNameEmpty() {
+    Schema.ofFields(Type.INT_TYPE, Type.LONG_TYPE, "", "Mycol1");
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testBadNameHasParentheses() {
+    Schema.ofFields(Type.INT_TYPE, Type.LONG_TYPE, "Mycol(0)", "Mycol1");
   }
 }
