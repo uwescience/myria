@@ -94,7 +94,7 @@ public final class IntegerAggregator implements Aggregator<Integer> {
     }
     if ((aggOps & Aggregator.AGG_OP_STDEV) != 0) {
       types.add(Type.DOUBLE_TYPE);
-      names.add("stdev(" + aFieldName + ")");
+      names.add("stdev_" + aFieldName);
     }
     resultSchema = new Schema(types, names);
   }
