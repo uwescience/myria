@@ -3,6 +3,8 @@ package edu.washington.escience.myria.util;
 import java.util.Arrays;
 import java.util.Set;
 
+import org.slf4j.LoggerFactory;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -13,6 +15,9 @@ import com.google.common.primitives.Ints;
  * 
  */
 public final class MyriaArrayUtils extends org.apache.commons.lang3.ArrayUtils {
+
+  /** The logger for this class. */
+  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MyriaArrayUtils.class);
 
   /**
    * Utility classes should not be instantiated.
@@ -134,6 +139,21 @@ public final class MyriaArrayUtils extends org.apache.commons.lang3.ArrayUtils {
       throw new IllegalArgumentException("The array " + Arrays.toString(maybeSetArray) + " is not a set");
     }
     return r;
+  }
+
+  /**
+   * Check if an array of int is a set. If not, log a warning.
+   * 
+   * @param maybeSetArray data array
+   * @return the array itself
+   * */
+  public static int[] warnIfNotSet(final int[] maybeSetArray) {
+    try {
+      return checkSet(maybeSetArray);
+    } catch (IllegalArgumentException e) {
+      LOGGER.warn("Array " + Arrays.toString(maybeSetArray) + " is not a set", e);
+      return maybeSetArray;
+    }
   }
 
   /**
