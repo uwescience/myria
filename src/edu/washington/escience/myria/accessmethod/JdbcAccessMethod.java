@@ -297,6 +297,18 @@ public final class JdbcAccessMethod extends AccessMethod {
   }
 
   @Override
+  public String deleteStatementFromSchema(final Schema schema, final RelationKey relationKey) {
+    final StringBuilder sb = new StringBuilder();
+    sb.append("DELETE FROM ").append(relationKey.toString(jdbcInfo.getDbms())).append(" WHERE (").append(
+        schema.getColumnName(0)).append("=?");
+    for (int col = 1; col < schema.numColumns(); col++) {
+      sb.append(" AND ").append(schema.getColumnName(col)).append("=?");
+    }
+    sb.append(");");
+    return sb.toString();
+  }
+
+  @Override
   public String createIfNotExistsStatementFromSchema(final Schema schema, final RelationKey relationKey) {
     switch (jdbcInfo.getDbms()) {
       case MyriaConstants.STORAGE_SYSTEM_MYSQL:
@@ -486,6 +498,23 @@ public final class JdbcAccessMethod extends AccessMethod {
       String newName = getIndexName(newRelation, index).toString(jdbcInfo.getDbms());
       StringBuilder statement = new StringBuilder("ALTER INDEX ").append(oldName).append(" RENAME TO ").append(newName);
       execute(statement.toString());
+    }
+  }
+
+  @Override
+  public void tupleBatchDelete(final RelationKey relationKey, final TupleBatch tuples) throws DbException {
+    try {
+      /* Set up and execute the query */
+      final PreparedStatement deleteStatement =
+          jdbcConnection.prepareStatement(deleteStatementFromSchema(tuples.getSchema(), relationKey));
+      tuples.getIntoJdbc(deleteStatement);
+      // TODO make it also independent. should be getIntoJdbc(statement,
+      // tupleBatch)
+      deleteStatement.executeBatch();
+      deleteStatement.close();
+    } catch (final SQLException e) {
+      LOGGER.error(e.getMessage(), e);
+      throw new DbException(e);
     }
   }
 }

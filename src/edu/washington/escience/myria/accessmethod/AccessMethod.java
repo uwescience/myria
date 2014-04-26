@@ -120,6 +120,15 @@ public abstract class AccessMethod {
   public abstract String insertStatementFromSchema(Schema schema, RelationKey relationKey);
 
   /**
+   * Generates the delete statement string for a relation in the database.
+   * 
+   * @param schema the relation schema
+   * @param relationKey the relation name
+   * @return the delete statement string
+   */
+  public abstract String deleteStatementFromSchema(final Schema schema, final RelationKey relationKey);
+
+  /**
    * Generates the create table statement string for a relation in the database.
    * 
    * @param schema the relation schema
@@ -154,6 +163,15 @@ public abstract class AccessMethod {
    * @throws DbException if there is an error dropping the table.
    */
   public abstract void dropTableIfExists(RelationKey relationKey) throws DbException;
+
+  /**
+   * Deletes the tuples passed in from the relation specified in the relation key.
+   * 
+   * @param relationKey the relation that store the tuples to be deleted
+   * @param tuples the tuples to be deleted
+   * @throws DbException when there is something wrong with the back end database
+   */
+  public abstract void tupleBatchDelete(RelationKey relationKey, TupleBatch tuples) throws DbException;
 
   /**
    * Creates the specified indexes on the provided temporary table, but uses the real table name for their names.
