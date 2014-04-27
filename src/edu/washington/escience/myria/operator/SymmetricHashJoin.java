@@ -280,10 +280,10 @@ public final class SymmetricHashJoin extends BinaryOperator {
     } else {
       this.outputColumns = null;
     }
-    leftCompareIndx = MyriaArrayUtils.checkSet(compareIndx1);
-    rightCompareIndx = MyriaArrayUtils.checkSet(compareIndx2);
-    leftAnswerColumns = MyriaArrayUtils.checkSet(answerColumns1);
-    rightAnswerColumns = MyriaArrayUtils.checkSet(answerColumns2);
+    leftCompareIndx = MyriaArrayUtils.warnIfNotSet(compareIndx1);
+    rightCompareIndx = MyriaArrayUtils.warnIfNotSet(compareIndx2);
+    leftAnswerColumns = MyriaArrayUtils.warnIfNotSet(answerColumns1);
+    rightAnswerColumns = MyriaArrayUtils.warnIfNotSet(answerColumns2);
 
   }
 
