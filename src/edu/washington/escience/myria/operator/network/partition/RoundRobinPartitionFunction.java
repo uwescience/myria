@@ -1,4 +1,4 @@
-package edu.washington.escience.myria.parallel;
+package edu.washington.escience.myria.operator.network.partition;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -9,18 +9,23 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
- * Partition of tuples by the hash code of the whole tuple.
+ * A partition function that simply sends one tuple to each output in turn.
+ * 
+ * @author dhalperi
+ * 
  */
-public final class WholeTupleHashPartitionFunction extends PartitionFunction {
+public final class RoundRobinPartitionFunction extends PartitionFunction {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
+  /** The next partition to use. */
+  private int partition = 0;
 
   /**
-   * @param numPartitions total number of partitions.
+   * @param numPartitions the number of partitions.
    */
   @JsonCreator
-  public WholeTupleHashPartitionFunction(@Nullable @JsonProperty("numPartitions") final Integer numPartitions) {
+  public RoundRobinPartitionFunction(@Nullable @JsonProperty("numPartitions") final Integer numPartitions) {
     super(numPartitions);
   }
 
@@ -28,12 +33,10 @@ public final class WholeTupleHashPartitionFunction extends PartitionFunction {
   public int[] partition(@Nonnull final TupleBatch tb) {
     final int[] result = new int[tb.numTuples()];
     for (int i = 0; i < result.length; i++) {
-      int p = tb.hashCode(i) % numPartition();
-      if (p < 0) {
-        p = p + numPartition();
-      }
-      result[i] = p;
+      result[i] = partition;
+      partition = (partition + 1) % numPartition();
     }
     return result;
   }
+
 }

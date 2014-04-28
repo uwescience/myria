@@ -1,4 +1,4 @@
-package edu.washington.escience.myria.parallel;
+package edu.washington.escience.myria.operator.network;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
 
 /**

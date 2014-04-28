@@ -13,7 +13,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.TupleSource;
-import edu.washington.escience.myria.parallel.MultiFieldHashPartitionFunction;
+import edu.washington.escience.myria.operator.network.partition.MultiFieldHashPartitionFunction;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 public class MultiFieldHashPartitionFunctionTest {

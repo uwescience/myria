@@ -1,6 +1,6 @@
 package edu.washington.escience.myria.api.encoding;
 
-import edu.washington.escience.myria.parallel.CollectConsumer;
+import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.util.MyriaUtils;
 

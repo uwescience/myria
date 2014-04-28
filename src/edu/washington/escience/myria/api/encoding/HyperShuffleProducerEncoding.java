@@ -3,8 +3,8 @@ package edu.washington.escience.myria.api.encoding;
 import javax.ws.rs.core.Response.Status;
 
 import edu.washington.escience.myria.api.MyriaApiException;
-import edu.washington.escience.myria.parallel.GenericShuffleProducer;
-import edu.washington.escience.myria.parallel.MFMDHashPartitionFunction;
+import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
+import edu.washington.escience.myria.operator.network.partition.MFMDHashPartitionFunction;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
 import edu.washington.escience.myria.util.MyriaUtils;

@@ -4,7 +4,7 @@ import java.util.Map;
 
 import org.jboss.netty.channel.socket.nio.NioSocketChannelConfig;
 
-import edu.washington.escience.myria.parallel.Consumer;
+import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.parallel.ipc.FlowControlBagInputBuffer;
 import edu.washington.escience.myria.parallel.ipc.StreamInputBuffer;
 

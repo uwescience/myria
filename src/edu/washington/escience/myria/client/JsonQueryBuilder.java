@@ -6,7 +6,7 @@ import edu.washington.escience.myria.operator.IDBController;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
-import edu.washington.escience.myria.parallel.EOSController;
+import edu.washington.escience.myria.operator.network.EOSController;
 
 /**
  * Json query builders interface.

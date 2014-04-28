@@ -9,11 +9,11 @@ import org.junit.Test;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 
-import edu.washington.escience.myria.parallel.MultiFieldHashPartitionFunction;
-import edu.washington.escience.myria.parallel.PartitionFunction;
-import edu.washington.escience.myria.parallel.RoundRobinPartitionFunction;
-import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
-import edu.washington.escience.myria.parallel.WholeTupleHashPartitionFunction;
+import edu.washington.escience.myria.operator.network.partition.MultiFieldHashPartitionFunction;
+import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
+import edu.washington.escience.myria.operator.network.partition.RoundRobinPartitionFunction;
+import edu.washington.escience.myria.operator.network.partition.SingleFieldHashPartitionFunction;
+import edu.washington.escience.myria.operator.network.partition.WholeTupleHashPartitionFunction;
 
 public class SerializationTests {
 

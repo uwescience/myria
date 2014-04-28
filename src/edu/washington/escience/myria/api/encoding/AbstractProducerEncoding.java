@@ -3,8 +3,8 @@ package edu.washington.escience.myria.api.encoding;
 import java.util.List;
 import java.util.Set;
 
+import edu.washington.escience.myria.operator.network.Producer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
-import edu.washington.escience.myria.parallel.Producer;
 
 public abstract class AbstractProducerEncoding<P extends Producer> extends UnaryOperatorEncoding<P> implements
     ExchangeEncoding {

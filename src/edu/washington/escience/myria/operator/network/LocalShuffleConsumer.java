@@ -1,6 +1,7 @@
-package edu.washington.escience.myria.parallel;
+package edu.washington.escience.myria.operator.network;
 
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.parallel.ExchangePairID;
 
 /**
  * The consumer part of the Shuffle Exchange operator.
