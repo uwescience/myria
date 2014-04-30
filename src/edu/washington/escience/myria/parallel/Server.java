@@ -1610,12 +1610,14 @@ public final class Server {
 
     /* Construct the operators that go elsewhere. */
     // TODO: replace this with some kind of query construction
-    DbQueryScan scan =
-        new DbQueryScan("select nanotime, eventtype  from " + relationKey.toString(getDBMS())
-            + " p where opname = (select opname from " + relationKey.toString(getDBMS())
-            + " where p.fragmentid=fragmentid and p.queryid=queryid order by nanotime asc limit 1) and fragmentid="
-            + fragmentId + " and queryid=" + queryId + " and eventtype IN ('call', 'return') order by nanotime asc",
-            schema);
+    String opnameQueryString =
+        Joiner.on(' ').join("select opname from", relationKey.toString(getDBMS()), "where", fragmentId,
+            "=fragmentId and ", queryId, "=queryId order by nanotime asc limit 1");
+    String queryString =
+        Joiner.on(' ').join("select nanotime, eventtype from", relationKey.toString(getDBMS()), "where opname = (",
+            opnameQueryString, ") and query=", queryId, "and fragmentid=", fragmentId,
+            "and eventtype in ('call', 'return') order by nanotime asc");
+    DbQueryScan scan = new DbQueryScan(queryString, schema);
     final ExchangePairID operatorId = ExchangePairID.newID();
 
     ImmutableList.Builder<Expression> emitExpressions = ImmutableList.builder();
