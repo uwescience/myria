@@ -1570,8 +1570,8 @@ public final class Server {
 
     /* Submit the plan for the download. */
     String planString =
-        Joiner.on("").join("download profiling log data for (query=", queryId, ", fragment=", fragmentId, ",log type=",
-            relationKey.getRelationName(), ')');
+        Joiner.on("").join("download profiling log data for (query=", queryId, ", fragment=", fragmentId,
+            ", log type=", relationKey.getRelationName(), ')');
     try {
       return submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
     } catch (CatalogException e) {
