@@ -1487,21 +1487,12 @@ public final class Server {
     if (workerInfo == null) {
       throw new RuntimeException("Worker id: " + workerId + " not found");
     }
-    while (connectionPool.isRemoteAlive(workerId)) {
+    if (connectionPool.isRemoteAlive(workerId)) {
       // TODO add process kill
       if (LOGGER.isInfoEnabled()) {
         LOGGER.info("Shutting down #{} : {}", workerId, workerInfo);
       }
       connectionPool.sendShortMessage(workerId, IPCUtils.CONTROL_SHUTDOWN);
-
-      if (!connectionPool.isRemoteAlive(workerId)) {
-        try {
-          Thread.sleep(MyriaConstants.WAITING_INTERVAL_1_SECOND_IN_MS);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          break;
-        }
-      }
     }
     aliveWorkers.remove(workerId);
   }
