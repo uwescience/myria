@@ -17,6 +17,7 @@ import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.accessmethod.AccessMethod;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
@@ -105,15 +106,15 @@ public class ProfilingLogger {
    * @throws DbException if index cannot be created
    */
   public static void createSentIndex(final AccessMethod accessMethod) throws DbException {
-    // query id, fragment index: faster filtering
-    List<String> columnNames = MyriaConstants.LOG_SENT_SCHEMA.getColumnNames();
+    final Schema schema = MyriaConstants.LOG_SENT_SCHEMA;
 
-    ImmutableList.Builder<List<IndexRef>> index = ImmutableList.builder();
-    index.add(ImmutableList.of(IndexRef.of(columnNames.indexOf("queryId")), IndexRef.of(columnNames
-        .indexOf("fragmentId"))));
+    List<IndexRef> index =
+        ImmutableList.of(IndexRef.of(schema, "queryId"), IndexRef.of(schema, "fragmentId"), IndexRef.of(schema,
+            "nanoTime"));
 
     try {
-      accessMethod.createIndexes(MyriaConstants.LOG_SENT_RELATION, MyriaConstants.LOG_SENT_SCHEMA, index.build());
+      accessMethod.createIndexes(MyriaConstants.LOG_SENT_RELATION, MyriaConstants.LOG_SENT_SCHEMA, ImmutableList
+          .of(index));
     } catch (DbException e) {
       LOGGER.error("Couldn't create index for profiling logs:", e);
     }
@@ -125,18 +126,18 @@ public class ProfilingLogger {
    * @throws DbException if index cannot be created
    */
   public static void createProfilingIndexes(final AccessMethod accessMethod) throws DbException {
-    // query id, fragment index: faster filtering
-    // operator name index: faster matching with roots
-    List<String> columnNames = MyriaConstants.PROFILING_SCHEMA.getColumnNames();
+    final Schema schema = MyriaConstants.PROFILING_SCHEMA;
 
-    ImmutableList.Builder<List<IndexRef>> index = ImmutableList.builder();
-    index.add(ImmutableList.of(IndexRef.of(columnNames.indexOf("queryId")), IndexRef.of(columnNames
-        .indexOf("fragmentId")), IndexRef.of(columnNames.indexOf("nanoTime"))));
-    index.add(ImmutableList.of(IndexRef.of(columnNames.indexOf("queryId")), IndexRef.of(columnNames
-        .indexOf("fragmentId")), IndexRef.of(columnNames.indexOf("opName"))));
+    List<IndexRef> rootOpsIndex =
+        ImmutableList.of(IndexRef.of(schema, "queryId"), IndexRef.of(schema, "fragmentId"), IndexRef.of(schema,
+            "nanoTime"));
+    List<IndexRef> filterIndex =
+        ImmutableList.of(IndexRef.of(schema, "queryId"), IndexRef.of(schema, "fragmentId"), IndexRef.of(schema,
+            "opName"), IndexRef.of(schema, "nanoTime"));
 
     try {
-      accessMethod.createIndexes(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA, index.build());
+      accessMethod.createIndexes(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA, ImmutableList.of(
+          rootOpsIndex, filterIndex));
     } catch (DbException e) {
       LOGGER.error("Couldn't create index for profiling logs:", e);
     }

@@ -226,7 +226,30 @@ public abstract class AccessMethod {
      * @return an IndexRef representing ascending order over that column.
      */
     public static IndexRef of(final int column) {
-      return new IndexRef(column);
+      return IndexRef.of(column, true);
+    }
+
+    /**
+     * Factory method for IndexRef.
+     * 
+     * @param schema the schema
+     * @param columnName the column name
+     * @return the index ref to the column
+     */
+    public static IndexRef of(final Schema schema, final String columnName) {
+      return IndexRef.of(schema.columnNameToIndex(columnName));
+    }
+
+    /**
+     * Factory method for IndexRef.
+     * 
+     * @param schema the schema.
+     * @param columnName the column name.
+     * @param ascending true if the column should be hashed in ascending order.
+     * @return the index ref to the column
+     */
+    public static IndexRef of(final Schema schema, final String columnName, final boolean ascending) {
+      return IndexRef.of(schema.columnNameToIndex(columnName), ascending);
     }
 
     /**
