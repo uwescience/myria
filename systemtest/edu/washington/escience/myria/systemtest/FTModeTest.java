@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.base.Preconditions;
@@ -50,6 +51,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestUtils;
 
+@Ignore
 public class FTModeTest extends SystemTestBase {
   // change configuration here
   private final int MaxID = 200;

@@ -3,6 +3,7 @@ package edu.washington.escience.myria.systemtest;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -26,6 +27,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestUtils;
 
+@Ignore
 public class QueryFailureTest extends SystemTestBase {
 
   @Test(expected = DbException.class, timeout = 50000)
