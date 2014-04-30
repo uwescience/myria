@@ -334,6 +334,10 @@ public final class QuerySubTreeTask {
       stateS.append(splitter + "Initialized");
       splitter = " | ";
     }
+    if ((state & QuerySubTreeTask.STATE_STARTED) == STATE_STARTED) {
+      stateS.append(splitter + "Started");
+      splitter = " | ";
+    }
     if ((state & QuerySubTreeTask.STATE_INPUT_AVAILABLE) == STATE_INPUT_AVAILABLE) {
       stateS.append(splitter + "Input_Available");
       splitter = " | ";
