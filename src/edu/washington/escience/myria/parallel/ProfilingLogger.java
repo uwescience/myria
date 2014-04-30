@@ -131,8 +131,9 @@ public class ProfilingLogger {
 
     ImmutableList.Builder<List<IndexRef>> index = ImmutableList.builder();
     index.add(ImmutableList.of(IndexRef.of(columnNames.indexOf("queryId")), IndexRef.of(columnNames
-        .indexOf("fragmentId"))));
-    index.add(ImmutableList.of(IndexRef.of(columnNames.indexOf("opName"))));
+        .indexOf("fragmentId")), IndexRef.of(columnNames.indexOf("nanotime"))));
+    index.add(ImmutableList.of(IndexRef.of(columnNames.indexOf("queryId")), IndexRef.of(columnNames
+        .indexOf("fragmentId")), IndexRef.of(columnNames.indexOf("opName"))));
 
     try {
       accessMethod.createIndexes(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA, index.build());
