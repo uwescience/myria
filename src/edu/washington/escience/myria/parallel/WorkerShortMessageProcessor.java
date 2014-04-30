@@ -80,14 +80,8 @@ public final class WorkerShortMessageProcessor extends AttachmentableAdapter imp
         } else {
           switch (qm.getType()) {
             case QUERY_START:
-              q.init().addListener(new QueryFutureListener() {
-                @Override
-                public void operationComplete(final QueryFuture future) throws Exception {
-                  if (future.isSuccess()) {
-                    future.getQuery().startExecution();
-                  }
-                }
-              });
+              q.init();
+              q.startExecution();
               break;
             case QUERY_PAUSE:
               q.pause();

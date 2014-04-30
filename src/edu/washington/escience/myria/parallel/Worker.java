@@ -155,57 +155,14 @@ public final class Worker {
           }
 
           if (q != null) {
-            QueryFuture future = q.getExecutionFuture();
-            long queryID = q.getQueryID();
-            if (future.isDone()) {
-              // completed query notify master
-              activeQueries.remove(queryID);
-              TransportMessage messageToSent = null;
-              if (future.isSuccess()) {
-                if (LOGGER.isDebugEnabled()) {
-                  LOGGER.debug("Query #" + queryID + "succeeded.");
-                }
-                messageToSent = IPCUtils.queryCompleteTM(queryID, q.getExecutionStatistics());
-              } else {
-                if (LOGGER.isDebugEnabled()) {
-                  LOGGER.debug("Query failed because of exception: ", future.getCause());
-                }
-
-                try {
-                  messageToSent = IPCUtils.queryFailureTM(queryID, future.getCause(), q.getExecutionStatistics());
-                } catch (IOException e) {
-                  if (LOGGER.isErrorEnabled()) {
-                    LOGGER.error("Unknown query failure TM creation error", e);
-                  }
-                  messageToSent = IPCUtils.simpleQueryFailureTM(queryID);
-                }
+            try {
+              receiveQuery(q);
+              sendMessageToMaster(IPCUtils.queryReadyTM(q.getQueryID()));
+            } catch (DbException e) {
+              if (LOGGER.isErrorEnabled()) {
+                LOGGER.error("Unexpected exception at preparing query. Drop the query.", e);
               }
-
-              sendMessageToMaster(messageToSent).addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(final ChannelFuture future) throws Exception {
-                  if (future.isSuccess()) {
-                    if (LOGGER.isDebugEnabled()) {
-                      LOGGER.debug("The query complete message is sent to the master for sure ");
-                    }
-                  }
-                }
-              });
-              if (LOGGER.isInfoEnabled()) {
-                LOGGER.info("My part of query " + q + " finished");
-              }
-
-            } else {
-              // new query
-              try {
-                receiveQuery(q);
-                sendMessageToMaster(IPCUtils.queryReadyTM(queryID));
-              } catch (DbException e) {
-                if (LOGGER.isErrorEnabled()) {
-                  LOGGER.error("Unexpected exception at preparing query. Drop the query.", e);
-                }
-                q = null;
-              }
+              q = null;
             }
           }
         }
@@ -483,7 +440,7 @@ public final class Worker {
 
   /**
    * @param cmdlineOptions command line options
-   */
+   * */
   private static void bootupWorker(final HashMap<String, Object> cmdlineOptions) {
     final String workingDir = (String) cmdlineOptions.get("workingDir");
     if (LOGGER.isInfoEnabled()) {
@@ -680,7 +637,52 @@ public final class Worker {
 
       @Override
       public void operationComplete(final QueryFuture future) {
-        queryQueue.put((WorkerQueryPartition) future.getQuery());
+        activeQueries.remove(query.getQueryID());
+
+        if (future.isSuccess()) {
+
+          sendMessageToMaster(IPCUtils.queryCompleteTM(query.getQueryID(), query.getExecutionStatistics()))
+              .addListener(new ChannelFutureListener() {
+
+                @Override
+                public void operationComplete(final ChannelFuture future) throws Exception {
+                  if (future.isSuccess()) {
+                    if (LOGGER.isDebugEnabled()) {
+                      LOGGER.debug("The query complete message is sent to the master for sure ");
+                    }
+                  }
+                }
+
+              });
+          if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("My part of query " + query + " finished");
+          }
+
+        } else {
+          if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Query failed because of exception: ", future.getCause());
+          }
+
+          TransportMessage tm = null;
+          try {
+            tm = IPCUtils.queryFailureTM(query.getQueryID(), future.getCause(), query.getExecutionStatistics());
+          } catch (IOException e) {
+            if (LOGGER.isErrorEnabled()) {
+              LOGGER.error("Unknown query failure TM creation error", e);
+            }
+            tm = IPCUtils.simpleQueryFailureTM(query.getQueryID());
+          }
+          sendMessageToMaster(tm).addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(final ChannelFuture future) throws Exception {
+              if (future.isSuccess()) {
+                if (LOGGER.isDebugEnabled()) {
+                  LOGGER.debug("The query complete message is sent to the master for sure ");
+                }
+              }
+            }
+          });
+        }
       }
     });
   }
