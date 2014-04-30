@@ -256,6 +256,21 @@ public final class MyriaConstants {
       Type.LONG_TYPE, Type.LONG_TYPE, Type.INT_TYPE), ImmutableList.of("queryId", "fragmentId", "nanoTime",
       "numTuples", "destWorkerId"));
 
+  /**
+   * String representation of round robin partition function.
+   */
+  public static final String PARTITION_FUNCTION_ROUND_ROBIN = "roundrobin";
+
+  /**
+   * String representation of round robin partition function.
+   */
+  public static final String PARTITION_FUNCTION_SINGLE_FIELD_HASH = "singlefieldhash";
+
+  /**
+   * String representation of round robin partition function.
+   */
+  public static final String PARTITION_FUNCTION_MULTI_FIELD_HASH = "multifieldhash";
+
   /** Private constructor to disallow building utility class. */
   private MyriaConstants() {
   }

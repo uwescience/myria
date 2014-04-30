@@ -39,6 +39,7 @@ import edu.washington.escience.myria.CsvTupleWriter;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.JsonTupleWriter;
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.PartitionInfo;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleWriter;
@@ -258,7 +259,8 @@ public final class DatasetResource {
     Operator source = new FileScan(new InputStreamSource(is), schema, delimiter);
 
     ResponseBuilder builder = Response.ok();
-    return doIngest(relationKey, source, null, null, true, builder);
+    PartitionInfo partInfo = server.getParitionFunctionInfo(relationKey);
+    return doIngest(relationKey, source, null, null, true, builder, partInfo);
   }
 
   /**
@@ -273,8 +275,10 @@ public final class DatasetResource {
 
     URI datasetUri = getCanonicalResourcePath(uriInfo, dataset.relationKey);
     ResponseBuilder builder = Response.created(datasetUri);
+    PartitionInfo partInfo = new PartitionInfo(dataset.partitionFunction, dataset.hashFields);
     return doIngest(dataset.relationKey, new FileScan(dataset.source, dataset.schema, dataset.delimiter, dataset.quote,
-        dataset.escape, dataset.numberOfSkippedLines), dataset.workers, dataset.indexes, dataset.overwrite, builder);
+        dataset.escape, dataset.numberOfSkippedLines), dataset.workers, dataset.indexes, dataset.overwrite, builder,
+        partInfo);
   }
 
   /**
@@ -291,6 +295,10 @@ public final class DatasetResource {
    * @param overwrite optional: indicates that an existing relation should be overwritten. If <code>false</code>, then a
    *          409 Conflict response will be thrown if <code>relationKey</code> already exists in the catalog.
    * @param data optional: the source of bytes to be loaded.
+   * @param partitionFunction optional: the partition function used for ingesting the data. The default is RoundRobin
+   *          partition function.
+   * @param hashFields optional: however, this parameter is required when the specified <code>partitionFunction</code>
+   *          requires hashFields.
    * @return the created dataset resource.
    * @throws DbException if there is an error in the database.
    */
@@ -299,8 +307,9 @@ public final class DatasetResource {
   public Response newDatasetMultipart(@FormDataParam("relationKey") final RelationKey relationKey,
       @FormDataParam("schema") final Schema schema, @FormDataParam("delimiter") final Character delimiter,
       @FormDataParam("binary") final Boolean binary, @FormDataParam("isLittleEndian") final Boolean isLittleEndian,
-      @FormDataParam("overwrite") final Boolean overwrite, @FormDataParam("data") final InputStream data)
-      throws DbException {
+      @FormDataParam("overwrite") final Boolean overwrite, @FormDataParam("data") final InputStream data,
+      @FormDataParam("partitionFunction") final String partitionFunction,
+      @FormDataParam("hashFields") final List<Integer> hashFields) throws DbException {
     /* Required parameters. */
     if (relationKey == null) {
       throw new MyriaApiException(Status.BAD_REQUEST, "Missing required field relationKey.");
@@ -320,8 +329,8 @@ public final class DatasetResource {
     /* In the response, tell the client the path to the relation. */
     URI datasetUri = getCanonicalResourcePath(uriInfo, relationKey);
     ResponseBuilder builder = Response.created(datasetUri);
-
-    return doIngest(relationKey, scan, null, null, overwrite, builder);
+    PartitionInfo partInfo = new PartitionInfo(partitionFunction, hashFields);
+    return doIngest(relationKey, scan, null, null, overwrite, builder, partInfo);
   }
 
   /**
@@ -333,11 +342,13 @@ public final class DatasetResource {
    * @param indexes any user-requested indexes to be created
    * @param overwrite whether an existing relation should be overwritten
    * @param builder the template response
+   * @param partitionFunctionInfo the partition function information.
    * @return the created dataset resource
    * @throws DbException on any error
    */
   private Response doIngest(final RelationKey relationKey, final Operator source, final Set<Integer> workers,
-      final List<List<IndexRef>> indexes, final Boolean overwrite, final ResponseBuilder builder) throws DbException {
+      final List<List<IndexRef>> indexes, final Boolean overwrite, final ResponseBuilder builder,
+      final PartitionInfo partitionFunctionInfo) throws DbException {
 
     /* Validate the workers that will ingest this dataset. */
     if (server.getAliveWorkers().size() == 0) {
@@ -365,7 +376,7 @@ public final class DatasetResource {
     /* Do the ingest, blocking until complete. */
     DatasetStatus status = null;
     try {
-      status = server.ingestDataset(relationKey, actualWorkers, indexes, source);
+      status = server.ingestDataset(relationKey, actualWorkers, indexes, source, partitionFunctionInfo);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
     }
@@ -429,7 +440,8 @@ public final class DatasetResource {
 
     ResponseBuilder builder = Response.created(getCanonicalResourcePath(uriInfo, dataset.relationKey));
     Operator tipsyScan = new TipsyFileScan(dataset.tipsyFilename, dataset.iorderFilename, dataset.grpFilename);
-    return doIngest(dataset.relationKey, tipsyScan, dataset.workers, dataset.indexes, false, builder);
+    PartitionInfo partInfo = new PartitionInfo(null, null);
+    return doIngest(dataset.relationKey, tipsyScan, dataset.workers, dataset.indexes, false, builder, partInfo);
   }
 
   /**
