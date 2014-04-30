@@ -1615,7 +1615,7 @@ public final class Server {
             "=fragmentId and ", queryId, "=queryId order by nanotime asc limit 1");
     String queryString =
         Joiner.on(' ').join("select nanotime, eventtype from", relationKey.toString(getDBMS()), "where opname = (",
-            opnameQueryString, ") and query=", queryId, "and fragmentid=", fragmentId,
+            opnameQueryString, ") and queryid=", queryId, "and fragmentid=", fragmentId,
             "and eventtype in ('call', 'return') order by nanotime asc");
     DbQueryScan scan = new DbQueryScan(queryString, schema);
     final ExchangePairID operatorId = ExchangePairID.newID();
