@@ -85,9 +85,6 @@ public class ProfilingLogger {
 
     // Relations have been created in Worker.start()
 
-    createProfilingIndexes();
-    createSentIndex();
-
     if (accessMethod instanceof JdbcAccessMethod) {
       connection = ((JdbcAccessMethod) accessMethod).getConnection();
       try {
@@ -103,9 +100,11 @@ public class ProfilingLogger {
   }
 
   /**
+   * @param accessMethod the access method
+   * 
    * @throws DbException if index cannot be created
    */
-  private void createSentIndex() throws DbException {
+  public static void createSentIndex(final AccessMethod accessMethod) throws DbException {
     // query id, fragment index: faster filtering
     List<String> columnNames = MyriaConstants.LOG_SENT_SCHEMA.getColumnNames();
 
@@ -121,9 +120,11 @@ public class ProfilingLogger {
   }
 
   /**
+   * @param accessMethod the access method
+   * 
    * @throws DbException if index cannot be created
    */
-  private void createProfilingIndexes() throws DbException {
+  public static void createProfilingIndexes(final AccessMethod accessMethod) throws DbException {
     // query id, fragment index: faster filtering
     // operator name index: faster matching with roots
     List<String> columnNames = MyriaConstants.PROFILING_SCHEMA.getColumnNames();

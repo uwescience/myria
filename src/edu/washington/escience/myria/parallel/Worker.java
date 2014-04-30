@@ -796,6 +796,9 @@ public final class Worker {
       final AccessMethod accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
       accessMethod.createTableIfNotExists(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA);
       accessMethod.createTableIfNotExists(MyriaConstants.LOG_SENT_RELATION, MyriaConstants.LOG_SENT_SCHEMA);
+
+      ProfilingLogger.createProfilingIndexes(accessMethod);
+      ProfilingLogger.createSentIndex(accessMethod);
     }
   }
 
