@@ -33,6 +33,7 @@ import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -1568,7 +1569,9 @@ public final class Server {
     final SingleQueryPlanWithArgs masterPlan = new SingleQueryPlanWithArgs(output);
 
     /* Submit the plan for the download. */
-    String planString = "download " + relationKey.toString(getDBMS());
+    String planString =
+        Joiner.on("").join("download profiling log data for (query=", queryId, ", fragment=", fragmentId, ",log type=",
+            relationKey.getRelationName(), ')');
     try {
       return submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
     } catch (CatalogException e) {
@@ -1661,7 +1664,8 @@ public final class Server {
     final SingleQueryPlanWithArgs masterPlan = new SingleQueryPlanWithArgs(output);
 
     /* Submit the plan for the download. */
-    String planString = "download " + relationKey.toString(getDBMS());
+    String planString =
+        Joiner.on("").join("download profiling histogram (query=", queryId, ", fragment=", fragmentId, ")");
     try {
       return submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
     } catch (CatalogException e) {
