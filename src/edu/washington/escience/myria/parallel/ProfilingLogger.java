@@ -131,7 +131,7 @@ public class ProfilingLogger {
 
     ImmutableList.Builder<List<IndexRef>> index = ImmutableList.builder();
     index.add(ImmutableList.of(IndexRef.of(columnNames.indexOf("queryId")), IndexRef.of(columnNames
-        .indexOf("fragmentId")), IndexRef.of(columnNames.indexOf("nanotime"))));
+        .indexOf("fragmentId")), IndexRef.of(columnNames.indexOf("nanoTime"))));
     index.add(ImmutableList.of(IndexRef.of(columnNames.indexOf("queryId")), IndexRef.of(columnNames
         .indexOf("fragmentId")), IndexRef.of(columnNames.indexOf("opName"))));
 
