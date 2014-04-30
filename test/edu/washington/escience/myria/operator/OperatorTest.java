@@ -367,14 +367,14 @@ public class OperatorTest {
 
     // we need to rename the columns from the second tuples
     ImmutableList.Builder<String> sb = ImmutableList.builder();
-    sb.add("id2");
-    sb.add("name2");
+    sb.add("id").add("name");
+    sb.add("id2").add("name2");
     TupleSource[] children = new TupleSource[2];
     children[0] = new TupleSource(randomTuples[0]);
     children[1] = new TupleSource(randomTuples[1]);
-    UnaryOperator rename = new Rename(children[1], sb.build());
 
-    BinaryOperator join = new MergeJoin(children[0], rename, new int[] { 0 }, new int[] { 0 }, new boolean[] { true });
+    BinaryOperator join =
+        new MergeJoin(sb.build(), children[0], children[1], new int[] { 0 }, new int[] { 0 }, new boolean[] { true });
     join.open(null);
     TupleBatch tb;
     final ArrayList<Entry<Long, String>> entries = new ArrayList<Entry<Long, String>>();
@@ -414,14 +414,15 @@ public class OperatorTest {
 
     // we need to rename the columns from the second tuples
     ImmutableList.Builder<String> sb = ImmutableList.builder();
+    sb.addAll(schema.getColumnNames());
     sb.add("id2");
     sb.add("value2");
     TupleSource[] children = new TupleSource[2];
     children[0] = new TupleSource(randomTuples[0]);
     children[1] = new TupleSource(randomTuples[1]);
-    UnaryOperator rename = new Rename(children[1], sb.build());
 
-    BinaryOperator join = new MergeJoin(children[0], rename, new int[] { 0 }, new int[] { 0 }, new boolean[] { true });
+    BinaryOperator join =
+        new MergeJoin(sb.build(), children[0], children[1], new int[] { 0 }, new int[] { 0 }, new boolean[] { true });
     join.open(null);
     TupleBatch tb = null;
     int count = 0;

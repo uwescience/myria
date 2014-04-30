@@ -45,6 +45,8 @@ public abstract class PartitionFunction implements Serializable {
    *          deserialization.
    */
   public PartitionFunction(@Nullable final Integer numPartitions) {
+    Preconditions.checkArgument((numPartitions == null) || (numPartitions > 0),
+        "numPartitions argument must be null or > 0");
     this.numPartitions = Objects.firstNonNull(numPartitions, INVALID_NUM_PARTITIONS);
   }
 

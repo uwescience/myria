@@ -72,7 +72,7 @@ public class TupleBatch implements ReadableTable, Serializable {
    * @return a shallow copy of the specified TupleBatch with the new column names.
    */
   public TupleBatch rename(final List<String> columnNames) {
-    Schema newSchema = Schema.of(schema.getColumnTypes(), columnNames);
+    Schema newSchema = Schema.of(schema.getColumnTypes(), Objects.requireNonNull(columnNames, "columnNames"));
     return new TupleBatch(newSchema, columns, numTuples, isEOI);
   }
 
