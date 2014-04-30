@@ -23,4 +23,6 @@ public class DatasetEncoding extends MyriaApiEncoding {
   public Boolean importFromDatabase;
   public List<List<IndexRef>> indexes;
   public Boolean overwrite;
+  public String partitionFunction;
+  public List<Integer> hashFields;
 }

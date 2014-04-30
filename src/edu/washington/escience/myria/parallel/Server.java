@@ -42,6 +42,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
+import edu.washington.escience.myria.PartitionInfo;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleWriter;
@@ -1176,12 +1177,14 @@ public final class Server {
    * @param workersToIngest restrict the workers to ingest data (null for all)
    * @param indexes the indexes created.
    * @param source the source of tuples to be ingested.
+   * @param partitionFunctionInfo the partition function information.
    * @return the status of the ingested dataset.
    * @throws InterruptedException interrupted
    * @throws DbException if there is an error
    */
   public DatasetStatus ingestDataset(final RelationKey relationKey, final Set<Integer> workersToIngest,
-      final List<List<IndexRef>> indexes, final Operator source) throws InterruptedException, DbException {
+      final List<List<IndexRef>> indexes, final Operator source, final PartitionInfo partitionFunctionInfo)
+      throws InterruptedException, DbException {
     /* Figure out the workers we will use. If workersToIngest is null, use all active workers. */
     Set<Integer> actualWorkers = workersToIngest;
     if (workersToIngest == null) {
@@ -1193,8 +1196,8 @@ public final class Server {
     /* The master plan: send the tuples out. */
     ExchangePairID scatterId = ExchangePairID.newID();
     GenericShuffleProducer scatter =
-        new GenericShuffleProducer(source, scatterId, workersArray,
-            new RoundRobinPartitionFunction(workersArray.length));
+        new GenericShuffleProducer(source, scatterId, workersArray, generatePartitionFunction(partitionFunctionInfo,
+            workersArray.length));
 
     /* The workers' plan */
     GenericShuffleConsumer gather =
@@ -1219,7 +1222,45 @@ public final class Server {
           new DatasetStatus(relationKey, source.getSchema(), -1, qf.getQuery().getQueryID(), qf.getQuery()
               .getExecutionStatistics().getEndTime());
 
+      /* Should find a way to populate the partition function without updating the value here. This is a hack. */
+      catalog.updatePartitionFunction(relationKey, partitionFunctionInfo);
       return status;
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
+
+  /**
+   * Helper method for returning a partition function to the caller. Supports RoundRobin, SingleFieldHash,
+   * MultiFieldHash. If the string is an invalid partition function name, this method will return RoundRobin as the
+   * default partition function.
+   * 
+   * @param partitionFunctionInfo the partition function
+   * @param numWorkers number of workers
+   * @return The partition function.
+   */
+  private PartitionFunction generatePartitionFunction(final PartitionInfo partitionFunctionInfo, final int numWorkers) {
+    String partitionFunction = partitionFunctionInfo.getPartitionFunction();
+    List<Integer> hashFields = partitionFunctionInfo.getHashFields();
+    if (partitionFunction.toLowerCase().equals(MyriaConstants.PARTITION_FUNCTION_SINGLE_FIELD_HASH)) {
+      return new SingleFieldHashPartitionFunction(numWorkers, hashFields.get(0));
+    } else if (partitionFunction.toLowerCase().equals(MyriaConstants.PARTITION_FUNCTION_MULTI_FIELD_HASH)) {
+      Integer[] fieldIndexesArray = hashFields.toArray(new Integer[hashFields.size()]);
+      return new MultiFieldHashPartitionFunction(numWorkers, fieldIndexesArray);
+    }
+    return new RoundRobinPartitionFunction(numWorkers);
+  }
+
+  /**
+   * Gets the partition function information of the relation out of the catalog.
+   * 
+   * @param relationKey the relation to query.
+   * @return the partition function information.
+   * @throws DbException if there is an error.
+   */
+  public PartitionInfo getParitionFunctionInfo(final RelationKey relationKey) throws DbException {
+    try {
+      return catalog.getPartitionFunctionInfo(relationKey);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1266,7 +1307,7 @@ public final class Server {
       /* TODO(dhalperi) -- figure out how to populate the numTuples column. */
       catalog.addRelationMetadata(relationKey, schema, -1, qf.getQuery().getQueryID());
       /* Add the round robin-partitioned shard. */
-      catalog.addStoredRelation(relationKey, actualWorkers, "RoundRobin");
+      catalog.addStoredRelation(relationKey, actualWorkers, MyriaConstants.PARTITION_FUNCTION_ROUND_ROBIN);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
