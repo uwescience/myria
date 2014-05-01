@@ -7,7 +7,7 @@ import edu.washington.escience.myria.MyriaCommit;
  */
 public class VersionEncoding {
   /** The git commit id at build time. */
-  public final String version = MyriaCommit.COMMIT;
+  public final String commit = MyriaCommit.COMMIT;
   /** The git branch at build time. */
   public final String branch = MyriaCommit.BRANCH;
 }
