@@ -460,16 +460,46 @@ public final class JdbcAccessMethod extends AccessMethod {
     Objects.requireNonNull(indexes);
 
     String sourceTableName = relationKey.toString(jdbcInfo.getDbms());
-
     for (List<IndexRef> index : indexes) {
       String indexName = getIndexName(relationKey, index).toString(jdbcInfo.getDbms());
       String indexColumns = getIndexColumns(schema, index);
-
       StringBuilder statement = new StringBuilder("CREATE INDEX ");
       statement.append(indexName).append(" ON ").append(sourceTableName).append(indexColumns);
-
       execute(statement.toString());
     }
+  }
+
+  @Override
+  public void createIndexIfNotExists(final RelationKey relationKey, final Schema schema, final List<IndexRef> index)
+      throws DbException {
+    Objects.requireNonNull(relationKey);
+    Objects.requireNonNull(schema);
+    Objects.requireNonNull(index);
+
+    if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
+      createIndexIfNotExistPostgres(relationKey, schema, index);
+    } else {
+      throw new DbException("create index if not exists is not supported in " + jdbcInfo.getDbms() + ", implement me");
+    }
+  }
+
+  public void createIndexIfNotExistPostgres(final RelationKey relationKey, final Schema schema,
+      final List<IndexRef> index) throws DbException {
+    Objects.requireNonNull(index);
+
+    String sourceTableName = relationKey.toString(jdbcInfo.getDbms());
+    String indexName = getIndexName(relationKey, index).toString(jdbcInfo.getDbms());
+    String indexNameSingleQuote = "'" + indexName.substring(1, indexName.length() - 1) + "'";
+    String indexColumns = getIndexColumns(schema, index);
+
+    StringBuilder statement = new StringBuilder();
+    statement.append("DO $$ BEGIN IF NOT EXISTS (");
+    statement.append("SELECT 1 FROM pg_class WHERE relname=" + indexNameSingleQuote);
+    statement.append(") THEN ");
+    statement.append("CREATE INDEX " + indexName + " ON " + sourceTableName + " " + indexColumns + ";");
+    statement.append("END IF; END$$;");
+
+    execute(statement.toString());
   }
 
   @Override

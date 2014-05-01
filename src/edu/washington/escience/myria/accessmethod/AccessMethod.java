@@ -167,6 +167,17 @@ public abstract class AccessMethod {
       final List<List<IndexRef>> indexes) throws DbException;
 
   /**
+   * Creates an indexes on the provided temporary table only when it doesn't exist.
+   * 
+   * @param relationKey the table on which the indexes will be created.
+   * @param schema the Schema of the data in the table.
+   * @param indexe the index to be created; each entry is a list of column indices.
+   * @throws DbException if there is an error in the DBMS.
+   */
+  public abstract void createIndexIfNotExists(final RelationKey relationKey, final Schema schema,
+      final List<IndexRef> index) throws DbException;
+
+  /**
    * Rename the indexes from the old relation name to the new relation name.
    * 
    * @param oldRelation the relation on whose name the index names are based.

@@ -111,10 +111,8 @@ public class ProfilingLogger {
     List<IndexRef> index =
         ImmutableList.of(IndexRef.of(schema, "queryId"), IndexRef.of(schema, "fragmentId"), IndexRef.of(schema,
             "nanoTime"));
-
     try {
-      accessMethod.createIndexes(MyriaConstants.LOG_SENT_RELATION, MyriaConstants.LOG_SENT_SCHEMA, ImmutableList
-          .of(index));
+      accessMethod.createIndexIfNotExists(MyriaConstants.LOG_SENT_RELATION, MyriaConstants.LOG_SENT_SCHEMA, index);
     } catch (DbException e) {
       LOGGER.error("Couldn't create index for profiling logs:", e);
     }
@@ -136,8 +134,10 @@ public class ProfilingLogger {
             "opName"), IndexRef.of(schema, "nanoTime"));
 
     try {
-      accessMethod.createIndexes(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA, ImmutableList.of(
-          rootOpsIndex, filterIndex));
+      accessMethod.createIndexIfNotExists(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA,
+          rootOpsIndex);
+      accessMethod.createIndexIfNotExists(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA,
+          filterIndex);
     } catch (DbException e) {
       LOGGER.error("Couldn't create index for profiling logs:", e);
     }
