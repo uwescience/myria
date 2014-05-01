@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.parallel;
 
+import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -204,6 +205,9 @@ public class ProfilingLogger {
         batchSizeEvents = 0;
       }
     } catch (SQLException e) {
+      if (e instanceof BatchUpdateException) {
+        LOGGER.error("Error writing batch: ", e.getNextException());
+      }
       throw new DbException(e);
     }
   }
@@ -221,6 +225,9 @@ public class ProfilingLogger {
         batchSizeSent = 0;
       }
     } catch (SQLException e) {
+      if (e instanceof BatchUpdateException) {
+        LOGGER.error("Error writing batch: ", e.getNextException());
+      }
       throw new DbException(e);
     }
   }
