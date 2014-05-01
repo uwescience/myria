@@ -6,8 +6,6 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import scala.NotImplementedError;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
@@ -82,7 +80,7 @@ public class ProfilingLogger {
       }
     } else {
       connection = null;
-      throw new NotImplementedError();
+      throw new UnsupportedOperationException("Profiling only supported with JDBC connection");
     }
   }
 
