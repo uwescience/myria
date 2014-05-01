@@ -495,9 +495,8 @@ public final class JdbcAccessMethod extends AccessMethod {
     String indexColumns = getIndexColumns(schema, index);
 
     String statement =
-        Joiner.on(' ').join("DO $$ BEGIN", "IF NOT EXISTS", "(SELECT 1 FROM pg_class WHERE relname=",
-            indexNameSingleQuote, ") THEN CREATE INDEX", indexName, "ON", sourceTableName, indexColumns,
-            "; END IF; END$$;");
+        Joiner.on(' ').join("DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname=", indexNameSingleQuote,
+            ") THEN CREATE INDEX", indexName, "ON", sourceTableName, indexColumns, "; END IF; END$$;");
     execute(statement);
   }
 
