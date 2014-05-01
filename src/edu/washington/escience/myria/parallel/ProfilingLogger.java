@@ -126,7 +126,7 @@ public class ProfilingLogger {
   }
 
   /**
-   * Inserts in batches. Call {@link #flushProfilingEvent()}.
+   * Inserts in batches. Call {@link #flushProfilingEventsBatch()}.
    * 
    * @param operator the operator where this record was logged
    * @param numTuples the number of tuples
@@ -151,7 +151,7 @@ public class ProfilingLogger {
     }
 
     if (batchSizeEvents > TupleBatch.BATCH_SIZE) {
-      flushProfilingEvent();
+      flushProfilingEventsBatch();
     }
   }
 
@@ -189,8 +189,8 @@ public class ProfilingLogger {
    * @throws DbException if insertion in the database fails
    */
   public synchronized void flush() throws DbException {
-    flushSent();
-    flushProfilingEvent();
+    flushSentBatch();
+    flushProfilingEventsBatch();
   }
 
   /**
@@ -198,7 +198,7 @@ public class ProfilingLogger {
    * 
    * @throws DbException if insertion in the database fails
    */
-  private synchronized void flushProfilingEvent() throws DbException {
+  private synchronized void flushProfilingEventsBatch() throws DbException {
     try {
       if (batchSizeEvents > 0) {
         statementEvent.executeBatch();
@@ -215,7 +215,7 @@ public class ProfilingLogger {
    * 
    * @throws DbException if insertion in the database fails
    */
-  private synchronized void flushSent() throws DbException {
+  private synchronized void flushSentBatch() throws DbException {
     try {
       if (batchSizeSent > 0) {
         statementSent.executeBatch();
@@ -235,7 +235,8 @@ public class ProfilingLogger {
    * @param destWorkerId the worker if that we send the data to
    * @throws DbException if insertion in the database fails
    */
-  public void recordSent(final Operator operator, final int numTuples, final int destWorkerId) throws DbException {
+  public synchronized void recordSent(final Operator operator, final int numTuples, final int destWorkerId)
+      throws DbException {
     try {
       statementSent.setLong(1, operator.getQueryId());
       statementSent.setLong(2, operator.getFragmentId());
@@ -250,7 +251,7 @@ public class ProfilingLogger {
     }
 
     if (batchSizeSent > TupleBatch.BATCH_SIZE) {
-      flushSent();
+      flushSentBatch();
     }
   }
 }
