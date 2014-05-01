@@ -272,3 +272,10 @@ jar {
 	       "Main-Class": "edu.washington.escience.myria.daemon.MasterDaemon")
   }
 }
+
+/* Update the version and branch in constants.java. */
+task updateCommitInfo(type:Exec) {
+  commandLine './update_commit_id.sh'
+}
+compileJava.dependsOn updateCommitInfo
+eclipseClasspath.dependsOn updateCommitInfo

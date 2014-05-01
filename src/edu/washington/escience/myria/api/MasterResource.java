@@ -2,9 +2,12 @@ package edu.washington.escience.myria.api;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import edu.washington.escience.myria.api.encoding.VersionEncoding;
 import edu.washington.escience.myria.daemon.MasterDaemon;
 
 /**
@@ -42,5 +45,16 @@ public final class MasterResource {
     /* Start the thread, then return an empty success response. */
     shutdownThread.start();
     return Response.noContent().build();
+  }
+
+  /**
+   * Get the version information of Myria at build time.
+   * 
+   * @return a {@link VersionEncoding}.
+   */
+  @GET
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response getVersion() {
+    return Response.ok(new VersionEncoding()).build();
   }
 }
