@@ -22,6 +22,7 @@ import org.postgresql.copy.CopyManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.CsvTupleWriter;
@@ -472,34 +473,32 @@ public final class JdbcAccessMethod extends AccessMethod {
   @Override
   public void createIndexIfNotExists(final RelationKey relationKey, final Schema schema, final List<IndexRef> index)
       throws DbException {
-    Objects.requireNonNull(relationKey);
-    Objects.requireNonNull(schema);
-    Objects.requireNonNull(index);
+    Objects.requireNonNull(relationKey, "relationKey");
+    Objects.requireNonNull(schema, "schema");
+    Objects.requireNonNull(index, "index");
 
     if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
       createIndexIfNotExistPostgres(relationKey, schema, index);
     } else {
-      throw new DbException("create index if not exists is not supported in " + jdbcInfo.getDbms() + ", implement me");
+      throw new UnsupportedOperationException("create index if not exists is not supported in " + jdbcInfo.getDbms()
+          + ", implement me");
     }
   }
 
   public void createIndexIfNotExistPostgres(final RelationKey relationKey, final Schema schema,
       final List<IndexRef> index) throws DbException {
-    Objects.requireNonNull(index);
+    Objects.requireNonNull(index, "index");
 
     String sourceTableName = relationKey.toString(jdbcInfo.getDbms());
     String indexName = getIndexName(relationKey, index).toString(jdbcInfo.getDbms());
     String indexNameSingleQuote = "'" + indexName.substring(1, indexName.length() - 1) + "'";
     String indexColumns = getIndexColumns(schema, index);
 
-    StringBuilder statement = new StringBuilder();
-    statement.append("DO $$ BEGIN IF NOT EXISTS (");
-    statement.append("SELECT 1 FROM pg_class WHERE relname=" + indexNameSingleQuote);
-    statement.append(") THEN ");
-    statement.append("CREATE INDEX " + indexName + " ON " + sourceTableName + " " + indexColumns + ";");
-    statement.append("END IF; END$$;");
-
-    execute(statement.toString());
+    String statement =
+        Joiner.on(' ').join("DO $$ BEGIN", "IF NOT EXISTS", "(SELECT 1 FROM pg_class WHERE relname=",
+            indexNameSingleQuote, ") THEN CREATE INDEX", indexName, "ON", sourceTableName, indexColumns,
+            "; END IF; END$$;");
+    execute(statement);
   }
 
   @Override

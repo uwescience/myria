@@ -428,7 +428,7 @@ public final class SQLiteAccessMethod extends AccessMethod {
 
   @Override
   public void createIndexIfNotExists(RelationKey relationKey, Schema schema, List<IndexRef> index) throws DbException {
-    throw new DbException("create index if not exists is not supported in sqlite yet, implement me");
+    throw new UnsupportedOperationException("create index if not exists is not supported in sqlite yet, implement me");
   }
 }
 
