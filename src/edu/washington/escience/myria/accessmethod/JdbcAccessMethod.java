@@ -22,6 +22,7 @@ import org.postgresql.copy.CopyManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.CsvTupleWriter;
@@ -460,16 +461,52 @@ public final class JdbcAccessMethod extends AccessMethod {
     Objects.requireNonNull(indexes);
 
     String sourceTableName = relationKey.toString(jdbcInfo.getDbms());
-
     for (List<IndexRef> index : indexes) {
       String indexName = getIndexName(relationKey, index).toString(jdbcInfo.getDbms());
       String indexColumns = getIndexColumns(schema, index);
-
       StringBuilder statement = new StringBuilder("CREATE INDEX ");
       statement.append(indexName).append(" ON ").append(sourceTableName).append(indexColumns);
-
       execute(statement.toString());
     }
+  }
+
+  @Override
+  public void createIndexIfNotExists(final RelationKey relationKey, final Schema schema, final List<IndexRef> index)
+      throws DbException {
+    Objects.requireNonNull(relationKey, "relationKey");
+    Objects.requireNonNull(schema, "schema");
+    Objects.requireNonNull(index, "index");
+
+    if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
+      createIndexIfNotExistPostgres(relationKey, schema, index);
+    } else {
+      throw new UnsupportedOperationException("create index if not exists is not supported in " + jdbcInfo.getDbms()
+          + ", implement me");
+    }
+  }
+
+  /**
+   * Create an index in postgres if no index with the same name already exists.
+   *
+   * @param relationKey the table on which the indexes will be created.
+   * @param schema the Schema of the data in the table.
+   * @param index the index to be created; each entry is a list of column indices.
+   * @throws DbException if there is an error in the DBMS.
+   */
+  public void createIndexIfNotExistPostgres(final RelationKey relationKey, final Schema schema,
+      final List<IndexRef> index) throws DbException {
+    Objects.requireNonNull(index, "index");
+
+    String sourceTableName = relationKey.toString(jdbcInfo.getDbms());
+    String indexName = getIndexName(relationKey, index).toString(jdbcInfo.getDbms());
+    String indexNameSingleQuote = "'" + indexName.substring(1, indexName.length() - 1) + "'";
+    String indexColumns = getIndexColumns(schema, index);
+
+    String statement =
+        Joiner.on(' ').join("DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relkind = 'i' AND relname=",
+            indexNameSingleQuote, ") THEN CREATE INDEX", indexName, "ON", sourceTableName, indexColumns,
+            "; END IF; END$$;");
+    execute(statement);
   }
 
   @Override
@@ -494,9 +531,6 @@ public final class JdbcAccessMethod extends AccessMethod {
  * Wraps a JDBC ResultSet in a Iterator<TupleBatch>.
  * 
  * Implementation based on org.apache.commons.dbutils.ResultSetIterator. Requires ResultSet.isLast() to be implemented.
- * 
- * @author dhalperi
- * 
  */
 class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
   /** The results from a JDBC query that will be returned in TupleBatches by this Iterator. */

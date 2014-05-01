@@ -33,6 +33,7 @@ import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -918,7 +919,7 @@ public final class Server {
 
     if (getSchema(MyriaConstants.PROFILING_RELATION) == null && !getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_SQLITE)) {
       importDataset(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA, null);
-      importDataset(MyriaConstants.LOG_SENT_RELATION, MyriaConstants.LOG_SENT_SCHEMA, null);
+      importDataset(MyriaConstants.SENT_RELATION, MyriaConstants.SENT_SCHEMA, null);
     }
   }
 
@@ -1568,7 +1569,9 @@ public final class Server {
     final SingleQueryPlanWithArgs masterPlan = new SingleQueryPlanWithArgs(output);
 
     /* Submit the plan for the download. */
-    String planString = "download " + relationKey.toString(getDBMS());
+    String planString =
+        Joiner.on("").join("download profiling log data for (query=", queryId, ", fragment=", fragmentId,
+            ", log type=", relationKey.getRelationName(), ')');
     try {
       return submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
     } catch (CatalogException e) {
@@ -1607,12 +1610,14 @@ public final class Server {
 
     /* Construct the operators that go elsewhere. */
     // TODO: replace this with some kind of query construction
-    DbQueryScan scan =
-        new DbQueryScan("select nanotime, eventtype  from " + relationKey.toString(getDBMS())
-            + " p where opname = (select opname from " + relationKey.toString(getDBMS())
-            + " where p.fragmentid=fragmentid and p.queryid=queryid order by nanotime asc limit 1) and fragmentid="
-            + fragmentId + " and queryid=" + queryId + " and eventtype IN ('call', 'return') order by nanotime asc",
-            schema);
+    String opnameQueryString =
+        Joiner.on(' ').join("select opname from", relationKey.toString(getDBMS()), "where", fragmentId,
+            "=fragmentId and ", queryId, "=queryId order by nanotime asc limit 1");
+    String queryString =
+        Joiner.on(' ').join("select nanotime, eventtype from", relationKey.toString(getDBMS()), "where opname = (",
+            opnameQueryString, ") and queryid=", queryId, "and fragmentid=", fragmentId,
+            "and eventtype in ('call', 'return') order by nanotime asc");
+    DbQueryScan scan = new DbQueryScan(queryString, schema);
     final ExchangePairID operatorId = ExchangePairID.newID();
 
     ImmutableList.Builder<Expression> emitExpressions = ImmutableList.builder();
@@ -1661,7 +1666,8 @@ public final class Server {
     final SingleQueryPlanWithArgs masterPlan = new SingleQueryPlanWithArgs(output);
 
     /* Submit the plan for the download. */
-    String planString = "download " + relationKey.toString(getDBMS());
+    String planString =
+        Joiner.on("").join("download profiling histogram (query=", queryId, ", fragment=", fragmentId, ")");
     try {
       return submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
     } catch (CatalogException e) {

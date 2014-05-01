@@ -14,6 +14,7 @@ import edu.washington.escience.myria.parallel.ProfilingLogger;
 import edu.washington.escience.myria.parallel.QueryPartition;
 import edu.washington.escience.myria.parallel.QuerySubTreeTask;
 import edu.washington.escience.myria.parallel.TaskResourceManager;
+import edu.washington.escience.myria.parallel.WorkerQueryPartition;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
@@ -215,9 +216,6 @@ public abstract class Operator implements Serializable {
         throw (DbException) errors;
       }
     }
-    if (isProfilingMode()) {
-      profilingLogger.flush();
-    }
   }
 
   /**
@@ -397,7 +395,8 @@ public abstract class Operator implements Serializable {
     open = true;
 
     if (isProfilingMode()) {
-      profilingLogger = ProfilingLogger.getLogger(this.execEnvVars);
+      final WorkerQueryPartition workerQueryPartition = (WorkerQueryPartition) getQueryPartition();
+      profilingLogger = workerQueryPartition.getOwnerWorker().getProfilingLogger();
     }
   }
 

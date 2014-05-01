@@ -425,6 +425,12 @@ public final class SQLiteAccessMethod extends AccessMethod {
       execute(statement.toString());
     }
   }
+
+  @Override
+  public void createIndexIfNotExists(final RelationKey relationKey, final Schema schema, final List<IndexRef> index)
+      throws DbException {
+    throw new UnsupportedOperationException("create index if not exists is not supported in sqlite yet, implement me");
+  }
 }
 
 /**

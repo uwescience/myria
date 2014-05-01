@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableMap;
 
+import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.operator.RootOperator;
@@ -99,7 +100,7 @@ public class WorkerQueryPartition implements QueryPartition {
 
   /**
    * The future listener for processing the complete events of the execution of all the query's tasks.
-   * */
+   */
   private final TaskFutureListener taskExecutionListener = new TaskFutureListener() {
 
     @Override
@@ -129,6 +130,13 @@ public class WorkerQueryPartition implements QueryPartition {
         if (LOGGER.isInfoEnabled()) {
           LOGGER.info("Query #" + queryID + " executed for "
               + DateTimeUtils.nanoElapseToHumanReadable(queryStatistics.getQueryExecutionElapse()));
+        }
+        if (isProfilingMode()) {
+          try {
+            getOwnerWorker().getProfilingLogger().flush();
+          } catch (DbException e) {
+            LOGGER.error("error flushing Profiling Logger: ", e);
+          }
         }
         if (failTasks.isEmpty()) {
           executionFuture.setSuccess();
