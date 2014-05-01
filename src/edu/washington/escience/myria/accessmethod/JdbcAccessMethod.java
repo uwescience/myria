@@ -485,6 +485,14 @@ public final class JdbcAccessMethod extends AccessMethod {
     }
   }
 
+  /**
+   * Create an index in postgres if no index with the same name already exists.
+   *
+   * @param relationKey the table on which the indexes will be created.
+   * @param schema the Schema of the data in the table.
+   * @param index the index to be created; each entry is a list of column indices.
+   * @throws DbException if there is an error in the DBMS.
+   */
   public void createIndexIfNotExistPostgres(final RelationKey relationKey, final Schema schema,
       final List<IndexRef> index) throws DbException {
     Objects.requireNonNull(index, "index");
@@ -522,9 +530,6 @@ public final class JdbcAccessMethod extends AccessMethod {
  * Wraps a JDBC ResultSet in a Iterator<TupleBatch>.
  * 
  * Implementation based on org.apache.commons.dbutils.ResultSetIterator. Requires ResultSet.isLast() to be implemented.
- * 
- * @author dhalperi
- * 
  */
 class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
   /** The results from a JDBC query that will be returned in TupleBatches by this Iterator. */
