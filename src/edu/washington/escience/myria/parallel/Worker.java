@@ -30,7 +30,6 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
-import edu.washington.escience.myria.accessmethod.AccessMethod;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.WorkerCatalog;
@@ -334,6 +333,11 @@ public final class Worker {
    * The thread group of the main thread.
    * */
   private static volatile ThreadGroup mainThreadGroup;
+
+  /**
+   * The profiling logger for this worker.
+   */
+  private ProfilingLogger profilingLogger;
 
   /**
    * @param args command line arguments
@@ -793,12 +797,7 @@ public final class Worker {
 
     ConnectionInfo connectionInfo = (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
     if (!connectionInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_SQLITE)) {
-      final AccessMethod accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
-      accessMethod.createTableIfNotExists(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA);
-      accessMethod.createTableIfNotExists(MyriaConstants.LOG_SENT_RELATION, MyriaConstants.LOG_SENT_SCHEMA);
-
-      ProfilingLogger.createProfilingIndexes(accessMethod);
-      ProfilingLogger.createSentIndex(accessMethod);
+      profilingLogger = new ProfilingLogger(connectionInfo);
     }
   }
 
@@ -822,5 +821,12 @@ public final class Worker {
    */
   public int getID() {
     return myID;
+  }
+
+  /**
+   * @return the profilingLogger
+   */
+  public ProfilingLogger getProfilingLogger() {
+    return profilingLogger;
   }
 }

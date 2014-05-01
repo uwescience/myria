@@ -247,12 +247,12 @@ public final class MyriaConstants {
   /**
    * The relation that stores profiling information.
    */
-  public static final RelationKey LOG_SENT_RELATION = new RelationKey("public", "logs", "Sending");
+  public static final RelationKey SENT_RELATION = new RelationKey("public", "logs", "Sending");
 
   /**
-   * The schema of the {@link #LOG_SENT_RELATION}.
+   * The schema of the {@link #SENT_RELATION}.
    */
-  public static final Schema LOG_SENT_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE,
+  public static final Schema SENT_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE,
       Type.LONG_TYPE, Type.LONG_TYPE, Type.INT_TYPE), ImmutableList.of("queryId", "fragmentId", "nanoTime",
       "numTuples", "destWorkerId"));
 

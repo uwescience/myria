@@ -919,7 +919,7 @@ public final class Server {
 
     if (getSchema(MyriaConstants.PROFILING_RELATION) == null && !getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_SQLITE)) {
       importDataset(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA, null);
-      importDataset(MyriaConstants.LOG_SENT_RELATION, MyriaConstants.LOG_SENT_SCHEMA, null);
+      importDataset(MyriaConstants.SENT_RELATION, MyriaConstants.SENT_SCHEMA, null);
     }
   }
 

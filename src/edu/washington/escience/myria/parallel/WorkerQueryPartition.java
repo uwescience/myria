@@ -99,7 +99,7 @@ public class WorkerQueryPartition implements QueryPartition {
 
   /**
    * The future listener for processing the complete events of the execution of all the query's tasks.
-   * */
+   */
   private final TaskFutureListener taskExecutionListener = new TaskFutureListener() {
 
     @Override
@@ -129,6 +129,10 @@ public class WorkerQueryPartition implements QueryPartition {
         if (LOGGER.isInfoEnabled()) {
           LOGGER.info("Query #" + queryID + " executed for "
               + DateTimeUtils.nanoElapseToHumanReadable(queryStatistics.getQueryExecutionElapse()));
+        }
+        if (isProfilingMode()) {
+          // query has finished, flush profiling data
+          getOwnerWorker().getProfilingLogger().flush();
         }
         if (failTasks.isEmpty()) {
           executionFuture.setSuccess();

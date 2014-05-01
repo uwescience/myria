@@ -1,6 +1,5 @@
 package edu.washington.escience.myria.parallel;
 
-import java.io.File;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -9,11 +8,8 @@ import java.util.concurrent.TimeUnit;
 
 import scala.NotImplementedError;
 
-import com.almworks.sqlite4java.SQLiteConnection;
-import com.almworks.sqlite4java.SQLiteException;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
@@ -22,8 +18,6 @@ import edu.washington.escience.myria.accessmethod.AccessMethod;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.JdbcAccessMethod;
-import edu.washington.escience.myria.accessmethod.SQLiteAccessMethod;
-import edu.washington.escience.myria.accessmethod.SQLiteInfo;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.storage.TupleBatch;
 
@@ -37,93 +31,81 @@ public class ProfilingLogger {
   /** The connection to the database database. */
   private final AccessMethod accessMethod;
 
-  /** The information for the database connection. */
-  private final ConnectionInfo connectionInfo;
-
   /** The jdbc connection. */
-  private Connection connection;
+  private final Connection connection;
 
   /** A query statement for batching. */
-  private PreparedStatement statement;
+  private PreparedStatement statementEvent;
 
-  /** Number of rows in batch in {@link #statement}. */
-  private int batchSize = 0;
+  /** A query statement for batching. */
+  private PreparedStatement statementSent;
 
-  /** The singleton instance. */
-  private static volatile ProfilingLogger instance = null;
+  /** Number of rows in batch in {@link #statementEvent}. */
+  private int batchSizeEvents = 0;
+
+  /** Number of rows in batch in {@link #statementSent}. */
+  private int batchSizeSent = 0;
 
   /**
    * Default constructor.
    * 
-   * @param execEnvVars execution environment variables
+   * @param connectionInfo connection information
    * 
    * @throws DbException if any error occurs
    */
-  protected ProfilingLogger(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    /* retrieve connection information from the environment variables, if not already set */
-    Preconditions.checkNotNull(execEnvVars, "execEnvVars");
-    connectionInfo = (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
-
-    if (connectionInfo == null) {
-      throw new DbException("Unable to instantiate DbInsert: connection information unknown");
-    }
-
-    if (connectionInfo instanceof SQLiteInfo) {
-      /* Set WAL in the beginning. */
-      final File dbFile = new File(((SQLiteInfo) connectionInfo).getDatabaseFilename());
-      SQLiteConnection conn = new SQLiteConnection(dbFile);
-      try {
-        conn.open(true);
-        conn.exec("PRAGMA journal_mode=WAL;");
-      } catch (SQLiteException e) {
-        e.printStackTrace();
-      }
-      conn.dispose();
-    }
-
+  public ProfilingLogger(final ConnectionInfo connectionInfo) throws DbException {
     /* open the database connection */
     accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
 
-    // Relations have been created in Worker.start()
+    accessMethod.createTableIfNotExists(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA);
+    accessMethod.createTableIfNotExists(MyriaConstants.SENT_RELATION, MyriaConstants.SENT_SCHEMA);
+
+    createProfilingIndexes();
+    createSentIndex();
 
     if (accessMethod instanceof JdbcAccessMethod) {
       connection = ((JdbcAccessMethod) accessMethod).getConnection();
       try {
-        statement =
+        statementEvent =
             connection.prepareStatement(accessMethod.insertStatementFromSchema(MyriaConstants.PROFILING_SCHEMA,
                 MyriaConstants.PROFILING_RELATION));
       } catch (SQLException e) {
         throw new DbException(e);
       }
-    } else if (accessMethod instanceof SQLiteAccessMethod) {
+
+      try {
+        statementSent =
+            connection.prepareStatement(accessMethod.insertStatementFromSchema(MyriaConstants.SENT_SCHEMA,
+                MyriaConstants.SENT_RELATION));
+      } catch (SQLException e) {
+        throw new DbException(e);
+      }
+    } else {
+      connection = null;
       throw new NotImplementedError();
     }
   }
 
   /**
-   * @param accessMethod the access method
-   * 
    * @throws DbException if index cannot be created
    */
-  public static void createSentIndex(final AccessMethod accessMethod) throws DbException {
-    final Schema schema = MyriaConstants.LOG_SENT_SCHEMA;
+  protected void createSentIndex() throws DbException {
+    final Schema schema = MyriaConstants.SENT_SCHEMA;
 
     List<IndexRef> index =
         ImmutableList.of(IndexRef.of(schema, "queryId"), IndexRef.of(schema, "fragmentId"), IndexRef.of(schema,
             "nanoTime"));
     try {
-      accessMethod.createIndexIfNotExists(MyriaConstants.LOG_SENT_RELATION, MyriaConstants.LOG_SENT_SCHEMA, index);
+      accessMethod.createIndexIfNotExists(MyriaConstants.SENT_RELATION, MyriaConstants.SENT_SCHEMA, index);
     } catch (DbException e) {
       LOGGER.error("Couldn't create index for profiling logs:", e);
     }
   }
 
   /**
-   * @param accessMethod the access method
-   * 
    * @throws DbException if index cannot be created
    */
-  public static void createProfilingIndexes(final AccessMethod accessMethod) throws DbException {
+  protected void createProfilingIndexes() throws DbException {
     final Schema schema = MyriaConstants.PROFILING_SCHEMA;
 
     List<IndexRef> rootOpsIndex =
@@ -144,26 +126,7 @@ public class ProfilingLogger {
   }
 
   /**
-   * Default constructor.
-   * 
-   * @param execEnvVars execution environment variables
-   * @return the logger instance
-   */
-  public static synchronized ProfilingLogger getLogger(final ImmutableMap<String, Object> execEnvVars) {
-    if (instance == null) {
-      try {
-        instance = new ProfilingLogger(execEnvVars);
-      } catch (DbException e) {
-        LOGGER.error("Failed to initialize profiling logger:", e);
-      }
-    }
-    Preconditions.checkArgument(instance.connectionInfo == (ConnectionInfo) execEnvVars
-        .get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO), "Connection info should not change.");
-    return instance;
-  }
-
-  /**
-   * Inserts in batches. Call {@link #flush()}.
+   * Inserts in batches. Call {@link #flushProfilingEvent()}.
    * 
    * @param operator the operator where this record was logged
    * @param numTuples the number of tuples
@@ -174,22 +137,21 @@ public class ProfilingLogger {
       throws DbException {
 
     try {
+      statementEvent.setLong(1, operator.getQueryId());
+      statementEvent.setString(2, operator.getOpName());
+      statementEvent.setLong(3, operator.getFragmentId());
+      statementEvent.setLong(4, getTime(operator));
+      statementEvent.setLong(5, numTuples);
+      statementEvent.setString(6, eventType);
 
-      statement.setLong(1, operator.getQueryId());
-      statement.setString(2, operator.getOpName());
-      statement.setLong(3, operator.getFragmentId());
-      statement.setLong(4, getTime(operator));
-      statement.setLong(5, numTuples);
-      statement.setString(6, eventType);
-
-      statement.addBatch();
-      batchSize++;
+      statementEvent.addBatch();
+      batchSizeEvents++;
     } catch (final SQLException e) {
       throw new DbException(e);
     }
 
-    if (batchSize > TupleBatch.BATCH_SIZE) {
-      flush();
+    if (batchSizeEvents > TupleBatch.BATCH_SIZE) {
+      flushProfilingEvent();
     }
   }
 
@@ -227,11 +189,38 @@ public class ProfilingLogger {
    * @throws DbException if insertion in the database fails
    */
   public synchronized void flush() throws DbException {
+    flushSent();
+    flushProfilingEvent();
+  }
+
+  /**
+   * Flush the tuple batch buffer that has logs about operator states.
+   * 
+   * @throws DbException if insertion in the database fails
+   */
+  private synchronized void flushProfilingEvent() throws DbException {
     try {
-      if (batchSize > 0) {
-        statement.executeBatch();
-        statement.clearBatch();
-        batchSize = 0;
+      if (batchSizeEvents > 0) {
+        statementEvent.executeBatch();
+        statementEvent.clearBatch();
+        batchSizeEvents = 0;
+      }
+    } catch (SQLException e) {
+      throw new DbException(e);
+    }
+  }
+
+  /**
+   * Flush the tuple batch buffer that has records about sent tuples.
+   * 
+   * @throws DbException if insertion in the database fails
+   */
+  private synchronized void flushSent() throws DbException {
+    try {
+      if (batchSizeSent > 0) {
+        statementSent.executeBatch();
+        statementSent.clearBatch();
+        batchSizeSent = 0;
       }
     } catch (SQLException e) {
       throw new DbException(e);
@@ -244,23 +233,24 @@ public class ProfilingLogger {
    * @param operator the operator where this record was logged
    * @param numTuples the number of tuples sent.
    * @param destWorkerId the worker if that we send the data to
+   * @throws DbException if insertion in the database fails
    */
-  public void recordSend(final Operator operator, final int numTuples, final int destWorkerId) {
+  public void recordSent(final Operator operator, final int numTuples, final int destWorkerId) throws DbException {
     try {
-      final PreparedStatement singleStatement =
-          connection.prepareStatement(accessMethod.insertStatementFromSchema(MyriaConstants.LOG_SENT_SCHEMA,
-              MyriaConstants.LOG_SENT_RELATION));
+      statementSent.setLong(1, operator.getQueryId());
+      statementSent.setLong(2, operator.getFragmentId());
+      statementSent.setLong(3, getTime(operator));
+      statementSent.setLong(4, numTuples);
+      statementSent.setInt(5, destWorkerId);
 
-      singleStatement.setLong(1, operator.getQueryId());
-      singleStatement.setLong(2, operator.getFragmentId());
-      singleStatement.setLong(3, getTime(operator));
-      singleStatement.setLong(4, numTuples);
-      singleStatement.setInt(5, destWorkerId);
-
-      singleStatement.executeUpdate();
-      singleStatement.close();
+      statementSent.addBatch();
+      batchSizeSent++;
     } catch (final SQLException e) {
-      LOGGER.error("Failed to write profiling data:", e);
+      throw new DbException(e);
+    }
+
+    if (batchSizeSent > TupleBatch.BATCH_SIZE) {
+      flushSent();
     }
   }
 }

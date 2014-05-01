@@ -75,7 +75,7 @@ public final class LogResource {
     if (queryId == null) {
       throw new MyriaApiException(Status.BAD_REQUEST, "Query ID missing.");
     }
-    return getLogs(queryId, fragmentId, MyriaConstants.LOG_SENT_RELATION, MyriaConstants.LOG_SENT_SCHEMA);
+    return getLogs(queryId, fragmentId, MyriaConstants.SENT_RELATION, MyriaConstants.SENT_SCHEMA);
   }
 
   /**
