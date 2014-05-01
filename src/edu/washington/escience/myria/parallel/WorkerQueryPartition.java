@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableMap;
 
+import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.operator.RootOperator;
@@ -131,8 +132,11 @@ public class WorkerQueryPartition implements QueryPartition {
               + DateTimeUtils.nanoElapseToHumanReadable(queryStatistics.getQueryExecutionElapse()));
         }
         if (isProfilingMode()) {
-          // query has finished, flush profiling data
-          getOwnerWorker().getProfilingLogger().flush();
+          try {
+            getOwnerWorker().getProfilingLogger().flush();
+          } catch (DbException e) {
+            LOGGER.error(e.getMessage());
+          }
         }
         if (failTasks.isEmpty()) {
           executionFuture.setSuccess();
