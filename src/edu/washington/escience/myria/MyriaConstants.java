@@ -262,12 +262,12 @@ public final class MyriaConstants {
   public static final String PARTITION_FUNCTION_ROUND_ROBIN = "roundrobin";
 
   /**
-   * String representation of round robin partition function.
+   * String representation of single field hash partition function.
    */
   public static final String PARTITION_FUNCTION_SINGLE_FIELD_HASH = "singlefieldhash";
 
   /**
-   * String representation of round robin partition function.
+   * String representation of multi field hash partition function.
    */
   public static final String PARTITION_FUNCTION_MULTI_FIELD_HASH = "multifieldhash";
 
