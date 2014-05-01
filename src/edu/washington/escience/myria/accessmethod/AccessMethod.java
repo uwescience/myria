@@ -171,7 +171,7 @@ public abstract class AccessMethod {
    * 
    * @param relationKey the table on which the indexes will be created.
    * @param schema the Schema of the data in the table.
-   * @param indexe the index to be created; each entry is a list of column indices.
+   * @param index the index to be created; each entry is a list of column indices.
    * @throws DbException if there is an error in the DBMS.
    */
   public abstract void createIndexIfNotExists(final RelationKey relationKey, final Schema schema,
