@@ -1420,6 +1420,19 @@ public final class Server {
   }
 
   /**
+   * @param searchTerm the search term
+   * @return the relations that match the search term
+   * @throws DbException if there is an error getting the relation keys.
+   */
+  public List<RelationKey> getMatchingRelationKeys(final String searchTerm) throws DbException {
+    try {
+      return catalog.getMatchingRelationKeys(searchTerm);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
+
+  /**
    * @param userName the user whose datasets we want to access.
    * @return a list of datasets belonging to the specified user.
    * @throws DbException if there is an error accessing the Catalog.
@@ -1444,6 +1457,14 @@ public final class Server {
     } catch (CatalogException e) {
       throw new DbException(e);
     }
+  }
+
+  /**
+   * @return number of queries.
+   * @throws CatalogException if an error occurs
+   */
+  public int getNumQueries() throws CatalogException {
+    return catalog.getNumQueries();
   }
 
   /**
@@ -1673,13 +1694,5 @@ public final class Server {
     } catch (CatalogException e) {
       throw new DbException(e);
     }
-  }
-
-  /**
-   * @return number of queries.
-   * @throws CatalogException if an error occurs
-   */
-  public int getNumQueries() throws CatalogException {
-    return catalog.getNumQueries();
   }
 }

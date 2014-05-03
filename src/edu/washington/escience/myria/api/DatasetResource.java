@@ -99,6 +99,19 @@ public final class DatasetResource {
   }
 
   /**
+   * @param searchTerm the search term
+   * @return list of dataset names matching the search term
+   * @throws DbException if there is an error accessing the catalog
+   */
+  @GET
+  @ApiOperation(value = "search datasets and get matching names", response = DatasetStatus.class)
+  @Path("/search/")
+  public Response searchDataset(@QueryParam("q") final String searchTerm) throws DbException {
+    List<RelationKey> relationKeys = server.getMatchingRelationKeys(searchTerm);
+    return Response.ok().cacheControl(MyriaApiUtils.doNotCache()).entity(relationKeys).build();
+  }
+
+  /**
    * Helper function to parse a format string, with default value "csv".
    * 
    * @param format the format string, with default value "csv".
