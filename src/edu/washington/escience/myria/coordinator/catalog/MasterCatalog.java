@@ -1493,7 +1493,7 @@ public final class MasterCatalog {
           try {
             SQLiteStatement statement =
                 sqliteConnection.prepare("SELECT user_name, program_name, relation_name FROM relations "
-                    + "WHERE lower(user_name || program_name || relation_name) LIKE ?");
+                    + "WHERE lower(user_name || ':' || program_name || ':' || relation_name) LIKE ?");
             statement.bind(1, expandedSearchTerm);
 
             ImmutableList.Builder<RelationKey> result = ImmutableList.builder();
