@@ -23,7 +23,9 @@ import com.almworks.sqlite4java.SQLiteJob;
 import com.almworks.sqlite4java.SQLiteQueue;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -1457,6 +1459,54 @@ public final class MasterCatalog {
             if (LOGGER.isErrorEnabled()) {
               LOGGER.error(e.toString());
             }
+            throw new CatalogException(e);
+          }
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
+   * Get matching relation keys. Matching means that the search term appears somewhere in the whole relation key string.
+   * Matching is fuzzy and accepts gaps in the match.
+   * 
+   * @param searchTerm the search term
+   * @return matching relation keys or empty list
+   * @throws CatalogException if an error occurs
+   */
+  public List<RelationKey> getMatchingRelationKeys(final String searchTerm) throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+
+    final String expandedSearchTerm =
+        '%' + Joiner.on("%").join(Splitter.fixedLength(1).split(searchTerm.toLowerCase())) + '%';
+
+    /* Do the work */
+    try {
+      return queue.execute(new SQLiteJob<List<RelationKey>>() {
+        @Override
+        protected List<RelationKey> job(final SQLiteConnection sqliteConnection) throws CatalogException,
+            SQLiteException {
+          try {
+            SQLiteStatement statement =
+                sqliteConnection.prepare("SELECT user_name, program_name, relation_name FROM relations "
+                    + "WHERE lower(user_name || program_name || relation_name) LIKE ?");
+            statement.bind(1, expandedSearchTerm);
+
+            ImmutableList.Builder<RelationKey> result = ImmutableList.builder();
+
+            while (statement.step()) {
+              String userName = statement.columnString(0);
+              String programName = statement.columnString(1);
+              String relationName = statement.columnString(2);
+              result.add(new RelationKey(userName, programName, relationName));
+            }
+            statement.dispose();
+            return result.build();
+          } catch (final SQLiteException e) {
             throw new CatalogException(e);
           }
         }
