@@ -1118,12 +1118,17 @@ public final class Server {
             // TODO failure management.
           }
 
-          catalog.queryFinished(queryID, startTime, endTime, elapsedNanos, status, message);
-          /*
-           * This should be the last line of code -- the query should not be removed from activeQueries until all the
-           * metadata is up to date.
-           */
-          activeQueries.remove(queryID);
+          try {
+            catalog.queryFinished(queryID, startTime, endTime, elapsedNanos, status, message);
+          } finally {
+            /*
+             * This should be the last line of code -- the query should not be removed from activeQueries until all the
+             * metadata is up to date.
+             * 
+             * Workaround #509: remove even if the update fails, otherwise we get zombie queries.
+             */
+            activeQueries.remove(queryID);
+          }
         }
       });
 
