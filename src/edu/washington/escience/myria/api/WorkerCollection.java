@@ -68,7 +68,7 @@ public final class WorkerCollection {
    * @return the URI of the worker added.
    */
   @POST
-  @Path("/add/worker-{workerId}")
+  @Path("/start/worker-{workerId}")
   public Response addWorker(@PathParam("workerId") final String sWorkerId, @Context final UriInfo uriInfo) {
     Integer workerId;
     try {

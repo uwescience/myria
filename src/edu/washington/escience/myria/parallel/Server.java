@@ -1205,9 +1205,6 @@ public final class Server {
       throw new RuntimeException("Worker id: " + workerId + " not found");
     }
     sendAddWorker = new Thread(new SendAddWorker(workerId, workerInfo, aliveWorkers.size()));
-    connectionPool.putRemote(workerId, workerInfo);
-
-    /* start a thread to launch the new worker. */
     new Thread(new NewWorkerScheduler(workerId, workerInfo.getHost(), workerInfo.getPort())).start();
   }
 
