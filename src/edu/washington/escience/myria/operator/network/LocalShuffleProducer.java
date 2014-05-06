@@ -1,8 +1,10 @@
-package edu.washington.escience.myria.parallel;
+package edu.washington.escience.myria.operator.network;
 
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.operator.Operator;
+import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
+import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
 

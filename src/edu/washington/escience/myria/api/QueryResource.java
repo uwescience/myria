@@ -31,6 +31,7 @@ import com.google.common.base.Objects;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.api.encoding.QueryConstruct;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
@@ -103,7 +104,8 @@ public final class QueryResource {
     /* Deserialize the three arguments we need */
     Map<Integer, SingleQueryPlanWithArgs> queryPlan;
     try {
-      queryPlan = query.instantiate(server);
+      queryPlan =
+          QueryConstruct.instantiate(query.fragments, server, FTMODE.valueOf(query.ftMode), query.profilingMode);
     } catch (CatalogException e) {
       /* CatalogException means something went wrong interfacing with the Catalog. */
       throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, e);

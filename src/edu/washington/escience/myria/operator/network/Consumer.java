@@ -1,4 +1,4 @@
-package edu.washington.escience.myria.parallel;
+package edu.washington.escience.myria.operator.network;
 
 import java.util.BitSet;
 import java.util.HashSet;
@@ -16,6 +16,9 @@ import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.operator.LeafOperator;
+import edu.washington.escience.myria.parallel.ExchangePairID;
+import edu.washington.escience.myria.parallel.QueryExecutionMode;
+import edu.washington.escience.myria.parallel.TaskResourceManager;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.IPCMessage;
 import edu.washington.escience.myria.parallel.ipc.StreamIOChannelID;

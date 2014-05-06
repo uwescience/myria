@@ -25,6 +25,7 @@ import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.parallel.ipc.FlowControlBagInputBuffer;
 import edu.washington.escience.myria.parallel.ipc.IPCEvent;
 import edu.washington.escience.myria.parallel.ipc.IPCEventListener;

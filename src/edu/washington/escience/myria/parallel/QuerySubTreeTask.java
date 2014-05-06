@@ -17,6 +17,8 @@ import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.operator.IDBController;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
+import edu.washington.escience.myria.operator.network.Consumer;
+import edu.washington.escience.myria.operator.network.Producer;
 import edu.washington.escience.myria.parallel.ipc.StreamIOChannelID;
 import edu.washington.escience.myria.util.AtomicUtils;
 import edu.washington.escience.myria.util.concurrent.ReentrantSpinLock;

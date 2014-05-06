@@ -1,4 +1,4 @@
-package edu.washington.escience.myria.parallel;
+package edu.washington.escience.myria.operator.network;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -13,6 +13,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.operator.IDBController;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.UnionAll;
+import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.storage.ExchangeTupleBatch;
 import edu.washington.escience.myria.storage.TupleBatch;
 import gnu.trove.impl.unmodifiable.TUnmodifiableIntIntMap;

@@ -3,7 +3,7 @@ package edu.washington.escience.myria.api.encoding;
 import java.util.List;
 import java.util.Set;
 
-import edu.washington.escience.myria.parallel.Consumer;
+import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 
 public abstract class AbstractConsumerEncoding<C extends Consumer> extends LeafOperatorEncoding<C> implements

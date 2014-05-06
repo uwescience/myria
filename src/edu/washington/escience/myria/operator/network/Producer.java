@@ -1,4 +1,4 @@
-package edu.washington.escience.myria.parallel;
+package edu.washington.escience.myria.operator.network;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -19,6 +19,9 @@ import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SimpleAppender;
 import edu.washington.escience.myria.operator.StreamingState;
+import edu.washington.escience.myria.parallel.ExchangePairID;
+import edu.washington.escience.myria.parallel.QueryExecutionMode;
+import edu.washington.escience.myria.parallel.TaskResourceManager;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.IPCEvent;
 import edu.washington.escience.myria.parallel.ipc.IPCEventListener;

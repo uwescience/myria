@@ -5,7 +5,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 
-import edu.washington.escience.myria.parallel.Producer;
+import edu.washington.escience.myria.operator.network.Producer;
 import edu.washington.escience.myria.parallel.ipc.IPCEvent.EventType;
 import edu.washington.escience.myria.util.concurrent.OrderedExecutorService;
 import edu.washington.escience.myria.util.concurrent.ReentrantSpinLock;

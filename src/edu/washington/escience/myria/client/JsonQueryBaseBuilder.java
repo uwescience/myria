@@ -71,11 +71,11 @@ import edu.washington.escience.myria.operator.TipsyFileScan;
 import edu.washington.escience.myria.operator.UnionAll;
 import edu.washington.escience.myria.operator.agg.Aggregate;
 import edu.washington.escience.myria.operator.agg.Aggregator;
-import edu.washington.escience.myria.parallel.CollectConsumer;
-import edu.washington.escience.myria.parallel.CollectProducer;
-import edu.washington.escience.myria.parallel.LocalMultiwayConsumer;
-import edu.washington.escience.myria.parallel.LocalMultiwayProducer;
-import edu.washington.escience.myria.parallel.PartitionFunction;
+import edu.washington.escience.myria.operator.network.CollectConsumer;
+import edu.washington.escience.myria.operator.network.CollectProducer;
+import edu.washington.escience.myria.operator.network.LocalMultiwayConsumer;
+import edu.washington.escience.myria.operator.network.LocalMultiwayProducer;
+import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
 
