@@ -9,6 +9,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Objects;
+
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.tool.MyriaConfigurationReader;
 
@@ -160,7 +162,7 @@ public final class DeploymentUtils {
     String workerDir = description + "/" + "worker_" + workerId;
     String classpath = "'conf:libs/*'";
     String librarypath = "sqlite4java-282";
-    String heapSize = maxHeapSize;
+    String heapSize = Objects.firstNonNull(maxHeapSize, "");
     if (description == null) {
       /* built in system test */
       path = workingDir;
