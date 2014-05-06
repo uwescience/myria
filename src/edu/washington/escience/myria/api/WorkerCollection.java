@@ -1,10 +1,12 @@
 package edu.washington.escience.myria.api;
 
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -12,6 +14,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.core.UriInfo;
 
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.parallel.SocketInfo;
@@ -57,6 +60,35 @@ public final class WorkerCollection {
     }
     /* Yay, worked! */
     return workerInfo.toString();
+  }
+
+  /**
+   * @param sWorkerId identifier of the worker, input string.
+   * @param uriInfo information about the URL of the request.
+   * @return the URI of the worker added.
+   */
+  @POST
+  @Path("/add/worker-{workerId}")
+  public Response addWorker(@PathParam("workerId") final String sWorkerId, @Context final UriInfo uriInfo) {
+    Integer workerId;
+    try {
+      workerId = Integer.parseInt(sWorkerId);
+    } catch (final NumberFormatException e) {
+      /* Parsing failed, throw a 400 (Bad Request) */
+      throw new MyriaApiException(Status.BAD_REQUEST, e);
+    }
+    if (server.isWorkerAlive(workerId)) {
+      /* Worker already alive, throw a 400 (Bad Request) */
+      throw new MyriaApiException(Status.BAD_REQUEST, "Worker already alive");
+    }
+    try {
+      server.startWorker(workerId);
+    } catch (final RuntimeException e) {
+      throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, e.getMessage());
+    }
+
+    URI queryUri = uriInfo.getRequestUri();
+    return Response.status(Status.ACCEPTED).location(queryUri).build();
   }
 
   /**

@@ -1175,6 +1175,43 @@ public final class Server {
   }
 
   /**
+   * 
+   * @param workerId the worker identification
+   * @return whether a worker is alive or not
+   */
+  public boolean isWorkerAlive(final Integer workerId) {
+    return aliveWorkers.containsKey(workerId);
+  }
+
+  /**
+   * Retrieves the worker info given the worker identification. Returns null if the worker does not exist on the worker
+   * list.
+   * 
+   * @param workerId the worker identification
+   * @return the worker information (host:port)
+   */
+  public SocketInfo getWorkerInfo(final Integer workerId) {
+    return workers.get(workerId);
+  }
+
+  /**
+   * Adds a worker turning it alive.
+   * 
+   * @param workerId the worker identification
+   */
+  public void startWorker(final Integer workerId) {
+    SocketInfo workerInfo = getWorkerInfo(workerId);
+    if (workerInfo == null) {
+      throw new RuntimeException("Worker id: " + workerId + " not found");
+    }
+    sendAddWorker = new Thread(new SendAddWorker(workerId, workerInfo, aliveWorkers.size()));
+    connectionPool.putRemote(workerId, workerInfo);
+
+    /* start a thread to launch the new worker. */
+    new Thread(new NewWorkerScheduler(workerId, workerInfo.getHost(), workerInfo.getPort())).start();
+  }
+
+  /**
    * @return the set of known workers in this Master.
    */
   public Map<Integer, SocketInfo> getWorkers() {
