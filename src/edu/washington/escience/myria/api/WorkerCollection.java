@@ -69,7 +69,7 @@ public final class WorkerCollection {
    */
   @POST
   @Path("/start/worker-{workerId}")
-  public Response addWorker(@PathParam("workerId") final String sWorkerId, @Context final UriInfo uriInfo) {
+  public Response startWorker(@PathParam("workerId") final String sWorkerId, @Context final UriInfo uriInfo) {
     Integer workerId;
     try {
       workerId = Integer.parseInt(sWorkerId);
