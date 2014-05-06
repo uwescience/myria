@@ -1149,8 +1149,11 @@ public final class Server {
 
       return mqp.getExecutionFuture();
     } catch (DbException | CatalogException | RuntimeException e) {
-      catalog.queryFinished(queryID, "error during submission", null, null, Status.ERROR, e.toString());
-      activeQueries.remove(queryID);
+      try {
+        catalog.queryFinished(queryID, "error during submission", null, null, Status.ERROR, e.toString());
+      } finally {
+        activeQueries.remove(queryID);
+      }
       throw e;
     }
   }
