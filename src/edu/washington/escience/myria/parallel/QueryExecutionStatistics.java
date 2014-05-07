@@ -43,7 +43,13 @@ public class QueryExecutionStatistics {
   /**
    * @return query execution elapsed in nanoseconds.
    * */
-  public final long getQueryExecutionElapse() {
+  public final Long getQueryExecutionElapse() {
+    if (startTime == null) {
+      return null;
+    }
+    if (endTime == null) {
+      return System.nanoTime() - startAtInNano;
+    }
     return endAtInNano - startAtInNano;
   }
 
