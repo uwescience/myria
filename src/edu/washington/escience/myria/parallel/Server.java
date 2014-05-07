@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -84,6 +85,8 @@ import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.IPCMessage;
 import edu.washington.escience.myria.parallel.ipc.InJVMLoopbackChannelSink;
 import edu.washington.escience.myria.parallel.ipc.QueueBasedShortMessageProcessor;
+import edu.washington.escience.myria.parallel.meta.Fragment;
+import edu.washington.escience.myria.parallel.meta.MetaTask;
 import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myria.proto.QueryProto.QueryMessage;
 import edu.washington.escience.myria.proto.QueryProto.QueryReport;
@@ -208,9 +211,9 @@ public final class Server {
   private final ConcurrentHashMap<Integer, SocketInfo> workers;
 
   /**
-   * Queries currently in execution.
+   * Queries currently active (queued, executing, being killed, etc.).
    */
-  private final ConcurrentHashMap<Long, QueryTaskId> activeQueries;
+  private final ConcurrentHashMap<Long, QueryState> activeQueries;
 
   /**
    * Queries currently in execution.
@@ -908,7 +911,7 @@ public final class Server {
    * @param queryID the queryID.
    */
   public void killQuery(final long queryID) {
-    killTask(activeQueries.get(queryID));
+    killTask(activeQueries.get(queryID).getCurrentTask().getTaskId());
   }
 
   /**
@@ -963,7 +966,7 @@ public final class Server {
     query.logicalRa = rawQuery;
     query.fragments = ImmutableList.of();
     query.profilingMode = profilingMode;
-    return submitQuery(query, masterPlan, workerPlans);
+    return submitQuery(query, new Fragment(masterPlan, workerPlans));
   }
 
   /**
@@ -971,14 +974,13 @@ public final class Server {
    * ready. Returns null if there are too many active queries.
    * 
    * @param physicalPlan the Myria physical plan for the query.
-   * @param workerPlans the physical parallel plan fragments for each worker.
-   * @param masterPlan the physical parallel plan fragment for the master.
+   * @param plan the query to be executed
    * @throws DbException if any error in non-catalog data processing
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
    */
-  public QueryFuture submitQuery(final QueryEncoding physicalPlan, final SingleQueryPlanWithArgs masterPlan,
-      final Map<Integer, SingleQueryPlanWithArgs> workerPlans) throws DbException, CatalogException {
+  public QueryFuture submitQuery(final QueryEncoding physicalPlan, final MetaTask plan) throws DbException,
+      CatalogException {
     if (!canSubmitQuery()) {
       return null;
     }
@@ -986,30 +988,81 @@ public final class Server {
       throw new DbException("Profiling mode is not supported when using SQLite as the storage system.");
     }
     final long queryID = catalog.newQuery(physicalPlan);
-    return submitQuery(new QueryTaskId(queryID, 0), masterPlan, workerPlans);
+    return submitQuery(queryID, plan);
   }
 
   /**
    * Submit a query for execution. The workerPlans may be removed in the future if the query compiler and schedulers are
    * ready. Returns null if there are too many active queries.
    * 
-   * @param taskId the catalog's assigned ID for this query.
-   * @param workerPlans the physical parallel plan fragments for each worker.
-   * @param masterPlan the physical parallel plan fragment for the master.
+   * @param queryId the catalog's assigned ID for this query.
+   * @param plan the query to be executed
    * @throws DbException if any error in non-catalog data processing
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
    */
-  private QueryFuture submitQuery(final QueryTaskId taskId, final SingleQueryPlanWithArgs masterPlan,
-      final Map<Integer, SingleQueryPlanWithArgs> workerPlans) throws DbException, CatalogException {
+  private QueryFuture submitQuery(final long queryId, final MetaTask plan) throws DbException, CatalogException {
     /* First check whether there are too many active queries. */
     if (!canSubmitQuery()) {
       return null;
     }
-    workerPlans.remove(MyriaConstants.MASTER_ID);
+    final QueryState queryState = new QueryState(queryId, plan, this);
+    activeQueries.put(queryId, queryState);
+    return advanceQuery(queryState);
+  }
+
+  /**
+   * Advance the given query to the next task. If there is no next task, mark the query as having succeeded.
+   * 
+   * @param queryState the specified query
+   * @return the future of the next task, or <code>null</code> if the query has succeeded.
+   * @throws DbException if
+   * @throws CatalogException
+   */
+  private QueryFuture advanceQuery(final QueryState queryState) throws DbException {
+    Verify.verify(queryState.getCurrentTask() == null, "expected queryState current task is null");
+
+    QueryTask task = queryState.nextTask();
+    if (task == null) {
+      queryState.markSuccess();
+      try {
+        finishQuery(queryState);
+      } catch (CatalogException e) {
+        throw new DbException("Erorr marking query " + queryState.getQueryId() + " as finished in the Catalog", e);
+      }
+      return null;
+    }
+    return submitTask(queryState);
+  }
+
+  /**
+   * Finish the specified query by updating its status in the Catalog and then removing it from the active queries.
+   * 
+   * @param queryState the query to be finished
+   * @throws CatalogException if there is an error updating the Catalog
+   */
+  private void finishQuery(final QueryState queryState) throws CatalogException {
+    Preconditions.checkNotNull(queryState, "queryState");
     try {
-      final MasterQueryPartition mqp = new MasterQueryPartition(masterPlan, workerPlans, taskId, this);
-      activeQueries.put(taskId.getQueryId(), taskId);
+      catalog.queryFinished(queryState);
+    } finally {
+      activeQueries.remove(queryState.getQueryId());
+    }
+  }
+
+  /**
+   * Submit the specified task for execution, and return its future.
+   * 
+   * @param queryState the query containing the task to be executed
+   * @return the future of the task
+   * @throws DbException if there is an error submitting the task for execution
+   */
+  private QueryFuture submitTask(final QueryState queryState) throws DbException {
+    final QueryTask task = Verify.verifyNotNull(queryState.getCurrentTask(), "query state should have a current task");
+    final QueryTaskId taskId = task.getTaskId();
+
+    try {
+      final MasterQueryPartition mqp = new MasterQueryPartition(task, this);
       activeQueryTasks.put(taskId, mqp);
 
       final QueryFuture queryExecutionFuture = mqp.getExecutionFuture();
@@ -1018,55 +1071,42 @@ public final class Server {
        * Add the DatasetMetadataUpdater, which will update the catalog with the set of workers created when the query
        * succeeds.
        */
-      queryExecutionFuture.addPreListener(new DatasetMetadataUpdater(catalog, workerPlans, taskId.getQueryId()));
+      try {
+        DatasetMetadataUpdater dsmd = new DatasetMetadataUpdater(catalog, mqp.getWorkerPlans(), taskId.getQueryId());
+        queryExecutionFuture.addPreListener(dsmd);
+      } catch (CatalogException e) {
+        throw new DbException("setting up the DatasetMetadataUpdater for task " + taskId, e);
+      }
 
       queryExecutionFuture.addListener(new QueryFutureListener() {
         @Override
         public void operationComplete(final QueryFuture future) throws Exception {
 
-          /* Before removing this query from the list of active queries, update it in the Catalog. */
-          final QueryExecutionStatistics stats = mqp.getExecutionStatistics();
-          final String startTime = stats.getStartTime();
-          final String endTime = stats.getEndTime();
-          final long elapsedNanos = stats.getQueryExecutionElapse();
-          final QueryStatusEncoding.Status status;
-          String message = null;
-          if (mqp.isKilled()) {
-            /* This is a catch-all for both ERROR and KILLED, right? */
-            message = mqp.getMessage();
-            if (message == null) {
-              status = Status.KILLED;
-            } else {
-              status = Status.ERROR;
-            }
-          } else {
-            status = Status.SUCCESS;
-          }
+          QueryState query = activeQueries.get(taskId.getQueryId());
+          finishTask(taskId);
 
+          final long elapsedNanos = mqp.getExecutionStatistics().getQueryExecutionElapse();
           if (future.isSuccess()) {
-            if (LOGGER.isInfoEnabled()) {
-              LOGGER.info("Query #{} succeeded. Time elapsed: {}.", taskId, DateTimeUtils
-                  .nanoElapseToHumanReadable(elapsedNanos));
-            }
+            LOGGER.info("Task #{} succeeded. Time elapsed: {}.", taskId, DateTimeUtils
+                .nanoElapseToHumanReadable(elapsedNanos));
             // TODO success management.
+            advanceQuery(query);
           } else {
-            if (LOGGER.isInfoEnabled()) {
-              LOGGER.info("Query #{} failed. Time elapsed: {}. Failure cause is {}.", taskId, DateTimeUtils
-                  .nanoElapseToHumanReadable(elapsedNanos), future.getCause());
-            }
-            // TODO failure management.
-          }
-
-          try {
-            catalog.queryFinished(taskId.getQueryId(), startTime, endTime, elapsedNanos, status, message);
-          } finally {
+            LOGGER.info("Task #{} failed. Time elapsed: {}. Failure cause is {}.", taskId, DateTimeUtils
+                .nanoElapseToHumanReadable(elapsedNanos), future.getCause());
+            final QueryStatusEncoding.Status status;
             /*
-             * This should be the last line of code -- the query should not be removed from activeQueries until all the
-             * metadata is up to date.
-             * 
-             * Workaround #509: remove even if the update fails, otherwise we get zombie queries.
+             * The query failed. The only way we have to tell whether it had an error or was killed is whether there is
+             * an error message logged.
              */
-            finishTask(taskId);
+            String message = mqp.getMessage();
+            if (message != null) {
+              status = Status.ERROR;
+            } else {
+              status = Status.KILLED;
+            }
+            query.markFailed(status, message);
+            finishQuery(query);
           }
         }
       });
@@ -1075,15 +1115,19 @@ public final class Server {
         @Override
         public void operationComplete(final QueryFuture future) throws Exception {
           mqp.init();
+          activeQueries.get(taskId.getQueryId()).markStart();
           mqp.startExecution();
           Server.this.startWorkerQuery(future.getQuery().getTaskId());
         }
       });
 
       return mqp.getExecutionFuture();
-    } catch (DbException | CatalogException | RuntimeException e) {
+    } catch (DbException | RuntimeException e) {
       try {
-        catalog.queryFinished(taskId.getQueryId(), "error during submission", null, null, Status.ERROR, e.toString());
+        queryState.markFailed(Status.ERROR, "error during submission of task " + taskId + ": " + e.toString());
+        catalog.queryFinished(queryState);
+      } catch (CatalogException e1) {
+        throw new DbException("error marking query as failed during submission", e1);
       } finally {
         finishTask(taskId);
       }
@@ -1097,8 +1141,9 @@ public final class Server {
    * @param taskId the query/subquery task to finish.
    */
   private void finishTask(final QueryTaskId taskId) {
+    long queryId = taskId.getQueryId();
     activeQueryTasks.remove(taskId);
-    activeQueries.remove(taskId.getQueryId());
+    activeQueries.get(queryId).finishTask();
   }
 
   /**
@@ -1281,26 +1326,25 @@ public final class Server {
   public QueryStatusEncoding getQueryStatus(final long queryId) throws CatalogException {
     /* Get the stored data for this query, e.g., the submitted program. */
     QueryStatusEncoding queryStatus = catalog.getQuery(queryId);
-    QueryTaskId taskId = activeQueries.get(queryId);
-    if (taskId == null) {
-      /* The query isn't active any more, so queryStatus already contains the final status. */
-      return queryStatus;
+    if (queryStatus == null) {
+      return null;
     }
-    MasterQueryPartition mqp = activeQueryTasks.get(taskId);
-    if (mqp == null) {
-      /* The query isn't active any more, so queryStatus already contains the final status. */
+
+    QueryState state = activeQueries.get(queryId);
+    if (state == null) {
+      /* Not active, so the information from the Catalog is authoritative. */
       return queryStatus;
     }
 
-    queryStatus.startTime = mqp.getExecutionStatistics().getStartTime();
-    queryStatus.finishTime = mqp.getExecutionStatistics().getEndTime();
+    /* Currently active, so fill in the latest information about the query. */
+    queryStatus.startTime = state.getStartTime();
+    queryStatus.finishTime = state.getEndTime();
     if (queryStatus.finishTime != null) {
-      queryStatus.elapsedNanos = mqp.getExecutionStatistics().getQueryExecutionElapse();
+      queryStatus.elapsedNanos = state.getElapsedTime();
     }
+
     /* TODO(dhalperi) get status in a better way. */
-    if (mqp.isKilled()) {
-      queryStatus.status = QueryStatusEncoding.Status.KILLED;
-    } else if (queryStatus.startTime != null) {
+    if (queryStatus.startTime != null) {
       queryStatus.status = QueryStatusEncoding.Status.RUNNING;
     } else {
       queryStatus.status = QueryStatusEncoding.Status.ACCEPTED;

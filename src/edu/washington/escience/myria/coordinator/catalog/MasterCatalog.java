@@ -37,7 +37,7 @@ import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
-import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
+import edu.washington.escience.myria.parallel.QueryState;
 import edu.washington.escience.myria.parallel.SocketInfo;
 
 /**
@@ -1334,17 +1334,11 @@ public final class MasterCatalog {
   /**
    * Update the status of the specified query in the MasterCatalog.
    * 
-   * @param queryId the id of the query.
-   * @param startTime when that query started.
-   * @param endTime when that query finished.
-   * @param elapsedNanos how long the query executed for, in nanoseconds.
-   * @param status the status of the query when finished.
-   * @param message a message describing the cause of the query's death, or null.
+   * @param query the state of the query.
    * @throws CatalogException if there is an error in the MasterCatalog.
    */
-  public void queryFinished(final long queryId, final String startTime, final String endTime, final Long elapsedNanos,
-      final Status status, final String message) throws CatalogException {
-    Objects.requireNonNull(status);
+  public void queryFinished(final QueryState query) throws CatalogException {
+    Objects.requireNonNull(query, "query");
     if (isClosed) {
       throw new CatalogException("MasterCatalog is closed.");
     }
@@ -1357,16 +1351,16 @@ public final class MasterCatalog {
             SQLiteStatement statement =
                 sqliteConnection
                     .prepare("UPDATE queries SET start_time=?, finish_time=?, elapsed_nanos=?, status=?, message=? WHERE query_id=?;");
-            statement.bind(1, startTime);
-            statement.bind(2, endTime);
-            if (elapsedNanos == null) {
+            statement.bind(1, query.getStartTime());
+            statement.bind(2, query.getEndTime());
+            if (query.getElapsedTime() == null) {
               statement.bindNull(3);
             } else {
-              statement.bind(3, elapsedNanos);
+              statement.bind(3, query.getElapsedTime());
             }
-            statement.bind(4, status.toString());
-            statement.bind(5, message);
-            statement.bind(6, queryId);
+            statement.bind(4, query.getStatus().toString());
+            statement.bind(5, query.getMessage());
+            statement.bind(6, query.getQueryId());
             statement.stepThrough();
             statement.dispose();
             return null;

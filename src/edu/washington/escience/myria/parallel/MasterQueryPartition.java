@@ -376,15 +376,15 @@ public class MasterQueryPartition implements QueryPartition {
   }
 
   /**
-   * @param masterPlan the master plan.
-   * @param workerPlans the worker plans.
-   * @param taskId the id of the query/subquery task.
+   * @param task the task to be executed.
    * @param master the master on which the query partition is running.
    * */
-  public MasterQueryPartition(final SingleQueryPlanWithArgs masterPlan,
-      final Map<Integer, SingleQueryPlanWithArgs> workerPlans, final QueryTaskId taskId, final Server master) {
+  public MasterQueryPartition(final QueryTask task, final Server master) {
+    Preconditions.checkNotNull(task, "task");
+    SingleQueryPlanWithArgs masterPlan = task.getMasterPlan();
+    Map<Integer, SingleQueryPlanWithArgs> workerPlans = task.getWorkerPlans();
     root = masterPlan.getRootOps().get(0);
-    this.taskId = Preconditions.checkNotNull(taskId, "taskId");
+    taskId = Preconditions.checkNotNull(task.getTaskId(), "taskId");
     this.master = master;
     profilingMode = masterPlan.isProfilingMode();
     ftMode = masterPlan.getFTMode();

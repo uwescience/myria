@@ -2,10 +2,7 @@ package edu.washington.escience.myria.api;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -23,24 +20,15 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
-import org.slf4j.LoggerFactory;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.base.Objects;
 
-import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.api.encoding.QueryConstruct;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
-import edu.washington.escience.myria.operator.EOSSource;
-import edu.washington.escience.myria.operator.RootOperator;
-import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.parallel.QueryFuture;
-import edu.washington.escience.myria.parallel.QueryFutureListener;
 import edu.washington.escience.myria.parallel.Server;
-import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
+import edu.washington.escience.myria.parallel.meta.JsonFragment;
 
 /**
  * Class that handles queries.
@@ -51,8 +39,6 @@ import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 @Produces(MediaType.APPLICATION_JSON)
 @Path("/query")
 public final class QueryResource {
-  /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(QueryResource.class);
   /** The Myria server running on the master. */
   @Context
   private Server server;
@@ -100,48 +86,18 @@ public final class QueryResource {
     }
     query.validate();
 
-    /* Deserialize the three arguments we need */
-    Map<Integer, SingleQueryPlanWithArgs> queryPlan;
-    try {
-      queryPlan = QueryConstruct.instantiate(query, server);
-    } catch (CatalogException e) {
-      /* CatalogException means something went wrong interfacing with the Catalog. */
-      throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, e);
-    } catch (MyriaApiException e) {
-      /* Passthrough MyriaApiException. */
-      throw e;
-    } catch (Exception e) {
-      /* Other exceptions mean that the request itself was likely bad. */
-      throw new MyriaApiException(Status.BAD_REQUEST, e);
-    }
-
-    Set<Integer> usingWorkers = new HashSet<Integer>();
-    usingWorkers.addAll(queryPlan.keySet());
-    /* Remove the server plan if present */
-    usingWorkers.remove(MyriaConstants.MASTER_ID);
-    /* Make sure that the requested workers are alive. */
-    if (!server.getAliveWorkers().containsAll(usingWorkers)) {
-      /* Throw a 503 (Service Unavailable) */
-      throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "Not all requested workers are alive");
-    }
-
-    SingleQueryPlanWithArgs masterPlan = queryPlan.get(MyriaConstants.MASTER_ID);
-    if (masterPlan == null) {
-      masterPlan = new SingleQueryPlanWithArgs(new SinkRoot(new EOSSource()));
-      masterPlan.setFTMode(query.ftMode);
-    } else {
-      queryPlan.remove(MyriaConstants.MASTER_ID);
-    }
-    final RootOperator masterRoot = masterPlan.getRootOps().get(0);
-
     /* Start the query, and get its Server-assigned Query ID */
     QueryFuture qf;
     try {
-      qf = server.submitQuery(query, masterPlan, queryPlan);
-    } catch (IllegalArgumentException e) {
-      throw new MyriaApiException(Status.BAD_REQUEST, e);
-    } catch (DbException | CatalogException e) {
+      qf = server.submitQuery(query, new JsonFragment(query.fragments));
+    } catch (MyriaApiException e) {
+      /* Passthrough MyriaApiException. */
+      throw e;
+    } catch (CatalogException e) {
       throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, e);
+    } catch (Exception e) {
+      /* Other exceptions mean that the request itself was likely bad. */
+      throw new MyriaApiException(Status.BAD_REQUEST, e);
     }
 
     /* Check to see if the query was submitted successfully. */
@@ -150,18 +106,6 @@ public final class QueryResource {
     }
 
     long queryId = qf.getQuery().getTaskId().getQueryId();
-    qf.addListener(new QueryFutureListener() {
-
-      @Override
-      public void operationComplete(final QueryFuture future) throws Exception {
-        if (masterRoot instanceof SinkRoot && query.expectedResultSize != null) {
-          if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("Expected num tuples: {}; but actually: {}", query.expectedResultSize, ((SinkRoot) masterRoot)
-                .getCount());
-          }
-        }
-      }
-    });
     /* And return the queryStatus as it is now. */
     QueryStatusEncoding qs = server.getQueryStatus(queryId);
     URI queryUri = getCanonicalResourcePath(uriInfo, queryId);
