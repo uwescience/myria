@@ -175,6 +175,24 @@ public final class IPCUtils {
   }
 
   /**
+   * @param workerId the id of the worker to be removed.
+   * @return the stop worker TM.
+   * */
+  public static TransportMessage stopWorkerTM(final int workerId) {
+    return TransportMessage.newBuilder().setType(TransportMessage.Type.CONTROL).setControlMessage(
+        ControlMessage.newBuilder().setType(ControlMessage.Type.STOP_WORKER).setWorkerId(workerId)).build();
+  }
+
+  /**
+   * @param workerId the id of the worker to be removed.
+   * @return the stop worker ack TM.
+   * */
+  public static TransportMessage stopWorkerAckTM(final int workerId) {
+    return TransportMessage.newBuilder().setType(TransportMessage.Type.CONTROL).setControlMessage(
+        ControlMessage.newBuilder().setType(ControlMessage.Type.STOP_WORKER_ACK).setWorkerId(workerId)).build();
+  }
+
+  /**
    * @param queryId .
    * @return a query ready TM.
    * */

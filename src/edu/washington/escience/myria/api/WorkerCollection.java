@@ -92,6 +92,36 @@ public final class WorkerCollection {
   }
 
   /**
+   * @param sWorkerId identifier of the worker, input string.
+   * @param uriInfo information about the URL of the request.
+   * @return the URI of the worker added.
+   */
+  @POST
+  @Path("/stop/worker-{workerId}")
+  public Response stopWorker(@PathParam("workerId") final String sWorkerId, @Context final UriInfo uriInfo) {
+    Integer workerId;
+    try {
+      workerId = Integer.parseInt(sWorkerId);
+    } catch (final NumberFormatException e) {
+      /* Parsing failed, throw a 400 (Bad Request) */
+      throw new MyriaApiException(Status.BAD_REQUEST, e);
+    }
+    SocketInfo workerInfo = server.getWorkers().get(workerId);
+    if (workerInfo == null) {
+      /* Worker not in catalog, throw a 400 (Bad Request) */
+      throw new MyriaApiException(Status.BAD_REQUEST, "Worker " + sWorkerId + " not deployed");
+    }
+    if (!server.isWorkerAlive(workerId)) {
+      /* Worker not alive, throw a 400 (Bad Request) */
+      throw new MyriaApiException(Status.BAD_REQUEST, "Worker " + sWorkerId + " not alive");
+    }
+    server.stopWorker(workerId);
+
+    URI queryUri = uriInfo.getRequestUri();
+    return Response.status(Status.ACCEPTED).location(queryUri).build();
+  }
+
+  /**
    * @return the set of workers (identifier : host-port string) known by this server.
    */
   @GET

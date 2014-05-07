@@ -158,6 +158,14 @@ public final class Server {
                   }
                 }
                 break;
+              case STOP_WORKER_ACK:
+                workerID = controlM.getWorkerId();
+                if (LOGGER.isInfoEnabled()) {
+                  LOGGER.info("Received STOP_WORKER_ACK from worker #" + workerID);
+                }
+                stoppingWorkers.remove(workerID);
+                connectionPool.sendShortMessage(workerID, IPCUtils.CONTROL_SHUTDOWN);
+                break;
               default:
                 if (LOGGER.isErrorEnabled()) {
                   LOGGER.error("Unexpected control message received at master: " + controlM);
@@ -236,6 +244,13 @@ public final class Server {
    * Current alive worker set.
    */
   private final ConcurrentHashMap<Integer, Long> aliveWorkers;
+
+  /**
+   * Current stopping worker set. No intersection with the alive worker set is possible. When a worker sends a
+   * STOP_WORKER_ACK message, it will be removed from this set.
+   * 
+   */
+  private final ConcurrentHashMap<Integer, Long> stoppingWorkers;
 
   /**
    * Scheduled new workers, when a scheduled worker sends the first heartbeat, it'll be removed from this set.
@@ -467,6 +482,7 @@ public final class Server {
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE, getExecutionMode());
 
     aliveWorkers = new ConcurrentHashMap<Integer, Long>();
+    stoppingWorkers = new ConcurrentHashMap<Integer, Long>();
     scheduledWorkers = new ConcurrentHashMap<Integer, SocketInfo>();
     scheduledWorkersTime = new ConcurrentHashMap<Integer, Long>();
 
@@ -1206,6 +1222,27 @@ public final class Server {
     }
     sendAddWorker = new Thread(new SendAddWorker(workerId, workerInfo, aliveWorkers.size()));
     new Thread(new NewWorkerScheduler(workerId, workerInfo.getHost(), workerInfo.getPort())).start();
+  }
+
+  /**
+   * Stops a worker.
+   * 
+   * @param workerId the worker identification
+   */
+  public void stopWorker(final Integer workerId) {
+    SocketInfo workerInfo = getWorkerInfo(workerId);
+    if (workerInfo == null) {
+      throw new RuntimeException("Worker id: " + workerId + " not found");
+    }
+    if (connectionPool.isRemoteAlive(workerId)) {
+      // TODO add process kill
+      if (LOGGER.isInfoEnabled()) {
+        LOGGER.info("Stopping worker #{} : {}", workerId, workerInfo);
+      }
+      connectionPool.sendShortMessage(workerId, IPCUtils.stopWorkerTM(workerId));
+    }
+    aliveWorkers.remove(workerId);
+    stoppingWorkers.put(workerId, System.currentTimeMillis());
   }
 
   /**
