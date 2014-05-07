@@ -62,19 +62,17 @@ public final class WorkerShortMessageProcessor extends AttachmentableAdapter imp
    * @return if the message is successfully processed.
    * */
   private boolean processQueryMessage(final Channel ch, final int remoteID, final QueryMessage qm) {
-    long queryId = qm.getQueryId();
+    QueryTaskId taskId = new QueryTaskId(qm.getQueryId(), qm.getSubqueryId());
     WorkerQueryPartition q = null;
     boolean result = true;
     switch (qm.getType()) {
       case QUERY_START:
-      case QUERY_PAUSE:
-      case QUERY_RESUME:
       case QUERY_KILL:
       case QUERY_RECOVER:
-        q = ownerWorker.getActiveQueries().get(queryId);
+        q = ownerWorker.getActiveQueries().get(taskId);
         if (q == null) {
           if (LOGGER.isErrorEnabled()) {
-            LOGGER.error("In receiving message {}, unknown query id: {}, current active queries are: {}", qm, queryId,
+            LOGGER.error("In receiving message {}, unknown query id: {}, current active queries are: {}", qm, taskId,
                 ownerWorker.getActiveQueries().keySet());
           }
         } else {
@@ -82,12 +80,6 @@ public final class WorkerShortMessageProcessor extends AttachmentableAdapter imp
             case QUERY_START:
               q.init();
               q.startExecution();
-              break;
-            case QUERY_PAUSE:
-              q.pause();
-              break;
-            case QUERY_RESUME:
-              q.resume();
               break;
             case QUERY_KILL:
               q.kill();
@@ -107,18 +99,14 @@ public final class WorkerShortMessageProcessor extends AttachmentableAdapter imp
         try {
           osis = new ObjectInputStream(new ByteArrayInputStream(qm.getQuery().getQuery().toByteArray()));
           final SingleQueryPlanWithArgs operators = (SingleQueryPlanWithArgs) (osis.readObject());
-          q = new WorkerQueryPartition(operators, queryId, ownerWorker);
+          q = new WorkerQueryPartition(operators, taskId, ownerWorker);
           result = ownerWorker.getQueryQueue().offer(q);
           if (!result) {
             break;
           }
-          if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Query received from: " + remoteID + ". " + q);
-          }
+          LOGGER.debug("Query received from: {}. {}", remoteID, q);
         } catch (IOException | ClassNotFoundException e) {
-          if (LOGGER.isErrorEnabled()) {
-            LOGGER.error("Error decoding query", e);
-          }
+          LOGGER.error("Error decoding query", e);
         }
         break;
       default:

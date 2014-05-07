@@ -326,7 +326,7 @@ public final class QuerySubTreeTask {
 
   @Override
   public String toString() {
-    long queryID = ownerQuery.getQueryID();
+    QueryTaskId queryID = ownerQuery.getTaskId();
     Operator rootOp = root;
 
     StringBuilder stateS = new StringBuilder();
@@ -360,15 +360,11 @@ public final class QuerySubTreeTask {
       stateS.append(splitter + "Killed");
       splitter = " | ";
     }
-    if ((state & QuerySubTreeTask.STATE_PAUSED) == STATE_PAUSED) {
-      stateS.append(splitter + "Paused");
-      splitter = " | ";
-    }
     if ((state & QuerySubTreeTask.STATE_OUTPUT_AVAILABLE) == STATE_OUTPUT_AVAILABLE) {
       stateS.append(splitter + "Output_Available");
       splitter = " | ";
     }
-    return String.format("Task: { Owner QID: %d, Root Op: %s, State: %s }", queryID, rootOp, stateS.toString());
+    return String.format("Task: { Owner QID: %s, Root Op: %s, State: %s }", queryID, rootOp, stateS.toString());
   }
 
   /**
@@ -394,11 +390,6 @@ public final class QuerySubTreeTask {
           AtomicUtils.setBitByValue(executionCondition, STATE_INTERRUPTED);
 
           // TODO clean up task state
-        } else if (ownerQuery.isPaused()) {
-          // the owner query is paused, exit execution.
-          if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Operator task execution paused because the query is paused. Root operator: {}.", root);
-          }
         } else {
           // do the execution
 
@@ -511,39 +502,34 @@ public final class QuerySubTreeTask {
   private static final int STATE_INPUT_AVAILABLE = (1 << 3);
 
   /**
-   * The task is paused.
-   */
-  private static final int STATE_PAUSED = (1 << 4);
-
-  /**
    * The task is killed.
    */
-  private static final int STATE_KILLED = (1 << 5);
+  private static final int STATE_KILLED = (1 << 4);
 
   /**
    * The task is not EOS.
    * */
-  private static final int STATE_EOS = (1 << 6);
+  private static final int STATE_EOS = (1 << 5);
 
   /**
    * The task is currently not in execution.
    * */
-  private static final int STATE_EXECUTION_REQUESTED = (1 << 7);
+  private static final int STATE_EXECUTION_REQUESTED = (1 << 6);
 
   /**
    * The task fails because of uncaught exception.
    * */
-  private static final int STATE_FAIL = (1 << 8);
+  private static final int STATE_FAIL = (1 << 7);
 
   /**
    * The task execution thread is interrupted.
    * */
-  private static final int STATE_INTERRUPTED = (1 << 9);
+  private static final int STATE_INTERRUPTED = (1 << 8);
 
   /**
    * The task is in execution.
    * */
-  private static final int STATE_IN_EXECUTION = (1 << 10);
+  private static final int STATE_IN_EXECUTION = (1 << 9);
 
   /**
    * Non-blocking ready condition.

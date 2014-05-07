@@ -98,7 +98,7 @@ public abstract class Operator implements Serializable {
    */
   public long getQueryId() {
     return ((TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER)).getOwnerTask()
-        .getOwnerQuery().getQueryID();
+        .getOwnerQuery().getTaskId().getQueryId();
   }
 
   /**

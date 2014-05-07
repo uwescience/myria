@@ -151,7 +151,7 @@ public final class QueryResource {
       throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "The server cannot accept new queries right now.");
     }
 
-    long queryId = qf.getQuery().getQueryID();
+    long queryId = qf.getQuery().getTaskId().getQueryId();
     qf.addListener(new QueryFutureListener() {
 
       @Override
@@ -202,7 +202,6 @@ public final class QueryResource {
         cache = true;
         break;
       case ACCEPTED:
-      case PAUSED:
       case RUNNING:
         httpStatus = Status.ACCEPTED;
         break;

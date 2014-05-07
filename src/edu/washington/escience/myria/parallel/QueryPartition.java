@@ -22,9 +22,9 @@ public interface QueryPartition extends Comparable<QueryPartition> {
   boolean isProfilingMode();
 
   /**
-   * @return The query ID.
+   * @return The query/subquery task ID.
    * */
-  long getQueryID();
+  QueryTaskId getTaskId();
 
   /**
    * @return the query priority.
@@ -47,32 +47,10 @@ public interface QueryPartition extends Comparable<QueryPartition> {
   void init();
 
   /**
-   * Pause the query. If the query is currently paused, do nothing.
-   * 
-   * @return the future instance of the pause action. The future will be set as done if and only if all the tasks in
-   *         this query have stopped execution. During a pause of the query, all call to this method returns the same
-   *         future instance. Two pause calls when the query is not paused at either of the calls return two different
-   *         instances.
-   * */
-  QueryFuture pause();
-
-  /**
-   * Resume the query.
-   * 
-   * @return the future instance of the resume action.
-   * */
-  QueryFuture resume();
-
-  /**
    * Kill the query.
    * 
    * */
   void kill();
-
-  /**
-   * @return if the query is paused.
-   * */
-  boolean isPaused();
 
   /**
    * @return the query execution statistics.

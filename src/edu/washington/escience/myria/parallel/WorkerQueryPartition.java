@@ -8,7 +8,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,9 +41,9 @@ public class WorkerQueryPartition implements QueryPartition {
   private static final Logger LOGGER = LoggerFactory.getLogger(WorkerQueryPartition.class);
 
   /**
-   * The query ID.
+   * The query/subquery task id.
    * */
-  private final long queryID;
+  private final QueryTaskId taskId;
 
   /**
    * All tasks.
@@ -75,11 +74,6 @@ public class WorkerQueryPartition implements QueryPartition {
    * priority, currently no use.
    * */
   private volatile int priority;
-
-  /**
-   * Store the current pause future if the query is in pause, otherwise null.
-   * */
-  private final AtomicReference<QueryFuture> pauseFuture = new AtomicReference<QueryFuture>(null);
 
   /**
    * the future for the query's execution.
@@ -118,8 +112,8 @@ public class WorkerQueryPartition implements QueryPartition {
         if (!(failureReason instanceof QueryKilledException)) {
           // The task is a failure, not killed.
           if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("got a failed task, root op = " + drivingTask.getRootOp().getOpName() + ", cause ",
-                failureReason);
+            LOGGER
+                .debug("got a failed task, root op = {} cause {}", drivingTask.getRootOp().getOpName(), failureReason);
           }
           for (QuerySubTreeTask t : tasks) {
             // kill other tasks
@@ -131,8 +125,8 @@ public class WorkerQueryPartition implements QueryPartition {
       if (currentNumFinished >= tasks.size()) {
         queryStatistics.markQueryEnd();
         if (LOGGER.isInfoEnabled()) {
-          LOGGER.info("Query #" + queryID + " executed for "
-              + DateTimeUtils.nanoElapseToHumanReadable(queryStatistics.getQueryExecutionElapse()));
+          LOGGER.info("Query #{} executed for {}", taskId, DateTimeUtils.nanoElapseToHumanReadable(queryStatistics
+              .getQueryExecutionElapse()));
         }
         if (isProfilingMode()) {
           try {
@@ -168,11 +162,11 @@ public class WorkerQueryPartition implements QueryPartition {
 
   /**
    * @param plan the plan of this query partition.
-   * @param queryID the id of the query.
+   * @param taskId the id of this query/subquery task.
    * @param ownerWorker the worker on which this query partition is going to run
    * */
-  public WorkerQueryPartition(final SingleQueryPlanWithArgs plan, final long queryID, final Worker ownerWorker) {
-    this.queryID = queryID;
+  public WorkerQueryPartition(final SingleQueryPlanWithArgs plan, final QueryTaskId taskId, final Worker ownerWorker) {
+    this.taskId = taskId;
     ftMode = plan.getFTMode();
     profilingMode = plan.isProfilingMode();
     List<RootOperator> operators = plan.getRootOps();
@@ -243,8 +237,8 @@ public class WorkerQueryPartition implements QueryPartition {
   }
 
   @Override
-  public final long getQueryID() {
-    return queryID;
+  public final QueryTaskId getTaskId() {
+    return taskId;
   }
 
   @Override
@@ -267,9 +261,7 @@ public class WorkerQueryPartition implements QueryPartition {
 
   @Override
   public final void startExecution() {
-    if (LOGGER.isInfoEnabled()) {
-      LOGGER.info("Query : " + getQueryID() + " start processing.");
-    }
+    LOGGER.info("Query : {} start processing", taskId);
 
     startMilliseconds = System.currentTimeMillis();
 
@@ -285,42 +277,10 @@ public class WorkerQueryPartition implements QueryPartition {
   }
 
   @Override
-  public final QueryFuture pause() {
-    final QueryFuture pauseF = new DefaultQueryFuture(this, true);
-    while (!pauseFuture.compareAndSet(null, pauseF)) {
-      QueryFuture current = pauseFuture.get();
-      if (current != null) {
-        // already paused by some other threads, do not do the actual pause
-        return current;
-      }
-    }
-    return pauseF;
-  }
-
-  @Override
-  public final QueryFuture resume() {
-    QueryFuture pf = pauseFuture.getAndSet(null);
-    DefaultQueryFuture rf = new DefaultQueryFuture(this, true);
-
-    if (pf == null) {
-      // query is not in pause, return success directly.
-      rf.setSuccess();
-      return rf;
-    }
-    // TODO do the resume stuff
-    return rf;
-  }
-
-  @Override
   public final void kill() {
     for (QuerySubTreeTask task : tasks) {
       task.kill();
     }
-  }
-
-  @Override
-  public final boolean isPaused() {
-    return pauseFuture.get() != null;
   }
 
   @Override
@@ -375,7 +335,7 @@ public class WorkerQueryPartition implements QueryPartition {
     for (QuerySubTreeTask task : tasks) {
       if (task.getRootOp() instanceof Producer) {
         if (LOGGER.isTraceEnabled()) {
-          LOGGER.trace("adding recovery task for " + task.getRootOp().getOpName());
+          LOGGER.trace("adding recovery task for {}", task.getRootOp().getOpName());
         }
         List<StreamingState> buffers = ((Producer) task.getRootOp()).getTriedToSendTuples();
         List<Integer> indices = ((Producer) task.getRootOp()).getChannelIndicesOfAWorker(workerId);

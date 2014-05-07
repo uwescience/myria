@@ -100,8 +100,7 @@ public final class Worker {
                   }
                   connectionPool.removeRemote(workerId).await();
                   sendMessageToMaster(IPCUtils.removeWorkerAckTM(workerId));
-                  for (Long id : activeQueries.keySet()) {
-                    WorkerQueryPartition wqp = activeQueries.get(id);
+                  for (WorkerQueryPartition wqp : activeQueryTasks.values()) {
                     if (wqp.getFTMode().equals(FTMODE.abandon)) {
                       wqp.getMissingWorkers().add(workerId);
                       wqp.updateProducerChannels(workerId, false);
@@ -157,7 +156,7 @@ public final class Worker {
           if (q != null) {
             try {
               receiveQuery(q);
-              sendMessageToMaster(IPCUtils.queryReadyTM(q.getQueryID()));
+              sendMessageToMaster(IPCUtils.queryReadyTM(q.getTaskId()));
             } catch (DbException e) {
               if (LOGGER.isErrorEnabled()) {
                 LOGGER.error("Unexpected exception at preparing query. Drop the query.", e);
@@ -247,10 +246,10 @@ public final class Worker {
    * */
   private volatile ExecutorService messageProcessingExecutor;
 
-  /**
-   * current active queries. queryID -> QueryPartition
-   * */
-  private final ConcurrentHashMap<Long, WorkerQueryPartition> activeQueries;
+  /** Currently active queries. Query ID -> Query Task ID. */
+  private final Map<Long, QueryTaskId> activeQueries;
+  /** Currently running tasks. QueryTaskId -> WorkerQueryPartition. */
+  private final Map<QueryTaskId, WorkerQueryPartition> activeQueryTasks;
 
   /**
    * shutdown checker executor.
@@ -561,8 +560,8 @@ public final class Worker {
   /**
    * @return the current active queries.
    * */
-  ConcurrentHashMap<Long, WorkerQueryPartition> getActiveQueries() {
-    return activeQueries;
+  Map<QueryTaskId, WorkerQueryPartition> getActiveQueries() {
+    return activeQueryTasks;
   }
 
   /**
@@ -600,7 +599,8 @@ public final class Worker {
         new IPCConnectionPool(myID, computingUnits, IPCConfigurations.createWorkerIPCServerBootstrap(this),
             IPCConfigurations.createWorkerIPCClientBootstrap(this), new TransportMessageSerializer(),
             new WorkerShortMessageProcessor(this));
-    activeQueries = new ConcurrentHashMap<Long, WorkerQueryPartition>();
+    activeQueries = new ConcurrentHashMap<>();
+    activeQueryTasks = new ConcurrentHashMap<>();
 
     inputBufferCapacity =
         Integer.valueOf(catalog.getConfigurationValue(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY));
@@ -633,21 +633,21 @@ public final class Worker {
    * @throws DbException if any error occurs.
    */
   public void receiveQuery(final WorkerQueryPartition query) throws DbException {
-    if (LOGGER.isInfoEnabled()) {
-      LOGGER.info("Query received " + query.getQueryID());
-    }
+    final QueryTaskId taskId = query.getTaskId();
+    LOGGER.info("Query received {}", taskId);
 
-    activeQueries.put(query.getQueryID(), query);
+    activeQueries.put(taskId.getQueryId(), taskId);
+    activeQueryTasks.put(taskId, query);
     query.getExecutionFuture().addListener(new QueryFutureListener() {
 
       @Override
       public void operationComplete(final QueryFuture future) {
-        activeQueries.remove(query.getQueryID());
+        finishTask(taskId);
 
         if (future.isSuccess()) {
 
-          sendMessageToMaster(IPCUtils.queryCompleteTM(query.getQueryID(), query.getExecutionStatistics()))
-              .addListener(new ChannelFutureListener() {
+          sendMessageToMaster(IPCUtils.queryCompleteTM(taskId, query.getExecutionStatistics())).addListener(
+              new ChannelFutureListener() {
 
                 @Override
                 public void operationComplete(final ChannelFuture future) throws Exception {
@@ -659,23 +659,18 @@ public final class Worker {
                 }
 
               });
-          if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("My part of query " + query + " finished");
-          }
-
+          LOGGER.info("My part of query {} finished", query);
         } else {
-          if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Query failed because of exception: ", future.getCause());
-          }
+          LOGGER.debug("Query failed because of exception: ", future.getCause());
 
           TransportMessage tm = null;
           try {
-            tm = IPCUtils.queryFailureTM(query.getQueryID(), future.getCause(), query.getExecutionStatistics());
+            tm = IPCUtils.queryFailureTM(taskId, future.getCause(), query.getExecutionStatistics());
           } catch (IOException e) {
             if (LOGGER.isErrorEnabled()) {
               LOGGER.error("Unknown query failure TM creation error", e);
             }
-            tm = IPCUtils.simpleQueryFailureTM(query.getQueryID());
+            tm = IPCUtils.simpleQueryFailureTM(taskId);
           }
           sendMessageToMaster(tm).addListener(new ChannelFutureListener() {
             @Override
@@ -693,6 +688,16 @@ public final class Worker {
   }
 
   /**
+   * Finish the task by removing it from the data structures.
+   * 
+   * @param taskId the query/subquery task to finish.
+   */
+  private void finishTask(final QueryTaskId taskId) {
+    activeQueryTasks.remove(taskId);
+    activeQueries.remove(taskId.getQueryId());
+  }
+
+  /**
    * @param message the message to get sent to the master
    * @return the future of this sending action.
    * */
@@ -705,11 +710,9 @@ public final class Worker {
    * 
    */
   void shutdown() {
-    if (LOGGER.isInfoEnabled()) {
-      LOGGER.info("Shutdown requested. Please wait when cleaning up...");
-    }
+    LOGGER.info("Shutdown requested. Please wait when cleaning up...");
 
-    for (WorkerQueryPartition p : activeQueries.values()) {
+    for (WorkerQueryPartition p : activeQueryTasks.values()) {
       p.kill();
     }
 
