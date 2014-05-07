@@ -958,22 +958,18 @@ public final class Server {
   public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final String physicalPlan,
       final SingleQueryPlanWithArgs masterPlan, final Map<Integer, SingleQueryPlanWithArgs> workerPlans,
       @Nullable final Boolean profilingMode) throws DbException, CatalogException {
-    if (!canSubmitQuery()) {
-      return null;
-    }
-    if (profilingMode && getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_SQLITE)) {
-      throw new DbException("Profiling mode is not supported when using SQLite as the storage system.");
-    }
-    final long queryID = catalog.newQuery(rawQuery, logicalRa, physicalPlan, profilingMode);
-    return submitQuery(new QueryTaskId(queryID, 0), masterPlan, workerPlans);
+    QueryEncoding query = new QueryEncoding();
+    query.rawDatalog = rawQuery;
+    query.logicalRa = rawQuery;
+    query.fragments = ImmutableList.of();
+    query.profilingMode = profilingMode;
+    return submitQuery(query, masterPlan, workerPlans);
   }
 
   /**
    * Submit a query for execution. The workerPlans may be removed in the future if the query compiler and schedulers are
    * ready. Returns null if there are too many active queries.
    * 
-   * @param rawQuery the raw user-defined query. E.g., the source Datalog program.
-   * @param logicalRa the logical relational algebra of the compiled plan.
    * @param physicalPlan the Myria physical plan for the query.
    * @param workerPlans the physical parallel plan fragments for each worker.
    * @param masterPlan the physical parallel plan fragment for the master.
@@ -981,16 +977,15 @@ public final class Server {
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
    */
-  public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final QueryEncoding physicalPlan,
-      final SingleQueryPlanWithArgs masterPlan, final Map<Integer, SingleQueryPlanWithArgs> workerPlans)
-      throws DbException, CatalogException {
+  public QueryFuture submitQuery(final QueryEncoding physicalPlan, final SingleQueryPlanWithArgs masterPlan,
+      final Map<Integer, SingleQueryPlanWithArgs> workerPlans) throws DbException, CatalogException {
     if (!canSubmitQuery()) {
       return null;
     }
     if (physicalPlan.profilingMode && getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_SQLITE)) {
       throw new DbException("Profiling mode is not supported when using SQLite as the storage system.");
     }
-    final long queryID = catalog.newQuery(rawQuery, logicalRa, physicalPlan);
+    final long queryID = catalog.newQuery(physicalPlan);
     return submitQuery(new QueryTaskId(queryID, 0), masterPlan, workerPlans);
   }
 

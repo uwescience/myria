@@ -1053,45 +1053,25 @@ public final class MasterCatalog {
   /**
    * Insert a new query into the Catalog.
    * 
-   * @param rawQuery the original user data of the query.
-   * @param logicalRa the compiled logical relational algebra plan of the query.
    * @param physicalPlan the physical execution plan for the query.
    * @return the newly generated ID of this query.
    * @throws CatalogException if there is an error adding the new query.
    */
-  public Long newQuery(final String rawQuery, final String logicalRa, final QueryEncoding physicalPlan)
-      throws CatalogException {
+  public Long newQuery(final QueryEncoding physicalPlan) throws CatalogException {
+    Objects.requireNonNull(physicalPlan, "physicalPlan");
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
     final String physicalString;
     try {
       physicalString = MyriaJsonMapperProvider.getMapper().writeValueAsString(physicalPlan);
     } catch (JsonProcessingException e) {
       throw new CatalogException(e);
     }
-    return newQuery(rawQuery, logicalRa, physicalString, physicalPlan.profilingMode);
-  }
-
-  /**
-   * Insert a new query into the Catalog.
-   * 
-   * @param rawQuery the original user data of the query.
-   * @param logicalRa the compiled logical relational algebra plan of the query.
-   * @param physicalPlan a String describing the physical execution plan for the query.
-   * @param profilingMode is the profiling mode of the query on.
-   * @return the newly generated ID of this query.
-   * @throws CatalogException if there is an error adding the new query.
-   */
-  public Long newQuery(final String rawQuery, final String logicalRa, final String physicalPlan,
-      final Boolean profilingMode) throws CatalogException {
-    Objects.requireNonNull(rawQuery);
-    Objects.requireNonNull(logicalRa);
-    Objects.requireNonNull(physicalPlan);
-    if (isClosed) {
-      throw new CatalogException("Catalog is closed.");
-    }
 
     final QueryStatusEncoding queryStatus =
-        QueryStatusEncoding.submitted(rawQuery, logicalRa, physicalPlan, Preconditions.checkNotNull(profilingMode,
-            false));
+        QueryStatusEncoding.submitted(physicalPlan.rawDatalog, physicalPlan.logicalRa, physicalPlan, Preconditions
+            .checkNotNull(physicalPlan.profilingMode, false));
 
     try {
       return queue.execute(new SQLiteJob<Long>() {
@@ -1103,7 +1083,7 @@ public final class MasterCatalog {
                     .prepare("INSERT INTO queries (raw_query, logical_ra, physical_plan, submit_time, start_time, finish_time, elapsed_nanos, status, profiling_mode) VALUES (?,?,?,?,?,?,?,?,?);");
             statement.bind(1, queryStatus.rawQuery);
             statement.bind(2, queryStatus.logicalRa);
-            statement.bind(3, physicalPlan);
+            statement.bind(3, physicalString);
             statement.bind(4, queryStatus.submitTime);
             statement.bind(5, queryStatus.startTime);
             statement.bind(6, queryStatus.finishTime);
@@ -1114,7 +1094,11 @@ public final class MasterCatalog {
               statement.bindNull(7);
             }
             statement.bind(8, queryStatus.status.toString());
-            statement.bind(9, queryStatus.profilingMode ? 1 : 0);
+            if (queryStatus.profilingMode) {
+              statement.bind(9, 1);
+            } else {
+              statement.bind(9, 0);
+            }
             statement.stepThrough();
             statement.dispose();
             return sqliteConnection.getLastInsertId();
