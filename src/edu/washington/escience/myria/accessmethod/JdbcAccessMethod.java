@@ -322,7 +322,7 @@ public final class JdbcAccessMethod extends AccessMethod {
         sb.append(", ");
       }
       sb.append(schema.getColumnName(i)).append(" ")
-          .append(typeToDbmsType(schema.getColumnType(i), jdbcInfo.getDbms()));
+          .append(typeToDbmsType(schema.getColumnType(i), jdbcInfo.getDbms())).append(" NOT NULL");
     }
     sb.append(");");
     return sb.toString();
