@@ -22,6 +22,7 @@ import org.postgresql.copy.CopyManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.CsvTupleWriter;
@@ -124,10 +125,8 @@ public final class JdbcAccessMethod extends AccessMethod {
       Reader reader = new InputStreamReader(new ByteArrayInputStream(baos.toByteArray()));
       StringBuilder copyString =
           new StringBuilder().append("COPY ").append(relationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL))
-              .append(" FROM STDIN WITH CSV");
-      for (String s : schema.getColumnNames()) {
-        copyString.append(" FORCE NOT NULL").append(s);
-      }
+              .append(" FROM STDIN WITH CSV FORCE NOT NULL ");
+      copyString.append(" FORCE NOT NULL").append(Joiner.on(',').join(schema.getColumnNames()));
       long inserted = cpManager.copyIn(copyString.toString(), reader);
       Preconditions.checkState(inserted == tupleBatch.numTuples(),
           "Error: inserted a batch of size %s but only actually inserted %s rows", tupleBatch.numTuples(), inserted);
