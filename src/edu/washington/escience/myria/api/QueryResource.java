@@ -30,7 +30,6 @@ import com.google.common.base.Objects;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.api.encoding.QueryConstruct;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
@@ -104,8 +103,7 @@ public final class QueryResource {
     /* Deserialize the three arguments we need */
     Map<Integer, SingleQueryPlanWithArgs> queryPlan;
     try {
-      queryPlan =
-          QueryConstruct.instantiate(query.fragments, server, FTMODE.valueOf(query.ftMode), query.profilingMode);
+      queryPlan = QueryConstruct.instantiate(query.fragments, server, query.ftMode, query.profilingMode);
     } catch (CatalogException e) {
       /* CatalogException means something went wrong interfacing with the Catalog. */
       throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, e);
@@ -130,7 +128,7 @@ public final class QueryResource {
     SingleQueryPlanWithArgs masterPlan = queryPlan.get(MyriaConstants.MASTER_ID);
     if (masterPlan == null) {
       masterPlan = new SingleQueryPlanWithArgs(new SinkRoot(new EOSSource()));
-      masterPlan.setFTMode(FTMODE.valueOf(query.ftMode));
+      masterPlan.setFTMode(query.ftMode);
     } else {
       queryPlan.remove(MyriaConstants.MASTER_ID);
     }

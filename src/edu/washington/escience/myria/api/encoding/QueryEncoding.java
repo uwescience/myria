@@ -6,6 +6,7 @@ import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.google.common.collect.ImmutableSet;
 
+import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.api.MyriaApiException;
 
 /**
@@ -28,7 +29,7 @@ public class QueryEncoding extends MyriaApiEncoding {
   /** The expected number of results (for testing). */
   public Long expectedResultSize;
   /** The fault-tolerance mode used in this query, default: none. */
-  public String ftMode = "none";
+  public FTMODE ftMode = FTMODE.none;
 
   @Override
   protected void validateExtra() throws MyriaApiException {
