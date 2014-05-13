@@ -230,9 +230,9 @@ public class QueryConstruct {
               try {
                 workers.addAll(producerWorkerMap.get(((AbstractConsumerEncoding<?>) exchange).getOperatorId()));
               } catch (NullPointerException ee) {
-                System.err.println("Consumer: " + ((AbstractConsumerEncoding<?>) exchange).opId);
-                System.err.println("Producer: " + ((AbstractConsumerEncoding<?>) exchange).argOperatorId);
-                System.err.println("producerWorkerMap: " + producerWorkerMap);
+                LOGGER.error("Consumer: {}", ((AbstractConsumerEncoding<?>) exchange).opId);
+                LOGGER.error("Producer: {}", ((AbstractConsumerEncoding<?>) exchange).argOperatorId);
+                LOGGER.error("producerWorkerMap: {}", producerWorkerMap);
                 throw ee;
               }
             } else if (exchange instanceof AbstractProducerEncoding) {
