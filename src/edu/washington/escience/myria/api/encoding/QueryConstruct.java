@@ -34,8 +34,32 @@ public class QueryConstruct {
   /** The logger for this class. */
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(QueryEncoding.class);
 
+  /**
+   * Instantiate the server's desired physical plan format from the JSON encoding of a query plan.
+   * 
+   * @param query the JSON encoding of a physical query plan
+   * @param server the server on which the query will be executed
+   * @return the physical plan
+   * @throws CatalogException if there is an error instantiating the plan
+   */
+  public static Map<Integer, SingleQueryPlanWithArgs> instantiate(final QueryEncoding query, final Server server)
+      throws CatalogException {
+    Map<Integer, SingleQueryPlanWithArgs> plans = instantiate(query.fragments, server);
+    setQueryExecutionOptions(plans, query.ftMode, query.profilingMode);
+    return plans;
+  }
+
+  /**
+   * Instantiate the server's desired physical plan from a list of JSON encodings of fragments. This list must contain a
+   * self-consistent, complete query. All fragments will be executed in parallel.
+   * 
+   * @param fragments the JSON-encoded query fragments to be executed in parallel
+   * @param server the server on which the query will be executed
+   * @return the physical plan
+   * @throws CatalogException if there is an error instantiating the plan
+   */
   public static Map<Integer, SingleQueryPlanWithArgs> instantiate(List<PlanFragmentEncoding> fragments,
-      final Server server, FTMODE ftMode, boolean profilingMode) throws CatalogException {
+      final Server server) throws CatalogException {
     /* First, we need to know which workers run on each plan. */
     setupWorkersForFragments(fragments, server);
     /* Next, we need to know which pipes (operators) are produced and consumed on which workers. */
@@ -61,14 +85,27 @@ public class QueryConstruct {
         SingleQueryPlanWithArgs workerPlan = plan.get(worker);
         if (workerPlan == null) {
           workerPlan = new SingleQueryPlanWithArgs();
-          workerPlan.setFTMode(ftMode);
-          workerPlan.setProfilingMode(profilingMode);
           plan.put(worker, workerPlan);
         }
         workerPlan.addRootOp(op);
       }
     }
     return plan;
+  }
+
+  /**
+   * Set the query execution options for the specified plans.
+   * 
+   * @param plans the physical query plan
+   * @param ftMode the fault tolerance mode under which the query will be executed
+   * @param profilingMode <code>true</code> if the query should be profiled
+   */
+  public static void setQueryExecutionOptions(Map<Integer, SingleQueryPlanWithArgs> plans, final FTMODE ftMode,
+      final boolean profilingMode) {
+    for (SingleQueryPlanWithArgs plan : plans.values()) {
+      plan.setFTMode(ftMode);
+      plan.setProfilingMode(profilingMode);
+    }
   }
 
   /**

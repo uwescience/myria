@@ -103,7 +103,7 @@ public final class QueryResource {
     /* Deserialize the three arguments we need */
     Map<Integer, SingleQueryPlanWithArgs> queryPlan;
     try {
-      queryPlan = QueryConstruct.instantiate(query.fragments, server, query.ftMode, query.profilingMode);
+      queryPlan = QueryConstruct.instantiate(query, server);
     } catch (CatalogException e) {
       /* CatalogException means something went wrong interfacing with the Catalog. */
       throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, e);
