@@ -67,7 +67,7 @@ public class IngestWithPartitionFunctionTest extends SystemTestBase {
    * the data.
    */
   @Test
-  public void test() throws Exception {
+  public void testIngestDataWithPartitionFunction() throws Exception {
     File ingestWithPartitionFuncntion = new File(jsonTestPath + ingestPartitionedFilename);
     File ingestWithoutPartitionFuncntion = new File(jsonTestPath + ingestNotPartitionedFilename);
 
