@@ -271,6 +271,21 @@ public final class MyriaConstants {
    */
   public static final String PARTITION_FUNCTION_MULTI_FIELD_HASH = "multifieldhash";
 
+  /**
+   * String representation of consistent hash partition function.
+   */
+  public static final String PARTITION_FUNCTION_CONSISTENT_HASH = "consistenthash";
+
+  /**
+   * The max number of workers possible in the cluster.
+   */
+  public static final int NUM_MAX_WORKERS = 10;
+
+  /**
+   * The number of replicas per worker.
+   */
+  public static final int NUM_REPLICAS = 0;
+
   /** Private constructor to disallow building utility class. */
   private MyriaConstants() {
   }

@@ -289,6 +289,11 @@ public final class Server {
   private volatile ExecutorService serverQueryExecutor;
 
   /**
+   * The {@link ConsistentHash} object.
+   */
+  private final ConsistentHash consistentHash;
+
+  /**
    * @return the query executor used in this worker.
    */
   ExecutorService getQueryExecutor() {
@@ -485,6 +490,8 @@ public final class Server {
 
     final String databaseSystem = catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_SYSTEM);
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM, databaseSystem);
+
+    consistentHash = ConsistentHash.of(MyriaConstants.NUM_MAX_WORKERS, MyriaConstants.NUM_REPLICAS);
   }
 
   /**
@@ -1242,11 +1249,14 @@ public final class Server {
   private PartitionFunction generatePartitionFunction(final PartitionInfo partitionFunctionInfo, final int numWorkers) {
     String partitionFunction = partitionFunctionInfo.getPartitionFunction();
     List<Integer> hashFields = partitionFunctionInfo.getHashFields();
-    if (partitionFunction.toLowerCase().equals(MyriaConstants.PARTITION_FUNCTION_SINGLE_FIELD_HASH)) {
+    if (partitionFunction.equalsIgnoreCase(MyriaConstants.PARTITION_FUNCTION_SINGLE_FIELD_HASH)) {
       return new SingleFieldHashPartitionFunction(numWorkers, hashFields.get(0));
-    } else if (partitionFunction.toLowerCase().equals(MyriaConstants.PARTITION_FUNCTION_MULTI_FIELD_HASH)) {
+    } else if (partitionFunction.equalsIgnoreCase(MyriaConstants.PARTITION_FUNCTION_MULTI_FIELD_HASH)) {
       Integer[] fieldIndexesArray = hashFields.toArray(new Integer[hashFields.size()]);
       return new MultiFieldHashPartitionFunction(numWorkers, fieldIndexesArray);
+    } else if (partitionFunction.equalsIgnoreCase(MyriaConstants.PARTITION_FUNCTION_CONSISTENT_HASH)) {
+      Integer[] fieldIndexesArray = hashFields.toArray(new Integer[hashFields.size()]);
+      return new ConsistentHashPartitionFunction(numWorkers, fieldIndexesArray, consistentHash);
     }
     return new RoundRobinPartitionFunction(numWorkers);
   }
