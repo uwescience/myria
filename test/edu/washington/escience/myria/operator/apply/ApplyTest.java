@@ -405,7 +405,6 @@ public class ApplyTest {
           assertEquals(Math.max(a, c), result.getLong(18, curI));
           assertEquals(Math.min(a, c), result.getLong(19, curI));
           assertEquals(d.substring(0, 4), result.getString(20, curI));
-          System.out.println("curI: " + curI + ", result: " + result.getInt(21, curI));
           assertEquals(ConsistentHash.getMaxN(MyriaConstants.NUM_MAX_WORKERS, MyriaConstants.NUM_REPLICAS,
               currentTupleBatch.hashCode(curI, new int[] { 0 }), 3), result.getInt(21, curI));
         }
