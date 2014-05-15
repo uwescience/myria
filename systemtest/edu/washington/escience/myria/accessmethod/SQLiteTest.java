@@ -25,6 +25,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.FSUtils;
 import edu.washington.escience.myria.util.SQLiteUtils;
+import edu.washington.escience.myria.util.TestEnvVars;
 import edu.washington.escience.myria.util.TestUtils;
 import edu.washington.escience.myria.util.Tuple;
 
@@ -68,7 +69,7 @@ public class SQLiteTest {
                 new ColumnReferenceExpression(testtableKey, 1)), ImmutableList.<Boolean> of(true, false));
 
     final Operator root = scan;
-    root.open(null);
+    root.open(TestEnvVars.get(1));
 
     /* For debugging purposes, print Schema */
     final Schema schema = root.getSchema();

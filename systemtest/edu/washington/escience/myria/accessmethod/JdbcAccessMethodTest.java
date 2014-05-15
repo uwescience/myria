@@ -24,6 +24,7 @@ import edu.washington.escience.myria.operator.TupleRangeSource;
 import edu.washington.escience.myria.operator.TupleSource;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.util.TestEnvVars;
 import edu.washington.escience.myria.util.TestUtils;
 
 /**
@@ -104,7 +105,7 @@ public class JdbcAccessMethodTest {
 
     /* Count up the results and assert they match expectations */
     int count = 0;
-    scan.open(null);
+    scan.open(TestEnvVars.get(1));
     TupleBatch tb = null;
     while (!scan.eos()) {
       tb = scan.nextReady();

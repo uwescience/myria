@@ -26,7 +26,7 @@ public abstract class ExpressionOperatorParameter {
 
   /* shared */
   /** The id of the node (worker of master) that is running the expression. */
-  private Integer nodeID;
+  private Integer nodeId;
 
   /**
    * Generate aliases for all relations and add them to the alias list.
@@ -96,14 +96,7 @@ public abstract class ExpressionOperatorParameter {
    * @return the id of the worker that the expression is executed on
    */
   public int getWorkerId() {
-    return nodeID;
-  }
-
-  /**
-   * @return the workerID
-   */
-  public Integer getWorkerID() {
-    return nodeID;
+    return nodeId;
   }
 
   /**
@@ -145,6 +138,6 @@ public abstract class ExpressionOperatorParameter {
    * @param nodeID the nodeID to set
    */
   public void setNodeID(final Integer nodeID) {
-    this.nodeID = nodeID;
+    nodeId = nodeID;
   }
 }

@@ -175,7 +175,7 @@ public class DbQueryScan extends LeafOperator {
   public final Schema generateSchema() {
     if (outputSchema == null) {
       final SqlExpressionOperatorParameter parameters = new SqlExpressionOperatorParameter();
-      return query.getOutputSchema(parameters);
+      outputSchema = query.getOutputSchema(parameters);
     }
     return outputSchema;
   }
@@ -202,9 +202,11 @@ public class DbQueryScan extends LeafOperator {
     if (query != null) {
       Objects.requireNonNull(query, "query");
       final SqlExpressionOperatorParameter parameters =
-          new SqlExpressionOperatorParameter(connectionInfo.getDbms(), getNodeID());
+          new SqlExpressionOperatorParameter(connectionInfo.getDbms(), getNodeId());
       rawSqlQuery = query.getSqlString(parameters);
-      outputSchema = query.getOutputSchema(parameters);
+      if (outputSchema == null) {
+        outputSchema = query.getOutputSchema(parameters);
+      }
     }
   }
 

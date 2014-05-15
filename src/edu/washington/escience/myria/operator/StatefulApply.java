@@ -154,7 +154,7 @@ public class StatefulApply extends Apply {
     evaluators.ensureCapacity(getEmitExpressions().size());
     for (Expression expr : getEmitExpressions()) {
       GenericEvaluator evaluator =
-          new GenericEvaluator(expr, new JavaExpressionOperatorParameter(inputSchema, getStateSchema(), getNodeID()));
+          new GenericEvaluator(expr, new JavaExpressionOperatorParameter(inputSchema, getStateSchema(), getNodeId()));
       if (evaluator.needsCompiling()) {
         evaluator.compile();
       }
@@ -170,14 +170,14 @@ public class StatefulApply extends Apply {
     for (int columnIdx = 0; columnIdx < getStateSchema().numColumns(); columnIdx++) {
       Expression expr = initExpressions.get(columnIdx);
       ConstantEvaluator evaluator =
-          new ConstantEvaluator(expr, new JavaExpressionOperatorParameter(inputSchema, getNodeID()));
+          new ConstantEvaluator(expr, new JavaExpressionOperatorParameter(inputSchema, getNodeId()));
       evaluator.compile();
       state.set(columnIdx, evaluator.eval());
     }
 
     for (Expression expr : updateExpressions) {
       GenericEvaluator evaluator =
-          new GenericEvaluator(expr, new JavaExpressionOperatorParameter(inputSchema, getStateSchema(), getNodeID()));
+          new GenericEvaluator(expr, new JavaExpressionOperatorParameter(inputSchema, getStateSchema(), getNodeId()));
       evaluator.compile();
       updateEvaluators.add(evaluator);
     }

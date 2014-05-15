@@ -98,7 +98,7 @@ public class Apply extends UnaryOperator {
     Schema inputSchema = Objects.requireNonNull(getChild().getSchema());
 
     emitEvaluators = new ArrayList<>(emitExpressions.size());
-    final ExpressionOperatorParameter parameters = new JavaExpressionOperatorParameter(inputSchema, getNodeID());
+    final ExpressionOperatorParameter parameters = new JavaExpressionOperatorParameter(inputSchema, getNodeId());
     for (Expression expr : emitExpressions) {
       GenericEvaluator evaluator;
       if (expr.isConstant()) {
