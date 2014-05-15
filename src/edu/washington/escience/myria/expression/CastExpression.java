@@ -197,4 +197,9 @@ public class CastExpression extends BinaryExpression {
         throw new IllegalStateException("should not reach here.");
     }
   }
+
+  @Override
+  public String getSqlString(final ExpressionOperatorParameter parameters) {
+    throw new UnsupportedOperationException("cannot compile cast to SQL");
+  }
 }

@@ -69,9 +69,7 @@ public abstract class ExpressionOperator implements Serializable {
    * @param parameters parameters passed down the tree
    * @return the SQL string for the entire subtree
    */
-  public String getSqlString(final ExpressionOperatorParameter parameters) {
-    throw new UnsupportedOperationException("cannot compile to SQL");
-  };
+  public abstract String getSqlString(final ExpressionOperatorParameter parameters);
 
   /**
    * @return all children

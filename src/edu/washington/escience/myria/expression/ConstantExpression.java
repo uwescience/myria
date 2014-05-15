@@ -131,7 +131,7 @@ public class ConstantExpression extends ZeroaryExpression {
       case DATETIME_TYPE:
         throw new UnsupportedOperationException("using constant value of type DateTime");
       case STRING_TYPE:
-        return '\"' + StringEscapeUtils.escapeSql(value) + '\"';
+        return '\'' + StringEscapeUtils.escapeSql(value) + '\'';
     }
     throw new UnsupportedOperationException("using constant value of type " + valueType);
   }

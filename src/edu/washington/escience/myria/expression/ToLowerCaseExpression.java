@@ -7,9 +7,9 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 
 /**
- * Return the upper case representation of the operand.
+ * Return the lower case representation of the operand.
  */
-public class ToUpperCaseExpression extends UnaryExpression {
+public class ToLowerCaseExpression extends UnaryExpression {
   /***/
   private static final long serialVersionUID = 1L;
 
@@ -17,7 +17,7 @@ public class ToUpperCaseExpression extends UnaryExpression {
    * This is not really unused, it's used automagically by Jackson deserialization.
    */
   @SuppressWarnings("unused")
-  private ToUpperCaseExpression() {
+  private ToLowerCaseExpression() {
     super();
   }
 
@@ -26,7 +26,7 @@ public class ToUpperCaseExpression extends UnaryExpression {
    * 
    * @param operand the operand.
    */
-  public ToUpperCaseExpression(final ExpressionOperator operand) {
+  public ToLowerCaseExpression(final ExpressionOperator operand) {
     super(operand);
   }
 
@@ -42,11 +42,11 @@ public class ToUpperCaseExpression extends UnaryExpression {
 
   @Override
   public String getJavaString(final ExpressionOperatorParameter parameters) {
-    return getDotFunctionCallUnaryString(".toUpperCase()", parameters);
+    return getDotFunctionCallUnaryString(".toLowerCase()", parameters);
   }
 
   @Override
   public String getSqlString(final ExpressionOperatorParameter parameters) {
-    return getSqlFunctionCallUnaryString("upper", parameters);
+    return getSqlFunctionCallUnaryString("lower", parameters);
   }
 }

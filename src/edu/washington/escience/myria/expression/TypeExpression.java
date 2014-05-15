@@ -61,4 +61,9 @@ public class TypeExpression extends ZeroaryExpression {
     TypeExpression otherExp = (TypeExpression) other;
     return Objects.equals(outputType, otherExp.outputType);
   }
+
+  @Override
+  public String getSqlString(final ExpressionOperatorParameter parameters) {
+    throw new UnsupportedOperationException("This expression operator does not have a sql string representation.");
+  }
 }

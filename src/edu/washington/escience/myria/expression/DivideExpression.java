@@ -42,6 +42,7 @@ public class DivideExpression extends BinaryExpression {
 
   @Override
   public String getSqlString(final ExpressionOperatorParameter parameters) {
-    return getSqlInfixBinaryString("/", parameters);
+    return new StringBuilder("(float(").append(getLeft().getSqlString(parameters)).append(")/").append(
+        getRight().getSqlString(parameters)).append(")").toString();
   }
 }

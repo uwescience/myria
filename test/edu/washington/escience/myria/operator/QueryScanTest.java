@@ -17,6 +17,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.AndExpression;
 import edu.washington.escience.myria.expression.ConstantExpression;
+import edu.washington.escience.myria.expression.DivideExpression;
 import edu.washington.escience.myria.expression.EqualsExpression;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
@@ -24,6 +25,7 @@ import edu.washington.escience.myria.expression.LessThanExpression;
 import edu.washington.escience.myria.expression.MinusExpression;
 import edu.washington.escience.myria.expression.PlusExpression;
 import edu.washington.escience.myria.expression.PowExpression;
+import edu.washington.escience.myria.expression.SubstrExpression;
 import edu.washington.escience.myria.expression.WorkerIdExpression;
 import edu.washington.escience.myria.expression.evaluate.SqlExpressionOperatorParameter;
 import edu.washington.escience.myria.expression.sql.ColumnReferenceExpression;
@@ -96,18 +98,37 @@ public class QueryScanTest {
 
     params.generateAliases(ImmutableList.of(r, s));
 
-    ExpressionOperator and = new AndExpression(new LessThanExpression(x, y), new EqualsExpression(x, z));
-    assertEquals(and.getSqlString(params), "((rel0.x<rel0.y) AND (rel0.x=rel1.z))");
+    {
+      ExpressionOperator and = new AndExpression(new LessThanExpression(x, y), new EqualsExpression(x, z));
+      assertEquals("((rel0.x<rel0.y) AND (rel0.x=rel1.z))", and.getSqlString(params));
+    }
 
-    ExpressionOperator complex =
-        new AndExpression(new PowExpression(x, y), new PlusExpression(z, new MinusExpression(x, y)));
-    assertEquals(complex.getSqlString(params), "(power(rel0.x,rel0.y) AND (rel1.z+(rel0.x-rel0.y)))");
+    {
+      ExpressionOperator expr =
+          new AndExpression(new PowExpression(x, y), new PlusExpression(z, new MinusExpression(x, y)));
+      assertEquals("(power(rel0.x,rel0.y) AND (rel1.z+(rel0.x-rel0.y)))", expr.getSqlString(params));
+    }
 
-    ExpressionOperator worker = new WorkerIdExpression();
-    assertEquals(worker.getSqlString(params), "42");
+    {
+      ExpressionOperator expr = new WorkerIdExpression();
+      assertEquals("42", expr.getSqlString(params));
+    }
 
-    ExpressionOperator constants = new PlusExpression(new ConstantExpression(0.5), new ConstantExpression(true));
-    assertEquals(constants.getSqlString(params), "(0.5+true)");
+    {
+      ExpressionOperator expr = new DivideExpression(new ConstantExpression(4), y);
+      assertEquals("(float(4)/rel0.y)", expr.getSqlString(params));
+    }
 
+    {
+      ExpressionOperator expr = new PlusExpression(new ConstantExpression(0.5), new ConstantExpression(true));
+      assertEquals("(0.5+true)", expr.getSqlString(params));
+    }
+
+    {
+      ExpressionOperator expr =
+          new SubstrExpression(new ConstantExpression("Hello World"), new ConstantExpression(3),
+              new ConstantExpression(5));
+      assertEquals("substring('Hello World' from 3 for (5)-(3))", expr.getSqlString(params));
+    }
   }
 }

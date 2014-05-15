@@ -38,4 +38,8 @@ public class GreaterExpression extends BinaryExpression {
     return getFunctionCallBinaryString("Math.max", parameters);
   }
 
+  @Override
+  public String getSqlString(final ExpressionOperatorParameter parameters) {
+    return getSqlFunctionCallBinaryString("greatest", parameters);
+  }
 }

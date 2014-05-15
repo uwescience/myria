@@ -43,8 +43,8 @@ public class VariableExpression extends ZeroaryExpression {
   @Override
   public String getJavaString(final ExpressionOperatorParameter parameters) {
     // We generate a variable access into the tuple buffer.
-    return new StringBuilder(Expression.TB).append(".get").append(getOutputType(parameters).getName()).append(
-        "(").append(columnIdx).append(", ").append(Expression.ROW).append(")").toString();
+    return new StringBuilder(Expression.TB).append(".get").append(getOutputType(parameters).getName()).append("(")
+        .append(columnIdx).append(", ").append(Expression.ROW).append(")").toString();
   }
 
   /**
@@ -66,5 +66,10 @@ public class VariableExpression extends ZeroaryExpression {
     }
     VariableExpression otherExp = (VariableExpression) other;
     return Objects.equals(columnIdx, otherExp.columnIdx);
+  }
+
+  @Override
+  public String getSqlString(final ExpressionOperatorParameter parameters) {
+    throw new UnsupportedOperationException("Use column reference");
   }
 }
