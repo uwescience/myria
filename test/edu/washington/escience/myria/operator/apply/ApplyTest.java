@@ -3,11 +3,15 @@ package edu.washington.escience.myria.operator.apply;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.util.Iterator;
+import java.util.List;
+
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.AbsExpression;
@@ -21,6 +25,7 @@ import edu.washington.escience.myria.expression.EqualsExpression;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.FloorExpression;
+import edu.washington.escience.myria.expression.GetMaxNExpression;
 import edu.washington.escience.myria.expression.GreaterExpression;
 import edu.washington.escience.myria.expression.GreaterThanExpression;
 import edu.washington.escience.myria.expression.GreaterThanOrEqualsExpression;
@@ -49,6 +54,7 @@ import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParam
 import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.TupleSource;
+import edu.washington.escience.myria.parallel.ConsistentHash;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestEnvVars;
@@ -72,6 +78,8 @@ public class ApplyTest {
       tbb.putString(3, "Foo" + i);
       tbb.putBoolean(4, i % 2 == 0);
     }
+    List<TupleBatch> forResult = tbb.getAll();
+
     ImmutableList.Builder<Expression> Expressions = ImmutableList.builder();
 
     ExpressionOperator vara = new VariableExpression(0);
@@ -296,6 +304,16 @@ public class ApplyTest {
       Expressions.add(expr);
     }
 
+    {
+      // Expression: getMaxN(maxWorkers, replicas, hashCode, numCurWorkers)
+      final List<ExpressionOperator> hashIndices = ImmutableList.of((ExpressionOperator) (new VariableExpression(0)));
+      GetMaxNExpression getMaxN =
+          new GetMaxNExpression(new ConstantExpression(MyriaConstants.NUM_MAX_WORKERS), new ConstantExpression(
+              MyriaConstants.NUM_REPLICAS), new ConstantExpression(3), hashIndices);
+      Expression expr = new Expression("getmaxn", getMaxN);
+      Expressions.add(expr);
+    }
+
     Apply apply = new Apply(new TupleSource(tbb), Expressions.build());
 
     final int nodeId = 3;
@@ -303,10 +321,15 @@ public class ApplyTest {
     TupleBatch result;
     int resultSize = 0;
     final double tolerance = 0.0000001;
+    Iterator<TupleBatch> forResultIterator = forResult.iterator();
     while (!apply.eos()) {
       result = apply.nextReady();
+      TupleBatch currentTupleBatch = null;
+      if (forResultIterator.hasNext()) {
+        currentTupleBatch = forResultIterator.next();
+      }
       if (result != null) {
-        assertEquals(21, result.getSchema().numColumns());
+        assertEquals(22, result.getSchema().numColumns());
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(0));
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(1));
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(2));
@@ -328,6 +351,7 @@ public class ApplyTest {
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(18));
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(19));
         assertEquals(Type.STRING_TYPE, result.getSchema().getColumnType(20));
+        assertEquals(Type.INT_TYPE, result.getSchema().getColumnType(21));
 
         assertEquals("sqrt", result.getSchema().getColumnName(0));
         assertEquals("simpleNestedExpression", result.getSchema().getColumnName(1));
@@ -350,6 +374,7 @@ public class ApplyTest {
         assertEquals("max", result.getSchema().getColumnName(18));
         assertEquals("min", result.getSchema().getColumnName(19));
         assertEquals("substr", result.getSchema().getColumnName(20));
+        assertEquals("getmaxn", result.getSchema().getColumnName(21));
 
         for (int curI = 0; curI < result.numTuples(); curI++) {
           long i = curI + resultSize;
@@ -380,6 +405,9 @@ public class ApplyTest {
           assertEquals(Math.max(a, c), result.getLong(18, curI));
           assertEquals(Math.min(a, c), result.getLong(19, curI));
           assertEquals(d.substring(0, 4), result.getString(20, curI));
+          System.out.println("curI: " + curI + ", result: " + result.getInt(21, curI));
+          assertEquals(ConsistentHash.getMaxN(MyriaConstants.NUM_MAX_WORKERS, MyriaConstants.NUM_REPLICAS,
+              currentTupleBatch.hashCode(curI, new int[] { 0 }), 3), result.getInt(21, curI));
         }
         resultSize += result.numTuples();
       }

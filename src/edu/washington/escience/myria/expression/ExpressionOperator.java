@@ -43,7 +43,7 @@ import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParam
     @Type(name = "POW", value = PowExpression.class), @Type(name = "TIMES", value = TimesExpression.class),
     /* Nary */
     @Type(name = "CONDITION", value = ConditionalExpression.class),
-    @Type(name = "SUBSTR", value = SubstrExpression.class) })
+    @Type(name = "SUBSTR", value = SubstrExpression.class), @Type(name = "GETMAXN", value = GetMaxNExpression.class) })
 public abstract class ExpressionOperator implements Serializable {
   /***/
   private static final long serialVersionUID = 1L;
