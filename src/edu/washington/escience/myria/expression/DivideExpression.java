@@ -2,6 +2,7 @@ package edu.washington.escience.myria.expression;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
+import edu.washington.escience.myria.expression.evaluate.SqlExpressionOperatorParameter;
 
 /**
  * Divide two operands in an expression tree using floating point arithmetic. This operator returns a
@@ -38,5 +39,10 @@ public class DivideExpression extends BinaryExpression {
   public String getJavaString(final ExpressionOperatorParameter parameters) {
     return new StringBuilder("(((double)").append(getLeft().getJavaString(parameters)).append(")/").append(
         getRight().getJavaString(parameters)).append(')').toString();
+  }
+
+  @Override
+  public String getSqlString(final SqlExpressionOperatorParameter parameters) {
+    return getSqlInfixBinaryString("/", parameters);
   }
 }

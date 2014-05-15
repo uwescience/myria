@@ -2,6 +2,7 @@ package edu.washington.escience.myria.expression;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
+import edu.washington.escience.myria.expression.evaluate.SqlExpressionOperatorParameter;
 
 /**
  * Take the natural logarithm (base e) of the operand.
@@ -36,5 +37,10 @@ public class LogExpression extends UnaryExpression {
   @Override
   public String getJavaString(final ExpressionOperatorParameter parameters) {
     return getFunctionCallUnaryString("Math.log", parameters);
+  }
+
+  @Override
+  public String getSqlString(final SqlExpressionOperatorParameter parameters) {
+    return getSqlFunctionCallUnaryString("log", parameters);
   }
 }

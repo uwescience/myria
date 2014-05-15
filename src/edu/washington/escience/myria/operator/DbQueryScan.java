@@ -4,6 +4,7 @@ import java.util.Iterator;
 import java.util.Objects;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
@@ -12,35 +13,27 @@ import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.accessmethod.AccessMethod;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
+import edu.washington.escience.myria.expression.evaluate.SqlExpressionOperatorParameter;
+import edu.washington.escience.myria.expression.sql.SelectOperator;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * Push a select query down into a JDBC based database and scan over the query result.
- * */
+ */
 public class DbQueryScan extends LeafOperator {
-
   /**
    * The connection info.
    */
   private ConnectionInfo connectionInfo;
 
   /**
-   * The name of the relation (RelationKey) for a SELECT * query.
-   */
-  private RelationKey relationKey;
-
-  /**
-   * Iterate over data from the JDBC database.
-   * */
-  private transient Iterator<TupleBatch> tuples;
-  /**
    * The result schema.
-   * */
+   */
   private final Schema outputSchema;
 
   /**
    * The SQL template.
-   * */
+   */
   private String baseSQL;
 
   /**
@@ -53,6 +46,16 @@ public class DbQueryScan extends LeafOperator {
    */
   private final boolean[] ascending;
 
+  /**
+   * SQL Ast.
+   */
+  private final SelectOperator select;
+
+  /**
+   * Iterate over data from the JDBC database.
+   * */
+  private transient Iterator<TupleBatch> tuples;
+
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
@@ -60,16 +63,31 @@ public class DbQueryScan extends LeafOperator {
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(DbQueryScan.class);
 
   /**
-   * Constructor.
-   * 
    * @param baseSQL see the corresponding field.
    * @param outputSchema see the corresponding field.
-   * */
+   */
   public DbQueryScan(final String baseSQL, final Schema outputSchema) {
     Objects.requireNonNull(baseSQL);
     Objects.requireNonNull(outputSchema);
 
     this.baseSQL = baseSQL;
+    this.outputSchema = outputSchema;
+    select = null;
+    connectionInfo = null;
+    tuples = null;
+    sortedColumns = null;
+    ascending = null;
+  }
+
+  /**
+   * @param select the AST.
+   * @param outputSchema see the corresponding field.
+   */
+  public DbQueryScan(final SelectOperator select, final Schema outputSchema) {
+    Objects.requireNonNull(select);
+    Objects.requireNonNull(outputSchema);
+
+    this.select = select;
     this.outputSchema = outputSchema;
     connectionInfo = null;
     tuples = null;
@@ -100,7 +118,8 @@ public class DbQueryScan extends LeafOperator {
     Objects.requireNonNull(relationKey);
     Objects.requireNonNull(outputSchema);
 
-    this.relationKey = relationKey;
+    select = new SelectOperator(ImmutableList.of(relationKey));
+
     this.outputSchema = outputSchema;
     baseSQL = null;
     connectionInfo = null;
@@ -136,7 +155,7 @@ public class DbQueryScan extends LeafOperator {
     Objects.requireNonNull(relationKey);
     Objects.requireNonNull(outputSchema);
 
-    this.relationKey = relationKey;
+    select = new SelectOperator(ImmutableList.of(relationKey));
     this.outputSchema = outputSchema;
     this.sortedColumns = sortedColumns;
     this.ascending = ascending;
@@ -208,28 +227,32 @@ public class DbQueryScan extends LeafOperator {
       }
     }
 
-    if (relationKey != null) {
-      baseSQL = "SELECT * FROM " + relationKey.toString(connectionInfo.getDbms());
+    if (select != null) {
+      final SqlExpressionOperatorParameter parameters =
+          new SqlExpressionOperatorParameter(connectionInfo.getDbms(), getNodeID());
+      baseSQL = select.getSqlString(parameters);
+    }
 
-      String prefix = "";
-      if (sortedColumns != null && sortedColumns.length > 0) {
-        Preconditions.checkArgument(sortedColumns.length == ascending.length);
-        StringBuilder orderByClause = new StringBuilder(" ORDER BY");
+    String prefix = "";
+    if (sortedColumns != null && sortedColumns.length > 0) {
+      Preconditions.checkArgument(sortedColumns.length == ascending.length);
+      StringBuilder orderByClause = new StringBuilder(" ORDER BY");
 
-        for (int columnIdx : sortedColumns) {
-          orderByClause.append(prefix + " " + getSchema().getColumnName(columnIdx));
-          if (ascending[columnIdx]) {
-            orderByClause.append(" ASC");
-          } else {
-            orderByClause.append(" DESC");
-          }
-
-          prefix = ",";
+      for (int columnIdx : sortedColumns) {
+        orderByClause.append(prefix + " " + getSchema().getColumnName(columnIdx));
+        if (ascending[columnIdx]) {
+          orderByClause.append(" ASC");
+        } else {
+          orderByClause.append(" DESC");
         }
 
-        baseSQL = baseSQL.concat(orderByClause.toString());
+        prefix = ",";
       }
+
+      baseSQL = baseSQL.concat(orderByClause.toString());
     }
+
+    Objects.requireNonNull(baseSQL, "baseSQL");
   }
 
   /**

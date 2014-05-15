@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
+import edu.washington.escience.myria.expression.evaluate.SqlExpressionOperatorParameter;
 
 /**
  * An abstract class representing some variable in an expression tree.
@@ -53,15 +54,23 @@ public abstract class ExpressionOperator implements Serializable {
    * types of the children are correct.
    * 
    * @param parameters parameters that are needed to determine the output type
-   * @return the type of the output of this expression.
+   * @return the type of the output of this expression
    */
   public abstract edu.washington.escience.myria.Type getOutputType(final ExpressionOperatorParameter parameters);
 
   /**
    * @param parameters parameters that are needed to create the java expression
-   * @return the entire tree represented as an expression.
+   * @return the entire tree represented as an expression
    */
   public abstract String getJavaString(final ExpressionOperatorParameter parameters);
+
+  /**
+   * @param parameters parameters passed down the tree
+   * @return the SQL string for the entire subtree
+   */
+  public String getSqlString(final SqlExpressionOperatorParameter parameters) {
+    throw new UnsupportedOperationException("cannot compile to SQL");
+  };
 
   /**
    * @return all children

@@ -2,6 +2,7 @@ package edu.washington.escience.myria.expression;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
+import edu.washington.escience.myria.expression.evaluate.SqlExpressionOperatorParameter;
 
 /**
  * Exponentiate left^right for two operands in an expression tree. Always evaluates to a double.
@@ -36,5 +37,10 @@ public class PowExpression extends BinaryExpression {
   @Override
   public String getJavaString(final ExpressionOperatorParameter parameters) {
     return getFunctionCallBinaryString("Math.pow", parameters);
+  }
+
+  @Override
+  public String getSqlString(final SqlExpressionOperatorParameter parameters) {
+    return getSqlFunctionCallBinaryString("power", parameters);
   }
 }

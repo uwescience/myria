@@ -2,6 +2,7 @@ package edu.washington.escience.myria.expression;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
+import edu.washington.escience.myria.expression.evaluate.SqlExpressionOperatorParameter;
 
 /**
  * Boolean and in an expression tree.
@@ -36,5 +37,10 @@ public class AndExpression extends BinaryExpression {
   @Override
   public String getJavaString(final ExpressionOperatorParameter parameters) {
     return getInfixBinaryString("&&", parameters);
+  }
+
+  @Override
+  public String getSqlString(final SqlExpressionOperatorParameter parameters) {
+    return getSqlInfixBinaryString(" AND ", parameters);
   }
 }

@@ -2,6 +2,7 @@ package edu.washington.escience.myria.expression;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
+import edu.washington.escience.myria.expression.evaluate.SqlExpressionOperatorParameter;
 
 /**
  * Subtract two operands in an expression tree.
@@ -41,5 +42,10 @@ public class MinusExpression extends BinaryExpression {
       return getFunctionCallBinaryString("com.google.common.math.LongMath.checkedSubtract", parameters);
     }
     return getInfixBinaryString("-", parameters);
+  }
+
+  @Override
+  public String getSqlString(final SqlExpressionOperatorParameter parameters) {
+    return getSqlInfixBinaryString("-", parameters);
   }
 }
