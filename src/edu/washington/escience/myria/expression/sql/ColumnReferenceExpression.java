@@ -25,6 +25,13 @@ public class ColumnReferenceExpression extends ZeroaryExpression {
   @JsonProperty
   private final RelationKey relation;
 
+  /**
+   * @return the relation
+   */
+  public RelationKey getRelation() {
+    return relation;
+  }
+
   /** The index in the input that is referenced. */
   @JsonProperty
   private final int columnIdx;

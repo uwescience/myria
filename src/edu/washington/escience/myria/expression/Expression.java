@@ -132,7 +132,7 @@ public class Expression implements Serializable {
   }
 
   /**
-   * @param optype Class to find
+   * @param optype class to find
    * @return true if the operator is in the expression
    */
   public boolean hasOperator(final Class<?> optype) {

@@ -1,11 +1,12 @@
 package edu.washington.escience.myria.operator;
 
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
@@ -15,7 +16,7 @@ import edu.washington.escience.myria.accessmethod.AccessMethod;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.expression.evaluate.SqlExpressionOperatorParameter;
 import edu.washington.escience.myria.expression.sql.ColumnReferenceExpression;
-import edu.washington.escience.myria.expression.sql.SqlQueryAst;
+import edu.washington.escience.myria.expression.sql.SqlQuery;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
@@ -35,12 +36,12 @@ public class DbQueryScan extends LeafOperator {
   /**
    * The SQL template.
    */
-  private String baseSQL;
+  private String rawSqlQuery;
 
   /**
    * SQL Ast.
    */
-  private final SqlQueryAst query;
+  private final SqlQuery query;
 
   /**
    * Iterate over data from the JDBC database.
@@ -54,14 +55,14 @@ public class DbQueryScan extends LeafOperator {
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(DbQueryScan.class);
 
   /**
-   * @param baseSQL see the corresponding field.
+   * @param rawSqlQuery see the corresponding field.
    * @param outputSchema see the corresponding field.
    */
-  public DbQueryScan(final String baseSQL, final Schema outputSchema) {
-    Objects.requireNonNull(baseSQL);
-    Objects.requireNonNull(outputSchema);
+  public DbQueryScan(final String rawSqlQuery, final Schema outputSchema) {
+    Objects.requireNonNull(rawSqlQuery, "rawSqlQuery");
+    Objects.requireNonNull(outputSchema, "outputSchema");
 
-    this.baseSQL = baseSQL;
+    this.rawSqlQuery = rawSqlQuery;
     this.outputSchema = outputSchema;
     query = null;
     connectionInfo = null;
@@ -72,7 +73,7 @@ public class DbQueryScan extends LeafOperator {
    * @param query the AST.
    * @param outputSchema see the corresponding field.
    */
-  public DbQueryScan(final SqlQueryAst query, final Schema outputSchema) {
+  public DbQueryScan(final SqlQuery query, final Schema outputSchema) {
     Objects.requireNonNull(query, "query");
     Objects.requireNonNull(outputSchema, "outputSchema");
 
@@ -105,10 +106,10 @@ public class DbQueryScan extends LeafOperator {
     Objects.requireNonNull(relationKey, "relationKey");
     Objects.requireNonNull(outputSchema, "outputSchema");
 
-    query = new SqlQueryAst(ImmutableList.of(relationKey));
+    query = new SqlQuery(relationKey);
 
     this.outputSchema = outputSchema;
-    baseSQL = null;
+    rawSqlQuery = null;
     connectionInfo = null;
     tuples = null;
   }
@@ -143,10 +144,12 @@ public class DbQueryScan extends LeafOperator {
     Objects.requireNonNull(outputSchema, "outputSchema");
     Objects.requireNonNull(connectionInfo, "connectionInfo");
 
-    query = new SqlQueryAst(null, ImmutableList.of(relationKey), null, sortedColumns, ascending);
+    LinkedHashMap<RelationKey, Schema> schemas = Maps.newLinkedHashMap();
+    schemas.put(relationKey, outputSchema);
+    query = new SqlQuery(null, schemas, null, sortedColumns, ascending);
     this.outputSchema = outputSchema;
     this.connectionInfo = connectionInfo;
-    baseSQL = null;
+    rawSqlQuery = null;
   }
 
   @Override
@@ -159,7 +162,7 @@ public class DbQueryScan extends LeafOperator {
     Objects.requireNonNull(connectionInfo);
     if (tuples == null) {
       tuples =
-          AccessMethod.of(connectionInfo.getDbms(), connectionInfo, true).tupleBatchIteratorFromQuery(baseSQL,
+          AccessMethod.of(connectionInfo.getDbms(), connectionInfo, true).tupleBatchIteratorFromQuery(rawSqlQuery,
               outputSchema);
     }
     if (tuples.hasNext()) {
@@ -195,11 +198,11 @@ public class DbQueryScan extends LeafOperator {
       }
     }
 
-    if (baseSQL == null) {
+    if (rawSqlQuery == null) {
       Objects.requireNonNull(query, "query");
       final SqlExpressionOperatorParameter parameters =
           new SqlExpressionOperatorParameter(connectionInfo.getDbms(), getNodeID());
-      baseSQL = query.getSqlString(parameters);
+      rawSqlQuery = query.getSqlString(parameters);
     }
   }
 

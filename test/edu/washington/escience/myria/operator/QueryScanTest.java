@@ -25,7 +25,7 @@ import edu.washington.escience.myria.expression.PowExpression;
 import edu.washington.escience.myria.expression.WorkerIdExpression;
 import edu.washington.escience.myria.expression.evaluate.SqlExpressionOperatorParameter;
 import edu.washington.escience.myria.expression.sql.ColumnReferenceExpression;
-import edu.washington.escience.myria.expression.sql.SqlQueryAst;
+import edu.washington.escience.myria.expression.sql.SqlQuery;
 
 public class QueryScanTest {
 
@@ -33,12 +33,12 @@ public class QueryScanTest {
   public void testSelectGeneration() throws DbException {
     RelationKey r = new RelationKey("public", "adhoc", "R");
     RelationKey s = new RelationKey("public", "adhoc", "S");
-    ExpressionOperator x = new ColumnReferenceExpression(r, 0);
-    ExpressionOperator y = new ColumnReferenceExpression(r, 1);
-    ExpressionOperator z = new ColumnReferenceExpression(s, 0);
+    ColumnReferenceExpression x = new ColumnReferenceExpression(r, 0);
+    ColumnReferenceExpression y = new ColumnReferenceExpression(r, 1);
+    ColumnReferenceExpression z = new ColumnReferenceExpression(s, 0);
     ExpressionOperator w = new AndExpression(new LessThanExpression(x, y), new EqualsExpression(x, z));
 
-    HashMap<RelationKey, Schema> schemas = Maps.newHashMap();
+    HashMap<RelationKey, Schema> schemas = Maps.newLinkedHashMap();
     schemas.put(r, Schema
         .of(ImmutableList.<Type> of(Type.INT_TYPE, Type.INT_TYPE), ImmutableList.<String> of("x", "y")));
     schemas.put(s, Schema.of(ImmutableList.<Type> of(Type.INT_TYPE), ImmutableList.<String> of("z")));
@@ -46,16 +46,28 @@ public class QueryScanTest {
     SqlExpressionOperatorParameter params =
         new SqlExpressionOperatorParameter(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL, -1);
 
-    SqlQueryAst select =
-        new SqlQueryAst(ImmutableList.<ExpressionOperator> of(x, y, z), ImmutableList.<RelationKey> of(r, s), w);
-    select.setSchemas(schemas);
-    assertEquals(
-        select.getSqlString(params),
-        "SELECT rel0.x,rel0.y,rel1.z\nFROM \"public adhoc R\" AS rel0,\"public adhoc S\" AS rel1\nWHERE ((rel0.x<rel0.y) AND (rel0.x=rel1.z))");
+    // spj query
+    {
+      SqlQuery query = new SqlQuery(ImmutableList.<ExpressionOperator> of(x, y, z), schemas, w, null, null);
+      assertEquals(
+          query.getSqlString(params),
+          "SELECT rel0.x,rel0.y,rel1.z\nFROM \"public adhoc R\" AS rel0,\"public adhoc S\" AS rel1\nWHERE ((rel0.x<rel0.y) AND (rel0.x=rel1.z))");
+    }
 
-    SqlQueryAst selectStar = new SqlQueryAst(ImmutableList.<RelationKey> of(r));
-    selectStar.setSchemas(schemas);
-    assertEquals(selectStar.getSqlString(params), "SELECT *\nFROM \"public adhoc R\" AS rel0");
+    // select *
+    {
+      SqlQuery query = new SqlQuery(r);
+      assertEquals(query.getSqlString(params), "SELECT *\nFROM \"public adhoc R\" AS rel0");
+    }
+
+    // order by
+    {
+      SqlQuery query =
+          new SqlQuery(ImmutableList.<ExpressionOperator> of(x, y), schemas, null, ImmutableList
+              .<ColumnReferenceExpression> of(x, y), ImmutableList.<Boolean> of(true, false));
+      assertEquals(query.getSqlString(params),
+          "SELECT rel0.x,rel0.y\nFROM \"public adhoc R\" AS rel0,\"public adhoc S\" AS rel1\nORDER BY rel0.x ASC,rel0.y DESC");
+    }
   }
 
   @Test
@@ -66,7 +78,7 @@ public class QueryScanTest {
     ExpressionOperator y = new ColumnReferenceExpression(r, 1);
     ExpressionOperator z = new ColumnReferenceExpression(s, 0);
 
-    HashMap<RelationKey, Schema> schemas = Maps.newHashMap();
+    HashMap<RelationKey, Schema> schemas = Maps.newLinkedHashMap();
     schemas.put(r, Schema
         .of(ImmutableList.<Type> of(Type.INT_TYPE, Type.INT_TYPE), ImmutableList.<String> of("x", "y")));
     schemas.put(s, Schema.of(ImmutableList.<Type> of(Type.INT_TYPE), ImmutableList.<String> of("z")));

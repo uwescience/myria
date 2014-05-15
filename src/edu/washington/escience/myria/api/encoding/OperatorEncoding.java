@@ -29,7 +29,7 @@ import edu.washington.escience.myria.parallel.Server;
     @Type(name = "ColumnSelect", value = ColumnSelectEncoding.class),
     @Type(name = "Consumer", value = ConsumerEncoding.class), @Type(name = "Counter", value = CounterEncoding.class),
     @Type(name = "DbInsert", value = DbInsertEncoding.class),
-    @Type(name = "DbQueryScan", value = QueryScanEncoding.class),
+    @Type(name = "DbQueryScan", value = RawQueryScanEncoding.class),
     @Type(name = "Difference", value = DifferenceEncoding.class),
     @Type(name = "DupElim", value = DupElimEncoding.class), @Type(name = "Empty", value = EmptyRelationEncoding.class),
     @Type(name = "EOSController", value = EOSControllerEncoding.class),

@@ -47,7 +47,7 @@ import edu.washington.escience.myria.api.encoding.LocalMultiwayProducerEncoding;
 import edu.washington.escience.myria.api.encoding.OperatorEncoding;
 import edu.washington.escience.myria.api.encoding.PlanFragmentEncoding;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
-import edu.washington.escience.myria.api.encoding.QueryScanEncoding;
+import edu.washington.escience.myria.api.encoding.RawQueryScanEncoding;
 import edu.washington.escience.myria.api.encoding.ShuffleConsumerEncoding;
 import edu.washington.escience.myria.api.encoding.ShuffleProducerEncoding;
 import edu.washington.escience.myria.api.encoding.SingleGroupByAggregateEncoding;
@@ -407,7 +407,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
 
       JsonQueryBaseBuilder[] eoiReceivers = new JsonQueryBaseBuilder[iterationEndPoints.length];
       for (int i = 0; i < iterationEndPoints.length; i++) {
-        JsonQueryBaseBuilder fakeScan = buildOperator(QueryScanEncoding.class, NO_PREFERENCE);
+        JsonQueryBaseBuilder fakeScan = buildOperator(RawQueryScanEncoding.class, NO_PREFERENCE);
         eoiReceivers[i] =
             buildOperator(ConsumerEncoding.class, new String[] { "argOperatorId" },
                 new JsonQueryBaseBuilder[] { fakeScan }, NO_PREFERENCE);
@@ -875,9 +875,9 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * @param outputSchema schema
    */
   public JsonQueryBaseBuilder queryScan(final String sql, final Schema outputSchema) {
-    JsonQueryBaseBuilder scan = buildOperator(QueryScanEncoding.class, ALL_WORKERS);
-    ((QueryScanEncoding) scan.op).sql = sql;
-    ((QueryScanEncoding) scan.op).schema = outputSchema;
+    JsonQueryBaseBuilder scan = buildOperator(RawQueryScanEncoding.class, ALL_WORKERS);
+    ((RawQueryScanEncoding) scan.op).sql = sql;
+    ((RawQueryScanEncoding) scan.op).schema = outputSchema;
     return scan;
   }
 
