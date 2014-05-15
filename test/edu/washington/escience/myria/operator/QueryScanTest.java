@@ -25,7 +25,7 @@ import edu.washington.escience.myria.expression.PowExpression;
 import edu.washington.escience.myria.expression.WorkerIdExpression;
 import edu.washington.escience.myria.expression.evaluate.SqlExpressionOperatorParameter;
 import edu.washington.escience.myria.expression.sql.ColumnReferenceExpression;
-import edu.washington.escience.myria.expression.sql.SelectOperator;
+import edu.washington.escience.myria.expression.sql.SqlQueryAst;
 
 public class QueryScanTest {
 
@@ -46,15 +46,15 @@ public class QueryScanTest {
     SqlExpressionOperatorParameter params =
         new SqlExpressionOperatorParameter(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL, -1);
 
-    SelectOperator select =
-        new SelectOperator(ImmutableList.<ExpressionOperator> of(x, y, z), ImmutableList.<RelationKey> of(r, s), w);
+    SqlQueryAst select =
+        new SqlQueryAst(ImmutableList.<ExpressionOperator> of(x, y, z), ImmutableList.<RelationKey> of(r, s), w);
     select.setSchemas(schemas);
     assertEquals(
         select.getSqlString(params),
         "SELECT rel0.x,rel0.y,rel1.z\nFROM \"public adhoc R\" AS rel0,\"public adhoc S\" AS rel1\nWHERE ((rel0.x<rel0.y) AND (rel0.x=rel1.z))");
 
-    SelectOperator selectStar = new SelectOperator(ImmutableList.<RelationKey> of(r));
-    select.setSchemas(schemas);
+    SqlQueryAst selectStar = new SqlQueryAst(ImmutableList.<RelationKey> of(r));
+    selectStar.setSchemas(schemas);
     assertEquals(selectStar.getSqlString(params), "SELECT *\nFROM \"public adhoc R\" AS rel0");
   }
 

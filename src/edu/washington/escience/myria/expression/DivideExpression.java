@@ -2,7 +2,6 @@ package edu.washington.escience.myria.expression;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
-import edu.washington.escience.myria.expression.evaluate.SqlExpressionOperatorParameter;
 
 /**
  * Divide two operands in an expression tree using floating point arithmetic. This operator returns a
@@ -42,7 +41,7 @@ public class DivideExpression extends BinaryExpression {
   }
 
   @Override
-  public String getSqlString(final SqlExpressionOperatorParameter parameters) {
+  public String getSqlString(final ExpressionOperatorParameter parameters) {
     return getSqlInfixBinaryString("/", parameters);
   }
 }

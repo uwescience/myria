@@ -10,7 +10,6 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myria.SimplePredicate;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
-import edu.washington.escience.myria.expression.evaluate.SqlExpressionOperatorParameter;
 
 /**
  * An ExpressionOperator with two children.
@@ -77,7 +76,7 @@ public abstract class BinaryExpression extends ExpressionOperator {
         getRight().getJavaString(parameters)).append(')').toString();
   }
 
-  protected final String getSqlInfixBinaryString(final String infix, final SqlExpressionOperatorParameter parameters) {
+  protected final String getSqlInfixBinaryString(final String infix, final ExpressionOperatorParameter parameters) {
     return new StringBuilder("(").append(getLeft().getSqlString(parameters)).append(infix).append(
         getRight().getSqlString(parameters)).append(')').toString();
   }
@@ -111,7 +110,7 @@ public abstract class BinaryExpression extends ExpressionOperator {
   }
 
   protected final String getSqlFunctionCallBinaryString(final String functionName,
-      final SqlExpressionOperatorParameter parameters) {
+      final ExpressionOperatorParameter parameters) {
     return new StringBuilder(functionName).append('(').append(getLeft().getSqlString(parameters)).append(',').append(
         getRight().getSqlString(parameters)).append(')').toString();
   }

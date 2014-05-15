@@ -16,7 +16,7 @@ import edu.washington.escience.myria.expression.MinusExpression;
 import edu.washington.escience.myria.expression.PlusExpression;
 import edu.washington.escience.myria.expression.TimesExpression;
 import edu.washington.escience.myria.expression.evaluate.ConstantEvaluator;
-import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
+import edu.washington.escience.myria.expression.evaluate.JavaExpressionOperatorParameter;
 
 public class ExpressionTest {
   /**
@@ -28,7 +28,7 @@ public class ExpressionTest {
    */
   private Object evaluateConstantExpression(ExpressionOperator op) throws DbException {
     Expression expr = new Expression("op", op);
-    ConstantEvaluator eval = new ConstantEvaluator(expr, new ExpressionOperatorParameter(Schema.EMPTY_SCHEMA));
+    ConstantEvaluator eval = new ConstantEvaluator(expr, new JavaExpressionOperatorParameter(Schema.EMPTY_SCHEMA));
     return eval.eval();
   }
 

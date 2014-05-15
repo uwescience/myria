@@ -11,7 +11,6 @@ import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
-import edu.washington.escience.myria.expression.evaluate.SqlExpressionOperatorParameter;
 import edu.washington.escience.myria.expression.sql.ColumnReferenceExpression;
 
 /**
@@ -70,7 +69,7 @@ public abstract class ExpressionOperator implements Serializable {
    * @param parameters parameters passed down the tree
    * @return the SQL string for the entire subtree
    */
-  public String getSqlString(final SqlExpressionOperatorParameter parameters) {
+  public String getSqlString(final ExpressionOperatorParameter parameters) {
     throw new UnsupportedOperationException("cannot compile to SQL");
   };
 

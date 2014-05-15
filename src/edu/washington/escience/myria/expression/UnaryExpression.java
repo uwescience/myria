@@ -9,7 +9,6 @@ import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
-import edu.washington.escience.myria.expression.evaluate.SqlExpressionOperatorParameter;
 
 /**
  * An ExpressionOperator with one child.
@@ -65,7 +64,7 @@ public abstract class UnaryExpression extends ExpressionOperator {
   }
 
   protected final String getSqlFunctionCallUnaryString(final String functionName,
-      final SqlExpressionOperatorParameter parameters) {
+      final ExpressionOperatorParameter parameters) {
     return new StringBuilder(functionName).append('(').append(operand.getSqlString(parameters)).append(')').toString();
   }
 

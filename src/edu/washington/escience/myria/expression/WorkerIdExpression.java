@@ -4,7 +4,6 @@ import java.util.Objects;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
-import edu.washington.escience.myria.expression.evaluate.SqlExpressionOperatorParameter;
 
 /**
  * Expression operator that returns the worker ID.
@@ -40,7 +39,7 @@ public class WorkerIdExpression extends ZeroaryExpression {
   }
 
   @Override
-  public String getSqlString(final SqlExpressionOperatorParameter parameters) {
+  public String getSqlString(final ExpressionOperatorParameter parameters) {
     return String.valueOf(parameters.getWorkerId());
   }
 }

@@ -47,6 +47,7 @@ import edu.washington.escience.myria.expression.WorkerIdExpression;
 import edu.washington.escience.myria.expression.evaluate.ConstantEvaluator;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
+import edu.washington.escience.myria.expression.evaluate.JavaExpressionOperatorParameter;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.TupleSource;
 import edu.washington.escience.myria.storage.TupleBatch;
@@ -176,7 +177,7 @@ public class ApplyTest {
       Expressions.add(expr);
     }
 
-    final ExpressionOperatorParameter parameters = new ExpressionOperatorParameter(tbb.getSchema(), -1);
+    final ExpressionOperatorParameter parameters = new JavaExpressionOperatorParameter(tbb.getSchema(), -1);
     {
       // Expression (just copy/ rename): a;
       Expression expr = new Expression("copy", vara);
@@ -262,7 +263,7 @@ public class ApplyTest {
       // Expression that returns the worker id (set below as nodeId)
       Expression expr = new Expression("workerID", new WorkerIdExpression());
 
-      GenericEvaluator eval = new ConstantEvaluator(expr, new ExpressionOperatorParameter(tbb.getSchema(), 42));
+      GenericEvaluator eval = new ConstantEvaluator(expr, new JavaExpressionOperatorParameter(tbb.getSchema(), 42));
       assertTrue(!eval.needsCompiling());
       assertEquals(eval.getJavaExpression(), "result.appendInt(42)");
       Expressions.add(expr);
@@ -595,7 +596,7 @@ public class ApplyTest {
   public void conditionalNeedsBooleancondition() throws IllegalArgumentException {
     ExpressionOperator a = new ConstantExpression(Type.INT_TYPE, "1");
     ConditionalExpression conditional = new ConditionalExpression(a, a, a);
-    conditional.getOutputType(new ExpressionOperatorParameter());
+    conditional.getOutputType(new JavaExpressionOperatorParameter());
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -603,14 +604,14 @@ public class ApplyTest {
     ConditionalExpression conditional =
         new ConditionalExpression(new ConstantExpression(Type.BOOLEAN_TYPE, "true"), new ConstantExpression(
             Type.INT_TYPE, "1"), new ConstantExpression(Type.STRING_TYPE, "foo"));
-    conditional.getOutputType(new ExpressionOperatorParameter());
+    conditional.getOutputType(new JavaExpressionOperatorParameter());
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void moduloNeedsIntegers() throws IllegalArgumentException {
     ModuloExpression conditional =
         new ModuloExpression(new ConstantExpression(Type.FLOAT_TYPE, "1"), new ConstantExpression(Type.INT_TYPE, "2"));
-    conditional.getOutputType(new ExpressionOperatorParameter());
+    conditional.getOutputType(new JavaExpressionOperatorParameter());
   }
 
 }

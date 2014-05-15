@@ -13,13 +13,14 @@ import com.google.common.collect.Lists;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.evaluate.SqlExpressionOperatorParameter;
 
 /**
- * A select operator that can be compiled to SQL. A SQL ast.
+ * A select operator that can be compiled to SQL.
  */
-public class SelectOperator implements Serializable {
+public class SqlQueryAst implements Serializable {
   /***/
   private static final long serialVersionUID = 1L;
 
@@ -49,7 +50,7 @@ public class SelectOperator implements Serializable {
   /**
    * This is not really unused, it's used automagically by Jackson deserialization.
    */
-  public SelectOperator() {
+  public SqlQueryAst() {
     this(ImmutableList.<ExpressionOperator> of(), ImmutableList.<RelationKey> of(), null);
   }
 
@@ -60,7 +61,7 @@ public class SelectOperator implements Serializable {
    * @param fromRelations the from relations
    * @param where the where expressions
    */
-  public SelectOperator(final ImmutableList<ExpressionOperator> select, final ImmutableList<RelationKey> fromRelations,
+  public SqlQueryAst(final ImmutableList<ExpressionOperator> select, final ImmutableList<RelationKey> fromRelations,
       final ExpressionOperator where) {
     this.select = select;
     this.fromRelations = fromRelations;
@@ -72,7 +73,7 @@ public class SelectOperator implements Serializable {
    * 
    * @param fromRelations the relations to select everything from
    */
-  public SelectOperator(final ImmutableList<RelationKey> fromRelations) {
+  public SqlQueryAst(final ImmutableList<RelationKey> fromRelations) {
     select = null;
     this.fromRelations = fromRelations;
     where = null;
@@ -94,12 +95,15 @@ public class SelectOperator implements Serializable {
   public String getSqlString(final SqlExpressionOperatorParameter parameters) {
     Preconditions.checkArgument(parameters.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL));
 
-    // TODO: make this work
-    // Preconditions.checkArgument(where.getOutputType(parameters) == Type.BOOLEAN_TYPE);
-
-    StringBuilder sb = new StringBuilder();
     parameters.generateAliases(fromRelations);
     parameters.setSchemas(schemas);
+
+    if (where != null) {
+      Preconditions.checkArgument(where.getOutputType(parameters) == Type.BOOLEAN_TYPE,
+          "Expected where clause to be boolean but it was %s", where.getOutputType(parameters));
+    }
+
+    StringBuilder sb = new StringBuilder();
 
     sb.append("SELECT ");
 

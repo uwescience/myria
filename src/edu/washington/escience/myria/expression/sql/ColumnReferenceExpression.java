@@ -13,7 +13,6 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.ZeroaryExpression;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
-import edu.washington.escience.myria.expression.evaluate.SqlExpressionOperatorParameter;
 
 /**
  * Represents a reference to a variable in a base relation. Use this in SQL expressions.
@@ -51,7 +50,7 @@ public class ColumnReferenceExpression extends ZeroaryExpression {
 
   @Override
   public Type getOutputType(final ExpressionOperatorParameter parameters) {
-    throw new UnsupportedOperationException();
+    return parameters.getSchema(relation).getColumnType(columnIdx);
   }
 
   @Override
@@ -74,7 +73,7 @@ public class ColumnReferenceExpression extends ZeroaryExpression {
   }
 
   @Override
-  public String getSqlString(final SqlExpressionOperatorParameter params) {
+  public String getSqlString(final ExpressionOperatorParameter params) {
     final Schema schema = params.getSchemas().get(relation);
     return new StringBuilder(params.getAlias(relation)).append(".").append(
         StringEscapeUtils.escapeSql(schema.getColumnName(columnIdx))).toString();

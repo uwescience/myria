@@ -8,7 +8,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
-import edu.washington.escience.myria.expression.evaluate.SqlExpressionOperatorParameter;
 
 /**
  * An expression that returns a constant value.
@@ -121,7 +120,7 @@ public class ConstantExpression extends ZeroaryExpression {
   }
 
   @Override
-  public String getSqlString(final SqlExpressionOperatorParameter parameters) {
+  public String getSqlString(final ExpressionOperatorParameter parameters) {
     switch (valueType) {
       case BOOLEAN_TYPE:
       case DOUBLE_TYPE:

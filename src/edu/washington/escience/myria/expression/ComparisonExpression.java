@@ -6,7 +6,6 @@ import edu.washington.escience.myria.SimplePredicate;
 import edu.washington.escience.myria.SimplePredicate.Op;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
-import edu.washington.escience.myria.expression.evaluate.SqlExpressionOperatorParameter;
 
 /**
  * Comparison in expression tree.
@@ -74,7 +73,7 @@ public abstract class ComparisonExpression extends BinaryExpression {
   }
 
   @Override
-  public String getSqlString(final SqlExpressionOperatorParameter parameters) {
+  public String getSqlString(final ExpressionOperatorParameter parameters) {
     return getSqlInfixBinaryString(getOperation().toSqlString(), parameters);
   }
 }

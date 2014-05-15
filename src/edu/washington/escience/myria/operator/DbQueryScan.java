@@ -14,7 +14,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.accessmethod.AccessMethod;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.expression.evaluate.SqlExpressionOperatorParameter;
-import edu.washington.escience.myria.expression.sql.SelectOperator;
+import edu.washington.escience.myria.expression.sql.SqlQueryAst;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
@@ -49,7 +49,7 @@ public class DbQueryScan extends LeafOperator {
   /**
    * SQL Ast.
    */
-  private final SelectOperator select;
+  private final SqlQueryAst select;
 
   /**
    * Iterate over data from the JDBC database.
@@ -83,7 +83,7 @@ public class DbQueryScan extends LeafOperator {
    * @param select the AST.
    * @param outputSchema see the corresponding field.
    */
-  public DbQueryScan(final SelectOperator select, final Schema outputSchema) {
+  public DbQueryScan(final SqlQueryAst select, final Schema outputSchema) {
     Objects.requireNonNull(select);
     Objects.requireNonNull(outputSchema);
 
@@ -118,7 +118,7 @@ public class DbQueryScan extends LeafOperator {
     Objects.requireNonNull(relationKey);
     Objects.requireNonNull(outputSchema);
 
-    select = new SelectOperator(ImmutableList.of(relationKey));
+    select = new SqlQueryAst(ImmutableList.of(relationKey));
 
     this.outputSchema = outputSchema;
     baseSQL = null;
@@ -155,7 +155,7 @@ public class DbQueryScan extends LeafOperator {
     Objects.requireNonNull(relationKey);
     Objects.requireNonNull(outputSchema);
 
-    select = new SelectOperator(ImmutableList.of(relationKey));
+    select = new SqlQueryAst(ImmutableList.of(relationKey));
     this.outputSchema = outputSchema;
     this.sortedColumns = sortedColumns;
     this.ascending = ascending;

@@ -2,7 +2,6 @@ package edu.washington.escience.myria.expression;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
-import edu.washington.escience.myria.expression.evaluate.SqlExpressionOperatorParameter;
 
 /**
  * Multiply two operands in an expression tree.
@@ -45,7 +44,7 @@ public class TimesExpression extends BinaryExpression {
   }
 
   @Override
-  public String getSqlString(final SqlExpressionOperatorParameter parameters) {
+  public String getSqlString(final ExpressionOperatorParameter parameters) {
     return getSqlInfixBinaryString("*", parameters);
   }
 }

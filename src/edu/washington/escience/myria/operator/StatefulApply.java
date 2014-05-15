@@ -17,8 +17,8 @@ import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.ColumnFactory;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.evaluate.ConstantEvaluator;
-import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
+import edu.washington.escience.myria.expression.evaluate.JavaExpressionOperatorParameter;
 import edu.washington.escience.myria.storage.Tuple;
 import edu.washington.escience.myria.storage.TupleBatch;
 
@@ -154,7 +154,7 @@ public class StatefulApply extends Apply {
     evaluators.ensureCapacity(getEmitExpressions().size());
     for (Expression expr : getEmitExpressions()) {
       GenericEvaluator evaluator =
-          new GenericEvaluator(expr, new ExpressionOperatorParameter(inputSchema, getStateSchema(), getNodeID()));
+          new GenericEvaluator(expr, new JavaExpressionOperatorParameter(inputSchema, getStateSchema(), getNodeID()));
       if (evaluator.needsCompiling()) {
         evaluator.compile();
       }
@@ -170,14 +170,14 @@ public class StatefulApply extends Apply {
     for (int columnIdx = 0; columnIdx < getStateSchema().numColumns(); columnIdx++) {
       Expression expr = initExpressions.get(columnIdx);
       ConstantEvaluator evaluator =
-          new ConstantEvaluator(expr, new ExpressionOperatorParameter(inputSchema, getNodeID()));
+          new ConstantEvaluator(expr, new JavaExpressionOperatorParameter(inputSchema, getNodeID()));
       evaluator.compile();
       state.set(columnIdx, evaluator.eval());
     }
 
     for (Expression expr : updateExpressions) {
       GenericEvaluator evaluator =
-          new GenericEvaluator(expr, new ExpressionOperatorParameter(inputSchema, getStateSchema(), getNodeID()));
+          new GenericEvaluator(expr, new JavaExpressionOperatorParameter(inputSchema, getStateSchema(), getNodeID()));
       evaluator.compile();
       updateEvaluators.add(evaluator);
     }
@@ -203,7 +203,7 @@ public class StatefulApply extends Apply {
     ImmutableList.Builder<String> namesBuilder = ImmutableList.builder();
 
     for (Expression expr : initExpressions) {
-      typesBuilder.add(expr.getOutputType(new ExpressionOperatorParameter(getChild().getSchema())));
+      typesBuilder.add(expr.getOutputType(new JavaExpressionOperatorParameter(getChild().getSchema())));
       namesBuilder.add(expr.getOutputName());
     }
     stateSchema = new Schema(typesBuilder.build(), namesBuilder.build());
@@ -231,7 +231,7 @@ public class StatefulApply extends Apply {
     ImmutableList.Builder<String> namesBuilder = ImmutableList.builder();
 
     for (Expression expr : getEmitExpressions()) {
-      typesBuilder.add(expr.getOutputType(new ExpressionOperatorParameter(inputSchema, getStateSchema())));
+      typesBuilder.add(expr.getOutputType(new JavaExpressionOperatorParameter(inputSchema, getStateSchema())));
       namesBuilder.add(expr.getOutputName());
     }
     return new Schema(typesBuilder.build(), namesBuilder.build());
