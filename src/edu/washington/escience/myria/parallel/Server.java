@@ -59,6 +59,8 @@ import edu.washington.escience.myria.expression.ConditionalExpression;
 import edu.washington.escience.myria.expression.ConstantExpression;
 import edu.washington.escience.myria.expression.EqualsExpression;
 import edu.washington.escience.myria.expression.Expression;
+import edu.washington.escience.myria.expression.ExpressionOperator;
+import edu.washington.escience.myria.expression.GetMaxNExpression;
 import edu.washington.escience.myria.expression.MinusExpression;
 import edu.washington.escience.myria.expression.PlusExpression;
 import edu.washington.escience.myria.expression.StateExpression;
@@ -1209,7 +1211,31 @@ public final class Server {
     /* The workers' plan */
     GenericShuffleConsumer gather =
         new GenericShuffleConsumer(source.getSchema(), scatterId, new int[] { MyriaConstants.MASTER_ID });
-    DbInsert insert = new DbInsert(gather, relationKey, true, indexes);
+
+    DbInsert insert;
+    if (partitionFunctionInfo.getPartitionFunction().equals(MyriaConstants.PARTITION_FUNCTION_CONSISTENT_HASH)) {
+      /* Apply MaxN value, if ingest with consistent hash. */
+      ImmutableList.Builder<Expression> expressions = ImmutableList.builder();
+      ImmutableList.Builder<ExpressionOperator> hashFields = ImmutableList.builder();
+      for (Integer field : partitionFunctionInfo.getHashFields()) {
+        hashFields.add(new VariableExpression(field));
+      }
+      GetMaxNExpression getMaxN =
+          new GetMaxNExpression(new ConstantExpression(MyriaConstants.NUM_MAX_WORKERS), new ConstantExpression(
+              MyriaConstants.NUM_REPLICAS), new ConstantExpression(3), hashFields.build());
+      Expression expr = new Expression("MaxN", getMaxN);
+      Schema schema = source.getSchema();
+      for (int column = 0; column < schema.numColumns(); column++) {
+        VariableExpression copy = new VariableExpression(column);
+        expressions.add(new Expression(schema.getColumnName(column), copy));
+      }
+      expressions.add(expr);
+      Apply apply = new Apply(gather, expressions.build());
+      insert = new DbInsert(apply, relationKey, true, indexes);
+    } else {
+      insert = new DbInsert(gather, relationKey, true, indexes);
+    }
+
     Map<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
     for (Integer workerId : workersArray) {
       workerPlans.put(workerId, new SingleQueryPlanWithArgs(insert));
