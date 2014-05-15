@@ -389,7 +389,7 @@ public final class DatasetResource {
 
     /* If we already have a dataset by this name, tell the user there's a conflict. */
     try {
-      if (server.getSchema(dataset.relationKey) != null) {
+      if (!Objects.firstNonNull(dataset.overwrite, Boolean.FALSE) && server.getSchema(dataset.relationKey) != null) {
         /* Found, throw a 409 (Conflict) */
         throw new MyriaApiException(Status.CONFLICT, "That dataset already exists.");
       }
@@ -397,10 +397,10 @@ public final class DatasetResource {
       throw new DbException(e);
     }
 
-    /* Moreover, check whether all requested workers are valid. */
-    if (dataset.workers != null && !server.getWorkers().keySet().containsAll(dataset.workers)) {
-      /* Throw a 503 (Service Unavailable) */
-      throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "Do not specify the workers of the dataset correctly");
+    /* For import, force the user to supply the workers. */
+    if (dataset.workers == null) {
+      throw new MyriaApiException(Status.BAD_REQUEST,
+          "When importing, you need to specify which workers have the dataset.");
     }
 
     try {
