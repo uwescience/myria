@@ -1,9 +1,9 @@
 package edu.washington.escience.myria.operator;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -14,6 +14,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.accessmethod.AccessMethod;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.expression.evaluate.SqlExpressionOperatorParameter;
+import edu.washington.escience.myria.expression.sql.ColumnReferenceExpression;
 import edu.washington.escience.myria.expression.sql.SqlQueryAst;
 import edu.washington.escience.myria.storage.TupleBatch;
 
@@ -37,19 +38,9 @@ public class DbQueryScan extends LeafOperator {
   private String baseSQL;
 
   /**
-   * Column indexes that the output should be ordered by.
-   */
-  private final int[] sortedColumns;
-
-  /**
-   * True for each column in {@link #sortedColumns} that should be ordered ascending.
-   */
-  private final boolean[] ascending;
-
-  /**
    * SQL Ast.
    */
-  private final SqlQueryAst select;
+  private final SqlQueryAst query;
 
   /**
    * Iterate over data from the JDBC database.
@@ -72,27 +63,23 @@ public class DbQueryScan extends LeafOperator {
 
     this.baseSQL = baseSQL;
     this.outputSchema = outputSchema;
-    select = null;
+    query = null;
     connectionInfo = null;
     tuples = null;
-    sortedColumns = null;
-    ascending = null;
   }
 
   /**
-   * @param select the AST.
+   * @param query the AST.
    * @param outputSchema see the corresponding field.
    */
-  public DbQueryScan(final SqlQueryAst select, final Schema outputSchema) {
-    Objects.requireNonNull(select);
-    Objects.requireNonNull(outputSchema);
+  public DbQueryScan(final SqlQueryAst query, final Schema outputSchema) {
+    Objects.requireNonNull(query, "query");
+    Objects.requireNonNull(outputSchema, "outputSchema");
 
-    this.select = select;
+    this.query = query;
     this.outputSchema = outputSchema;
     connectionInfo = null;
     tuples = null;
-    sortedColumns = null;
-    ascending = null;
   }
 
   /**
@@ -104,7 +91,7 @@ public class DbQueryScan extends LeafOperator {
    * */
   public DbQueryScan(final ConnectionInfo connectionInfo, final String baseSQL, final Schema outputSchema) {
     this(baseSQL, outputSchema);
-    Objects.requireNonNull(connectionInfo);
+    Objects.requireNonNull(connectionInfo, "connectionInfo");
     this.connectionInfo = connectionInfo;
   }
 
@@ -115,17 +102,15 @@ public class DbQueryScan extends LeafOperator {
    * @param outputSchema the Schema of the returned tuples.
    */
   public DbQueryScan(final RelationKey relationKey, final Schema outputSchema) {
-    Objects.requireNonNull(relationKey);
-    Objects.requireNonNull(outputSchema);
+    Objects.requireNonNull(relationKey, "relationKey");
+    Objects.requireNonNull(outputSchema, "outputSchema");
 
-    select = new SqlQueryAst(ImmutableList.of(relationKey));
+    query = new SqlQueryAst(ImmutableList.of(relationKey));
 
     this.outputSchema = outputSchema;
     baseSQL = null;
     connectionInfo = null;
     tuples = null;
-    sortedColumns = null;
-    ascending = null;
   }
 
   /**
@@ -138,30 +123,8 @@ public class DbQueryScan extends LeafOperator {
    */
   public DbQueryScan(final ConnectionInfo connectionInfo, final RelationKey relationKey, final Schema outputSchema) {
     this(relationKey, outputSchema);
-    Objects.requireNonNull(connectionInfo);
+    Objects.requireNonNull(connectionInfo, "connectionInfo");
     this.connectionInfo = connectionInfo;
-  }
-
-  /**
-   * Construct a new DbQueryScan object that runs <code>SELECT * FROM relationKey ORDER BY [...]</code>.
-   * 
-   * @param relationKey the relation to be scanned.
-   * @param outputSchema the Schema of the returned tuples.
-   * @param sortedColumns the columns by which the tuples should be ordered by.
-   * @param ascending true for columns that should be ordered ascending.
-   */
-  public DbQueryScan(final RelationKey relationKey, final Schema outputSchema, final int[] sortedColumns,
-      final boolean[] ascending) {
-    Objects.requireNonNull(relationKey);
-    Objects.requireNonNull(outputSchema);
-
-    select = new SqlQueryAst(ImmutableList.of(relationKey));
-    this.outputSchema = outputSchema;
-    this.sortedColumns = sortedColumns;
-    this.ascending = ascending;
-    baseSQL = null;
-    connectionInfo = null;
-    tuples = null;
   }
 
   /**
@@ -175,10 +138,15 @@ public class DbQueryScan extends LeafOperator {
    * @param ascending true for columns that should be ordered ascending.
    */
   public DbQueryScan(final ConnectionInfo connectionInfo, final RelationKey relationKey, final Schema outputSchema,
-      final int[] sortedColumns, final boolean[] ascending) {
-    this(relationKey, outputSchema, sortedColumns, ascending);
-    Objects.requireNonNull(connectionInfo);
+      final List<ColumnReferenceExpression> sortedColumns, final List<Boolean> ascending) {
+    Objects.requireNonNull(relationKey, "relationKey");
+    Objects.requireNonNull(outputSchema, "outputSchema");
+    Objects.requireNonNull(connectionInfo, "connectionInfo");
+
+    query = new SqlQueryAst(null, ImmutableList.of(relationKey), null, sortedColumns, ascending);
+    this.outputSchema = outputSchema;
     this.connectionInfo = connectionInfo;
+    baseSQL = null;
   }
 
   @Override
@@ -227,32 +195,12 @@ public class DbQueryScan extends LeafOperator {
       }
     }
 
-    if (select != null) {
+    if (baseSQL == null) {
+      Objects.requireNonNull(query, "query");
       final SqlExpressionOperatorParameter parameters =
           new SqlExpressionOperatorParameter(connectionInfo.getDbms(), getNodeID());
-      baseSQL = select.getSqlString(parameters);
+      baseSQL = query.getSqlString(parameters);
     }
-
-    String prefix = "";
-    if (sortedColumns != null && sortedColumns.length > 0) {
-      Preconditions.checkArgument(sortedColumns.length == ascending.length);
-      StringBuilder orderByClause = new StringBuilder(" ORDER BY");
-
-      for (int columnIdx : sortedColumns) {
-        orderByClause.append(prefix + " " + getSchema().getColumnName(columnIdx));
-        if (ascending[columnIdx]) {
-          orderByClause.append(" ASC");
-        } else {
-          orderByClause.append(" DESC");
-        }
-
-        prefix = ",";
-      }
-
-      baseSQL = baseSQL.concat(orderByClause.toString());
-    }
-
-    Objects.requireNonNull(baseSQL, "baseSQL");
   }
 
   /**

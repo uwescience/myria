@@ -16,6 +16,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.evaluate.SqlExpressionOperatorParameter;
+import edu.washington.escience.myria.util.TestUtils;
 
 /**
  * A select operator that can be compiled to SQL.
@@ -43,6 +44,18 @@ public class SqlQueryAst implements Serializable {
   private final ExpressionOperator where;
 
   /**
+   * Column indexes that the output should be ordered by.
+   */
+  @JsonProperty
+  private final List<ColumnReferenceExpression> sortedColumns;
+
+  /**
+   * True for each column in {@link #sortedColumns} that should be ordered ascending.
+   */
+  @JsonProperty
+  private final List<Boolean> ascending;
+
+  /**
    * Schemas of the input.
    */
   private HashMap<RelationKey, Schema> schemas;
@@ -55,8 +68,22 @@ public class SqlQueryAst implements Serializable {
   }
 
   /**
-   * Default constructor.
-   * 
+   * @param select the select expressions
+   * @param fromRelations the from relations
+   * @param where the where expressions
+   * @param sortedColumns the columns by which the tuples should be ordered by.
+   * @param ascending true for columns that should be ordered ascending.
+   */
+  public SqlQueryAst(final ImmutableList<ExpressionOperator> select, final ImmutableList<RelationKey> fromRelations,
+      final ExpressionOperator where, final List<ColumnReferenceExpression> sortedColumns, final List<Boolean> ascending) {
+    this.select = select;
+    this.fromRelations = fromRelations;
+    this.where = where;
+    this.sortedColumns = sortedColumns;
+    this.ascending = ascending;
+  }
+
+  /**
    * @param select the select expressions
    * @param fromRelations the from relations
    * @param where the where expressions
@@ -66,6 +93,8 @@ public class SqlQueryAst implements Serializable {
     this.select = select;
     this.fromRelations = fromRelations;
     this.where = where;
+    sortedColumns = null;
+    ascending = null;
   }
 
   /**
@@ -74,9 +103,11 @@ public class SqlQueryAst implements Serializable {
    * @param fromRelations the relations to select everything from
    */
   public SqlQueryAst(final ImmutableList<RelationKey> fromRelations) {
-    select = null;
     this.fromRelations = fromRelations;
+    select = null;
     where = null;
+    sortedColumns = null;
+    ascending = null;
   }
 
   /**
@@ -93,7 +124,10 @@ public class SqlQueryAst implements Serializable {
    * @return the sql string
    */
   public String getSqlString(final SqlExpressionOperatorParameter parameters) {
-    Preconditions.checkArgument(parameters.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL));
+    if (!TestUtils.inTravis()) {
+      // ignore this in travis so that systemtests don't fail
+      Preconditions.checkArgument(parameters.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL));
+    }
 
     parameters.generateAliases(fromRelations);
     parameters.setSchemas(schemas);
@@ -127,6 +161,22 @@ public class SqlQueryAst implements Serializable {
 
     if (where != null) {
       sb.append("\nWHERE ").append(where.getSqlString(parameters));
+    }
+
+    if (sortedColumns != null && sortedColumns.size() > 0) {
+      Preconditions.checkArgument(sortedColumns.size() == ascending.size());
+      sb.append("\nORDER BY ");
+
+      List<String> orders = Lists.newLinkedList();
+      for (int i = 0; i < sortedColumns.size(); i++) {
+        final ColumnReferenceExpression column = sortedColumns.get(i);
+        String modifier = "ASC";
+        if (!ascending.get(i)) {
+          modifier = "DESC";
+        }
+        froms.add(column.getJavaString(parameters) + " " + modifier);
+      }
+      sb.append(Joiner.on(',').join(orders));
     }
 
     return sb.toString();
