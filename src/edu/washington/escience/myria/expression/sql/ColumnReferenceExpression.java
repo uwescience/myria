@@ -23,13 +23,13 @@ public class ColumnReferenceExpression extends ZeroaryExpression {
 
   /** The relation for the variable. */
   @JsonProperty
-  private final RelationKey relation;
+  private final RelationKey relationKey;
 
   /**
    * @return the relation
    */
   public RelationKey getRelation() {
-    return relation;
+    return relationKey;
   }
 
   /** The index in the input that is referenced. */
@@ -42,7 +42,7 @@ public class ColumnReferenceExpression extends ZeroaryExpression {
   @SuppressWarnings("unused")
   private ColumnReferenceExpression() {
     super();
-    relation = null;
+    relationKey = null;
     columnIdx = -1;
   }
 
@@ -51,13 +51,13 @@ public class ColumnReferenceExpression extends ZeroaryExpression {
    * @param columnIdx the column index of the variable
    */
   public ColumnReferenceExpression(final RelationKey relation, final int columnIdx) {
-    this.relation = relation;
+    this.relationKey = relation;
     this.columnIdx = columnIdx;
   }
 
   @Override
   public Type getOutputType(final ExpressionOperatorParameter parameters) {
-    return parameters.getSchema(relation).getColumnType(columnIdx);
+    return parameters.getSchema(relationKey).getColumnType(columnIdx);
   }
 
   @Override
@@ -67,7 +67,7 @@ public class ColumnReferenceExpression extends ZeroaryExpression {
 
   @Override
   public int hashCode() {
-    return Objects.hash(getClass().getCanonicalName(), relation, columnIdx);
+    return Objects.hash(getClass().getCanonicalName(), relationKey, columnIdx);
   }
 
   @Override
@@ -76,13 +76,13 @@ public class ColumnReferenceExpression extends ZeroaryExpression {
       return false;
     }
     ColumnReferenceExpression otherExp = (ColumnReferenceExpression) other;
-    return Objects.equals(relation, otherExp.relation) && columnIdx == otherExp.columnIdx;
+    return Objects.equals(relationKey, otherExp.relationKey) && columnIdx == otherExp.columnIdx;
   }
 
   @Override
   public String getSqlString(final ExpressionOperatorParameter params) {
-    final Schema schema = params.getSchemas().get(relation);
-    return new StringBuilder(params.getAlias(relation)).append(".").append(
+    final Schema schema = params.getSchemas().get(relationKey);
+    return new StringBuilder(params.getAlias(relationKey)).append(".").append(
         StringEscapeUtils.escapeSql(schema.getColumnName(columnIdx))).toString();
   }
 }
