@@ -3,6 +3,7 @@ package edu.washington.escience.myria.operator;
 import static org.junit.Assert.assertEquals;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 import org.junit.Test;
 
@@ -42,7 +43,7 @@ public class QueryScanTest {
     Expression ze = new Expression("z", z);
     ExpressionOperator w = new AndExpression(new LessThanExpression(x, y), new EqualsExpression(x, z));
 
-    HashMap<RelationKey, Schema> schemas = Maps.newLinkedHashMap();
+    LinkedHashMap<RelationKey, Schema> schemas = Maps.newLinkedHashMap();
     schemas.put(r, Schema
         .of(ImmutableList.<Type> of(Type.INT_TYPE, Type.INT_TYPE), ImmutableList.<String> of("x", "y")));
     schemas.put(s, Schema.of(ImmutableList.<Type> of(Type.INT_TYPE), ImmutableList.<String> of("z")));

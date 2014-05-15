@@ -1,7 +1,7 @@
 package edu.washington.escience.myria.expression.sql;
 
 import java.io.Serializable;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -39,7 +39,7 @@ public class SqlQuery implements Serializable {
    * Schemas of the input. Used to create the from clause. It can be inferred from the select and where clause if the
    * catalog is present, which contains the schemas.
    */
-  private HashMap<RelationKey, Schema> inputSchemas;
+  private LinkedHashMap<RelationKey, Schema> inputSchemas;
 
   /**
    * Selection for the where clause.
@@ -77,9 +77,9 @@ public class SqlQuery implements Serializable {
    * @param sortedColumns the columns by which the tuples should be ordered by.
    * @param ascending true for columns that should be ordered ascending.
    */
-  public SqlQuery(final ImmutableList<Expression> selectExpressions, final HashMap<RelationKey, Schema> inputSchemas,
-      final ExpressionOperator whereExpression, final List<ColumnReferenceExpression> sortedColumns,
-      final List<Boolean> ascending) {
+  public SqlQuery(final ImmutableList<Expression> selectExpressions,
+      final LinkedHashMap<RelationKey, Schema> inputSchemas, final ExpressionOperator whereExpression,
+      final List<ColumnReferenceExpression> sortedColumns, final List<Boolean> ascending) {
     if (sortedColumns != null) {
       Objects.requireNonNull(ascending, "ascending");
       Preconditions.checkArgument(sortedColumns.size() == ascending.size());
@@ -99,7 +99,7 @@ public class SqlQuery implements Serializable {
   public SqlQuery(final RelationKey relation) {
     selectExpressions = null;
     whereExpression = null;
-    inputSchemas = new HashMap<>();
+    inputSchemas = new LinkedHashMap<>();
     inputSchemas.put(relation, null);
     sortedColumns = null;
     ascending = null;
@@ -112,16 +112,19 @@ public class SqlQuery implements Serializable {
    * @throws CatalogException if the catalog cannot be accessed
    */
   public void generateInputSchemas(final Server server) throws CatalogException {
-    inputSchemas = Maps.newLinkedHashMap();
+    Preconditions.checkArgument(selectExpressions != null, "Need selectExpressions to determine output schema.");
 
+    inputSchemas = Maps.newLinkedHashMap();
     LinkedList<ExpressionOperator> ops = Lists.newLinkedList();
-    ops.add(whereExpression);
+    if (whereExpression != null) {
+      ops.add(whereExpression);
+    }
     for (Expression op : selectExpressions) {
       ops.add(op.getRootExpressionOperator());
     }
     while (!ops.isEmpty()) {
       final ExpressionOperator op = ops.pop();
-      if (op.getClass().equals(ColumnReferenceExpression.class)) {
+      if (op instanceof ColumnReferenceExpression) {
         ColumnReferenceExpression ref = (ColumnReferenceExpression) op;
         RelationKey key = ref.getRelation();
         if (!inputSchemas.containsKey(key)) {
@@ -138,6 +141,9 @@ public class SqlQuery implements Serializable {
    * @return the output schema
    */
   public Schema getOutputSchema(final SqlExpressionOperatorParameter parameters) {
+    Objects.requireNonNull(inputSchemas, "inputSchemas");
+    parameters.setSchemas(inputSchemas);
+
     ImmutableList.Builder<Type> types = ImmutableList.builder();
     ImmutableList.Builder<String> names = ImmutableList.builder();
     for (Expression expression : selectExpressions) {

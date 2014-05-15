@@ -9,6 +9,13 @@ import edu.washington.escience.myria.Schema;
  * Parameters passed to expressions.
  */
 public class SqlExpressionOperatorParameter extends ExpressionOperatorParameter {
+
+  /**
+   * Empty constructor.
+   */
+  public SqlExpressionOperatorParameter() {
+  }
+
   /**
    * @param dbms the dbms
    * @param nodeID the node id

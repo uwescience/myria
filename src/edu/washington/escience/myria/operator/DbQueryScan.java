@@ -173,6 +173,10 @@ public class DbQueryScan extends LeafOperator {
 
   @Override
   public final Schema generateSchema() {
+    if (outputSchema == null) {
+      final SqlExpressionOperatorParameter parameters = new SqlExpressionOperatorParameter();
+      return query.getOutputSchema(parameters);
+    }
     return outputSchema;
   }
 

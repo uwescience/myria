@@ -2,6 +2,7 @@ package edu.washington.escience.myria.expression;
 
 import java.io.Serializable;
 import java.util.LinkedList;
+import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Lists;
@@ -25,16 +26,15 @@ public class Expression implements Serializable {
   private final String outputName;
 
   /**
-   * The java expression to be evaluated.
-   */
-  @JsonProperty
-  private String javaExpression;
-
-  /**
    * Expression encoding reference is needed to get the output type.
    */
   @JsonProperty
   private final ExpressionOperator rootExpressionOperator;
+
+  /**
+   * The java expression to be evaluated.
+   */
+  private String javaExpression;
 
   /**
    * Variable name of result.
@@ -86,6 +86,7 @@ public class Expression implements Serializable {
    * @return the rootExpressionOperator
    */
   public ExpressionOperator getRootExpressionOperator() {
+    Objects.requireNonNull(rootExpressionOperator, "rootExpressionOperator");
     return rootExpressionOperator;
   }
 
