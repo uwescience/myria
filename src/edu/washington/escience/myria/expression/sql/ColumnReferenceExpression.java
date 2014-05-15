@@ -18,7 +18,7 @@ import edu.washington.escience.myria.expression.evaluate.SqlExpressionOperatorPa
 /**
  * Represents a reference to a variable in a base relation. Use this in SQL expressions.
  */
-public class RelationVariableExpression extends ZeroaryExpression {
+public class ColumnReferenceExpression extends ZeroaryExpression {
   /***/
   private static final long serialVersionUID = 1L;
 
@@ -34,15 +34,17 @@ public class RelationVariableExpression extends ZeroaryExpression {
    * This is not really unused, it's used automagically by Jackson deserialization.
    */
   @SuppressWarnings("unused")
-  private RelationVariableExpression() {
-    this(new RelationKey("", "", ""), -1);
+  private ColumnReferenceExpression() {
+    super();
+    relation = null;
+    columnIdx = -1;
   }
 
   /**
    * @param relation the relation for the variable
    * @param columnIdx the column index of the variable
    */
-  public RelationVariableExpression(final RelationKey relation, final int columnIdx) {
+  public ColumnReferenceExpression(final RelationKey relation, final int columnIdx) {
     this.relation = relation;
     this.columnIdx = columnIdx;
   }
@@ -64,10 +66,10 @@ public class RelationVariableExpression extends ZeroaryExpression {
 
   @Override
   public boolean equals(final Object other) {
-    if (other == null || !(other instanceof RelationVariableExpression)) {
+    if (other == null || !(other instanceof ColumnReferenceExpression)) {
       return false;
     }
-    RelationVariableExpression otherExp = (RelationVariableExpression) other;
+    ColumnReferenceExpression otherExp = (ColumnReferenceExpression) other;
     return Objects.equals(relation, otherExp.relation) && columnIdx == otherExp.columnIdx;
   }
 

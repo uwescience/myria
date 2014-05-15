@@ -58,7 +58,7 @@ public final class RelationKey implements Serializable {
   private static String checkName(final String name, final String whichName) {
     Objects.requireNonNull(name, whichName);
     Preconditions.checkArgument(VALID_NAME_PATTERN.matcher(name).matches(),
-        "supplied %s %s does not match the valid name regex %s", whichName, name, VALID_NAME_REGEX);
+        "supplied %s '%s' does not match the valid name regex %s", whichName, name, VALID_NAME_REGEX);
     return name;
   }
 

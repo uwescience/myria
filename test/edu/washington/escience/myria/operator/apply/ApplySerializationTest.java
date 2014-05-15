@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.collect.ImmutableList;
 
+import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.expression.AbsExpression;
@@ -53,6 +54,7 @@ import edu.washington.escience.myria.expression.TypeExpression;
 import edu.washington.escience.myria.expression.TypeOfExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.expression.WorkerIdExpression;
+import edu.washington.escience.myria.expression.sql.ColumnReferenceExpression;
 
 public class ApplySerializationTest {
 
@@ -64,6 +66,7 @@ public class ApplySerializationTest {
     ImmutableList.Builder<ExpressionOperator> expressions = ImmutableList.builder();
 
     /* Zeroary */
+    ColumnReferenceExpression column = new ColumnReferenceExpression(new RelationKey("public", "adhoc", "R"), 0);
     ConstantExpression constant = new ConstantExpression(Type.INT_TYPE, "5");
     RandomExpression random = new RandomExpression();
     StateExpression state = new StateExpression(3);
@@ -71,7 +74,7 @@ public class ApplySerializationTest {
     TypeOfExpression typeof = new TypeOfExpression(2);
     VariableExpression variable = new VariableExpression(1);
     WorkerIdExpression worker = new WorkerIdExpression();
-    expressions.add(constant).add(random).add(state).add(type).add(typeof).add(variable).add(worker);
+    expressions.add(column).add(constant).add(random).add(state).add(type).add(typeof).add(variable).add(worker);
 
     /* Unary */
     AbsExpression abs = new AbsExpression(constant);

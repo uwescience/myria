@@ -24,7 +24,7 @@ import edu.washington.escience.myria.expression.PlusExpression;
 import edu.washington.escience.myria.expression.PowExpression;
 import edu.washington.escience.myria.expression.WorkerIdExpression;
 import edu.washington.escience.myria.expression.evaluate.SqlExpressionOperatorParameter;
-import edu.washington.escience.myria.expression.sql.RelationVariableExpression;
+import edu.washington.escience.myria.expression.sql.ColumnReferenceExpression;
 import edu.washington.escience.myria.expression.sql.SelectOperator;
 
 public class QueryScanTest {
@@ -33,9 +33,9 @@ public class QueryScanTest {
   public void testSelectGeneration() throws DbException {
     RelationKey r = new RelationKey("public", "adhoc", "R");
     RelationKey s = new RelationKey("public", "adhoc", "S");
-    ExpressionOperator x = new RelationVariableExpression(r, 0);
-    ExpressionOperator y = new RelationVariableExpression(r, 1);
-    ExpressionOperator z = new RelationVariableExpression(s, 0);
+    ExpressionOperator x = new ColumnReferenceExpression(r, 0);
+    ExpressionOperator y = new ColumnReferenceExpression(r, 1);
+    ExpressionOperator z = new ColumnReferenceExpression(s, 0);
     ExpressionOperator w = new AndExpression(new LessThanExpression(x, y), new EqualsExpression(x, z));
 
     HashMap<RelationKey, Schema> schemas = Maps.newHashMap();
@@ -62,9 +62,9 @@ public class QueryScanTest {
   public void testSqlGeneration() throws DbException {
     RelationKey r = new RelationKey("public", "adhoc", "R");
     RelationKey s = new RelationKey("public", "adhoc", "S");
-    ExpressionOperator x = new RelationVariableExpression(r, 0);
-    ExpressionOperator y = new RelationVariableExpression(r, 1);
-    ExpressionOperator z = new RelationVariableExpression(s, 0);
+    ExpressionOperator x = new ColumnReferenceExpression(r, 0);
+    ExpressionOperator y = new ColumnReferenceExpression(r, 1);
+    ExpressionOperator z = new ColumnReferenceExpression(s, 0);
 
     HashMap<RelationKey, Schema> schemas = Maps.newHashMap();
     schemas.put(r, Schema

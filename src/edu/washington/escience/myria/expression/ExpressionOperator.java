@@ -12,6 +12,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 import edu.washington.escience.myria.expression.evaluate.SqlExpressionOperatorParameter;
+import edu.washington.escience.myria.expression.sql.ColumnReferenceExpression;
 
 /**
  * An abstract class representing some variable in an expression tree.
@@ -19,6 +20,7 @@ import edu.washington.escience.myria.expression.evaluate.SqlExpressionOperatorPa
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
     /* Zeroary */
+    @Type(name = "COLUMN", value = ColumnReferenceExpression.class),
     @Type(name = "CONSTANT", value = ConstantExpression.class), @Type(name = "RANDOM", value = RandomExpression.class),
     @Type(name = "STATE", value = StateExpression.class), @Type(name = "TYPE", value = TypeExpression.class),
     @Type(name = "TYPEOF", value = TypeOfExpression.class), @Type(name = "VARIABLE", value = VariableExpression.class),

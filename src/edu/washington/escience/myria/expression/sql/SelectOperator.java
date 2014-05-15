@@ -44,7 +44,7 @@ public class SelectOperator implements Serializable {
   /**
    * Schemas of the input.
    */
-  HashMap<RelationKey, Schema> schemas;
+  private HashMap<RelationKey, Schema> schemas;
 
   /**
    * This is not really unused, it's used automagically by Jackson deserialization.
