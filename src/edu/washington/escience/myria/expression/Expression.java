@@ -97,14 +97,25 @@ public class Expression implements Serializable {
   }
 
   /**
+   * Get the java representation of the expression. This function caches the expression. To clear the cache, call
+   * {@link #resetJavaExpression()}.
+   * 
    * @param parameters parameters that are needed to create the java expression
    * @return the Java form of this expression.
    */
   public String getJavaExpression(final ExpressionOperatorParameter parameters) {
     if (javaExpression == null) {
-      return rootExpressionOperator.getJavaString(parameters);
+      javaExpression = rootExpressionOperator.getJavaString(parameters);
     }
     return javaExpression;
+  }
+
+  /**
+   * @param parameters parameters that are needed to create the java expression
+   * @return the sql form of this expression.
+   */
+  public String getSqlExpression(final ExpressionOperatorParameter parameters) {
+    return rootExpressionOperator.getSqlString(parameters);
   }
 
   /**

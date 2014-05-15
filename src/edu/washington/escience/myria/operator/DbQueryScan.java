@@ -31,7 +31,7 @@ public class DbQueryScan extends LeafOperator {
   /**
    * The result schema.
    */
-  private final Schema outputSchema;
+  private Schema outputSchema;
 
   /**
    * The SQL template.
@@ -71,14 +71,11 @@ public class DbQueryScan extends LeafOperator {
 
   /**
    * @param query the AST.
-   * @param outputSchema see the corresponding field.
    */
-  public DbQueryScan(final SqlQuery query, final Schema outputSchema) {
+  public DbQueryScan(final SqlQuery query) {
     Objects.requireNonNull(query, "query");
-    Objects.requireNonNull(outputSchema, "outputSchema");
 
     this.query = query;
-    this.outputSchema = outputSchema;
     connectionInfo = null;
     tuples = null;
   }
@@ -198,11 +195,12 @@ public class DbQueryScan extends LeafOperator {
       }
     }
 
-    if (rawSqlQuery == null) {
+    if (query != null) {
       Objects.requireNonNull(query, "query");
       final SqlExpressionOperatorParameter parameters =
           new SqlExpressionOperatorParameter(connectionInfo.getDbms(), getNodeID());
       rawSqlQuery = query.getSqlString(parameters);
+      outputSchema = query.getOutputSchema(parameters);
     }
   }
 

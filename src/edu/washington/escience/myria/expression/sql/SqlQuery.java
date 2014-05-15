@@ -13,15 +13,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
+import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.evaluate.SqlExpressionOperatorParameter;
 import edu.washington.escience.myria.parallel.Server;
-import edu.washington.escience.myria.util.TestUtils;
 
 /**
  * A select operator that can be compiled to SQL.
@@ -34,7 +33,7 @@ public class SqlQuery implements Serializable {
    * The select clause, projections. Null means *.
    */
   @JsonProperty
-  private final List<ExpressionOperator> selectExpressions;
+  private final List<Expression> selectExpressions;
 
   /**
    * Schemas of the input. Used to create the from clause. It can be inferred from the select and where clause if the
@@ -78,9 +77,9 @@ public class SqlQuery implements Serializable {
    * @param sortedColumns the columns by which the tuples should be ordered by.
    * @param ascending true for columns that should be ordered ascending.
    */
-  public SqlQuery(final ImmutableList<ExpressionOperator> selectExpressions,
-      final HashMap<RelationKey, Schema> inputSchemas, final ExpressionOperator whereExpression,
-      final List<ColumnReferenceExpression> sortedColumns, final List<Boolean> ascending) {
+  public SqlQuery(final ImmutableList<Expression> selectExpressions, final HashMap<RelationKey, Schema> inputSchemas,
+      final ExpressionOperator whereExpression, final List<ColumnReferenceExpression> sortedColumns,
+      final List<Boolean> ascending) {
     if (sortedColumns != null) {
       Objects.requireNonNull(ascending, "ascending");
       Preconditions.checkArgument(sortedColumns.size() == ascending.size());
@@ -117,8 +116,8 @@ public class SqlQuery implements Serializable {
 
     LinkedList<ExpressionOperator> ops = Lists.newLinkedList();
     ops.add(whereExpression);
-    for (ExpressionOperator op : selectExpressions) {
-      ops.add(op);
+    for (Expression op : selectExpressions) {
+      ops.add(op.getRootExpressionOperator());
     }
     while (!ops.isEmpty()) {
       final ExpressionOperator op = ops.pop();
@@ -135,16 +134,28 @@ public class SqlQuery implements Serializable {
   }
 
   /**
+   * @param parameters the parameters passed down the expression tree
+   * @return the output schema
+   */
+  public Schema getOutputSchema(final SqlExpressionOperatorParameter parameters) {
+    ImmutableList.Builder<Type> types = ImmutableList.builder();
+    ImmutableList.Builder<String> names = ImmutableList.builder();
+    for (Expression expression : selectExpressions) {
+      names.add(expression.getOutputName());
+      types.add(expression.getOutputType(parameters));
+    }
+    return new Schema(types, names);
+  }
+
+  /**
    * Returns the compiled sql string.
    * 
    * @param parameters parameters passed down the tree
    * @return the sql string
    */
   public String getSqlString(final SqlExpressionOperatorParameter parameters) {
-    if (!TestUtils.inTravis()) {
-      // ignore this in travis so that systemtests don't fail
-      Preconditions.checkArgument(parameters.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL));
-    }
+    // TODO: ignore for now as we haven't removed sqlite yet
+    // Preconditions.checkArgument(parameters.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL));
 
     Objects.requireNonNull(inputSchemas, "inputSchemas");
 
@@ -164,8 +175,8 @@ public class SqlQuery implements Serializable {
 
     if (selectExpressions != null) {
       List<String> selects = Lists.newLinkedList();
-      for (ExpressionOperator expr : selectExpressions) {
-        selects.add(expr.getSqlString(parameters));
+      for (Expression expr : selectExpressions) {
+        selects.add(expr.getSqlExpression(parameters));
       }
       sb.append(Joiner.on(',').join(selects));
     } else {

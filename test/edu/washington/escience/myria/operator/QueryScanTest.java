@@ -17,6 +17,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.AndExpression;
 import edu.washington.escience.myria.expression.ConstantExpression;
 import edu.washington.escience.myria.expression.EqualsExpression;
+import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.LessThanExpression;
 import edu.washington.escience.myria.expression.MinusExpression;
@@ -36,6 +37,9 @@ public class QueryScanTest {
     ColumnReferenceExpression x = new ColumnReferenceExpression(r, 0);
     ColumnReferenceExpression y = new ColumnReferenceExpression(r, 1);
     ColumnReferenceExpression z = new ColumnReferenceExpression(s, 0);
+    Expression xe = new Expression("x", x);
+    Expression ye = new Expression("y", y);
+    Expression ze = new Expression("z", z);
     ExpressionOperator w = new AndExpression(new LessThanExpression(x, y), new EqualsExpression(x, z));
 
     HashMap<RelationKey, Schema> schemas = Maps.newLinkedHashMap();
@@ -48,10 +52,13 @@ public class QueryScanTest {
 
     // spj query
     {
-      SqlQuery query = new SqlQuery(ImmutableList.<ExpressionOperator> of(x, y, z), schemas, w, null, null);
+      SqlQuery query = new SqlQuery(ImmutableList.<Expression> of(xe, ye, ze), schemas, w, null, null);
       assertEquals(
           query.getSqlString(params),
           "SELECT rel0.x,rel0.y,rel1.z\nFROM \"public adhoc R\" AS rel0,\"public adhoc S\" AS rel1\nWHERE ((rel0.x<rel0.y) AND (rel0.x=rel1.z))");
+
+      assertEquals(query.getOutputSchema(params), Schema.of(ImmutableList.<Type> of(Type.INT_TYPE, Type.INT_TYPE,
+          Type.INT_TYPE), ImmutableList.<String> of("x", "y", "z")));
     }
 
     // select *
@@ -63,7 +70,7 @@ public class QueryScanTest {
     // order by
     {
       SqlQuery query =
-          new SqlQuery(ImmutableList.<ExpressionOperator> of(x, y), schemas, null, ImmutableList
+          new SqlQuery(ImmutableList.<Expression> of(xe, ye), schemas, null, ImmutableList
               .<ColumnReferenceExpression> of(x, y), ImmutableList.<Boolean> of(true, false));
       assertEquals(query.getSqlString(params),
           "SELECT rel0.x,rel0.y\nFROM \"public adhoc R\" AS rel0,\"public adhoc S\" AS rel1\nORDER BY rel0.x ASC,rel0.y DESC");
