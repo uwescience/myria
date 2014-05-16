@@ -8,6 +8,12 @@ name = testMyriadeploy
 #max_heap_size=-Xmx2g
 # Uncomment if want to launch workers in debug mode
 #debug_mode = true
+# Uncomment if want to register to the watchdog. 
+# Need to launch the watchdog before launching the cluster.
+#watchdog = vega.cs.washington.edu:8385
+# Uncomment if want to "securely" register to the watchdog. 
+# Need to provide the secret code when using the watchdog to restart.
+#secret_code = apple
 rest_port = 8753
 
 # Compute nodes configuration
