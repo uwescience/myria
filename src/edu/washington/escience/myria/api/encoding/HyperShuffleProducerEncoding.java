@@ -38,9 +38,13 @@ public class HyperShuffleProducerEncoding extends AbstractProducerEncoding<Gener
     for (int d : hyperCubeDimensions) {
       numCells = numCells * d;
     }
-    if (getRealWorkerIds().size() != numCells) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "number of workers (" + getRealWorkerIds().size()
-          + ") is not equal to the product of hyper join dimensions (" + numCells + ")");
+    for (int[] partition : cellPartition) {
+      for (int cellId : partition) {
+        if (cellId >= getRealWorkerIds().size()) {
+          throw new MyriaApiException(Status.BAD_REQUEST, "cellId in cellPartition must be smaller than worker number "
+              + getRealWorkerIds().size() + "( " + cellId + " is found)");
+        }
+      }
     }
 
     /* constructing a MFMDHashPartitionFunction. */
