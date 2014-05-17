@@ -109,7 +109,7 @@ def get_graph(unified_plan):
     in_pipes = defaultdict(list)
     for op in unified_plan:
         # Operator id
-        op_id = op['opName']
+        op_id = op['opId']
         # Add child edges
         local_edges.extend([(x,op_id) for x in operator_get_children(op)])
         # Add pipes
@@ -133,7 +133,7 @@ def export_dot(nodes, edges, pipe_edges, filename=""):
   edge [fontname="Helvetica", fontsize=9 ] ;
 """ % (filename,)
     for n in nodes:
-       print "\"%s\" [label=\"%s\", color=%s, penwidth=2];" % (n['opName'], n['opName'], colors[n['fragmentId'] % len(colors)])
+       print "\"%s\" [label=\"%s\", color=%s, penwidth=2];" % (n['opId'], n['opId'], colors[n['fragmentId'] % len(colors)])
     for (x,y) in edges:
         print "\"%s\" -> \"%s\" [color=black]" % (x, y)
     for (x,y,label) in pipe_edges:
