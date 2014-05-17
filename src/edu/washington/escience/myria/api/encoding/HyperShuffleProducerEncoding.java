@@ -18,7 +18,9 @@ import edu.washington.escience.myria.util.MyriaUtils;
 public class HyperShuffleProducerEncoding extends AbstractProducerEncoding<GenericShuffleProducer> {
 
   @Required
-  public int[] indexes;
+  public int[] hashedColumns;
+  @Required
+  public int[] mappedHCDimensions;
   @Required
   public int[] hyperCubeDimensions;
   @Required
@@ -42,7 +44,8 @@ public class HyperShuffleProducerEncoding extends AbstractProducerEncoding<Gener
     }
 
     /* constructing a MFMDHashPartitionFunction. */
-    MFMDHashPartitionFunction pf = new MFMDHashPartitionFunction(cellPartition.length, hyperCubeDimensions, indexes);
+    MFMDHashPartitionFunction pf =
+        new MFMDHashPartitionFunction(cellPartition.length, hyperCubeDimensions, hashedColumns, mappedHCDimensions);
 
     return new GenericShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), cellPartition,
         MyriaUtils.integerCollectionToIntArray(getRealWorkerIds()), pf);
