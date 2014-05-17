@@ -27,7 +27,7 @@ public final class MFMDHashPartitionFunction extends PartitionFunction {
    * @param numPartitions number of buckets
    * @param hypercubeDimensions the sizes of each dimension of the hypercube.
    * @param hashedColumns which fields are hashed.
-   * @param mappedHCDimensions mapped dimensions of hashed columns.
+   * @param mappedHCDimensions mapped hypercube dimensions of hashed columns.
    * 
    */
   public MFMDHashPartitionFunction(final int numPartitions, final int[] hypercubeDimensions, final int[] hashedColumns,
