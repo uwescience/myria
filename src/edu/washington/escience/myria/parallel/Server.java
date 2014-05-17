@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -1161,6 +1162,23 @@ public final class Server {
    */
   public Set<Integer> getAliveWorkers() {
     return ImmutableSet.copyOf(aliveWorkers.keySet());
+  }
+
+  /**
+   * Return a random subset of workers.
+   * 
+   * @param number the number of alive workers returned
+   * @return a subset of workers that are currently alive.
+   */
+  public Set<Integer> getAliveWorkers(final int number) {
+    Preconditions.checkArgument(number <= getAliveWorkers().size(),
+        "The number of workers requested cannot exceed the number of alive workers.");
+    if (number == getAliveWorkers().size()) {
+      return getAliveWorkers();
+    }
+    List<Integer> workerList = new ArrayList<Integer>(aliveWorkers.keySet());
+    Collections.shuffle(workerList);
+    return ImmutableSet.copyOf(workerList.subList(0, number));
   }
 
   /**
