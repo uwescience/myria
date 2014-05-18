@@ -91,6 +91,25 @@ class myHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             return
 
+        elif self.path == "/unregister":
+            # if you need to change your secret code, unregister first
+            master = form['master'].value
+            if master not in known_deployments.keys():
+                self.send_response(200)
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write("Unknown deployment!")
+                return
+            if not check_secret_code(form, known_deployments[master]):
+                self.send_response(200)
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write("Wrong serect code!")
+                return
+            del known_deployments[master]
+            self.send_response(200)
+            return
+
 def dumpDeployment():
     while True:
         pickle.dump(known_deployments, open("myria_watchdog_dump", "wb"))
