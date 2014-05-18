@@ -297,6 +297,35 @@ public final class JdbcAccessMethod extends AccessMethod {
   }
 
   @Override
+  public String selectStatementFromSchema(final Schema schema, final RelationKey relationKey, final String condition) {
+    StringBuilder statement = new StringBuilder();
+    statement.append("SELECT ");
+    boolean first = true;
+    for (String colName : schema.getColumnNames()) {
+      if (!first) {
+        statement.append(", ");
+      }
+      first = false;
+      statement.append(colName);
+    }
+    statement.append(" FROM ").append(relationKey.toString(jdbcInfo.getDbms()));
+    if (condition != null) {
+      statement.append(" WHERE ").append(condition);
+    }
+    return statement.toString();
+  }
+
+  @Override
+  public void createView(final RelationKey viewRelationKey, final RelationKey relationKey, final Schema schema,
+      final String condition) throws DbException {
+    StringBuilder statement = new StringBuilder();
+    statement.append("CREATE VIEW ").append(viewRelationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)).append(
+        " AS ");
+    statement.append(selectStatementFromSchema(schema, relationKey, condition));
+    execute(statement.toString());
+  }
+
+  @Override
   public String createIfNotExistsStatementFromSchema(final Schema schema, final RelationKey relationKey) {
     switch (jdbcInfo.getDbms()) {
       case MyriaConstants.STORAGE_SYSTEM_MYSQL:

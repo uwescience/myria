@@ -120,6 +120,16 @@ public abstract class AccessMethod {
   public abstract String insertStatementFromSchema(Schema schema, RelationKey relationKey);
 
   /**
+   * Generates the select statement string for a relation in the database.
+   * 
+   * @param schema the relation schema.
+   * @param relationKey the relation name.
+   * @param condition the where clause of the select statement.
+   * @return the insert statement string.
+   */
+  public abstract String selectStatementFromSchema(Schema schema, RelationKey relationKey, String condition);
+
+  /**
    * Generates the create table statement string for a relation in the database.
    * 
    * @param schema the relation schema
@@ -176,6 +186,19 @@ public abstract class AccessMethod {
    */
   public abstract void renameIndexes(RelationKey oldRelation, RelationKey newRelation, List<List<IndexRef>> indexes)
       throws DbException;
+
+  /**
+   * Creates a view on top of the specified relation key with the name specified in viewRelationKey and project using
+   * the schema. The user can also specify the condition.
+   * 
+   * @param viewRelationKey the relation key of the view.
+   * @param relationKey the relation key of the relation in the database.
+   * @param schema the schema of the view.
+   * @param condition the condition to filter some tuples out. If no condition is needed, null should be passed in.
+   * @throws DbException if there is an error in the DBMS.
+   */
+  public abstract void createView(final RelationKey viewRelationKey, final RelationKey relationKey,
+      final Schema schema, final String condition) throws DbException;
 
   /**
    * Holds a reference to a column and whether it is ascending or descending.

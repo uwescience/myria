@@ -225,4 +225,11 @@ public class DbInsert extends RootOperator {
     return relationKey;
   }
 
+  /**
+   * @return the access method of this insert operator.
+   * @return
+   */
+  protected AccessMethod getAccessmethod() {
+    return accessMethod;
+  }
 }
