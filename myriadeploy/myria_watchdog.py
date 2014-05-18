@@ -11,7 +11,7 @@ import threading
 
 known_deployments = {}
 
-def check_secret_code(form, deployment):
+def check_secret_code(form, deployment, self):
     if "secret_code" in form.keys():
         proposed_secret_code = form['secret_code'].value
     else:
@@ -20,7 +20,22 @@ def check_secret_code(form, deployment):
         correct_secret_code = deployment["secret_code"]
     else:
         correct_secret_code = None
-    return correct_secret_code == proposed_secret_code
+    if not correct_secret_code == proposed_secret_code:
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+        self.wfile.write("Wrong serect code!")
+        return False
+    return True
+
+def check_argument(form, key, self):
+    if not key in form.keys():
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+        self.wfile.write("Missing argument: " + key)
+        return False
+    return True
 
 class myHandler(BaseHTTPRequestHandler):
 
@@ -39,27 +54,26 @@ class myHandler(BaseHTTPRequestHandler):
             environ = {'REQUEST_METHOD':'POST',
                        'CONTENT_TYPE':self.headers['Content-Type']
                       })
-        if self.path == "/restart":
-            master_address = form['master'].value
-            # use IP address as the key since a machine can have multiple machine names
-            host = socket.gethostbyname(master_address.split(":")[0])
-            port = master_address.split(":")[1]
-            master_address = host + ":" + port
+        if not check_argument(form, 'master', self):
+            return
+        master = form['master'].value
 
-            if not master_address in known_deployments.keys():
+        if self.path == "/restart":
+            # use IP address as the key since a machine can have multiple machine names
+            host = socket.gethostbyname(master.split(":")[0])
+            port = master.split(":")[1]
+            master = host + ":" + port
+
+            if not master in known_deployments.keys():
                 self.send_response(200)
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 self.wfile.write("Unknown deployment!")
                 return
 
-            working_dir = known_deployments[master_address]["working_dir"]
-            deployment_file = known_deployments[master_address]["deployment_file"]
-            if not check_secret_code(form, known_deployments[master_address]):
-                self.send_response(200)
-                self.send_header('Access-Control-Allow-Origin', '*')
-                self.end_headers()
-                self.wfile.write("Wrong serect code!")
+            working_dir = known_deployments[master]["working_dir"]
+            deployment_file = known_deployments[master]["deployment_file"]
+            if not check_secret_code(form, known_deployments[master], self):
                 return
 
             args = ["ssh", host, "cd", working_dir, "&& cd .. && ./stop_all_by_force.py", deployment_file]
@@ -74,14 +88,14 @@ class myHandler(BaseHTTPRequestHandler):
             return
 
         elif self.path == "/register":
-            master = form['master'].value
+            if not check_argument(form, 'working_dir', self):
+                return
+            if not check_argument(form, 'deployment_file', self):
+                return
+
             if master in known_deployments.keys():
                 # existed deployment, check if the code matches
-                if not check_secret_code(form, known_deployments[master]):
-                    self.send_response(200)
-                    self.send_header('Access-Control-Allow-Origin', '*')
-                    self.end_headers()
-                    self.wfile.write("Wrong serect code!")
+                if not check_secret_code(form, known_deployments[master], self):
                     return
             known_deployments[master] = {}
             known_deployments[form['master'].value]["working_dir"] = form['working_dir'].value
@@ -93,18 +107,13 @@ class myHandler(BaseHTTPRequestHandler):
 
         elif self.path == "/unregister":
             # if you need to change your secret code, unregister first
-            master = form['master'].value
             if master not in known_deployments.keys():
                 self.send_response(200)
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 self.wfile.write("Unknown deployment!")
                 return
-            if not check_secret_code(form, known_deployments[master]):
-                self.send_response(200)
-                self.send_header('Access-Control-Allow-Origin', '*')
-                self.end_headers()
-                self.wfile.write("Wrong serect code!")
+            if not check_secret_code(form, known_deployments[master], self):
                 return
             del known_deployments[master]
             self.send_response(200)
