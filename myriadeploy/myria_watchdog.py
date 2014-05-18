@@ -11,6 +11,17 @@ import threading
 
 known_deployments = {}
 
+def check_secret_code(form, deployment):
+    if "secret_code" in form.keys():
+        proposed_secret_code = form['secret_code'].value
+    else:
+        proposed_secret_code = None
+    if "secret_code" in deployment.keys():
+        correct_secret_code = deployment["secret_code"]
+    else:
+        correct_secret_code = None
+    return correct_secret_code == proposed_secret_code
+
 class myHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
@@ -44,16 +55,7 @@ class myHandler(BaseHTTPRequestHandler):
 
             working_dir = known_deployments[master_address]["working_dir"]
             deployment_file = known_deployments[master_address]["deployment_file"]
-
-            if "secret_code" in form.keys():
-                proposed_secret_code = form['secret_code'].value
-            else:
-                proposed_secret_code = None
-            if "secret_code" in known_deployments[master_address].keys():
-                correct_secret_code = known_deployments[master_address]["secret_code"]
-            else:
-                correct_secret_code = None
-            if correct_secret_code != proposed_secret_code:
+            if not check_secret_code(form, known_deployments[master_address]):
                 self.send_response(200)
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
@@ -72,7 +74,16 @@ class myHandler(BaseHTTPRequestHandler):
             return
 
         elif self.path == "/register":
-            known_deployments[form['master'].value] = {}
+            master = form['master'].value
+            if master in known_deployments.keys():
+                # existed deployment, check if the code matches
+                if not check_secret_code(form, known_deployments[master]):
+                    self.send_response(200)
+                    self.send_header('Access-Control-Allow-Origin', '*')
+                    self.end_headers()
+                    self.wfile.write("Wrong serect code!")
+                    return
+            known_deployments[master] = {}
             known_deployments[form['master'].value]["working_dir"] = form['working_dir'].value
             known_deployments[form['master'].value]["deployment_file"] = form['deployment_file'].value
             if "secret_code" in form.keys():
