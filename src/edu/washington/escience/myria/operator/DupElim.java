@@ -117,6 +117,9 @@ public final class DupElim extends StreamingState {
 
   @Override
   public int numTuples() {
+    if (uniqueTuples == null) {
+      return 0;
+    }
     return uniqueTuples.numTuples();
   }
 
