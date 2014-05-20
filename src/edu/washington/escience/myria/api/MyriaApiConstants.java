@@ -17,6 +17,10 @@ public final class MyriaApiConstants {
   public static final String MYRIA_MASTER_DAEMON_ATTRIBUTE = "myria.master_daemon";
   /** The string identifying the Myria ApiServer in the Restlet Context variable. */
   public static final String MYRIA_API_SERVER_ATTRIBUTE = "myria.master_api_server";
+  /** The path to the SSL Keystore. */
+  public static final String MYRIA_API_SSL_KEYSTORE = "myria.master_api_server.ssl.keystore_path";
+  /** The password to the SSL Keystore. */
+  public static final String MYRIA_API_SSL_KEYSTORE_PASSWORD = "myria.master_api_server.ssl.keystore_password";
   /** The default number of results returned in a large query. */
   public static final Long MYRIA_API_DEFAULT_NUM_RESULTS = 10L;
 }
