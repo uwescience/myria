@@ -738,7 +738,7 @@ public final class Server {
    */
   private void cleanup() {
     if (LOGGER.isInfoEnabled()) {
-      LOGGER.info(MyriaConstants.SYSTEM_NAME + " is going to shutdown");
+      LOGGER.info("{} is going to shutdown", MyriaConstants.SYSTEM_NAME);
     }
 
     if (scheduledWorkers.size() > 0) {
@@ -759,8 +759,12 @@ public final class Server {
       p.kill();
     }
 
-    messageProcessingExecutor.shutdownNow();
-    scheduledTaskExecutor.shutdownNow();
+    if (messageProcessingExecutor != null && !messageProcessingExecutor.isShutdown()) {
+      messageProcessingExecutor.shutdownNow();
+    }
+    if (scheduledTaskExecutor != null && !scheduledTaskExecutor.isShutdown()) {
+      scheduledTaskExecutor.shutdownNow();
+    }
 
     /*
      * Close the catalog before shutting down the IPC because there may be Catalog jobs pending that were triggered by
