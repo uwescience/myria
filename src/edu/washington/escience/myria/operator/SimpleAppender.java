@@ -60,6 +60,9 @@ public final class SimpleAppender extends StreamingState {
 
   @Override
   public int numTuples() {
+    if (tuples == null) {
+      return 0;
+    }
     return tuples.size();
   }
 }
