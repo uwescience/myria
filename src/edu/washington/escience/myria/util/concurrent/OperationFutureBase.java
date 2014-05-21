@@ -26,7 +26,6 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.util.AttachmentableAdapter;
 
 /**
  * This class provides default implementations to the {@link OperationFuture}.
@@ -44,7 +43,7 @@ import edu.washington.escience.myria.util.AttachmentableAdapter;
  * 
  * @param <T> possible operation result when operation is successfully conducted.
  */
-public abstract class OperationFutureBase<T> extends AttachmentableAdapter implements OperationFuture {
+public abstract class OperationFutureBase<T> implements OperationFuture {
 
   /**
    * logger.

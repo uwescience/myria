@@ -18,7 +18,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.util.Attachmentable;
 
 /**
  * This class serves as the root of all the handle objects for asynchronous operations.
@@ -95,7 +94,7 @@ import edu.washington.escience.myria.util.Attachmentable;
  * notifier thread.
  * 
  * */
-public interface OperationFuture extends Attachmentable {
+public interface OperationFuture {
 
   /**
    * Returns <tt>true</tt> if this task completed.

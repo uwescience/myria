@@ -1,14 +1,13 @@
 package edu.washington.escience.myria.parallel;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.util.Attachmentable;
 import edu.washington.escience.myria.util.concurrent.OperationFuture;
 import edu.washington.escience.myria.util.concurrent.OperationFutureListener;
 
 /**
  * The result of an asynchronous {@link QuerySubTreeTask} operation.
  */
-public interface TaskFuture extends Attachmentable, OperationFuture {
+public interface TaskFuture extends OperationFuture {
 
   /**
    * @return the query where the query operation associated with this future takes place.

@@ -19,14 +19,13 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.util.Attachmentable;
 
 /**
  * The handle of an asynchronous {@link Callable} operation.
  * 
  * @param <T> the return type of the {@link Callable}
  */
-public interface ExecutionFuture<T> extends Attachmentable, Future<T>, OperationFuture {
+public interface ExecutionFuture<T> extends Future<T>, OperationFuture {
 
   /**
    * @return the {@link Callable} object associated with this future.

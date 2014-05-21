@@ -15,7 +15,6 @@
 package edu.washington.escience.myria.parallel;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.util.Attachmentable;
 import edu.washington.escience.myria.util.concurrent.OperationFutureBase;
 import edu.washington.escience.myria.util.concurrent.OperationFutureListener;
 import edu.washington.escience.myria.util.concurrent.OperationFutureProgressListener;
@@ -23,7 +22,7 @@ import edu.washington.escience.myria.util.concurrent.OperationFutureProgressList
 /**
  * The default {@link QueryFuture} implementation.
  */
-class DefaultTaskFuture extends OperationFutureBase<Void> implements Attachmentable, TaskFuture {
+class DefaultTaskFuture extends OperationFutureBase<Void> implements TaskFuture {
 
   /**
    * The owner query of this future, i.e. the future is for an operation on the query.
