@@ -1208,6 +1208,8 @@ public final class Server {
     if (partitionFn == null) {
       partitionFn = new RoundRobinPartitionFunction(workersArray.length);
     }
+    partitionFn.setNumPartitions(workersArray.length); // Override what is passed in with the JSON with the actual
+                                                       // number of workers to ingest
 
     /* The master plan: send the tuples out. */
     ExchangePairID scatterId = ExchangePairID.newID();
