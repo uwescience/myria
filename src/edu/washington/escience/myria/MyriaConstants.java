@@ -252,24 +252,9 @@ public final class MyriaConstants {
   /**
    * The schema of the {@link #SENT_RELATION}.
    */
-  public static final Schema SENT_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE,
-      Type.LONG_TYPE, Type.LONG_TYPE, Type.INT_TYPE), ImmutableList.of("queryId", "fragmentId", "nanoTime",
-      "numTuples", "destWorkerId"));
-
-  /**
-   * String representation of round robin partition function.
-   */
-  public static final String PARTITION_FUNCTION_ROUND_ROBIN = "roundrobin";
-
-  /**
-   * String representation of single field hash partition function.
-   */
-  public static final String PARTITION_FUNCTION_SINGLE_FIELD_HASH = "singlefieldhash";
-
-  /**
-   * String representation of multi field hash partition function.
-   */
-  public static final String PARTITION_FUNCTION_MULTI_FIELD_HASH = "multifieldhash";
+  public static final Schema SENT_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE,
+      Type.LONG_TYPE, Type.INT_TYPE), ImmutableList
+      .of("queryId", "fragmentId", "nanoTime", "numTuples", "destWorkerId"));
 
   /** Private constructor to disallow building utility class. */
   private MyriaConstants() {

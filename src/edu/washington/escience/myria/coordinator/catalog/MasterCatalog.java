@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -31,7 +30,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
-import edu.washington.escience.myria.PartitionInfo;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -40,6 +38,7 @@ import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
+import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
 import edu.washington.escience.myria.parallel.SocketInfo;
 
 /**
@@ -114,7 +113,6 @@ public final class MasterCatalog {
     + "    relation_name STRING NOT NULL,\n"
     + "    num_shards INTEGER NOT NULL,\n"
     + "    how_partitioned STRING NOT NULL,\n"
-    + "    hash_fields INTEGER NOT NULL,\n"
     + "    FOREIGN KEY (user_name,program_name,relation_name) REFERENCES relations);";
   /** Create the stored_relations table. */
   private static final String CREATE_SHARDS =
@@ -438,33 +436,30 @@ public final class MasterCatalog {
    * @return the partition function information.
    * @throws CatalogException when there is something wrong in the catalog.
    */
-  public PartitionInfo getPartitionFunctionInfo(final RelationKey relation) throws CatalogException {
+  public String getPartitionFunctionString(final RelationKey relation) throws CatalogException {
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
     }
     /* Do the work */
     try {
-      return queue.execute(new SQLiteJob<PartitionInfo>() {
-        private PartitionInfo retval = null;
+      return queue.execute(new SQLiteJob<String>() {
+        private String retval = null;
 
         @Override
-        protected PartitionInfo job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+        protected String job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
           try {
 
             /* First, populate the stored_relation table. */
             SQLiteStatement statement =
                 sqliteConnection
-                    .prepare("SELECT how_partitioned, hash_fields FROM stored_relations WHERE user_name=? AND program_name=? AND relation_name=?;");
+                    .prepare("SELECT how_partitioned FROM stored_relations WHERE user_name=? AND program_name=? AND relation_name=?;");
             statement.bind(1, relation.getUserName());
             statement.bind(2, relation.getProgramName());
             statement.bind(3, relation.getRelationName());
             statement.step();
-            final String howPartitioned = statement.columnString(0);
-            final long hashFieldsBitMask = statement.columnLong(1);
+            retval = statement.columnString(0);
             statement.dispose();
             statement = null;
-
-            retval = new PartitionInfo(howPartitioned, convertBitMaskToIntList(hashFieldsBitMask));
           } catch (final SQLiteException e) {
             throw new CatalogException(e);
           }
@@ -477,40 +472,17 @@ public final class MasterCatalog {
   }
 
   /**
-   * Converts the bitMask in long to a list of integers.
-   * 
-   * @param bitMask the bit mask in long representation
-   * @return a list of integers representing the index that is set to true.
-   */
-  private List<Integer> convertBitMaskToIntList(final long bitMask) {
-    BitSet bitSet = BitSet.valueOf(new long[] { bitMask });
-    List<Integer> retval = new ArrayList<Integer>();
-    int index = 0;
-    while (bitSet.cardinality() > 0) {
-      if (bitSet.get(index)) {
-        retval.add(index);
-        bitSet.clear(index);
-        index++;
-      }
-    }
-    return retval;
-  }
-
-  /**
    * Updates the relation with the correct partition function and its hash fields.
    * 
    * @param relation the relation
-   * @param partitionFunctionInfo the partition function information
+   * @param partitionFunction the partition function
    * @throws CatalogException when there is something wrong with the database.
    */
-  public void updatePartitionFunction(final RelationKey relation, final PartitionInfo partitionFunctionInfo)
+  public void updatePartitionFunction(final RelationKey relation, final PartitionFunction partitionFunction)
       throws CatalogException {
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
     }
-    final String howPartitioned = partitionFunctionInfo.getPartitionFunction();
-    final List<Integer> hashFields = partitionFunctionInfo.getHashFields();
-    final long hashFieldBitMask = generateHashFieldsBitSet(hashFields);
     /* Do the work */
     try {
       queue.execute(new SQLiteJob<Object>() {
@@ -523,12 +495,11 @@ public final class MasterCatalog {
             /* First, populate the stored_relation table. */
             SQLiteStatement statement =
                 sqliteConnection
-                    .prepare("UPDATE stored_relations SET how_partitioned=?, hash_fields=? WHERE user_name=? AND program_name=? AND relation_name=?;");
-            statement.bind(1, howPartitioned);
-            statement.bind(2, hashFieldBitMask);
-            statement.bind(3, relation.getUserName());
-            statement.bind(4, relation.getProgramName());
-            statement.bind(5, relation.getRelationName());
+                    .prepare("UPDATE stored_relations SET how_partitioned=? WHERE user_name=? AND program_name=? AND relation_name=?;");
+            statement.bind(1, partitionFunction.toString());
+            statement.bind(2, relation.getUserName());
+            statement.bind(3, relation.getProgramName());
+            statement.bind(4, relation.getRelationName());
             statement.stepThrough();
             statement.dispose();
             statement = null;
@@ -544,23 +515,6 @@ public final class MasterCatalog {
     } catch (InterruptedException | ExecutionException e) {
       throw new CatalogException(e);
     }
-  }
-
-  /**
-   * Generates a long value representing the bit mask of the hash fields.
-   * 
-   * @param hashFields the hash fields to be converted
-   * @return a long value representing the bit mask of the hash fields. 0 if the hashFields is null.
-   */
-  private long generateHashFieldsBitSet(final List<Integer> hashFields) {
-    if (hashFields.isEmpty()) {
-      return 0;
-    }
-    BitSet bitSet = new BitSet();
-    for (Integer field : hashFields) {
-      bitSet.set(field, true);
-    }
-    return bitSet.toLongArray()[0];
   }
 
   /**
@@ -592,13 +546,12 @@ public final class MasterCatalog {
             /* First, populate the stored_relation table. */
             SQLiteStatement statement =
                 sqliteConnection
-                    .prepare("INSERT INTO stored_relations (user_name,program_name,relation_name,num_shards,how_partitioned,hash_fields) VALUES (?,?,?,?,?,?);");
+                    .prepare("INSERT INTO stored_relations (user_name,program_name,relation_name,num_shards,how_partitioned) VALUES (?,?,?,?,?);");
             statement.bind(1, relation.getUserName());
             statement.bind(2, relation.getProgramName());
             statement.bind(3, relation.getRelationName());
             statement.bind(4, workers.size());
             statement.bind(5, howPartitioned);
-            statement.bind(6, 0);
             statement.stepThrough();
             statement.dispose();
             statement = null;
