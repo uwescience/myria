@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.operator.network.partition;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -75,5 +76,10 @@ public final class MultiFieldHashPartitionFunction extends PartitionFunction {
       result[i] = p;
     }
     return result;
+  }
+
+  @Override
+  public String toString() {
+    return "MultiFieldHash(" + Arrays.toString(indexes) + ")";
   }
 }

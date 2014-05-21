@@ -36,4 +36,9 @@ public final class WholeTupleHashPartitionFunction extends PartitionFunction {
     }
     return result;
   }
+
+  @Override
+  public String toString() {
+    return "WholeTupleHash()";
+  }
 }
