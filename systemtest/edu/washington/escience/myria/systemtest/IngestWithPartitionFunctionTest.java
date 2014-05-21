@@ -37,10 +37,7 @@ public class IngestWithPartitionFunctionTest extends SystemTestBase {
   private static final String jsonTestPath = "./jsonQueries/partition_vaspol/";
   /* The filename for ingest json file without specifying the partition function. */
   private static final String ingestNotPartitionedFilename = "ingest_data.json";
-  /* The filename for ingest json file with the partition function. */
-  private static final String ingestPartitionedFilename = "ingest_data_partitioned.json";
-  /* The filename of the query for repartitioning the data. */
-  private static final String repartitionQueryFilename = "repartition.json";
+
   /* The myria server name. */
   private static final String serverName = "localhost";
 
@@ -63,11 +60,37 @@ public class IngestWithPartitionFunctionTest extends SystemTestBase {
   }
 
   /*
+   * Test that ingesting using single field hash partition function gives the same result as ingesting round robin, then
+   * repartition the data.
+   */
+  @Test
+  public void testIngestDataWithSingleFieldHashPartitionFunction() throws Exception {
+    /* The filename for ingest json file with the partition function. */
+    final String ingestPartitionedFilename = "ingest_data_partitioned_single_field.json";
+    /* The filename of the query for repartitioning the data. */
+    final String repartitionQueryFilename = "repartition_single_field.json";
+    testIngestDataWithPartitionFunctionHelper(ingestPartitionedFilename, repartitionQueryFilename);
+  }
+
+  /*
+   * Test that ingesting using multi field hash partition function gives the same result as ingesting round robin, then
+   * repartition the data.
+   */
+  @Test
+  public void testIngestDataWithMultiFieldHashPartitionFunction() throws Exception {
+    /* The filename for ingest json file with the partition function. */
+    final String ingestPartitionedFilename = "ingest_data_partitioned_multi_field.json";
+    /* The filename of the query for repartitioning the data. */
+    final String repartitionQueryFilename = "repartition_multi_field.json";
+    testIngestDataWithPartitionFunctionHelper(ingestPartitionedFilename, repartitionQueryFilename);
+  }
+
+  /*
    * Test that ingesting using the partition function gives the same result as ingesting round robin, then repartition
    * the data.
    */
-  @Test
-  public void testIngestDataWithPartitionFunction() throws Exception {
+  public void testIngestDataWithPartitionFunctionHelper(final String ingestPartitionedFilename,
+      final String repartitionQueryFilename) throws Exception {
     File ingestWithPartitionFuncntion = new File(jsonTestPath + ingestPartitionedFilename);
     File ingestWithoutPartitionFuncntion = new File(jsonTestPath + ingestNotPartitionedFilename);
 
@@ -146,7 +169,9 @@ public class IngestWithPartitionFunctionTest extends SystemTestBase {
         TupleBatch testing = tupleBatchIterPartitioned.next();
         assertEquals(expected.numTuples(), testing.numTuples()); // make sure that there are equal numbers of tuples.
         for (int i = 0; i < expected.numTuples(); ++i) {
-          assertEquals(expected.getInt(0, i), testing.getInt(0, i));
+          for (int j = 0; j < expected.numColumns(); ++j) {
+            assertEquals(expected.getInt(j, i), testing.getInt(j, i));
+          }
         }
       }
       assertFalse(tupleBatchIterRepartitioned.hasNext()); // So that we are sure that the two iterators have the same

@@ -1,0 +1,20 @@
+{
+  "relationKey": {
+    "userName" : "vaspol",
+    "programName" : "partition_test",
+    "relationName" : "partitioned"
+  },
+  "schema": {
+    "columnTypes" : ["LONG_TYPE", "LONG_TYPE", "LONG_TYPE"],
+    "columnNames" : ["data", "data2", "data3"]
+  },
+  "source": {
+    "dataType" : "Bytes",
+    "bytes" : "MSwyLDMKMiwzLDQKNCw1LDYKMyw0LDUKNiw3LDgKMTAsMTAwMDAsMTAxCjQyLDQxLDQwCi0xMDAwLDEsMgoxMiw0LDUKMTI1LDEyNiwyNjEK"
+  },
+  "partitionFunction" : {
+    "type" : "MultiFieldHash",
+    "indexes" : ["0","1"],
+    "numPartitions" : "2"
+  }
+}
