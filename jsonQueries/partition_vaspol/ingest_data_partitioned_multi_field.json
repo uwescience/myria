@@ -14,7 +14,6 @@
   },
   "partitionFunction" : {
     "type" : "MultiFieldHash",
-    "indexes" : ["0","1"],
-    "numPartitions" : "2"
+    "indexes" : ["0","1"]
   }
 }

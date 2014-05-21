@@ -14,7 +14,6 @@
   },
   "partitionFunction" : {
     "type" : "SingleFieldHash",
-    "index" : "0",
-    "numPartitions" : "2"
+    "index" : "0"
   }
 }
