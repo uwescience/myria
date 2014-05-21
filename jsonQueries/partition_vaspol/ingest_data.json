@@ -5,11 +5,11 @@
     "relationName" : "not_partitioned"
   },
   "schema": {
-    "columnTypes" : ["LONG_TYPE"],
-    "columnNames" : ["data"]
+    "columnTypes" : ["LONG_TYPE", "LONG_TYPE", "LONG_TYPE"],
+    "columnNames" : ["data", "data2", "data3"]
   },
   "source": {
     "dataType" : "Bytes",
-    "bytes" : "MQoyCjMKNAo1CjYKNwo4CjkKMTA="
+    "bytes" : "MSwyLDMKMiwzLDQKNCw1LDYKMyw0LDUKNiw3LDgKMTAsMTAwMDAsMTAxCjQyLDQxLDQwCi0xMDAwLDEsMgoxMiw0LDUKMTI1LDEyNiwyNjEK"
   }
 }
