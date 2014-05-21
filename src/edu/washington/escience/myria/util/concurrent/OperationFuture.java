@@ -48,18 +48,18 @@ import edu.washington.escience.myria.DbException;
  *                                      +---------------------------+
  *                                      | Completed successfully    |
  *                                      +---------------------------+
- *                                 +---->      isDone() = <b>true</b>      |
- * +--------------------------+    |    |   isSuccess() = <b>true</b>      |
+ *                                 +---->      isDone() = true      |
+ * +--------------------------+    |    |   isSuccess() = true      |
  * |        Uncompleted       |    |    +===========================+
  * +--------------------------+    |    | Completed with failure    |
- * |      isDone() = <b>false</b>   |    |    +---------------------------+
- * |   isSuccess() = false    |----+---->   isDone() = <b>true</b>         |
- * | isCancelled() = false    |    |    | getCause() = <b>non-null</b>     |
+ * |      isDone() = false    |    |    +---------------------------+
+ * |   isSuccess() = false    |----+---->   isDone() = true         |
+ * | isCancelled() = false    |    |    | getCause() = non-null     |
  * |    getCause() = null     |    |    +===========================+
  * +--------------------------+    |    | Completed by cancellation |
  *                                 |    +---------------------------+
- *                                 +---->      isDone() = <b>true</b>      |
- *                                      | isCancelled() = <b>true</b>      |
+ *                                 +---->      isDone() = true      |
+ *                                      | isCancelled() = true      |
  *                                      +---------------------------+
  * </pre>
  * 
