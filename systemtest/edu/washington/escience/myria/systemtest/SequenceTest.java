@@ -206,10 +206,16 @@ public class SequenceTest extends SystemTestBase {
     HttpURLConnection conn = JsonAPIUtils.submitQuery("localhost", masterDaemonPort, queryString);
     assertEquals(HttpStatus.SC_ACCEPTED, conn.getResponseCode());
     long queryId = getQueryStatus(conn).queryId;
+    conn.disconnect();
     while (!server.queryCompleted(queryId)) {
       Thread.sleep(1);
     }
     QueryStatusEncoding status = server.getQueryStatus(queryId);
     assertEquals(Status.SUCCESS, status.status);
+
+    String ret =
+        JsonAPIUtils.download("localhost", masterDaemonPort, resultKey.getUserName(), resultKey.getProgramName(),
+            resultKey.getRelationName(), "csv");
+    assertEquals("sum_value\r\n9\r\n", ret);
   }
 }
