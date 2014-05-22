@@ -24,8 +24,6 @@ public class QueryEncoding extends MyriaApiEncoding {
   public String logicalRa;
   /** Set whether this query is run in profiling mode. (default is false) */
   public boolean profilingMode = false;
-  /** The expected number of results (for testing). */
-  public Long expectedResultSize;
   /** The fault-tolerance mode used in this query, default: none. */
   public FTMODE ftMode = FTMODE.none;
 
