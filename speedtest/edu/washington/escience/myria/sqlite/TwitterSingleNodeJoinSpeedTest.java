@@ -22,7 +22,8 @@ import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.SQLiteInfo;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
-import edu.washington.escience.myria.operator.ColumnSelect;
+import edu.washington.escience.myria.operator.Apply;
+import edu.washington.escience.myria.operator.Applys;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
@@ -101,7 +102,7 @@ public class TwitterSingleNodeJoinSpeedTest {
     final SymmetricHashJoin join = new SymmetricHashJoin(joinSchema, scan1, scan2, new int[] { 1 }, new int[] { 0 });
 
     /* Select only the two columns of interest: SC1.follower now transitively follows SC2.followee. */
-    final ColumnSelect colSelect = new ColumnSelect(new int[] { 0, 3 }, join);
+    final Apply colSelect = Applys.columnSelect(join, 0, 3);
 
     /* Now Dupelim */
     final StreamingStateWrapper dupelim = new StreamingStateWrapper(colSelect, new DupElim());
