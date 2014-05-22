@@ -22,7 +22,7 @@ public class FragmentEncoding extends MetaTaskEncoding {
   public void validateExtra() {
     int i = 0;
     for (PlanFragmentEncoding f : fragments) {
-      Preconditions.checkNotNull(f, "fragment %s/%s", i, fragments.size());
+      Preconditions.checkNotNull(f, "fragment %s of %s", i, fragments.size());
       f.validate();
       ++i;
     }

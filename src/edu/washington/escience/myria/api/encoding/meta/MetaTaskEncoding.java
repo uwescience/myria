@@ -11,5 +11,5 @@ import edu.washington.escience.myria.parallel.meta.MetaTask;
 @JsonSubTypes({
     @Type(name = "Fragment", value = FragmentEncoding.class), @Type(name = "Sequence", value = SequenceEncoding.class), })
 public abstract class MetaTaskEncoding extends MyriaApiEncoding {
-  abstract MetaTask getTask();
+  public abstract MetaTask getTask();
 }

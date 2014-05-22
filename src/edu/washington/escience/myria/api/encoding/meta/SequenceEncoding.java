@@ -14,7 +14,7 @@ public class SequenceEncoding extends MetaTaskEncoding {
   public List<MetaTaskEncoding> tasks;
 
   @Override
-  MetaTask getTask() {
+  public MetaTask getTask() {
     ImmutableList.Builder<MetaTask> ret = ImmutableList.builder();
     for (MetaTaskEncoding t : tasks) {
       ret.add(t.getTask());
