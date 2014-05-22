@@ -58,7 +58,8 @@ public class MultiwayJoinTest extends SystemTestBase {
         workerIDs[1])));
 
     /* Step 2: submit JSON query plan */
-    File queryJson = new File("./jsonQueries/multiwayJoin_shumo/twoWayJoinSystemTest.json");
+    String filePath = Paths.get("testdata", "multiwayjoin", "twoWayJoinSystemTest.json").toString();
+    File queryJson = new File(filePath);
     HttpURLConnection conn = JsonAPIUtils.submitQuery("localhost", masterDaemonPort, queryJson);
     if (null != conn.getErrorStream()) {
       throw new IllegalStateException(getContents(conn));
