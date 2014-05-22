@@ -491,7 +491,7 @@ public final class JdbcAccessMethod extends AccessMethod {
 
   /**
    * Create an index in postgres if no index with the same name already exists.
-   *
+   * 
    * @param relationKey the table on which the indexes will be created.
    * @param schema the Schema of the data in the table.
    * @param index the index to be created; each entry is a list of column indices.

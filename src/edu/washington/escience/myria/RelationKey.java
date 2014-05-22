@@ -134,6 +134,8 @@ public final class RelationKey implements Serializable {
         return toString('\"', ' ', '\"');
       case MyriaConstants.STORAGE_SYSTEM_MYSQL:
         return toString('`', ' ', '`');
+      case MyriaConstants.STORAGE_SYSTEM_VIEW:
+        return toString('\0', ':', '\0');
       default:
         throw new IllegalArgumentException("Unsupported dbms " + dbms);
     }
