@@ -138,7 +138,7 @@ public class WorkerQueryPartition implements QueryPartition {
           try {
             getOwnerWorker().getProfilingLogger().flush(queryID);
           } catch (DbException e) {
-            LOGGER.error("error flushing Profiling Logger: {}", e);
+            LOGGER.error("Error flushing profiling logger.", e);
           }
         }
         if (failTasks.isEmpty()) {
