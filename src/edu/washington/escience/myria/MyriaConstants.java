@@ -238,16 +238,28 @@ public final class MyriaConstants {
   public static final int MAX_ACTIVE_QUERIES = 5;
 
   /**
+   * The relation that stores profiling information while it is being written.
+   */
+  public static final RelationKey PROFILING_RELATION_TMP = new RelationKey("public", "tmp", "Profiling");
+
+  /**
    * The relation that stores profiling information.
    */
   public static final RelationKey PROFILING_RELATION = new RelationKey("public", "logs", "Profiling");
 
   /**
+   * The schema of the {@link #PROFILING_RELATION_TMP}.
+   */
+  public static final Schema PROFILING_SCHEMA_TMP = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE,
+      Type.STRING_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("queryId", "fragmentId",
+      "opId", "nanoTime", "numTuples", "eventType"));
+
+  /**
    * The schema of the {@link #PROFILING_RELATION}.
    */
-  public static final Schema PROFILING_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE,
-      Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("queryId", "opName",
-      "fragmentId", "nanoTime", "numTuples", "eventType"));
+  public static final Schema PROFILING_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE,
+      Type.STRING_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("queryId", "fragmentId",
+      "opId", "startTime", "endTime", "numTuples"));
 
   /**
    * The relation that stores profiling information.
@@ -257,9 +269,9 @@ public final class MyriaConstants {
   /**
    * The schema of the {@link #SENT_RELATION}.
    */
-  public static final Schema SENT_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE,
-      Type.LONG_TYPE, Type.LONG_TYPE, Type.INT_TYPE), ImmutableList.of("queryId", "fragmentId", "nanoTime",
-      "numTuples", "destWorkerId"));
+  public static final Schema SENT_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE,
+      Type.LONG_TYPE, Type.INT_TYPE), ImmutableList
+      .of("queryId", "fragmentId", "nanoTime", "numTuples", "destWorkerId"));
 
   /** Private constructor to disallow building utility class. */
   private MyriaConstants() {

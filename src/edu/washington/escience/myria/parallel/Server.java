@@ -923,7 +923,9 @@ public final class Server {
       LOGGER.info("Server started on {}", masterSocketInfo.toString());
     }
 
-    if (getSchema(MyriaConstants.PROFILING_RELATION) == null && !getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_SQLITE)) {
+    if (getSchema(MyriaConstants.PROFILING_RELATION_TMP) == null
+        && getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
+      importDataset(MyriaConstants.PROFILING_RELATION_TMP, MyriaConstants.PROFILING_SCHEMA_TMP, null);
       importDataset(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA, null);
       importDataset(MyriaConstants.SENT_RELATION, MyriaConstants.SENT_SCHEMA, null);
     }
@@ -1637,7 +1639,7 @@ public final class Server {
 
     final Schema schema =
         new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("nanoTime", "eventType"));
-    final RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
+    final RelationKey relationKey = MyriaConstants.PROFILING_RELATION_TMP;
 
     /* Get the workers. */
     Set<Integer> actualWorkers = ((QueryEncoding) queryStatus.physicalPlan).getWorkers();

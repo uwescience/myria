@@ -797,7 +797,7 @@ public final class Worker {
         TimeUnit.MILLISECONDS);
 
     ConnectionInfo connectionInfo = (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
-    if (!connectionInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_SQLITE)) {
+    if (connectionInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
       profilingLogger = new ProfilingLogger(connectionInfo);
     }
   }
