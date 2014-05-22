@@ -28,7 +28,6 @@ import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.parallel.FullQueryFuture;
 import edu.washington.escience.myria.parallel.Server;
-import edu.washington.escience.myria.parallel.meta.JsonFragment;
 
 /**
  * Class that handles queries.
@@ -89,7 +88,7 @@ public final class QueryResource {
     /* Start the query, and get its Server-assigned Query ID */
     FullQueryFuture qf;
     try {
-      qf = server.submitQuery(query, new JsonFragment(query.fragments));
+      qf = server.submitQuery(query, query.plan.getTask());
     } catch (MyriaApiException e) {
       /* Passthrough MyriaApiException. */
       throw e;
