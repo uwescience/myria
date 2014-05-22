@@ -1,9 +1,11 @@
 package edu.washington.escience.myria.api.encoding.meta;
 
 import java.util.List;
+import java.util.Set;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.api.encoding.Required;
 import edu.washington.escience.myria.parallel.meta.MetaTask;
@@ -31,6 +33,15 @@ public class SequenceEncoding extends MetaTaskEncoding {
       m.validate();
       ++i;
     }
+  }
+
+  @Override
+  public Set<Integer> getWorkers() {
+    ImmutableSet.Builder<Integer> ret = ImmutableSet.builder();
+    for (MetaTaskEncoding t : tasks) {
+      ret.addAll(t.getWorkers());
+    }
+    return ret.build();
   }
 
 }
