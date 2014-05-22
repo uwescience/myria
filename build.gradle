@@ -17,6 +17,7 @@ task wrapper(type: Wrapper) {
 
 jacoco {
     toolVersion = "0.7.1.201405082137"
+    excludes = ['**/edu/washington/escience/myria/proto/*']
 }
 
 /* We use Java 1.7 */
