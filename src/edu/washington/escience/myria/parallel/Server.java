@@ -15,6 +15,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -38,6 +39,7 @@ import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
@@ -51,7 +53,6 @@ import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
-import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.CatalogMaker;
 import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
@@ -933,7 +934,7 @@ public final class Server {
    * @throws DbException if any error occurs.
    * @throws CatalogException catalog errors.
    */
-  public QueryFuture submitQueryPlan(final RootOperator masterRoot, final Map<Integer, RootOperator[]> workerRoots)
+  public FullQueryFuture submitQueryPlan(final RootOperator masterRoot, final Map<Integer, RootOperator[]> workerRoots)
       throws DbException, CatalogException {
     String catalogInfoPlaceHolder = "MasterPlan: " + masterRoot + "; WorkerPlan: " + workerRoots;
     Map<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
@@ -958,7 +959,7 @@ public final class Server {
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
    */
-  public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final String physicalPlan,
+  public FullQueryFuture submitQuery(final String rawQuery, final String logicalRa, final String physicalPlan,
       final SingleQueryPlanWithArgs masterPlan, final Map<Integer, SingleQueryPlanWithArgs> workerPlans,
       @Nullable final Boolean profilingMode) throws DbException, CatalogException {
     QueryEncoding query = new QueryEncoding();
@@ -979,10 +980,10 @@ public final class Server {
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
    */
-  public QueryFuture submitQuery(final QueryEncoding physicalPlan, final MetaTask plan) throws DbException,
+  public FullQueryFuture submitQuery(final QueryEncoding physicalPlan, final MetaTask plan) throws DbException,
       CatalogException {
     if (!canSubmitQuery()) {
-      return null;
+      throw new DbException("Cannot submit query");
     }
     if (physicalPlan.profilingMode && getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_SQLITE)) {
       throw new DbException("Profiling mode is not supported when using SQLite as the storage system.");
@@ -1001,14 +1002,11 @@ public final class Server {
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
    */
-  private QueryFuture submitQuery(final long queryId, final MetaTask plan) throws DbException, CatalogException {
-    /* First check whether there are too many active queries. */
-    if (!canSubmitQuery()) {
-      return null;
-    }
+  private FullQueryFuture submitQuery(final long queryId, final MetaTask plan) throws DbException, CatalogException {
     final QueryState queryState = new QueryState(queryId, plan, this);
     activeQueries.put(queryId, queryState);
-    return advanceQuery(queryState);
+    advanceQuery(queryState);
+    return queryState.getFuture();
   }
 
   /**
@@ -1092,20 +1090,14 @@ public final class Server {
             // TODO success management.
             advanceQuery(query);
           } else {
+            Throwable cause = future.getCause();
             LOGGER.info("Task #{} failed. Time elapsed: {}. Failure cause is {}.", taskId, DateTimeUtils
-                .nanoElapseToHumanReadable(elapsedNanos), future.getCause());
-            final QueryStatusEncoding.Status status;
-            /*
-             * The query failed. The only way we have to tell whether it had an error or was killed is whether there is
-             * an error message logged.
-             */
-            String message = mqp.getMessage();
-            if (message != null) {
-              status = Status.ERROR;
+                .nanoElapseToHumanReadable(elapsedNanos), cause);
+            if (cause instanceof QueryKilledException) {
+              query.markKilled();
             } else {
-              status = Status.KILLED;
+              query.markFailed(cause);
             }
-            query.markFailed(status, message);
             finishQuery(query);
           }
         }
@@ -1124,7 +1116,7 @@ public final class Server {
       return mqp.getExecutionFuture();
     } catch (DbException | RuntimeException e) {
       try {
-        queryState.markFailed(Status.ERROR, "error during submission of task " + taskId + ": " + e.toString());
+        queryState.markFailed(e);
         catalog.queryFinished(queryState);
       } catch (CatalogException e1) {
         throw new DbException("error marking query as failed during submission", e1);
@@ -1208,24 +1200,26 @@ public final class Server {
       workerPlans.put(workerId, new SingleQueryPlanWithArgs(insert));
     }
 
+    ListenableFuture<QueryState> qf;
     try {
-      /* Start the workers */
-      QueryFuture qf =
-          submitQuery("ingest " + relationKey.toString("sqlite"), "ingest " + relationKey.toString("sqlite"),
-              "ingest " + relationKey.toString("sqlite"), new SingleQueryPlanWithArgs(scatter), workerPlans, false)
-              .sync();
-      if (qf == null) {
-        return null;
-      }
-      /* TODO(dhalperi) -- figure out how to populate the numTuples column. */
-      DatasetStatus status =
-          new DatasetStatus(relationKey, source.getSchema(), -1, qf.getQuery().getTaskId().getQueryId(), qf.getQuery()
-              .getExecutionStatistics().getEndTime());
-
-      return status;
+      qf =
+          submitQuery("ingest " + relationKey.toString("sqlite"), "ingest " + relationKey.toString("sqlite"), "ingest "
+              + relationKey.toString("sqlite"), new SingleQueryPlanWithArgs(scatter), workerPlans, false);
     } catch (CatalogException e) {
-      throw new DbException(e);
+      throw new DbException("Error submitting query", e);
     }
+    QueryState queryState;
+    try {
+      queryState = qf.get();
+    } catch (ExecutionException e) {
+      throw new DbException("Error executing query", e.getCause());
+    }
+
+    /* TODO(dhalperi) -- figure out how to populate the numTuples column. */
+    DatasetStatus status =
+        new DatasetStatus(relationKey, source.getSchema(), -1, queryState.getQueryId(), queryState.getEndTime());
+
+    return status;
   }
 
   /**
@@ -1256,18 +1250,19 @@ public final class Server {
       for (Integer workerId : actualWorkers) {
         workerPlans.put(workerId, new SingleQueryPlanWithArgs(new SinkRoot(new EOSSource())));
       }
-      QueryFuture qf =
-          submitQuery("import " + relationKey.toString("sqlite"), "import " + relationKey.toString("sqlite"),
-              "import " + relationKey.toString("sqlite"), new SingleQueryPlanWithArgs(new SinkRoot(new EOSSource())),
-              workerPlans, false).sync();
-
-      if (qf == null) {
-        throw new DbException("Cannot import dataset right now, server is overloaded.");
+      ListenableFuture<QueryState> qf =
+          submitQuery("import " + relationKey.toString("sqlite"), "import " + relationKey.toString("sqlite"), "import "
+              + relationKey.toString("sqlite"), new SingleQueryPlanWithArgs(new SinkRoot(new EOSSource())),
+              workerPlans, false);
+      QueryState queryState;
+      try {
+        queryState = qf.get();
+      } catch (ExecutionException e) {
+        throw new DbException("Error executing query", e.getCause());
       }
 
-      /* Now that the query has finished, add the metadata about this relation to the dataset. */
       /* TODO(dhalperi) -- figure out how to populate the numTuples column. */
-      catalog.addRelationMetadata(relationKey, schema, -1, qf.getQuery().getTaskId().getQueryId());
+      catalog.addRelationMetadata(relationKey, schema, -1, queryState.getQueryId());
       /* Add the round robin-partitioned shard. */
       catalog.addStoredRelation(relationKey, actualWorkers, "RoundRobin");
     } catch (CatalogException e) {
@@ -1469,7 +1464,8 @@ public final class Server {
    * @return the query future from which the query status can be looked up.
    * @throws DbException if there is an error in the system.
    */
-  public QueryFuture startDataStream(final RelationKey relationKey, final TupleWriter writer) throws DbException {
+  public ListenableFuture<QueryState> startDataStream(final RelationKey relationKey, final TupleWriter writer)
+      throws DbException {
     /* Get the relation's schema, to make sure it exists. */
     final Schema schema;
     try {
@@ -1523,8 +1519,8 @@ public final class Server {
    * @return profiling logs for the query.
    * @throws DbException if there is an error when accessing profiling logs.
    */
-  public QueryFuture startLogDataStream(final long queryId, final long fragmentId, final TupleWriter writer,
-      final RelationKey relationKey, final Schema schema) throws DbException {
+  public ListenableFuture<QueryState> startLogDataStream(final long queryId, final long fragmentId,
+      final TupleWriter writer, final RelationKey relationKey, final Schema schema) throws DbException {
     /* Get the relation's schema, to make sure it exists. */
     final QueryStatusEncoding queryStatus;
     try {
@@ -1602,8 +1598,8 @@ public final class Server {
    * 
    * @throws DbException if there is an error when accessing profiling logs.
    */
-  public QueryFuture startHistogramDataStream(final long queryId, final long fragmentId, final TupleWriter writer)
-      throws DbException {
+  public ListenableFuture<QueryState> startHistogramDataStream(final long queryId, final long fragmentId,
+      final TupleWriter writer) throws DbException {
     /* Get the relation's schema, to make sure it exists. */
     final QueryStatusEncoding queryStatus;
     try {

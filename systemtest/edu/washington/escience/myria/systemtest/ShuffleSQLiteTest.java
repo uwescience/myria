@@ -111,7 +111,7 @@ public class ShuffleSQLiteTest extends SystemTestBase {
     final SinkRoot serverPlan = new SinkRoot(queueStore);
 
     /* Submit and execute worker plans */
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    server.submitQueryPlan(serverPlan, workerPlans).get();
     TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
     TupleBatch tb = null;
     while (!receivedTupleBatches.isEmpty()) {

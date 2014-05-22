@@ -1,5 +1,8 @@
 package edu.washington.escience.myria.systemtest;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -10,13 +13,14 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.IDBController;
@@ -41,7 +45,7 @@ import edu.washington.escience.myria.operator.network.LocalMultiwayProducer;
 import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
 import edu.washington.escience.myria.operator.network.partition.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
-import edu.washington.escience.myria.parallel.QueryFuture;
+import edu.washington.escience.myria.parallel.QueryState;
 import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
@@ -252,22 +256,20 @@ public class ConnectedComponentTest extends SystemTestBase {
     SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
 
     if (!failure) {
-      server.submitQuery("", "", "", serverPlan, workerPlans, false).sync();
+      server.submitQuery("", "", "", serverPlan, workerPlans, false).get();
     } else {
       workerPlans.get(workerIDs[0]).setFTMode(FTMODE.valueOf("rejoin"));
       workerPlans.get(workerIDs[1]).setFTMode(FTMODE.valueOf("rejoin"));
       serverPlan.setFTMode(FTMODE.valueOf("rejoin"));
 
-      QueryFuture qf = server.submitQuery("", "", "", serverPlan, workerPlans, false);
+      ListenableFuture<QueryState> qf = server.submitQuery("", "", "", serverPlan, workerPlans, false);
       Thread.sleep(1000);
       LOGGER.info("killing worker " + workerIDs[1] + "!");
       workerProcess[1].destroy();
-      qf.sync();
-      while (!server.queryCompleted(1)) {
-        Thread.sleep(100);
-      }
-      LOGGER.info("query 1 finished.");
-      Preconditions.checkArgument(qf.isSuccess());
+      QueryState queryState = qf.get();
+      assertTrue(server.queryCompleted(queryState.getQueryId()));
+      LOGGER.info("query {} finished.", queryState.getQueryId());
+      assertEquals(Status.SUCCESS, queryState.getStatus());
     }
 
     TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());

@@ -26,7 +26,7 @@ import com.google.common.base.Objects;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
-import edu.washington.escience.myria.parallel.QueryFuture;
+import edu.washington.escience.myria.parallel.FullQueryFuture;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.parallel.meta.JsonFragment;
 
@@ -87,7 +87,7 @@ public final class QueryResource {
     query.validate();
 
     /* Start the query, and get its Server-assigned Query ID */
-    QueryFuture qf;
+    FullQueryFuture qf;
     try {
       qf = server.submitQuery(query, new JsonFragment(query.fragments));
     } catch (MyriaApiException e) {
@@ -105,7 +105,7 @@ public final class QueryResource {
       throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "The server cannot accept new queries right now.");
     }
 
-    long queryId = qf.getQuery().getTaskId().getQueryId();
+    long queryId = qf.getQueryId();
     /* And return the queryStatus as it is now. */
     QueryStatusEncoding qs = server.getQueryStatus(queryId);
     URI queryUri = getCanonicalResourcePath(uriInfo, queryId);

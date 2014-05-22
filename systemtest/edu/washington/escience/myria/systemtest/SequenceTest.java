@@ -34,7 +34,7 @@ import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
 import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
 import edu.washington.escience.myria.operator.network.partition.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
-import edu.washington.escience.myria.parallel.QueryFuture;
+import edu.washington.escience.myria.parallel.FullQueryFuture;
 import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 import edu.washington.escience.myria.parallel.meta.Fragment;
 import edu.washington.escience.myria.parallel.meta.MetaTask;
@@ -96,13 +96,10 @@ public class SequenceTest extends SystemTestBase {
     encoding.profilingMode = false;
     encoding.rawDatalog = "test";
     encoding.logicalRa = "test";
-    QueryFuture qf = server.submitQuery(encoding, all);
-    long queryId = qf.getQuery().getTaskId().getQueryId();
-
+    FullQueryFuture qf = server.submitQuery(encoding, all);
+    long queryId = qf.getQueryId();
     /* Wait for the query to finish, succeed, and check the result. */
-    while (!server.queryCompleted(queryId)) {
-      Thread.sleep(100);
-    }
+    qf.get();
     QueryStatusEncoding status = server.getQueryStatus(queryId);
     assertEquals(Status.SUCCESS, status.status);
 

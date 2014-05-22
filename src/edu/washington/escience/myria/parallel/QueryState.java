@@ -3,8 +3,6 @@ package edu.washington.escience.myria.parallel;
 import java.util.LinkedList;
 import java.util.Objects;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 
@@ -35,6 +33,8 @@ public final class QueryState {
   private final Server server;
   /** The message explaining why a query failed. */
   private String message;
+  /** The future for this query. */
+  private final FullQueryFuture future;
 
   /**
    * Construct a new QueryState object for this query.
@@ -53,6 +53,7 @@ public final class QueryState {
     metaQ = new LinkedList<>();
     metaQ.add(plan);
     message = null;
+    future = FullQueryFuture.create(queryId);
   }
 
   /**
@@ -142,16 +143,16 @@ public final class QueryState {
   }
 
   /**
-   * Set this query as having failed.
+   * Set this query as having failed due to the specified cause.
    * 
-   * @param status the status of the query {@link Status#KILLED} or {@link Status#ERROR}
-   * @param message the error message, if any. May be <code>null</code>
+   * @param cause the reason the query failed.
    */
-  public void markFailed(final Status status, @Nullable final String message) {
-    Preconditions.checkNotNull(status, "status");
+  public void markFailed(final Throwable cause) {
+    Preconditions.checkNotNull(cause, "cause");
     markEnd();
-    this.status = status;
-    this.message = message;
+    status = Status.ERROR;
+    message = cause.getMessage();
+    future.setException(cause);
   }
 
   /**
@@ -160,6 +161,7 @@ public final class QueryState {
   public void markSuccess() {
     markEnd();
     status = Status.SUCCESS;
+    future.set(this);
   }
 
   /**
@@ -195,5 +197,23 @@ public final class QueryState {
    */
   public String getMessage() {
     return message;
+  }
+
+  /**
+   * Returns the future on the execution of this query.
+   * 
+   * @return the future on the execution of this query
+   */
+  public FullQueryFuture getFuture() {
+    return future;
+  }
+
+  /**
+   * Call when the query has been killed.
+   */
+  public void markKilled() {
+    markEnd();
+    status = Status.KILLED;
+    future.cancel(true);
   }
 }

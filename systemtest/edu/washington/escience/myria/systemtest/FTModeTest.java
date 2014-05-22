@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.systemtest;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,12 +16,14 @@ import org.junit.Test;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.operator.DbInsert;
@@ -45,7 +49,7 @@ import edu.washington.escience.myria.operator.network.LocalMultiwayProducer;
 import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
 import edu.washington.escience.myria.operator.network.partition.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
-import edu.washington.escience.myria.parallel.QueryFuture;
+import edu.washington.escience.myria.parallel.QueryState;
 import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
@@ -454,13 +458,13 @@ public class FTModeTest extends SystemTestBase {
     SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
     serverPlan.setFTMode(FTMODE.valueOf("abandon"));
 
-    QueryFuture qf = server.submitQuery("", "", "", serverPlan, workerPlans, false);
+    ListenableFuture<QueryState> qf = server.submitQuery("", "", "", serverPlan, workerPlans, false);
     Thread.sleep(2000);
     /* kill the one without EOSController */
     LOGGER.info("killing worker " + workerIDs[1]);
     workerProcess[1].destroy();
-    qf.sync();
-    Preconditions.checkArgument(qf.isSuccess());
+    QueryState qs = qf.get();
+    assertEquals(Status.SUCCESS, qs.getStatus());
     TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
     while (!receivedTupleBatches.isEmpty()) {
       TupleBatch tb = receivedTupleBatches.poll();
@@ -559,18 +563,18 @@ public class FTModeTest extends SystemTestBase {
 
     SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(new EOSSource()));
     serverPlan.setFTMode(FTMODE.valueOf("rejoin"));
-    QueryFuture qf = server.submitQuery("", "", "", serverPlan, workerPlans, false);
+    ListenableFuture<QueryState> qf = server.submitQuery("", "", "", serverPlan, workerPlans, false);
     Thread.sleep(3000);
     /* kill the one without EOSController */
     LOGGER.info("killing worker " + workerIDs[1]);
     workerProcess[1].destroy();
-    qf.sync();
+    QueryState qs = qf.get();
 
     while (!server.queryCompleted(1)) {
       Thread.sleep(100);
     }
     LOGGER.info("query 1 finished.");
-    Preconditions.checkArgument(qf.isSuccess());
+    assertEquals(Status.SUCCESS, qs.getStatus());
 
     final ExchangePairID serverReceiveID1 = ExchangePairID.newID();
     final CollectConsumer serverCollect = new CollectConsumer(tableSchema, serverReceiveID1, workerIDs);
@@ -583,8 +587,7 @@ public class FTModeTest extends SystemTestBase {
     send2server.setOpName("send2server query 2");
     workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(send2server));
     workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(send2server));
-    qf = server.submitQuery("", "", "", serverPlan, workerPlans, false);
-    qf.sync();
+    server.submitQuery("", "", "", serverPlan, workerPlans, false).get();
 
     TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
     while (!receivedTupleBatches.isEmpty()) {

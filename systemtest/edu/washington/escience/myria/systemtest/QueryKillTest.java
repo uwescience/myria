@@ -1,11 +1,17 @@
 package edu.washington.escience.myria.systemtest;
 
+import static org.junit.Assert.fail;
+
 import java.util.HashMap;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.Uninterruptibles;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.RelationKey;
@@ -18,15 +24,14 @@ import edu.washington.escience.myria.operator.failures.DelayInjector;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
-import edu.washington.escience.myria.parallel.QueryFuture;
-import edu.washington.escience.myria.parallel.QueryKilledException;
+import edu.washington.escience.myria.parallel.FullQueryFuture;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestUtils;
 
 public class QueryKillTest extends SystemTestBase {
 
-  @Test(expected = QueryKilledException.class)
+  @Test(expected = CancellationException.class)
   public void killQueryTest() throws Throwable {
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
     createTable(workerIDs[0], testtableKey, "id long, name varchar(20)");
@@ -73,16 +78,20 @@ public class QueryKillTest extends SystemTestBase {
 
     final SinkRoot serverPlan = new SinkRoot(serverCollect);
 
-    QueryFuture qf = server.submitQueryPlan(serverPlan, workerPlans);
-    qf.awaitUninterruptibly(5, TimeUnit.SECONDS); // wait 5 seconds,
-                                                  // worker0 should have
-                                                  // completed.
-
-    server.killQuery(qf.getQuery().getTaskId().getQueryId());
+    FullQueryFuture qf = server.submitQueryPlan(serverPlan, workerPlans);
+    // wait 5 seconds, worker0 should have completed.
     try {
-      qf.sync();
-    } catch (DbException e) {
-      throw e.getCause();
+      Uninterruptibles.getUninterruptibly(qf, 5, TimeUnit.SECONDS);
+      fail();
+    } catch (TimeoutException e) {
+      /* The above command had better time out -- the query should not finish. Thus the above behavior is expected. */
+    }
+
+    server.killQuery(qf.getQueryId());
+    try {
+      qf.get();
+    } catch (ExecutionException e) {
+      throw new DbException("Executing query", e.getCause());
     }
   }
 }
