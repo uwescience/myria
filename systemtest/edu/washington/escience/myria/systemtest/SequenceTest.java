@@ -2,13 +2,17 @@ package edu.washington.escience.myria.systemtest;
 
 import static org.junit.Assert.assertEquals;
 
+import java.net.HttpURLConnection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import org.apache.commons.httpclient.HttpStatus;
 import org.junit.Test;
 
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
@@ -16,9 +20,25 @@ import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
+import edu.washington.escience.myria.api.encoding.AggregateEncoding;
+import edu.washington.escience.myria.api.encoding.ApplyEncoding;
+import edu.washington.escience.myria.api.encoding.CollectConsumerEncoding;
+import edu.washington.escience.myria.api.encoding.CollectProducerEncoding;
+import edu.washington.escience.myria.api.encoding.DatasetEncoding;
+import edu.washington.escience.myria.api.encoding.DbInsertEncoding;
+import edu.washington.escience.myria.api.encoding.PlanFragmentEncoding;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
+import edu.washington.escience.myria.api.encoding.TableScanEncoding;
+import edu.washington.escience.myria.api.encoding.meta.FragmentEncoding;
+import edu.washington.escience.myria.api.encoding.meta.MetaTaskEncoding;
+import edu.washington.escience.myria.api.encoding.meta.SequenceEncoding;
+import edu.washington.escience.myria.expression.Expression;
+import edu.washington.escience.myria.expression.VariableExpression;
+import edu.washington.escience.myria.io.ByteArraySource;
+import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.EOSSource;
@@ -41,6 +61,7 @@ import edu.washington.escience.myria.parallel.meta.MetaTask;
 import edu.washington.escience.myria.parallel.meta.Sequence;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.util.JsonAPIUtils;
 
 public class SequenceTest extends SystemTestBase {
 
@@ -107,5 +128,88 @@ public class SequenceTest extends SystemTestBase {
     assertEquals(1, tbs.size());
     TupleBatch tb = tbs.get(0);
     assertEquals(numVals * workerIDs.length, tb.getLong(0, 0));
+  }
+
+  @Test
+  public void testJsonSequence() throws Exception {
+    ObjectWriter writer = MyriaJsonMapperProvider.getWriter();
+
+    Schema schema = Schema.ofFields("value", Type.INT_TYPE, "label", Type.STRING_TYPE);
+    RelationKey origKey = RelationKey.of("test", "sequence", "json");
+    RelationKey interKey = RelationKey.of("test", "sequence", "jsonValue");
+    RelationKey resultKey = RelationKey.of("test", "sequence", "jsonSumValues");
+
+    /* Begin with ingest */
+    byte[] data = Joiner.on('\n').join("1,a", "3,b", "5,a").getBytes();
+    DataSource source = new ByteArraySource(data);
+    DatasetEncoding dataset = new DatasetEncoding();
+    dataset.source = source;
+    dataset.schema = schema;
+    dataset.relationKey = origKey;
+    String ingestString = writer.writeValueAsString(dataset);
+    JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestString);
+
+    /* First job: select just the value column and insert it to a new intermediate relation. */
+    TableScanEncoding scan = new TableScanEncoding();
+    scan.opId = "scan";
+    scan.relationKey = origKey;
+    ApplyEncoding apply = new ApplyEncoding();
+    apply.opId = "apply";
+    apply.argChild = scan.opId;
+    apply.emitExpressions = ImmutableList.of(new Expression("value", new VariableExpression(0)));
+    DbInsertEncoding insert = new DbInsertEncoding();
+    insert.opId = "insert";
+    insert.argChild = apply.opId;
+    insert.relationKey = interKey;
+    PlanFragmentEncoding fragment = new PlanFragmentEncoding();
+    fragment.operators = ImmutableList.of(scan, apply, insert);
+    FragmentEncoding firstJson = new FragmentEncoding(ImmutableList.of(fragment));
+
+    /* Second job: Sum the values in that column. */
+    // Fragment 1: scan and produce
+    scan = new TableScanEncoding();
+    scan.opId = "scan";
+    scan.relationKey = interKey;
+    CollectProducerEncoding prod = new CollectProducerEncoding();
+    prod.opId = "prod";
+    prod.argChild = scan.opId;
+    fragment = new PlanFragmentEncoding();
+    fragment.operators = ImmutableList.of(scan, prod);
+    // Fragment 2: consume, agg, insert
+    CollectConsumerEncoding cons = new CollectConsumerEncoding();
+    cons.opId = "cons";
+    cons.argOperatorId = prod.opId;
+    AggregateEncoding agg = new AggregateEncoding();
+    agg.argChild = cons.opId;
+    agg.opId = "agg";
+    agg.argAggFields = new int[] { 0 };
+    agg.argAggOperators = ImmutableList.of((List<String>) ImmutableList.of("AGG_OP_SUM"));
+    insert = new DbInsertEncoding();
+    insert.opId = "insert";
+    insert.argChild = agg.opId;
+    insert.relationKey = resultKey;
+    PlanFragmentEncoding fragment2 = new PlanFragmentEncoding();
+    fragment2.operators = ImmutableList.of(cons, agg, insert);
+    FragmentEncoding secondJson = new FragmentEncoding(ImmutableList.of(fragment, fragment2));
+
+    // Sequence of firstJson, secondJson
+    SequenceEncoding seq = new SequenceEncoding();
+    seq.tasks = ImmutableList.<MetaTaskEncoding> of(firstJson, secondJson);
+
+    QueryEncoding query = new QueryEncoding();
+    query.plan = seq;
+    query.logicalRa = "sequence json test";
+    query.rawDatalog = query.logicalRa;
+
+    String queryString = writer.writeValueAsString(query);
+
+    HttpURLConnection conn = JsonAPIUtils.submitQuery("localhost", masterDaemonPort, queryString);
+    assertEquals(HttpStatus.SC_ACCEPTED, conn.getResponseCode());
+    long queryId = getQueryStatus(conn).queryId;
+    while (!server.queryCompleted(queryId)) {
+      Thread.sleep(1);
+    }
+    QueryStatusEncoding status = server.getQueryStatus(queryId);
+    assertEquals(Status.SUCCESS, status.status);
   }
 }
