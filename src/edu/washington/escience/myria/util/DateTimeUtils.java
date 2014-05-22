@@ -39,7 +39,10 @@ public final class DateTimeUtils {
    * @return Convert nanoElapse to human readable format.
    * @param nanoElapse time elapse in nano seconds.
    * */
-  public static String nanoElapseToHumanReadable(final long nanoElapse) {
+  public static String nanoElapseToHumanReadable(final Long nanoElapse) {
+    if (nanoElapse == null) {
+      return "not started";
+    }
     long nanoElapseLocal = nanoElapse;
     String elapseFormat = null;
     final long day = TimeUnit.NANOSECONDS.toDays(nanoElapseLocal);
