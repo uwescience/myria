@@ -15,8 +15,7 @@ import org.apache.commons.io.FilenameUtils;
 
 import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
 import edu.washington.escience.myria.operator.RootOperator;
-import edu.washington.escience.myria.parallel.QueryFuture;
-import edu.washington.escience.myria.parallel.QueryFutureListener;
+import edu.washington.escience.myria.parallel.FullQueryFuture;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.util.DateTimeUtils;
@@ -102,20 +101,11 @@ public class Main {
 
     long start = System.nanoTime();
 
-    QueryFuture qf = server.submitQueryPlan(masterPlan, workerPlans).addListener(new QueryFutureListener() {
-      @Override
-      public void operationComplete(final QueryFuture future) throws Exception {
-        TupleBatch tb = null;
-        while (!resultStore.isEmpty()) {
-          tb = resultStore.poll();
-          System.out.print(tb);
-        }
-      }
-    });
+    FullQueryFuture qf = server.submitQueryPlan(masterPlan, workerPlans);
 
     TupleBatch tb = null;
     int numResult = 0;
-    while (!qf.isDone()) {
+    while (!qf.isDone() || !resultStore.isEmpty()) {
       tb = resultStore.poll(100, TimeUnit.MILLISECONDS);
       System.out.print(tb);
       numResult += tb.numTuples();
@@ -124,9 +114,8 @@ public class Main {
     System.out.println("Time spent: " + DateTimeUtils.nanoElapseToHumanReadable(System.nanoTime() - start));
     System.out.println("Total " + numResult + " tuples.");
 
-    qf.awaitUninterruptibly();
+    qf.get();
     server.shutdown();
-
   }
 
   static Server startMaster() throws Exception {
