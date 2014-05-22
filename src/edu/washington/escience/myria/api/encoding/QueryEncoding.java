@@ -3,7 +3,6 @@ package edu.washington.escience.myria.api.encoding;
 import java.util.List;
 import java.util.Set;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
@@ -13,7 +12,6 @@ import edu.washington.escience.myria.api.MyriaApiException;
  * A JSON-able wrapper for the expected wire message for a query.
  * 
  */
-@JsonIgnoreProperties({ "expected_result" })
 public class QueryEncoding extends MyriaApiEncoding {
   /** The raw Datalog. */
   @Required
