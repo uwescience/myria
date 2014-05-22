@@ -539,11 +539,11 @@ public class SystemTestBase {
       /* If this test was run with a Java agent, then add it. */
       List<String> inputArgs = ManagementFactory.getRuntimeMXBean().getInputArguments();
       for (String s : inputArgs) {
-        if (s.startsWith("-javaagent:")) {
-          String prefix = "-javaagent:";
-          String fullpath = new File(".").getCanonicalPath();
-          String end = s.substring(prefix.length());
-          args.add(prefix + fullpath + File.separator + end);
+        if (s.startsWith("-javaagent")) {
+          String currentDirectory = new File(".").getCanonicalPath();
+          String javaAgent = s.replaceAll("build/", currentDirectory + File.separator + "build/");
+          args.add(javaAgent);
+          System.err.println("Enabled java agent: " + javaAgent);
         }
       }
 
