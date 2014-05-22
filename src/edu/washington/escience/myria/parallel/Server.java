@@ -69,6 +69,7 @@ import edu.washington.escience.myria.expression.WorkerIdExpression;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbInsert;
+import edu.washington.escience.myria.operator.DbInsertWithView;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.EOSSource;
 import edu.washington.escience.myria.operator.InMemoryOrderBy;
@@ -1231,7 +1232,12 @@ public final class Server {
       }
       expressions.add(expr);
       Apply apply = new Apply(gather, expressions.build());
-      insert = new DbInsert(apply, relationKey, true, indexes);
+      RelationKey actualDataRelationKey =
+          RelationKey.of(relationKey.getUserName(), relationKey.getProgramName(), relationKey.getRelationName()
+              + "_actual");
+      Integer numShards = workersToIngest.size();
+      String condition = numShards + " <= maxN";
+      insert = new DbInsertWithView(apply, actualDataRelationKey, true, relationKey, schema, condition);
     } else {
       insert = new DbInsert(gather, relationKey, true, indexes);
     }
