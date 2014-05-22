@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.ProcessBuilder.Redirect;
+import java.lang.management.ManagementFactory;
 import java.net.HttpURLConnection;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -15,6 +16,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
@@ -533,6 +535,17 @@ public class SystemTestBase {
           .add("-Djava.library.path=" + lp).add("-classpath").add(cp) // paths
           .add("-Xmx" + MEMORY) // memory limit to MEMORY
       ;
+
+      /* If this test was run with a Java agent, then add it. */
+      List<String> inputArgs = ManagementFactory.getRuntimeMXBean().getInputArguments();
+      for (String s : inputArgs) {
+        if (s.startsWith("-javaagent:")) {
+          String prefix = "-javaagent:";
+          String fullpath = new File(".").getCanonicalPath();
+          String end = s.substring(prefix.length());
+          args.add(prefix + fullpath + File.separator + end);
+        }
+      }
 
       /* Second, set up the JVM debug options. */
       if (DEBUG) {
