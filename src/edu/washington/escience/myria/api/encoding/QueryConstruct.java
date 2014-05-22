@@ -35,21 +35,6 @@ public class QueryConstruct {
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(QueryEncoding.class);
 
   /**
-   * Instantiate the server's desired physical plan format from the JSON encoding of a query plan.
-   * 
-   * @param query the JSON encoding of a physical query plan
-   * @param server the server on which the query will be executed
-   * @return the physical plan
-   * @throws CatalogException if there is an error instantiating the plan
-   */
-  public static Map<Integer, SingleQueryPlanWithArgs> instantiate(final QueryEncoding query, final Server server)
-      throws CatalogException {
-    Map<Integer, SingleQueryPlanWithArgs> plans = instantiate(query.fragments, server);
-    setQueryExecutionOptions(plans, query.ftMode, query.profilingMode);
-    return plans;
-  }
-
-  /**
    * Instantiate the server's desired physical plan from a list of JSON encodings of fragments. This list must contain a
    * self-consistent, complete query. All fragments will be executed in parallel.
    * 
