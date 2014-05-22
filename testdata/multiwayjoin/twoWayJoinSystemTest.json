@@ -1,0 +1,98 @@
+{
+    "fragments":[
+        {
+            "operators":[
+                {
+                    "opId":"scan_r",
+                    "opType":"TableScan",
+                    "relationKey":{
+                        "programName":"test",
+                        "relationName":"testtable1",
+                        "userName":"test"
+                    }
+                },
+                {
+                    "argChild":"scan_r",
+                    "argPf":{
+                        "index":0,
+                        "type":"SingleFieldHash"
+                    },
+                    "opId":"shuffle_r",
+                    "opType":"ShuffleProducer"
+                }
+            ]
+        },
+        {
+            "operators":[
+                {
+                    "opId":"scan_s",
+                    "opType":"TableScan",
+                    "relationKey":{
+                        "programName":"test",
+                        "relationName":"testtable2",
+                        "userName":"test"
+                    }
+                },
+                {
+                    "argChild":"scan_s",
+                    "argPf":{
+                        "index":0,
+                        "type":"SingleFieldHash"
+                    },
+                    "opId":"shuffle_s",
+                    "opType":"ShuffleProducer"
+                }
+            ]
+        },
+        {
+            "operators":[
+                {
+                    "argOperatorId":"shuffle_r",
+                    "opId":"gather_r",
+                    "opType":"ShuffleConsumer"
+                },
+                {
+                    "opId":"order_r",
+                    "opType":"InMemoryOrderBy",
+                    "argChild": "gather_r",
+                    "argSortColumns": [0,1],
+                    "argAscending": [true,true]
+                },
+                {
+                    "argOperatorId":"shuffle_s",
+                    "opId":"gather_s",
+                    "opType":"ShuffleConsumer"
+                },
+                {
+                    "opId":"order_s",
+                    "opType":"InMemoryOrderBy",
+                    "argChild": "gather_s",
+                    "argSortColumns": [0,1],
+                    "argAscending": [true,true]
+                },
+                {
+                    "opId":"join",
+                    "opType":"LeapFrogJoin",
+                    "argChildren": ["order_r","order_s"],
+                    "argColumnNames": ["id1", "name1", "id2", "name2"],
+                    "joinFieldMapping": [[[0,0],[1,0]]],
+                    "outputFieldMapping": [[0,0],[0,1],[1,0],[1,1]]
+                },
+                {
+                    "argChild":"join",
+                    "argOverwriteTable":true,
+                    "opId":"insert_result",
+                    "opType":"DbInsert",
+                    "relationKey":{
+                        "programName":"test",
+                        "relationName":"two_way_join_test",
+                        "userName":"test"
+                    }
+                }
+            ]
+        }
+    ],
+    "logicalRa":"T(x,y,x,z) := S(x, y), R(y, z)",
+    "profilingMode":false,
+    "rawDatalog":"T(x,y,x,z) := S(x, y), R(y, z)"
+} 
