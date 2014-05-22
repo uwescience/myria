@@ -647,10 +647,10 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     }
     Preconditions.checkNotNull(root.runOnWorkers);
 
-    ArrayList<JsonQueryBaseBuilder> operators = new ArrayList<JsonQueryBaseBuilder>();
+    ArrayList<JsonQueryBaseBuilder> operators = new ArrayList<>();
     PlanFragmentEncoding fragment = new PlanFragmentEncoding();
     findOperators(operators, root);
-    fragment.operators = new ArrayList<OperatorEncoding<?>>(operators.size());
+    fragment.operators = new ArrayList<>(operators.size());
 
     for (JsonQueryBaseBuilder obb : operators) {
       fragment.operators.add(obb.op);
