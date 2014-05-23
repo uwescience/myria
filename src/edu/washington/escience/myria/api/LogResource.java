@@ -118,6 +118,9 @@ public final class LogResource {
    * 
    * @param queryId query id.
    * @param fragmentId the fragment id.
+   * @param start the start of the range
+   * @param end the end of the range
+   * @param step the length of a step
    * @param uriInfo the URL of the current request.
    * @return the profiling logs of the query across all workers
    * @throws DbException if there is an error in the database.
@@ -126,12 +129,23 @@ public final class LogResource {
   @Produces(MediaType.TEXT_PLAIN)
   @Path("histogram")
   public Response getHistogram(@QueryParam("queryId") final Long queryId,
-      @QueryParam("fragmentId") final Long fragmentId, @Context final UriInfo uriInfo) throws DbException {
+      @QueryParam("fragmentId") final Long fragmentId, @QueryParam("start") final Long start,
+      @QueryParam("end") final Long end, @QueryParam("step") final Long step, @Context final UriInfo uriInfo)
+      throws DbException {
     if (queryId == null) {
       throw new MyriaApiException(Status.BAD_REQUEST, "Query ID missing.");
     }
     if (fragmentId == null) {
       throw new MyriaApiException(Status.BAD_REQUEST, "Fragment ID missing.");
+    }
+    if (start == null) {
+      throw new MyriaApiException(Status.BAD_REQUEST, "Start missing.");
+    }
+    if (end == null) {
+      throw new MyriaApiException(Status.BAD_REQUEST, "End missing.");
+    }
+    if (step == null) {
+      throw new MyriaApiException(Status.BAD_REQUEST, "Step missing.");
     }
 
     ResponseBuilder response = Response.ok();
@@ -151,7 +165,7 @@ public final class LogResource {
     TupleWriter writer = new CsvTupleWriter(writerOutput);
 
     try {
-      server.startHistogramDataStream(queryId, fragmentId, writer);
+      server.startHistogramDataStream(queryId, fragmentId, start, end, step, writer);
     } catch (IllegalArgumentException e) {
       throw new MyriaApiException(Status.BAD_REQUEST, e);
     }

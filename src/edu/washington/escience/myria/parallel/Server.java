@@ -55,13 +55,7 @@ import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.CatalogMaker;
 import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
-import edu.washington.escience.myria.expression.ConditionalExpression;
-import edu.washington.escience.myria.expression.ConstantExpression;
-import edu.washington.escience.myria.expression.EqualsExpression;
 import edu.washington.escience.myria.expression.Expression;
-import edu.washington.escience.myria.expression.MinusExpression;
-import edu.washington.escience.myria.expression.PlusExpression;
-import edu.washington.escience.myria.expression.StateExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.expression.WorkerIdExpression;
 import edu.washington.escience.myria.operator.Apply;
@@ -69,11 +63,11 @@ import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.EOSSource;
-import edu.washington.escience.myria.operator.InMemoryOrderBy;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
-import edu.washington.escience.myria.operator.StatefulApply;
+import edu.washington.escience.myria.operator.agg.Aggregator;
+import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
 import edu.washington.escience.myria.operator.network.Consumer;
@@ -1618,13 +1612,16 @@ public final class Server {
   /**
    * @param queryId query id.
    * @param fragmentId the fragment id to return data for. All fragments, if < 0.
+   * @param start start of the histogram
+   * @param end the end of the histogram
+   * @param step the step size between min and max
    * @param writer writer to get data.
    * @return profiling logs for the query.
    * 
    * @throws DbException if there is an error when accessing profiling logs.
    */
-  public QueryFuture startHistogramDataStream(final long queryId, final long fragmentId, final TupleWriter writer)
-      throws DbException {
+  public QueryFuture startHistogramDataStream(final long queryId, final long fragmentId, final long start,
+      final long end, final long step, final TupleWriter writer) throws DbException {
     /* Get the relation's schema, to make sure it exists. */
     final QueryStatusEncoding queryStatus;
     try {
@@ -1636,34 +1633,29 @@ public final class Server {
     Preconditions.checkArgument(queryStatus.status == QueryStatusEncoding.Status.SUCCESS,
         "query %s did not succeed (%s)", queryId, queryStatus.status);
     Preconditions.checkArgument(queryStatus.profilingMode, "query %s was not run with profiling enabled");
+    Preconditions.checkArgument(start < end, "range cannot be negative");
 
     final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("nanoTime", "eventType"));
-    final RelationKey relationKey = MyriaConstants.PROFILING_RELATION_TMP;
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("nanoTime", "numWorkers"));
+    final RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
 
     /* Get the workers. */
     Set<Integer> actualWorkers = ((QueryEncoding) queryStatus.physicalPlan).getWorkers();
 
     /* Construct the operators that go elsewhere. */
-    // TODO: replace this with some kind of query construction
     String opnameQueryString =
-        Joiner.on(' ').join("select opname from", relationKey.toString(getDBMS()), "where", fragmentId,
-            "=fragmentId and ", queryId, "=queryId order by nanotime asc limit 1");
-    String queryString =
-        Joiner.on(' ').join("select nanotime, eventtype from", relationKey.toString(getDBMS()), "where opname = (",
-            opnameQueryString, ") and queryid=", queryId, "and fragmentid=", fragmentId,
-            "and eventtype in ('call', 'return') order by nanotime asc");
-    DbQueryScan scan = new DbQueryScan(queryString, schema);
+        Joiner.on(' ').join("SELECT opid FROM", relationKey.toString(getDBMS()), "WHERE", fragmentId,
+            "=fragmentId AND ", queryId, "=queryId ORDER BY starttime ASC limit 1");
+
+    String histogramWorkerQueryString =
+        Joiner.on(' ').join(
+            "SELECT s.t AS nanotime, CASE WHEN opid IS NULL THEN 0 ELSE 1 END AS numWorkers FROM generate_series(",
+            start, ", ", end, ", ", step, ") As s(t) LEFT OUTER JOIN (SELECT * FROM", relationKey.toString(getDBMS()),
+            "WHERE queryid=", queryId, "AND fragmentid=", fragmentId, " AND opid=(", opnameQueryString,
+            ")) AS p ON s.t BETWEEN starttime AND endtime;");
+
+    DbQueryScan scan = new DbQueryScan(histogramWorkerQueryString, schema);
     final ExchangePairID operatorId = ExchangePairID.newID();
-
-    ImmutableList.Builder<Expression> emitExpressions = ImmutableList.builder();
-
-    emitExpressions.add(new Expression("workerId", new WorkerIdExpression()));
-
-    for (int column = 0; column < schema.numColumns(); column++) {
-      VariableExpression copy = new VariableExpression(column);
-      emitExpressions.add(new Expression(schema.getColumnName(column), copy));
-    }
 
     CollectProducer producer = new CollectProducer(scan, operatorId, MyriaConstants.MASTER_ID);
 
@@ -1677,28 +1669,18 @@ public final class Server {
     /* Construct the master plan. */
     final CollectConsumer consumer =
         new CollectConsumer(scan.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
-    final InMemoryOrderBy order = new InMemoryOrderBy(consumer, new int[] { 0 }, new boolean[] { true });
 
-    /* Use stateful apply to build histogram */
+    /* Aggregate histogram on master */
+    final SingleGroupByAggregate sumAggregate =
+        new SingleGroupByAggregate(consumer, new int[] { 1 }, 0, new int[] { Aggregator.AGG_OP_SUM });
 
-    // increment on call, decrement on return, else do nothing
-    Expression conditionalIncrementDecrement =
-        new Expression(new ConditionalExpression(new EqualsExpression(new VariableExpression(1),
-            new ConstantExpression(Type.STRING_TYPE, "call")), new PlusExpression(new StateExpression(0),
-            new ConstantExpression(1)), new MinusExpression(new StateExpression(0), new ConstantExpression(1))));
+    ImmutableList.Builder<Expression> emitExpressions = ImmutableList.builder();
+    emitExpressions.add(new Expression("nanoTime", new VariableExpression(0)));
+    emitExpressions.add(new Expression("numWorkers", new VariableExpression(1)));
 
-    ImmutableList.Builder<Expression> ib = ImmutableList.builder();
-    ib.add(new Expression("numWorkers", new ConstantExpression(0)));
+    final Apply rename = new Apply(sumAggregate, emitExpressions.build());
 
-    ImmutableList.Builder<Expression> eb = ImmutableList.builder();
-    eb.add(new Expression("time", new VariableExpression(0)));
-    eb.add(new Expression("numWorkers", new StateExpression(0)));
-
-    ImmutableList.Builder<Expression> ub = ImmutableList.builder();
-    ub.add(conditionalIncrementDecrement);
-
-    final StatefulApply hist = new StatefulApply(order, eb.build(), ib.build(), ub.build());
-    DataOutput output = new DataOutput(hist, writer);
+    DataOutput output = new DataOutput(rename, writer);
     final SingleQueryPlanWithArgs masterPlan = new SingleQueryPlanWithArgs(output);
 
     /* Submit the plan for the download. */
