@@ -37,4 +37,9 @@ public class AndExpression extends BinaryExpression {
   public String getJavaString(final ExpressionOperatorParameter parameters) {
     return getInfixBinaryString("&&", parameters);
   }
+
+  @Override
+  public String getSqlString(final ExpressionOperatorParameter parameters) {
+    return getSqlInfixBinaryString(" AND ", parameters);
+  }
 }

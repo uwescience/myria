@@ -38,4 +38,8 @@ public class LesserExpression extends BinaryExpression {
     return getFunctionCallBinaryString("Math.min", parameters);
   }
 
+  @Override
+  public String getSqlString(final ExpressionOperatorParameter parameters) {
+    return getSqlFunctionCallBinaryString("least", parameters);
+  }
 }

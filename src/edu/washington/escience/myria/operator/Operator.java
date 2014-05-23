@@ -533,7 +533,7 @@ public abstract class Operator implements Serializable {
   /**
    * @return The id of the node (worker or master) that is running this operator.
    */
-  protected int getNodeID() {
+  protected int getNodeId() {
     return (Integer) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_NODE_ID);
   }
 }

@@ -2,6 +2,7 @@ package edu.washington.escience.myria.expression;
 
 import java.io.Serializable;
 import java.util.LinkedList;
+import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Lists;
@@ -25,16 +26,15 @@ public class Expression implements Serializable {
   private final String outputName;
 
   /**
-   * The java expression to be evaluated.
-   */
-  @JsonProperty
-  private String javaExpression;
-
-  /**
    * Expression encoding reference is needed to get the output type.
    */
   @JsonProperty
   private final ExpressionOperator rootExpressionOperator;
+
+  /**
+   * The java expression to be evaluated.
+   */
+  private String javaExpression;
 
   /**
    * Variable name of result.
@@ -86,6 +86,7 @@ public class Expression implements Serializable {
    * @return the rootExpressionOperator
    */
   public ExpressionOperator getRootExpressionOperator() {
+    Objects.requireNonNull(rootExpressionOperator, "rootExpressionOperator");
     return rootExpressionOperator;
   }
 
@@ -97,14 +98,25 @@ public class Expression implements Serializable {
   }
 
   /**
+   * Get the java representation of the expression. This function caches the expression. To clear the cache, call
+   * {@link #resetJavaExpression()}.
+   * 
    * @param parameters parameters that are needed to create the java expression
    * @return the Java form of this expression.
    */
   public String getJavaExpression(final ExpressionOperatorParameter parameters) {
     if (javaExpression == null) {
-      return rootExpressionOperator.getJavaString(parameters);
+      javaExpression = rootExpressionOperator.getJavaString(parameters);
     }
     return javaExpression;
+  }
+
+  /**
+   * @param parameters parameters that are needed to create the java expression
+   * @return the sql form of this expression.
+   */
+  public String getSqlExpression(final ExpressionOperatorParameter parameters) {
+    return rootExpressionOperator.getSqlString(parameters);
   }
 
   /**
@@ -132,7 +144,7 @@ public class Expression implements Serializable {
   }
 
   /**
-   * @param optype Class to find
+   * @param optype class to find
    * @return true if the operator is in the expression
    */
   public boolean hasOperator(final Class<?> optype) {

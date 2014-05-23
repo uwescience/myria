@@ -42,4 +42,9 @@ public class MinusExpression extends BinaryExpression {
     }
     return getInfixBinaryString("-", parameters);
   }
+
+  @Override
+  public String getSqlString(final ExpressionOperatorParameter parameters) {
+    return getSqlInfixBinaryString("-", parameters);
+  }
 }

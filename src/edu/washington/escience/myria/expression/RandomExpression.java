@@ -37,4 +37,9 @@ public class RandomExpression extends ZeroaryExpression {
   public boolean equals(final Object other) {
     return other != null && other instanceof RandomExpression;
   }
+
+  @Override
+  public String getSqlString(final ExpressionOperatorParameter parameters) {
+    return "random()";
+  }
 }

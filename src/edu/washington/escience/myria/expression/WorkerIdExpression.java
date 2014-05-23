@@ -37,4 +37,9 @@ public class WorkerIdExpression extends ZeroaryExpression {
   public boolean equals(final Object other) {
     return (other != null && WorkerIdExpression.class.equals(other.getClass()));
   }
+
+  @Override
+  public String getSqlString(final ExpressionOperatorParameter parameters) {
+    return String.valueOf(parameters.getWorkerId());
+  }
 }

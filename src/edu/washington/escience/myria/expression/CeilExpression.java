@@ -37,4 +37,9 @@ public class CeilExpression extends UnaryExpression {
   public String getJavaString(final ExpressionOperatorParameter parameters) {
     return getFunctionCallUnaryString("Math.ceil", parameters);
   }
+
+  @Override
+  public String getSqlString(final ExpressionOperatorParameter parameters) {
+    return getSqlFunctionCallUnaryString("ceil", parameters);
+  }
 }

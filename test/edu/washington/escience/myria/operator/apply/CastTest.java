@@ -16,7 +16,7 @@ import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.TypeExpression;
 import edu.washington.escience.myria.expression.evaluate.ConstantEvaluator;
-import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
+import edu.washington.escience.myria.expression.evaluate.JavaExpressionOperatorParameter;
 
 public class CastTest {
 
@@ -29,7 +29,7 @@ public class CastTest {
    */
   private Object evaluateCastExpression(ExpressionOperator op, Type type) throws DbException {
     Expression expr = new Expression("op", new CastExpression(op, new TypeExpression(type)));
-    ConstantEvaluator eval = new ConstantEvaluator(expr, new ExpressionOperatorParameter(Schema.EMPTY_SCHEMA));
+    ConstantEvaluator eval = new ConstantEvaluator(expr, new JavaExpressionOperatorParameter(Schema.EMPTY_SCHEMA));
     return eval.eval();
   }
 
@@ -358,7 +358,7 @@ public class CastTest {
   @Test(expected = IllegalArgumentException.class)
   public void unsupportedCast() throws IllegalArgumentException {
     ExpressionOperator cast = new CastExpression(new ConstantExpression(12), new TypeExpression(Type.DATETIME_TYPE));
-    cast.getOutputType(new ExpressionOperatorParameter());
+    cast.getOutputType(new JavaExpressionOperatorParameter());
   }
 
 }

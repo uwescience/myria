@@ -81,6 +81,29 @@ public class SimplePredicate implements Serializable {
       throw new UnsupportedOperationException("Don't know how to convert op to string " + name());
     }
 
+    /**
+     * @return the sql representation
+     */
+    public String toSqlString() {
+      switch (this) {
+        case EQUALS:
+          return "=";
+        case GREATER_THAN:
+          return ">";
+        case LESS_THAN:
+          return "<";
+        case GREATER_THAN_OR_EQ:
+          return ">=";
+        case LESS_THAN_OR_EQ:
+          return "<=";
+        case NOT_EQUALS:
+          return "!=";
+        case LIKE:
+          throw new UnsupportedOperationException();
+      }
+      throw new UnsupportedOperationException("Don't know how to convert op to string " + name());
+    }
+
   }
 
   /** Required for serialization. */

@@ -37,4 +37,9 @@ public class CosExpression extends UnaryExpression {
   public String getJavaString(final ExpressionOperatorParameter parameters) {
     return getFunctionCallUnaryString("Math.cos", parameters);
   }
+
+  @Override
+  public String getSqlString(final ExpressionOperatorParameter parameters) {
+    return getSqlFunctionCallUnaryString("cos", parameters);
+  }
 }

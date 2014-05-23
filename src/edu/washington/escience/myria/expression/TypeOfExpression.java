@@ -65,4 +65,9 @@ public class TypeOfExpression extends ZeroaryExpression {
     TypeOfExpression otherExp = (TypeOfExpression) other;
     return Objects.equals(columnIdx, otherExp.columnIdx);
   }
+
+  @Override
+  public String getSqlString(final ExpressionOperatorParameter parameters) {
+    throw new UnsupportedOperationException("This expression operator does not have a java string representation.");
+  }
 }

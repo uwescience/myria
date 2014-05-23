@@ -56,4 +56,9 @@ public class IntDivideExpression extends BinaryExpression {
     return new StringBuilder("com.google.common.math.DoubleMath.roundToLong(").append(
         getInfixBinaryString("/", parameters)).append(", java.math.RoundingMode.DOWN)").toString();
   }
+
+  @Override
+  public String getSqlString(final ExpressionOperatorParameter parameters) {
+    return getSqlInfixBinaryString("/", parameters);
+  }
 }

@@ -76,6 +76,11 @@ public abstract class BinaryExpression extends ExpressionOperator {
         getRight().getJavaString(parameters)).append(')').toString();
   }
 
+  protected final String getSqlInfixBinaryString(final String infix, final ExpressionOperatorParameter parameters) {
+    return new StringBuilder("(").append(getLeft().getSqlString(parameters)).append(infix).append(
+        getRight().getSqlString(parameters)).append(')').toString();
+  }
+
   /**
    * Returns the object comparison string: right + ".compareTo(" + left + ")" + op + "0". E.g, for
    * {@link EqualsExpression}, <code>op</code> is <code>LIKE</code> and <code>value</code> is <code>0</code>.
@@ -102,6 +107,12 @@ public abstract class BinaryExpression extends ExpressionOperator {
       final ExpressionOperatorParameter parameters) {
     return new StringBuilder(functionName).append('(').append(getLeft().getJavaString(parameters)).append(',').append(
         getRight().getJavaString(parameters)).append(')').toString();
+  }
+
+  protected final String getSqlFunctionCallBinaryString(final String functionName,
+      final ExpressionOperatorParameter parameters) {
+    return new StringBuilder(functionName).append('(').append(getLeft().getSqlString(parameters)).append(',').append(
+        getRight().getSqlString(parameters)).append(')').toString();
   }
 
   /**

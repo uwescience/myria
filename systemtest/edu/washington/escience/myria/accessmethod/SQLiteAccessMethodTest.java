@@ -23,6 +23,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.FSUtils;
 import edu.washington.escience.myria.util.SQLiteUtils;
+import edu.washington.escience.myria.util.TestEnvVars;
 import edu.washington.escience.myria.util.TestUtils;
 
 public class SQLiteAccessMethodTest {
@@ -189,7 +190,7 @@ public class SQLiteAccessMethodTest {
     final SQLiteInfo sqliteInfo = SQLiteInfo.of(dbFile.getAbsolutePath());
     final DbQueryScan scan = new DbQueryScan(sqliteInfo, inputKey, tableSchema);
     final DbInsert insert = new DbInsert(scan, outputKey, sqliteInfo, true);
-    insert.open(null);
+    insert.open(TestEnvVars.get(1));
     while (!insert.eos()) {
       insert.nextReady();
     }

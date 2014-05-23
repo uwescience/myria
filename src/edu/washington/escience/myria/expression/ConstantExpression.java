@@ -120,6 +120,23 @@ public class ConstantExpression extends ZeroaryExpression {
   }
 
   @Override
+  public String getSqlString(final ExpressionOperatorParameter parameters) {
+    switch (valueType) {
+      case BOOLEAN_TYPE:
+      case DOUBLE_TYPE:
+      case FLOAT_TYPE:
+      case INT_TYPE:
+      case LONG_TYPE:
+        return value;
+      case DATETIME_TYPE:
+        throw new UnsupportedOperationException("using constant value of type DateTime");
+      case STRING_TYPE:
+        return '\'' + StringEscapeUtils.escapeSql(value) + '\'';
+    }
+    throw new UnsupportedOperationException("using constant value of type " + valueType);
+  }
+
+  @Override
   public int hashCode() {
     return Objects.hash(getClass().getCanonicalName(), valueType, value);
   }

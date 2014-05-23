@@ -37,4 +37,9 @@ public class FloorExpression extends UnaryExpression {
   public String getJavaString(final ExpressionOperatorParameter parameters) {
     return getFunctionCallUnaryString("Math.floor", parameters);
   }
+
+  @Override
+  public String getSqlString(final ExpressionOperatorParameter parameters) {
+    return getSqlFunctionCallUnaryString("floor", parameters);
+  }
 }

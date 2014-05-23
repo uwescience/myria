@@ -18,12 +18,14 @@ import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.expression.sql.ColumnReferenceExpression;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.FSUtils;
 import edu.washington.escience.myria.util.SQLiteUtils;
+import edu.washington.escience.myria.util.TestEnvVars;
 import edu.washington.escience.myria.util.TestUtils;
 import edu.washington.escience.myria.util.Tuple;
 
@@ -62,11 +64,12 @@ public class SQLiteTest {
 
     /* Scan the testtable in database */
     final DbQueryScan scan =
-        new DbQueryScan(SQLiteInfo.of(dbAbsolutePath), testtableKey, outputSchema, new int[] { 0, 1 }, new boolean[] {
-            true, false });
+        new DbQueryScan(SQLiteInfo.of(dbAbsolutePath), testtableKey, outputSchema, ImmutableList
+            .<ColumnReferenceExpression> of(new ColumnReferenceExpression(testtableKey, 0),
+                new ColumnReferenceExpression(testtableKey, 1)), ImmutableList.<Boolean> of(true, false));
 
     final Operator root = scan;
-    root.open(null);
+    root.open(TestEnvVars.get(1));
 
     /* For debugging purposes, print Schema */
     final Schema schema = root.getSchema();

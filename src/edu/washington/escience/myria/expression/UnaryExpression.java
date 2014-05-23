@@ -63,6 +63,11 @@ public abstract class UnaryExpression extends ExpressionOperator {
     return new StringBuilder(functionName).append('(').append(operand.getJavaString(parameters)).append(')').toString();
   }
 
+  protected final String getSqlFunctionCallUnaryString(final String functionName,
+      final ExpressionOperatorParameter parameters) {
+    return new StringBuilder(functionName).append('(').append(operand.getSqlString(parameters)).append(')').toString();
+  }
+
   /**
    * Returns the function call unary string: child + functionName. E.g, for {@link ToUpperCaseExpression},
    * <code>functionName</code> is <code>".toUpperCase()"</code>.

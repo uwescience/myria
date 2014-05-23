@@ -11,6 +11,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.evaluate.BooleanEvaluator;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
+import edu.washington.escience.myria.expression.evaluate.JavaExpressionOperatorParameter;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
@@ -73,7 +74,7 @@ public final class Filter extends UnaryOperator {
 
     Schema inputSchema = getChild().getSchema();
 
-    final ExpressionOperatorParameter parameters = new ExpressionOperatorParameter(inputSchema, getNodeID());
+    final ExpressionOperatorParameter parameters = new JavaExpressionOperatorParameter(inputSchema, getNodeId());
 
     evaluator = new BooleanEvaluator(predicate, parameters);
     if (evaluator.needsCompiling()) {

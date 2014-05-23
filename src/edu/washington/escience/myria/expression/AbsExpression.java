@@ -36,4 +36,9 @@ public class AbsExpression extends UnaryExpression {
   public String getJavaString(final ExpressionOperatorParameter parameters) {
     return getFunctionCallUnaryString("Math.abs", parameters);
   }
+
+  @Override
+  public String getSqlString(final ExpressionOperatorParameter parameters) {
+    return getSqlFunctionCallUnaryString("abs", parameters);
+  }
 }

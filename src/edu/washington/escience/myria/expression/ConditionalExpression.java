@@ -63,4 +63,9 @@ public class ConditionalExpression extends NAryExpression {
         getChild(1).getJavaString(parameters)).append(":").append(getChild(2).getJavaString(parameters)).append(")")
         .toString();
   }
+
+  @Override
+  public String getSqlString(final ExpressionOperatorParameter parameters) {
+    throw new UnsupportedOperationException("cannot compile case to SQL");
+  }
 }

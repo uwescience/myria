@@ -46,4 +46,8 @@ public class LenExpression extends UnaryExpression {
     return getDotFunctionCallUnaryString(".length()", parameters);
   }
 
+  @Override
+  public String getSqlString(final ExpressionOperatorParameter parameters) {
+    return getSqlFunctionCallUnaryString("char_length", parameters);
+  }
 }

@@ -44,8 +44,8 @@ public class StateExpression extends ZeroaryExpression {
   @Override
   public String getJavaString(final ExpressionOperatorParameter parameters) {
     // We generate a variable access into the state tuple.
-    return new StringBuilder(Expression.STATE).append(".get").append(getOutputType(parameters).getName())
-        .append("(").append(getColumnIdx()).append(", 0)").toString();
+    return new StringBuilder(Expression.STATE).append(".get").append(getOutputType(parameters).getName()).append("(")
+        .append(getColumnIdx()).append(", 0)").toString();
   }
 
   /**
@@ -67,5 +67,10 @@ public class StateExpression extends ZeroaryExpression {
     }
     StateExpression otherExp = (StateExpression) other;
     return Objects.equals(getColumnIdx(), otherExp.getColumnIdx());
+  }
+
+  @Override
+  public String getSqlString(final ExpressionOperatorParameter parameters) {
+    throw new UnsupportedOperationException("cannot compile state to SQL");
   }
 }

@@ -71,4 +71,9 @@ public abstract class ComparisonExpression extends BinaryExpression {
     }
     return getInfixBinaryString(getOperation().toJavaString(), parameters);
   }
+
+  @Override
+  public String getSqlString(final ExpressionOperatorParameter parameters) {
+    return getSqlInfixBinaryString(getOperation().toSqlString(), parameters);
+  }
 }

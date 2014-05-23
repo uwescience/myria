@@ -37,4 +37,9 @@ public class PowExpression extends BinaryExpression {
   public String getJavaString(final ExpressionOperatorParameter parameters) {
     return getFunctionCallBinaryString("Math.pow", parameters);
   }
+
+  @Override
+  public String getSqlString(final ExpressionOperatorParameter parameters) {
+    return getSqlFunctionCallBinaryString("power", parameters);
+  }
 }

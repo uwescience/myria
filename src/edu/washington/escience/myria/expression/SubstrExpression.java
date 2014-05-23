@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.expression;
 
+import scala.collection.mutable.StringBuilder;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
@@ -50,4 +52,10 @@ public class SubstrExpression extends NAryExpression {
     return getDotFunctionCallString(".substring", parameters);
   }
 
+  @Override
+  public String getSqlString(final ExpressionOperatorParameter parameters) {
+    return new StringBuilder("substring(").append(getChild(0).getSqlString(parameters)).append(" from ").append(
+        getChild(1).getSqlString(parameters)).append(" for (").append(getChild(2).getSqlString(parameters)).append(
+        ")-(").append(getChild(1).getSqlString(parameters)).append("))").toString();
+  }
 }

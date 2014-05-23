@@ -39,4 +39,10 @@ public class DivideExpression extends BinaryExpression {
     return new StringBuilder("(((double)").append(getLeft().getJavaString(parameters)).append(")/").append(
         getRight().getJavaString(parameters)).append(')').toString();
   }
+
+  @Override
+  public String getSqlString(final ExpressionOperatorParameter parameters) {
+    return new StringBuilder("(float(").append(getLeft().getSqlString(parameters)).append(")/").append(
+        getRight().getSqlString(parameters)).append(")").toString();
+  }
 }
