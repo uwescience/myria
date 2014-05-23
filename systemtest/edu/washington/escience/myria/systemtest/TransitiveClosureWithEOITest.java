@@ -13,7 +13,8 @@ import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.operator.ColumnSelect;
+import edu.washington.escience.myria.operator.Apply;
+import edu.washington.escience.myria.operator.Applys;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.IDBController;
@@ -304,7 +305,7 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
 
     final List<String> joinOutputColumns = ImmutableList.of("follower1", "followee1", "follower2", "followee2");
     final SymmetricHashJoin join = new SymmetricHashJoin(joinOutputColumns, sc1, sc2, new int[] { 0 }, new int[] { 1 });
-    final ColumnSelect proj = new ColumnSelect(new int[] { 2, 1 }, join);
+    final Apply proj = Applys.columnSelect(join, 2, 1);
     ExchangePairID beforeDE = ExchangePairID.newID();
 
     final GenericShuffleProducer sp3 = new GenericShuffleProducer(proj, beforeDE, new int[] { workerIDs[0] }, pf0);

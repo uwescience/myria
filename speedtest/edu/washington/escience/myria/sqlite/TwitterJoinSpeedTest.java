@@ -17,7 +17,8 @@ import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.operator.ColumnSelect;
+import edu.washington.escience.myria.operator.Apply;
+import edu.washington.escience.myria.operator.Applys;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.RootOperator;
@@ -168,7 +169,7 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final List<String> joinSchema = ImmutableList.of("follower", "joinL", "joinR", "followee");
     final SymmetricHashJoin localjoin = new SymmetricHashJoin(joinSchema, sc1, sc2, new int[] { 1 }, new int[] { 0 });
     /* Select only the two columns of interest: SC1.follower now transitively follows SC2.followee. */
-    final ColumnSelect proj = new ColumnSelect(new int[] { 0, 3 }, localjoin);
+    final Apply proj = Applys.columnSelect(localjoin, 0, 3);
     /* Now reshuffle the results to partition based on the new followee, so that we can dupelim. */
     final ExchangePairID arrayID0 = ExchangePairID.newID();
     final GenericShuffleProducer sp0 = new GenericShuffleProducer(proj, arrayID0, workerIDs, pf0);

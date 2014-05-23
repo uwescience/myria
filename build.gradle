@@ -12,7 +12,11 @@ group = "edu.washington.escience.myria"
 version = "0.1"
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '1.11'
+    gradleVersion = '1.12'
+}
+
+jacoco {
+    toolVersion = "0.7.1.201405082137"
 }
 
 /* We use Java 1.7 */
@@ -29,14 +33,6 @@ buildscript {
     classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:0.4.0'
   }
 }
-/* Coveralls */
-jacocoTestReport {
-  reports {
-    xml.enabled = true // coveralls plugin depends on xml format report
-    html.enabled = true
-  }
-}
-
 /* Tell gradle where the source code is located. */
 sourceSets {
   /* Code for main */
@@ -270,6 +266,15 @@ jar {
     attributes("Implementation-Title" : "Myria",
                "Implementation-Version": version,
 	       "Main-Class": "edu.washington.escience.myria.daemon.MasterDaemon")
+  }
+}
+
+/* Coveralls */
+jacocoTestReport {
+  executionData(test, systemtest)
+  reports {
+    xml.enabled = true // coveralls plugin depends on xml format report
+    html.enabled = true
   }
 }
 
