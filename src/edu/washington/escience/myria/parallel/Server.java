@@ -1181,13 +1181,13 @@ public final class Server {
    * @param number the number of alive workers returned
    * @return a subset of workers that are currently alive.
    */
-  public Set<Integer> getAliveWorkers(final int number) {
+  public Set<Integer> getRandomWorkers(final int number) {
     Preconditions.checkArgument(number <= getAliveWorkers().size(),
         "The number of workers requested cannot exceed the number of alive workers.");
     if (number == getAliveWorkers().size()) {
       return getAliveWorkers();
     }
-    List<Integer> workerList = new ArrayList<Integer>(aliveWorkers.keySet());
+    List<Integer> workerList = new ArrayList<>(aliveWorkers.keySet());
     Collections.shuffle(workerList);
     return ImmutableSet.copyOf(workerList.subList(0, number));
   }
