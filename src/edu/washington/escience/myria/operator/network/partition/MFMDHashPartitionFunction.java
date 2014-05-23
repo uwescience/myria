@@ -26,16 +26,20 @@ public final class MFMDHashPartitionFunction extends PartitionFunction {
    * 
    * @param numPartitions number of buckets
    * @param hypercubeDimensions the sizes of each dimension of the hypercube.
-   * @param fieldIndexes which fields are hashed.
+   * @param hashedColumns which fields are hashed.
+   * @param mappedHCDimensions mapped hypercube dimensions of hashed columns.
    * 
    */
-  public MFMDHashPartitionFunction(final int numPartitions, final int[] hypercubeDimensions, final int[] fieldIndexes) {
+  public MFMDHashPartitionFunction(final int numPartitions, final int[] hypercubeDimensions, final int[] hashedColumns,
+      final int[] mappedHCDimensions) {
     super(numPartitions);
-    partitionFunctions = new SingleFieldHashPartitionFunction[fieldIndexes.length];
-    for (int i = 0; i < fieldIndexes.length; ++i) {
-      Preconditions.checkPositionIndex(fieldIndexes[i], hypercubeDimensions.length);
+    partitionFunctions = new SingleFieldHashPartitionFunction[hashedColumns.length];
+    for (int i = 0; i < hashedColumns.length; ++i) {
+      Preconditions.checkPositionIndex(hashedColumns[i], hypercubeDimensions.length);
+      Preconditions.checkArgument(hashedColumns.length == mappedHCDimensions.length,
+          "hashedColumns must have the same arity as mappedHCDimensions");
       partitionFunctions[i] =
-          new SingleFieldHashPartitionFunction(hypercubeDimensions[fieldIndexes[i]], fieldIndexes[i]);
+          new SingleFieldHashPartitionFunction(hypercubeDimensions[mappedHCDimensions[i]], hashedColumns[i]);
     }
   }
 
