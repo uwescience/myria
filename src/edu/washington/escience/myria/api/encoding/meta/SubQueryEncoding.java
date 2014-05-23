@@ -10,21 +10,21 @@ import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.api.encoding.PlanFragmentEncoding;
 import edu.washington.escience.myria.api.encoding.Required;
-import edu.washington.escience.myria.parallel.meta.JsonFragment;
-import edu.washington.escience.myria.parallel.meta.MetaTask;
+import edu.washington.escience.myria.parallel.JsonSubQuery;
+import edu.washington.escience.myria.parallel.MetaTask;
 
-public class FragmentEncoding extends MetaTaskEncoding {
+public class SubQueryEncoding extends SubPlanEncoding {
   @Required
   public List<PlanFragmentEncoding> fragments;
 
   @JsonCreator
-  public FragmentEncoding(@JsonProperty("fragments") final List<PlanFragmentEncoding> fragments) {
+  public SubQueryEncoding(@JsonProperty("fragments") final List<PlanFragmentEncoding> fragments) {
     this.fragments = fragments;
   }
 
   @Override
   public MetaTask getTask() {
-    return new JsonFragment(fragments);
+    return new JsonSubQuery(fragments);
   }
 
   @Override

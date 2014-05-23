@@ -9,10 +9,9 @@ import com.google.common.base.Verify;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
-import edu.washington.escience.myria.parallel.meta.MetaTask;
 
 /**
- * Keeps track of all the queries that are currently executing on the Server.
+ * Keeps track of all the state (statistics, subqueries, etc.) for a single Myria query.
  */
 public final class QueryState {
   /** The id of this query. */
@@ -21,23 +20,23 @@ public final class QueryState {
   private long subqueryId;
   /** The status of the query. Must be kept synchronized. */
   private Status status;
-  /** The query tasks to be executed. */
-  private final LinkedList<QueryTask> taskQ;
+  /** The subqueries to be executed. */
+  private final LinkedList<SubQuery> subQueryQ;
   /** The meta tasks to be executed. */
   private final LinkedList<MetaTask> metaQ;
   /** The execution statistics about this query. */
-  private final QueryExecutionStatistics executionStats;
-  /** The currently-executing task. */
-  private QueryTask currentTask;
+  private final ExecutionStatistics executionStats;
+  /** The currently-executing subquery. */
+  private SubQuery currentSubQuery;
   /** The server. */
   private final Server server;
   /** The message explaining why a query failed. */
   private String message;
   /** The future for this query. */
-  private final FullQueryFuture future;
+  private final QueryFuture future;
 
   /**
-   * Construct a new QueryState object for this query.
+   * Construct a new {@link QueryState} object for this query.
    * 
    * @param queryId the id of this query
    * @param plan the execution plan
@@ -48,12 +47,12 @@ public final class QueryState {
     this.queryId = queryId;
     subqueryId = 0;
     status = Status.ACCEPTED;
-    executionStats = new QueryExecutionStatistics();
-    taskQ = new LinkedList<>();
+    executionStats = new ExecutionStatistics();
+    subQueryQ = new LinkedList<>();
     metaQ = new LinkedList<>();
     metaQ.add(plan);
     message = null;
-    future = FullQueryFuture.create(queryId);
+    future = QueryFuture.create(queryId);
   }
 
   /**
@@ -82,54 +81,54 @@ public final class QueryState {
    * @return <code>true</code> if this query has finished, and <code>false</code> otherwise
    */
   public boolean isDone() {
-    return taskQ.isEmpty() && metaQ.isEmpty();
+    return subQueryQ.isEmpty() && metaQ.isEmpty();
   }
 
   /**
-   * Returns the task in this query that is currently executing, or null if no task is running.
+   * Returns the {@link SubQuery} that is currently executing, or <code>null</code> if nothing is running.
    * 
-   * @return the task in this query that is currently executing, or null if no task is running
+   * @return the {@link SubQuery} that is currently executing, or <code>null</code> if nothing is running
    */
-  public QueryTask getCurrentTask() {
-    return currentTask;
+  public SubQuery getCurrentSubQuery() {
+    return currentSubQuery;
   }
 
   /**
-   * Generates and returns the next task to run.
+   * Generates and returns the next {@link SubQuery} to run.
    * 
-   * @return the next task to run
+   * @return the next {@link SubQuery} to run
    * @throws DbException if there is an error
    */
-  public QueryTask nextTask() throws DbException {
-    Preconditions.checkState(currentTask == null, "must call finishTask before calling nextTask");
+  public SubQuery nextSubQuery() throws DbException {
+    Preconditions.checkState(currentSubQuery == null, "must call finishSubQuery before calling nextSubQuery");
     if (isDone()) {
       return null;
     }
-    if (!taskQ.isEmpty()) {
-      currentTask = taskQ.removeFirst();
-      currentTask.setTaskId(new QueryTaskId(queryId, subqueryId));
+    if (!subQueryQ.isEmpty()) {
+      currentSubQuery = subQueryQ.removeFirst();
+      currentSubQuery.setSubQueryId(new SubQueryId(queryId, subqueryId));
       ++subqueryId;
-      return currentTask;
+      return currentSubQuery;
     }
-    metaQ.getFirst().instantiate(metaQ, taskQ, server);
+    metaQ.getFirst().instantiate(metaQ, subQueryQ, server);
     /*
-     * The above line may have emptied metaQ, mucked with taskQ, not sure. So just recurse to make sure we do the right
-     * thing.
+     * The above line may have emptied metaQ, mucked with subQueryQ, not sure. So just recurse to make sure we do the
+     * right thing.
      */
-    return nextTask();
+    return nextSubQuery();
   }
 
   /**
-   * Mark the current task as finished.
+   * Mark the current {@link SubQuery} as finished.
    */
-  public void finishTask() {
-    currentTask = null;
+  public void finishSubQuery() {
+    currentSubQuery = null;
   }
 
   /**
-   * Returns the time this query started, in ISO8601 format, or null if the query has not yet been started.
+   * Returns the time this query started, in ISO8601 format, or <code>null</code> if the query has not yet been started.
    * 
-   * @return the time this query started, in ISO8601 format, or null if the query has not yet been started
+   * @return the time this query started, in ISO8601 format, or <code>null</code> if the query has not yet been started
    */
   public String getStartTime() {
     return executionStats.getStartTime();
@@ -139,7 +138,7 @@ public final class QueryState {
    * Set the time this query started to now in ISO8601 format.
    */
   public void markStart() {
-    executionStats.markQueryStart();
+    executionStats.markStart();
   }
 
   /**
@@ -168,14 +167,14 @@ public final class QueryState {
    * Set the time this query ended to now in ISO8601 format.
    */
   private void markEnd() {
-    Verify.verify(currentTask == null, "expect current task to be null when query ends");
-    executionStats.markQueryEnd();
+    Verify.verify(currentSubQuery == null, "expect current subquery to be null when query ends");
+    executionStats.markEnd();
   }
 
   /**
-   * Returns the time this query ended, in ISO8601 format, or null if the query has not yet ended.
+   * Returns the time this query ended, in ISO8601 format, or <code>null</code> if the query has not yet ended.
    * 
-   * @return the time this query ended, in ISO8601 format, or null if the query has not yet ended
+   * @return the time this query ended, in ISO8601 format, or <code>null</code> if the query has not yet ended
    */
   public String getEndTime() {
     return executionStats.getEndTime();
@@ -204,7 +203,7 @@ public final class QueryState {
    * 
    * @return the future on the execution of this query
    */
-  public FullQueryFuture getFuture() {
+  public QueryFuture getFuture() {
     return future;
   }
 

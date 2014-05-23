@@ -7,23 +7,23 @@ import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import edu.washington.escience.myria.api.encoding.MyriaApiEncoding;
-import edu.washington.escience.myria.parallel.meta.MetaTask;
+import edu.washington.escience.myria.parallel.MetaTask;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
-    @Type(name = "Fragment", value = FragmentEncoding.class), @Type(name = "Sequence", value = SequenceEncoding.class), })
-public abstract class MetaTaskEncoding extends MyriaApiEncoding {
+    @Type(name = "SubQuery", value = SubQueryEncoding.class), @Type(name = "Sequence", value = SequenceEncoding.class), })
+public abstract class SubPlanEncoding extends MyriaApiEncoding {
   /**
-   * Turn this MetaTaskEncoding into a {@link MetaTask}.
+   * Generate a {@link MetaTask} from this encoding.
    * 
-   * @return the {@link MetaTask} corresponding to this MetaTaskEncoding.
+   * @return the {@link MetaTask} corresponding to this encoding.
    */
   public abstract MetaTask getTask();
 
   /**
-   * Return the set of workers requested by the client for this query.
+   * Return the set of workers requested by the client for this subplan.
    * 
-   * @return the set of workers requested by the client for this query.
+   * @return the set of workers requested by the client for this subplan.
    */
   public abstract Set<Integer> getWorkers();
 }

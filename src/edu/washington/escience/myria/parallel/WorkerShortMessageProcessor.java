@@ -62,17 +62,17 @@ public final class WorkerShortMessageProcessor extends AttachmentableAdapter imp
    * @return if the message is successfully processed.
    * */
   private boolean processQueryMessage(final Channel ch, final int remoteID, final QueryMessage qm) {
-    QueryTaskId taskId = new QueryTaskId(qm.getQueryId(), qm.getSubqueryId());
-    WorkerQueryPartition q = null;
+    SubQueryId subQueryId = new SubQueryId(qm.getQueryId(), qm.getSubqueryId());
+    WorkerSubQuery q = null;
     boolean result = true;
     switch (qm.getType()) {
       case QUERY_START:
       case QUERY_KILL:
       case QUERY_RECOVER:
-        q = ownerWorker.getActiveQueries().get(taskId);
+        q = ownerWorker.getActiveQueries().get(subQueryId);
         if (q == null) {
           if (LOGGER.isErrorEnabled()) {
-            LOGGER.error("In receiving message {}, unknown query id: {}, current active queries are: {}", qm, taskId,
+            LOGGER.error("In receiving message {}, unknown query id: {}, current active queries are: {}", qm, subQueryId,
                 ownerWorker.getActiveQueries().keySet());
           }
         } else {
@@ -98,8 +98,8 @@ public final class WorkerShortMessageProcessor extends AttachmentableAdapter imp
         ObjectInputStream osis = null;
         try {
           osis = new ObjectInputStream(new ByteArrayInputStream(qm.getQuery().getQuery().toByteArray()));
-          final SingleQueryPlanWithArgs operators = (SingleQueryPlanWithArgs) (osis.readObject());
-          q = new WorkerQueryPartition(operators, taskId, ownerWorker);
+          final SubQueryPlan operators = (SubQueryPlan) (osis.readObject());
+          q = new WorkerSubQuery(operators, subQueryId, ownerWorker);
           result = ownerWorker.getQueryQueue().offer(q);
           if (!result) {
             break;

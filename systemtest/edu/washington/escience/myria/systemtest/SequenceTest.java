@@ -32,9 +32,9 @@ import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
 import edu.washington.escience.myria.api.encoding.TableScanEncoding;
-import edu.washington.escience.myria.api.encoding.meta.FragmentEncoding;
-import edu.washington.escience.myria.api.encoding.meta.MetaTaskEncoding;
 import edu.washington.escience.myria.api.encoding.meta.SequenceEncoding;
+import edu.washington.escience.myria.api.encoding.meta.SubPlanEncoding;
+import edu.washington.escience.myria.api.encoding.meta.SubQueryEncoding;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.io.ByteArraySource;
@@ -54,11 +54,11 @@ import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
 import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
 import edu.washington.escience.myria.operator.network.partition.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
-import edu.washington.escience.myria.parallel.FullQueryFuture;
-import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
-import edu.washington.escience.myria.parallel.meta.Fragment;
-import edu.washington.escience.myria.parallel.meta.MetaTask;
-import edu.washington.escience.myria.parallel.meta.Sequence;
+import edu.washington.escience.myria.parallel.MetaTask;
+import edu.washington.escience.myria.parallel.QueryFuture;
+import edu.washington.escience.myria.parallel.Sequence;
+import edu.washington.escience.myria.parallel.SubQuery;
+import edu.washington.escience.myria.parallel.SubQueryPlan;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.JsonAPIUtils;
@@ -85,12 +85,12 @@ public class SequenceTest extends SystemTestBase {
     final DbInsert insert = new DbInsert(cc, storage, true);
 
     /* First task: create, shuffle, insert the tuples. */
-    Map<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<>();
+    Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
     for (int i : workerIDs) {
-      workerPlans.put(i, new SingleQueryPlanWithArgs(new RootOperator[] { insert, sp }));
+      workerPlans.put(i, new SubQueryPlan(new RootOperator[] { insert, sp }));
     }
-    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(new EOSSource()));
-    MetaTask first = new Fragment(serverPlan, workerPlans);
+    SubQueryPlan serverPlan = new SubQueryPlan(new SinkRoot(new EOSSource()));
+    MetaTask first = new SubQuery(serverPlan, workerPlans);
 
     /* Second task: count the number of tuples. */
     DbQueryScan scan = new DbQueryScan(storage, testSchema);
@@ -105,9 +105,9 @@ public class SequenceTest extends SystemTestBase {
     SinkRoot root = new SinkRoot(queueStore);
     workerPlans = new HashMap<>();
     for (int i : workerIDs) {
-      workerPlans.put(i, new SingleQueryPlanWithArgs(coll));
+      workerPlans.put(i, new SubQueryPlan(coll));
     }
-    MetaTask second = new Fragment(new SingleQueryPlanWithArgs(root), workerPlans);
+    MetaTask second = new SubQuery(new SubQueryPlan(root), workerPlans);
 
     /* Combine first and second into two queries, one after the other. */
     MetaTask all = new Sequence(ImmutableList.of(first, second));
@@ -117,7 +117,7 @@ public class SequenceTest extends SystemTestBase {
     encoding.profilingMode = false;
     encoding.rawDatalog = "test";
     encoding.logicalRa = "test";
-    FullQueryFuture qf = server.submitQuery(encoding, all);
+    QueryFuture qf = server.submitQuery(encoding, all);
     long queryId = qf.getQueryId();
     /* Wait for the query to finish, succeed, and check the result. */
     qf.get();
@@ -163,7 +163,7 @@ public class SequenceTest extends SystemTestBase {
     insert.relationKey = interKey;
     PlanFragmentEncoding fragment = new PlanFragmentEncoding();
     fragment.operators = ImmutableList.of(scan, apply, insert);
-    FragmentEncoding firstJson = new FragmentEncoding(ImmutableList.of(fragment));
+    SubQueryEncoding firstJson = new SubQueryEncoding(ImmutableList.of(fragment));
 
     /* Second job: Sum the values in that column. */
     // Fragment 1: scan and produce
@@ -190,11 +190,11 @@ public class SequenceTest extends SystemTestBase {
     insert.relationKey = resultKey;
     PlanFragmentEncoding fragment2 = new PlanFragmentEncoding();
     fragment2.operators = ImmutableList.of(cons, agg, insert);
-    FragmentEncoding secondJson = new FragmentEncoding(ImmutableList.of(fragment, fragment2));
+    SubQueryEncoding secondJson = new SubQueryEncoding(ImmutableList.of(fragment, fragment2));
 
     // Sequence of firstJson, secondJson
     SequenceEncoding seq = new SequenceEncoding();
-    seq.tasks = ImmutableList.<MetaTaskEncoding> of(firstJson, secondJson);
+    seq.tasks = ImmutableList.<SubPlanEncoding> of(firstJson, secondJson);
 
     QueryEncoding query = new QueryEncoding();
     query.plan = seq;

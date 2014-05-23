@@ -5,7 +5,7 @@ import com.google.common.base.Joiner;
 /**
  * A struct that holds a composite identifier for a query.
  */
-public final class QueryTaskId {
+public final class SubQueryId {
   /** The overall query. */
   private final long queryId;
   /** The subquery. */
@@ -31,7 +31,7 @@ public final class QueryTaskId {
    * @param queryId the query
    * @param subqueryId the subquery
    */
-  public QueryTaskId(final long queryId, final long subqueryId) {
+  public SubQueryId(final long queryId, final long subqueryId) {
     this.queryId = queryId;
     this.subqueryId = subqueryId;
   }
@@ -46,7 +46,7 @@ public final class QueryTaskId {
     if (o == null || o.getClass() != getClass()) {
       return false;
     }
-    QueryTaskId other = (QueryTaskId) o;
+    SubQueryId other = (SubQueryId) o;
     return other.queryId == queryId && other.subqueryId == subqueryId;
   }
 

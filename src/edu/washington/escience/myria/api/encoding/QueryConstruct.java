@@ -27,7 +27,7 @@ import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.operator.network.EOSController;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.Server;
-import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
+import edu.washington.escience.myria.parallel.SubQueryPlan;
 import edu.washington.escience.myria.util.MyriaUtils;
 
 public class QueryConstruct {
@@ -43,7 +43,7 @@ public class QueryConstruct {
    * @return the physical plan
    * @throws CatalogException if there is an error instantiating the plan
    */
-  public static Map<Integer, SingleQueryPlanWithArgs> instantiate(List<PlanFragmentEncoding> fragments,
+  public static Map<Integer, SubQueryPlan> instantiate(List<PlanFragmentEncoding> fragments,
       final Server server) throws CatalogException {
     /* First, we need to know which workers run on each plan. */
     setupWorkersForFragments(fragments, server);
@@ -59,7 +59,7 @@ public class QueryConstruct {
       }
     }
 
-    Map<Integer, SingleQueryPlanWithArgs> plan = new HashMap<Integer, SingleQueryPlanWithArgs>();
+    Map<Integer, SubQueryPlan> plan = new HashMap<Integer, SubQueryPlan>();
     HashMap<PlanFragmentEncoding, RootOperator> instantiatedFragments =
         new HashMap<PlanFragmentEncoding, RootOperator>();
     HashMap<String, Operator> allOperators = new HashMap<String, Operator>();
@@ -67,9 +67,9 @@ public class QueryConstruct {
       RootOperator op =
           instantiateFragment(fragment, server, instantiatedFragments, op2OwnerFragmentMapping, allOperators);
       for (Integer worker : fragment.workers) {
-        SingleQueryPlanWithArgs workerPlan = plan.get(worker);
+        SubQueryPlan workerPlan = plan.get(worker);
         if (workerPlan == null) {
-          workerPlan = new SingleQueryPlanWithArgs();
+          workerPlan = new SubQueryPlan();
           plan.put(worker, workerPlan);
         }
         workerPlan.addRootOp(op);
@@ -85,9 +85,9 @@ public class QueryConstruct {
    * @param ftMode the fault tolerance mode under which the query will be executed
    * @param profilingMode <code>true</code> if the query should be profiled
    */
-  public static void setQueryExecutionOptions(Map<Integer, SingleQueryPlanWithArgs> plans, final FTMODE ftMode,
+  public static void setQueryExecutionOptions(Map<Integer, SubQueryPlan> plans, final FTMODE ftMode,
       final boolean profilingMode) {
-    for (SingleQueryPlanWithArgs plan : plans.values()) {
+    for (SubQueryPlan plan : plans.values()) {
       plan.setFTMode(ftMode);
       plan.setProfilingMode(profilingMode);
     }

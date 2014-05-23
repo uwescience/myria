@@ -12,8 +12,6 @@
  */
 package edu.washington.escience.myria.util.concurrent;
 
-import edu.washington.escience.myria.parallel.QueryFuture;
-
 /**
  * Listens to the progress of a time-consuming I/O operation such as a large file transfer. If this listener is added to
  * a {@link OperationFuture} of an I/O operation that supports progress notification, the listener's
@@ -33,9 +31,9 @@ import edu.washington.escience.myria.parallel.QueryFuture;
 public interface OperationFutureProgressListener extends OperationFutureListener {
 
   /**
-   * Invoked when the I/O operation associated with the {@link QueryFuture} has been progressed.
+   * Invoked when the I/O operation associated with the {@link LocalSubQueryFuture} has been progressed.
    * 
-   * @param future the source {@link QueryFuture} which called this callback
+   * @param future the source {@link OperationFuture} which called this callback
    * @param amount the amount of work completed by the most recent action.
    * @param current the total amount of work currently completed
    * @param total the total amount of work need to be completed

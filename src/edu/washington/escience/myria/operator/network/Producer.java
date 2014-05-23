@@ -21,7 +21,7 @@ import edu.washington.escience.myria.operator.SimpleAppender;
 import edu.washington.escience.myria.operator.StreamingState;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.QueryExecutionMode;
-import edu.washington.escience.myria.parallel.TaskResourceManager;
+import edu.washington.escience.myria.parallel.LocalFragmentResourceManager;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.IPCEvent;
 import edu.washington.escience.myria.parallel.ipc.IPCEventListener;
@@ -43,7 +43,7 @@ public abstract class Producer extends RootOperator {
   /**
    * The worker this operator is located at.
    */
-  private transient TaskResourceManager taskResourceManager;
+  private transient LocalFragmentResourceManager taskResourceManager;
 
   /**
    * the netty channels doing the true IPC IO.
@@ -193,7 +193,7 @@ public abstract class Producer extends RootOperator {
   @SuppressWarnings("unchecked")
   @Override
   public final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    taskResourceManager = (TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
+    taskResourceManager = (LocalFragmentResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER);
     partitionBuffers = new TupleBatchBuffer[numOfPartition];
     for (int i = 0; i < numOfPartition; i++) {
       partitionBuffers[i] = new TupleBatchBuffer(getSchema());
@@ -204,7 +204,7 @@ public abstract class Producer extends RootOperator {
     localizedOutputIDs = new StreamIOChannelID[outputIDs.length];
     for (int i = 0; i < outputIDs.length; i++) {
       if (outputIDs[i].getRemoteID() == IPCConnectionPool.SELF_IPC_ID) {
-        localizedOutputIDs[i] = new StreamIOChannelID(outputIDs[i].getStreamID(), taskResourceManager.getMyWorkerID());
+        localizedOutputIDs[i] = new StreamIOChannelID(outputIDs[i].getStreamID(), taskResourceManager.getNodeId());
       } else {
         localizedOutputIDs[i] = outputIDs[i];
       }
@@ -229,13 +229,13 @@ public abstract class Producer extends RootOperator {
     ioChannels[i].addListener(StreamOutputChannel.OUTPUT_DISABLED, new IPCEventListener() {
       @Override
       public void triggered(final IPCEvent event) {
-        taskResourceManager.getOwnerTask().notifyOutputDisabled(localizedOutputIDs[i]);
+        taskResourceManager.getFragment().notifyOutputDisabled(localizedOutputIDs[i]);
       }
     });
     ioChannels[i].addListener(StreamOutputChannel.OUTPUT_RECOVERED, new IPCEventListener() {
       @Override
       public void triggered(final IPCEvent event) {
-        taskResourceManager.getOwnerTask().notifyOutputEnabled(localizedOutputIDs[i]);
+        taskResourceManager.getFragment().notifyOutputEnabled(localizedOutputIDs[i]);
       }
     });
     ioChannelsAvail[i] = true;
@@ -339,7 +339,7 @@ public abstract class Producer extends RootOperator {
    * */
   protected final void writePartitionsIntoChannels(final boolean usingTimeout, final int[][] channelIndices,
       final TupleBatch[] partitions) {
-    FTMODE mode = taskResourceManager.getOwnerTask().getOwnerQuery().getFTMode();
+    FTMODE mode = taskResourceManager.getFragment().getLocalSubQuery().getFTMode();
 
     if (totallyLocal) {
       if (partitions != null) {
@@ -466,7 +466,7 @@ public abstract class Producer extends RootOperator {
   /**
    * @return The resource manager of the running task.
    * */
-  protected TaskResourceManager getTaskResourceManager() {
+  protected LocalFragmentResourceManager getTaskResourceManager() {
     return taskResourceManager;
   }
 
@@ -532,7 +532,7 @@ public abstract class Producer extends RootOperator {
       setEOI(true);
       child.setEOI(false);
     } else if (child.eos()) {
-      if (taskResourceManager.getOwnerTask().getOwnerQuery().getFTMode().equals(FTMODE.rejoin)) {
+      if (taskResourceManager.getFragment().getLocalSubQuery().getFTMode().equals(FTMODE.rejoin)) {
         for (LinkedList<TupleBatch> tbs : pendingTuplesToSend) {
           if (tbs.size() > 0) {
             // due to failure, buffers are not empty, this task needs to be executed again to push these TBs out when

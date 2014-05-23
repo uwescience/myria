@@ -18,7 +18,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.operator.LeafOperator;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.QueryExecutionMode;
-import edu.washington.escience.myria.parallel.TaskResourceManager;
+import edu.washington.escience.myria.parallel.LocalFragmentResourceManager;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.IPCMessage;
 import edu.washington.escience.myria.parallel.ipc.StreamIOChannelID;
@@ -82,7 +82,7 @@ public class Consumer extends LeafOperator {
    * The worker this operator is located at.
    * 
    */
-  private transient TaskResourceManager taskResourceManager;
+  private transient LocalFragmentResourceManager taskResourceManager;
 
   /**
    * @return my exchange channels.
@@ -148,7 +148,7 @@ public class Consumer extends LeafOperator {
     }
     workerIdToIndex = new TUnmodifiableIntIntMap(tmp);
 
-    taskResourceManager = (TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
+    taskResourceManager = (LocalFragmentResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER);
     nonBlockingExecution =
         (QueryExecutionMode) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE) == QueryExecutionMode.NON_BLOCKING;;
   }
@@ -207,10 +207,10 @@ public class Consumer extends LeafOperator {
 
     int numExpecting = sourceWorkers.size();
 
-    if (taskResourceManager.getOwnerTask().getOwnerQuery().getFTMode().equals(FTMODE.abandon)) {
+    if (taskResourceManager.getFragment().getLocalSubQuery().getFTMode().equals(FTMODE.abandon)) {
       Set<Integer> expectingWorkers = new HashSet<Integer>();
       expectingWorkers.addAll(sourceWorkers);
-      expectingWorkers.removeAll(taskResourceManager.getOwnerTask().getOwnerQuery().getMissingWorkers());
+      expectingWorkers.removeAll(taskResourceManager.getFragment().getLocalSubQuery().getMissingWorkers());
       numExpecting = expectingWorkers.size();
     }
 

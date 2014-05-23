@@ -10,42 +10,34 @@ import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
- * Non-blocking driving code of a sub-query.
- * 
- * Task state could be:<br>
- * 1) In execution.<br>
- * 2) In dormant.<br>
- * 3) Already finished.<br>
- * 4) Has not started.
- * */
-public final class TaskResourceManager {
+ * Holds the IPC resources for a specific fragment.
+ */
+public final class LocalFragmentResourceManager {
 
   /** The logger for this class. */
-  static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(TaskResourceManager.class.getName());
+  static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(LocalFragmentResourceManager.class);
 
   /**
    * The ipc pool.
-   * */
+   */
   private final IPCConnectionPool ipcPool;
 
   /**
-   * All output channels owned by the owner task.
-   * */
+   * All output channels owned by this fragment.
+   */
   private final Set<StreamOutputChannel<TupleBatch>> outputChannels;
 
-  /**
-   * owner task.
-   * */
-  private final QuerySubTreeTask ownerTask;
+  /** The corresponding fragment. */
+  private final LocalFragment fragment;
 
   /**
    * @param connectionPool connection pool.
-   * @param ownerTask owner task
+   * @param fragment the corresponding fragment
    */
-  public TaskResourceManager(final IPCConnectionPool connectionPool, final QuerySubTreeTask ownerTask) {
+  public LocalFragmentResourceManager(final IPCConnectionPool connectionPool, final LocalFragment fragment) {
     ipcPool = connectionPool;
     outputChannels = Sets.newSetFromMap(new ConcurrentHashMap<StreamOutputChannel<TupleBatch>, Boolean>());
-    this.ownerTask = ownerTask;
+    this.fragment = fragment;
   }
 
   /**
@@ -54,7 +46,7 @@ public final class TaskResourceManager {
    * @param remoteWorkerID remoteWorker
    * @param operatorID remote receive operator
    * @return a output channel.
-   * */
+   */
   public StreamOutputChannel<TupleBatch> startAStream(final int remoteWorkerID, final ExchangePairID operatorID) {
     return this.startAStream(remoteWorkerID, operatorID.getLong());
   }
@@ -65,7 +57,7 @@ public final class TaskResourceManager {
    * @param remoteWorkerID remoteWorker
    * @param streamID remote receive operator
    * @return a output channel.
-   * */
+   */
   public StreamOutputChannel<TupleBatch> startAStream(final int remoteWorkerID, final long streamID) {
     StreamOutputChannel<TupleBatch> output = ipcPool.reserveLongTermConnection(remoteWorkerID, streamID);
     outputChannels.add(output);
@@ -73,19 +65,19 @@ public final class TaskResourceManager {
   }
 
   /**
-   * remove an output channel from outputChannels. Need it when a recovery task is finished and needs to detach & attach
+   * Remove an output channel from outputChannels. Need it when a recovery task is finished and needs to detach & attach
    * its channel to the original producer. In this case, the channel shouldn't be released when the cleanup() method of
    * the recovery task is called.
    * 
    * @param channel the channel to be removed.
-   * */
+   */
   public void removeOutputChannel(final StreamOutputChannel<TupleBatch> channel) {
     outputChannels.remove(channel);
   }
 
   /**
    * clean up, release all resources.
-   * */
+   */
   public void cleanup() {
     for (StreamOutputChannel<TupleBatch> out : outputChannels) {
       out.release();
@@ -93,17 +85,17 @@ public final class TaskResourceManager {
   }
 
   /**
-   * @return the worker/master id where the task resides.
-   * */
-  public int getMyWorkerID() {
+   * @return the ID of the node (worker or master) on which this fragment is executing.
+   */
+  public int getNodeId() {
     return ipcPool.getMyIPCID();
   }
 
   /**
-   * @return owner task.
-   * */
-  public QuerySubTreeTask getOwnerTask() {
-    return ownerTask;
+   * @return the corresponding fragment.
+   */
+  public LocalFragment getFragment() {
+    return fragment;
   }
 
 }

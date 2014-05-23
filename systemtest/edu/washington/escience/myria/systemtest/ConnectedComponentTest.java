@@ -46,7 +46,7 @@ import edu.washington.escience.myria.operator.network.partition.PartitionFunctio
 import edu.washington.escience.myria.operator.network.partition.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.QueryState;
-import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
+import edu.washington.escience.myria.parallel.SubQueryPlan;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestUtils;
@@ -246,14 +246,14 @@ public class ConnectedComponentTest extends SystemTestBase {
       }
     }
 
-    HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
-    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(plan1.toArray(new RootOperator[plan1.size()])));
-    workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(plan2.toArray(new RootOperator[plan2.size()])));
+    HashMap<Integer, SubQueryPlan> workerPlans = new HashMap<Integer, SubQueryPlan>();
+    workerPlans.put(workerIDs[0], new SubQueryPlan(plan1.toArray(new RootOperator[plan1.size()])));
+    workerPlans.put(workerIDs[1], new SubQueryPlan(plan2.toArray(new RootOperator[plan2.size()])));
 
     final CollectConsumer serverCollect = new CollectConsumer(table1Schema, serverOpId, workerIDs);
     final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
-    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
+    SubQueryPlan serverPlan = new SubQueryPlan(new SinkRoot(queueStore));
 
     if (!failure) {
       server.submitQuery("", "", "", serverPlan, workerPlans, false).get();

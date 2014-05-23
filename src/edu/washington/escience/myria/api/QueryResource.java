@@ -26,7 +26,7 @@ import com.google.common.base.Objects;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
-import edu.washington.escience.myria.parallel.FullQueryFuture;
+import edu.washington.escience.myria.parallel.QueryFuture;
 import edu.washington.escience.myria.parallel.Server;
 
 /**
@@ -86,7 +86,7 @@ public final class QueryResource {
     query.validate();
 
     /* Start the query, and get its Server-assigned Query ID */
-    FullQueryFuture qf;
+    QueryFuture qf;
     try {
       qf = server.submitQuery(query, query.plan.getTask());
     } catch (MyriaApiException e) {

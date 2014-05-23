@@ -18,29 +18,31 @@ import edu.washington.escience.myria.util.concurrent.OperationFuture;
 import edu.washington.escience.myria.util.concurrent.OperationFutureListener;
 
 /**
- * Listens to the result of a {@link QueryFuture}. The result of the asynchronous {@link Channel} query operation is
- * notified once this listener is added by calling {@link QueryFuture#addListener(QueryFutureListener)}.
+ * Listens to the result of a {@link LocalSubQueryFuture}. The result of the asynchronous {@link Channel} query
+ * operation is notified once this listener is added by calling
+ * {@link LocalSubQueryFuture#addListener(LocalSubQueryFutureListener)}.
  * 
  * <h3>Return the control to the caller quickly</h3>
  * 
- * {@link #operationComplete(QueryFuture)} is directly called by an query thread. Therefore, performing a time consuming
- * task or a blocking operation in the handler method can cause an unexpected pause during query. If you need to perform
- * a blocking operation on query completion, try to execute the operation in a different thread using a thread pool.
+ * {@link #operationComplete(LocalSubQueryFuture)} is directly called by a subquery thread. Therefore, performing a time
+ * consuming task or a blocking operation in the handler method can cause an unexpected pause during execution. If you
+ * need to perform a blocking operation on subquery completion, try to execute the operation in a different thread using
+ * a thread pool.
  */
-public abstract class QueryFutureListener implements OperationFutureListener {
+public abstract class LocalSubQueryFutureListener implements OperationFutureListener {
 
   /**
-   * Invoked when the query operation associated with the {@link QueryFuture} has been completed.
+   * Invoked when the subquery associated with the {@link LocalSubQueryFuture} has been completed.
    * 
-   * @param future the source {@link QueryFuture} which called this callback
+   * @param future the source {@link LocalSubQueryFuture} which called this callback
    * @throws Exception if any error occurs. But note that any uncaught exception caused by this method will be discarded
    *           silently. Do the exception handling in the code by yourself.
    */
-  public abstract void operationComplete(QueryFuture future) throws Exception;
+  public abstract void operationComplete(LocalSubQueryFuture future) throws Exception;
 
   @Override
   public final void operationComplete(final OperationFuture future) throws Exception {
-    this.operationComplete((QueryFuture) future);
+    this.operationComplete((LocalSubQueryFuture) future);
   }
 
 }

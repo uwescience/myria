@@ -1,4 +1,4 @@
-package edu.washington.escience.myria.parallel.meta;
+package edu.washington.escience.myria.parallel;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -15,46 +15,44 @@ import edu.washington.escience.myria.api.encoding.QueryConstruct;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.operator.EOSSource;
 import edu.washington.escience.myria.operator.SinkRoot;
-import edu.washington.escience.myria.parallel.QueryTask;
-import edu.washington.escience.myria.parallel.Server;
-import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 
 /**
- * A meta-task that runs a single plan fragment. Note that a {@link JsonFragment} cannot have a meta-task as its plan.
+ * A {@link MetaTask} that runs a single subquery. Note that a {@link JsonSubQuery} cannot have a {@link MetaTask} as a
+ * child, but rather can only accept a physical JSON subquery as a set of fragments.
  */
-public final class JsonFragment extends MetaTask {
+public final class JsonSubQuery extends MetaTask {
   /** The json query to be executed. */
-  private final List<PlanFragmentEncoding> plans;
+  private final List<PlanFragmentEncoding> fragments;
 
   /**
-   * Construct a {@link MetaTask} that runs the given plan fragment. The plans will be instantiated using
+   * Construct a {@link MetaTask} that runs the given subquery. The subquery will be instantiated using
    * {@link QueryConstruct#instantiate(List, edu.washington.escience.myria.parallel.Server)}.
    * 
-   * @param plans the JSON query to be executed
+   * @param fragments the JSON query to be executed, broken into fragments
    * @see QueryConstruct#instantiate(List, edu.washington.escience.myria.parallel.Server)
    */
-  public JsonFragment(final List<PlanFragmentEncoding> plans) {
-    this.plans = Objects.requireNonNull(plans, "plans");
+  public JsonSubQuery(final List<PlanFragmentEncoding> fragments) {
+    this.fragments = Objects.requireNonNull(fragments, "fragments");
   }
 
   @Override
-  public void instantiate(final LinkedList<MetaTask> metaQ, final LinkedList<QueryTask> taskQ, final Server server)
+  public void instantiate(final LinkedList<MetaTask> metaQ, final LinkedList<SubQuery> subQueryQ, final Server server)
       throws DbException {
     MetaTask task = metaQ.peekFirst();
     Verify.verify(task == this, "this Fragment %s should be the first object on the queue, not %s!", this, task);
     metaQ.removeFirst();
 
-    Map<Integer, SingleQueryPlanWithArgs> allPlans;
+    Map<Integer, SubQueryPlan> allPlans;
     try {
-      allPlans = QueryConstruct.instantiate(plans, server);
+      allPlans = QueryConstruct.instantiate(fragments, server);
     } catch (CatalogException e) {
-      throw new DbException("Error instantiating JsonFragment", e);
+      throw new DbException("Error instantiating JsonSubQuery", e);
     }
-    SingleQueryPlanWithArgs serverPlan = allPlans.get(MyriaConstants.MASTER_ID);
-    Map<Integer, SingleQueryPlanWithArgs> workerPlans;
+    SubQueryPlan serverPlan = allPlans.get(MyriaConstants.MASTER_ID);
+    Map<Integer, SubQueryPlan> workerPlans;
     if (serverPlan != null) {
       workerPlans = new HashMap<>();
-      for (Map.Entry<Integer, SingleQueryPlanWithArgs> entry : allPlans.entrySet()) {
+      for (Map.Entry<Integer, SubQueryPlan> entry : allPlans.entrySet()) {
         if (entry.getKey() != MyriaConstants.MASTER_ID) {
           workerPlans.put(entry.getKey(), entry.getValue());
         }
@@ -62,9 +60,9 @@ public final class JsonFragment extends MetaTask {
     } else {
       workerPlans = allPlans;
       /* Create the empty server plan. TODO why do we need this? */
-      serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(new EOSSource()));
+      serverPlan = new SubQueryPlan(new SinkRoot(new EOSSource()));
     }
 
-    taskQ.addFirst(new QueryTask(serverPlan, workerPlans));
+    subQueryQ.addFirst(new SubQuery(serverPlan, workerPlans));
   }
 }

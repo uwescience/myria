@@ -24,7 +24,7 @@ import edu.washington.escience.myria.operator.failures.DelayInjector;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
-import edu.washington.escience.myria.parallel.FullQueryFuture;
+import edu.washington.escience.myria.parallel.QueryFuture;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestUtils;
@@ -78,7 +78,7 @@ public class QueryKillTest extends SystemTestBase {
 
     final SinkRoot serverPlan = new SinkRoot(serverCollect);
 
-    FullQueryFuture qf = server.submitQueryPlan(serverPlan, workerPlans);
+    QueryFuture qf = server.submitQueryPlan(serverPlan, workerPlans);
     // wait 5 seconds, worker0 should have completed.
     try {
       Uninterruptibles.getUninterruptibly(qf, 5, TimeUnit.SECONDS);

@@ -30,7 +30,7 @@ import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.StreamingStateWrapper;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.parallel.QueryExecutionMode;
-import edu.washington.escience.myria.parallel.TaskResourceManager;
+import edu.washington.escience.myria.parallel.LocalFragmentResourceManager;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 public class TwitterSingleNodeJoinSpeedTest {
@@ -49,7 +49,7 @@ public class TwitterSingleNodeJoinSpeedTest {
    * The environment execution variables.
    */
   private final static ImmutableMap<String, Object> execEnvVars = ImmutableMap.<String, Object> of(
-      MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER, new TaskResourceManager(null, null),
+      MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER, new LocalFragmentResourceManager(null, null),
       MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE, QueryExecutionMode.BLOCKING);
 
   /** Whether we were able to copy the data. */

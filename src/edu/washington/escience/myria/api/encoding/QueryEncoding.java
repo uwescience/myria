@@ -8,8 +8,8 @@ import com.google.common.base.Verify;
 
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.api.MyriaApiException;
-import edu.washington.escience.myria.api.encoding.meta.FragmentEncoding;
-import edu.washington.escience.myria.api.encoding.meta.MetaTaskEncoding;
+import edu.washington.escience.myria.api.encoding.meta.SubQueryEncoding;
+import edu.washington.escience.myria.api.encoding.meta.SubPlanEncoding;
 
 /**
  * A JSON-able wrapper for the expected wire message for a query.
@@ -30,7 +30,7 @@ public class QueryEncoding extends MyriaApiEncoding {
   /** The old physical query plan encoding. */
   public List<PlanFragmentEncoding> fragments;
   /** The new meta task query plan encoding. */
-  public MetaTaskEncoding plan;
+  public SubPlanEncoding plan;
 
   @Override
   protected void validateExtra() throws MyriaApiException {
@@ -38,7 +38,7 @@ public class QueryEncoding extends MyriaApiEncoding {
         "exactly one of fragments or plan must be specified");
     /* If they gave us an old plan type, convert it to a new plan type. */
     if (fragments != null) {
-      plan = new FragmentEncoding(fragments);
+      plan = new SubQueryEncoding(fragments);
       fragments = null;
     }
     plan.validate();

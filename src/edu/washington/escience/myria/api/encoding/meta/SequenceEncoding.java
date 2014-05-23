@@ -8,17 +8,17 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.api.encoding.Required;
-import edu.washington.escience.myria.parallel.meta.MetaTask;
-import edu.washington.escience.myria.parallel.meta.Sequence;
+import edu.washington.escience.myria.parallel.MetaTask;
+import edu.washington.escience.myria.parallel.Sequence;
 
-public class SequenceEncoding extends MetaTaskEncoding {
+public class SequenceEncoding extends SubPlanEncoding {
   @Required
-  public List<MetaTaskEncoding> tasks;
+  public List<SubPlanEncoding> tasks;
 
   @Override
   public MetaTask getTask() {
     ImmutableList.Builder<MetaTask> ret = ImmutableList.builder();
-    for (MetaTaskEncoding t : tasks) {
+    for (SubPlanEncoding t : tasks) {
       ret.add(t.getTask());
     }
     return new Sequence(ret.build());
@@ -28,7 +28,7 @@ public class SequenceEncoding extends MetaTaskEncoding {
   public void validateExtra() {
     Preconditions.checkArgument(tasks.size() > 0, "Sequence cannot be empty");
     int i = 0;
-    for (MetaTaskEncoding m : tasks) {
+    for (SubPlanEncoding m : tasks) {
       Preconditions.checkNotNull(m, "task %s/%s", i, tasks.size());
       m.validate();
       ++i;
@@ -38,7 +38,7 @@ public class SequenceEncoding extends MetaTaskEncoding {
   @Override
   public Set<Integer> getWorkers() {
     ImmutableSet.Builder<Integer> ret = ImmutableSet.builder();
-    for (MetaTaskEncoding t : tasks) {
+    for (SubPlanEncoding t : tasks) {
       ret.addAll(t.getWorkers());
     }
     return ret.build();
