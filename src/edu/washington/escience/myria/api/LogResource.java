@@ -114,6 +114,50 @@ public final class LogResource {
   }
 
   /**
+   * @param queryId query id.
+   * @param fragmentId the fragment id.
+   * @param uriInfo the URL of the current request.
+   * @return the range for which we have profiling info
+   * @throws DbException if there is an error in the database.
+   */
+  @GET
+  @Produces(MediaType.TEXT_PLAIN)
+  @Path("range")
+  public Response getRange(@QueryParam("queryId") final Long queryId, @QueryParam("fragmentId") final Long fragmentId,
+      @Context final UriInfo uriInfo) throws DbException {
+    if (queryId == null) {
+      throw new MyriaApiException(Status.BAD_REQUEST, "Query ID missing.");
+    }
+    if (fragmentId == null) {
+      throw new MyriaApiException(Status.BAD_REQUEST, "Fragment ID missing.");
+    }
+
+    ResponseBuilder response = Response.ok();
+    response.type(MediaType.TEXT_PLAIN);
+
+    PipedOutputStream writerOutput = new PipedOutputStream();
+    PipedInputStream input;
+    try {
+      input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
+    } catch (IOException e) {
+      throw new DbException(e);
+    }
+
+    PipedStreamingOutput entity = new PipedStreamingOutput(input);
+    response.entity(entity);
+
+    TupleWriter writer = new CsvTupleWriter(writerOutput);
+
+    try {
+      server.startRangeDataStream(queryId, fragmentId, writer);
+    } catch (IllegalArgumentException e) {
+      throw new MyriaApiException(Status.BAD_REQUEST, e);
+    }
+
+    return response.build();
+  }
+
+  /**
    * Get the number of workers working on a fragment based on profiling logs of a query for the root operators.
    * 
    * @param queryId query id.
