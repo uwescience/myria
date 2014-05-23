@@ -2,6 +2,8 @@ package edu.washington.escience.myria.api.encoding;
 
 import javax.ws.rs.core.Response.Status;
 
+import com.google.common.base.Preconditions;
+
 import edu.washington.escience.myria.api.MyriaApiException;
 import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
 import edu.washington.escience.myria.operator.network.partition.MFMDHashPartitionFunction;
@@ -40,10 +42,7 @@ public class HyperShuffleProducerEncoding extends AbstractProducerEncoding<Gener
     }
     for (int[] partition : cellPartition) {
       for (int cellId : partition) {
-        if (cellId >= getRealWorkerIds().size()) {
-          throw new MyriaApiException(Status.BAD_REQUEST, "cellId in cellPartition must be smaller than worker number "
-              + getRealWorkerIds().size() + "( " + cellId + " is found)");
-        }
+        Preconditions.checkElementIndex(cellId, getRealWorkerIds().size());
       }
     }
 
@@ -52,7 +51,7 @@ public class HyperShuffleProducerEncoding extends AbstractProducerEncoding<Gener
         new MFMDHashPartitionFunction(cellPartition.length, hyperCubeDimensions, hashedColumns, mappedHCDimensions);
 
     return new GenericShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), cellPartition,
-        MyriaUtils.integerCollectionToIntArray(server.getAliveWorkers(numCells)), pf);
+        MyriaUtils.integerCollectionToIntArray(server.getRandomWorkers(numCells)), pf);
   }
 
   @Override
