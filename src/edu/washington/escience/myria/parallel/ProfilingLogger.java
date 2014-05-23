@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
@@ -171,19 +172,13 @@ public class ProfilingLogger {
    * @return the insert into statement
    */
   private String getTransformProfilingDataStatement() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("INSERT INTO ").append(
-        MyriaConstants.PROFILING_RELATION.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)).append("\n");
-    sb.append("SELECT DISTINCT ON (c.queryid, c.fragmentid, c.nanotime) ");
-    sb.append("c.queryid, c.fragmentid, c.opid, c.nanotime as startTime, r.nanotime as endTime, r.numtuples \n");
-    sb.append("FROM ").append(MyriaConstants.PROFILING_RELATION_TMP.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL))
-        .append(" c").append(" ");
-    sb.append("JOIN ").append(MyriaConstants.PROFILING_RELATION_TMP.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL))
-        .append(" r").append("\n");
-    sb.append("ON c.queryid = r.queryid AND c.opid = r.opid AND c.fragmentid = r.fragmentid\n");
-    sb.append("WHERE r.nanotime >= c.nanotime AND r.eventtype = 'return' AND c.eventtype = 'call' AND c.queryid = ?\n");
-    sb.append("ORDER  BY c.queryid, c.fragmentid, c.nanotime, r.nanotime ASC;");
-    return sb.toString();
+    return Joiner.on(' ').join("INSERT INTO ",
+        MyriaConstants.PROFILING_RELATION.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL),
+        "SELECT c.queryid, c.fragmentid, c.opid, c.nanotime as startTime, r.nanotime as endTime, r.numtuples", "FROM",
+        MyriaConstants.PROFILING_RELATION_TMP.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), "c, ",
+        MyriaConstants.PROFILING_RELATION_TMP.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), "r", "WHERE",
+        "c.queryid = r.queryid AND c.opid = r.opid AND c.fragmentid = r.fragmentid",
+        "AND r.eventtype = 'return' AND c.eventtype = 'call' AND c.queryid = ?", "ORDER  BY c.nanotime ASC;");
   }
 
   /**
@@ -192,10 +187,11 @@ public class ProfilingLogger {
    * @param operator the operator where this record was logged
    * @param numTuples the number of tuples
    * @param eventType the type of the event to be logged
+   * @param traceId an id to trace corresponding events
    * @throws DbException if insertion in the database fails
    */
-  public synchronized void recordEvent(final Operator operator, final long numTuples, final String eventType)
-      throws DbException {
+  public synchronized void recordEvent(final Operator operator, final long numTuples, final String eventType,
+      final int traceId) throws DbException {
 
     try {
       statementEvent.setLong(1, operator.getQueryId());
@@ -204,6 +200,7 @@ public class ProfilingLogger {
       statementEvent.setLong(4, getTime(operator));
       statementEvent.setLong(5, numTuples);
       statementEvent.setString(6, eventType);
+      statementEvent.setInt(7, traceId);
 
       statementEvent.addBatch();
       batchSizeEvents++;
@@ -235,6 +232,7 @@ public class ProfilingLogger {
    * @throws DbException if any error occurs
    */
   private void transformProfilingRelation(final long queryId) throws DbException {
+    // TODO: throw away old data
     try {
       statementTransform.setLong(1, queryId);
       statementTransform.executeUpdate();

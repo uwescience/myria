@@ -251,8 +251,8 @@ public final class MyriaConstants {
    * The schema of the {@link #PROFILING_RELATION_TMP}.
    */
   public static final Schema PROFILING_SCHEMA_TMP = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE,
-      Type.STRING_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("queryId", "fragmentId",
-      "opId", "nanoTime", "numTuples", "eventType"));
+      Type.STRING_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.STRING_TYPE, Type.INT_TYPE), ImmutableList.of("queryId",
+      "fragmentId", "opId", "nanoTime", "numTuples", "eventType", "traceId"));
 
   /**
    * The schema of the {@link #PROFILING_RELATION}.
