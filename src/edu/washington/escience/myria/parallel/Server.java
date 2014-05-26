@@ -55,7 +55,6 @@ import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.CatalogMaker;
 import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
-import edu.washington.escience.myria.expression.ConstantExpression;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.expression.WorkerIdExpression;
@@ -1665,15 +1664,9 @@ public final class Server {
     final CollectConsumer consumer =
         new CollectConsumer(scan.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
 
-    // add column with constant 1
-    ImmutableList.Builder<Expression> extendEmitExpressions = ImmutableList.builder();
-    extendEmitExpressions.add(new Expression("nanoTime", new VariableExpression(0)));
-    extendEmitExpressions.add(new Expression("numWorkers", new ConstantExpression(1)));
-    final Apply extend = new Apply(consumer, extendEmitExpressions.build());
-
     // sum up the number of workers working
     final SingleGroupByAggregate sumAggregate =
-        new SingleGroupByAggregate(extend, new int[] { 1 }, 0, new int[] { Aggregator.AGG_OP_SUM });
+        new SingleGroupByAggregate(consumer, new int[] { 0 }, 0, new int[] { Aggregator.AGG_OP_COUNT });
 
     // rename columns
     ImmutableList.Builder<Expression> renameExpressions = ImmutableList.builder();

@@ -172,13 +172,15 @@ public class ProfilingLogger {
    * @return the insert into statement
    */
   private String getTransformProfilingDataStatement() {
-    return Joiner.on(' ').join("INSERT INTO ",
+    return Joiner.on(' ').join("INSERT INTO",
         MyriaConstants.PROFILING_RELATION.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL),
         "SELECT c.queryid, c.fragmentid, c.opid, c.nanotime as startTime, r.nanotime as endTime, r.numtuples", "FROM",
-        MyriaConstants.PROFILING_RELATION_TMP.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), "c, ",
+        MyriaConstants.PROFILING_RELATION_TMP.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), "c,",
         MyriaConstants.PROFILING_RELATION_TMP.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), "r", "WHERE",
-        "c.queryid = r.queryid AND c.opid = r.opid AND c.fragmentid = r.fragmentid",
-        "AND r.eventtype = 'return' AND c.eventtype = 'call' AND c.queryid = ?", "ORDER  BY c.nanotime ASC;");
+        "c.queryid = r.queryid AND c.opid = r.opid AND c.fragmentid = r.fragmentid AND c.traceid = r.traceid",
+        "AND r.eventtype = 'return' AND c.eventtype = 'call' AND c.queryid = ?", "ORDER  BY c.nanotime ASC;",
+        "DELETE FROM", MyriaConstants.PROFILING_RELATION_TMP.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL),
+        "WHERE", "queryid = ?");
   }
 
   /**
@@ -232,10 +234,13 @@ public class ProfilingLogger {
    * @throws DbException if any error occurs
    */
   private void transformProfilingRelation(final long queryId) throws DbException {
-    // TODO: throw away old data
     try {
-      statementTransform.setLong(1, queryId);
+      statementTransform.setLong(1, queryId); // for insert statement
+      statementTransform.setLong(2, queryId); // for delete statement
+      connection.setAutoCommit(false);
       statementTransform.executeUpdate();
+      connection.commit();
+      connection.setAutoCommit(true);
     } catch (SQLException e) {
       if (e instanceof BatchUpdateException) {
         LOGGER.error("Error transforming profiling relation: ", e.getNextException());

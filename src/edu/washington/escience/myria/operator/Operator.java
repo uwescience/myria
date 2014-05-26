@@ -338,9 +338,6 @@ public abstract class Operator implements Serializable {
         numberOfTupleReturned = result.numTuples();
       }
       profilingLogger.recordEvent(this, numberOfTupleReturned, "return", traceId);
-      if (eos()) {
-        profilingLogger.recordEvent(this, numberOfTupleReturned, "eos", traceId);
-      }
     }
     if (result == null) {
       checkEOSAndEOI();
