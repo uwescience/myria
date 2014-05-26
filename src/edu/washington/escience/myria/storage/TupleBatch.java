@@ -313,6 +313,7 @@ public class TupleBatch implements ReadableTable, Serializable {
     BitSet[] resultBitSet = new BitSet[result.length];
     for (int i = 0; i < partitions.length; i++) {
       int p = partitions[i];
+      Preconditions.checkElementIndex(p, result.length);
       if (resultBitSet[p] == null) {
         resultBitSet[p] = new BitSet(result.length);
       }
