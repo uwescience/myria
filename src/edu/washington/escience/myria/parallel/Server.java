@@ -1716,7 +1716,8 @@ public final class Server {
     Set<Integer> actualWorkers = ((QueryEncoding) queryStatus.physicalPlan).getWorkers();
 
     String opnameQueryString =
-        Joiner.on(' ').join("SELECT min(starttime), max(endtime) FROM", relationKey.toString(getDBMS()));
+        Joiner.on(' ').join("SELECT min(starttime), max(endtime) FROM", relationKey.toString(getDBMS()),
+            "WHERE queryid=", queryId, "AND fragmentid=", fragmentId);
 
     DbQueryScan scan = new DbQueryScan(opnameQueryString, schema);
     final ExchangePairID operatorId = ExchangePairID.newID();
