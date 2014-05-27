@@ -6,6 +6,7 @@ import java.net.HttpURLConnection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.commons.httpclient.HttpStatus;
@@ -48,6 +49,7 @@ import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.operator.TupleSource;
 import edu.washington.escience.myria.operator.agg.Aggregate;
 import edu.washington.escience.myria.operator.agg.Aggregator;
+import edu.washington.escience.myria.operator.failures.InitFailureInjector;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
 import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
@@ -128,6 +130,36 @@ public class SequenceTest extends SystemTestBase {
     assertEquals(1, tbs.size());
     TupleBatch tb = tbs.get(0);
     assertEquals(numVals * workerIDs.length, tb.getLong(0, 0));
+  }
+
+  @Test(expected = ExecutionException.class)
+  public void testSequenceFailSubQuery2() throws Exception {
+    /* First task: do nothing. */
+    Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
+    for (int i : workerIDs) {
+      workerPlans.put(i, new SubQueryPlan(new RootOperator[] { new SinkRoot(new EOSSource()) }));
+    }
+    SubQueryPlan serverPlan = new SubQueryPlan(new SinkRoot(new EOSSource()));
+    MetaTask first = new SubQuery(serverPlan, workerPlans);
+
+    /* Second task: crash just the first worker. */
+    workerPlans = new HashMap<>();
+    workerPlans.put(workerIDs[0], new SubQueryPlan(new RootOperator[] { new SinkRoot(new InitFailureInjector(
+        new EOSSource())) }));
+    MetaTask second = new SubQuery(serverPlan, workerPlans);
+
+    /* Combine first and second into two queries, one after the other. */
+    MetaTask all = new Sequence(ImmutableList.of(first, second));
+
+    /* Submit the query. */
+    QueryEncoding encoding = new QueryEncoding();
+    encoding.profilingMode = false;
+    encoding.rawDatalog = "test";
+    encoding.logicalRa = "test";
+    QueryFuture qf = server.submitQuery(encoding, all);
+
+    /* Wait for query to finish, expecting an exception. */
+    qf.get();
   }
 
   @Test
