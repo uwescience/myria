@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.parallel;
 
+import com.google.common.base.Objects;
+
 import edu.washington.escience.myria.proto.QueryProto;
 import edu.washington.escience.myria.util.DateTimeUtils;
 
@@ -57,7 +59,8 @@ public class ExecutionStatistics {
    * @return the protobuf message representation of this class.
    */
   public final QueryProto.ExecutionStatistics toProtobuf() {
-    return QueryProto.ExecutionStatistics.newBuilder().setElapse(getQueryExecutionElapse()).build();
+    Long elapsed = Objects.firstNonNull(getQueryExecutionElapse(), -1L);
+    return QueryProto.ExecutionStatistics.newBuilder().setElapse(elapsed).build();
   }
 
   /**
