@@ -146,6 +146,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
   /**
    * The workers on which the current operator is going to run, i.e. the operator partition.
    * */
+  @Nonnull
   private final Set<Integer> runOnWorkers;
   /**
    * An operator is going to run on any single worker.
@@ -285,7 +286,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     parents = new HashSet<JsonQueryBaseBuilder>();
 
     Set<Integer> childrenWorkers = NO_PREFERENCE;
-    for (final JsonQueryBaseBuilder c : children) {
+    for (final JsonQueryBaseBuilder c : this.children) {
       childrenWorkers = workerSetAlgebra(childrenWorkers, c.runOnWorkers);
       if (childrenWorkers == null) {
         throw new IllegalArgumentException("Workers of a child are not compatible with other children. Current op: "
@@ -295,9 +296,9 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     if (compatibleWithChildrenWorkers) {
       runOnWorkers = workerSetAlgebra(childrenWorkers, runningWorkers);
       if (runOnWorkers == null) {
-        String[] childrenNames = new String[children.length];
-        for (int i = 0; i < children.length; i++) {
-          childrenNames[i] = getOpName(children[i]);
+        String[] childrenNames = new String[this.children.length];
+        for (int i = 0; i < this.children.length; i++) {
+          childrenNames[i] = getOpName(this.children[i]);
         }
         throw new IllegalArgumentException("Running workers are not compatible with children workers. Current op: "
             + getOpName(this) + ", children: " + StringUtils.join(childrenNames, ','));
