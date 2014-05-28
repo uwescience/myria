@@ -57,7 +57,6 @@ public class MasterSubQuery implements LocalSubQuery {
         public void operationComplete(final LocalSubQueryFuture future) throws Exception {
           int total = workerExecutionInfo.size();
           int current = nowReceived.incrementAndGet();
-          workerReceiveFuture.setProgress(1, current, workerExecutionInfo.size());
           if (current >= total) {
             workerReceiveFuture.setSuccess();
           }
@@ -70,7 +69,6 @@ public class MasterSubQuery implements LocalSubQuery {
         public void operationComplete(final LocalSubQueryFuture future) throws Exception {
           int total = workerExecutionInfo.size();
           int current = nowCompleted.incrementAndGet();
-          queryExecutionFuture.setProgress(1, current, workerExecutionInfo.size());
           if (!future.isSuccess()) {
             Throwable cause = future.getCause();
             if (!(cause instanceof QueryKilledException)) {

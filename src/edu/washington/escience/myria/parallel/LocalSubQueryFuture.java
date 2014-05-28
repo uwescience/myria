@@ -17,7 +17,6 @@ package edu.washington.escience.myria.parallel;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.util.concurrent.OperationFutureBase;
 import edu.washington.escience.myria.util.concurrent.OperationFutureListener;
-import edu.washington.escience.myria.util.concurrent.OperationFutureProgressListener;
 
 /**
  * The result of an asynchronous {@link LocalSubQuery} operation.
@@ -68,19 +67,6 @@ class LocalSubQueryFuture extends OperationFutureBase<Void> {
    */
   final boolean setFailure(final Throwable cause) {
     return setFailure0(cause);
-  }
-
-  /**
-   * Notifies the progress of the operation to the listeners that implements {@link OperationFutureProgressListener}.
-   * Please note that this method will not do anything and return {@code false} if this future is complete already.
-   * 
-   * @param amount the amount of progress finished between the last call of this method and the current call
-   * @param current the current finished amount
-   * @param total the total amount to finish
-   * @return {@code true} if and only if notification was made.
-   */
-  final boolean setProgress(final long amount, final long current, final long total) {
-    return setProgress0(amount, current, total);
   }
 
   @Override

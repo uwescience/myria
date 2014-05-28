@@ -105,7 +105,6 @@ public class WorkerSubQuery implements LocalSubQuery {
       LocalFragment drivingFragment = future.getFragment();
       int currentNumFinished = numFinishedFragments.incrementAndGet();
 
-      executionFuture.setProgress(1, currentNumFinished, fragments.size());
       Throwable failureReason = future.getCause();
       if (!future.isSuccess()) {
         failFragments.add(drivingFragment);
