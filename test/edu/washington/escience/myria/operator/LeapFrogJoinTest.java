@@ -13,6 +13,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.util.TestEnvVars;
 
 public class LeapFrogJoinTest {
   @Test
@@ -96,7 +97,8 @@ public class LeapFrogJoinTest {
   }
 
   @Test
-  public void testTriangularJoinOnCompleteGraph() throws DbException {
+  public void strangeTriangle() throws DbException {
+    /* Query: Result(x,y,z) :- R(x,y),S(y,z),T(x,y,z). */
     final Schema r_schema =
         new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("r_x", "r_y"));
     final Schema s_schema =
@@ -135,6 +137,60 @@ public class LeapFrogJoinTest {
       }
     }
     join.close();
+    assertEquals(8, batches.numTuples());
   }
 
+  @Test
+  public void strangeRectangle() throws DbException {
+    /* Rectangle(x,y,z,p) :- R(x,y),S(y,z),T(z,p),K(p,x),M(x,y,z). */
+    final Schema r_schema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("r_x", "r_y"));
+    final Schema s_schema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("s_y", "s_z"));
+    final Schema t_schema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("t_z", "t_p"));
+    final Schema k_schema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("k_p", "k_x"));
+    final Schema m_schema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("m_x", "m_y",
+            "m_z"));
+    /* read data from files. */
+    final String r_path = Paths.get("testdata", "multiwayjoin", "rectangles.csv").toString();
+    final String m_path = Paths.get("testdata", "multiwayjoin", "rec_2_hop.csv").toString();
+    FileScan fileScanR = new FileScan(r_path, r_schema);
+    FileScan fileScanS = new FileScan(r_path, s_schema);
+    FileScan fileScanT = new FileScan(r_path, t_schema);
+    FileScan fileScanK = new FileScan(r_path, k_schema);
+    FileScan fileScanM = new FileScan(m_path, m_schema);
+    /* order the tables. */
+    InMemoryOrderBy orderR = new InMemoryOrderBy(fileScanR, new int[] { 0, 1 }, new boolean[] { true, true });
+    InMemoryOrderBy orderS = new InMemoryOrderBy(fileScanS, new int[] { 0, 1 }, new boolean[] { true, true });
+    InMemoryOrderBy orderT = new InMemoryOrderBy(fileScanT, new int[] { 0, 1 }, new boolean[] { true, true });
+    InMemoryOrderBy orderK = new InMemoryOrderBy(fileScanK, new int[] { 1, 0 }, new boolean[] { true, true });
+    InMemoryOrderBy orderM = new InMemoryOrderBy(fileScanM, new int[] { 0, 1, 2 }, new boolean[] { true, true, true });
+
+    /* leapfrog join, Rectangle(x,y,z,p) :- R(x,y),S(y,z),T(z,p),K(p,x),M(x,y,z). */
+    int[][][] fieldMap =
+        new int[][][] {
+            { { 0, 0 }, { 3, 1 }, { 4, 0 } }, { { 0, 1 }, { 1, 0 }, { 4, 1 } }, { { 1, 1 }, { 2, 0 }, { 4, 2 } },
+            { { 2, 1 }, { 3, 0 }, { 4, 2 } } };
+    int[][] outputMap = new int[][] { { 0, 0 }, { 0, 1 }, { 1, 1 }, { 2, 1 } };
+    final ImmutableList<String> outputColumnNames = ImmutableList.of("x", "y", "z", "p");
+    final Schema outputSchema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE), outputColumnNames);
+    LeapFrogJoin join =
+        new LeapFrogJoin(new Operator[] { orderR, orderS, orderT, orderK, orderM }, fieldMap, outputMap,
+            outputColumnNames, new boolean[] { false, false, false, false, false });
+    join.open(TestEnvVars.get());
+    TupleBatch tb;
+    TupleBatchBuffer batches = new TupleBatchBuffer(outputSchema);
+    while (!join.eos()) {
+      tb = join.nextReady();
+      if (tb != null) {
+        batches.appendTB(tb);
+      }
+    }
+    join.close();
+    assertEquals(4, batches.numTuples());
+  }
 }
