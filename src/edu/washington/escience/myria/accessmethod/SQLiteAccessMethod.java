@@ -170,19 +170,14 @@ public final class SQLiteAccessMethod extends AccessMethod {
      * is released pretty fast. However if another connection comes during the exclusive lock period, a
      * "database is locked" exception will still be thrown. The following code simply tries to call prepare again.
      */
-    boolean conflict = true;
     int count = 0;
-    while (conflict) {
-      conflict = false;
+    Throwable cause = null;
+    while (statement == null && count < MAX_RETRY_ATTEMPTS) {
       try {
         statement = sqliteConnection.prepare(queryString);
       } catch (final SQLiteException e) {
-        conflict = true;
+        cause = e;
         count++;
-        if (count >= MAX_RETRY_ATTEMPTS) {
-          LOGGER.error(e.getMessage(), e);
-          throw new DbException(e);
-        }
         try {
           Thread.sleep(MyriaConstants.SHORT_WAITING_INTERVAL_10_MS);
         } catch (InterruptedException e1) {
@@ -190,6 +185,11 @@ public final class SQLiteAccessMethod extends AccessMethod {
           return Collections.<TupleBatch> emptyList().iterator();
         }
       }
+    }
+
+    if (statement == null) {
+      LOGGER.error("SQLite database maximum retry attempts exceeded", cause);
+      throw new DbException(cause);
     }
 
     try {
