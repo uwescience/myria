@@ -45,7 +45,7 @@ import edu.washington.escience.myria.operator.network.LocalMultiwayProducer;
 import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
 import edu.washington.escience.myria.operator.network.partition.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
-import edu.washington.escience.myria.parallel.QueryState;
+import edu.washington.escience.myria.parallel.Query;
 import edu.washington.escience.myria.parallel.SubQueryPlan;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
@@ -262,11 +262,11 @@ public class ConnectedComponentTest extends SystemTestBase {
       workerPlans.get(workerIDs[1]).setFTMode(FTMODE.valueOf("rejoin"));
       serverPlan.setFTMode(FTMODE.valueOf("rejoin"));
 
-      ListenableFuture<QueryState> qf = server.submitQuery("", "", "", serverPlan, workerPlans, false);
+      ListenableFuture<Query> qf = server.submitQuery("", "", "", serverPlan, workerPlans, false);
       Thread.sleep(1000);
       LOGGER.info("killing worker " + workerIDs[1] + "!");
       workerProcess[1].destroy();
-      QueryState queryState = qf.get();
+      Query queryState = qf.get();
       assertTrue(server.queryCompleted(queryState.getQueryId()));
       LOGGER.info("query {} finished.", queryState.getQueryId());
       assertEquals(Status.SUCCESS, queryState.getStatus());

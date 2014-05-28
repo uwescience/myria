@@ -13,7 +13,7 @@ import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
 /**
  * Keeps track of all the state (statistics, subqueries, etc.) for a single Myria query.
  */
-public final class QueryState {
+public final class Query {
   /** The id of this query. */
   private final long queryId;
   /** The id of the next subquery to be issued. */
@@ -36,13 +36,13 @@ public final class QueryState {
   private final QueryFuture future;
 
   /**
-   * Construct a new {@link QueryState} object for this query.
+   * Construct a new {@link Query} object for this query.
    * 
    * @param queryId the id of this query
    * @param plan the execution plan
    * @param server the server on which this query will be executed
    */
-  public QueryState(final long queryId, final MetaTask plan, final Server server) {
+  public Query(final long queryId, final MetaTask plan, final Server server) {
     this.server = Objects.requireNonNull(server, "server");
     this.queryId = queryId;
     subqueryId = 0;

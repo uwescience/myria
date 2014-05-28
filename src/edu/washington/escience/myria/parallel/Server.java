@@ -213,7 +213,7 @@ public final class Server {
   /**
    * Queries currently active (queued, executing, being killed, etc.).
    */
-  private final ConcurrentHashMap<Long, QueryState> activeQueries;
+  private final ConcurrentHashMap<Long, Query> activeQueries;
 
   /**
    * Subqueries currently in execution.
@@ -1008,7 +1008,7 @@ public final class Server {
    * @return the query future from which the query status can be looked up.
    */
   private QueryFuture submitQuery(final long queryId, final MetaTask plan) throws DbException, CatalogException {
-    final QueryState queryState = new QueryState(queryId, plan, this);
+    final Query queryState = new Query(queryId, plan, this);
     activeQueries.put(queryId, queryState);
     advanceQuery(queryState);
     return queryState.getFuture();
@@ -1022,7 +1022,7 @@ public final class Server {
    * @return the future of the next {@Link SubQuery}, or <code>null</code> if this query has succeeded.
    * @throws DbException if there is an error
    */
-  private LocalSubQueryFuture advanceQuery(final QueryState queryState) throws DbException {
+  private LocalSubQueryFuture advanceQuery(final Query queryState) throws DbException {
     Verify.verify(queryState.getCurrentSubQuery() == null, "expected queryState current task is null");
 
     SubQuery task = queryState.nextSubQuery();
@@ -1044,7 +1044,7 @@ public final class Server {
    * @param queryState the query to be finished
    * @throws CatalogException if there is an error updating the Catalog
    */
-  private void finishQuery(final QueryState queryState) throws CatalogException {
+  private void finishQuery(final Query queryState) throws CatalogException {
     Preconditions.checkNotNull(queryState, "queryState");
     try {
       catalog.queryFinished(queryState);
@@ -1060,7 +1060,7 @@ public final class Server {
    * @return the future of the subquery
    * @throws DbException if there is an error submitting the subquery for execution
    */
-  private LocalSubQueryFuture submitSubQuery(final QueryState queryState) throws DbException {
+  private LocalSubQueryFuture submitSubQuery(final Query queryState) throws DbException {
     final SubQuery subQuery =
         Verify.verifyNotNull(queryState.getCurrentSubQuery(), "query state should have a current subquery");
     final SubQueryId subQueryId = subQuery.getSubQueryId();
@@ -1087,7 +1087,7 @@ public final class Server {
         @Override
         public void operationComplete(final LocalSubQueryFuture future) throws Exception {
 
-          QueryState query = activeQueries.get(subQueryId.getQueryId());
+          Query query = activeQueries.get(subQueryId.getQueryId());
           finishSubQuery(subQueryId);
 
           final long elapsedNanos = mqp.getExecutionStatistics().getQueryExecutionElapse();
@@ -1224,7 +1224,7 @@ public final class Server {
       workerPlans.put(workerId, new SubQueryPlan(insert));
     }
 
-    ListenableFuture<QueryState> qf;
+    ListenableFuture<Query> qf;
     try {
       qf =
           submitQuery("ingest " + relationKey.toString("sqlite"), "ingest " + relationKey.toString("sqlite"), "ingest "
@@ -1232,7 +1232,7 @@ public final class Server {
     } catch (CatalogException e) {
       throw new DbException("Error submitting query", e);
     }
-    QueryState queryState;
+    Query queryState;
     try {
       queryState = qf.get();
     } catch (ExecutionException e) {
@@ -1274,10 +1274,10 @@ public final class Server {
       for (Integer workerId : actualWorkers) {
         workerPlans.put(workerId, new SubQueryPlan(new SinkRoot(new EOSSource())));
       }
-      ListenableFuture<QueryState> qf =
+      ListenableFuture<Query> qf =
           submitQuery("import " + relationKey.toString("sqlite"), "import " + relationKey.toString("sqlite"), "import "
               + relationKey.toString("sqlite"), new SubQueryPlan(new SinkRoot(new EOSSource())), workerPlans, false);
-      QueryState queryState;
+      Query queryState;
       try {
         queryState = qf.get();
       } catch (ExecutionException e) {
@@ -1348,7 +1348,7 @@ public final class Server {
       return null;
     }
 
-    QueryState state = activeQueries.get(queryId);
+    Query state = activeQueries.get(queryId);
     if (state == null) {
       /* Not active, so the information from the Catalog is authoritative. */
       return queryStatus;
@@ -1487,7 +1487,7 @@ public final class Server {
    * @return the query future from which the query status can be looked up.
    * @throws DbException if there is an error in the system.
    */
-  public ListenableFuture<QueryState> startDataStream(final RelationKey relationKey, final TupleWriter writer)
+  public ListenableFuture<Query> startDataStream(final RelationKey relationKey, final TupleWriter writer)
       throws DbException {
     /* Get the relation's schema, to make sure it exists. */
     final Schema schema;
@@ -1541,7 +1541,7 @@ public final class Server {
    * @return profiling logs for the query.
    * @throws DbException if there is an error when accessing profiling logs.
    */
-  public ListenableFuture<QueryState> startLogDataStream(final long queryId, final long fragmentId,
+  public ListenableFuture<Query> startLogDataStream(final long queryId, final long fragmentId,
       final TupleWriter writer, final RelationKey relationKey, final Schema schema) throws DbException {
     /* Get the relation's schema, to make sure it exists. */
     final QueryStatusEncoding queryStatus;
@@ -1620,7 +1620,7 @@ public final class Server {
    * 
    * @throws DbException if there is an error when accessing profiling logs.
    */
-  public ListenableFuture<QueryState> startHistogramDataStream(final long queryId, final long fragmentId,
+  public ListenableFuture<Query> startHistogramDataStream(final long queryId, final long fragmentId,
       final TupleWriter writer) throws DbException {
     /* Get the relation's schema, to make sure it exists. */
     final QueryStatusEncoding queryStatus;

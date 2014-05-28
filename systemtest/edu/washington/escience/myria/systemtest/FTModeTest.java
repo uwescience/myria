@@ -49,7 +49,7 @@ import edu.washington.escience.myria.operator.network.LocalMultiwayProducer;
 import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
 import edu.washington.escience.myria.operator.network.partition.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
-import edu.washington.escience.myria.parallel.QueryState;
+import edu.washington.escience.myria.parallel.Query;
 import edu.washington.escience.myria.parallel.SubQueryPlan;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
@@ -458,12 +458,12 @@ public class FTModeTest extends SystemTestBase {
     SubQueryPlan serverPlan = new SubQueryPlan(new SinkRoot(queueStore));
     serverPlan.setFTMode(FTMODE.valueOf("abandon"));
 
-    ListenableFuture<QueryState> qf = server.submitQuery("", "", "", serverPlan, workerPlans, false);
+    ListenableFuture<Query> qf = server.submitQuery("", "", "", serverPlan, workerPlans, false);
     Thread.sleep(2000);
     /* kill the one without EOSController */
     LOGGER.info("killing worker " + workerIDs[1]);
     workerProcess[1].destroy();
-    QueryState qs = qf.get();
+    Query qs = qf.get();
     assertEquals(Status.SUCCESS, qs.getStatus());
     TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
     while (!receivedTupleBatches.isEmpty()) {
@@ -563,12 +563,12 @@ public class FTModeTest extends SystemTestBase {
 
     SubQueryPlan serverPlan = new SubQueryPlan(new SinkRoot(new EOSSource()));
     serverPlan.setFTMode(FTMODE.valueOf("rejoin"));
-    ListenableFuture<QueryState> qf = server.submitQuery("", "", "", serverPlan, workerPlans, false);
+    ListenableFuture<Query> qf = server.submitQuery("", "", "", serverPlan, workerPlans, false);
     Thread.sleep(3000);
     /* kill the one without EOSController */
     LOGGER.info("killing worker " + workerIDs[1]);
     workerProcess[1].destroy();
-    QueryState qs = qf.get();
+    Query qs = qf.get();
 
     while (!server.queryCompleted(1)) {
       Thread.sleep(100);

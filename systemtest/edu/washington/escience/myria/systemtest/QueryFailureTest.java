@@ -25,7 +25,7 @@ import edu.washington.escience.myria.operator.failures.SingleRandomFailureInject
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
-import edu.washington.escience.myria.parallel.QueryState;
+import edu.washington.escience.myria.parallel.Query;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestUtils;
@@ -86,7 +86,7 @@ public class QueryFailureTest extends SystemTestBase {
 
     final SinkRoot serverPlan = new SinkRoot(serverCollect);
 
-    ListenableFuture<QueryState> qf = server.submitQueryPlan(serverPlan, workerPlans);
+    ListenableFuture<Query> qf = server.submitQueryPlan(serverPlan, workerPlans);
     Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     try {
       qf.get();
@@ -146,7 +146,7 @@ public class QueryFailureTest extends SystemTestBase {
 
     final SinkRoot serverPlan = new SinkRoot(srfi);
 
-    ListenableFuture<QueryState> qf = server.submitQueryPlan(serverPlan, workerPlans);
+    ListenableFuture<Query> qf = server.submitQueryPlan(serverPlan, workerPlans);
     Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     try {
       qf.get();
@@ -211,7 +211,7 @@ public class QueryFailureTest extends SystemTestBase {
 
     final SinkRoot serverPlan = new SinkRoot(srfiMaster);
 
-    ListenableFuture<QueryState> qf = server.submitQueryPlan(serverPlan, workerPlans);
+    ListenableFuture<Query> qf = server.submitQueryPlan(serverPlan, workerPlans);
     Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     try {
       qf.get();
@@ -274,7 +274,7 @@ public class QueryFailureTest extends SystemTestBase {
 
     final SinkRoot serverPlan = new SinkRoot(serverCollect);
 
-    ListenableFuture<QueryState> qf = server.submitQueryPlan(serverPlan, workerPlans);
+    ListenableFuture<Query> qf = server.submitQueryPlan(serverPlan, workerPlans);
     Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     try {
       qf.get();
@@ -334,7 +334,7 @@ public class QueryFailureTest extends SystemTestBase {
 
     final SinkRoot serverPlan = new SinkRoot(srfi);
 
-    ListenableFuture<QueryState> qf = server.submitQueryPlan(serverPlan, workerPlans);
+    ListenableFuture<Query> qf = server.submitQueryPlan(serverPlan, workerPlans);
     Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     try {
       qf.get();
@@ -399,7 +399,7 @@ public class QueryFailureTest extends SystemTestBase {
 
     final SinkRoot serverPlan = new SinkRoot(srfiMaster);
 
-    ListenableFuture<QueryState> qf = server.submitQueryPlan(serverPlan, workerPlans);
+    ListenableFuture<Query> qf = server.submitQueryPlan(serverPlan, workerPlans);
     Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     try {
       qf.get();
@@ -462,7 +462,7 @@ public class QueryFailureTest extends SystemTestBase {
 
     final SinkRoot serverPlan = new SinkRoot(serverCollect);
 
-    ListenableFuture<QueryState> qf = server.submitQueryPlan(serverPlan, workerPlans);
+    ListenableFuture<Query> qf = server.submitQueryPlan(serverPlan, workerPlans);
     Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     try {
       qf.get();
@@ -523,7 +523,7 @@ public class QueryFailureTest extends SystemTestBase {
 
     final SinkRoot serverPlan = new SinkRoot(srfi);
 
-    ListenableFuture<QueryState> qf = server.submitQueryPlan(serverPlan, workerPlans);
+    ListenableFuture<Query> qf = server.submitQueryPlan(serverPlan, workerPlans);
     Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     try {
       qf.get();

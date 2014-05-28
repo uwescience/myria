@@ -37,7 +37,7 @@ import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
-import edu.washington.escience.myria.parallel.QueryState;
+import edu.washington.escience.myria.parallel.Query;
 import edu.washington.escience.myria.parallel.SocketInfo;
 
 /**
@@ -1337,7 +1337,7 @@ public final class MasterCatalog {
    * @param query the state of the query.
    * @throws CatalogException if there is an error in the MasterCatalog.
    */
-  public void queryFinished(final QueryState query) throws CatalogException {
+  public void queryFinished(final Query query) throws CatalogException {
     Objects.requireNonNull(query, "query");
     if (isClosed) {
       throw new CatalogException("MasterCatalog is closed.");

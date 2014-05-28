@@ -13,12 +13,12 @@ import com.google.common.util.concurrent.SettableFuture;
 /**
  * The future for a query.
  */
-public final class QueryFuture implements ListenableFuture<QueryState> {
+public final class QueryFuture implements ListenableFuture<Query> {
 
   /** The id of the query this future represents. */
   private final long queryId;
   /** The wrapped future, which actually implements all the future behavior. */
-  private final ListenableFuture<QueryState> future;
+  private final ListenableFuture<Query> future;
 
   /**
    * Create a future for the specified query.
@@ -36,7 +36,7 @@ public final class QueryFuture implements ListenableFuture<QueryState> {
    * @param queryId the id of the submitted query.
    */
   private QueryFuture(final long queryId) {
-    this(queryId, SettableFuture.<QueryState> create());
+    this(queryId, SettableFuture.<Query> create());
   }
 
   /**
@@ -45,7 +45,7 @@ public final class QueryFuture implements ListenableFuture<QueryState> {
    * @param queryId the id of the submitted query.
    * @param future the future to be wrapped.
    */
-  private QueryFuture(final long queryId, final ListenableFuture<QueryState> future) {
+  private QueryFuture(final long queryId, final ListenableFuture<Query> future) {
     this.queryId = queryId;
     this.future = future;
   }
@@ -73,12 +73,12 @@ public final class QueryFuture implements ListenableFuture<QueryState> {
   }
 
   @Override
-  public QueryState get() throws InterruptedException, ExecutionException {
+  public Query get() throws InterruptedException, ExecutionException {
     return future.get();
   }
 
   @Override
-  public QueryState get(final long timeout, final TimeUnit unit) throws InterruptedException, ExecutionException,
+  public Query get(final long timeout, final TimeUnit unit) throws InterruptedException, ExecutionException,
       TimeoutException {
     return future.get(timeout, unit);
   }
@@ -95,9 +95,9 @@ public final class QueryFuture implements ListenableFuture<QueryState> {
    * @param value the value the future should hold.
    * @return true if the value was successfully set.
    */
-  public boolean set(@Nullable final QueryState value) {
+  public boolean set(@Nullable final Query value) {
     if (future instanceof SettableFuture) {
-      return ((SettableFuture<QueryState>) future).set(value);
+      return ((SettableFuture<Query>) future).set(value);
     }
     return false;
   }
@@ -112,7 +112,7 @@ public final class QueryFuture implements ListenableFuture<QueryState> {
    */
   public boolean setException(final Throwable throwable) {
     if (future instanceof SettableFuture) {
-      return ((SettableFuture<QueryState>) future).setException(throwable);
+      return ((SettableFuture<Query>) future).setException(throwable);
     }
     return false;
   }
