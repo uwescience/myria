@@ -212,6 +212,6 @@ public final class SubQuery extends QueryPlan {
     QueryPlan task = planQ.peekFirst();
     Verify.verify(task == this, "this %s should be the first object on the queue, not %s!", this, task);
     planQ.removeFirst();
-    subQueryQ.addFirst(new SubQuery(masterPlan, workerPlans));
+    subQueryQ.addFirst(this);
   }
 }
