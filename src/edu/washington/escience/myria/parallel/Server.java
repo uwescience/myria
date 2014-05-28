@@ -983,8 +983,14 @@ public final class Server {
     if (!canSubmitQuery()) {
       throw new DbException("Cannot submit query");
     }
-    if (physicalPlan.profilingMode && getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_SQLITE)) {
-      throw new DbException("Profiling mode is not supported when using SQLite as the storage system.");
+    if (physicalPlan.profilingMode) {
+      if (!(plan instanceof SubQuery || plan instanceof JsonSubQuery)) {
+        throw new DbException("Profiling mode is not supported for plans (" + plan.getClass().getSimpleName()
+            + ") that may contain multiple subqueries.");
+      }
+      if (getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_SQLITE)) {
+        throw new DbException("Profiling mode is not supported when using SQLite as the storage system.");
+      }
     }
     final long queryID = catalog.newQuery(physicalPlan);
     return submitQuery(queryID, plan);
