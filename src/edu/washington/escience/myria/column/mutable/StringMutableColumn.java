@@ -66,9 +66,9 @@ public final class StringMutableColumn extends MutableColumn<String> {
   }
 
   @Override
-  public void replace(final int index, final String value) {
-    Preconditions.checkElementIndex(index, size());
-    data[index] = value;
+  public void replaceString(final String value, final int row) {
+    Preconditions.checkElementIndex(row, size());
+    data[row] = value;
   }
 
   @Override

@@ -4,6 +4,8 @@ import java.nio.BufferOverflowException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import javax.annotation.Nonnull;
+
 import org.joda.time.DateTime;
 
 import com.almworks.sqlite4java.SQLiteException;
@@ -12,12 +14,14 @@ import com.almworks.sqlite4java.SQLiteStatement;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.mutable.MutableColumn;
 import edu.washington.escience.myria.storage.ReadableColumn;
+import edu.washington.escience.myria.storage.ReplaceableColumn;
 
 /**
  * @param <T> type of the objects in this column.
  * 
  */
-public abstract class ColumnBuilder<T extends Comparable<?>> implements ReadableColumn, WritableColumn {
+public abstract class ColumnBuilder<T extends Comparable<?>> implements ReadableColumn, WritableColumn,
+    ReplaceableColumn {
 
   @Override
   public ColumnBuilder<T> appendBoolean(final boolean value) throws BufferOverflowException {
@@ -144,14 +148,38 @@ public abstract class ColumnBuilder<T extends Comparable<?>> implements Readable
    */
   public abstract ColumnBuilder<T> forkNewBuilder();
 
-  /**
-   * Replace the specified element.
-   * 
-   * @param value element to be inserted.
-   * @param idx where to insert the element.
-   * @return this column builder.
-   * @throws IndexOutOfBoundsException if the idx exceeds the currently valid indices, i.e. the currently built size.
-   */
-  public abstract ColumnBuilder<T> replace(int idx, T value) throws IndexOutOfBoundsException;
+  @Override
+  public void replaceBoolean(final boolean value, final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
 
+  @Override
+  public void replaceDateTime(@Nonnull final DateTime value, final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public void replaceDouble(final double value, final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public void replaceFloat(final float value, final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public void replaceInt(final int value, final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public void replaceLong(final long value, final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public void replaceString(@Nonnull final String value, final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
 }

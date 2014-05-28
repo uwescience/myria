@@ -68,19 +68,9 @@ public final class DoubleMutableColumn extends MutableColumn<Double> {
   }
 
   @Override
-  public void replace(final int index, final Double value) {
-    replace(index, value.doubleValue());
-  }
-
-  /**
-   * replace the value on a row with the given double value.
-   * 
-   * @param index row index
-   * @param value the double value.
-   */
-  public void replace(final int index, final double value) {
-    Preconditions.checkElementIndex(index, size());
-    data[index] = value;
+  public void replaceDouble(final double value, final int row) {
+    Preconditions.checkElementIndex(row, size());
+    data[row] = value;
   }
 
   @Override

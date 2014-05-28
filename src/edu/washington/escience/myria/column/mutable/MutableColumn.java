@@ -2,11 +2,14 @@ package edu.washington.escience.myria.column.mutable;
 
 import java.io.Serializable;
 
+import javax.annotation.Nonnull;
+
 import org.joda.time.DateTime;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.storage.ReadableColumn;
+import edu.washington.escience.myria.storage.ReplaceableColumn;
 
 /**
  * A mutable column of a batch of tuples.
@@ -14,7 +17,8 @@ import edu.washington.escience.myria.storage.ReadableColumn;
  * @param <T> type of the objects in this column.
  * 
  */
-public abstract class MutableColumn<T extends Comparable<?>> implements Cloneable, ReadableColumn, Serializable {
+public abstract class MutableColumn<T extends Comparable<?>> implements Cloneable, ReadableColumn, ReplaceableColumn,
+    Serializable {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -64,13 +68,40 @@ public abstract class MutableColumn<T extends Comparable<?>> implements Cloneabl
   @Override
   public abstract int size();
 
-  /**
-   * replace the old value at index with the new value.
-   * 
-   * @param index the index
-   * @param value the new value
-   */
-  public abstract void replace(int index, T value);
+  @Override
+  public void replaceBoolean(final boolean value, final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public void replaceDateTime(@Nonnull final DateTime value, final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public void replaceDouble(final double value, final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public void replaceFloat(final float value, final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public void replaceInt(final int value, final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public void replaceLong(final long value, final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public void replaceString(@Nonnull final String value, final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
 
   /**
    * return the column representation of this mutable column. It copies data.

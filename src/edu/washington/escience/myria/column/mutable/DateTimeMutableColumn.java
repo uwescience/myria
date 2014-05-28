@@ -67,9 +67,9 @@ public final class DateTimeMutableColumn extends MutableColumn<DateTime> {
   }
 
   @Override
-  public void replace(final int index, final DateTime value) {
-    Preconditions.checkElementIndex(index, size());
-    data[index] = value;
+  public void replaceDateTime(final DateTime value, final int row) {
+    Preconditions.checkElementIndex(row, size());
+    data[row] = value;
   }
 
   @Override

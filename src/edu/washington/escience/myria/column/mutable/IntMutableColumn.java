@@ -65,19 +65,9 @@ public final class IntMutableColumn extends MutableColumn<Integer> {
   }
 
   @Override
-  public void replace(final int index, final Integer value) {
-    replace(index, value.intValue());
-  }
-
-  /**
-   * replace the value on a row with the given int value.
-   * 
-   * @param index row index
-   * @param value the int value.
-   */
-  public void replace(final int index, final int value) {
-    Preconditions.checkElementIndex(index, size());
-    data[index] = value;
+  public void replaceInt(final int value, final int row) {
+    Preconditions.checkElementIndex(row, size());
+    data[row] = value;
   }
 
   @Override

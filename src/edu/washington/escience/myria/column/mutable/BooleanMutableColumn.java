@@ -66,19 +66,9 @@ public class BooleanMutableColumn extends MutableColumn<Boolean> {
   }
 
   @Override
-  public void replace(final int index, final Boolean value) {
-    replace(index, value.booleanValue());
-  }
-
-  /**
-   * replace the value on a row with the given boolean value.
-   * 
-   * @param index row index
-   * @param value the boolean value.
-   */
-  public void replace(final int index, final boolean value) {
-    Preconditions.checkElementIndex(index, size());
-    data.set(index, value);
+  public void replaceBoolean(final boolean value, final int row) {
+    Preconditions.checkElementIndex(row, size());
+    data.set(row, value);
   }
 
   @Override
