@@ -368,6 +368,7 @@ public final class DatasetResource {
       status = server.ingestDataset(relationKey, actualWorkers, indexes, source);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
+      return Response.status(Status.SERVICE_UNAVAILABLE).entity("Interrupted").build();
     }
 
     /* In the response, tell the client the path to the relation. */
