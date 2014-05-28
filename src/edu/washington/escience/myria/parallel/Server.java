@@ -35,6 +35,7 @@ import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableList;
@@ -965,7 +966,7 @@ public final class Server {
     query.rawDatalog = rawQuery;
     query.logicalRa = rawQuery;
     query.fragments = ImmutableList.of();
-    query.profilingMode = profilingMode;
+    query.profilingMode = Objects.firstNonNull(profilingMode, false);
     return submitQuery(query, new SubQuery(masterPlan, workerPlans));
   }
 
