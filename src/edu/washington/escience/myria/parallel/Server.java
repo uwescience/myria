@@ -1707,6 +1707,7 @@ public final class Server {
         "query %s did not succeed (%s)", queryId, queryStatus.status);
     Preconditions.checkArgument(queryStatus.profilingMode, "query %s was not run with profiling enabled");
     Preconditions.checkArgument(start < end, "range cannot be negative");
+    Preconditions.checkArgument(step > 0, "step has to be greater than 0");
 
     final Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("nanoTime"));
     final RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
