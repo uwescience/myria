@@ -1533,13 +1533,11 @@ public final class Server {
    * @param queryId query id.
    * @param fragmentId the fragment id to return data for. All fragments, if < 0.
    * @param writer writer to get data.
-   * @param relationKey the relation to stream from
-   * @param schema the schema of the relation to stream from
    * @return profiling logs for the query.
    * @throws DbException if there is an error when accessing profiling logs.
    */
-  public QueryFuture startLogDataStream(final long queryId, final long fragmentId, final TupleWriter writer,
-      final RelationKey relationKey, final Schema schema) throws DbException {
+  public QueryFuture startSentLogDataStream(final long queryId, final long fragmentId, final TupleWriter writer)
+      throws DbException {
     /* Get the relation's schema, to make sure it exists. */
     final QueryStatusEncoding queryStatus;
     try {
@@ -1556,14 +1554,17 @@ public final class Server {
 
     String fragmentWhere = "";
     if (fragmentId >= 0) {
-      fragmentWhere = " AND fragmentId=" + fragmentId;
+      fragmentWhere = "AND fragmentid = " + fragmentId;
     }
 
-    /* Construct the operators that go elsewhere. */
+    final Schema schema = MyriaConstants.SENT_SCHEMA;
+
     // TODO: replace this with some kind of query construction
-    DbQueryScan scan =
-        new DbQueryScan("SELECT * FROM " + relationKey.toString(getDBMS()) + " WHERE queryId=" + queryId
-            + fragmentWhere + " ORDER BY fragmentid, nanotime", schema);
+    String sentQueryString =
+        Joiner.on(' ').join("SELECT * FROM", MyriaConstants.SENT_RELATION.toString(getDBMS()) + " WHERE queryid =",
+            queryId, fragmentWhere, " ORDER BY fragmentid, nanotime");
+
+    DbQueryScan scan = new DbQueryScan(sentQueryString, schema);
     final ExchangePairID operatorId = ExchangePairID.newID();
 
     ImmutableList.Builder<Expression> emitExpressions = ImmutableList.builder();
@@ -1590,7 +1591,6 @@ public final class Server {
       workerPlans.put(worker, workerPlan);
     }
 
-    /* Construct the master plan. */
     final CollectConsumer consumer =
         new CollectConsumer(addWorkerId.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
     DataOutput output = new DataOutput(consumer, writer);
@@ -1598,8 +1598,83 @@ public final class Server {
 
     /* Submit the plan for the download. */
     String planString =
-        Joiner.on("").join("download profiling log data for (query=", queryId, ", fragment=", fragmentId,
-            ", log type=", relationKey.getRelationName(), ')');
+        Joiner.on("").join("download profiling log data for (query=", queryId, ", fragment=", fragmentId, ")");
+    try {
+      return submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
+
+  /**
+   * @param queryId query id.
+   * @param fragmentId the fragment id to return data for. All fragments, if < 0.
+   * @param start the earliest time where we need data
+   * @param end the latest time
+   * @param writer writer to get data.
+   * @return profiling logs for the query.
+   * 
+   * @throws DbException if there is an error when accessing profiling logs.
+   */
+  public QueryFuture startLogDataStream(final long queryId, final long fragmentId, final long start, final long end,
+      final TupleWriter writer) throws DbException {
+    /* Get the relation's schema, to make sure it exists. */
+    final QueryStatusEncoding queryStatus;
+    try {
+      queryStatus = catalog.getQuery(queryId);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+    Preconditions.checkArgument(queryStatus != null, "query %s not found", queryId);
+    Preconditions.checkArgument(queryStatus.status == QueryStatusEncoding.Status.SUCCESS,
+        "query %s did not succeed (%s)", queryId, queryStatus.status);
+    Preconditions.checkArgument(queryStatus.profilingMode, "query %s was not run with profiling enabled");
+    Preconditions.checkArgument(start < end, "range cannot be negative");
+
+    final Schema schema =
+        new Schema(ImmutableList.of(Type.STRING_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList
+            .of("opId", "startTime", "endTime", "numTuples"));
+
+    Set<Integer> actualWorkers = ((QueryEncoding) queryStatus.physicalPlan).getWorkers();
+
+    String queryString =
+        Joiner.on(' ').join("SELECT opid, starttime, endtime, numtuples FROM",
+            MyriaConstants.PROFILING_RELATION.toString(getDBMS()), "WHERE fragmentId =", fragmentId, "AND queryid =",
+            queryId, "AND endtime >", start, "AND starttime <", end, "ORDER BY starttime ASC");
+
+    DbQueryScan scan = new DbQueryScan(queryString, schema);
+
+    ImmutableList.Builder<Expression> emitExpressions = ImmutableList.builder();
+
+    emitExpressions.add(new Expression("workerId", new WorkerIdExpression()));
+
+    for (int column = 0; column < schema.numColumns(); column++) {
+      VariableExpression copy = new VariableExpression(column);
+      emitExpressions.add(new Expression(schema.getColumnName(column), copy));
+    }
+
+    Apply addWorkerId = new Apply(scan, emitExpressions.build());
+
+    final ExchangePairID operatorId = ExchangePairID.newID();
+
+    CollectProducer producer = new CollectProducer(addWorkerId, operatorId, MyriaConstants.MASTER_ID);
+
+    SingleQueryPlanWithArgs workerPlan = new SingleQueryPlanWithArgs(producer);
+    Map<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<>(actualWorkers.size());
+    for (Integer worker : actualWorkers) {
+      workerPlans.put(worker, workerPlan);
+    }
+
+    final CollectConsumer consumer =
+        new CollectConsumer(addWorkerId.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
+
+    DataOutput output = new DataOutput(consumer, writer);
+    final SingleQueryPlanWithArgs masterPlan = new SingleQueryPlanWithArgs(output);
+
+    /* Submit the plan for the download. */
+    String planString =
+        Joiner.on('\0').join("download profiling data (query=", queryId, ", fragment=", fragmentId, ", range=[",
+            Joiner.on(", ").join(start, end), "]", ")");
     try {
       return submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
     } catch (CatalogException e) {
@@ -1679,8 +1754,8 @@ public final class Server {
 
     /* Submit the plan for the download. */
     String planString =
-        Joiner.on("").join("download profiling histogram (query=", queryId, ", fragment=", fragmentId, "range=[",
-            Joiner.on(',').join(start, end, step), "]", ")");
+        Joiner.on('\0').join("download profiling histogram (query=", queryId, ", fragment=", fragmentId, ", range=[",
+            Joiner.on(", ").join(start, end, step), "]", ")");
     try {
       return submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
     } catch (CatalogException e) {
@@ -1742,7 +1817,7 @@ public final class Server {
     final SingleQueryPlanWithArgs masterPlan = new SingleQueryPlanWithArgs(output);
 
     /* Submit the plan for the download. */
-    String planString = Joiner.on("").join("download time range (query=", queryId, ", fragment=", fragmentId, ")");
+    String planString = Joiner.on('\0').join("download time range (query=", queryId, ", fragment=", fragmentId, ")");
     try {
       return submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
     } catch (CatalogException e) {
