@@ -979,7 +979,7 @@ public final class Server {
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
    */
-  public QueryFuture submitQuery(final QueryEncoding physicalPlan, final MetaTask plan) throws DbException,
+  public QueryFuture submitQuery(final QueryEncoding physicalPlan, final QueryPlan plan) throws DbException,
       CatalogException {
     if (!canSubmitQuery()) {
       throw new DbException("Cannot submit query");
@@ -1007,7 +1007,7 @@ public final class Server {
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
    */
-  private QueryFuture submitQuery(final long queryId, final MetaTask plan) throws DbException, CatalogException {
+  private QueryFuture submitQuery(final long queryId, final QueryPlan plan) throws DbException, CatalogException {
     final Query queryState = new Query(queryId, plan, this);
     activeQueries.put(queryId, queryState);
     advanceQuery(queryState);

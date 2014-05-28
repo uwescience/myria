@@ -17,15 +17,15 @@ import edu.washington.escience.myria.operator.EOSSource;
 import edu.washington.escience.myria.operator.SinkRoot;
 
 /**
- * A {@link MetaTask} that runs a single subquery. Note that a {@link JsonSubQuery} cannot have a {@link MetaTask} as a
+ * A {@link QueryPlan} that runs a single subquery. Note that a {@link JsonSubQuery} cannot have a {@link QueryPlan} as a
  * child, but rather can only accept a physical JSON subquery as a set of fragments.
  */
-public final class JsonSubQuery extends MetaTask {
+public final class JsonSubQuery extends QueryPlan {
   /** The json query to be executed. */
   private final List<PlanFragmentEncoding> fragments;
 
   /**
-   * Construct a {@link MetaTask} that runs the given subquery. The subquery will be instantiated using
+   * Construct a {@link QueryPlan} that runs the given subquery. The subquery will be instantiated using
    * {@link QueryConstruct#instantiate(List, edu.washington.escience.myria.parallel.Server)}.
    * 
    * @param fragments the JSON query to be executed, broken into fragments
@@ -36,11 +36,11 @@ public final class JsonSubQuery extends MetaTask {
   }
 
   @Override
-  public void instantiate(final LinkedList<MetaTask> metaQ, final LinkedList<SubQuery> subQueryQ, final Server server)
+  public void instantiate(final LinkedList<QueryPlan> planQ, final LinkedList<SubQuery> subQueryQ, final Server server)
       throws DbException {
-    MetaTask task = metaQ.peekFirst();
+    QueryPlan task = planQ.peekFirst();
     Verify.verify(task == this, "this Fragment %s should be the first object on the queue, not %s!", this, task);
-    metaQ.removeFirst();
+    planQ.removeFirst();
 
     Map<Integer, SubQueryPlan> allPlans;
     try {

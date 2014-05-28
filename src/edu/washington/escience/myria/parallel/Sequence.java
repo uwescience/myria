@@ -8,34 +8,33 @@ import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableList;
 
 /**
- * A meta-task that multiple {@link MetaTask} in sequence.
+ * A {@link QueryPlan} node that signifies running each of its children serially.
  */
-public final class Sequence extends MetaTask {
-  /** The tasks to run. */
-  private final List<MetaTask> tasks;
+public final class Sequence extends QueryPlan {
+  /** The child query plans to run serially. */
+  private final List<QueryPlan> plans;
 
   /**
-   * Construct a {@link MetaTask} that runs the given tasks in sequence.
+   * Construct a {@link QueryPlan} that runs the given tasks in sequence.
    * 
-   * @param tasks the tasks to be run.
+   * @param plans the tasks to be run.
    */
-  public Sequence(final List<MetaTask> tasks) {
-    this.tasks = ImmutableList.copyOf(Objects.requireNonNull(tasks, "tasks"));
+  public Sequence(final List<QueryPlan> plans) {
+    this.plans = ImmutableList.copyOf(Objects.requireNonNull(plans, "plans"));
   }
 
   /**
    * @return the tasks
    */
-  public List<MetaTask> getTasks() {
-    return tasks;
+  public List<QueryPlan> getTasks() {
+    return plans;
   }
 
   @Override
-  public void instantiate(final LinkedList<MetaTask> metaQ, final LinkedList<SubQuery> subQueryQ, final Server server) {
-    MetaTask checkTask = metaQ.peekFirst();
-    Verify.verify(checkTask == this, "this Fragment %s should be the first object on the queue, not %s!", this,
-        checkTask);
-    metaQ.removeFirst();
-    metaQ.addAll(tasks);
+  public void instantiate(final LinkedList<QueryPlan> planQ, final LinkedList<SubQuery> subQueryQ, final Server server) {
+    QueryPlan checkTask = planQ.peekFirst();
+    Verify.verify(checkTask == this, "this %s should be the first object on the queue, not %s!", this, checkTask);
+    planQ.removeFirst();
+    planQ.addAll(plans);
   }
 }

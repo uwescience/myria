@@ -8,8 +8,9 @@ import com.google.common.base.Verify;
 
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.api.MyriaApiException;
-import edu.washington.escience.myria.api.encoding.meta.SubQueryEncoding;
-import edu.washington.escience.myria.api.encoding.meta.SubPlanEncoding;
+import edu.washington.escience.myria.api.encoding.plan.SubPlanEncoding;
+import edu.washington.escience.myria.api.encoding.plan.SubQueryEncoding;
+import edu.washington.escience.myria.parallel.QueryPlan;
 
 /**
  * A JSON-able wrapper for the expected wire message for a query.
@@ -29,7 +30,7 @@ public class QueryEncoding extends MyriaApiEncoding {
 
   /** The old physical query plan encoding. */
   public List<PlanFragmentEncoding> fragments;
-  /** The new meta task query plan encoding. */
+  /** The new {@link QueryPlan} encoding. */
   public SubPlanEncoding plan;
 
   @Override

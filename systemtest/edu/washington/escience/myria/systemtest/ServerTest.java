@@ -12,7 +12,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.operator.EOSSource;
 import edu.washington.escience.myria.operator.SinkRoot;
-import edu.washington.escience.myria.parallel.MetaTask;
+import edu.washington.escience.myria.parallel.QueryPlan;
 import edu.washington.escience.myria.parallel.Sequence;
 import edu.washington.escience.myria.parallel.SubQuery;
 import edu.washington.escience.myria.parallel.SubQueryPlan;
@@ -24,7 +24,7 @@ public class ServerTest extends SystemTestBase {
   @Test(expected = DbException.class)
   public void testProfilingWithSQLite() throws Exception {
     SubQueryPlan serverPlan = new SubQueryPlan(new SinkRoot(new EOSSource()));
-    MetaTask plan = new SubQuery(serverPlan, new HashMap<Integer, SubQueryPlan>());
+    QueryPlan plan = new SubQuery(serverPlan, new HashMap<Integer, SubQueryPlan>());
     QueryEncoding query = new QueryEncoding();
     query.rawDatalog = "testDatalog";
     query.logicalRa = "testRa";
@@ -43,8 +43,8 @@ public class ServerTest extends SystemTestBase {
   @Test(expected = DbException.class)
   public void testProfilingWithMultipleQueries() throws Exception {
     SubQueryPlan serverPlan = new SubQueryPlan(new SinkRoot(new EOSSource()));
-    MetaTask frag = new SubQuery(serverPlan, new HashMap<Integer, SubQueryPlan>());
-    MetaTask plan = new Sequence(ImmutableList.of(frag, frag));
+    QueryPlan frag = new SubQuery(serverPlan, new HashMap<Integer, SubQueryPlan>());
+    QueryPlan plan = new Sequence(ImmutableList.of(frag, frag));
     QueryEncoding query = new QueryEncoding();
     query.rawDatalog = "testDatalog";
     query.logicalRa = "testRa";

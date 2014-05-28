@@ -22,8 +22,8 @@ public final class Query {
   private Status status;
   /** The subqueries to be executed. */
   private final LinkedList<SubQuery> subQueryQ;
-  /** The meta tasks to be executed. */
-  private final LinkedList<MetaTask> metaQ;
+  /** The query plan tasks to be executed. */
+  private final LinkedList<QueryPlan> planQ;
   /** The execution statistics about this query. */
   private final ExecutionStatistics executionStats;
   /** The currently-executing subquery. */
@@ -42,15 +42,15 @@ public final class Query {
    * @param plan the execution plan
    * @param server the server on which this query will be executed
    */
-  public Query(final long queryId, final MetaTask plan, final Server server) {
+  public Query(final long queryId, final QueryPlan plan, final Server server) {
     this.server = Objects.requireNonNull(server, "server");
     this.queryId = queryId;
     subqueryId = 0;
     status = Status.ACCEPTED;
     executionStats = new ExecutionStatistics();
     subQueryQ = new LinkedList<>();
-    metaQ = new LinkedList<>();
-    metaQ.add(plan);
+    planQ = new LinkedList<>();
+    planQ.add(plan);
     message = null;
     future = QueryFuture.create(queryId);
   }
@@ -81,7 +81,7 @@ public final class Query {
    * @return <code>true</code> if this query has finished, and <code>false</code> otherwise
    */
   public boolean isDone() {
-    return subQueryQ.isEmpty() && metaQ.isEmpty();
+    return subQueryQ.isEmpty() && planQ.isEmpty();
   }
 
   /**
@@ -110,9 +110,9 @@ public final class Query {
       ++subqueryId;
       return currentSubQuery;
     }
-    metaQ.getFirst().instantiate(metaQ, subQueryQ, server);
+    planQ.getFirst().instantiate(planQ, subQueryQ, server);
     /*
-     * The above line may have emptied metaQ, mucked with subQueryQ, not sure. So just recurse to make sure we do the
+     * The above line may have emptied planQ, mucked with subQueryQ, not sure. So just recurse to make sure we do the
      * right thing.
      */
     return nextSubQuery();

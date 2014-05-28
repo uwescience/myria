@@ -1,4 +1,4 @@
-package edu.washington.escience.myria.api.encoding.meta;
+package edu.washington.escience.myria.api.encoding.plan;
 
 import java.util.List;
 import java.util.Set;
@@ -11,7 +11,7 @@ import com.google.common.collect.ImmutableSet;
 import edu.washington.escience.myria.api.encoding.PlanFragmentEncoding;
 import edu.washington.escience.myria.api.encoding.Required;
 import edu.washington.escience.myria.parallel.JsonSubQuery;
-import edu.washington.escience.myria.parallel.MetaTask;
+import edu.washington.escience.myria.parallel.QueryPlan;
 
 public class SubQueryEncoding extends SubPlanEncoding {
   @Required
@@ -23,7 +23,7 @@ public class SubQueryEncoding extends SubPlanEncoding {
   }
 
   @Override
-  public MetaTask getTask() {
+  public QueryPlan getPlan() {
     return new JsonSubQuery(fragments);
   }
 

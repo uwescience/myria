@@ -33,9 +33,9 @@ import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
 import edu.washington.escience.myria.api.encoding.TableScanEncoding;
-import edu.washington.escience.myria.api.encoding.meta.SequenceEncoding;
-import edu.washington.escience.myria.api.encoding.meta.SubPlanEncoding;
-import edu.washington.escience.myria.api.encoding.meta.SubQueryEncoding;
+import edu.washington.escience.myria.api.encoding.plan.SequenceEncoding;
+import edu.washington.escience.myria.api.encoding.plan.SubPlanEncoding;
+import edu.washington.escience.myria.api.encoding.plan.SubQueryEncoding;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.io.ByteArraySource;
@@ -56,7 +56,7 @@ import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
 import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
 import edu.washington.escience.myria.operator.network.partition.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
-import edu.washington.escience.myria.parallel.MetaTask;
+import edu.washington.escience.myria.parallel.QueryPlan;
 import edu.washington.escience.myria.parallel.QueryFuture;
 import edu.washington.escience.myria.parallel.Sequence;
 import edu.washington.escience.myria.parallel.SubQuery;
@@ -92,7 +92,7 @@ public class SequenceTest extends SystemTestBase {
       workerPlans.put(i, new SubQueryPlan(new RootOperator[] { insert, sp }));
     }
     SubQueryPlan serverPlan = new SubQueryPlan(new SinkRoot(new EOSSource()));
-    MetaTask first = new SubQuery(serverPlan, workerPlans);
+    QueryPlan first = new SubQuery(serverPlan, workerPlans);
 
     /* Second task: count the number of tuples. */
     DbQueryScan scan = new DbQueryScan(storage, testSchema);
@@ -109,10 +109,10 @@ public class SequenceTest extends SystemTestBase {
     for (int i : workerIDs) {
       workerPlans.put(i, new SubQueryPlan(coll));
     }
-    MetaTask second = new SubQuery(new SubQueryPlan(root), workerPlans);
+    QueryPlan second = new SubQuery(new SubQueryPlan(root), workerPlans);
 
     /* Combine first and second into two queries, one after the other. */
-    MetaTask all = new Sequence(ImmutableList.of(first, second));
+    QueryPlan all = new Sequence(ImmutableList.of(first, second));
 
     /* Submit the query and compute its ID. */
     QueryEncoding encoding = new QueryEncoding();
@@ -140,16 +140,16 @@ public class SequenceTest extends SystemTestBase {
       workerPlans.put(i, new SubQueryPlan(new RootOperator[] { new SinkRoot(new EOSSource()) }));
     }
     SubQueryPlan serverPlan = new SubQueryPlan(new SinkRoot(new EOSSource()));
-    MetaTask first = new SubQuery(serverPlan, workerPlans);
+    QueryPlan first = new SubQuery(serverPlan, workerPlans);
 
     /* Second task: crash just the first worker. */
     workerPlans = new HashMap<>();
     workerPlans.put(workerIDs[0], new SubQueryPlan(new RootOperator[] { new SinkRoot(new InitFailureInjector(
         new EOSSource())) }));
-    MetaTask second = new SubQuery(serverPlan, workerPlans);
+    QueryPlan second = new SubQuery(serverPlan, workerPlans);
 
     /* Combine first and second into two queries, one after the other. */
-    MetaTask all = new Sequence(ImmutableList.of(first, second));
+    QueryPlan all = new Sequence(ImmutableList.of(first, second));
 
     /* Submit the query. */
     QueryEncoding encoding = new QueryEncoding();
@@ -226,7 +226,7 @@ public class SequenceTest extends SystemTestBase {
 
     // Sequence of firstJson, secondJson
     SequenceEncoding seq = new SequenceEncoding();
-    seq.tasks = ImmutableList.<SubPlanEncoding> of(firstJson, secondJson);
+    seq.plans = ImmutableList.<SubPlanEncoding> of(firstJson, secondJson);
 
     QueryEncoding query = new QueryEncoding();
     query.plan = seq;

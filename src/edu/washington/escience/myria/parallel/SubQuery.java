@@ -20,7 +20,7 @@ import edu.washington.escience.myria.operator.RootOperator;
 /**
  * Represents a single {@link SubQuery} in a query.
  */
-public final class SubQuery extends MetaTask {
+public final class SubQuery extends QueryPlan {
   /** The id of this {@link SubQuery}. */
   private SubQueryId subQueryId;
   /** The master plan for this {@link SubQuery}. */
@@ -208,10 +208,10 @@ public final class SubQuery extends MetaTask {
   }
 
   @Override
-  public void instantiate(final LinkedList<MetaTask> metaQ, final LinkedList<SubQuery> subQueryQ, final Server server) {
-    MetaTask task = metaQ.peekFirst();
-    Verify.verify(task == this, "this SubQuery %s should be the first object on the queue, not %s!", this, task);
-    metaQ.removeFirst();
+  public void instantiate(final LinkedList<QueryPlan> planQ, final LinkedList<SubQuery> subQueryQ, final Server server) {
+    QueryPlan task = planQ.peekFirst();
+    Verify.verify(task == this, "this %s should be the first object on the queue, not %s!", this, task);
+    planQ.removeFirst();
     subQueryQ.addFirst(new SubQuery(masterPlan, workerPlans));
   }
 }

@@ -88,7 +88,7 @@ public final class QueryResource {
     /* Start the query, and get its Server-assigned Query ID */
     QueryFuture qf;
     try {
-      qf = server.submitQuery(query, query.plan.getTask());
+      qf = server.submitQuery(query, query.plan.getPlan());
     } catch (MyriaApiException e) {
       /* Passthrough MyriaApiException. */
       throw e;
