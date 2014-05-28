@@ -557,9 +557,6 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
 
       try {
         ch = getAConnection(remoteID);
-        if (ch == null) {
-          return false;
-        }
 
         if (!IPCUtils.isRemoteConnected(ch)) {
           // shallow testing
