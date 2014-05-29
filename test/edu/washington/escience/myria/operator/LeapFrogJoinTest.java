@@ -173,7 +173,7 @@ public class LeapFrogJoinTest {
     int[][][] fieldMap =
         new int[][][] {
             { { 0, 0 }, { 3, 1 }, { 4, 0 } }, { { 0, 1 }, { 1, 0 }, { 4, 1 } }, { { 1, 1 }, { 2, 0 }, { 4, 2 } },
-            { { 2, 1 }, { 3, 0 }, { 4, 2 } } };
+            { { 2, 1 }, { 3, 0 } } };
     int[][] outputMap = new int[][] { { 0, 0 }, { 0, 1 }, { 1, 1 }, { 2, 1 } };
     final ImmutableList<String> outputColumnNames = ImmutableList.of("x", "y", "z", "p");
     final Schema outputSchema =
@@ -193,4 +193,44 @@ public class LeapFrogJoinTest {
     join.close();
     assertEquals(4, batches.numTuples());
   }
+
+  @Test
+  public void tridentQuery() throws DbException {
+    /* Query: Result(x,y,z) :- R(x),S(x),T(y,x). */
+    final Schema r_schema = new Schema(ImmutableList.of(Type.INT_TYPE), ImmutableList.of("film_id_a"));
+    final Schema s_schema = new Schema(ImmutableList.of(Type.INT_TYPE), ImmutableList.of("film_id_b"));
+    final Schema t_schema =
+        new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE), ImmutableList.of("film_id", "perform_id"));
+    /* read data from files, note */
+    final String r_path = Paths.get("testdata", "multiwayjoin", "fa.csv").toString();
+    final String s_path = Paths.get("testdata", "multiwayjoin", "fb.csv").toString();
+    final String t_path = Paths.get("testdata", "multiwayjoin", "pf.csv").toString();
+    FileScan fileScanR = new FileScan(r_path, r_schema);
+    FileScan fileScanS = new FileScan(s_path, s_schema);
+    FileScan fileScanT = new FileScan(t_path, t_schema);
+    /* order the tables. */
+    InMemoryOrderBy orderR = new InMemoryOrderBy(fileScanR, new int[] { 0 }, new boolean[] { true });
+    InMemoryOrderBy orderS = new InMemoryOrderBy(fileScanS, new int[] { 0 }, new boolean[] { true });
+    InMemoryOrderBy orderT = new InMemoryOrderBy(fileScanT, new int[] { 1 }, new boolean[] { true });
+    /* leapfrog join. */
+    int[][][] fieldMap = new int[][][] { { { 0, 0 }, { 1, 0 }, { 2, 1 } } };
+    int[][] outputMap = new int[][] { { 0, 0 }, { 2, 0 } };
+    final ImmutableList<String> outputColumnNames = ImmutableList.of("x", "y");
+    final Schema outputSchema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE), outputColumnNames);
+    LeapFrogJoin join =
+        new LeapFrogJoin(new Operator[] { orderR, orderS, orderT }, fieldMap, outputMap, outputColumnNames,
+            new boolean[] { false, false, false });
+    join.open(null);
+    TupleBatch tb;
+    TupleBatchBuffer batches = new TupleBatchBuffer(outputSchema);
+    while (!join.eos()) {
+      tb = join.nextReady();
+      if (tb != null) {
+        batches.appendTB(tb);
+      }
+    }
+    join.close();
+    System.out.println(batches.numTuples());
+  }
+
 }
