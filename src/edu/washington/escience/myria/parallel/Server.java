@@ -1737,7 +1737,7 @@ public final class Server {
         Joiner.on(' ').join("SELECT s.t AS nanotime FROM generate_series(", start, ", ", end, ", ", step,
             ") As s(t) JOIN (SELECT * FROM", relationKey.toString(getDBMS()), "WHERE queryid=", queryId,
             "AND fragmentid=", fragmentId, "AND opid=(", opnameQueryString,
-            ")) AS p ON s.t BETWEEN starttime AND endtime;");
+            ")) AS p ON s.t BETWEEN starttime AND endtime");
 
     DbQueryScan scan = new DbQueryScan(histogramWorkerQueryString, schema);
     final ExchangePairID operatorId = ExchangePairID.newID();
@@ -1834,6 +1834,77 @@ public final class Server {
 
     /* Submit the plan for the download. */
     String planString = Joiner.on('\0').join("download time range (query=", queryId, ", fragment=", fragmentId, ")");
+    try {
+      return submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
+
+  /**
+   * @param queryId query id.
+   * @param fragmentId the fragment id to return data for. All fragments, if < 0.
+   * @param writer writer to get data.
+   * @return contributions for operator.
+   * 
+   * @throws DbException if there is an error when accessing profiling logs.
+   */
+  public QueryFuture startContributionsStream(final long queryId, final long fragmentId, final TupleWriter writer)
+      throws DbException {
+    /* Get the relation's schema, to make sure it exists. */
+    final QueryStatusEncoding queryStatus;
+    try {
+      queryStatus = catalog.getQuery(queryId);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+    Preconditions.checkArgument(queryStatus != null, "query %s not found", queryId);
+    Preconditions.checkArgument(queryStatus.status == QueryStatusEncoding.Status.SUCCESS,
+        "query %s did not succeed (%s)", queryId, queryStatus.status);
+    Preconditions.checkArgument(queryStatus.profilingMode, "query %s was not run with profiling enabled");
+
+    final Schema schema =
+        new Schema(ImmutableList.of(Type.STRING_TYPE, Type.LONG_TYPE), ImmutableList.of("opId", "nanoTime"));
+    final RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
+
+    Set<Integer> actualWorkers = ((QueryEncoding) queryStatus.physicalPlan).getWorkers();
+
+    String opContributionsQueryString =
+        Joiner.on(' ').join("SELECT opid, sum(endtime - starttime) FROM ", relationKey.toString(getDBMS()),
+            "WHERE queryid=", queryId, "AND fragmentid=", fragmentId, "GROUP BY opid");
+
+    DbQueryScan scan = new DbQueryScan(opContributionsQueryString, schema);
+    final ExchangePairID operatorId = ExchangePairID.newID();
+
+    CollectProducer producer = new CollectProducer(scan, operatorId, MyriaConstants.MASTER_ID);
+
+    SingleQueryPlanWithArgs workerPlan = new SingleQueryPlanWithArgs(producer);
+    Map<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<>(actualWorkers.size());
+    for (Integer worker : actualWorkers) {
+      workerPlans.put(worker, workerPlan);
+    }
+
+    /* Aggregate on master */
+
+    final CollectConsumer consumer =
+        new CollectConsumer(scan.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
+
+    // sum up contributions
+    final SingleGroupByAggregate sumAggregate =
+        new SingleGroupByAggregate(consumer, new int[] { 0 }, 0, new int[] { Aggregator.AGG_OP_COUNT });
+
+    // rename columns
+    ImmutableList.Builder<Expression> renameExpressions = ImmutableList.builder();
+    renameExpressions.add(new Expression("opId", new VariableExpression(0)));
+    renameExpressions.add(new Expression("nanoTime", new VariableExpression(1)));
+    final Apply rename = new Apply(sumAggregate, renameExpressions.build());
+
+    DataOutput output = new DataOutput(rename, writer);
+    final SingleQueryPlanWithArgs masterPlan = new SingleQueryPlanWithArgs(output);
+
+    /* Submit the plan for the download. */
+    String planString =
+        Joiner.on('\0').join("download operator contributions (query=", queryId, ", fragment=", fragmentId, ")");
     try {
       return submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
     } catch (CatalogException e) {
