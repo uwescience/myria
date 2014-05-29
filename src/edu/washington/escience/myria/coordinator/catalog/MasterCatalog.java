@@ -632,6 +632,82 @@ public final class MasterCatalog {
   }
 
   /**
+   * Adds the new set of workers to the shard information of the relation.
+   * 
+   * @param relation the relation
+   * @param newShards the set of new shards to be added
+   * @throws CatalogException if there is a database exception
+   */
+  public void updateShardInformation(final RelationKey relation, final Set<Integer> newShards) throws CatalogException {
+    Objects.requireNonNull(relation);
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+
+    /* Do the work */
+    try {
+      queue.execute(new SQLiteJob<Object>() {
+        @Override
+        protected Object job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+          try {
+            /* To begin: start a transaction. */
+            sqliteConnection.exec("BEGIN TRANSACTION;");
+
+            /* get the relation id and the current num_shards from stored_relations */
+            SQLiteStatement statement =
+                sqliteConnection
+                    .prepare("SELECT stored_relation_id, num_shards FROM stored_relations WHERE user_name = ? AND program_name = ? AND relation_name = ?");
+            statement.bind(1, relation.getUserName());
+            statement.bind(2, relation.getProgramName());
+            statement.bind(3, relation.getRelationName());
+            statement.step();
+            int storedRelationId = statement.columnInt(0);
+            int numShards = statement.columnInt(1);
+            statement.dispose();
+            statement = null;
+
+            /* update the stored_relation table. */
+            statement =
+                sqliteConnection
+                    .prepare("UPDATE stored_relations SET num_shards=? WHERE user_name = ? AND program_name = ? AND relation_name = ?");
+            statement.bind(1, numShards + newShards.size());
+            statement.bind(2, relation.getUserName());
+            statement.bind(3, relation.getProgramName());
+            statement.bind(4, relation.getRelationName());
+            statement.stepThrough();
+            statement.dispose();
+            statement = null;
+
+            /* populate the shards table. */
+            statement =
+                sqliteConnection.prepare("INSERT INTO shards(stored_relation_id,shard_index,worker_id) "
+                    + "VALUES (?,?,?);");
+            int count = 0;
+            for (int i : newShards) {
+              statement.bind(1, storedRelationId);
+              statement.bind(2, count);
+              statement.bind(3, i);
+              statement.step();
+              statement.reset(false);
+              ++count;
+            }
+            statement.dispose();
+            statement = null;
+
+            /* To complete: commit the transaction. */
+            sqliteConnection.exec("COMMIT TRANSACTION;");
+          } catch (final SQLiteException e) {
+            throw new CatalogException(e);
+          }
+          return null;
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
    * Adds a worker using the specified host and port to the Catalog.
    * 
    * @param hostPortString specifies the path to the worker in the format "host:port"
