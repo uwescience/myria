@@ -7,6 +7,7 @@ import java.io.ObjectInputStream;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -67,6 +68,7 @@ import edu.washington.escience.myria.expression.StateExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.expression.WorkerIdExpression;
 import edu.washington.escience.myria.operator.Apply;
+import edu.washington.escience.myria.operator.CreateView;
 import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbInsertWithView;
@@ -1224,7 +1226,7 @@ public final class Server {
       GetMaxNExpression getMaxN =
           new GetMaxNExpression(new ConstantExpression(MyriaConstants.NUM_MAX_WORKERS), new ConstantExpression(
               MyriaConstants.NUM_REPLICAS), new ConstantExpression(3), hashFields.build());
-      Expression expr = new Expression("MaxN", getMaxN);
+      Expression expr = new Expression("maxN", getMaxN);
       Schema schema = source.getSchema();
       for (int column = 0; column < schema.numColumns(); column++) {
         VariableExpression copy = new VariableExpression(column);
@@ -1303,6 +1305,104 @@ public final class Server {
   public PartitionInfo getParitionFunctionInfo(final RelationKey relationKey) throws DbException {
     try {
       return catalog.getPartitionFunctionInfo(relationKey);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
+
+  /**
+   * Scale out the relation to use one additional worker.
+   * 
+   * @param relationKey the relation to scale out
+   * @return the worker id that the relation scaled to
+   * @throws InterruptedException interrupted
+   * @throws DbException if there is an error
+   */
+  public String scaleOut(final RelationKey relationKey) throws DbException, InterruptedException {
+    try {
+      if (!catalog.getPartitionFunctionInfo(relationKey).getPartitionFunction().equals(
+          MyriaConstants.PARTITION_FUNCTION_CONSISTENT_HASH)) {
+        return null;
+      }
+      ImmutableSet.Builder<Integer> usedWorkersBuilder = ImmutableSet.builder();
+      usedWorkersBuilder.addAll(getWorkersForRelation(relationKey, null));
+      final ImmutableSet<Integer> usedWorkers = usedWorkersBuilder.build();
+      final Set<Integer> validWorkerToScale = aliveWorkers.keySet();
+      validWorkerToScale.removeAll(usedWorkers);
+      Set<Integer> newWorkers = new HashSet<>();
+      Integer targetWorker = validWorkerToScale.iterator().next();
+      newWorkers.add(targetWorker);
+
+      RelationKey actualDataRelationKey =
+          RelationKey.of(relationKey.getUserName(), relationKey.getProgramName(), relationKey.getRelationName()
+              + "_actual");
+      Schema schema = catalog.getSchema(relationKey);
+      LOGGER.info("Schema: " + schema);
+      ImmutableList.Builder<String> colNamesBuilder = ImmutableList.builder();
+      colNamesBuilder.addAll(schema.getColumnNames());
+      colNamesBuilder.add("maxN");
+      ImmutableList.Builder<Type> colTypesBuilder = ImmutableList.builder();
+      colTypesBuilder.addAll(schema.getColumnTypes());
+      colTypesBuilder.add(Type.INT_TYPE);
+      Schema actualDataSchema = new Schema(colTypesBuilder.build(), colNamesBuilder.build());
+      /* all workers' plan */
+      String sql = "SELECT * FROM " + actualDataRelationKey.toString(getDBMS()) + " WHERE maxN = " + usedWorkers.size();
+      DbQueryScan scan = new DbQueryScan(sql, actualDataSchema);
+      ImmutableList.Builder<Expression> expressions = ImmutableList.builder();
+      for (int column = 0; column < schema.numColumns(); column++) {
+        if (!schema.getColumnName(column).equals("maxN")) {
+          VariableExpression copy = new VariableExpression(column);
+          expressions.add(new Expression(schema.getColumnName(column), copy));
+        }
+      }
+      final ExchangePairID shuffleId = ExchangePairID.newID();
+      ConstantExpression constExpr = new ConstantExpression(MyriaConstants.NUM_MAX_WORKERS);
+      expressions.add(new Expression("maxN", constExpr));
+      Apply apply = new Apply(scan, expressions.build());
+      CollectProducer scatter = new CollectProducer(apply, shuffleId, targetWorker);
+
+      /* Target worker plan */
+      CollectConsumer consumer = new CollectConsumer(actualDataSchema, shuffleId, usedWorkers);
+      String condition = (usedWorkers.size() + 1) + " <= maxN";
+      DbInsertWithView insert =
+          new DbInsertWithView(consumer, actualDataRelationKey, true, relationKey, schema, condition);
+
+      /* send the query to the workers */
+      Map<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
+      for (Integer workerId : usedWorkers) {
+        workerPlans.put(workerId, new SingleQueryPlanWithArgs(scatter));
+      }
+      workerPlans.put(targetWorker, new SingleQueryPlanWithArgs(insert));
+
+      SingleQueryPlanWithArgs masterPlan = new SingleQueryPlanWithArgs(new SinkRoot(new EOSSource()));
+
+      /* Start the workers */
+      QueryFuture qf =
+          submitQuery("scaleout " + relationKey.toString("sqlite"), "scaleout " + relationKey.toString("sqlite"),
+              "scaleout " + relationKey.toString("sqlite"), masterPlan, workerPlans, false).sync();
+      if (qf == null) {
+        return null;
+      }
+
+      /* update the shards of the relation with the new worker. */
+      catalog.updateShardInformation(relationKey, newWorkers);
+
+      /* update the view with the proper number of maxN */
+      workerPlans.clear();
+      EOSSource source = new EOSSource();
+      CreateView createView = new CreateView(source, relationKey, actualDataRelationKey, schema, condition);
+      for (Integer workerId : usedWorkers) {
+        workerPlans.put(workerId, new SingleQueryPlanWithArgs(createView));
+      }
+
+      qf =
+          submitQuery("updateView " + relationKey.toString("sqlite"), "updateView " + relationKey.toString("sqlite"),
+              "updateView " + relationKey.toString("sqlite"), masterPlan, workerPlans, false).sync();
+      if (qf == null) {
+        return null;
+      }
+
+      return newWorkers.toString();
     } catch (CatalogException e) {
       throw new DbException(e);
     }
