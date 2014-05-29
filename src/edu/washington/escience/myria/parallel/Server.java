@@ -1611,13 +1611,14 @@ public final class Server {
    * @param fragmentId the fragment id to return data for. All fragments, if < 0.
    * @param start the earliest time where we need data
    * @param end the latest time
+   * @param onlyRootOperator only return data for root operator
    * @param writer writer to get data.
    * @return profiling logs for the query.
    * 
    * @throws DbException if there is an error when accessing profiling logs.
    */
   public QueryFuture startLogDataStream(final long queryId, final long fragmentId, final long start, final long end,
-      final TupleWriter writer) throws DbException {
+      final boolean onlyRootOperator, final TupleWriter writer) throws DbException {
     /* Get the relation's schema, to make sure it exists. */
     final QueryStatusEncoding queryStatus;
     try {
@@ -1637,10 +1638,17 @@ public final class Server {
 
     Set<Integer> actualWorkers = ((QueryEncoding) queryStatus.physicalPlan).getWorkers();
 
+    String opCondition = "";
+    if (onlyRootOperator) {
+      opCondition =
+          Joiner.on(' ').join("AND opid = (SELECT opid FROM", MyriaConstants.PROFILING_RELATION.toString(getDBMS()),
+              "WHERE", fragmentId, "=fragmentId AND", queryId, "=queryId ORDER BY starttime ASC limit 1)");;
+    }
+
     String queryString =
         Joiner.on(' ').join("SELECT opid, starttime, endtime, numtuples FROM",
             MyriaConstants.PROFILING_RELATION.toString(getDBMS()), "WHERE fragmentId =", fragmentId, "AND queryid =",
-            queryId, "AND endtime >", start, "AND starttime <", end, "ORDER BY starttime ASC");
+            queryId, "AND endtime >", start, "AND starttime <", end, opCondition, "ORDER BY starttime ASC");
 
     DbQueryScan scan = new DbQueryScan(queryString, schema);
 
@@ -1716,12 +1724,12 @@ public final class Server {
 
     String opnameQueryString =
         Joiner.on(' ').join("SELECT opid FROM", relationKey.toString(getDBMS()), "WHERE", fragmentId,
-            "=fragmentId AND ", queryId, "=queryId ORDER BY starttime ASC limit 1");
+            "=fragmentId AND", queryId, "=queryId ORDER BY starttime ASC limit 1");
 
     String histogramWorkerQueryString =
         Joiner.on(' ').join("SELECT s.t AS nanotime FROM generate_series(", start, ", ", end, ", ", step,
             ") As s(t) JOIN (SELECT * FROM", relationKey.toString(getDBMS()), "WHERE queryid=", queryId,
-            "AND fragmentid=", fragmentId, " AND opid=(", opnameQueryString,
+            "AND fragmentid=", fragmentId, "AND opid=(", opnameQueryString,
             ")) AS p ON s.t BETWEEN starttime AND endtime;");
 
     DbQueryScan scan = new DbQueryScan(histogramWorkerQueryString, schema);
