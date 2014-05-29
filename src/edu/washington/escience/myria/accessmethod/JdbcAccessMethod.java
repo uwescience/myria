@@ -319,8 +319,8 @@ public final class JdbcAccessMethod extends AccessMethod {
   public void createView(final RelationKey viewRelationKey, final RelationKey relationKey, final Schema schema,
       final String condition) throws DbException {
     StringBuilder statement = new StringBuilder();
-    statement.append("CREATE VIEW ").append(viewRelationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)).append(
-        " AS ");
+    statement.append("CREATE OR REPLACE VIEW ").append(viewRelationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE))
+        .append(" AS ");
     statement.append(selectStatementFromSchema(schema, relationKey, condition));
     execute(statement.toString());
   }

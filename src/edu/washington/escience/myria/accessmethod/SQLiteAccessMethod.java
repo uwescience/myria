@@ -448,11 +448,15 @@ public final class SQLiteAccessMethod extends AccessMethod {
   @Override
   public void createView(final RelationKey viewRelationKey, final RelationKey relationKey, final Schema schema,
       final String condition) throws DbException {
-    StringBuilder statement = new StringBuilder();
-    statement.append("CREATE VIEW ").append(viewRelationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)).append(
-        " AS ");
-    statement.append(selectStatementFromSchema(schema, relationKey, condition));
-    execute(statement.toString());
+    StringBuilder deleteViewStatement = new StringBuilder();
+    deleteViewStatement.append("DROP VIEW IF EXISTS ").append(
+        viewRelationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
+    execute(deleteViewStatement.toString());
+    StringBuilder createViewStatement = new StringBuilder();
+    createViewStatement.append("CREATE VIEW ").append(viewRelationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE))
+        .append(" AS ");
+    createViewStatement.append(selectStatementFromSchema(schema, relationKey, condition));
+    execute(createViewStatement.toString());
   }
 }
 
