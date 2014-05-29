@@ -1869,9 +1869,14 @@ public final class Server {
 
     Set<Integer> actualWorkers = ((QueryEncoding) queryStatus.physicalPlan).getWorkers();
 
+    String fragIdCondition = "";
+    if (fragmentId >= 0) {
+      fragIdCondition = "AND fragmentid=" + fragmentId;
+    }
+
     String opContributionsQueryString =
         Joiner.on(' ').join("SELECT opid, sum(endtime - starttime) FROM ", relationKey.toString(getDBMS()),
-            "WHERE queryid=", queryId, "AND fragmentid=", fragmentId, "GROUP BY opid");
+            "WHERE queryid=", queryId, fragIdCondition, "GROUP BY opid");
 
     DbQueryScan scan = new DbQueryScan(opContributionsQueryString, schema);
     final ExchangePairID operatorId = ExchangePairID.newID();
@@ -1891,7 +1896,7 @@ public final class Server {
 
     // sum up contributions
     final SingleGroupByAggregate sumAggregate =
-        new SingleGroupByAggregate(consumer, new int[] { 0 }, 0, new int[] { Aggregator.AGG_OP_COUNT });
+        new SingleGroupByAggregate(consumer, new int[] { 1 }, 0, new int[] { Aggregator.AGG_OP_SUM });
 
     // rename columns
     ImmutableList.Builder<Expression> renameExpressions = ImmutableList.builder();
