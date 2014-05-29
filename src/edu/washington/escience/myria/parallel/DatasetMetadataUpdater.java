@@ -18,6 +18,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
 import edu.washington.escience.myria.operator.DbInsert;
+import edu.washington.escience.myria.operator.DbInsertWithView;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.util.concurrent.OperationFuture;
 import edu.washington.escience.myria.util.concurrent.OperationFutureListener;
@@ -110,7 +111,26 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
       List<RootOperator> rootOps = plan.getRootOps();
       for (RootOperator op : rootOps) {
         /* If op is a DbInsert, we are inserting tuples into a relation. */
-        if (op instanceof DbInsert) {
+        if (op instanceof DbInsertWithView) {
+          /* Add this worker to the set of workers storing the new copy of this relation. */
+          RelationKey relationKey = ((DbInsert) op).getRelationKey();
+          RelationMetadata meta = ret.get(relationKey);
+          if (meta == null) {
+            meta = new RelationMetadata();
+            meta.setWorkers(new TreeSet<Integer>());
+            ret.put(relationKey, meta);
+          }
+          meta.getWorkers().add(workerId);
+          Schema newSchema = ((DbInsertWithView) op).getViewSchema();
+          Schema oldSchema = catalog.getSchema(relationKey);
+          /* Check if the relation already has a schema in the database and, if so, it better match! */
+          if (oldSchema != null) {
+            Preconditions.checkArgument(oldSchema.equals(newSchema),
+                "Relation %s already exists with Schema %s. You cannot overwrite it with the new Schema %s",
+                relationKey, oldSchema, newSchema);
+          }
+          meta.setSchema(newSchema);
+        } else if (op instanceof DbInsert) {
           /* Add this worker to the set of workers storing the new copy of this relation. */
           RelationKey relationKey = ((DbInsert) op).getRelationKey();
           RelationMetadata meta = ret.get(relationKey);
