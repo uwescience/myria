@@ -2,14 +2,11 @@ package edu.washington.escience.myria.operator;
 
 import java.util.List;
 
-import com.google.common.collect.ImmutableMap;
-
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
-import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * Insert operator that will insert the tuples into a table and create a view on top of that table. The view will be as
@@ -139,30 +136,10 @@ public class DbInsertWithView extends DbInsert {
   }
 
   @Override
-  public void cleanup() {
-    super.cleanup();
-  }
-
-  @Override
-  protected void consumeTuples(final TupleBatch tupleBatch) throws DbException {
-    super.consumeTuples(tupleBatch);
-  }
-
-  @Override
-  protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    super.init(execEnvVars);
-  }
-
-  @Override
   protected void childEOS() throws DbException {
     super.childEOS();
     /* When the child is done. We create a view on top of the relation. */
     super.getAccessmethod().createView(viewRelationKey, super.getRelationKey(), viewSchema, condition);
-  }
-
-  @Override
-  protected void childEOI() throws DbException {
-    super.childEOI();
   }
 
   /**
@@ -170,6 +147,13 @@ public class DbInsertWithView extends DbInsert {
    */
   @Override
   public RelationKey getRelationKey() {
-    return super.getRelationKey();
+    return viewRelationKey;
+  }
+
+  /**
+   * @return the view schema
+   */
+  public Schema getViewSchema() {
+    return viewSchema;
   }
 }
