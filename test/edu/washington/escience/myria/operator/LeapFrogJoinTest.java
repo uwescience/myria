@@ -230,7 +230,7 @@ public class LeapFrogJoinTest {
       }
     }
     join.close();
-    System.out.println(batches.numTuples());
+    assertEquals(2, batches.numTuples());
   }
 
 }
