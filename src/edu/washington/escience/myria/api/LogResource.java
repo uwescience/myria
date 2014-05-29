@@ -41,6 +41,7 @@ public final class LogResource {
    * @param fragmentId the fragment id.
    * @param start the earliest time where we need data
    * @param end the latest time
+   * @param minLength the minimum length of a span to return, default is 0
    * @param onlyRootOp the operator to return data for, default is all
    * @param uriInfo the URL of the current request
    * @return the profiling logs of the query across all workers
@@ -51,8 +52,9 @@ public final class LogResource {
   @Path("profiling")
   public Response getProfileLogs(@QueryParam("queryId") final Long queryId,
       @QueryParam("fragmentId") final Long fragmentId, @QueryParam("start") final Long start,
-      @QueryParam("end") final Long end, @DefaultValue("false") @QueryParam("onlyRootOp") final String onlyRootOp,
-      @Context final UriInfo uriInfo) throws DbException {
+      @QueryParam("end") final Long end, @DefaultValue("0") @QueryParam("minLength") final Long minLength,
+      @DefaultValue("false") @QueryParam("onlyRootOp") final boolean onlyRootOp, @Context final UriInfo uriInfo)
+      throws DbException {
     if (queryId == null) {
       throw new MyriaApiException(Status.BAD_REQUEST, "Query ID missing.");
     }
@@ -65,8 +67,8 @@ public final class LogResource {
     if (end == null) {
       throw new MyriaApiException(Status.BAD_REQUEST, "End missing.");
     }
-    if (!onlyRootOp.equals("true") && !onlyRootOp.equals("false")) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "onlyRootOp should be true or false.");
+    if (minLength < 0) {
+      throw new MyriaApiException(Status.BAD_REQUEST, "minLength has to be greater than or equal to 0.");
     }
 
     ResponseBuilder response = Response.ok();
@@ -86,7 +88,7 @@ public final class LogResource {
     TupleWriter writer = new CsvTupleWriter(writerOutput);
 
     try {
-      server.startLogDataStream(queryId, fragmentId, start, end, onlyRootOp.equals("true"), writer);
+      server.startLogDataStream(queryId, fragmentId, start, end, minLength, onlyRootOp, writer);
     } catch (IllegalArgumentException e) {
       throw new MyriaApiException(Status.BAD_REQUEST, e);
     }
@@ -190,7 +192,6 @@ public final class LogResource {
    * @param start the start of the range
    * @param end the end of the range
    * @param step the length of a step
-   * 
    * @param uriInfo the URL of the current request.
    * @return the profiling logs of the query across all workers
    * @throws DbException if there is an error in the database.

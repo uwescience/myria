@@ -1611,6 +1611,7 @@ public final class Server {
    * @param fragmentId the fragment id to return data for. All fragments, if < 0.
    * @param start the earliest time where we need data
    * @param end the latest time
+   * @param minSpanLength minimum length of a span to be returned
    * @param onlyRootOperator only return data for root operator
    * @param writer writer to get data.
    * @return profiling logs for the query.
@@ -1618,7 +1619,7 @@ public final class Server {
    * @throws DbException if there is an error when accessing profiling logs.
    */
   public QueryFuture startLogDataStream(final long queryId, final long fragmentId, final long start, final long end,
-      final boolean onlyRootOperator, final TupleWriter writer) throws DbException {
+      final long minSpanLength, final boolean onlyRootOperator, final TupleWriter writer) throws DbException {
     /* Get the relation's schema, to make sure it exists. */
     final QueryStatusEncoding queryStatus;
     try {
@@ -1645,10 +1646,16 @@ public final class Server {
               "WHERE", fragmentId, "=fragmentId AND", queryId, "=queryId ORDER BY starttime ASC limit 1)");;
     }
 
+    String spanCondition = "";
+    if (minSpanLength > 0) {
+      spanCondition = Joiner.on(' ').join("AND endtime - starttime >", minSpanLength);
+    }
+
     String queryString =
         Joiner.on(' ').join("SELECT opid, starttime, endtime, numtuples FROM",
             MyriaConstants.PROFILING_RELATION.toString(getDBMS()), "WHERE fragmentId =", fragmentId, "AND queryid =",
-            queryId, "AND endtime >", start, "AND starttime <", end, opCondition, "ORDER BY starttime ASC");
+            queryId, "AND endtime >", start, "AND starttime <", end, opCondition, spanCondition,
+            "ORDER BY starttime ASC");
 
     DbQueryScan scan = new DbQueryScan(queryString, schema);
 
