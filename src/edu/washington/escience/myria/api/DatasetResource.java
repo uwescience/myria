@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.net.URI;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -266,6 +267,88 @@ public final class DatasetResource {
     return doIngest(dataset.relationKey, new FileScan(dataset.source, dataset.schema, dataset.delimiter, dataset.quote,
         dataset.escape, dataset.numberOfSkippedLines), dataset.workers, dataset.indexes, dataset.overwrite, builder,
         partInfo);
+  }
+
+  /**
+   * Scales the dataset out so it uses one additional worker.
+   * 
+   * @param userName the user who owns the target relation.
+   * @param programName the program to which the target relation belongs.
+   * @param relationName the name of the target relation.
+   * @return the response whether the dataset was scaled out properly or not.
+   * @throws DbException if there is an error in the database.
+   */
+  @POST
+  @Path("/user-{userName}/program-{programName}/relation-{relationName}/scaleout")
+  public Response scaleOutDataset(@PathParam("userName") final String userName,
+      @PathParam("programName") final String programName, @PathParam("relationName") final String relationName)
+      throws DbException {
+    LOGGER.info("username" + userName + ", programName:" + programName + ", relationName:" + relationName);
+    RelationKey relationKey = RelationKey.of(userName, programName, relationName);
+    Schema schema;
+    Set<Integer> workersUsed;
+    try {
+      schema = server.getSchema(relationKey);
+      workersUsed = new HashSet<Integer>(server.getWorkersForRelation(relationKey, null));
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+    if (schema == null) {
+      /* Not found, throw a 404 (Not Found) */
+      throw new MyriaApiException(Status.NOT_FOUND, "The dataset was not found: " + relationKey.toString());
+    }
+
+    Set<Integer> validWorkers = server.getAliveWorkers();
+    if (validWorkers.size() - workersUsed.size() <= 0) {
+      /* Make sure we have enough workers to scale out, need at least one. */
+      throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "Not enough workers to scale out.");
+    }
+    if (!validWorkers.containsAll(workersUsed)) {
+      /* All the workers associated to the worker should be up */
+      throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "Not all workers associated to the relation is alive.");
+    }
+    String response = null;
+    try {
+      response = server.scaleOut(relationKey);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
+    if (response != null) {
+      return Response.ok().entity(response).cacheControl(MyriaApiUtils.doNotCache()).build();
+    } else {
+      return Response.notModified().entity("Operation not supported on the relation.").cacheControl(
+          MyriaApiUtils.doNotCache()).build();
+    }
+  }
+
+  /**
+   * Scales the dataset in so it uses one less worker.
+   * 
+   * @param userName the user who owns the target relation.
+   * @param programName the program to which the target relation belongs.
+   * @param relationName the name of the target relation.
+   * @return the response whether the dataset was scaled out properly or not.
+   * @throws DbException if there is an error in the database.
+   */
+  @POST
+  @Path("/user-{userName}/program-{programName}/relation-{relationName}/scalein")
+  public Response scaleInDataset(@PathParam("userName") final String userName,
+      @PathParam("programName") final String programName, @PathParam("relationName") final String relationName)
+      throws DbException {
+    RelationKey relationKey = RelationKey.of(userName, programName, relationName);
+    Schema schema;
+    try {
+      schema = server.getSchema(relationKey);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+
+    if (schema == null) {
+      /* Not found, throw a 404 (Not Found) */
+      throw new MyriaApiException(Status.NOT_FOUND, "The dataset was not found: " + relationKey.toString());
+    }
+
+    return Response.ok().cacheControl(MyriaApiUtils.doNotCache()).build();
   }
 
   /**
