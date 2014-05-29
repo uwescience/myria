@@ -68,6 +68,7 @@ public class ProfilingLogger {
     accessMethod.createTableIfNotExists(MyriaConstants.SENT_RELATION, MyriaConstants.SENT_SCHEMA);
 
     createProfilingIndexes();
+    createTmpProfilingIndexes();
     createSentIndex();
 
     if (accessMethod instanceof JdbcAccessMethod
@@ -119,15 +120,30 @@ public class ProfilingLogger {
   /**
    * @throws DbException if index cannot be created
    */
+  protected void createTmpProfilingIndexes() throws DbException {
+    final Schema schema = MyriaConstants.PROFILING_SCHEMA_TMP;
+
+    List<IndexRef> filterIndex = ImmutableList.of(IndexRef.of(schema, "queryId"));
+
+    try {
+      accessMethod.createIndexIfNotExists(MyriaConstants.PROFILING_RELATION_TMP, schema, filterIndex);
+    } catch (DbException e) {
+      LOGGER.error("Couldn't create index for profiling logs:", e);
+    }
+  }
+
+  /**
+   * @throws DbException if index cannot be created
+   */
   protected void createProfilingIndexes() throws DbException {
     final Schema schema = MyriaConstants.PROFILING_SCHEMA;
 
     List<IndexRef> rootOpsIndex =
         ImmutableList.of(IndexRef.of(schema, "queryId"), IndexRef.of(schema, "fragmentId"), IndexRef.of(schema,
-            "startTime"));
+            "startTime"), IndexRef.of(schema, "endTime"));
     List<IndexRef> filterIndex =
         ImmutableList.of(IndexRef.of(schema, "queryId"), IndexRef.of(schema, "fragmentId"),
-            IndexRef.of(schema, "opId"), IndexRef.of(schema, "startTime"));
+            IndexRef.of(schema, "opId"), IndexRef.of(schema, "startTime"), IndexRef.of(schema, "endTime"));
 
     try {
       accessMethod.createIndexIfNotExists(MyriaConstants.PROFILING_RELATION, schema, rootOpsIndex);
@@ -216,7 +232,7 @@ public class ProfilingLogger {
   }
 
   /**
-   * Flush the tuple batch buffer and transform the profiling data. Do not call this twice.
+   * Flush the tuple batch buffer and transform the profiling data.
    * 
    * @param queryId the query id
    * @throws DbException if insertion in the database fails
