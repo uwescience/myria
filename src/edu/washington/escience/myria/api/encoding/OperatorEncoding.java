@@ -59,14 +59,14 @@ import edu.washington.escience.myria.parallel.Server;
 public abstract class OperatorEncoding<T extends Operator> extends MyriaApiEncoding {
 
   @Required
-  public String opId;
+  public Integer opId;
 
   public String opName;
 
   /**
    * Connect any operators to this one.
    */
-  public abstract void connect(Operator operator, Map<String, Operator> operators);
+  public abstract void connect(Operator operator, Map<Integer, Operator> operators);
 
   /**
    * @param server the Myria server for which this operator will be used.

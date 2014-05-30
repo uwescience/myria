@@ -9,9 +9,9 @@ import edu.washington.escience.myria.parallel.ExchangePairID;
 public abstract class AbstractConsumerEncoding<C extends Consumer> extends LeafOperatorEncoding<C> implements
     ExchangeEncoding {
   @Required
-  public String argOperatorId;
+  public Integer argOperatorId;
 
-  String getOperatorId() {
+  Integer getOperatorId() {
     return argOperatorId;
   }
 

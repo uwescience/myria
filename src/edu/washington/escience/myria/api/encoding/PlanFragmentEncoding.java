@@ -30,7 +30,7 @@ public final class PlanFragmentEncoding extends MyriaApiEncoding {
 
   @Override
   protected void validateExtra() {
-    Set<String> opNames = new HashSet<String>();
+    Set<Integer> opNames = new HashSet<Integer>();
     for (OperatorEncoding<?> op : operators) {
       op.validate();
       if (!opNames.contains(op.opId)) {

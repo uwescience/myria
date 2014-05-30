@@ -15,10 +15,10 @@ import edu.washington.escience.myria.operator.Operator;
 public abstract class NaryOperatorEncoding<T extends Operator> extends OperatorEncoding<T> {
 
   @Required
-  public String[] argChildren;
+  public Integer[] argChildren;
 
   @Override
-  public final void connect(final Operator current, final Map<String, Operator> operators) {
+  public final void connect(final Operator current, final Map<Integer, Operator> operators) {
     Operator[] tmp = new Operator[argChildren.length];
     for (int i = 0; i < tmp.length; ++i) {
       tmp[i] = operators.get(argChildren[i]);

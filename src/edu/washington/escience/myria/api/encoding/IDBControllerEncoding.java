@@ -36,7 +36,7 @@ public class IDBControllerEncoding extends OperatorEncoding<IDBController> {
   }
 
   @Override
-  public void connect(Operator current, Map<String, Operator> operators) {
+  public void connect(Operator current, Map<Integer, Operator> operators) {
     current.setChildren(new Operator[] {
         operators.get(argInitialInput), operators.get(argIterationInput), operators.get(argEosControllerInput) });
   }
