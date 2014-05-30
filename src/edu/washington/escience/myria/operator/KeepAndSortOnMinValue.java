@@ -258,50 +258,14 @@ public final class KeepAndSortOnMinValue extends StreamingState {
   public int compare(final MutableTupleBuffer tuples, final int column, final int row, final int pivot) {
     Type t = getSchema().getColumnType(column);
     switch (t) {
-      case LONG_TYPE: {
-        long tmp1 = tuples.getLong(column, row);
-        long tmp2 = tuples.getLong(column, pivot);
-        if (tmp1 < tmp2) {
-          return -1;
-        }
-        if (tmp1 > tmp2) {
-          return 1;
-        }
-        return 0;
-      }
-      case INT_TYPE: {
-        int tmp1 = tuples.getInt(column, row);
-        int tmp2 = tuples.getInt(column, pivot);
-        if (tmp1 < tmp2) {
-          return -1;
-        }
-        if (tmp1 > tmp2) {
-          return 1;
-        }
-        return 0;
-      }
-      case DOUBLE_TYPE: {
-        double tmp1 = tuples.getDouble(column, row);
-        double tmp2 = tuples.getDouble(column, pivot);
-        if (tmp1 < tmp2) {
-          return -1;
-        }
-        if (tmp1 > tmp2) {
-          return 1;
-        }
-        return 0;
-      }
-      case FLOAT_TYPE: {
-        float tmp1 = tuples.getFloat(column, row);
-        float tmp2 = tuples.getFloat(column, pivot);
-        if (tmp1 < tmp2) {
-          return -1;
-        }
-        if (tmp1 > tmp2) {
-          return 1;
-        }
-        return 0;
-      }
+      case LONG_TYPE:
+        return Type.compareRaw(tuples.getLong(column, row), tuples.getLong(column, pivot));
+      case INT_TYPE:
+        return Type.compareRaw(tuples.getInt(column, row), tuples.getInt(column, pivot));
+      case DOUBLE_TYPE:
+        return Type.compareRaw(tuples.getDouble(column, row), tuples.getDouble(column, pivot));
+      case FLOAT_TYPE:
+        return Type.compareRaw(tuples.getFloat(column, row), tuples.getFloat(column, pivot));
       default:
         throw new RuntimeException("compare() doesn't support type " + t);
     }
