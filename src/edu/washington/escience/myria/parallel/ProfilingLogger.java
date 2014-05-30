@@ -29,7 +29,7 @@ public class ProfilingLogger {
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(QuerySubTreeTask.class.getName());
 
   /** The connection to the database database. */
-  private final AccessMethod accessMethod;
+  private final JdbcAccessMethod accessMethod;
 
   /** The jdbc connection. */
   private final Connection connection;
@@ -60,10 +60,14 @@ public class ProfilingLogger {
    * @throws DbException if any error occurs
    */
   public ProfilingLogger(final ConnectionInfo connectionInfo) throws DbException {
-    /* open the database connection */
-    accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
+    Preconditions.checkArgument(connectionInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL),
+        "Profiling only supported with Postgres JDBC connection");
 
-    accessMethod.createTableIfNotExists(MyriaConstants.PROFILING_RELATION_TMP, MyriaConstants.PROFILING_SCHEMA_TMP);
+    /* open the database connection */
+    accessMethod = (JdbcAccessMethod) AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
+
+    accessMethod.createUnloggedTableIfNotExists(MyriaConstants.PROFILING_RELATION_TMP,
+        MyriaConstants.PROFILING_SCHEMA_TMP);
     accessMethod.createTableIfNotExists(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA);
     accessMethod.createTableIfNotExists(MyriaConstants.SENT_RELATION, MyriaConstants.SENT_SCHEMA);
 
@@ -71,34 +75,29 @@ public class ProfilingLogger {
     createTmpProfilingIndexes();
     createSentIndex();
 
-    if (accessMethod instanceof JdbcAccessMethod
-        && connectionInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
-      connection = ((JdbcAccessMethod) accessMethod).getConnection();
-      try {
-        statementEvent =
-            connection.prepareStatement(accessMethod.insertStatementFromSchema(MyriaConstants.PROFILING_SCHEMA_TMP,
-                MyriaConstants.PROFILING_RELATION_TMP));
-      } catch (SQLException e) {
-        throw new DbException(e);
-      }
-
-      try {
-        statementTransform = connection.prepareStatement(getTransformProfilingDataStatement());
-      } catch (SQLException e) {
-        throw new DbException(e);
-      }
-
-      try {
-        statementSent =
-            connection.prepareStatement(accessMethod.insertStatementFromSchema(MyriaConstants.SENT_SCHEMA,
-                MyriaConstants.SENT_RELATION));
-      } catch (SQLException e) {
-        throw new DbException(e);
-      }
-    } else {
-      connection = null;
-      throw new UnsupportedOperationException("Profiling only supported with Postgres JDBC connection");
+    connection = accessMethod.getConnection();
+    try {
+      statementEvent =
+          connection.prepareStatement(accessMethod.insertStatementFromSchema(MyriaConstants.PROFILING_SCHEMA_TMP,
+              MyriaConstants.PROFILING_RELATION_TMP));
+    } catch (SQLException e) {
+      throw new DbException(e);
     }
+
+    try {
+      statementTransform = connection.prepareStatement(getTransformProfilingDataStatement());
+    } catch (SQLException e) {
+      throw new DbException(e);
+    }
+
+    try {
+      statementSent =
+          connection.prepareStatement(accessMethod.insertStatementFromSchema(MyriaConstants.SENT_SCHEMA,
+              MyriaConstants.SENT_RELATION));
+    } catch (SQLException e) {
+      throw new DbException(e);
+    }
+
   }
 
   /**

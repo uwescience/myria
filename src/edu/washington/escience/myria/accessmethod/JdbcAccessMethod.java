@@ -283,6 +283,22 @@ public final class JdbcAccessMethod extends AccessMethod {
     execute(createIfNotExistsStatementFromSchema(schema, relationKey));
   }
 
+  /**
+   * Create an unlogged table.
+   * 
+   * @param relationKey the relation name
+   * @param schema the relation schema
+   * @throws DbException if anything goes wrong
+   */
+  public void createUnloggedTableIfNotExists(final RelationKey relationKey, final Schema schema) throws DbException {
+    Objects.requireNonNull(jdbcConnection);
+    Objects.requireNonNull(jdbcInfo);
+    Objects.requireNonNull(relationKey);
+    Objects.requireNonNull(schema);
+
+    execute(createIfNotExistsStatementFromSchema(schema, relationKey, true));
+  }
+
   @Override
   public String insertStatementFromSchema(final Schema schema, final RelationKey relationKey) {
     Objects.requireNonNull(schema);
@@ -303,6 +319,17 @@ public final class JdbcAccessMethod extends AccessMethod {
 
   @Override
   public String createIfNotExistsStatementFromSchema(final Schema schema, final RelationKey relationKey) {
+    return createIfNotExistsStatementFromSchema(schema, relationKey, false);
+  }
+
+  /**
+   * @param schema the relation schema
+   * @param relationKey the relation name
+   * @param unlogged whether to create an unlogged table
+   * @return the insert statement string
+   */
+  private String createIfNotExistsStatementFromSchema(final Schema schema, final RelationKey relationKey,
+      final boolean unlogged) {
     switch (jdbcInfo.getDbms()) {
       case MyriaConstants.STORAGE_SYSTEM_MYSQL:
       case MyriaConstants.STORAGE_SYSTEM_POSTGRESQL:
@@ -315,8 +342,16 @@ public final class JdbcAccessMethod extends AccessMethod {
             + " can CREATE TABLE IF NOT EXISTS");
     }
 
+    Preconditions.checkArgument(!unlogged || jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL),
+        "Can only create unlogged table in Postgres");
+    String unloggedString = "";
+    if (unlogged) {
+      unloggedString = "UNLOGGED ";
+    }
+
     final StringBuilder sb = new StringBuilder();
-    sb.append("CREATE TABLE IF NOT EXISTS ").append(relationKey.toString(jdbcInfo.getDbms())).append(" (");
+    sb.append("CREATE ").append(unloggedString).append("TABLE IF NOT EXISTS ").append(
+        relationKey.toString(jdbcInfo.getDbms())).append(" (");
     for (int i = 0; i < schema.numColumns(); ++i) {
       if (i > 0) {
         sb.append(", ");
