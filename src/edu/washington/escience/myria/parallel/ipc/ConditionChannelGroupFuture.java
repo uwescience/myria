@@ -6,8 +6,6 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
@@ -21,10 +19,8 @@ import org.jboss.netty.channel.group.DefaultChannelGroup;
  * checking.
  * */
 public class ConditionChannelGroupFuture implements ChannelGroupFuture {
-  /**
-   * logger.
-   * */
-  private static final Logger LOGGER = Logger.getLogger(ConditionChannelGroupFuture.class.getName());
+  /** The logger for this class. */
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(ConditionChannelGroupFuture.class);
 
   /**
    * the actual channel group future that monitors the channel group event.
@@ -75,7 +71,7 @@ public class ConditionChannelGroupFuture implements ChannelGroupFuture {
       try {
         listener.operationComplete(this);
       } catch (final Throwable t) {
-        LOGGER.log(Level.WARNING, "Exception occured when executing ChannelGroupFutureListener", t);
+        LOGGER.warn("Exception occured when executing ChannelGroupFutureListener", t);
       }
     }
   }
@@ -278,7 +274,7 @@ public class ConditionChannelGroupFuture implements ChannelGroupFuture {
           try {
             l.operationComplete(this);
           } catch (final Throwable t) {
-            LOGGER.log(Level.WARNING, "Exception occured when executing ChannelGroupFutureListener", t);
+            LOGGER.warn("Exception occured when executing ChannelGroupFutureListener", t);
           }
         }
       }

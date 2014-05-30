@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 public class InJVMChannel extends AbstractChannel implements LocalChannel {
 
   /** The logger for this class. */
-  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(InJVMChannel.class.getName());
+  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(InJVMChannel.class);
 
   /**
    * Messages will be processed by the pipeline first and if the pipeline decides not to filter out a message, then it

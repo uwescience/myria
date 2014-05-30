@@ -25,7 +25,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
  */
 public class ProfilingLogger {
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(LocalFragment.class.getName());
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(LocalFragment.class);
 
   /** The connection to the database database. */
   private final AccessMethod accessMethod;

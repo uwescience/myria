@@ -11,7 +11,7 @@ import edu.washington.escience.myria.operator.network.Consumer;
 public class StreamInputChannel<PAYLOAD> extends StreamIOChannel {
 
   /** The logger for this class. */
-  static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(StreamInputChannel.class.getName());
+  static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(StreamInputChannel.class);
 
   /**
    * The input buffer into which the messages from this channel should be pushed.

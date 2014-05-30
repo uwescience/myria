@@ -19,7 +19,7 @@ import edu.washington.escience.myria.util.concurrent.ReentrantSpinLock;
 public class StreamOutputChannel<PAYLOAD> extends StreamIOChannel {
 
   /** The logger for this class. */
-  static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(StreamOutputChannel.class.getName());
+  static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(StreamOutputChannel.class);
 
   /**
    * Output disabled listeners.

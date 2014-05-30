@@ -33,7 +33,7 @@ public class EOSController extends Producer {
   private static final long serialVersionUID = 1L;
 
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(EOSController.class.getName());
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(EOSController.class);
   /**
    * Recording the number of EOI received from each controlled {@link IDBController}.
    * */
