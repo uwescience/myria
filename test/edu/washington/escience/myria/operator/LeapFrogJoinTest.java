@@ -234,6 +234,43 @@ public class LeapFrogJoinTest {
   }
 
   @Test
+  public void intersect3tables() throws DbException {
+    /* I(x) :- A(x),B(x),C(x). */
+    final Schema a_schema = new Schema(ImmutableList.of(Type.INT_TYPE), ImmutableList.of("a_x"));
+    final Schema b_schema = new Schema(ImmutableList.of(Type.INT_TYPE), ImmutableList.of("b_x"));
+    final Schema c_schema = new Schema(ImmutableList.of(Type.INT_TYPE), ImmutableList.of("c_x"));
+    /* read data from files, note */
+    final String a_path = Paths.get("testdata", "multiwayjoin", "a.csv").toString();
+    final String b_path = Paths.get("testdata", "multiwayjoin", "b.csv").toString();
+    final String c_path = Paths.get("testdata", "multiwayjoin", "c.csv").toString();
+    FileScan fileScanA = new FileScan(a_path, a_schema);
+    FileScan fileScanB = new FileScan(b_path, b_schema);
+    FileScan fileScanC = new FileScan(c_path, c_schema);
+    /* order the tables. */
+    InMemoryOrderBy orderA = new InMemoryOrderBy(fileScanA, new int[] { 0 }, new boolean[] { true });
+    InMemoryOrderBy orderB = new InMemoryOrderBy(fileScanB, new int[] { 0 }, new boolean[] { true });
+    InMemoryOrderBy orderC = new InMemoryOrderBy(fileScanC, new int[] { 0 }, new boolean[] { true });
+    /* leapfrog join. */
+    int[][][] fieldMap = new int[][][] { { { 0, 0 }, { 1, 0 }, { 2, 0 } } };
+    int[][] outputMap = new int[][] { { 0, 0 } };
+    final ImmutableList<String> outputColumnNames = ImmutableList.of("x");
+    final Schema outputSchema = new Schema(ImmutableList.of(Type.INT_TYPE), outputColumnNames);
+    LeapFrogJoin join =
+        new LeapFrogJoin(new Operator[] { orderA, orderB, orderC }, fieldMap, outputMap, outputColumnNames,
+            new boolean[] { false, false, false });
+    join.open(null);
+    TupleBatch tb;
+    TupleBatchBuffer batches = new TupleBatchBuffer(outputSchema);
+    while (!join.eos()) {
+      tb = join.nextReady();
+      if (tb != null) {
+        batches.appendTB(tb);
+      }
+    }
+    join.close();
+    assertEquals(2, batches.numTuples());
+  }
+  @Test
   public void outputFreeVariable() throws DbException {
     /* Result(x):- o(k,x), p(x,y), q(y,z) */
     final Schema o_schema =
@@ -249,10 +286,10 @@ public class LeapFrogJoinTest {
     FileScan fileScanO = new FileScan(o_path, o_schema);
     FileScan fileScanP = new FileScan(p_path, p_schema);
     FileScan fileScanQ = new FileScan(q_path, q_schema);
-    InMemoryOrderBy orderO = new InMemoryOrderBy(fileScanO, new int[] { 0, 1 }, new boolean[] { true, true });
+    InMemoryOrderBy orderO = new InMemoryOrderBy(fileScanO, new int[] { 1 }, new boolean[] { true });
     InMemoryOrderBy orderP = new InMemoryOrderBy(fileScanP, new int[] { 0, 1 }, new boolean[] { true, true });
-    InMemoryOrderBy orderQ = new InMemoryOrderBy(fileScanQ, new int[] { 0, 1 }, new boolean[] { true, true });
-    /* leapfrog join, Rectangle(x,y,z,p) :- R(x,y),S(y,z),T(z,p),K(p,x),M(x,y,z). */
+    InMemoryOrderBy orderQ = new InMemoryOrderBy(fileScanQ, new int[] { 0 }, new boolean[] { true });
+    /* leapfrog join. */
     int[][][] fieldMap = new int[][][] { { { 0, 1 }, { 1, 0 } }, { { 1, 1 }, { 2, 0 } } };
     int[][] outputMap = new int[][] { { 0, 0 } };
     final ImmutableList<String> outputColumnNames = ImmutableList.of("k");
