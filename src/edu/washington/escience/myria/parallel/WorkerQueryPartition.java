@@ -409,6 +409,7 @@ public class WorkerQueryPartition implements QueryPartition {
             for (QuerySubTreeTask task : list) {
               init(task);
               /* input might be null but we still need it to run */
+              task.start();
               task.notifyNewInput();
             }
             break;
