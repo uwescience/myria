@@ -1235,12 +1235,12 @@ public final class Server {
       workerPlans.put(workerId, new SingleQueryPlanWithArgs(insert));
     }
 
+    String ingestString = "ingest " + relationKey.toString(getDBMS());
     try {
       /* Start the workers */
       QueryFuture qf =
-          submitQuery("ingest " + relationKey.toString("sqlite"), "ingest " + relationKey.toString("sqlite"),
-              "ingest " + relationKey.toString("sqlite"), new SingleQueryPlanWithArgs(scatter), workerPlans, false)
-              .sync();
+          submitQuery(ingestString, ingestString, ingestString, new SingleQueryPlanWithArgs(scatter), workerPlans,
+              false).sync();
       if (qf == null) {
         return null;
       }
@@ -1283,10 +1283,11 @@ public final class Server {
       for (Integer workerId : actualWorkers) {
         workerPlans.put(workerId, new SingleQueryPlanWithArgs(new SinkRoot(new EOSSource())));
       }
+
+      String importString = "import " + relationKey.toString(getDBMS());
       QueryFuture qf =
-          submitQuery("import " + relationKey.toString("sqlite"), "import " + relationKey.toString("sqlite"),
-              "import " + relationKey.toString("sqlite"), new SingleQueryPlanWithArgs(new SinkRoot(new EOSSource())),
-              workerPlans, false).sync();
+          submitQuery(importString, importString, importString,
+              new SingleQueryPlanWithArgs(new SinkRoot(new EOSSource())), workerPlans, false).sync();
 
       if (qf == null) {
         throw new DbException("Cannot import dataset right now, server is overloaded.");
