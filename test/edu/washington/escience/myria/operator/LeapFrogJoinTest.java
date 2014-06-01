@@ -233,4 +233,43 @@ public class LeapFrogJoinTest {
     assertEquals(2, batches.numTuples());
   }
 
+  @Test
+  public void outputFreeVariable() throws DbException {
+    /* Result(x):- o(k,x), p(x,y), q(y,z) */
+    final Schema o_schema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("o_k", "o_x"));
+    final Schema p_schema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("p_x", "p_y"));
+    final Schema q_schema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("q_y", "q_z"));
+    /* order the tables. */
+    final String o_path = Paths.get("testdata", "multiwayjoin", "o.csv").toString();
+    final String p_path = Paths.get("testdata", "multiwayjoin", "p.csv").toString();
+    final String q_path = Paths.get("testdata", "multiwayjoin", "q.csv").toString();
+    FileScan fileScanO = new FileScan(o_path, o_schema);
+    FileScan fileScanP = new FileScan(p_path, p_schema);
+    FileScan fileScanQ = new FileScan(q_path, q_schema);
+    InMemoryOrderBy orderO = new InMemoryOrderBy(fileScanO, new int[] { 0, 1 }, new boolean[] { true, true });
+    InMemoryOrderBy orderP = new InMemoryOrderBy(fileScanP, new int[] { 0, 1 }, new boolean[] { true, true });
+    InMemoryOrderBy orderQ = new InMemoryOrderBy(fileScanQ, new int[] { 0, 1 }, new boolean[] { true, true });
+    /* leapfrog join, Rectangle(x,y,z,p) :- R(x,y),S(y,z),T(z,p),K(p,x),M(x,y,z). */
+    int[][][] fieldMap = new int[][][] { { { 0, 1 }, { 1, 0 } }, { { 1, 1 }, { 2, 0 } } };
+    int[][] outputMap = new int[][] { { 0, 0 } };
+    final ImmutableList<String> outputColumnNames = ImmutableList.of("k");
+    final Schema outputSchema = new Schema(ImmutableList.of(Type.LONG_TYPE), outputColumnNames);
+    LeapFrogJoin join =
+        new LeapFrogJoin(new Operator[] { orderO, orderP, orderQ }, fieldMap, outputMap, outputColumnNames,
+            new boolean[] { false, false, false });
+    join.open(TestEnvVars.get());
+    TupleBatch tb;
+    TupleBatchBuffer batches = new TupleBatchBuffer(outputSchema);
+    while (!join.eos()) {
+      tb = join.nextReady();
+      if (tb != null) {
+        batches.appendTB(tb);
+      }
+    }
+    join.close();
+    assertEquals(9, batches.numTuples());
+  }
 }
