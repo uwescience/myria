@@ -394,10 +394,12 @@ public abstract class Producer extends RootOperator {
         }
         if (mode.equals(FTMODE.rejoin) && !(this instanceof LocalMultiwayProducer)) {
           // rejoin, append the TB into the backup buffer in case of recovering
-          triedToSendTuples.get(i).update(tb);
+          tb = triedToSendTuples.get(i).update(tb);
         }
         try {
-          writeMessage(i, tb);
+          if (tb != null) {
+            writeMessage(i, tb);
+          }
         } catch (IllegalStateException e) {
           if (mode.equals(FTMODE.abandon)) {
             ioChannelsAvail[i] = false;
