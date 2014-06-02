@@ -56,8 +56,8 @@ import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
 import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
 import edu.washington.escience.myria.operator.network.partition.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
-import edu.washington.escience.myria.parallel.QueryPlan;
 import edu.washington.escience.myria.parallel.QueryFuture;
+import edu.washington.escience.myria.parallel.QueryPlan;
 import edu.washington.escience.myria.parallel.Sequence;
 import edu.washington.escience.myria.parallel.SubQuery;
 import edu.washington.escience.myria.parallel.SubQueryPlan;
@@ -69,13 +69,10 @@ public class SequenceTest extends SystemTestBase {
 
   @Test
   public void testSequence() throws Exception {
-    Schema testSchema = Schema.ofFields(Type.INT_TYPE, "val");
-    TupleBatchBuffer sourceBuffer = new TupleBatchBuffer(testSchema);
     final int numVals = TupleBatch.BATCH_SIZE + 2;
-    for (int i = 0; i < numVals; ++i) {
-      sourceBuffer.putInt(0, i);
-    }
-    final TupleSource source = new TupleSource(sourceBuffer.getAll());
+    TupleSource source = new TupleSource(range(numVals).getAll());
+    Schema testSchema = source.getSchema();
+    RelationKey storage = RelationKey.of("test", "testi", "step1");
 
     ExchangePairID shuffleId = ExchangePairID.newID();
     final GenericShuffleProducer sp =
@@ -83,7 +80,6 @@ public class SequenceTest extends SystemTestBase {
             0));
 
     final GenericShuffleConsumer cc = new GenericShuffleConsumer(testSchema, shuffleId, workerIDs);
-    RelationKey storage = RelationKey.of("test", "testi", "step1");
     final DbInsert insert = new DbInsert(cc, storage, true);
 
     /* First task: create, shuffle, insert the tuples. */
@@ -249,5 +245,94 @@ public class SequenceTest extends SystemTestBase {
         JsonAPIUtils.download("localhost", masterDaemonPort, resultKey.getUserName(), resultKey.getProgramName(),
             resultKey.getRelationName(), "csv");
     assertEquals("sum_value\r\n9\r\n", ret);
+  }
+
+  /**
+   * Returns a {@link TupleBatchBuffer} containing the values 0 to {@code n-1}. The column is of type {@Link
+   * Type#INT_TYPE} and the column name is {@code "val"}.
+   * 
+   * @param n the number of values in the buffer.
+   * @return a {@link TupleBatchBuffer} containing the values 0 to {@code n-1}
+   */
+  public static TupleBatchBuffer range(int n) {
+    TupleBatchBuffer sourceBuffer = new TupleBatchBuffer(Schema.ofFields(Type.INT_TYPE, "val"));
+    for (int i = 0; i < n; ++i) {
+      sourceBuffer.putInt(0, i);
+    }
+    return sourceBuffer;
+  }
+
+  @Test
+  public void testNestedSequence() throws Exception {
+    final int numVals = TupleBatch.BATCH_SIZE + 2;
+    final int numCopies = 3;
+    TupleBatchBuffer data = range(numVals);
+    Schema schema = data.getSchema();
+    RelationKey dataKey = RelationKey.of("test", "testi", "step");
+    List<RootOperator[]> seqs = Lists.newLinkedList();
+
+    for (int i = 0; i < numCopies; ++i) {
+      TupleSource source = new TupleSource(data.getAll());
+      ExchangePairID shuffleId = ExchangePairID.newID();
+      final GenericShuffleProducer sp =
+          new GenericShuffleProducer(source, shuffleId, workerIDs, new SingleFieldHashPartitionFunction(
+              workerIDs.length, 0));
+
+      final GenericShuffleConsumer cc = new GenericShuffleConsumer(schema, shuffleId, workerIDs);
+
+      /* Only overwrite for the first seq when i == 0. After, append. */
+      final DbInsert insert = new DbInsert(cc, dataKey, i == 0);
+      seqs.add(new RootOperator[] { insert, sp });
+    }
+
+    /* First Sequence: do the numCopies inserts, one after the other. */
+    List<QueryPlan> plans = Lists.newLinkedList();
+    for (RootOperator[] op : seqs) {
+      Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
+      for (int i : workerIDs) {
+        workerPlans.put(i, new SubQueryPlan(op));
+      }
+      SubQueryPlan serverPlan = new SubQueryPlan(new SinkRoot(new EOSSource()));
+      plans.add(new SubQuery(serverPlan, workerPlans));
+    }
+    QueryPlan first = new Sequence(plans);
+
+    /* Task to run after the first Sequence: Count the number of tuples. */
+    DbQueryScan scan = new DbQueryScan(dataKey, schema);
+    Aggregate localCount = new Aggregate(scan, new int[] { 0 }, new int[] { Aggregator.AGG_OP_COUNT });
+    ExchangePairID collectId = ExchangePairID.newID();
+    final CollectProducer coll = new CollectProducer(localCount, collectId, MyriaConstants.MASTER_ID);
+
+    final CollectConsumer cons = new CollectConsumer(Schema.ofFields(Type.LONG_TYPE, "_COUNT0_"), collectId, workerIDs);
+    Aggregate masterSum = new Aggregate(cons, new int[] { 0 }, new int[] { Aggregator.AGG_OP_SUM });
+    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
+    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, masterSum);
+    SinkRoot root = new SinkRoot(queueStore);
+    Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
+    for (int i : workerIDs) {
+      workerPlans.put(i, new SubQueryPlan(coll));
+    }
+    // Stick in a trivial Sequence of one subquery for good measure
+    QueryPlan second = new Sequence(ImmutableList.<QueryPlan> of(new SubQuery(new SubQueryPlan(root), workerPlans)));
+
+    /* Combine first and second into two queries, one after the other. */
+    QueryPlan all = new Sequence(ImmutableList.of(first, second));
+
+    /* Submit the query and compute its ID. */
+    QueryEncoding encoding = new QueryEncoding();
+    encoding.profilingMode = false;
+    encoding.rawDatalog = "test";
+    encoding.logicalRa = "test";
+    QueryFuture qf = server.submitQuery(encoding, all);
+    long queryId = qf.getQueryId();
+    /* Wait for the query to finish, succeed, and check the result. */
+    qf.get();
+    QueryStatusEncoding status = server.getQueryStatus(queryId);
+    assertEquals(Status.SUCCESS, status.status);
+
+    List<TupleBatch> tbs = Lists.newLinkedList(receivedTupleBatches);
+    assertEquals(1, tbs.size());
+    TupleBatch tb = tbs.get(0);
+    assertEquals(numVals * numCopies * workerIDs.length, tb.getLong(0, 0));
   }
 }
