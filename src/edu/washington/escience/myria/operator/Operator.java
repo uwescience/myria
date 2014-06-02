@@ -394,7 +394,7 @@ public abstract class Operator implements Serializable {
     }
     open = true;
 
-    if (isProfilingMode()) {
+    if (isProfilingMode() && getQueryPartition() instanceof WorkerQueryPartition) {
       final WorkerQueryPartition workerQueryPartition = (WorkerQueryPartition) getQueryPartition();
       profilingLogger = workerQueryPartition.getOwnerWorker().getProfilingLogger();
     }
