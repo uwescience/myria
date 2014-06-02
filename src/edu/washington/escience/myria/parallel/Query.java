@@ -3,6 +3,8 @@ package edu.washington.escience.myria.parallel;
 import java.util.LinkedList;
 import java.util.Objects;
 
+import javax.annotation.concurrent.GuardedBy;
+
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 
@@ -19,6 +21,7 @@ public final class Query {
   /** The id of the next subquery to be issued. */
   private long subqueryId;
   /** The status of the query. Must be kept synchronized. */
+  @GuardedBy("this")
   private Status status;
   /** The subqueries to be executed. */
   private final LinkedList<SubQuery> subQueryQ;
@@ -46,7 +49,9 @@ public final class Query {
     this.server = Objects.requireNonNull(server, "server");
     this.queryId = queryId;
     subqueryId = 0;
-    status = Status.ACCEPTED;
+    synchronized (this) {
+      status = Status.ACCEPTED;
+    }
     executionStats = new ExecutionStatistics();
     subQueryQ = new LinkedList<>();
     planQ = new LinkedList<>();
@@ -70,7 +75,7 @@ public final class Query {
    * @return the status of this query.
    */
   public QueryStatusEncoding.Status getStatus() {
-    synchronized (status) {
+    synchronized (this) {
       return status;
     }
   }
@@ -149,7 +154,9 @@ public final class Query {
   public void markFailed(final Throwable cause) {
     Preconditions.checkNotNull(cause, "cause");
     markEnd();
-    status = Status.ERROR;
+    synchronized (this) {
+      status = Status.ERROR;
+    }
     message = cause.getMessage();
     future.setException(cause);
   }
@@ -159,7 +166,9 @@ public final class Query {
    */
   public void markSuccess() {
     markEnd();
-    status = Status.SUCCESS;
+    synchronized (this) {
+      status = Status.SUCCESS;
+    }
     future.set(this);
   }
 
@@ -212,7 +221,9 @@ public final class Query {
    */
   public void markKilled() {
     markEnd();
-    status = Status.KILLED;
+    synchronized (this) {
+      status = Status.SUCCESS;
+    }
     future.cancel(true);
   }
 }

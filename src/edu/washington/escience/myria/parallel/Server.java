@@ -1357,16 +1357,8 @@ public final class Server {
     /* Currently active, so fill in the latest information about the query. */
     queryStatus.startTime = state.getStartTime();
     queryStatus.finishTime = state.getEndTime();
-    if (queryStatus.finishTime != null) {
-      queryStatus.elapsedNanos = state.getElapsedTime();
-    }
-
-    /* TODO(dhalperi) get status in a better way. */
-    if (queryStatus.startTime != null) {
-      queryStatus.status = QueryStatusEncoding.Status.RUNNING;
-    } else {
-      queryStatus.status = QueryStatusEncoding.Status.ACCEPTED;
-    }
+    queryStatus.elapsedNanos = state.getElapsedTime();
+    queryStatus.status = state.getStatus();
     return queryStatus;
   }
 
