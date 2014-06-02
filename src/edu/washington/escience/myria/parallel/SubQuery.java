@@ -9,13 +9,13 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
 
 import edu.washington.escience.myria.RelationKey;
-import edu.washington.escience.myria.operator.DbReader;
-import edu.washington.escience.myria.operator.DbWriter;
-import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.operator.RootOperator;
+import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * Represents a single {@link SubQuery} in a query.
@@ -30,7 +30,7 @@ public final class SubQuery extends QueryPlan {
   /** The set of relations that this {@link SubQuery} reads. */
   private final Set<RelationKey> readRelations;
   /** The set of relations that this {@link SubQuery} writes. */
-  private final Set<RelationKey> writeRelations;
+  private final ImmutableMap<RelationKey, Schema> writeRelations;
   /** The execution statistics about this {@link SubQuery}. */
   private final ExecutionStatistics executionStats;
 
@@ -58,14 +58,16 @@ public final class SubQuery extends QueryPlan {
     this.workerPlans = Objects.requireNonNull(workerPlans, "workerPlans");
     executionStats = new ExecutionStatistics();
 
-    ImmutableSet.Builder<RelationKey> read = ImmutableSet.builder();
-    ImmutableSet.Builder<RelationKey> write = ImmutableSet.builder();
-    computeReadWriteSets(read, write, masterPlan);
+    ImmutableSet.Builder<RelationKey> read = ImmutableSet.<RelationKey> builder().addAll(masterPlan.readSet());
+    Map<RelationKey, Schema> write = Maps.newHashMap();
+    read.addAll(masterPlan.readSet());
+    write.putAll(masterPlan.writeSet());
     for (SubQueryPlan plan : workerPlans.values()) {
-      computeReadWriteSets(read, write, plan);
+      read.addAll(plan.readSet());
+      MyriaUtils.putNewVerifyOld(plan.writeSet(), write);
     }
     readRelations = read.build();
-    writeRelations = write.build();
+    writeRelations = ImmutableMap.copyOf(write);
   }
 
   /**
@@ -96,42 +98,6 @@ public final class SubQuery extends QueryPlan {
   }
 
   /**
-   * A helper to walk various plan fragments and compute what relations they read and write. This is for understanding
-   * query contention.
-   * 
-   * @param read a builder for the set of relations that are read
-   * @param write a builder for the set of relations that are written
-   * @param plan a single worker/master query plan
-   */
-  private static void computeReadWriteSets(final ImmutableSet.Builder<RelationKey> read,
-      final ImmutableSet.Builder<RelationKey> write, final SubQueryPlan plan) {
-    for (RootOperator op : plan.getRootOps()) {
-      computeReadWriteSets(read, write, op);
-    }
-  }
-
-  /**
-   * A helper to walk various operators and compute what relations they read and write. This is for understanding query
-   * contention.
-   * 
-   * @param read a builder for the set of relations that are read
-   * @param write a builder for the set of relations that are written
-   * @param op a single operator, which will be recursively traversed
-   */
-  private static void computeReadWriteSets(final ImmutableSet.Builder<RelationKey> read,
-      final ImmutableSet.Builder<RelationKey> write, final Operator op) {
-    if (op instanceof DbWriter) {
-      write.addAll(((DbWriter) op).writeSet());
-    } else if (op instanceof DbReader) {
-      read.addAll(((DbReader) op).readSet());
-    }
-
-    for (Operator child : op.getChildren()) {
-      computeReadWriteSets(read, write, child);
-    }
-  }
-
-  /**
    * Returns the set of relations that are read when executing this {@link SubQuery}.
    * 
    * @return the set of relations that are read when executing this {@link SubQuery}
@@ -145,7 +111,7 @@ public final class SubQuery extends QueryPlan {
    * 
    * @return the set of relations that are written when executing this {@link SubQuery}
    */
-  public Set<RelationKey> getWriteRelations() {
+  public Map<RelationKey, Schema> getWriteRelations() {
     return writeRelations;
   }
 

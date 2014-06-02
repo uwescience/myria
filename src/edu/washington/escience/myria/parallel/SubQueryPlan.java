@@ -3,16 +3,29 @@ package edu.washington.escience.myria.parallel;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.RelationKey;
+import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.operator.DbReader;
+import edu.washington.escience.myria.operator.DbWriter;
+import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
+import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * Class that contains a list of RootOperators with parameters associated with the query, for example, FT mode. We may
  * have more parameters once Myria is launched as a service, in that case a query would have parameters such as resource
  * limits.
  */
-public class SubQueryPlan implements Serializable {
+public class SubQueryPlan implements Serializable, DbReader, DbWriter {
 
   /** Serialization. */
   private static final long serialVersionUID = 1L;
@@ -23,6 +36,11 @@ public class SubQueryPlan implements Serializable {
   /** FT mode, default: none. */
   private FTMODE ftMode = FTMODE.valueOf("none");
 
+  /** The relations that are written, along with their schemas. */
+  private final Map<RelationKey, Schema> writeSet;
+  /** The relations that are read. */
+  private final Set<RelationKey> readSet;
+
   /**
    * profilingMode,default:false.
    */
@@ -31,6 +49,8 @@ public class SubQueryPlan implements Serializable {
   /** Constructor. */
   public SubQueryPlan() {
     rootOps = new ArrayList<RootOperator>();
+    writeSet = Maps.newHashMap();
+    readSet = Sets.newHashSet();
   }
 
   /**
@@ -69,6 +89,25 @@ public class SubQueryPlan implements Serializable {
    * */
   public void addRootOp(final RootOperator op) {
     rootOps.add(op);
+    updateReadWriteSets(op);
+  }
+
+  /**
+   * A helper to walk various operators and compute what relations they read and write. This is for understanding query
+   * contention.
+   * 
+   * @param op a single operator, which will be recursively traversed
+   */
+  private void updateReadWriteSets(final Operator op) {
+    if (op instanceof DbWriter) {
+      MyriaUtils.putNewVerifyOld(((DbWriter) op).writeSet(), writeSet);
+    } else if (op instanceof DbReader) {
+      readSet.addAll(((DbReader) op).readSet());
+    }
+
+    for (Operator child : op.getChildren()) {
+      updateReadWriteSets(child);
+    }
   }
 
   /**
@@ -108,12 +147,21 @@ public class SubQueryPlan implements Serializable {
   }
 
   /**
-   * 
    * Set profiling mode.
    * 
    * @param profilingMode the profiling mode.
    */
   public void setProfilingMode(final boolean profilingMode) {
     this.profilingMode = profilingMode;
+  }
+
+  @Override
+  public Map<RelationKey, Schema> writeSet() {
+    return ImmutableMap.copyOf(writeSet);
+  }
+
+  @Override
+  public Set<RelationKey> readSet() {
+    return ImmutableSet.copyOf(readSet);
   }
 }

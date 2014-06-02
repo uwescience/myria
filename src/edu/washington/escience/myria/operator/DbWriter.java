@@ -1,15 +1,16 @@
 package edu.washington.escience.myria.operator;
 
-import java.util.Set;
+import java.util.Map;
 
 import edu.washington.escience.myria.RelationKey;
+import edu.washington.escience.myria.Schema;
 
 /** An interface for an operator that writes to a relation in the database. */
 public interface DbWriter {
   /**
-   * Returns the set of relations that this operator writes.
+   * Returns the relations that this operator writes, and their schemas.
    * 
-   * @return the set of relations that this operator writes.
+   * @return the relations that this operator writes, and their schemas.
    */
-  Set<RelationKey> writeSet();
+  Map<RelationKey, Schema> writeSet();
 }

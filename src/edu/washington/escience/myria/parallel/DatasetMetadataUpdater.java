@@ -1,24 +1,21 @@
 package edu.washington.escience.myria.parallel;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.TreeSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
-import edu.washington.escience.myria.operator.DbInsert;
-import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.util.concurrent.OperationFuture;
 import edu.washington.escience.myria.util.concurrent.OperationFutureListener;
 
@@ -99,37 +96,41 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
    * @return a mapping showing what relations were created and on which workers.
    * @throws CatalogException if there is an error in the Catalog.
    */
-  private static Map<RelationKey, RelationMetadata> inferRelationsCreated(
-      final Map<Integer, SubQueryPlan> workerPlans, final MasterCatalog catalog) throws CatalogException {
+  private static Map<RelationKey, RelationMetadata> inferRelationsCreated(final Map<Integer, SubQueryPlan> workerPlans,
+      final MasterCatalog catalog) throws CatalogException {
     Map<RelationKey, RelationMetadata> ret = new HashMap<RelationKey, RelationMetadata>();
 
-    /* For each plan, look for DbInsert operators. */
+    /* Loop through each subquery plan, finding what relations it writes. */
     for (Map.Entry<Integer, SubQueryPlan> entry : workerPlans.entrySet()) {
-      SubQueryPlan plan = entry.getValue();
       Integer workerId = entry.getKey();
-      List<RootOperator> rootOps = plan.getRootOps();
-      for (RootOperator op : rootOps) {
-        /* If op is a DbInsert, we are inserting tuples into a relation. */
-        if (op instanceof DbInsert) {
-          /* Add this worker to the set of workers storing the new copy of this relation. */
-          RelationKey relationKey = ((DbInsert) op).getRelationKey();
-          RelationMetadata meta = ret.get(relationKey);
-          if (meta == null) {
-            meta = new RelationMetadata();
-            meta.setWorkers(new TreeSet<Integer>());
-            ret.put(relationKey, meta);
-          }
-          meta.getWorkers().add(workerId);
-          Schema newSchema = op.getSchema();
-          Schema oldSchema = catalog.getSchema(relationKey);
-          /* Check if the relation already has a schema in the database and, if so, it better match! */
-          if (oldSchema != null) {
-            Preconditions.checkArgument(oldSchema.equals(newSchema),
-                "Relation %s already exists with Schema %s. You cannot overwrite it with the new Schema %s",
-                relationKey, oldSchema, newSchema);
-          }
-          meta.setSchema(newSchema);
+      SubQueryPlan plan = entry.getValue();
+      Map<RelationKey, Schema> writes = plan.writeSet();
+
+      /* For every relation this plan writes, create a new relation metadata. */
+      for (RelationKey relation : writes.keySet()) {
+        if (!ret.containsKey(relation)) {
+          RelationMetadata meta = new RelationMetadata(relation);
+          ret.put(relation, meta);
         }
+      }
+
+      /* Ensure that the metadata are consistent with both the existing Catalog and across the subquery plan fragments. */
+      for (Map.Entry<RelationKey, Schema> writeEntry : writes.entrySet()) {
+        RelationKey relationKey = writeEntry.getKey();
+        Schema newSchema = writeEntry.getValue();
+
+        /* Check if the relation already has a schema in the database and, if so, it better match! */
+        Schema oldSchema = catalog.getSchema(relationKey);
+        if (oldSchema != null) {
+          Preconditions.checkArgument(oldSchema.equals(newSchema),
+              "Relation %s already exists with Schema %s. You cannot overwrite it with the new Schema %s", relationKey,
+              oldSchema, newSchema);
+        }
+
+        /* Ensure that the metadata for this {@link SubQuery} also agrees about the schema, add this worker. */
+        RelationMetadata meta = ret.get(relationKey);
+        meta.setOrVerifySchema(newSchema);
+        meta.addWorker(workerId);
       }
     }
     return ret;
@@ -137,23 +138,35 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
 
   /** Class to store the metadata for a relation between query issuing and query complete. */
   private static class RelationMetadata {
+    /** The relation. */
+    private final RelationKey relationKey;
     /** The workers that will store the relation. */
     private Set<Integer> workers;
     /** The schema of the relation. */
     private Schema schema;
 
     /**
-     * @return the workers.
+     * Construct a new {@link RelationMetadata} instance.
+     * 
+     * @param relationKey the relation.
      */
-    public Set<Integer> getWorkers() {
-      return workers;
+    RelationMetadata(final RelationKey relationKey) {
+      this.relationKey = Objects.requireNonNull(relationKey, "relationKey");
+      workers = ImmutableSet.of();
     }
 
     /**
-     * @param workers the workers to set,
+     * @return the workers.
      */
-    public void setWorkers(final Set<Integer> workers) {
-      this.workers = Objects.requireNonNull(workers);
+    public ImmutableSet<Integer> getWorkers() {
+      return ImmutableSet.copyOf(workers);
+    }
+
+    /**
+     * @param worker the worker to add
+     */
+    public void addWorker(final int worker) {
+      workers = ImmutableSet.<Integer> builder().addAll(workers).add(worker).build();
     }
 
     /**
@@ -164,10 +177,18 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
     }
 
     /**
+     * If there is not yet a Schema defined for this relation, set it. Otherwise, make sure that the provided Schema
+     * matches the existing definition.
+     * 
      * @param schema the schema to set.
      */
-    public void setSchema(final Schema schema) {
-      this.schema = Objects.requireNonNull(schema);
+    public void setOrVerifySchema(final Schema schema) {
+      if (this.schema == null) {
+        this.schema = Objects.requireNonNull(schema, "schema");
+        return;
+      }
+      Preconditions.checkArgument(this.schema.equals(schema),
+          "SubQuery cannot write Relation %s with two different Schemas %s and %s", relationKey, this.schema, schema);
     }
   }
 }
