@@ -24,7 +24,7 @@ def check_secret_code(form, deployment, self):
         self.send_response(200)
         self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
-        self.wfile.write("Wrong serect code!")
+        self.wfile.write("Wrong secret code!")
         return False
     return True
 
