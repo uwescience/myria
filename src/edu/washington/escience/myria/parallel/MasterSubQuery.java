@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.netty.channel.ChannelFuture;
@@ -95,7 +96,7 @@ public class MasterSubQuery implements LocalSubQuery {
             LOGGER.info("Query #{} executed for {}", subQueryId, DateTimeUtils
                 .nanoElapseToHumanReadable(queryStatistics.getQueryExecutionElapse()));
 
-            if (!killed && failedWorkerLocalSubQueries.isEmpty()) {
+            if (!killed.get() && failedWorkerLocalSubQueries.isEmpty()) {
               queryExecutionFuture.setSuccess();
             } else {
               if (failedWorkerLocalSubQueries.isEmpty()) {
@@ -250,7 +251,7 @@ public class MasterSubQuery implements LocalSubQuery {
    */
   final void queryReceivedByWorker(final int workerID) {
     WorkerExecutionInfo wei = workerExecutionInfo.get(workerID);
-    LOGGER.debug("Worker #{} received query#{}", workerID, subQueryId);
+    LOGGER.debug("Worker #{} received query #{}", workerID, subQueryId);
     if (wei.workerReceiveSubQuery.isSuccess()) {
       /* a recovery worker */
       master.getIPCConnectionPool().sendShortMessage(workerID, IPCUtils.startQueryTM(subQueryId));
@@ -445,10 +446,9 @@ public class MasterSubQuery implements LocalSubQuery {
 
   @Override
   public final void kill() {
-    if (killed) {
+    if (!killed.compareAndSet(false, true)) {
       return;
     }
-    killed = true;
     fragment.kill();
     Set<Integer> workers = getWorkersUnfinished();
     ChannelFuture[] cfs = new ChannelFuture[workers.size()];
@@ -482,7 +482,7 @@ public class MasterSubQuery implements LocalSubQuery {
   /**
    * If the query has been asked to get killed (the kill event may not have completed).
    */
-  private volatile boolean killed = false;
+  private final AtomicBoolean killed = new AtomicBoolean(false);
 
   /**
    * Describes the cause of the query's death.
@@ -493,7 +493,7 @@ public class MasterSubQuery implements LocalSubQuery {
    * @return If the query has been asked to get killed (the kill event may not have completed).
    */
   public final boolean isKilled() {
-    return killed;
+    return killed.get();
   }
 
   @Override
