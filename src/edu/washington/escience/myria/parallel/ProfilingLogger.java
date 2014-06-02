@@ -212,8 +212,8 @@ public class ProfilingLogger {
 
     try {
       statementEvent.setLong(1, operator.getQueryId());
-      statementEvent.setLong(2, operator.getFragmentId());
-      statementEvent.setString(3, operator.getOpName());
+      statementEvent.setInt(2, operator.getFragmentId());
+      statementEvent.setInt(3, operator.getOpId());
       statementEvent.setLong(4, getTime(operator));
       statementEvent.setLong(5, numTuples);
       statementEvent.setString(6, eventType);
@@ -317,7 +317,7 @@ public class ProfilingLogger {
       throws DbException {
     try {
       statementSent.setLong(1, operator.getQueryId());
-      statementSent.setLong(2, operator.getFragmentId());
+      statementSent.setInt(2, operator.getFragmentId());
       statementSent.setLong(3, getTime(operator));
       statementSent.setLong(4, numTuples);
       statementSent.setInt(5, destWorkerId);

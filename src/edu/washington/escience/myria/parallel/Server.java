@@ -68,6 +68,7 @@ import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.agg.Aggregate;
 import edu.washington.escience.myria.operator.agg.Aggregator;
+import edu.washington.escience.myria.operator.agg.MultiGroupByAggregate;
 import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
@@ -1703,13 +1704,14 @@ public final class Server {
    * @param start start of the histogram
    * @param end the end of the histogram
    * @param step the step size between min and max
+   * @param onlyRootOp return histogram only for root operator
    * @param writer writer to get data.
    * @return profiling logs for the query.
    * 
    * @throws DbException if there is an error when accessing profiling logs.
    */
   public QueryFuture startHistogramDataStream(final long queryId, final long fragmentId, final long start,
-      final long end, final long step, final TupleWriter writer) throws DbException {
+      final long end, final long step, final boolean onlyRootOp, final TupleWriter writer) throws DbException {
     /* Get the relation's schema, to make sure it exists. */
     final QueryStatusEncoding queryStatus;
     try {
@@ -1724,20 +1726,23 @@ public final class Server {
     Preconditions.checkArgument(start < end, "range cannot be negative");
     Preconditions.checkArgument(step > 0, "step has to be greater than 0");
 
-    final Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("nanoTime"));
+    final Schema schema =
+        new Schema(ImmutableList.of(Type.INT_TYPE, Type.LONG_TYPE), ImmutableList.of("opId", "nanoTime"));
     final RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
 
     Set<Integer> actualWorkers = ((QueryEncoding) queryStatus.physicalPlan).getWorkers();
 
-    String opnameQueryString =
-        Joiner.on(' ').join("SELECT opid FROM", relationKey.toString(getDBMS()), "WHERE", fragmentId,
-            "=fragmentId AND", queryId, "=queryId ORDER BY starttime ASC limit 1");
+    String filterOpnameQueryString = "";
+    if (onlyRootOp) {
+      filterOpnameQueryString =
+          Joiner.on(' ').join("AND p.opid=(SELECT opid FROM", relationKey.toString(getDBMS()), "WHERE fragmentid=",
+              fragmentId, " AND queryid=", queryId, "ORDER BY starttime ASC limit 1)");
+    }
 
     String histogramWorkerQueryString =
-        Joiner.on(' ').join("SELECT s.t AS nanotime FROM generate_series(", start, ", ", end, ", ", step,
-            ") As s(t) JOIN (SELECT * FROM", relationKey.toString(getDBMS()), "WHERE queryid=", queryId,
-            "AND fragmentid=", fragmentId, "AND opid=(", opnameQueryString,
-            ")) AS p ON s.t BETWEEN starttime AND endtime");
+        Joiner.on(' ').join("SELECT p.opid, s.t AS nanotime FROM generate_series(", start, ", ", end, ", ", step,
+            ") AS s(t), ", relationKey.toString(getDBMS()), " AS p WHERE p.queryid=", queryId, "AND p.fragmentid=",
+            fragmentId, filterOpnameQueryString, "AND s.t BETWEEN p.starttime AND p.endtime");
 
     DbQueryScan scan = new DbQueryScan(histogramWorkerQueryString, schema);
     final ExchangePairID operatorId = ExchangePairID.newID();
@@ -1756,13 +1761,13 @@ public final class Server {
         new CollectConsumer(scan.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
 
     // sum up the number of workers working
-    final SingleGroupByAggregate sumAggregate =
-        new SingleGroupByAggregate(consumer, new int[] { 0 }, 0, new int[] { Aggregator.AGG_OP_COUNT });
-
+    final MultiGroupByAggregate sumAggregate =
+        new MultiGroupByAggregate(consumer, new int[] { 0, 1 }, new int[] { 1 }, new int[] { Aggregator.AGG_OP_COUNT });
     // rename columns
     ImmutableList.Builder<Expression> renameExpressions = ImmutableList.builder();
-    renameExpressions.add(new Expression("nanoTime", new VariableExpression(0)));
-    renameExpressions.add(new Expression("numWorkers", new VariableExpression(1)));
+    renameExpressions.add(new Expression("opId", new VariableExpression(0)));
+    renameExpressions.add(new Expression("nanoTime", new VariableExpression(1)));
+    renameExpressions.add(new Expression("numWorkers", new VariableExpression(2)));
     final Apply rename = new Apply(sumAggregate, renameExpressions.build());
 
     DataOutput output = new DataOutput(rename, writer);
@@ -1864,7 +1869,7 @@ public final class Server {
     Preconditions.checkArgument(queryStatus.profilingMode, "query %s was not run with profiling enabled");
 
     final Schema schema =
-        new Schema(ImmutableList.of(Type.STRING_TYPE, Type.LONG_TYPE), ImmutableList.of("opId", "nanoTime"));
+        new Schema(ImmutableList.of(Type.INT_TYPE, Type.LONG_TYPE), ImmutableList.of("opId", "nanoTime"));
     final RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
 
     Set<Integer> actualWorkers = ((QueryEncoding) queryStatus.physicalPlan).getWorkers();

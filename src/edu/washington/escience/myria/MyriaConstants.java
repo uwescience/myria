@@ -250,16 +250,16 @@ public final class MyriaConstants {
   /**
    * The schema of the {@link #PROFILING_RELATION_TMP}.
    */
-  public static final Schema PROFILING_SCHEMA_TMP = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE,
-      Type.STRING_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.STRING_TYPE, Type.INT_TYPE), ImmutableList.of("queryId",
+  public static final Schema PROFILING_SCHEMA_TMP = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.INT_TYPE,
+      Type.INT_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.STRING_TYPE, Type.INT_TYPE), ImmutableList.of("queryId",
       "fragmentId", "opId", "nanoTime", "numTuples", "eventType", "traceId"));
 
   /**
    * The schema of the {@link #PROFILING_RELATION}.
    */
-  public static final Schema PROFILING_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE,
-      Type.STRING_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("queryId", "fragmentId",
-      "opId", "startTime", "endTime", "numTuples"));
+  public static final Schema PROFILING_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.INT_TYPE,
+      Type.INT_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("queryId", "fragmentId", "opId",
+      "startTime", "endTime", "numTuples"));
 
   /**
    * The relation that stores profiling information.
@@ -269,7 +269,7 @@ public final class MyriaConstants {
   /**
    * The schema of the {@link #SENT_RELATION}.
    */
-  public static final Schema SENT_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE,
+  public static final Schema SENT_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.INT_TYPE, Type.LONG_TYPE,
       Type.LONG_TYPE, Type.INT_TYPE), ImmutableList
       .of("queryId", "fragmentId", "nanoTime", "numTuples", "destWorkerId"));
 

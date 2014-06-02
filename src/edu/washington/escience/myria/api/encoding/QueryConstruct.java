@@ -251,6 +251,7 @@ public class QueryConstruct {
       Operator op = encoding.construct(server);
       /* helpful for debugging. */
       op.setOpName("Operator" + String.valueOf(encoding.opId));
+      op.setOpId(encoding.opId);
       op.setFragmentId(planFragment.fragmentIndex);
       myOperators.put(encoding.opId, op);
       if (op instanceof RootOperator) {

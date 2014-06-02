@@ -239,6 +239,7 @@ public final class LogResource {
    * @param start the start of the range
    * @param end the end of the range
    * @param step the length of a step
+   * @param onlyRootOp return histogram for root operator, default is all
    * @param uriInfo the URL of the current request.
    * @return the profiling logs of the query across all workers
    * @throws DbException if there is an error in the database.
@@ -248,7 +249,8 @@ public final class LogResource {
   @Path("histogram")
   public Response getHistogram(@QueryParam("queryId") final Long queryId,
       @QueryParam("fragmentId") final Long fragmentId, @QueryParam("start") final Long start,
-      @QueryParam("end") final Long end, @QueryParam("step") final Long step, @Context final UriInfo uriInfo)
+      @QueryParam("end") final Long end, @QueryParam("step") final Long step,
+      @DefaultValue("true") @QueryParam("onlyRootOp") final boolean onlyRootOp, @Context final UriInfo uriInfo)
       throws DbException {
     if (queryId == null) {
       throw new MyriaApiException(Status.BAD_REQUEST, "Query ID missing.");
@@ -283,7 +285,7 @@ public final class LogResource {
     TupleWriter writer = new CsvTupleWriter(writerOutput);
 
     try {
-      server.startHistogramDataStream(queryId, fragmentId, start, end, step, writer);
+      server.startHistogramDataStream(queryId, fragmentId, start, end, step, onlyRootOp, writer);
     } catch (IllegalArgumentException e) {
       throw new MyriaApiException(Status.BAD_REQUEST, e);
     }
