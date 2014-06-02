@@ -1,11 +1,17 @@
 package edu.washington.escience.myria.systemtest;
 
+import static org.junit.Assert.fail;
+
 import java.util.HashMap;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.Uninterruptibles;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.RelationKey;
@@ -19,14 +25,13 @@ import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.QueryFuture;
-import edu.washington.escience.myria.parallel.QueryKilledException;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestUtils;
 
 public class QueryKillTest extends SystemTestBase {
 
-  @Test(expected = QueryKilledException.class)
+  @Test(expected = CancellationException.class)
   public void killQueryTest() throws Throwable {
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
     createTable(workerIDs[0], testtableKey, "id long, name varchar(20)");
@@ -44,7 +49,7 @@ public class QueryKillTest extends SystemTestBase {
       tbb.putLong(0, TestUtils.randomLong(0, 100000, 1)[0]);
       tbb.putString(1, TestUtils.randomFixedLengthNumericString(0, 100000, 1, 20)[0]);
       while ((tb = tbb.popFilled()) != null) {
-        LOGGER.debug("Insert a TB into testbed. #" + numTB + ".");
+        LOGGER.debug("Insert a TB into testbed. #{}.", numTB);
         numTB++;
         insert(workerIDs[0], testtableKey, schema, tb);
         insert(workerIDs[1], testtableKey, schema, tb);
@@ -74,15 +79,19 @@ public class QueryKillTest extends SystemTestBase {
     final SinkRoot serverPlan = new SinkRoot(serverCollect);
 
     QueryFuture qf = server.submitQueryPlan(serverPlan, workerPlans);
-    qf.awaitUninterruptibly(5, TimeUnit.SECONDS); // wait 5 seconds,
-                                                  // worker0 should have
-                                                  // completed.
-
-    server.killQuery(qf.getQuery().getQueryID());
+    // wait 5 seconds, worker0 should have completed.
     try {
-      qf.sync();
-    } catch (DbException e) {
-      throw e.getCause();
+      Uninterruptibles.getUninterruptibly(qf, 5, TimeUnit.SECONDS);
+      fail();
+    } catch (TimeoutException e) {
+      /* The above command had better time out -- the query should not finish. Thus the above behavior is expected. */
+    }
+
+    server.killQuery(qf.getQueryId());
+    try {
+      qf.get();
+    } catch (ExecutionException e) {
+      throw new DbException("Executing query", e.getCause());
     }
   }
 }

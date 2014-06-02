@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.api.MyriaApiException;
@@ -518,7 +519,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
       }
 
       result.fragments = Arrays.asList(fragments.values().toArray(new PlanFragmentEncoding[] {}));
-      result.ftMode = MyriaConstants.FTMODE.none.name();
+      result.ftMode = FTMODE.none;
       result.logicalRa = "";
       result.profilingMode = false;
       result.rawDatalog = "";
@@ -646,10 +647,10 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     }
     Preconditions.checkNotNull(root.runOnWorkers);
 
-    ArrayList<JsonQueryBaseBuilder> operators = new ArrayList<JsonQueryBaseBuilder>();
+    ArrayList<JsonQueryBaseBuilder> operators = new ArrayList<>();
     PlanFragmentEncoding fragment = new PlanFragmentEncoding();
     findOperators(operators, root);
-    fragment.operators = new ArrayList<OperatorEncoding<?>>(operators.size());
+    fragment.operators = new ArrayList<>(operators.size());
 
     for (JsonQueryBaseBuilder obb : operators) {
       fragment.operators.add(obb.op);

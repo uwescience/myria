@@ -127,7 +127,7 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, sumCount);
     SinkRoot serverPlan = new SinkRoot(queueStore);
 
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    server.submitQueryPlan(serverPlan, workerPlans).get();
     /* Make sure the count matches the known result. */
     assertEquals(3361461, receivedTupleBatches.take().getLong(0, 0));
 
@@ -189,7 +189,7 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final CollectConsumer collect = new CollectConsumer(cp.getSchema(), serverReceiveID, workerIDs);
     final SinkRoot serverPlan = new SinkRoot(collect);
 
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    server.submitQueryPlan(serverPlan, workerPlans).get();
     /* Make sure the count matches the known result. */
     assertEquals(3361461, serverPlan.getCount());
 
@@ -249,7 +249,7 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final CollectConsumer collect = new CollectConsumer(cp.getSchema(), serverReceiveID, workerIDs);
     final SinkRoot serverPlan = new SinkRoot(collect);
 
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    server.submitQueryPlan(serverPlan, workerPlans).get();
     /* Make sure the count matches the known result. */
     assertEquals(3361461, serverPlan.getCount());
 

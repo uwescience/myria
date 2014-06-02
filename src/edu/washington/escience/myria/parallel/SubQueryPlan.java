@@ -12,7 +12,7 @@ import edu.washington.escience.myria.operator.RootOperator;
  * have more parameters once Myria is launched as a service, in that case a query would have parameters such as resource
  * limits.
  */
-public class SingleQueryPlanWithArgs implements Serializable {
+public class SubQueryPlan implements Serializable {
 
   /** Serialization. */
   private static final long serialVersionUID = 1L;
@@ -29,7 +29,7 @@ public class SingleQueryPlanWithArgs implements Serializable {
   private boolean profilingMode = false;
 
   /** Constructor. */
-  public SingleQueryPlanWithArgs() {
+  public SubQueryPlan() {
     rootOps = new ArrayList<RootOperator>();
   }
 
@@ -38,7 +38,7 @@ public class SingleQueryPlanWithArgs implements Serializable {
    * 
    * @param op a root operator.
    * */
-  public SingleQueryPlanWithArgs(final RootOperator op) {
+  public SubQueryPlan(final RootOperator op) {
     this();
     addRootOp(op);
   }
@@ -48,7 +48,7 @@ public class SingleQueryPlanWithArgs implements Serializable {
    * 
    * @param ops a list of root operators.
    * */
-  public SingleQueryPlanWithArgs(final RootOperator[] ops) {
+  public SubQueryPlan(final RootOperator[] ops) {
     this();
     addRootOp(ops);
   }

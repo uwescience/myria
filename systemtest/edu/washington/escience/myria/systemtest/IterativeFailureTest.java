@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Ignore;
@@ -328,8 +329,8 @@ public class IterativeFailureTest extends SystemTestBase {
     SinkRoot serverPlan = new SinkRoot(serverCollect);
 
     try {
-      server.submitQueryPlan(serverPlan, workerPlans).sync();
-    } catch (DbException e) {
+      server.submitQueryPlan(serverPlan, workerPlans).get();
+    } catch (ExecutionException e) {
       throw e.getCause();
     }
 
@@ -475,7 +476,7 @@ public class IterativeFailureTest extends SystemTestBase {
     SinkRoot serverPlan = new SinkRoot(srfi);
 
     try {
-      server.submitQueryPlan(serverPlan, workerPlans).sync();
+      server.submitQueryPlan(serverPlan, workerPlans).get();
     } catch (DbException e) {
       throw e.getCause();
     }
@@ -553,7 +554,7 @@ public class IterativeFailureTest extends SystemTestBase {
     SinkRoot serverPlan = new SinkRoot(serverCollect);
 
     try {
-      server.submitQueryPlan(serverPlan, workerPlans).sync();
+      server.submitQueryPlan(serverPlan, workerPlans).get();
     } catch (DbException e) {
       throw e.getCause();
     }
@@ -623,7 +624,7 @@ public class IterativeFailureTest extends SystemTestBase {
     SinkRoot serverPlan = new SinkRoot(srfi);
 
     try {
-      server.submitQueryPlan(serverPlan, workerPlans).sync();
+      server.submitQueryPlan(serverPlan, workerPlans).get();
     } catch (DbException e) {
       throw e.getCause();
     }

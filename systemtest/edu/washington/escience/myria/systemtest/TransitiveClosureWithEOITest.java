@@ -215,7 +215,7 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
     final SinkRoot serverPlan = new SinkRoot(queueStore);
 
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    server.submitQueryPlan(serverPlan, workerPlans).get();
     TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
     while (!receivedTupleBatches.isEmpty()) {
       tb = receivedTupleBatches.poll();
@@ -326,7 +326,7 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
     final SinkRoot serverPlan = new SinkRoot(queueStore);
 
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    server.submitQueryPlan(serverPlan, workerPlans).get();
     TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
     TupleBatch tb = null;
     while (!receivedTupleBatches.isEmpty()) {

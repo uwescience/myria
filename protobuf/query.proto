@@ -15,10 +15,11 @@ message QueryMessage {
   }
   
   required uint64 query_id = 1;
-  required QueryMessage.Type type = 2;
-  optional QueryReport query_report = 3; //Report of the query execution. when type is QUERY_COMPLETE
-  optional Query query = 4; // query data, when type is QUERY_DISTRIBUTE 
-  optional int32 worker_id = 5; // worker id, when type is QUERY_RECOVER
+  required uint64 subquery_id = 2;
+  required QueryMessage.Type type = 3;
+  optional QueryReport query_report = 4; //Report of the query execution. when type is QUERY_COMPLETE
+  optional Query query = 5; // query data, when type is QUERY_DISTRIBUTE 
+  optional int32 worker_id = 6; // worker id, when type is QUERY_RECOVER
 }
 
 message Query {

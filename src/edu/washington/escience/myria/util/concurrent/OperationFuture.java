@@ -18,7 +18,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.util.Attachmentable;
 
 /**
  * This class serves as the root of all the handle objects for asynchronous operations.
@@ -49,18 +48,18 @@ import edu.washington.escience.myria.util.Attachmentable;
  *                                      +---------------------------+
  *                                      | Completed successfully    |
  *                                      +---------------------------+
- *                                 +---->      isDone() = <b>true</b>      |
- * +--------------------------+    |    |   isSuccess() = <b>true</b>      |
+ *                                 +---->      isDone() = true      |
+ * +--------------------------+    |    |   isSuccess() = true      |
  * |        Uncompleted       |    |    +===========================+
  * +--------------------------+    |    | Completed with failure    |
- * |      isDone() = <b>false</b>   |    |    +---------------------------+
- * |   isSuccess() = false    |----+---->   isDone() = <b>true</b>         |
- * | isCancelled() = false    |    |    | getCause() = <b>non-null</b>     |
+ * |      isDone() = false    |    |    +---------------------------+
+ * |   isSuccess() = false    |----+---->   isDone() = true         |
+ * | isCancelled() = false    |    |    | getCause() = non-null     |
  * |    getCause() = null     |    |    +===========================+
  * +--------------------------+    |    | Completed by cancellation |
  *                                 |    +---------------------------+
- *                                 +---->      isDone() = <b>true</b>      |
- *                                      | isCancelled() = <b>true</b>      |
+ *                                 +---->      isDone() = true      |
+ *                                      | isCancelled() = true      |
  *                                      +---------------------------+
  * </pre>
  * 
@@ -95,7 +94,7 @@ import edu.washington.escience.myria.util.Attachmentable;
  * notifier thread.
  * 
  * */
-public interface OperationFuture extends Attachmentable {
+public interface OperationFuture {
 
   /**
    * Returns <tt>true</tt> if this task completed.

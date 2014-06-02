@@ -15,35 +15,37 @@
 package edu.washington.escience.myria.parallel;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.util.Attachmentable;
 import edu.washington.escience.myria.util.concurrent.OperationFutureBase;
 import edu.washington.escience.myria.util.concurrent.OperationFutureListener;
-import edu.washington.escience.myria.util.concurrent.OperationFutureProgressListener;
 
 /**
- * The default {@link QueryFuture} implementation.
+ * The result of an asynchronous {@link LocalSubQuery} operation.
  */
-class DefaultTaskFuture extends OperationFutureBase<Void> implements Attachmentable, TaskFuture {
+class LocalSubQueryFuture extends OperationFutureBase<Void> {
 
   /**
-   * The owner query of this future, i.e. the future is for an operation on the query.
-   * */
-  private final QuerySubTreeTask task;
+   * The {@link LocalSubQuery} associated with this future.
+   */
+  private final LocalSubQuery query;
 
   /**
    * Creates a new instance.
    * 
-   * @param task the {@link QuerySubTreeTask } associated with this future
+   * @param query the {@link LocalSubQuery} associated with this future
    * @param cancellable {@code true} if and only if this future can be canceled
    */
-  public DefaultTaskFuture(final QuerySubTreeTask task, final boolean cancellable) {
+  public LocalSubQueryFuture(final LocalSubQuery query, final boolean cancellable) {
     super(cancellable);
-    this.task = task;
+    this.query = query;
   }
 
-  @Override
-  public final QuerySubTreeTask getTask() {
-    return task;
+  /**
+   * Returns the {@link LocalSubQuery} associated with this future.
+   * 
+   * @return the {@link LocalSubQuery} associated with this future
+   */
+  public final LocalSubQuery getLocalSubQuery() {
+    return query;
   }
 
   /**
@@ -67,58 +69,46 @@ class DefaultTaskFuture extends OperationFutureBase<Void> implements Attachmenta
     return setFailure0(cause);
   }
 
-  /**
-   * Notifies the progress of the operation to the listeners that implements {@link OperationFutureProgressListener}.
-   * Please note that this method will not do anything and return {@code false} if this future is complete already.
-   * 
-   * @param amount the amount of progress finished between the last call of this method and the current call
-   * @param current the current finished amount
-   * @param total the total amount to finish
-   * @return {@code true} if and only if notification was made.
-   */
-  final boolean setProgress(final long amount, final long current, final long total) {
-    return setProgress0(amount, current, total);
-  }
-
   @Override
-  public TaskFuture addListener(final OperationFutureListener listener) {
+  public LocalSubQueryFuture addListener(final OperationFutureListener listener) {
     super.addListener0(listener);
     return this;
   }
 
   @Override
-  public TaskFuture removeListener(final OperationFutureListener listener) {
+  public LocalSubQueryFuture removeListener(final OperationFutureListener listener) {
     super.removeListener0(listener);
     return this;
   }
 
   @Override
-  public TaskFuture sync() throws InterruptedException, DbException {
+  public LocalSubQueryFuture sync() throws InterruptedException, DbException {
     super.sync0();
     return this;
   }
 
   @Override
-  public TaskFuture syncUninterruptibly() throws DbException {
+  public LocalSubQueryFuture syncUninterruptibly() throws DbException {
     super.syncUninterruptibly0();
     return this;
   }
 
   @Override
-  public TaskFuture await() throws InterruptedException {
+  public LocalSubQueryFuture await() throws InterruptedException {
     super.await0();
     return this;
   }
 
   @Override
-  public TaskFuture awaitUninterruptibly() {
+  public LocalSubQueryFuture awaitUninterruptibly() {
     super.awaitUninterruptibly0();
     return this;
   }
 
   @Override
-  public TaskFuture addPreListener(final OperationFutureListener listener) {
+  public LocalSubQueryFuture addPreListener(final OperationFutureListener listener) {
     super.addPreListener0(listener);
     return this;
   }
+
 }

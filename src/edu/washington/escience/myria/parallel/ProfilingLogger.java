@@ -25,7 +25,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
  */
 public class ProfilingLogger {
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(QuerySubTreeTask.class.getName());
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(LocalFragment.class.getName());
 
   /** The connection to the database database. */
   private final AccessMethod accessMethod;
@@ -167,16 +167,16 @@ public class ProfilingLogger {
    * @return the time to record
    */
   private long getTime(final Operator operator) {
-    final WorkerQueryPartition workerQueryPartition = (WorkerQueryPartition) operator.getQueryPartition();
-    final long workerStartTimeMillis = workerQueryPartition.getBeginMilliseconds();
-    final long threadStartTimeMillis = operator.getSubTreeTask().getBeginMilliseconds();
+    final WorkerSubQuery workerSubQuery = (WorkerSubQuery) operator.getLocalSubQuery();
+    final long workerStartTimeMillis = workerSubQuery.getBeginMilliseconds();
+    final long threadStartTimeMillis = operator.getFragment().getBeginMilliseconds();
     Preconditions.checkState(workerStartTimeMillis > 0, "Query initialization time has not been recorded.");
     Preconditions.checkState(threadStartTimeMillis > 0, "Thread time has not been recorded.");
     final long startupTimeMillis = threadStartTimeMillis - workerStartTimeMillis;
     Preconditions.checkState(startupTimeMillis >= 0,
         "Thread that works on fragment cannot run (%s) before query is initialized (%s).", workerStartTimeMillis,
         threadStartTimeMillis);
-    final long threadStartNanos = operator.getSubTreeTask().getBeginNanoseconds();
+    final long threadStartNanos = operator.getFragment().getBeginNanoseconds();
     final long activeTimeNanos = System.nanoTime() - threadStartNanos;
 
     return TimeUnit.MILLISECONDS.toNanos(startupTimeMillis) + activeTimeNanos;

@@ -15,35 +15,37 @@
 package edu.washington.escience.myria.parallel;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.util.Attachmentable;
 import edu.washington.escience.myria.util.concurrent.OperationFutureBase;
 import edu.washington.escience.myria.util.concurrent.OperationFutureListener;
-import edu.washington.escience.myria.util.concurrent.OperationFutureProgressListener;
 
 /**
- * The default {@link QueryFuture} implementation.
+ * The future for a {@link LocalFragment}.
  */
-class DefaultQueryFuture extends OperationFutureBase<Void> implements Attachmentable, QueryFuture {
+final class LocalFragmentFuture extends OperationFutureBase<Void> {
 
   /**
-   * The owner query of this future, i.e. the future is for an operation on the query.
-   * */
-  private final QueryPartition query;
+   * The {@link LocalFragment} associated with this future.
+   */
+  private final LocalFragment fragment;
 
   /**
    * Creates a new instance.
    * 
-   * @param query the {@link Query } associated with this future
+   * @param fragment the {@link LocalFragment} associated with this future
    * @param cancellable {@code true} if and only if this future can be canceled
    */
-  public DefaultQueryFuture(final QueryPartition query, final boolean cancellable) {
+  public LocalFragmentFuture(final LocalFragment fragment, final boolean cancellable) {
     super(cancellable);
-    this.query = query;
+    this.fragment = fragment;
   }
 
-  @Override
-  public final QueryPartition getQuery() {
-    return query;
+  /**
+   * Return the {@link LocalFragment} that this future is associated with.
+   * 
+   * @return the {@link LocalFragment} that this future is associated with
+   */
+  public LocalFragment getFragment() {
+    return fragment;
   }
 
   /**
@@ -52,7 +54,7 @@ class DefaultQueryFuture extends OperationFutureBase<Void> implements Attachment
    * @return {@code true} if and only if successfully marked this future as a success. Otherwise {@code false} because
    *         this future is already marked as either a success or a failure.
    */
-  final boolean setSuccess() {
+  boolean setSuccess() {
     return setSuccess0(null);
   }
 
@@ -63,63 +65,49 @@ class DefaultQueryFuture extends OperationFutureBase<Void> implements Attachment
    * @return {@code true} if and only if successfully marked this future as a failure. Otherwise {@code false} because
    *         this future is already marked as either a success or a failure.
    */
-  final boolean setFailure(final Throwable cause) {
+  boolean setFailure(final Throwable cause) {
     return setFailure0(cause);
   }
 
-  /**
-   * Notifies the progress of the operation to the listeners that implements {@link OperationFutureProgressListener}.
-   * Please note that this method will not do anything and return {@code false} if this future is complete already.
-   * 
-   * @param amount the amount of progress finished between the last call of this method and the current call
-   * @param current the current finished amount
-   * @param total the total amount to finish
-   * @return {@code true} if and only if notification was made.
-   */
-  final boolean setProgress(final long amount, final long current, final long total) {
-    return setProgress0(amount, current, total);
-  }
-
   @Override
-  public QueryFuture addListener(final OperationFutureListener listener) {
+  public LocalFragmentFuture addListener(final OperationFutureListener listener) {
     super.addListener0(listener);
     return this;
   }
 
   @Override
-  public QueryFuture removeListener(final OperationFutureListener listener) {
+  public LocalFragmentFuture removeListener(final OperationFutureListener listener) {
     super.removeListener0(listener);
     return this;
   }
 
   @Override
-  public QueryFuture sync() throws InterruptedException, DbException {
+  public LocalFragmentFuture sync() throws InterruptedException, DbException {
     super.sync0();
     return this;
   }
 
   @Override
-  public QueryFuture syncUninterruptibly() throws DbException {
+  public LocalFragmentFuture syncUninterruptibly() throws DbException {
     super.syncUninterruptibly0();
     return this;
   }
 
   @Override
-  public QueryFuture await() throws InterruptedException {
+  public LocalFragmentFuture await() throws InterruptedException {
     super.await0();
     return this;
   }
 
   @Override
-  public QueryFuture awaitUninterruptibly() {
+  public LocalFragmentFuture awaitUninterruptibly() {
     super.awaitUninterruptibly0();
     return this;
   }
 
   @Override
-  public QueryFuture addPreListener(final OperationFutureListener listener) {
+  public LocalFragmentFuture addPreListener(final OperationFutureListener listener) {
     super.addPreListener0(listener);
     return this;
   }
-
 }

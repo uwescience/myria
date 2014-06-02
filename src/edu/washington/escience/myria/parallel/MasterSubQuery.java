@@ -9,7 +9,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
@@ -17,7 +16,9 @@ import org.jboss.netty.channel.group.DefaultChannelGroupFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
@@ -34,50 +35,46 @@ import edu.washington.escience.myria.util.DateTimeUtils;
 import edu.washington.escience.myria.util.IPCUtils;
 
 /**
- * A {@link MasterQueryPartition} is the partition of a query plan at the Master side. Currently, a master query
- * partition can only have a single task.
- * 
- * */
-public class MasterQueryPartition implements QueryPartition {
+ * A {@link LocalSubQuery} running at the Master. Currently, a {@link MasterSubQuery} can only have a single
+ * {@link LocalFragment}.
+ */
+public class MasterSubQuery implements LocalSubQuery {
 
   /**
    * Record worker execution info.
-   * */
+   */
   private class WorkerExecutionInfo {
     /**
-     * @param workerID owner worker id of the partition.
-     * @param workerPlan the query plan of this partition.
-     * */
-    WorkerExecutionInfo(final int workerID, final SingleQueryPlanWithArgs workerPlan) {
-      this.workerID = workerID;
+     * @param workerID owner worker id of the {@link LocalSubQuery}.
+     * @param workerPlan the query plan of the {@link LocalSubQuery}.
+     */
+    WorkerExecutionInfo(final int workerID, final SubQueryPlan workerPlan) {
       this.workerPlan = workerPlan;
-      workerReceiveQuery = new DefaultQueryFuture(MasterQueryPartition.this, false);
-      workerReceiveQuery.addListener(new QueryFutureListener() {
+      workerReceiveSubQuery = new LocalSubQueryFuture(MasterSubQuery.this, false);
+      workerReceiveSubQuery.addListener(new LocalSubQueryFutureListener() {
 
         @Override
-        public void operationComplete(final QueryFuture future) throws Exception {
+        public void operationComplete(final LocalSubQueryFuture future) throws Exception {
           int total = workerExecutionInfo.size();
           int current = nowReceived.incrementAndGet();
-          workerReceiveFuture.setProgress(1, current, workerExecutionInfo.size());
           if (current >= total) {
             workerReceiveFuture.setSuccess();
           }
         }
       });
-      workerCompleteQuery = new DefaultQueryFuture(MasterQueryPartition.this, false);
-      workerCompleteQuery.addListener(new QueryFutureListener() {
+      workerCompleteQuery = new LocalSubQueryFuture(MasterSubQuery.this, false);
+      workerCompleteQuery.addListener(new LocalSubQueryFutureListener() {
 
         @Override
-        public void operationComplete(final QueryFuture future) throws Exception {
+        public void operationComplete(final LocalSubQueryFuture future) throws Exception {
           int total = workerExecutionInfo.size();
           int current = nowCompleted.incrementAndGet();
-          queryExecutionFuture.setProgress(1, current, workerExecutionInfo.size());
           if (!future.isSuccess()) {
             Throwable cause = future.getCause();
             if (!(cause instanceof QueryKilledException)) {
               // Only record non-killed exceptions
               if (ftMode.equals(FTMODE.none)) {
-                failedQueryPartitions.put(workerID, cause);
+                failedWorkerLocalSubQueries.put(workerID, cause);
                 // if any worker fails because of some exception, kill the query.
                 kill();
                 /* Record the reason for failure. */
@@ -85,35 +82,33 @@ public class MasterQueryPartition implements QueryPartition {
                   message = Objects.firstNonNull(message, cause.toString());
                 }
               } else if (ftMode.equals(FTMODE.abandon)) {
-                LOGGER.debug("(Abandon) ignoring failed query future on query #{}", queryID);
+                LOGGER.debug("(Abandon) ignoring failed subquery future on subquery #{}", subQueryId);
                 // do nothing
               } else if (ftMode.equals(FTMODE.rejoin)) {
-                LOGGER.debug("(Rejoin) ignoring failed query future on query #{}", queryID);
+                LOGGER.debug("(Rejoin) ignoring failed subquery future on subquery #{}", subQueryId);
                 // do nothing
               }
             }
           }
           if (current >= total) {
-            queryStatistics.markQueryEnd();
-            if (LOGGER.isInfoEnabled()) {
-              LOGGER.info("Query #" + queryID + " executed for "
-                  + DateTimeUtils.nanoElapseToHumanReadable(queryStatistics.getQueryExecutionElapse()));
-            }
+            queryStatistics.markEnd();
+            LOGGER.info("Query #{} executed for {}", subQueryId, DateTimeUtils
+                .nanoElapseToHumanReadable(queryStatistics.getQueryExecutionElapse()));
 
-            if (!killed && failedQueryPartitions.isEmpty()) {
+            if (!killed && failedWorkerLocalSubQueries.isEmpty()) {
               queryExecutionFuture.setSuccess();
             } else {
-              if (failedQueryPartitions.isEmpty()) {
+              if (failedWorkerLocalSubQueries.isEmpty()) {
                 // query gets killed.
                 queryExecutionFuture.setFailure(new QueryKilledException());
               } else {
                 DbException composedException =
-                    new DbException("Query #" + future.getQuery().getQueryID() + " failed.");
-                for (Entry<Integer, Throwable> workerIDCause : failedQueryPartitions.entrySet()) {
+                    new DbException("Query #" + future.getLocalSubQuery().getSubQueryId() + " failed.");
+                for (Entry<Integer, Throwable> workerIDCause : failedWorkerLocalSubQueries.entrySet()) {
                   int failedWorkerID = workerIDCause.getKey();
                   Throwable cause = workerIDCause.getValue();
                   if (!(cause instanceof QueryKilledException)) {
-                    // Only record non-killed exceptoins
+                    // Only record non-killed exceptions
                     DbException workerException =
                         new DbException("Worker #" + failedWorkerID + " failed: " + cause.getMessage(), cause);
                     workerException.setStackTrace(cause.getStackTrace());
@@ -132,60 +127,54 @@ public class MasterQueryPartition implements QueryPartition {
     }
 
     /**
-     * The worker (maybe the master) who is executing the query partition.
-     * */
-    @SuppressWarnings("unused")
-    private final int workerID;
+     * The {@link SubQueryPlan} that's assigned to the master.
+     */
+    private final SubQueryPlan workerPlan;
 
     /**
-     * The query plan that's assigned to the worker.
-     * */
-    private final SingleQueryPlanWithArgs workerPlan;
+     * The future denoting the status of {@link SubQuery} dispatching to the workers.
+     */
+    private final LocalSubQueryFuture workerReceiveSubQuery;
 
     /**
-     * The future denoting the status of query partition dispatching to the worker event.
-     * */
-    private final DefaultQueryFuture workerReceiveQuery;
-
-    /**
-     * The future denoting the status of query partition execution on the worker.
-     * */
-    private final DefaultQueryFuture workerCompleteQuery;
+     * The future denoting the status of {@link SubQuery} execution on the worker.
+     */
+    private final LocalSubQueryFuture workerCompleteQuery;
   }
 
   /**
    * logger.
-   * */
-  private static final Logger LOGGER = LoggerFactory.getLogger(MasterQueryPartition.class);
+   */
+  private static final Logger LOGGER = LoggerFactory.getLogger(MasterSubQuery.class);
 
   /**
-   * The query ID.
-   * */
-  private final long queryID;
+   * The {@link SubQuery} id.
+   */
+  private final SubQueryId subQueryId;
 
   /**
-   * The execution task for the master side query partition.
-   * */
-  private volatile QuerySubTreeTask rootTask;
+   * The actual physical plan for the master {@link LocalSubQuery}.
+   */
+  private volatile LocalFragment fragment;
 
   /***
-   * Statistics of this query partition.
+   * Statistics of this {@link LocalSubQuery}.
    */
-  private final QueryExecutionStatistics queryStatistics = new QueryExecutionStatistics();
+  private final ExecutionStatistics queryStatistics = new ExecutionStatistics();
 
   /**
-   * The root operator of the master query partition.
-   * */
+   * The root operator of the {@link MasterSubQuery}.
+   */
   private final RootOperator root;
 
   /**
    * The owner master.
-   * */
+   */
   private final Server master;
 
   /**
    * The FT mode.
-   * */
+   */
   private final FTMODE ftMode;
 
   /**
@@ -195,61 +184,55 @@ public class MasterQueryPartition implements QueryPartition {
 
   /**
    * The priority.
-   * */
+   */
   private volatile int priority;
 
   /**
    * The data structure denoting the query dispatching/execution status of each worker.
-   * */
+   */
   private final ConcurrentHashMap<Integer, WorkerExecutionInfo> workerExecutionInfo;
 
   /**
    * the number of workers currently received the query.
-   * */
+   */
   private final AtomicInteger nowReceived = new AtomicInteger();
 
   /**
    * The number of workers currently completed the query.
-   * */
+   */
   private final AtomicInteger nowCompleted = new AtomicInteger();
 
   /**
    * The future object denoting the worker receive query plan operation.
-   * */
-  private final DefaultQueryFuture workerReceiveFuture = new DefaultQueryFuture(this, false);
+   */
+  private final LocalSubQueryFuture workerReceiveFuture = new LocalSubQueryFuture(this, false);
 
   /**
    * The future object denoting the query execution progress.
-   * */
-  private final DefaultQueryFuture queryExecutionFuture = new DefaultQueryFuture(this, false);
+   */
+  private final LocalSubQueryFuture queryExecutionFuture = new LocalSubQueryFuture(this, false);
 
   /**
    * Current alive worker set.
-   * */
+   */
   private final Set<Integer> missingWorkers;
 
   /**
-   * Store the current pause future if the query is in pause, otherwise null.
-   * */
-  private final AtomicReference<QueryFuture> pauseFuture = new AtomicReference<QueryFuture>(null);
+   * record all failed {@link LocalSubQuery}s.
+   */
+  private final ConcurrentHashMap<Integer, Throwable> failedWorkerLocalSubQueries = new ConcurrentHashMap<>();
 
   /**
-   * record all failed query partitions.
-   * */
-  private final ConcurrentHashMap<Integer, Throwable> failedQueryPartitions =
-      new ConcurrentHashMap<Integer, Throwable>();
-
-  /**
-   * The future listener for processing the complete events of the execution of the master task.
-   * */
-  private final TaskFutureListener taskExecutionListener = new TaskFutureListener() {
+   * The future listener for processing the complete events of the execution of the master fragment.
+   */
+  private final LocalFragmentFutureListener fragmentExecutionListener = new LocalFragmentFutureListener() {
 
     @Override
-    public void operationComplete(final TaskFuture future) throws Exception {
+    public void operationComplete(final LocalFragmentFuture future) throws Exception {
       if (future.isSuccess()) {
         if (root instanceof SinkRoot) {
           if (LOGGER.isInfoEnabled()) {
-            LOGGER.info(" Root task {} EOS. Num output tuple: {}", rootTask, ((SinkRoot) root).getCount());
+            LOGGER.info(" Root fragment {} EOS. Num output tuple: {}", fragment, ((SinkRoot) root).getCount());
           }
         }
         workerExecutionInfo.get(MyriaConstants.MASTER_ID).workerCompleteQuery.setSuccess();
@@ -264,35 +247,32 @@ public class MasterQueryPartition implements QueryPartition {
    * Callback when a query plan is received by a worker.
    * 
    * @param workerID the workerID
-   * */
+   */
   final void queryReceivedByWorker(final int workerID) {
     WorkerExecutionInfo wei = workerExecutionInfo.get(workerID);
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug("Worker #{} received query#{}", workerID, queryID);
-    }
-    if (wei.workerReceiveQuery.isSuccess()) {
+    LOGGER.debug("Worker #{} received query#{}", workerID, subQueryId);
+    if (wei.workerReceiveSubQuery.isSuccess()) {
       /* a recovery worker */
-      master.getIPCConnectionPool().sendShortMessage(workerID, IPCUtils.startQueryTM(queryID));
+      master.getIPCConnectionPool().sendShortMessage(workerID, IPCUtils.startQueryTM(subQueryId));
       for (Entry<Integer, WorkerExecutionInfo> e : workerExecutionInfo.entrySet()) {
         if (e.getKey() == workerID) {
           /* the new worker doesn't need to start recovery tasks */
           continue;
         }
         if (!e.getValue().workerCompleteQuery.isDone() && e.getKey() != MyriaConstants.MASTER_ID) {
-          master.getIPCConnectionPool().sendShortMessage(e.getKey(), IPCUtils.recoverQueryTM(queryID, workerID));
+          master.getIPCConnectionPool().sendShortMessage(e.getKey(), IPCUtils.recoverQueryTM(subQueryId, workerID));
         }
       }
     } else {
-      wei.workerReceiveQuery.setSuccess();
+      wei.workerReceiveSubQuery.setSuccess();
     }
   }
 
   /**
    * @return worker plans.
-   * */
-  final Map<Integer, SingleQueryPlanWithArgs> getWorkerPlans() {
-    Map<Integer, SingleQueryPlanWithArgs> result =
-        new HashMap<Integer, SingleQueryPlanWithArgs>(workerExecutionInfo.size());
+   */
+  final Map<Integer, SubQueryPlan> getWorkerPlans() {
+    Map<Integer, SubQueryPlan> result = new HashMap<Integer, SubQueryPlan>(workerExecutionInfo.size());
     for (Entry<Integer, WorkerExecutionInfo> e : workerExecutionInfo.entrySet()) {
       if (e.getKey() != MyriaConstants.MASTER_ID) {
         result.put(e.getKey(), e.getValue().workerPlan);
@@ -303,26 +283,26 @@ public class MasterQueryPartition implements QueryPartition {
 
   /**
    * @return query future for the worker receiving query action.
-   * */
-  final QueryFuture getWorkerReceiveFuture() {
+   */
+  final LocalSubQueryFuture getWorkerReceiveFuture() {
     return workerReceiveFuture;
   }
 
   @Override
-  public final QueryFuture getExecutionFuture() {
+  public final LocalSubQueryFuture getExecutionFuture() {
     return queryExecutionFuture;
   }
 
   /**
    * @return my root operator.
-   * */
+   */
   final RootOperator getRootOperator() {
     return root;
   }
 
   /**
    * @return the set of workers get assigned to run the query.
-   * */
+   */
   final Set<Integer> getWorkerAssigned() {
     Set<Integer> s = new HashSet<Integer>(workerExecutionInfo.keySet());
     s.remove(MyriaConstants.MASTER_ID);
@@ -331,14 +311,14 @@ public class MasterQueryPartition implements QueryPartition {
 
   /**
    * @return the set of workers who havn't finished their execution of the query.
-   * */
+   */
   final Set<Integer> getWorkersUnfinished() {
-    Set<Integer> result = new HashSet<Integer>();
+    Set<Integer> result = new HashSet<>();
     for (Entry<Integer, WorkerExecutionInfo> e : workerExecutionInfo.entrySet()) {
       if (e.getKey() == MyriaConstants.MASTER_ID) {
         continue;
       }
-      QueryFuture workerExecutionFuture = e.getValue().workerCompleteQuery;
+      LocalSubQueryFuture workerExecutionFuture = e.getValue().workerCompleteQuery;
       if (!workerExecutionFuture.isDone()) {
         result.add(e.getKey());
       }
@@ -350,17 +330,15 @@ public class MasterQueryPartition implements QueryPartition {
    * Callback when a worker completes its part of the query.
    * 
    * @param workerID the workerID
-   * */
+   */
   final void workerComplete(final int workerID) {
     final WorkerExecutionInfo wei = workerExecutionInfo.get(workerID);
     if (wei == null) {
-      LOGGER.warn("Got a QUERY_COMPLETE (succeed) message from worker " + workerID + " who is not assigned to query"
-          + queryID);
+      LOGGER.warn("Got a QUERY_COMPLETE (succeed) message from worker {} who is not assigned to query #{}", workerID,
+          subQueryId);
       return;
     }
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug("Received query complete (succeed) message from worker: {}", workerID);
-    }
+    LOGGER.debug("Received query complete (succeed) message from worker: {}", workerID);
     wei.workerCompleteQuery.setSuccess();
   }
 
@@ -369,18 +347,16 @@ public class MasterQueryPartition implements QueryPartition {
    * 
    * @param workerID the workerID
    * @param cause the cause of the failure
-   * */
+   */
   final void workerFail(final int workerID, final Throwable cause) {
     final WorkerExecutionInfo wei = workerExecutionInfo.get(workerID);
     if (wei == null) {
-      LOGGER.warn("Got a QUERY_COMPLETE (fail) message from worker " + workerID + " who is not assigned to query"
-          + queryID);
+      LOGGER.warn("Got a QUERY_COMPLETE (fail) message from worker {} who is not assigned to query #{}", workerID,
+          subQueryId);
       return;
     }
 
-    if (LOGGER.isInfoEnabled()) {
-      LOGGER.info("Received query complete (fail) message from worker: {}, cause: {}", workerID, cause.toString());
-    }
+    LOGGER.info("Received query complete (fail) message from worker: {}, cause: {}", workerID, cause);
     if (ftMode.equals(FTMODE.rejoin) && cause.toString().endsWith("LostHeartbeatException")) {
       /* for rejoin, don't set it to be completed since this worker is expected to be launched again. */
       return;
@@ -389,21 +365,21 @@ public class MasterQueryPartition implements QueryPartition {
   }
 
   /**
-   * @param masterPlan the master plan.
-   * @param workerPlans the worker plans.
-   * @param queryID queryID.
-   * @param master the master on which the query partition is running.
-   * */
-  public MasterQueryPartition(final SingleQueryPlanWithArgs masterPlan,
-      final Map<Integer, SingleQueryPlanWithArgs> workerPlans, final long queryID, final Server master) {
+   * @param subQuery the {@link SubQuery} to be executed.
+   * @param master the master on which the {@link SubQuery} is running.
+   */
+  public MasterSubQuery(final SubQuery subQuery, final Server master) {
+    Preconditions.checkNotNull(subQuery, "subQuery");
+    SubQueryPlan masterPlan = subQuery.getMasterPlan();
+    Map<Integer, SubQueryPlan> workerPlans = subQuery.getWorkerPlans();
     root = masterPlan.getRootOps().get(0);
-    this.queryID = queryID;
+    subQueryId = Preconditions.checkNotNull(subQuery.getSubQueryId(), "subQueryId");
     this.master = master;
     profilingMode = masterPlan.isProfilingMode();
     ftMode = masterPlan.getFTMode();
     workerExecutionInfo = new ConcurrentHashMap<Integer, WorkerExecutionInfo>(workerPlans.size());
 
-    for (Entry<Integer, SingleQueryPlanWithArgs> workerInfo : workerPlans.entrySet()) {
+    for (Entry<Integer, SubQueryPlan> workerInfo : workerPlans.entrySet()) {
       workerExecutionInfo.put(workerInfo.getKey(), new WorkerExecutionInfo(workerInfo.getKey(), workerInfo.getValue()));
     }
     WorkerExecutionInfo masterPart = new WorkerExecutionInfo(MyriaConstants.MASTER_ID, masterPlan);
@@ -411,10 +387,10 @@ public class MasterQueryPartition implements QueryPartition {
 
     missingWorkers = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
 
-    rootTask = new QuerySubTreeTask(MyriaConstants.MASTER_ID, this, root, master.getQueryExecutor());
-    rootTask.getExecutionFuture().addListener(taskExecutionListener);
-    HashSet<Consumer> consumerSet = new HashSet<Consumer>();
-    consumerSet.addAll(rootTask.getInputChannels().values());
+    fragment = new LocalFragment(MyriaConstants.MASTER_ID, this, root, master.getQueryExecutor());
+    fragment.getExecutionFuture().addListener(fragmentExecutionListener);
+    HashSet<Consumer> consumerSet = new HashSet<>();
+    consumerSet.addAll(fragment.getInputChannels().values());
 
     for (final Consumer operator : consumerSet) {
       FlowControlBagInputBuffer<TupleBatch> inputBuffer =
@@ -426,19 +402,19 @@ public class MasterQueryPartition implements QueryPartition {
 
         @Override
         public void triggered(final IPCEvent event) {
-          rootTask.notifyNewInput();
+          fragment.notifyNewInput();
         }
       });
     }
   }
 
   @Override
-  public final long getQueryID() {
-    return queryID;
+  public final SubQueryId getSubQueryId() {
+    return subQueryId;
   }
 
   @Override
-  public final int compareTo(final QueryPartition o) {
+  public final int compareTo(final LocalSubQuery o) {
     if (o == null) {
       return -1;
     }
@@ -452,13 +428,14 @@ public class MasterQueryPartition implements QueryPartition {
 
   @Override
   public final String toString() {
-    return rootTask + ", priority:" + priority;
+    return Joiner.on("").join(fragment, ", priority:", priority);
   }
 
   @Override
   public final void startExecution() {
-    queryStatistics.markQueryStart();
-    rootTask.start();
+    LOGGER.info("starting execution for query #{}", subQueryId);
+    queryStatistics.markStart();
+    fragment.start();
   }
 
   @Override
@@ -467,77 +444,44 @@ public class MasterQueryPartition implements QueryPartition {
   }
 
   @Override
-  public final QueryFuture pause() {
-    final QueryFuture pauseF = new DefaultQueryFuture(this, true);
-    while (!pauseFuture.compareAndSet(null, pauseF)) {
-      QueryFuture current = pauseFuture.get();
-      if (current != null) {
-        // already paused by some other threads, do not do the actual pause
-        return current;
-      }
-    }
-    return pauseF;
-  }
-
-  @Override
-  public final QueryFuture resume() {
-    QueryFuture pf = pauseFuture.getAndSet(null);
-    DefaultQueryFuture rf = new DefaultQueryFuture(this, true);
-
-    if (pf == null) {
-      rf.setSuccess();
-      return rf;
-    }
-
-    // TODO do the resume stuff
-    return rf;
-  }
-
-  @Override
   public final void kill() {
     if (killed) {
       return;
     }
     killed = true;
-    rootTask.kill();
+    fragment.kill();
     Set<Integer> workers = getWorkersUnfinished();
     ChannelFuture[] cfs = new ChannelFuture[workers.size()];
     int i = 0;
     DefaultChannelGroup cg = new DefaultChannelGroup();
     for (Integer workerID : workers) {
-      cfs[i] = master.getIPCConnectionPool().sendShortMessage(workerID, IPCUtils.killQueryTM(getQueryID()));
+      cfs[i] = master.getIPCConnectionPool().sendShortMessage(workerID, IPCUtils.killQueryTM(getSubQueryId()));
       cg.add(cfs[i].getChannel());
       i++;
     }
     DefaultChannelGroupFuture f = new DefaultChannelGroupFuture(cg, Arrays.asList(cfs));
     f.awaitUninterruptibly();
     if (!f.isCompleteSuccess()) {
-      if (LOGGER.isErrorEnabled()) {
-        LOGGER.error("Send kill query message to workers failed.");
-      }
+      LOGGER.error("Send kill query message to workers failed.");
     }
-  }
-
-  @Override
-  public final boolean isPaused() {
-    return pauseFuture.get() != null;
   }
 
   @Override
   public final void init() {
     ImmutableMap.Builder<String, Object> b = ImmutableMap.builder();
-    TaskResourceManager resourceManager = new TaskResourceManager(master.getIPCConnectionPool(), rootTask);
-    rootTask.init(resourceManager, b.putAll(master.getExecEnvVars()).build());
+    LocalFragmentResourceManager resourceManager =
+        new LocalFragmentResourceManager(master.getIPCConnectionPool(), fragment);
+    fragment.init(resourceManager, b.putAll(master.getExecEnvVars()).build());
   }
 
   @Override
-  public final QueryExecutionStatistics getExecutionStatistics() {
+  public final ExecutionStatistics getExecutionStatistics() {
     return queryStatistics;
   }
 
   /**
    * If the query has been asked to get killed (the kill event may not have completed).
-   * */
+   */
   private volatile boolean killed = false;
 
   /**
@@ -547,7 +491,7 @@ public class MasterQueryPartition implements QueryPartition {
 
   /**
    * @return If the query has been asked to get killed (the kill event may not have completed).
-   * */
+   */
   public final boolean isKilled() {
     return killed;
   }
@@ -568,21 +512,21 @@ public class MasterQueryPartition implements QueryPartition {
   }
 
   /**
-   * when a REMOVE_WORKER message is received, give tasks another chance to decide if they are ready to generate
-   * EOS/EOI.
+   * when a REMOVE_WORKER message is received, give the execution {@link LocalFragment} another chance to decide if it
+   * is ready to generate EOS/EOI.
    */
-  public void triggerTasks() {
-    rootTask.notifyNewInput();
+  public void triggerFragmentEosEoiCheck() {
+    fragment.notifyNewInput();
   }
 
   /**
-   * enable/disable output channels of the root(producer) of each task.
+   * enable/disable output channels of the root(producer) of the {@link LocalFragment}.
    * 
    * @param workerId the worker that changed its status.
    * @param enable enable/disable all the channels that belong to the worker.
-   * */
+   */
   public void updateProducerChannels(final int workerId, final boolean enable) {
-    rootTask.updateProducerChannels(workerId, enable);
+    fragment.updateProducerChannels(workerId, enable);
   }
 
   /**
