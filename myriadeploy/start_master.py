@@ -2,13 +2,8 @@
 
 "Start the Myria master in the specified deployment."
 
-import myriadeploy
-import setup_cluster
-
 import subprocess
 import sys
-import time
-import urllib2
 
 def start_master(config_file):
     args = ["./using_deployment_utils.sh", config_file, "-start_master"]

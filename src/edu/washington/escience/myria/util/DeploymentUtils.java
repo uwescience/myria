@@ -89,6 +89,11 @@ public final class DeploymentUtils {
         rsyncFileToRemote(configFileName, hostname, remotePath);
         rsyncFileToRemote("get_logs.py", hostname, remotePath);
         rsyncFileToRemote("myriadeploy.py", hostname, remotePath);
+        rsyncFileToRemote("stop_all_by_force.py", hostname, remotePath);
+        rsyncFileToRemote("launch_cluster.sh", hostname, remotePath);
+        rsyncFileToRemote("using_deployment_utils.sh", hostname, remotePath);
+        rsyncFileToRemote("start_master.py", hostname, remotePath);
+        rsyncFileToRemote("start_workers.py", hostname, remotePath);
       }
       Map<String, String> workers = config.get("workers");
       for (String workerId : workers.keySet()) {
@@ -157,14 +162,14 @@ public final class DeploymentUtils {
       final String maxHeapSize, final String workerId, final int port, final boolean debug) {
     StringBuilder builder = new StringBuilder();
     String path = workingDir + "/" + description + "-files";
-    String workerDir = description + "/" + "worker_" + workerId;
+    String workerDir = path + "/" + description + "/" + "worker_" + workerId;
     String classpath = "'conf:libs/*'";
     String librarypath = "sqlite4java-282";
     String heapSize = maxHeapSize;
     if (description == null) {
       /* built in system test */
       path = workingDir;
-      workerDir = "worker_" + workerId;
+      workerDir = path + "/worker_" + workerId;
       classpath = System.getProperty("java.class.path");
       librarypath = System.getProperty("java.library.path");
       heapSize = "";
@@ -203,18 +208,19 @@ public final class DeploymentUtils {
    * @param maxHeapSize the same meaning as max_heap_size in deployment.cfg
    * @param restPort the port number for restlet.
    */
-  public static void startMaster(final String address, final String workingDir, final String description,
+  public static void startMaster(final String address, String workingDir, final String description,
       final String maxHeapSize, final int restPort) {
+    workingDir += "/" + description + "-files";
     StringBuilder builder = new StringBuilder();
     builder.append("ssh " + address);
-    builder.append(" cd " + workingDir + "/" + description + "-files;");
+    builder.append(" cd " + workingDir + ";");
     builder.append(" nohup java -cp 'conf:libs/*'");
     builder.append(" -Djava.util.logging.config.file=logging.properties");
     builder.append(" -Dlog4j.configuration=log4j.properties");
     builder.append(" -Djava.library.path=sqlite4java-282");
     builder.append(" " + maxHeapSize);
     builder.append(" edu.washington.escience.myria.daemon.MasterDaemon");
-    builder.append(" " + description + " " + restPort);
+    builder.append(" " + workingDir + "/" + description + " " + restPort);
     builder.append(" 0</dev/null");
     builder.append(" 1>master_stdout");
     builder.append(" 2>master_stderr");
