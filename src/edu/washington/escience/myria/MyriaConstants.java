@@ -178,11 +178,6 @@ public final class MyriaConstants {
   public static final String STORAGE_SYSTEM_POSTGRESQL = "postgresql";
 
   /**
-   * Nor a real storage system but it can be used to generate a consistent name for user facing relation names.
-   */
-  public static final String STORAGE_SYSTEM_VIEW = "view";
-
-  /**
    * PostgreSQL port.
    */
   public static final int STORAGE_POSTGRESQL_PORT = 5401;

@@ -1217,10 +1217,8 @@ public final class Server {
     try {
       /* Start the workers */
       QueryFuture qf =
-          submitQuery("ingest " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_VIEW),
-              "ingest " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_VIEW),
-              "ingest " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_VIEW),
-              new SingleQueryPlanWithArgs(scatter), workerPlans, false).sync();
+          submitQuery("ingest " + relationKey.toString(), "ingest " + relationKey.toString(),
+              "ingest " + relationKey.toString(), new SingleQueryPlanWithArgs(scatter), workerPlans, false).sync();
       if (qf == null) {
         return null;
       }
@@ -1264,10 +1262,9 @@ public final class Server {
         workerPlans.put(workerId, new SingleQueryPlanWithArgs(new SinkRoot(new EOSSource())));
       }
       QueryFuture qf =
-          submitQuery("import " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_VIEW),
-              "import " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_VIEW),
-              "import " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_VIEW),
-              new SingleQueryPlanWithArgs(new SinkRoot(new EOSSource())), workerPlans, false).sync();
+          submitQuery("import " + relationKey.toString(), "import " + relationKey.toString(),
+              "import " + relationKey.toString(), new SingleQueryPlanWithArgs(new SinkRoot(new EOSSource())),
+              workerPlans, false).sync();
 
       if (qf == null) {
         throw new DbException("Cannot import dataset right now, server is overloaded.");
@@ -1521,7 +1518,7 @@ public final class Server {
     final SingleQueryPlanWithArgs masterPlan = new SingleQueryPlanWithArgs(output);
 
     /* Submit the plan for the download. */
-    String planString = "download " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_VIEW);
+    String planString = "download " + relationKey.toString();
     try {
       return submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
     } catch (CatalogException e) {

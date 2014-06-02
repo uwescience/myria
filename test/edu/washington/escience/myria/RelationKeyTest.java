@@ -39,7 +39,7 @@ public class RelationKeyTest {
 
   @Test
   public void testToString() {
-    assertEquals("[a#b#c]", r1a.toString());
+    assertEquals("a:b:c", r1a.toString());
     assertEquals("[a#b#c]", r1a.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
     assertEquals("\"a b c\"", r1a.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL));
     assertEquals("\"a b c\"", r1a.toString(MyriaConstants.STORAGE_SYSTEM_MONETDB));
