@@ -755,7 +755,11 @@ public class LeapFrogJoin extends NAryOperator {
         /* put value to index table if it first appears */
         if (isIndexed(new JoinField(childIndex, column))) {
           int thisRow = tables[childIndex].numTuples();
-          if (column == tb.numColumns() - 1) {
+          /*
+           * If the indexed column is not the first, numTuples() will return the number containing the current building
+           * tuple, so minus 1 here.
+           */
+          if (column != 0) {
             thisRow = tables[childIndex].numTuples() - 1;
           }
           int lastRow = thisRow - 1;
@@ -1163,7 +1167,6 @@ public class LeapFrogJoin extends NAryOperator {
   private int cellCompare(final CellPointer cp1, final CellPointer cp2) {
     return TupleUtils.cellCompare(tables[cp1.tableIndex], cp1.getFieldIndex(), cp1.getRow(),
         tables[cp2.getTableIndex()], cp2.getFieldIndex(), cp2.getRow());
-
   }
 
 }

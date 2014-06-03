@@ -82,7 +82,7 @@ public class LeapFrogJoinTest {
         new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE), outputColumnNames);
     LeapFrogJoin join =
         new LeapFrogJoin(new Operator[] { orderR, orderS, orderT }, fieldMap, outputMap, outputColumnNames,
-            new boolean[] { true, true, false });
+            new boolean[] { true, true, true });
     join.open(null);
     TupleBatch tb;
     TupleBatchBuffer batches = new TupleBatchBuffer(outputSchema);
@@ -180,7 +180,7 @@ public class LeapFrogJoinTest {
         new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE), outputColumnNames);
     LeapFrogJoin join =
         new LeapFrogJoin(new Operator[] { orderR, orderS, orderT, orderK, orderM }, fieldMap, outputMap,
-            outputColumnNames, new boolean[] { false, false, false, false, false });
+            outputColumnNames, new boolean[] { false, false, false, false, true });
     join.open(TestEnvVars.get());
     TupleBatch tb;
     TupleBatchBuffer batches = new TupleBatchBuffer(outputSchema);
@@ -270,6 +270,7 @@ public class LeapFrogJoinTest {
     join.close();
     assertEquals(2, batches.numTuples());
   }
+
   @Test
   public void outputFreeVariable() throws DbException {
     /* Result(x):- o(k,x), p(x,y), q(y,z) */
