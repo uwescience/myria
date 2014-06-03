@@ -52,6 +52,7 @@ import edu.washington.escience.myria.TupleWriter;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
+import edu.washington.escience.myria.api.encoding.QueryConstruct;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
@@ -996,6 +997,10 @@ public final class Server {
       if (getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_SQLITE)) {
         throw new DbException("Profiling mode is not supported when using SQLite as the storage system.");
       }
+    }
+    if (plan instanceof JsonSubQuery) {
+      /* Hack to instantiate a single-fragment query for the visualization. */
+      QueryConstruct.instantiate(((JsonSubQuery) plan).getFragments(), this);
     }
     final long queryID = catalog.newQuery(physicalPlan);
     return submitQuery(queryID, plan);
