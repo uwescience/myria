@@ -257,7 +257,7 @@ public class LeapFrogJoinTest {
     final Schema outputSchema = new Schema(ImmutableList.of(Type.INT_TYPE), outputColumnNames);
     LeapFrogJoin join =
         new LeapFrogJoin(new Operator[] { orderA, orderB, orderC }, fieldMap, outputMap, outputColumnNames,
-            new boolean[] { false, false, false });
+            new boolean[] { false, false, true });
     join.open(null);
     TupleBatch tb;
     TupleBatchBuffer batches = new TupleBatchBuffer(outputSchema);
