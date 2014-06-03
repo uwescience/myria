@@ -3,12 +3,17 @@ package edu.washington.escience.myria.api;
 import java.io.IOException;
 import java.net.URI;
 
+import javax.net.ssl.SSLException;
 import javax.ws.rs.core.UriBuilder;
 
+import org.glassfish.grizzly.http.server.HttpHandler;
 import org.glassfish.grizzly.http.server.HttpServer;
+import org.glassfish.grizzly.ssl.SSLContextConfigurator;
+import org.glassfish.grizzly.ssl.SSLEngineConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.sun.jersey.api.container.ContainerFactory;
 import com.sun.jersey.api.container.grizzly2.GrizzlyServerFactory;
 import com.sun.jersey.api.core.ResourceConfig;
 
@@ -40,7 +45,28 @@ public final class MasterApiServer {
   public MasterApiServer(final Server server, final MasterDaemon daemon, final int port) throws IOException {
     URI baseUri = UriBuilder.fromUri("http://0.0.0.0/").port(port).build();
     ResourceConfig masterApplication = new MasterApplication(server, daemon);
-    webServer = GrizzlyServerFactory.createHttpServer(baseUri, masterApplication);
+
+    /* If the keystore path and password are both set, use SSL. */
+    String keystorePath = server.getConfiguration(MyriaApiConstants.MYRIA_API_SSL_KEYSTORE);
+    String keystorePassword = server.getConfiguration(MyriaApiConstants.MYRIA_API_SSL_KEYSTORE_PASSWORD);
+    if (keystorePath != null && keystorePassword != null) {
+      LOGGER.info("Enabling SSL");
+      baseUri = UriBuilder.fromUri(baseUri).scheme("https").build();
+      HttpHandler handler = ContainerFactory.createContainer(HttpHandler.class, masterApplication);
+      SSLContextConfigurator sslCon = new SSLContextConfigurator();
+      sslCon.setKeyStoreFile(keystorePath);
+      sslCon.setKeyStorePass(keystorePassword);
+      if (!sslCon.validateConfiguration(true)) {
+        throw new SSLException(
+            "SSL keystore configuration did not validate. Missing or incorrect path to keystore? Wrong password?");
+      }
+      webServer =
+          GrizzlyServerFactory.createHttpServer(baseUri, handler, true, new SSLEngineConfigurator(sslCon, false, false,
+              false));
+    } else {
+      LOGGER.info("Not enabling SSL");
+      webServer = GrizzlyServerFactory.createHttpServer(baseUri, masterApplication);
+    }
   }
 
   /**

@@ -9,6 +9,7 @@ import javax.ws.rs.core.Response.Status;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.api.MyriaApiException;
+import edu.washington.escience.myria.operator.Operator;
 
 /**
  * A JSON-able wrapper for the expected wire message for a query.
@@ -18,7 +19,7 @@ public final class PlanFragmentEncoding extends MyriaApiEncoding {
   public List<Integer> workers;
   /** The Operators in this plan fragment. */
   @Required
-  public List<OperatorEncoding<?>> operators;
+  public List<OperatorEncoding<? extends Operator>> operators;
   /** Index of this fragment. */
   public long fragmentIndex = -1;
   /** List of required fields. */
@@ -31,7 +32,7 @@ public final class PlanFragmentEncoding extends MyriaApiEncoding {
   @Override
   protected void validateExtra() {
     Set<String> opNames = new HashSet<String>();
-    for (OperatorEncoding<?> op : operators) {
+    for (OperatorEncoding<? extends Operator> op : operators) {
       op.validate();
       if (!opNames.contains(op.opId)) {
         opNames.add(op.opId);

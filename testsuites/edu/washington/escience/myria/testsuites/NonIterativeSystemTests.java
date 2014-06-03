@@ -11,10 +11,8 @@ import edu.washington.escience.myria.systemtest.IterativeSelfJoinTest;
 import edu.washington.escience.myria.systemtest.LocalMultiwayProducerTest;
 import edu.washington.escience.myria.systemtest.MultithreadScanTest;
 import edu.washington.escience.myria.systemtest.OperatorTestUsingSQLiteStorage;
-import edu.washington.escience.myria.systemtest.ParallelDistinctUsingSQLiteTest;
 import edu.washington.escience.myria.systemtest.QueryFailureTest;
 import edu.washington.escience.myria.systemtest.QueryKillTest;
-import edu.washington.escience.myria.systemtest.ShuffleSQLiteTest;
 import edu.washington.escience.myria.systemtest.SplitDataTest;
 
 @RunWith(Suite.class)
@@ -24,8 +22,6 @@ import edu.washington.escience.myria.systemtest.SplitDataTest;
     LocalMultiwayProducerTest.class, //
     MultithreadScanTest.class, //
     OperatorTestUsingSQLiteStorage.class, //
-    ParallelDistinctUsingSQLiteTest.class, //
-    ShuffleSQLiteTest.class, //
     SplitDataTest.class, //
     QueryKillTest.class, //
     QueryFailureTest.class, //

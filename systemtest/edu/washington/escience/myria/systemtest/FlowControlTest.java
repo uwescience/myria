@@ -82,7 +82,7 @@ public class FlowControlTest extends SystemTestBase {
     final CollectConsumer serverCollect = new CollectConsumer(schema, serverReceiveID, new int[] { workerIDs[1] });
     final SinkRoot serverPlan = new SinkRoot(serverCollect);
 
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    server.submitQueryPlan(serverPlan, workerPlans).get();
     assertEquals(numTuples, serverPlan.getCount());
 
   }
