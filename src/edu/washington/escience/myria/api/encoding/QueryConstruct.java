@@ -146,7 +146,7 @@ public class QueryConstruct {
       for (OperatorEncoding<?> operator : fragment.operators) {
         if (operator instanceof AbstractConsumerEncoding) {
           AbstractConsumerEncoding<?> consumer = (AbstractConsumerEncoding<?>) operator;
-          Integer sourceProducerID = consumer.getOperatorId();
+          Integer sourceProducerID = consumer.getArgOperatorId();
           List<ExchangePairID> sourceProducerOutputChannels = producerOutputChannels.get(sourceProducerID);
           if (sourceProducerOutputChannels == null) {
             // The producer is not yet met
@@ -191,7 +191,7 @@ public class QueryConstruct {
           for (ExchangePairID id : exchange.getRealOperatorIds()) {
             if (exchange instanceof AbstractConsumerEncoding) {
               try {
-                workers.addAll(producerWorkerMap.get(((AbstractConsumerEncoding<?>) exchange).getOperatorId()));
+                workers.addAll(producerWorkerMap.get(((AbstractConsumerEncoding<?>) exchange).getArgOperatorId()));
               } catch (NullPointerException ee) {
                 System.err.println("Consumer: " + ((AbstractConsumerEncoding<?>) exchange).opId);
                 System.err.println("Producer: " + ((AbstractConsumerEncoding<?>) exchange).argOperatorId);

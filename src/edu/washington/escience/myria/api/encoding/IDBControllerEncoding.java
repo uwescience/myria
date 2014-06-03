@@ -15,13 +15,13 @@ public class IDBControllerEncoding extends OperatorEncoding<IDBController> {
   public Integer argSelfIdbId;
   @JsonProperty
   @Required
-  public String argInitialInput;
+  public Integer argInitialInput;
   @JsonProperty
   @Required
-  public String argIterationInput;
+  public Integer argIterationInput;
   @JsonProperty
   @Required
-  public String argEosControllerInput;
+  public Integer argEosControllerInput;
 
   private ExchangePairID realControllerOperatorId;
   public Integer realControllerWorkerId;

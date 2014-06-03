@@ -11,7 +11,7 @@ public abstract class AbstractConsumerEncoding<C extends Consumer> extends LeafO
   @Required
   public Integer argOperatorId;
 
-  Integer getOperatorId() {
+  Integer getArgOperatorId() {
     return argOperatorId;
   }
 
