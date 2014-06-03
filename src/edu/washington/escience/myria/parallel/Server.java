@@ -728,8 +728,12 @@ public final class Server {
       p.kill();
     }
 
-    messageProcessingExecutor.shutdownNow();
-    scheduledTaskExecutor.shutdownNow();
+    if (messageProcessingExecutor != null && !messageProcessingExecutor.isShutdown()) {
+      messageProcessingExecutor.shutdownNow();
+    }
+    if (scheduledTaskExecutor != null && !scheduledTaskExecutor.isShutdown()) {
+      scheduledTaskExecutor.shutdownNow();
+    }
 
     /*
      * Close the catalog before shutting down the IPC because there may be Catalog jobs pending that were triggered by
