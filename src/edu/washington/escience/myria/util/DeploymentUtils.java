@@ -315,7 +315,7 @@ public final class DeploymentUtils {
       final boolean useDel) {
     StringBuilder builder = new StringBuilder();
     builder.append("rsync");
-    builder.append(" -aLvz");
+    builder.append(" -rtLDvz");
     if (useDel) {
       builder.append(" --del");
     }

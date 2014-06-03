@@ -9,7 +9,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.storage.TupleBatch;
@@ -30,14 +29,11 @@ public abstract class PartitionFunction implements Serializable {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  /** Invalid number of partitions. */
-  private static final int INVALID_NUM_PARTITIONS = -1;
-
   /**
    * The number of partitions into which input tuples can be divided.
    */
   @JsonProperty
-  private int numPartitions = INVALID_NUM_PARTITIONS;
+  private Integer numPartitions = null;
 
   /**
    * @param numPartitions the number of partitions into which input tuples can be divided. Note that this is a
@@ -47,16 +43,14 @@ public abstract class PartitionFunction implements Serializable {
   public PartitionFunction(@Nullable final Integer numPartitions) {
     Preconditions.checkArgument((numPartitions == null) || (numPartitions > 0),
         "numPartitions argument must be null or > 0");
-    this.numPartitions = Objects.firstNonNull(numPartitions, INVALID_NUM_PARTITIONS);
+    this.numPartitions = numPartitions;
   }
 
   /**
    * @return the number of partitions.
    */
   public final int numPartition() {
-    if (numPartitions == INVALID_NUM_PARTITIONS) {
-      throw new IllegalStateException("numPartitions has not been set");
-    }
+    Preconditions.checkState(numPartitions != null, "numPartitions has not been set");
     return numPartitions;
   }
 

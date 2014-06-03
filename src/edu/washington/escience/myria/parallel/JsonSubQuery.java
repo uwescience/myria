@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import com.google.common.base.Verify;
+import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
@@ -17,12 +18,19 @@ import edu.washington.escience.myria.operator.EOSSource;
 import edu.washington.escience.myria.operator.SinkRoot;
 
 /**
- * A {@link QueryPlan} that runs a single subquery. Note that a {@link JsonSubQuery} cannot have a {@link QueryPlan} as a
- * child, but rather can only accept a physical JSON subquery as a set of fragments.
+ * A {@link QueryPlan} that runs a single subquery. Note that a {@link JsonSubQuery} cannot have a {@link QueryPlan} as
+ * a child, but rather can only accept a physical JSON subquery as a set of fragments.
  */
 public final class JsonSubQuery extends QueryPlan {
   /** The json query to be executed. */
   private final List<PlanFragmentEncoding> fragments;
+
+  /**
+   * @return the fragments of the query.
+   */
+  protected List<PlanFragmentEncoding> getFragments() {
+    return ImmutableList.copyOf(fragments);
+  }
 
   /**
    * Construct a {@link QueryPlan} that runs the given subquery. The subquery will be instantiated using
