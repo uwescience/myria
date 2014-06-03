@@ -50,7 +50,7 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
    * @param queryId the query that will write these relations to the cluster.
    * @throws CatalogException if there is an error accessing the catalog.
    */
-  public DatasetMetadataUpdater(final MasterCatalog catalog, final Map<Integer, SingleQueryPlanWithArgs> workerPlans,
+  public DatasetMetadataUpdater(final MasterCatalog catalog, final Map<Integer, SubQueryPlan> workerPlans,
       final long queryId) throws CatalogException {
     this.catalog = Objects.requireNonNull(catalog);
     this.queryId = queryId;
@@ -100,12 +100,12 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
    * @throws CatalogException if there is an error in the Catalog.
    */
   private static Map<RelationKey, RelationMetadata> inferRelationsCreated(
-      final Map<Integer, SingleQueryPlanWithArgs> workerPlans, final MasterCatalog catalog) throws CatalogException {
+      final Map<Integer, SubQueryPlan> workerPlans, final MasterCatalog catalog) throws CatalogException {
     Map<RelationKey, RelationMetadata> ret = new HashMap<RelationKey, RelationMetadata>();
 
     /* For each plan, look for DbInsert operators. */
-    for (Map.Entry<Integer, SingleQueryPlanWithArgs> entry : workerPlans.entrySet()) {
-      SingleQueryPlanWithArgs plan = entry.getValue();
+    for (Map.Entry<Integer, SubQueryPlan> entry : workerPlans.entrySet()) {
+      SubQueryPlan plan = entry.getValue();
       Integer workerId = entry.getKey();
       List<RootOperator> rootOps = plan.getRootOps();
       for (RootOperator op : rootOps) {

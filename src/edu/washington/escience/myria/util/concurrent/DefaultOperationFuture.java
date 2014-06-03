@@ -84,19 +84,6 @@ public class DefaultOperationFuture extends OperationFutureBase<Void> {
   }
 
   /**
-   * Notifies the progress of the operation to the listeners that implements {@link OperationFutureProgressListener}.
-   * Please note that this method will not do anything and return {@code false} if this future is complete already.
-   * 
-   * @param amount the amount of progress finished between the last call of this method and the current call
-   * @param current the current finished amount
-   * @param total the total amount to finish
-   * @return {@code true} if and only if notification was made.
-   */
-  public final boolean setProgress(final long amount, final long current, final long total) {
-    return super.setProgress0(amount, current, total);
-  }
-
-  /**
    * Marks this future as a failure and notifies all listeners.
    * 
    * @param cause the cause.

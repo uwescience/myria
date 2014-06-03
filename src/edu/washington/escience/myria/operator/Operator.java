@@ -11,11 +11,11 @@ import com.google.common.collect.ImmutableMap;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.parallel.LocalFragment;
+import edu.washington.escience.myria.parallel.LocalFragmentResourceManager;
+import edu.washington.escience.myria.parallel.LocalSubQuery;
 import edu.washington.escience.myria.parallel.ProfilingLogger;
-import edu.washington.escience.myria.parallel.QueryPartition;
-import edu.washington.escience.myria.parallel.QuerySubTreeTask;
-import edu.washington.escience.myria.parallel.TaskResourceManager;
-import edu.washington.escience.myria.parallel.WorkerQueryPartition;
+import edu.washington.escience.myria.parallel.WorkerSubQuery;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
@@ -108,30 +108,31 @@ public abstract class Operator implements Serializable {
    * @return return query id.
    */
   public long getQueryId() {
-    return ((TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER)).getOwnerTask()
-        .getOwnerQuery().getQueryID();
+    return ((LocalFragmentResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER))
+        .getFragment().getLocalSubQuery().getSubQueryId().getQueryId();
   }
 
   /**
-   * @return worker/master query partition.
+   * @return the executing {@link LocalSubQuery} that this {@link Operator} is part of.
    */
-  public final QueryPartition getQueryPartition() {
-    QuerySubTreeTask qstt = getSubTreeTask();
+  public final LocalSubQuery getLocalSubQuery() {
+    LocalFragment qstt = getFragment();
     if (qstt == null) {
       return null;
     } else {
-      return qstt.getOwnerQuery();
+      return qstt.getLocalSubQuery();
     }
   }
 
   /**
-   * @return query subtree task
+   * @return the executing {@link LocalFragment} that this {@link Operator} is part of.
    */
-  public QuerySubTreeTask getSubTreeTask() {
+  public LocalFragment getFragment() {
     if (execEnvVars == null) {
       return null;
     } else {
-      return ((TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER)).getOwnerTask();
+      return ((LocalFragmentResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER))
+          .getFragment();
     }
   }
 
@@ -164,16 +165,16 @@ public abstract class Operator implements Serializable {
     }
 
     if (profilingMode == null) {
-      TaskResourceManager trm =
-          (TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
+      LocalFragmentResourceManager trm =
+          (LocalFragmentResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER);
       if (trm == null) {
         return false;
       }
-      QuerySubTreeTask task = trm.getOwnerTask();
-      if (task == null) {
+      LocalFragment fragment = trm.getFragment();
+      if (fragment == null) {
         return false;
       }
-      profilingMode = task.getOwnerQuery().isProfilingMode();
+      profilingMode = fragment.getLocalSubQuery().isProfilingMode();
     }
     return profilingMode;
   }
@@ -405,8 +406,8 @@ public abstract class Operator implements Serializable {
     open = true;
 
     if (isProfilingMode()) {
-      final WorkerQueryPartition workerQueryPartition = (WorkerQueryPartition) getQueryPartition();
-      profilingLogger = workerQueryPartition.getOwnerWorker().getProfilingLogger();
+      final WorkerSubQuery workerSubQuery = (WorkerSubQuery) getLocalSubQuery();
+      profilingLogger = workerSubQuery.getWorker().getProfilingLogger();
     }
   }
 

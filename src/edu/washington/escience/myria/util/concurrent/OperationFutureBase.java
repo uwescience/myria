@@ -15,7 +15,6 @@
 package edu.washington.escience.myria.util.concurrent;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -26,7 +25,6 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.util.AttachmentableAdapter;
 
 /**
  * This class provides default implementations to the {@link OperationFuture}.
@@ -44,7 +42,7 @@ import edu.washington.escience.myria.util.AttachmentableAdapter;
  * 
  * @param <T> possible operation result when operation is successfully conducted.
  */
-public abstract class OperationFutureBase<T> extends AttachmentableAdapter implements OperationFuture {
+public abstract class OperationFutureBase<T> implements OperationFuture {
 
   /**
    * logger.
@@ -76,11 +74,6 @@ public abstract class OperationFutureBase<T> extends AttachmentableAdapter imple
    * All other pre-notify listeners.
    * */
   private List<OperationFutureListener> otherPreListeners;
-
-  /**
-   * Listeners for progress events.
-   * */
-  private List<OperationFutureProgressListener> progressListeners;
 
   /**
    * Possible operation result.
@@ -236,13 +229,6 @@ public abstract class OperationFutureBase<T> extends AttachmentableAdapter imple
           }
           otherListeners.add(listener);
         }
-
-        if (listener instanceof OperationFutureProgressListener) {
-          if (progressListeners == null) {
-            progressListeners = new ArrayList<OperationFutureProgressListener>(1);
-          }
-          progressListeners.add((OperationFutureProgressListener) listener);
-        }
       }
     }
 
@@ -265,11 +251,6 @@ public abstract class OperationFutureBase<T> extends AttachmentableAdapter imple
     if (listener == null) {
       throw new NullPointerException("listener");
     }
-    if (listener instanceof OperationFutureProgressListener) {
-      throw new IllegalArgumentException(OperationFutureProgressListener.class.getCanonicalName()
-          + " can only be added by addListener");
-    }
-
     boolean notifyNow = false;
     synchronized (this) {
       if (isDone()) {
@@ -316,10 +297,6 @@ public abstract class OperationFutureBase<T> extends AttachmentableAdapter imple
         }
       } else if (otherListeners != null) {
         otherListeners.remove(listener);
-      }
-
-      if (listener instanceof OperationFutureProgressListener) {
-        progressListeners.remove(listener);
       }
     }
   }
@@ -610,54 +587,4 @@ public abstract class OperationFutureBase<T> extends AttachmentableAdapter imple
       }
     }
   }
-
-  /**
-   * Notifies the progress of the operation to the listeners that implements {@link OperationFutureProgressListener}.
-   * Please note that this method will not do anything and return {@code false} if this future is complete already.
-   * 
-   * @param amount the amount of progress finished between the last call of this method and the current call
-   * @param current the current finished amount
-   * @param total the total amount to finish
-   * @return {@code true} if and only if notification was made.
-   */
-  protected final boolean setProgress0(final long amount, final long current, final long total) {
-    // Do not generate progress event after completion.
-    if (isDone()) {
-      return false;
-    }
-    OperationFutureProgressListener[] plisteners;
-    synchronized (this) {
-      Collection<OperationFutureProgressListener> progressListenersLocal = progressListeners;
-      if (progressListenersLocal == null || progressListenersLocal.isEmpty()) {
-        // Nothing to notify - no need to create an empty array.
-        return true;
-      }
-      plisteners = progressListenersLocal.toArray(new OperationFutureProgressListener[progressListenersLocal.size()]);
-    }
-    for (OperationFutureProgressListener pl : plisteners) {
-      notifyProgressListener(pl, amount, current, total);
-    }
-    return true;
-  }
-
-  /**
-   * Notify progress listeners.
-   * 
-   * @param l the listener
-   * @param amount the amount of progress finished in the most recent operation
-   * @param current the current finished amount
-   * @param total the total amount to finish
-   * 
-   * */
-  private void notifyProgressListener(final OperationFutureProgressListener l, final long amount, final long current,
-      final long total) {
-    try {
-      l.operationProgressed(this, amount, current, total);
-    } catch (Throwable t) {
-      if (LOGGER.isWarnEnabled()) {
-        LOGGER.warn("An exception was thrown by " + OperationFutureProgressListener.class.getSimpleName() + '.', t);
-      }
-    }
-  }
-
 }

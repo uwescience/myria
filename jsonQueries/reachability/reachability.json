@@ -1,6 +1,5 @@
 {
-	"expected_result": "working on the t_20000000 dataset, staring from node 12, using 14 workers, 2G memory on each, finishes in about 2 mins. number of result: 4215071 (although not directly observable from this query)",
-	"fragments":
+	"fragments": 
 	[
 		{
 			"operators":

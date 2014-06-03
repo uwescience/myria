@@ -2,6 +2,7 @@ package edu.washington.escience.myria.api.encoding;
 
 import java.net.URI;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import edu.washington.escience.myria.RelationKey;
@@ -14,6 +15,7 @@ import edu.washington.escience.myria.Schema;
  * 
  */
 public class DatasetStatus {
+
   /**
    * Instantiate a DatasetStatus with the provided values.
    * 
@@ -23,8 +25,10 @@ public class DatasetStatus {
    * @param queryId The query that created this dataset.
    * @param created When this dataset was created, in ISO8601 format.
    */
-  public DatasetStatus(final RelationKey relationKey, final Schema schema, final long numTuples, final long queryId,
-      final String created) {
+  @JsonCreator
+  public DatasetStatus(@JsonProperty("relationKey") final RelationKey relationKey,
+      @JsonProperty("schema") final Schema schema, @JsonProperty("numTuples") final long numTuples,
+      @JsonProperty("queryId") final long queryId, @JsonProperty("created") final String created) {
     this.relationKey = relationKey;
     this.schema = schema;
     this.numTuples = numTuples;

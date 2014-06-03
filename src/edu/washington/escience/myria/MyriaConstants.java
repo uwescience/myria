@@ -67,7 +67,7 @@ public final class MyriaConstants {
   /**
    * Task resource manager.
    */
-  public static final String EXEC_ENV_VAR_TASK_RESOURCE_MANAGER = "taskResourceManager";
+  public static final String EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER = "fragmentResourceManager";
 
   /**
    * Query ID.
@@ -176,11 +176,6 @@ public final class MyriaConstants {
    * PostgreSQL storage.
    */
   public static final String STORAGE_SYSTEM_POSTGRESQL = "postgresql";
-
-  /**
-   * Nor a real storage system but it can be used to generate a consistent name for user facing relation names.
-   */
-  public static final String STORAGE_SYSTEM_VIEW = "view";
 
   /**
    * PostgreSQL port.

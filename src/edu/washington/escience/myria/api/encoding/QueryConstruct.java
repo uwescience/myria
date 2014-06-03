@@ -27,15 +27,24 @@ import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.operator.network.EOSController;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.Server;
-import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
+import edu.washington.escience.myria.parallel.SubQueryPlan;
 import edu.washington.escience.myria.util.MyriaUtils;
 
 public class QueryConstruct {
   /** The logger for this class. */
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(QueryEncoding.class);
 
-  public static Map<Integer, SingleQueryPlanWithArgs> instantiate(List<PlanFragmentEncoding> fragments,
-      final Server server, FTMODE ftMode, boolean profilingMode) throws CatalogException {
+  /**
+   * Instantiate the server's desired physical plan from a list of JSON encodings of fragments. This list must contain a
+   * self-consistent, complete query. All fragments will be executed in parallel.
+   * 
+   * @param fragments the JSON-encoded query fragments to be executed in parallel
+   * @param server the server on which the query will be executed
+   * @return the physical plan
+   * @throws CatalogException if there is an error instantiating the plan
+   */
+  public static Map<Integer, SubQueryPlan> instantiate(List<PlanFragmentEncoding> fragments,
+      final Server server) throws CatalogException {
     /* First, we need to know which workers run on each plan. */
     setupWorkersForFragments(fragments, server);
     /* Next, we need to know which pipes (operators) are produced and consumed on which workers. */
@@ -50,7 +59,7 @@ public class QueryConstruct {
       }
     }
 
-    Map<Integer, SingleQueryPlanWithArgs> plan = new HashMap<Integer, SingleQueryPlanWithArgs>();
+    Map<Integer, SubQueryPlan> plan = new HashMap<Integer, SubQueryPlan>();
     HashMap<PlanFragmentEncoding, RootOperator> instantiatedFragments =
         new HashMap<PlanFragmentEncoding, RootOperator>();
     HashMap<Integer, Operator> allOperators = new HashMap<Integer, Operator>();
@@ -58,17 +67,30 @@ public class QueryConstruct {
       RootOperator op =
           instantiateFragment(fragment, server, instantiatedFragments, op2OwnerFragmentMapping, allOperators);
       for (Integer worker : fragment.workers) {
-        SingleQueryPlanWithArgs workerPlan = plan.get(worker);
+        SubQueryPlan workerPlan = plan.get(worker);
         if (workerPlan == null) {
-          workerPlan = new SingleQueryPlanWithArgs();
-          workerPlan.setFTMode(ftMode);
-          workerPlan.setProfilingMode(profilingMode);
+          workerPlan = new SubQueryPlan();
           plan.put(worker, workerPlan);
         }
         workerPlan.addRootOp(op);
       }
     }
     return plan;
+  }
+
+  /**
+   * Set the query execution options for the specified plans.
+   * 
+   * @param plans the physical query plan
+   * @param ftMode the fault tolerance mode under which the query will be executed
+   * @param profilingMode <code>true</code> if the query should be profiled
+   */
+  public static void setQueryExecutionOptions(Map<Integer, SubQueryPlan> plans, final FTMODE ftMode,
+      final boolean profilingMode) {
+    for (SubQueryPlan plan : plans.values()) {
+      plan.setFTMode(ftMode);
+      plan.setProfilingMode(profilingMode);
+    }
   }
 
   /**
@@ -193,9 +215,9 @@ public class QueryConstruct {
               try {
                 workers.addAll(producerWorkerMap.get(((AbstractConsumerEncoding<?>) exchange).getArgOperatorId()));
               } catch (NullPointerException ee) {
-                System.err.println("Consumer: " + ((AbstractConsumerEncoding<?>) exchange).opId);
-                System.err.println("Producer: " + ((AbstractConsumerEncoding<?>) exchange).argOperatorId);
-                System.err.println("producerWorkerMap: " + producerWorkerMap);
+                LOGGER.error("Consumer: {}", ((AbstractConsumerEncoding<?>) exchange).opId);
+                LOGGER.error("Producer: {}", ((AbstractConsumerEncoding<?>) exchange).argOperatorId);
+                LOGGER.error("producerWorkerMap: {}", producerWorkerMap);
                 throw ee;
               }
             } else if (exchange instanceof AbstractProducerEncoding) {
