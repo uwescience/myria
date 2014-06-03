@@ -180,14 +180,17 @@ public class SequenceTest extends SystemTestBase {
 
     /* First job: select just the value column and insert it to a new intermediate relation. */
     TableScanEncoding scan = new TableScanEncoding();
-    scan.opId = "scan";
+
+    int SCAN = 0, APPLY = 1, INSERT = 2, PROD = 3, CONS = 4, AGG = 5;
+
+    scan.opId = SCAN;
     scan.relationKey = origKey;
     ApplyEncoding apply = new ApplyEncoding();
-    apply.opId = "apply";
+    apply.opId = APPLY;
     apply.argChild = scan.opId;
     apply.emitExpressions = ImmutableList.of(new Expression("value", new VariableExpression(0)));
     DbInsertEncoding insert = new DbInsertEncoding();
-    insert.opId = "insert";
+    insert.opId = INSERT;
     insert.argChild = apply.opId;
     insert.relationKey = interKey;
     PlanFragmentEncoding fragment = new PlanFragmentEncoding();
@@ -197,24 +200,24 @@ public class SequenceTest extends SystemTestBase {
     /* Second job: Sum the values in that column. */
     // Fragment 1: scan and produce
     scan = new TableScanEncoding();
-    scan.opId = "scan";
+    scan.opId = SCAN;
     scan.relationKey = interKey;
     CollectProducerEncoding prod = new CollectProducerEncoding();
-    prod.opId = "prod";
+    prod.opId = PROD;
     prod.argChild = scan.opId;
     fragment = new PlanFragmentEncoding();
     fragment.operators = ImmutableList.of(scan, prod);
     // Fragment 2: consume, agg, insert
     CollectConsumerEncoding cons = new CollectConsumerEncoding();
-    cons.opId = "cons";
+    cons.opId = CONS;
     cons.argOperatorId = prod.opId;
     AggregateEncoding agg = new AggregateEncoding();
     agg.argChild = cons.opId;
-    agg.opId = "agg";
+    agg.opId = AGG;
     agg.argAggFields = new int[] { 0 };
     agg.argAggOperators = ImmutableList.of((List<String>) ImmutableList.of("AGG_OP_SUM"));
     insert = new DbInsertEncoding();
-    insert.opId = "insert";
+    insert.opId = INSERT;
     insert.argChild = agg.opId;
     insert.relationKey = resultKey;
     PlanFragmentEncoding fragment2 = new PlanFragmentEncoding();
