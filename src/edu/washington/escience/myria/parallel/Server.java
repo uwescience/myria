@@ -1879,8 +1879,8 @@ public final class Server {
 
     CollectProducer producer = new CollectProducer(scan, operatorId, MyriaConstants.MASTER_ID);
 
-    SingleQueryPlanWithArgs workerPlan = new SingleQueryPlanWithArgs(producer);
-    Map<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<>(actualWorkers.size());
+    SubQueryPlan workerPlan = new SubQueryPlan(producer);
+    Map<Integer, SubQueryPlan> workerPlans = new HashMap<>(actualWorkers.size());
     for (Integer worker : actualWorkers) {
       workerPlans.put(worker, workerPlan);
     }
@@ -1901,7 +1901,7 @@ public final class Server {
     final Apply rename = new Apply(sumAggregate, renameExpressions.build());
 
     DataOutput output = new DataOutput(rename, writer);
-    final SingleQueryPlanWithArgs masterPlan = new SingleQueryPlanWithArgs(output);
+    final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
     /* Submit the plan for the download. */
     String planString =
