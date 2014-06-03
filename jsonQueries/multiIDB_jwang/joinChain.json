@@ -172,7 +172,7 @@
         {
             "operators": [
                 {
-                    "argOperatorId": 11,
+                    "argOperatorId": 18,
                     "opId": 19,
                     "opType": "LocalMultiwayConsumer"
                 },
@@ -217,7 +217,7 @@
                     "opType": "ShuffleConsumer"
                 },
                 {
-                    "argOperatorId": 31,
+                    "argOperatorId": 47,
                     "opId": 28,
                     "opType": "ShuffleConsumer"
                 },
@@ -281,7 +281,7 @@
                         "index": "0",
                         "type": "SingleFieldHash"
                     },
-                    "opId": 31,
+                    "opId": 47,
                     "opType": "ShuffleProducer"
                 }
             ]
