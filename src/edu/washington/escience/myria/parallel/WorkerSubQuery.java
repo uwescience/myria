@@ -129,9 +129,9 @@ public class WorkerSubQuery implements LocalSubQuery {
         }
         if (isProfilingMode()) {
           try {
-            getWorker().getProfilingLogger().flush();
+            getWorker().getProfilingLogger().flush(subQueryId.getQueryId());
           } catch (DbException e) {
-            LOGGER.error("error flushing Profiling Logger: ", e);
+            LOGGER.error("Error flushing profiling logger", e);
           }
         }
         if (failFragments.isEmpty()) {

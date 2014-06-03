@@ -101,7 +101,7 @@ public final class RelationKey implements Serializable {
 
   @Override
   public String toString() {
-    return toString('[', '#', ']');
+    return toString('\0', ':', '\0').trim();
   }
 
   /**

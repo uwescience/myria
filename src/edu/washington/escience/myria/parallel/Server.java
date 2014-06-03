@@ -57,13 +57,7 @@ import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.CatalogMaker;
 import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
-import edu.washington.escience.myria.expression.ConditionalExpression;
-import edu.washington.escience.myria.expression.ConstantExpression;
-import edu.washington.escience.myria.expression.EqualsExpression;
 import edu.washington.escience.myria.expression.Expression;
-import edu.washington.escience.myria.expression.MinusExpression;
-import edu.washington.escience.myria.expression.PlusExpression;
-import edu.washington.escience.myria.expression.StateExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.expression.WorkerIdExpression;
 import edu.washington.escience.myria.operator.Apply;
@@ -71,11 +65,12 @@ import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.EOSSource;
-import edu.washington.escience.myria.operator.InMemoryOrderBy;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
-import edu.washington.escience.myria.operator.StatefulApply;
+import edu.washington.escience.myria.operator.agg.Aggregate;
+import edu.washington.escience.myria.operator.agg.Aggregator;
+import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
 import edu.washington.escience.myria.operator.network.Consumer;
@@ -881,7 +876,9 @@ public final class Server {
     messageProcessingExecutor.submit(new MessageProcessor());
     LOGGER.info("Server started on {}", masterSocketInfo);
 
-    if (getSchema(MyriaConstants.PROFILING_RELATION) == null && !getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_SQLITE)) {
+    if (getSchema(MyriaConstants.PROFILING_RELATION_TMP) == null
+        && getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
+      importDataset(MyriaConstants.PROFILING_RELATION_TMP, MyriaConstants.PROFILING_SCHEMA_TMP, null);
       importDataset(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA, null);
       importDataset(MyriaConstants.SENT_RELATION, MyriaConstants.SENT_SCHEMA, null);
     }
@@ -1231,8 +1228,8 @@ public final class Server {
     ListenableFuture<Query> qf;
     try {
       qf =
-          submitQuery("ingest " + relationKey.toString("sqlite"), "ingest " + relationKey.toString("sqlite"), "ingest "
-              + relationKey.toString("sqlite"), new SubQueryPlan(scatter), workerPlans, false);
+          submitQuery("ingest " + relationKey.toString(), "ingest " + relationKey.toString(), "ingest "
+              + relationKey.toString(), new SubQueryPlan(scatter), workerPlans, false);
     } catch (CatalogException e) {
       throw new DbException("Error submitting query", e);
     }
@@ -1279,8 +1276,8 @@ public final class Server {
         workerPlans.put(workerId, new SubQueryPlan(new SinkRoot(new EOSSource())));
       }
       ListenableFuture<Query> qf =
-          submitQuery("import " + relationKey.toString("sqlite"), "import " + relationKey.toString("sqlite"), "import "
-              + relationKey.toString("sqlite"), new SubQueryPlan(new SinkRoot(new EOSSource())), workerPlans, false);
+          submitQuery("import " + relationKey.toString(), "import " + relationKey.toString(), "import "
+              + relationKey.toString(), new SubQueryPlan(new SinkRoot(new EOSSource())), workerPlans, false);
       Query queryState;
       try {
         queryState = qf.get();
@@ -1507,9 +1504,8 @@ public final class Server {
     final ExchangePairID operatorId = ExchangePairID.newID();
     CollectProducer producer = new CollectProducer(scan, operatorId, MyriaConstants.MASTER_ID);
 
-    /* Construct the workers' {@link SingleQueryPlanWithArgs}. */
     SubQueryPlan workerPlan = new SubQueryPlan(producer);
-    Map<Integer, SubQueryPlan> workerPlans = new HashMap<Integer, SubQueryPlan>(scanWorkers.size());
+    Map<Integer, SubQueryPlan> workerPlans = new HashMap<>(scanWorkers.size());
     for (Integer worker : scanWorkers) {
       workerPlans.put(worker, workerPlan);
     }
@@ -1520,7 +1516,7 @@ public final class Server {
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
     /* Submit the plan for the download. */
-    String planString = "download " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE);
+    String planString = "download " + relationKey.toString();
     try {
       return submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
     } catch (CatalogException e) {
@@ -1532,13 +1528,11 @@ public final class Server {
    * @param queryId query id.
    * @param fragmentId the fragment id to return data for. All fragments, if < 0.
    * @param writer writer to get data.
-   * @param relationKey the relation to stream from
-   * @param schema the schema of the relation to stream from
    * @return profiling logs for the query.
    * @throws DbException if there is an error when accessing profiling logs.
    */
-  public ListenableFuture<Query> startLogDataStream(final long queryId, final long fragmentId,
-      final TupleWriter writer, final RelationKey relationKey, final Schema schema) throws DbException {
+  public ListenableFuture<Query> startSentLogDataStream(final long queryId, final long fragmentId,
+      final TupleWriter writer) throws DbException {
     /* Get the relation's schema, to make sure it exists. */
     final QueryStatusEncoding queryStatus;
     try {
@@ -1549,21 +1543,23 @@ public final class Server {
     Preconditions.checkArgument(queryStatus != null, "query %s not found", queryId);
     Preconditions.checkArgument(queryStatus.status == QueryStatusEncoding.Status.SUCCESS,
         "query %s did not succeed (%s)", queryId, queryStatus.status);
-    Preconditions.checkArgument(queryStatus.profilingMode, "query %s was not run with profiling enabled");
+    Preconditions.checkArgument(queryStatus.profilingMode, "query %s was not run with profiling enabled", queryId);
 
-    /* Get the workers. */
     Set<Integer> actualWorkers = ((QueryEncoding) queryStatus.physicalPlan).getWorkers();;
 
     String fragmentWhere = "";
     if (fragmentId >= 0) {
-      fragmentWhere = " AND fragmentId=" + fragmentId;
+      fragmentWhere = "AND fragmentid = " + fragmentId;
     }
 
-    /* Construct the operators that go elsewhere. */
+    final Schema schema = MyriaConstants.SENT_SCHEMA;
+
     // TODO: replace this with some kind of query construction
-    DbQueryScan scan =
-        new DbQueryScan("SELECT * FROM " + relationKey.toString(getDBMS()) + " WHERE queryId=" + queryId
-            + fragmentWhere + " ORDER BY fragmentid, nanotime", schema);
+    String sentQueryString =
+        Joiner.on(' ').join("SELECT * FROM", MyriaConstants.SENT_RELATION.toString(getDBMS()) + " WHERE queryid =",
+            queryId, fragmentWhere, " ORDER BY fragmentid, nanotime");
+
+    DbQueryScan scan = new DbQueryScan(sentQueryString, schema);
     final ExchangePairID operatorId = ExchangePairID.newID();
 
     ImmutableList.Builder<Expression> emitExpressions = ImmutableList.builder();
@@ -1584,14 +1580,12 @@ public final class Server {
 
     CollectProducer producer = new CollectProducer(addWorkerId, operatorId, MyriaConstants.MASTER_ID);
 
-    /* Construct the workers' {@link SingleQueryPlanWithArgs}. */
     SubQueryPlan workerPlan = new SubQueryPlan(producer);
     Map<Integer, SubQueryPlan> workerPlans = new HashMap<>(actualWorkers.size());
     for (Integer worker : actualWorkers) {
       workerPlans.put(worker, workerPlan);
     }
 
-    /* Construct the master plan. */
     final CollectConsumer consumer =
         new CollectConsumer(addWorkerId.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
     DataOutput output = new DataOutput(consumer, writer);
@@ -1599,8 +1593,7 @@ public final class Server {
 
     /* Submit the plan for the download. */
     String planString =
-        Joiner.on("").join("download profiling log data for (query=", queryId, ", fragment=", fragmentId,
-            ", log type=", relationKey.getRelationName(), ')');
+        Joiner.on("").join("download profiling log data for (query=", queryId, ", fragment=", fragmentId, ")");
     try {
       return submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
     } catch (CatalogException e) {
@@ -1611,13 +1604,170 @@ public final class Server {
   /**
    * @param queryId query id.
    * @param fragmentId the fragment id to return data for. All fragments, if < 0.
+   * @param start the earliest time where we need data
+   * @param end the latest time
    * @param writer writer to get data.
    * @return profiling logs for the query.
    * 
    * @throws DbException if there is an error when accessing profiling logs.
    */
-  public ListenableFuture<Query> startHistogramDataStream(final long queryId, final long fragmentId,
+  public QueryFuture startLogDataStream(final long queryId, final long fragmentId, final long start, final long end,
       final TupleWriter writer) throws DbException {
+    /* Get the relation's schema, to make sure it exists. */
+    final QueryStatusEncoding queryStatus;
+    try {
+      queryStatus = catalog.getQuery(queryId);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+    Preconditions.checkArgument(queryStatus != null, "query %s not found", queryId);
+    Preconditions.checkArgument(queryStatus.status == QueryStatusEncoding.Status.SUCCESS,
+        "query %s did not succeed (%s)", queryId, queryStatus.status);
+    Preconditions.checkArgument(queryStatus.profilingMode, "query %s was not run with profiling enabled", queryId);
+    Preconditions.checkArgument(start < end, "range cannot be negative");
+
+    final Schema schema =
+        new Schema(ImmutableList.of(Type.STRING_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList
+            .of("opId", "startTime", "endTime", "numTuples"));
+
+    Set<Integer> actualWorkers = ((QueryEncoding) queryStatus.physicalPlan).getWorkers();
+
+    String queryString =
+        Joiner.on(' ').join("SELECT opid, starttime, endtime, numtuples FROM",
+            MyriaConstants.PROFILING_RELATION.toString(getDBMS()), "WHERE fragmentId =", fragmentId, "AND queryid =",
+            queryId, "AND endtime >", start, "AND starttime <", end, "ORDER BY starttime ASC");
+
+    DbQueryScan scan = new DbQueryScan(queryString, schema);
+
+    ImmutableList.Builder<Expression> emitExpressions = ImmutableList.builder();
+
+    emitExpressions.add(new Expression("workerId", new WorkerIdExpression()));
+
+    for (int column = 0; column < schema.numColumns(); column++) {
+      VariableExpression copy = new VariableExpression(column);
+      emitExpressions.add(new Expression(schema.getColumnName(column), copy));
+    }
+
+    Apply addWorkerId = new Apply(scan, emitExpressions.build());
+
+    final ExchangePairID operatorId = ExchangePairID.newID();
+
+    CollectProducer producer = new CollectProducer(addWorkerId, operatorId, MyriaConstants.MASTER_ID);
+
+    SubQueryPlan workerPlan = new SubQueryPlan(producer);
+    Map<Integer, SubQueryPlan> workerPlans = new HashMap<>(actualWorkers.size());
+    for (Integer worker : actualWorkers) {
+      workerPlans.put(worker, workerPlan);
+    }
+
+    final CollectConsumer consumer =
+        new CollectConsumer(addWorkerId.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
+
+    DataOutput output = new DataOutput(consumer, writer);
+    final SubQueryPlan masterPlan = new SubQueryPlan(output);
+
+    /* Submit the plan for the download. */
+    String planString =
+        Joiner.on('\0').join("download profiling data (query=", queryId, ", fragment=", fragmentId, ", range=[",
+            Joiner.on(", ").join(start, end), "]", ")");
+    try {
+      return submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
+
+  /**
+   * @param queryId query id.
+   * @param fragmentId the fragment id to return data for. All fragments, if < 0.
+   * @param start start of the histogram
+   * @param end the end of the histogram
+   * @param step the step size between min and max
+   * @param writer writer to get data.
+   * @return profiling logs for the query.
+   * 
+   * @throws DbException if there is an error when accessing profiling logs.
+   */
+  public QueryFuture startHistogramDataStream(final long queryId, final long fragmentId, final long start,
+      final long end, final long step, final TupleWriter writer) throws DbException {
+    /* Get the relation's schema, to make sure it exists. */
+    final QueryStatusEncoding queryStatus;
+    try {
+      queryStatus = catalog.getQuery(queryId);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+    Preconditions.checkArgument(queryStatus != null, "query %s not found", queryId);
+    Preconditions.checkArgument(queryStatus.status == QueryStatusEncoding.Status.SUCCESS,
+        "query %s did not succeed (%s)", queryId, queryStatus.status);
+    Preconditions.checkArgument(queryStatus.profilingMode, "query %s was not run with profiling enabled");
+    Preconditions.checkArgument(start < end, "range cannot be negative");
+    Preconditions.checkArgument(step > 0, "step has to be greater than 0");
+
+    final Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("nanoTime"));
+    final RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
+
+    Set<Integer> actualWorkers = ((QueryEncoding) queryStatus.physicalPlan).getWorkers();
+
+    String opnameQueryString =
+        Joiner.on(' ').join("SELECT opid FROM", relationKey.toString(getDBMS()), "WHERE", fragmentId,
+            "=fragmentId AND ", queryId, "=queryId ORDER BY starttime ASC limit 1");
+
+    String histogramWorkerQueryString =
+        Joiner.on(' ').join("SELECT s.t AS nanotime FROM generate_series(", start, ", ", end, ", ", step,
+            ") As s(t) JOIN (SELECT * FROM", relationKey.toString(getDBMS()), "WHERE queryid=", queryId,
+            "AND fragmentid=", fragmentId, " AND opid=(", opnameQueryString,
+            ")) AS p ON s.t BETWEEN starttime AND endtime;");
+
+    DbQueryScan scan = new DbQueryScan(histogramWorkerQueryString, schema);
+    final ExchangePairID operatorId = ExchangePairID.newID();
+
+    CollectProducer producer = new CollectProducer(scan, operatorId, MyriaConstants.MASTER_ID);
+
+    SubQueryPlan workerPlan = new SubQueryPlan(producer);
+    Map<Integer, SubQueryPlan> workerPlans = new HashMap<>(actualWorkers.size());
+    for (Integer worker : actualWorkers) {
+      workerPlans.put(worker, workerPlan);
+    }
+
+    /* Aggregate histogram on master */
+
+    final CollectConsumer consumer =
+        new CollectConsumer(scan.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
+
+    // sum up the number of workers working
+    final SingleGroupByAggregate sumAggregate =
+        new SingleGroupByAggregate(consumer, new int[] { 0 }, 0, new int[] { Aggregator.AGG_OP_COUNT });
+
+    // rename columns
+    ImmutableList.Builder<Expression> renameExpressions = ImmutableList.builder();
+    renameExpressions.add(new Expression("nanoTime", new VariableExpression(0)));
+    renameExpressions.add(new Expression("numWorkers", new VariableExpression(1)));
+    final Apply rename = new Apply(sumAggregate, renameExpressions.build());
+
+    DataOutput output = new DataOutput(rename, writer);
+    final SubQueryPlan masterPlan = new SubQueryPlan(output);
+
+    /* Submit the plan for the download. */
+    String planString =
+        Joiner.on('\0').join("download profiling histogram (query=", queryId, ", fragment=", fragmentId, ", range=[",
+            Joiner.on(", ").join(start, end, step), "]", ")");
+    try {
+      return submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
+
+  /**
+   * @param queryId the query id
+   * @param fragmentId the fragment id
+   * @param writer writer to get data
+   * @return profiling logs for the query.
+   * @throws DbException if there is an error when accessing profiling logs.
+   */
+  public QueryFuture startRangeDataStream(final Long queryId, final Long fragmentId, final TupleWriter writer)
+      throws DbException {
     /* Get the relation's schema, to make sure it exists. */
     final QueryStatusEncoding queryStatus;
     try {
@@ -1631,36 +1781,20 @@ public final class Server {
     Preconditions.checkArgument(queryStatus.profilingMode, "query %s was not run with profiling enabled");
 
     final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("nanoTime", "eventType"));
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("startTime", "endTime"));
     final RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
 
-    /* Get the workers. */
     Set<Integer> actualWorkers = ((QueryEncoding) queryStatus.physicalPlan).getWorkers();
 
-    /* Construct the operators that go elsewhere. */
-    // TODO: replace this with some kind of query construction
     String opnameQueryString =
-        Joiner.on(' ').join("select opname from", relationKey.toString(getDBMS()), "where", fragmentId,
-            "=fragmentId and ", queryId, "=queryId order by nanotime asc limit 1");
-    String queryString =
-        Joiner.on(' ').join("select nanotime, eventtype from", relationKey.toString(getDBMS()), "where opname = (",
-            opnameQueryString, ") and queryid=", queryId, "and fragmentid=", fragmentId,
-            "and eventtype in ('call', 'return') order by nanotime asc");
-    DbQueryScan scan = new DbQueryScan(queryString, schema);
+        Joiner.on(' ').join("SELECT min(starttime), max(endtime) FROM", relationKey.toString(getDBMS()),
+            "WHERE queryid=", queryId, "AND fragmentid=", fragmentId);
+
+    DbQueryScan scan = new DbQueryScan(opnameQueryString, schema);
     final ExchangePairID operatorId = ExchangePairID.newID();
-
-    ImmutableList.Builder<Expression> emitExpressions = ImmutableList.builder();
-
-    emitExpressions.add(new Expression("workerId", new WorkerIdExpression()));
-
-    for (int column = 0; column < schema.numColumns(); column++) {
-      VariableExpression copy = new VariableExpression(column);
-      emitExpressions.add(new Expression(schema.getColumnName(column), copy));
-    }
 
     CollectProducer producer = new CollectProducer(scan, operatorId, MyriaConstants.MASTER_ID);
 
-    /* Construct the workers' {@link SingleQueryPlanWithArgs}. */
     SubQueryPlan workerPlan = new SubQueryPlan(producer);
     Map<Integer, SubQueryPlan> workerPlans = new HashMap<>(actualWorkers.size());
     for (Integer worker : actualWorkers) {
@@ -1670,33 +1804,16 @@ public final class Server {
     /* Construct the master plan. */
     final CollectConsumer consumer =
         new CollectConsumer(scan.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
-    final InMemoryOrderBy order = new InMemoryOrderBy(consumer, new int[] { 0 }, new boolean[] { true });
 
-    /* Use stateful apply to build histogram */
+    // Aggregate range on master
+    final Aggregate sumAggregate =
+        new Aggregate(consumer, new int[] { 0, 1 }, new int[] { Aggregator.AGG_OP_MIN, Aggregator.AGG_OP_MAX });
 
-    // increment on call, decrement on return, else do nothing
-    Expression conditionalIncrementDecrement =
-        new Expression(new ConditionalExpression(new EqualsExpression(new VariableExpression(1),
-            new ConstantExpression(Type.STRING_TYPE, "call")), new PlusExpression(new StateExpression(0),
-            new ConstantExpression(1)), new MinusExpression(new StateExpression(0), new ConstantExpression(1))));
-
-    ImmutableList.Builder<Expression> ib = ImmutableList.builder();
-    ib.add(new Expression("numWorkers", new ConstantExpression(0)));
-
-    ImmutableList.Builder<Expression> eb = ImmutableList.builder();
-    eb.add(new Expression("time", new VariableExpression(0)));
-    eb.add(new Expression("numWorkers", new StateExpression(0)));
-
-    ImmutableList.Builder<Expression> ub = ImmutableList.builder();
-    ub.add(conditionalIncrementDecrement);
-
-    final StatefulApply hist = new StatefulApply(order, eb.build(), ib.build(), ub.build());
-    DataOutput output = new DataOutput(hist, writer);
+    DataOutput output = new DataOutput(sumAggregate, writer);
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
     /* Submit the plan for the download. */
-    String planString =
-        Joiner.on("").join("download profiling histogram (query=", queryId, ", fragment=", fragmentId, ")");
+    String planString = Joiner.on('\0').join("download time range (query=", queryId, ", fragment=", fragmentId, ")");
     try {
       return submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
     } catch (CatalogException e) {

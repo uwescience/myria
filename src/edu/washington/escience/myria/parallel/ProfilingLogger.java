@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
@@ -39,6 +40,12 @@ public class ProfilingLogger {
   /** A query statement for batching. */
   private PreparedStatement statementSent;
 
+  /**
+   * A query statement for transforming the profiling relation from {@link MyriaConstants.PROFILING_SCHEMA_TMP} to
+   * {@link MyriaConstants.PROFILING_SCHEMA}.
+   */
+  private PreparedStatement statementTransform;
+
   /** Number of rows in batch in {@link #statementEvent}. */
   private int batchSizeEvents = 0;
 
@@ -56,18 +63,27 @@ public class ProfilingLogger {
     /* open the database connection */
     accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
 
+    accessMethod.createTableIfNotExists(MyriaConstants.PROFILING_RELATION_TMP, MyriaConstants.PROFILING_SCHEMA_TMP);
     accessMethod.createTableIfNotExists(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA);
     accessMethod.createTableIfNotExists(MyriaConstants.SENT_RELATION, MyriaConstants.SENT_SCHEMA);
 
     createProfilingIndexes();
+    createTmpProfilingIndexes();
     createSentIndex();
 
-    if (accessMethod instanceof JdbcAccessMethod) {
+    if (accessMethod instanceof JdbcAccessMethod
+        && connectionInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
       connection = ((JdbcAccessMethod) accessMethod).getConnection();
       try {
         statementEvent =
-            connection.prepareStatement(accessMethod.insertStatementFromSchema(MyriaConstants.PROFILING_SCHEMA,
-                MyriaConstants.PROFILING_RELATION));
+            connection.prepareStatement(accessMethod.insertStatementFromSchema(MyriaConstants.PROFILING_SCHEMA_TMP,
+                MyriaConstants.PROFILING_RELATION_TMP));
+      } catch (SQLException e) {
+        throw new DbException(e);
+      }
+
+      try {
+        statementTransform = connection.prepareStatement(getTransformProfilingDataStatement());
       } catch (SQLException e) {
         throw new DbException(e);
       }
@@ -81,7 +97,7 @@ public class ProfilingLogger {
       }
     } else {
       connection = null;
-      throw new UnsupportedOperationException("Profiling only supported with JDBC connection");
+      throw new UnsupportedOperationException("Profiling only supported with Postgres JDBC connection");
     }
   }
 
@@ -95,7 +111,22 @@ public class ProfilingLogger {
         ImmutableList.of(IndexRef.of(schema, "queryId"), IndexRef.of(schema, "fragmentId"), IndexRef.of(schema,
             "nanoTime"));
     try {
-      accessMethod.createIndexIfNotExists(MyriaConstants.SENT_RELATION, MyriaConstants.SENT_SCHEMA, index);
+      accessMethod.createIndexIfNotExists(MyriaConstants.SENT_RELATION, schema, index);
+    } catch (DbException e) {
+      LOGGER.error("Couldn't create index for profiling logs:", e);
+    }
+  }
+
+  /**
+   * @throws DbException if index cannot be created
+   */
+  protected void createTmpProfilingIndexes() throws DbException {
+    final Schema schema = MyriaConstants.PROFILING_SCHEMA_TMP;
+
+    List<IndexRef> filterIndex = ImmutableList.of(IndexRef.of(schema, "queryId"));
+
+    try {
+      accessMethod.createIndexIfNotExists(MyriaConstants.PROFILING_RELATION_TMP, schema, filterIndex);
     } catch (DbException e) {
       LOGGER.error("Couldn't create index for profiling logs:", e);
     }
@@ -109,48 +140,16 @@ public class ProfilingLogger {
 
     List<IndexRef> rootOpsIndex =
         ImmutableList.of(IndexRef.of(schema, "queryId"), IndexRef.of(schema, "fragmentId"), IndexRef.of(schema,
-            "nanoTime"));
+            "startTime"), IndexRef.of(schema, "endTime"));
     List<IndexRef> filterIndex =
-        ImmutableList.of(IndexRef.of(schema, "queryId"), IndexRef.of(schema, "fragmentId"), IndexRef.of(schema,
-            "opName"), IndexRef.of(schema, "nanoTime"));
+        ImmutableList.of(IndexRef.of(schema, "queryId"), IndexRef.of(schema, "fragmentId"),
+            IndexRef.of(schema, "opId"), IndexRef.of(schema, "startTime"), IndexRef.of(schema, "endTime"));
 
     try {
-      accessMethod.createIndexIfNotExists(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA,
-          rootOpsIndex);
-      accessMethod.createIndexIfNotExists(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA,
-          filterIndex);
+      accessMethod.createIndexIfNotExists(MyriaConstants.PROFILING_RELATION, schema, rootOpsIndex);
+      accessMethod.createIndexIfNotExists(MyriaConstants.PROFILING_RELATION, schema, filterIndex);
     } catch (DbException e) {
       LOGGER.error("Couldn't create index for profiling logs:", e);
-    }
-  }
-
-  /**
-   * Inserts in batches. Call {@link #flushProfilingEventsBatch()}.
-   * 
-   * @param operator the operator where this record was logged
-   * @param numTuples the number of tuples
-   * @param eventType the type of the event to be logged
-   * @throws DbException if insertion in the database fails
-   */
-  public synchronized void recordEvent(final Operator operator, final long numTuples, final String eventType)
-      throws DbException {
-
-    try {
-      statementEvent.setLong(1, operator.getQueryId());
-      statementEvent.setString(2, operator.getOpName());
-      statementEvent.setLong(3, operator.getFragmentId());
-      statementEvent.setLong(4, getTime(operator));
-      statementEvent.setLong(5, numTuples);
-      statementEvent.setString(6, eventType);
-
-      statementEvent.addBatch();
-      batchSizeEvents++;
-    } catch (final SQLException e) {
-      throw new DbException(e);
-    }
-
-    if (batchSizeEvents > TupleBatch.BATCH_SIZE) {
-      flushProfilingEventsBatch();
     }
   }
 
@@ -183,13 +182,87 @@ public class ProfilingLogger {
   }
 
   /**
-   * Flush the tuple batch buffer.
+   * Creates a statement for transforming the profiling relation from {@link MyriaConstants.PROFILING_SCHEMA_TMP} to
+   * {@link MyriaConstants.PROFILING_SCHEMA}.
    * 
+   * @return the insert into statement
+   */
+  private String getTransformProfilingDataStatement() {
+    return Joiner.on(' ').join("INSERT INTO",
+        MyriaConstants.PROFILING_RELATION.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL),
+        "SELECT c.queryid, c.fragmentid, c.opid, c.nanotime as startTime, r.nanotime as endTime, r.numtuples", "FROM",
+        MyriaConstants.PROFILING_RELATION_TMP.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), "c,",
+        MyriaConstants.PROFILING_RELATION_TMP.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), "r", "WHERE",
+        "c.queryid = r.queryid AND c.opid = r.opid AND c.fragmentid = r.fragmentid AND c.traceid = r.traceid",
+        "AND r.eventtype = 'return' AND c.eventtype = 'call' AND c.queryid = ?", "ORDER  BY c.nanotime ASC;",
+        "DELETE FROM", MyriaConstants.PROFILING_RELATION_TMP.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL),
+        "WHERE", "queryid = ?");
+  }
+
+  /**
+   * Inserts in batches. Call {@link #flushProfilingEventsBatch()}.
+   * 
+   * @param operator the operator where this record was logged
+   * @param numTuples the number of tuples
+   * @param eventType the type of the event to be logged
+   * @param traceId an id to trace corresponding events
    * @throws DbException if insertion in the database fails
    */
-  public synchronized void flush() throws DbException {
+  public synchronized void recordEvent(final Operator operator, final long numTuples, final String eventType,
+      final int traceId) throws DbException {
+
+    try {
+      statementEvent.setLong(1, operator.getQueryId());
+      statementEvent.setLong(2, operator.getFragmentId());
+      statementEvent.setString(3, operator.getOpName());
+      statementEvent.setLong(4, getTime(operator));
+      statementEvent.setLong(5, numTuples);
+      statementEvent.setString(6, eventType);
+      statementEvent.setInt(7, traceId);
+
+      statementEvent.addBatch();
+      batchSizeEvents++;
+    } catch (final SQLException e) {
+      throw new DbException(e);
+    }
+
+    if (batchSizeEvents > TupleBatch.BATCH_SIZE) {
+      flushProfilingEventsBatch();
+    }
+  }
+
+  /**
+   * Flush the tuple batch buffer and transform the profiling data.
+   * 
+   * @param queryId the query id
+   * @throws DbException if insertion in the database fails
+   */
+  public synchronized void flush(final long queryId) throws DbException {
     flushSentBatch();
     flushProfilingEventsBatch();
+    transformProfilingRelation(queryId);
+  }
+
+  /**
+   * Executes the transformation.
+   * 
+   * @param queryId the query id
+   * @throws DbException if any error occurs
+   */
+  private void transformProfilingRelation(final long queryId) throws DbException {
+    try {
+      statementTransform.setLong(1, queryId); // for insert statement
+      statementTransform.setLong(2, queryId); // for delete statement
+      connection.setAutoCommit(false);
+      statementTransform.executeUpdate();
+      connection.commit();
+      connection.setAutoCommit(true);
+    } catch (SQLException e) {
+      if (e instanceof BatchUpdateException) {
+        LOGGER.error("Error transforming profiling relation: ", e.getNextException());
+      }
+      throw new DbException(e);
+    }
   }
 
   /**
@@ -197,13 +270,14 @@ public class ProfilingLogger {
    * 
    * @throws DbException if insertion in the database fails
    */
-  private synchronized void flushProfilingEventsBatch() throws DbException {
+  private void flushProfilingEventsBatch() throws DbException {
     try {
-      if (batchSizeEvents > 0) {
-        statementEvent.executeBatch();
-        statementEvent.clearBatch();
-        batchSizeEvents = 0;
+      if (batchSizeEvents == 0) {
+        return;
       }
+      statementEvent.executeBatch();
+      statementEvent.clearBatch();
+      batchSizeEvents = 0;
     } catch (SQLException e) {
       if (e instanceof BatchUpdateException) {
         LOGGER.error("Error writing batch: ", e.getNextException());
@@ -217,7 +291,7 @@ public class ProfilingLogger {
    * 
    * @throws DbException if insertion in the database fails
    */
-  private synchronized void flushSentBatch() throws DbException {
+  private void flushSentBatch() throws DbException {
     try {
       if (batchSizeSent > 0) {
         statementSent.executeBatch();

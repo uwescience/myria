@@ -86,6 +86,11 @@ public abstract class Operator implements Serializable {
   private Boolean profilingMode;
 
   /**
+   * A unique identifier to trace corresponding events.
+   */
+  private int traceId;
+
+  /**
    * @return the profilingLogger
    */
   public ProfilingLogger getProfilingLogger() {
@@ -312,7 +317,9 @@ public abstract class Operator implements Serializable {
     }
 
     if (isProfilingMode()) {
-      profilingLogger.recordEvent(this, -1, "call");
+      // use trace id to track corresponding events
+      traceId++;
+      profilingLogger.recordEvent(this, -1, "call", traceId);
     }
 
     TupleBatch result = null;
@@ -331,10 +338,7 @@ public abstract class Operator implements Serializable {
       if (result != null) {
         numberOfTupleReturned = result.numTuples();
       }
-      profilingLogger.recordEvent(this, numberOfTupleReturned, "return");
-      if (eos()) {
-        profilingLogger.recordEvent(this, numberOfTupleReturned, "eos");
-      }
+      profilingLogger.recordEvent(this, numberOfTupleReturned, "return", traceId);
     }
     if (result == null) {
       checkEOSAndEOI();
@@ -410,7 +414,7 @@ public abstract class Operator implements Serializable {
     this.eoi = eoi;
     if (isProfilingMode()) {
       try {
-        profilingLogger.recordEvent(this, -1, "eoi");
+        profilingLogger.recordEvent(this, -1, "eoi", traceId);
       } catch (Exception e) {
         LOGGER.error("Failed to write profiling data:", e);
       }
