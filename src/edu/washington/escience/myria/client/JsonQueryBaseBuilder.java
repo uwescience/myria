@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.api.MyriaApiException;
@@ -33,7 +34,6 @@ import edu.washington.escience.myria.api.encoding.BroadcastConsumerEncoding;
 import edu.washington.escience.myria.api.encoding.BroadcastProducerEncoding;
 import edu.washington.escience.myria.api.encoding.CollectConsumerEncoding;
 import edu.washington.escience.myria.api.encoding.CollectProducerEncoding;
-import edu.washington.escience.myria.api.encoding.ColumnSelectEncoding;
 import edu.washington.escience.myria.api.encoding.ConsumerEncoding;
 import edu.washington.escience.myria.api.encoding.DbInsertEncoding;
 import edu.washington.escience.myria.api.encoding.DupElimEncoding;
@@ -59,7 +59,6 @@ import edu.washington.escience.myria.api.encoding.TipsyFileScanEncoding;
 import edu.washington.escience.myria.api.encoding.UnionAllEncoding;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.io.FileSource;
-import edu.washington.escience.myria.operator.ColumnSelect;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.FileScan;
@@ -190,7 +189,6 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     OPERATOR_PREFICES.put(TipsyFileScanEncoding.class, "tipsy");
     OPERATOR_PREFICES.put(FileScanEncoding.class, "file");
     OPERATOR_PREFICES.put(FilterEncoding.class, "filter");
-    OPERATOR_PREFICES.put(ColumnSelectEncoding.class, "project");
   }
 
   /**
@@ -521,7 +519,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
       }
 
       result.fragments = Arrays.asList(fragments.values().toArray(new PlanFragmentEncoding[] {}));
-      result.ftMode = MyriaConstants.FTMODE.none.name();
+      result.ftMode = FTMODE.none;
       result.logicalRa = "";
       result.profilingMode = false;
       result.rawDatalog = "";
@@ -649,10 +647,10 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     }
     Preconditions.checkNotNull(root.runOnWorkers);
 
-    ArrayList<JsonQueryBaseBuilder> operators = new ArrayList<JsonQueryBaseBuilder>();
+    ArrayList<JsonQueryBaseBuilder> operators = new ArrayList<>();
     PlanFragmentEncoding fragment = new PlanFragmentEncoding();
     findOperators(operators, root);
-    fragment.operators = new ArrayList<OperatorEncoding<?>>(operators.size());
+    fragment.operators = new ArrayList<>(operators.size());
 
     for (JsonQueryBaseBuilder obb : operators) {
       fragment.operators.add(obb.op);
@@ -849,20 +847,6 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     JsonQueryBaseBuilder filter = buildOperator(FilterEncoding.class, NO_PREFERENCE);
     ((FilterEncoding) filter.op).argPredicate = predicate;
     return filter;
-  }
-
-  /**
-   * Column selection (Project).
-   * 
-   * {@link ColumnSelect}.
-   * 
-   * @return builder.
-   * @param fieldList list of fields to be remained
-   */
-  public JsonQueryBaseBuilder project(final int[] fieldList) {
-    JsonQueryBaseBuilder project = buildOperator(ColumnSelectEncoding.class, NO_PREFERENCE);
-    ((ColumnSelectEncoding) project.op).argFieldList = fieldList;
-    return project;
   }
 
   /**

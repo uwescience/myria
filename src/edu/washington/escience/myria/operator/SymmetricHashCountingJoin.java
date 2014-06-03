@@ -369,6 +369,20 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
 
   @Override
   protected Schema generateSchema() {
+    final Schema leftSchema = getLeft().getSchema();
+    final Schema rightSchema = getRight().getSchema();
+
+    /* Assert that the compare index types are the same. */
+    for (int i = 0; i < rightCompareIndx.length; ++i) {
+      int leftIndex = leftCompareIndx[i];
+      int rightIndex = rightCompareIndx[i];
+      Type leftType = leftSchema.getColumnType(leftIndex);
+      Type rightType = rightSchema.getColumnType(rightIndex);
+      Preconditions.checkState(leftType == rightType,
+          "column types do not match for join at index %s: left column type %s [%s] != right column type %s [%s]", i,
+          leftIndex, leftType, rightIndex, rightType);
+    }
+
     return Schema.of(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of(columnName));
   }
 

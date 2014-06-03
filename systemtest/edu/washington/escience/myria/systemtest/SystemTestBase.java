@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.ProcessBuilder.Redirect;
+import java.lang.management.ManagementFactory;
 import java.net.HttpURLConnection;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -15,6 +16,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
@@ -37,6 +39,7 @@ import org.junit.runner.Description;
 import org.slf4j.LoggerFactory;
 
 import com.almworks.sqlite4java.SQLiteException;
+import com.fasterxml.jackson.databind.ObjectReader;
 import com.google.common.collect.ImmutableList;
 import com.google.protobuf.ByteString;
 
@@ -49,6 +52,9 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.SQLiteAccessMethod;
 import edu.washington.escience.myria.accessmethod.SQLiteInfo;
+import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
+import edu.washington.escience.myria.api.encoding.DatasetStatus;
+import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.CatalogMaker;
 import edu.washington.escience.myria.coordinator.catalog.WorkerCatalog;
@@ -526,34 +532,47 @@ public class SystemTestBase {
       String cp = System.getProperty("java.class.path");
       String lp = System.getProperty("java.library.path");
 
-      ProcessBuilder tpb;
-      if (DEBUG) {
-        tpb =
-            new ProcessBuilder("java", "-ea", // enable assertion
-                "-Djava.library.path=" + lp, "-Dorg.jboss.netty.debug", "-Xdebug",
-                // Now eclipse is able to debug remotely the worker processes
-                // following the steps:
-                // 1. Set a breakpoint at the beginning of a JUnit test method.
-                // 2. start debug the JUnit test method. The test method should stop
-                // at the preset breakpoint.
-                // But now, the worker processes are already started.
-                // 3. Create an Eclipse remote debugger and set to attach to localhost
-                // 10001 for worker1 and localhost
-                // 10002 for worker2
-                // 4. Now, you are able to debug the worker processes. All the Java
-                // debugging methods are supported such
-                // as breakpoints.
-                "-Xrunjdwp:transport=dt_socket,address=" + (workerPorts[i] + 1000) + ",server=y,suspend=n", //
-                "-Xmx" + MEMORY, // memory limit to MEMORY
-                "-classpath", cp, Worker.class.getCanonicalName(), "--workingDir", workingDir, "--testMethod", name
-                    .getMethodName());
-      } else {
-        tpb = new ProcessBuilder("java", "-ea", // enable assertion
-            "-Djava.library.path=" + lp, "-classpath", cp, // paths
-            "-Xmx" + MEMORY, // memory limit to MEMORY
-            Worker.class.getCanonicalName(), "--workingDir", workingDir, "--testMethod", name.getMethodName());
+      /* Construct the arguments to start the new Java process. First, set up the JVM options. */
+      ImmutableList.Builder<String> args = ImmutableList.builder();
+      args.add("java") // run java
+          .add("-ea") // enable assertions
+          .add("-Djava.library.path=" + lp).add("-classpath").add(cp) // paths
+          .add("-Xmx" + MEMORY) // memory limit to MEMORY
+      ;
+
+      /* If this test was run with a Java agent, then add it. */
+      List<String> inputArgs = ManagementFactory.getRuntimeMXBean().getInputArguments();
+      for (String s : inputArgs) {
+        if (s.startsWith("-javaagent")) {
+          String currentDirectory = new File(".").getCanonicalPath();
+          String javaAgent = s.replaceAll("build/", currentDirectory + File.separator + "build/");
+          args.add(javaAgent);
+          System.err.println("Enabled java agent: " + javaAgent);
+        }
       }
-      final ProcessBuilder pb = tpb;
+
+      /* Second, set up the JVM debug options. */
+      if (DEBUG) {
+        args.add("-Dorg.jboss.netty.debug").add("-Xdebug")
+        // Now eclipse is able to debug remotely the worker processes
+        // following the steps:
+        // 1. Set a breakpoint at the beginning of a JUnit test method.
+        // 2. start debug the JUnit test method. The test method should stop
+        // at the preset breakpoint.
+        // But now, the worker processes are already started.
+        // 3. Create an Eclipse remote debugger and set to attach to localhost
+        // 10001 for worker1 and localhost
+        // 10002 for worker2
+        // 4. Now, you are able to debug the worker processes. All the Java
+        // debugging methods are supported such
+        // as breakpoints.
+            .add("-Xrunjdwp:transport=dt_socket,address=" + (workerPorts[i] + 1000) + ",server=y,suspend=n");
+      }
+
+      /* Finally, set up the class to be run (Worker) and its command-line options. */
+      args.add(Worker.class.getCanonicalName(), "--workingDir", workingDir, "--testMethod", name.getMethodName());
+
+      final ProcessBuilder pb = new ProcessBuilder(args.build());
 
       pb.directory(new File(workingDir));
       pb.redirectErrorStream(true);
@@ -601,5 +620,15 @@ public class SystemTestBase {
 
       ++workerCount;
     }
+  }
+
+  public static QueryStatusEncoding getQueryStatus(HttpURLConnection conn) throws IOException {
+    ObjectReader reader = MyriaJsonMapperProvider.getReader().withType(QueryStatusEncoding.class);
+    return reader.readValue(conn.getInputStream());
+  }
+
+  public static DatasetStatus getDatasetStatus(HttpURLConnection conn) throws IOException {
+    ObjectReader reader = MyriaJsonMapperProvider.getReader().withType(DatasetStatus.class);
+    return reader.readValue(conn.getInputStream());
   }
 }

@@ -6,14 +6,14 @@
                     "opId":"Scan(R)",
                     "opType":"TableScan",
                     "relationKey":{
-                        "programName":"multiway_join",
-                        "relationName":"twitter_small",
-                        "userName":"chushumo"
+                        "programName":"adhoc",
+                        "relationName":"twitter_1m",
+                        "userName":"public"
                     }
                 },
                 {
                     "argChild":"Scan(R)",
-                    "indexes": [0],
+                    "hashedColumns": [0],
                     "cellPartition":[
                         [
                             0,
@@ -24,6 +24,7 @@
                             3
                         ]
                     ],
+                    "mappedHCDimensions":[0],
                     "hyperCubeDimensions":[
                         2,
                         2
@@ -39,14 +40,15 @@
                     "opId":"Scan(S)",
                     "opType":"TableScan",
                     "relationKey":{
-                        "programName":"multiway_join",
-                        "relationName":"twitter_small",
-                        "userName":"chushumo"
+                        "programName":"adhoc",
+                        "relationName":"twitter_1m",
+                        "userName":"public"
                     }
                 },
                 {
                     "argChild":"Scan(S)",
-                    "indexes": [1],
+                    "hashedColumns": [1],
+                    "mappedHCDimensions":[1],
                     "cellPartition":[
                         [
                             0,

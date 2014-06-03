@@ -67,7 +67,7 @@ public final class MyriaConstants {
   /**
    * Task resource manager.
    * */
-  public static final String EXEC_ENV_VAR_TASK_RESOURCE_MANAGER = "taskResourceManager";
+  public static final String EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER = "fragmentResourceManager";
 
   /**
    * Query ID.
@@ -252,9 +252,9 @@ public final class MyriaConstants {
   /**
    * The schema of the {@link #SENT_RELATION}.
    */
-  public static final Schema SENT_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE,
-      Type.LONG_TYPE, Type.LONG_TYPE, Type.INT_TYPE), ImmutableList.of("queryId", "fragmentId", "nanoTime",
-      "numTuples", "destWorkerId"));
+  public static final Schema SENT_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE,
+      Type.LONG_TYPE, Type.INT_TYPE), ImmutableList
+      .of("queryId", "fragmentId", "nanoTime", "numTuples", "destWorkerId"));
 
   /** Private constructor to disallow building utility class. */
   private MyriaConstants() {

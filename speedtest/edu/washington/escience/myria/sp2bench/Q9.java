@@ -8,7 +8,8 @@ import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.operator.ColumnSelect;
+import edu.washington.escience.myria.operator.Apply;
+import edu.washington.escience.myria.operator.Applys;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.Operator;
@@ -90,14 +91,14 @@ public class Q9 implements QueryPlanGenerator {
         new SymmetricHashJoin(multiPersonInConsumer, multiTriplesInConsumer, new int[] { 0 }, new int[] { 2 });
     // schema: (personID long, subject long, predicateName String, personID long)
 
-    final ColumnSelect projInPredicates = new ColumnSelect(new int[] { 2 }, joinPersonsTriplesIn);
+    final Apply projInPredicates = Applys.columnSelect(joinPersonsTriplesIn, 2);
     // schema: (predicateName string)
 
     final SymmetricHashJoin joinPersonsTriplesOut =
         new SymmetricHashJoin(multiPersonOutConsumer, multiTriplesOutConsumer, new int[] { 0 }, new int[] { 0 });
     // schema: (personID long, personID long, predicateName String, object long)
 
-    final ColumnSelect projOutPredicates = new ColumnSelect(new int[] { 2 }, joinPersonsTriplesOut);
+    final Apply projOutPredicates = Applys.columnSelect(joinPersonsTriplesOut, 2);
     // schema: (predicateName String)
 
     final UnionAll union = new UnionAll(new Operator[] { projInPredicates, projOutPredicates });
