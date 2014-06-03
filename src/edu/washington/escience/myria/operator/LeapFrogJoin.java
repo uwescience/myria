@@ -938,11 +938,6 @@ public class LeapFrogJoin extends NAryOperator {
     final CellPointer startCursor = new CellPointer(jf.table, jf.column, startRow);
     CellPointer cursor = new CellPointer(startCursor);
 
-    /* short-cuts, return result early. */
-    if (cellCompare(startCursor, target) >= 0) {
-      return false;
-    }
-
     /* set row number to upper bound */
     cursor.setRow(endRow);
     if (cellCompare(cursor, target) < 0) {
@@ -984,11 +979,6 @@ public class LeapFrogJoin extends NAryOperator {
 
     final CellPointer startCursor = new CellPointer(jf.table, jf.column, index.get(startRowOnIndex));
     CellPointer cursor = new CellPointer(startCursor);
-
-    /* short-cuts, return result early. */
-    if (cellCompare(startCursor, target) >= 0) {
-      return false;
-    }
 
     /* set row number to upper bound */
     cursor.setRow(index.get(endRowOnIndex));
