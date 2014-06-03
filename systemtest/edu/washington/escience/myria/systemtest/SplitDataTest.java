@@ -66,7 +66,7 @@ public class SplitDataTest extends SystemTestBase {
       workerPlans.put(i, new RootOperator[] { insert });
     }
 
-    server.submitQueryPlan(scatter, workerPlans).sync();
+    server.submitQueryPlan(scatter, workerPlans).get();
 
     /*** TEST PHASE 2: Count them up, make sure the answer agrees. ***/
     /* Create the worker plan: DbQueryScan with count, then send it to master. */
@@ -91,7 +91,7 @@ public class SplitDataTest extends SystemTestBase {
 
     /* Actually dispatch the worker plans. */
     /* Start the query and collect the results. */
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    server.submitQueryPlan(serverPlan, workerPlans).get();
     TupleBatch result = aggResult.take();
 
     /* Sanity-check the results, sum them, then confirm. */

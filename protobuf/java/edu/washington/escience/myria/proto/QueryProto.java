@@ -23,20 +23,31 @@ public final class QueryProto {
      */
     long getQueryId();
 
-    // required .QueryMessage.Type type = 2;
+    // required uint64 subquery_id = 2;
     /**
-     * <code>required .QueryMessage.Type type = 2;</code>
+     * <code>required uint64 subquery_id = 2;</code>
+     */
+    boolean hasSubqueryId();
+
+    /**
+     * <code>required uint64 subquery_id = 2;</code>
+     */
+    long getSubqueryId();
+
+    // required .QueryMessage.Type type = 3;
+    /**
+     * <code>required .QueryMessage.Type type = 3;</code>
      */
     boolean hasType();
 
     /**
-     * <code>required .QueryMessage.Type type = 2;</code>
+     * <code>required .QueryMessage.Type type = 3;</code>
      */
     edu.washington.escience.myria.proto.QueryProto.QueryMessage.Type getType();
 
-    // optional .QueryReport query_report = 3;
+    // optional .QueryReport query_report = 4;
     /**
-     * <code>optional .QueryReport query_report = 3;</code>
+     * <code>optional .QueryReport query_report = 4;</code>
      * 
      * <pre>
      *Report of the query execution. when type is QUERY_COMPLETE
@@ -45,7 +56,7 @@ public final class QueryProto {
     boolean hasQueryReport();
 
     /**
-     * <code>optional .QueryReport query_report = 3;</code>
+     * <code>optional .QueryReport query_report = 4;</code>
      * 
      * <pre>
      *Report of the query execution. when type is QUERY_COMPLETE
@@ -54,7 +65,7 @@ public final class QueryProto {
     edu.washington.escience.myria.proto.QueryProto.QueryReport getQueryReport();
 
     /**
-     * <code>optional .QueryReport query_report = 3;</code>
+     * <code>optional .QueryReport query_report = 4;</code>
      * 
      * <pre>
      *Report of the query execution. when type is QUERY_COMPLETE
@@ -62,9 +73,9 @@ public final class QueryProto {
      */
     edu.washington.escience.myria.proto.QueryProto.QueryReportOrBuilder getQueryReportOrBuilder();
 
-    // optional .Query query = 4;
+    // optional .Query query = 5;
     /**
-     * <code>optional .Query query = 4;</code>
+     * <code>optional .Query query = 5;</code>
      * 
      * <pre>
      * query data, when type is QUERY_DISTRIBUTE 
@@ -73,7 +84,7 @@ public final class QueryProto {
     boolean hasQuery();
 
     /**
-     * <code>optional .Query query = 4;</code>
+     * <code>optional .Query query = 5;</code>
      * 
      * <pre>
      * query data, when type is QUERY_DISTRIBUTE 
@@ -82,7 +93,7 @@ public final class QueryProto {
     edu.washington.escience.myria.proto.QueryProto.Query getQuery();
 
     /**
-     * <code>optional .Query query = 4;</code>
+     * <code>optional .Query query = 5;</code>
      * 
      * <pre>
      * query data, when type is QUERY_DISTRIBUTE 
@@ -90,9 +101,9 @@ public final class QueryProto {
      */
     edu.washington.escience.myria.proto.QueryProto.QueryOrBuilder getQueryOrBuilder();
 
-    // optional int32 worker_id = 5;
+    // optional int32 worker_id = 6;
     /**
-     * <code>optional int32 worker_id = 5;</code>
+     * <code>optional int32 worker_id = 6;</code>
      * 
      * <pre>
      * worker id, when type is QUERY_RECOVER
@@ -101,7 +112,7 @@ public final class QueryProto {
     boolean hasWorkerId();
 
     /**
-     * <code>optional int32 worker_id = 5;</code>
+     * <code>optional int32 worker_id = 6;</code>
      * 
      * <pre>
      * worker id, when type is QUERY_RECOVER
@@ -145,8 +156,6 @@ public final class QueryProto {
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       initFields();
-      @SuppressWarnings("unused")
-      int mutable_bitField0_ = 0;
       com.google.protobuf.UnknownFieldSet.Builder unknownFields = com.google.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
@@ -168,20 +177,25 @@ public final class QueryProto {
               break;
             }
             case 16: {
+              bitField0_ |= 0x00000002;
+              subqueryId_ = input.readUInt64();
+              break;
+            }
+            case 24: {
               int rawValue = input.readEnum();
               edu.washington.escience.myria.proto.QueryProto.QueryMessage.Type value =
                   edu.washington.escience.myria.proto.QueryProto.QueryMessage.Type.valueOf(rawValue);
               if (value == null) {
-                unknownFields.mergeVarintField(2, rawValue);
+                unknownFields.mergeVarintField(3, rawValue);
               } else {
-                bitField0_ |= 0x00000002;
+                bitField0_ |= 0x00000004;
                 type_ = value;
               }
               break;
             }
-            case 26: {
+            case 34: {
               edu.washington.escience.myria.proto.QueryProto.QueryReport.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000004) == 0x00000004)) {
+              if (((bitField0_ & 0x00000008) == 0x00000008)) {
                 subBuilder = queryReport_.toBuilder();
               }
               queryReport_ =
@@ -191,12 +205,12 @@ public final class QueryProto {
                 subBuilder.mergeFrom(queryReport_);
                 queryReport_ = subBuilder.buildPartial();
               }
-              bitField0_ |= 0x00000004;
+              bitField0_ |= 0x00000008;
               break;
             }
-            case 34: {
+            case 42: {
               edu.washington.escience.myria.proto.QueryProto.Query.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000008) == 0x00000008)) {
+              if (((bitField0_ & 0x00000010) == 0x00000010)) {
                 subBuilder = query_.toBuilder();
               }
               query_ =
@@ -205,11 +219,11 @@ public final class QueryProto {
                 subBuilder.mergeFrom(query_);
                 query_ = subBuilder.buildPartial();
               }
-              bitField0_ |= 0x00000008;
+              bitField0_ |= 0x00000010;
               break;
             }
-            case 40: {
-              bitField0_ |= 0x00000010;
+            case 48: {
+              bitField0_ |= 0x00000020;
               workerId_ = input.readInt32();
               break;
             }
@@ -480,32 +494,52 @@ public final class QueryProto {
       return queryId_;
     }
 
-    // required .QueryMessage.Type type = 2;
-    public static final int TYPE_FIELD_NUMBER = 2;
-    private edu.washington.escience.myria.proto.QueryProto.QueryMessage.Type type_;
+    // required uint64 subquery_id = 2;
+    public static final int SUBQUERY_ID_FIELD_NUMBER = 2;
+    private long subqueryId_;
 
     /**
-     * <code>required .QueryMessage.Type type = 2;</code>
+     * <code>required uint64 subquery_id = 2;</code>
      */
     @Override
-    public boolean hasType() {
+    public boolean hasSubqueryId() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
 
     /**
-     * <code>required .QueryMessage.Type type = 2;</code>
+     * <code>required uint64 subquery_id = 2;</code>
+     */
+    @Override
+    public long getSubqueryId() {
+      return subqueryId_;
+    }
+
+    // required .QueryMessage.Type type = 3;
+    public static final int TYPE_FIELD_NUMBER = 3;
+    private edu.washington.escience.myria.proto.QueryProto.QueryMessage.Type type_;
+
+    /**
+     * <code>required .QueryMessage.Type type = 3;</code>
+     */
+    @Override
+    public boolean hasType() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+
+    /**
+     * <code>required .QueryMessage.Type type = 3;</code>
      */
     @Override
     public edu.washington.escience.myria.proto.QueryProto.QueryMessage.Type getType() {
       return type_;
     }
 
-    // optional .QueryReport query_report = 3;
-    public static final int QUERY_REPORT_FIELD_NUMBER = 3;
+    // optional .QueryReport query_report = 4;
+    public static final int QUERY_REPORT_FIELD_NUMBER = 4;
     private edu.washington.escience.myria.proto.QueryProto.QueryReport queryReport_;
 
     /**
-     * <code>optional .QueryReport query_report = 3;</code>
+     * <code>optional .QueryReport query_report = 4;</code>
      * 
      * <pre>
      *Report of the query execution. when type is QUERY_COMPLETE
@@ -513,11 +547,11 @@ public final class QueryProto {
      */
     @Override
     public boolean hasQueryReport() {
-      return ((bitField0_ & 0x00000004) == 0x00000004);
+      return ((bitField0_ & 0x00000008) == 0x00000008);
     }
 
     /**
-     * <code>optional .QueryReport query_report = 3;</code>
+     * <code>optional .QueryReport query_report = 4;</code>
      * 
      * <pre>
      *Report of the query execution. when type is QUERY_COMPLETE
@@ -529,7 +563,7 @@ public final class QueryProto {
     }
 
     /**
-     * <code>optional .QueryReport query_report = 3;</code>
+     * <code>optional .QueryReport query_report = 4;</code>
      * 
      * <pre>
      *Report of the query execution. when type is QUERY_COMPLETE
@@ -540,12 +574,12 @@ public final class QueryProto {
       return queryReport_;
     }
 
-    // optional .Query query = 4;
-    public static final int QUERY_FIELD_NUMBER = 4;
+    // optional .Query query = 5;
+    public static final int QUERY_FIELD_NUMBER = 5;
     private edu.washington.escience.myria.proto.QueryProto.Query query_;
 
     /**
-     * <code>optional .Query query = 4;</code>
+     * <code>optional .Query query = 5;</code>
      * 
      * <pre>
      * query data, when type is QUERY_DISTRIBUTE 
@@ -553,11 +587,11 @@ public final class QueryProto {
      */
     @Override
     public boolean hasQuery() {
-      return ((bitField0_ & 0x00000008) == 0x00000008);
+      return ((bitField0_ & 0x00000010) == 0x00000010);
     }
 
     /**
-     * <code>optional .Query query = 4;</code>
+     * <code>optional .Query query = 5;</code>
      * 
      * <pre>
      * query data, when type is QUERY_DISTRIBUTE 
@@ -569,7 +603,7 @@ public final class QueryProto {
     }
 
     /**
-     * <code>optional .Query query = 4;</code>
+     * <code>optional .Query query = 5;</code>
      * 
      * <pre>
      * query data, when type is QUERY_DISTRIBUTE 
@@ -580,12 +614,12 @@ public final class QueryProto {
       return query_;
     }
 
-    // optional int32 worker_id = 5;
-    public static final int WORKER_ID_FIELD_NUMBER = 5;
+    // optional int32 worker_id = 6;
+    public static final int WORKER_ID_FIELD_NUMBER = 6;
     private int workerId_;
 
     /**
-     * <code>optional int32 worker_id = 5;</code>
+     * <code>optional int32 worker_id = 6;</code>
      * 
      * <pre>
      * worker id, when type is QUERY_RECOVER
@@ -593,11 +627,11 @@ public final class QueryProto {
      */
     @Override
     public boolean hasWorkerId() {
-      return ((bitField0_ & 0x00000010) == 0x00000010);
+      return ((bitField0_ & 0x00000020) == 0x00000020);
     }
 
     /**
-     * <code>optional int32 worker_id = 5;</code>
+     * <code>optional int32 worker_id = 6;</code>
      * 
      * <pre>
      * worker id, when type is QUERY_RECOVER
@@ -610,6 +644,7 @@ public final class QueryProto {
 
     private void initFields() {
       queryId_ = 0L;
+      subqueryId_ = 0L;
       type_ = edu.washington.escience.myria.proto.QueryProto.QueryMessage.Type.QUERY_DISTRIBUTE;
       queryReport_ = edu.washington.escience.myria.proto.QueryProto.QueryReport.getDefaultInstance();
       query_ = edu.washington.escience.myria.proto.QueryProto.Query.getDefaultInstance();
@@ -626,6 +661,10 @@ public final class QueryProto {
       }
 
       if (!hasQueryId()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasSubqueryId()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -656,16 +695,19 @@ public final class QueryProto {
         output.writeUInt64(1, queryId_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeEnum(2, type_.getNumber());
+        output.writeUInt64(2, subqueryId_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeMessage(3, queryReport_);
+        output.writeEnum(3, type_.getNumber());
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        output.writeMessage(4, query_);
+        output.writeMessage(4, queryReport_);
       }
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        output.writeInt32(5, workerId_);
+        output.writeMessage(5, query_);
+      }
+      if (((bitField0_ & 0x00000020) == 0x00000020)) {
+        output.writeInt32(6, workerId_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -684,16 +726,19 @@ public final class QueryProto {
         size += com.google.protobuf.CodedOutputStream.computeUInt64Size(1, queryId_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += com.google.protobuf.CodedOutputStream.computeEnumSize(2, type_.getNumber());
+        size += com.google.protobuf.CodedOutputStream.computeUInt64Size(2, subqueryId_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += com.google.protobuf.CodedOutputStream.computeMessageSize(3, queryReport_);
+        size += com.google.protobuf.CodedOutputStream.computeEnumSize(3, type_.getNumber());
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        size += com.google.protobuf.CodedOutputStream.computeMessageSize(4, query_);
+        size += com.google.protobuf.CodedOutputStream.computeMessageSize(4, queryReport_);
       }
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        size += com.google.protobuf.CodedOutputStream.computeInt32Size(5, workerId_);
+        size += com.google.protobuf.CodedOutputStream.computeMessageSize(5, query_);
+      }
+      if (((bitField0_ & 0x00000020) == 0x00000020)) {
+        size += com.google.protobuf.CodedOutputStream.computeInt32Size(6, workerId_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -827,22 +872,24 @@ public final class QueryProto {
         super.clear();
         queryId_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000001);
-        type_ = edu.washington.escience.myria.proto.QueryProto.QueryMessage.Type.QUERY_DISTRIBUTE;
+        subqueryId_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000002);
+        type_ = edu.washington.escience.myria.proto.QueryProto.QueryMessage.Type.QUERY_DISTRIBUTE;
+        bitField0_ = (bitField0_ & ~0x00000004);
         if (queryReportBuilder_ == null) {
           queryReport_ = edu.washington.escience.myria.proto.QueryProto.QueryReport.getDefaultInstance();
         } else {
           queryReportBuilder_.clear();
         }
-        bitField0_ = (bitField0_ & ~0x00000004);
+        bitField0_ = (bitField0_ & ~0x00000008);
         if (queryBuilder_ == null) {
           query_ = edu.washington.escience.myria.proto.QueryProto.Query.getDefaultInstance();
         } else {
           queryBuilder_.clear();
         }
-        bitField0_ = (bitField0_ & ~0x00000008);
-        workerId_ = 0;
         bitField0_ = (bitField0_ & ~0x00000010);
+        workerId_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000020);
         return this;
       }
 
@@ -883,25 +930,29 @@ public final class QueryProto {
         if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
           to_bitField0_ |= 0x00000002;
         }
-        result.type_ = type_;
+        result.subqueryId_ = subqueryId_;
         if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
           to_bitField0_ |= 0x00000004;
+        }
+        result.type_ = type_;
+        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+          to_bitField0_ |= 0x00000008;
         }
         if (queryReportBuilder_ == null) {
           result.queryReport_ = queryReport_;
         } else {
           result.queryReport_ = queryReportBuilder_.build();
         }
-        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
-          to_bitField0_ |= 0x00000008;
+        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+          to_bitField0_ |= 0x00000010;
         }
         if (queryBuilder_ == null) {
           result.query_ = query_;
         } else {
           result.query_ = queryBuilder_.build();
         }
-        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
-          to_bitField0_ |= 0x00000010;
+        if (((from_bitField0_ & 0x00000020) == 0x00000020)) {
+          to_bitField0_ |= 0x00000020;
         }
         result.workerId_ = workerId_;
         result.bitField0_ = to_bitField0_;
@@ -926,6 +977,9 @@ public final class QueryProto {
         if (other.hasQueryId()) {
           setQueryId(other.getQueryId());
         }
+        if (other.hasSubqueryId()) {
+          setSubqueryId(other.getSubqueryId());
+        }
         if (other.hasType()) {
           setType(other.getType());
         }
@@ -945,6 +999,10 @@ public final class QueryProto {
       @Override
       public final boolean isInitialized() {
         if (!hasQueryId()) {
+
+          return false;
+        }
+        if (!hasSubqueryId()) {
 
           return false;
         }
@@ -1025,20 +1083,59 @@ public final class QueryProto {
         return this;
       }
 
-      // required .QueryMessage.Type type = 2;
-      private edu.washington.escience.myria.proto.QueryProto.QueryMessage.Type type_ =
-          edu.washington.escience.myria.proto.QueryProto.QueryMessage.Type.QUERY_DISTRIBUTE;
+      // required uint64 subquery_id = 2;
+      private long subqueryId_;
 
       /**
-       * <code>required .QueryMessage.Type type = 2;</code>
+       * <code>required uint64 subquery_id = 2;</code>
        */
       @Override
-      public boolean hasType() {
+      public boolean hasSubqueryId() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
 
       /**
-       * <code>required .QueryMessage.Type type = 2;</code>
+       * <code>required uint64 subquery_id = 2;</code>
+       */
+      @Override
+      public long getSubqueryId() {
+        return subqueryId_;
+      }
+
+      /**
+       * <code>required uint64 subquery_id = 2;</code>
+       */
+      public Builder setSubqueryId(long value) {
+        bitField0_ |= 0x00000002;
+        subqueryId_ = value;
+        onChanged();
+        return this;
+      }
+
+      /**
+       * <code>required uint64 subquery_id = 2;</code>
+       */
+      public Builder clearSubqueryId() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        subqueryId_ = 0L;
+        onChanged();
+        return this;
+      }
+
+      // required .QueryMessage.Type type = 3;
+      private edu.washington.escience.myria.proto.QueryProto.QueryMessage.Type type_ =
+          edu.washington.escience.myria.proto.QueryProto.QueryMessage.Type.QUERY_DISTRIBUTE;
+
+      /**
+       * <code>required .QueryMessage.Type type = 3;</code>
+       */
+      @Override
+      public boolean hasType() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+
+      /**
+       * <code>required .QueryMessage.Type type = 3;</code>
        */
       @Override
       public edu.washington.escience.myria.proto.QueryProto.QueryMessage.Type getType() {
@@ -1046,35 +1143,35 @@ public final class QueryProto {
       }
 
       /**
-       * <code>required .QueryMessage.Type type = 2;</code>
+       * <code>required .QueryMessage.Type type = 3;</code>
        */
       public Builder setType(edu.washington.escience.myria.proto.QueryProto.QueryMessage.Type value) {
         if (value == null) {
           throw new NullPointerException();
         }
-        bitField0_ |= 0x00000002;
+        bitField0_ |= 0x00000004;
         type_ = value;
         onChanged();
         return this;
       }
 
       /**
-       * <code>required .QueryMessage.Type type = 2;</code>
+       * <code>required .QueryMessage.Type type = 3;</code>
        */
       public Builder clearType() {
-        bitField0_ = (bitField0_ & ~0x00000002);
+        bitField0_ = (bitField0_ & ~0x00000004);
         type_ = edu.washington.escience.myria.proto.QueryProto.QueryMessage.Type.QUERY_DISTRIBUTE;
         onChanged();
         return this;
       }
 
-      // optional .QueryReport query_report = 3;
+      // optional .QueryReport query_report = 4;
       private edu.washington.escience.myria.proto.QueryProto.QueryReport queryReport_ =
           edu.washington.escience.myria.proto.QueryProto.QueryReport.getDefaultInstance();
       private com.google.protobuf.SingleFieldBuilder<edu.washington.escience.myria.proto.QueryProto.QueryReport, edu.washington.escience.myria.proto.QueryProto.QueryReport.Builder, edu.washington.escience.myria.proto.QueryProto.QueryReportOrBuilder> queryReportBuilder_;
 
       /**
-       * <code>optional .QueryReport query_report = 3;</code>
+       * <code>optional .QueryReport query_report = 4;</code>
        * 
        * <pre>
        *Report of the query execution. when type is QUERY_COMPLETE
@@ -1082,11 +1179,11 @@ public final class QueryProto {
        */
       @Override
       public boolean hasQueryReport() {
-        return ((bitField0_ & 0x00000004) == 0x00000004);
+        return ((bitField0_ & 0x00000008) == 0x00000008);
       }
 
       /**
-       * <code>optional .QueryReport query_report = 3;</code>
+       * <code>optional .QueryReport query_report = 4;</code>
        * 
        * <pre>
        *Report of the query execution. when type is QUERY_COMPLETE
@@ -1102,7 +1199,7 @@ public final class QueryProto {
       }
 
       /**
-       * <code>optional .QueryReport query_report = 3;</code>
+       * <code>optional .QueryReport query_report = 4;</code>
        * 
        * <pre>
        *Report of the query execution. when type is QUERY_COMPLETE
@@ -1118,12 +1215,12 @@ public final class QueryProto {
         } else {
           queryReportBuilder_.setMessage(value);
         }
-        bitField0_ |= 0x00000004;
+        bitField0_ |= 0x00000008;
         return this;
       }
 
       /**
-       * <code>optional .QueryReport query_report = 3;</code>
+       * <code>optional .QueryReport query_report = 4;</code>
        * 
        * <pre>
        *Report of the query execution. when type is QUERY_COMPLETE
@@ -1136,12 +1233,12 @@ public final class QueryProto {
         } else {
           queryReportBuilder_.setMessage(builderForValue.build());
         }
-        bitField0_ |= 0x00000004;
+        bitField0_ |= 0x00000008;
         return this;
       }
 
       /**
-       * <code>optional .QueryReport query_report = 3;</code>
+       * <code>optional .QueryReport query_report = 4;</code>
        * 
        * <pre>
        *Report of the query execution. when type is QUERY_COMPLETE
@@ -1149,7 +1246,7 @@ public final class QueryProto {
        */
       public Builder mergeQueryReport(edu.washington.escience.myria.proto.QueryProto.QueryReport value) {
         if (queryReportBuilder_ == null) {
-          if (((bitField0_ & 0x00000004) == 0x00000004)
+          if (((bitField0_ & 0x00000008) == 0x00000008)
               && queryReport_ != edu.washington.escience.myria.proto.QueryProto.QueryReport.getDefaultInstance()) {
             queryReport_ =
                 edu.washington.escience.myria.proto.QueryProto.QueryReport.newBuilder(queryReport_).mergeFrom(value)
@@ -1161,12 +1258,12 @@ public final class QueryProto {
         } else {
           queryReportBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000004;
+        bitField0_ |= 0x00000008;
         return this;
       }
 
       /**
-       * <code>optional .QueryReport query_report = 3;</code>
+       * <code>optional .QueryReport query_report = 4;</code>
        * 
        * <pre>
        *Report of the query execution. when type is QUERY_COMPLETE
@@ -1179,25 +1276,25 @@ public final class QueryProto {
         } else {
           queryReportBuilder_.clear();
         }
-        bitField0_ = (bitField0_ & ~0x00000004);
+        bitField0_ = (bitField0_ & ~0x00000008);
         return this;
       }
 
       /**
-       * <code>optional .QueryReport query_report = 3;</code>
+       * <code>optional .QueryReport query_report = 4;</code>
        * 
        * <pre>
        *Report of the query execution. when type is QUERY_COMPLETE
        * </pre>
        */
       public edu.washington.escience.myria.proto.QueryProto.QueryReport.Builder getQueryReportBuilder() {
-        bitField0_ |= 0x00000004;
+        bitField0_ |= 0x00000008;
         onChanged();
         return getQueryReportFieldBuilder().getBuilder();
       }
 
       /**
-       * <code>optional .QueryReport query_report = 3;</code>
+       * <code>optional .QueryReport query_report = 4;</code>
        * 
        * <pre>
        *Report of the query execution. when type is QUERY_COMPLETE
@@ -1213,7 +1310,7 @@ public final class QueryProto {
       }
 
       /**
-       * <code>optional .QueryReport query_report = 3;</code>
+       * <code>optional .QueryReport query_report = 4;</code>
        * 
        * <pre>
        *Report of the query execution. when type is QUERY_COMPLETE
@@ -1229,13 +1326,13 @@ public final class QueryProto {
         return queryReportBuilder_;
       }
 
-      // optional .Query query = 4;
+      // optional .Query query = 5;
       private edu.washington.escience.myria.proto.QueryProto.Query query_ =
           edu.washington.escience.myria.proto.QueryProto.Query.getDefaultInstance();
       private com.google.protobuf.SingleFieldBuilder<edu.washington.escience.myria.proto.QueryProto.Query, edu.washington.escience.myria.proto.QueryProto.Query.Builder, edu.washington.escience.myria.proto.QueryProto.QueryOrBuilder> queryBuilder_;
 
       /**
-       * <code>optional .Query query = 4;</code>
+       * <code>optional .Query query = 5;</code>
        * 
        * <pre>
        * query data, when type is QUERY_DISTRIBUTE 
@@ -1243,11 +1340,11 @@ public final class QueryProto {
        */
       @Override
       public boolean hasQuery() {
-        return ((bitField0_ & 0x00000008) == 0x00000008);
+        return ((bitField0_ & 0x00000010) == 0x00000010);
       }
 
       /**
-       * <code>optional .Query query = 4;</code>
+       * <code>optional .Query query = 5;</code>
        * 
        * <pre>
        * query data, when type is QUERY_DISTRIBUTE 
@@ -1263,7 +1360,7 @@ public final class QueryProto {
       }
 
       /**
-       * <code>optional .Query query = 4;</code>
+       * <code>optional .Query query = 5;</code>
        * 
        * <pre>
        * query data, when type is QUERY_DISTRIBUTE 
@@ -1279,12 +1376,12 @@ public final class QueryProto {
         } else {
           queryBuilder_.setMessage(value);
         }
-        bitField0_ |= 0x00000008;
+        bitField0_ |= 0x00000010;
         return this;
       }
 
       /**
-       * <code>optional .Query query = 4;</code>
+       * <code>optional .Query query = 5;</code>
        * 
        * <pre>
        * query data, when type is QUERY_DISTRIBUTE 
@@ -1297,12 +1394,12 @@ public final class QueryProto {
         } else {
           queryBuilder_.setMessage(builderForValue.build());
         }
-        bitField0_ |= 0x00000008;
+        bitField0_ |= 0x00000010;
         return this;
       }
 
       /**
-       * <code>optional .Query query = 4;</code>
+       * <code>optional .Query query = 5;</code>
        * 
        * <pre>
        * query data, when type is QUERY_DISTRIBUTE 
@@ -1310,7 +1407,7 @@ public final class QueryProto {
        */
       public Builder mergeQuery(edu.washington.escience.myria.proto.QueryProto.Query value) {
         if (queryBuilder_ == null) {
-          if (((bitField0_ & 0x00000008) == 0x00000008)
+          if (((bitField0_ & 0x00000010) == 0x00000010)
               && query_ != edu.washington.escience.myria.proto.QueryProto.Query.getDefaultInstance()) {
             query_ =
                 edu.washington.escience.myria.proto.QueryProto.Query.newBuilder(query_).mergeFrom(value).buildPartial();
@@ -1321,12 +1418,12 @@ public final class QueryProto {
         } else {
           queryBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000008;
+        bitField0_ |= 0x00000010;
         return this;
       }
 
       /**
-       * <code>optional .Query query = 4;</code>
+       * <code>optional .Query query = 5;</code>
        * 
        * <pre>
        * query data, when type is QUERY_DISTRIBUTE 
@@ -1339,25 +1436,25 @@ public final class QueryProto {
         } else {
           queryBuilder_.clear();
         }
-        bitField0_ = (bitField0_ & ~0x00000008);
+        bitField0_ = (bitField0_ & ~0x00000010);
         return this;
       }
 
       /**
-       * <code>optional .Query query = 4;</code>
+       * <code>optional .Query query = 5;</code>
        * 
        * <pre>
        * query data, when type is QUERY_DISTRIBUTE 
        * </pre>
        */
       public edu.washington.escience.myria.proto.QueryProto.Query.Builder getQueryBuilder() {
-        bitField0_ |= 0x00000008;
+        bitField0_ |= 0x00000010;
         onChanged();
         return getQueryFieldBuilder().getBuilder();
       }
 
       /**
-       * <code>optional .Query query = 4;</code>
+       * <code>optional .Query query = 5;</code>
        * 
        * <pre>
        * query data, when type is QUERY_DISTRIBUTE 
@@ -1373,7 +1470,7 @@ public final class QueryProto {
       }
 
       /**
-       * <code>optional .Query query = 4;</code>
+       * <code>optional .Query query = 5;</code>
        * 
        * <pre>
        * query data, when type is QUERY_DISTRIBUTE 
@@ -1389,11 +1486,11 @@ public final class QueryProto {
         return queryBuilder_;
       }
 
-      // optional int32 worker_id = 5;
+      // optional int32 worker_id = 6;
       private int workerId_;
 
       /**
-       * <code>optional int32 worker_id = 5;</code>
+       * <code>optional int32 worker_id = 6;</code>
        * 
        * <pre>
        * worker id, when type is QUERY_RECOVER
@@ -1401,11 +1498,11 @@ public final class QueryProto {
        */
       @Override
       public boolean hasWorkerId() {
-        return ((bitField0_ & 0x00000010) == 0x00000010);
+        return ((bitField0_ & 0x00000020) == 0x00000020);
       }
 
       /**
-       * <code>optional int32 worker_id = 5;</code>
+       * <code>optional int32 worker_id = 6;</code>
        * 
        * <pre>
        * worker id, when type is QUERY_RECOVER
@@ -1417,28 +1514,28 @@ public final class QueryProto {
       }
 
       /**
-       * <code>optional int32 worker_id = 5;</code>
+       * <code>optional int32 worker_id = 6;</code>
        * 
        * <pre>
        * worker id, when type is QUERY_RECOVER
        * </pre>
        */
       public Builder setWorkerId(int value) {
-        bitField0_ |= 0x00000010;
+        bitField0_ |= 0x00000020;
         workerId_ = value;
         onChanged();
         return this;
       }
 
       /**
-       * <code>optional int32 worker_id = 5;</code>
+       * <code>optional int32 worker_id = 6;</code>
        * 
        * <pre>
        * worker id, when type is QUERY_RECOVER
        * </pre>
        */
       public Builder clearWorkerId() {
-        bitField0_ = (bitField0_ & ~0x00000010);
+        bitField0_ = (bitField0_ & ~0x00000020);
         workerId_ = 0;
         onChanged();
         return this;
@@ -1512,8 +1609,6 @@ public final class QueryProto {
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       initFields();
-      @SuppressWarnings("unused")
-      int mutable_bitField0_ = 0;
       com.google.protobuf.UnknownFieldSet.Builder unknownFields = com.google.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
@@ -2024,8 +2119,6 @@ public final class QueryProto {
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       initFields();
-      @SuppressWarnings("unused")
-      int mutable_bitField0_ = 0;
       com.google.protobuf.UnknownFieldSet.Builder unknownFields = com.google.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
@@ -2821,8 +2914,6 @@ public final class QueryProto {
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       initFields();
-      @SuppressWarnings("unused")
-      int mutable_bitField0_ = 0;
       com.google.protobuf.UnknownFieldSet.Builder unknownFields = com.google.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
@@ -3258,19 +3349,20 @@ public final class QueryProto {
   static {
     java.lang.String[] descriptorData =
         {
-            "\n\013query.proto\"\266\002\n\014QueryMessage\022\020\n\010query_"
-                + "id\030\001 \002(\004\022 \n\004type\030\002 \002(\0162\022.QueryMessage.Ty"
-                + "pe\022\"\n\014query_report\030\003 \001(\0132\014.QueryReport\022\025"
-                + "\n\005query\030\004 \001(\0132\006.Query\022\021\n\tworker_id\030\005 \001(\005"
-                + "\"\243\001\n\004Type\022\024\n\020QUERY_DISTRIBUTE\020\000\022\017\n\013QUERY"
-                + "_START\020\001\022\017\n\013QUERY_PAUSE\020\007\022\020\n\014QUERY_RESUM"
-                + "E\020\010\022\016\n\nQUERY_KILL\020\t\022\032\n\026QUERY_READY_TO_EX"
-                + "ECUTE\020\002\022\022\n\016QUERY_COMPLETE\020\006\022\021\n\rQUERY_REC"
-                + "OVER\020\003\"\026\n\005Query\022\r\n\005query\030\001 \002(\014\"a\n\013QueryR"
-                + "eport\022\017\n\007success\030\001 \002(\010\0222\n\024execution_stat",
-            "istics\030\002 \002(\0132\024.ExecutionStatistics\022\r\n\005ca"
-                + "use\030\003 \001(\014\"%\n\023ExecutionStatistics\022\016\n\006elap"
-                + "se\030\002 \002(\004B1\n#edu.washington.escience.myri" + "a.protoB\nQueryProto" };
+            "\n\013query.proto\"\313\002\n\014QueryMessage\022\020\n\010query_"
+                + "id\030\001 \002(\004\022\023\n\013subquery_id\030\002 \002(\004\022 \n\004type\030\003 "
+                + "\002(\0162\022.QueryMessage.Type\022\"\n\014query_report\030"
+                + "\004 \001(\0132\014.QueryReport\022\025\n\005query\030\005 \001(\0132\006.Que"
+                + "ry\022\021\n\tworker_id\030\006 \001(\005\"\243\001\n\004Type\022\024\n\020QUERY_"
+                + "DISTRIBUTE\020\000\022\017\n\013QUERY_START\020\001\022\017\n\013QUERY_P"
+                + "AUSE\020\007\022\020\n\014QUERY_RESUME\020\010\022\016\n\nQUERY_KILL\020\t"
+                + "\022\032\n\026QUERY_READY_TO_EXECUTE\020\002\022\022\n\016QUERY_CO"
+                + "MPLETE\020\006\022\021\n\rQUERY_RECOVER\020\003\"\026\n\005Query\022\r\n\005"
+                + "query\030\001 \002(\014\"a\n\013QueryReport\022\017\n\007success\030\001 ",
+            "\002(\010\0222\n\024execution_statistics\030\002 \002(\0132\024.Exec"
+                + "utionStatistics\022\r\n\005cause\030\003 \001(\014\"%\n\023Execut"
+                + "ionStatistics\022\016\n\006elapse\030\002 \002(\004B1\n#edu.was"
+                + "hington.escience.myria.protoB\nQueryProto" };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
           @Override
@@ -3280,7 +3372,7 @@ public final class QueryProto {
             internal_static_QueryMessage_descriptor = getDescriptor().getMessageTypes().get(0);
             internal_static_QueryMessage_fieldAccessorTable =
                 new com.google.protobuf.GeneratedMessage.FieldAccessorTable(internal_static_QueryMessage_descriptor,
-                    new java.lang.String[] { "QueryId", "Type", "QueryReport", "Query", "WorkerId", });
+                    new java.lang.String[] { "QueryId", "SubqueryId", "Type", "QueryReport", "Query", "WorkerId", });
             internal_static_Query_descriptor = getDescriptor().getMessageTypes().get(1);
             internal_static_Query_fieldAccessorTable =
                 new com.google.protobuf.GeneratedMessage.FieldAccessorTable(internal_static_Query_descriptor,

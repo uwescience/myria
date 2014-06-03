@@ -322,19 +322,30 @@ public final class SymmetricHashJoin extends BinaryOperator {
 
   @Override
   protected Schema generateSchema() {
-    final Operator left = getLeft();
-    final Operator right = getRight();
+    final Schema leftSchema = getLeft().getSchema();
+    final Schema rightSchema = getRight().getSchema();
     ImmutableList.Builder<Type> types = ImmutableList.builder();
     ImmutableList.Builder<String> names = ImmutableList.builder();
 
+    /* Assert that the compare index types are the same. */
+    for (int i = 0; i < rightCompareIndx.length; ++i) {
+      int leftIndex = leftCompareIndx[i];
+      int rightIndex = rightCompareIndx[i];
+      Type leftType = leftSchema.getColumnType(leftIndex);
+      Type rightType = rightSchema.getColumnType(rightIndex);
+      Preconditions.checkState(leftType == rightType,
+          "column types do not match for join at index %s: left column type %s [%s] != right column type %s [%s]", i,
+          leftIndex, leftType, rightIndex, rightType);
+    }
+
     for (int i : leftAnswerColumns) {
-      types.add(left.getSchema().getColumnType(i));
-      names.add(left.getSchema().getColumnName(i));
+      types.add(leftSchema.getColumnType(i));
+      names.add(leftSchema.getColumnName(i));
     }
 
     for (int i : rightAnswerColumns) {
-      types.add(right.getSchema().getColumnType(i));
-      names.add(right.getSchema().getColumnName(i));
+      types.add(rightSchema.getColumnType(i));
+      names.add(rightSchema.getColumnName(i));
     }
 
     if (outputColumns != null) {

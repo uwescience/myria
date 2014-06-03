@@ -25,7 +25,6 @@ import edu.washington.escience.myria.parallel.Server;
     @Type(name = "BroadcastProducer", value = BroadcastProducerEncoding.class),
     @Type(name = "CollectConsumer", value = CollectConsumerEncoding.class),
     @Type(name = "CollectProducer", value = CollectProducerEncoding.class),
-    @Type(name = "ColumnSelect", value = ColumnSelectEncoding.class),
     @Type(name = "Consumer", value = ConsumerEncoding.class), @Type(name = "Counter", value = CounterEncoding.class),
     @Type(name = "DbInsert", value = DbInsertEncoding.class),
     @Type(name = "DbQueryScan", value = QueryScanEncoding.class),

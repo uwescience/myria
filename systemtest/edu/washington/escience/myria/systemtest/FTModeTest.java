@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.systemtest;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,12 +16,14 @@ import org.junit.Test;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.operator.DbInsert;
@@ -45,8 +49,8 @@ import edu.washington.escience.myria.operator.network.LocalMultiwayProducer;
 import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
 import edu.washington.escience.myria.operator.network.partition.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
-import edu.washington.escience.myria.parallel.QueryFuture;
-import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
+import edu.washington.escience.myria.parallel.Query;
+import edu.washington.escience.myria.parallel.SubQueryPlan;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestUtils;
@@ -436,9 +440,9 @@ public class FTModeTest extends SystemTestBase {
       }
     }
 
-    HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
-    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs());
-    workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs());
+    HashMap<Integer, SubQueryPlan> workerPlans = new HashMap<Integer, SubQueryPlan>();
+    workerPlans.put(workerIDs[0], new SubQueryPlan());
+    workerPlans.put(workerIDs[1], new SubQueryPlan());
     workerPlans.get(workerIDs[0]).setFTMode(FTMODE.valueOf("abandon"));
     workerPlans.get(workerIDs[1]).setFTMode(FTMODE.valueOf("abandon"));
     for (int i = 0; i < workerPlan.get(0).size(); ++i) {
@@ -451,16 +455,16 @@ public class FTModeTest extends SystemTestBase {
     final CollectConsumer serverCollect = new CollectConsumer(tableSchema, serverReceiveID, workerIDs);
     final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
-    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
+    SubQueryPlan serverPlan = new SubQueryPlan(new SinkRoot(queueStore));
     serverPlan.setFTMode(FTMODE.valueOf("abandon"));
 
-    QueryFuture qf = server.submitQuery("", "", "", serverPlan, workerPlans, false);
+    ListenableFuture<Query> qf = server.submitQuery("", "", "", serverPlan, workerPlans, false);
     Thread.sleep(2000);
     /* kill the one without EOSController */
     LOGGER.info("killing worker " + workerIDs[1]);
     workerProcess[1].destroy();
-    qf.sync();
-    Preconditions.checkArgument(qf.isSuccess());
+    Query qs = qf.get();
+    assertEquals(Status.SUCCESS, qs.getStatus());
     TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
     while (!receivedTupleBatches.isEmpty()) {
       TupleBatch tb = receivedTupleBatches.poll();
@@ -545,9 +549,9 @@ public class FTModeTest extends SystemTestBase {
       }
     }
 
-    HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
-    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs());
-    workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs());
+    HashMap<Integer, SubQueryPlan> workerPlans = new HashMap<Integer, SubQueryPlan>();
+    workerPlans.put(workerIDs[0], new SubQueryPlan());
+    workerPlans.put(workerIDs[1], new SubQueryPlan());
     workerPlans.get(workerIDs[0]).setFTMode(FTMODE.valueOf("rejoin"));
     workerPlans.get(workerIDs[1]).setFTMode(FTMODE.valueOf("rejoin"));
     for (int i = 0; i < workerPlan.get(0).size(); ++i) {
@@ -557,34 +561,33 @@ public class FTModeTest extends SystemTestBase {
       workerPlans.get(workerIDs[1]).addRootOp(workerPlan.get(1).get(i));
     }
 
-    SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(new EOSSource()));
+    SubQueryPlan serverPlan = new SubQueryPlan(new SinkRoot(new EOSSource()));
     serverPlan.setFTMode(FTMODE.valueOf("rejoin"));
-    QueryFuture qf = server.submitQuery("", "", "", serverPlan, workerPlans, false);
+    ListenableFuture<Query> qf = server.submitQuery("", "", "", serverPlan, workerPlans, false);
     Thread.sleep(3000);
     /* kill the one without EOSController */
     LOGGER.info("killing worker " + workerIDs[1]);
     workerProcess[1].destroy();
-    qf.sync();
+    Query qs = qf.get();
 
     while (!server.queryCompleted(1)) {
       Thread.sleep(100);
     }
     LOGGER.info("query 1 finished.");
-    Preconditions.checkArgument(qf.isSuccess());
+    assertEquals(Status.SUCCESS, qs.getStatus());
 
     final ExchangePairID serverReceiveID1 = ExchangePairID.newID();
     final CollectConsumer serverCollect = new CollectConsumer(tableSchema, serverReceiveID1, workerIDs);
     serverCollect.setOpName("serverCollect");
     final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
-    serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
+    serverPlan = new SubQueryPlan(new SinkRoot(queueStore));
     final DbQueryScan scan1 = new DbQueryScan(RelationKey.of("test", "test", "output"), tableSchema);
     final CollectProducer send2server = new CollectProducer(scan1, serverReceiveID1, MASTER_ID);
     send2server.setOpName("send2server query 2");
-    workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs(send2server));
-    workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs(send2server));
-    qf = server.submitQuery("", "", "", serverPlan, workerPlans, false);
-    qf.sync();
+    workerPlans.put(workerIDs[0], new SubQueryPlan(send2server));
+    workerPlans.put(workerIDs[1], new SubQueryPlan(send2server));
+    server.submitQuery("", "", "", serverPlan, workerPlans, false).get();
 
     TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
     while (!receivedTupleBatches.isEmpty()) {

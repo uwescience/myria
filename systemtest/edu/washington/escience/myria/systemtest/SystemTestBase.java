@@ -39,6 +39,7 @@ import org.junit.runner.Description;
 import org.slf4j.LoggerFactory;
 
 import com.almworks.sqlite4java.SQLiteException;
+import com.fasterxml.jackson.databind.ObjectReader;
 import com.google.common.collect.ImmutableList;
 import com.google.protobuf.ByteString;
 
@@ -51,6 +52,9 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.SQLiteAccessMethod;
 import edu.washington.escience.myria.accessmethod.SQLiteInfo;
+import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
+import edu.washington.escience.myria.api.encoding.DatasetStatus;
+import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.CatalogMaker;
 import edu.washington.escience.myria.coordinator.catalog.WorkerCatalog;
@@ -616,5 +620,15 @@ public class SystemTestBase {
 
       ++workerCount;
     }
+  }
+
+  public static QueryStatusEncoding getQueryStatus(HttpURLConnection conn) throws IOException {
+    ObjectReader reader = MyriaJsonMapperProvider.getReader().withType(QueryStatusEncoding.class);
+    return reader.readValue(conn.getInputStream());
+  }
+
+  public static DatasetStatus getDatasetStatus(HttpURLConnection conn) throws IOException {
+    ObjectReader reader = MyriaJsonMapperProvider.getReader().withType(DatasetStatus.class);
+    return reader.readValue(conn.getInputStream());
   }
 }

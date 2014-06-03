@@ -67,7 +67,7 @@ public final class MyriaConstants {
   /**
    * Task resource manager.
    */
-  public static final String EXEC_ENV_VAR_TASK_RESOURCE_MANAGER = "taskResourceManager";
+  public static final String EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER = "fragmentResourceManager";
 
   /**
    * Query ID.
