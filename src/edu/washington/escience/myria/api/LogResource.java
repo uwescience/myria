@@ -144,7 +144,7 @@ public final class LogResource {
   }
 
   /**
-   * Get sent logs of a query.
+   * Get information about where tuples were sent.
    * 
    * @param queryId query id.
    * @param fragmentId the fragment id. < 0 means all

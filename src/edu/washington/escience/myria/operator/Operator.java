@@ -165,12 +165,12 @@ public abstract class Operator implements Serializable {
     }
 
     if (profilingMode == null) {
-      LocalFragmentResourceManager trm =
+      LocalFragmentResourceManager lfrm =
           (LocalFragmentResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER);
-      if (trm == null) {
+      if (lfrm == null) {
         return false;
       }
-      LocalFragment fragment = trm.getFragment();
+      LocalFragment fragment = lfrm.getFragment();
       if (fragment == null) {
         return false;
       }

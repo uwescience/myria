@@ -992,8 +992,8 @@ public final class Server {
         throw new DbException("Profiling mode is not supported for plans (" + plan.getClass().getSimpleName()
             + ") that may contain multiple subqueries.");
       }
-      if (getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_SQLITE)) {
-        throw new DbException("Profiling mode is not supported when using SQLite as the storage system.");
+      if (!getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
+        throw new DbException("Profiling mode is only supported when using Postgres as the storage system.");
       }
     }
     if (plan instanceof JsonSubQuery) {
@@ -1551,7 +1551,7 @@ public final class Server {
         "query %s did not succeed (%s)", queryId, queryStatus.status);
     Preconditions.checkArgument(queryStatus.profilingMode, "query %s was not run with profiling enabled", queryId);
 
-    Set<Integer> actualWorkers = ((QueryEncoding) queryStatus.physicalPlan).getWorkers();;
+    Set<Integer> actualWorkers = ((QueryEncoding) queryStatus.physicalPlan).getWorkers();
 
     String fragmentWhere = "";
     if (fragmentId >= 0) {
@@ -1560,9 +1560,8 @@ public final class Server {
 
     final Schema schema = MyriaConstants.SENT_SCHEMA;
 
-    // TODO: replace this with some kind of query construction
     String sentQueryString =
-        Joiner.on(' ').join("SELECT * FROM", MyriaConstants.SENT_RELATION.toString(getDBMS()) + " WHERE queryid =",
+        Joiner.on(' ').join("SELECT * FROM", MyriaConstants.SENT_RELATION.toString(getDBMS()) + "WHERE queryid =",
             queryId, fragmentWhere, " ORDER BY fragmentid, nanotime");
 
     DbQueryScan scan = new DbQueryScan(sentQueryString, schema);
@@ -1722,7 +1721,7 @@ public final class Server {
     Preconditions.checkArgument(queryStatus != null, "query %s not found", queryId);
     Preconditions.checkArgument(queryStatus.status == QueryStatusEncoding.Status.SUCCESS,
         "query %s did not succeed (%s)", queryId, queryStatus.status);
-    Preconditions.checkArgument(queryStatus.profilingMode, "query %s was not run with profiling enabled");
+    Preconditions.checkArgument(queryStatus.profilingMode, "query %s was not run with profiling enabled", queryId);
     Preconditions.checkArgument(start < end, "range cannot be negative");
     Preconditions.checkArgument(step > 0, "step has to be greater than 0");
 
@@ -1803,7 +1802,7 @@ public final class Server {
     Preconditions.checkArgument(queryStatus != null, "query %s not found", queryId);
     Preconditions.checkArgument(queryStatus.status == QueryStatusEncoding.Status.SUCCESS,
         "query %s did not succeed (%s)", queryId, queryStatus.status);
-    Preconditions.checkArgument(queryStatus.profilingMode, "query %s was not run with profiling enabled");
+    Preconditions.checkArgument(queryStatus.profilingMode, "query %s was not run with profiling enabled", queryId);
 
     final Schema schema =
         new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("startTime", "endTime"));
@@ -1866,7 +1865,7 @@ public final class Server {
     Preconditions.checkArgument(queryStatus != null, "query %s not found", queryId);
     Preconditions.checkArgument(queryStatus.status == QueryStatusEncoding.Status.SUCCESS,
         "query %s did not succeed (%s)", queryId, queryStatus.status);
-    Preconditions.checkArgument(queryStatus.profilingMode, "query %s was not run with profiling enabled");
+    Preconditions.checkArgument(queryStatus.profilingMode, "query %s was not run with profiling enabled", queryId);
 
     final Schema schema =
         new Schema(ImmutableList.of(Type.INT_TYPE, Type.LONG_TYPE), ImmutableList.of("opId", "nanoTime"));
