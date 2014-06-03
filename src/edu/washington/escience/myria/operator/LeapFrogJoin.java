@@ -756,10 +756,10 @@ public class LeapFrogJoin extends NAryOperator {
         if (isIndexed(new JoinField(childIndex, column))) {
           int thisRow = tables[childIndex].numTuples();
           /*
-           * If the indexed column is not the first, numTuples() will return the number containing the current building
-           * tuple, so minus 1 here.
+           * If this is the last column, this tuple is already built in tables[childIndex]. So numTuples() have been
+           * updated already.
            */
-          if (column != 0) {
+          if (column == tb.numColumns() - 1) {
             thisRow = tables[childIndex].numTuples() - 1;
           }
           int lastRow = thisRow - 1;
