@@ -1,14 +1,17 @@
 package edu.washington.escience.myria.parallel;
 
 import java.util.LinkedList;
-import java.util.Objects;
 
 import javax.annotation.concurrent.GuardedBy;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.api.encoding.QueryConstruct;
+import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
 
@@ -37,16 +40,24 @@ public final class Query {
   private String message;
   /** The future for this query. */
   private final QueryFuture future;
+  /** True if the query should be run with profiling enabled. */
+  private final boolean profiling;
+  /** Indicates whether the query should be run with a particular fault tolerance mode. */
+  private final FTMODE ftMode;
 
   /**
    * Construct a new {@link Query} object for this query.
    * 
    * @param queryId the id of this query
+   * @param query contains the query options (profiling, fault tolerance)
    * @param plan the execution plan
    * @param server the server on which this query will be executed
    */
-  public Query(final long queryId, final QueryPlan plan, final Server server) {
-    this.server = Objects.requireNonNull(server, "server");
+  public Query(final long queryId, final QueryEncoding query, final QueryPlan plan, final Server server) {
+    Preconditions.checkNotNull(query, "query");
+    this.server = Preconditions.checkNotNull(server, "server");
+    profiling = Objects.firstNonNull(query.profilingMode, false);
+    ftMode = Objects.firstNonNull(query.ftMode, FTMODE.none);
     this.queryId = queryId;
     subqueryId = 0;
     synchronized (this) {
@@ -113,6 +124,7 @@ public final class Query {
       currentSubQuery = subQueryQ.removeFirst();
       currentSubQuery.setSubQueryId(new SubQueryId(queryId, subqueryId));
       ++subqueryId;
+      QueryConstruct.setQueryExecutionOptions(currentSubQuery.getWorkerPlans(), ftMode, profiling);
       return currentSubQuery;
     }
     planQ.getFirst().instantiate(planQ, subQueryQ, server);
@@ -225,5 +237,19 @@ public final class Query {
       status = Status.SUCCESS;
     }
     future.cancel(true);
+  }
+
+  /**
+   * @return the fault tolerance mode for this query.
+   */
+  protected FTMODE getFtMode() {
+    return ftMode;
+  }
+
+  /**
+   * @return true if this query should be profiled.
+   */
+  protected boolean isProfilingMode() {
+    return profiling;
   }
 }

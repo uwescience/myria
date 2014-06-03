@@ -1001,7 +1001,7 @@ public final class Server {
       QueryConstruct.instantiate(((JsonSubQuery) plan).getFragments(), this);
     }
     final long queryID = catalog.newQuery(physicalPlan);
-    return submitQuery(queryID, plan);
+    return submitQuery(queryID, physicalPlan, plan);
   }
 
   /**
@@ -1009,13 +1009,15 @@ public final class Server {
    * ready. Returns null if there are too many active queries.
    * 
    * @param queryId the catalog's assigned ID for this query.
+   * @param query contains the query options (profiling, fault tolerance)
    * @param plan the query to be executed
    * @throws DbException if any error in non-catalog data processing
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
    */
-  private QueryFuture submitQuery(final long queryId, final QueryPlan plan) throws DbException, CatalogException {
-    final Query queryState = new Query(queryId, plan, this);
+  private QueryFuture submitQuery(final long queryId, final QueryEncoding query, final QueryPlan plan)
+      throws DbException, CatalogException {
+    final Query queryState = new Query(queryId, query, plan, this);
     activeQueries.put(queryId, queryState);
     advanceQuery(queryState);
     return queryState.getFuture();
