@@ -38,6 +38,10 @@ public final class MyriaExceptionMapper implements ExceptionMapper<Exception> {
     if (ex instanceof WebApplicationException) {
       return ((WebApplicationException) ex).getResponse();
     }
+    /** Wrong arguments are probably caused by a bad request. */
+    if (ex instanceof IllegalArgumentException) {
+      return MyriaExceptionMapper.getResponse(Status.BAD_REQUEST, ex);
+    }
     /** Problems during JsonMapping are client errors. */
     if (ex instanceof JsonMappingException) {
       return MyriaExceptionMapper.getResponse(Status.BAD_REQUEST, ex);

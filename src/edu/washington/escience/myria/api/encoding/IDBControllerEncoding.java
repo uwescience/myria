@@ -15,13 +15,13 @@ public class IDBControllerEncoding extends OperatorEncoding<IDBController> {
   public Integer argSelfIdbId;
   @JsonProperty
   @Required
-  public String argInitialInput;
+  public Integer argInitialInput;
   @JsonProperty
   @Required
-  public String argIterationInput;
+  public Integer argIterationInput;
   @JsonProperty
   @Required
-  public String argEosControllerInput;
+  public Integer argEosControllerInput;
 
   private ExchangePairID realControllerOperatorId;
   public Integer realControllerWorkerId;
@@ -36,7 +36,7 @@ public class IDBControllerEncoding extends OperatorEncoding<IDBController> {
   }
 
   @Override
-  public void connect(Operator current, Map<String, Operator> operators) {
+  public void connect(Operator current, Map<Integer, Operator> operators) {
     current.setChildren(new Operator[] {
         operators.get(argInitialInput), operators.get(argIterationInput), operators.get(argEosControllerInput) });
   }

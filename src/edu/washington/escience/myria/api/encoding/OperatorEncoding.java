@@ -11,8 +11,7 @@ import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.parallel.Server;
 
 /**
- * A JSON-able wrapper for the expected wire message for an operator. To add a new operator, three things need to be
- * done.
+ * A JSON-able wrapper for the expected wire message for an operator. To add a new operator, two things need to be done.
  * 
  * 1. Create an Encoding class that extends OperatorEncoding.
  * 
@@ -59,14 +58,14 @@ import edu.washington.escience.myria.parallel.Server;
 public abstract class OperatorEncoding<T extends Operator> extends MyriaApiEncoding {
 
   @Required
-  public String opId;
+  public Integer opId;
 
   public String opName;
 
   /**
    * Connect any operators to this one.
    */
-  public abstract void connect(Operator operator, Map<String, Operator> operators);
+  public abstract void connect(Operator operator, Map<Integer, Operator> operators);
 
   /**
    * @param server the Myria server for which this operator will be used.

@@ -52,7 +52,7 @@ public final class MFMDHashPartitionFunction extends PartitionFunction {
       for (int j = 0; j < tb.numTuples(); j++) {
         result[j] = result[j] + p[j];
         if (i != partitionFunctions.length - 1) {
-          result[j] = result[j] * partitionFunctions[i].numPartition();
+          result[j] = result[j] * partitionFunctions[i + 1].numPartition();
         }
       }
     }

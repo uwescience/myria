@@ -22,6 +22,7 @@ import javax.ws.rs.core.UriInfo;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
@@ -54,9 +55,8 @@ public final class QueryResource {
   @Path("validate")
   public Response validateQuery(final QueryEncoding query, @Context final UriInfo uriInfo) {
     /* Validate the input. */
-    if (query == null) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "Missing query encoding.");
-    }
+    Preconditions.checkArgument(query != null, "Missing query encoding.");
+
     query.validate();
     /* Make sure we can serialize it properly. */
     try {
@@ -80,9 +80,7 @@ public final class QueryResource {
   @POST
   public Response postNewQuery(final QueryEncoding query, @Context final UriInfo uriInfo) throws CatalogException {
     /* Validate the input. */
-    if (query == null) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "Missing query encoding.");
-    }
+    Preconditions.checkArgument(query != null, "Missing query encoding.");
     query.validate();
 
     /* Start the query, and get its Server-assigned Query ID */

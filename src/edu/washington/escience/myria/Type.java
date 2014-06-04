@@ -297,66 +297,71 @@ public enum Type implements Serializable {
   }
 
   /**
-   * @return true if valueInTuple op operand.
-   * @param valueInTuple the value to be compared in a tuple
-   * @param operand the operand
+   * @return the value 0 if <code>x</code> is numerically equal to <code>y</code>; a value less than 0 if <code>x</code>
+   *         is numerically less than <code>y</code>; and a value greater than 0 otherwise.
+   * @param x the value to be compared in a tuple
+   * @param y the operand
    * */
-  public static final int compareRaw(final int valueInTuple, final int operand) {
-    return Integer.compare(valueInTuple, operand);
+  public static final int compareRaw(final int x, final int y) {
+    return Integer.compare(x, y);
   }
 
   /**
-   * @return true if valueInTuple op operand.
-   * @param valueInTuple the value to be compared in a tuple
-   * @param operand the operand
+   * @return the value 0 if x == y; a value less than 0 if !x && y; and a value greater than 0 if x && !y.
+   * @param x the value to be compared in a tuple
+   * @param y the operand
    * */
-  public static final int compareRaw(final boolean valueInTuple, final boolean operand) {
-    return Boolean.compare(valueInTuple, operand);
+  public static final int compareRaw(final boolean x, final boolean y) {
+    return Boolean.compare(x, y);
   }
 
   /**
-   * @return true if valueInTuple op operand.
-   * @param valueInTuple the value to be compared in a tuple
-   * @param operand the operand
+   * @return negative value if this is less, 0 if equal, or positive value if greater.
+   * @param x the value to be compared in a tuple
+   * @param y the operand
    * */
-  public static final int compareRaw(final DateTime valueInTuple, final DateTime operand) {
-    return valueInTuple.compareTo(operand);
+  public static final int compareRaw(final DateTime x, final DateTime y) {
+    return x.compareTo(y);
   }
 
   /**
-   * @return true if valueInTuple op operand.
-   * @param valueInTuple the value to be compared in a tuple
-   * @param operand the operand
+   * @return the value 0 if <code>x</code> is numerically equal to <code>y</code>; a value less than 0 if <code>x</code>
+   *         is numerically less than <code>y</code>; and a value greater than 0 otherwise.
+   * @param x the value to be compared in a tuple
+   * @param y the operand
    * */
-  public static final int compareRaw(final double valueInTuple, final double operand) {
-    return Double.compare(valueInTuple, operand);
+  public static final int compareRaw(final double x, final double y) {
+    return Double.compare(x, y);
   }
 
   /**
-   * @return true if valueInTuple op operand.
-   * @param valueInTuple the value to be compared in a tuple
-   * @param operand the operand
+   * @return the value 0 if <code>x</code> is numerically equal to <code>y</code>; a value less than 0 if <code>x</code>
+   *         is numerically less than <code>y</code>; and a value greater than 0 otherwise.
+   * @param x the value to be compared in a tuple
+   * @param y the operand
    * */
-  public static final int compareRaw(final float valueInTuple, final float operand) {
-    return Float.compare(valueInTuple, operand);
+  public static final int compareRaw(final float x, final float y) {
+    return Float.compare(x, y);
   }
 
   /**
-   * @return true if valueInTuple op operand.
-   * @param valueInTuple the value to be compared in a tuple
-   * @param operand the operand
+   * @return the value 0 if <code>x</code> is numerically equal to <code>y</code>; a value less than 0 if <code>x</code>
+   *         is numerically less than <code>y</code>; and a value greater than 0 otherwise.
+   * @param x the value to be compared in a tuple
+   * @param y the operand
    * */
-  public static final int compareRaw(final long valueInTuple, final long operand) {
-    return Long.compare(valueInTuple, operand);
+  public static final int compareRaw(final long x, final long y) {
+    return Long.compare(x, y);
   }
 
   /**
-   * @return true if valueInTuple op operand.
-   * @param valueInTuple the value to be compared in a tuple
-   * @param operand the operand
+   * @return value 0 if the <code>x</code> is equal to <code>y</code>; a value less than 0 if <code>x</code> is
+   *         lexicographically less than <code>y</code>; and a value greater than 0 if this string is otherwise.
+   * @param x the value to be compared in a tuple
+   * @param y the operand
    * */
-  public static final int compareRaw(final String valueInTuple, final String operand) {
-    return valueInTuple.compareTo(operand);
+  public static final int compareRaw(final String x, final String y) {
+    return x.compareTo(y);
   }
 
   /**

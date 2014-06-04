@@ -10,7 +10,7 @@ import edu.washington.escience.myria.operator.network.EOSController;
 
 /**
  * Json query builders interface.
- * */
+ */
 public interface JsonQueryBuilder {
 
   /**
@@ -18,7 +18,7 @@ public interface JsonQueryBuilder {
    * 
    * @param workers the set of workers in the computing system
    * @return builder.
-   * */
+   */
   JsonQueryBuilder workers(final int[] workers);
 
   /**
@@ -27,7 +27,7 @@ public interface JsonQueryBuilder {
    * TODO
    * 
    * @return builder.
-   * */
+   */
   JsonQueryBuilder export();
 
   /**
@@ -35,7 +35,7 @@ public interface JsonQueryBuilder {
    * {@link EOSController}.
    * 
    * @return builder.
-   * */
+   */
   JsonQueryBuilder beginIterate();
 
   /**
@@ -44,7 +44,7 @@ public interface JsonQueryBuilder {
    * 
    * @param idbStateProcessor the state processor in {@link IDBController}
    * @return builder.
-   * */
+   */
   JsonQueryBaseBuilder beginIterate(final StreamingStateEncoding<?> idbStateProcessor);
 
   /**
@@ -52,7 +52,7 @@ public interface JsonQueryBuilder {
    * 
    * @param iterateBeginner iterate the stream of current operator back into the iterate beginner.
    * @return builder.
-   * */
+   */
   JsonQueryBuilder endIterate(final JsonQueryBuilder iterateBeginner);
 
   /**
@@ -61,7 +61,7 @@ public interface JsonQueryBuilder {
    * automatically added.
    * 
    * @return The Json string of the query plan.
-   * */
+   */
   String buildJson();
 
   /**
@@ -70,7 +70,7 @@ public interface JsonQueryBuilder {
    * {@link SinkRoot} is automatically added.
    * 
    * @return The Java encoding of the query plan.
-   * */
+   */
   QueryEncoding build();
 
   /**
@@ -79,6 +79,6 @@ public interface JsonQueryBuilder {
    * @param name the name
    * @return a new building block with the setName operation recorded.
    * @throws IllegalArgumentException if the name is duplicated with other operators.
-   * */
+   */
   JsonQueryBuilder setName(final String name);
 }
