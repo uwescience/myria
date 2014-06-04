@@ -1054,7 +1054,6 @@ public final class Server {
    * @throws CatalogException if there is an error updating the Catalog
    */
   private void finishQuery(final Query queryState) throws CatalogException {
-    Preconditions.checkNotNull(queryState, "queryState");
     try {
       catalog.queryFinished(queryState);
     } finally {
@@ -1131,13 +1130,12 @@ public final class Server {
 
       return mqp.getExecutionFuture();
     } catch (DbException | RuntimeException e) {
+      finishSubQuery(subQueryId);
+      queryState.markFailed(e);
       try {
-        queryState.markFailed(e);
-        catalog.queryFinished(queryState);
+        finishQuery(queryState);
       } catch (CatalogException e1) {
         throw new DbException("error marking query as failed during submission", e1);
-      } finally {
-        finishSubQuery(subQueryId);
       }
       throw e;
     }
