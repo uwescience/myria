@@ -14,7 +14,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
-import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
 import com.google.common.base.Preconditions;
@@ -80,11 +79,7 @@ public final class LogResource {
 
     TupleWriter writer = new CsvTupleWriter(writerOutput);
 
-    try {
-      server.startLogDataStream(queryId, fragmentId, start, end, minLength, onlyRootOp, writer);
-    } catch (IllegalArgumentException e) {
-      throw new MyriaApiException(Status.BAD_REQUEST, e);
-    }
+    server.startLogDataStream(queryId, fragmentId, start, end, minLength, onlyRootOp, writer);
 
     return response.build();
   }
@@ -123,11 +118,7 @@ public final class LogResource {
 
     TupleWriter writer = new CsvTupleWriter(writerOutput);
 
-    try {
-      server.startContributionsStream(queryId, fragmentId, writer);
-    } catch (IllegalArgumentException e) {
-      throw new MyriaApiException(Status.BAD_REQUEST, e);
-    }
+    server.startContributionsStream(queryId, fragmentId, writer);
 
     return response.build();
   }
@@ -166,11 +157,7 @@ public final class LogResource {
 
     TupleWriter writer = new CsvTupleWriter(writerOutput);
 
-    try {
-      server.startSentLogDataStream(queryId, fragmentId, writer);
-    } catch (IllegalArgumentException e) {
-      throw new MyriaApiException(Status.BAD_REQUEST, e);
-    }
+    server.startSentLogDataStream(queryId, fragmentId, writer);
 
     return response.build();
   }
@@ -207,11 +194,7 @@ public final class LogResource {
 
     TupleWriter writer = new CsvTupleWriter(writerOutput);
 
-    try {
-      server.startRangeDataStream(queryId, fragmentId, writer);
-    } catch (IllegalArgumentException e) {
-      throw new MyriaApiException(Status.BAD_REQUEST, e);
-    }
+    server.startRangeDataStream(queryId, fragmentId, writer);
 
     return response.build();
   }
@@ -260,11 +243,7 @@ public final class LogResource {
 
     TupleWriter writer = new CsvTupleWriter(writerOutput);
 
-    try {
-      server.startHistogramDataStream(queryId, fragmentId, start, end, step, onlyRootOp, writer);
-    } catch (IllegalArgumentException e) {
-      throw new MyriaApiException(Status.BAD_REQUEST, e);
-    }
+    server.startHistogramDataStream(queryId, fragmentId, start, end, step, onlyRootOp, writer);
 
     return response.build();
   }

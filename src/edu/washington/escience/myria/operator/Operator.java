@@ -146,6 +146,7 @@ public abstract class Operator implements Serializable {
    * @return fragment Id.
    */
   public int getFragmentId() {
+    Objects.requireNonNull(fragmentId, "fragmentId");
     return fragmentId;
   }
 
