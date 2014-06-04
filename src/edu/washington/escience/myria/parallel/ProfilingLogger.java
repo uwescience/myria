@@ -199,7 +199,8 @@ public class ProfilingLogger {
   }
 
   /**
-   * Inserts in batches. Call {@link #flushProfilingEventsBatch()}.
+   * Appends a single event appearing in an operator to a batch that is flushed either after a certain number of events
+   * are in the batch or {@link #flushProfilingEventsBatch()} is called.
    * 
    * @param operator the operator where this record was logged
    * @param numTuples the number of tuples

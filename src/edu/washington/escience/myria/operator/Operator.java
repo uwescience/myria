@@ -92,7 +92,8 @@ public abstract class Operator implements Serializable {
   private Boolean profilingMode;
 
   /**
-   * A unique identifier to trace corresponding events.
+   * A counter that tracks how many times {@link #nextReady()} has been called, thus helping to join the call and return
+   * log entries that belong to the same call.
    */
   private int traceId;
 
