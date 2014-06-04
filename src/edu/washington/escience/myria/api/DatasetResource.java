@@ -28,6 +28,7 @@ import org.apache.commons.httpclient.HttpStatus;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
 import com.sun.jersey.core.header.ContentDisposition;
 import com.sun.jersey.multipart.FormDataParam;
 import com.wordnik.swagger.annotations.Api;
@@ -204,11 +205,7 @@ public final class DatasetResource {
     }
 
     /* Start streaming tuples into the TupleWriter, and through the pipes to the PipedStreamingOutput. */
-    try {
-      server.startDataStream(relationKey, writer);
-    } catch (IllegalArgumentException e) {
-      throw new MyriaApiException(Status.BAD_REQUEST, e);
-    }
+    server.startDataStream(relationKey, writer);
 
     /* Yay, worked! Ensure the file has the correct filename. */
     return response.build();
@@ -301,14 +298,10 @@ public final class DatasetResource {
       @FormDataParam("binary") final Boolean binary, @FormDataParam("isLittleEndian") final Boolean isLittleEndian,
       @FormDataParam("overwrite") final Boolean overwrite, @FormDataParam("data") final InputStream data)
       throws DbException {
-    /* Required parameters. */
-    if (relationKey == null) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "Missing required field relationKey.");
-    } else if (schema == null) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "Missing required field schema.");
-    } else if (data == null) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "Missing required field data.");
-    }
+
+    Preconditions.checkArgument(relationKey != null, "Missing required field relationKey.");
+    Preconditions.checkArgument(schema != null, "Missing required field schama.");
+    Preconditions.checkArgument(data != null, "Missing required field data.");
 
     Operator scan;
     if (Objects.firstNonNull(binary, false)) {

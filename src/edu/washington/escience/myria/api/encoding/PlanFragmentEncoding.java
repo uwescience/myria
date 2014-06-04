@@ -21,17 +21,17 @@ public final class PlanFragmentEncoding extends MyriaApiEncoding {
   @Required
   public List<OperatorEncoding<? extends Operator>> operators;
   /** Index of this fragment. */
-  public long fragmentIndex = -1;
+  public int fragmentIndex = -1;
   /** List of required fields. */
   public static final List<String> requiredFields = ImmutableList.of("operators");
 
-  public void setFragmentIndex(long fragmentIndex) {
+  public void setFragmentIndex(int fragmentIndex) {
     this.fragmentIndex = fragmentIndex;
   }
 
   @Override
   protected void validateExtra() {
-    Set<String> opNames = new HashSet<String>();
+    Set<Integer> opNames = new HashSet<Integer>();
     for (OperatorEncoding<? extends Operator> op : operators) {
       op.validate();
       if (!opNames.contains(op.opId)) {

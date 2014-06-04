@@ -50,7 +50,7 @@ public class QueryConstruct {
     /* Next, we need to know which pipes (operators) are produced and consumed on which workers. */
     setupWorkerNetworkOperators(fragments);
 
-    HashMap<String, PlanFragmentEncoding> op2OwnerFragmentMapping = new HashMap<String, PlanFragmentEncoding>();
+    HashMap<Integer, PlanFragmentEncoding> op2OwnerFragmentMapping = new HashMap<Integer, PlanFragmentEncoding>();
     int idx = 0;
     for (PlanFragmentEncoding fragment : fragments) {
       fragment.setFragmentIndex(idx++);
@@ -62,7 +62,7 @@ public class QueryConstruct {
     Map<Integer, SubQueryPlan> plan = new HashMap<Integer, SubQueryPlan>();
     HashMap<PlanFragmentEncoding, RootOperator> instantiatedFragments =
         new HashMap<PlanFragmentEncoding, RootOperator>();
-    HashMap<String, Operator> allOperators = new HashMap<String, Operator>();
+    HashMap<Integer, Operator> allOperators = new HashMap<Integer, Operator>();
     for (PlanFragmentEncoding fragment : fragments) {
       RootOperator op =
           instantiateFragment(fragment, server, instantiatedFragments, op2OwnerFragmentMapping, allOperators);
@@ -159,16 +159,16 @@ public class QueryConstruct {
    * Loop through all the operators in a plan fragment and connect them up.
    */
   private static void setupWorkerNetworkOperators(List<PlanFragmentEncoding> fragments) {
-    Map<String, Set<Integer>> producerWorkerMap = new HashMap<String, Set<Integer>>();
+    Map<Integer, Set<Integer>> producerWorkerMap = new HashMap<Integer, Set<Integer>>();
     Map<ExchangePairID, Set<Integer>> consumerWorkerMap = new HashMap<ExchangePairID, Set<Integer>>();
-    Map<String, List<ExchangePairID>> producerOutputChannels = new HashMap<String, List<ExchangePairID>>();
+    Map<Integer, List<ExchangePairID>> producerOutputChannels = new HashMap<Integer, List<ExchangePairID>>();
     List<IDBControllerEncoding> idbInputs = new ArrayList<IDBControllerEncoding>();
     /* Pass 1: map strings to real operator IDs, also collect producers and consumers. */
     for (PlanFragmentEncoding fragment : fragments) {
       for (OperatorEncoding<?> operator : fragment.operators) {
         if (operator instanceof AbstractConsumerEncoding) {
           AbstractConsumerEncoding<?> consumer = (AbstractConsumerEncoding<?>) operator;
-          String sourceProducerID = consumer.getOperatorId();
+          Integer sourceProducerID = consumer.getArgOperatorId();
           List<ExchangePairID> sourceProducerOutputChannels = producerOutputChannels.get(sourceProducerID);
           if (sourceProducerOutputChannels == null) {
             // The producer is not yet met
@@ -213,7 +213,7 @@ public class QueryConstruct {
           for (ExchangePairID id : exchange.getRealOperatorIds()) {
             if (exchange instanceof AbstractConsumerEncoding) {
               try {
-                workers.addAll(producerWorkerMap.get(((AbstractConsumerEncoding<?>) exchange).getOperatorId()));
+                workers.addAll(producerWorkerMap.get(((AbstractConsumerEncoding<?>) exchange).getArgOperatorId()));
               } catch (NullPointerException ee) {
                 LOGGER.error("Consumer: {}", ((AbstractConsumerEncoding<?>) exchange).opId);
                 LOGGER.error("Producer: {}", ((AbstractConsumerEncoding<?>) exchange).argOperatorId);
@@ -249,7 +249,7 @@ public class QueryConstruct {
    */
   private static RootOperator instantiateFragment(final PlanFragmentEncoding planFragment, final Server server,
       final HashMap<PlanFragmentEncoding, RootOperator> instantiatedFragments,
-      final Map<String, PlanFragmentEncoding> opOwnerFragment, final Map<String, Operator> allOperators) {
+      final Map<Integer, PlanFragmentEncoding> opOwnerFragment, final Map<Integer, Operator> allOperators) {
     RootOperator instantiatedFragment = instantiatedFragments.get(planFragment);
     if (instantiatedFragment != null) {
       return instantiatedFragment;
@@ -257,9 +257,9 @@ public class QueryConstruct {
 
     RootOperator fragmentRoot = null;
     CollectConsumer oldRoot = null;
-    Map<String, Operator> myOperators = new HashMap<String, Operator>();
-    HashMap<String, AbstractConsumerEncoding<?>> nonIterativeConsumers =
-        new HashMap<String, AbstractConsumerEncoding<?>>();
+    Map<Integer, Operator> myOperators = new HashMap<Integer, Operator>();
+    HashMap<Integer, AbstractConsumerEncoding<?>> nonIterativeConsumers =
+        new HashMap<Integer, AbstractConsumerEncoding<?>>();
     HashSet<IDBControllerEncoding> idbs = new HashSet<IDBControllerEncoding>();
     /* Instantiate all the operators. */
     for (OperatorEncoding<?> encoding : planFragment.operators) {
@@ -272,7 +272,8 @@ public class QueryConstruct {
 
       Operator op = encoding.construct(server);
       /* helpful for debugging. */
-      op.setOpName(encoding.opId);
+      op.setOpName("Operator" + String.valueOf(encoding.opId));
+      op.setOpId(encoding.opId);
       op.setFragmentId(planFragment.fragmentIndex);
       myOperators.put(encoding.opId, op);
       if (op instanceof RootOperator) {
@@ -304,7 +305,7 @@ public class QueryConstruct {
 
     for (AbstractConsumerEncoding<?> c : nonIterativeConsumers.values()) {
       Consumer consumer = (Consumer) myOperators.get(c.opId);
-      String producingOpName = c.argOperatorId;
+      Integer producingOpName = c.argOperatorId;
       Operator producingOp = allOperators.get(producingOpName);
       if (producingOp instanceof IDBController) {
         consumer.setSchema(IDBController.EOI_REPORT_SCHEMA);
