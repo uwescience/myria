@@ -1560,11 +1560,13 @@ public final class Server {
       fragmentWhere = "AND fragmentid = " + fragmentId;
     }
 
-    final Schema schema = MyriaConstants.SENT_SCHEMA;
+    final Schema schema =
+        Schema.ofFields("fragmentid", Type.INT_TYPE, "destworker", Type.INT_TYPE, "numTuples", Type.LONG_TYPE);
 
     String sentQueryString =
-        Joiner.on(' ').join("SELECT * FROM", MyriaConstants.SENT_RELATION.toString(getDBMS()) + "WHERE queryid =",
-            queryId, fragmentWhere, " ORDER BY fragmentid, nanotime");
+        Joiner.on(' ').join("SELECT fragmentid, destworkerid, sum(numtuples) as numtuples FROM",
+            MyriaConstants.SENT_RELATION.toString(getDBMS()) + "WHERE queryid =", queryId, fragmentWhere,
+            "GROUP BY queryid, fragmentid, destworkerid");
 
     DbQueryScan scan = new DbQueryScan(sentQueryString, schema);
     final ExchangePairID operatorId = ExchangePairID.newID();
@@ -1574,11 +1576,6 @@ public final class Server {
     emitExpressions.add(new Expression("workerId", new WorkerIdExpression()));
 
     for (int column = 0; column < schema.numColumns(); column++) {
-      // we don't need the query id and sometimes the fragment id since they are in the query
-      if (schema.getColumnName(column).toLowerCase().equals("queryid") || fragmentId >= 0
-          && schema.getColumnName(column).toLowerCase().equals("fragmentid")) {
-        continue;
-      }
       VariableExpression copy = new VariableExpression(column);
       emitExpressions.add(new Expression(schema.getColumnName(column), copy));
     }
@@ -1595,7 +1592,19 @@ public final class Server {
 
     final CollectConsumer consumer =
         new CollectConsumer(addWorkerId.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
-    DataOutput output = new DataOutput(consumer, writer);
+
+    final MultiGroupByAggregate aggregate =
+        new MultiGroupByAggregate(consumer, new int[] { 0, 1, 2 }, new int[] { 3 }, new int[] { Aggregator.AGG_OP_SUM });
+
+    // rename columns
+    ImmutableList.Builder<Expression> renameExpressions = ImmutableList.builder();
+    renameExpressions.add(new Expression("src", new VariableExpression(0)));
+    renameExpressions.add(new Expression("fragmentId", new VariableExpression(1)));
+    renameExpressions.add(new Expression("dest", new VariableExpression(2)));
+    renameExpressions.add(new Expression("numTuples", new VariableExpression(3)));
+    final Apply rename = new Apply(aggregate, renameExpressions.build());
+
+    DataOutput output = new DataOutput(rename, writer);
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
     /* Submit the plan for the download. */
@@ -1636,8 +1645,8 @@ public final class Server {
     Preconditions.checkArgument(start < end, "range cannot be negative");
 
     final Schema schema =
-        new Schema(ImmutableList.of(Type.STRING_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList
-            .of("opId", "startTime", "endTime", "numTuples"));
+        Schema.ofFields("opId", Type.INT_TYPE, "startTime", Type.LONG_TYPE, "endTime", Type.LONG_TYPE, "numTuples",
+            Type.LONG_TYPE);
 
     Set<Integer> actualWorkers = ((QueryEncoding) queryStatus.physicalPlan).getWorkers();
 
@@ -1727,8 +1736,7 @@ public final class Server {
     Preconditions.checkArgument(start < end, "range cannot be negative");
     Preconditions.checkArgument(step > 0, "step has to be greater than 0");
 
-    final Schema schema =
-        new Schema(ImmutableList.of(Type.INT_TYPE, Type.LONG_TYPE), ImmutableList.of("opId", "nanoTime"));
+    final Schema schema = Schema.ofFields("opId", Type.INT_TYPE, "nanoTime", Type.LONG_TYPE);
     final RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
 
     Set<Integer> actualWorkers = ((QueryEncoding) queryStatus.physicalPlan).getWorkers();
@@ -1806,8 +1814,7 @@ public final class Server {
         "query %s did not succeed (%s)", queryId, queryStatus.status);
     Preconditions.checkArgument(queryStatus.profilingMode, "query %s was not run with profiling enabled", queryId);
 
-    final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("startTime", "endTime"));
+    final Schema schema = Schema.ofFields("startTime", Type.LONG_TYPE, "endTime", Type.LONG_TYPE);
     final RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
 
     Set<Integer> actualWorkers = ((QueryEncoding) queryStatus.physicalPlan).getWorkers();
@@ -1869,8 +1876,7 @@ public final class Server {
         "query %s did not succeed (%s)", queryId, queryStatus.status);
     Preconditions.checkArgument(queryStatus.profilingMode, "query %s was not run with profiling enabled", queryId);
 
-    final Schema schema =
-        new Schema(ImmutableList.of(Type.INT_TYPE, Type.LONG_TYPE), ImmutableList.of("opId", "nanoTime"));
+    final Schema schema = Schema.ofFields("opId", Type.INT_TYPE, "nanoTime", Type.LONG_TYPE);
     final RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
 
     Set<Integer> actualWorkers = ((QueryEncoding) queryStatus.physicalPlan).getWorkers();
