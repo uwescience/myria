@@ -880,9 +880,10 @@ public final class Server {
 
     if (getSchema(MyriaConstants.PROFILING_RELATION_TMP) == null
         && getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
-      importDataset(MyriaConstants.PROFILING_RELATION_TMP, MyriaConstants.PROFILING_SCHEMA_TMP, null);
-      importDataset(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA, null);
-      importDataset(MyriaConstants.SENT_RELATION, MyriaConstants.SENT_SCHEMA, null);
+      final Set<Integer> workerIds = workers.keySet();
+      importDataset(MyriaConstants.PROFILING_RELATION_TMP, MyriaConstants.PROFILING_SCHEMA_TMP, workerIds);
+      importDataset(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA, workerIds);
+      importDataset(MyriaConstants.SENT_RELATION, MyriaConstants.SENT_SCHEMA, workerIds);
     }
   }
 
