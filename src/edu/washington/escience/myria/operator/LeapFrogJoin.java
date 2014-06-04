@@ -378,7 +378,7 @@ public class LeapFrogJoin extends NAryOperator {
        */
       public void setMaxRow(final int maxRow) {
         this.maxRow = maxRow;
-        Preconditions.checkArgument(maxRow > 0);
+        Preconditions.checkArgument(maxRow > 0, "maxRow: %s", maxRow);
         Preconditions.checkState(minRow < maxRow, "minRow >= maxRow. (minRow=%s, ,maxRow=%s)", minRow, maxRow);
       }
 
@@ -389,7 +389,7 @@ public class LeapFrogJoin extends NAryOperator {
       public void setRange(final int minRow, final int maxRow) {
         this.minRow = minRow;
         this.maxRow = maxRow;
-        Preconditions.checkArgument(maxRow > 0);
+        Preconditions.checkArgument(maxRow > 0, "maxRow: %s", maxRow);
         Preconditions.checkState(minRow < maxRow, "minRow >= maxRow. (minRow=%s, ,maxRow=%s)", minRow, maxRow);
       }
 
@@ -410,7 +410,7 @@ public class LeapFrogJoin extends NAryOperator {
        * @param maxRow maximal row.
        */
       public IteratorRange(final int minRow, final int maxRow) {
-        Preconditions.checkArgument(maxRow > 0);
+        Preconditions.checkArgument(maxRow > 0, "maxRow: %s", maxRow);
         this.minRow = minRow;
         this.maxRow = maxRow;
       }
@@ -760,7 +760,7 @@ public class LeapFrogJoin extends NAryOperator {
            * updated already.
            */
           if (column == tb.numColumns() - 1) {
-            thisRow = tables[childIndex].numTuples() - 1;
+            thisRow--;
           }
           int lastRow = thisRow - 1;
           if (lastRow == -1 || TupleUtils.cellCompare(tables[childIndex], column, lastRow, tb, column, row) != 0) {
