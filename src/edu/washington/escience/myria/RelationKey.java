@@ -6,6 +6,7 @@ import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 
 /**
@@ -101,7 +102,7 @@ public final class RelationKey implements Serializable {
 
   @Override
   public String toString() {
-    return toString('\0', ':', '\0').trim();
+    return Joiner.on(':').join(userName, programName, relationName);
   }
 
   /**
@@ -114,8 +115,7 @@ public final class RelationKey implements Serializable {
    */
   private String toString(final char leftEscape, final char separate, final char rightEscape) {
     StringBuilder sb = new StringBuilder();
-    sb.append(leftEscape).append(userName).append(separate).append(programName).append(separate).append(relationName)
-        .append(rightEscape);
+    sb.append(leftEscape).append(Joiner.on(separate).join(userName, programName, relationName)).append(rightEscape);
     return sb.toString();
   }
 
