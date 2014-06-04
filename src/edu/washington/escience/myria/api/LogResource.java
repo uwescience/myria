@@ -17,6 +17,8 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
+import com.google.common.base.Preconditions;
+
 import edu.washington.escience.myria.CsvTupleWriter;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
@@ -55,21 +57,12 @@ public final class LogResource {
       @QueryParam("end") final Long end, @DefaultValue("0") @QueryParam("minLength") final Long minLength,
       @DefaultValue("false") @QueryParam("onlyRootOp") final boolean onlyRootOp, @Context final UriInfo uriInfo)
       throws DbException {
-    if (queryId == null) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "Query ID missing.");
-    }
-    if (fragmentId == null) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "Fragment ID missing.");
-    }
-    if (start == null) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "Start missing.");
-    }
-    if (end == null) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "End missing.");
-    }
-    if (minLength < 0) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "minLength has to be greater than or equal to 0.");
-    }
+
+    Preconditions.checkArgument(queryId != null, "Missing required field queryId.");
+    Preconditions.checkArgument(fragmentId != null, "Missing required field fragmentId.");
+    Preconditions.checkArgument(start != null, "Missing required field start.");
+    Preconditions.checkArgument(end != null, "Missing required field end.");
+    Preconditions.checkArgument(minLength >= 0, "MinLength has to be greater than or equal to 0");
 
     ResponseBuilder response = Response.ok();
     response.type(MediaType.TEXT_PLAIN);
@@ -111,12 +104,8 @@ public final class LogResource {
   public Response getContributions(@QueryParam("queryId") final Long queryId,
       @DefaultValue("-1") @QueryParam("fragmentId") final Long fragmentId, @Context final UriInfo uriInfo)
       throws DbException {
-    if (queryId == null) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "Query ID missing.");
-    }
-    if (fragmentId == null) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "Fragment ID missing.");
-    }
+
+    Preconditions.checkArgument(queryId != null, "Missing required field queryId.");
 
     ResponseBuilder response = Response.ok();
     response.type(MediaType.TEXT_PLAIN);
@@ -158,9 +147,8 @@ public final class LogResource {
   public Response getSentLogs(@QueryParam("queryId") final Long queryId,
       @DefaultValue("-1") @QueryParam("fragmentId") final long fragmentId, @Context final UriInfo uriInfo)
       throws DbException {
-    if (queryId == null) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "Query ID missing.");
-    }
+
+    Preconditions.checkArgument(queryId != null, "Missing required field queryId.");
 
     ResponseBuilder response = Response.ok();
     response.type(MediaType.TEXT_PLAIN);
@@ -199,12 +187,9 @@ public final class LogResource {
   @Path("range")
   public Response getRange(@QueryParam("queryId") final Long queryId, @QueryParam("fragmentId") final Long fragmentId,
       @Context final UriInfo uriInfo) throws DbException {
-    if (queryId == null) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "Query ID missing.");
-    }
-    if (fragmentId == null) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "Fragment ID missing.");
-    }
+
+    Preconditions.checkArgument(queryId != null, "Missing required field queryId.");
+    Preconditions.checkArgument(fragmentId != null, "Missing required field fragmentId.");
 
     ResponseBuilder response = Response.ok();
     response.type(MediaType.TEXT_PLAIN);
@@ -252,21 +237,13 @@ public final class LogResource {
       @QueryParam("end") final Long end, @QueryParam("step") final Long step,
       @DefaultValue("true") @QueryParam("onlyRootOp") final boolean onlyRootOp, @Context final UriInfo uriInfo)
       throws DbException {
-    if (queryId == null) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "Query ID missing.");
-    }
-    if (fragmentId == null) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "Fragment ID missing.");
-    }
-    if (start == null) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "Start missing.");
-    }
-    if (end == null) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "End missing.");
-    }
-    if (step == null) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "Step missing.");
-    }
+
+    Preconditions.checkArgument(queryId != null, "Missing required field queryId.");
+    Preconditions.checkArgument(fragmentId != null, "Missing required field fragmentId.");
+    Preconditions.checkArgument(start != null, "Missing required field start.");
+    Preconditions.checkArgument(end != null, "Missing required field end.");
+    Preconditions.checkArgument(step != null, "Missing required field step.");
+    Preconditions.checkArgument(step >= 0, "Step has to be greater than or equal to 0");
 
     ResponseBuilder response = Response.ok();
     response.type(MediaType.TEXT_PLAIN);
