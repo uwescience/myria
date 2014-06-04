@@ -243,7 +243,6 @@ public final class LogResource {
     Preconditions.checkArgument(start != null, "Missing required field start.");
     Preconditions.checkArgument(end != null, "Missing required field end.");
     Preconditions.checkArgument(step != null, "Missing required field step.");
-    Preconditions.checkArgument(step >= 0, "Step has to be greater than or equal to 0");
 
     ResponseBuilder response = Response.ok();
     response.type(MediaType.TEXT_PLAIN);

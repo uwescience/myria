@@ -206,6 +206,7 @@ public class ProfilingLogger {
    * @param numTuples the number of tuples
    * @param eventType the type of the event to be logged
    * @param traceId an id to trace corresponding events
+   * 
    * @throws DbException if insertion in the database fails
    */
   public synchronized void recordEvent(final Operator operator, final long numTuples, final String eventType,

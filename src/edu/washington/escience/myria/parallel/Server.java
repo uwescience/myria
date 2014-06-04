@@ -1541,17 +1541,7 @@ public final class Server {
    */
   public ListenableFuture<Query> startSentLogDataStream(final long queryId, final long fragmentId,
       final TupleWriter writer) throws DbException {
-    /* Get the relation's schema, to make sure it exists. */
-    final QueryStatusEncoding queryStatus;
-    try {
-      queryStatus = catalog.getQuery(queryId);
-    } catch (CatalogException e) {
-      throw new DbException(e);
-    }
-    Preconditions.checkArgument(queryStatus != null, "query %s not found", queryId);
-    Preconditions.checkArgument(queryStatus.status == QueryStatusEncoding.Status.SUCCESS,
-        "query %s did not succeed (%s)", queryId, queryStatus.status);
-    Preconditions.checkArgument(queryStatus.profilingMode, "query %s was not run with profiling enabled", queryId);
+    final QueryStatusEncoding queryStatus = checkAndReturnQueryStatus(queryId);
 
     Set<Integer> actualWorkers = ((QueryEncoding) queryStatus.physicalPlan).getWorkers();
 
@@ -1631,17 +1621,8 @@ public final class Server {
    */
   public QueryFuture startLogDataStream(final long queryId, final long fragmentId, final long start, final long end,
       final long minSpanLength, final boolean onlyRootOperator, final TupleWriter writer) throws DbException {
-    /* Get the relation's schema, to make sure it exists. */
-    final QueryStatusEncoding queryStatus;
-    try {
-      queryStatus = catalog.getQuery(queryId);
-    } catch (CatalogException e) {
-      throw new DbException(e);
-    }
-    Preconditions.checkArgument(queryStatus != null, "query %s not found", queryId);
-    Preconditions.checkArgument(queryStatus.status == QueryStatusEncoding.Status.SUCCESS,
-        "query %s did not succeed (%s)", queryId, queryStatus.status);
-    Preconditions.checkArgument(queryStatus.profilingMode, "query %s was not run with profiling enabled", queryId);
+    final QueryStatusEncoding queryStatus = checkAndReturnQueryStatus(queryId);
+
     Preconditions.checkArgument(start < end, "range cannot be negative");
 
     final Schema schema =
@@ -1722,17 +1703,8 @@ public final class Server {
    */
   public QueryFuture startHistogramDataStream(final long queryId, final long fragmentId, final long start,
       final long end, final long step, final boolean onlyRootOp, final TupleWriter writer) throws DbException {
-    /* Get the relation's schema, to make sure it exists. */
-    final QueryStatusEncoding queryStatus;
-    try {
-      queryStatus = catalog.getQuery(queryId);
-    } catch (CatalogException e) {
-      throw new DbException(e);
-    }
-    Preconditions.checkArgument(queryStatus != null, "query %s not found", queryId);
-    Preconditions.checkArgument(queryStatus.status == QueryStatusEncoding.Status.SUCCESS,
-        "query %s did not succeed (%s)", queryId, queryStatus.status);
-    Preconditions.checkArgument(queryStatus.profilingMode, "query %s was not run with profiling enabled", queryId);
+    final QueryStatusEncoding queryStatus = checkAndReturnQueryStatus(queryId);
+
     Preconditions.checkArgument(start < end, "range cannot be negative");
     Preconditions.checkArgument(step > 0, "step has to be greater than 0");
 
@@ -1765,7 +1737,6 @@ public final class Server {
     }
 
     /* Aggregate histogram on master */
-
     final CollectConsumer consumer =
         new CollectConsumer(scan.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
 
@@ -1802,17 +1773,7 @@ public final class Server {
    */
   public QueryFuture startRangeDataStream(final Long queryId, final Long fragmentId, final TupleWriter writer)
       throws DbException {
-    /* Get the relation's schema, to make sure it exists. */
-    final QueryStatusEncoding queryStatus;
-    try {
-      queryStatus = catalog.getQuery(queryId);
-    } catch (CatalogException e) {
-      throw new DbException(e);
-    }
-    Preconditions.checkArgument(queryStatus != null, "query %s not found", queryId);
-    Preconditions.checkArgument(queryStatus.status == QueryStatusEncoding.Status.SUCCESS,
-        "query %s did not succeed (%s)", queryId, queryStatus.status);
-    Preconditions.checkArgument(queryStatus.profilingMode, "query %s was not run with profiling enabled", queryId);
+    final QueryStatusEncoding queryStatus = checkAndReturnQueryStatus(queryId);
 
     final Schema schema = Schema.ofFields("startTime", Type.LONG_TYPE, "endTime", Type.LONG_TYPE);
     final RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
@@ -1864,17 +1825,7 @@ public final class Server {
    */
   public QueryFuture startContributionsStream(final long queryId, final long fragmentId, final TupleWriter writer)
       throws DbException {
-    /* Get the relation's schema, to make sure it exists. */
-    final QueryStatusEncoding queryStatus;
-    try {
-      queryStatus = catalog.getQuery(queryId);
-    } catch (CatalogException e) {
-      throw new DbException(e);
-    }
-    Preconditions.checkArgument(queryStatus != null, "query %s not found", queryId);
-    Preconditions.checkArgument(queryStatus.status == QueryStatusEncoding.Status.SUCCESS,
-        "query %s did not succeed (%s)", queryId, queryStatus.status);
-    Preconditions.checkArgument(queryStatus.profilingMode, "query %s was not run with profiling enabled", queryId);
+    final QueryStatusEncoding queryStatus = checkAndReturnQueryStatus(queryId);
 
     final Schema schema = Schema.ofFields("opId", Type.INT_TYPE, "nanoTime", Type.LONG_TYPE);
     final RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
@@ -1902,7 +1853,6 @@ public final class Server {
     }
 
     /* Aggregate on master */
-
     final CollectConsumer consumer =
         new CollectConsumer(scan.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
 
@@ -1927,5 +1877,28 @@ public final class Server {
     } catch (CatalogException e) {
       throw new DbException(e);
     }
+  }
+
+  /**
+   * Get the query status and check whether the query ran successfully with profiling enabled.
+   * 
+   * @param queryId the query id
+   * @return the query status
+   * @throws DbException if the query cannot be retrieved
+   */
+  private QueryStatusEncoding checkAndReturnQueryStatus(final long queryId) throws DbException {
+    /* Get the relation's schema, to make sure it exists. */
+    final QueryStatusEncoding queryStatus;
+    try {
+      queryStatus = catalog.getQuery(queryId);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+
+    Preconditions.checkArgument(queryStatus != null, "query %s not found", queryId);
+    Preconditions.checkArgument(queryStatus.status == QueryStatusEncoding.Status.SUCCESS,
+        "query %s did not succeed (%s)", queryId, queryStatus.status);
+    Preconditions.checkArgument(queryStatus.profilingMode, "query %s was not run with profiling enabled", queryId);
+    return queryStatus;
   }
 }
