@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -95,7 +96,7 @@ public abstract class Operator implements Serializable {
    * A counter that tracks how many times {@link #nextReady()} has been called, thus helping to join the call and return
    * log entries that belong to the same call.
    */
-  private volatile long traceId;
+  private final AtomicLong traceId = new AtomicLong();
 
   /**
    * @return the profilingLogger
@@ -326,8 +327,8 @@ public abstract class Operator implements Serializable {
 
     if (isProfilingMode()) {
       // use trace id to track corresponding events
-      traceId++;
-      profilingLogger.recordEvent(this, -1, "call", traceId);
+      long trace = traceId.incrementAndGet();
+      profilingLogger.recordEvent(this, -1, "call", trace);
     }
 
     TupleBatch result = null;
@@ -346,7 +347,7 @@ public abstract class Operator implements Serializable {
       if (result != null) {
         numberOfTupleReturned = result.numTuples();
       }
-      profilingLogger.recordEvent(this, numberOfTupleReturned, "return", traceId);
+      profilingLogger.recordEvent(this, numberOfTupleReturned, "return", traceId.get());
     }
     if (result == null) {
       checkEOSAndEOI();
@@ -422,7 +423,7 @@ public abstract class Operator implements Serializable {
     this.eoi = eoi;
     if (isProfilingMode()) {
       try {
-        profilingLogger.recordEvent(this, -1, "eoi", traceId);
+        profilingLogger.recordEvent(this, -1, "eoi", traceId.get());
       } catch (Exception e) {
         LOGGER.error("Failed to write profiling data:", e);
       }
