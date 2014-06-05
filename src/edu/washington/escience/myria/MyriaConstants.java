@@ -1,5 +1,6 @@
 package edu.washington.escience.myria;
 
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class holds the constants for the Myria execution.
@@ -265,6 +266,11 @@ public final class MyriaConstants {
    */
   public static final Schema SENT_SCHEMA = Schema.ofFields(Type.LONG_TYPE, Type.INT_TYPE, Type.LONG_TYPE,
       Type.LONG_TYPE, Type.INT_TYPE, "queryId", "fragmentId", "nanoTime", "numTuples", "destWorkerId");
+
+  /**
+   * For how long cached versions of the profiling data should be valid.
+   */
+  public static final long PROFILING_CACHE_AGE = TimeUnit.HOURS.toMillis(1);
 
   /** Private constructor to disallow building utility class. */
   private MyriaConstants() {
