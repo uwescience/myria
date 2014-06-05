@@ -8,6 +8,7 @@ import org.junit.Test;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.ConstantExpression;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
@@ -271,5 +272,37 @@ public class ExpressionTest {
     ConstantExpression val2 = new ConstantExpression(0.5);
     ExpressionOperator expr = new IntDivideExpression(val1, val2);
     evaluateConstantAndUnrollException(expr);
+  }
+
+  @Test
+  public void testLongString() throws Throwable {
+    ConstantExpression tenBillion = new ConstantExpression(Type.LONG_TYPE, "10000000000");
+    assertEquals(10000000000L, evaluateConstantAndUnrollException(tenBillion));
+    tenBillion = new ConstantExpression(Type.LONG_TYPE, "10000000000l");
+    assertEquals(10000000000L, evaluateConstantAndUnrollException(tenBillion));
+    tenBillion = new ConstantExpression(Type.LONG_TYPE, "10000000000L");
+    assertEquals(10000000000L, evaluateConstantAndUnrollException(tenBillion));
+  }
+
+  @Test
+  public void testFloatString() throws Throwable {
+    ConstantExpression piApprox = new ConstantExpression(Type.FLOAT_TYPE, "3.1415926");
+    assertEquals((float) Math.PI, (Float) evaluateConstantAndUnrollException(piApprox), 0.00001);
+    piApprox = new ConstantExpression(Type.FLOAT_TYPE, "3.1415926f");
+    assertEquals((float) Math.PI, (Float) evaluateConstantAndUnrollException(piApprox), 0.00001);
+    piApprox = new ConstantExpression(Type.FLOAT_TYPE, "3.1415926F");
+    assertEquals((float) Math.PI, (Float) evaluateConstantAndUnrollException(piApprox), 0.00001);
+  }
+
+  @Test
+  public void testIntString() throws Throwable {
+    ConstantExpression oneBillion = new ConstantExpression(Type.INT_TYPE, "1000000000");
+    assertEquals(1000000000, evaluateConstantAndUnrollException(oneBillion));
+  }
+
+  @Test
+  public void testDoubleString() throws Throwable {
+    ConstantExpression piApprox = new ConstantExpression(Type.DOUBLE_TYPE, String.valueOf(Math.PI));
+    assertEquals(Math.PI, (Double) evaluateConstantAndUnrollException(piApprox), 0.00000001);
   }
 }
