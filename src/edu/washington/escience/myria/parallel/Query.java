@@ -42,6 +42,7 @@ public final class Query {
   /** The server. */
   private final Server server;
   /** The message explaining why a query failed. */
+  @GuardedBy("this")
   private String message;
   /** The future for this query. */
   private final QueryFuture future;
@@ -181,7 +182,9 @@ public final class Query {
       status = Status.ERROR;
     }
     markEnd();
-    message = ErrorUtils.getStackTrace(cause);
+    synchronized (this) {
+      message = ErrorUtils.getStackTrace(cause);
+    }
     future.setException(cause);
   }
 
@@ -228,7 +231,9 @@ public final class Query {
    * @return a message explaining why a query failed, or <code>null</code> if the query did not fail
    */
   public String getMessage() {
-    return message;
+    synchronized (this) {
+      return message;
+    }
   }
 
   /**

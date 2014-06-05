@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.systemtest;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.net.HttpURLConnection;
@@ -166,7 +167,9 @@ public class SequenceTest extends SystemTestBase {
        * the API. See https://github.com/uwescience/myria/issues/542
        */
       assertTrue(ErrorUtils.getStackTrace(e).contains("Failure in init"));
-      assertTrue(server.getQueryStatus(qf.getQueryId()).message.contains("Failure in init"));
+      String message = server.getQueryStatus(qf.getQueryId()).message;
+      assertNotNull(message);
+      assertTrue(message.contains("Failure in init"));
       throw e;
     }
   }
