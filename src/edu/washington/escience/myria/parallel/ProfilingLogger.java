@@ -19,7 +19,6 @@ import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.JdbcAccessMethod;
 import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * A logger for profiling data.
@@ -227,7 +226,7 @@ public class ProfilingLogger {
       throw new DbException(e);
     }
 
-    if (batchSizeEvents > TupleBatch.BATCH_SIZE) {
+    if (batchSizeEvents > MyriaConstants.PROFILING_LOGGER_BATCH_SIZE) {
       flushProfilingEventsBatch();
     }
   }
@@ -330,7 +329,7 @@ public class ProfilingLogger {
       throw new DbException(e);
     }
 
-    if (batchSizeSent > TupleBatch.BATCH_SIZE) {
+    if (batchSizeSent > MyriaConstants.PROFILING_LOGGER_BATCH_SIZE) {
       flushSentBatch();
     }
   }

@@ -272,6 +272,11 @@ public final class MyriaConstants {
    */
   public static final long PROFILING_CACHE_AGE = TimeUnit.HOURS.toMillis(1);
 
+  /**
+   * Number of entries in profiling logger before it is flushed.
+   */
+  public static final int PROFILING_LOGGER_BATCH_SIZE = 10000;
+
   /** Private constructor to disallow building utility class. */
   private MyriaConstants() {
   }
