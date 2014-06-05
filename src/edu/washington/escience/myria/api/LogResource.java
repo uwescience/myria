@@ -5,7 +5,6 @@ import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.util.Date;
 
-import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -32,8 +31,7 @@ import edu.washington.escience.myria.parallel.Server;
 /**
  * Class that handles logs.
  */
-@Consumes(MediaType.APPLICATION_JSON)
-@Produces(MediaType.APPLICATION_JSON)
+@Produces(MediaType.TEXT_PLAIN)
 @Path("/logs")
 public final class LogResource {
   /** The Myria server running on the master. */
@@ -54,7 +52,6 @@ public final class LogResource {
    * @throws DbException if there is an error in the database.
    */
   @GET
-  @Produces(MediaType.TEXT_PLAIN)
   @Path("profiling")
   public Response getProfileLogs(@QueryParam("queryId") final Long queryId,
       @QueryParam("fragmentId") final Long fragmentId, @QueryParam("start") final Long start,
@@ -69,12 +66,11 @@ public final class LogResource {
     Preconditions.checkArgument(minLength >= 0, "MinLength has to be greater than or equal to 0");
 
     EntityTag eTag = new EntityTag(Integer.toString(Joiner.on('-').join("profiling", queryId, fragmentId).hashCode()));
-    ResponseBuilder response =
-        request.evaluatePreconditions(new DateTime().minus(MyriaConstants.PROFILING_CACHE_AGE).toDate(), eTag);
-    if (response != null) {
-      return response.build();
+    Object obj = checkAndAddCache(request, eTag);
+    if (obj instanceof Response) {
+      return (Response) obj;
     }
-    response = Response.ok().tag(eTag).lastModified(new Date());
+    ResponseBuilder response = (ResponseBuilder) obj;
 
     response.type(MediaType.TEXT_PLAIN);
 
@@ -105,7 +101,6 @@ public final class LogResource {
    * @throws DbException if there is an error in the database.
    */
   @GET
-  @Produces(MediaType.TEXT_PLAIN)
   @Path("contribution")
   public Response getContributions(@QueryParam("queryId") final Long queryId,
       @DefaultValue("-1") @QueryParam("fragmentId") final Long fragmentId, @Context final Request request)
@@ -115,12 +110,11 @@ public final class LogResource {
 
     EntityTag eTag =
         new EntityTag(Integer.toString(Joiner.on('-').join("contribution", queryId, fragmentId).hashCode()));
-    ResponseBuilder response =
-        request.evaluatePreconditions(new DateTime().minus(MyriaConstants.PROFILING_CACHE_AGE).toDate(), eTag);
-    if (response != null) {
-      return response.build();
+    Object obj = checkAndAddCache(request, eTag);
+    if (obj instanceof Response) {
+      return (Response) obj;
     }
-    response = Response.ok().tag(eTag).lastModified(new Date());
+    ResponseBuilder response = (ResponseBuilder) obj;
 
     response.type(MediaType.TEXT_PLAIN);
 
@@ -152,7 +146,6 @@ public final class LogResource {
    * @throws DbException if there is an error in the database.
    */
   @GET
-  @Produces(MediaType.TEXT_PLAIN)
   @Path("sent")
   public Response getSentLogs(@QueryParam("queryId") final Long queryId,
       @DefaultValue("-1") @QueryParam("fragmentId") final long fragmentId, @Context final Request request)
@@ -161,12 +154,11 @@ public final class LogResource {
     Preconditions.checkArgument(queryId != null, "Missing required field queryId.");
 
     EntityTag eTag = new EntityTag(Integer.toString(Joiner.on('-').join("sent", queryId, fragmentId).hashCode()));
-    ResponseBuilder response =
-        request.evaluatePreconditions(new DateTime().minus(MyriaConstants.PROFILING_CACHE_AGE).toDate(), eTag);
-    if (response != null) {
-      return response.build();
+    Object obj = checkAndAddCache(request, eTag);
+    if (obj instanceof Response) {
+      return (Response) obj;
     }
-    response = Response.ok().tag(eTag).lastModified(new Date());
+    ResponseBuilder response = (ResponseBuilder) obj;
 
     response.type(MediaType.TEXT_PLAIN);
 
@@ -196,7 +188,6 @@ public final class LogResource {
    * @throws DbException if there is an error in the database.
    */
   @GET
-  @Produces(MediaType.TEXT_PLAIN)
   @Path("range")
   public Response getRange(@QueryParam("queryId") final Long queryId, @QueryParam("fragmentId") final Long fragmentId,
       @Context final Request request) throws DbException {
@@ -205,12 +196,11 @@ public final class LogResource {
     Preconditions.checkArgument(fragmentId != null, "Missing required field fragmentId.");
 
     EntityTag eTag = new EntityTag(Integer.toString(Joiner.on('-').join("range", queryId, fragmentId).hashCode()));
-    ResponseBuilder response =
-        request.evaluatePreconditions(new DateTime().minus(MyriaConstants.PROFILING_CACHE_AGE).toDate(), eTag);
-    if (response != null) {
-      return response.build();
+    Object obj = checkAndAddCache(request, eTag);
+    if (obj instanceof Response) {
+      return (Response) obj;
     }
-    response = Response.ok().tag(eTag).lastModified(new Date());
+    ResponseBuilder response = (ResponseBuilder) obj;
 
     response.type(MediaType.TEXT_PLAIN);
 
@@ -246,7 +236,6 @@ public final class LogResource {
    * @throws DbException if there is an error in the database.
    */
   @GET
-  @Produces(MediaType.TEXT_PLAIN)
   @Path("histogram")
   public Response getHistogram(@QueryParam("queryId") final Long queryId,
       @QueryParam("fragmentId") final Long fragmentId, @QueryParam("start") final Long start,
@@ -263,12 +252,12 @@ public final class LogResource {
     EntityTag eTag =
         new EntityTag(Integer.toString(Joiner.on('-').join("histogram", queryId, fragmentId, start, end, step,
             onlyRootOp).hashCode()));
-    ResponseBuilder response =
-        request.evaluatePreconditions(new DateTime().minus(MyriaConstants.PROFILING_CACHE_AGE).toDate(), eTag);
-    if (response != null) {
-      return response.build();
+
+    Object obj = checkAndAddCache(request, eTag);
+    if (obj instanceof Response) {
+      return (Response) obj;
     }
-    response = Response.ok().tag(eTag).lastModified(new Date());
+    ResponseBuilder response = (ResponseBuilder) obj;
 
     response.type(MediaType.TEXT_PLAIN);
 
@@ -288,5 +277,23 @@ public final class LogResource {
     server.startHistogramDataStream(queryId, fragmentId, start, end, step, onlyRootOp, writer);
 
     return response.build();
+  }
+
+  /**
+   * Checks whether the response was cached by the client (checking eTag) and whether it is not too old (checking last
+   * modified). Returns a {@link Response} if the content is cached and a {@link ResponseBuilder} if not. In the second
+   * case, the caller needs to add to the builder and then return it.
+   * 
+   * @param request the request
+   * @param eTag a unique identifier for the version of the resource to be cached
+   * @return {@link Response} if the content is cached and a {@link ResponseBuilder} otherwise
+   */
+  private Object checkAndAddCache(final Request request, final EntityTag eTag) {
+    ResponseBuilder response =
+        request.evaluatePreconditions(new DateTime().minus(MyriaConstants.PROFILING_CACHE_AGE).toDate(), eTag);
+    if (response != null) {
+      return response.build();
+    }
+    return Response.ok().tag(eTag).lastModified(new Date());
   }
 }
