@@ -177,6 +177,7 @@ public final class Query {
    * Set the time this query ended to now in ISO8601 format.
    */
   public void markSuccess() {
+    Verify.verify(currentSubQuery == null, "expect current subquery to be null when query ends");
     markEnd();
     synchronized (this) {
       status = Status.SUCCESS;
@@ -188,7 +189,6 @@ public final class Query {
    * Set the time this query ended to now in ISO8601 format.
    */
   private void markEnd() {
-    Verify.verify(currentSubQuery == null, "expect current subquery to be null when query ends");
     executionStats.markEnd();
   }
 
