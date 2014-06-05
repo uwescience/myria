@@ -155,6 +155,9 @@ public final class Query {
    * Set the time this query started to now in ISO8601 format.
    */
   public void markStart() {
+    synchronized (this) {
+      status = Status.RUNNING;
+    }
     executionStats.markStart();
   }
 
