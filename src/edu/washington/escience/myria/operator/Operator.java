@@ -95,7 +95,7 @@ public abstract class Operator implements Serializable {
    * A counter that tracks how many times {@link #nextReady()} has been called, thus helping to join the call and return
    * log entries that belong to the same call.
    */
-  private int traceId;
+  private volatile long traceId;
 
   /**
    * @return the profilingLogger
