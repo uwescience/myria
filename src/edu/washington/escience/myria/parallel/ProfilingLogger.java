@@ -19,7 +19,6 @@ import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.JdbcAccessMethod;
 import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * A logger for profiling data.
@@ -210,7 +209,7 @@ public class ProfilingLogger {
    * @throws DbException if insertion in the database fails
    */
   public synchronized void recordEvent(final Operator operator, final long numTuples, final String eventType,
-      final int traceId) throws DbException {
+      final long traceId) throws DbException {
 
     try {
       statementEvent.setLong(1, operator.getQueryId());
@@ -219,7 +218,7 @@ public class ProfilingLogger {
       statementEvent.setLong(4, getTime(operator));
       statementEvent.setLong(5, numTuples);
       statementEvent.setString(6, eventType);
-      statementEvent.setInt(7, traceId);
+      statementEvent.setLong(7, traceId);
 
       statementEvent.addBatch();
       batchSizeEvents++;
@@ -227,7 +226,7 @@ public class ProfilingLogger {
       throw new DbException(e);
     }
 
-    if (batchSizeEvents > TupleBatch.BATCH_SIZE) {
+    if (batchSizeEvents > MyriaConstants.PROFILING_LOGGER_BATCH_SIZE) {
       flushProfilingEventsBatch();
     }
   }
@@ -330,7 +329,7 @@ public class ProfilingLogger {
       throw new DbException(e);
     }
 
-    if (batchSizeSent > TupleBatch.BATCH_SIZE) {
+    if (batchSizeSent > MyriaConstants.PROFILING_LOGGER_BATCH_SIZE) {
       flushSentBatch();
     }
   }
