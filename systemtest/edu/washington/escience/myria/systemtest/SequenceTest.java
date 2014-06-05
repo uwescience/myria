@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.systemtest;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.net.HttpURLConnection;
 import java.util.HashMap;
@@ -64,6 +65,7 @@ import edu.washington.escience.myria.parallel.SubQuery;
 import edu.washington.escience.myria.parallel.SubQueryPlan;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.util.ErrorUtils;
 import edu.washington.escience.myria.util.JsonAPIUtils;
 
 public class SequenceTest extends SystemTestBase {
@@ -156,7 +158,17 @@ public class SequenceTest extends SystemTestBase {
     QueryFuture qf = server.submitQuery(encoding, all);
 
     /* Wait for query to finish, expecting an exception. */
-    qf.get();
+    try {
+      qf.get();
+    } catch (Exception e) {
+      /*
+       * Assert both 1) that the cause of the exception is in the stack trace and 2) that this message is visible via
+       * the API. See https://github.com/uwescience/myria/issues/542
+       */
+      assertTrue(ErrorUtils.getStackTrace(e).contains("Failure in init"));
+      assertTrue(server.getQueryStatus(qf.getQueryId()).message.contains("Failure in init"));
+      throw e;
+    }
   }
 
   @Test
