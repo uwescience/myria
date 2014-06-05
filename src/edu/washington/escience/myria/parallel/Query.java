@@ -4,6 +4,8 @@ import java.util.LinkedList;
 
 import javax.annotation.concurrent.GuardedBy;
 
+import org.slf4j.LoggerFactory;
+
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
@@ -14,11 +16,14 @@ import edu.washington.escience.myria.api.encoding.QueryConstruct;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
+import edu.washington.escience.myria.util.ErrorUtils;
 
 /**
  * Keeps track of all the state (statistics, subqueries, etc.) for a single Myria query.
  */
 public final class Query {
+  /** The logger for this class. */
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(Query.class);
   /** The id of this query. */
   private final long queryId;
   /** The id of the next subquery to be issued. */
@@ -168,11 +173,15 @@ public final class Query {
    */
   public void markFailed(final Throwable cause) {
     Preconditions.checkNotNull(cause, "cause");
-    markEnd();
     synchronized (this) {
+      if (status == Status.ERROR || status == Status.SUCCESS || status == Status.KILLED) {
+        LOGGER.warn("Ignoring markFailed(cause) because already have status {}, message {}", status, message, cause);
+        return;
+      }
       status = Status.ERROR;
     }
-    message = cause.getMessage();
+    markEnd();
+    message = ErrorUtils.getStackTrace(cause);
     future.setException(cause);
   }
 
