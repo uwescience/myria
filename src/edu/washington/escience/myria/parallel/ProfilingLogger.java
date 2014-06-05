@@ -210,7 +210,7 @@ public class ProfilingLogger {
    * @throws DbException if insertion in the database fails
    */
   public synchronized void recordEvent(final Operator operator, final long numTuples, final String eventType,
-      final int traceId) throws DbException {
+      final long traceId) throws DbException {
 
     try {
       statementEvent.setLong(1, operator.getQueryId());
@@ -219,7 +219,7 @@ public class ProfilingLogger {
       statementEvent.setLong(4, getTime(operator));
       statementEvent.setLong(5, numTuples);
       statementEvent.setString(6, eventType);
-      statementEvent.setInt(7, traceId);
+      statementEvent.setLong(7, traceId);
 
       statementEvent.addBatch();
       batchSizeEvents++;
