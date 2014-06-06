@@ -24,8 +24,9 @@ import edu.washington.escience.myria.storage.ReadableTable;
 public interface TupleWriter {
 
   /**
-   * Inform the TupleWriter of the column headers. In the standard case (CSV output, see {@link CsvTupleWriter}), they
-   * are written out directly. In some cases, they may be cached and output with the data (see {@link JsonTupleWriter}).
+   * Inform the {@link TupleWriter} of the column headers. In the standard case (CSV output, see {@link CsvTupleWriter}
+   * ), they are written out directly. In some cases, they may be cached and output with the data (see
+   * {@link JsonTupleWriter}).
    * 
    * @param columnNames the names of the columns.
    * @throws IOException if there is an error writing the tuples.
@@ -33,7 +34,7 @@ public interface TupleWriter {
   void writeColumnHeaders(List<String> columnNames) throws IOException;
 
   /**
-   * Provide a TupleWriter with tuples to serialize.
+   * Provide a {@link TupleWriter} with tuples to serialize.
    * 
    * @param tuples the batch of tuples to be serialized.
    * @throws IOException if there is an error writing the tuples.
@@ -41,11 +42,18 @@ public interface TupleWriter {
   void writeTuples(ReadableTable tuples) throws IOException;
 
   /**
-   * Inform the TupleWriter that no more tuples will come. It may close and flush an {@link java.io.OutputStream}, for
-   * example.
+   * Inform the {@link TupleWriter} that no more tuples will come. It may close and flush an
+   * {@link java.io.OutputStream}, for example.
    * 
    * @throws IOException if there is an error writing the tuples.
    */
   void done() throws IOException;
 
+  /**
+   * Called when the query filling in the {@link TupleWriter} has experienced an error. The {@link TupleWriter} should
+   * close the stream, preferably also informing the end-point of the error.
+   * 
+   * @throws IOException if there is an error manipulating the state.
+   */
+  void error() throws IOException;
 }

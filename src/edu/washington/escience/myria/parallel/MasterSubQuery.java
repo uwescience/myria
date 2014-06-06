@@ -103,7 +103,7 @@ public class MasterSubQuery implements LocalSubQuery {
                 queryExecutionFuture.setFailure(new QueryKilledException());
               } else {
                 DbException composedException =
-                    new DbException("Query #" + future.getLocalSubQuery().getSubQueryId() + " failed.");
+                    new DbException("Query #" + future.getLocalSubQuery().getSubQueryId() + " failed");
                 for (Entry<Integer, Throwable> workerIDCause : failedWorkerLocalSubQueries.entrySet()) {
                   int failedWorkerID = workerIDCause.getKey();
                   Throwable cause = workerIDCause.getValue();

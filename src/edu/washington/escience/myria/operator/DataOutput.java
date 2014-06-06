@@ -21,6 +21,8 @@ public final class DataOutput extends RootOperator {
   private static final long serialVersionUID = 1L;
   /** The class that will serialize the tuple batches. */
   private final TupleWriter tupleWriter;
+  /** Whether this object has finished. */
+  private boolean done = false;
 
   /**
    * Instantiate a new DataOutput operator, which will stream its tuples to the specified {@link TupleWriter}.
@@ -45,6 +47,7 @@ public final class DataOutput extends RootOperator {
     } catch (IOException e) {
       throw new DbException(e);
     }
+    done = true;
   }
 
   @Override
@@ -62,6 +65,13 @@ public final class DataOutput extends RootOperator {
       tupleWriter.writeColumnHeaders(getChild().getSchema().getColumnNames());
     } catch (IOException e) {
       throw new DbException(e);
+    }
+  }
+
+  @Override
+  protected void cleanup() throws IOException {
+    if (!done) {
+      tupleWriter.error();
     }
   }
 }
