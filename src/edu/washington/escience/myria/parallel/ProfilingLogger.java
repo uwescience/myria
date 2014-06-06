@@ -121,7 +121,7 @@ public class ProfilingLogger {
   protected void createTmpProfilingIndexes() throws DbException {
     final Schema schema = MyriaConstants.PROFILING_SCHEMA_TMP;
 
-    List<IndexRef> filterIndex = ImmutableList.of(IndexRef.of(schema, "queryId"));
+    List<IndexRef> filterIndex = ImmutableList.of(IndexRef.of(schema, "queryId"), IndexRef.of(schema, "eventType"));
 
     try {
       accessMethod.createIndexIfNotExists(MyriaConstants.PROFILING_RELATION_TMP, schema, filterIndex);
@@ -191,8 +191,8 @@ public class ProfilingLogger {
         "SELECT c.queryid, c.fragmentid, c.opid, c.nanotime as startTime, r.nanotime as endTime, r.numtuples", "FROM",
         MyriaConstants.PROFILING_RELATION_TMP.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), "c,",
         MyriaConstants.PROFILING_RELATION_TMP.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), "r", "WHERE",
-        "c.queryid = r.queryid AND c.opid = r.opid AND c.fragmentid = r.fragmentid AND c.traceid = r.traceid",
-        "AND r.eventtype = 'return' AND c.eventtype = 'call' AND c.queryid = ?", "ORDER  BY c.nanotime ASC;",
+        "c.opid = r.opid AND c.fragmentid = r.fragmentid AND c.traceid = r.traceid",
+        "AND r.eventtype = 'return' AND c.eventtype = 'call' AND c.queryid = r.queryid AND r.queryid = ?;",
         "DELETE FROM", MyriaConstants.PROFILING_RELATION_TMP.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL),
         "WHERE", "queryid = ?");
   }
@@ -252,7 +252,7 @@ public class ProfilingLogger {
   private void transformProfilingRelation(final long queryId) throws DbException {
     try {
       statementTransform.setLong(1, queryId); // for insert statement
-      statementTransform.setLong(2, queryId); // for delete statement
+      statementTransform.setLong(3, queryId); // for delete statement
       connection.setAutoCommit(false);
       statementTransform.executeUpdate();
       connection.commit();
