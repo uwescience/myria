@@ -4,8 +4,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelException;
@@ -37,10 +35,8 @@ public class ConditionCloseFuture implements ChannelFuture {
    * condition set lock.
    * */
   private final Object conditionSetLock = new Object();
-  /**
-   * The logger.
-   */
-  private static final Logger LOGGER = Logger.getLogger(ConditionCloseFuture.class.getName());
+  /** The logger for this class. */
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(ConditionCloseFuture.class);
   /**
    * If the condition is unsatisfied, treat the future as a failure.
    * */
@@ -85,7 +81,7 @@ public class ConditionCloseFuture implements ChannelFuture {
         try {
           listener.operationComplete(this);
         } catch (final Throwable t) {
-          LOGGER.log(Level.WARNING, "Exception occured when executing ChannelGroupFutureListener", t);
+          LOGGER.warn("Exception occured when executing ChannelGroupFutureListener", t);
         }
       }
     }
@@ -261,7 +257,7 @@ public class ConditionCloseFuture implements ChannelFuture {
           try {
             l.operationComplete(this);
           } catch (final Throwable t) {
-            LOGGER.log(Level.WARNING, "Exception occured when executing ChannelGroupFutureListener", t);
+            LOGGER.warn("Exception occured when executing ChannelGroupFutureListener", t);
           }
         }
       }

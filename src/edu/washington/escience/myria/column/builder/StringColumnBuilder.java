@@ -123,12 +123,11 @@ public final class StringColumnBuilder extends ColumnBuilder<String> {
   }
 
   @Override
-  public StringColumnBuilder replace(final int idx, final String value) throws IndexOutOfBoundsException {
+  public void replaceString(final String value, final int row) throws IndexOutOfBoundsException {
     Preconditions.checkState(!built, "No further changes are allowed after the builder has built the column.");
-    Preconditions.checkElementIndex(idx, numStrings);
+    Preconditions.checkElementIndex(row, numStrings);
     Objects.requireNonNull(value, "value");
-    data[idx] = value;
-    return this;
+    data[row] = value;
   }
 
   @Override

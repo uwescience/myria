@@ -25,7 +25,7 @@ import edu.washington.escience.myria.operator.Operator;
  */
 public class ProfilingLogger {
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(LocalFragment.class.getName());
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(LocalFragment.class);
 
   /** The connection to the database database. */
   private final JdbcAccessMethod accessMethod;

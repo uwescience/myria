@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.accessmethod;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.nio.file.Files;
@@ -101,6 +102,8 @@ public class SQLiteTest {
         long currentId = tb1.getLong(0, i);
         String currentName = tb1.getString(1, i);
         if (previousId != null) {
+          assertNotNull(previousId);
+          assertNotNull(previousName);
           assertTrue(previousId <= currentId);
           if (previousId == currentId) {
             assertTrue(previousName.compareTo(currentName) >= 0);

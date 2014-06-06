@@ -46,7 +46,7 @@ public class GlobalAvg extends UnaryOperator {
       DoubleColumnBuilder rc = new DoubleColumnBuilder();
       rc.expandAll();
       for (int idx = 0; idx < tb.numTuples(); ++idx) {
-        rc.replace(idx, inputColumns.get(sumIdx).getLong(idx) * 1.0 / inputColumns.get(countIdx).getLong(idx));
+        rc.replaceDouble(inputColumns.get(sumIdx).getLong(idx) * 1.0 / inputColumns.get(countIdx).getLong(idx), idx);
       }
 
       ImmutableList.Builder<Column<?>> newColumnsB = ImmutableList.builder();

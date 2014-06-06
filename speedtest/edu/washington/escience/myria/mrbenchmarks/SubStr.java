@@ -46,7 +46,7 @@ public class SubStr extends UnaryOperator {
       ImmutableList<Column<?>> source = tb.getDataColumns();
       for (int idx = 0; idx < tb.numTuples(); ++idx) {
         String subStr = source.get(substrColumnIdx).getString(idx).substring(fromCharIdx, endCharIdx);
-        builder.replace(idx, subStr);
+        builder.replaceString(subStr, idx);
       }
 
       StringColumn sc = builder.build();

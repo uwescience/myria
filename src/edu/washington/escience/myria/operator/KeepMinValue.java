@@ -32,7 +32,7 @@ public final class KeepMinValue extends StreamingState {
   /**
    * The logger for this class.
    * */
-  static final Logger LOGGER = LoggerFactory.getLogger(KeepMinValue.class.getName());
+  static final Logger LOGGER = LoggerFactory.getLogger(KeepMinValue.class);
 
   /**
    * Indices to unique tuples.

@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
@@ -158,6 +159,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
   /**
    * The workers on which the current operator is going to run, i.e. the operator partition.
    */
+  @Nonnull
   private final Set<Integer> runOnWorkers;
   /**
    * An operator is going to run on any single worker.
@@ -210,10 +212,11 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * @param workers2 worker set 2
    * @return compatible worker set.
    */
+  @Nullable
   private static Set<Integer> workerSetAlgebra(@Nonnull final Set<Integer> workers1,
       @Nonnull final Set<Integer> workers2) {
-    Preconditions.checkNotNull(workers1);
-    Preconditions.checkNotNull(workers2);
+    Preconditions.checkNotNull(workers1, "workers1");
+    Preconditions.checkNotNull(workers2, "workers2");
 
     if (workers1 == ANY_SINGLE_WORKER) {
       if (workers2 == ANY_SINGLE_WORKER || workers2 == NO_PREFERENCE) {
@@ -297,7 +300,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     parents = new HashSet<JsonQueryBaseBuilder>();
 
     Set<Integer> childrenWorkers = NO_PREFERENCE;
-    for (final JsonQueryBaseBuilder c : children) {
+    for (final JsonQueryBaseBuilder c : this.children) {
       childrenWorkers = workerSetAlgebra(childrenWorkers, c.runOnWorkers);
       if (childrenWorkers == null) {
         throw new IllegalArgumentException("Workers of a child are not compatible with other children. Current op: "
@@ -305,15 +308,16 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
       }
     }
     if (compatibleWithChildrenWorkers) {
-      runOnWorkers = workerSetAlgebra(childrenWorkers, runningWorkers);
-      if (runOnWorkers == null) {
-        String[] childrenNames = new String[children.length];
-        for (int i = 0; i < children.length; i++) {
-          childrenNames[i] = getOpName(children[i]);
+      Set<Integer> workers = workerSetAlgebra(childrenWorkers, runningWorkers);
+      if (workers == null) {
+        String[] childrenNames = new String[this.children.length];
+        for (int i = 0; i < this.children.length; i++) {
+          childrenNames[i] = getOpName(this.children[i]);
         }
         throw new IllegalArgumentException("Running workers are not compatible with children workers. Current op: "
             + getOpName(this) + ", children: " + StringUtils.join(childrenNames, ','));
       }
+      runOnWorkers = workers;
     } else {
       runOnWorkers = runningWorkers;
     }

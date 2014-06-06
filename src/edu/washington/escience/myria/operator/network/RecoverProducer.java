@@ -21,7 +21,7 @@ public final class RecoverProducer extends CollectProducer {
   private static final long serialVersionUID = 1L;
 
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(RecoverProducer.class.getName());
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(RecoverProducer.class);
 
   /** the original producer. */
   private final Producer oriProducer;

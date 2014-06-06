@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.storage;
 
+import javax.annotation.Nonnull;
+
 import org.joda.time.DateTime;
 
 /**
@@ -18,6 +20,7 @@ public interface ReadableTable extends TupleTable {
    * @param row the row of the desired value.
    * @return the value in the specified column and row.
    */
+  @Nonnull
   DateTime getDateTime(final int column, final int row);
 
   /**
@@ -53,6 +56,7 @@ public interface ReadableTable extends TupleTable {
    * @param row the row of the desired value.
    * @return the value in the specified column and row.
    */
+  @Nonnull
   Object getObject(final int column, final int row);
 
   /**
@@ -60,11 +64,13 @@ public interface ReadableTable extends TupleTable {
    * @param row the row of the desired value.
    * @return the value in the specified column and row.
    */
+  @Nonnull
   String getString(final int column, final int row);
 
   /**
    * @param column the index of the column to be returned.
    * @return a {@link ReadableColumn} representation of the specified column of this table.
    */
+  @Nonnull
   ReadableColumn asColumn(final int column);
 }

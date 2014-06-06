@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.storage;
 
+import javax.annotation.Nonnull;
+
 import org.joda.time.DateTime;
 
 /**
@@ -22,6 +24,7 @@ public interface ReadableColumn extends ColumnInterface {
    * @return the element at the specified row in this column.
    * @throws UnsupportedOperationException if this column does not support this type.
    */
+  @Nonnull
   DateTime getDateTime(final int row);
 
   /**
@@ -66,6 +69,7 @@ public interface ReadableColumn extends ColumnInterface {
    * @param row row of element to return.
    * @return the element at the specified row in this column.
    */
+  @Nonnull
   Object getObject(final int row);
 
   /**
@@ -75,5 +79,6 @@ public interface ReadableColumn extends ColumnInterface {
    * @return the element at the specified row in this column.
    * @throws UnsupportedOperationException if this column does not support this type.
    */
+  @Nonnull
   String getString(final int row);
 }

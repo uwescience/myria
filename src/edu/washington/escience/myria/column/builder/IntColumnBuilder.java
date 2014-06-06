@@ -112,24 +112,10 @@ public final class IntColumnBuilder extends ColumnBuilder<Integer> {
   }
 
   @Override
-  @Deprecated
-  public IntColumnBuilder replace(final int idx, final Integer value) throws IndexOutOfBoundsException {
-    return replace(idx, value.intValue());
-  }
-
-  /**
-   * Replace the specified element.
-   * 
-   * @param value element to be inserted.
-   * @param idx where to insert the element.
-   * @return this column builder.
-   * @throws IndexOutOfBoundsException if the idx exceeds the currently valid indices, i.e. the currently built size.
-   */
-  public IntColumnBuilder replace(final int idx, final int value) throws IndexOutOfBoundsException {
+  public void replaceInt(final int value, final int row) throws IndexOutOfBoundsException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    Preconditions.checkElementIndex(idx, data.position());
-    data.put(idx, value);
-    return this;
+    Preconditions.checkElementIndex(row, data.position());
+    data.put(row, value);
   }
 
   @Override
