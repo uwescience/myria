@@ -121,7 +121,9 @@ public class ProfilingLogger {
   protected void createTmpProfilingIndexes() throws DbException {
     final Schema schema = MyriaConstants.PROFILING_SCHEMA_TMP;
 
-    List<IndexRef> filterIndex = ImmutableList.of(IndexRef.of(schema, "queryId"), IndexRef.of(schema, "eventType"));
+    List<IndexRef> filterIndex =
+        ImmutableList.of(IndexRef.of(schema, "queryId"), IndexRef.of(schema, "eventType"), IndexRef.of(schema,
+            "fragmentId"), IndexRef.of(schema, "opId"), IndexRef.of(schema, "traceId"));
 
     try {
       accessMethod.createIndexIfNotExists(MyriaConstants.PROFILING_RELATION_TMP, schema, filterIndex);
@@ -186,15 +188,16 @@ public class ProfilingLogger {
    * @return the insert into statement
    */
   private String getTransformProfilingDataStatement() {
-    return Joiner.on(' ').join("INSERT INTO",
-        MyriaConstants.PROFILING_RELATION.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL),
-        "SELECT c.queryid, c.fragmentid, c.opid, c.nanotime as startTime, r.nanotime as endTime, r.numtuples", "FROM",
-        MyriaConstants.PROFILING_RELATION_TMP.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), "c,",
-        MyriaConstants.PROFILING_RELATION_TMP.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), "r", "WHERE",
-        "c.opid = r.opid AND c.fragmentid = r.fragmentid AND c.traceid = r.traceid",
-        "AND r.eventtype = 'return' AND c.eventtype = 'call' AND c.queryid = r.queryid AND r.queryid = ?;",
-        "DELETE FROM", MyriaConstants.PROFILING_RELATION_TMP.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL),
-        "WHERE", "queryid = ?");
+    String tmpRelation = MyriaConstants.PROFILING_RELATION_TMP.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL);
+    return Joiner.on(' ').join(
+        "INSERT INTO", MyriaConstants.PROFILING_RELATION.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL),
+        "SELECT c.queryid, c.fragmentid, c.opid, c.nanotime as startTime, r.nanotime as endTime, r.numtuples",
+        "FROM", tmpRelation, "c,",
+        tmpRelation, "r",
+        "WHERE",
+        Joiner.on(" AND ").join("c.queryid=r.queryid", "c.fragmentid=r.fragmentid", "c.opid=r.opid", "c.traceid=r.traceid",
+            "r.eventtype='return'", "c.eventtype = 'call'", "r.queryid=?"), ";",
+        "DELETE FROM", tmpRelation, "WHERE queryid = ?");
   }
 
   /**
@@ -252,7 +255,7 @@ public class ProfilingLogger {
   private void transformProfilingRelation(final long queryId) throws DbException {
     try {
       statementTransform.setLong(1, queryId); // for insert statement
-      statementTransform.setLong(3, queryId); // for delete statement
+      statementTransform.setLong(2, queryId); // for delete statement
       connection.setAutoCommit(false);
       statementTransform.executeUpdate();
       connection.commit();
