@@ -3,7 +3,7 @@
         {
             "operators": [
                 {
-                    "opName": "SCAN1",
+                    "opId": "SCAN1",
                     "opType": "TableScan",
                     "relationKey": {
                         "programName": "LSST_useCase",
@@ -20,7 +20,7 @@
                         ],
                         "type": "MultiFieldHash"
                     },
-                    "opName": "SP11",
+                    "opId": "SP11",
                     "opType": "ShuffleProducer"
                 }
             ],
@@ -33,7 +33,7 @@
         {
             "operators": [
                 {
-                    "opName": "SCAN2",
+                    "opId": "SCAN2",
                     "opType": "TableScan",
                     "relationKey": {
                         "programName": "LSST_useCase",
@@ -50,7 +50,7 @@
                         ],
                         "type": "MultiFieldHash"
                     },
-                    "opName": "SP12",
+                    "opId": "SP12",
                     "opType": "ShuffleProducer"
                 }
             ],
@@ -64,7 +64,7 @@
             "operators": [
                 {
                     "argOperatorId": "SP11",
-                    "opName": "SC1",
+                    "opId": "SC1",
                     "opType": "ShuffleConsumer"
                 },
                 {
@@ -82,12 +82,12 @@
                         "0",
                         "1"
                     ],
-                    "opName": "MULTI_GRP_AGG",
+                    "opId": "MULTI_GRP_AGG",
                     "opType": "MultiGroupByAggregate"
                 },
                 {
                     "argOperatorId": "SP12",
-                    "opName": "SC3",
+                    "opId": "SC3",
                     "opType": "ShuffleConsumer"
                 },
                 {
@@ -111,7 +111,7 @@
                         "2",
                         "3"
                     ],
-                    "opName": "JOIN",
+                    "opId": "JOIN",
                     "opType": "SymmetricHashJoin"
                 },
                 {
@@ -124,12 +124,12 @@
                         ],
                         "type": "WithinSumRangePredicate"
                     },
-                    "opName": "FILTER",
+                    "opId": "FILTER",
                     "opType": "Filter"
                 },
                 {
                     "argChild": "FILTER",
-                    "opName": "CP1",
+                    "opId": "CP1",
                     "opType": "CollectProducer"
                 }
             ],
@@ -143,12 +143,12 @@
             "operators": [
                 {
                     "argOperatorId": "CP1",
-                    "opName": "CC1",
+                    "opId": "CC1",
                     "opType": "CollectConsumer"
                 },
                 {
                     "argChild": "CC1",
-                    "opName": "INSERT",
+                    "opId": "INSERT",
                     "opType": "DbInsert",
                     "relationKey": {
                         "programName": "LSST_useCase",

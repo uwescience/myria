@@ -2,7 +2,7 @@ package edu.washington.escience.myria.api.encoding;
 
 import java.util.List;
 
-import edu.washington.escience.myria.parallel.EOSController;
+import edu.washington.escience.myria.operator.network.EOSController;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.util.MyriaUtils;

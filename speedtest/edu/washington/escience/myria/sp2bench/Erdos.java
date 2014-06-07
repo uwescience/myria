@@ -11,7 +11,8 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.operator.ColumnSelect;
+import edu.washington.escience.myria.operator.Apply;
+import edu.washington.escience.myria.operator.Applys;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.Operator;
@@ -21,14 +22,14 @@ import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.StreamingStateWrapper;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
-import edu.washington.escience.myria.parallel.CollectConsumer;
-import edu.washington.escience.myria.parallel.CollectProducer;
-import edu.washington.escience.myria.parallel.Consumer;
+import edu.washington.escience.myria.operator.network.CollectConsumer;
+import edu.washington.escience.myria.operator.network.CollectProducer;
+import edu.washington.escience.myria.operator.network.Consumer;
+import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
+import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
+import edu.washington.escience.myria.operator.network.Producer;
+import edu.washington.escience.myria.operator.network.partition.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
-import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
-import edu.washington.escience.myria.parallel.GenericShuffleProducer;
-import edu.washington.escience.myria.parallel.Producer;
-import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 public class Erdos {
@@ -90,7 +91,7 @@ public class Erdos {
             new int[] { 0 });
     // schema: (pubId long, pubId long, authorId long)
 
-    final ColumnSelect projCoAuthorID = new ColumnSelect(new int[] { 2 }, joinCoAuthors);
+    final Apply projCoAuthorID = Applys.columnSelect(joinCoAuthors, 2);
     // schema: (authorId long)
     final StreamingStateWrapper localDECoAuthorID = new StreamingStateWrapper(projCoAuthorID, new DupElim());
     // schema: (authorId long)
@@ -132,11 +133,10 @@ public class Erdos {
         new SymmetricHashJoin(erdosNMinus1, allPubsShuffleByAuthorC, new int[] { 0 }, new int[] { 1 });
     // schema: (authorId long, pubId long, authorId long)
 
-    final ColumnSelect projCoAuthorPubsID = new ColumnSelect(new int[] { 1 }, joinCoAuthorPubs);
+    final Apply projCoAuthorPubsID = Applys.columnSelect(joinCoAuthorPubs, 1);
     // schema: (pubId long)
 
-    final StreamingStateWrapper coAuthorPubsLocalDE =
-        new StreamingStateWrapper(projCoAuthorPubsID, new DupElim());
+    final StreamingStateWrapper coAuthorPubsLocalDE = new StreamingStateWrapper(projCoAuthorPubsID, new DupElim());
     // schema: (pubId long)
 
     ExchangePairID coAuthorPubsShuffleID = ExchangePairID.newID();
@@ -146,8 +146,7 @@ public class Erdos {
         new GenericShuffleConsumer(coAuthorPubsShuffleP.getSchema(), coAuthorPubsShuffleID, allWorkers);
     // schema: (pubId long)
 
-    final StreamingStateWrapper coAuthorPubsGlobalDE =
-        new StreamingStateWrapper(coAuthorPubsShuffleC, new DupElim());
+    final StreamingStateWrapper coAuthorPubsGlobalDE = new StreamingStateWrapper(coAuthorPubsShuffleC, new DupElim());
     // schema: (pubId long)
 
     final DbQueryScan allPubsAuthorNames = new DbQueryScan(//
@@ -171,11 +170,10 @@ public class Erdos {
             new int[] { 0 }, new int[] { 0 });
     // schema: (pubId long, pubId long, authorId long)
 
-    final ColumnSelect projCoCoAuthorName = new ColumnSelect(new int[] { 2 }, joinCoCoAuthorPubs);
+    final Apply projCoCoAuthorName = Applys.columnSelect(joinCoCoAuthorPubs, 2);
     // schema: (authorId long)
 
-    final StreamingStateWrapper coCoAuthorNameLocalDE =
-        new StreamingStateWrapper(projCoCoAuthorName, new DupElim());
+    final StreamingStateWrapper coCoAuthorNameLocalDE = new StreamingStateWrapper(projCoCoAuthorName, new DupElim());
     // schema: (authorId long)
 
     ExchangePairID coCoAuthorNameShuffleID = ExchangePairID.newID();
@@ -199,8 +197,7 @@ public class Erdos {
     return allNames;
   }
 
-  public static StreamingStateWrapper erdosN(int n, int[] allWorkers, ArrayList<Producer> producers)
-      throws DbException {
+  public static StreamingStateWrapper erdosN(int n, int[] allWorkers, ArrayList<Producer> producers) throws DbException {
     StreamingStateWrapper erdos1 = erdosOne(allWorkers, producers);
     if (n <= 1) {
       return erdos1;

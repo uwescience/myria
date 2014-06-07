@@ -15,10 +15,10 @@ import edu.washington.escience.myria.operator.Operator;
 public abstract class UnaryOperatorEncoding<T extends Operator> extends OperatorEncoding<T> {
 
   @Required
-  public String argChild;
+  public Integer argChild;
 
   @Override
-  public final void connect(Operator current, Map<String, Operator> operators) {
+  public final void connect(Operator current, Map<Integer, Operator> operators) {
     current.setChildren(new Operator[] { operators.get(argChild) });
   }
 

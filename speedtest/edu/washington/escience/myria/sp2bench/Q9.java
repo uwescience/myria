@@ -8,7 +8,8 @@ import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.operator.ColumnSelect;
+import edu.washington.escience.myria.operator.Apply;
+import edu.washington.escience.myria.operator.Applys;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.Operator;
@@ -18,14 +19,14 @@ import edu.washington.escience.myria.operator.StreamingStateWrapper;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.operator.UnionAll;
-import edu.washington.escience.myria.parallel.CollectConsumer;
-import edu.washington.escience.myria.parallel.CollectProducer;
+import edu.washington.escience.myria.operator.network.CollectConsumer;
+import edu.washington.escience.myria.operator.network.CollectProducer;
+import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
+import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
+import edu.washington.escience.myria.operator.network.LocalMultiwayConsumer;
+import edu.washington.escience.myria.operator.network.LocalMultiwayProducer;
+import edu.washington.escience.myria.operator.network.partition.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
-import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
-import edu.washington.escience.myria.parallel.GenericShuffleProducer;
-import edu.washington.escience.myria.parallel.LocalMultiwayConsumer;
-import edu.washington.escience.myria.parallel.LocalMultiwayProducer;
-import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 public class Q9 implements QueryPlanGenerator {
@@ -90,14 +91,14 @@ public class Q9 implements QueryPlanGenerator {
         new SymmetricHashJoin(multiPersonInConsumer, multiTriplesInConsumer, new int[] { 0 }, new int[] { 2 });
     // schema: (personID long, subject long, predicateName String, personID long)
 
-    final ColumnSelect projInPredicates = new ColumnSelect(new int[] { 2 }, joinPersonsTriplesIn);
+    final Apply projInPredicates = Applys.columnSelect(joinPersonsTriplesIn, 2);
     // schema: (predicateName string)
 
     final SymmetricHashJoin joinPersonsTriplesOut =
         new SymmetricHashJoin(multiPersonOutConsumer, multiTriplesOutConsumer, new int[] { 0 }, new int[] { 0 });
     // schema: (personID long, personID long, predicateName String, object long)
 
-    final ColumnSelect projOutPredicates = new ColumnSelect(new int[] { 2 }, joinPersonsTriplesOut);
+    final Apply projOutPredicates = Applys.columnSelect(joinPersonsTriplesOut, 2);
     // schema: (predicateName String)
 
     final UnionAll union = new UnionAll(new Operator[] { projInPredicates, projOutPredicates });

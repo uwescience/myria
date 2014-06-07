@@ -6,7 +6,6 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.parallel.QueryExecutionMode;
-import edu.washington.escience.myria.parallel.TaskResourceManager;
 import edu.washington.escience.myria.storage.MutableTupleBuffer;
 import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.storage.TupleBatch;
@@ -109,7 +108,8 @@ public final class SymmetricHashJoin extends BinaryOperator {
 
     @Override
     public boolean execute(final int index) {
-      if (TupleUtils.equalSubRows(inputTB, row, inputCmpColumns, joinAgainstHashTable, index, joinAgainstCmpColumns)) {
+      if (TupleUtils.tupleEquals(inputTB, inputCmpColumns, row, joinAgainstHashTable, joinAgainstCmpColumns, index)) {
+
         addToAns(inputTB, row, joinAgainstHashTable, index, fromLeft);
       }
       return true;
@@ -145,7 +145,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
 
     @Override
     public boolean execute(final int index) {
-      if (TupleUtils.equalSubRows(inputTB, row, keyColumns, hashTable, index, keyColumns)) {
+      if (TupleUtils.tupleEquals(inputTB, keyColumns, row, hashTable, keyColumns, index)) {
         replaced = true;
         List<Column<?>> columns = inputTB.getDataColumns();
         for (int j = 0; j < inputTB.numColumns(); ++j) {
@@ -280,10 +280,10 @@ public final class SymmetricHashJoin extends BinaryOperator {
     } else {
       this.outputColumns = null;
     }
-    leftCompareIndx = MyriaArrayUtils.checkSet(compareIndx1);
-    rightCompareIndx = MyriaArrayUtils.checkSet(compareIndx2);
-    leftAnswerColumns = MyriaArrayUtils.checkSet(answerColumns1);
-    rightAnswerColumns = MyriaArrayUtils.checkSet(answerColumns2);
+    leftCompareIndx = MyriaArrayUtils.warnIfNotSet(compareIndx1);
+    rightCompareIndx = MyriaArrayUtils.warnIfNotSet(compareIndx2);
+    leftAnswerColumns = MyriaArrayUtils.warnIfNotSet(answerColumns1);
+    rightAnswerColumns = MyriaArrayUtils.warnIfNotSet(answerColumns2);
 
   }
 
@@ -322,19 +322,30 @@ public final class SymmetricHashJoin extends BinaryOperator {
 
   @Override
   protected Schema generateSchema() {
-    final Operator left = getLeft();
-    final Operator right = getRight();
+    final Schema leftSchema = getLeft().getSchema();
+    final Schema rightSchema = getRight().getSchema();
     ImmutableList.Builder<Type> types = ImmutableList.builder();
     ImmutableList.Builder<String> names = ImmutableList.builder();
 
+    /* Assert that the compare index types are the same. */
+    for (int i = 0; i < rightCompareIndx.length; ++i) {
+      int leftIndex = leftCompareIndx[i];
+      int rightIndex = rightCompareIndx[i];
+      Type leftType = leftSchema.getColumnType(leftIndex);
+      Type rightType = rightSchema.getColumnType(rightIndex);
+      Preconditions.checkState(leftType == rightType,
+          "column types do not match for join at index %s: left column type %s [%s] != right column type %s [%s]", i,
+          leftIndex, leftType, rightIndex, rightType);
+    }
+
     for (int i : leftAnswerColumns) {
-      types.add(left.getSchema().getColumnType(i));
-      names.add(left.getSchema().getColumnName(i));
+      types.add(leftSchema.getColumnType(i));
+      names.add(leftSchema.getColumnName(i));
     }
 
     for (int i : rightAnswerColumns) {
-      types.add(right.getSchema().getColumnType(i));
-      names.add(right.getSchema().getColumnName(i));
+      types.add(rightSchema.getColumnType(i));
+      names.add(rightSchema.getColumnName(i));
     }
 
     if (outputColumns != null) {
@@ -598,8 +609,8 @@ public final class SymmetricHashJoin extends BinaryOperator {
 
     ans = new TupleBatchBuffer(getSchema());
 
-    TaskResourceManager qem = (TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
-    nonBlocking = qem.getExecutionMode() == QueryExecutionMode.NON_BLOCKING;
+    nonBlocking =
+        (QueryExecutionMode) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE) == QueryExecutionMode.NON_BLOCKING;
     doJoin = new JoinProcedure();
     doReplace = new ReplaceProcedure();
   }

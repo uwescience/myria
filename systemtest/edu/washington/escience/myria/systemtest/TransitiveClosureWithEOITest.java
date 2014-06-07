@@ -13,7 +13,8 @@ import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.operator.ColumnSelect;
+import edu.washington.escience.myria.operator.Apply;
+import edu.washington.escience.myria.operator.Applys;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.IDBController;
@@ -24,17 +25,17 @@ import edu.washington.escience.myria.operator.StreamingStateWrapper;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.operator.UnionAll;
-import edu.washington.escience.myria.parallel.CollectConsumer;
-import edu.washington.escience.myria.parallel.CollectProducer;
-import edu.washington.escience.myria.parallel.Consumer;
-import edu.washington.escience.myria.parallel.EOSController;
+import edu.washington.escience.myria.operator.network.CollectConsumer;
+import edu.washington.escience.myria.operator.network.CollectProducer;
+import edu.washington.escience.myria.operator.network.Consumer;
+import edu.washington.escience.myria.operator.network.EOSController;
+import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
+import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
+import edu.washington.escience.myria.operator.network.LocalMultiwayConsumer;
+import edu.washington.escience.myria.operator.network.LocalMultiwayProducer;
+import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
+import edu.washington.escience.myria.operator.network.partition.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
-import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
-import edu.washington.escience.myria.parallel.GenericShuffleProducer;
-import edu.washington.escience.myria.parallel.LocalMultiwayConsumer;
-import edu.washington.escience.myria.parallel.LocalMultiwayProducer;
-import edu.washington.escience.myria.parallel.PartitionFunction;
-import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestUtils;
@@ -214,7 +215,7 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
     final SinkRoot serverPlan = new SinkRoot(queueStore);
 
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    server.submitQueryPlan(serverPlan, workerPlans).get();
     TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
     while (!receivedTupleBatches.isEmpty()) {
       tb = receivedTupleBatches.poll();
@@ -304,7 +305,7 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
 
     final List<String> joinOutputColumns = ImmutableList.of("follower1", "followee1", "follower2", "followee2");
     final SymmetricHashJoin join = new SymmetricHashJoin(joinOutputColumns, sc1, sc2, new int[] { 0 }, new int[] { 1 });
-    final ColumnSelect proj = new ColumnSelect(new int[] { 2, 1 }, join);
+    final Apply proj = Applys.columnSelect(join, 2, 1);
     ExchangePairID beforeDE = ExchangePairID.newID();
 
     final GenericShuffleProducer sp3 = new GenericShuffleProducer(proj, beforeDE, new int[] { workerIDs[0] }, pf0);
@@ -325,7 +326,7 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
     final SinkRoot serverPlan = new SinkRoot(queueStore);
 
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    server.submitQueryPlan(serverPlan, workerPlans).get();
     TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
     TupleBatch tb = null;
     while (!receivedTupleBatches.isEmpty()) {

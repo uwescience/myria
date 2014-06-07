@@ -3,6 +3,8 @@ package edu.washington.escience.myria.operator;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -10,10 +12,11 @@ import com.google.common.collect.ImmutableMap;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.parallel.LocalFragment;
+import edu.washington.escience.myria.parallel.LocalFragmentResourceManager;
+import edu.washington.escience.myria.parallel.LocalSubQuery;
 import edu.washington.escience.myria.parallel.ProfilingLogger;
-import edu.washington.escience.myria.parallel.QueryPartition;
-import edu.washington.escience.myria.parallel.QuerySubTreeTask;
-import edu.washington.escience.myria.parallel.TaskResourceManager;
+import edu.washington.escience.myria.parallel.WorkerSubQuery;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
@@ -31,7 +34,7 @@ public abstract class Operator implements Serializable {
 
   /**
    * logger for this class.
-   * */
+   */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Operator.class);
 
   /** Required for Java serialization. */
@@ -39,12 +42,17 @@ public abstract class Operator implements Serializable {
 
   /**
    * the name of the operator from json queries (or set from hand-constructed query plans).
-   * */
+   */
   private String opName = "";
 
   /**
+   * The unique operator id.
+   */
+  private Integer opId;
+
+  /**
    * A bit denoting whether the operator is open (initialized).
-   * */
+   */
   private boolean open = false;
 
   /**
@@ -54,12 +62,12 @@ public abstract class Operator implements Serializable {
 
   /**
    * EOS. Initially set it as true;
-   * */
+   */
   private volatile boolean eos = true;
 
   /**
    * End of iteration.
-   * */
+   */
   private boolean eoi = false;
 
   /**
@@ -85,6 +93,12 @@ public abstract class Operator implements Serializable {
   private Boolean profilingMode;
 
   /**
+   * A counter that tracks how many times {@link #nextReady()} has been called, thus helping to join the call and return
+   * log entries that belong to the same call.
+   */
+  private final AtomicLong traceId = new AtomicLong();
+
+  /**
    * @return the profilingLogger
    */
   public ProfilingLogger getProfilingLogger() {
@@ -96,49 +110,51 @@ public abstract class Operator implements Serializable {
    * @return return query id.
    */
   public long getQueryId() {
-    return ((TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER)).getOwnerTask()
-        .getOwnerQuery().getQueryID();
+    return ((LocalFragmentResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER))
+        .getFragment().getLocalSubQuery().getSubQueryId().getQueryId();
   }
 
   /**
-   * @return worker/master query partition.
+   * @return the executing {@link LocalSubQuery} that this {@link Operator} is part of.
    */
-  public final QueryPartition getQueryPartition() {
-    QuerySubTreeTask qstt = getSubTreeTask();
+  public final LocalSubQuery getLocalSubQuery() {
+    LocalFragment qstt = getFragment();
     if (qstt == null) {
       return null;
     } else {
-      return qstt.getOwnerQuery();
+      return qstt.getLocalSubQuery();
     }
   }
 
   /**
-   * @return query subtree task
+   * @return the executing {@link LocalFragment} that this {@link Operator} is part of.
    */
-  public QuerySubTreeTask getSubTreeTask() {
+  public LocalFragment getFragment() {
     if (execEnvVars == null) {
       return null;
     } else {
-      return ((TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER)).getOwnerTask();
+      return ((LocalFragmentResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER))
+          .getFragment();
     }
   }
 
   /**
    * fragment id of this operator.
    */
-  private long fragmentId;
+  private Integer fragmentId;
 
   /**
    * @return fragment Id.
    */
-  public long getFragmentId() {
+  public int getFragmentId() {
+    Objects.requireNonNull(fragmentId, "fragmentId");
     return fragmentId;
   }
 
   /**
    * @param fragmentId fragment Id.
    */
-  public void setFragmentId(final long fragmentId) {
+  public void setFragmentId(final int fragmentId) {
     this.fragmentId = fragmentId;
   }
 
@@ -152,16 +168,16 @@ public abstract class Operator implements Serializable {
     }
 
     if (profilingMode == null) {
-      TaskResourceManager trm =
-          (TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
-      if (trm == null) {
+      LocalFragmentResourceManager lfrm =
+          (LocalFragmentResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER);
+      if (lfrm == null) {
         return false;
       }
-      QuerySubTreeTask task = trm.getOwnerTask();
-      if (task == null) {
+      LocalFragment fragment = lfrm.getFragment();
+      if (fragment == null) {
         return false;
       }
-      profilingMode = task.getOwnerQuery().isProfilingMode();
+      profilingMode = fragment.getLocalSubQuery().isProfilingMode();
     }
     return profilingMode;
   }
@@ -215,9 +231,6 @@ public abstract class Operator implements Serializable {
         throw (DbException) errors;
       }
     }
-    if (isProfilingMode()) {
-      profilingLogger.flush();
-    }
   }
 
   /**
@@ -227,14 +240,14 @@ public abstract class Operator implements Serializable {
    * 
    * @return if the Operator is EOS
    * 
-   * */
+   */
   public final boolean eos() {
     return eos;
   }
 
   /**
    * @return if the operator received an EOI.
-   * */
+   */
   public final boolean eoi() {
     return eoi;
   }
@@ -248,7 +261,7 @@ public abstract class Operator implements Serializable {
 
   /**
    * process EOS and EOI logic.
-   * */
+   */
   protected void checkEOSAndEOI() {
     // this is the implementation for ordinary operators, e.g. join, project.
     // some operators have their own logics, e.g. LeafOperator, IDBController.
@@ -298,7 +311,7 @@ public abstract class Operator implements Serializable {
    * 
    * @return if currently there's output for pulling.
    * 
-   * */
+   */
   public final TupleBatch nextReady() throws DbException {
     if (!open) {
       throw new DbException("Operator not yet open");
@@ -313,7 +326,9 @@ public abstract class Operator implements Serializable {
     }
 
     if (isProfilingMode()) {
-      profilingLogger.recordEvent(this, -1, "call");
+      // use trace id to track corresponding events
+      long trace = traceId.incrementAndGet();
+      profilingLogger.recordEvent(this, -1, "call", trace);
     }
 
     TupleBatch result = null;
@@ -332,10 +347,7 @@ public abstract class Operator implements Serializable {
       if (result != null) {
         numberOfTupleReturned = result.numTuples();
       }
-      profilingLogger.recordEvent(this, numberOfTupleReturned, "return");
-      if (eos()) {
-        profilingLogger.recordEvent(this, numberOfTupleReturned, "eos");
-      }
+      profilingLogger.recordEvent(this, numberOfTupleReturned, "return", traceId.get());
     }
     if (result == null) {
       checkEOSAndEOI();
@@ -348,12 +360,12 @@ public abstract class Operator implements Serializable {
 
   /**
    * A simple statistic. The number of output tuples generated by this Operator.
-   * */
+   */
   private long numOutputTuples;
 
   /**
    * A simple statistic. The number of output TBs generated by this Operator.
-   * */
+   */
   private long numOutputTBs;
 
   /**
@@ -362,7 +374,7 @@ public abstract class Operator implements Serializable {
    * @param execEnvVars the environment variables of the execution unit.
    * 
    * @throws DbException if any error occurs
-   * */
+   */
   public final void open(final Map<String, Object> execEnvVars) throws DbException {
     // open the children first
     if (open) {
@@ -397,7 +409,8 @@ public abstract class Operator implements Serializable {
     open = true;
 
     if (isProfilingMode()) {
-      profilingLogger = ProfilingLogger.getLogger(this.execEnvVars);
+      final WorkerSubQuery workerSubQuery = (WorkerSubQuery) getLocalSubQuery();
+      profilingLogger = workerSubQuery.getWorker().getProfilingLogger();
     }
   }
 
@@ -410,7 +423,7 @@ public abstract class Operator implements Serializable {
     this.eoi = eoi;
     if (isProfilingMode()) {
       try {
-        profilingLogger.recordEvent(this, -1, "eoi");
+        profilingLogger.recordEvent(this, -1, "eoi", traceId.get());
       } catch (Exception e) {
         LOGGER.error("Failed to write profiling data:", e);
       }
@@ -437,7 +450,7 @@ public abstract class Operator implements Serializable {
    * Do the clean up, release resources.
    * 
    * @throws Exception if any error occurs
-   * */
+   */
   protected void cleanup() throws Exception {
   };
 
@@ -449,7 +462,7 @@ public abstract class Operator implements Serializable {
    * @throws Exception if any error occurs
    * 
    * @return next ready output TupleBatch. null if either EOS or no output TupleBatch can be generated currently.
-   * */
+   */
   protected abstract TupleBatch fetchNextReady() throws Exception;
 
   /**
@@ -494,12 +507,12 @@ public abstract class Operator implements Serializable {
 
   /**
    * Store if the children have meet EOI.
-   * */
+   */
   private boolean[] childrenEOI = null;
 
   /**
    * @return children EOI status.
-   * */
+   */
   protected final boolean[] getChildrenEOI() {
     if (childrenEOI == null) {
       // getChildren() == null indicates a leaf operator, which has its own checkEOSAndEOI()
@@ -510,7 +523,7 @@ public abstract class Operator implements Serializable {
 
   /**
    * For use in leaf operators.
-   * */
+   */
   protected static final Operator[] NO_CHILDREN = new Operator[] {};
 
   /**
@@ -520,6 +533,13 @@ public abstract class Operator implements Serializable {
    */
   public void setOpName(final String name) {
     opName = name;
+  }
+
+  /**
+   * @param opId the opId to set
+   */
+  public void setOpId(final int opId) {
+    this.opId = opId;
   }
 
   /**
@@ -536,5 +556,15 @@ public abstract class Operator implements Serializable {
    */
   protected int getNodeID() {
     return (Integer) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_NODE_ID);
+  }
+
+  /**
+   * Get the unique operator id.
+   * 
+   * @return the op id
+   */
+  public int getOpId() {
+    Objects.requireNonNull(opId);
+    return opId;
   }
 }

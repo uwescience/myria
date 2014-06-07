@@ -8,7 +8,8 @@ import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.operator.ColumnSelect;
+import edu.washington.escience.myria.operator.Apply;
+import edu.washington.escience.myria.operator.Applys;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.RootOperator;
@@ -18,13 +19,13 @@ import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.operator.agg.Aggregate;
 import edu.washington.escience.myria.operator.agg.Aggregator;
-import edu.washington.escience.myria.parallel.CollectConsumer;
-import edu.washington.escience.myria.parallel.CollectProducer;
+import edu.washington.escience.myria.operator.network.CollectConsumer;
+import edu.washington.escience.myria.operator.network.CollectProducer;
+import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
+import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
+import edu.washington.escience.myria.operator.network.partition.SingleFieldHashPartitionFunction;
+import edu.washington.escience.myria.operator.network.partition.WholeTupleHashPartitionFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
-import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
-import edu.washington.escience.myria.parallel.GenericShuffleProducer;
-import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
-import edu.washington.escience.myria.parallel.WholeTupleHashPartitionFunction;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 public class Q5A_Count implements QueryPlanGenerator {
@@ -78,11 +79,10 @@ public class Q5A_Count implements QueryPlanGenerator {
         new SymmetricHashJoin(shuffleArticlesC, shuffleCreatorsC, new int[] { 0 }, new int[] { 0 });
     // schema: (articleId long, articleId long, creatorID long)
 
-    final ColumnSelect projArticleCreatorsID = new ColumnSelect(new int[] { 2 }, joinArticleCreator);
+    final Apply projArticleCreatorsID = Applys.columnSelect(joinArticleCreator, 2);
     // schema: (articleAuthorIDs long)
 
-    final StreamingStateWrapper deArticleAuthors =
-        new StreamingStateWrapper(projArticleCreatorsID, new DupElim());
+    final StreamingStateWrapper deArticleAuthors = new StreamingStateWrapper(projArticleCreatorsID, new DupElim());
     // schema: (articleAuthorIDs long)
 
     final GenericShuffleProducer shuffleArticleCreatorsP =
@@ -123,11 +123,10 @@ public class Q5A_Count implements QueryPlanGenerator {
         new SymmetricHashJoin(shuffleProceedingsC, shuffleCreators2C, new int[] { 0 }, new int[] { 0 });
     // schema: (proceedingId long, proceedingId long, creatorID long)
 
-    final ColumnSelect projProceedingsID = new ColumnSelect(new int[] { 2 }, joinProceedingsCreator);
+    final Apply projProceedingsID = Applys.columnSelect(joinProceedingsCreator, 2);
     // schema: (proceedingAuthorID long)
 
-    final StreamingStateWrapper deProceedingAuthors =
-        new StreamingStateWrapper(projProceedingsID, new DupElim());
+    final StreamingStateWrapper deProceedingAuthors = new StreamingStateWrapper(projProceedingsID, new DupElim());
 
     final GenericShuffleProducer shuffleProceedingsCreatorsP =
         new GenericShuffleProducer(deProceedingAuthors, proceedingsCreatorsShuffleID, allWorkers, pfOn0);
@@ -158,7 +157,7 @@ public class Q5A_Count implements QueryPlanGenerator {
         new SymmetricHashJoin(articleProceedingsCreatorJoin, shuffleFOAF2C, new int[] { 1 }, new int[] { 0 });
     // schema: (articleProceedingAuthorID long, articleProceedingAuthorID long, foafNameID long)
 
-    final ColumnSelect finalColSelect = new ColumnSelect(new int[] { 1, 2 }, articleProceedingsCreatorFOAFJoin);
+    final Apply finalColSelect = Applys.columnSelect(articleProceedingsCreatorFOAFJoin, 1, 2);
     // schema: (articleProceedingAuthorID long, foafNameID long)
 
     final GenericShuffleProducer forDupElimShuffleP =

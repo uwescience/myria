@@ -8,9 +8,9 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.parallel.Consumer;
+import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
-import edu.washington.escience.myria.parallel.TaskResourceManager;
+import edu.washington.escience.myria.parallel.LocalFragmentResourceManager;
 import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
@@ -71,7 +71,7 @@ public class IDBController extends Operator implements StreamingStateful {
   /**
    * For IPC communication. Specifically, for doing EOI report.
    * */
-  private transient TaskResourceManager resourceManager;
+  private transient LocalFragmentResourceManager resourceManager;
   /**
    * The IPC channel for EOI report.
    * */
@@ -211,7 +211,7 @@ public class IDBController extends Operator implements StreamingStateful {
   public final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     initialInputEnded = false;
     emptyDelta = true;
-    resourceManager = (TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
+    resourceManager = (LocalFragmentResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER);
     eoiReportChannel = resourceManager.startAStream(controllerWorkerID, controllerOpID);
     state.init(execEnvVars);
   }

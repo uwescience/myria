@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nonnull;
 
@@ -22,6 +23,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.api.MyriaApiException;
@@ -33,7 +35,6 @@ import edu.washington.escience.myria.api.encoding.BroadcastConsumerEncoding;
 import edu.washington.escience.myria.api.encoding.BroadcastProducerEncoding;
 import edu.washington.escience.myria.api.encoding.CollectConsumerEncoding;
 import edu.washington.escience.myria.api.encoding.CollectProducerEncoding;
-import edu.washington.escience.myria.api.encoding.ColumnSelectEncoding;
 import edu.washington.escience.myria.api.encoding.ConsumerEncoding;
 import edu.washington.escience.myria.api.encoding.DbInsertEncoding;
 import edu.washington.escience.myria.api.encoding.DupElimEncoding;
@@ -59,7 +60,6 @@ import edu.washington.escience.myria.api.encoding.TipsyFileScanEncoding;
 import edu.washington.escience.myria.api.encoding.UnionAllEncoding;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.io.FileSource;
-import edu.washington.escience.myria.operator.ColumnSelect;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.FileScan;
@@ -71,23 +71,23 @@ import edu.washington.escience.myria.operator.TipsyFileScan;
 import edu.washington.escience.myria.operator.UnionAll;
 import edu.washington.escience.myria.operator.agg.Aggregate;
 import edu.washington.escience.myria.operator.agg.Aggregator;
-import edu.washington.escience.myria.parallel.CollectConsumer;
-import edu.washington.escience.myria.parallel.CollectProducer;
-import edu.washington.escience.myria.parallel.LocalMultiwayConsumer;
-import edu.washington.escience.myria.parallel.LocalMultiwayProducer;
-import edu.washington.escience.myria.parallel.PartitionFunction;
+import edu.washington.escience.myria.operator.network.CollectConsumer;
+import edu.washington.escience.myria.operator.network.CollectProducer;
+import edu.washington.escience.myria.operator.network.LocalMultiwayConsumer;
+import edu.washington.escience.myria.operator.network.LocalMultiwayProducer;
+import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
 
 /**
  * Json query builder base implementation. This class provides spark-like query plan building functionality.
  * 
- * */
+ */
 public class JsonQueryBaseBuilder implements JsonQueryBuilder {
 
   /**
    * Shared data among all instances in a single building process.
-   * */
+   */
   private static final class SharedData {
 
     /**
@@ -97,27 +97,27 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
 
     /**
      * record all operators this builder built.
-     * */
+     */
     private final Set<JsonQueryBaseBuilder> allOperators;
 
     /**
      * User defined operator name to operator mapping.
-     * */
+     */
     private final Map<String, JsonQueryBaseBuilder> userDefinedName2OpMap;
 
     /**
      * operator to user defined operator name mapping.
-     * */
+     */
     private final Map<JsonQueryBaseBuilder, String> op2UserDefinedNameMap;
 
     /**
      * Random number generator.
-     * */
+     */
     private final Random rand = new Random();
 
     /**
      * Constructor.
-     * */
+     */
     private SharedData() {
       allOperators = new HashSet<JsonQueryBaseBuilder>();
       userDefinedName2OpMap = new HashMap<String, JsonQueryBaseBuilder>();
@@ -125,36 +125,47 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
       globalWorkers = NO_PREFERENCE;
     }
 
+    /**
+     * The current op number.
+     */
+    private static AtomicInteger newOpNumber = new AtomicInteger();
+
+    /**
+     * @return a new unique number
+     */
+    public static int nextOpNumber() {
+      return newOpNumber.getAndIncrement();
+    }
   }
 
   /**
    * Shared data.
-   * */
+   */
   private final SharedData sharedData;
 
   /**
    * The current {@link Operator}, or the output of the current {@link Operator}, this builder represents.
-   * */
+   */
   private final OperatorEncoding<?> op;
   /**
    * The children of the current op.
-   * */
+   */
   private final JsonQueryBaseBuilder[] children;
   /**
    * The field names which are the children of the current op.
-   * */
+   */
   private final String[] childrenFields;
   /**
    * The workers on which the current operator is going to run, i.e. the operator partition.
-   * */
+   */
   private final Set<Integer> runOnWorkers;
   /**
    * An operator is going to run on any single worker.
-   * */
+   */
   private static final Set<Integer> ANY_SINGLE_WORKER = Collections.unmodifiableSet(new HashSet<Integer>(0));
   /**
    * An operator is going to run on all workers.
-   * */
+   */
   private static final Set<Integer> ALL_WORKERS = Collections.unmodifiableSet(new HashSet<Integer>(0));
   /**
    * An operator is going to run on any worker settings. The actual setting is decided by either other operators which
@@ -165,12 +176,12 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
   /**
    * The parents of the current op. It is for automatically generating {@link LocalMultiwayProducer} and
    * {@link LocalMultiwayConsumer} pairs.
-   * */
+   */
   private final Set<JsonQueryBaseBuilder> parents;
 
   /**
    * Operator name prefix. For use in automatically constructing operator names.
-   * */
+   */
   public static final Map<Class<? extends OperatorEncoding<?>>, String> OPERATOR_PREFICES =
       new HashMap<Class<? extends OperatorEncoding<?>>, String>();
   static {
@@ -190,7 +201,6 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     OPERATOR_PREFICES.put(TipsyFileScanEncoding.class, "tipsy");
     OPERATOR_PREFICES.put(FileScanEncoding.class, "file");
     OPERATOR_PREFICES.put(FilterEncoding.class, "filter");
-    OPERATOR_PREFICES.put(ColumnSelectEncoding.class, "project");
   }
 
   /**
@@ -199,7 +209,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * @param workers1 worker set 1
    * @param workers2 worker set 2
    * @return compatible worker set.
-   * */
+   */
   private static Set<Integer> workerSetAlgebra(@Nonnull final Set<Integer> workers1,
       @Nonnull final Set<Integer> workers2) {
     Preconditions.checkNotNull(workers1);
@@ -262,7 +272,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * @param sharedData shared data.
    * @param compatibleWithChildrenWorkers if true, make sure the current op's worker set is compatible with the
    *          children's, else no check, which happens in Producer/Consumer pairs
-   * */
+   */
   private JsonQueryBaseBuilder(final OperatorEncoding<?> currentOp, final String[] childrenFields,
       final JsonQueryBaseBuilder[] children, @Nonnull final Set<Integer> runningWorkers,
       final boolean compatibleWithChildrenWorkers, final SharedData sharedData) {
@@ -312,7 +322,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
   /**
    * Constructor.
    * 
-   * */
+   */
   public JsonQueryBaseBuilder() {
     op = null;
     children = new JsonQueryBaseBuilder[] {};
@@ -327,7 +337,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * 
    * @param op the operator to check
    * @return the check result.
-   * */
+   */
   private boolean isRootOp(final JsonQueryBaseBuilder op) {
     if (op.op instanceof AbstractProducerEncoding || op.op instanceof DbInsertEncoding
         || op.op instanceof SinkRootEncoding) {
@@ -341,7 +351,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * 
    * @return the check result.
    * @param op the op to check.
-   * */
+   */
   private static boolean isSinkRootOp(final JsonQueryBaseBuilder op) {
     if (op.op instanceof DbInsertEncoding || op.op instanceof SinkRootEncoding) {
       return true;
@@ -353,7 +363,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * Fork the output stream of an operator by adding {@link LocalMultiwayProducer}/{@link LocalMultiwayConsumer} pair.
    * 
    * @param toMulti the operator to be forked
-   * */
+   */
   private void insertLocalMultiway(final JsonQueryBaseBuilder toMulti) {
     if (toMulti.op instanceof LocalMultiwayProducerEncoding) {
       return;
@@ -376,7 +386,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
 
   /**
    * Process output stream forking.
-   * */
+   */
   private void processLocalStreamForks() {
     for (JsonQueryBaseBuilder opp : sharedData.allOperators.toArray(new JsonQueryBaseBuilder[] {})) {
       // add local multiway producers
@@ -389,7 +399,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
   /**
    * Process iterations. This method will add the {@link IDBInputEncoding}, {@link EOSControllerEncoding} and other
    * related operators into the query plan if the query plan contains iterations.
-   * */
+   */
   private void processIterations() {
 
     HashSet<JsonQueryBaseBuilder> iterationNodes = new HashSet<JsonQueryBaseBuilder>();
@@ -413,18 +423,18 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
                 new JsonQueryBaseBuilder[] { fakeScan }, NO_PREFERENCE);
 
         eoiReceivers[i].setName("eoiReceiver#" + i);
-        eoiReceivers[i].op.opName = "eoiReceiver#" + i;
+        eoiReceivers[i].op.opId = SharedData.nextOpNumber();
         sharedData.allOperators.add(eoiReceivers[i]);
 
       }
 
       JsonQueryBaseBuilder eoiInput = buildOperator(UnionAllEncoding.class, "argChildren", eoiReceivers, NO_PREFERENCE);
       eoiInput.setName("allEOIReports");
-      eoiInput.op.opName = "allEOIReports";
+      eoiInput.op.opId = SharedData.nextOpNumber();
 
       JsonQueryBaseBuilder eosC = buildOperator(EOSControllerEncoding.class, "argChild", eoiInput, ANY_SINGLE_WORKER);
       eosC.setName("eosController");
-      eosC.op.opName = "eosController";
+      eosC.op.opId = SharedData.nextOpNumber();
 
       for (int i = 0; i < iterationEndPoints.length; i++) {
         JsonQueryBaseBuilder iterationEndPoint = iterationEndPoints[i];
@@ -449,7 +459,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
             buildOperator(IDBControllerEncoding.class, new String[] {
                 "argInitialInput", "argIterationInput", "argEosControllerInput" }, new JsonQueryBaseBuilder[] {
                 initialInput, iterationInput, eosReceiver }, NO_PREFERENCE);
-        idbC.op.opName = "idbInput#" + i;
+        idbC.op.opId = SharedData.nextOpNumber();
         ((IDBControllerEncoding) idbC.op).argSelfIdbId = i;
         ((IDBControllerEncoding) idbC.op).argState =
             ((IterateBeginPlaceHolder) (iterationBeginPoint.op)).idbStateProcessor;
@@ -478,20 +488,21 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
   /**
    * @param b the builder.
    * @return the operator name.
-   * */
+   */
   private String getOpName(final JsonQueryBaseBuilder b) {
-    if (b.op.opName != null) {
-      return b.op.opName;
-    }
-    for (JsonQueryBaseBuilder opp : sharedData.allOperators) {
-      setOpNames(opp);
-    }
     return b.op.opName;
+    // if (b.op.opId != null) {
+    // return String.valueOf(b.op.opId);
+    // }
+    // for (JsonQueryBaseBuilder opp : sharedData.allOperators) {
+    // setOpNames(opp);
+    // }
+    // return b.op.opId;
   }
 
   /**
    * @return the encoding of the query this builder is going to build.
-   * */
+   */
   @Override
   public final QueryEncoding build() {
     if (!isRootOp(this)) {
@@ -521,7 +532,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
       }
 
       result.fragments = Arrays.asList(fragments.values().toArray(new PlanFragmentEncoding[] {}));
-      result.ftMode = MyriaConstants.FTMODE.none.name();
+      result.ftMode = FTMODE.none;
       result.logicalRa = "";
       result.profilingMode = false;
       result.rawDatalog = "";
@@ -539,7 +550,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
 
   /**
    * @return the json format of the query built.
-   * */
+   */
   @Override
   public final String buildJson() {
     ObjectMapper ow = MyriaJsonMapperProvider.getMapper();
@@ -562,7 +573,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * @param runningWorkers worker set.
    * @return a wrapping {@link JsonQueryBaseBuilder}
    * @throws IllegalArgumentException if any argument is illegal
-   * */
+   */
   private <T extends OperatorEncoding<?>> JsonQueryBaseBuilder buildOperator(final Class<T> operatorClass,
       final String childField, final JsonQueryBaseBuilder child, final Set<Integer> runningWorkers)
       throws IllegalArgumentException {
@@ -578,7 +589,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * @param runningWorkers worker set.
    * @return a wrapping {@link JsonQueryBaseBuilder}
    * @throws IllegalArgumentException if any argument is illegal
-   * */
+   */
   private <T extends OperatorEncoding<?>> JsonQueryBaseBuilder buildOperator(final Class<T> operatorClass,
       final Set<Integer> runningWorkers) throws IllegalArgumentException {
     return buildOperator(Preconditions.checkNotNull(operatorClass), new String[] {}, new JsonQueryBaseBuilder[] {},
@@ -595,7 +606,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * @param runningWorkers worker set.
    * @return a wrapping {@link JsonQueryBaseBuilder}
    * @throws IllegalArgumentException if any argument is illegal
-   * */
+   */
   private <T extends OperatorEncoding<?>> JsonQueryBaseBuilder buildOperator(final Class<T> operatorClass,
       final String childrenField, final JsonQueryBaseBuilder[] children, final Set<Integer> runningWorkers)
       throws IllegalArgumentException {
@@ -613,7 +624,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * @param runningWorkers worker set.
    * @return a wrapping {@link JsonQueryBaseBuilder}
    * @throws IllegalArgumentException if any argument is illegal
-   * */
+   */
   private <T extends OperatorEncoding<?>> JsonQueryBaseBuilder buildOperator(@Nonnull final Class<T> operatorClass,
       @Nonnull final String[] childrenFields, @Nonnull final JsonQueryBaseBuilder[] children,
       @Nonnull final Set<Integer> runningWorkers) throws IllegalArgumentException {
@@ -641,7 +652,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
   /**
    * @param root the root of the fragment
    * @param fragments the current built fragments.
-   * */
+   */
   private void buildFragment(final Map<JsonQueryBaseBuilder, PlanFragmentEncoding> fragments,
       final JsonQueryBaseBuilder root) {
     if (fragments.get(root) != null) {
@@ -649,10 +660,10 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     }
     Preconditions.checkNotNull(root.runOnWorkers);
 
-    ArrayList<JsonQueryBaseBuilder> operators = new ArrayList<JsonQueryBaseBuilder>();
+    ArrayList<JsonQueryBaseBuilder> operators = new ArrayList<>();
     PlanFragmentEncoding fragment = new PlanFragmentEncoding();
     findOperators(operators, root);
-    fragment.operators = new ArrayList<OperatorEncoding<?>>(operators.size());
+    fragment.operators = new ArrayList<>(operators.size());
 
     for (JsonQueryBaseBuilder obb : operators) {
       fragment.operators.add(obb.op);
@@ -681,13 +692,13 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * set.
    * 
    * @param currentOp the operator to update.
-   * */
+   */
   private void updateChildrenFields(final JsonQueryBaseBuilder currentOp) {
     // update children field names
-    String[] childrenNames = new String[currentOp.children.length];
+    Integer[] childrenNames = new Integer[currentOp.children.length];
     int idx = 0;
     for (JsonQueryBaseBuilder c : currentOp.children) {
-      childrenNames[idx++] = c.op.opName;
+      childrenNames[idx++] = c.op.opId;
     }
 
     if (currentOp.childrenFields.length == 1) {
@@ -718,7 +729,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * Set all the operator names rooted by a given operator.
    * 
    * @param root the root operator to start
-   * */
+   */
   private void setOpNames(final JsonQueryBaseBuilder root) {
     setOpNames(root, new HashMap<String, JsonQueryBaseBuilder>());
   }
@@ -728,14 +739,14 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * 
    * @param root the root operator to start
    * @param namedOperators record the name to op mapping.
-   * */
+   */
   private void setOpNames(final JsonQueryBaseBuilder root, final HashMap<String, JsonQueryBaseBuilder> namedOperators) {
-    if (root.op.opName != null) {
+    if (root.op.opId != null) {
       return;
     } else {
       String opName = sharedData.op2UserDefinedNameMap.get(root);
       if (opName != null) {
-        root.op.opName = opName;
+        root.op.opName = "Operator" + root.op.opId;
         return;
       } else {
         for (JsonQueryBaseBuilder f : root.children) {
@@ -751,14 +762,14 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * 
    * @param currentOp the operator which is to get name built.
    * @param namedOperators the operator name -> operator mapping.
-   * */
+   */
   private void buildOpNameFromChildren(final JsonQueryBaseBuilder currentOp,
       final HashMap<String, JsonQueryBaseBuilder> namedOperators) {
 
     String[] childrenNames = new String[currentOp.children.length];
     int idx = 0;
     for (JsonQueryBaseBuilder c : currentOp.children) {
-      childrenNames[idx++] = c.op.opName;
+      childrenNames[idx++] = "Operator" + c.op.opId;
     }
 
     String namePrefix = null;
@@ -776,7 +787,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     if (currentOp.op instanceof AbstractConsumerEncoding) {
       // for consumers, do not include the child producer's XXXProducer prefix
       opNameBuilder.append('(');
-      opNameBuilder.append(currentOp.children[0].children[0].op.opName);
+      opNameBuilder.append(currentOp.children[0].children[0].op.opId);
       opNameBuilder.append(')');
     } else {
       if (currentOp.children.length > 0) {
@@ -795,7 +806,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     }
     name = name + suffix;
     namedOperators.put(name, currentOp);
-    currentOp.op.opName = name;
+    currentOp.op.opId = SharedData.nextOpNumber();
 
   }
 
@@ -804,7 +815,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * 
    * @param operators existing operators
    * @param currentRoot the current root operator
-   * */
+   */
   private void findOperators(final List<JsonQueryBaseBuilder> operators, final JsonQueryBaseBuilder currentRoot) {
     operators.add(currentRoot);
     if (!(currentRoot.op instanceof AbstractConsumerEncoding)) {
@@ -823,7 +834,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * @param otherCmpColumns other cmp columns
    * @param myResultColumns my result columns
    * @param otherResultColumns other result columns
-   * */
+   */
   public JsonQueryBaseBuilder hashEquiJoin(final JsonQueryBuilder other, final int[] myCmpColumns,
       final int[] myResultColumns, final int[] otherCmpColumns, final int[] otherResultColumns) {
 
@@ -852,20 +863,6 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
   }
 
   /**
-   * Column selection (Project).
-   * 
-   * {@link ColumnSelect}.
-   * 
-   * @return builder.
-   * @param fieldList list of fields to be remained
-   */
-  public JsonQueryBaseBuilder project(final int[] fieldList) {
-    JsonQueryBaseBuilder project = buildOperator(ColumnSelectEncoding.class, NO_PREFERENCE);
-    ((ColumnSelectEncoding) project.op).argFieldList = fieldList;
-    return project;
-  }
-
-  /**
    * Query scan.
    * 
    * {@link DbQueryScan}.
@@ -889,7 +886,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * @param iorderFilename .
    * @param grpFilename .
    * @param outputSchema schema
-   * */
+   */
   public JsonQueryBaseBuilder tipsyScan(final String tipsyFilename, final String iorderFilename,
       final String grpFilename, final Schema outputSchema) {
     JsonQueryBaseBuilder scan = buildOperator(TipsyFileScanEncoding.class, ALL_WORKERS);
@@ -906,7 +903,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * @param fileName .
    * @param delimeter .
    * @param outputSchema schema
-   * */
+   */
   public JsonQueryBaseBuilder fileScan(final String fileName, final Character delimeter, final Schema outputSchema) {
     JsonQueryBaseBuilder scan = buildOperator(FileScanEncoding.class, ALL_WORKERS);
     ((FileScanEncoding) scan.op).delimiter = delimeter;
@@ -922,7 +919,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * 
    * @return builder.
    * @param table the table.
-   * */
+   */
   public JsonQueryBaseBuilder scan(final RelationKey table) {
     Preconditions.checkNotNull(table);
     // generateID("TableScan: " + table),
@@ -936,7 +933,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * 
    * @return builder.
    * @param pf partition function
-   * */
+   */
   public JsonQueryBaseBuilder shuffle(final PartitionFunction pf) {
     JsonQueryBaseBuilder shuffleP = buildOperator(ShuffleProducerEncoding.class, "argChild", this, NO_PREFERENCE);
     ((ShuffleProducerEncoding) shuffleP.op).argPf = pf;
@@ -947,7 +944,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * {@link CollectProducer} {@link CollectConsumer} pair.
    * 
    * @return builder.
-   * */
+   */
   public JsonQueryBaseBuilder collect() {
     JsonQueryBaseBuilder p = buildOperator(CollectProducerEncoding.class, "argChild", this, NO_PREFERENCE);
     return buildOperator(CollectConsumerEncoding.class, "argOperatorId", p, ANY_SINGLE_WORKER);
@@ -958,7 +955,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * 
    * @return builder.
    * @param workerID collect destination.
-   * */
+   */
   public JsonQueryBaseBuilder collect(final int workerID) {
     JsonQueryBaseBuilder p = buildOperator(CollectProducerEncoding.class, "argChild", this, NO_PREFERENCE);
     JsonQueryBaseBuilder c =
@@ -970,7 +967,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * {@link CollectProducer} {@link CollectConsumer} pair, send to master.
    * 
    * @return builder.
-   * */
+   */
   public JsonQueryBaseBuilder masterCollect() {
     return this.collect(MyriaConstants.MASTER_ID);
   }
@@ -985,7 +982,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * {@link BroadcastProducer} and {@link BroadcastConsumer} pair.
    * 
    * @return builder.
-   * */
+   */
   public JsonQueryBaseBuilder broadcast() {
     JsonQueryBaseBuilder p = buildOperator(BroadcastProducerEncoding.class, "argChild", this, NO_PREFERENCE);
     return buildOperator(BroadcastProducerEncoding.class, "argOperatorId", p, NO_PREFERENCE);
@@ -995,7 +992,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * {@link DupElim}.
    * 
    * @return builder.
-   * */
+   */
   public JsonQueryBaseBuilder dupElim() {
     return buildOperator(DupElimEncoding.class, "argChild", this, NO_PREFERENCE);
   }
@@ -1005,7 +1002,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * 
    * @return builder.
    * @param others others.
-   * */
+   */
   public JsonQueryBaseBuilder union(final Set<JsonQueryBuilder> others) {
     JsonQueryBaseBuilder[] childrenL = others.toArray(new JsonQueryBaseBuilder[others.size() + 1]);
     childrenL[childrenL.length - 1] = this;
@@ -1017,7 +1014,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * 
    * @return builder.
    * @param other other.
-   * */
+   */
   public JsonQueryBaseBuilder union(final JsonQueryBuilder other) {
     return buildOperator(UnionAllEncoding.class, "argChildren", new JsonQueryBaseBuilder[] {
         this, (JsonQueryBaseBuilder) other }, NO_PREFERENCE);
@@ -1029,7 +1026,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * @return builder.
    * @param aggColumns agg columns
    * @param aggOps agg ops.
-   * */
+   */
   public JsonQueryBaseBuilder aggregate(final int[] aggColumns, final int[] aggOps) {
     List<List<String>> ops = AggregateEncoding.serializeAggregateOperator(aggOps);
     JsonQueryBaseBuilder agg = buildOperator(AggregateEncoding.class, "argChild", this, NO_PREFERENCE);
@@ -1045,7 +1042,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * @param groupColumn group by column
    * @param aggColumns agg columns
    * @param aggOps agg ops.
-   * */
+   */
   public JsonQueryBaseBuilder groupBy(final int groupColumn, final int[] aggColumns, final int[] aggOps) {
     List<List<String>> ops = AggregateEncoding.serializeAggregateOperator(aggOps);
     JsonQueryBaseBuilder gp = buildOperator(SingleGroupByAggregateEncoding.class, "argChild", this, NO_PREFERENCE);
@@ -1060,7 +1057,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * 
    * @return builder.
    * @param relationKey .
-   * */
+   */
   public JsonQueryBaseBuilder dbInsert(final RelationKey relationKey) {
     JsonQueryBaseBuilder insertJBB = buildOperator(DbInsertEncoding.class, "argChild", this, NO_PREFERENCE);
     DbInsertEncoding insert = (DbInsertEncoding) insertJBB.op;
@@ -1127,23 +1124,23 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
 
   /**
    * A helper class to mark the place where the iteration starts.
-   * */
+   */
   private static final class IterateBeginPlaceHolder extends OperatorEncoding<IDBController> {
 
     /**
      * IDB state processor.
-     * */
+     */
     private StreamingStateEncoding<?> idbStateProcessor;
 
     /**
      * Used by java reflection.
-     * */
+     */
     @SuppressWarnings("unused")
     public IterateBeginPlaceHolder() {
     }
 
     @Override
-    public void connect(final Operator operator, final Map<String, Operator> operators) {
+    public void connect(final Operator operator, final Map<Integer, Operator> operators) {
       throw new UnsupportedOperationException();
     }
 
@@ -1156,23 +1153,23 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
 
   /**
    * A helper class to mark the place where the iteration ends.
-   * */
+   */
   private static final class IterateEndPlaceHolder extends OperatorEncoding<IDBController> {
 
     /**
      * The corresponding iteration begin placeholder.
-     * */
+     */
     private JsonQueryBaseBuilder iterationBeginPoint;
 
     /**
      * Used by java reflection.
-     * */
+     */
     @SuppressWarnings("unused")
     public IterateEndPlaceHolder() {
     }
 
     @Override
-    public void connect(final Operator operator, final Map<String, Operator> operators) {
+    public void connect(final Operator operator, final Map<Integer, Operator> operators) {
       throw new UnsupportedOperationException();
     }
 
@@ -1187,7 +1184,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * {@link Aggregate}. Count.
    * 
    * @return builder.
-   * */
+   */
   public JsonQueryBaseBuilder count() {
     return aggregate(new int[] { 0 }, new int[] { Aggregator.AGG_OP_COUNT });
   }

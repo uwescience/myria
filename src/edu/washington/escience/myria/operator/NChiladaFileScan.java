@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Scanner;
+import java.util.regex.Pattern;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
@@ -252,7 +253,7 @@ public class NChiladaFileScan extends LeafOperator {
       }
       for (FileStatus status : statii) {
         Path p = status.getPath();
-        String[] pNameTokens = p.getName().split(File.separator);
+        String[] pNameTokens = p.getName().split(Pattern.quote(File.separator));
         String fileName = pNameTokens[pNameTokens.length - 1];
         DataInput dataInputStream = fs.open(p);
         map.put(fileName, dataInputStream);

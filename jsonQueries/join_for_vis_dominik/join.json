@@ -1,112 +1,148 @@
 {
-    "fragments":[
+  "logicalRa": "Sequence[Store(public:adhoc:TwitterJoin)[Apply(column0=$0,column11=$3)[Select((($1 = $2) and ($3 > 42)))[CrossProduct[Scan(public:adhoc:TwitterK), Scan(public:adhoc:TwitterK)]]]]]",
+  "profilingMode": 1,
+  "fragments": [
+    {
+      "operators": [
         {
-            "operators":[
-                {
-                    "opName":"Scan(R)",
-                    "opType":"TableScan",
-                    "relationKey":{
-                        "programName":"adhoc",
-                        "relationName":"TwitterSmall",
-                        "userName":"public"
-                    }
-                },
-                {
-                    "argChild":"Scan(R)",
-                    "argPf":{
-                        "index":1,
-                        "type":"SingleFieldHash"
-                    },
-                    "opName":"Shuffle(R)",
-                    "opType":"ShuffleProducer"
-                }
-            ]
+          "opId": 1,
+          "argOperatorId": 2,
+          "opType": "ShuffleConsumer",
+          "opName": "MyriaShuffleConsumer"
         },
         {
-            "operators":[
-                {
-                    "opName":"Scan(S)",
-                    "opType":"TableScan",
-                    "relationKey":{
-                        "programName":"adhoc",
-                        "relationName":"TwitterSmall",
-                        "userName":"public"
-                    }
-                },
-                {
-                    "argChild":"Scan(S)",
-                    "argPf":{
-                        "index":0,
-                        "type":"SingleFieldHash"
-                    },
-                    "opName":"Shuffle(S)",
-                    "opType":"ShuffleProducer"
-                }
-            ]
+          "opId": 3,
+          "argOperatorId": 4,
+          "opType": "ShuffleConsumer",
+          "opName": "MyriaShuffleConsumer"
         },
         {
-            "operators":[
-                {
-                    "argOperatorId":"Shuffle(R)",
-                    "opName":"GatherR",
-                    "opType":"ShuffleConsumer"
-                },
-                {
-                    "argOperatorId":"Shuffle(S)",
-                    "opName":"GatherS",
-                    "opType":"ShuffleConsumer"
-                },
-                {
-                    "argChild1":"GatherR",
-                    "argChild2":"GatherS",
-                    "argColumns1":[
-                        1
-                    ],
-                    "argColumns2":[
-                        0
-                    ],
-                    "argSelect1":[
-                        0
-                    ],
-                    "argSelect2":[
-                        1
-                    ],
-                    "opName":"Join",
-                    "opType":"SymmetricHashJoin"
-                },
-                {
-                    "argChild":"Join",
-                    "opName":"SendResult",
-                    "opType":"CollectProducer"
-                }
-            ]
+          "argSelect2": [
+            1
+          ],
+          "argColumns2": [
+            0
+          ],
+          "opName": "MyriaSymmetricHashJoin(($1 = $2); [$0, $3])",
+          "argSelect1": [
+            0
+          ],
+          "argColumnNames": [
+            "column0",
+            "column11"
+          ],
+          "argColumns1": [
+            1
+          ],
+          "argChild2": "1",
+          "opType": "SymmetricHashJoin",
+          "argChild1": "3",
+          "opId": 5
         },
         {
-            "operators":[
-                {
-                    "argOperatorId":"SendResult",
-                    "opName":"CollectResult",
-                    "opType":"CollectConsumer"
-                },
-                {
-                    "argChild":"CollectResult",
-                    "argOverwriteTable":true,
-                    "opName":"Insert",
-                    "opType":"DbInsert",
-                    "relationKey":{
-                        "programName":"adhoc",
-                        "relationName":"TwitterJoin",
-                        "userName":"public"
-                    }
-                }
-            ],
-            "workers":[
-                1
-            ]
+          "emitExpressions": [
+            {
+              "outputName": "column0",
+              "rootExpressionOperator": {
+                "type": "VARIABLE",
+                "columnIdx": 0
+              }
+            },
+            {
+              "outputName": "column11",
+              "rootExpressionOperator": {
+                "type": "VARIABLE",
+                "columnIdx": 1
+              }
+            }
+          ],
+          "opId": 6,
+          "opName": "MyriaApply(column0=$0,column11=$1)",
+          "opType": "Apply",
+          "argChild": 5
+        },
+        {
+          "relationKey": {
+            "relationName": "TwitterJoin",
+            "programName": "adhoc",
+            "userName": "public"
+          },
+          "opName": "MyriaStore(public:adhoc:TwitterJoin)",
+          "opId": 0,
+          "opType": "DbInsert",
+          "argChild": 6,
+          "argOverwriteTable": true
         }
-    ],
-    "logicalRa":"Join Twitter",
-    "profilingMode":true,
-    "rawDatalog":"Join Twitter"
+      ]
+    },
+    {
+      "operators": [
+        {
+          "relationKey": {
+            "relationName": "TwitterK",
+            "programName": "adhoc",
+            "userName": "public"
+          },
+          "opId": 7,
+          "opType": "TableScan",
+          "opName": "MyriaScan(public:adhoc:TwitterK)"
+        },
+        {
+          "opName": "MyriaShuffleProducer(h($1))",
+          "opId": 4,
+          "argPf": {
+            "type": "SingleFieldHash",
+            "index": 1
+          },
+          "opType": "ShuffleProducer",
+          "argChild": 7
+        }
+      ]
+    },
+    {
+      "operators": [
+        {
+          "relationKey": {
+            "relationName": "TwitterK",
+            "programName": "adhoc",
+            "userName": "public"
+          },
+          "opId": 8,
+          "opType": "TableScan",
+          "opName": "MyriaScan(public:adhoc:TwitterK)"
+        },
+        {
+          "argPredicate": {
+            "rootExpressionOperator": {
+              "type": "GT",
+              "right": {
+                "type": "CONSTANT",
+                "value": "42",
+                "valueType": "INT_TYPE"
+              },
+              "left": {
+                "type": "VARIABLE",
+                "columnIdx": 1
+              }
+            }
+          },
+          "opId": 9,
+          "opName": "MyriaSelect(($1 > 42))",
+          "opType": "Filter",
+          "argChild": 8
+        },
+        {
+          "opName": "MyriaShuffleProducer(h($0))",
+          "opId": 2,
+          "argPf": {
+            "type": "SingleFieldHash",
+            "index": 0
+          },
+          "opType": "ShuffleProducer",
+          "argChild": 9
+        }
+      ]
+    }
+  ],
+  "rawDatalog": "T1 = scan(TwitterK);\nT2 = scan(TwitterK);\nT3 = [from T1,T2 where T1.$1 = T2.$0 and T2.$1 > 42 emit T1.$0, T2.$1];\nstore(T3, TwitterJoin);"
 }
-

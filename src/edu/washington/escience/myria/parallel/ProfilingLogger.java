@@ -1,193 +1,153 @@
 package edu.washington.escience.myria.parallel;
 
-import java.io.File;
+import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import scala.NotImplementedError;
-
-import com.almworks.sqlite4java.SQLiteConnection;
-import com.almworks.sqlite4java.SQLiteException;
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.accessmethod.AccessMethod;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.JdbcAccessMethod;
-import edu.washington.escience.myria.accessmethod.SQLiteAccessMethod;
-import edu.washington.escience.myria.accessmethod.SQLiteInfo;
 import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * A logger for profiling data.
  */
 public class ProfilingLogger {
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(QuerySubTreeTask.class.getName());
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(LocalFragment.class.getName());
 
   /** The connection to the database database. */
-  private final AccessMethod accessMethod;
-
-  /** The information for the database connection. */
-  private ConnectionInfo connectionInfo;
+  private final JdbcAccessMethod accessMethod;
 
   /** The jdbc connection. */
-  private Connection connection;
+  private final Connection connection;
 
   /** A query statement for batching. */
-  private PreparedStatement statement;
+  private PreparedStatement statementEvent;
 
-  /** Number of rows in batch in {@link #statement}. */
-  private int batchSize = 0;
+  /** A query statement for batching. */
+  private PreparedStatement statementSent;
 
-  /** The singleton instance. */
-  private static ProfilingLogger instance = null;
+  /**
+   * A query statement for transforming the profiling relation from {@link MyriaConstants.PROFILING_SCHEMA_TMP} to
+   * {@link MyriaConstants.PROFILING_SCHEMA}.
+   */
+  private PreparedStatement statementTransform;
+
+  /** Number of rows in batch in {@link #statementEvent}. */
+  private int batchSizeEvents = 0;
+
+  /** Number of rows in batch in {@link #statementSent}. */
+  private int batchSizeSent = 0;
 
   /**
    * Default constructor.
    * 
-   * @param execEnvVars execution environment variables
+   * @param connectionInfo connection information
    * 
    * @throws DbException if any error occurs
    */
-  protected ProfilingLogger(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    /* retrieve connection information from the environment variables, if not already set */
-    if (connectionInfo == null && execEnvVars != null) {
-      connectionInfo = (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
-    }
-
-    if (connectionInfo == null) {
-      throw new DbException("Unable to instantiate DbInsert: connection information unknown");
-    }
-
-    if (connectionInfo instanceof SQLiteInfo) {
-      /* Set WAL in the beginning. */
-      final File dbFile = new File(((SQLiteInfo) connectionInfo).getDatabaseFilename());
-      SQLiteConnection conn = new SQLiteConnection(dbFile);
-      try {
-        conn.open(true);
-        conn.exec("PRAGMA journal_mode=WAL;");
-      } catch (SQLiteException e) {
-        e.printStackTrace();
-      }
-      conn.dispose();
-    }
+  public ProfilingLogger(final ConnectionInfo connectionInfo) throws DbException {
+    Preconditions.checkArgument(connectionInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL),
+        "Profiling only supported with Postgres JDBC connection");
 
     /* open the database connection */
-    accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
+    accessMethod = (JdbcAccessMethod) AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
 
-    // Relations have been created in Worker.start()
+    accessMethod.createUnloggedTableIfNotExists(MyriaConstants.PROFILING_RELATION_TMP,
+        MyriaConstants.PROFILING_SCHEMA_TMP);
+    accessMethod.createTableIfNotExists(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA);
+    accessMethod.createTableIfNotExists(MyriaConstants.SENT_RELATION, MyriaConstants.SENT_SCHEMA);
 
     createProfilingIndexes();
+    createTmpProfilingIndexes();
     createSentIndex();
 
-    if (accessMethod instanceof JdbcAccessMethod) {
-      connection = ((JdbcAccessMethod) accessMethod).getConnection();
-      try {
-        statement =
-            connection.prepareStatement(accessMethod.insertStatementFromSchema(MyriaConstants.PROFILING_SCHEMA,
-                MyriaConstants.PROFILING_RELATION));
-      } catch (SQLException e) {
-        throw new DbException(e);
-      }
-    } else if (accessMethod instanceof SQLiteAccessMethod) {
-      throw new NotImplementedError();
-    }
-  }
-
-  /**
-   * @throws DbException if index cannot be created
-   */
-  private void createSentIndex() throws DbException {
-    // query id, fragment index: faster filtering
-    List<String> columnNames = MyriaConstants.LOG_SENT_SCHEMA.getColumnNames();
-
-    ImmutableList.Builder<List<IndexRef>> index = ImmutableList.builder();
-    index.add(ImmutableList.of(IndexRef.of(columnNames.indexOf("queryId")), IndexRef.of(columnNames
-        .indexOf("fragmentId"))));
-
+    connection = accessMethod.getConnection();
     try {
-      accessMethod.createIndexes(MyriaConstants.LOG_SENT_RELATION, MyriaConstants.LOG_SENT_SCHEMA, index.build());
-    } catch (DbException e) {
-      LOGGER.error("Couldn't create index for profiling logs:", e);
-    }
-  }
-
-  /**
-   * @throws DbException if index cannot be created
-   */
-  private void createProfilingIndexes() throws DbException {
-    // query id, fragment index: faster filtering
-    // operator name index: faster matching with roots
-    List<String> columnNames = MyriaConstants.PROFILING_SCHEMA.getColumnNames();
-
-    ImmutableList.Builder<List<IndexRef>> index = ImmutableList.builder();
-    index.add(ImmutableList.of(IndexRef.of(columnNames.indexOf("queryId")), IndexRef.of(columnNames
-        .indexOf("fragmentId"))));
-    index.add(ImmutableList.of(IndexRef.of(columnNames.indexOf("opName"))));
-
-    try {
-      accessMethod.createIndexes(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA, index.build());
-    } catch (DbException e) {
-      LOGGER.error("Couldn't create index for profiling logs:", e);
-    }
-  }
-
-  /**
-   * Default constructor.
-   * 
-   * @param execEnvVars execution environment variables
-   * @return the logger instance
-   */
-  public static synchronized ProfilingLogger getLogger(final ImmutableMap<String, Object> execEnvVars) {
-    if (instance == null) {
-      try {
-        instance = new ProfilingLogger(execEnvVars);
-      } catch (DbException e) {
-        LOGGER.error("Failed to initialize profiling logger:", e);
-      }
-    }
-    Preconditions.checkArgument(instance.connectionInfo == (ConnectionInfo) execEnvVars
-        .get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO), "Connection info should not change.");
-    return instance;
-  }
-
-  /**
-   * Inserts in batches. Call {@link #flush()}.
-   * 
-   * @param operator the operator where this record was logged
-   * @param numTuples the number of tuples
-   * @param eventType the type of the event to be logged
-   * @throws DbException if insertion in the database fails
-   */
-  public synchronized void recordEvent(final Operator operator, final long numTuples, final String eventType)
-      throws DbException {
-
-    try {
-
-      statement.setLong(1, operator.getQueryId());
-      statement.setString(2, operator.getOpName());
-      statement.setLong(3, operator.getFragmentId());
-      statement.setLong(4, getTime(operator));
-      statement.setLong(5, numTuples);
-      statement.setString(6, eventType);
-
-      statement.addBatch();
-      batchSize++;
-    } catch (final SQLException e) {
+      statementEvent =
+          connection.prepareStatement(accessMethod.insertStatementFromSchema(MyriaConstants.PROFILING_SCHEMA_TMP,
+              MyriaConstants.PROFILING_RELATION_TMP));
+    } catch (SQLException e) {
       throw new DbException(e);
     }
 
-    if (batchSize > TupleBatch.BATCH_SIZE) {
-      flush();
+    try {
+      statementTransform = connection.prepareStatement(getTransformProfilingDataStatement());
+    } catch (SQLException e) {
+      throw new DbException(e);
+    }
+
+    try {
+      statementSent =
+          connection.prepareStatement(accessMethod.insertStatementFromSchema(MyriaConstants.SENT_SCHEMA,
+              MyriaConstants.SENT_RELATION));
+    } catch (SQLException e) {
+      throw new DbException(e);
+    }
+
+  }
+
+  /**
+   * @throws DbException if index cannot be created
+   */
+  protected void createSentIndex() throws DbException {
+    final Schema schema = MyriaConstants.SENT_SCHEMA;
+
+    List<IndexRef> index =
+        ImmutableList.of(IndexRef.of(schema, "queryId"), IndexRef.of(schema, "fragmentId"), IndexRef.of(schema,
+            "nanoTime"));
+    try {
+      accessMethod.createIndexIfNotExists(MyriaConstants.SENT_RELATION, schema, index);
+    } catch (DbException e) {
+      LOGGER.error("Couldn't create index for profiling logs:", e);
+    }
+  }
+
+  /**
+   * @throws DbException if index cannot be created
+   */
+  protected void createTmpProfilingIndexes() throws DbException {
+    final Schema schema = MyriaConstants.PROFILING_SCHEMA_TMP;
+
+    List<IndexRef> filterIndex = ImmutableList.of(IndexRef.of(schema, "queryId"));
+
+    try {
+      accessMethod.createIndexIfNotExists(MyriaConstants.PROFILING_RELATION_TMP, schema, filterIndex);
+    } catch (DbException e) {
+      LOGGER.error("Couldn't create index for profiling logs:", e);
+    }
+  }
+
+  /**
+   * @throws DbException if index cannot be created
+   */
+  protected void createProfilingIndexes() throws DbException {
+    final Schema schema = MyriaConstants.PROFILING_SCHEMA;
+
+    List<IndexRef> rootOpsIndex =
+        ImmutableList.of(IndexRef.of(schema, "queryId"), IndexRef.of(schema, "fragmentId"), IndexRef.of(schema,
+            "startTime"), IndexRef.of(schema, "endTime"));
+    List<IndexRef> filterIndex =
+        ImmutableList.of(IndexRef.of(schema, "queryId"), IndexRef.of(schema, "fragmentId"),
+            IndexRef.of(schema, "opId"), IndexRef.of(schema, "startTime"), IndexRef.of(schema, "endTime"));
+
+    try {
+      accessMethod.createIndexIfNotExists(MyriaConstants.PROFILING_RELATION, schema, rootOpsIndex);
+      accessMethod.createIndexIfNotExists(MyriaConstants.PROFILING_RELATION, schema, filterIndex);
+    } catch (DbException e) {
+      LOGGER.error("Couldn't create index for profiling logs:", e);
     }
   }
 
@@ -204,32 +164,144 @@ public class ProfilingLogger {
    * @return the time to record
    */
   private long getTime(final Operator operator) {
-    final WorkerQueryPartition workerQueryPartition = (WorkerQueryPartition) operator.getQueryPartition();
-    final long workerStartTimeMillis = workerQueryPartition.getBeginMilliseconds();
-    final long threadStartTimeMillis = operator.getSubTreeTask().getBeginMilliseconds();
+    final WorkerSubQuery workerSubQuery = (WorkerSubQuery) operator.getLocalSubQuery();
+    final long workerStartTimeMillis = workerSubQuery.getBeginMilliseconds();
+    final long threadStartTimeMillis = operator.getFragment().getBeginMilliseconds();
+    Preconditions.checkState(workerStartTimeMillis > 0, "Query initialization time has not been recorded.");
+    Preconditions.checkState(threadStartTimeMillis > 0, "Thread time has not been recorded.");
     final long startupTimeMillis = threadStartTimeMillis - workerStartTimeMillis;
-    Preconditions.checkArgument(startupTimeMillis >= 0,
+    Preconditions.checkState(startupTimeMillis >= 0,
         "Thread that works on fragment cannot run (%s) before query is initialized (%s).", workerStartTimeMillis,
         threadStartTimeMillis);
-    final long threadStartNanos = operator.getSubTreeTask().getBeginNanoseconds();
+    final long threadStartNanos = operator.getFragment().getBeginNanoseconds();
     final long activeTimeNanos = System.nanoTime() - threadStartNanos;
 
     return TimeUnit.MILLISECONDS.toNanos(startupTimeMillis) + activeTimeNanos;
   }
 
   /**
-   * Flush the tuple batch buffer.
+   * Creates a statement for transforming the profiling relation from {@link MyriaConstants.PROFILING_SCHEMA_TMP} to
+   * {@link MyriaConstants.PROFILING_SCHEMA}.
+   * 
+   * @return the insert into statement
+   */
+  private String getTransformProfilingDataStatement() {
+    return Joiner.on(' ').join("INSERT INTO",
+        MyriaConstants.PROFILING_RELATION.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL),
+        "SELECT c.queryid, c.fragmentid, c.opid, c.nanotime as startTime, r.nanotime as endTime, r.numtuples", "FROM",
+        MyriaConstants.PROFILING_RELATION_TMP.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), "c,",
+        MyriaConstants.PROFILING_RELATION_TMP.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), "r", "WHERE",
+        "c.queryid = r.queryid AND c.opid = r.opid AND c.fragmentid = r.fragmentid AND c.traceid = r.traceid",
+        "AND r.eventtype = 'return' AND c.eventtype = 'call' AND c.queryid = ?", "ORDER  BY c.nanotime ASC;",
+        "DELETE FROM", MyriaConstants.PROFILING_RELATION_TMP.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL),
+        "WHERE", "queryid = ?");
+  }
+
+  /**
+   * Appends a single event appearing in an operator to a batch that is flushed either after a certain number of events
+   * are in the batch or {@link #flushProfilingEventsBatch()} is called.
+   * 
+   * @param operator the operator where this record was logged
+   * @param numTuples the number of tuples
+   * @param eventType the type of the event to be logged
+   * @param traceId an id to trace corresponding events
    * 
    * @throws DbException if insertion in the database fails
    */
-  public synchronized void flush() throws DbException {
+  public synchronized void recordEvent(final Operator operator, final long numTuples, final String eventType,
+      final long traceId) throws DbException {
+
     try {
-      if (batchSize > 0) {
-        statement.executeBatch();
-        statement.clearBatch();
-        batchSize = 0;
+      statementEvent.setLong(1, operator.getQueryId());
+      statementEvent.setInt(2, operator.getFragmentId());
+      statementEvent.setInt(3, operator.getOpId());
+      statementEvent.setLong(4, getTime(operator));
+      statementEvent.setLong(5, numTuples);
+      statementEvent.setString(6, eventType);
+      statementEvent.setLong(7, traceId);
+
+      statementEvent.addBatch();
+      batchSizeEvents++;
+    } catch (final SQLException e) {
+      throw new DbException(e);
+    }
+
+    if (batchSizeEvents > MyriaConstants.PROFILING_LOGGER_BATCH_SIZE) {
+      flushProfilingEventsBatch();
+    }
+  }
+
+  /**
+   * Flush the tuple batch buffer and transform the profiling data.
+   * 
+   * @param queryId the query id
+   * @throws DbException if insertion in the database fails
+   */
+  public synchronized void flush(final long queryId) throws DbException {
+    flushSentBatch();
+    flushProfilingEventsBatch();
+    transformProfilingRelation(queryId);
+  }
+
+  /**
+   * Executes the transformation.
+   * 
+   * @param queryId the query id
+   * @throws DbException if any error occurs
+   */
+  private void transformProfilingRelation(final long queryId) throws DbException {
+    try {
+      statementTransform.setLong(1, queryId); // for insert statement
+      statementTransform.setLong(2, queryId); // for delete statement
+      connection.setAutoCommit(false);
+      statementTransform.executeUpdate();
+      connection.commit();
+      connection.setAutoCommit(true);
+    } catch (SQLException e) {
+      if (e instanceof BatchUpdateException) {
+        LOGGER.error("Error transforming profiling relation: ", e.getNextException());
+      }
+      throw new DbException(e);
+    }
+  }
+
+  /**
+   * Flush the tuple batch buffer that has logs about operator states.
+   * 
+   * @throws DbException if insertion in the database fails
+   */
+  private void flushProfilingEventsBatch() throws DbException {
+    try {
+      if (batchSizeEvents == 0) {
+        return;
+      }
+      statementEvent.executeBatch();
+      statementEvent.clearBatch();
+      batchSizeEvents = 0;
+    } catch (SQLException e) {
+      if (e instanceof BatchUpdateException) {
+        LOGGER.error("Error writing batch: ", e.getNextException());
+      }
+      throw new DbException(e);
+    }
+  }
+
+  /**
+   * Flush the tuple batch buffer that has records about sent tuples.
+   * 
+   * @throws DbException if insertion in the database fails
+   */
+  private void flushSentBatch() throws DbException {
+    try {
+      if (batchSizeSent > 0) {
+        statementSent.executeBatch();
+        statementSent.clearBatch();
+        batchSizeSent = 0;
       }
     } catch (SQLException e) {
+      if (e instanceof BatchUpdateException) {
+        LOGGER.error("Error writing batch: ", e.getNextException());
+      }
       throw new DbException(e);
     }
   }
@@ -240,23 +312,25 @@ public class ProfilingLogger {
    * @param operator the operator where this record was logged
    * @param numTuples the number of tuples sent.
    * @param destWorkerId the worker if that we send the data to
+   * @throws DbException if insertion in the database fails
    */
-  public void recordSend(final Operator operator, final int numTuples, final int destWorkerId) {
+  public synchronized void recordSent(final Operator operator, final int numTuples, final int destWorkerId)
+      throws DbException {
     try {
-      final PreparedStatement singleStatement =
-          connection.prepareStatement(accessMethod.insertStatementFromSchema(MyriaConstants.LOG_SENT_SCHEMA,
-              MyriaConstants.LOG_SENT_RELATION));
+      statementSent.setLong(1, operator.getQueryId());
+      statementSent.setInt(2, operator.getFragmentId());
+      statementSent.setLong(3, getTime(operator));
+      statementSent.setLong(4, numTuples);
+      statementSent.setInt(5, destWorkerId);
 
-      singleStatement.setLong(1, operator.getQueryId());
-      singleStatement.setLong(2, operator.getFragmentId());
-      singleStatement.setLong(3, getTime(operator));
-      singleStatement.setLong(4, numTuples);
-      singleStatement.setInt(5, destWorkerId);
-
-      singleStatement.executeUpdate();
-      singleStatement.close();
+      statementSent.addBatch();
+      batchSizeSent++;
     } catch (final SQLException e) {
-      LOGGER.error("Failed to write profiling data:", e);
+      throw new DbException(e);
+    }
+
+    if (batchSizeSent > MyriaConstants.PROFILING_LOGGER_BATCH_SIZE) {
+      flushSentBatch();
     }
   }
 }

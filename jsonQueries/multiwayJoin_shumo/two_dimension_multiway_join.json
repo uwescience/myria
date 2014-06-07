@@ -3,17 +3,17 @@
         {
             "operators":[
                 {
-                    "opName":"Scan(R)",
+                    "opId":"Scan(R)",
                     "opType":"TableScan",
                     "relationKey":{
-                        "programName":"multiway_join",
-                        "relationName":"twitter_small",
-                        "userName":"chushumo"
+                        "programName":"adhoc",
+                        "relationName":"twitter_1m",
+                        "userName":"public"
                     }
                 },
                 {
                     "argChild":"Scan(R)",
-                    "indexes": [0],
+                    "hashedColumns": [0],
                     "cellPartition":[
                         [
                             0,
@@ -24,11 +24,12 @@
                             3
                         ]
                     ],
+                    "mappedHCDimensions":[0],
                     "hyperCubeDimensions":[
                         2,
                         2
                     ],
-                    "opName":"HyperShuffle(R)",
+                    "opId":"HyperShuffle(R)",
                     "opType":"HyperShuffleProducer"
                 }
             ]
@@ -36,17 +37,18 @@
         {
             "operators":[
                 {
-                    "opName":"Scan(S)",
+                    "opId":"Scan(S)",
                     "opType":"TableScan",
                     "relationKey":{
-                        "programName":"multiway_join",
-                        "relationName":"twitter_small",
-                        "userName":"chushumo"
+                        "programName":"adhoc",
+                        "relationName":"twitter_1m",
+                        "userName":"public"
                     }
                 },
                 {
                     "argChild":"Scan(S)",
-                    "indexes": [1],
+                    "hashedColumns": [1],
+                    "mappedHCDimensions":[1],
                     "cellPartition":[
                         [
                             0,
@@ -61,7 +63,7 @@
                         2,
                         2
                     ],
-                    "opName":"HyperShuffle(S)",
+                    "opId":"HyperShuffle(S)",
                     "opType":"HyperShuffleProducer"
                 }
             ]
@@ -70,12 +72,12 @@
             "operators":[
                 {
                     "argOperatorId":"HyperShuffle(R)",
-                    "opName":"GatherR",
+                    "opId":"GatherR",
                     "opType":"HyperShuffleConsumer"
                 },
                 {
                     "argOperatorId":"HyperShuffle(S)",
-                    "opName":"GatherS",
+                    "opId":"GatherS",
                     "opType":"HyperShuffleConsumer"
                 },
                 {
@@ -93,12 +95,12 @@
                     "argSelect2":[
                         1
                     ],
-                    "opName":"Join",
+                    "opId":"Join",
                     "opType":"SymmetricHashJoin"
                 },
                 {
                     "argChild":"Join",
-                    "opName":"SendResult",
+                    "opId":"SendResult",
                     "opType":"CollectProducer"
                 }
             ]
@@ -107,13 +109,13 @@
             "operators":[
                 {
                     "argOperatorId":"SendResult",
-                    "opName":"CollectResult",
+                    "opId":"CollectResult",
                     "opType":"CollectConsumer"
                 },
                 {
                     "argChild":"CollectResult",
                     "argOverwriteTable":true,
-                    "opName":"Insert",
+                    "opId":"Insert",
                     "opType":"DbInsert",
                     "relationKey":{
                         "programName":"multiway_join",

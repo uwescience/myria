@@ -4,7 +4,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.ImmutableSet;
 
-import edu.washington.escience.myria.parallel.Consumer;
+import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.parallel.ipc.IPCEvent.EventType;
 import edu.washington.escience.myria.util.Attachmentable;
 

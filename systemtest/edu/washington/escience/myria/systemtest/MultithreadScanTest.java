@@ -18,17 +18,17 @@ import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
-import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.StreamingStateWrapper;
+import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.operator.UnionAll;
-import edu.washington.escience.myria.parallel.CollectConsumer;
-import edu.washington.escience.myria.parallel.CollectProducer;
+import edu.washington.escience.myria.operator.network.CollectConsumer;
+import edu.washington.escience.myria.operator.network.CollectProducer;
+import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
+import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
+import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
+import edu.washington.escience.myria.operator.network.partition.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
-import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
-import edu.washington.escience.myria.parallel.GenericShuffleProducer;
-import edu.washington.escience.myria.parallel.PartitionFunction;
-import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestUtils;
@@ -142,7 +142,7 @@ public class MultithreadScanTest extends SystemTestBase {
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
     final SinkRoot serverPlan = new SinkRoot(queueStore);
 
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    server.submitQueryPlan(serverPlan, workerPlans).get();
     TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
     while (!receivedTupleBatches.isEmpty()) {
       tb = receivedTupleBatches.poll();
@@ -227,7 +227,7 @@ public class MultithreadScanTest extends SystemTestBase {
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
     final SinkRoot serverPlan = new SinkRoot(queueStore);
 
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    server.submitQueryPlan(serverPlan, workerPlans).get();
     TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
     while (!receivedTupleBatches.isEmpty()) {
       tb = receivedTupleBatches.poll();

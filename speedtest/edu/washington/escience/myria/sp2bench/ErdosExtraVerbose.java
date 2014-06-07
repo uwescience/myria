@@ -10,7 +10,8 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.operator.ColumnSelect;
+import edu.washington.escience.myria.operator.Apply;
+import edu.washington.escience.myria.operator.Applys;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.RootOperator;
@@ -18,13 +19,13 @@ import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.StreamingStateWrapper;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
-import edu.washington.escience.myria.parallel.CollectConsumer;
-import edu.washington.escience.myria.parallel.CollectProducer;
+import edu.washington.escience.myria.operator.network.CollectConsumer;
+import edu.washington.escience.myria.operator.network.CollectProducer;
+import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
+import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
+import edu.washington.escience.myria.operator.network.Producer;
+import edu.washington.escience.myria.operator.network.partition.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
-import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
-import edu.washington.escience.myria.parallel.GenericShuffleProducer;
-import edu.washington.escience.myria.parallel.Producer;
-import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 public class ErdosExtraVerbose {
@@ -97,7 +98,7 @@ public class ErdosExtraVerbose {
         new GenericShuffleConsumer(coAuthorShuffleP.getSchema(), coAuthorShuffleID, allWorkers);
     // schema: (pubName string, pubName String, authorName string)
 
-    final ColumnSelect projCoAuthorID = new ColumnSelect(new int[] { 2 }, coAuthorShuffleC);
+    final Apply projCoAuthorID = Applys.columnSelect(coAuthorShuffleC, 2);
     // schema: (authorName string)
 
     producers.add(coAuthorShuffleP);
@@ -147,11 +148,10 @@ public class ErdosExtraVerbose {
         new GenericShuffleConsumer(coAuthorPubsShuffleP.getSchema(), coAuthorPubsShuffleID, allWorkers);
     // schema: (authorName string, pubName string, authorName String)
 
-    final ColumnSelect projCoAuthorPubsID = new ColumnSelect(new int[] { 1 }, coAuthorPubsShuffleC);
+    final Apply projCoAuthorPubsID = Applys.columnSelect(coAuthorPubsShuffleC, 1);
     // schema: (pubName string)
 
-    final StreamingStateWrapper coAuthorPubsGlobalDE =
-        new StreamingStateWrapper(projCoAuthorPubsID, new DupElim());
+    final StreamingStateWrapper coAuthorPubsGlobalDE = new StreamingStateWrapper(projCoAuthorPubsID, new DupElim());
     // schema: (pubName string)
 
     final DbQueryScan allPubsAuthorNames = new DbQueryScan(//
@@ -187,7 +187,7 @@ public class ErdosExtraVerbose {
         new GenericShuffleConsumer(coCoAuthorNameShuffleP.getSchema(), coCoAuthorNameShuffleID, allWorkers);
     // schema: (pubName string, pubName string, authorName string)
 
-    final ColumnSelect projCoCoAuthorName = new ColumnSelect(new int[] { 2 }, coCoAuthorNameShuffleC);
+    final Apply projCoCoAuthorName = Applys.columnSelect(coCoAuthorNameShuffleC, 2);
 
     producers.add(coCoAuthorNameShuffleP);
     producers.add(coAuthorNamesPubsShuffleP);
@@ -197,8 +197,7 @@ public class ErdosExtraVerbose {
     // schema: (authorName string)
   }
 
-  public static StreamingStateWrapper erdosN(int n, int[] allWorkers, ArrayList<Producer> producers)
-      throws DbException {
+  public static StreamingStateWrapper erdosN(int n, int[] allWorkers, ArrayList<Producer> producers) throws DbException {
     StreamingStateWrapper erdos1 = erdosOne(allWorkers, producers);
     if (n <= 1) {
       return erdos1;

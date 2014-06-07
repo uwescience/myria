@@ -4,8 +4,8 @@ import org.jboss.netty.channel.Channel;
 
 import com.google.common.base.Preconditions;
 
-import edu.washington.escience.myria.parallel.Consumer;
-import edu.washington.escience.myria.parallel.Producer;
+import edu.washington.escience.myria.operator.network.Consumer;
+import edu.washington.escience.myria.operator.network.Producer;
 import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.concurrent.ReentrantSpinLock;
 

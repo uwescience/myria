@@ -18,8 +18,8 @@ import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.TupleSource;
 import edu.washington.escience.myria.operator.failures.DelayInjector;
-import edu.washington.escience.myria.parallel.CollectConsumer;
-import edu.washington.escience.myria.parallel.CollectProducer;
+import edu.washington.escience.myria.operator.network.CollectConsumer;
+import edu.washington.escience.myria.operator.network.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
@@ -73,7 +73,7 @@ public class FlowControlTest extends SystemTestBase {
     workerPlans.put(workerIDs[0], new RootOperator[] { cp1 });
 
     final CollectConsumer cc1 = new CollectConsumer(schema, worker1ReceiveID, new int[] { workerIDs[0] });
-    final DelayInjector di = new DelayInjector(1, TimeUnit.SECONDS, cc1);
+    final DelayInjector di = new DelayInjector(50, TimeUnit.MILLISECONDS, cc1);
     final CollectProducer cp2 = new CollectProducer(di, serverReceiveID, MASTER_ID);
 
     workerPlans.put(workerIDs[0], new RootOperator[] { cp1 });
@@ -82,7 +82,7 @@ public class FlowControlTest extends SystemTestBase {
     final CollectConsumer serverCollect = new CollectConsumer(schema, serverReceiveID, new int[] { workerIDs[1] });
     final SinkRoot serverPlan = new SinkRoot(serverCollect);
 
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    server.submitQueryPlan(serverPlan, workerPlans).get();
     assertEquals(numTuples, serverPlan.getCount());
 
   }

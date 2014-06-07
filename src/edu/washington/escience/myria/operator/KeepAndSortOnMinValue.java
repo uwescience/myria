@@ -182,7 +182,7 @@ public final class KeepAndSortOnMinValue extends StreamingState {
 
     @Override
     public boolean execute(final int index) {
-      if (TupleUtils.equalSubRows(inputTB, row, keyColIndices, uniqueTuples, index, keyColIndices)) {
+      if (TupleUtils.tupleEquals(inputTB, keyColIndices, row, uniqueTuples, keyColIndices, index)) {
         unique = false;
         Column<?> valueColumn = inputTB.getDataColumns().get(valueColIndex);
         if (shouldReplace(index, valueColumn, row)) {

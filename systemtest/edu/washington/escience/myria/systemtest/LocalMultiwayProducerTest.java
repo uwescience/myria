@@ -16,11 +16,11 @@ import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.operator.UnionAll;
-import edu.washington.escience.myria.parallel.CollectConsumer;
-import edu.washington.escience.myria.parallel.CollectProducer;
+import edu.washington.escience.myria.operator.network.CollectConsumer;
+import edu.washington.escience.myria.operator.network.CollectProducer;
+import edu.washington.escience.myria.operator.network.LocalMultiwayConsumer;
+import edu.washington.escience.myria.operator.network.LocalMultiwayProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
-import edu.washington.escience.myria.parallel.LocalMultiwayConsumer;
-import edu.washington.escience.myria.parallel.LocalMultiwayProducer;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestUtils;
@@ -106,7 +106,7 @@ public class LocalMultiwayProducerTest extends SystemTestBase {
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
     SinkRoot serverPlan = new SinkRoot(queueStore);
 
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    server.submitQueryPlan(serverPlan, workerPlans).get();
     TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
     while (!receivedTupleBatches.isEmpty()) {
       tb = receivedTupleBatches.poll();

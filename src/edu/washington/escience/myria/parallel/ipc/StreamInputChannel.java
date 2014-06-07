@@ -1,6 +1,6 @@
 package edu.washington.escience.myria.parallel.ipc;
 
-import edu.washington.escience.myria.parallel.Consumer;
+import edu.washington.escience.myria.operator.network.Consumer;
 
 /**
  * 

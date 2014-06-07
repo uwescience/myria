@@ -14,6 +14,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
 
 /**
@@ -187,10 +188,10 @@ public final class MergeJoin extends BinaryOperator {
     } else {
       this.outputColumns = null;
     }
-    leftCompareIndx = MyriaArrayUtils.checkSet(compareIndx1);
-    rightCompareIndx = MyriaArrayUtils.checkSet(compareIndx2);
-    leftAnswerColumns = MyriaArrayUtils.checkSet(answerColumns1);
-    rightAnswerColumns = MyriaArrayUtils.checkSet(answerColumns2);
+    leftCompareIndx = MyriaArrayUtils.warnIfNotSet(compareIndx1);
+    rightCompareIndx = MyriaArrayUtils.warnIfNotSet(compareIndx2);
+    leftAnswerColumns = MyriaArrayUtils.warnIfNotSet(answerColumns1);
+    rightAnswerColumns = MyriaArrayUtils.warnIfNotSet(answerColumns2);
 
     this.ascending = ascending;
 
@@ -263,8 +264,8 @@ public final class MergeJoin extends BinaryOperator {
    * @param rightRow in the right TB
    */
   protected void addToAns(final TupleBatch leftTb, final int leftRow, final TupleBatch rightTb, final int rightRow) {
-    Preconditions.checkArgument(leftTb.tupleCompare(leftCompareIndx, leftRow, rightTb, rightCompareIndx, rightRow,
-        ascending) == 0, "Joined tuples do not match.");
+    Preconditions.checkArgument(TupleUtils.tupleCompare(leftTb, leftCompareIndx, leftRow, rightTb, rightCompareIndx,
+        rightRow, ascending) == 0);
 
     for (int i = 0; i < leftAnswerColumns.length; ++i) {
       ans.put(i, leftTb.getDataColumns().get(leftAnswerColumns[i]), leftRow);
@@ -320,12 +321,13 @@ public final class MergeJoin extends BinaryOperator {
 
     while (!deferredEOS && !needData) {
       final int compared =
-          leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex, rightBatches.getLast(), rightCompareIndx,
-              rightRowIndex, ascending);
+          TupleUtils.tupleCompare(leftBatches.getLast(), leftCompareIndx, leftRowIndex, rightBatches.getLast(),
+              rightCompareIndx, rightRowIndex, ascending);
+
       if (compared == 0) {
-        Preconditions.checkState(leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex,
+        Preconditions.checkState(TupleUtils.tupleCompare(leftBatches.getLast(), leftCompareIndx, leftRowIndex,
             rightBatches.getLast(), rightCompareIndx, rightRowIndex, ascending) == 0);
-        Preconditions.checkState(leftBatches.getFirst().tupleCompare(leftCompareIndx, leftBeginIndex,
+        Preconditions.checkState(TupleUtils.tupleCompare(leftBatches.getFirst(), leftCompareIndx, leftBeginIndex,
             rightBatches.getFirst(), rightCompareIndx, rightBeginIndex, ascending) == 0);
         leftAndRightEqual();
       } else if (compared > 0) {
@@ -563,8 +565,8 @@ public final class MergeJoin extends BinaryOperator {
       }
 
       if (leftNotProcessed != null) {
-        if (leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex, leftNotProcessed, leftCompareIndx, 0,
-            ascending) == 0) {
+        if (TupleUtils.tupleCompare(leftBatches.getLast(), leftCompareIndx, leftRowIndex, leftNotProcessed,
+            leftCompareIndx, 0, ascending) == 0) {
           leftBatches.add(leftNotProcessed);
           leftNotProcessed = null;
           leftRowIndex = 0;
@@ -576,7 +578,8 @@ public final class MergeJoin extends BinaryOperator {
       } else {
         return AdvanceResult.NOT_ENOUGH_DATA;
       }
-    } else if (leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex, leftRowIndex + 1, ascending) == 0) {
+    } else if (TupleUtils.tupleCompare(leftBatches.getLast(), leftCompareIndx, leftRowIndex, leftRowIndex + 1,
+        ascending) == 0) {
       leftRowIndex++;
       joinedLeft = false;
       return AdvanceResult.OK;
@@ -601,8 +604,8 @@ public final class MergeJoin extends BinaryOperator {
       }
 
       if (rightNotProcessed != null) {
-        if (rightBatches.getLast().tupleCompare(rightCompareIndx, rightRowIndex, rightNotProcessed, rightCompareIndx,
-            0, ascending) == 0) {
+        if (TupleUtils.tupleCompare(rightBatches.getLast(), rightCompareIndx, rightRowIndex, rightNotProcessed,
+            rightCompareIndx, 0, ascending) == 0) {
           rightBatches.add(rightNotProcessed);
           rightNotProcessed = null;
           rightRowIndex = 0;
@@ -614,7 +617,8 @@ public final class MergeJoin extends BinaryOperator {
       } else {
         return AdvanceResult.NOT_ENOUGH_DATA;
       }
-    } else if (rightBatches.getLast().tupleCompare(rightCompareIndx, rightRowIndex, rightRowIndex + 1, ascending) == 0) {
+    } else if (TupleUtils.tupleCompare(rightBatches.getLast(), rightCompareIndx, rightRowIndex, rightRowIndex + 1,
+        ascending) == 0) {
       rightRowIndex++;
       joinedRight = false;
       return AdvanceResult.OK;

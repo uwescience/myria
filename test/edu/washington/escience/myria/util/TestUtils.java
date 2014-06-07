@@ -1,5 +1,9 @@
 package edu.washington.escience.myria.util;
 
+import java.util.AbstractMap.SimpleEntry;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -12,10 +16,25 @@ import org.junit.Assert;
 
 import com.google.common.collect.ImmutableList;
 
+import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 public final class TestUtils {
+
+  public static class EntryComparator implements Comparator<Entry<Long, String>> {
+
+    @Override
+    public int compare(Entry<Long, String> o1, Entry<Long, String> o2) {
+      int res = o1.getKey().compareTo(o2.getKey());
+      if (res != 0) {
+        return res;
+      }
+      return o1.getValue().compareTo(o2.getValue());
+    }
+
+  }
 
   private static Random random = null;
 
@@ -498,6 +517,39 @@ public final class TestUtils {
     ImmutableList.Builder<Number> sourceListBuilder = ImmutableList.builder();
     sourceListBuilder.add(element);
     return sourceListBuilder;
+  }
+
+  /**
+   * @param numTuples how many tuples in output
+   * @param sampleSize how many different values should be created at random (around numTuples/sampleSize duplicates)
+   * @param sorted Generate sorted tuples, sorted by id
+   * @return
+   */
+  public static TupleBatchBuffer generateRandomTuples(final int numTuples, final int sampleSize, boolean sorted) {
+    final ArrayList<Entry<Long, String>> entries = new ArrayList<Entry<Long, String>>();
+
+    final long[] ids = randomLong(0, sampleSize, numTuples);
+    final String[] names = randomFixedLengthNumericString(0, sampleSize, numTuples, 20);
+
+    for (int i = 0; i < numTuples; i++) {
+      entries.add(new SimpleEntry<Long, String>(ids[i], names[i]));
+    }
+
+    Comparator<Entry<Long, String>> comparator = new EntryComparator();
+    if (sorted) {
+      Collections.sort(entries, comparator);
+    }
+
+    final Schema schema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+
+    final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
+
+    for (Entry<Long, String> entry : entries) {
+      tbb.putLong(0, entry.getKey());
+      tbb.putString(1, entry.getValue());
+    }
+    return tbb;
   }
 
 }

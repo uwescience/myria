@@ -11,8 +11,7 @@ import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.parallel.Server;
 
 /**
- * A JSON-able wrapper for the expected wire message for an operator. To add a new operator, three things need to be
- * done.
+ * A JSON-able wrapper for the expected wire message for an operator. To add a new operator, two things need to be done.
  * 
  * 1. Create an Encoding class that extends OperatorEncoding.
  * 
@@ -26,10 +25,10 @@ import edu.washington.escience.myria.parallel.Server;
     @Type(name = "BroadcastProducer", value = BroadcastProducerEncoding.class),
     @Type(name = "CollectConsumer", value = CollectConsumerEncoding.class),
     @Type(name = "CollectProducer", value = CollectProducerEncoding.class),
-    @Type(name = "ColumnSelect", value = ColumnSelectEncoding.class),
     @Type(name = "Consumer", value = ConsumerEncoding.class), @Type(name = "Counter", value = CounterEncoding.class),
     @Type(name = "DbInsert", value = DbInsertEncoding.class),
     @Type(name = "DbQueryScan", value = QueryScanEncoding.class),
+    @Type(name = "Difference", value = DifferenceEncoding.class),
     @Type(name = "DupElim", value = DupElimEncoding.class), @Type(name = "Empty", value = EmptyRelationEncoding.class),
     @Type(name = "EOSController", value = EOSControllerEncoding.class),
     @Type(name = "FileScan", value = FileScanEncoding.class), @Type(name = "Filter", value = FilterEncoding.class),
@@ -42,7 +41,7 @@ import edu.washington.escience.myria.parallel.Server;
     @Type(name = "LocalMultiwayProducer", value = LocalMultiwayProducerEncoding.class),
     @Type(name = "Merge", value = MergeEncoding.class), @Type(name = "MergeJoin", value = MergeJoinEncoding.class),
     @Type(name = "MultiGroupByAggregate", value = MultiGroupByAggregateEncoding.class),
-    @Type(name = "Rename", value = RenameEncoding.class),
+    @Type(name = "NChiladaFileScan", value = NChiladaFileScanEncoding.class),
     @Type(name = "RightHashCountingJoin", value = RightHashCountingJoinEncoding.class),
     @Type(name = "RightHashJoin", value = RightHashJoinEncoding.class),
     @Type(name = "SeaFlowScan", value = SeaFlowFileScanEncoding.class),
@@ -56,18 +55,18 @@ import edu.washington.escience.myria.parallel.Server;
     @Type(name = "SymmetricHashCountingJoin", value = SymmetricHashCountingJoinEncoding.class),
     @Type(name = "TableScan", value = TableScanEncoding.class),
     @Type(name = "TipsyFileScan", value = TipsyFileScanEncoding.class),
-    @Type(name = "NChiladaFileScan", value = NChiladaFileScanEncoding.class),
-    @Type(name = "UnionAll", value = UnionAllEncoding.class),
-    @Type(name = "Difference", value = DifferenceEncoding.class) })
+    @Type(name = "UnionAll", value = UnionAllEncoding.class) })
 public abstract class OperatorEncoding<T extends Operator> extends MyriaApiEncoding {
 
   @Required
+  public Integer opId;
+
   public String opName;
 
   /**
    * Connect any operators to this one.
    */
-  public abstract void connect(Operator operator, Map<String, Operator> operators);
+  public abstract void connect(Operator operator, Map<Integer, Operator> operators);
 
   /**
    * @param server the Myria server for which this operator will be used.

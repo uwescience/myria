@@ -11,10 +11,10 @@ import com.google.common.collect.ImmutableMap;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.storage.MutableTupleBuffer;
 import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
-import edu.washington.escience.myria.storage.MutableTupleBuffer;
 
 /**
  * Orders tuples in memory.

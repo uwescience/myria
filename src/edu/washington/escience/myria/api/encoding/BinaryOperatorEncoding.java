@@ -15,13 +15,13 @@ import edu.washington.escience.myria.operator.Operator;
 public abstract class BinaryOperatorEncoding<T extends Operator> extends OperatorEncoding<T> {
 
   @Required
-  public String argChild1;
+  public Integer argChild1;
 
   @Required
-  public String argChild2;
+  public Integer argChild2;
 
   @Override
-  public final void connect(Operator current, Map<String, Operator> operators) {
+  public final void connect(Operator current, Map<Integer, Operator> operators) {
     current.setChildren(new Operator[] { operators.get(argChild1), operators.get(argChild2) });
   }
 

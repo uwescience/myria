@@ -4,6 +4,7 @@ import java.util.Objects;
 
 import org.apache.commons.lang.StringEscapeUtils;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import edu.washington.escience.myria.Type;
@@ -26,21 +27,19 @@ public class ConstantExpression extends ZeroaryExpression {
   private final String value;
 
   /**
-   * This is not really unused, it's used automagically by Jackson deserialization.
-   */
-  @SuppressWarnings("unused")
-  private ConstantExpression() {
-    valueType = null;
-    value = null;
-  }
-
-  /**
    * @param type the type of this object.
    * @param value the value of this constant.
    */
-  public ConstantExpression(final Type type, final String value) {
+  @JsonCreator
+  public ConstantExpression(@JsonProperty("valueType") final Type type, @JsonProperty("value") final String value) {
     valueType = type;
-    this.value = value;
+    if (type == Type.LONG_TYPE && value.toUpperCase().indexOf('L') == -1) {
+      this.value = value + 'L';
+    } else if (type == Type.FLOAT_TYPE && value.toUpperCase().indexOf('F') == -1) {
+      this.value = value + 'F';
+    } else {
+      this.value = value;
+    }
   }
 
   /**

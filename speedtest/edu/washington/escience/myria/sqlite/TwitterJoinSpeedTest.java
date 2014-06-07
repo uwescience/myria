@@ -17,7 +17,8 @@ import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.operator.ColumnSelect;
+import edu.washington.escience.myria.operator.Apply;
+import edu.washington.escience.myria.operator.Applys;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.RootOperator;
@@ -27,13 +28,13 @@ import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.operator.agg.Aggregate;
 import edu.washington.escience.myria.operator.agg.Aggregator;
-import edu.washington.escience.myria.parallel.CollectConsumer;
-import edu.washington.escience.myria.parallel.CollectProducer;
+import edu.washington.escience.myria.operator.network.CollectConsumer;
+import edu.washington.escience.myria.operator.network.CollectProducer;
+import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
+import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
+import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
+import edu.washington.escience.myria.operator.network.partition.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
-import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
-import edu.washington.escience.myria.parallel.GenericShuffleProducer;
-import edu.washington.escience.myria.parallel.PartitionFunction;
-import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.systemtest.SystemTestBase;
 
@@ -126,7 +127,7 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, sumCount);
     SinkRoot serverPlan = new SinkRoot(queueStore);
 
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    server.submitQueryPlan(serverPlan, workerPlans).get();
     /* Make sure the count matches the known result. */
     assertEquals(3361461, receivedTupleBatches.take().getLong(0, 0));
 
@@ -168,7 +169,7 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final List<String> joinSchema = ImmutableList.of("follower", "joinL", "joinR", "followee");
     final SymmetricHashJoin localjoin = new SymmetricHashJoin(joinSchema, sc1, sc2, new int[] { 1 }, new int[] { 0 });
     /* Select only the two columns of interest: SC1.follower now transitively follows SC2.followee. */
-    final ColumnSelect proj = new ColumnSelect(new int[] { 0, 3 }, localjoin);
+    final Apply proj = Applys.columnSelect(localjoin, 0, 3);
     /* Now reshuffle the results to partition based on the new followee, so that we can dupelim. */
     final ExchangePairID arrayID0 = ExchangePairID.newID();
     final GenericShuffleProducer sp0 = new GenericShuffleProducer(proj, arrayID0, workerIDs, pf0);
@@ -188,7 +189,7 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final CollectConsumer collect = new CollectConsumer(cp.getSchema(), serverReceiveID, workerIDs);
     final SinkRoot serverPlan = new SinkRoot(collect);
 
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    server.submitQueryPlan(serverPlan, workerPlans).get();
     /* Make sure the count matches the known result. */
     assertEquals(3361461, serverPlan.getCount());
 
@@ -248,7 +249,7 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final CollectConsumer collect = new CollectConsumer(cp.getSchema(), serverReceiveID, workerIDs);
     final SinkRoot serverPlan = new SinkRoot(collect);
 
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    server.submitQueryPlan(serverPlan, workerPlans).get();
     /* Make sure the count matches the known result. */
     assertEquals(3361461, serverPlan.getCount());
 

@@ -220,7 +220,7 @@ if args.run_filename:
     }
 
     scan1 = {
-      "opName": "SCAN1",
+      "opId": "SCAN1",
       "opType": "TableScan",
       "relationKey": relation_key
     }
@@ -228,7 +228,7 @@ if args.run_filename:
     shuffle1 = {
       "argChild": "SCAN1",
       "argOperatorId": "0",
-      "opName": "SP1",
+      "opId": "SP1",
       "opType": "ShuffleProducer",
       "argPf": {
         "index": 1,
@@ -243,7 +243,7 @@ if args.run_filename:
     }
 
     scan2 = {
-      "opName": "SCAN2",
+      "opId": "SCAN2",
       "opType": "TableScan",
       "relationKey": relation_key
     }
@@ -251,7 +251,7 @@ if args.run_filename:
     shuffle2 = {
       "argChild": "SCAN2",
       "argOperatorId": "1",
-      "opName": "SP2",
+      "opId": "SP2",
       "opType": "ShuffleProducer",
       "argPf": {
         "index": 1,
@@ -270,7 +270,7 @@ if args.run_filename:
         "columnTypes" : ["LONG_TYPE","LONG_TYPE"],
         "columnNames" : ["follower","followee"]
       },
-      "opName": "SC1",
+      "opId": "SC1",
       "opType": "ShuffleConsumer"
     }
 
@@ -280,7 +280,7 @@ if args.run_filename:
         "columnTypes" : ["LONG_TYPE","LONG_TYPE"],
         "columnNames" : ["follower","followee"]
       },
-      "opName": "SC2",
+      "opId": "SC2",
       "opType": "ShuffleConsumer"
     }
  
@@ -299,13 +299,13 @@ if args.run_filename:
       "argSelect2": [
         "1"
       ],
-      "opName": "JOIN",
+      "opId": "JOIN",
       "opType": "SymmetricHashJoin"
     }
 
     sink_root = {
       "argChild": "JOIN",
-      "opName": "SINK",
+      "opId": "SINK",
       "opType": "SinkRoot"
     }
 

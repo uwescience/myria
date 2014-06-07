@@ -21,12 +21,12 @@ import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.operator.TupleSource;
 import edu.washington.escience.myria.operator.agg.Aggregate;
 import edu.washington.escience.myria.operator.agg.Aggregator;
-import edu.washington.escience.myria.parallel.CollectConsumer;
-import edu.washington.escience.myria.parallel.CollectProducer;
+import edu.washington.escience.myria.operator.network.CollectConsumer;
+import edu.washington.escience.myria.operator.network.CollectProducer;
+import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
+import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
+import edu.washington.escience.myria.operator.network.partition.RoundRobinPartitionFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
-import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
-import edu.washington.escience.myria.parallel.GenericShuffleProducer;
-import edu.washington.escience.myria.parallel.RoundRobinPartitionFunction;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
@@ -66,7 +66,7 @@ public class SplitDataTest extends SystemTestBase {
       workerPlans.put(i, new RootOperator[] { insert });
     }
 
-    server.submitQueryPlan(scatter, workerPlans).sync();
+    server.submitQueryPlan(scatter, workerPlans).get();
 
     /*** TEST PHASE 2: Count them up, make sure the answer agrees. ***/
     /* Create the worker plan: DbQueryScan with count, then send it to master. */
@@ -91,7 +91,7 @@ public class SplitDataTest extends SystemTestBase {
 
     /* Actually dispatch the worker plans. */
     /* Start the query and collect the results. */
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    server.submitQueryPlan(serverPlan, workerPlans).get();
     TupleBatch result = aggResult.take();
 
     /* Sanity-check the results, sum them, then confirm. */

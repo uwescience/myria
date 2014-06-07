@@ -4,7 +4,7 @@
             "operators": [
                 {
                     "argOperatorId": "CP1",
-                    "opName": "CC1",
+                    "opId": "CC1",
                     "opType": "CollectConsumer"
                 }
             ],
@@ -15,7 +15,7 @@
         {
             "operators": [
                 {
-                    "opName": "SCAN1",
+                    "opId": "SCAN1",
                     "opType": "TableScan",
                     "relationKey": {
                         "programName": "global_join",
@@ -29,7 +29,7 @@
                         "index": "1",
                         "type": "SingleFieldHash"
                     },
-                    "opName": "SP1",
+                    "opId": "SP1",
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -37,7 +37,7 @@
         {
             "operators": [
                 {
-                    "opName": "SCAN2",
+                    "opId": "SCAN2",
                     "opType": "TableScan",
                     "relationKey": {
                         "programName": "global_join",
@@ -51,7 +51,7 @@
                         "index": "0",
                         "type": "SingleFieldHash"
                     },
-                    "opName": "SP2",
+                    "opId": "SP2",
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -60,12 +60,12 @@
             "operators": [
                 {
                     "argOperatorId": "SP1",
-                    "opName": "SC1",
+                    "opId": "SC1",
                     "opType": "ShuffleConsumer"
                 },
                 {
                     "argOperatorId": "SP2",
-                    "opName": "SC2",
+                    "opId": "SC2",
                     "opType": "ShuffleConsumer"
                 },
                 {
@@ -83,12 +83,12 @@
                     "argSelect2": [
                         "1"
                     ],
-                    "opName": "JOIN",
+                    "opId": "JOIN",
                     "opType": "SymmetricHashJoin"
                 },
                 {
                     "argChild": "JOIN",
-                    "opName": "CP1",
+                    "opId": "CP1",
                     "opType": "CollectProducer"
                 }
             ]

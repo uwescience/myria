@@ -22,14 +22,15 @@ import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.SQLiteInfo;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
-import edu.washington.escience.myria.operator.ColumnSelect;
+import edu.washington.escience.myria.operator.Apply;
+import edu.washington.escience.myria.operator.Applys;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.StreamingStateWrapper;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.parallel.QueryExecutionMode;
-import edu.washington.escience.myria.parallel.TaskResourceManager;
+import edu.washington.escience.myria.parallel.LocalFragmentResourceManager;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 public class TwitterSingleNodeJoinSpeedTest {
@@ -48,8 +49,8 @@ public class TwitterSingleNodeJoinSpeedTest {
    * The environment execution variables.
    */
   private final static ImmutableMap<String, Object> execEnvVars = ImmutableMap.<String, Object> of(
-      MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER, new TaskResourceManager(null, null,
-          QueryExecutionMode.BLOCKING));
+      MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER, new LocalFragmentResourceManager(null, null),
+      MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE, QueryExecutionMode.BLOCKING);
 
   /** Whether we were able to copy the data. */
   private static boolean successfulSetup = false;
@@ -101,7 +102,7 @@ public class TwitterSingleNodeJoinSpeedTest {
     final SymmetricHashJoin join = new SymmetricHashJoin(joinSchema, scan1, scan2, new int[] { 1 }, new int[] { 0 });
 
     /* Select only the two columns of interest: SC1.follower now transitively follows SC2.followee. */
-    final ColumnSelect colSelect = new ColumnSelect(new int[] { 0, 3 }, join);
+    final Apply colSelect = Applys.columnSelect(join, 0, 3);
 
     /* Now Dupelim */
     final StreamingStateWrapper dupelim = new StreamingStateWrapper(colSelect, new DupElim());

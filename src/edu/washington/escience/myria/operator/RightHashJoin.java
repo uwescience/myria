@@ -102,7 +102,7 @@ public final class RightHashJoin extends BinaryOperator {
 
     @Override
     public boolean execute(final int index) {
-      if (TupleUtils.equalSubRows(inputTB, row, inputCmpColumns, joinAgainstHashTable, index, joinAgainstCmpColumns)) {
+      if (TupleUtils.tupleEquals(inputTB, inputCmpColumns, row, joinAgainstHashTable, joinAgainstCmpColumns, index)) {
         addToAns(inputTB, row, joinAgainstHashTable, index);
       }
       return true;
@@ -174,11 +174,10 @@ public final class RightHashJoin extends BinaryOperator {
     } else {
       this.outputColumns = null;
     }
-    leftCompareIndx = MyriaArrayUtils.checkSet(compareIndx1);
-    rightCompareIndx = MyriaArrayUtils.checkSet(compareIndx2);
-    leftAnswerColumns = MyriaArrayUtils.checkSet(answerColumns1);
-    rightAnswerColumns = MyriaArrayUtils.checkSet(answerColumns2);
-
+    leftCompareIndx = MyriaArrayUtils.warnIfNotSet(compareIndx1);
+    rightCompareIndx = MyriaArrayUtils.warnIfNotSet(compareIndx2);
+    leftAnswerColumns = MyriaArrayUtils.warnIfNotSet(answerColumns1);
+    rightAnswerColumns = MyriaArrayUtils.warnIfNotSet(answerColumns2);
   }
 
   /**
@@ -216,19 +215,30 @@ public final class RightHashJoin extends BinaryOperator {
 
   @Override
   protected Schema generateSchema() {
-    final Operator left = getLeft();
-    final Operator right = getRight();
+    final Schema leftSchema = getLeft().getSchema();
+    final Schema rightSchema = getRight().getSchema();
     ImmutableList.Builder<Type> types = ImmutableList.builder();
     ImmutableList.Builder<String> names = ImmutableList.builder();
 
+    /* Assert that the compare index types are the same. */
+    for (int i = 0; i < rightCompareIndx.length; ++i) {
+      int leftIndex = leftCompareIndx[i];
+      int rightIndex = rightCompareIndx[i];
+      Type leftType = leftSchema.getColumnType(leftIndex);
+      Type rightType = rightSchema.getColumnType(rightIndex);
+      Preconditions.checkState(leftType == rightType,
+          "column types do not match for join at index %s: left column type %s [%s] != right column type %s [%s]", i,
+          leftIndex, leftType, rightIndex, rightType);
+    }
+
     for (int i : leftAnswerColumns) {
-      types.add(left.getSchema().getColumnType(i));
-      names.add(left.getSchema().getColumnName(i));
+      types.add(leftSchema.getColumnType(i));
+      names.add(leftSchema.getColumnName(i));
     }
 
     for (int i : rightAnswerColumns) {
-      types.add(right.getSchema().getColumnType(i));
-      names.add(right.getSchema().getColumnName(i));
+      types.add(rightSchema.getColumnType(i));
+      names.add(rightSchema.getColumnName(i));
     }
 
     if (outputColumns != null) {
@@ -362,9 +372,10 @@ public final class RightHashJoin extends BinaryOperator {
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     final Operator right = getRight();
-    rightHashTableIndices = new TIntObjectHashMap<TIntList>();
 
+    rightHashTableIndices = new TIntObjectHashMap<TIntList>();
     rightHashTable = new MutableTupleBuffer(right.getSchema());
+
     ans = new TupleBatchBuffer(getSchema());
     doJoin = new JoinProcedure();
   }

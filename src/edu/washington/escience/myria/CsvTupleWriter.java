@@ -10,8 +10,8 @@ import org.supercsv.encoder.DefaultCsvEncoder;
 import org.supercsv.io.CsvListWriter;
 import org.supercsv.prefs.CsvPreference;
 
-import edu.washington.escience.myria.storage.ReadableTable;
 import au.com.bytecode.opencsv.CSVWriter;
+import edu.washington.escience.myria.storage.ReadableTable;
 
 /**
  * CsvTupleWriter is a {@link TupleWriter} that serializes tuples to a delimited file, usually a CSV. It uses a
@@ -79,5 +79,14 @@ public class CsvTupleWriter implements TupleWriter {
   public void done() throws IOException {
     csvWriter.flush();
     csvWriter.close();
+  }
+
+  @Override
+  public void error() throws IOException {
+    try {
+      csvWriter.write("There was an error. Investigate the query status to see the message");
+    } finally {
+      csvWriter.close();
+    }
   }
 }

@@ -48,7 +48,12 @@ public final class MasterDaemon {
    */
   public MasterDaemon(final String catalogDirPath, final int apiPort) throws Exception {
     server = new Server(FilenameUtils.concat(catalogDirPath, "master.catalog"));
-    apiServer = new MasterApiServer(server, this, apiPort);
+    try {
+      apiServer = new MasterApiServer(server, this, apiPort);
+    } catch (Exception e) {
+      server.shutdown();
+      throw e;
+    }
   }
 
   /**

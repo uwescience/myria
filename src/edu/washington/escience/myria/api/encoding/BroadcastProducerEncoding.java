@@ -1,7 +1,7 @@
 package edu.washington.escience.myria.api.encoding;
 
-import edu.washington.escience.myria.parallel.FixValuePartitionFunction;
-import edu.washington.escience.myria.parallel.GenericShuffleProducer;
+import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
+import edu.washington.escience.myria.operator.network.partition.FixValuePartitionFunction;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.util.MyriaUtils;
 

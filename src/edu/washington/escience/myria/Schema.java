@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 import net.jcip.annotations.Immutable;
 
@@ -19,6 +20,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
+import edu.washington.escience.myria.util.MyriaUtils;
+
 /**
  * Schema describes the schema of a tuple.
  */
@@ -27,6 +30,25 @@ public final class Schema implements Serializable {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
+
+  /** The regular expression specifying what names are valid. */
+  public static final String VALID_NAME_REGEX = "^[a-zA-Z_]\\w*$";
+  /** The regular expression matcher for {@link #VALID_NAME_REGEX}. */
+  private static final Pattern VALID_NAME_PATTERN = Pattern.compile(VALID_NAME_REGEX);
+
+  /**
+   * Validate a potential column name for use in a Schema. Valid names are given by {@link #VALID_NAME_REGEX}.
+   * 
+   * @param name the candidate column name.
+   * @return the supplied name, if it is valid.
+   * @throws IllegalArgumentException if the name does not match the regex {@link #VALID_NAME_REGEX}.
+   */
+  private static String checkName(final String name) {
+    Objects.requireNonNull(name, "name");
+    Preconditions.checkArgument(VALID_NAME_PATTERN.matcher(name).matches(),
+        "supplied column name %s does not match the valid name regex %s", name, VALID_NAME_REGEX);
+    return name;
+  }
 
   /**
    * Converts a JDBC ResultSetMetaData object into a Schema.
@@ -131,17 +153,6 @@ public final class Schema implements Serializable {
   }
 
   /**
-   * Merge two Schemas into one. The result has the columns of the first concatenated with the columns of the second.
-   * 
-   * @param first The Schema with the first columns of the new Schema.
-   * @param second The Schema with the last columns of the Schema.
-   * @return the new Schema.
-   */
-  public static Schema mergeKeepDuplicateNames(final Schema first, final Schema second) {
-    return new Schema(first, second);
-  }
-
-  /**
    * Create a new Schema using an existing Schema and a new column.
    * 
    * @param schema the existing schema.
@@ -197,6 +208,9 @@ public final class Schema implements Serializable {
    * @return a Schema representing the specified column types and names.
    */
   public static Schema of(final List<Type> types, final List<String> names) {
+    if (names == null) {
+      return new Schema(types);
+    }
     return new Schema(types, names);
   }
 
@@ -219,18 +233,28 @@ public final class Schema implements Serializable {
   }
 
   /**
+   * Helper function to generate the list of column names given a {@link Type} array.
+   * 
+   * @param types the types of the columns
+   * @return the list of column names given a {@link Type} array. Every column is named <code>colI</code> where
+   *         <code>I</code> counts from <code>0</code> to <code>types.size()</code>.
+   */
+  private static List<String> generateNames(final List<Type> types) {
+    Objects.requireNonNull(types, "types");
+    final ImmutableList.Builder<String> names = ImmutableList.builder();
+    for (int i = 0; i < types.size(); i++) {
+      names.add("col" + i);
+    }
+    return names.build();
+  }
+
+  /**
    * Create a Schema given an array of column types. Column names will be col0, col1, ....
    * 
    * @param types the types of the columns.
    */
   public Schema(final List<Type> types) {
-    Objects.requireNonNull(types);
-    columnTypes = ImmutableList.copyOf(types);
-    final ImmutableList.Builder<String> names = ImmutableList.builder();
-    for (int i = 0; i < types.size(); i++) {
-      names.add("col" + i);
-    }
-    columnNames = names.build();
+    this(types, generateNames(types));
   }
 
   /**
@@ -250,59 +274,22 @@ public final class Schema implements Serializable {
    * @param columnNames array specifying the names of the columns.
    */
   public Schema(final List<Type> columnTypes, final List<String> columnNames) {
-    Objects.requireNonNull(columnTypes, "Column types cannot be null");
-    Objects.requireNonNull(columnNames, "Column names cannot be null");
+    Objects.requireNonNull(columnTypes, "columnTypes");
+    Objects.requireNonNull(columnNames, "columnNames");
     if (columnTypes.size() != columnNames.size()) {
       throw new IllegalArgumentException("Invalid Schema: must have the same number of column types and column");
     }
-    HashSet<String> uniqueNames = new HashSet<String>(columnNames);
-    if (uniqueNames.size() != columnNames.size()) {
-      throw new IllegalArgumentException("Invalid Schema: column names must be unique.");
+    MyriaUtils.checkHasNoNulls(columnTypes, "columnTypes may not contain null elements");
+    MyriaUtils.checkHasNoNulls(columnNames, "columnNames may not contain null elements");
+    HashSet<String> uniqueNames = new HashSet<>();
+    for (String name : columnNames) {
+      checkName(name);
+      if (!uniqueNames.add(name)) {
+        throw new IllegalArgumentException("schema has duplicated column name " + name);
+      }
     }
     this.columnTypes = ImmutableList.copyOf(columnTypes);
     this.columnNames = ImmutableList.copyOf(columnNames);
-  }
-
-  /**
-   * Merge Schema. Schemas generated by operators such as join should be allowed to have duplicate names.
-   * 
-   * @param first first Schema
-   * @param second second Schema
-   * */
-  private Schema(final Schema first, final Schema second) {
-    final ImmutableList.Builder<Type> types = ImmutableList.builder();
-    final ImmutableList.Builder<String> names = ImmutableList.builder();
-
-    types.addAll(first.getColumnTypes()).addAll(second.getColumnTypes());
-    names.addAll(first.getColumnNames()).addAll(second.getColumnNames());
-
-    columnTypes = types.build();
-    columnNames = names.build();
-  }
-
-  /**
-   * Constructor. Create a new tuple desc with typeAr.length columns with columns of the specified types, with anonymous
-   * (unnamed) columns.
-   * 
-   * @param typeAr array specifying the number of and types of columns in this Schema. It must contain at least one
-   *          entry.
-   */
-  @Deprecated
-  public Schema(final Type[] typeAr) {
-    this(Arrays.asList(typeAr));
-  }
-
-  /**
-   * Construct a Schema given a type array and column name arrays.
-   * 
-   * This function is deprecated as it requires a copy: arrays are mutable and Schema objects are immutable.
-   * 
-   * @param types the types of the columns in this Schema.
-   * @param names the names of the columns in this Schema.
-   */
-  @Deprecated
-  public Schema(final Type[] types, final String[] names) {
-    this(Arrays.asList(types), Arrays.asList(names));
   }
 
   /**
@@ -439,7 +426,36 @@ public final class Schema implements Serializable {
 
   /**
    * The empty schema.
-   * */
+   */
   public static final Schema EMPTY_SCHEMA = Schema.of(Arrays.asList(new Type[] {}), Arrays.asList(new String[] {}));
 
+  /**
+   * Construct a Schema from a list of {@link Type} and {@link String} objects. The types and names may be interleaved
+   * in any order; ordering within types and within names is preserved. If there are no {@link String} objects given,
+   * then the {@link #Schema(List)} constructor is used.
+   * 
+   * @param fields any number of {@link Type} or {@link String} objects.
+   * @return the {@link Schema} containing these objects.
+   */
+  public static Schema ofFields(final Object... fields) {
+    ImmutableList.Builder<Type> typesB = ImmutableList.builder();
+    ImmutableList.Builder<String> namesB = ImmutableList.builder();
+    for (Object o : fields) {
+      Objects.requireNonNull(o, "field cannot be null");
+      if (o instanceof Type) {
+        typesB.add((Type) o);
+      } else if (o instanceof String) {
+        namesB.add((String) o);
+      } else {
+        throw new IllegalArgumentException("fields must be either " + Type.class.getCanonicalName() + " or "
+            + String.class.getCanonicalName() + ", not " + o.getClass().getCanonicalName());
+      }
+    }
+    List<Type> types = typesB.build();
+    List<String> names = namesB.build();
+    if (names.isEmpty()) {
+      return new Schema(types);
+    }
+    return Schema.of(types, names);
+  }
 }
