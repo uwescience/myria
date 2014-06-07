@@ -190,14 +190,18 @@ public class ProfilingLogger {
   private String getTransformProfilingDataStatement() {
     String tmpRelation = MyriaConstants.PROFILING_RELATION_TMP.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL);
     return Joiner.on(' ').join(
-        "INSERT INTO", MyriaConstants.PROFILING_RELATION.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL),
+        "INSERT INTO",
+        MyriaConstants.PROFILING_RELATION.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL),
         "SELECT c.queryid, c.fragmentid, c.opid, c.nanotime as startTime, r.nanotime as endTime, r.numtuples",
-        "FROM", tmpRelation, "c,",
-        tmpRelation, "r",
+        "FROM",
+        tmpRelation,
+        "c,",
+        tmpRelation,
+        "r",
         "WHERE",
-        Joiner.on(" AND ").join("c.queryid=r.queryid", "c.fragmentid=r.fragmentid", "c.opid=r.opid", "c.traceid=r.traceid",
-            "r.eventtype='return'", "c.eventtype = 'call'", "r.queryid=?"), ";",
-        "DELETE FROM", tmpRelation, "WHERE queryid = ?");
+        Joiner.on(" AND ").join("c.queryid=r.queryid", "c.fragmentid=r.fragmentid", "c.opid=r.opid",
+            "c.traceid=r.traceid", "r.eventtype='return'", "c.eventtype = 'call'", "r.queryid=?"), ";", "DELETE FROM",
+        tmpRelation, "WHERE queryid = ?");
   }
 
   /**
@@ -253,6 +257,7 @@ public class ProfilingLogger {
    * @throws DbException if any error occurs
    */
   private void transformProfilingRelation(final long queryId) throws DbException {
+    final long startTime = System.nanoTime();
     try {
       statementTransform.setLong(1, queryId); // for insert statement
       statementTransform.setLong(2, queryId); // for delete statement
@@ -266,6 +271,9 @@ public class ProfilingLogger {
       }
       throw new DbException(e);
     }
+    LOGGER.info("Transforming the profiling relation took {} milliseconds.", TimeUnit.NANOSECONDS.toMillis(System
+        .nanoTime()
+        - startTime));
   }
 
   /**
@@ -274,6 +282,7 @@ public class ProfilingLogger {
    * @throws DbException if insertion in the database fails
    */
   private void flushProfilingEventsBatch() throws DbException {
+    final long startTime = System.nanoTime();
     try {
       if (batchSizeEvents == 0) {
         return;
@@ -287,6 +296,9 @@ public class ProfilingLogger {
       }
       throw new DbException(e);
     }
+    LOGGER.info("Flusing the profiling events batch took {} milliseconds.", TimeUnit.NANOSECONDS.toMillis(System
+        .nanoTime()
+        - startTime));
   }
 
   /**
@@ -295,6 +307,7 @@ public class ProfilingLogger {
    * @throws DbException if insertion in the database fails
    */
   private void flushSentBatch() throws DbException {
+    final long startTime = System.nanoTime();
     try {
       if (batchSizeSent > 0) {
         statementSent.executeBatch();
@@ -307,6 +320,8 @@ public class ProfilingLogger {
       }
       throw new DbException(e);
     }
+    LOGGER.info("Flusing the sent batch took {} milliseconds.", TimeUnit.NANOSECONDS.toMillis(System.nanoTime()
+        - startTime));
   }
 
   /**
