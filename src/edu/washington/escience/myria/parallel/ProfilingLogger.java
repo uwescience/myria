@@ -296,7 +296,7 @@ public class ProfilingLogger {
       }
       throw new DbException(e);
     }
-    LOGGER.info("Flusing the profiling events batch took {} milliseconds.", TimeUnit.NANOSECONDS.toMillis(System
+    LOGGER.info("Flushing the profiling events batch took {} milliseconds.", TimeUnit.NANOSECONDS.toMillis(System
         .nanoTime()
         - startTime));
   }
@@ -320,7 +320,7 @@ public class ProfilingLogger {
       }
       throw new DbException(e);
     }
-    LOGGER.info("Flusing the sent batch took {} milliseconds.", TimeUnit.NANOSECONDS.toMillis(System.nanoTime()
+    LOGGER.info("Flushing the sent batch took {} milliseconds.", TimeUnit.NANOSECONDS.toMillis(System.nanoTime()
         - startTime));
   }
 
