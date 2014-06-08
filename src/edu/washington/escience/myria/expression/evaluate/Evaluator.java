@@ -7,6 +7,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
+import edu.washington.escience.myria.expression.StateExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
 
 /**
@@ -24,13 +25,19 @@ public abstract class Evaluator {
   private final ExpressionOperatorParameter parameters;
 
   /**
+   * True if the expression uses state.
+   */
+  private final boolean needsState;
+
+  /**
    * @param expression the expression to be evaluated
    * @param parameters parameters that are passed to the expression
    */
   public Evaluator(final Expression expression, final ExpressionOperatorParameter parameters) {
-    this.expression = expression;
-    Preconditions.checkNotNull(parameters.getSchema());
-    this.parameters = parameters;
+    this.expression = Preconditions.checkNotNull(expression, "expression");
+    this.parameters = Preconditions.checkNotNull(parameters, "parameters");
+    Preconditions.checkNotNull(parameters.getSchema(), "parameters.getSchema()");
+    needsState = getExpression().hasOperator(StateExpression.class);
   }
 
   /**
@@ -113,5 +120,12 @@ public abstract class Evaluator {
    */
   public boolean isConstant() {
     return getExpression().isConstant();
+  }
+
+  /**
+   * @return true if the expression accesses the state.
+   */
+  public boolean needsState() {
+    return needsState;
   }
 }
