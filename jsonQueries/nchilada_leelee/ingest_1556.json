@@ -1,0 +1,9 @@
+{ 
+    	"nchiladaDirectoryName": "hdfs://vega.cs.washington.edu:8020//datasets/cosmo25p.768sg1bwK1C52/cosmo25p.768sg1bwK1C52.001556",
+    	"groupFileName": "hdfs://vega.cs.washington.edu:8020//datasets/cosmo25p.768sg1bwK1C52/cosmo25p.768sg1bwK1C52.001556.rockstar.grp",
+      "relationKey": {
+        	"programName": "adhoc",
+        	"relationName": "snapshot1556",
+        	"userName": "public"
+    	}
+	}

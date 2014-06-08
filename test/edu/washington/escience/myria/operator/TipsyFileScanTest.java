@@ -32,7 +32,7 @@ public class TipsyFileScanTest {
   private static final int NUM_COLUMN_DARK = 9;
   private static final int NUM_COLUMN_STAR = 11;
 
-  private static int getRowCount(Operator fileScan) throws DbException {
+  public static int getRowCount(Operator fileScan) throws DbException {
     fileScan.open(TestEnvVars.get());
 
     int count = 0;
