@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.parallel;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Objects;
@@ -14,7 +15,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 
 import edu.washington.escience.myria.RelationKey;
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
@@ -30,7 +30,7 @@ public final class SubQuery extends QueryPlan {
   /** The set of relations that this {@link SubQuery} reads. */
   private final Set<RelationKey> readRelations;
   /** The set of relations that this {@link SubQuery} writes. */
-  private final ImmutableMap<RelationKey, Schema> writeRelations;
+  private final ImmutableMap<RelationKey, RelationWriteMetadata> writeRelations;
   /** The execution statistics about this {@link SubQuery}. */
   private final ExecutionStatistics executionStats;
 
@@ -59,7 +59,7 @@ public final class SubQuery extends QueryPlan {
     executionStats = new ExecutionStatistics();
 
     ImmutableSet.Builder<RelationKey> read = ImmutableSet.<RelationKey> builder().addAll(masterPlan.readSet());
-    Map<RelationKey, Schema> write = Maps.newHashMap();
+    Map<RelationKey, RelationWriteMetadata> write = Maps.newHashMap();
     read.addAll(masterPlan.readSet());
     write.putAll(masterPlan.writeSet());
     for (SubQueryPlan plan : workerPlans.values()) {
@@ -111,7 +111,7 @@ public final class SubQuery extends QueryPlan {
    * 
    * @return the set of relations that are written when executing this {@link SubQuery}
    */
-  public Map<RelationKey, Schema> getWriteRelations() {
+  public Map<RelationKey, RelationWriteMetadata> getWriteRelations() {
     return writeRelations;
   }
 
@@ -179,5 +179,41 @@ public final class SubQuery extends QueryPlan {
     Verify.verify(task == this, "this %s should be the first object on the queue, not %s!", this, task);
     planQ.removeFirst();
     subQueryQ.addFirst(this);
+  }
+
+  /**
+   * Returns a mapping showing what relations this subquery will create, and all the associated {@link RelationWriteMetadata}
+   * about these relations.
+   * 
+   * @return a mapping showing what relations were created and the corresponding {@link RelationWriteMetadata}.
+   */
+  public Map<RelationKey, RelationWriteMetadata> getCreatedRelationMetadata() {
+    Map<RelationKey, RelationWriteMetadata> ret = new HashMap<>();
+
+    /* Loop through each subquery plan, finding what relations it writes. */
+    for (Map.Entry<Integer, SubQueryPlan> planEntry : workerPlans.entrySet()) {
+      Integer workerId = planEntry.getKey();
+      SubQueryPlan plan = planEntry.getValue();
+      Map<RelationKey, RelationWriteMetadata> writes = plan.writeSet();
+
+      for (Map.Entry<RelationKey, RelationWriteMetadata> writeEntry : writes.entrySet()) {
+        RelationKey relation = writeEntry.getKey();
+        RelationWriteMetadata meta = ret.get(relation);
+        RelationWriteMetadata metadata = writeEntry.getValue();
+        if (meta == null) {
+          meta = metadata;
+          ret.put(relation, meta);
+        } else {
+          /* We have an entry for this relation. Make sure that schema and overwrite match. */
+          Preconditions.checkArgument(meta.getOverwrite() == metadata.getOverwrite(),
+              "cannot mix overwriting and appending to %s in the same subquery %s", relation, getSubQueryId());
+          Preconditions.checkArgument(meta.getSchema() == metadata.getSchema(),
+              "cannot write to %s with two different Schemas %s and %s in the same subquery %s", relation, meta
+                  .getSchema(), metadata.getSchema(), getSubQueryId());
+        }
+        meta.addWorker(workerId);
+      }
+    }
+    return ret;
   }
 }

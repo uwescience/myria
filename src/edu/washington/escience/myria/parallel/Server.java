@@ -1064,6 +1064,45 @@ public final class Server {
   }
 
   /**
+   * Determines and sanity-checks the set of relations created by this subquery. Assuming the checks pass, creates a
+   * {@link DatasetMetadataUpdater} future for this subquery and adds it as a pre-listener to the specified
+   * {@code future}.
+   * 
+   * @param subQuery the subquery to be executed
+   * @param future the future on the subquery
+   * @throws DbException if there is an error
+   */
+  private void addDatasetMetadataUpdater(final SubQuery subQuery, final LocalSubQueryFuture future) throws DbException {
+    final Map<RelationKey, RelationWriteMetadata> relationsCreated = subQuery.getCreatedRelationMetadata();
+    if (relationsCreated.size() == 0) {
+      return;
+    }
+
+    for (RelationWriteMetadata meta : relationsCreated.values()) {
+      if (!meta.getOverwrite()) {
+        try {
+          Schema oldSchema = catalog.getSchema(meta.getRelationKey());
+          if (oldSchema != null) {
+            Preconditions.checkArgument(oldSchema.equals(meta.getSchema()),
+                "Cannot append to relation %s (schema: %s) with new schema (%s)", meta.getRelationKey(), oldSchema,
+                meta.getSchema());
+          }
+        } catch (CatalogException e) {
+          throw new DbException(Joiner.on(' ').join("Error checking catalog for schema of", meta.getRelationKey(),
+              "during subquery", subQuery.getSubQueryId()), e);
+        }
+      }
+    }
+
+    /*
+     * Add the DatasetMetadataUpdater, which will update the catalog with the set of workers created when the query
+     * succeeds.
+     */
+    DatasetMetadataUpdater dsmd = new DatasetMetadataUpdater(catalog, relationsCreated, subQuery.getSubQueryId());
+    future.addPreListener(dsmd);
+  }
+
+  /**
    * Submit the next subquery in the query for execution, and return its future.
    * 
    * @param queryState the query containing the subquery to be executed
@@ -1081,17 +1120,8 @@ public final class Server {
 
       final LocalSubQueryFuture queryExecutionFuture = mqp.getExecutionFuture();
 
-      /*
-       * Add the DatasetMetadataUpdater, which will update the catalog with the set of workers created when the query
-       * succeeds.
-       */
-      try {
-        DatasetMetadataUpdater dsmd =
-            new DatasetMetadataUpdater(catalog, mqp.getWorkerPlans(), subQueryId.getQueryId());
-        queryExecutionFuture.addPreListener(dsmd);
-      } catch (CatalogException e) {
-        throw new DbException("setting up the DatasetMetadataUpdater for subquery " + subQueryId, e);
-      }
+      /* Add the future to update the metadata about created relations, if there are any. */
+      addDatasetMetadataUpdater(subQuery, queryExecutionFuture);
 
       queryExecutionFuture.addListener(new LocalSubQueryFutureListener() {
         @Override
