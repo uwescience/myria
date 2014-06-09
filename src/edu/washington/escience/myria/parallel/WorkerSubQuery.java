@@ -16,7 +16,6 @@ import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.StreamingState;
 import edu.washington.escience.myria.operator.TupleSource;
@@ -33,17 +32,12 @@ import edu.washington.escience.myria.util.DateTimeUtils;
 /**
  * A {@link LocalSubQuery} running at a worker.
  */
-public class WorkerSubQuery implements LocalSubQuery {
+public class WorkerSubQuery extends LocalSubQuery {
 
   /**
    * logger.
    */
   private static final Logger LOGGER = LoggerFactory.getLogger(WorkerSubQuery.class);
-
-  /**
-   * The ID of this subquery.
-   */
-  private final SubQueryId subQueryId;
 
   /**
    * All {@link LocalFragment}s of this {@link WorkerSubQuery}.
@@ -59,21 +53,6 @@ public class WorkerSubQuery implements LocalSubQuery {
    * The owner {@link Worker}.
    */
   private final Worker worker;
-
-  /**
-   * The ftMode.
-   */
-  private final FTMODE ftMode;
-
-  /**
-   * The profiling mode.
-   */
-  private final boolean profilingMode;
-
-  /**
-   * priority, currently no use.
-   */
-  private volatile int priority;
 
   /**
    * the future for the query's execution.
@@ -92,6 +71,8 @@ public class WorkerSubQuery implements LocalSubQuery {
 
   /**
    * Record milliseconds so that we can normalize the time in {@link ProfilingLogger}.
+   * 
+   * TODO: why can't we put this in {@link ExecutionStatistics} and/or compute it from the nano start time there?
    */
   private volatile long startMilliseconds = 0;
 
@@ -122,14 +103,14 @@ public class WorkerSubQuery implements LocalSubQuery {
       }
 
       if (currentNumFinished >= fragments.size()) {
-        queryStatistics.markEnd();
+        getExecutionStatistics().markEnd();
         if (LOGGER.isInfoEnabled()) {
-          LOGGER.info("Query #{} executed for {}", subQueryId, DateTimeUtils.nanoElapseToHumanReadable(queryStatistics
-              .getQueryExecutionElapse()));
+          LOGGER.info("Query #{} executed for {}", getSubQueryId(), DateTimeUtils
+              .nanoElapseToHumanReadable(getExecutionStatistics().getQueryExecutionElapse()));
         }
         if (isProfilingMode()) {
           try {
-            getWorker().getProfilingLogger().flush(subQueryId.getQueryId());
+            getWorker().getProfilingLogger().flush(getSubQueryId().getQueryId());
           } catch (DbException e) {
             LOGGER.error("Error flushing profiling logger", e);
           }
@@ -156,19 +137,12 @@ public class WorkerSubQuery implements LocalSubQuery {
   };
 
   /**
-   * Statistics of this {@link WorkerSubQuery}.
-   */
-  private final ExecutionStatistics queryStatistics = new ExecutionStatistics();
-
-  /**
    * @param plan the plan of this {@link WorkerSubQuery}.
    * @param subQueryId the id of this subquery.
    * @param ownerWorker the worker on which this {@link WorkerSubQuery} is going to run
    */
   public WorkerSubQuery(final SubQueryPlan plan, final SubQueryId subQueryId, final Worker ownerWorker) {
-    this.subQueryId = subQueryId;
-    ftMode = plan.getFTMode();
-    profilingMode = plan.isProfilingMode();
+    super(subQueryId, plan.getFTMode(), plan.isProfilingMode());
     List<RootOperator> operators = plan.getRootOps();
     fragments = new HashSet<LocalFragment>(operators.size());
     numFinishedFragments = new AtomicInteger(0);
@@ -236,43 +210,18 @@ public class WorkerSubQuery implements LocalSubQuery {
   }
 
   @Override
-  public final SubQueryId getSubQueryId() {
-    return subQueryId;
-  }
-
-  @Override
-  public final int compareTo(final LocalSubQuery o) {
-    if (o == null) {
-      return -1;
-    }
-    return priority - o.getPriority();
-  }
-
-  @Override
-  public final void setPriority(final int priority) {
-    this.priority = priority;
-  }
-
-  @Override
   public final String toString() {
-    return fragments + ", priority:" + priority;
+    return fragments.toString();
   }
 
   @Override
   public final void startExecution() {
-    LOGGER.info("Query : {} start processing", subQueryId);
-
+    LOGGER.info("Subquery #{} start processing", getSubQueryId());
+    getExecutionStatistics().markStart();
     startMilliseconds = System.currentTimeMillis();
-
-    queryStatistics.markStart();
     for (LocalFragment t : fragments) {
       t.start();
     }
-  }
-
-  @Override
-  public final int getPriority() {
-    return priority;
   }
 
   @Override
@@ -283,45 +232,8 @@ public class WorkerSubQuery implements LocalSubQuery {
   }
 
   @Override
-  public final ExecutionStatistics getExecutionStatistics() {
-    return queryStatistics;
-  }
-
-  @Override
-  public FTMODE getFTMode() {
-    return ftMode;
-  }
-
-  @Override
-  public boolean isProfilingMode() {
-    return profilingMode;
-  }
-
-  @Override
   public Set<Integer> getMissingWorkers() {
     return missingWorkers;
-  }
-
-  /**
-   * when a REMOVE_WORKER message is received, give all the {@link LocalFragment}s of this {@link SubQuery} another
-   * chance to decide if they are ready to generate EOS/EOI.
-   */
-  public void triggerFragmentEosEoiChecks() {
-    for (LocalFragment fragment : fragments) {
-      fragment.notifyNewInput();
-    }
-  }
-
-  /**
-   * enable/disable output channels of the root(producer) of each fragment.
-   * 
-   * @param workerId the worker that changed its status.
-   * @param enable enable/disable all the channels that belong to the worker.
-   */
-  public void updateProducerChannels(final int workerId, final boolean enable) {
-    for (LocalFragment fragment : fragments) {
-      fragment.updateProducerChannels(workerId, enable);
-    }
   }
 
   /**
@@ -394,5 +306,10 @@ public class WorkerSubQuery implements LocalSubQuery {
    */
   public long getBeginMilliseconds() {
     return startMilliseconds;
+  }
+
+  @Override
+  public Set<LocalFragment> getFragments() {
+    return fragments;
   }
 }
