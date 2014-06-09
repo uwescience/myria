@@ -35,7 +35,8 @@ public class RelationWriteMetadata implements Serializable {
    * @param overwrite if {@code true}, then the relation will be overwritten / created. if false, the relation will be
    *          created or appended. If appending, the schema must match the catalog schema.
    */
-  public RelationWriteMetadata(@Nonnull final RelationKey relationKey, @Nonnull final Schema schema, final boolean overwrite) {
+  public RelationWriteMetadata(@Nonnull final RelationKey relationKey, @Nonnull final Schema schema,
+      final boolean overwrite) {
     this.relationKey = Objects.requireNonNull(relationKey, "relationKey");
     this.overwrite = overwrite;
     this.schema = Objects.requireNonNull(schema, "schema");
@@ -87,5 +88,20 @@ public class RelationWriteMetadata implements Serializable {
    */
   public Set<Integer> getWorkers() {
     return ImmutableSet.copyOf(workers);
+  }
+
+  @Override
+  public boolean equals(final Object other) {
+    if ((other == null) || !(other instanceof RelationWriteMetadata)) {
+      return false;
+    }
+    RelationWriteMetadata o = (RelationWriteMetadata) other;
+    return Objects.equals(schema, o.schema) && Objects.equals(relationKey, o.relationKey)
+        && Objects.equals(overwrite, o.overwrite);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(relationKey, schema, overwrite);
   }
 }
