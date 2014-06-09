@@ -13,7 +13,6 @@ import com.google.common.collect.Sets;
 
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.RelationKey;
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.operator.DbReader;
 import edu.washington.escience.myria.operator.DbWriter;
 import edu.washington.escience.myria.operator.Operator;
@@ -37,7 +36,7 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
   private FTMODE ftMode = FTMODE.valueOf("none");
 
   /** The relations that are written, along with their schemas. */
-  private final Map<RelationKey, Schema> writeSet;
+  private final Map<RelationKey, RelationWriteMetadata> writeSet;
   /** The relations that are read. */
   private final Set<RelationKey> readSet;
 
@@ -156,7 +155,7 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
   }
 
   @Override
-  public Map<RelationKey, Schema> writeSet() {
+  public Map<RelationKey, RelationWriteMetadata> writeSet() {
     return ImmutableMap.copyOf(writeSet);
   }
 
