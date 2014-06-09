@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.parallel;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.Objects;
 
 import edu.washington.escience.myria.proto.QueryProto;
@@ -45,6 +47,7 @@ public class ExecutionStatistics {
   /**
    * @return the elapsed time, in nanoseconds.
    */
+  @Nullable
   public final Long getQueryExecutionElapse() {
     if (startTime == null) {
       return null;
