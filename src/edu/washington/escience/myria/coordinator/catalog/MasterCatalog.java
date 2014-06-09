@@ -1531,4 +1531,44 @@ public final class MasterCatalog {
       throw new CatalogException(e);
     }
   }
+
+  /**
+   * Update the {@link MasterCatalog} so that the specified relation has the specified tuple count.
+   * 
+   * @param relation the relation to update
+   * @param count the number of tuples in that relation
+   * @throws CatalogException if there is an error
+   */
+  public void updateRelationTupleCount(final RelationKey relation, final long count) throws CatalogException {
+    Objects.requireNonNull(relation, "relation");
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+
+    /* Do the work */
+    try {
+      queue.execute(new SQLiteJob<Void>() {
+        @Override
+        protected Void job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+          try {
+            SQLiteStatement statement =
+                sqliteConnection
+                    .prepare("UPDATE relations SET num_tuples=? WHERE user_name=? AND program_name=? AND relation_name=?;");
+            statement.bind(1, count);
+            statement.bind(2, relation.getUserName());
+            statement.bind(3, relation.getProgramName());
+            statement.bind(4, relation.getRelationName());
+            statement.stepThrough();
+            statement.dispose();
+            statement = null;
+          } catch (final SQLiteException e) {
+            throw new CatalogException(e);
+          }
+          return null;
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
 }
