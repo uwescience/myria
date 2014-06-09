@@ -23,15 +23,9 @@ public final class Sequence extends QueryPlan {
     this.plans = ImmutableList.copyOf(Objects.requireNonNull(plans, "plans"));
   }
 
-  /**
-   * @return the tasks
-   */
-  public List<QueryPlan> getTasks() {
-    return plans;
-  }
-
   @Override
-  public void instantiate(final LinkedList<QueryPlan> planQ, final LinkedList<SubQuery> subQueryQ, final Server server) {
+  public void instantiate(final LinkedList<QueryPlan> planQ, final LinkedList<SubQuery> subQueryQ, final Server server,
+      final long queryId) {
     QueryPlan checkTask = planQ.peekFirst();
     Verify.verify(checkTask == this, "this %s should be the first object on the queue, not %s!", this, checkTask);
     planQ.removeFirst();

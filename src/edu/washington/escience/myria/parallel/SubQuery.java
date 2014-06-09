@@ -174,7 +174,8 @@ public final class SubQuery extends QueryPlan {
   }
 
   @Override
-  public void instantiate(final LinkedList<QueryPlan> planQ, final LinkedList<SubQuery> subQueryQ, final Server server) {
+  public void instantiate(final LinkedList<QueryPlan> planQ, final LinkedList<SubQuery> subQueryQ, final Server server,
+      final long queryId) {
     QueryPlan task = planQ.peekFirst();
     Verify.verify(task == this, "this %s should be the first object on the queue, not %s!", this, task);
     planQ.removeFirst();

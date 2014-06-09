@@ -44,8 +44,8 @@ public final class JsonSubQuery extends QueryPlan {
   }
 
   @Override
-  public void instantiate(final LinkedList<QueryPlan> planQ, final LinkedList<SubQuery> subQueryQ, final Server server)
-      throws DbException {
+  public void instantiate(final LinkedList<QueryPlan> planQ, final LinkedList<SubQuery> subQueryQ, final Server server,
+      final long queryId) throws DbException {
     QueryPlan task = planQ.peekFirst();
     Verify.verify(task == this, "this Fragment %s should be the first object on the queue, not %s!", this, task);
     planQ.removeFirst();

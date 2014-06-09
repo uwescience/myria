@@ -151,7 +151,7 @@ public final class Query {
       QueryConstruct.setQueryExecutionOptions(currentSubQuery.getWorkerPlans(), ftMode, profiling);
       return currentSubQuery;
     }
-    planQ.getFirst().instantiate(planQ, subQueryQ, server);
+    planQ.getFirst().instantiate(planQ, subQueryQ, server, queryId);
     /*
      * The above line may have emptied planQ, mucked with subQueryQ, not sure. So just recurse to make sure we do the
      * right thing.
