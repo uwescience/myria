@@ -1,9 +1,9 @@
 package edu.washington.escience.myria.operator.network;
 
+import java.util.Set;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.parallel.ExchangePairID;
@@ -31,7 +31,7 @@ public final class CollectConsumer extends Consumer {
    * @param operatorID my operatorID
    * @param workerIDs from which workers the data will come.
    * */
-  public CollectConsumer(final Schema schema, final ExchangePairID operatorID, final ImmutableSet<Integer> workerIDs) {
+  public CollectConsumer(final Schema schema, final ExchangePairID operatorID, final Set<Integer> workerIDs) {
     super(schema, operatorID, workerIDs);
     LOGGER.trace("created CollectConsumer for ExchangePairId=" + operatorID);
   }
