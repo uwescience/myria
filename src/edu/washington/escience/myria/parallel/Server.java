@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.jboss.netty.channel.ChannelFactory;
@@ -1945,5 +1946,35 @@ public final class Server {
     } catch (CatalogException e) {
       throw new DbException("updating the number of tuples in the catalog", e);
     }
+  }
+
+  /**
+   * Set the global variable owned by the specified query and named by the specified key to the specified value.
+   * 
+   * @param queryId the query to whom the variable belongs.
+   * @param key the name of the variable
+   * @param value the new value for the variable
+   */
+  public void setQueryGlobal(final long queryId, @Nonnull final String key, @Nonnull final Object value) {
+    Preconditions.checkNotNull(key, "key");
+    Preconditions.checkNotNull(value, "value");
+    Query query = activeQueries.get(queryId);
+    Preconditions.checkArgument(query != null, "query %s is not active to set key %s to value %s", queryId, key, value);
+    query.setGlobal(key, value);
+  }
+
+  /**
+   * Get the value of global variable owned by the specified query and named by the specified key.
+   * 
+   * @param queryId the query to whom the variable belongs.
+   * @param key the name of the variable
+   * @return the value of the variable
+   */
+  @Nullable
+  public Object getQueryGlobal(final long queryId, @Nonnull final String key) {
+    Preconditions.checkNotNull(key, "key");
+    Query query = activeQueries.get(queryId);
+    Preconditions.checkArgument(query != null, "query %s is not active to get the value of key %s", queryId, key);
+    return query.getGlobal(key);
   }
 }
