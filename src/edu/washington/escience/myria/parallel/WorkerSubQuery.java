@@ -205,8 +205,9 @@ public class WorkerSubQuery extends LocalSubQuery {
    */
   public final void init(final LocalFragment f) {
     LocalFragmentResourceManager resourceManager = new LocalFragmentResourceManager(worker.getIPCConnectionPool(), f);
-    ImmutableMap.Builder<String, Object> b = ImmutableMap.builder();
-    f.init(resourceManager, b.putAll(worker.getExecEnvVars()).build());
+    ImmutableMap.Builder<String, Object> queryExecEnvVars = ImmutableMap.builder();
+    queryExecEnvVars.put(MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getSubQueryId().getQueryId());
+    f.init(resourceManager, queryExecEnvVars.putAll(worker.getExecEnvVars()).build());
   }
 
   @Override

@@ -401,10 +401,11 @@ public class MasterSubQuery extends LocalSubQuery {
 
   @Override
   public final void init() {
-    ImmutableMap.Builder<String, Object> b = ImmutableMap.builder();
     LocalFragmentResourceManager resourceManager =
         new LocalFragmentResourceManager(master.getIPCConnectionPool(), fragment);
-    fragment.init(resourceManager, b.putAll(master.getExecEnvVars()).build());
+    ImmutableMap.Builder<String, Object> queryExecEnvVars = ImmutableMap.builder();
+    queryExecEnvVars.put(MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getSubQueryId().getQueryId());
+    fragment.init(resourceManager, queryExecEnvVars.putAll(master.getExecEnvVars()).build());
   }
 
   /**
