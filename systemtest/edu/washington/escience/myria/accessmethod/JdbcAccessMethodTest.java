@@ -121,6 +121,10 @@ public class JdbcAccessMethodTest {
 
   @Test
   public void testInsertTuplesAndCountThemMySQL() throws DbException {
+    if (!TestUtils.inTravis()) {
+      LOGGER.warn("Skipping MySQL test since not in Travis.");
+      return;
+    }
     testInsertTuplesAndCountThem(MyriaConstants.STORAGE_SYSTEM_MYSQL);
   }
 
