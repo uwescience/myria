@@ -10,6 +10,7 @@ import java.util.Objects;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.DbException;
@@ -42,23 +43,15 @@ public class JdbcAccessMethodTest {
   private static final String POSTGRES_DATABASE_NAME = "myria_test";
 
   private JdbcInfo getJdbcInfo(final String dbms) {
-    if (TestUtils.inTravis()) {
-      /* Return localhost using Travis' default credentials. */
-      if (dbms.equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
-        return JdbcInfo.of(POSTGRES_DRIVER_CLASS, MyriaConstants.STORAGE_SYSTEM_POSTGRESQL, "localhost", POSTGRES_PORT,
-            POSTGRES_DATABASE_NAME, "postgres", "");
-      } else {
-        return JdbcInfo.of(MYSQL_DRIVER_CLASS, MyriaConstants.STORAGE_SYSTEM_MYSQL, "localhost", MYSQL_PORT,
-            MYSQL_DATABASE_NAME, "travis", "");
-      }
+    Verify.verify(TestUtils.inTravis(), "This test should only run in Travis");
+    /* Return localhost using Travis' default credentials. */
+    if (dbms.equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
+      return JdbcInfo.of(POSTGRES_DRIVER_CLASS, MyriaConstants.STORAGE_SYSTEM_POSTGRESQL, "localhost", POSTGRES_PORT,
+          POSTGRES_DATABASE_NAME, "postgres", "");
+    } else {
+      return JdbcInfo.of(MYSQL_DRIVER_CLASS, MyriaConstants.STORAGE_SYSTEM_MYSQL, "localhost", MYSQL_PORT,
+          MYSQL_DATABASE_NAME, "travis", "");
     }
-
-    /* Return the MyriaTest AWS MySQL instance */
-    final String host = "54.213.118.143";
-    final String user = "myria";
-    final String password = "nays26[shark";
-    return JdbcInfo.of(MYSQL_DRIVER_CLASS, MyriaConstants.STORAGE_SYSTEM_MYSQL, host, MYSQL_PORT, MYSQL_DATABASE_NAME,
-        user, password);
   }
 
   private void testInsertTuplesAndCountThem(final String dbms) throws DbException {
