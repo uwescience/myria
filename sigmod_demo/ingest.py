@@ -38,3 +38,4 @@ do_ingest("all_opp_v3", [('Cruise', STRING), ("Day", STRING), ("File_Id", STRING
   ("fsc_small", INT)])
 do_ingest("all_vct", [('Cruise', STRING), ("Day", STRING), ("File_Id", STRING), ("Cell_Id", INT),
   ("pop", STRING)])
+do_ingest("lat_lon_points", [('lat', DOUBLE), ('lon', DOUBLE)])
