@@ -222,6 +222,7 @@ public class TupleBatch implements ReadableTable, Serializable {
   }
 
   @Override
+  @Deprecated
   public final Object getObject(final int column, final int row) {
     return columns.get(column).getObject(row);
   }
