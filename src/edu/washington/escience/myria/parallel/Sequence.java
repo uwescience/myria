@@ -31,4 +31,11 @@ public final class Sequence extends QueryPlan {
     planQ.removeFirst();
     planQ.addAll(0, plans);
   }
+
+  @Override
+  public void reset() {
+    for (QueryPlan p : plans) {
+      p.reset();
+    }
+  }
 }

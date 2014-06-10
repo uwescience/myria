@@ -22,4 +22,9 @@ public abstract class QueryPlan {
    */
   public abstract void instantiate(LinkedList<QueryPlan> planQ, LinkedList<SubQuery> subQueryQ, Server server,
       long queryId) throws DbException;
+
+  /**
+   * Reset this {@link QueryPlan} so that it can be executed again.
+   */
+  public abstract void reset();
 }

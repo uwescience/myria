@@ -73,4 +73,9 @@ public final class JsonSubQuery extends QueryPlan {
 
     subQueryQ.addFirst(new SubQuery(serverPlan, workerPlans));
   }
+
+  @Override
+  public void reset() {
+    /* Do nothing. */
+  }
 }

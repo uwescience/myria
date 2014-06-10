@@ -169,7 +169,8 @@ public final class SubQuery extends QueryPlan {
    * @throws IllegalStateException if the {@link SubQuery}'s id has already been set
    */
   public void setSubQueryId(final SubQueryId subQueryId) {
-    Preconditions.checkState(this.subQueryId == null, "subquery id already set");
+    Preconditions.checkState(this.subQueryId == null, "subquery id already set to %s, not changing it to %s",
+        this.subQueryId, subQueryId);
     this.subQueryId = subQueryId;
   }
 
@@ -216,5 +217,14 @@ public final class SubQuery extends QueryPlan {
       }
     }
     return ret;
+  }
+
+  /**
+   * Resets this SubQuery so that it can be issued again. Needed for DoWhile.
+   */
+  @Override
+  public void reset() {
+    subQueryId = null;
+    executionStats.reset();
   }
 }
