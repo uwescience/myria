@@ -1154,7 +1154,9 @@ public final class Server {
         @Override
         public void operationComplete(final LocalSubQueryFuture future) throws Exception {
           mqp.init();
-          activeQueries.get(subQueryId.getQueryId()).markStart();
+          if (subQueryId.getSubqueryId() == 0) {
+            activeQueries.get(subQueryId.getQueryId()).markStart();
+          }
           mqp.startExecution();
           Server.this.startWorkerQuery(future.getLocalSubQuery().getSubQueryId());
         }
