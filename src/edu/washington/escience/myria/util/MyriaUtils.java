@@ -2,6 +2,7 @@ package edu.washington.escience.myria.util;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -91,5 +92,28 @@ public final class MyriaUtils {
       Preconditions.checkNotNull(o, message);
     }
     return iter;
+  }
+
+  /**
+   * Copy all mappings from the source to the destination, ensuring that if any keys were already present, then the
+   * values match. This is sort of a "map Union" operator.
+   * 
+   * @param <K> the type of the keys.
+   * @param <V> the type of the values.
+   * @param source the new mappings to be added.
+   * @param dest the destination for new mappings, which may already has some mappings.
+   */
+  public static <K, V> void putNewVerifyOld(final Map<K, V> source, final Map<K, V> dest) {
+    for (Map.Entry<K, V> entry : source.entrySet()) {
+      K newK = entry.getKey();
+      V newV = entry.getValue();
+      V oldV = dest.get(newK);
+      if (oldV == null) {
+        dest.put(newK, newV);
+      } else {
+        Preconditions.checkArgument(oldV.equals(newV), "New value %s for key %s does not match old value %s", newV,
+            newK, oldV);
+      }
+    }
   }
 }

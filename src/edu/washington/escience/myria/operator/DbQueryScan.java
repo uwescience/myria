@@ -244,6 +244,7 @@ public class DbQueryScan extends LeafOperator implements DbReader {
   @Override
   public Set<RelationKey> readSet() {
     if (relationKey == null) {
+      LOGGER.error("DbQueryScan does not support the DbReader interface properly for SQL queries.");
       return ImmutableSet.of();
     }
     return ImmutableSet.of(relationKey);
