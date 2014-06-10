@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.parallel;
 
 import java.util.LinkedList;
+import java.util.Map;
 
 import javax.annotation.concurrent.GuardedBy;
 
@@ -12,6 +13,7 @@ import com.google.common.base.Verify;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.api.encoding.QueryConstruct;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
@@ -116,6 +118,21 @@ public final class Query {
   }
 
   /**
+   * If the sub-query we're about to execute writes to any relations, generate and enqueue the
+   * "update tuple relation count" sub-query to be run next.
+   * 
+   * @param subQuery the subquery about to be executed. This subquery must have already been removed from the queue.
+   */
+  private void addDerivedSubQueries(final SubQuery subQuery) {
+    Map<RelationKey, RelationWriteMetadata> relationsWritten = currentSubQuery.getRelationWriteMetadata();
+    if (!relationsWritten.isEmpty()) {
+      SubQuery updateCatalog =
+          QueryConstruct.getRelationTupleUpdateSubQuery(currentSubQuery.getRelationWriteMetadata(), server);
+      subQueryQ.addFirst(updateCatalog);
+    }
+  }
+
+  /**
    * Generates and returns the next {@link SubQuery} to run.
    * 
    * @return the next {@link SubQuery} to run
@@ -130,6 +147,7 @@ public final class Query {
       currentSubQuery = subQueryQ.removeFirst();
       currentSubQuery.setSubQueryId(new SubQueryId(queryId, subqueryId));
       ++subqueryId;
+      addDerivedSubQueries(currentSubQuery);
       QueryConstruct.setQueryExecutionOptions(currentSubQuery.getWorkerPlans(), ftMode, profiling);
       return currentSubQuery;
     }

@@ -890,7 +890,7 @@ public final class Server {
   /**
    * @return the dbms from {@link #execEnvVars}.
    */
-  private String getDBMS() {
+  public String getDBMS() {
     return (String) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM);
   }
 
@@ -1072,7 +1072,7 @@ public final class Server {
    * @throws DbException if there is an error
    */
   private void addDatasetMetadataUpdater(final SubQuery subQuery, final LocalSubQueryFuture future) throws DbException {
-    final Map<RelationKey, RelationWriteMetadata> relationsCreated = subQuery.getCreatedRelationMetadata();
+    final Map<RelationKey, RelationWriteMetadata> relationsCreated = subQuery.getRelationWriteMetadata();
     if (relationsCreated.size() == 0) {
       return;
     }
@@ -1929,5 +1929,20 @@ public final class Server {
         "query %s did not succeed (%s)", queryId, queryStatus.status);
     Preconditions.checkArgument(queryStatus.profilingMode, "query %s was not run with profiling enabled", queryId);
     return queryStatus;
+  }
+
+  /**
+   * Update the {@link MasterCatalog} so that the specified relation has the specified tuple count.
+   * 
+   * @param relation the relation to update
+   * @param count the number of tuples in that relation
+   * @throws DbException if there is an error in the catalog
+   */
+  public void updateRelationTupleCount(final RelationKey relation, final long count) throws DbException {
+    try {
+      catalog.updateRelationTupleCount(relation, count);
+    } catch (CatalogException e) {
+      throw new DbException("updating the number of tuples in the catalog", e);
+    }
   }
 }

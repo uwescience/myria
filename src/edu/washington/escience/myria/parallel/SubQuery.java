@@ -182,12 +182,12 @@ public final class SubQuery extends QueryPlan {
   }
 
   /**
-   * Returns a mapping showing what relations this subquery will create, and all the associated {@link RelationWriteMetadata}
-   * about these relations.
+   * Returns a mapping showing what relations this subquery will write, and all the associated
+   * {@link RelationWriteMetadata} about these relations.
    * 
-   * @return a mapping showing what relations were created and the corresponding {@link RelationWriteMetadata}.
+   * @return a mapping showing what relations are written and the corresponding {@link RelationWriteMetadata}.
    */
-  public Map<RelationKey, RelationWriteMetadata> getCreatedRelationMetadata() {
+  public Map<RelationKey, RelationWriteMetadata> getRelationWriteMetadata() {
     Map<RelationKey, RelationWriteMetadata> ret = new HashMap<>();
 
     /* Loop through each subquery plan, finding what relations it writes. */

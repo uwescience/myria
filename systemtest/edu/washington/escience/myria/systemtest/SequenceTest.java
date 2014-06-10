@@ -125,11 +125,13 @@ public class SequenceTest extends SystemTestBase {
     qf.get();
     QueryStatusEncoding status = server.getQueryStatus(queryId);
     assertEquals(Status.SUCCESS, status.status);
+    long expectedTuples = numVals * workerIDs.length;
+    assertEquals(expectedTuples, server.getDatasetStatus(storage).getNumTuples());
 
     List<TupleBatch> tbs = Lists.newLinkedList(receivedTupleBatches);
     assertEquals(1, tbs.size());
     TupleBatch tb = tbs.get(0);
-    assertEquals(numVals * workerIDs.length, tb.getLong(0, 0));
+    assertEquals(expectedTuples, tb.getLong(0, 0));
   }
 
   @Test(expected = ExecutionException.class)
@@ -192,6 +194,7 @@ public class SequenceTest extends SystemTestBase {
     dataset.relationKey = origKey;
     String ingestString = writer.writeValueAsString(dataset);
     JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestString);
+    assertEquals(3, server.getDatasetStatus(origKey).getNumTuples());
 
     /* First job: select just the value column and insert it to a new intermediate relation. */
     TableScanEncoding scan = new TableScanEncoding();
@@ -259,6 +262,7 @@ public class SequenceTest extends SystemTestBase {
     }
     QueryStatusEncoding status = server.getQueryStatus(queryId);
     assertEquals(Status.SUCCESS, status.status);
+    assertEquals(1, server.getDatasetStatus(resultKey).getNumTuples());
 
     String ret =
         JsonAPIUtils.download("localhost", masterDaemonPort, resultKey.getUserName(), resultKey.getProgramName(),
@@ -350,9 +354,13 @@ public class SequenceTest extends SystemTestBase {
     QueryStatusEncoding status = server.getQueryStatus(queryId);
     assertEquals(Status.SUCCESS, status.status);
 
+    long expectedNumTuples = numVals * numCopies * workerIDs.length;
+
     List<TupleBatch> tbs = Lists.newLinkedList(receivedTupleBatches);
     assertEquals(1, tbs.size());
     TupleBatch tb = tbs.get(0);
-    assertEquals(numVals * numCopies * workerIDs.length, tb.getLong(0, 0));
+    assertEquals(expectedNumTuples, tb.getLong(0, 0));
+    /* Ensure that the number of tuples matches our expectation. */
+    assertEquals(expectedNumTuples, server.getDatasetStatus(dataKey).getNumTuples());
   }
 }

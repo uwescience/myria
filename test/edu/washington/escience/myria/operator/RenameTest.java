@@ -56,6 +56,7 @@ public class RenameTest {
     originalTuples = new TupleBatch(originalSchema, originalData);
   }
 
+  @SuppressWarnings("deprecation")
   @Test
   public void testTupleBatch() {
     /* Sanity check originalTuples */
