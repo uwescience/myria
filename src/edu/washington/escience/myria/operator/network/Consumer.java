@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
@@ -17,8 +18,8 @@ import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.operator.LeafOperator;
 import edu.washington.escience.myria.parallel.ExchangePairID;
-import edu.washington.escience.myria.parallel.QueryExecutionMode;
 import edu.washington.escience.myria.parallel.LocalFragmentResourceManager;
+import edu.washington.escience.myria.parallel.QueryExecutionMode;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.IPCMessage;
 import edu.washington.escience.myria.parallel.ipc.StreamIOChannelID;
@@ -114,10 +115,10 @@ public class Consumer extends LeafOperator {
    * @param operatorID {@link Consumer#operatorID}
    * @param workerIDs {@link Consumer#sourceWorkers}
    * */
-  public Consumer(final Schema schema, final ExchangePairID operatorID, final ImmutableSet<Integer> workerIDs) {
+  public Consumer(final Schema schema, final ExchangePairID operatorID, final Set<Integer> workerIDs) {
     this.operatorID = operatorID;
     this.schema = schema;
-    sourceWorkers = workerIDs;
+    sourceWorkers = ImmutableSet.copyOf(workerIDs);
     LOGGER.trace("created Consumer for ExchangePairId=" + operatorID);
   }
 
@@ -148,7 +149,8 @@ public class Consumer extends LeafOperator {
     }
     workerIdToIndex = new TUnmodifiableIntIntMap(tmp);
 
-    taskResourceManager = (LocalFragmentResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER);
+    taskResourceManager =
+        (LocalFragmentResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER);
     nonBlockingExecution =
         (QueryExecutionMode) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE) == QueryExecutionMode.NON_BLOCKING;;
   }
@@ -286,6 +288,7 @@ public class Consumer extends LeafOperator {
    */
   private IPCMessage.StreamData<TupleBatch> take(final int timeout) throws InterruptedException {
     IPCMessage.StreamData<TupleBatch> result = null;
+    Verify.verifyNotNull(inputBuffer, "inputBuffer should not be null");
     if (timeout == 0) {
       result = inputBuffer.poll();
     } else if (timeout > 0) {

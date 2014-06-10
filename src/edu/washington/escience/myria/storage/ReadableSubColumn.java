@@ -69,6 +69,7 @@ public final class ReadableSubColumn implements ReadableColumn {
   }
 
   @Override
+  @Deprecated
   public Object getObject(final int row) {
     return inner.getObject(column, row);
   }

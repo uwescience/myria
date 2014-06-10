@@ -12,21 +12,38 @@ import javax.ws.rs.core.Response.Status;
 
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
 
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.RelationKey;
+import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.api.MyriaApiException;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
+import edu.washington.escience.myria.expression.ConstantExpression;
+import edu.washington.escience.myria.expression.Expression;
+import edu.washington.escience.myria.expression.VariableExpression;
+import edu.washington.escience.myria.operator.Apply;
+import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.IDBController;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.UpdateCatalog;
+import edu.washington.escience.myria.operator.agg.Aggregator;
+import edu.washington.escience.myria.operator.agg.MultiGroupByAggregate;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
+import edu.washington.escience.myria.operator.network.CollectProducer;
 import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.operator.network.EOSController;
 import edu.washington.escience.myria.parallel.ExchangePairID;
+import edu.washington.escience.myria.parallel.RelationWriteMetadata;
 import edu.washington.escience.myria.parallel.Server;
+import edu.washington.escience.myria.parallel.SubQuery;
 import edu.washington.escience.myria.parallel.SubQueryPlan;
 import edu.washington.escience.myria.util.MyriaUtils;
 
@@ -43,8 +60,8 @@ public class QueryConstruct {
    * @return the physical plan
    * @throws CatalogException if there is an error instantiating the plan
    */
-  public static Map<Integer, SubQueryPlan> instantiate(List<PlanFragmentEncoding> fragments,
-      final Server server) throws CatalogException {
+  public static Map<Integer, SubQueryPlan> instantiate(List<PlanFragmentEncoding> fragments, final Server server)
+      throws CatalogException {
     /* First, we need to know which workers run on each plan. */
     setupWorkersForFragments(fragments, server);
     /* Next, we need to know which pipes (operators) are produced and consumed on which workers. */
@@ -341,5 +358,61 @@ public class QueryConstruct {
 
     instantiatedFragments.put(planFragment, fragmentRoot);
     return fragmentRoot;
+  }
+
+  /**
+   * Builds the query plan to update the {@link Server}'s master catalog with the number of tuples in every relation
+   * written by a subquery. The query plan is basically "SELECT RelationKey, COUNT(*)" -> Collect at master ->
+   * "SELECT RelationKey, SUM(counts)".
+   * 
+   * @param relationsWritten the metadata about which relations were written during the execution of this subquery.
+   * @param server the server on which the catalog will be updated
+   * @return the query plan to update the master's catalog with the new number of tuples for all written relations.
+   */
+  public static SubQuery getRelationTupleUpdateSubQuery(final Map<RelationKey, RelationWriteMetadata> relationsWritten,
+      final Server server) {
+    ExchangePairID collectId = ExchangePairID.newID();
+    Schema schema =
+        Schema.ofFields("userName", Type.STRING_TYPE, "programName", Type.STRING_TYPE, "relationName",
+            Type.STRING_TYPE, "tupleCount", Type.LONG_TYPE);
+
+    String dbms = server.getDBMS();
+    Preconditions.checkState(dbms != null, "Server must have a configured DBMS environment variable");
+
+    /*
+     * Worker plans: for each relation, create a {@link DbQueryScan} to get the count, an {@link Apply} to add the
+     * {@link RelationKey}, then a {@link CollectProducer} to send the count to the master.
+     */
+    Map<Integer, SubQueryPlan> workerPlans = Maps.newHashMap();
+    for (RelationWriteMetadata meta : relationsWritten.values()) {
+      Set<Integer> workers = meta.getWorkers();
+      RelationKey relation = meta.getRelationKey();
+      for (Integer worker : workers) {
+        DbQueryScan localCount =
+            new DbQueryScan("SELECT COUNT(*) FROM " + relation.toString(dbms), Schema.ofFields("tupleCount",
+                Type.LONG_TYPE));
+        List<Expression> expressions =
+            ImmutableList.of(new Expression(schema.getColumnName(0), new ConstantExpression(relation.getUserName())),
+                new Expression(schema.getColumnName(1), new ConstantExpression(relation.getProgramName())),
+                new Expression(schema.getColumnName(2), new ConstantExpression(relation.getRelationName())),
+                new Expression(schema.getColumnName(3), new VariableExpression(0)));
+        Apply addRelationName = new Apply(localCount, expressions);
+        CollectProducer producer = new CollectProducer(addRelationName, collectId, MyriaConstants.MASTER_ID);
+        if (!workerPlans.containsKey(worker)) {
+          workerPlans.put(worker, new SubQueryPlan(producer));
+        } else {
+          workerPlans.get(worker).addRootOp(producer);
+        }
+      }
+    }
+
+    /* Master plan: collect, sum, insert the updates. */
+    CollectConsumer consumer = new CollectConsumer(schema, collectId, workerPlans.keySet());
+    MultiGroupByAggregate aggCounts =
+        new MultiGroupByAggregate(consumer, new int[] { 0, 1, 2 }, new int[] { 3 }, new int[] { Aggregator.AGG_OP_SUM });
+    UpdateCatalog catalog = new UpdateCatalog(aggCounts, server);
+    SubQueryPlan masterPlan = new SubQueryPlan(catalog);
+
+    return new SubQuery(masterPlan, workerPlans);
   }
 }
