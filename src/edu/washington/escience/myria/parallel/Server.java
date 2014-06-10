@@ -1037,7 +1037,18 @@ public final class Server {
   private LocalSubQueryFuture advanceQuery(final Query queryState) throws DbException {
     Verify.verify(queryState.getCurrentSubQuery() == null, "expected queryState current task is null");
 
-    SubQuery task = queryState.nextSubQuery();
+    SubQuery task;
+    try {
+      task = queryState.nextSubQuery();
+    } catch (Throwable t) {
+      queryState.markFailed(t);
+      try {
+        finishQuery(queryState);
+      } catch (CatalogException e) {
+        t.addSuppressed(e);
+      }
+      throw t;
+    }
     if (task == null) {
       queryState.markSuccess();
       try {
