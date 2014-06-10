@@ -16,7 +16,6 @@ import edu.washington.escience.myria.column.builder.ColumnFactory;
 import edu.washington.escience.myria.column.builder.WritableColumn;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
-import edu.washington.escience.myria.expression.StateExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.StatefulApply;
@@ -39,11 +38,6 @@ public class GenericEvaluator extends Evaluator {
   private EvalInterface evaluator;
 
   /**
-   * True if the expression uses state.
-   */
-  private final boolean needsState;
-
-  /**
    * Default constructor.
    * 
    * @param expression the expression for the evaluator
@@ -51,7 +45,6 @@ public class GenericEvaluator extends Evaluator {
    */
   public GenericEvaluator(final Expression expression, final ExpressionOperatorParameter parameters) {
     super(expression, parameters);
-    needsState = getExpression().hasOperator(StateExpression.class);
   }
 
   /**
@@ -61,7 +54,8 @@ public class GenericEvaluator extends Evaluator {
    */
   @Override
   public void compile() throws DbException {
-    Preconditions.checkArgument(needsCompiling(), "This expression does not need to be compiled.");
+    Preconditions.checkArgument(needsCompiling() || (getStateSchema() != null),
+        "This expression does not need to be compiled.");
 
     String javaExpression = getJavaExpression();
     IScriptEvaluator se;
@@ -135,12 +129,5 @@ public class GenericEvaluator extends Evaluator {
       eval(tb, row, ret, null);
     }
     return ret.build();
-  }
-
-  /**
-   * @return true if the expression accesses the state.
-   */
-  public boolean needsState() {
-    return needsState;
   }
 }
