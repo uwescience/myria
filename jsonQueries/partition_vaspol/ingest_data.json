@@ -11,5 +11,6 @@
   "source": {
     "dataType" : "Bytes",
     "bytes" : "MSwyLDMKMiwzLDQKNCw1LDYKMyw0LDUKNiw3LDgKMTAsMTAwMDAsMTAxCjQyLDQxLDQwCi0xMDAwLDEsMgoxMiw0LDUKMTI1LDEyNiwyNjEK"
-  }
+  },
+  "delimiter": ","
 }

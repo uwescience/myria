@@ -3,7 +3,7 @@
         {
             "operators": [
                 {
-                    "opId": "ScanR",
+                    "opId": 0,
                     "opType": "TableScan",
                     "relationKey": {
                         "userName": "vaspol",
@@ -12,8 +12,8 @@
                     }
                 },
                 {
-                    "argChild": "ScanR",
-                    "opId": "shuffle",
+                    "argChild": 0,
+                    "opId": 1,
                     "opType": "ShuffleProducer",
                     "argPf": {
                         "index": "0",
@@ -25,14 +25,14 @@
         {
             "operators": [
                 {
-                    "argOperatorId": "shuffle",
-                    "opId": "shuffleConsumer",
+                    "argOperatorId": 1,
+                    "opId": 2,
                     "opType": "ShuffleConsumer"
                 },
                 {
-                    "argChild": "shuffleConsumer",
+                    "argChild": 2,
                     "argOverwriteTable": true,
-                    "opId": "Insert",
+                    "opId": 3,
                     "opType": "DbInsert",
                     "relationKey": {
                         "programName": "partition_test",
