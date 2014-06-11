@@ -293,9 +293,9 @@ public final class DatasetResource {
    *          little-Endian format. Only applicable when <code>binary</code> is set.
    * @param overwrite optional: indicates that an existing relation should be overwritten. If <code>false</code>, then a
    *          409 Conflict response will be thrown if <code>relationKey</code> already exists in the catalog.
-   * @param data optional: the source of bytes to be loaded.
    * @param partitionFunction optional: the partition function used for ingesting the data. The default is RoundRobin
    *          partition function.
+   * @param data optional: the source of bytes to be loaded.
    * @return the created dataset resource.
    * @throws DbException if there is an error in the database.
    */
@@ -304,8 +304,9 @@ public final class DatasetResource {
   public Response newDatasetMultipart(@FormDataParam("relationKey") final RelationKey relationKey,
       @FormDataParam("schema") final Schema schema, @FormDataParam("delimiter") final Character delimiter,
       @FormDataParam("binary") final Boolean binary, @FormDataParam("isLittleEndian") final Boolean isLittleEndian,
-      @FormDataParam("overwrite") final Boolean overwrite, @FormDataParam("data") final InputStream data,
-      @FormDataParam("partitionFunction") final PartitionFunction partitionFunction) throws DbException {
+      @FormDataParam("overwrite") final Boolean overwrite,
+      @FormDataParam("partitionFunction") final PartitionFunction partitionFunction,
+      @FormDataParam("data") final InputStream data) throws DbException {
     /* Required parameters. */
     if (relationKey == null) {
       throw new MyriaApiException(Status.BAD_REQUEST, "Missing required field relationKey.");

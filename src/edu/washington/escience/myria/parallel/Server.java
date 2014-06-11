@@ -34,6 +34,7 @@ import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -1204,10 +1205,8 @@ public final class Server {
     }
     Preconditions.checkArgument(actualWorkers.size() > 0, "Must use > 0 workers");
     int[] workersArray = MyriaUtils.integerCollectionToIntArray(actualWorkers);
-    PartitionFunction partitionFn = partitionFunction;
-    if (partitionFn == null) {
-      partitionFn = new RoundRobinPartitionFunction(workersArray.length);
-    }
+    PartitionFunction partitionFn =
+        Objects.firstNonNull(partitionFunction, new RoundRobinPartitionFunction(workersArray.length));
     partitionFn.setNumPartitions(workersArray.length); // Override what is passed in with the JSON with the actual
                                                        // number of workers to ingest
 
