@@ -184,6 +184,25 @@ public final class SubQuery extends QueryPlan {
   }
 
   /**
+   * Returns a mapping showing what persistent relations this subquery will write, and all the associated
+   * {@link RelationWriteMetadata} about these relations. This function is like {@link #getRelationWriteMetadata()}, but
+   * returns only those relations that are persisted.
+   * 
+   * @return a mapping showing what persistent relations are written and the corresponding {@link RelationWriteMetadata}
+   *         .
+   */
+  public Map<RelationKey, RelationWriteMetadata> getPersistentRelationWriteMetadata() {
+    ImmutableMap.Builder<RelationKey, RelationWriteMetadata> ret = ImmutableMap.builder();
+    for (Map.Entry<RelationKey, RelationWriteMetadata> entry : getRelationWriteMetadata().entrySet()) {
+      RelationWriteMetadata meta = entry.getValue();
+      if (!meta.isTemporary()) {
+        ret.put(entry);
+      }
+    }
+    return ret.build();
+  }
+
+  /**
    * Returns a mapping showing what relations this subquery will write, and all the associated
    * {@link RelationWriteMetadata} about these relations.
    * 

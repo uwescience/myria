@@ -1112,11 +1112,12 @@ public final class Server {
       }
     }
 
+    Map<RelationKey, RelationWriteMetadata> persistentRelations = subQuery.getPersistentRelationWriteMetadata();
     /*
      * Add the DatasetMetadataUpdater, which will update the catalog with the set of workers created when the query
-     * succeeds.
+     * succeeds. Note that we only use persistent relations here.
      */
-    DatasetMetadataUpdater dsmd = new DatasetMetadataUpdater(catalog, relationsCreated, subQuery.getSubQueryId());
+    DatasetMetadataUpdater dsmd = new DatasetMetadataUpdater(catalog, persistentRelations, subQuery.getSubQueryId());
     future.addPreListener(dsmd);
   }
 

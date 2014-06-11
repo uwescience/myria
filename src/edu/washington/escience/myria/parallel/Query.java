@@ -126,16 +126,15 @@ public final class Query {
   }
 
   /**
-   * If the sub-query we're about to execute writes to any relations, generate and enqueue the
+   * If the sub-query we're about to execute writes to any persistent relations, generate and enqueue the
    * "update tuple relation count" sub-query to be run next.
    * 
    * @param subQuery the subquery about to be executed. This subquery must have already been removed from the queue.
    */
   private synchronized void addDerivedSubQueries(final SubQuery subQuery) {
-    Map<RelationKey, RelationWriteMetadata> relationsWritten = currentSubQuery.getRelationWriteMetadata();
+    Map<RelationKey, RelationWriteMetadata> relationsWritten = currentSubQuery.getPersistentRelationWriteMetadata();
     if (!relationsWritten.isEmpty()) {
-      SubQuery updateCatalog =
-          QueryConstruct.getRelationTupleUpdateSubQuery(currentSubQuery.getRelationWriteMetadata(), server);
+      SubQuery updateCatalog = QueryConstruct.getRelationTupleUpdateSubQuery(relationsWritten, server);
       subQueryQ.addFirst(updateCatalog);
     }
   }
