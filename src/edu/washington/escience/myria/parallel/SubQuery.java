@@ -207,7 +207,7 @@ public final class SubQuery extends QueryPlan {
           ret.put(relation, meta);
         } else {
           /* We have an entry for this relation. Make sure that schema and overwrite match. */
-          Preconditions.checkArgument(meta.getOverwrite() == metadata.getOverwrite(),
+          Preconditions.checkArgument(meta.isOverwrite() == metadata.isOverwrite(),
               "cannot mix overwriting and appending to %s in the same subquery %s", relation, getSubQueryId());
           Preconditions.checkArgument(meta.getSchema() == metadata.getSchema(),
               "cannot write to %s with two different Schemas %s and %s in the same subquery %s", relation, meta

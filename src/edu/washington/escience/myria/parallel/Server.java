@@ -1097,7 +1097,7 @@ public final class Server {
     }
 
     for (RelationWriteMetadata meta : relationsCreated.values()) {
-      if (!meta.getOverwrite()) {
+      if (!meta.isOverwrite()) {
         try {
           Schema oldSchema = catalog.getSchema(meta.getRelationKey());
           if (oldSchema != null) {

@@ -69,7 +69,7 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
     for (RelationWriteMetadata meta : relationsCreated.values()) {
       RelationKey relation = meta.getRelationKey();
       Set<Integer> workers = meta.getWorkers();
-      if (meta.getOverwrite()) {
+      if (meta.isOverwrite()) {
         catalog.deleteRelationIfExists(meta.getRelationKey());
       }
       Schema schema = meta.getSchema();

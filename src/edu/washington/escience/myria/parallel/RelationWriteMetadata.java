@@ -64,7 +64,7 @@ public class RelationWriteMetadata implements Serializable {
    * 
    * @return {@code true} if the relation will be overwritten if it already exists, or {@code false} otherwise.
    */
-  public boolean getOverwrite() {
+  public boolean isOverwrite() {
     return overwrite;
   }
 
