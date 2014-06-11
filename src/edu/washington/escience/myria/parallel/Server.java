@@ -240,6 +240,11 @@ public final class Server {
   private final ConcurrentHashMap<String, Object> execEnvVars;
 
   /**
+   * An in-memory catalog to map temporary relations to their schemas.
+   */
+  private final ConcurrentHashMap<RelationKey, Schema> tempRelations;
+
+  /**
    * All message queue.
    * 
    * @TODO remove this queue as in {@link Worker}s.
@@ -447,6 +452,8 @@ public final class Server {
     aliveWorkers = new ConcurrentHashMap<>();
     scheduledWorkers = new ConcurrentHashMap<>();
     scheduledWorkersTime = new ConcurrentHashMap<>();
+
+    tempRelations = new ConcurrentHashMap<>();
 
     removeWorkerAckReceived = new ConcurrentHashMap<>();
     addWorkerAckReceived = new ConcurrentHashMap<>();
@@ -1096,19 +1103,31 @@ public final class Server {
       return;
     }
 
+    /* Verify that the schemas for any temp relation we're not overwriting match the existing schema. */
     for (RelationWriteMetadata meta : relationsCreated.values()) {
-      if (!meta.isOverwrite()) {
+      if (meta.isOverwrite()) {
+        continue;
+      }
+
+      RelationKey relation = meta.getRelationKey();
+      Schema oldSchema;
+      String relationType;
+      if (meta.isTemporary()) {
+        relationType = "temporary";
+        oldSchema = getTempSchema(relation);
+      } else {
+        relationType = "persistent";
         try {
-          Schema oldSchema = catalog.getSchema(meta.getRelationKey());
-          if (oldSchema != null) {
-            Preconditions.checkArgument(oldSchema.equals(meta.getSchema()),
-                "Cannot append to relation %s (schema: %s) with new schema (%s)", meta.getRelationKey(), oldSchema,
-                meta.getSchema());
-          }
+          oldSchema = getSchema(relation);
         } catch (CatalogException e) {
-          throw new DbException(Joiner.on(' ').join("Error checking catalog for schema of", meta.getRelationKey(),
+          throw new DbException(Joiner.on(' ').join("Error checking catalog for schema of", relation,
               "during subquery", subQuery.getSubQueryId()), e);
         }
+      }
+      if (oldSchema != null) {
+        Preconditions.checkArgument(oldSchema.equals(meta.getSchema()),
+            "Cannot append to existing %s relation %s (schema: %s) with new schema (%s)", relationType, relation,
+            oldSchema, meta.getSchema());
       }
     }
 
@@ -1352,6 +1371,16 @@ public final class Server {
    */
   public Schema getSchema(final RelationKey relationKey) throws CatalogException {
     return catalog.getSchema(relationKey);
+  }
+
+  /**
+   * Get the Schema of a temporary relation.
+   * 
+   * @param relationKey the key of the desired temporary relation.
+   * @return the schema of the specified relation, or null if not found.
+   */
+  public Schema getTempSchema(final RelationKey relationKey) {
+    return tempRelations.get(relationKey);
   }
 
   /**
