@@ -229,7 +229,7 @@ public class DbInsert extends RootOperator implements DbWriter {
 
   @Override
   public Map<RelationKey, RelationWriteMetadata> writeSet() {
-    return ImmutableMap.of(relationKey, new RelationWriteMetadata(relationKey, getSchema(), overwriteTable));
+    return ImmutableMap.of(relationKey, new RelationWriteMetadata(relationKey, getSchema(), overwriteTable, false));
   }
 
 }

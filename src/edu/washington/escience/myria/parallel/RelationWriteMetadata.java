@@ -26,6 +26,8 @@ public class RelationWriteMetadata implements Serializable {
   private final Schema schema;
   /** Whether an existing copy of relation will be overwritten. */
   private final boolean overwrite;
+  /** Whether the relation being written is a temporary or a permanent relation. */
+  private final boolean temporary;
 
   /**
    * Constructs a new relation metadata object.
@@ -34,12 +36,15 @@ public class RelationWriteMetadata implements Serializable {
    * @param schema the schema of the write.
    * @param overwrite if {@code true}, then the relation will be overwritten / created. if false, the relation will be
    *          created or appended. If appending, the schema must match the catalog schema.
+   * @param temporary if {@code true}, then the relation will be not be added to the Catalog, and its tuple count will
+   *          not be maintained.
    */
   public RelationWriteMetadata(@Nonnull final RelationKey relationKey, @Nonnull final Schema schema,
-      final boolean overwrite) {
+      final boolean overwrite, final boolean temporary) {
     this.relationKey = Objects.requireNonNull(relationKey, "relationKey");
-    this.overwrite = overwrite;
     this.schema = Objects.requireNonNull(schema, "schema");
+    this.overwrite = overwrite;
+    this.temporary = temporary;
     workers = new HashSet<>();
   }
 
@@ -61,6 +66,16 @@ public class RelationWriteMetadata implements Serializable {
    */
   public boolean getOverwrite() {
     return overwrite;
+  }
+
+  /**
+   * Indicates whether the relation is a temporary relation ({@code true}) or will be persisted ({@code false}). If (
+   * {@code false}), the relation will not be persisted and/or added to the catalog, reducing query overhead.
+   * 
+   * @return if {@code false}, the relation will be persisted and entered into the catalog.
+   */
+  public boolean isTemporary() {
+    return temporary;
   }
 
   /**
