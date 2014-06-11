@@ -2,7 +2,6 @@ package edu.washington.escience.myria.systemtest;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -93,7 +92,6 @@ public class JsonQuerySubmitTest extends SystemTestBase {
   @Test
   public void jsonQuerySubmitTest() throws Exception {
     // DeploymentUtils.ensureMasterStart("localhost", masterDaemonPort);
-
     File queryJson = new File("./jsonQueries/sample_queries/single_join.json");
     File ingestJson = new File("./jsonQueries/globalJoin_jwang/ingest_smallTable.json");
 
@@ -107,29 +105,22 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     }
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
     conn.disconnect();
-    while (!server.queryCompleted(1)) {
-      Thread.sleep(100);
-    }
-    assertEquals(QueryStatusEncoding.Status.SUCCESS, server.getQueryStatus(1).status);
 
     String data = JsonAPIUtils.download("localhost", masterDaemonPort, "jwang", "global_join", "smallTable", "json");
     String subStr = "{\"follower\":46,\"followee\":17}";
     assertTrue(data.contains(subStr));
-    while (!server.queryCompleted(2)) {
-      Thread.sleep(100);
-    }
-    assertEquals(QueryStatusEncoding.Status.SUCCESS, server.getQueryStatus(2).status);
 
     conn = JsonAPIUtils.submitQuery("localhost", masterDaemonPort, queryJson);
     if (null != conn.getErrorStream()) {
       throw new IllegalStateException(getContents(conn));
     }
     assertEquals(HttpURLConnection.HTTP_ACCEPTED, conn.getResponseCode());
+    long queryId = getQueryStatus(conn).queryId;
     conn.disconnect();
-    while (!server.queryCompleted(3)) {
+    while (!server.queryCompleted(queryId)) {
       Thread.sleep(100);
     }
-    assertEquals(QueryStatusEncoding.Status.SUCCESS, server.getQueryStatus(3).status);
+    assertEquals(QueryStatusEncoding.Status.SUCCESS, server.getQueryStatus(queryId).status);
   }
 
   @Test
@@ -147,45 +138,29 @@ public class JsonQuerySubmitTest extends SystemTestBase {
       throw new IllegalStateException(getContents(conn));
     }
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
-    LOGGER.info(getContents(conn));
-    /* make sure the ingestion is done. */
-    while (!server.queryCompleted(1)) {
-      Thread.sleep(100);
-    }
-    assertEquals(QueryStatusEncoding.Status.SUCCESS, server.getQueryStatus(1).status);
+    conn.disconnect();
 
     conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestB0);
     if (null != conn.getErrorStream()) {
       throw new IllegalStateException(getContents(conn));
     }
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
-    LOGGER.info(getContents(conn));
-    while (!server.queryCompleted(2)) {
-      Thread.sleep(100);
-    }
-    assertEquals(QueryStatusEncoding.Status.SUCCESS, server.getQueryStatus(2).status);
+    conn.disconnect();
 
     conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestC0);
     if (null != conn.getErrorStream()) {
       throw new IllegalStateException(getContents(conn));
     }
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
-    LOGGER.info(getContents(conn));
-    while (!server.queryCompleted(3)) {
-      Thread.sleep(100);
-    }
-    assertEquals(QueryStatusEncoding.Status.SUCCESS, server.getQueryStatus(3).status);
+    conn.disconnect();
 
     conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestR);
     if (null != conn.getErrorStream()) {
       throw new IllegalStateException(getContents(conn));
     }
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
-    LOGGER.info(getContents(conn));
-    while (!server.queryCompleted(4)) {
-      Thread.sleep(100);
-    }
-    assertEquals(QueryStatusEncoding.Status.SUCCESS, server.getQueryStatus(4).status);
+    assertEquals(QueryStatusEncoding.Status.SUCCESS, server.getQueryStatus(getDatasetStatus(conn).getQueryId()).status);
+    conn.disconnect();
 
     File queryJson = new File("./jsonQueries/multiIDB_jwang/joinChain.json");
     conn = JsonAPIUtils.submitQuery("localhost", masterDaemonPort, queryJson);
@@ -193,14 +168,11 @@ public class JsonQuerySubmitTest extends SystemTestBase {
       throw new IllegalStateException(getContents(conn));
     }
     assertEquals(HttpURLConnection.HTTP_ACCEPTED, conn.getResponseCode());
-    LOGGER.info(getContents(conn));
-    while (!server.queryCompleted(5)) {
+    long queryId = getQueryStatus(conn).queryId;
+    conn.disconnect();
+    while (!server.queryCompleted(queryId)) {
       Thread.sleep(100);
     }
-    assertEquals(QueryStatusEncoding.Status.SUCCESS, server.getQueryStatus(5).status);
-
-    Long result = server.getQueryResult(5);
-    assertNotNull(result);
-    assertEquals(result.longValue(), 4121l);
+    assertEquals(QueryStatusEncoding.Status.SUCCESS, server.getQueryStatus(queryId).status);
   }
 }

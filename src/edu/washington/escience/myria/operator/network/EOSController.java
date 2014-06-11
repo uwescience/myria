@@ -33,7 +33,7 @@ public class EOSController extends Producer {
   private static final long serialVersionUID = 1L;
 
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(EOSController.class.getName());
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(EOSController.class);
   /**
    * Recording the number of EOI received from each controlled {@link IDBController}.
    * */
@@ -97,8 +97,8 @@ public class EOSController extends Producer {
     }
 
     int numExpecting = eosZeroColValue;
-    if (getTaskResourceManager().getOwnerTask().getOwnerQuery().getFTMode().equals(FTMODE.abandon)) {
-      Set<Integer> missingWorkers = getTaskResourceManager().getOwnerTask().getOwnerQuery().getMissingWorkers();
+    if (getTaskResourceManager().getFragment().getLocalSubQuery().getFTMode().equals(FTMODE.abandon)) {
+      Set<Integer> missingWorkers = getTaskResourceManager().getFragment().getLocalSubQuery().getMissingWorkers();
       for (Integer id : missingWorkers) {
         if (workerIdToIndex.containsKey(id)) {
           int workerIdx = workerIdToIndex.get(id);

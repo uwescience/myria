@@ -59,13 +59,7 @@ public class LeapFrogJoin extends NAryOperator {
   /**
    * {@code {@link #joinFieldLocalOrder}[i][j]} stores join field order of j-th field of i-th child's table.
    */
-  private transient List<List<JoinFieldOrder>> joinFieldLocalOrder;
-
-  /**
-   * {@code {@link #joinFieldGlobalOrder}[i][j]} stores global order of j-th field of i-th child's table (-1 means not
-   * a joining field).
-   */
-  private transient List<List<JoinFieldOrder>> joinFieldGlobalOrder;
+  private transient List<List<JoinAttrOrder>> joinFieldLocalOrder;
 
   /**
    * {@code {@link #localOrderedJoinField}[i][j]} stores the join field (locally) ordered j of i-th child's table.
@@ -81,6 +75,11 @@ public class LeapFrogJoin extends NAryOperator {
    * output column names.
    */
   private final ImmutableList<String> outputColumnNames;
+
+  /**
+   * The index of the lastly ordered attribute among those who are participating join.
+   */
+  private transient List<Integer> lastJoinAttrIdx;
 
   /**
    * The buffer holding the valid tuples from children.
@@ -211,12 +210,12 @@ public class LeapFrogJoin extends NAryOperator {
     /**
      * index of table containing this field in children.
      */
-    private final int tableIndex;
+    private final int table;
 
     /**
      * index of this field in its owner table.
      */
-    private final int fieldIndex;
+    private final int column;
 
     /**
      * Constructor.
@@ -225,13 +224,13 @@ public class LeapFrogJoin extends NAryOperator {
      * @param fieldIndex join field index in a table.
      */
     public JoinField(final int tableIndex, final int fieldIndex) {
-      this.tableIndex = tableIndex;
-      this.fieldIndex = fieldIndex;
+      table = tableIndex;
+      column = fieldIndex;
     }
 
     @Override
     public String toString() {
-      return tableIndex + ":" + fieldIndex;
+      return table + ":" + column;
     }
 
   }
@@ -241,10 +240,11 @@ public class LeapFrogJoin extends NAryOperator {
    * 
    */
   private class TableIterator {
+
     /**
-     * table index of this iterator.
+     * table index.
      */
-    private final int tableIndex;
+    private final int tableIdx;
 
     /**
      * current field.
@@ -285,6 +285,11 @@ public class LeapFrogJoin extends NAryOperator {
      */
     public void setRowOfCurrentField(final int row) {
       rowIndices[currentField] = row;
+      Preconditions.checkArgument(row < ranges[currentField].getMaxRow(),
+          "row: %s >= maxRow: %s, currentField: %s, tableIdx: %s, curDepth: %s", row, ranges[currentField].getMaxRow(),
+          currentField, tableIdx, currentDepth);
+      Preconditions.checkArgument(row >= ranges[currentField].getMinRow(), "row: %s < minRow: %s", row,
+          ranges[currentField].getMinRow());
     }
 
     /**
@@ -323,31 +328,21 @@ public class LeapFrogJoin extends NAryOperator {
     public TableIterator(final int tableIndex) {
       Preconditions.checkPositionIndex(tableIndex, getChildren().length,
           "table index cannot exceed number of children.");
-      this.tableIndex = tableIndex;
 
+      tableIdx = tableIndex;
       /* initiate ranges */
       ranges = new IteratorRange[tables[tableIndex].numColumns()];
       for (int i = 0; i < tables[tableIndex].numColumns(); ++i) {
-        ranges[i] = new IteratorRange(-1, -1);
+        ranges[i] = new IteratorRange(0, tables[tableIndex].numTuples());
       }
 
       /* initiate rowIndices */
       rowIndices = new int[getChildren().length];
-      Arrays.fill(rowIndices, -1);
-    }
-
-    /**
-     * @return the table index of this iterator.
-     */
-    @SuppressWarnings("unused")
-    public int getTableIndex() {
-      return tableIndex;
+      Arrays.fill(rowIndices, 0);
     }
 
     /**
      * The legal range of an iterator on a field. This is to simulate the trie data structure.
-     * 
-     * @author chushumo
      * 
      */
     private class IteratorRange {
@@ -368,6 +363,7 @@ public class LeapFrogJoin extends NAryOperator {
        */
       public void setMinRow(final int minRow) {
         this.minRow = minRow;
+        Preconditions.checkState(minRow < maxRow, "minRow >= maxRow. (minRow=%s, ,maxRow=%s)", minRow, maxRow);
       }
 
       /**
@@ -382,6 +378,19 @@ public class LeapFrogJoin extends NAryOperator {
        */
       public void setMaxRow(final int maxRow) {
         this.maxRow = maxRow;
+        Preconditions.checkArgument(maxRow > 0, "maxRow: %s", maxRow);
+        Preconditions.checkState(minRow < maxRow, "minRow >= maxRow. (minRow=%s, ,maxRow=%s)", minRow, maxRow);
+      }
+
+      /**
+       * @param minRow minimal row number of this range, inclusive.
+       * @param maxRow maximal row number of this range, exclusive.
+       */
+      public void setRange(final int minRow, final int maxRow) {
+        this.minRow = minRow;
+        this.maxRow = maxRow;
+        Preconditions.checkArgument(maxRow > 0, "maxRow: %s", maxRow);
+        Preconditions.checkState(minRow < maxRow, "minRow >= maxRow. (minRow=%s, ,maxRow=%s)", minRow, maxRow);
       }
 
       /**
@@ -390,10 +399,18 @@ public class LeapFrogJoin extends NAryOperator {
       private int maxRow;
 
       /**
+       * @param aIteratorRange another IteratorRange object copying from
+       */
+      public void setRange(final IteratorRange aIteratorRange) {
+        setRange(aIteratorRange.minRow, aIteratorRange.maxRow);
+      }
+
+      /**
        * @param minRow minimal row.
        * @param maxRow maximal row.
        */
       public IteratorRange(final int minRow, final int maxRow) {
+        Preconditions.checkArgument(maxRow > 0, "maxRow: %s", maxRow);
         this.minRow = minRow;
         this.maxRow = maxRow;
       }
@@ -408,7 +425,7 @@ public class LeapFrogJoin extends NAryOperator {
    * @return true if this JoinField is ordered first, false otherwise.
    */
   private boolean isIndexed(final JoinField jf) {
-    return indexOnFirst[jf.tableIndex] && joinFieldLocalOrder.get(jf.tableIndex).get(jf.fieldIndex).order == 0;
+    return indexOnFirst[jf.table] && getLocalOrder(jf) == 0;
   }
 
   /**
@@ -417,29 +434,28 @@ public class LeapFrogJoin extends NAryOperator {
   private class JoinIteratorCompare implements Comparator<JoinField> {
     @Override
     public int compare(final JoinField o1, final JoinField o2) {
-      return TupleUtils.cellCompare(tables[o1.tableIndex], o1.fieldIndex, iterators[o1.tableIndex]
-          .getRowOfCurrentField(), tables[o2.tableIndex], o2.fieldIndex, iterators[o2.tableIndex]
-          .getRowOfCurrentField());
+      return TupleUtils.cellCompare(tables[o1.table], o1.column, iterators[o1.table].getRowOfCurrentField(),
+          tables[o2.table], o2.column, iterators[o2.table].getRowOfCurrentField());
     }
   }
 
   /**
-   * record a field in a table and its join order.
+   * the attribute order of a joined column.
    * 
    */
-  private final class JoinFieldOrder implements Serializable {
+  private final class JoinAttrOrder implements Serializable {
     /**
      * required.
      */
     private static final long serialVersionUID = 1L;
     /**
-     * join order of this field.
+     * order of this attribute.
      */
     private int order;
     /**
-     * field index of this field.
+     * column index of this attribute.
      */
-    private final int fieldIndex;
+    private final int colIdx;
 
     /**
      * @return order
@@ -456,24 +472,24 @@ public class LeapFrogJoin extends NAryOperator {
     }
 
     /**
-     * @return field index in a table..
+     * @return column index in a table..
      */
-    private int getFieldIndex() {
-      return fieldIndex;
+    private int getColumnIdx() {
+      return colIdx;
     }
 
     /**
      * @param order order of this join field.
-     * @param fieldIndex index of this join field.
+     * @param columnIdx column index of this join attribute.
      */
-    public JoinFieldOrder(final int order, final int fieldIndex) {
+    public JoinAttrOrder(final int order, final int columnIdx) {
       this.order = order;
-      this.fieldIndex = fieldIndex;
+      colIdx = columnIdx;
     }
 
     @Override
     public String toString() {
-      return fieldIndex + ":" + order;
+      return colIdx + ":" + order;
     }
   }
 
@@ -523,7 +539,6 @@ public class LeapFrogJoin extends NAryOperator {
 
       int numberOfNoDataChild = 0;
       for (int i = 0; i < children.length; ++i) {
-
         Operator child = children[i];
         if (!child.eos()) {
           TupleBatch childTB = child.nextReady();
@@ -541,14 +556,13 @@ public class LeapFrogJoin extends NAryOperator {
           numberOfNoDataChild++;
         }
       }
-
       if (numberOfNoDataChild == children.length && numberOfEOSChild != children.length) {
         return null;
       }
     }
-
-    /* handle the case that one of input tables is empty. */
+    /* Initialization before LeapFrog starts. */
     if (currentDepth == -1) {
+      /* handle the case that one of input tables is empty. */
       for (MutableTupleBuffer table : tables) {
         if (table.numTuples() == 0) {
           joinFinished = true;
@@ -556,6 +570,8 @@ public class LeapFrogJoin extends NAryOperator {
           return null;
         }
       }
+      /* Initiate table iterators. */
+      initIterators();
     }
     /* do the join, pop if there is ready tb. */
     if (!joinFinished) {
@@ -580,15 +596,30 @@ public class LeapFrogJoin extends NAryOperator {
     ImmutableList.Builder<String> names = ImmutableList.builder();
     Operator[] children = getChildren();
     for (int i = 0; i < outputFieldMapping.size(); ++i) {
-      types.add(children[outputFieldMapping.get(i).tableIndex].getSchema().getColumnType(
-          outputFieldMapping.get(i).fieldIndex));
-      names.add(children[outputFieldMapping.get(i).tableIndex].getSchema().getColumnName(
-          outputFieldMapping.get(i).fieldIndex));
+      types.add(children[outputFieldMapping.get(i).table].getSchema().getColumnType(outputFieldMapping.get(i).column));
+      names.add(children[outputFieldMapping.get(i).table].getSchema().getColumnName(outputFieldMapping.get(i).column));
     }
     if (outputColumnNames != null) {
       return new Schema(types.build(), outputColumnNames);
     } else {
       return new Schema(types, names);
+    }
+  }
+
+  /**
+   * move to the next iterator.
+   */
+  private void nextIterator() {
+    currentIteratorIndex = (currentIteratorIndex + 1) % joinFieldMapping.get(currentDepth).size();
+  }
+
+  /**
+   * Initiate iterators.
+   */
+  private void initIterators() {
+    iterators = new TableIterator[tables.length];
+    for (int i = 0; i < tables.length; ++i) {
+      iterators[i] = new TableIterator(i);
     }
   }
 
@@ -610,17 +641,15 @@ public class LeapFrogJoin extends NAryOperator {
     /* initiate join field mapping and field local order */
     joinFieldMapping = new ArrayList<List<JoinField>>();
     joinFieldLocalOrder = new ArrayList<>(children.length);
-    joinFieldGlobalOrder = new ArrayList<>(children.length);
 
     for (Operator element : children) {
-      List<JoinFieldOrder> localOrder = new ArrayList<>();
-      List<JoinFieldOrder> globalOrder = new ArrayList<>();
+      List<JoinAttrOrder> localOrder = new ArrayList<>();
+      List<JoinAttrOrder> globalOrder = new ArrayList<>();
       for (int i = 0; i < element.getSchema().numColumns(); ++i) {
-        localOrder.add(new JoinFieldOrder(-1, i));
-        globalOrder.add(new JoinFieldOrder(-1, i));
+        localOrder.add(new JoinAttrOrder(-1, i));
+        globalOrder.add(new JoinAttrOrder(-1, i));
       }
       joinFieldLocalOrder.add(localOrder);
-      joinFieldGlobalOrder.add(globalOrder);
     }
 
     /* set join field mapping and field local order */
@@ -630,16 +659,15 @@ public class LeapFrogJoin extends NAryOperator {
         // get table index and field index of each join field
         Preconditions.checkArgument(userJoinFieldMapping[i][j].length == 2,
             "the inner arrary of JoinFieldMapping must have the length of 2");
-        int tableIndex = userJoinFieldMapping[i][j][0];
-        int fieldIndex = userJoinFieldMapping[i][j][1];
+        final int tableIdx = userJoinFieldMapping[i][j][0];
+        final int colIdx = userJoinFieldMapping[i][j][1];
         // update joinFieldMapping and reverseJoinFieldMapping
-        Preconditions.checkPositionIndex(tableIndex, children.length,
-            "table index cannot exceed the number of children.");
-        Preconditions.checkPositionIndex(fieldIndex, children[tableIndex].getSchema().numColumns(),
+        Preconditions
+            .checkPositionIndex(tableIdx, children.length, "table index cannot exceed the number of children.");
+        Preconditions.checkPositionIndex(colIdx, children[tableIdx].getSchema().numColumns(),
             "field index cannot exceed the number of columns.");
-        joinedFieldList.add(new JoinField(tableIndex, fieldIndex));
-        joinFieldLocalOrder.get(tableIndex).get(fieldIndex).setOrder(i);
-        joinFieldGlobalOrder.get(tableIndex).get(fieldIndex).setOrder(i);
+        joinedFieldList.add(new JoinField(tableIdx, colIdx));
+        joinFieldLocalOrder.get(tableIdx).get(colIdx).setOrder(i);
       }
       joinFieldMapping.add(joinedFieldList);
     }
@@ -648,38 +676,37 @@ public class LeapFrogJoin extends NAryOperator {
     for (int i = 0; i < joinFieldLocalOrder.size(); ++i) {
 
       List<JoinField> jfl = new ArrayList<>();
-      List<JoinFieldOrder> orderedJoinFieldOrder = new ArrayList<>();
-      for (JoinFieldOrder localOrder : joinFieldLocalOrder.get(i)) {
-        orderedJoinFieldOrder.add(new JoinFieldOrder(localOrder.getOrder(), localOrder.getFieldIndex()));
+      List<JoinAttrOrder> colAttrOrder = new ArrayList<>();
+      for (JoinAttrOrder localOrder : joinFieldLocalOrder.get(i)) {
+        if (localOrder.getOrder() != -1) {
+          colAttrOrder.add(new JoinAttrOrder(localOrder.getOrder(), localOrder.getColumnIdx()));
+        }
       }
 
-      Collections.sort(orderedJoinFieldOrder, new Comparator<JoinFieldOrder>() {
+      Collections.sort(colAttrOrder, new Comparator<JoinAttrOrder>() {
         @Override
-        public int compare(final JoinFieldOrder o1, final JoinFieldOrder o2) {
-          if (o1.getOrder() == -1 && o2.getOrder() == -1) {
-            return 0;
-          } else if (o1.getOrder() == -1 && o2.getOrder() != -1) {
-            return 1;
-          } else if (o1.getOrder() != -1 && o2.getOrder() == -1) {
-            return -1;
-          } else {
-            return Integer.compare(o1.getOrder(), o2.getOrder());
-          }
+        public int compare(final JoinAttrOrder o1, final JoinAttrOrder o2) {
+          return Integer.compare(o1.getOrder(), o2.getOrder());
         }
       });
 
-      for (int j = 0; j < orderedJoinFieldOrder.size(); j++) {
-        jfl.add(new JoinField(i, orderedJoinFieldOrder.get(j).getFieldIndex()));
+      for (int j = 0; j < colAttrOrder.size(); j++) {
+        jfl.add(new JoinField(i, colAttrOrder.get(j).getColumnIdx()));
       }
       localOrderedJoinField.add(jfl);
     }
+
+    lastJoinAttrIdx = new ArrayList<>(children.length);
 
     /* convert the global order to the local order and update the local order back to the joinFieldLocalOrder. */
     for (int i = 0; i < localOrderedJoinField.size(); ++i) {
       List<JoinField> orderedJoinField = localOrderedJoinField.get(i);
       for (int j = 0; j < orderedJoinField.size(); j++) {
         JoinField jf = orderedJoinField.get(j);
-        joinFieldLocalOrder.get(i).get(jf.fieldIndex).setOrder(j);
+        joinFieldLocalOrder.get(i).get(jf.column).setOrder(j);
+        if (j == orderedJoinField.size() - 1) {
+          lastJoinAttrIdx.add(jf.column);
+        }
       }
     }
 
@@ -690,11 +717,7 @@ public class LeapFrogJoin extends NAryOperator {
       tables[i] = new MutableTupleBuffer(children[i].getSchema());
       firstVarIndices[i] = new TIntArrayList();
     }
-    /* Initiate iterators */
-    iterators = new TableIterator[children.length];
-    for (int i = 0; i < children.length; ++i) {
-      iterators[i] = new TableIterator(i);
-    }
+
     currentDepth = -1;
 
     ansTBB = new TupleBatchBuffer(getSchema());
@@ -709,11 +732,15 @@ public class LeapFrogJoin extends NAryOperator {
     }
     tables = null;
     firstVarIndices = null;
-    for (int i = 0; i < iterators.length; ++i) {
-      iterators[i] = null;
+    /* iterators may not be initialized */
+    if (iterators != null) {
+      for (int i = 0; i < iterators.length; ++i) {
+        iterators[i] = null;
+      }
+      iterators = null;
     }
-    iterators = null;
     ansTBB = null;
+    lastJoinAttrIdx = null;
   }
 
   /**
@@ -728,8 +755,12 @@ public class LeapFrogJoin extends NAryOperator {
         /* put value to index table if it first appears */
         if (isIndexed(new JoinField(childIndex, column))) {
           int thisRow = tables[childIndex].numTuples();
+          /*
+           * If this is the last column, this tuple is already built in tables[childIndex]. So numTuples() have been
+           * updated already.
+           */
           if (column == tb.numColumns() - 1) {
-            thisRow = tables[childIndex].numTuples() - 1;
+            thisRow--;
           }
           int lastRow = thisRow - 1;
           if (lastRow == -1 || TupleUtils.cellCompare(tables[childIndex], column, lastRow, tb, column, row) != 0) {
@@ -746,27 +777,25 @@ public class LeapFrogJoin extends NAryOperator {
   private void leapfrogInit() {
 
     for (JoinField jf : joinFieldMapping.get(currentDepth)) {
-      final int localOrder = joinFieldLocalOrder.get(jf.tableIndex).get(jf.fieldIndex).order;
-      final TableIterator it = iterators[jf.tableIndex];
+      final int localOrder = getLocalOrder(jf);
+      final TableIterator it = iterators[jf.table];
       if (localOrder == 0) {
         /* if the join field is highest ordered, reset the cursor */
-        it.ranges[jf.fieldIndex].setMinRow(0);
-        it.ranges[jf.fieldIndex].setMaxRow(tables[jf.tableIndex].numTuples());
-        it.setCurrentField(jf.fieldIndex);
+        it.ranges[jf.column].setRange(0, tables[jf.table].numTuples());
+        it.setCurrentField(jf.column);
         it.setRowOfCurrentField(0);
         it.rowOnIndex = 0;
       } else {
         /* if the join field is not ordered as the first, set the cursor to last level */
-        final int lastJf = localOrderedJoinField.get(jf.tableIndex).get(localOrder - 1).fieldIndex;
-        it.ranges[jf.fieldIndex].setMinRow(it.ranges[lastJf].getMinRow());
-        it.ranges[jf.fieldIndex].setMaxRow(it.ranges[lastJf].getMaxRow());
-        it.setCurrentField(jf.fieldIndex);
-        it.setRowOfCurrentField(it.ranges[jf.fieldIndex].getMinRow());
+        final int lastJf = localOrderedJoinField.get(jf.table).get(localOrder - 1).column;
+        it.ranges[jf.column].setRange(it.ranges[lastJf]);
+        it.setCurrentField(jf.column);
+        it.setRowOfCurrentField(it.ranges[jf.column].getMinRow());
       }
     }
 
     Collections.sort(joinFieldMapping.get(currentDepth), new JoinIteratorCompare());
-    currentIteratorIndex = 0;
+    currentIteratorIndex = joinFieldMapping.get(currentDepth).size() - 1;
   }
 
   /**
@@ -780,26 +809,25 @@ public class LeapFrogJoin extends NAryOperator {
   private boolean leapfrogSearch() {
     boolean atEnd = false;
     Preconditions.checkElementIndex(currentDepth, joinFieldMapping.size(), "current depth is invalid.");
-    JoinField fieldWithMaxKey =
-        joinFieldMapping.get(currentDepth).get(
-            (currentIteratorIndex - 1 + joinFieldMapping.get(currentDepth).size())
-                % joinFieldMapping.get(currentDepth).size());
+    /* get the column to proceed the search. */
+    JoinField columnToProceed = joinFieldMapping.get(currentDepth).get(currentIteratorIndex);
     CellPointer maxKey =
-        new CellPointer(fieldWithMaxKey.tableIndex, fieldWithMaxKey.fieldIndex, iterators[fieldWithMaxKey.tableIndex]
+        new CellPointer(columnToProceed.table, columnToProceed.column, iterators[columnToProceed.table]
             .getRowOfCurrentField());
-
-    Preconditions.checkState(
-        maxKey.getRow() <= iterators[fieldWithMaxKey.tableIndex].ranges[fieldWithMaxKey.fieldIndex].getMaxRow(),
-        "violate max row during search.");
-    if (maxKey.getRow() == iterators[fieldWithMaxKey.tableIndex].ranges[fieldWithMaxKey.fieldIndex].getMaxRow()) {
+    /* if this is already the end of a trie range, return atEnd=ture. */
+    final int maxRow = iterators[columnToProceed.table].ranges[columnToProceed.column].getMaxRow();
+    Preconditions.checkState(maxKey.getRow() <= maxRow, "current row: %s, maxRow: %s", maxKey.getRow(), maxRow);
+    if (maxKey.getRow() == maxRow) {
       return true;
     }
+
+    nextIterator();
 
     while (true) {
       JoinField fieldWithLeastKey = joinFieldMapping.get(currentDepth).get(currentIteratorIndex);
       CellPointer leastKey =
-          new CellPointer(fieldWithLeastKey.tableIndex, fieldWithLeastKey.fieldIndex,
-              iterators[fieldWithLeastKey.tableIndex].getRowOfCurrentField());
+          new CellPointer(fieldWithLeastKey.table, fieldWithLeastKey.column, iterators[fieldWithLeastKey.table]
+              .getRowOfCurrentField());
       if (cellCompare(leastKey, maxKey) == 0) { // if the value current
         break;
       } else {
@@ -809,12 +837,21 @@ public class LeapFrogJoin extends NAryOperator {
         } else {
           // if leapfrog_seek hasn't reach end, update max key, move to the next table
           maxKey =
-              new CellPointer(fieldWithLeastKey.tableIndex, fieldWithLeastKey.fieldIndex,
-                  iterators[fieldWithLeastKey.tableIndex].getRowOfCurrentField());
-          currentIteratorIndex = (currentIteratorIndex + 1) % joinFieldMapping.get(currentDepth).size();
+              new CellPointer(fieldWithLeastKey.table, fieldWithLeastKey.column, iterators[fieldWithLeastKey.table]
+                  .getRowOfCurrentField());
+          nextIterator();
         }
       }
     }
+    /* checking the state */
+    for (JoinField jf : joinFieldMapping.get(currentDepth)) {
+      final int maxRowJf = iterators[jf.table].ranges[jf.column].getMaxRow();
+      final int minRowJf = iterators[jf.table].ranges[jf.column].getMinRow();
+      final int curRow = iterators[jf.table].getRow(jf.column);
+      Preconditions.checkState(curRow >= minRowJf, "curRow: %s, minRow: %s", curRow, minRowJf);
+      Preconditions.checkState(curRow < maxRowJf, "curRow: %s, maxRow: %s", curRow, maxRowJf);
+    }
+
     return atEnd;
   }
 
@@ -824,15 +861,15 @@ public class LeapFrogJoin extends NAryOperator {
    */
   private void refineRange(final JoinField jf) {
 
-    int startRow = iterators[jf.tableIndex].getRow(jf.fieldIndex);
-    int endRow = iterators[jf.tableIndex].ranges[jf.fieldIndex].getMaxRow() - 1;
-    iterators[jf.tableIndex].ranges[jf.fieldIndex].setMinRow(startRow);
-    Preconditions.checkState(startRow <= endRow, "startRow must smaller than endRow");
+    int startRow = iterators[jf.table].getRow(jf.column);
+    int endRow = iterators[jf.table].ranges[jf.column].getMaxRow() - 1;
+    iterators[jf.table].ranges[jf.column].setMinRow(startRow);
+    Preconditions.checkState(startRow <= endRow, "startRow > endRow. (startRow=%s, endRow=%s)", startRow, endRow);
 
-    final CellPointer startCursor = new CellPointer(jf.tableIndex, jf.fieldIndex, startRow);
+    final CellPointer startCursor = new CellPointer(jf.table, jf.column, startRow);
 
     /* short cut: if the maxCursor has the same value as current line */
-    CellPointer cursor = new CellPointer(jf.tableIndex, jf.fieldIndex, endRow);
+    CellPointer cursor = new CellPointer(jf.table, jf.column, endRow);
     if (cellCompare(startCursor, cursor) == 0) {
       return;
     }
@@ -840,7 +877,7 @@ public class LeapFrogJoin extends NAryOperator {
     /* short cut: if the next line has different value */
     cursor.setRow(++startRow);
     if (cellCompare(startCursor, cursor) < 0) {
-      iterators[jf.tableIndex].ranges[jf.fieldIndex].maxRow = startRow;
+      iterators[jf.table].ranges[jf.column].setMaxRow(startRow);
       return;
     }
 
@@ -874,7 +911,7 @@ public class LeapFrogJoin extends NAryOperator {
       }
 
       if (endRow == startRow + 1) {
-        iterators[jf.tableIndex].ranges[jf.fieldIndex].setMaxRow(endRow);
+        iterators[jf.table].ranges[jf.column].setMaxRow(endRow);
         return;
       }
     }
@@ -894,17 +931,12 @@ public class LeapFrogJoin extends NAryOperator {
       return leapfrogSeekWithIndex(jf, target);
     }
 
-    int startRow = iterators[jf.tableIndex].getRow(jf.fieldIndex);
-    int endRow = iterators[jf.tableIndex].ranges[jf.fieldIndex].getMaxRow() - 1;
+    int startRow = iterators[jf.table].getRow(jf.column);
+    int endRow = iterators[jf.table].ranges[jf.column].getMaxRow() - 1;
     Preconditions.checkState(startRow <= endRow, "startRow must be no less than endRow");
 
-    final CellPointer startCursor = new CellPointer(jf.tableIndex, jf.fieldIndex, startRow);
+    final CellPointer startCursor = new CellPointer(jf.table, jf.column, startRow);
     CellPointer cursor = new CellPointer(startCursor);
-
-    /* short-cuts, return result early. */
-    if (cellCompare(startCursor, target) >= 0) {
-      return false;
-    }
 
     /* set row number to upper bound */
     cursor.setRow(endRow);
@@ -924,7 +956,7 @@ public class LeapFrogJoin extends NAryOperator {
 
       if (startRow == endRow - 1) {
         cursor.setRow(endRow);
-        iterators[jf.tableIndex].setRow(jf.fieldIndex, endRow);
+        iterators[jf.table].setRow(jf.column, endRow);
         return false;
       }
     }
@@ -938,20 +970,15 @@ public class LeapFrogJoin extends NAryOperator {
    * @return at end or not.
    */
   private boolean leapfrogSeekWithIndex(final JoinField jf, final CellPointer target) {
-    TIntList index = firstVarIndices[jf.tableIndex];
-    int startRowOnIndex = iterators[jf.tableIndex].rowOnIndex;
+    TIntList index = firstVarIndices[jf.table];
+    int startRowOnIndex = iterators[jf.table].rowOnIndex;
     int endRowOnIndex = index.size() - 1;
     Preconditions.checkState(startRowOnIndex <= endRowOnIndex, "startRow must be no less than endRow");
     Preconditions.checkElementIndex(startRowOnIndex, index.size());
     Preconditions.checkElementIndex(endRowOnIndex, index.size());
 
-    final CellPointer startCursor = new CellPointer(jf.tableIndex, jf.fieldIndex, index.get(startRowOnIndex));
+    final CellPointer startCursor = new CellPointer(jf.table, jf.column, index.get(startRowOnIndex));
     CellPointer cursor = new CellPointer(startCursor);
-
-    /* short-cuts, return result early. */
-    if (cellCompare(startCursor, target) >= 0) {
-      return false;
-    }
 
     /* set row number to upper bound */
     cursor.setRow(index.get(endRowOnIndex));
@@ -972,8 +999,8 @@ public class LeapFrogJoin extends NAryOperator {
 
       if (startRowOnIndex == endRowOnIndex - 1) {
         cursor.setRow(index.get(endRowOnIndex));
-        iterators[jf.tableIndex].setRow(jf.fieldIndex, index.get(endRowOnIndex));
-        iterators[jf.tableIndex].rowOnIndex = endRowOnIndex;
+        iterators[jf.table].setRow(jf.column, index.get(endRowOnIndex));
+        iterators[jf.table].rowOnIndex = endRowOnIndex;
         return false;
       }
     }
@@ -993,46 +1020,40 @@ public class LeapFrogJoin extends NAryOperator {
     /* break if a full tuple batch has been formed */
     while (ansTBB.numTuples() < TupleBatch.BATCH_SIZE) {
       for (JoinField jf : joinFieldMapping.get(currentDepth)) {
-        Preconditions.checkState(jf.fieldIndex == iterators[jf.tableIndex].currentField,
+        Preconditions.checkState(jf.column == iterators[jf.table].currentField,
             "current field invariant is not correct.");
       }
+      /* do LeapFrog search to find the next output position. */
       boolean atEnd = leapfrogSearch();
-
       if (atEnd && currentDepth == 0) {
         /* if the first join variable reaches end, then the join finish. */
         joinFinished = true;
         break;
-
       } else if (atEnd) {
         /* reach to the end in current depth, go back to last depth */
         joinUp();
-
       } else if (currentDepth == joinFieldMapping.size() - 1) {
-
-        /* refine range */
+        /* output all the tuples on this position and move to the next value. */
+        /* 1. refine ranges. */
         for (JoinField jf : joinFieldMapping.get(currentDepth)) {
           refineRange(jf);
         }
 
-        /* exhaust all output with current join key */
+        /* 2. exhaust all output with current join key. */
         exhaustOutput(0);
 
-        /* move to the next value */
-        iterators[joinFieldMapping.get(currentDepth).get(currentIteratorIndex).tableIndex].nextValue();
-        currentIteratorIndex =
-            (currentIteratorIndex - 1 + joinFieldMapping.get(currentDepth).size())
-                % joinFieldMapping.get(currentDepth).size();
+        /* 3. move to the next value */
+        iterators[joinFieldMapping.get(currentDepth).get(currentIteratorIndex).table].nextValue();
 
-        /* restore range */
+        /* 4. restore ranges */
         for (JoinField jf : joinFieldMapping.get(currentDepth)) {
-          final int localOrder = joinFieldLocalOrder.get(jf.tableIndex).get(jf.fieldIndex).order;
-          final TableIterator it = iterators[jf.tableIndex];
+          final int localOrder = getLocalOrder(jf);
+          final TableIterator it = iterators[jf.table];
           if (localOrder != 0) {
-            final int lastJf = localOrderedJoinField.get(jf.tableIndex).get(localOrder - 1).fieldIndex;
-            it.ranges[jf.fieldIndex].setMinRow(it.ranges[lastJf].getMinRow());
-            it.ranges[jf.fieldIndex].setMaxRow(it.ranges[lastJf].getMaxRow());
+            final int lastJf = localOrderedJoinField.get(jf.table).get(localOrder - 1).column;
+            it.ranges[jf.column].setRange(it.ranges[lastJf]);
           } else {
-            it.ranges[jf.fieldIndex].setMaxRow(tables[jf.tableIndex].numTuples());
+            it.ranges[jf.column].setMaxRow(tables[jf.table].numTuples());
           }
         }
 
@@ -1049,20 +1070,23 @@ public class LeapFrogJoin extends NAryOperator {
    */
   private void joinOpen() {
     for (JoinField jf : joinFieldMapping.get(currentDepth)) {
-      int ti = jf.tableIndex;
-      /* set the range for the highest ordered field in a table */
-      if (joinFieldLocalOrder.get(ti).get(iterators[ti].currentField).getOrder() == 0) {
-        iterators[jf.tableIndex].ranges[jf.fieldIndex].setMinRow(0);
-        iterators[jf.tableIndex].ranges[jf.fieldIndex].setMaxRow(tables[jf.tableIndex].numTuples());
-      }
+      /* refine the range of join variable at current depth */
       refineRange(jf);
     }
     currentDepth++;
     for (JoinField jf : joinFieldMapping.get(currentDepth)) {
-      iterators[jf.tableIndex].setCurrentField(jf.fieldIndex);
-      iterators[jf.tableIndex].setRowOfCurrentField(iterators[jf.tableIndex].ranges[jf.fieldIndex].getMinRow());
+      iterators[jf.table].setCurrentField(jf.column);
+      iterators[jf.table].setRowOfCurrentField(iterators[jf.table].ranges[jf.column].getMinRow());
     }
     leapfrogInit();
+  }
+
+  /**
+   * @param jf JoinField
+   * @return the local order of the JoinField jf, starting from 0.
+   */
+  private int getLocalOrder(final JoinField jf) {
+    return joinFieldLocalOrder.get(jf.table).get(jf.column).getOrder();
   }
 
   /**
@@ -1073,42 +1097,38 @@ public class LeapFrogJoin extends NAryOperator {
     currentDepth--;
 
     for (JoinField jf : joinFieldMapping.get(currentDepth)) {
-      iterators[jf.tableIndex].setCurrentField(jf.fieldIndex);
+      iterators[jf.table].setCurrentField(jf.column);
     }
 
-    /* move to the next value */
+    /* arbitrarily choose one relation, let's say, 0th. */
     currentIteratorIndex = 0;
-    iterators[joinFieldMapping.get(currentDepth).get(currentIteratorIndex).tableIndex].nextValue();
-    currentIteratorIndex =
-        (currentIteratorIndex - 1 + joinFieldMapping.get(currentDepth).size())
-            % joinFieldMapping.get(currentDepth).size();
+    /* move its cursor to the next value. */
+    iterators[joinFieldMapping.get(currentDepth).get(currentIteratorIndex).table].nextValue();
 
     for (JoinField jf : joinFieldMapping.get(currentDepth)) {
-      final TableIterator it = iterators[jf.tableIndex];
-      final int localOrder = joinFieldLocalOrder.get(jf.tableIndex).get(jf.fieldIndex).order;
+      final TableIterator it = iterators[jf.table];
+      final int localOrder = getLocalOrder(jf);
       if (localOrder == 0) {
-        it.ranges[jf.fieldIndex].setMinRow(0);
-        it.ranges[jf.fieldIndex].setMaxRow(tables[jf.tableIndex].numTuples());
+        it.ranges[jf.column].setRange(0, tables[jf.table].numTuples());
       } else {
-        final int lastJf = localOrderedJoinField.get(jf.tableIndex).get(localOrder - 1).fieldIndex;
-        it.ranges[jf.fieldIndex].setMinRow(it.ranges[lastJf].getMinRow());
-        it.ranges[jf.fieldIndex].setMaxRow(it.ranges[lastJf].getMaxRow());
+        final int lastJf = localOrderedJoinField.get(jf.table).get(localOrder - 1).column;
+        it.ranges[jf.column].setRange(it.ranges[lastJf]);
       }
     }
-
   }
 
   /**
    * Recursively output all result tuples sharing the same join key(s).
    * 
-   * @param index start position of iterators.
+   * @param index the current table index.
    */
   private void exhaustOutput(final int index) {
-    JoinField currentJF = joinFieldMapping.get(currentDepth).get(index);
-    int currentRow = iterators[currentJF.tableIndex].ranges[currentJF.fieldIndex].minRow;
-    for (; currentRow < iterators[currentJF.tableIndex].ranges[currentJF.fieldIndex].maxRow; currentRow++) {
-      iterators[currentJF.tableIndex].setRowOfCurrentField(currentRow);
-      if (index == joinFieldMapping.get(currentDepth).size() - 1) {
+    final int tableIdx = index;
+    final int colIdx = lastJoinAttrIdx.get(index);
+    int currentRow = iterators[tableIdx].ranges[colIdx].minRow;
+    for (; currentRow < iterators[tableIdx].ranges[colIdx].maxRow; currentRow++) {
+      iterators[tableIdx].setRowOfCurrentField(currentRow);
+      if (index == tables.length - 1) {
         addToAns();
       } else {
         exhaustOutput(index + 1);
@@ -1121,10 +1141,10 @@ public class LeapFrogJoin extends NAryOperator {
    */
   private void addToAns() {
     for (int i = 0; i < outputFieldMapping.size(); ++i) {
-      MutableTupleBuffer hashTable = tables[outputFieldMapping.get(i).tableIndex];
-      int row = iterators[outputFieldMapping.get(i).tableIndex].getRowOfCurrentField();
+      MutableTupleBuffer hashTable = tables[outputFieldMapping.get(i).table];
+      int row = iterators[outputFieldMapping.get(i).table].getRowOfCurrentField();
       int rowInTB = hashTable.getTupleIndexInContainingTB(row);
-      ReadableColumn sourceColumn = hashTable.getColumns(row)[outputFieldMapping.get(i).fieldIndex];
+      ReadableColumn sourceColumn = hashTable.getColumns(row)[outputFieldMapping.get(i).column];
       ansTBB.put(i, sourceColumn, rowInTB);
     }
   }
@@ -1137,7 +1157,6 @@ public class LeapFrogJoin extends NAryOperator {
   private int cellCompare(final CellPointer cp1, final CellPointer cp2) {
     return TupleUtils.cellCompare(tables[cp1.tableIndex], cp1.getFieldIndex(), cp1.getRow(),
         tables[cp2.getTableIndex()], cp2.getFieldIndex(), cp2.getRow());
-
   }
 
 }

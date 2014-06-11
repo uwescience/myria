@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 public class InJVMLoopbackChannelSink extends AbstractChannelSink {
 
   /** The logger for this class. */
-  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(InJVMLoopbackChannelSink.class.getName());
+  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(InJVMLoopbackChannelSink.class);
 
   @Override
   public final void eventSunk(final ChannelPipeline pipeline, final ChannelEvent e) throws Exception {

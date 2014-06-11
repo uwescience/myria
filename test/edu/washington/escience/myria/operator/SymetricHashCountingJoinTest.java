@@ -34,4 +34,11 @@ public class SymetricHashCountingJoinTest {
     assertEquals(5L, count);
   }
 
+  @Test(expected = IllegalStateException.class)
+  public void testIncompatibleJoinKeys() throws DbException {
+    TupleSource left = new TupleSource(JoinTestUtils.leftInput);
+    TupleSource right = new TupleSource(JoinTestUtils.rightInput);
+    Operator join = new SymmetricHashCountingJoin(left, right, new int[] { 0 }, new int[] { 0 });
+    join.open(TestEnvVars.get());
+  }
 }

@@ -28,6 +28,7 @@ import org.apache.commons.httpclient.HttpStatus;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
 import com.sun.jersey.core.header.ContentDisposition;
 import com.sun.jersey.multipart.FormDataParam;
 import com.wordnik.swagger.annotations.Api;
@@ -205,11 +206,7 @@ public final class DatasetResource {
     }
 
     /* Start streaming tuples into the TupleWriter, and through the pipes to the PipedStreamingOutput. */
-    try {
-      server.startDataStream(relationKey, writer);
-    } catch (IllegalArgumentException e) {
-      throw new MyriaApiException(Status.BAD_REQUEST, e);
-    }
+    server.startDataStream(relationKey, writer);
 
     /* Yay, worked! Ensure the file has the correct filename. */
     return response.build();
@@ -307,14 +304,9 @@ public final class DatasetResource {
       @FormDataParam("overwrite") final Boolean overwrite,
       @FormDataParam("partitionFunction") final PartitionFunction partitionFunction,
       @FormDataParam("data") final InputStream data) throws DbException {
-    /* Required parameters. */
-    if (relationKey == null) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "Missing required field relationKey.");
-    } else if (schema == null) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "Missing required field schema.");
-    } else if (data == null) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "Missing required field data.");
-    }
+    Preconditions.checkArgument(relationKey != null, "Missing required field relationKey.");
+    Preconditions.checkArgument(schema != null, "Missing required field schama.");
+    Preconditions.checkArgument(data != null, "Missing required field data.");
 
     Operator scan;
     if (Objects.firstNonNull(binary, false)) {
@@ -375,6 +367,7 @@ public final class DatasetResource {
       status = server.ingestDataset(relationKey, actualWorkers, indexes, source, partitionFunction);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
+      return Response.status(Status.SERVICE_UNAVAILABLE).entity("Interrupted").build();
     }
 
     /* In the response, tell the client the path to the relation. */
@@ -396,7 +389,7 @@ public final class DatasetResource {
 
     /* If we already have a dataset by this name, tell the user there's a conflict. */
     try {
-      if (server.getSchema(dataset.relationKey) != null) {
+      if (!Objects.firstNonNull(dataset.overwrite, Boolean.FALSE) && server.getSchema(dataset.relationKey) != null) {
         /* Found, throw a 409 (Conflict) */
         throw new MyriaApiException(Status.CONFLICT, "That dataset already exists.");
       }
@@ -404,10 +397,10 @@ public final class DatasetResource {
       throw new DbException(e);
     }
 
-    /* Moreover, check whether all requested workers are valid. */
-    if (dataset.workers != null && !server.getWorkers().keySet().containsAll(dataset.workers)) {
-      /* Throw a 503 (Service Unavailable) */
-      throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "Do not specify the workers of the dataset correctly");
+    /* For import, force the user to supply the workers. */
+    if (dataset.workers == null) {
+      throw new MyriaApiException(Status.BAD_REQUEST,
+          "When importing, you need to specify which workers have the dataset.");
     }
 
     try {

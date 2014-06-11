@@ -68,19 +68,9 @@ public final class FloatMutableColumn extends MutableColumn<Float> {
   }
 
   @Override
-  public void replace(final int index, final Float value) {
-    replace(index, value.floatValue());
-  }
-
-  /**
-   * replace the value on a row with the given float value.
-   * 
-   * @param index row index
-   * @param value the float value.
-   */
-  public void replace(final int index, final float value) {
-    Preconditions.checkElementIndex(index, size());
-    data[index] = value;
+  public void replaceFloat(final float value, final int row) {
+    Preconditions.checkElementIndex(row, size());
+    data[row] = value;
   }
 
   @Override

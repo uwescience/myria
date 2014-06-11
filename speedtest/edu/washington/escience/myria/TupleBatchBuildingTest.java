@@ -74,8 +74,8 @@ public class TupleBatchBuildingTest {
     long start = System.nanoTime();
     for (long i = 0; i < testSize; i++) {
       for (int j = 0; j < TupleBatch.BATCH_SIZE; j++) {
-        icb1.replace(j, icb1Source[j]);
-        icb2.replace(j, icb2Source[j]);
+        icb1.replaceLong(icb1Source[j], j);
+        icb2.replaceLong(icb2Source[j], j);
       }
       totalCount += icb1.size();
     }

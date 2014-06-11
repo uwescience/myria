@@ -66,11 +66,11 @@ import edu.washington.escience.myria.util.concurrent.ThreadAffinityFixedRoundRob
 public final class Worker {
 
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Worker.class.getName());
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Worker.class);
 
   /**
    * Control message processor.
-   * */
+   */
   private final class ControlMessageProcessor implements Runnable {
     @Override
     public void run() {
@@ -100,12 +100,11 @@ public final class Worker {
                   }
                   connectionPool.removeRemote(workerId).await();
                   sendMessageToMaster(IPCUtils.removeWorkerAckTM(workerId));
-                  for (Long id : activeQueries.keySet()) {
-                    WorkerQueryPartition wqp = activeQueries.get(id);
+                  for (WorkerSubQuery wqp : executingSubQueries.values()) {
                     if (wqp.getFTMode().equals(FTMODE.abandon)) {
                       wqp.getMissingWorkers().add(workerId);
                       wqp.updateProducerChannels(workerId, false);
-                      wqp.triggerTasks();
+                      wqp.triggerFragmentEosEoiChecks();
                     } else if (wqp.getFTMode().equals(FTMODE.rejoin)) {
                       wqp.getMissingWorkers().add(workerId);
                     }
@@ -145,7 +144,7 @@ public final class Worker {
     @Override
     public final void run() {
       try {
-        WorkerQueryPartition q = null;
+        WorkerSubQuery q = null;
         while (true) {
           try {
             q = queryQueue.take();
@@ -157,7 +156,7 @@ public final class Worker {
           if (q != null) {
             try {
               receiveQuery(q);
-              sendMessageToMaster(IPCUtils.queryReadyTM(q.getQueryID()));
+              sendMessageToMaster(IPCUtils.queryReadyTM(q.getSubQueryId()));
             } catch (DbException e) {
               if (LOGGER.isErrorEnabled()) {
                 LOGGER.error("Unexpected exception at preparing query. Drop the query.", e);
@@ -190,7 +189,7 @@ public final class Worker {
    * Periodically detect whether the {@link Worker} should be shutdown. 1) it detects whether the server is still alive.
    * If the server got killed because of any reason, the workers will be terminated. 2) it detects whether a shutdown
    * message is received.
-   * */
+   */
   private class ShutdownChecker extends ErrorLoggingTimerTask {
     @Override
     public final synchronized void runInner() {
@@ -227,34 +226,34 @@ public final class Worker {
 
   /**
    * usage.
-   * */
+   */
   static final String USAGE = "Usage: worker [--conf <conf_dir>]";
 
   /**
    * {@link ExecutorService} for query executions.
-   * */
+   */
   private volatile ExecutorService queryExecutor;
 
   /**
    * @return the query executor used in this worker.
-   * */
+   */
   ExecutorService getQueryExecutor() {
     return queryExecutor;
   }
 
   /**
    * {@link ExecutorService} for non-query message processing.
-   * */
+   */
   private volatile ExecutorService messageProcessingExecutor;
 
-  /**
-   * current active queries. queryID -> QueryPartition
-   * */
-  private final ConcurrentHashMap<Long, WorkerQueryPartition> activeQueries;
+  /** Currently active queries. Query ID -> {@link SubQueryId}. */
+  private final Map<Long, SubQueryId> activeQueries;
+  /** Currently running subqueries. {@link SubQueryId} -> {@link WorkerSubQuery}. */
+  private final Map<SubQueryId, WorkerSubQuery> executingSubQueries;
 
   /**
    * shutdown checker executor.
-   * */
+   */
   private ScheduledExecutorService scheduledTaskExecutor;
 
   /**
@@ -274,65 +273,65 @@ public final class Worker {
 
   /**
    * abrupt shutdown.
-   * */
+   */
   private volatile boolean abruptShutdown = false;
 
   /**
    * Message queue for control messages.
-   * */
+   */
   private final LinkedBlockingQueue<ControlMessage> controlMessageQueue;
 
   /**
    * Message queue for queries.
-   * */
-  private final PriorityBlockingQueue<WorkerQueryPartition> queryQueue;
+   */
+  private final PriorityBlockingQueue<WorkerSubQuery> queryQueue;
 
   /**
    * My catalog.
-   * */
+   */
   private final WorkerCatalog catalog;
 
   /**
    * master IPC address.
-   * */
+   */
   private final SocketInfo masterSocketInfo;
 
   /**
    * Query execution mode. May remove
-   * */
+   */
   private final QueryExecutionMode queryExecutionMode;
 
   /**
    * {@link ExecutorService} for Netty pipelines.
-   * */
+   */
   private volatile OrderedMemoryAwareThreadPoolExecutor pipelineExecutor;
 
   /**
    * The default input buffer capacity for each {@link Consumer} input buffer.
-   * */
+   */
   private final int inputBufferCapacity;
 
   /**
    * the system wide default inuput buffer recover event trigger.
    * 
    * @see FlowControlBagInputBuffer#INPUT_BUFFER_RECOVER
-   * */
+   */
   private final int inputBufferRecoverTrigger;
 
   /**
    * Current working directory. It's the logical root of the worker. All the data the worker and the operators running
    * on the worker can access should be put under this directory.
-   * */
+   */
   private final String workingDirectory;
 
   /**
    * Execution environment variables for operators.
-   * */
+   */
   private final ConcurrentHashMap<String, Object> execEnvVars;
 
   /**
    * The thread group of the main thread.
-   * */
+   */
   private static volatile ThreadGroup mainThreadGroup;
 
   /**
@@ -343,7 +342,7 @@ public final class Worker {
   /**
    * @param args command line arguments
    * @return options parsed from command line.
-   * */
+   */
   private static HashMap<String, Object> processArgs(final String[] args) {
     HashMap<String, Object> options = new HashMap<String, Object>();
     // if (args.length > 2) {
@@ -370,7 +369,7 @@ public final class Worker {
    * Setup system properties.
    * 
    * @param cmdlineOptions command line options
-   * */
+   */
   private static void systemSetup(final HashMap<String, Object> cmdlineOptions) {
     java.util.logging.Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     java.util.logging.Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
@@ -445,7 +444,7 @@ public final class Worker {
 
   /**
    * @param cmdlineOptions command line options
-   * */
+   */
   private static void bootupWorker(final HashMap<String, Object> cmdlineOptions) {
     final String workingDir = (String) cmdlineOptions.get("workingDir");
     if (LOGGER.isInfoEnabled()) {
@@ -484,7 +483,7 @@ public final class Worker {
    * Worker process entry point.
    * 
    * @param args command line arguments.
-   * */
+   */
   public static void main(final String[] args) {
     try {
       HashMap<String, Object> cmdlineOptions = processArgs(args);
@@ -503,35 +502,35 @@ public final class Worker {
 
   /**
    * @return my control message queue.
-   * */
+   */
   LinkedBlockingQueue<ControlMessage> getControlMessageQueue() {
     return controlMessageQueue;
   }
 
   /**
    * @return my query queue.
-   * */
-  PriorityBlockingQueue<WorkerQueryPartition> getQueryQueue() {
+   */
+  PriorityBlockingQueue<WorkerSubQuery> getQueryQueue() {
     return queryQueue;
   }
 
   /**
    * @return my connection pool for IPC.
-   * */
+   */
   IPCConnectionPool getIPCConnectionPool() {
     return connectionPool;
   }
 
   /**
    * @return my pipeline executor.
-   * */
+   */
   OrderedMemoryAwareThreadPoolExecutor getPipelineExecutor() {
     return pipelineExecutor;
   }
 
   /**
    * @return the system wide default inuput buffer capacity.
-   * */
+   */
   int getInputBufferCapacity() {
     return inputBufferCapacity;
   }
@@ -539,35 +538,35 @@ public final class Worker {
   /**
    * @return the system wide default inuput buffer recover event trigger.
    * @see FlowControlBagInputBuffer#INPUT_BUFFER_RECOVER
-   * */
+   */
   int getInputBufferRecoverTrigger() {
     return inputBufferRecoverTrigger;
   }
 
   /**
    * @return my execution environment variables for init of operators.
-   * */
+   */
   ConcurrentHashMap<String, Object> getExecEnvVars() {
     return execEnvVars;
   }
 
   /**
    * @return the working directory of the worker.
-   * */
+   */
   public String getWorkingDirectory() {
     return workingDirectory;
   }
 
   /**
    * @return the current active queries.
-   * */
-  ConcurrentHashMap<Long, WorkerQueryPartition> getActiveQueries() {
-    return activeQueries;
+   */
+  Map<SubQueryId, WorkerSubQuery> getActiveQueries() {
+    return executingSubQueries;
   }
 
   /**
    * @return query execution mode.
-   * */
+   */
   QueryExecutionMode getQueryExecutionMode() {
     return queryExecutionMode;
   }
@@ -577,7 +576,7 @@ public final class Worker {
    * @param mode my execution mode.
    * @throws CatalogException if there's any catalog operation errors.
    * @throws FileNotFoundException if catalog files are not found.
-   * */
+   */
   public Worker(final String workingDirectory, final QueryExecutionMode mode) throws CatalogException,
       FileNotFoundException {
     queryExecutionMode = mode;
@@ -587,7 +586,7 @@ public final class Worker {
     myID = Integer.parseInt(catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_IDENTIFIER));
 
     controlMessageQueue = new LinkedBlockingQueue<ControlMessage>();
-    queryQueue = new PriorityBlockingQueue<WorkerQueryPartition>();
+    queryQueue = new PriorityBlockingQueue<WorkerSubQuery>();
 
     masterSocketInfo = catalog.getMasters().get(0);
 
@@ -600,7 +599,8 @@ public final class Worker {
         new IPCConnectionPool(myID, computingUnits, IPCConfigurations.createWorkerIPCServerBootstrap(this),
             IPCConfigurations.createWorkerIPCClientBootstrap(this), new TransportMessageSerializer(),
             new WorkerShortMessageProcessor(this));
-    activeQueries = new ConcurrentHashMap<Long, WorkerQueryPartition>();
+    activeQueries = new ConcurrentHashMap<>();
+    executingSubQueries = new ConcurrentHashMap<>();
 
     inputBufferCapacity =
         Integer.valueOf(catalog.getConfigurationValue(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY));
@@ -627,27 +627,27 @@ public final class Worker {
   }
 
   /**
-   * It does the initialization and preparation for the execution of the query.
+   * It does the initialization and preparation for the execution of the subquery.
    * 
-   * @param query the received query.
+   * @param subQuery the received query.
    * @throws DbException if any error occurs.
    */
-  public void receiveQuery(final WorkerQueryPartition query) throws DbException {
-    if (LOGGER.isInfoEnabled()) {
-      LOGGER.info("Query received " + query.getQueryID());
-    }
+  public void receiveQuery(final WorkerSubQuery subQuery) throws DbException {
+    final SubQueryId subQueryId = subQuery.getSubQueryId();
+    LOGGER.info("SubQuery #{} received.", subQueryId);
 
-    activeQueries.put(query.getQueryID(), query);
-    query.getExecutionFuture().addListener(new QueryFutureListener() {
+    activeQueries.put(subQueryId.getQueryId(), subQueryId);
+    executingSubQueries.put(subQueryId, subQuery);
+    subQuery.getExecutionFuture().addListener(new LocalSubQueryFutureListener() {
 
       @Override
-      public void operationComplete(final QueryFuture future) {
-        activeQueries.remove(query.getQueryID());
+      public void operationComplete(final LocalSubQueryFuture future) {
+        finishTask(subQueryId);
 
         if (future.isSuccess()) {
 
-          sendMessageToMaster(IPCUtils.queryCompleteTM(query.getQueryID(), query.getExecutionStatistics()))
-              .addListener(new ChannelFutureListener() {
+          sendMessageToMaster(IPCUtils.queryCompleteTM(subQueryId, subQuery.getExecutionStatistics())).addListener(
+              new ChannelFutureListener() {
 
                 @Override
                 public void operationComplete(final ChannelFuture future) throws Exception {
@@ -659,23 +659,18 @@ public final class Worker {
                 }
 
               });
-          if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("My part of query " + query + " finished");
-          }
-
+          LOGGER.info("My part of query {} finished", subQuery);
         } else {
-          if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Query failed because of exception: ", future.getCause());
-          }
+          LOGGER.debug("Query failed because of exception: ", future.getCause());
 
           TransportMessage tm = null;
           try {
-            tm = IPCUtils.queryFailureTM(query.getQueryID(), future.getCause(), query.getExecutionStatistics());
+            tm = IPCUtils.queryFailureTM(subQueryId, future.getCause(), subQuery.getExecutionStatistics());
           } catch (IOException e) {
             if (LOGGER.isErrorEnabled()) {
               LOGGER.error("Unknown query failure TM creation error", e);
             }
-            tm = IPCUtils.simpleQueryFailureTM(query.getQueryID());
+            tm = IPCUtils.simpleQueryFailureTM(subQueryId);
           }
           sendMessageToMaster(tm).addListener(new ChannelFutureListener() {
             @Override
@@ -693,9 +688,19 @@ public final class Worker {
   }
 
   /**
+   * Finish the subquery by removing it from the data structures.
+   * 
+   * @param subQueryId the id of the subquery to finish.
+   */
+  private void finishTask(final SubQueryId subQueryId) {
+    executingSubQueries.remove(subQueryId);
+    activeQueries.remove(subQueryId.getQueryId());
+  }
+
+  /**
    * @param message the message to get sent to the master
    * @return the future of this sending action.
-   * */
+   */
   ChannelFuture sendMessageToMaster(final TransportMessage message) {
     return Worker.this.connectionPool.sendShortMessage(MyriaConstants.MASTER_ID, message);
   }
@@ -705,11 +710,9 @@ public final class Worker {
    * 
    */
   void shutdown() {
-    if (LOGGER.isInfoEnabled()) {
-      LOGGER.info("Shutdown requested. Please wait when cleaning up...");
-    }
+    LOGGER.info("Shutdown requested. Please wait when cleaning up...");
 
-    for (WorkerQueryPartition p : activeQueries.values()) {
+    for (WorkerSubQuery p : executingSubQueries.values()) {
       p.kill();
     }
 
@@ -744,7 +747,7 @@ public final class Worker {
    * Start the worker service.
    * 
    * @throws Exception if any error meets.
-   * */
+   */
   public void start() throws Exception {
     ExecutorService bossExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("IPC boss"));
     ExecutorService workerExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("IPC worker"));
@@ -797,7 +800,7 @@ public final class Worker {
         TimeUnit.MILLISECONDS);
 
     ConnectionInfo connectionInfo = (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
-    if (!connectionInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_SQLITE)) {
+    if (connectionInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
       profilingLogger = new ProfilingLogger(connectionInfo);
     }
   }
@@ -805,7 +808,7 @@ public final class Worker {
   /**
    * @param configKey config key.
    * @return a worker configuration.
-   * */
+   */
   public String getConfiguration(final String configKey) {
     try {
       return catalog.getConfigurationValue(configKey);

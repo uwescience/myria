@@ -74,7 +74,7 @@ public class Apply extends UnaryOperator {
   protected TupleBatch fetchNextReady() throws DbException, InvocationTargetException {
     Operator child = getChild();
 
-    if (child.eoi() || getChild().eos()) {
+    if (child.eoi() || child.eos()) {
       return null;
     }
 

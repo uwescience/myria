@@ -15,5 +15,4 @@ public class ApplyEncoding extends UnaryOperatorEncoding<Apply> {
   public Apply construct(Server server) {
     return new Apply(null, emitExpressions);
   }
-
 }

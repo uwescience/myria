@@ -6,6 +6,7 @@ import java.io.NotSerializableException;
 import java.io.ObjectOutputStream;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
@@ -16,8 +17,9 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnFactory;
-import edu.washington.escience.myria.parallel.QueryExecutionStatistics;
-import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
+import edu.washington.escience.myria.parallel.ExecutionStatistics;
+import edu.washington.escience.myria.parallel.SubQueryId;
+import edu.washington.escience.myria.parallel.SubQueryPlan;
 import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
@@ -175,33 +177,44 @@ public final class IPCUtils {
   }
 
   /**
-   * @param queryId .
+   * @param taskId the query/subquery task id.
    * @return a query ready TM.
    * */
-  public static TransportMessage queryReadyTM(final Long queryId) {
-    return QUERY_TM_BUILDER.get().setQueryMessage(
-        QueryMessage.newBuilder().setType(QueryMessage.Type.QUERY_READY_TO_EXECUTE).setQueryId(queryId)).build();
-  }
-
-  /**
-   * @param queryId .
-   * @param workerId .
-   * @return a query recover TM.
-   * */
-  public static TransportMessage recoverQueryTM(final Long queryId, final int workerId) {
-    return QUERY_TM_BUILDER.get().setQueryMessage(
-        QueryMessage.newBuilder().setType(QueryMessage.Type.QUERY_RECOVER).setQueryId(queryId).setWorkerId(workerId))
+  public static TransportMessage queryReadyTM(final SubQueryId taskId) {
+    return QUERY_TM_BUILDER.get().setQueryMessage(queryMessageOf(taskId, QueryMessage.Type.QUERY_READY_TO_EXECUTE))
         .build();
   }
 
   /**
-   * @param queryId the completed query id.
+   * @param taskId .
+   * @param workerId .
+   * @return a query recover TM.
+   * */
+  public static TransportMessage recoverQueryTM(final SubQueryId taskId, final int workerId) {
+    return QUERY_TM_BUILDER.get().setQueryMessage(
+        queryMessageOf(taskId, QueryMessage.Type.QUERY_RECOVER).setWorkerId(workerId)).build();
+  }
+
+  /**
+   * @param taskId the task of the message to be sent
+   * @param type the type of the message to be sent
+   * @return a builder for a query message
+   */
+  private static QueryMessage.Builder queryMessageOf(final SubQueryId taskId, final QueryMessage.Type type) {
+    Objects.requireNonNull(taskId, "taskId");
+    Objects.requireNonNull(type, "type");
+    return QueryMessage.newBuilder().setQueryId(taskId.getQueryId()).setSubqueryId(taskId.getSubqueryId())
+        .setType(type);
+  }
+
+  /**
+   * @param taskId the completed query/subquery task id.
    * @return a query complete TM.
    * @param statistics query execution statistics
    * */
-  public static TransportMessage queryCompleteTM(final long queryId, final QueryExecutionStatistics statistics) {
+  public static TransportMessage queryCompleteTM(final SubQueryId taskId, final ExecutionStatistics statistics) {
     return QUERY_TM_BUILDER.get().setQueryMessage(
-        QueryMessage.newBuilder().setQueryId(queryId).setType(QueryMessage.Type.QUERY_COMPLETE).setQueryReport(
+        queryMessageOf(taskId, QueryMessage.Type.QUERY_COMPLETE).setQueryReport(
             QueryReport.newBuilder().setSuccess(true).setExecutionStatistics(statistics.toProtobuf()))).build();
   }
 
@@ -244,42 +257,41 @@ public final class IPCUtils {
   }
 
   /**
-   * @param queryId the completed query id.
-   * @return a query complete TM.
+   * @param taskId the failed query/subquery task id.
    * @param cause the cause of the failure
-   * @throws IOException if any IO error occurs.
    * @param statistics query execution statistics
+   * @return a query failed (complete, !success) TM.
+   * @throws IOException if any IO error occurs.
    * */
-  public static TransportMessage queryFailureTM(final long queryId, final Throwable cause,
-      final QueryExecutionStatistics statistics) throws IOException {
+  public static TransportMessage queryFailureTM(final SubQueryId taskId, final Throwable cause,
+      final ExecutionStatistics statistics) throws IOException {
     final ByteArrayOutputStream inMemBuffer = new ByteArrayOutputStream();
     final ObjectOutputStream oos = new ObjectOutputStream(inMemBuffer);
     oos.writeObject(wrapSerializableThrowable(cause));
     oos.flush();
     inMemBuffer.flush();
     return QUERY_TM_BUILDER.get().setQueryMessage(
-        QueryMessage.newBuilder().setQueryId(queryId).setType(QueryMessage.Type.QUERY_COMPLETE).setQueryReport(
+        queryMessageOf(taskId, QueryMessage.Type.QUERY_COMPLETE).setQueryReport(
             QueryReport.newBuilder().setSuccess(false).setExecutionStatistics(statistics.toProtobuf()).setCause(
                 ByteString.copyFrom(inMemBuffer.toByteArray())))).build();
   }
 
   /**
-   * @param queryId the completed query id.
-   * @return a query complete TM.
+   * @param taskId the failed query/subquery task id.
+   * @return a query failed (complete, !success) TM.
    * */
-  public static TransportMessage simpleQueryFailureTM(final long queryId) {
+  public static TransportMessage simpleQueryFailureTM(final SubQueryId taskId) {
     return QUERY_TM_BUILDER.get().setQueryMessage(
-        QueryMessage.newBuilder().setQueryId(queryId).setType(QueryMessage.Type.QUERY_COMPLETE).setQueryReport(
+        queryMessageOf(taskId, QueryMessage.Type.QUERY_COMPLETE).setQueryReport(
             QueryReport.newBuilder().setSuccess(false))).build();
   }
 
   /**
-   * @param queryId the id of the query to be started.
+   * @param taskId the failed query/subquery task id.
    * @return the query start TM.
    * */
-  public static TransportMessage startQueryTM(final long queryId) {
-    return QUERY_TM_BUILDER.get().setQueryMessage(
-        QueryMessage.newBuilder().setType(QueryMessage.Type.QUERY_START).setQueryId(queryId)).build();
+  public static TransportMessage startQueryTM(final SubQueryId taskId) {
+    return QUERY_TM_BUILDER.get().setQueryMessage(queryMessageOf(taskId, QueryMessage.Type.QUERY_START)).build();
   }
 
   /**
@@ -375,12 +387,12 @@ public final class IPCUtils {
   }
 
   /**
-   * @param queryId .
+   * @param taskId the query/subquery task id
    * @param query the query to encode.
    * @throws IOException if error occurs in encoding the query.
    * @return an encoded query TM
    */
-  public static TransportMessage queryMessage(final long queryId, final SingleQueryPlanWithArgs query)
+  public static TransportMessage queryMessage(final SubQueryId taskId, final SubQueryPlan query)
       throws IOException {
     final ByteArrayOutputStream inMemBuffer = new ByteArrayOutputStream();
     final ObjectOutputStream oos = new ObjectOutputStream(inMemBuffer);
@@ -388,17 +400,16 @@ public final class IPCUtils {
     oos.flush();
     inMemBuffer.flush();
     return QUERY_TM_BUILDER.get().setQueryMessage(
-        QueryMessage.newBuilder().setType(QueryMessage.Type.QUERY_DISTRIBUTE).setQueryId(queryId).setQuery(
+        queryMessageOf(taskId, QueryMessage.Type.QUERY_DISTRIBUTE).setQuery(
             QueryProto.Query.newBuilder().setQuery(ByteString.copyFrom(inMemBuffer.toByteArray())))).build();
   }
 
   /**
-   * @param queryId .
+   * @param taskId the query/subquery task to be killed.
    * @return a query ready TM.
    * */
-  public static TransportMessage killQueryTM(final long queryId) {
-    return QUERY_TM_BUILDER.get().setQueryMessage(
-        QueryMessage.newBuilder().setType(QueryMessage.Type.QUERY_KILL).setQueryId(queryId)).build();
+  public static TransportMessage killQueryTM(final SubQueryId taskId) {
+    return QUERY_TM_BUILDER.get().setQueryMessage(queryMessageOf(taskId, QueryMessage.Type.QUERY_KILL)).build();
   }
 
   /**

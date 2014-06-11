@@ -5,6 +5,7 @@ package edu.washington.escience.myria.operator;
 
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import com.almworks.sqlite4java.SQLiteConnection;
@@ -21,13 +22,14 @@ import edu.washington.escience.myria.accessmethod.AccessMethod;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.SQLiteInfo;
+import edu.washington.escience.myria.parallel.RelationWriteMetadata;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * @author valmeida
  * 
  */
-public class DbInsert extends RootOperator {
+public class DbInsert extends RootOperator implements DbWriter {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -223,6 +225,11 @@ public class DbInsert extends RootOperator {
    */
   public RelationKey getRelationKey() {
     return relationKey;
+  }
+
+  @Override
+  public Map<RelationKey, RelationWriteMetadata> writeSet() {
+    return ImmutableMap.of(relationKey, new RelationWriteMetadata(relationKey, getSchema(), overwriteTable));
   }
 
 }

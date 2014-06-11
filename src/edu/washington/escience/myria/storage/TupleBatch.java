@@ -222,6 +222,7 @@ public class TupleBatch implements ReadableTable, Serializable {
   }
 
   @Override
+  @Deprecated
   public final Object getObject(final int column, final int row) {
     return columns.get(column).getObject(row);
   }
@@ -313,6 +314,7 @@ public class TupleBatch implements ReadableTable, Serializable {
     BitSet[] resultBitSet = new BitSet[result.length];
     for (int i = 0; i < partitions.length; i++) {
       int p = partitions[i];
+      Preconditions.checkElementIndex(p, result.length);
       if (resultBitSet[p] == null) {
         resultBitSet[p] = new BitSet(result.length);
       }

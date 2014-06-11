@@ -1,50 +1,49 @@
 {
-	"expected_result": "working on the t_20000000 dataset, staring from node 12, using 14 workers, 2G memory on each, finishes in about 2 mins. number of result: 4215071 (although not directly observable from this query)",
 	"fragments": 
 	[
 		{
-			"operators": 
+			"operators":
 			[
 			{
-			  "opId" : "cc",
+			  "opId" : 0,
 			  "opType" : "CollectConsumer",
-			  "argOperatorId" : "cpc"
+			  "argOperatorId" : 16
 			}
 			],
-			"workers": 
+			"workers":
 			[
 				0
 			]
 		},
 		{
-			"operators": 
+			"operators":
 			[
 			{
-				"opId" : "eoiReceiverA",
+				"opId" : 1,
 				"opType" : "Consumer",
-				"argOperatorId" : "idbinputa"
+				"argOperatorId" : 8
 			},
 			{
-				"opId" : "merge",
+				"opId" : 2,
 				"opType" : "UnionAll",
-				"argChildren" : ["eoiReceiverA"]
+				"argChildren" : [1]
 			},
 			{
-				"opId" : "eosController",
+				"opId" : 3,
 				"opType" : "EOSController",
-				"argChild" : "merge"
+				"argChild" : 2
 			}
 			],
-			"workers": 
+			"workers":
 			[
 				1
 			]
 		},
 		{
-			"operators": 
+			"operators":
 			[
 			{
-				"opId" : "scan2a",
+				"opId" : 4,
 				"opType" : "TableScan",
 				"relationKey" : {
 					"userName" : "jwang",
@@ -53,9 +52,9 @@
 				}
 			},
 			{
-				"opId" : "sp2a",
+				"opId" : 19,
 				"opType" : "ShuffleProducer",
-				"argChild" : "scan2a",
+				"argChild" : 4,
 				"argPf" : {
 					"type" : "SingleFieldHash",
 					"index" : 0
@@ -64,10 +63,10 @@
 			]
 		},
 		{
-			"operators": 
+			"operators":
 			[
 			{
-				"opId" : "scan2g",
+				"opId" : 17,
 				"opType" : "TableScan",
 				"relationKey" : {
 					"userName" : "jwang",
@@ -76,9 +75,9 @@
 				}
 			},
 			{
-				"opId" : "sp2g",
+				"opId" : 18,
 				"opType" : "ShuffleProducer",
-				"argChild" : "scan2g",
+				"argChild" : 17,
 				"argPf" : {
 					"type" : "SingleFieldHash",
 					"index" : 0
@@ -87,69 +86,69 @@
 			]
 		},
 		{
-			"operators": 
+			"operators":
 			[
 			{
-				"opId" : "sc2a",
+				"opId" : 5,
 				"opType" : "ShuffleConsumer",
-				"argOperatorId" : "sp2a"
+				"argOperatorId" : 19
 			},
 			{
-				"opId" : "sc3a",
+				"opId" : 6,
 				"opType" : "ShuffleConsumer",
-				"argOperatorId" : "sp3a"
+				"argOperatorId" : 12
 			},
 			{
-				"opId" : "eosReceivera",
+				"opId" : 7,
 				"opType" : "Consumer",
-				"argOperatorId" : "eosController"
+				"argOperatorId" : 3
 			},
 			{
-				"opId" : "idbinputa",
+				"opId" : 8,
 				"opType" : "IDBController",
 				"argSelfIdbId" : "0",
-				"argInitialInput" : "sc2a",
-				"argIterationInput" : "sc3a",
-				"argState" : 
+				"argInitialInput" : 5,
+				"argIterationInput" : 6,
+				"argState" :
 				{
 					"type" : "DupElim"
 				},
-				"argEosControllerInput" : "eosReceivera"
+				"argEosControllerInput" : 7
 			},
 			{
-				"opId" : "mpa",
+				"opId" : 13,
 				"opType" : "LocalMultiwayProducer",
-				"argChild" : "idbinputa"
+				"argChild" : 8
 			}
 			]
 		},
 		{
-			"operators": 
+			"operators":
 			[
 			{
-				"opId" : "send2joina",
+				"opId" : 9,
 				"opType" : "LocalMultiwayConsumer",
-				"argOperatorId" : "mpa"
+				"argOperatorId" : 13
 			},
 			{
-				"opId" : "sc1g",
+				"opId" : 11,
 				"opType" : "ShuffleConsumer",
-				"argOperatorId" : "sp2g"
+				"argOperatorId" : 18
 			},
 			{
-				"opId" : "joina",
+				"opId" : 10,
 				"opType" : "SymmetricHashJoin",
-				"argChild1" : "send2joina",
-				"argChild2" : "sc1g",
+				"argChild1" : 9,
+				"argChild2" : 11,
 				"argColumns1" : ["0"],
 				"argColumns2" : ["0"],
 				"argSelect1" : [],
 				"argSelect2" : ["1"]
 			},
 			{
-				"opId" : "sp3a",
+				"opId" : 12,
 				"opType" : "ShuffleProducer",
-				"argChild" : "joina",
+				"argChild" : 10,
 				"argPf" : {
 					"type" : "SingleFieldHash",
 					"index" : 0
@@ -158,24 +157,24 @@
 			]
 		},
 		{
-			"operators": 
+			"operators":
 			[
 			{
-				"opId" : "send2server",
+				"opId" : 14,
 				"opType" : "LocalMultiwayConsumer",
-				"argOperatorId" : "mpa"
+				"argOperatorId" : 13
 			},
 			{
-				"opId" : "count",
+				"opId" : 15,
 				"opType" : "Aggregate",
-				"argChild" : "send2server",
+				"argChild" : 14,
 				"argAggFields" : ["0"],
 				"argAggOperators" : [["AGG_OP_COUNT"]]
 			},
 			{
-				"opId" : "cpc",
+				"opId" : 16,
 				"opType" : "CollectProducer",
-				"argChild" : "count"
+				"argChild" : 15
 			}
 			]
 		}

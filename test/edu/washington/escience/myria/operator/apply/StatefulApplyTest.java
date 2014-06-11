@@ -154,4 +154,36 @@ public class StatefulApplyTest {
     assertEquals(1, count);
   }
 
+  @Test
+  public void testBug547UpdateNotNeedsCompile() throws DbException {
+    final Schema schema = Schema.ofFields(Type.INT_TYPE);
+    final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
+    for (int i = 0; i < 3; ++i) {
+      tbb.putInt(0, i);
+    }
+
+    Expression emitExpression = new Expression("x", new StateExpression(0));
+    Expression initExpression = new Expression("old", new ConstantExpression(-1));
+    Expression updateExpression = new Expression("old", new VariableExpression(0));
+    StatefulApply apply =
+        new StatefulApply(new TupleSource(tbb), ImmutableList.of(emitExpression), ImmutableList.of(initExpression),
+            ImmutableList.of(updateExpression));
+
+    apply.open(TestEnvVars.get());
+    assertEquals("x", apply.getSchema().getColumnName(0));
+    int old = -1;
+    while (!apply.eos()) {
+      TupleBatch tb = apply.nextReady();
+      if (tb == null) {
+        continue;
+      }
+      for (int i = 0; i < tb.numTuples(); ++i) {
+        old++;
+        assertEquals(old, tb.getInt(0, i));
+      }
+    }
+    apply.close();
+    assertEquals(2, old);
+  }
+
 }

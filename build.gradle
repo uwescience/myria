@@ -33,14 +33,6 @@ buildscript {
     classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:0.4.0'
   }
 }
-/* Coveralls */
-jacocoTestReport {
-  reports {
-    xml.enabled = true // coveralls plugin depends on xml format report
-    html.enabled = true
-  }
-}
-
 /* Tell gradle where the source code is located. */
 sourceSets {
   /* Code for main */
@@ -116,7 +108,7 @@ dependencies {
   compile "org.ini4j:ini4j:0.5.2"
   compile "com.almworks.sqlite4java:sqlite4java:0.282"
 
-  compile "com.google.guava:guava:16.0.1"
+  compile "com.google.guava:guava:17.0"
   compile "com.google.protobuf:protobuf-java:2.5.0"
 
   compile "io.netty:netty:3.9.0.Final"
@@ -274,6 +266,15 @@ jar {
     attributes("Implementation-Title" : "Myria",
                "Implementation-Version": version,
 	       "Main-Class": "edu.washington.escience.myria.daemon.MasterDaemon")
+  }
+}
+
+/* Coveralls */
+jacocoTestReport {
+  executionData(test, systemtest)
+  reports {
+    xml.enabled = true // coveralls plugin depends on xml format report
+    html.enabled = true
   }
 }
 

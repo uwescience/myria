@@ -50,8 +50,7 @@ public class SplitDataTest extends SystemTestBase {
     final ExchangePairID shuffleId = ExchangePairID.newID();
 
     final GenericShuffleProducer scatter =
-        new GenericShuffleProducer(source, shuffleId, new int[] { workerIDs[0], workerIDs[1] },
-            new RoundRobinPartitionFunction(workerIDs.length));
+        new GenericShuffleProducer(source, shuffleId, workerIDs, new RoundRobinPartitionFunction(workerIDs.length));
 
     /* ... and the corresponding shuffle consumer. */
     final GenericShuffleConsumer gather = new GenericShuffleConsumer(schema, shuffleId, new int[] { MASTER_ID });
@@ -66,7 +65,8 @@ public class SplitDataTest extends SystemTestBase {
       workerPlans.put(i, new RootOperator[] { insert });
     }
 
-    server.submitQueryPlan(scatter, workerPlans).sync();
+    server.submitQueryPlan(scatter, workerPlans).get();
+    assertEquals(numTuplesInserted, server.getDatasetStatus(tuplesRRKey).getNumTuples());
 
     /*** TEST PHASE 2: Count them up, make sure the answer agrees. ***/
     /* Create the worker plan: DbQueryScan with count, then send it to master. */
@@ -91,13 +91,13 @@ public class SplitDataTest extends SystemTestBase {
 
     /* Actually dispatch the worker plans. */
     /* Start the query and collect the results. */
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    server.submitQueryPlan(serverPlan, workerPlans).get();
     TupleBatch result = aggResult.take();
 
     /* Sanity-check the results, sum them, then confirm. */
     assertEquals(workerIDs.length, result.getLong(0, 0));
 
-    LOGGER.debug("numTuplesInsert=" + numTuplesInserted + ", sum=" + result.getObject(0, 0));
+    LOGGER.debug("numTuplesInsert=" + numTuplesInserted + ", sum=" + result.getLong(0, 0));
     assertEquals(numTuplesInserted, result.getLong(1, 0));
 
   }

@@ -11,9 +11,9 @@ import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.DbQueryScan;
-import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
@@ -72,7 +72,8 @@ public class BroadcastTest extends SystemTestBase {
     final DbQueryScan scan2 = new DbQueryScan(testtable2Key, schema);
 
     final ImmutableList<String> outputColumnNames = ImmutableList.of("id1", "name1", "id2", "name2");
-    final SymmetricHashJoin localjoin = new SymmetricHashJoin(outputColumnNames, bs, scan2, new int[] { 0 }, new int[] { 0 });
+    final SymmetricHashJoin localjoin =
+        new SymmetricHashJoin(outputColumnNames, bs, scan2, new int[] { 0 }, new int[] { 0 });
 
     final CollectProducer cp = new CollectProducer(localjoin, serverReceiveID, MASTER_ID);
 
@@ -86,7 +87,7 @@ public class BroadcastTest extends SystemTestBase {
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
     SinkRoot serverPlan = new SinkRoot(queueStore);
 
-    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    server.submitQueryPlan(serverPlan, workerPlans).get();
 
     TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
     TupleBatch tb = null;

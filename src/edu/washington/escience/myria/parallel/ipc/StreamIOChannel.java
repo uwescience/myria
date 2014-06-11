@@ -8,7 +8,7 @@ import org.jboss.netty.channel.Channel;
 public abstract class StreamIOChannel {
 
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(StreamIOChannel.class.getName());
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(StreamIOChannel.class);
 
   /**
    * Physical channel for IO.

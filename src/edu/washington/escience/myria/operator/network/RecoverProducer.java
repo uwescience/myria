@@ -21,7 +21,7 @@ public final class RecoverProducer extends CollectProducer {
   private static final long serialVersionUID = 1L;
 
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(RecoverProducer.class.getName());
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(RecoverProducer.class);
 
   /** the original producer. */
   private final Producer oriProducer;
@@ -60,9 +60,9 @@ public final class RecoverProducer extends CollectProducer {
       /* set the channel to be available again */
       oriProducer.getChannelsAvail()[channelIndx] = true;
       /* if the channel was disabled before crash, need to give the task a chance to enable it. */
-      oriProducer.getTaskResourceManager().getOwnerTask().notifyOutputEnabled(tmp.getID());
+      oriProducer.getTaskResourceManager().getFragment().notifyOutputEnabled(tmp.getID());
       /* if the task has no new input, but needs to produce potential EOSs & push TBs in its buffers out. */
-      oriProducer.getTaskResourceManager().getOwnerTask().notifyNewInput();
+      oriProducer.getTaskResourceManager().getFragment().notifyNewInput();
     } else {
       channelEnds(0);
     }

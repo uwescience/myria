@@ -2,9 +2,11 @@ package edu.washington.escience.myria.operator;
 
 import java.util.Iterator;
 import java.util.Objects;
+import java.util.Set;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
@@ -17,7 +19,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 /**
  * Push a select query down into a JDBC based database and scan over the query result.
  * */
-public class DbQueryScan extends LeafOperator {
+public class DbQueryScan extends LeafOperator implements DbReader {
 
   /**
    * The connection info.
@@ -237,5 +239,14 @@ public class DbQueryScan extends LeafOperator {
    */
   public ConnectionInfo getConnectionInfo() {
     return connectionInfo;
+  }
+
+  @Override
+  public Set<RelationKey> readSet() {
+    if (relationKey == null) {
+      LOGGER.error("DbQueryScan does not support the DbReader interface properly for SQL queries.");
+      return ImmutableSet.of();
+    }
+    return ImmutableSet.of(relationKey);
   }
 }

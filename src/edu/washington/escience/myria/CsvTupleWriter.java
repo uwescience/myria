@@ -80,4 +80,13 @@ public class CsvTupleWriter implements TupleWriter {
     csvWriter.flush();
     csvWriter.close();
   }
+
+  @Override
+  public void error() throws IOException {
+    try {
+      csvWriter.write("There was an error. Investigate the query status to see the message");
+    } finally {
+      csvWriter.close();
+    }
+  }
 }

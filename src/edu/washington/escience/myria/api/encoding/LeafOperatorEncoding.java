@@ -15,7 +15,7 @@ import edu.washington.escience.myria.operator.Operator;
 public abstract class LeafOperatorEncoding<T extends Operator> extends OperatorEncoding<T> {
 
   @Override
-  public final void connect(Operator current, Map<String, Operator> operators) {
+  public final void connect(Operator current, Map<Integer, Operator> operators) {
   }
 
 }

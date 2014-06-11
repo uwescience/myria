@@ -65,19 +65,9 @@ public final class LongMutableColumn extends MutableColumn<Long> {
   }
 
   @Override
-  public void replace(final int index, final Long value) {
-    replace(index, value.longValue());
-  }
-
-  /**
-   * replace the value on a row with the given long value.
-   * 
-   * @param index row index
-   * @param value the long value.
-   */
-  public void replace(final int index, final long value) {
-    Preconditions.checkElementIndex(index, size());
-    data[index] = value;
+  public void replaceLong(final long value, final int row) {
+    Preconditions.checkElementIndex(row, size());
+    data[row] = value;
   }
 
   @Override

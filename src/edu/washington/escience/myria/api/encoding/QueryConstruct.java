@@ -12,36 +12,62 @@ import javax.ws.rs.core.Response.Status;
 
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
 
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.RelationKey;
+import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.api.MyriaApiException;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
+import edu.washington.escience.myria.expression.ConstantExpression;
+import edu.washington.escience.myria.expression.Expression;
+import edu.washington.escience.myria.expression.VariableExpression;
+import edu.washington.escience.myria.operator.Apply;
+import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.IDBController;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.UpdateCatalog;
+import edu.washington.escience.myria.operator.agg.Aggregator;
+import edu.washington.escience.myria.operator.agg.MultiGroupByAggregate;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
+import edu.washington.escience.myria.operator.network.CollectProducer;
 import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.operator.network.EOSController;
 import edu.washington.escience.myria.parallel.ExchangePairID;
+import edu.washington.escience.myria.parallel.RelationWriteMetadata;
 import edu.washington.escience.myria.parallel.Server;
-import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
+import edu.washington.escience.myria.parallel.SubQuery;
+import edu.washington.escience.myria.parallel.SubQueryPlan;
 import edu.washington.escience.myria.util.MyriaUtils;
 
 public class QueryConstruct {
   /** The logger for this class. */
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(QueryEncoding.class);
 
-  public static Map<Integer, SingleQueryPlanWithArgs> instantiate(List<PlanFragmentEncoding> fragments,
-      final Server server, FTMODE ftMode, boolean profilingMode) throws CatalogException {
+  /**
+   * Instantiate the server's desired physical plan from a list of JSON encodings of fragments. This list must contain a
+   * self-consistent, complete query. All fragments will be executed in parallel.
+   * 
+   * @param fragments the JSON-encoded query fragments to be executed in parallel
+   * @param server the server on which the query will be executed
+   * @return the physical plan
+   * @throws CatalogException if there is an error instantiating the plan
+   */
+  public static Map<Integer, SubQueryPlan> instantiate(List<PlanFragmentEncoding> fragments, final Server server)
+      throws CatalogException {
     /* First, we need to know which workers run on each plan. */
     setupWorkersForFragments(fragments, server);
     /* Next, we need to know which pipes (operators) are produced and consumed on which workers. */
     setupWorkerNetworkOperators(fragments);
 
-    HashMap<String, PlanFragmentEncoding> op2OwnerFragmentMapping = new HashMap<String, PlanFragmentEncoding>();
+    HashMap<Integer, PlanFragmentEncoding> op2OwnerFragmentMapping = new HashMap<Integer, PlanFragmentEncoding>();
     int idx = 0;
     for (PlanFragmentEncoding fragment : fragments) {
       fragment.setFragmentIndex(idx++);
@@ -50,25 +76,38 @@ public class QueryConstruct {
       }
     }
 
-    Map<Integer, SingleQueryPlanWithArgs> plan = new HashMap<Integer, SingleQueryPlanWithArgs>();
+    Map<Integer, SubQueryPlan> plan = new HashMap<Integer, SubQueryPlan>();
     HashMap<PlanFragmentEncoding, RootOperator> instantiatedFragments =
         new HashMap<PlanFragmentEncoding, RootOperator>();
-    HashMap<String, Operator> allOperators = new HashMap<String, Operator>();
+    HashMap<Integer, Operator> allOperators = new HashMap<Integer, Operator>();
     for (PlanFragmentEncoding fragment : fragments) {
       RootOperator op =
           instantiateFragment(fragment, server, instantiatedFragments, op2OwnerFragmentMapping, allOperators);
       for (Integer worker : fragment.workers) {
-        SingleQueryPlanWithArgs workerPlan = plan.get(worker);
+        SubQueryPlan workerPlan = plan.get(worker);
         if (workerPlan == null) {
-          workerPlan = new SingleQueryPlanWithArgs();
-          workerPlan.setFTMode(ftMode);
-          workerPlan.setProfilingMode(profilingMode);
+          workerPlan = new SubQueryPlan();
           plan.put(worker, workerPlan);
         }
         workerPlan.addRootOp(op);
       }
     }
     return plan;
+  }
+
+  /**
+   * Set the query execution options for the specified plans.
+   * 
+   * @param plans the physical query plan
+   * @param ftMode the fault tolerance mode under which the query will be executed
+   * @param profilingMode <code>true</code> if the query should be profiled
+   */
+  public static void setQueryExecutionOptions(Map<Integer, SubQueryPlan> plans, final FTMODE ftMode,
+      final boolean profilingMode) {
+    for (SubQueryPlan plan : plans.values()) {
+      plan.setFTMode(ftMode);
+      plan.setProfilingMode(profilingMode);
+    }
   }
 
   /**
@@ -137,16 +176,16 @@ public class QueryConstruct {
    * Loop through all the operators in a plan fragment and connect them up.
    */
   private static void setupWorkerNetworkOperators(List<PlanFragmentEncoding> fragments) {
-    Map<String, Set<Integer>> producerWorkerMap = new HashMap<String, Set<Integer>>();
+    Map<Integer, Set<Integer>> producerWorkerMap = new HashMap<Integer, Set<Integer>>();
     Map<ExchangePairID, Set<Integer>> consumerWorkerMap = new HashMap<ExchangePairID, Set<Integer>>();
-    Map<String, List<ExchangePairID>> producerOutputChannels = new HashMap<String, List<ExchangePairID>>();
+    Map<Integer, List<ExchangePairID>> producerOutputChannels = new HashMap<Integer, List<ExchangePairID>>();
     List<IDBControllerEncoding> idbInputs = new ArrayList<IDBControllerEncoding>();
     /* Pass 1: map strings to real operator IDs, also collect producers and consumers. */
     for (PlanFragmentEncoding fragment : fragments) {
       for (OperatorEncoding<?> operator : fragment.operators) {
         if (operator instanceof AbstractConsumerEncoding) {
           AbstractConsumerEncoding<?> consumer = (AbstractConsumerEncoding<?>) operator;
-          String sourceProducerID = consumer.getOperatorId();
+          Integer sourceProducerID = consumer.getArgOperatorId();
           List<ExchangePairID> sourceProducerOutputChannels = producerOutputChannels.get(sourceProducerID);
           if (sourceProducerOutputChannels == null) {
             // The producer is not yet met
@@ -191,11 +230,11 @@ public class QueryConstruct {
           for (ExchangePairID id : exchange.getRealOperatorIds()) {
             if (exchange instanceof AbstractConsumerEncoding) {
               try {
-                workers.addAll(producerWorkerMap.get(((AbstractConsumerEncoding<?>) exchange).getOperatorId()));
+                workers.addAll(producerWorkerMap.get(((AbstractConsumerEncoding<?>) exchange).getArgOperatorId()));
               } catch (NullPointerException ee) {
-                System.err.println("Consumer: " + ((AbstractConsumerEncoding<?>) exchange).opId);
-                System.err.println("Producer: " + ((AbstractConsumerEncoding<?>) exchange).argOperatorId);
-                System.err.println("producerWorkerMap: " + producerWorkerMap);
+                LOGGER.error("Consumer: {}", ((AbstractConsumerEncoding<?>) exchange).opId);
+                LOGGER.error("Producer: {}", ((AbstractConsumerEncoding<?>) exchange).argOperatorId);
+                LOGGER.error("producerWorkerMap: {}", producerWorkerMap);
                 throw ee;
               }
             } else if (exchange instanceof AbstractProducerEncoding) {
@@ -227,7 +266,7 @@ public class QueryConstruct {
    */
   private static RootOperator instantiateFragment(final PlanFragmentEncoding planFragment, final Server server,
       final HashMap<PlanFragmentEncoding, RootOperator> instantiatedFragments,
-      final Map<String, PlanFragmentEncoding> opOwnerFragment, final Map<String, Operator> allOperators) {
+      final Map<Integer, PlanFragmentEncoding> opOwnerFragment, final Map<Integer, Operator> allOperators) {
     RootOperator instantiatedFragment = instantiatedFragments.get(planFragment);
     if (instantiatedFragment != null) {
       return instantiatedFragment;
@@ -235,9 +274,9 @@ public class QueryConstruct {
 
     RootOperator fragmentRoot = null;
     CollectConsumer oldRoot = null;
-    Map<String, Operator> myOperators = new HashMap<String, Operator>();
-    HashMap<String, AbstractConsumerEncoding<?>> nonIterativeConsumers =
-        new HashMap<String, AbstractConsumerEncoding<?>>();
+    Map<Integer, Operator> myOperators = new HashMap<Integer, Operator>();
+    HashMap<Integer, AbstractConsumerEncoding<?>> nonIterativeConsumers =
+        new HashMap<Integer, AbstractConsumerEncoding<?>>();
     HashSet<IDBControllerEncoding> idbs = new HashSet<IDBControllerEncoding>();
     /* Instantiate all the operators. */
     for (OperatorEncoding<?> encoding : planFragment.operators) {
@@ -250,7 +289,8 @@ public class QueryConstruct {
 
       Operator op = encoding.construct(server);
       /* helpful for debugging. */
-      op.setOpName(encoding.opId);
+      op.setOpName("Operator" + String.valueOf(encoding.opId));
+      op.setOpId(encoding.opId);
       op.setFragmentId(planFragment.fragmentIndex);
       myOperators.put(encoding.opId, op);
       if (op instanceof RootOperator) {
@@ -282,7 +322,7 @@ public class QueryConstruct {
 
     for (AbstractConsumerEncoding<?> c : nonIterativeConsumers.values()) {
       Consumer consumer = (Consumer) myOperators.get(c.opId);
-      String producingOpName = c.argOperatorId;
+      Integer producingOpName = c.argOperatorId;
       Operator producingOp = allOperators.get(producingOpName);
       if (producingOp instanceof IDBController) {
         consumer.setSchema(IDBController.EOI_REPORT_SCHEMA);
@@ -318,5 +358,61 @@ public class QueryConstruct {
 
     instantiatedFragments.put(planFragment, fragmentRoot);
     return fragmentRoot;
+  }
+
+  /**
+   * Builds the query plan to update the {@link Server}'s master catalog with the number of tuples in every relation
+   * written by a subquery. The query plan is basically "SELECT RelationKey, COUNT(*)" -> Collect at master ->
+   * "SELECT RelationKey, SUM(counts)".
+   * 
+   * @param relationsWritten the metadata about which relations were written during the execution of this subquery.
+   * @param server the server on which the catalog will be updated
+   * @return the query plan to update the master's catalog with the new number of tuples for all written relations.
+   */
+  public static SubQuery getRelationTupleUpdateSubQuery(final Map<RelationKey, RelationWriteMetadata> relationsWritten,
+      final Server server) {
+    ExchangePairID collectId = ExchangePairID.newID();
+    Schema schema =
+        Schema.ofFields("userName", Type.STRING_TYPE, "programName", Type.STRING_TYPE, "relationName",
+            Type.STRING_TYPE, "tupleCount", Type.LONG_TYPE);
+
+    String dbms = server.getDBMS();
+    Preconditions.checkState(dbms != null, "Server must have a configured DBMS environment variable");
+
+    /*
+     * Worker plans: for each relation, create a {@link DbQueryScan} to get the count, an {@link Apply} to add the
+     * {@link RelationKey}, then a {@link CollectProducer} to send the count to the master.
+     */
+    Map<Integer, SubQueryPlan> workerPlans = Maps.newHashMap();
+    for (RelationWriteMetadata meta : relationsWritten.values()) {
+      Set<Integer> workers = meta.getWorkers();
+      RelationKey relation = meta.getRelationKey();
+      for (Integer worker : workers) {
+        DbQueryScan localCount =
+            new DbQueryScan("SELECT COUNT(*) FROM " + relation.toString(dbms), Schema.ofFields("tupleCount",
+                Type.LONG_TYPE));
+        List<Expression> expressions =
+            ImmutableList.of(new Expression(schema.getColumnName(0), new ConstantExpression(relation.getUserName())),
+                new Expression(schema.getColumnName(1), new ConstantExpression(relation.getProgramName())),
+                new Expression(schema.getColumnName(2), new ConstantExpression(relation.getRelationName())),
+                new Expression(schema.getColumnName(3), new VariableExpression(0)));
+        Apply addRelationName = new Apply(localCount, expressions);
+        CollectProducer producer = new CollectProducer(addRelationName, collectId, MyriaConstants.MASTER_ID);
+        if (!workerPlans.containsKey(worker)) {
+          workerPlans.put(worker, new SubQueryPlan(producer));
+        } else {
+          workerPlans.get(worker).addRootOp(producer);
+        }
+      }
+    }
+
+    /* Master plan: collect, sum, insert the updates. */
+    CollectConsumer consumer = new CollectConsumer(schema, collectId, workerPlans.keySet());
+    MultiGroupByAggregate aggCounts =
+        new MultiGroupByAggregate(consumer, new int[] { 0, 1, 2 }, new int[] { 3 }, new int[] { Aggregator.AGG_OP_SUM });
+    UpdateCatalog catalog = new UpdateCatalog(aggCounts, server);
+    SubQueryPlan masterPlan = new SubQueryPlan(catalog);
+
+    return new SubQuery(masterPlan, workerPlans);
   }
 }

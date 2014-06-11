@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.hash;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import java.util.Random;
 
@@ -14,6 +15,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.TupleSource;
 import edu.washington.escience.myria.operator.network.partition.MultiFieldHashPartitionFunction;
+import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 public class MultiFieldHashPartitionFunctionTest {
@@ -35,7 +37,9 @@ public class MultiFieldHashPartitionFunctionTest {
     TupleSource source = generateTupleBatchSource(numGroups, tuplesPerGroup);
     try {
       source.open(null);
-      int[] partitions = multiFieldPartitionFunction.partition(source.nextReady());
+      TupleBatch tb = source.nextReady();
+      assertNotNull(tb);
+      int[] partitions = multiFieldPartitionFunction.partition(tb);
       // for each of the groups, it must map to the same partition
       for (int i = 0; i < numGroups; i++) {
         int expected = partitions[i * tuplesPerGroup];
