@@ -1271,18 +1271,13 @@ public final class Server {
     } catch (CatalogException e) {
       throw new DbException("Error submitting query", e);
     }
-    Query queryState;
     try {
-      queryState = qf.get();
+      qf.get();
     } catch (ExecutionException e) {
       throw new DbException("Error executing query", e.getCause());
     }
 
-    /* TODO(dhalperi) -- figure out how to populate the numTuples column. */
-    DatasetStatus status =
-        new DatasetStatus(relationKey, source.getSchema(), -1, queryState.getQueryId(), queryState.getEndTime());
-
-    return status;
+    return getDatasetStatus(relationKey);
   }
 
   /**
