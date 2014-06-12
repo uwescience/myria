@@ -154,6 +154,9 @@ public final class Query {
        */
       QueryConstruct.setQueryExecutionOptions(currentSubQuery.getWorkerPlans(), ftMode, profiling && (subqueryId == 0));
       ++subqueryId;
+      if (subqueryId >= 100) {
+        throw new DbException("Infinite-loop safeguard: quitting after 100 subqueries.");
+      }
       return currentSubQuery;
     }
     planQ.getFirst().instantiate(planQ, subQueryQ, server);
