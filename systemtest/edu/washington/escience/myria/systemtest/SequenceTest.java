@@ -134,6 +134,69 @@ public class SequenceTest extends SystemTestBase {
     assertEquals(expectedTuples, tb.getLong(0, 0));
   }
 
+  @Test
+  public void testNestedSequenceBug() throws Exception {
+    final int numVals = TupleBatch.BATCH_SIZE + 2;
+    TupleSource source = new TupleSource(range(numVals).getAll());
+    Schema testSchema = source.getSchema();
+    RelationKey storage = RelationKey.of("test", "testNestedSequenceBug", "data");
+
+    ExchangePairID shuffleId = ExchangePairID.newID();
+    final GenericShuffleProducer sp =
+        new GenericShuffleProducer(source, shuffleId, workerIDs, new SingleFieldHashPartitionFunction(workerIDs.length,
+            0));
+
+    final GenericShuffleConsumer cc = new GenericShuffleConsumer(testSchema, shuffleId, workerIDs);
+    final DbInsert insert = new DbInsert(cc, storage, true);
+
+    /* First task: create, shuffle, insert the tuples. */
+    Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
+    for (int i : workerIDs) {
+      workerPlans.put(i, new SubQueryPlan(new RootOperator[] { insert, sp }));
+    }
+    SubQueryPlan serverPlan = new SubQueryPlan(new SinkRoot(new EOSSource()));
+    QueryPlan first = new Sequence(ImmutableList.<QueryPlan> of(new SubQuery(serverPlan, workerPlans)));
+
+    /* Second task: count the number of tuples. */
+    DbQueryScan scan = new DbQueryScan(storage, testSchema);
+    Aggregate localCount = new Aggregate(scan, new int[] { 0 }, new int[] { Aggregator.AGG_OP_COUNT });
+    ExchangePairID collectId = ExchangePairID.newID();
+    final CollectProducer coll = new CollectProducer(localCount, collectId, MyriaConstants.MASTER_ID);
+
+    final CollectConsumer cons = new CollectConsumer(Schema.ofFields(Type.LONG_TYPE, "_COUNT0_"), collectId, workerIDs);
+    Aggregate masterSum = new Aggregate(cons, new int[] { 0 }, new int[] { Aggregator.AGG_OP_SUM });
+    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
+    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, masterSum);
+    SinkRoot root = new SinkRoot(queueStore);
+    workerPlans = new HashMap<>();
+    for (int i : workerIDs) {
+      workerPlans.put(i, new SubQueryPlan(coll));
+    }
+    QueryPlan second = new SubQuery(new SubQueryPlan(root), workerPlans);
+
+    /* Combine first and second into two queries, one after the other. */
+    QueryPlan all = new Sequence(ImmutableList.of(first, second));
+
+    /* Submit the query and compute its ID. */
+    QueryEncoding encoding = new QueryEncoding();
+    encoding.profilingMode = false;
+    encoding.rawDatalog = "test";
+    encoding.logicalRa = "test";
+    QueryFuture qf = server.submitQuery(encoding, all);
+    long queryId = qf.getQueryId();
+    /* Wait for the query to finish, succeed, and check the result. */
+    qf.get();
+    QueryStatusEncoding status = server.getQueryStatus(queryId);
+    assertEquals(Status.SUCCESS, status.status);
+    long expectedTuples = numVals * workerIDs.length;
+    assertEquals(expectedTuples, server.getDatasetStatus(storage).getNumTuples());
+
+    List<TupleBatch> tbs = Lists.newLinkedList(receivedTupleBatches);
+    assertEquals(1, tbs.size());
+    TupleBatch tb = tbs.get(0);
+    assertEquals(expectedTuples, tb.getLong(0, 0));
+  }
+
   @Test(expected = ExecutionException.class)
   public void testSequenceFailSubQuery2() throws Exception {
     /* First task: do nothing. */
