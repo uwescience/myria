@@ -1276,24 +1276,13 @@ public final class Server {
     } catch (CatalogException e) {
       throw new DbException("Error submitting query", e);
     }
-    Query queryState;
     try {
-      queryState = qf.get();
+      qf.get();
     } catch (ExecutionException e) {
       throw new DbException("Error executing query", e.getCause());
     }
 
-    /* TODO(dhalperi) -- figure out how to populate the numTuples column. */
-    DatasetStatus status =
-        new DatasetStatus(relationKey, source.getSchema(), -1, queryState.getQueryId(), queryState.getEndTime());
-
-    /* Should find a way to populate the partition function without updating the value here. This is a hack. */
-    try {
-      catalog.updatePartitionFunction(relationKey, partitionFn);
-    } catch (CatalogException e) {
-      throw new DbException("Error updating the partition function", e);
-    }
-    return status;
+    return getDatasetStatus(relationKey);
   }
 
   /**
