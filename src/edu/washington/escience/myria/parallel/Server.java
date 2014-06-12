@@ -1131,7 +1131,7 @@ public final class Server {
           Query query = activeQueries.get(subQueryId.getQueryId());
           finishSubQuery(subQueryId);
 
-          final long elapsedNanos = mqp.getExecutionStatistics().getQueryExecutionElapse();
+          final Long elapsedNanos = mqp.getExecutionStatistics().getQueryExecutionElapse();
           if (future.isSuccess()) {
             LOGGER.info("Subquery #{} succeeded. Time elapsed: {}.", subQueryId, DateTimeUtils
                 .nanoElapseToHumanReadable(elapsedNanos));
@@ -1155,7 +1155,9 @@ public final class Server {
         @Override
         public void operationComplete(final LocalSubQueryFuture future) throws Exception {
           mqp.init();
-          activeQueries.get(subQueryId.getQueryId()).markStart();
+          if (subQueryId.getSubqueryId() == 0) {
+            activeQueries.get(subQueryId.getQueryId()).markStart();
+          }
           mqp.startExecution();
           Server.this.startWorkerQuery(future.getLocalSubQuery().getSubQueryId());
         }

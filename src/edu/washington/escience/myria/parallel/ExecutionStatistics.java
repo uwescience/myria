@@ -1,6 +1,9 @@
 package edu.washington.escience.myria.parallel;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.proto.QueryProto;
 import edu.washington.escience.myria.util.DateTimeUtils;
@@ -30,6 +33,7 @@ public class ExecutionStatistics {
    * Set the start time to now.
    */
   public final void markStart() {
+    Preconditions.checkArgument(startTime == null, "can't re-mark start");
     startAtInNano = System.nanoTime();
     startTime = DateTimeUtils.nowInISO8601();
   }
@@ -38,6 +42,7 @@ public class ExecutionStatistics {
    * Set the end time to now.
    */
   public final void markEnd() {
+    Preconditions.checkArgument(endTime == null, "can't re-mark end");
     endAtInNano = System.nanoTime();
     endTime = DateTimeUtils.nowInISO8601();
   }
@@ -45,6 +50,7 @@ public class ExecutionStatistics {
   /**
    * @return the elapsed time, in nanoseconds.
    */
+  @Nullable
   public final Long getQueryExecutionElapse() {
     if (startTime == null) {
       return null;
