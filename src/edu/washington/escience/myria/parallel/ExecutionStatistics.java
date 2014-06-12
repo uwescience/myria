@@ -13,15 +13,18 @@ import edu.washington.escience.myria.util.DateTimeUtils;
  */
 public class ExecutionStatistics {
 
+  /** Constant to use when times have not been set. */
+  private static final long MISSING_TIME = -1;
+
   /**
    * Start timestamp. This timestamp is machine specific.
    */
-  private transient volatile long startAtInNano = 0;
+  private transient volatile long startAtInNano = MISSING_TIME;
 
   /**
    * End timestamp. This timestamp is machine specific.
    */
-  private transient volatile long endAtInNano = -1;
+  private transient volatile long endAtInNano = MISSING_TIME;
 
   /** Start time, in ISO8601 datetime format. */
   private transient volatile String startTime;
@@ -65,7 +68,7 @@ public class ExecutionStatistics {
    * @return the protobuf message representation of this class.
    */
   public final QueryProto.ExecutionStatistics toProtobuf() {
-    Long elapsed = Objects.firstNonNull(getQueryExecutionElapse(), -1L);
+    Long elapsed = Objects.firstNonNull(getQueryExecutionElapse(), MISSING_TIME);
     return QueryProto.ExecutionStatistics.newBuilder().setElapse(elapsed).build();
   }
 
@@ -81,5 +84,15 @@ public class ExecutionStatistics {
    */
   protected final String getEndTime() {
     return endTime;
+  }
+
+  /**
+   * Resets the start and end times measured by this object.
+   */
+  public final void reset() {
+    startAtInNano = MISSING_TIME;
+    endAtInNano = MISSING_TIME;
+    startTime = null;
+    endTime = null;
   }
 }

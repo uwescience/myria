@@ -16,6 +16,7 @@ import net.jcip.annotations.Immutable;
 import com.almworks.sqlite4java.SQLiteConstants;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -207,7 +208,9 @@ public final class Schema implements Serializable {
    * @param names the names of the columns. Note that names may be null.
    * @return a Schema representing the specified column types and names.
    */
-  public static Schema of(final List<Type> types, final List<String> names) {
+  @JsonCreator
+  public static Schema of(@JsonProperty(value = "columnTypes", required = true) final List<Type> types,
+      @JsonProperty("columnNames") final List<String> names) {
     if (names == null) {
       return new Schema(types);
     }
@@ -255,15 +258,6 @@ public final class Schema implements Serializable {
    */
   public Schema(final List<Type> types) {
     this(types, generateNames(types));
-  }
-
-  /**
-   * This is not really unused, it's used automagically by Jackson deserialization.
-   */
-  @SuppressWarnings("unused")
-  private Schema() {
-    columnTypes = null;
-    columnNames = null;
   }
 
   /**
