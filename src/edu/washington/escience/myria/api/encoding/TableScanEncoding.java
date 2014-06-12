@@ -4,6 +4,7 @@ import javax.ws.rs.core.Response.Status;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Verify;
 
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
@@ -22,7 +23,8 @@ public class TableScanEncoding extends LeafOperatorEncoding<DbQueryScan> {
   @Override
   public DbQueryScan construct(final Server server) {
     Schema schema;
-    if (Objects.firstNonNull(temporary, Boolean.FALSE)) {
+    Verify.verifyNotNull(temporary, "temporary");
+    if (temporary) {
       schema = server.getTempSchema(relationKey);
     } else {
       try {
@@ -33,6 +35,11 @@ public class TableScanEncoding extends LeafOperatorEncoding<DbQueryScan> {
     }
     Preconditions.checkArgument(schema != null, "Specified relation %s does not exist.", relationKey);
     return new DbQueryScan(relationKey, schema);
+  }
+
+  @Override
+  public void validateExtra() {
+    temporary = Objects.firstNonNull(temporary, Boolean.FALSE);
   }
 
 }

@@ -131,7 +131,12 @@ public class QueryConstruct {
       for (OperatorEncoding<?> operator : fragment.operators) {
         if (operator instanceof TableScanEncoding) {
           TableScanEncoding scan = ((TableScanEncoding) operator);
-          List<Integer> scanWorkers = server.getWorkersForRelation(scan.relationKey, scan.storedRelationId);
+          Set<Integer> scanWorkers;
+          if (scan.temporary) {
+            scanWorkers = server.getWorkersForTempRelation(scan.relationKey);
+          } else {
+            scanWorkers = server.getWorkersForRelation(scan.relationKey, scan.storedRelationId);
+          }
           if (scanWorkers == null) {
             throw new MyriaApiException(Status.BAD_REQUEST, "Unable to find workers that store "
                 + scan.relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
@@ -427,6 +432,7 @@ public class QueryConstruct {
     scan.opId = opId++;
     scan.opName = "Scan[" + condition.toString() + "]";
     scan.relationKey = condition;
+    scan.temporary = Boolean.TRUE;
     // send it to master
     CollectProducerEncoding producer = new CollectProducerEncoding();
     producer.argChild = scan.opId;

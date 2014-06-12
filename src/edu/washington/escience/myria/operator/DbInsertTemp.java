@@ -38,6 +38,8 @@ public class DbInsertTemp extends AbstractDbInsert {
   private ConnectionInfo connectionInfo;
   /** The name of the table the tuples should be inserted into. */
   private final RelationKey relationKey;
+  /** The name of the table the tuples should be inserted into for staging. */
+  private RelationKey stagingRelationKey;
   /** Whether to overwrite an existing table or not. */
   private final boolean overwriteTable;
   /** The indexes to be created on the table. Each entry is a list of columns. */
@@ -101,7 +103,7 @@ public class DbInsertTemp extends AbstractDbInsert {
   @Override
   protected void consumeTuples(final TupleBatch tupleBatch) throws DbException {
     Preconditions.checkState(accessMethod != null, "accessMethod must not be null");
-    accessMethod.tupleBatchInsert(relationKey, getSchema(), tupleBatch);
+    accessMethod.tupleBatchInsert(stagingRelationKey, getSchema(), tupleBatch);
   }
 
   @Override
@@ -133,18 +135,27 @@ public class DbInsertTemp extends AbstractDbInsert {
     accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
 
     if (overwriteTable) {
+      stagingRelationKey =
+          RelationKey.of(relationKey.getUserName(), relationKey.getProgramName() + "__staging", relationKey
+              .getRelationName());
       /* Drop the relation, if it exists. */
-      accessMethod.dropTableIfExists(relationKey);
+      accessMethod.dropTableIfExists(stagingRelationKey);
+    } else {
+      stagingRelationKey = relationKey;
     }
 
     /* Create the table */
-    accessMethod.createTableIfNotExists(relationKey, getSchema());
+    accessMethod.createTableIfNotExists(stagingRelationKey, getSchema());
     /* Create indexes. */
-    accessMethod.createIndexes(relationKey, getSchema(), indexes);
+    accessMethod.createIndexes(stagingRelationKey, getSchema(), indexes);
   }
 
   @Override
   protected void childEOS() throws DbException {
+    /* If the child finished, we're done too. If in overwrite mode, drop the existing table and rename. */
+    if (overwriteTable) {
+      accessMethod.dropAndRenameTables(relationKey, stagingRelationKey);
+    }
   }
 
   @Override

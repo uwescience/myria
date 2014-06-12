@@ -240,9 +240,9 @@ public final class Server {
   private final ConcurrentHashMap<String, Object> execEnvVars;
 
   /**
-   * An in-memory catalog to map temporary relations to their schemas.
+   * An in-memory catalog to map temporary relations to their metadata.
    */
-  private final ConcurrentHashMap<RelationKey, Schema> tempRelations;
+  private final ConcurrentHashMap<RelationKey, RelationWriteMetadata> tempRelations;
 
   /**
    * All message queue.
@@ -1106,6 +1106,9 @@ public final class Server {
     /* Verify that the schemas for any temp relation we're not overwriting match the existing schema. */
     for (RelationWriteMetadata meta : relationsCreated.values()) {
       if (meta.isOverwrite()) {
+        if (meta.isTemporary()) {
+          tempRelations.put(meta.getRelationKey(), meta);
+        }
         continue;
       }
 
@@ -1132,6 +1135,9 @@ public final class Server {
     }
 
     Map<RelationKey, RelationWriteMetadata> persistentRelations = subQuery.getPersistentRelationWriteMetadata();
+    if (persistentRelations.size() == 0) {
+      return;
+    }
     /*
      * Add the DatasetMetadataUpdater, which will update the catalog with the set of workers created when the query
      * succeeds. Note that we only use persistent relations here.
@@ -1380,7 +1386,11 @@ public final class Server {
    * @return the schema of the specified relation, or null if not found.
    */
   public Schema getTempSchema(final RelationKey relationKey) {
-    return tempRelations.get(relationKey);
+    RelationWriteMetadata meta = tempRelations.get(relationKey);
+    if (meta == null) {
+      return null;
+    }
+    return meta.getSchema();
   }
 
   /**
@@ -1389,9 +1399,20 @@ public final class Server {
    * @return the list of workers that store the specified relation.
    * @throws CatalogException if there is an error accessing the catalog.
    */
-  public List<Integer> getWorkersForRelation(final RelationKey relationKey, final Integer storedRelationId)
+  public Set<Integer> getWorkersForRelation(final RelationKey relationKey, final Integer storedRelationId)
       throws CatalogException {
     return catalog.getWorkersForRelation(relationKey, storedRelationId);
+  }
+
+  /**
+   * @param relationKey the key of the desired temporary relation.
+   * @return the list of workers that store the specified relation.
+   */
+  public Set<Integer> getWorkersForTempRelation(final RelationKey relationKey) {
+    Preconditions.checkNotNull(relationKey, "relationKey");
+    RelationWriteMetadata meta = tempRelations.get(relationKey);
+    Preconditions.checkNotNull(meta, "RelationWriteMetadata for relation key %s", relationKey);
+    return meta.getWorkers();
   }
 
   /**
@@ -1571,7 +1592,7 @@ public final class Server {
     Preconditions.checkArgument(schema != null, "relation %s was not found", relationKey);
 
     /* Get the workers that store it. */
-    List<Integer> scanWorkers;
+    Set<Integer> scanWorkers;
     try {
       scanWorkers = getWorkersForRelation(relationKey, null);
     } catch (CatalogException e) {
