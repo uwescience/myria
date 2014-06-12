@@ -13,6 +13,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.api.encoding.QueryConstruct;
@@ -158,8 +159,9 @@ public final class Query {
        */
       QueryConstruct.setQueryExecutionOptions(currentSubQuery.getWorkerPlans(), ftMode, profiling && (subqueryId == 0));
       ++subqueryId;
-      if (subqueryId >= 100) {
-        throw new DbException("Infinite-loop safeguard: quitting after 100 subqueries.");
+      if (subqueryId >= MyriaConstants.MAXIMUM_NUM_SUBQUERIES) {
+        throw new DbException("Infinite-loop safeguard: quitting after " + MyriaConstants.MAXIMUM_NUM_SUBQUERIES
+            + " subqueries.");
       }
       return currentSubQuery;
     }
