@@ -35,6 +35,6 @@ public final class Sequence extends QueryPlan {
     QueryPlan checkTask = planQ.peekFirst();
     Verify.verify(checkTask == this, "this %s should be the first object on the queue, not %s!", this, checkTask);
     planQ.removeFirst();
-    planQ.addAll(plans);
+    planQ.addAll(0, plans);
   }
 }

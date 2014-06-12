@@ -1129,7 +1129,7 @@ public final class Server {
           Query query = activeQueries.get(subQueryId.getQueryId());
           finishSubQuery(subQueryId);
 
-          final long elapsedNanos = mqp.getExecutionStatistics().getQueryExecutionElapse();
+          final Long elapsedNanos = mqp.getExecutionStatistics().getQueryExecutionElapse();
           if (future.isSuccess()) {
             LOGGER.info("Subquery #{} succeeded. Time elapsed: {}.", subQueryId, DateTimeUtils
                 .nanoElapseToHumanReadable(elapsedNanos));
@@ -1153,7 +1153,9 @@ public final class Server {
         @Override
         public void operationComplete(final LocalSubQueryFuture future) throws Exception {
           mqp.init();
-          activeQueries.get(subQueryId.getQueryId()).markStart();
+          if (subQueryId.getSubqueryId() == 0) {
+            activeQueries.get(subQueryId.getQueryId()).markStart();
+          }
           mqp.startExecution();
           Server.this.startWorkerQuery(future.getLocalSubQuery().getSubQueryId());
         }
@@ -1270,18 +1272,13 @@ public final class Server {
     } catch (CatalogException e) {
       throw new DbException("Error submitting query", e);
     }
-    Query queryState;
     try {
-      queryState = qf.get();
+      qf.get();
     } catch (ExecutionException e) {
       throw new DbException("Error executing query", e.getCause());
     }
 
-    /* TODO(dhalperi) -- figure out how to populate the numTuples column. */
-    DatasetStatus status =
-        new DatasetStatus(relationKey, source.getSchema(), -1, queryState.getQueryId(), queryState.getEndTime());
-
-    return status;
+    return getDatasetStatus(relationKey);
   }
 
   /**

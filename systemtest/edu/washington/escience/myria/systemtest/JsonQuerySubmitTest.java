@@ -6,8 +6,11 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.net.HttpURLConnection;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+
+import javax.annotation.Nullable;
 
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -22,7 +25,9 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.DatasetEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
+import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.io.EmptySource;
+import edu.washington.escience.myria.io.FileSource;
 import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.util.JsonAPIUtils;
 
@@ -38,11 +43,21 @@ public class JsonQuerySubmitTest extends SystemTestBase {
    */
   public static String emptyIngest() throws JsonProcessingException {
     /* Construct the JSON for an Empty Ingest request. */
-    DatasetEncoding emptyIngest = new DatasetEncoding();
-    emptyIngest.relationKey = RelationKey.of("public", "adhoc", "smallTable");
-    emptyIngest.schema = Schema.of(ImmutableList.of(Type.STRING_TYPE, Type.LONG_TYPE), ImmutableList.of("foo", "bar"));
-    emptyIngest.source = new EmptySource();
-    return MyriaJsonMapperProvider.getWriter().writeValueAsString(emptyIngest);
+    RelationKey key = RelationKey.of("public", "adhoc", "smallTable");
+    Schema schema = Schema.of(ImmutableList.of(Type.STRING_TYPE, Type.LONG_TYPE), ImmutableList.of("foo", "bar"));
+    return ingest(key, schema, new EmptySource(), null);
+  }
+
+  public static String ingest(RelationKey key, Schema schema, DataSource source, @Nullable Character delimiter)
+      throws JsonProcessingException {
+    DatasetEncoding ingest = new DatasetEncoding();
+    ingest.relationKey = key;
+    ingest.schema = schema;
+    ingest.source = source;
+    if (delimiter != null) {
+      ingest.delimiter = delimiter;
+    }
+    return MyriaJsonMapperProvider.getWriter().writeValueAsString(ingest);
   }
 
   @Override
@@ -87,6 +102,29 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     fetchedDataset = JsonAPIUtils.download("localhost", masterDaemonPort, "public", "adhoc", "smallTable", "csv");
     assertFalse(fetchedDataset.contains("pizza pizza"));
     assertTrue(fetchedDataset.contains("sri lanka"));
+  }
+
+  @Test
+  public void ingestTest() throws Exception {
+    /* good ingestion. */
+    DataSource source = new FileSource(Paths.get("testdata", "filescan", "simple_two_col_int.txt").toString());
+    RelationKey key = RelationKey.of("public", "adhoc", "testIngest");
+    Schema schema = Schema.of(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE), ImmutableList.of("x", "y"));
+    Character delimiter = ' ';
+    HttpURLConnection conn =
+        JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingest(key, schema, source, delimiter));
+    if (null != conn.getErrorStream()) {
+      throw new IllegalStateException(getContents(conn));
+    }
+    assertEquals(conn.getResponseCode(), HttpURLConnection.HTTP_CREATED);
+    assertEquals(getDatasetStatus(conn).getNumTuples(), 7);
+    conn.disconnect();
+    /* bad ingestion. */
+    delimiter = ',';
+    RelationKey newkey = RelationKey.of("public", "adhoc", "testbadIngest");
+    conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingest(newkey, schema, source, delimiter));
+    assertEquals(conn.getResponseCode(), HttpURLConnection.HTTP_INTERNAL_ERROR);
+    conn.disconnect();
   }
 
   @Test
