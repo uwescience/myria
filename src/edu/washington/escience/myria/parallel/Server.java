@@ -1282,6 +1282,13 @@ public final class Server {
       throw new DbException("Error executing query", e.getCause());
     }
 
+    /* Should find a way to populate the partition function without updating the value here. This is a hack. */
+    try {
+      catalog.updatePartitionFunction(relationKey, partitionFn);
+    } catch (CatalogException e) {
+      throw new DbException("Error updating the partition function", e);
+    }
+
     return getDatasetStatus(relationKey);
   }
 
