@@ -283,7 +283,11 @@ public final class Query {
   public void markKilled() {
     markEnd();
     synchronized (this) {
-      status = Status.SUCCESS;
+      if (status == Status.ERROR || status == Status.SUCCESS || status == Status.KILLED) {
+        LOGGER.warn("Ignoring markKilled() because already have status {}, message {}", status, message);
+        return;
+      }
+      status = Status.KILLED;
     }
     future.cancel(true);
   }
