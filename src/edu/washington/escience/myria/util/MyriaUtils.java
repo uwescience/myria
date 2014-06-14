@@ -1,8 +1,10 @@
 package edu.washington.escience.myria.util;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Random;
 import java.util.Set;
 
 import com.google.common.base.Preconditions;
@@ -66,6 +68,33 @@ public final class MyriaUtils {
   }
 
   /**
+   * Convert a double collection of integers to an int[][].
+   * 
+   * @param input the collection of integers.
+   * @return an int[][] containing the given integers.
+   * @throws Exception in case of different inner collection sizes
+   */
+  public static int[][] integerDoubleCollectionToIntArray(final Collection<Set<Integer>> input) throws Exception {
+    Preconditions.checkArgument(input.size() > 0);
+
+    Collection<Integer> inner0 = (Collection<Integer>) input.toArray()[0];
+    int[][] output = new int[input.size()][inner0.size()];
+    int i = 0;
+    for (Collection<Integer> inner : input) {
+      if (inner.size() != inner0.size()) {
+        throw new Exception("All inner collections must have same size to be converted into a matrix.");
+      }
+      int j = 0;
+      for (int value : inner) {
+        output[i][j] = value;
+        ++j;
+      }
+      ++i;
+    }
+    return output;
+  }
+
+  /**
    * Helper function that generates an array of the numbers 0..max-1.
    * 
    * @param max the size of the array.
@@ -91,5 +120,56 @@ public final class MyriaUtils {
       Preconditions.checkNotNull(o, message);
     }
     return iter;
+  }
+
+  /**
+   * Generates a random sample from a set.
+   * 
+   * @param <T> the set type
+   * 
+   * @param items the superset
+   * @param m the subset size
+   * @return the random subset
+   */
+  public static <T> Set<T> randomSample(final List<T> items, final int m) {
+    Random rnd = new Random();
+    HashSet<T> res = new HashSet<T>(m);
+    int n = items.size();
+    for (int i = n - m; i < n; i++) {
+      int pos = rnd.nextInt(i + 1);
+      T item = items.get(pos);
+      if (res.contains(item)) {
+        res.add(items.get(i));
+      } else {
+        res.add(item);
+      }
+    }
+    return res;
+  }
+
+  /**
+   * Flattens a list of single elements set into a set.
+   * 
+   * @param <T> the set type
+   * 
+   * @param l the argument list
+   * 
+   * @return the resulting set
+   * 
+   * @throws Exception an exception in case of multiple (or zero) elements list
+   */
+  public static <T> Set<T> flatten(final List<Set<T>> l) throws Exception {
+    HashSet<T> result = new HashSet<T>();
+    for (Set<T> s : l) {
+      if (s.size() != 1) {
+        throw new Exception("The sets inside the list must contain one and onlly one element.");
+      }
+      T e = (T) s.toArray()[0];
+      if (result.contains(e)) {
+        throw new Exception("Duplicate elements for flatten the list into a set.");
+      }
+      result.add(e);
+    }
+    return result;
   }
 }

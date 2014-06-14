@@ -5,6 +5,8 @@ import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -53,6 +55,7 @@ import edu.washington.escience.myria.operator.FileScan;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.TipsyFileScan;
 import edu.washington.escience.myria.parallel.Server;
+import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * This is the class that handles API calls to create or fetch datasets.
@@ -273,8 +276,15 @@ public final class DatasetResource {
 
     URI datasetUri = getCanonicalResourcePath(uriInfo, dataset.relationKey);
     ResponseBuilder builder = Response.created(datasetUri);
-    return doIngest(dataset.relationKey, new FileScan(dataset.source, dataset.schema, dataset.delimiter, dataset.quote,
-        dataset.escape, dataset.numberOfSkippedLines), dataset.workers, dataset.indexes, dataset.overwrite, builder);
+    if (dataset.workers != null) {
+      return doIngest(dataset.relationKey, new FileScan(dataset.source, dataset.schema, dataset.delimiter,
+          dataset.quote, dataset.escape, dataset.numberOfSkippedLines), dataset.workers, dataset.indexes,
+          dataset.overwrite, builder);
+    } else {
+      return doIngest(dataset.relationKey, new FileScan(dataset.source, dataset.schema, dataset.delimiter,
+          dataset.quote, dataset.escape, dataset.numberOfSkippedLines), dataset.partitions, dataset.numPartitions,
+          dataset.repFactor, dataset.indexes, dataset.overwrite, builder);
+    }
   }
 
   /**
@@ -368,6 +378,93 @@ public final class DatasetResource {
       status = server.ingestDataset(relationKey, actualWorkers, indexes, source);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
+    }
+
+    /* In the response, tell the client the path to the relation. */
+    URI datasetUri = getCanonicalResourcePath(uriInfo, relationKey);
+    status.setUri(datasetUri);
+    return builder.entity(status).build();
+  }
+
+  /**
+   * Ingest a dataset with replication.
+   * 
+   * @param relationKey the destination relation for the data
+   * @param source the source of tuples to be loaded
+   * @param workers the workers on which the data will be stored
+   * @param numPartitions the number of partitions
+   * @param repFactor the replication factor
+   * @param indexes any user-requested indexes to be created
+   * @param overwrite whether an existing relation should be overwritten
+   * @param builder the template response
+   * @return the created dataset resource
+   * @throws DbException on any error
+   */
+  private Response doIngest(final RelationKey relationKey, final Operator source, final List<Set<Integer>> workers,
+      Integer numPartitions, final Integer repFactor, final List<List<IndexRef>> indexes, final Boolean overwrite,
+      final ResponseBuilder builder) throws DbException {
+
+    /* Validate the workers that will ingest this dataset. */
+    if (server.getAliveWorkers().size() == 0) {
+      throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "There are no alive workers to receive this dataset.");
+    }
+
+    /* Mount the list of data nodes. */
+    List<Set<Integer>> actualWorkers = null;
+
+    if (workers == null && numPartitions == null) {
+      /* We construct the workers list with all alive workers. */
+      numPartitions = server.getAliveWorkers().size();
+      actualWorkers = new ArrayList<Set<Integer>>();
+      for (Integer worker : server.getAliveWorkers()) {
+        HashSet<Integer> hs = new HashSet<Integer>();
+        hs.add(worker);
+        actualWorkers.add(hs);
+      }
+    }
+
+    /* Validate that there are enough alive workers, given the number of partitions and the replication factor. */
+    if (server.getAliveWorkers().size() >= numPartitions && server.getAliveWorkers().size() >= repFactor) {
+      throw new MyriaApiException(Status.BAD_REQUEST, "There are not enough alive workers to receive this dataset.");
+    }
+
+    if (workers != null) {
+      // TODO valmeida fix possible bug here
+      /*
+       * if (!server.getAliveWorkers().containsAll(workers)) { throw new MyriaApiException(Status.SERVICE_UNAVAILABLE,
+       * "Not all requested workers are alive"); }
+       */
+      actualWorkers = workers;
+    } else {
+      /*
+       * Construct the list of actual workers from the list of alive workers and the number of partitions and the
+       * replication factor.
+       */
+      actualWorkers = server.getSampleAliveWorkers(numPartitions, repFactor);
+    }
+
+    /* Check overwriting existing dataset. */
+    try {
+      if (!Objects.firstNonNull(overwrite, false) && server.getSchema(relationKey) != null) {
+        throw new MyriaApiException(Status.CONFLICT, "That dataset already exists.");
+      }
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+
+    /* Do the ingest, blocking until complete. */
+    DatasetStatus status = null;
+    try {
+      if (repFactor == null) {
+        /* No replication. */
+        status = server.ingestDataset(relationKey, MyriaUtils.flatten(actualWorkers), indexes, source);
+      } else {
+        status = server.ingestDataset(relationKey, actualWorkers, numPartitions, repFactor, indexes, source);
+      }
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    } catch (Exception e) {
+      throw new MyriaApiException(Status.BAD_REQUEST, "Badly constructed worker list.");
     }
 
     /* In the response, tell the client the path to the relation. */
