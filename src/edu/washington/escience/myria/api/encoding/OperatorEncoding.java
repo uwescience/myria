@@ -45,6 +45,7 @@ import edu.washington.escience.myria.parallel.Server;
     @Type(name = "RightHashCountingJoin", value = RightHashCountingJoinEncoding.class),
     @Type(name = "RightHashJoin", value = RightHashJoinEncoding.class),
     @Type(name = "SeaFlowScan", value = SeaFlowFileScanEncoding.class),
+    @Type(name = "SetGlobal", value = SetGlobalEncoding.class),
     @Type(name = "ShuffleConsumer", value = ShuffleConsumerEncoding.class),
     @Type(name = "ShuffleProducer", value = ShuffleProducerEncoding.class),
     @Type(name = "SingleGroupByAggregate", value = SingleGroupByAggregateEncoding.class),

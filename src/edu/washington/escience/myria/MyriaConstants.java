@@ -265,6 +265,12 @@ public final class MyriaConstants {
    */
   public static final int PROFILING_LOGGER_BATCH_SIZE = 10000;
 
+  /**
+   * The maximum number of subqueries we will allow a query to execute before killing it. This is a safeguard against an
+   * infinite loop.
+   */
+  public static final int MAXIMUM_NUM_SUBQUERIES = 100;
+
   /** Private constructor to disallow building utility class. */
   private MyriaConstants() {
   }

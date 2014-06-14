@@ -41,6 +41,7 @@ import edu.washington.escience.myria.operator.network.CollectProducer;
 import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.operator.network.EOSController;
 import edu.washington.escience.myria.parallel.ExchangePairID;
+import edu.washington.escience.myria.parallel.JsonSubQuery;
 import edu.washington.escience.myria.parallel.RelationWriteMetadata;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.parallel.SubQuery;
@@ -414,5 +415,48 @@ public class QueryConstruct {
     SubQueryPlan masterPlan = new SubQueryPlan(catalog);
 
     return new SubQuery(masterPlan, workerPlans);
+  }
+
+  public static JsonSubQuery setDoWhileCondition(final RelationKey condition) {
+    ImmutableList.Builder<PlanFragmentEncoding> fragments = ImmutableList.builder();
+    int opId = 0;
+
+    /* The worker part: scan the relation and send it to master. */
+    // scan the relation
+    TableScanEncoding scan = new TableScanEncoding();
+    scan.opId = opId++;
+    scan.opName = "Scan[" + condition.toString() + "]";
+    scan.relationKey = condition;
+    // send it to master
+    CollectProducerEncoding producer = new CollectProducerEncoding();
+    producer.argChild = scan.opId;
+    producer.opName = "CollectProducer[" + scan.opName + "]";
+    producer.opId = opId++;
+    // make a fragment
+    PlanFragmentEncoding workerFragment = new PlanFragmentEncoding();
+    workerFragment.operators = ImmutableList.of(scan, producer);
+    // add it to the list
+    fragments.add(workerFragment);
+
+    /* The master part: collect the tuples, update the variable. */
+    // collect the tuples
+    CollectConsumerEncoding consumer = new CollectConsumerEncoding();
+    consumer.argOperatorId = producer.opId;
+    consumer.opId = opId++;
+    consumer.opName = "CollectConsumer";
+    // update the variable
+    SetGlobalEncoding setGlobal = new SetGlobalEncoding();
+    setGlobal.opId = opId++;
+    setGlobal.opName = "SetGlobal[" + condition.toString() + "]";
+    setGlobal.argChild = consumer.opId;
+    setGlobal.key = condition.toString();
+    // the fragment, and it must only run at the master.
+    PlanFragmentEncoding masterFragment = new PlanFragmentEncoding();
+    masterFragment.operators = ImmutableList.of(consumer, setGlobal);
+    masterFragment.workers = ImmutableList.of(MyriaConstants.MASTER_ID);
+    fragments.add(masterFragment);
+
+    // Done!
+    return new JsonSubQuery(fragments.build());
   }
 }
