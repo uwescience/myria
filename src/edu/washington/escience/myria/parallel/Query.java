@@ -129,8 +129,13 @@ public final class Query {
     if (!subQueryQ.isEmpty()) {
       currentSubQuery = subQueryQ.removeFirst();
       currentSubQuery.setSubQueryId(new SubQueryId(queryId, subqueryId));
+      /*
+       * TODO - revisit when we support profiling with sequences.
+       * 
+       * We only support profiling a single subquery, so disable profiling if subqueryId != 0.
+       */
+      QueryConstruct.setQueryExecutionOptions(currentSubQuery.getWorkerPlans(), ftMode, profiling && (subqueryId == 0));
       ++subqueryId;
-      QueryConstruct.setQueryExecutionOptions(currentSubQuery.getWorkerPlans(), ftMode, profiling);
       return currentSubQuery;
     }
     planQ.getFirst().instantiate(planQ, subQueryQ, server);
