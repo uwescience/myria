@@ -5,6 +5,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -38,6 +40,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.primitives.Ints;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
@@ -1191,6 +1194,23 @@ public final class Server {
   }
 
   /**
+   * @return the organization of partitions and replication, given the alive workers
+   * 
+   * @param numPartitions the number of partitions
+   * @param replicationFactor the replication factor
+   * 
+   */
+  public List<Set<Integer>> getSampleAliveWorkers(final Integer numPartitions, final Integer replicationFactor) {
+    List<Set<Integer>> result = new ArrayList<Set<Integer>>();
+    List<Integer> alive = Collections.list(aliveWorkers.keys());
+    for (int i = 0; i < numPartitions; i++) {
+      Set<Integer> partition = MyriaUtils.randomSample(alive, replicationFactor);
+      result.add(partition);
+    }
+    return result;
+  }
+
+  /**
    * 
    * @param workerId the worker identification
    * @return whether a worker is alive or not
@@ -1301,6 +1321,83 @@ public final class Server {
       DatasetStatus status =
           new DatasetStatus(relationKey, source.getSchema(), -1, qf.getQuery().getQueryID(), qf.getQuery()
               .getExecutionStatistics().getEndTime());
+
+      return status;
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
+
+  /**
+   * Ingest the given dataset with replication.
+   * 
+   * @param relationKey the name of the dataset.
+   * @param workersToIngest restrict the workers to ingest data (null for all)
+   * @param numPartitions the number of partitions.
+   * @param repFactor the replication factor.
+   * @param indexes the indexes created.
+   * @param source the source of tuples to be ingested.
+   * @return the status of the ingested dataset.
+   * @throws Exception in case of the workers list conversion problems.
+   */
+  public DatasetStatus ingestDataset(final RelationKey relationKey, final List<Set<Integer>> workersToIngest,
+      final Integer numPartitions, final Integer repFactor, final List<List<IndexRef>> indexes, final Operator source)
+      throws Exception {
+    /* Figure out the workers we will use. If workersToIngest is null, use all active workers. */
+
+    LOGGER.info("Server.ingestDataset start");
+
+    LOGGER.info("Server.ingestDataset before integerDoubleCollectionToIntArray");
+    int[][] partitions = MyriaUtils.integerDoubleCollectionToIntArray(workersToIngest);
+    LOGGER.info("Server.ingestDataset after integerDoubleCollectionToIntArray");
+
+    LOGGER.info("Server.ingestDataset before Ints.concat");
+    int[] workersArray = Ints.concat(partitions);
+    LOGGER.info("Server.ingestDataset after Ints.concat");
+
+    /* The master plan: send the tuples out. */
+    LOGGER.info("Server.ingestDataset getting id");
+    ExchangePairID scatterId = ExchangePairID.newID();
+    LOGGER.info("Server.ingestDataset done, creating GenericShuffleProducer");
+    LOGGER.info("numPartitions: " + numPartitions);
+    LOGGER.info("repFactor: " + repFactor);
+    LOGGER.info("partitions: " + Arrays.deepToString(partitions));
+    LOGGER.info("workersArray: " + Arrays.toString(workersArray));
+
+    GenericShuffleProducer scatter =
+        new GenericShuffleProducer(source, scatterId, partitions, workersArray, new RoundRobinPartitionFunction(
+            numPartitions));
+    LOGGER.info("Server.ingestDataset GenericShuffleProducer created");
+
+    /* The workers' plan */
+    // TODO valmeida change the Consumer to add the partition number into the relationKey value
+    GenericShuffleConsumer gather =
+        new GenericShuffleConsumer(source.getSchema(), scatterId, new int[] { MyriaConstants.MASTER_ID });
+    DbInsert insert = new DbInsert(gather, relationKey, true, indexes);
+    Map<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
+    for (Integer workerId : workersArray) {
+      workerPlans.put(workerId, new SingleQueryPlanWithArgs(insert));
+    }
+    LOGGER.info("Server.ingestDataset GenericShuffleConsumer created");
+
+    try {
+      /* Start the workers */
+      LOGGER.info("Server.ingestDataset submitting query to workers");
+
+      QueryFuture qf =
+          submitQuery("ingest " + relationKey.toString("sqlite"), "ingest " + relationKey.toString("sqlite"),
+              "ingest " + relationKey.toString("sqlite"), new SingleQueryPlanWithArgs(scatter), workerPlans, false)
+              .sync();
+      if (qf == null) {
+        LOGGER.info("Server.ingestDataset qf == null");
+        return null;
+      }
+      /* TODO(dhalperi) -- figure out how to populate the numTuples column. */
+      DatasetStatus status =
+          new DatasetStatus(relationKey, source.getSchema(), -1, qf.getQuery().getQueryID(), qf.getQuery()
+              .getExecutionStatistics().getEndTime());
+
+      LOGGER.info("Server.ingestDataset finished correctly");
 
       return status;
     } catch (CatalogException e) {

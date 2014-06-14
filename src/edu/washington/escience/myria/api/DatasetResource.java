@@ -283,8 +283,8 @@ public final class DatasetResource {
       LOGGER.info("Dataset " + dataset.relationKey.toString("sqlite")
           + " ingested with replication. Replication factor " + dataset.repFactor);
       return doIngest(dataset.relationKey, new FileScan(dataset.source, dataset.schema, dataset.delimiter,
-          dataset.quote, dataset.escape, dataset.numberOfSkippedLines), dataset.workers, dataset.indexes,
-          dataset.overwrite, builder);
+          dataset.quote, dataset.escape, dataset.numberOfSkippedLines), dataset.partitions, dataset.numPartitions,
+          dataset.repFactor, dataset.indexes, dataset.overwrite, builder);
     }
   }
 
@@ -380,6 +380,101 @@ public final class DatasetResource {
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
     }
+
+    /* In the response, tell the client the path to the relation. */
+    URI datasetUri = getCanonicalResourcePath(uriInfo, relationKey);
+    status.setUri(datasetUri);
+    return builder.entity(status).build();
+  }
+
+  /**
+   * Ingest a dataset with replication.
+   * 
+   * @param relationKey the destination relation for the data
+   * @param source the source of tuples to be loaded
+   * @param partitions the workers on which the partitions will be stored
+   * @param numPartitions the number of partitions
+   * @param repFactor the replication factor
+   * @param indexes any user-requested indexes to be created
+   * @param overwrite whether an existing relation should be overwritten
+   * @param builder the template response
+   * @return the created dataset resource
+   * @throws DbException on any error
+   */
+  private Response doIngest(final RelationKey relationKey, final Operator source, final List<Set<Integer>> partitions,
+      final Integer numPartitions, final Integer repFactor, final List<List<IndexRef>> indexes,
+      final Boolean overwrite, final ResponseBuilder builder) throws DbException {
+
+    LOGGER.info("DatasetResource.doIngest start.");
+    LOGGER.info("# of partitions: " + numPartitions + " and replication factor: " + repFactor);
+
+    /* Validate the workers that will ingest this dataset. */
+    if (server.getAliveWorkers().size() == 0) {
+      throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "There are no alive workers to receive this dataset.");
+    }
+
+    /* Mount the list of data nodes. */
+    List<Set<Integer>> actualPartitions = null;
+    Integer actualNumPartitions;
+    Integer actualRepFactor;
+
+    if (partitions != null) {
+      /* partition list is set, in this case numPartitions and repFactor are also set */
+      LOGGER.info("DatasetResource.doIngest partitions set.");
+      // TODO valmeida check whether all requested workers are alive.
+      /*
+       * if (!server.getAliveWorkers().containsAll(workers)) { throw new MyriaApiException(Status.SERVICE_UNAVAILABLE,
+       * "Not all requested workers are alive"); }
+       */
+      actualNumPartitions = numPartitions;
+      actualRepFactor = repFactor;
+    } else {
+      if (numPartitions != null) {
+        /* numPartitions set, repFactor can be null */
+        actualNumPartitions = numPartitions;
+      } else {
+        /* numPartitions not set, we use all alive workers. */
+        actualNumPartitions = server.getAliveWorkers().size();
+      }
+      if (repFactor == null) {
+        actualRepFactor = 1;
+        // TODO valmeida fix this case to not use replication at all
+      } else {
+        actualRepFactor = repFactor;
+      }
+      LOGGER.info("DatasetResource.doIngest numPartitions and repFactor set. Retrieving samples");
+      actualPartitions = server.getSampleAliveWorkers(actualNumPartitions, actualRepFactor);
+    }
+
+    /* Validate that there are enough alive workers, given the number of partitions and the replication factor. */
+    if (server.getAliveWorkers().size() < numPartitions || server.getAliveWorkers().size() < repFactor) {
+      throw new MyriaApiException(Status.BAD_REQUEST, "There are not enough alive workers to receive this dataset.");
+    }
+
+    /* Check overwriting existing dataset. */
+    try {
+      if (!Objects.firstNonNull(overwrite, false) && server.getSchema(relationKey) != null) {
+        throw new MyriaApiException(Status.CONFLICT, "That dataset already exists.");
+      }
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+
+    /* Do the ingest, blocking until complete. */
+    DatasetStatus status = null;
+    try {
+      LOGGER.info("DatasetResource.doIngest Ingesting the dataset.");
+      LOGGER.info("Partitions: " + partitions.toString());
+      LOGGER.info("numPartitions: " + numPartitions);
+      LOGGER.info("repFactor: " + repFactor);
+      status = server.ingestDataset(relationKey, actualPartitions, actualNumPartitions, repFactor, indexes, source);
+      LOGGER.info("DatasetResource.doIngest Dataset ingested.");
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    } catch (Exception e) {
+      throw new MyriaApiException(Status.BAD_REQUEST, "Badly constructed worker list.");
+    }
+    LOGGER.info("DatasetResource.doIngest dataset ingested.");
 
     /* In the response, tell the client the path to the relation. */
     URI datasetUri = getCanonicalResourcePath(uriInfo, relationKey);
