@@ -273,8 +273,19 @@ public final class DatasetResource {
 
     URI datasetUri = getCanonicalResourcePath(uriInfo, dataset.relationKey);
     ResponseBuilder builder = Response.created(datasetUri);
-    return doIngest(dataset.relationKey, new FileScan(dataset.source, dataset.schema, dataset.delimiter, dataset.quote,
-        dataset.escape, dataset.numberOfSkippedLines), dataset.workers, dataset.indexes, dataset.overwrite, builder);
+
+    if (dataset.repFactor == null) {
+      LOGGER.info("Dataset " + dataset.relationKey.toString("sqlite") + " ingested without replication.");
+      return doIngest(dataset.relationKey, new FileScan(dataset.source, dataset.schema, dataset.delimiter,
+          dataset.quote, dataset.escape, dataset.numberOfSkippedLines), dataset.workers, dataset.indexes,
+          dataset.overwrite, builder);
+    } else {
+      LOGGER.info("Dataset " + dataset.relationKey.toString("sqlite")
+          + " ingested with replication. Replication factor " + dataset.repFactor);
+      return doIngest(dataset.relationKey, new FileScan(dataset.source, dataset.schema, dataset.delimiter,
+          dataset.quote, dataset.escape, dataset.numberOfSkippedLines), dataset.workers, dataset.indexes,
+          dataset.overwrite, builder);
+    }
   }
 
   /**
