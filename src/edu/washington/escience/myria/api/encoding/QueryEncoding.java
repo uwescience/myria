@@ -19,7 +19,7 @@ import edu.washington.escience.myria.parallel.QueryPlan;
 public class QueryEncoding extends MyriaApiEncoding {
   /** The raw Datalog. */
   @Required
-  public String rawDatalog;
+  public String rawQuery;
   /** The logical relation algebra plan. */
   @Required
   public String logicalRa;

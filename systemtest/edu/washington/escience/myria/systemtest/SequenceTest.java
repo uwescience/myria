@@ -117,7 +117,7 @@ public class SequenceTest extends SystemTestBase {
     /* Submit the query and compute its ID. */
     QueryEncoding encoding = new QueryEncoding();
     encoding.profilingMode = false;
-    encoding.rawDatalog = "test";
+    encoding.rawQuery = "test";
     encoding.logicalRa = "test";
     QueryFuture qf = server.submitQuery(encoding, all);
     long queryId = qf.getQueryId();
@@ -180,7 +180,7 @@ public class SequenceTest extends SystemTestBase {
     /* Submit the query and compute its ID. */
     QueryEncoding encoding = new QueryEncoding();
     encoding.profilingMode = false;
-    encoding.rawDatalog = "test";
+    encoding.rawQuery = "test";
     encoding.logicalRa = "test";
     QueryFuture qf = server.submitQuery(encoding, all);
     long queryId = qf.getQueryId();
@@ -219,7 +219,7 @@ public class SequenceTest extends SystemTestBase {
     /* Submit the query. */
     QueryEncoding encoding = new QueryEncoding();
     encoding.profilingMode = false;
-    encoding.rawDatalog = "test";
+    encoding.rawQuery = "test";
     encoding.logicalRa = "test";
     QueryFuture qf = server.submitQuery(encoding, all);
 
@@ -312,7 +312,7 @@ public class SequenceTest extends SystemTestBase {
     QueryEncoding query = new QueryEncoding();
     query.plan = seq;
     query.logicalRa = "sequence json test";
-    query.rawDatalog = query.logicalRa;
+    query.rawQuery = query.logicalRa;
 
     String queryString = writer.writeValueAsString(query);
 
@@ -407,7 +407,7 @@ public class SequenceTest extends SystemTestBase {
     /* Submit the query and compute its ID. */
     QueryEncoding encoding = new QueryEncoding();
     encoding.profilingMode = false;
-    encoding.rawDatalog = "test";
+    encoding.rawQuery = "test";
     encoding.logicalRa = "test";
     QueryFuture qf = server.submitQuery(encoding, all);
     long queryId = qf.getQueryId();

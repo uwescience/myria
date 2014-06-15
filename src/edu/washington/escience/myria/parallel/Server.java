@@ -974,7 +974,7 @@ public final class Server {
       final SubQueryPlan masterPlan, final Map<Integer, SubQueryPlan> workerPlans, @Nullable final Boolean profilingMode)
       throws DbException, CatalogException {
     QueryEncoding query = new QueryEncoding();
-    query.rawDatalog = rawQuery;
+    query.rawQuery = rawQuery;
     query.logicalRa = rawQuery;
     query.fragments = ImmutableList.of();
     query.profilingMode = Objects.firstNonNull(profilingMode, false);
