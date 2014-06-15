@@ -320,7 +320,7 @@ if args.run_filename:
     plan = {
       "fragments": fragments,
       "logicalRa": "SINK(JOIN(SCAN1,SCAN2))",
-      "rawDatalog": "twitter(x,z) :- twitter(x,y),twitter(y,z)."
+      "rawQuery": "twitter(x,z) :- twitter(x,y),twitter(y,z)."
     }
 
     query.write(json.dumps(plan, indent=2))

@@ -62,7 +62,7 @@ if __name__ == "__main__":
             'operators' : clean_up(ops)
         })
     output = {
-            'rawDatalog' : myria_json_plan['rawDatalog'],
+            'rawQuery' : myria_json_plan['rawQuery'],
             'logicalRa' : myria_json_plan['logicalRa'],
             'fragments' : fragments
     }

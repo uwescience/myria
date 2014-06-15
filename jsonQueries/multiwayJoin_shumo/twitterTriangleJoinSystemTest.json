@@ -75,5 +75,5 @@
     ],
     "logicalRa":"local triangle ",
     "profilingMode":false,
-    "rawDatalog":"T(x,y,z) =: S(x,y), R(y,z), T(z,x)"
+    "rawQuery":"T(x,y,z) =: S(x,y), R(y,z), T(z,x)"
 } 

@@ -102,7 +102,7 @@ def generate_broadcastjoin():
     whole_plan = {
         "fragments": fragments,
         "logicalRa": "broadcast join",
-        "rawDatalog": "broadcast join"
+        "rawQuery": "broadcast join"
     }
 
     return whole_plan
@@ -217,7 +217,7 @@ def generate_partition_join():
     whole_plan = {
         "fragments": fragments,
         "logicalRa": "partiton join",
-        "rawDatalog": "partition join"
+        "rawQuery": "partition join"
     }
     return whole_plan
 
@@ -300,7 +300,7 @@ def concatenate():
     whole_plan = {
         "fragments": fragments,
         "logicalRa": "union table in 8 workers",
-        "rawDatalog": "union table in 8 workers"
+        "rawQuery": "union table in 8 workers"
     }
     return whole_plan
 

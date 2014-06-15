@@ -44,5 +44,5 @@
         }
     ],
     "logicalRa": "Insert[Shuffle(0)[Scan[smallTable], smallTable2]]",
-    "rawDatalog": "smallTable_hash_follower(x,y) :- smallTable(x,y), @hash(x)."
+    "rawQuery": "smallTable_hash_follower(x,y) :- smallTable(x,y), @hash(x)."
 }

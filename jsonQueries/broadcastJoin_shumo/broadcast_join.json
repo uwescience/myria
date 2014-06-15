@@ -86,5 +86,5 @@
         }
     ],
     "logicalRa": "broadcast join",
-    "rawDatalog": "broadcast join"
+    "rawQuery": "broadcast join"
 }
