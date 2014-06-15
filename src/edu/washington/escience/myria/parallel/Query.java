@@ -179,6 +179,7 @@ public final class Query {
         throw new DbException("Infinite-loop safeguard: quitting after " + MyriaConstants.MAXIMUM_NUM_SUBQUERIES
             + " subqueries.");
       }
+      currentSubQuery.getMasterPlan().setFTMode(ftMode);
       return currentSubQuery;
     }
     planQ.getFirst().instantiate(planQ, subQueryQ, new ConstructArgs(server, queryId));
