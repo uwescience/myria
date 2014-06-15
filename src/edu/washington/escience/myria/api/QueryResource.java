@@ -130,12 +130,8 @@ public final class QueryResource {
           .build();
     }
     queryStatus.url = uri;
-    Status httpStatus = Status.INTERNAL_SERVER_ERROR;
-    boolean cache = false;
-    if (QueryStatusEncoding.Status.finished(queryStatus.status)) {
-      cache = true;
-    }
-    ResponseBuilder response = Response.status(httpStatus).location(uri).entity(queryStatus);
+    boolean cache = QueryStatusEncoding.Status.finished(queryStatus.status);
+    ResponseBuilder response = Response.ok().location(uri).entity(queryStatus);
     if (!cache) {
       response.cacheControl(MyriaApiUtils.doNotCache());
     }
