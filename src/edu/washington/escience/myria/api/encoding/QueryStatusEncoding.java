@@ -33,6 +33,7 @@ public class QueryStatusEncoding {
     ret.logicalRa = query.logicalRa;
     ret.physicalPlan = query.plan;
     ret.profilingMode = query.profilingMode;
+    ret.ftMode = query.ftMode.toString();
     ret.submitTime = DateTimeUtils.nowInISO8601();
     ret.status = Status.ACCEPTED;
     return ret;
@@ -62,6 +63,8 @@ public class QueryStatusEncoding {
   public Status status;
   /** The profilingMode of the query. */
   public Boolean profilingMode;
+  /** The ftMode of the query. */
+  public String ftMode;
 
   /** The current status of the query. */
   public static enum Status {
