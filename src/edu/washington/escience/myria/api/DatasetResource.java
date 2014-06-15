@@ -414,7 +414,7 @@ public final class DatasetResource {
     }
 
     /* Mount the list of data nodes. */
-    List<Set<Integer>> actualPartitions = null;
+    List<Set<Integer>> actualPartitions;
     Integer actualNumPartitions;
     Integer actualRepFactor;
 
@@ -426,6 +426,7 @@ public final class DatasetResource {
        * if (!server.getAliveWorkers().containsAll(workers)) { throw new MyriaApiException(Status.SERVICE_UNAVAILABLE,
        * "Not all requested workers are alive"); }
        */
+      actualPartitions = partitions;
       actualNumPartitions = numPartitions;
       actualRepFactor = repFactor;
     } else {
@@ -472,7 +473,7 @@ public final class DatasetResource {
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
     } catch (Exception e) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "Badly constructed worker list.");
+      throw new MyriaApiException(Status.BAD_REQUEST, e.getMessage());
     }
     LOGGER.info("DatasetResource.doIngest dataset ingested.");
 

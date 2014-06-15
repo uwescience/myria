@@ -1332,27 +1332,42 @@ public final class Server {
    * Ingest the given dataset with replication.
    * 
    * @param relationKey the name of the dataset.
-   * @param workersToIngest restrict the workers to ingest data (null for all)
+   * @param partitions restrict the workers to ingest data (null for all)
    * @param numPartitions the number of partitions.
    * @param repFactor the replication factor.
    * @param indexes the indexes created.
    * @param source the source of tuples to be ingested.
    * @return the status of the ingested dataset.
-   * @throws Exception in case of the workers list conversion problems.
+   * @throws InterruptedException interrupted
+   * @throws DbException if there is an error
    */
-  public DatasetStatus ingestDataset(final RelationKey relationKey, final List<Set<Integer>> workersToIngest,
+  public DatasetStatus ingestDataset(final RelationKey relationKey, final List<Set<Integer>> partitions,
       final Integer numPartitions, final Integer repFactor, final List<List<IndexRef>> indexes, final Operator source)
-      throws Exception {
+      throws InterruptedException, DbException {
     /* Figure out the workers we will use. If workersToIngest is null, use all active workers. */
 
     LOGGER.info("Server.ingestDataset start");
 
     LOGGER.info("Server.ingestDataset before integerDoubleCollectionToIntArray");
-    int[][] partitions = MyriaUtils.integerDoubleCollectionToIntArray(workersToIngest);
+    int[][] intArrayPartitions;
+    try {
+      intArrayPartitions = MyriaUtils.integerDoubleCollectionToIntArray(partitions);
+      LOGGER.info("intArrayPartitions: " + Arrays.deepToString(intArrayPartitions));
+    } catch (Exception e) {
+      LOGGER.info("Error at integerDoubleCollectionToIntArray");
+      return null;
+    }
     LOGGER.info("Server.ingestDataset after integerDoubleCollectionToIntArray");
 
     LOGGER.info("Server.ingestDataset before Ints.concat");
-    int[] workersArray = Ints.concat(partitions);
+    int[] workersArray;
+    try {
+      workersArray = Ints.concat(intArrayPartitions);
+      LOGGER.info("workersArray: " + Arrays.toString(workersArray));
+    } catch (Exception e) {
+      LOGGER.info("Error at Ints.concat");
+      return null;
+    }
     LOGGER.info("Server.ingestDataset after Ints.concat");
 
     /* The master plan: send the tuples out. */
@@ -1361,12 +1376,12 @@ public final class Server {
     LOGGER.info("Server.ingestDataset done, creating GenericShuffleProducer");
     LOGGER.info("numPartitions: " + numPartitions);
     LOGGER.info("repFactor: " + repFactor);
-    LOGGER.info("partitions: " + Arrays.deepToString(partitions));
+    LOGGER.info("partitions: " + Arrays.deepToString(intArrayPartitions));
     LOGGER.info("workersArray: " + Arrays.toString(workersArray));
 
     GenericShuffleProducer scatter =
-        new GenericShuffleProducer(source, scatterId, partitions, workersArray, new RoundRobinPartitionFunction(
-            numPartitions));
+        new GenericShuffleProducer(source, scatterId, intArrayPartitions, workersArray,
+            new RoundRobinPartitionFunction(numPartitions));
     LOGGER.info("Server.ingestDataset GenericShuffleProducer created");
 
     /* The workers' plan */

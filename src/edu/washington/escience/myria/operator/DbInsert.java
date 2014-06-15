@@ -7,6 +7,8 @@ import java.io.File;
 import java.util.List;
 import java.util.Objects;
 
+import org.slf4j.LoggerFactory;
+
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.google.common.base.Preconditions;
@@ -28,6 +30,9 @@ import edu.washington.escience.myria.storage.TupleBatch;
  * 
  */
 public class DbInsert extends RootOperator {
+
+  /** The logger for this class. */
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(DbInsert.class);
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -146,6 +151,9 @@ public class DbInsert extends RootOperator {
 
   @Override
   public void cleanup() {
+    
+    LOGGER.info("DbInsert.cleanup");
+   
     try {
       if (accessMethod != null) {
         accessMethod.close();
@@ -159,11 +167,16 @@ public class DbInsert extends RootOperator {
   protected void consumeTuples(final TupleBatch tupleBatch) throws DbException {
     Objects.requireNonNull(accessMethod);
     Objects.requireNonNull(tempRelationKey);
+
+    LOGGER.info("DbInsert.consumeTuples");
+
     accessMethod.tupleBatchInsert(tempRelationKey, getSchema(), tupleBatch);
   }
 
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+
+    LOGGER.info("DbInsert.init");
 
     /* retrieve connection information from the environment variables, if not already set */
     if (connectionInfo == null && execEnvVars != null) {

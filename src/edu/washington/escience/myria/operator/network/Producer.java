@@ -1,10 +1,12 @@
 package edu.washington.escience.myria.operator.network;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
 import org.jboss.netty.channel.ChannelFuture;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -36,6 +38,9 @@ import edu.washington.escience.myria.util.MyriaArrayUtils;
  * Each (workerID, operatorID) pair is a logical destination.
  * */
 public abstract class Producer extends RootOperator {
+
+  /** The logger for this class. */
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(Producer.class);
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -339,9 +344,30 @@ public abstract class Producer extends RootOperator {
    * */
   protected final void writePartitionsIntoChannels(final boolean usingTimeout, final int[][] channelIndices,
       final TupleBatch[] partitions) {
+
+    LOGGER.info("Producer.writePartitionsIntoChannels start");
+    LOGGER.info("usingTimeout: " + usingTimeout);
+    LOGGER.info("channelIndices: " + Arrays.deepToString(channelIndices));
+    if (partitions != null) {
+      LOGGER.info("partitions size: " + partitions.length);
+      int v = 0;
+      for (TupleBatch partition : partitions) {
+        LOGGER.info("Partition " + v + " size: " + partition.numTuples());
+        ++v;
+      }
+    } else {
+      LOGGER.info("Partitions null");
+    }
+    if (partitionBuffers != null) {
+      LOGGER.info("Partition buffers size: " + partitionBuffers.length);
+    } else {
+      LOGGER.info("Partition buffers null");
+    }
+
     FTMODE mode = taskResourceManager.getOwnerTask().getOwnerQuery().getFTMode();
 
     if (totallyLocal) {
+      LOGGER.info("totally local");
       if (partitions != null) {
         for (int i = 0; i < numOfPartition; ++i) {
           if (partitions[i] != null) {
@@ -355,9 +381,13 @@ public abstract class Producer extends RootOperator {
         }
       }
     } else {
+      LOGGER.info("not totally local");
       if (partitions != null) {
+        LOGGER.info("partitions not null");
         for (int i = 0; i < numOfPartition; ++i) {
+          LOGGER.info("partition " + i + " not null");
           if (partitions[i] != null) {
+            LOGGER.info("absorbing partition " + i);
             partitionBuffers[i].absorb(partitions[i]);
           }
         }
@@ -365,16 +395,29 @@ public abstract class Producer extends RootOperator {
       for (int i = 0; i < numOfPartition; ++i) {
         while (true) {
           TupleBatch tb = null;
+          LOGGER.info("Popping partition " + i);
           if (usingTimeout) {
+            LOGGER.info("Using timeout");
             tb = partitionBuffers[i].popAnyUsingTimeout();
           } else {
+            LOGGER.info("Not using timeout");
             tb = partitionBuffers[i].popAny();
           }
           if (tb == null) {
+            LOGGER.info("tb is null, lets break here");
             break;
           }
+          LOGGER.info("channelIndices: " + Arrays.deepToString(channelIndices));
           for (int j : channelIndices[i]) {
+            LOGGER.info("channel " + j);
+            LOGGER.info("ioChannelsAvail: " + Arrays.toString(ioChannelsAvail));
+            LOGGER.info("mode: " + mode.toString());
+            LOGGER.info("getting pending tuples to send");
+
+            LOGGER.info("Pending tuples to send size " + pendingTuplesToSend.size());
+            LOGGER.info("Adding tuple batch with " + tb.numTuples() + " tuples at position " + j);
             if (!ioChannelsAvail[j] && mode.equals(FTMODE.abandon)) {
+              LOGGER.info("continue...");
               continue;
             }
             pendingTuplesToSend.get(j).add(tb);

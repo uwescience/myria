@@ -7,6 +7,8 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 
+import org.slf4j.LoggerFactory;
+
 import com.google.common.base.Preconditions;
 
 /**
@@ -15,6 +17,10 @@ import com.google.common.base.Preconditions;
  * @author dhalperi
  */
 public final class MyriaUtils {
+
+  /** Logger. */
+  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MyriaUtils.class);
+
   /**
    * Utility classes should not be instantiated.
    */
@@ -125,26 +131,21 @@ public final class MyriaUtils {
    * 
    * @param input the collection of integers.
    * @return an int[][] containing the given integers.
-   * @throws Exception in case of different inner collection sizes
    */
-  public static int[][] integerDoubleCollectionToIntArray(final Collection<Set<Integer>> input) throws Exception {
+  public static int[][] integerDoubleCollectionToIntArray(final List<Set<Integer>> input) {
     Preconditions.checkArgument(input.size() > 0);
 
-    Collection<Integer> inner0 = (Collection<Integer>) input.toArray()[0];
+    Set<Integer> inner0 = input.get(0);
     int[][] output = new int[input.size()][inner0.size()];
     int i = 0;
-    for (Collection<Integer> inner : input) {
-      if (inner.size() != inner0.size()) {
-        throw new Exception("All inner collections must have same size to be converted into a matrix.");
-      }
+    for (Set<Integer> inner : input) {
       int j = 0;
-      for (int value : inner) {
-        output[i][j] = value;
+      for (Integer value : inner) {
+        output[i][j] = value.intValue();
         ++j;
       }
       ++i;
     }
     return output;
   }
-
 }
