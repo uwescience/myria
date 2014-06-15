@@ -103,10 +103,7 @@ public class GenericShuffleProducer extends Producer {
         }
       }
     }
-    // TODO valmeida fix this mock later
-    int[][] channelIndices = { { 0, 1 }, { 2, 3 } };
-    writePartitionsIntoChannels(true, channelIndices, partitions);
-    // writePartitionsIntoChannels(true, partitionToChannel, partitions);
+    writePartitionsIntoChannels(true, partitionToChannel, partitions);
   }
 
   /**

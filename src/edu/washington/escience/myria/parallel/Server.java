@@ -40,7 +40,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.primitives.Ints;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
@@ -1344,31 +1343,61 @@ public final class Server {
   public DatasetStatus ingestDataset(final RelationKey relationKey, final List<Set<Integer>> partitions,
       final Integer numPartitions, final Integer repFactor, final List<List<IndexRef>> indexes, final Operator source)
       throws InterruptedException, DbException {
-    /* Figure out the workers we will use. If workersToIngest is null, use all active workers. */
+
+    Preconditions.checkNotNull(numPartitions);
+    Preconditions.checkNotNull(repFactor);
 
     LOGGER.info("Server.ingestDataset start");
 
-    LOGGER.info("Server.ingestDataset before integerDoubleCollectionToIntArray");
-    int[][] intArrayPartitions;
-    try {
-      intArrayPartitions = MyriaUtils.integerDoubleCollectionToIntArray(partitions);
-      LOGGER.info("intArrayPartitions: " + Arrays.deepToString(intArrayPartitions));
-    } catch (Exception e) {
-      LOGGER.info("Error at integerDoubleCollectionToIntArray");
-      return null;
+    /* Build the worker IDs and the partition indices arrays. */
+    LOGGER.info("Building intArrayPartitions and mapWorkers...");
+    int[][] intArrayPartitions = new int[numPartitions][repFactor];
+    HashMap<Integer, Integer> mapWorkers = new HashMap<Integer, Integer>();
+    int i = 0;
+    int k = 0;
+    for (Set<Integer> partition : partitions) {
+      int j = 0;
+      for (Integer id : partition) {
+        intArrayPartitions[i][j] = k;
+        if (!mapWorkers.containsKey(k)) {
+          mapWorkers.put(k, id);
+          ++k;
+        }
+        ++j;
+      }
+      ++i;
     }
-    LOGGER.info("Server.ingestDataset after integerDoubleCollectionToIntArray");
 
-    LOGGER.info("Server.ingestDataset before Ints.concat");
-    int[] workersArray;
-    try {
-      workersArray = Ints.concat(intArrayPartitions);
-      LOGGER.info("workersArray: " + Arrays.toString(workersArray));
-    } catch (Exception e) {
-      LOGGER.info("Error at Ints.concat");
-      return null;
+    LOGGER.info("intArrayPartitions: " + Arrays.deepToString(intArrayPartitions));
+    LOGGER.info("mapWorkers: " + mapWorkers.toString());
+
+    LOGGER.info("Building intArrayWorkers...");
+    int[] intArrayWorkers = new int[numPartitions * repFactor];
+    i = 0;
+    for (int[] partitionIndex : intArrayPartitions) {
+      LOGGER.info("Partition: " + Arrays.toString(partitionIndex));
+      for (int p : partitionIndex) {
+        LOGGER.info("i: " + i);
+        LOGGER.info("p: " + p);
+        LOGGER.info("mapping: " + mapWorkers.get(p));
+        intArrayWorkers[i] = mapWorkers.get(p);
+        ++i;
+      }
     }
-    LOGGER.info("Server.ingestDataset after Ints.concat");
+    LOGGER.info("intArrayWorkers: " + Arrays.toString(intArrayWorkers));
+
+    /*
+     * LOGGER.info("Server.ingestDataset before integerDoubleCollectionToIntArray"); int[][] intArrayPartitions; try {
+     * intArrayPartitions = MyriaUtils.integerDoubleCollectionToIntArray(partitions); LOGGER.info("intArrayPartitions: "
+     * + Arrays.deepToString(intArrayPartitions)); } catch (Exception e) {
+     * LOGGER.info("Error at integerDoubleCollectionToIntArray"); return null; }
+     * LOGGER.info("Server.ingestDataset after integerDoubleCollectionToIntArray");
+     * 
+     * LOGGER.info("Server.ingestDataset before Ints.concat"); int[] workersArray; try { workersArray =
+     * Ints.concat(intArrayPartitions); LOGGER.info("workersArray: " + Arrays.toString(workersArray)); } catch
+     * (Exception e) { LOGGER.info("Error at Ints.concat"); return null; }
+     * LOGGER.info("Server.ingestDataset after Ints.concat");
+     */
 
     /* The master plan: send the tuples out. */
     LOGGER.info("Server.ingestDataset getting id");
@@ -1377,10 +1406,10 @@ public final class Server {
     LOGGER.info("numPartitions: " + numPartitions);
     LOGGER.info("repFactor: " + repFactor);
     LOGGER.info("partitions: " + Arrays.deepToString(intArrayPartitions));
-    LOGGER.info("workersArray: " + Arrays.toString(workersArray));
+    LOGGER.info("workersArray: " + Arrays.toString(intArrayWorkers));
 
     GenericShuffleProducer scatter =
-        new GenericShuffleProducer(source, scatterId, intArrayPartitions, workersArray,
+        new GenericShuffleProducer(source, scatterId, intArrayPartitions, intArrayWorkers,
             new RoundRobinPartitionFunction(numPartitions));
     LOGGER.info("Server.ingestDataset GenericShuffleProducer created");
 
@@ -1390,7 +1419,7 @@ public final class Server {
         new GenericShuffleConsumer(source.getSchema(), scatterId, new int[] { MyriaConstants.MASTER_ID });
     DbInsert insert = new DbInsert(gather, relationKey, true, indexes);
     Map<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
-    for (Integer workerId : workersArray) {
+    for (Integer workerId : intArrayWorkers) {
       workerPlans.put(workerId, new SingleQueryPlanWithArgs(insert));
     }
     LOGGER.info("Server.ingestDataset GenericShuffleConsumer created");
