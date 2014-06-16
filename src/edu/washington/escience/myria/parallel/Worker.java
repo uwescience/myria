@@ -829,16 +829,14 @@ public final class Worker {
    * @return the profilingLogger
    * @throws DbException if there is an error initializing the profiling logger
    */
-  public ProfilingLogger getProfilingLogger() throws DbException {
-    synchronized (this) {
-      if (profilingLogger == null || !profilingLogger.isValid()) {
-        ConnectionInfo connectionInfo =
-            (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
-        if (connectionInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
-          profilingLogger = new ProfilingLogger(connectionInfo);
-        }
+  public synchronized ProfilingLogger getProfilingLogger() throws DbException {
+    if (profilingLogger == null || !profilingLogger.isValid()) {
+      profilingLogger = null;
+      ConnectionInfo connectionInfo = (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
+      if (connectionInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
+        profilingLogger = new ProfilingLogger(connectionInfo);
       }
-      return profilingLogger;
     }
+    return profilingLogger;
   }
 }
