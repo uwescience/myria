@@ -2,9 +2,6 @@
 
 "Start all Myria workers in the specified deployment."
 
-import myriadeploy
-import setup_cluster
-
 import subprocess
 import sys
 
