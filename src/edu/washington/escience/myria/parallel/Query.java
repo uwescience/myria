@@ -17,6 +17,7 @@ import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.api.encoding.QueryConstruct;
+import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
@@ -171,7 +172,7 @@ public final class Query {
       }
       return currentSubQuery;
     }
-    planQ.getFirst().instantiate(planQ, subQueryQ, server, queryId);
+    planQ.getFirst().instantiate(planQ, subQueryQ, new ConstructArgs(server, queryId));
     /*
      * The above line may have emptied planQ, mucked with subQueryQ, not sure. So just recurse to make sure we do the
      * right thing.

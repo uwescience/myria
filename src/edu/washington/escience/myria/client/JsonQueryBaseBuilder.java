@@ -48,6 +48,7 @@ import edu.washington.escience.myria.api.encoding.LocalMultiwayConsumerEncoding;
 import edu.washington.escience.myria.api.encoding.LocalMultiwayProducerEncoding;
 import edu.washington.escience.myria.api.encoding.OperatorEncoding;
 import edu.washington.escience.myria.api.encoding.PlanFragmentEncoding;
+import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryScanEncoding;
 import edu.washington.escience.myria.api.encoding.ShuffleConsumerEncoding;
@@ -77,7 +78,6 @@ import edu.washington.escience.myria.operator.network.CollectProducer;
 import edu.washington.escience.myria.operator.network.LocalMultiwayConsumer;
 import edu.washington.escience.myria.operator.network.LocalMultiwayProducer;
 import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
-import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
 
 /**
@@ -1149,7 +1149,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     }
 
     @Override
-    public IDBController construct(final Server server) throws MyriaApiException {
+    public IDBController construct(final ConstructArgs args) throws MyriaApiException {
       throw new UnsupportedOperationException();
     }
 
@@ -1178,7 +1178,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     }
 
     @Override
-    public IDBController construct(final Server server) throws MyriaApiException {
+    public IDBController construct(final ConstructArgs args) throws MyriaApiException {
       throw new UnsupportedOperationException();
     }
 

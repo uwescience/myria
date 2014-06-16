@@ -55,6 +55,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.QueryConstruct;
+import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
@@ -1016,7 +1017,7 @@ public final class Server {
     }
     if (plan instanceof JsonSubQuery) {
       /* Hack to instantiate a single-fragment query for the visualization. */
-      QueryConstruct.instantiate(((JsonSubQuery) plan).getFragments(), this);
+      QueryConstruct.instantiate(((JsonSubQuery) plan).getFragments(), new ConstructArgs(this, -1));
     }
     final long queryID = catalog.newQuery(physicalPlan);
     return submitQuery(queryID, physicalPlan, plan);

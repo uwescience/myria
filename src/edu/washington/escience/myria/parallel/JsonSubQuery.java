@@ -13,6 +13,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.api.encoding.PlanFragmentEncoding;
 import edu.washington.escience.myria.api.encoding.QueryConstruct;
+import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.operator.EOSSource;
 import edu.washington.escience.myria.operator.SinkRoot;
@@ -44,15 +45,15 @@ public final class JsonSubQuery extends QueryPlan {
   }
 
   @Override
-  public void instantiate(final LinkedList<QueryPlan> planQ, final LinkedList<SubQuery> subQueryQ, final Server server,
-      final long queryId) throws DbException {
+  public void instantiate(final LinkedList<QueryPlan> planQ, final LinkedList<SubQuery> subQueryQ,
+      final ConstructArgs args) throws DbException {
     QueryPlan task = planQ.peekFirst();
     Verify.verify(task == this, "this Fragment %s should be the first object on the queue, not %s!", this, task);
     planQ.removeFirst();
 
     Map<Integer, SubQueryPlan> allPlans;
     try {
-      allPlans = QueryConstruct.instantiate(fragments, server);
+      allPlans = QueryConstruct.instantiate(fragments, args);
     } catch (CatalogException e) {
       throw new DbException("Error instantiating JsonSubQuery", e);
     }

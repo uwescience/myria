@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.Nonnull;
 import javax.ws.rs.core.Response.Status;
 
 import org.slf4j.LoggerFactory;
@@ -61,10 +62,10 @@ public class QueryConstruct {
    * @return the physical plan
    * @throws CatalogException if there is an error instantiating the plan
    */
-  public static Map<Integer, SubQueryPlan> instantiate(List<PlanFragmentEncoding> fragments, final Server server)
+  public static Map<Integer, SubQueryPlan> instantiate(List<PlanFragmentEncoding> fragments, final ConstructArgs args)
       throws CatalogException {
     /* First, we need to know which workers run on each plan. */
-    setupWorkersForFragments(fragments, server);
+    setupWorkersForFragments(fragments, args.getServer());
     /* Next, we need to know which pipes (operators) are produced and consumed on which workers. */
     setupWorkerNetworkOperators(fragments);
 
@@ -83,7 +84,7 @@ public class QueryConstruct {
     HashMap<Integer, Operator> allOperators = new HashMap<Integer, Operator>();
     for (PlanFragmentEncoding fragment : fragments) {
       RootOperator op =
-          instantiateFragment(fragment, server, instantiatedFragments, op2OwnerFragmentMapping, allOperators);
+          instantiateFragment(fragment, args, instantiatedFragments, op2OwnerFragmentMapping, allOperators);
       for (Integer worker : fragment.workers) {
         SubQueryPlan workerPlan = plan.get(worker);
         if (workerPlan == null) {
@@ -270,7 +271,7 @@ public class QueryConstruct {
    * @param planFragment the encoded plan fragment.
    * @return the actual plan fragment.
    */
-  private static RootOperator instantiateFragment(final PlanFragmentEncoding planFragment, final Server server,
+  private static RootOperator instantiateFragment(final PlanFragmentEncoding planFragment, final ConstructArgs args,
       final HashMap<PlanFragmentEncoding, RootOperator> instantiatedFragments,
       final Map<Integer, PlanFragmentEncoding> opOwnerFragment, final Map<Integer, Operator> allOperators) {
     RootOperator instantiatedFragment = instantiatedFragments.get(planFragment);
@@ -293,7 +294,7 @@ public class QueryConstruct {
         nonIterativeConsumers.put(encoding.opId, (AbstractConsumerEncoding<?>) encoding);
       }
 
-      Operator op = encoding.construct(server);
+      Operator op = encoding.construct(args);
       /* helpful for debugging. */
       op.setOpName("Operator" + String.valueOf(encoding.opId));
       op.setOpId(encoding.opId);
@@ -323,7 +324,7 @@ public class QueryConstruct {
     }
 
     for (PlanFragmentEncoding f : dependantFragments) {
-      instantiateFragment(f, server, instantiatedFragments, opOwnerFragment, allOperators);
+      instantiateFragment(f, args, instantiatedFragments, opOwnerFragment, allOperators);
     }
 
     for (AbstractConsumerEncoding<?> c : nonIterativeConsumers.values()) {
@@ -464,5 +465,23 @@ public class QueryConstruct {
 
     // Done!
     return new JsonSubQuery(fragments.build());
+  }
+
+  public final static class ConstructArgs {
+    private final Server server;
+    private final long queryId;
+
+    public ConstructArgs(@Nonnull final Server server, final long queryId) {
+      this.server = Preconditions.checkNotNull(server, "server");
+      this.queryId = queryId;
+    }
+
+    public long getQueryId() {
+      return queryId;
+    }
+
+    public Server getServer() {
+      return server;
+    }
   }
 }

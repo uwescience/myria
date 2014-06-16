@@ -9,6 +9,7 @@ import com.google.common.base.Verify;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.api.MyriaApiException;
+import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.parallel.Server;
@@ -21,8 +22,9 @@ public class TableScanEncoding extends LeafOperatorEncoding<DbQueryScan> {
   public Boolean temporary;
 
   @Override
-  public DbQueryScan construct(final Server server) {
+  public DbQueryScan construct(ConstructArgs args) {
     Schema schema;
+    Server server = args.getServer();
     Verify.verifyNotNull(temporary, "temporary");
     if (temporary) {
       schema = server.getTempSchema(relationKey);

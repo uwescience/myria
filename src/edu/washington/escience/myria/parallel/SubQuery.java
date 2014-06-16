@@ -15,6 +15,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 
 import edu.washington.escience.myria.RelationKey;
+import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
@@ -175,8 +176,8 @@ public final class SubQuery extends QueryPlan {
   }
 
   @Override
-  public void instantiate(final LinkedList<QueryPlan> planQ, final LinkedList<SubQuery> subQueryQ, final Server server,
-      final long queryId) {
+  public void instantiate(final LinkedList<QueryPlan> planQ, final LinkedList<SubQuery> subQueryQ,
+      final ConstructArgs args) {
     QueryPlan task = planQ.peekFirst();
     Verify.verify(task == this, "this %s should be the first object on the queue, not %s!", this, task);
     planQ.removeFirst();
