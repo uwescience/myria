@@ -333,4 +333,18 @@ public class ProfilingLogger {
       flushSentBatch();
     }
   }
+
+  /**
+   * Returns {@code true} if the current JDBC connection is active.
+   * 
+   * @return {@code true} if the current JDBC connection is active.
+   */
+  public boolean isValid() {
+    try {
+      return connection.isValid(1);
+    } catch (SQLException e) {
+      LOGGER.warn("Error checking connection validity", e);
+      return false;
+    }
+  }
 }

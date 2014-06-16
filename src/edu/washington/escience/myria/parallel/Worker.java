@@ -17,6 +17,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
+import javax.annotation.concurrent.GuardedBy;
+
 import org.apache.commons.io.FilenameUtils;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelFuture;
@@ -337,6 +339,7 @@ public final class Worker {
   /**
    * The profiling logger for this worker.
    */
+  @GuardedBy("this")
   private ProfilingLogger profilingLogger;
 
   /**
@@ -798,11 +801,6 @@ public final class Worker {
         MyriaConstants.WORKER_SHUTDOWN_CHECKER_INTERVAL, TimeUnit.MILLISECONDS);
     scheduledTaskExecutor.scheduleAtFixedRate(new HeartbeatReporter(), 0, MyriaConstants.HEARTBEAT_INTERVAL,
         TimeUnit.MILLISECONDS);
-
-    ConnectionInfo connectionInfo = (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
-    if (connectionInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
-      profilingLogger = new ProfilingLogger(connectionInfo);
-    }
   }
 
   /**
@@ -829,8 +827,16 @@ public final class Worker {
 
   /**
    * @return the profilingLogger
+   * @throws DbException if there is an error initializing the profiling logger
    */
-  public ProfilingLogger getProfilingLogger() {
+  public synchronized ProfilingLogger getProfilingLogger() throws DbException {
+    if (profilingLogger == null || !profilingLogger.isValid()) {
+      profilingLogger = null;
+      ConnectionInfo connectionInfo = (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
+      if (connectionInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
+        profilingLogger = new ProfilingLogger(connectionInfo);
+      }
+    }
     return profilingLogger;
   }
 }
