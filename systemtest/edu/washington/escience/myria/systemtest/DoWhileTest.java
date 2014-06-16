@@ -24,6 +24,7 @@ import edu.washington.escience.myria.expression.TimesExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.DbInsert;
+import edu.washington.escience.myria.operator.DbInsertTemp;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.EOSSource;
 import edu.washington.escience.myria.operator.RootOperator;
@@ -90,7 +91,7 @@ public class DoWhileTest extends SystemTestBase {
     Expression filterExpression =
         new Expression("f", new LessThanExpression(new VariableExpression(0), new ConstantExpression(5)));
     Apply maxXapply = new Apply(maxX, ImmutableList.of(filterExpression));
-    DbInsert writeCondition = new DbInsert(maxXapply, condition, true);
+    DbInsertTemp writeCondition = new DbInsertTemp(maxXapply, condition, null, true, null);
     // The condition
     SubQuery updateCondition = wrapForWorker1(writeCondition);
 

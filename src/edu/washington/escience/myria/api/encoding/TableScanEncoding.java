@@ -27,7 +27,7 @@ public class TableScanEncoding extends LeafOperatorEncoding<DbQueryScan> {
     Server server = args.getServer();
     Verify.verifyNotNull(temporary, "temporary");
     if (temporary) {
-      schema = server.getTempSchema(relationKey);
+      schema = server.getTempSchema(args.getQueryId(), relationKey);
     } else {
       try {
         schema = server.getSchema(relationKey);

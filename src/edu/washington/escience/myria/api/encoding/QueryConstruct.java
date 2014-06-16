@@ -65,7 +65,7 @@ public class QueryConstruct {
   public static Map<Integer, SubQueryPlan> instantiate(List<PlanFragmentEncoding> fragments, final ConstructArgs args)
       throws CatalogException {
     /* First, we need to know which workers run on each plan. */
-    setupWorkersForFragments(fragments, args.getServer());
+    setupWorkersForFragments(fragments, args);
     /* Next, we need to know which pipes (operators) are produced and consumed on which workers. */
     setupWorkerNetworkOperators(fragments);
 
@@ -117,8 +117,9 @@ public class QueryConstruct {
    * 
    * @throws CatalogException if there is an error in the Catalog.
    */
-  private static void setupWorkersForFragments(List<PlanFragmentEncoding> fragments, final Server server)
+  private static void setupWorkersForFragments(List<PlanFragmentEncoding> fragments, final ConstructArgs args)
       throws CatalogException {
+    Server server = args.getServer();
     for (PlanFragmentEncoding fragment : fragments) {
       if (fragment.workers != null && fragment.workers.size() > 0) {
         /* The workers are set in the plan. */
@@ -134,7 +135,7 @@ public class QueryConstruct {
           TableScanEncoding scan = ((TableScanEncoding) operator);
           Set<Integer> scanWorkers;
           if (scan.temporary) {
-            scanWorkers = server.getWorkersForTempRelation(scan.relationKey);
+            scanWorkers = server.getWorkersForTempRelation(args.queryId, scan.relationKey);
           } else {
             scanWorkers = server.getWorkersForRelation(scan.relationKey, scan.storedRelationId);
           }

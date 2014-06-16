@@ -2,12 +2,15 @@ package edu.washington.escience.myria.parallel;
 
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.annotation.Nonnull;
 import javax.annotation.concurrent.GuardedBy;
 
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
@@ -16,11 +19,14 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.RelationKey;
+import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.api.encoding.QueryConstruct;
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
+import edu.washington.escience.myria.coordinator.catalog.CatalogException;
+import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
 import edu.washington.escience.myria.util.ErrorUtils;
 
 /**
@@ -62,6 +68,8 @@ public final class Query {
   private final FTMODE ftMode;
   /** Global variables that are part of this query. */
   private final ConcurrentHashMap<String, Object> globals;
+  /** Temporary relations created during the execution of this query. */
+  private final ConcurrentHashMap<RelationKey, RelationWriteMetadata> tempRelations;
 
   /**
    * Construct a new {@link Query} object for this query.
@@ -88,6 +96,7 @@ public final class Query {
     message = null;
     future = QueryFuture.create(queryId);
     globals = new ConcurrentHashMap<>();
+    tempRelations = new ConcurrentHashMap<>();
   }
 
   /**
@@ -340,5 +349,99 @@ public final class Query {
       server.killSubQuery(currentSubQuery.getSubQueryId());
       currentSubQuery = null;
     }
+  }
+
+  /**
+   * Determines and sanity-checks the set of relations created by the currently running subquery. Assuming the checks
+   * pass, creates a {@link DatasetMetadataUpdater} future for this subquery and adds it as a pre-listener to the
+   * specified {@code future}.
+   * 
+   * @param catalog the Catalog in which the relation metadata will be updated
+   * @param future the future on the subquery
+   * @throws DbException if there is an error
+   */
+  public synchronized void addDatasetMetadataUpdater(final MasterCatalog catalog, final LocalSubQueryFuture future)
+      throws DbException {
+    SubQuery subQuery = currentSubQuery;
+    final Map<RelationKey, RelationWriteMetadata> relationsCreated = subQuery.getRelationWriteMetadata();
+    if (relationsCreated.size() == 0) {
+      return;
+    }
+
+    /* Verify that the schemas for any temp relation we're not overwriting match the existing schema. */
+    for (RelationWriteMetadata meta : relationsCreated.values()) {
+      if (meta.isOverwrite()) {
+        if (meta.isTemporary()) {
+          tempRelations.put(meta.getRelationKey(), meta);
+        }
+        continue;
+      }
+
+      RelationKey relation = meta.getRelationKey();
+      Schema oldSchema;
+      String relationType;
+      if (meta.isTemporary()) {
+        relationType = "temporary";
+        oldSchema = tempRelations.get(relation).getSchema();
+      } else {
+        relationType = "persistent";
+        try {
+          oldSchema = server.getSchema(relation);
+        } catch (CatalogException e) {
+          throw new DbException(Joiner.on(' ').join("Error checking catalog for schema of", relation,
+              "during subquery", subQuery.getSubQueryId()), e);
+        }
+      }
+      if (oldSchema != null) {
+        Preconditions.checkArgument(oldSchema.equals(meta.getSchema()),
+            "Cannot append to existing %s relation %s (schema: %s) with new schema (%s)", relationType, relation,
+            oldSchema, meta.getSchema());
+      }
+    }
+
+    Map<RelationKey, RelationWriteMetadata> persistentRelations = subQuery.getPersistentRelationWriteMetadata();
+    if (persistentRelations.size() == 0) {
+      return;
+    }
+    /*
+     * Add the DatasetMetadataUpdater, which will update the catalog with the set of workers created when the query
+     * succeeds. Note that we only use persistent relations here.
+     */
+    DatasetMetadataUpdater dsmd = new DatasetMetadataUpdater(catalog, persistentRelations, subQuery.getSubQueryId());
+    future.addPreListener(dsmd);
+  }
+
+  /**
+   * Returns the schema for the specified temp relation.
+   * 
+   * @param relationKey the desired temp relation
+   * @return the schema for the specified temp relation
+   */
+  public Schema getTempSchema(@Nonnull final RelationKey relationKey) {
+    return getMetadata(relationKey).getSchema();
+  }
+
+  /**
+   * Returns the workers storing the specified temp relation.
+   * 
+   * @param relationKey the desired temp relation
+   * @return the set of workers storing the specified temp relation
+   */
+  public Set<Integer> getWorkersForTempRelation(@Nonnull final RelationKey relationKey) {
+    return getMetadata(relationKey).getWorkers();
+  }
+
+  /**
+   * Get the {@link RelationWriteMetadata} for the specified temp relation.
+   * 
+   * @param relationKey the key of the temp relation
+   * @return the {@link RelationWriteMetadata} for the specified temp relation
+   * @throws IllegalArgumentException if there is no such temp relation
+   */
+  private RelationWriteMetadata getMetadata(@Nonnull final RelationKey relationKey) {
+    Preconditions.checkNotNull(relationKey, "relationKey");
+    RelationWriteMetadata meta = tempRelations.get(relationKey);
+    Preconditions.checkArgument(meta != null, "Query #%s, no temp relation with key %s found", queryId, relationKey);
+    return meta;
   }
 }

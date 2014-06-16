@@ -241,11 +241,6 @@ public final class Server {
   private final ConcurrentHashMap<String, Object> execEnvVars;
 
   /**
-   * An in-memory catalog to map temporary relations to their metadata.
-   */
-  private final ConcurrentHashMap<RelationKey, RelationWriteMetadata> tempRelations;
-
-  /**
    * All message queue.
    * 
    * @TODO remove this queue as in {@link Worker}s.
@@ -453,8 +448,6 @@ public final class Server {
     aliveWorkers = new ConcurrentHashMap<>();
     scheduledWorkers = new ConcurrentHashMap<>();
     scheduledWorkersTime = new ConcurrentHashMap<>();
-
-    tempRelations = new ConcurrentHashMap<>();
 
     removeWorkerAckReceived = new ConcurrentHashMap<>();
     addWorkerAckReceived = new ConcurrentHashMap<>();
@@ -925,9 +918,7 @@ public final class Server {
    * @param queryID the queryID.
    */
   public void killQuery(final long queryID) {
-    Query query = activeQueries.get(queryID);
-    Preconditions.checkNotNull(query, "Query %s is not running", queryID);
-    query.kill();
+    getQuery(queryID).kill();
   }
 
   /**
@@ -1090,64 +1081,6 @@ public final class Server {
   }
 
   /**
-   * Determines and sanity-checks the set of relations created by this subquery. Assuming the checks pass, creates a
-   * {@link DatasetMetadataUpdater} future for this subquery and adds it as a pre-listener to the specified
-   * {@code future}.
-   * 
-   * @param subQuery the subquery to be executed
-   * @param future the future on the subquery
-   * @throws DbException if there is an error
-   */
-  private void addDatasetMetadataUpdater(final SubQuery subQuery, final LocalSubQueryFuture future) throws DbException {
-    final Map<RelationKey, RelationWriteMetadata> relationsCreated = subQuery.getRelationWriteMetadata();
-    if (relationsCreated.size() == 0) {
-      return;
-    }
-
-    /* Verify that the schemas for any temp relation we're not overwriting match the existing schema. */
-    for (RelationWriteMetadata meta : relationsCreated.values()) {
-      if (meta.isOverwrite()) {
-        if (meta.isTemporary()) {
-          tempRelations.put(meta.getRelationKey(), meta);
-        }
-        continue;
-      }
-
-      RelationKey relation = meta.getRelationKey();
-      Schema oldSchema;
-      String relationType;
-      if (meta.isTemporary()) {
-        relationType = "temporary";
-        oldSchema = getTempSchema(relation);
-      } else {
-        relationType = "persistent";
-        try {
-          oldSchema = getSchema(relation);
-        } catch (CatalogException e) {
-          throw new DbException(Joiner.on(' ').join("Error checking catalog for schema of", relation,
-              "during subquery", subQuery.getSubQueryId()), e);
-        }
-      }
-      if (oldSchema != null) {
-        Preconditions.checkArgument(oldSchema.equals(meta.getSchema()),
-            "Cannot append to existing %s relation %s (schema: %s) with new schema (%s)", relationType, relation,
-            oldSchema, meta.getSchema());
-      }
-    }
-
-    Map<RelationKey, RelationWriteMetadata> persistentRelations = subQuery.getPersistentRelationWriteMetadata();
-    if (persistentRelations.size() == 0) {
-      return;
-    }
-    /*
-     * Add the DatasetMetadataUpdater, which will update the catalog with the set of workers created when the query
-     * succeeds. Note that we only use persistent relations here.
-     */
-    DatasetMetadataUpdater dsmd = new DatasetMetadataUpdater(catalog, persistentRelations, subQuery.getSubQueryId());
-    future.addPreListener(dsmd);
-  }
-
-  /**
    * Submit the next subquery in the query for execution, and return its future.
    * 
    * @param queryState the query containing the subquery to be executed
@@ -1158,7 +1091,6 @@ public final class Server {
     final SubQuery subQuery =
         Verify.verifyNotNull(queryState.getCurrentSubQuery(), "query state should have a current subquery");
     final SubQueryId subQueryId = subQuery.getSubQueryId();
-
     try {
       final MasterSubQuery mqp = new MasterSubQuery(subQuery, this);
       executingSubQueries.put(subQueryId, mqp);
@@ -1166,13 +1098,12 @@ public final class Server {
       final LocalSubQueryFuture queryExecutionFuture = mqp.getExecutionFuture();
 
       /* Add the future to update the metadata about created relations, if there are any. */
-      addDatasetMetadataUpdater(subQuery, queryExecutionFuture);
+      queryState.addDatasetMetadataUpdater(catalog, queryExecutionFuture);
 
       queryExecutionFuture.addListener(new LocalSubQueryFutureListener() {
         @Override
         public void operationComplete(final LocalSubQueryFuture future) throws Exception {
 
-          Query query = activeQueries.get(subQueryId.getQueryId());
           finishSubQuery(subQueryId);
 
           final Long elapsedNanos = mqp.getExecutionStatistics().getQueryExecutionElapse();
@@ -1180,17 +1111,17 @@ public final class Server {
             LOGGER.info("Subquery #{} succeeded. Time elapsed: {}.", subQueryId, DateTimeUtils
                 .nanoElapseToHumanReadable(elapsedNanos));
             // TODO success management.
-            advanceQuery(query);
+            advanceQuery(queryState);
           } else {
             Throwable cause = future.getCause();
             LOGGER.info("Subquery #{} failed. Time elapsed: {}. Failure cause is {}.", subQueryId, DateTimeUtils
                 .nanoElapseToHumanReadable(elapsedNanos), cause);
             if (cause instanceof QueryKilledException) {
-              query.markKilled();
+              queryState.markKilled();
             } else {
-              query.markFailed(cause);
+              queryState.markFailed(cause);
             }
-            finishQuery(query);
+            finishQuery(queryState);
           }
         }
       });
@@ -1381,20 +1312,6 @@ public final class Server {
   }
 
   /**
-   * Get the Schema of a temporary relation.
-   * 
-   * @param relationKey the key of the desired temporary relation.
-   * @return the schema of the specified relation, or null if not found.
-   */
-  public Schema getTempSchema(final RelationKey relationKey) {
-    RelationWriteMetadata meta = tempRelations.get(relationKey);
-    if (meta == null) {
-      return null;
-    }
-    return meta.getSchema();
-  }
-
-  /**
    * @param relationKey the key of the desired relation.
    * @param storedRelationId indicates which copy of the desired relation we want to scan.
    * @return the list of workers that store the specified relation.
@@ -1406,14 +1323,12 @@ public final class Server {
   }
 
   /**
-   * @param relationKey the key of the desired temporary relation.
+   * @param queryId the query that owns the desired temp relation.
+   * @param relationKey the key of the desired temp relation.
    * @return the list of workers that store the specified relation.
    */
-  public Set<Integer> getWorkersForTempRelation(final RelationKey relationKey) {
-    Preconditions.checkNotNull(relationKey, "relationKey");
-    RelationWriteMetadata meta = tempRelations.get(relationKey);
-    Preconditions.checkNotNull(meta, "RelationWriteMetadata for relation key %s", relationKey);
-    return meta.getWorkers();
+  public Set<Integer> getWorkersForTempRelation(@Nonnull final Long queryId, @Nonnull final RelationKey relationKey) {
+    return getQuery(queryId).getWorkersForTempRelation(relationKey);
   }
 
   /**
@@ -2038,5 +1953,32 @@ public final class Server {
     Query query = activeQueries.get(queryId);
     Preconditions.checkArgument(query != null, "query %s is not active to get the value of key %s", queryId, key);
     return query.getGlobal(key);
+  }
+
+  /**
+   * Return the schema of the specified temp relation in the specified query.
+   * 
+   * @param queryId the query that owns the temp relation
+   * @param relationKey the name of the temporary relation
+   * @return the schema of the specified temp relation in the specified query
+   */
+  public Schema getTempSchema(@Nonnull final Long queryId, @Nonnull final RelationKey relationKey) {
+    Query q = activeQueries.get(queryId);
+    Preconditions.checkNotNull(q, "query %s is not running", queryId);
+    return q.getTempSchema(relationKey);
+  }
+
+  /**
+   * Get the query with the specified ID, ensuring that it is active.
+   * 
+   * @param queryId the id of the query to return.
+   * @return the query with the specified ID, ensuring that it is active
+   * @throws IllegalArgumentException if there is no active query with the given ID
+   */
+  @Nonnull
+  private Query getQuery(@Nonnull final Long queryId) {
+    Query query = activeQueries.get(Preconditions.checkNotNull(queryId, "queryId"));
+    Preconditions.checkArgument(query != null, "Query #%s is not active", queryId);
+    return query;
   }
 }
