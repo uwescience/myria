@@ -26,6 +26,7 @@ import edu.washington.escience.myria.parallel.ipc.FlowControlBagInputBuffer;
 import edu.washington.escience.myria.parallel.ipc.IPCEvent;
 import edu.washington.escience.myria.parallel.ipc.IPCEventListener;
 import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
+import edu.washington.escience.myria.profiling.ProfilingLogger;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.util.DateTimeUtils;
 
@@ -110,7 +111,7 @@ public class WorkerSubQuery extends LocalSubQuery {
         }
         if (isProfilingMode()) {
           try {
-            getWorker().getProfilingLogger().flush(getSubQueryId().getQueryId());
+            getWorker().getProfilingLogger().flush();
           } catch (DbException e) {
             LOGGER.error("Error flushing profiling logger", e);
           }

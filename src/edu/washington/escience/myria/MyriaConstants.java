@@ -233,21 +233,9 @@ public final class MyriaConstants {
   public static final int MAX_ACTIVE_QUERIES = 5;
 
   /**
-   * The relation that stores profiling information while it is being written.
-   */
-  public static final RelationKey PROFILING_RELATION_TMP = new RelationKey("public", "tmp", "Profiling");
-
-  /**
    * The relation that stores profiling information.
    */
   public static final RelationKey PROFILING_RELATION = new RelationKey("public", "logs", "Profiling");
-
-  /**
-   * The schema of the {@link #PROFILING_RELATION_TMP}.
-   */
-  public static final Schema PROFILING_SCHEMA_TMP = Schema.ofFields(Type.LONG_TYPE, Type.INT_TYPE, Type.INT_TYPE,
-      Type.LONG_TYPE, Type.LONG_TYPE, Type.STRING_TYPE, Type.INT_TYPE, "queryId", "fragmentId", "opId", "nanoTime",
-      "numTuples", "eventType", "traceId");
 
   /**
    * The schema of the {@link #PROFILING_RELATION}.

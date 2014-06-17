@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -15,8 +14,8 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.parallel.LocalFragment;
 import edu.washington.escience.myria.parallel.LocalFragmentResourceManager;
 import edu.washington.escience.myria.parallel.LocalSubQuery;
-import edu.washington.escience.myria.parallel.ProfilingLogger;
 import edu.washington.escience.myria.parallel.WorkerSubQuery;
+import edu.washington.escience.myria.profiling.ProfilingLogger;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
@@ -91,12 +90,6 @@ public abstract class Operator implements Serializable {
    * Cache for profiling mode.
    */
   private Boolean profilingMode;
-
-  /**
-   * A counter that tracks how many times {@link #nextReady()} has been called, thus helping to join the call and return
-   * log entries that belong to the same call.
-   */
-  private final AtomicLong traceId = new AtomicLong();
 
   /**
    * @return the profilingLogger
@@ -325,10 +318,9 @@ public abstract class Operator implements Serializable {
       return null;
     }
 
+    long startTime = -1;
     if (isProfilingMode()) {
-      // use trace id to track corresponding events
-      long trace = traceId.incrementAndGet();
-      profilingLogger.recordEvent(this, -1, "call", trace);
+      startTime = profilingLogger.getTime(this);
     }
 
     TupleBatch result = null;
@@ -347,7 +339,7 @@ public abstract class Operator implements Serializable {
       if (result != null) {
         numberOfTupleReturned = result.numTuples();
       }
-      profilingLogger.recordEvent(this, numberOfTupleReturned, "return", traceId.get());
+      profilingLogger.recordEvent(this, numberOfTupleReturned, startTime);
     }
     if (result == null) {
       checkEOSAndEOI();
@@ -421,13 +413,6 @@ public abstract class Operator implements Serializable {
    */
   public final void setEOI(final boolean eoi) {
     this.eoi = eoi;
-    if (isProfilingMode()) {
-      try {
-        profilingLogger.recordEvent(this, -1, "eoi", traceId.get());
-      } catch (Exception e) {
-        LOGGER.error("Failed to write profiling data:", e);
-      }
-    }
   }
 
   /**
