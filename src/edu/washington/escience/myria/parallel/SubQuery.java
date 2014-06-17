@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.parallel;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Objects;
@@ -9,13 +10,12 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
 
 import edu.washington.escience.myria.RelationKey;
-import edu.washington.escience.myria.operator.DbReader;
-import edu.washington.escience.myria.operator.DbWriter;
-import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.operator.RootOperator;
+import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * Represents a single {@link SubQuery} in a query.
@@ -30,7 +30,7 @@ public final class SubQuery extends QueryPlan {
   /** The set of relations that this {@link SubQuery} reads. */
   private final Set<RelationKey> readRelations;
   /** The set of relations that this {@link SubQuery} writes. */
-  private final Set<RelationKey> writeRelations;
+  private final ImmutableMap<RelationKey, RelationWriteMetadata> writeRelations;
   /** The execution statistics about this {@link SubQuery}. */
   private final ExecutionStatistics executionStats;
 
@@ -58,14 +58,16 @@ public final class SubQuery extends QueryPlan {
     this.workerPlans = Objects.requireNonNull(workerPlans, "workerPlans");
     executionStats = new ExecutionStatistics();
 
-    ImmutableSet.Builder<RelationKey> read = ImmutableSet.builder();
-    ImmutableSet.Builder<RelationKey> write = ImmutableSet.builder();
-    computeReadWriteSets(read, write, masterPlan);
+    ImmutableSet.Builder<RelationKey> read = ImmutableSet.<RelationKey> builder().addAll(masterPlan.readSet());
+    Map<RelationKey, RelationWriteMetadata> write = Maps.newHashMap();
+    read.addAll(masterPlan.readSet());
+    write.putAll(masterPlan.writeSet());
     for (SubQueryPlan plan : workerPlans.values()) {
-      computeReadWriteSets(read, write, plan);
+      read.addAll(plan.readSet());
+      MyriaUtils.putNewVerifyOld(plan.writeSet(), write);
     }
     readRelations = read.build();
-    writeRelations = write.build();
+    writeRelations = ImmutableMap.copyOf(write);
   }
 
   /**
@@ -96,42 +98,6 @@ public final class SubQuery extends QueryPlan {
   }
 
   /**
-   * A helper to walk various plan fragments and compute what relations they read and write. This is for understanding
-   * query contention.
-   * 
-   * @param read a builder for the set of relations that are read
-   * @param write a builder for the set of relations that are written
-   * @param plan a single worker/master query plan
-   */
-  private static void computeReadWriteSets(final ImmutableSet.Builder<RelationKey> read,
-      final ImmutableSet.Builder<RelationKey> write, final SubQueryPlan plan) {
-    for (RootOperator op : plan.getRootOps()) {
-      computeReadWriteSets(read, write, op);
-    }
-  }
-
-  /**
-   * A helper to walk various operators and compute what relations they read and write. This is for understanding query
-   * contention.
-   * 
-   * @param read a builder for the set of relations that are read
-   * @param write a builder for the set of relations that are written
-   * @param op a single operator, which will be recursively traversed
-   */
-  private static void computeReadWriteSets(final ImmutableSet.Builder<RelationKey> read,
-      final ImmutableSet.Builder<RelationKey> write, final Operator op) {
-    if (op instanceof DbWriter) {
-      write.addAll(((DbWriter) op).writeSet());
-    } else if (op instanceof DbReader) {
-      read.addAll(((DbReader) op).readSet());
-    }
-
-    for (Operator child : op.getChildren()) {
-      computeReadWriteSets(read, write, child);
-    }
-  }
-
-  /**
    * Returns the set of relations that are read when executing this {@link SubQuery}.
    * 
    * @return the set of relations that are read when executing this {@link SubQuery}
@@ -145,7 +111,7 @@ public final class SubQuery extends QueryPlan {
    * 
    * @return the set of relations that are written when executing this {@link SubQuery}
    */
-  public Set<RelationKey> getWriteRelations() {
+  public Map<RelationKey, RelationWriteMetadata> getWriteRelations() {
     return writeRelations;
   }
 
@@ -203,15 +169,62 @@ public final class SubQuery extends QueryPlan {
    * @throws IllegalStateException if the {@link SubQuery}'s id has already been set
    */
   public void setSubQueryId(final SubQueryId subQueryId) {
-    Preconditions.checkState(this.subQueryId == null, "subquery id already set");
+    Preconditions.checkState(this.subQueryId == null, "subquery id already set to %s, not changing it to %s",
+        this.subQueryId, subQueryId);
     this.subQueryId = subQueryId;
   }
 
   @Override
-  public void instantiate(final LinkedList<QueryPlan> planQ, final LinkedList<SubQuery> subQueryQ, final Server server) {
+  public void instantiate(final LinkedList<QueryPlan> planQ, final LinkedList<SubQuery> subQueryQ, final Server server,
+      final long queryId) {
     QueryPlan task = planQ.peekFirst();
     Verify.verify(task == this, "this %s should be the first object on the queue, not %s!", this, task);
     planQ.removeFirst();
     subQueryQ.addFirst(this);
+  }
+
+  /**
+   * Returns a mapping showing what relations this subquery will write, and all the associated
+   * {@link RelationWriteMetadata} about these relations.
+   * 
+   * @return a mapping showing what relations are written and the corresponding {@link RelationWriteMetadata}.
+   */
+  public Map<RelationKey, RelationWriteMetadata> getRelationWriteMetadata() {
+    Map<RelationKey, RelationWriteMetadata> ret = new HashMap<>();
+
+    /* Loop through each subquery plan, finding what relations it writes. */
+    for (Map.Entry<Integer, SubQueryPlan> planEntry : workerPlans.entrySet()) {
+      Integer workerId = planEntry.getKey();
+      SubQueryPlan plan = planEntry.getValue();
+      Map<RelationKey, RelationWriteMetadata> writes = plan.writeSet();
+
+      for (Map.Entry<RelationKey, RelationWriteMetadata> writeEntry : writes.entrySet()) {
+        RelationKey relation = writeEntry.getKey();
+        RelationWriteMetadata meta = ret.get(relation);
+        RelationWriteMetadata metadata = writeEntry.getValue();
+        if (meta == null) {
+          meta = metadata;
+          ret.put(relation, meta);
+        } else {
+          /* We have an entry for this relation. Make sure that schema and overwrite match. */
+          Preconditions.checkArgument(meta.getOverwrite() == metadata.getOverwrite(),
+              "cannot mix overwriting and appending to %s in the same subquery %s", relation, getSubQueryId());
+          Preconditions.checkArgument(meta.getSchema() == metadata.getSchema(),
+              "cannot write to %s with two different Schemas %s and %s in the same subquery %s", relation, meta
+                  .getSchema(), metadata.getSchema(), getSubQueryId());
+        }
+        meta.addWorker(workerId);
+      }
+    }
+    return ret;
+  }
+
+  /**
+   * Resets this SubQuery so that it can be issued again. Needed for DoWhile.
+   */
+  @Override
+  public void reset() {
+    subQueryId = null;
+    executionStats.reset();
   }
 }

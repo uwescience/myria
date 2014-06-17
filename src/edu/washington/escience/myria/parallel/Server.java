@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.jboss.netty.channel.ChannelFactory;
@@ -583,7 +584,7 @@ public final class Server {
             if (mqp.getFTMode().equals(FTMODE.abandon)) {
               mqp.getMissingWorkers().add(workerId);
               mqp.updateProducerChannels(workerId, false);
-              mqp.triggerFragmentEosEoiCheck();
+              mqp.triggerFragmentEosEoiChecks();
             } else if (mqp.getFTMode().equals(FTMODE.rejoin)) {
               mqp.getMissingWorkers().add(workerId);
               mqp.updateProducerChannels(workerId, false);
@@ -879,10 +880,9 @@ public final class Server {
     messageProcessingExecutor.submit(new MessageProcessor());
     LOGGER.info("Server started on {}", masterSocketInfo);
 
-    if (getSchema(MyriaConstants.PROFILING_RELATION_TMP) == null
+    if (getSchema(MyriaConstants.PROFILING_RELATION) == null
         && getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
       final Set<Integer> workerIds = workers.keySet();
-      importDataset(MyriaConstants.PROFILING_RELATION_TMP, MyriaConstants.PROFILING_SCHEMA_TMP, workerIds);
       importDataset(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA, workerIds);
       importDataset(MyriaConstants.SENT_RELATION, MyriaConstants.SENT_SCHEMA, workerIds);
     }
@@ -891,7 +891,7 @@ public final class Server {
   /**
    * @return the dbms from {@link #execEnvVars}.
    */
-  private String getDBMS() {
+  public String getDBMS() {
     return (String) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM);
   }
 
@@ -1036,7 +1036,18 @@ public final class Server {
   private LocalSubQueryFuture advanceQuery(final Query queryState) throws DbException {
     Verify.verify(queryState.getCurrentSubQuery() == null, "expected queryState current task is null");
 
-    SubQuery task = queryState.nextSubQuery();
+    SubQuery task;
+    try {
+      task = queryState.nextSubQuery();
+    } catch (Throwable t) {
+      queryState.markFailed(t);
+      try {
+        finishQuery(queryState);
+      } catch (CatalogException e) {
+        t.addSuppressed(e);
+      }
+      throw t;
+    }
     if (task == null) {
       queryState.markSuccess();
       try {
@@ -1064,6 +1075,45 @@ public final class Server {
   }
 
   /**
+   * Determines and sanity-checks the set of relations created by this subquery. Assuming the checks pass, creates a
+   * {@link DatasetMetadataUpdater} future for this subquery and adds it as a pre-listener to the specified
+   * {@code future}.
+   * 
+   * @param subQuery the subquery to be executed
+   * @param future the future on the subquery
+   * @throws DbException if there is an error
+   */
+  private void addDatasetMetadataUpdater(final SubQuery subQuery, final LocalSubQueryFuture future) throws DbException {
+    final Map<RelationKey, RelationWriteMetadata> relationsCreated = subQuery.getRelationWriteMetadata();
+    if (relationsCreated.size() == 0) {
+      return;
+    }
+
+    for (RelationWriteMetadata meta : relationsCreated.values()) {
+      if (!meta.getOverwrite()) {
+        try {
+          Schema oldSchema = catalog.getSchema(meta.getRelationKey());
+          if (oldSchema != null) {
+            Preconditions.checkArgument(oldSchema.equals(meta.getSchema()),
+                "Cannot append to relation %s (schema: %s) with new schema (%s)", meta.getRelationKey(), oldSchema,
+                meta.getSchema());
+          }
+        } catch (CatalogException e) {
+          throw new DbException(Joiner.on(' ').join("Error checking catalog for schema of", meta.getRelationKey(),
+              "during subquery", subQuery.getSubQueryId()), e);
+        }
+      }
+    }
+
+    /*
+     * Add the DatasetMetadataUpdater, which will update the catalog with the set of workers created when the query
+     * succeeds.
+     */
+    DatasetMetadataUpdater dsmd = new DatasetMetadataUpdater(catalog, relationsCreated, subQuery.getSubQueryId());
+    future.addPreListener(dsmd);
+  }
+
+  /**
    * Submit the next subquery in the query for execution, and return its future.
    * 
    * @param queryState the query containing the subquery to be executed
@@ -1081,17 +1131,8 @@ public final class Server {
 
       final LocalSubQueryFuture queryExecutionFuture = mqp.getExecutionFuture();
 
-      /*
-       * Add the DatasetMetadataUpdater, which will update the catalog with the set of workers created when the query
-       * succeeds.
-       */
-      try {
-        DatasetMetadataUpdater dsmd =
-            new DatasetMetadataUpdater(catalog, mqp.getWorkerPlans(), subQueryId.getQueryId());
-        queryExecutionFuture.addPreListener(dsmd);
-      } catch (CatalogException e) {
-        throw new DbException("setting up the DatasetMetadataUpdater for subquery " + subQueryId, e);
-      }
+      /* Add the future to update the metadata about created relations, if there are any. */
+      addDatasetMetadataUpdater(subQuery, queryExecutionFuture);
 
       queryExecutionFuture.addListener(new LocalSubQueryFutureListener() {
         @Override
@@ -1100,7 +1141,7 @@ public final class Server {
           Query query = activeQueries.get(subQueryId.getQueryId());
           finishSubQuery(subQueryId);
 
-          final long elapsedNanos = mqp.getExecutionStatistics().getQueryExecutionElapse();
+          final Long elapsedNanos = mqp.getExecutionStatistics().getQueryExecutionElapse();
           if (future.isSuccess()) {
             LOGGER.info("Subquery #{} succeeded. Time elapsed: {}.", subQueryId, DateTimeUtils
                 .nanoElapseToHumanReadable(elapsedNanos));
@@ -1124,7 +1165,9 @@ public final class Server {
         @Override
         public void operationComplete(final LocalSubQueryFuture future) throws Exception {
           mqp.init();
-          activeQueries.get(subQueryId.getQueryId()).markStart();
+          if (subQueryId.getSubqueryId() == 0) {
+            activeQueries.get(subQueryId.getQueryId()).markStart();
+          }
           mqp.startExecution();
           Server.this.startWorkerQuery(future.getLocalSubQuery().getSubQueryId());
         }
@@ -1241,18 +1284,13 @@ public final class Server {
     } catch (CatalogException e) {
       throw new DbException("Error submitting query", e);
     }
-    Query queryState;
     try {
-      queryState = qf.get();
+      qf.get();
     } catch (ExecutionException e) {
       throw new DbException("Error executing query", e.getCause());
     }
 
-    /* TODO(dhalperi) -- figure out how to populate the numTuples column. */
-    DatasetStatus status =
-        new DatasetStatus(relationKey, source.getSchema(), -1, queryState.getQueryId(), queryState.getEndTime());
-
-    return status;
+    return getDatasetStatus(relationKey);
   }
 
   /**
@@ -1900,5 +1938,50 @@ public final class Server {
         "query %s did not succeed (%s)", queryId, queryStatus.status);
     Preconditions.checkArgument(queryStatus.profilingMode, "query %s was not run with profiling enabled", queryId);
     return queryStatus;
+  }
+
+  /**
+   * Update the {@link MasterCatalog} so that the specified relation has the specified tuple count.
+   * 
+   * @param relation the relation to update
+   * @param count the number of tuples in that relation
+   * @throws DbException if there is an error in the catalog
+   */
+  public void updateRelationTupleCount(final RelationKey relation, final long count) throws DbException {
+    try {
+      catalog.updateRelationTupleCount(relation, count);
+    } catch (CatalogException e) {
+      throw new DbException("updating the number of tuples in the catalog", e);
+    }
+  }
+
+  /**
+   * Set the global variable owned by the specified query and named by the specified key to the specified value.
+   * 
+   * @param queryId the query to whom the variable belongs.
+   * @param key the name of the variable
+   * @param value the new value for the variable
+   */
+  public void setQueryGlobal(final long queryId, @Nonnull final String key, @Nonnull final Object value) {
+    Preconditions.checkNotNull(key, "key");
+    Preconditions.checkNotNull(value, "value");
+    Query query = activeQueries.get(queryId);
+    Preconditions.checkArgument(query != null, "query %s is not active to set key %s to value %s", queryId, key, value);
+    query.setGlobal(key, value);
+  }
+
+  /**
+   * Get the value of global variable owned by the specified query and named by the specified key.
+   * 
+   * @param queryId the query to whom the variable belongs.
+   * @param key the name of the variable
+   * @return the value of the variable
+   */
+  @Nullable
+  public Object getQueryGlobal(final long queryId, @Nonnull final String key) {
+    Preconditions.checkNotNull(key, "key");
+    Query query = activeQueries.get(queryId);
+    Preconditions.checkArgument(query != null, "query %s is not active to get the value of key %s", queryId, key);
+    return query.getGlobal(key);
   }
 }

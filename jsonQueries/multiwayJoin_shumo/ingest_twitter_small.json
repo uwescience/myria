@@ -10,6 +10,7 @@
   },
   "source" : {
     "dataType" : "File",
-    "filename" : "/Users/chushumo/Dropbox/My_Work/Multiway_Join/data/twitter_rv.615784"
-  }
+    "filename" : "/disk1/datasets/twitter/twitter_62000.txt"
+  },
+  "delimiter": ","
 }

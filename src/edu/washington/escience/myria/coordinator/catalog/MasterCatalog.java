@@ -102,7 +102,7 @@ public final class MasterCatalog {
     + "    col_index INTEGER NOT NULL,\n"
     + "    col_name STRING,\n"
     + "    col_type STRING NOT NULL,\n"
-    + "    FOREIGN KEY (user_name,program_name,relation_name) REFERENCES relations);";
+    + "    FOREIGN KEY (user_name,program_name,relation_name) REFERENCES relations ON DELETE CASCADE);";
   /** Create the stored_relations table. */
   private static final String CREATE_STORED_RELATIONS =
       "CREATE TABLE stored_relations (\n"
@@ -112,11 +112,11 @@ public final class MasterCatalog {
     + "    relation_name STRING NOT NULL,\n"
     + "    num_shards INTEGER NOT NULL,\n"
     + "    how_partitioned STRING NOT NULL,\n"
-    + "    FOREIGN KEY (user_name,program_name,relation_name) REFERENCES relations);";
+    + "    FOREIGN KEY (user_name,program_name,relation_name) REFERENCES relations ON DELETE CASCADE);";
   /** Create the stored_relations table. */
   private static final String CREATE_SHARDS =
       "CREATE TABLE shards (\n"
-    + "    stored_relation_id INTEGER NOT NULL REFERENCES stored_relations,\n"
+    + "    stored_relation_id INTEGER NOT NULL REFERENCES stored_relations ON DELETE CASCADE,\n"
     + "    shard_index INTEGER NOT NULL,\n"
     + "    worker_id INTEGER NOT NULL REFERENCES workers);";
   /** Create the stored_relations table. */
@@ -227,7 +227,7 @@ public final class MasterCatalog {
    *           TODO add some sanity checks to the filename?
    */
   public static MasterCatalog open(final String filename) throws FileNotFoundException, CatalogException {
-    Objects.requireNonNull(filename);
+    Objects.requireNonNull(filename, "filename");
 
     java.util.logging.Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     java.util.logging.Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
@@ -364,8 +364,8 @@ public final class MasterCatalog {
    */
   public void addRelationMetadata(final RelationKey relation, final Schema schema, final long numTuples,
       final long queryId) throws CatalogException {
-    Objects.requireNonNull(relation);
-    Objects.requireNonNull(schema);
+    Objects.requireNonNull(relation, "relation");
+    Objects.requireNonNull(schema, "schema");
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
     }
@@ -1487,6 +1487,84 @@ public final class MasterCatalog {
           } catch (final SQLiteException e) {
             throw new CatalogException(e);
           }
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
+   * Delete the specified relation from the catalog, if it exists.
+   * 
+   * @param relation the relation to be deleted.
+   * @throws CatalogException if there is an error
+   */
+  public void deleteRelationIfExists(final RelationKey relation) throws CatalogException {
+    Objects.requireNonNull(relation, "relation");
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+
+    /* Do the work */
+    try {
+      queue.execute(new SQLiteJob<Void>() {
+        @Override
+        protected Void job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+          try {
+            SQLiteStatement statement =
+                sqliteConnection
+                    .prepare("DELETE FROM relations WHERE user_name=? AND program_name=? AND relation_name=?;");
+            statement.bind(1, relation.getUserName());
+            statement.bind(2, relation.getProgramName());
+            statement.bind(3, relation.getRelationName());
+            statement.stepThrough();
+            statement.dispose();
+            statement = null;
+          } catch (final SQLiteException e) {
+            throw new CatalogException(e);
+          }
+          return null;
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
+   * Update the {@link MasterCatalog} so that the specified relation has the specified tuple count.
+   * 
+   * @param relation the relation to update
+   * @param count the number of tuples in that relation
+   * @throws CatalogException if there is an error
+   */
+  public void updateRelationTupleCount(final RelationKey relation, final long count) throws CatalogException {
+    Objects.requireNonNull(relation, "relation");
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+
+    /* Do the work */
+    try {
+      queue.execute(new SQLiteJob<Void>() {
+        @Override
+        protected Void job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+          try {
+            SQLiteStatement statement =
+                sqliteConnection
+                    .prepare("UPDATE relations SET num_tuples=? WHERE user_name=? AND program_name=? AND relation_name=?;");
+            statement.bind(1, count);
+            statement.bind(2, relation.getUserName());
+            statement.bind(3, relation.getProgramName());
+            statement.bind(4, relation.getRelationName());
+            statement.stepThrough();
+            statement.dispose();
+            statement = null;
+          } catch (final SQLiteException e) {
+            throw new CatalogException(e);
+          }
+          return null;
         }
       }).get();
     } catch (InterruptedException | ExecutionException e) {

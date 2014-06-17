@@ -1,6 +1,8 @@
 package edu.washington.escience.myria.parallel;
 
 import java.util.LinkedList;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.concurrent.GuardedBy;
 
@@ -11,7 +13,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.api.encoding.QueryConstruct;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
@@ -50,6 +54,8 @@ public final class Query {
   private final boolean profiling;
   /** Indicates whether the query should be run with a particular fault tolerance mode. */
   private final FTMODE ftMode;
+  /** Global variables that are part of this query. */
+  private final ConcurrentHashMap<String, Object> globals;
 
   /**
    * Construct a new {@link Query} object for this query.
@@ -75,6 +81,7 @@ public final class Query {
     planQ.add(plan);
     message = null;
     future = QueryFuture.create(queryId);
+    globals = new ConcurrentHashMap<>();
   }
 
   /**
@@ -116,6 +123,21 @@ public final class Query {
   }
 
   /**
+   * If the sub-query we're about to execute writes to any relations, generate and enqueue the
+   * "update tuple relation count" sub-query to be run next.
+   * 
+   * @param subQuery the subquery about to be executed. This subquery must have already been removed from the queue.
+   */
+  private void addDerivedSubQueries(final SubQuery subQuery) {
+    Map<RelationKey, RelationWriteMetadata> relationsWritten = currentSubQuery.getRelationWriteMetadata();
+    if (!relationsWritten.isEmpty()) {
+      SubQuery updateCatalog =
+          QueryConstruct.getRelationTupleUpdateSubQuery(currentSubQuery.getRelationWriteMetadata(), server);
+      subQueryQ.addFirst(updateCatalog);
+    }
+  }
+
+  /**
    * Generates and returns the next {@link SubQuery} to run.
    * 
    * @return the next {@link SubQuery} to run
@@ -129,11 +151,21 @@ public final class Query {
     if (!subQueryQ.isEmpty()) {
       currentSubQuery = subQueryQ.removeFirst();
       currentSubQuery.setSubQueryId(new SubQueryId(queryId, subqueryId));
+      addDerivedSubQueries(currentSubQuery);
+      /*
+       * TODO - revisit when we support profiling with sequences.
+       * 
+       * We only support profiling a single subquery, so disable profiling if subqueryId != 0.
+       */
+      QueryConstruct.setQueryExecutionOptions(currentSubQuery.getWorkerPlans(), ftMode, profiling && (subqueryId == 0));
       ++subqueryId;
-      QueryConstruct.setQueryExecutionOptions(currentSubQuery.getWorkerPlans(), ftMode, profiling);
+      if (subqueryId >= MyriaConstants.MAXIMUM_NUM_SUBQUERIES) {
+        throw new DbException("Infinite-loop safeguard: quitting after " + MyriaConstants.MAXIMUM_NUM_SUBQUERIES
+            + " subqueries.");
+      }
       return currentSubQuery;
     }
-    planQ.getFirst().instantiate(planQ, subQueryQ, server);
+    planQ.getFirst().instantiate(planQ, subQueryQ, server, queryId);
     /*
      * The above line may have emptied planQ, mucked with subQueryQ, not sure. So just recurse to make sure we do the
      * right thing.
@@ -268,5 +300,25 @@ public final class Query {
    */
   protected boolean isProfilingMode() {
     return profiling;
+  }
+
+  /**
+   * Return the value of the global variable named by the specified key.
+   * 
+   * @param key the name of the variable
+   * @return the value of the variable, nor {@code null} if the variable does not exist.
+   */
+  public Object getGlobal(final String key) {
+    return globals.get(key);
+  }
+
+  /**
+   * Set the global variable named by the specified key to the specified value.
+   * 
+   * @param key the name of the variable
+   * @param value the new value for the variable
+   */
+  public void setGlobal(final String key, final Object value) {
+    globals.put(key, value);
   }
 }

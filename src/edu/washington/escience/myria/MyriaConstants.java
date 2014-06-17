@@ -233,21 +233,9 @@ public final class MyriaConstants {
   public static final int MAX_ACTIVE_QUERIES = 5;
 
   /**
-   * The relation that stores profiling information while it is being written.
-   */
-  public static final RelationKey PROFILING_RELATION_TMP = new RelationKey("public", "tmp", "Profiling");
-
-  /**
    * The relation that stores profiling information.
    */
   public static final RelationKey PROFILING_RELATION = new RelationKey("public", "logs", "Profiling");
-
-  /**
-   * The schema of the {@link #PROFILING_RELATION_TMP}.
-   */
-  public static final Schema PROFILING_SCHEMA_TMP = Schema.ofFields(Type.LONG_TYPE, Type.INT_TYPE, Type.INT_TYPE,
-      Type.LONG_TYPE, Type.LONG_TYPE, Type.STRING_TYPE, Type.INT_TYPE, "queryId", "fragmentId", "opId", "nanoTime",
-      "numTuples", "eventType", "traceId");
 
   /**
    * The schema of the {@link #PROFILING_RELATION}.
@@ -276,6 +264,12 @@ public final class MyriaConstants {
    * Number of entries in profiling logger before it is flushed.
    */
   public static final int PROFILING_LOGGER_BATCH_SIZE = 10000;
+
+  /**
+   * The maximum number of subqueries we will allow a query to execute before killing it. This is a safeguard against an
+   * infinite loop.
+   */
+  public static final int MAXIMUM_NUM_SUBQUERIES = 100;
 
   /** Private constructor to disallow building utility class. */
   private MyriaConstants() {
