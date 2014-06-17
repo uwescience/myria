@@ -1351,14 +1351,15 @@ public final class Server {
 
     /* Build the worker IDs and the partition indices arrays. */
     LOGGER.info("Building intArrayPartitions and mapWorkers...");
-    int[][] intArrayPartitions = new int[numPartitions][repFactor];
+    int[][] intArray2dPartitions = new int[numPartitions][repFactor];
     HashMap<Integer, Integer> mapWorkers = new HashMap<Integer, Integer>();
     int i = 0;
     int k = 0;
+    int p = 0;
     for (Set<Integer> partition : partitions) {
       int j = 0;
       for (Integer id : partition) {
-        intArrayPartitions[i][j] = k;
+        intArray2dPartitions[i][j] = k;
         if (!mapWorkers.containsKey(k)) {
           mapWorkers.put(k, id);
           ++k;
@@ -1368,36 +1369,29 @@ public final class Server {
       ++i;
     }
 
-    LOGGER.info("intArrayPartitions: " + Arrays.deepToString(intArrayPartitions));
+    LOGGER.info("intArrayPartitions: " + Arrays.deepToString(intArray2dPartitions));
     LOGGER.info("mapWorkers: " + mapWorkers.toString());
 
     LOGGER.info("Building intArrayWorkers...");
     int[] intArrayWorkers = new int[numPartitions * repFactor];
+    int[] intArrayPartitions = new int[numPartitions * repFactor];
     i = 0;
-    for (int[] partitionIndex : intArrayPartitions) {
+    int j = 0;
+    for (int[] partitionIndex : intArray2dPartitions) {
       LOGGER.info("Partition: " + Arrays.toString(partitionIndex));
-      for (int p : partitionIndex) {
+      for (int pi : partitionIndex) {
         LOGGER.info("i: " + i);
-        LOGGER.info("p: " + p);
-        LOGGER.info("mapping: " + mapWorkers.get(p));
-        intArrayWorkers[i] = mapWorkers.get(p);
+        LOGGER.info("pi: " + pi);
+        LOGGER.info("mapping: " + mapWorkers.get(pi));
+        intArrayWorkers[i] = mapWorkers.get(pi);
+        intArrayPartitions[i] = j;
         ++i;
+
       }
+      ++j;
     }
     LOGGER.info("intArrayWorkers: " + Arrays.toString(intArrayWorkers));
-
-    /*
-     * LOGGER.info("Server.ingestDataset before integerDoubleCollectionToIntArray"); int[][] intArrayPartitions; try {
-     * intArrayPartitions = MyriaUtils.integerDoubleCollectionToIntArray(partitions); LOGGER.info("intArrayPartitions: "
-     * + Arrays.deepToString(intArrayPartitions)); } catch (Exception e) {
-     * LOGGER.info("Error at integerDoubleCollectionToIntArray"); return null; }
-     * LOGGER.info("Server.ingestDataset after integerDoubleCollectionToIntArray");
-     * 
-     * LOGGER.info("Server.ingestDataset before Ints.concat"); int[] workersArray; try { workersArray =
-     * Ints.concat(intArrayPartitions); LOGGER.info("workersArray: " + Arrays.toString(workersArray)); } catch
-     * (Exception e) { LOGGER.info("Error at Ints.concat"); return null; }
-     * LOGGER.info("Server.ingestDataset after Ints.concat");
-     */
+    LOGGER.info("intArrayPartitions: " + Arrays.toString(intArrayPartitions));
 
     /* The master plan: send the tuples out. */
     LOGGER.info("Server.ingestDataset getting id");
@@ -1405,11 +1399,12 @@ public final class Server {
     LOGGER.info("Server.ingestDataset done, creating GenericShuffleProducer");
     LOGGER.info("numPartitions: " + numPartitions);
     LOGGER.info("repFactor: " + repFactor);
-    LOGGER.info("partitions: " + Arrays.deepToString(intArrayPartitions));
+    LOGGER.info("partitions: " + Arrays.deepToString(intArray2dPartitions));
     LOGGER.info("workersArray: " + Arrays.toString(intArrayWorkers));
+    LOGGER.info("partitionsArray: " + Arrays.toString(intArrayPartitions));
 
     GenericShuffleProducer scatter =
-        new GenericShuffleProducer(source, scatterId, intArrayPartitions, intArrayWorkers,
+        new GenericShuffleProducer(source, scatterId, intArray2dPartitions, intArrayWorkers,
             new RoundRobinPartitionFunction(numPartitions));
     LOGGER.info("Server.ingestDataset GenericShuffleProducer created");
 
@@ -1417,9 +1412,14 @@ public final class Server {
     // TODO valmeida change the Consumer to add the partition number into the relationKey value
     GenericShuffleConsumer gather =
         new GenericShuffleConsumer(source.getSchema(), scatterId, new int[] { MyriaConstants.MASTER_ID });
-    DbInsert insert = new DbInsert(gather, relationKey, true, indexes);
     Map<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
-    for (Integer workerId : intArrayWorkers) {
+
+    for (i = 0; i < intArrayWorkers.length; i++) {
+      int workerId = intArrayWorkers[i];
+      RelationKey relKey = RelationKey.of(relationKey);
+      relKey.setPartitionId(intArrayPartitions[i]);
+      LOGGER.info("Creating DbInsert for worker " + workerId + " relationKey: " + relKey.toString());
+      DbInsert insert = new DbInsert(gather, relKey, true, indexes);
       workerPlans.put(workerId, new SingleQueryPlanWithArgs(insert));
     }
     LOGGER.info("Server.ingestDataset GenericShuffleConsumer created");

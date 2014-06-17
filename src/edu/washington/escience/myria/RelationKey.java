@@ -26,6 +26,8 @@ public final class RelationKey implements Serializable {
   /** The name of the relation. */
   @JsonProperty
   private final String relationName;
+  /** The partition identifier, only used with replication. */
+  private Integer partitionId;
 
   /**
    * Static function to create a RelationKey object.
@@ -39,6 +41,20 @@ public final class RelationKey implements Serializable {
   public static RelationKey of(@JsonProperty("userName") final String userName,
       @JsonProperty("programName") final String programName, @JsonProperty("relationName") final String relationName) {
     return new RelationKey(userName, programName, relationName);
+  }
+
+  /**
+   * Static function that copies a RelationKey object.
+   * 
+   * @param r the relationKey to be copied.
+   * @return the newly created relationKey.
+   */
+  public static RelationKey of(final RelationKey r) {
+    RelationKey result = new RelationKey(r.userName, r.programName, r.relationName);
+    if (r.partitionId != null) {
+      result.setPartitionId(r.partitionId);
+    }
+    return result;
   }
 
   /** The regular expression specifying what names are valid. */
@@ -76,6 +92,7 @@ public final class RelationKey implements Serializable {
     this.userName = userName;
     this.programName = programName;
     this.relationName = relationName;
+    partitionId = null;
   }
 
   /**
@@ -99,6 +116,22 @@ public final class RelationKey implements Serializable {
     return userName;
   }
 
+  /**
+   * @return the partition identifier of this relation
+   */
+  public Integer getPartitionId() {
+    return partitionId;
+  }
+
+  /**
+   * Setter for partitionId attribute.
+   * 
+   * @param partitionId the new value
+   */
+  public void setPartitionId(final Integer partitionId) {
+    this.partitionId = partitionId;
+  }
+
   @Override
   public String toString() {
     return toString('[', '#', ']');
@@ -114,8 +147,13 @@ public final class RelationKey implements Serializable {
    */
   private String toString(final char leftEscape, final char separate, final char rightEscape) {
     StringBuilder sb = new StringBuilder();
-    sb.append(leftEscape).append(userName).append(separate).append(programName).append(separate).append(relationName)
-        .append(rightEscape);
+    if (partitionId == null) {
+      sb.append(leftEscape).append(userName).append(separate).append(programName).append(separate).append(relationName)
+          .append(rightEscape);
+    } else {
+      sb.append(leftEscape).append(userName).append(separate).append(programName).append(separate).append(relationName)
+          .append(separate).append(partitionId.toString()).append(rightEscape);
+    }
     return sb.toString();
   }
 
@@ -141,7 +179,11 @@ public final class RelationKey implements Serializable {
 
   @Override
   public int hashCode() {
-    return Objects.hash(userName, programName, relationName);
+    if (partitionId == null) {
+      return Objects.hash(userName, programName, relationName);
+    } else {
+      return Objects.hash(userName, programName, relationName, partitionId);
+    }
   }
 
   @Override
@@ -150,7 +192,13 @@ public final class RelationKey implements Serializable {
       return false;
     }
     RelationKey o = (RelationKey) other;
-    return Objects.equals(userName, o.userName) && Objects.equals(programName, o.programName)
-        && Objects.equals(relationName, o.relationName);
+    if (partitionId == null && o.partitionId == null) {
+      return Objects.equals(userName, o.userName) && Objects.equals(programName, o.programName)
+          && Objects.equals(relationName, o.relationName);
+    } else if (partitionId != null && o.partitionId != null) {
+      return Objects.equals(userName, o.userName) && Objects.equals(programName, o.programName)
+          && Objects.equals(relationName, o.relationName) && Objects.equals(partitionId, o.partitionId);
+    }
+    return false;
   }
 }
