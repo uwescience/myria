@@ -57,6 +57,8 @@ import edu.washington.escience.myria.operator.Operator;
     @Type(name = "SymmetricHashJoin", value = SymmetricHashJoinEncoding.class),
     @Type(name = "SymmetricHashCountingJoin", value = SymmetricHashCountingJoinEncoding.class),
     @Type(name = "TableScan", value = TableScanEncoding.class),
+    @Type(name = "TempInsert", value = TempInsertEncoding.class),
+    @Type(name = "TempTableScan", value = TempTableScanEncoding.class),
     @Type(name = "TipsyFileScan", value = TipsyFileScanEncoding.class),
     @Type(name = "UnionAll", value = UnionAllEncoding.class) })
 public abstract class OperatorEncoding<T extends Operator> extends MyriaApiEncoding {

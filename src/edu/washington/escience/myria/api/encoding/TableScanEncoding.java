@@ -2,9 +2,7 @@ package edu.washington.escience.myria.api.encoding;
 
 import javax.ws.rs.core.Response.Status;
 
-import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Verify;
 
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
@@ -19,29 +17,17 @@ public class TableScanEncoding extends LeafOperatorEncoding<DbQueryScan> {
   @Required
   public RelationKey relationKey;
   public Integer storedRelationId;
-  public Boolean temporary;
 
   @Override
   public DbQueryScan construct(ConstructArgs args) {
     Schema schema;
     Server server = args.getServer();
-    Verify.verifyNotNull(temporary, "temporary");
-    if (temporary) {
-      schema = server.getTempSchema(args.getQueryId(), relationKey);
-    } else {
-      try {
-        schema = server.getSchema(relationKey);
-      } catch (final CatalogException e) {
-        throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, e);
-      }
+    try {
+      schema = server.getSchema(relationKey);
+    } catch (final CatalogException e) {
+      throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, e);
     }
     Preconditions.checkArgument(schema != null, "Specified relation %s does not exist.", relationKey);
     return new DbQueryScan(relationKey, schema);
   }
-
-  @Override
-  public void validateExtra() {
-    temporary = Objects.firstNonNull(temporary, Boolean.FALSE);
-  }
-
 }

@@ -62,7 +62,7 @@ public class DoWhileTest extends SystemTestBase {
     /* x */
     RelationKey x = RelationKey.of("test", "dowhile", "x");
     /* condition */
-    RelationKey condition = RelationKey.of("test", "dowhile", "condition");
+    String condition = "condition";
 
     /* x = [0 as val, 1 as exp]; */
     Schema schema = Schema.ofFields("val", Type.INT_TYPE, "exp", Type.INT_TYPE);
@@ -91,7 +91,7 @@ public class DoWhileTest extends SystemTestBase {
     Expression filterExpression =
         new Expression("f", new LessThanExpression(new VariableExpression(0), new ConstantExpression(5)));
     Apply maxXapply = new Apply(maxX, ImmutableList.of(filterExpression));
-    DbInsertTemp writeCondition = new DbInsertTemp(maxXapply, condition, null, true, null);
+    DbInsertTemp writeCondition = new DbInsertTemp(maxXapply, RelationKey.ofTemp(1, condition), null, true, null);
     // The condition
     SubQuery updateCondition = wrapForWorker1(writeCondition);
 

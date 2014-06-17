@@ -1131,7 +1131,7 @@ public final class Server {
         public void operationComplete(final LocalSubQueryFuture future) throws Exception {
           mqp.init();
           if (subQueryId.getSubqueryId() == 0) {
-            activeQueries.get(subQueryId.getQueryId()).markStart();
+            getQuery(subQueryId.getQueryId()).markStart();
           }
           mqp.startExecution();
           Server.this.startWorkerQuery(future.getLocalSubQuery().getSubQueryId());
@@ -1155,7 +1155,7 @@ public final class Server {
   private void finishSubQuery(final SubQueryId subQueryId) {
     long queryId = subQueryId.getQueryId();
     executingSubQueries.remove(subQueryId);
-    activeQueries.get(queryId).finishSubQuery();
+    getQuery(queryId).finishSubQuery();
   }
 
   /**
@@ -1935,9 +1935,7 @@ public final class Server {
   public void setQueryGlobal(final long queryId, @Nonnull final String key, @Nonnull final Object value) {
     Preconditions.checkNotNull(key, "key");
     Preconditions.checkNotNull(value, "value");
-    Query query = activeQueries.get(queryId);
-    Preconditions.checkArgument(query != null, "query %s is not active to set key %s to value %s", queryId, key, value);
-    query.setGlobal(key, value);
+    getQuery(queryId).setGlobal(key, value);
   }
 
   /**
@@ -1950,22 +1948,18 @@ public final class Server {
   @Nullable
   public Object getQueryGlobal(final long queryId, @Nonnull final String key) {
     Preconditions.checkNotNull(key, "key");
-    Query query = activeQueries.get(queryId);
-    Preconditions.checkArgument(query != null, "query %s is not active to get the value of key %s", queryId, key);
-    return query.getGlobal(key);
+    return getQuery(queryId).getGlobal(key);
   }
 
   /**
    * Return the schema of the specified temp relation in the specified query.
    * 
    * @param queryId the query that owns the temp relation
-   * @param relationKey the name of the temporary relation
+   * @param name the name of the temporary relation
    * @return the schema of the specified temp relation in the specified query
    */
-  public Schema getTempSchema(@Nonnull final Long queryId, @Nonnull final RelationKey relationKey) {
-    Query q = activeQueries.get(queryId);
-    Preconditions.checkNotNull(q, "query %s is not running", queryId);
-    return q.getTempSchema(relationKey);
+  public Schema getTempSchema(@Nonnull final Long queryId, @Nonnull final String name) {
+    return getQuery(queryId).getTempSchema(RelationKey.ofTemp(queryId, name));
   }
 
   /**

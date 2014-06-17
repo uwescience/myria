@@ -8,7 +8,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.api.encoding.QueryConstruct;
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 
@@ -19,7 +18,7 @@ public final class DoWhile extends QueryPlan {
   /** The query plans in the body. */
   private final List<QueryPlan> body;
   /** The relation to be scanned for the while loop continuation condition. */
-  private final RelationKey condition;
+  private final String condition;
   /** Whether this while loop has ever been run. */
   private boolean hasRun;
 
@@ -31,7 +30,7 @@ public final class DoWhile extends QueryPlan {
    * @param condition the relation to be scanned for the while loop continuation condition. Must be a singleton boolean
    *          relation.
    */
-  public DoWhile(final List<? extends QueryPlan> body, final RelationKey condition) {
+  public DoWhile(final List<? extends QueryPlan> body, final String condition) {
     this.body = ImmutableList.copyOf(Objects.requireNonNull(body, "body"));
     this.condition = Objects.requireNonNull(condition, "condition");
     hasRun = false;

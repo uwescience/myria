@@ -131,30 +131,34 @@ public class QueryConstruct {
 
       /* If the plan has scans, it has to run on all of those workers. */
       for (OperatorEncoding<?> operator : fragment.operators) {
+        Set<Integer> scanWorkers;
+        String scanRelation;
         if (operator instanceof TableScanEncoding) {
           TableScanEncoding scan = ((TableScanEncoding) operator);
-          Set<Integer> scanWorkers;
-          if (scan.temporary) {
-            scanWorkers = server.getWorkersForTempRelation(args.queryId, scan.relationKey);
-          } else {
-            scanWorkers = server.getWorkersForRelation(scan.relationKey, scan.storedRelationId);
-          }
-          if (scanWorkers == null) {
-            throw new MyriaApiException(Status.BAD_REQUEST, "Unable to find workers that store "
-                + scan.relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
-          }
-          if (fragment.workers.size() == 0) {
-            fragment.workers.addAll(scanWorkers);
-          } else {
-            /*
-             * If the fragment already has workers, it scans multiple relations. They better use the exact same set of
-             * workers.
-             */
-            if (fragment.workers.size() != scanWorkers.size() || !fragment.workers.containsAll(scanWorkers)) {
-              throw new MyriaApiException(Status.BAD_REQUEST,
-                  "All tables scanned within a fragment must use the exact same set of workers. Caught at TableScan("
-                      + scan.relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE) + ")");
-            }
+          scanRelation = scan.relationKey.toString();
+          scanWorkers = server.getWorkersForRelation(scan.relationKey, scan.storedRelationId);
+        } else if (operator instanceof TempTableScanEncoding) {
+          TempTableScanEncoding scan = ((TempTableScanEncoding) operator);
+          scanRelation = "temporary relation " + scan.table;
+          scanWorkers =
+              server.getWorkersForTempRelation(args.getQueryId(), RelationKey.ofTemp(args.getQueryId(), scan.table));
+        } else {
+          continue;
+        }
+        if (scanWorkers == null) {
+          throw new MyriaApiException(Status.BAD_REQUEST, "Unable to find workers that store " + scanRelation);
+        }
+        if (fragment.workers.size() == 0) {
+          fragment.workers.addAll(scanWorkers);
+        } else {
+          /*
+           * If the fragment already has workers, it scans multiple relations. They better use the exact same set of
+           * workers.
+           */
+          if (fragment.workers.size() != scanWorkers.size() || !fragment.workers.containsAll(scanWorkers)) {
+            throw new MyriaApiException(Status.BAD_REQUEST,
+                "All tables scanned within a fragment must use the exact same set of workers. Caught scanning "
+                    + scanRelation);
           }
         }
       }
@@ -424,17 +428,16 @@ public class QueryConstruct {
     return new SubQuery(masterPlan, workerPlans);
   }
 
-  public static JsonSubQuery setDoWhileCondition(final RelationKey condition) {
+  public static JsonSubQuery setDoWhileCondition(final String condition) {
     ImmutableList.Builder<PlanFragmentEncoding> fragments = ImmutableList.builder();
     int opId = 0;
 
     /* The worker part: scan the relation and send it to master. */
     // scan the relation
-    TableScanEncoding scan = new TableScanEncoding();
+    TempTableScanEncoding scan = new TempTableScanEncoding();
     scan.opId = opId++;
     scan.opName = "Scan[" + condition.toString() + "]";
-    scan.relationKey = condition;
-    scan.temporary = Boolean.TRUE;
+    scan.table = condition;
     // send it to master
     CollectProducerEncoding producer = new CollectProducerEncoding();
     producer.argChild = scan.opId;

@@ -7,7 +7,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
-import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.api.encoding.Required;
 import edu.washington.escience.myria.parallel.DoWhile;
 import edu.washington.escience.myria.parallel.QueryPlan;
@@ -16,7 +15,7 @@ public class DoWhileEncoding extends SubPlanEncoding {
   @Required
   public List<SubPlanEncoding> body;
   @Required
-  public RelationKey condition;
+  public String condition;
 
   @Override
   public QueryPlan getPlan() {
