@@ -41,5 +41,5 @@ do_ingest("all_vct", [('Cruise', STRING), ("Day", STRING), ("File_Id", STRING), 
 do_ingest("lat_lon_points", [('lat', DOUBLE), ('lon', DOUBLE)])
 do_ingest("employee", [('id', 'INT_TYPE'), ('dept_id', 'INT_TYPE'), ('name', 'STRING_TYPE'),
                        ('salary', "INT_TYPE")])
-do_ingest("dept", [('id', 'INT_TYPE'), ('dept_id', 'INT_TYPE'), ('name', 'STRING_TYPE'),
-                   ('salary','INT_TYPE')])
+do_ingest("department", [('id', 'INT_TYPE'), ('dept_id', 'INT_TYPE'), ('name', 'STRING_TYPE'),
+                          ('salary','INT_TYPE')])
