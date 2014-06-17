@@ -108,10 +108,10 @@ public class ProfilingLogger {
 
     List<IndexRef> rootOpsIndex =
         ImmutableList.of(IndexRef.of(schema, "queryId"), IndexRef.of(schema, "fragmentId"), IndexRef.of(schema,
-            "startTime"));
+            "startTime"), IndexRef.of(schema, "endTime"));
     List<IndexRef> filterIndex =
         ImmutableList.of(IndexRef.of(schema, "queryId"), IndexRef.of(schema, "fragmentId"),
-            IndexRef.of(schema, "opId"), IndexRef.of(schema, "startTime"));
+            IndexRef.of(schema, "opId"), IndexRef.of(schema, "startTime"), IndexRef.of(schema, "endTime"));
 
     try {
       accessMethod.createIndexIfNotExists(MyriaConstants.PROFILING_RELATION, schema, rootOpsIndex);
