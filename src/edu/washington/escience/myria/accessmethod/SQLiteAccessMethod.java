@@ -365,13 +365,6 @@ public final class SQLiteAccessMethod extends AccessMethod {
   }
 
   @Override
-  public void renameIndexes(final RelationKey oldRelation, final RelationKey newRelation,
-      final List<List<IndexRef>> indexes) throws DbException {
-    /* Do nothing -- rather than renaming the right way, we create every index with a different unique name. */
-    return;
-  }
-
-  @Override
   public void dropTableIfExists(final RelationKey relationKey) throws DbException {
     execute("DROP TABLE IF EXISTS " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
   }

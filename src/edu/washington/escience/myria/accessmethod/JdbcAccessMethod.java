@@ -242,37 +242,6 @@ public final class JdbcAccessMethod extends AccessMethod {
     }
   }
 
-  /**
-   * Insert the Tuples in this TupleBatch into the database.
-   * 
-   * @param jdbcInfo information about the connection parameters.
-   * @param relationKey the table to insert into.
-   * @param schema the schema of the relation.
-   * @param tupleBatch the tupleBatch to be inserted.
-   * @throws DbException if there is an error inserting these tuples.
-   */
-  public static void tupleBatchInsert(final JdbcInfo jdbcInfo, final RelationKey relationKey, final Schema schema,
-      final TupleBatch tupleBatch) throws DbException {
-    JdbcAccessMethod jdbcAccessMethod = new JdbcAccessMethod(jdbcInfo, false);
-    jdbcAccessMethod.tupleBatchInsert(relationKey, schema, tupleBatch);
-    jdbcAccessMethod.close();
-  }
-
-  /**
-   * Create a JDBC Connection and then expose the results as an Iterator<TupleBatch>.
-   * 
-   * @param jdbcInfo the JDBC connection information.
-   * @param queryString the query.
-   * @param schema the schema of the returned tuples.
-   * @return an Iterator<TupleBatch> containing the results.
-   * @throws DbException if there is an error getting tuples.
-   */
-  public static Iterator<TupleBatch> tupleBatchIteratorFromQuery(final JdbcInfo jdbcInfo, final String queryString,
-      final Schema schema) throws DbException {
-    JdbcAccessMethod jdbcAccessMethod = new JdbcAccessMethod(jdbcInfo, true);
-    return jdbcAccessMethod.tupleBatchIteratorFromQuery(queryString, schema);
-  }
-
   @Override
   public void createTableIfNotExists(final RelationKey relationKey, final Schema schema) throws DbException {
     Objects.requireNonNull(jdbcConnection, "jdbcConnection");
@@ -546,23 +515,6 @@ public final class JdbcAccessMethod extends AccessMethod {
             indexNameSingleQuote, ") THEN CREATE INDEX", indexName, "ON", sourceTableName, indexColumns,
             "; END IF; END$$;");
     execute(statement);
-  }
-
-  @Override
-  public void renameIndexes(final RelationKey oldRelation, final RelationKey newRelation,
-      final List<List<IndexRef>> indexes) throws DbException {
-
-    if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_MYSQL)) {
-      /* Do nothing -- rather than renaming the right way, we create every index with a different unique name. */
-      return;
-    }
-
-    for (List<IndexRef> index : indexes) {
-      String oldName = getIndexName(oldRelation, index).toString(jdbcInfo.getDbms());
-      String newName = getIndexName(newRelation, index).toString(jdbcInfo.getDbms());
-      StringBuilder statement = new StringBuilder("ALTER INDEX ").append(oldName).append(" RENAME TO ").append(newName);
-      execute(statement.toString());
-    }
   }
 }
 
