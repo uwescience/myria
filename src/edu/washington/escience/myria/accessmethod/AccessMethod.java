@@ -178,17 +178,6 @@ public abstract class AccessMethod {
       final List<IndexRef> index) throws DbException;
 
   /**
-   * Rename the indexes from the old relation name to the new relation name.
-   * 
-   * @param oldRelation the relation on whose name the index names are based.
-   * @param newRelation the new name for that relation.
-   * @param indexes the description of the indexes themselves.
-   * @throws DbException if there is an error in the DBMS.
-   */
-  public abstract void renameIndexes(RelationKey oldRelation, RelationKey newRelation, List<List<IndexRef>> indexes)
-      throws DbException;
-
-  /**
    * Holds a reference to a column and whether it is ascending or descending.
    */
   public static final class IndexRef implements Serializable {
