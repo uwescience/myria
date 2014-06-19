@@ -1,7 +1,7 @@
 package edu.washington.escience.myria.api.encoding;
 
+import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
-import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
@@ -13,7 +13,7 @@ import edu.washington.escience.myria.util.MyriaUtils;
 public class HyperShuffleConsumerEncoding extends AbstractConsumerEncoding<GenericShuffleConsumer> {
 
   @Override
-  public GenericShuffleConsumer construct(Server server) {
+  public GenericShuffleConsumer construct(ConstructArgs args) {
     return new GenericShuffleConsumer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
         .integerCollectionToIntArray(getRealWorkerIds()));
   }

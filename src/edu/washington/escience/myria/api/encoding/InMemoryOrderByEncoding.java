@@ -3,8 +3,8 @@ package edu.washington.escience.myria.api.encoding;
 import javax.ws.rs.core.Response.Status;
 
 import edu.washington.escience.myria.api.MyriaApiException;
+import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.InMemoryOrderBy;
-import edu.washington.escience.myria.parallel.Server;
 
 public class InMemoryOrderByEncoding extends UnaryOperatorEncoding<InMemoryOrderBy> {
 
@@ -14,7 +14,7 @@ public class InMemoryOrderByEncoding extends UnaryOperatorEncoding<InMemoryOrder
   public boolean[] argAscending;
 
   @Override
-  public InMemoryOrderBy construct(Server server) throws MyriaApiException {
+  public InMemoryOrderBy construct(ConstructArgs args) throws MyriaApiException {
     return new InMemoryOrderBy(null, argSortColumns, argAscending);
   }
 

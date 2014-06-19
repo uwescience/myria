@@ -1,8 +1,8 @@
 package edu.washington.escience.myria.api.encoding;
 
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.DbQueryScan;
-import edu.washington.escience.myria.parallel.Server;
 
 public class QueryScanEncoding extends LeafOperatorEncoding<DbQueryScan> {
   @Required
@@ -11,7 +11,7 @@ public class QueryScanEncoding extends LeafOperatorEncoding<DbQueryScan> {
   public String sql;
 
   @Override
-  public DbQueryScan construct(final Server server) {
+  public DbQueryScan construct(ConstructArgs args) {
     return new DbQueryScan(sql, schema);
   }
 

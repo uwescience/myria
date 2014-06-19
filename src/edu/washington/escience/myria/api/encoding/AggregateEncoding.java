@@ -3,9 +3,9 @@ package edu.washington.escience.myria.api.encoding;
 import java.util.ArrayList;
 import java.util.List;
 
+import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.agg.Aggregate;
 import edu.washington.escience.myria.operator.agg.Aggregator;
-import edu.washington.escience.myria.parallel.Server;
 
 public class AggregateEncoding extends UnaryOperatorEncoding<Aggregate> {
   @Required
@@ -14,7 +14,7 @@ public class AggregateEncoding extends UnaryOperatorEncoding<Aggregate> {
   public int[] argAggFields;
 
   @Override
-  public Aggregate construct(Server server) {
+  public Aggregate construct(ConstructArgs args) {
     int[] ops = deserializeAggregateOperator(argAggOperators);
     return new Aggregate(null, argAggFields, ops);
   }

@@ -1,8 +1,8 @@
 package edu.washington.escience.myria.api.encoding;
 
 import edu.washington.escience.myria.api.MyriaApiException;
+import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.NChiladaFileScan;
-import edu.washington.escience.myria.parallel.Server;
 
 public class NChiladaFileScanEncoding extends LeafOperatorEncoding<NChiladaFileScan> {
 
@@ -12,7 +12,7 @@ public class NChiladaFileScanEncoding extends LeafOperatorEncoding<NChiladaFileS
   public String groupFileName;
 
   @Override
-  public NChiladaFileScan construct(Server server) throws MyriaApiException {
+  public NChiladaFileScan construct(ConstructArgs args) throws MyriaApiException {
     return new NChiladaFileScan(nchiladaDirectoryName, groupFileName);
   }
 }

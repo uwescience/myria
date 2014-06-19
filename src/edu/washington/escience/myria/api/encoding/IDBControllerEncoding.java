@@ -4,10 +4,10 @@ import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.IDBController;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.parallel.ExchangePairID;
-import edu.washington.escience.myria.parallel.Server;
 
 public class IDBControllerEncoding extends OperatorEncoding<IDBController> {
   @JsonProperty
@@ -30,7 +30,7 @@ public class IDBControllerEncoding extends OperatorEncoding<IDBController> {
   public StreamingStateEncoding<?> argState;
 
   @Override
-  public IDBController construct(Server server) {
+  public IDBController construct(ConstructArgs args) {
     return new IDBController(argSelfIdbId, realControllerOperatorId, realControllerWorkerId, null, null, null, argState
         .construct());
   }

@@ -153,4 +153,15 @@ public final class RelationKey implements Serializable {
     return Objects.equals(userName, o.userName) && Objects.equals(programName, o.programName)
         && Objects.equals(relationName, o.relationName);
   }
+
+  /**
+   * Return the default relation key for a temporary table created for the given query.
+   * 
+   * @param queryId the query that will generate this temporary table
+   * @param table the name of the table
+   * @return the default relation key for this temp table created for the given query
+   */
+  public static RelationKey ofTemp(final long queryId, final String table) {
+    return RelationKey.of("myria_q_" + queryId, "__temp__", table);
+  }
 }
