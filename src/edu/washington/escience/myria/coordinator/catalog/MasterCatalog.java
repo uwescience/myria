@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -38,6 +39,7 @@ import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
+import edu.washington.escience.myria.parallel.DatasetMetadataUpdater.RelationMetadata;
 import edu.washington.escience.myria.parallel.SocketInfo;
 
 /**
@@ -111,6 +113,7 @@ public final class MasterCatalog {
     + "    program_name STRING NOT NULL,\n"
     + "    relation_name STRING NOT NULL,\n"
     + "    num_shards INTEGER NOT NULL,\n"
+    + "    rep_factor INTEGER NOT NULL,\n"
     + "    how_partitioned STRING NOT NULL,\n"
     + "    FOREIGN KEY (user_name,program_name,relation_name) REFERENCES relations);";
   /** Create the stored_relations table. */
@@ -436,10 +439,10 @@ public final class MasterCatalog {
    * @param howPartitioned how this copy of the relation is partitioned.
    * @throws CatalogException if there is an error in the database.
    */
-  public void addStoredRelation(final RelationKey relation, final Set<Integer> workers, final String howPartitioned)
-      throws CatalogException {
+  public void addStoredRelation(final RelationKey relation, final RelationMetadata relationMetadata,
+      final String howPartitioned) throws CatalogException {
     Objects.requireNonNull(relation);
-    Objects.requireNonNull(workers);
+    Objects.requireNonNull(relationMetadata);
     Objects.requireNonNull(howPartitioned);
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
@@ -457,11 +460,12 @@ public final class MasterCatalog {
             /* First, populate the stored_relation table. */
             SQLiteStatement statement =
                 sqliteConnection
-                    .prepare("INSERT INTO stored_relations (user_name,program_name,relation_name,num_shards,how_partitioned) VALUES (?,?,?,?,?);");
+                    .prepare("INSERT INTO stored_relations (user_name,program_name,relation_name,num_shards,rep_factor,how_partitioned) VALUES (?,?,?,?,?,?);");
             statement.bind(1, relation.getUserName());
             statement.bind(2, relation.getProgramName());
             statement.bind(3, relation.getRelationName());
-            statement.bind(4, workers.size());
+            statement.bind(4, relationMetadata.getWorkers().size());
+            statement.bind(5, relationMetadata.getReplicationFactor());
             statement.bind(5, howPartitioned);
             statement.stepThrough();
             statement.dispose();
@@ -472,14 +476,14 @@ public final class MasterCatalog {
             statement =
                 sqliteConnection.prepare("INSERT INTO shards(stored_relation_id,shard_index,worker_id) "
                     + "VALUES (?,?,?);");
-            statement.bind(1, storedRelationId);
-            int count = 0;
-            for (int i : workers) {
-              statement.bind(2, count);
-              statement.bind(3, i);
-              statement.step();
-              statement.reset(false);
-              ++count;
+            for (Entry<Integer, List<Integer>> e : relationMetadata.getPartitionsWorkers().entrySet()) {
+              for (Integer workerId : e.getValue()) {
+                statement.bind(1, storedRelationId);
+                statement.bind(2, e.getKey());
+                statement.bind(3, workerId);
+                statement.step();
+                statement.reset(false);
+              }
             }
             statement.dispose();
             statement = null;

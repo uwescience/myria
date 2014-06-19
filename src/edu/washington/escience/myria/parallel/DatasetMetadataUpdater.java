@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.parallel;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -84,7 +85,7 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
       if (catalog.getSchema(relation) == null) {
         catalog.addRelationMetadata(relation, schema, -1, queryId);
       }
-      catalog.addStoredRelation(relation, workers, "unknown");
+      catalog.addStoredRelation(relation, meta, "unknown");
       LOGGER.debug("Query #{} - adding {} to store shard of {}", queryId, workers, relation
           .toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
     }
@@ -113,13 +114,20 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
         if (op instanceof DbInsert) {
           /* Add this worker to the set of workers storing the new copy of this relation. */
           RelationKey relationKey = ((DbInsert) op).getRelationKey();
+          Integer partitionId = relationKey.getPartitionId();
+          if (partitionId != null) {
+            /* empties the relation key partitionId, we put this information now on the metadata. */
+            relationKey.setPartitionId(null);
+          }
           RelationMetadata meta = ret.get(relationKey);
           if (meta == null) {
             meta = new RelationMetadata();
-            meta.setWorkers(new TreeSet<Integer>());
             ret.put(relationKey, meta);
           }
           meta.getWorkers().add(workerId);
+          if (partitionId != null) {
+            meta.addPartition(workerId, partitionId);
+          }
           Schema newSchema = op.getSchema();
           Schema oldSchema = catalog.getSchema(relationKey);
           /* Check if the relation already has a schema in the database and, if so, it better match! */
@@ -136,11 +144,18 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
   }
 
   /** Class to store the metadata for a relation between query issuing and query complete. */
-  private static class RelationMetadata {
+  public static class RelationMetadata {
     /** The workers that will store the relation. */
-    private Set<Integer> workers;
+    private final Set<Integer> workers;
+    /** The workers partitions list */
+    private final Map<Integer, List<Integer>> partitionsWorkers;
     /** The schema of the relation. */
     private Schema schema;
+
+    public RelationMetadata() {
+      workers = new TreeSet<Integer>();
+      partitionsWorkers = new HashMap<Integer, List<Integer>>();
+    }
 
     /**
      * @return the workers.
@@ -149,11 +164,34 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
       return workers;
     }
 
-    /**
-     * @param workers the workers to set,
+    /** 
+     * 
      */
-    public void setWorkers(final Set<Integer> workers) {
-      this.workers = Objects.requireNonNull(workers);
+    public void addPartition(final Integer partitionId, final Integer workerId) {
+      if (partitionsWorkers.containsKey(partitionId)) {
+        partitionsWorkers.get(partitionId).add(workerId);
+      } else {
+        List<Integer> workersPartition = new ArrayList<Integer>();
+        workersPartition.add(workerId);
+        partitionsWorkers.put(partitionId, workersPartition);
+      }
+    }
+
+    public List<Integer> getPartitionWorkers(final Integer partitionId) {
+      return partitionsWorkers.get(partitionId);
+    }
+
+    public Map<Integer, List<Integer>> getPartitionsWorkers() {
+      return partitionsWorkers;
+    }
+
+    public Integer getReplicationFactor() {
+      if (partitionsWorkers.size() == 0) {
+        /** No replication. */
+        return 1;
+      } else {
+        return partitionsWorkers.get(partitionsWorkers.keySet().iterator().next()).size();
+      }
     }
 
     /**
