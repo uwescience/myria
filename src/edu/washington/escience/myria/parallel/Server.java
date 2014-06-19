@@ -916,7 +916,9 @@ public final class Server {
    * @param queryID the queryID.
    */
   public void killQuery(final long queryID) {
-    killSubQuery(activeQueries.get(queryID).getCurrentSubQuery().getSubQueryId());
+    Query query = activeQueries.get(queryID);
+    Preconditions.checkNotNull(query, "Query %s is not running", queryID);
+    query.kill();
   }
 
   /**
@@ -924,8 +926,14 @@ public final class Server {
    * 
    * @param subQueryId the ID of the subquery to be killed
    */
-  private void killSubQuery(final SubQueryId subQueryId) {
-    executingSubQueries.get(subQueryId).kill();
+  protected void killSubQuery(final SubQueryId subQueryId) {
+    Preconditions.checkNotNull(subQueryId, "subQueryId");
+    MasterSubQuery subQuery = executingSubQueries.get(subQueryId);
+    if (subQuery != null) {
+      subQuery.kill();
+    } else {
+      LOGGER.warn("tried to kill subquery {} but it is not executing.", subQueryId);
+    }
   }
 
   /**
@@ -1039,22 +1047,18 @@ public final class Server {
     SubQuery task;
     try {
       task = queryState.nextSubQuery();
-    } catch (Throwable t) {
-      queryState.markFailed(t);
-      try {
-        finishQuery(queryState);
-      } catch (CatalogException e) {
-        t.addSuppressed(e);
-      }
-      throw t;
+    } catch (QueryKilledException qke) {
+      queryState.markKilled();
+      finishQuery(queryState);
+      return null;
+    } catch (RuntimeException | DbException e) {
+      queryState.markFailed(e);
+      finishQuery(queryState);
+      return null;
     }
     if (task == null) {
       queryState.markSuccess();
-      try {
-        finishQuery(queryState);
-      } catch (CatalogException e) {
-        throw new DbException("Error marking query " + queryState.getQueryId() + " as finished in the Catalog", e);
-      }
+      finishQuery(queryState);
       return null;
     }
     return submitSubQuery(queryState);
@@ -1064,11 +1068,13 @@ public final class Server {
    * Finish the specified query by updating its status in the Catalog and then removing it from the active queries.
    * 
    * @param queryState the query to be finished
-   * @throws CatalogException if there is an error updating the Catalog
+   * @throws DbException if there is an error updating the Catalog
    */
-  private void finishQuery(final Query queryState) throws CatalogException {
+  private void finishQuery(final Query queryState) throws DbException {
     try {
       catalog.queryFinished(queryState);
+    } catch (CatalogException e) {
+      throw new DbException("Error finishing query " + queryState.getQueryId(), e);
     } finally {
       activeQueries.remove(queryState.getQueryId());
     }
@@ -1177,11 +1183,7 @@ public final class Server {
     } catch (DbException | RuntimeException e) {
       finishSubQuery(subQueryId);
       queryState.markFailed(e);
-      try {
-        finishQuery(queryState);
-      } catch (CatalogException e1) {
-        throw new DbException("error marking query as failed during submission", e1);
-      }
+      finishQuery(queryState);
       throw e;
     }
   }

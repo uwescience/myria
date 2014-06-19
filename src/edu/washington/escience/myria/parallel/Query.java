@@ -31,17 +31,22 @@ public final class Query {
   /** The id of this query. */
   private final long queryId;
   /** The id of the next subquery to be issued. */
+  @GuardedBy("this")
   private long subqueryId;
   /** The status of the query. Must be kept synchronized. */
   @GuardedBy("this")
   private Status status;
   /** The subqueries to be executed. */
+  @GuardedBy("this")
   private final LinkedList<SubQuery> subQueryQ;
   /** The query plan tasks to be executed. */
+  @GuardedBy("this")
   private final LinkedList<QueryPlan> planQ;
   /** The execution statistics about this query. */
+  @GuardedBy("this")
   private final ExecutionStatistics executionStats;
   /** The currently-executing subquery. */
+  @GuardedBy("this")
   private SubQuery currentSubQuery;
   /** The server. */
   private final Server server;
@@ -98,10 +103,8 @@ public final class Query {
    * 
    * @return the status of this query.
    */
-  public QueryStatusEncoding.Status getStatus() {
-    synchronized (this) {
-      return status;
-    }
+  public synchronized QueryStatusEncoding.Status getStatus() {
+    return status;
   }
 
   /**
@@ -109,7 +112,7 @@ public final class Query {
    * 
    * @return <code>true</code> if this query has finished, and <code>false</code> otherwise
    */
-  public boolean isDone() {
+  public synchronized boolean isDone() {
     return subQueryQ.isEmpty() && planQ.isEmpty();
   }
 
@@ -118,7 +121,7 @@ public final class Query {
    * 
    * @return the {@link SubQuery} that is currently executing, or <code>null</code> if nothing is running
    */
-  public SubQuery getCurrentSubQuery() {
+  public synchronized SubQuery getCurrentSubQuery() {
     return currentSubQuery;
   }
 
@@ -128,7 +131,7 @@ public final class Query {
    * 
    * @param subQuery the subquery about to be executed. This subquery must have already been removed from the queue.
    */
-  private void addDerivedSubQueries(final SubQuery subQuery) {
+  private synchronized void addDerivedSubQueries(final SubQuery subQuery) {
     Map<RelationKey, RelationWriteMetadata> relationsWritten = currentSubQuery.getRelationWriteMetadata();
     if (!relationsWritten.isEmpty()) {
       SubQuery updateCatalog =
@@ -142,11 +145,15 @@ public final class Query {
    * 
    * @return the next {@link SubQuery} to run
    * @throws DbException if there is an error
+   * @throws QueryKilledException if the query has been killed.
    */
-  public SubQuery nextSubQuery() throws DbException {
+  public synchronized SubQuery nextSubQuery() throws DbException, QueryKilledException {
     Preconditions.checkState(currentSubQuery == null, "must call finishSubQuery before calling nextSubQuery");
     if (isDone()) {
       return null;
+    }
+    if (status == Status.KILLING) {
+      throw new QueryKilledException();
     }
     if (!subQueryQ.isEmpty()) {
       currentSubQuery = subQueryQ.removeFirst();
@@ -176,7 +183,7 @@ public final class Query {
   /**
    * Mark the current {@link SubQuery} as finished.
    */
-  public void finishSubQuery() {
+  public synchronized void finishSubQuery() {
     currentSubQuery = null;
   }
 
@@ -185,17 +192,15 @@ public final class Query {
    * 
    * @return the time this query started, in ISO8601 format, or <code>null</code> if the query has not yet been started
    */
-  public String getStartTime() {
+  public synchronized String getStartTime() {
     return executionStats.getStartTime();
   }
 
   /**
    * Set the time this query started to now in ISO8601 format.
    */
-  public void markStart() {
-    synchronized (this) {
-      status = Status.RUNNING;
-    }
+  public synchronized void markStart() {
+    status = Status.RUNNING;
     executionStats.markStart();
   }
 
@@ -204,38 +209,36 @@ public final class Query {
    * 
    * @param cause the reason the query failed.
    */
-  public void markFailed(final Throwable cause) {
+  public synchronized void markFailed(final Throwable cause) {
     Preconditions.checkNotNull(cause, "cause");
-    synchronized (this) {
-      if (status == Status.ERROR || status == Status.SUCCESS || status == Status.KILLED) {
-        LOGGER.warn("Ignoring markFailed(cause) because already have status {}, message {}", status, message, cause);
-        return;
-      }
-      status = Status.ERROR;
+    if (Status.finished(status)) {
+      LOGGER.warn("Ignoring markFailed({}) because already finished: status {}, message {}", cause, status, message);
+      return;
     }
+    status = Status.ERROR;
     markEnd();
-    synchronized (this) {
-      message = ErrorUtils.getStackTrace(cause);
-    }
+    message = ErrorUtils.getStackTrace(cause);
     future.setException(cause);
   }
 
   /**
    * Set the time this query ended to now in ISO8601 format.
    */
-  public void markSuccess() {
+  public synchronized void markSuccess() {
     Verify.verify(currentSubQuery == null, "expect current subquery to be null when query ends");
-    markEnd();
-    synchronized (this) {
-      status = Status.SUCCESS;
+    if (Status.finished(status)) {
+      LOGGER.warn("Ignoring markSuccess() because already finished: status {}, message {}", status, message);
+      return;
     }
+    status = Status.SUCCESS;
+    markEnd();
     future.set(this);
   }
 
   /**
    * Set the time this query ended to now in ISO8601 format.
    */
-  private void markEnd() {
+  private synchronized void markEnd() {
     executionStats.markEnd();
   }
 
@@ -244,7 +247,7 @@ public final class Query {
    * 
    * @return the time this query ended, in ISO8601 format, or <code>null</code> if the query has not yet ended
    */
-  public String getEndTime() {
+  public synchronized String getEndTime() {
     return executionStats.getEndTime();
   }
 
@@ -253,7 +256,7 @@ public final class Query {
    * 
    * @return the time elapsed (in nanoseconds) since the query started
    */
-  public Long getElapsedTime() {
+  public synchronized Long getElapsedTime() {
     return executionStats.getQueryExecutionElapse();
   }
 
@@ -262,10 +265,8 @@ public final class Query {
    * 
    * @return a message explaining why a query failed, or <code>null</code> if the query did not fail
    */
-  public String getMessage() {
-    synchronized (this) {
-      return message;
-    }
+  public synchronized String getMessage() {
+    return message;
   }
 
   /**
@@ -280,11 +281,15 @@ public final class Query {
   /**
    * Call when the query has been killed.
    */
-  public void markKilled() {
+  public synchronized void markKilled() {
     markEnd();
-    synchronized (this) {
-      status = Status.SUCCESS;
+    if (Status.finished(status)) {
+      LOGGER.warn("Ignoring markKilled() because already finished: status {}, message {}", status, message);
+      return;
     }
+    Preconditions.checkState(status == Status.KILLING,
+        "cannot mark a query killed unless its status is KILLING, not %s", status);
+    status = Status.KILLED;
     future.cancel(true);
   }
 
@@ -320,5 +325,20 @@ public final class Query {
    */
   public void setGlobal(final String key, final Object value) {
     globals.put(key, value);
+  }
+
+  /**
+   * Initiate the process of killing this query, if it's not done already.
+   */
+  public synchronized void kill() {
+    if (!Status.ongoing(status)) {
+      LOGGER.warn("Ignoring kill() because query is not ongoing; status {}, message {}", status, message);
+      return;
+    }
+    status = Status.KILLING;
+    if (currentSubQuery != null) {
+      server.killSubQuery(currentSubQuery.getSubQueryId());
+      currentSubQuery = null;
+    }
   }
 }
