@@ -53,6 +53,7 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
    */
   public DatasetMetadataUpdater(final MasterCatalog catalog, final Map<Integer, SingleQueryPlanWithArgs> workerPlans,
       final long queryId) throws CatalogException {
+    LOGGER.info("DatasetMetadataUpdater constructor.");
     this.catalog = Objects.requireNonNull(catalog);
     this.queryId = queryId;
     relationsCreated = inferRelationsCreated(Objects.requireNonNull(workerPlans), catalog);
@@ -104,6 +105,8 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
       final Map<Integer, SingleQueryPlanWithArgs> workerPlans, final MasterCatalog catalog) throws CatalogException {
     Map<RelationKey, RelationMetadata> ret = new HashMap<RelationKey, RelationMetadata>();
 
+    LOGGER.info("DatasetMetadataUpdater.inferRelationsCreated");
+
     /* For each plan, look for DbInsert operators. */
     for (Map.Entry<Integer, SingleQueryPlanWithArgs> entry : workerPlans.entrySet()) {
       SingleQueryPlanWithArgs plan = entry.getValue();
@@ -114,19 +117,26 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
         if (op instanceof DbInsert) {
           /* Add this worker to the set of workers storing the new copy of this relation. */
           RelationKey relationKey = ((DbInsert) op).getRelationKey();
+          LOGGER.info("Relation " + relationKey.toString() + " with DbInsert");
           Integer partitionId = relationKey.getPartitionId();
           if (partitionId != null) {
             /* empties the relation key partitionId, we put this information now on the metadata. */
+            LOGGER.info("Relation replicated. Removing partition information from relationKey.");
             relationKey.setPartitionId(null);
+          } else {
+            LOGGER.info("Relation not replicated.");
           }
           RelationMetadata meta = ret.get(relationKey);
           if (meta == null) {
             meta = new RelationMetadata();
             ret.put(relationKey, meta);
           }
+          LOGGER.info("Adding worker " + workerId + "to the metadata.");
           meta.getWorkers().add(workerId);
           if (partitionId != null) {
-            meta.addPartition(workerId, partitionId);
+            LOGGER.info("Adding partition " + partitionId + " associated with worker " + workerId
+                + " into the metadata.");
+            meta.addPartition(partitionId, workerId);
           }
           Schema newSchema = op.getSchema();
           Schema oldSchema = catalog.getSchema(relationKey);
@@ -206,6 +216,14 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
      */
     public void setSchema(final Schema schema) {
       this.schema = Objects.requireNonNull(schema);
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder();
+      sb.append(workers.toString()).append(" - ").append(partitionsWorkers.toString()).append(" - ").append(
+          schema.toString());
+      return sb.toString();
     }
   }
 }

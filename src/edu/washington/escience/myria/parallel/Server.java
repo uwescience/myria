@@ -1466,6 +1466,8 @@ public final class Server {
   public void importDataset(final RelationKey relationKey, final Schema schema, final Set<Integer> workersToImportFrom)
       throws DbException, InterruptedException {
 
+    // TODO valmeida allow database importing to deal with replication as ingest does
+
     /* Figure out the workers we will use. If workersToImportFrom is null, use all active workers. */
     Set<Integer> actualWorkers = workersToImportFrom;
     if (workersToImportFrom == null) {

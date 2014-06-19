@@ -439,10 +439,10 @@ public final class MasterCatalog {
    * @param howPartitioned how this copy of the relation is partitioned.
    * @throws CatalogException if there is an error in the database.
    */
-  public void addStoredRelation(final RelationKey relation, final RelationMetadata relationMetadata,
-      final String howPartitioned) throws CatalogException {
+  public void addStoredRelation(final RelationKey relation, final Set<Integer> workers, final String howPartitioned)
+      throws CatalogException {
     Objects.requireNonNull(relation);
-    Objects.requireNonNull(relationMetadata);
+    Objects.requireNonNull(workers);
     Objects.requireNonNull(howPartitioned);
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
@@ -464,9 +464,9 @@ public final class MasterCatalog {
             statement.bind(1, relation.getUserName());
             statement.bind(2, relation.getProgramName());
             statement.bind(3, relation.getRelationName());
-            statement.bind(4, relationMetadata.getWorkers().size());
-            statement.bind(5, relationMetadata.getReplicationFactor());
-            statement.bind(5, howPartitioned);
+            statement.bind(4, workers.size());
+            statement.bind(5, 1);
+            statement.bind(6, howPartitioned);
             statement.stepThrough();
             statement.dispose();
             statement = null;
@@ -476,11 +476,94 @@ public final class MasterCatalog {
             statement =
                 sqliteConnection.prepare("INSERT INTO shards(stored_relation_id,shard_index,worker_id) "
                     + "VALUES (?,?,?);");
+            int count = 0;
+            for (Integer workerId : workers) {
+              statement.bind(1, storedRelationId);
+              statement.bind(2, count);
+              statement.bind(3, workerId);
+              statement.step();
+              statement.reset(false);
+            }
+            statement.dispose();
+            statement = null;
+
+            /* To complete: commit the transaction. */
+            sqliteConnection.exec("COMMIT TRANSACTION;");
+          } catch (final SQLiteException e) {
+            throw new CatalogException(e);
+          }
+          return null;
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
+   * Adds the metadata for a relation into the Catalog.
+   * 
+   * @param relation the relation to create.
+   * @param workers the IDs of the workers storing this copy of the relation.
+   * @param howPartitioned how this copy of the relation is partitioned.
+   * @throws CatalogException if there is an error in the database.
+   */
+  public void addStoredRelation(final RelationKey relation, final RelationMetadata relationMetadata,
+      final String howPartitioned) throws CatalogException {
+    Objects.requireNonNull(relation);
+    Objects.requireNonNull(relationMetadata);
+    Objects.requireNonNull(howPartitioned);
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+
+    /* Do the work */
+    try {
+      queue.execute(new SQLiteJob<Object>() {
+        @Override
+        protected Object job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+          try {
+            /* To begin: start a transaction. */
+            sqliteConnection.exec("BEGIN TRANSACTION;");
+
+            LOGGER.info("Relation metadata: " + relationMetadata.toString());
+            /* First, populate the stored_relation table. */
+            SQLiteStatement statement =
+                sqliteConnection
+                    .prepare("INSERT INTO stored_relations (user_name,program_name,relation_name,num_shards,rep_factor,how_partitioned) VALUES (?,?,?,?,?,?);");
+            statement.bind(1, relation.getUserName());
+            statement.bind(2, relation.getProgramName());
+            statement.bind(3, relation.getRelationName());
+            statement.bind(4, relationMetadata.getPartitionsWorkers().size());
+            statement.bind(5, relationMetadata.getReplicationFactor());
+            statement.bind(6, howPartitioned);
+            LOGGER.info("Insert statement on stored_relations.");
+            LOGGER.info("user_name: " + relation.getUserName());
+            LOGGER.info("program_name: " + relation.getProgramName());
+            LOGGER.info("relation_name: " + relation.getRelationName());
+            LOGGER.info("num_shards: " + relationMetadata.getPartitionsWorkers().size());
+            LOGGER.info("rep_factor" + relationMetadata.getReplicationFactor());
+            LOGGER.info("how_partitioned" + howPartitioned);
+            statement.step();
+            statement.dispose();
+            statement = null;
+
+            LOGGER.info("Inserted");
+
+            Long storedRelationId = sqliteConnection.getLastInsertId();
+            /* Second, populate the shards table. */
+            statement =
+                sqliteConnection.prepare("INSERT INTO shards(stored_relation_id,shard_index,worker_id) "
+                    + "VALUES (?,?,?);");
+            statement.bind(1, storedRelationId);
             for (Entry<Integer, List<Integer>> e : relationMetadata.getPartitionsWorkers().entrySet()) {
               for (Integer workerId : e.getValue()) {
-                statement.bind(1, storedRelationId);
                 statement.bind(2, e.getKey());
                 statement.bind(3, workerId);
+                LOGGER.info("Insert statement on shards.");
+                LOGGER.info("stored_relation_id: " + storedRelationId);
+                LOGGER.info("shard_index: " + e.getKey());
+                LOGGER.info("worker_id: " + workerId);
                 statement.step();
                 statement.reset(false);
               }
