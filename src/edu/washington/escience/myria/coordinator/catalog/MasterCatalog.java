@@ -41,6 +41,7 @@ import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
 import edu.washington.escience.myria.parallel.DatasetMetadataUpdater.RelationMetadata;
 import edu.washington.escience.myria.parallel.SocketInfo;
+import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * This class is intended to store the configuration information for a Myria installation.
@@ -1390,6 +1391,8 @@ public final class MasterCatalog {
       throw new CatalogException("Catalog is closed.");
     }
 
+    LOGGER.info("MasterCatalog.getWorkersForRelation");
+    LOGGER.info("Relation " + relationKey.toString());
     try {
       return queue.execute(new SQLiteJob<List<Integer>>() {
         @Override
@@ -1413,16 +1416,32 @@ public final class MasterCatalog {
             }
             /* Get the list of associated workers. */
             SQLiteStatement statement =
-                sqliteConnection.prepare("SELECT worker_id FROM shards WHERE stored_relation_id = ?;");
+                sqliteConnection
+                    .prepare("SELECT shard_index, worker_id FROM shards WHERE stored_relation_id = ? ORDER BY shard_index;");
             statement.bind(1, relationId);
             List<Integer> ret = new ArrayList<Integer>();
+            Map<Integer, List<Integer>> shardsWorkers = new HashMap<Integer, List<Integer>>();
             while (statement.step()) {
-              ret.add(statement.columnInt(0));
+              Integer shardIndex = statement.columnInt(0);
+              Integer workerId = statement.columnInt(1);
+              if (shardsWorkers.containsKey(shardIndex)) {
+                shardsWorkers.get(shardIndex).add(workerId);
+              } else {
+                List<Integer> workers = new ArrayList<Integer>();
+                workers.add(workerId);
+                shardsWorkers.put(shardIndex, workers);
+              }
             }
             statement.dispose();
-            if (ret.size() == 0) {
+            if (shardsWorkers.size() == 0) {
               return null;
+            } else {
+              /* compute the list of workers */
+              for (Entry<Integer, List<Integer>> e : shardsWorkers.entrySet()) {
+                ret.add(MyriaUtils.getSingleElement(MyriaUtils.randomSample(e.getValue(), 1)));
+              }
             }
+            LOGGER.info("Resulting set of workers " + ret.toString());
             return ret;
           } catch (final SQLiteException e) {
             throw new CatalogException(e);
