@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.Nonnull;
 import javax.ws.rs.core.Response.Status;
 
 import org.slf4j.LoggerFactory;
@@ -61,10 +62,10 @@ public class QueryConstruct {
    * @return the physical plan
    * @throws CatalogException if there is an error instantiating the plan
    */
-  public static Map<Integer, SubQueryPlan> instantiate(List<PlanFragmentEncoding> fragments, final Server server)
+  public static Map<Integer, SubQueryPlan> instantiate(List<PlanFragmentEncoding> fragments, final ConstructArgs args)
       throws CatalogException {
     /* First, we need to know which workers run on each plan. */
-    setupWorkersForFragments(fragments, server);
+    setupWorkersForFragments(fragments, args);
     /* Next, we need to know which pipes (operators) are produced and consumed on which workers. */
     setupWorkerNetworkOperators(fragments);
 
@@ -83,7 +84,7 @@ public class QueryConstruct {
     HashMap<Integer, Operator> allOperators = new HashMap<Integer, Operator>();
     for (PlanFragmentEncoding fragment : fragments) {
       RootOperator op =
-          instantiateFragment(fragment, server, instantiatedFragments, op2OwnerFragmentMapping, allOperators);
+          instantiateFragment(fragment, args, instantiatedFragments, op2OwnerFragmentMapping, allOperators);
       for (Integer worker : fragment.workers) {
         SubQueryPlan workerPlan = plan.get(worker);
         if (workerPlan == null) {
@@ -116,8 +117,9 @@ public class QueryConstruct {
    * 
    * @throws CatalogException if there is an error in the Catalog.
    */
-  private static void setupWorkersForFragments(List<PlanFragmentEncoding> fragments, final Server server)
+  private static void setupWorkersForFragments(List<PlanFragmentEncoding> fragments, final ConstructArgs args)
       throws CatalogException {
+    Server server = args.getServer();
     for (PlanFragmentEncoding fragment : fragments) {
       if (fragment.workers != null && fragment.workers.size() > 0) {
         /* The workers are set in the plan. */
@@ -129,25 +131,34 @@ public class QueryConstruct {
 
       /* If the plan has scans, it has to run on all of those workers. */
       for (OperatorEncoding<?> operator : fragment.operators) {
+        Set<Integer> scanWorkers;
+        String scanRelation;
         if (operator instanceof TableScanEncoding) {
           TableScanEncoding scan = ((TableScanEncoding) operator);
-          List<Integer> scanWorkers = server.getWorkersForRelation(scan.relationKey, scan.storedRelationId);
-          if (scanWorkers == null) {
-            throw new MyriaApiException(Status.BAD_REQUEST, "Unable to find workers that store "
-                + scan.relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
-          }
-          if (fragment.workers.size() == 0) {
-            fragment.workers.addAll(scanWorkers);
-          } else {
-            /*
-             * If the fragment already has workers, it scans multiple relations. They better use the exact same set of
-             * workers.
-             */
-            if (fragment.workers.size() != scanWorkers.size() || !fragment.workers.containsAll(scanWorkers)) {
-              throw new MyriaApiException(Status.BAD_REQUEST,
-                  "All tables scanned within a fragment must use the exact same set of workers. Caught at TableScan("
-                      + scan.relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE) + ")");
-            }
+          scanRelation = scan.relationKey.toString();
+          scanWorkers = server.getWorkersForRelation(scan.relationKey, scan.storedRelationId);
+        } else if (operator instanceof TempTableScanEncoding) {
+          TempTableScanEncoding scan = ((TempTableScanEncoding) operator);
+          scanRelation = "temporary relation " + scan.table;
+          scanWorkers =
+              server.getWorkersForTempRelation(args.getQueryId(), RelationKey.ofTemp(args.getQueryId(), scan.table));
+        } else {
+          continue;
+        }
+        if (scanWorkers == null) {
+          throw new MyriaApiException(Status.BAD_REQUEST, "Unable to find workers that store " + scanRelation);
+        }
+        if (fragment.workers.size() == 0) {
+          fragment.workers.addAll(scanWorkers);
+        } else {
+          /*
+           * If the fragment already has workers, it scans multiple relations. They better use the exact same set of
+           * workers.
+           */
+          if (fragment.workers.size() != scanWorkers.size() || !fragment.workers.containsAll(scanWorkers)) {
+            throw new MyriaApiException(Status.BAD_REQUEST,
+                "All tables scanned within a fragment must use the exact same set of workers. Caught scanning "
+                    + scanRelation);
           }
         }
       }
@@ -265,7 +276,7 @@ public class QueryConstruct {
    * @param planFragment the encoded plan fragment.
    * @return the actual plan fragment.
    */
-  private static RootOperator instantiateFragment(final PlanFragmentEncoding planFragment, final Server server,
+  private static RootOperator instantiateFragment(final PlanFragmentEncoding planFragment, final ConstructArgs args,
       final HashMap<PlanFragmentEncoding, RootOperator> instantiatedFragments,
       final Map<Integer, PlanFragmentEncoding> opOwnerFragment, final Map<Integer, Operator> allOperators) {
     RootOperator instantiatedFragment = instantiatedFragments.get(planFragment);
@@ -288,7 +299,7 @@ public class QueryConstruct {
         nonIterativeConsumers.put(encoding.opId, (AbstractConsumerEncoding<?>) encoding);
       }
 
-      Operator op = encoding.construct(server);
+      Operator op = encoding.construct(args);
       /* helpful for debugging. */
       op.setOpName("Operator" + String.valueOf(encoding.opId));
       op.setOpId(encoding.opId);
@@ -318,7 +329,7 @@ public class QueryConstruct {
     }
 
     for (PlanFragmentEncoding f : dependantFragments) {
-      instantiateFragment(f, server, instantiatedFragments, opOwnerFragment, allOperators);
+      instantiateFragment(f, args, instantiatedFragments, opOwnerFragment, allOperators);
     }
 
     for (AbstractConsumerEncoding<?> c : nonIterativeConsumers.values()) {
@@ -417,16 +428,16 @@ public class QueryConstruct {
     return new SubQuery(masterPlan, workerPlans);
   }
 
-  public static JsonSubQuery setDoWhileCondition(final RelationKey condition) {
+  public static JsonSubQuery setDoWhileCondition(final String condition) {
     ImmutableList.Builder<PlanFragmentEncoding> fragments = ImmutableList.builder();
     int opId = 0;
 
     /* The worker part: scan the relation and send it to master. */
     // scan the relation
-    TableScanEncoding scan = new TableScanEncoding();
+    TempTableScanEncoding scan = new TempTableScanEncoding();
     scan.opId = opId++;
     scan.opName = "Scan[" + condition.toString() + "]";
-    scan.relationKey = condition;
+    scan.table = condition;
     // send it to master
     CollectProducerEncoding producer = new CollectProducerEncoding();
     producer.argChild = scan.opId;
@@ -458,5 +469,23 @@ public class QueryConstruct {
 
     // Done!
     return new JsonSubQuery(fragments.build());
+  }
+
+  public final static class ConstructArgs {
+    private final Server server;
+    private final long queryId;
+
+    public ConstructArgs(@Nonnull final Server server, final long queryId) {
+      this.server = Preconditions.checkNotNull(server, "server");
+      this.queryId = queryId;
+    }
+
+    public long getQueryId() {
+      return queryId;
+    }
+
+    public Server getServer() {
+      return server;
+    }
   }
 }

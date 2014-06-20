@@ -131,22 +131,21 @@ public final class QueryResource {
     }
     queryStatus.url = uri;
     Status httpStatus = Status.INTERNAL_SERVER_ERROR;
-    boolean cache = false;
     switch (queryStatus.status) {
       case SUCCESS:
       case ERROR:
       case KILLED:
       case UNKNOWN:
         httpStatus = Status.OK;
-        cache = true;
         break;
       case ACCEPTED:
       case RUNNING:
+      case KILLING:
         httpStatus = Status.ACCEPTED;
         break;
     }
     ResponseBuilder response = Response.status(httpStatus).location(uri).entity(queryStatus);
-    if (!cache) {
+    if (!QueryStatusEncoding.Status.finished(queryStatus.status)) {
       response.cacheControl(MyriaApiUtils.doNotCache());
     }
     return response.build();

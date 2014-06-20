@@ -66,6 +66,26 @@ public class QueryStatusEncoding {
 
   /** The current status of the query. */
   public static enum Status {
-    ACCEPTED, RUNNING, SUCCESS, KILLED, ERROR, UNKNOWN
+    ACCEPTED, RUNNING, SUCCESS, KILLING, KILLED, ERROR, UNKNOWN;
+
+    /**
+     * Return {@code true} if a query with the given status is ongoing, i.e., it can be killed or completed.
+     * 
+     * @param s a status variable
+     * @return {@code true} if a query with the given status is ongoing.
+     */
+    public static boolean ongoing(final Status s) {
+      return s == ACCEPTED || s == RUNNING;
+    }
+
+    /**
+     * Return {@code true} if a query with the given status is completely finished and the status will not change.
+     * 
+     * @param s a status variable
+     * @return {@code true} if a query with the given status is completely finished and the status will not change.
+     */
+    public static boolean finished(final Status s) {
+      return s == SUCCESS || s == KILLED || s == ERROR || s == UNKNOWN;
+    }
   }
 }

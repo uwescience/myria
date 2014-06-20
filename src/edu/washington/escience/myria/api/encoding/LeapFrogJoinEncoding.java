@@ -3,8 +3,8 @@ package edu.washington.escience.myria.api.encoding;
 import java.util.List;
 
 import edu.washington.escience.myria.api.MyriaApiException;
+import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.LeapFrogJoin;
-import edu.washington.escience.myria.parallel.Server;
 
 public class LeapFrogJoinEncoding extends NaryOperatorEncoding<LeapFrogJoin> {
 
@@ -16,7 +16,7 @@ public class LeapFrogJoinEncoding extends NaryOperatorEncoding<LeapFrogJoin> {
   public int[][] outputFieldMapping;
 
   @Override
-  public LeapFrogJoin construct(Server server) throws MyriaApiException {
+  public LeapFrogJoin construct(ConstructArgs args) throws MyriaApiException {
     return new LeapFrogJoin(null, joinFieldMapping, outputFieldMapping, argColumnNames, indexOnFirst);
   }
 }

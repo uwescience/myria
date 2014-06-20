@@ -5,9 +5,9 @@ import javax.ws.rs.core.Response.Status;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.api.MyriaApiException;
+import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
 import edu.washington.escience.myria.operator.network.partition.MFMDHashPartitionFunction;
-import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
 import edu.washington.escience.myria.util.MyriaUtils;
 
@@ -29,7 +29,7 @@ public class HyperShuffleProducerEncoding extends AbstractProducerEncoding<Gener
   public int[][] cellPartition;
 
   @Override
-  public GenericShuffleProducer construct(Server server) throws MyriaApiException {
+  public GenericShuffleProducer construct(ConstructArgs args) throws MyriaApiException {
 
     /*
      * Validate whether number of workers matches cube dimensions.
@@ -51,7 +51,7 @@ public class HyperShuffleProducerEncoding extends AbstractProducerEncoding<Gener
         new MFMDHashPartitionFunction(cellPartition.length, hyperCubeDimensions, hashedColumns, mappedHCDimensions);
 
     return new GenericShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), cellPartition,
-        MyriaUtils.integerCollectionToIntArray(server.getRandomWorkers(numCells)), pf);
+        MyriaUtils.integerCollectionToIntArray(args.getServer().getRandomWorkers(numCells)), pf);
   }
 
   @Override

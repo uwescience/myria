@@ -8,8 +8,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.api.encoding.QueryConstruct;
+import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 
 /**
  * A {@link QueryPlan} node that signifies running each of its children serially.
@@ -18,7 +18,7 @@ public final class DoWhile extends QueryPlan {
   /** The query plans in the body. */
   private final List<QueryPlan> body;
   /** The relation to be scanned for the while loop continuation condition. */
-  private final RelationKey condition;
+  private final String condition;
   /** Whether this while loop has ever been run. */
   private boolean hasRun;
 
@@ -30,7 +30,7 @@ public final class DoWhile extends QueryPlan {
    * @param condition the relation to be scanned for the while loop continuation condition. Must be a singleton boolean
    *          relation.
    */
-  public DoWhile(final List<? extends QueryPlan> body, final RelationKey condition) {
+  public DoWhile(final List<? extends QueryPlan> body, final String condition) {
     this.body = ImmutableList.copyOf(Objects.requireNonNull(body, "body"));
     this.condition = Objects.requireNonNull(condition, "condition");
     hasRun = false;
@@ -51,16 +51,15 @@ public final class DoWhile extends QueryPlan {
    * 
    * @param planQ the queue of {@link QueryPlan} tasks
    * @param subQueryQ the queue of {@link SubQuery} tasks
-   * @param server the server on which the {@link SubQuery} tasks will be executed
-   * @param queryId the query of which the instantiated plan will be a part.
+   * @param args the {@link QueryConstruct#ConstructArgs} arguments needed to instantiate a query plan
    */
   @Override
-  public void instantiate(final LinkedList<QueryPlan> planQ, final LinkedList<SubQuery> subQueryQ, final Server server,
-      final long queryId) {
+  public void instantiate(final LinkedList<QueryPlan> planQ, final LinkedList<SubQuery> subQueryQ,
+      final ConstructArgs args) {
     QueryPlan checkTask = planQ.peekFirst();
     Verify.verify(checkTask == this, "this %s should be the first object on the queue, not %s!", this, checkTask);
     if (hasRun) {
-      Boolean b = (Boolean) server.getQueryGlobal(queryId, condition.toString());
+      Boolean b = (Boolean) args.getServer().getQueryGlobal(args.getQueryId(), condition.toString());
       Preconditions.checkState(b != null,
           "Query %s: DoWhile Loop has run, but global variable for loop condition (%s) has not been set", condition
               .toString());

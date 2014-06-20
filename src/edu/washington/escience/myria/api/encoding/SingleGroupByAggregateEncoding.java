@@ -2,9 +2,9 @@ package edu.washington.escience.myria.api.encoding;
 
 import java.util.List;
 
+import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.agg.Aggregator;
 import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
-import edu.washington.escience.myria.parallel.Server;
 
 public class SingleGroupByAggregateEncoding extends UnaryOperatorEncoding<SingleGroupByAggregate> {
 
@@ -16,7 +16,7 @@ public class SingleGroupByAggregateEncoding extends UnaryOperatorEncoding<Single
   public int argGroupField;
 
   @Override
-  public SingleGroupByAggregate construct(Server server) {
+  public SingleGroupByAggregate construct(ConstructArgs args) {
     int[] ops = deserializeAggregateOperator(argAggOperators);
     return new SingleGroupByAggregate(null, argAggFields, argGroupField, ops);
   }

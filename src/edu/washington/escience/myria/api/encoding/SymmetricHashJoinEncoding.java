@@ -2,8 +2,8 @@ package edu.washington.escience.myria.api.encoding;
 
 import java.util.List;
 
+import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
-import edu.washington.escience.myria.parallel.Server;
 
 public class SymmetricHashJoinEncoding extends BinaryOperatorEncoding<SymmetricHashJoin> {
 
@@ -20,7 +20,7 @@ public class SymmetricHashJoinEncoding extends BinaryOperatorEncoding<SymmetricH
   public boolean argSetSemanticsRight = false;
 
   @Override
-  public SymmetricHashJoin construct(Server server) {
+  public SymmetricHashJoin construct(ConstructArgs args) {
     return new SymmetricHashJoin(argColumnNames, null, null, argColumns1, argColumns2, argSelect1, argSelect2,
         argSetSemanticsLeft, argSetSemanticsRight);
   }

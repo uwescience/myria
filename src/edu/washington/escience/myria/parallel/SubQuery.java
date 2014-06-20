@@ -15,6 +15,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 
 import edu.washington.escience.myria.RelationKey;
+import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
@@ -175,12 +176,31 @@ public final class SubQuery extends QueryPlan {
   }
 
   @Override
-  public void instantiate(final LinkedList<QueryPlan> planQ, final LinkedList<SubQuery> subQueryQ, final Server server,
-      final long queryId) {
+  public void instantiate(final LinkedList<QueryPlan> planQ, final LinkedList<SubQuery> subQueryQ,
+      final ConstructArgs args) {
     QueryPlan task = planQ.peekFirst();
     Verify.verify(task == this, "this %s should be the first object on the queue, not %s!", this, task);
     planQ.removeFirst();
     subQueryQ.addFirst(this);
+  }
+
+  /**
+   * Returns a mapping showing what persistent relations this subquery will write, and all the associated
+   * {@link RelationWriteMetadata} about these relations. This function is like {@link #getRelationWriteMetadata()}, but
+   * returns only those relations that are persisted.
+   * 
+   * @return a mapping showing what persistent relations are written and the corresponding {@link RelationWriteMetadata}
+   *         .
+   */
+  public Map<RelationKey, RelationWriteMetadata> getPersistentRelationWriteMetadata() {
+    ImmutableMap.Builder<RelationKey, RelationWriteMetadata> ret = ImmutableMap.builder();
+    for (Map.Entry<RelationKey, RelationWriteMetadata> entry : getRelationWriteMetadata().entrySet()) {
+      RelationWriteMetadata meta = entry.getValue();
+      if (!meta.isTemporary()) {
+        ret.put(entry);
+      }
+    }
+    return ret.build();
   }
 
   /**
@@ -207,7 +227,7 @@ public final class SubQuery extends QueryPlan {
           ret.put(relation, meta);
         } else {
           /* We have an entry for this relation. Make sure that schema and overwrite match. */
-          Preconditions.checkArgument(meta.getOverwrite() == metadata.getOverwrite(),
+          Preconditions.checkArgument(meta.isOverwrite() == metadata.isOverwrite(),
               "cannot mix overwriting and appending to %s in the same subquery %s", relation, getSubQueryId());
           Preconditions.checkArgument(meta.getSchema() == metadata.getSchema(),
               "cannot write to %s with two different Schemas %s and %s in the same subquery %s", relation, meta

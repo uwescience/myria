@@ -1280,7 +1280,7 @@ public final class MasterCatalog {
    * @return the list of workers that are involved in storing this relation.
    * @throws CatalogException if there is an error in the database.
    */
-  public List<Integer> getWorkersForRelation(final RelationKey relationKey, final Integer storedRelationId)
+  public Set<Integer> getWorkersForRelation(final RelationKey relationKey, final Integer storedRelationId)
       throws CatalogException {
     Objects.requireNonNull(relationKey);
     if (isClosed) {
@@ -1288,9 +1288,9 @@ public final class MasterCatalog {
     }
 
     try {
-      return queue.execute(new SQLiteJob<List<Integer>>() {
+      return queue.execute(new SQLiteJob<Set<Integer>>() {
         @Override
-        protected List<Integer> job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+        protected Set<Integer> job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
           try {
             Integer relationId = storedRelationId;
             /* First, if the storedRelationId is null we pick the first copy of this relation. */
@@ -1312,7 +1312,7 @@ public final class MasterCatalog {
             SQLiteStatement statement =
                 sqliteConnection.prepare("SELECT worker_id FROM shards WHERE stored_relation_id = ?;");
             statement.bind(1, relationId);
-            List<Integer> ret = new ArrayList<Integer>();
+            Set<Integer> ret = new HashSet<Integer>();
             while (statement.step()) {
               ret.add(statement.columnInt(0));
             }

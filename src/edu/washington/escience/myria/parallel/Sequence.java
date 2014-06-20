@@ -7,6 +7,8 @@ import java.util.Objects;
 import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableList;
 
+import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
+
 /**
  * A {@link QueryPlan} node that signifies running each of its children serially.
  */
@@ -24,8 +26,8 @@ public final class Sequence extends QueryPlan {
   }
 
   @Override
-  public void instantiate(final LinkedList<QueryPlan> planQ, final LinkedList<SubQuery> subQueryQ, final Server server,
-      final long queryId) {
+  public void instantiate(final LinkedList<QueryPlan> planQ, final LinkedList<SubQuery> subQueryQ,
+      final ConstructArgs args) {
     QueryPlan checkTask = planQ.peekFirst();
     Verify.verify(checkTask == this, "this %s should be the first object on the queue, not %s!", this, checkTask);
     planQ.removeFirst();

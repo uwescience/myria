@@ -1,10 +1,10 @@
 package edu.washington.escience.myria.systemtest;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import java.util.HashMap;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -13,10 +13,10 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.Uninterruptibles;
 
-import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
@@ -31,7 +31,7 @@ import edu.washington.escience.myria.util.TestUtils;
 
 public class QueryKillTest extends SystemTestBase {
 
-  @Test(expected = CancellationException.class)
+  @Test
   public void killQueryTest() throws Throwable {
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
     createTable(workerIDs[0], testtableKey, "id long, name varchar(20)");
@@ -90,8 +90,10 @@ public class QueryKillTest extends SystemTestBase {
     server.killQuery(qf.getQueryId());
     try {
       qf.get();
-    } catch (ExecutionException e) {
-      throw new DbException("Executing query", e.getCause());
+      fail();
+    } catch (CancellationException e) {
+      /* This is the desired behavior. */
     }
+    assertEquals(Status.KILLED, server.getQueryStatus(qf.getQueryId()).status);
   }
 }

@@ -1,7 +1,7 @@
 package edu.washington.escience.myria.api.encoding;
 
+import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.Counter;
-import edu.washington.escience.myria.parallel.Server;
 
 public class CounterEncoding extends UnaryOperatorEncoding<Counter> {
 
@@ -9,7 +9,7 @@ public class CounterEncoding extends UnaryOperatorEncoding<Counter> {
   public String columnName;
 
   @Override
-  public Counter construct(Server server) {
+  public Counter construct(ConstructArgs args) {
     return new Counter(columnName);
   }
 

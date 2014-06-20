@@ -2,13 +2,15 @@ package edu.washington.escience.myria.api.encoding;
 
 import java.util.Map;
 
+import javax.annotation.Nonnull;
+
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import edu.washington.escience.myria.api.MyriaApiException;
+import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.parallel.Server;
 
 /**
  * A JSON-able wrapper for the expected wire message for an operator. To add a new operator, two things need to be done.
@@ -55,6 +57,8 @@ import edu.washington.escience.myria.parallel.Server;
     @Type(name = "SymmetricHashJoin", value = SymmetricHashJoinEncoding.class),
     @Type(name = "SymmetricHashCountingJoin", value = SymmetricHashCountingJoinEncoding.class),
     @Type(name = "TableScan", value = TableScanEncoding.class),
+    @Type(name = "TempInsert", value = TempInsertEncoding.class),
+    @Type(name = "TempTableScan", value = TempTableScanEncoding.class),
     @Type(name = "TipsyFileScan", value = TipsyFileScanEncoding.class),
     @Type(name = "UnionAll", value = UnionAllEncoding.class) })
 public abstract class OperatorEncoding<T extends Operator> extends MyriaApiEncoding {
@@ -70,9 +74,9 @@ public abstract class OperatorEncoding<T extends Operator> extends MyriaApiEncod
   public abstract void connect(Operator operator, Map<Integer, Operator> operators);
 
   /**
-   * @param server the Myria server for which this operator will be used.
+   * @param args TODO
    * @return an instantiated operator.
    */
-  public abstract T construct(Server server) throws MyriaApiException;
+  public abstract T construct(@Nonnull ConstructArgs args) throws MyriaApiException;
 
 }
