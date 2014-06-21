@@ -1414,6 +1414,9 @@ public final class MasterCatalog {
               relationId = statement.columnInt(0);
               statement.dispose();
             }
+
+            LOGGER.info("Relation id: " + relationId);
+
             /* Get the list of associated workers. */
             SQLiteStatement statement =
                 sqliteConnection
@@ -1421,9 +1424,11 @@ public final class MasterCatalog {
             statement.bind(1, relationId);
             List<Integer> ret = new ArrayList<Integer>();
             Map<Integer, List<Integer>> shardsWorkers = new HashMap<Integer, List<Integer>>();
+            LOGGER.info("Running the query to select shards and worker ids");
             while (statement.step()) {
               Integer shardIndex = statement.columnInt(0);
               Integer workerId = statement.columnInt(1);
+              LOGGER.info("shardIndex: " + shardIndex + " workerId: " + workerId);
               if (shardsWorkers.containsKey(shardIndex)) {
                 shardsWorkers.get(shardIndex).add(workerId);
               } else {
@@ -1432,6 +1437,7 @@ public final class MasterCatalog {
                 shardsWorkers.put(shardIndex, workers);
               }
             }
+            LOGGER.info("shardWorkers: " + shardsWorkers.toString());
             statement.dispose();
             if (shardsWorkers.size() == 0) {
               return null;
