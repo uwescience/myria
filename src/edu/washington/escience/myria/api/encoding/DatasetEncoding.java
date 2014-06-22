@@ -26,35 +26,34 @@ public class DatasetEncoding extends MyriaApiEncoding {
   public Boolean importFromDatabase;
   public List<List<IndexRef>> indexes;
   public Boolean overwrite;
-  public List<Set<Integer>> partitions;
-  public Integer numPartitions;
+  public List<Set<Integer>> shards;
+  public Integer numShards;
   public Integer repFactor;
 
   @Override
   protected void validateExtra() throws MyriaApiException {
     if (workers != null) {
-      if (partitions != null || numPartitions != null || repFactor != null) {
+      if (shards != null || numShards != null || repFactor != null) {
         throw new MyriaApiException(Status.BAD_REQUEST, "Worker list can be set only if no replication is used.");
       }
     } else {
-      if (partitions != null && numPartitions != null) {
-        throw new MyriaApiException(Status.BAD_REQUEST,
-            "One cannot set both the number of partitions and a partitions list.");
+      if (shards != null && numShards != null) {
+        throw new MyriaApiException(Status.BAD_REQUEST, "One cannot set both the number of shards and a shard list.");
       }
-      if (numPartitions == null) {
+      if (numShards == null) {
         /* partition list is set, check upon replication factor */
-        if (partitions.size() == 0) {
-          throw new MyriaApiException(Status.BAD_REQUEST, "User-specified partitions (optional) cannot be empty.");
+        if (shards.size() == 0) {
+          throw new MyriaApiException(Status.BAD_REQUEST, "User-specified shards (optional) cannot be empty.");
         }
-        // TODO valmeida traverse the list of partitions validating each component
-        numPartitions = partitions.size();
-        repFactor = partitions.get(0).size();
+        // TODO valmeida traverse the list of shards validating each component
+        numShards = shards.size();
+        repFactor = shards.get(0).size();
       } else {
-        // TODO valmeida case with no replication where numPartitions is set instead of workers list
+        // TODO valmeida case with no replication where numShards is set instead of workers list
       }
       /*
-       * It can still happen that the worker list and numPartitions are both null. In this case, we will later construct
-       * the partitions with all alive workers.
+       * It can still happen that the worker list and number of shards are both null. In this case, we will later
+       * construct the partitions with all alive workers.
        */
     }
   }

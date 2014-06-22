@@ -283,7 +283,7 @@ public final class DatasetResource {
       LOGGER.info("Dataset " + dataset.relationKey.toString("sqlite")
           + " ingested with replication. Replication factor " + dataset.repFactor);
       return doIngest(dataset.relationKey, new FileScan(dataset.source, dataset.schema, dataset.delimiter,
-          dataset.quote, dataset.escape, dataset.numberOfSkippedLines), dataset.partitions, dataset.numPartitions,
+          dataset.quote, dataset.escape, dataset.numberOfSkippedLines), dataset.shards, dataset.numShards,
           dataset.repFactor, dataset.indexes, dataset.overwrite, builder);
     }
   }
@@ -392,8 +392,8 @@ public final class DatasetResource {
    * 
    * @param relationKey the destination relation for the data
    * @param source the source of tuples to be loaded
-   * @param partitions the workers on which the partitions will be stored
-   * @param numPartitions the number of partitions
+   * @param shards the workers on which the partitions will be stored
+   * @param numShards the number of partitions
    * @param repFactor the replication factor
    * @param indexes any user-requested indexes to be created
    * @param overwrite whether an existing relation should be overwritten
@@ -401,12 +401,12 @@ public final class DatasetResource {
    * @return the created dataset resource
    * @throws DbException on any error
    */
-  private Response doIngest(final RelationKey relationKey, final Operator source, final List<Set<Integer>> partitions,
-      final Integer numPartitions, final Integer repFactor, final List<List<IndexRef>> indexes,
-      final Boolean overwrite, final ResponseBuilder builder) throws DbException {
+  private Response doIngest(final RelationKey relationKey, final Operator source, final List<Set<Integer>> shards,
+      final Integer numShards, final Integer repFactor, final List<List<IndexRef>> indexes, final Boolean overwrite,
+      final ResponseBuilder builder) throws DbException {
 
     LOGGER.info("DatasetResource.doIngest start.");
-    LOGGER.info("# of partitions: " + numPartitions + " and replication factor: " + repFactor);
+    LOGGER.info("# of partitions: " + numShards + " and replication factor: " + repFactor);
 
     /* Validate the workers that will ingest this dataset. */
     if (server.getAliveWorkers().size() == 0) {
@@ -414,11 +414,11 @@ public final class DatasetResource {
     }
 
     /* Mount the list of data nodes. */
-    List<Set<Integer>> actualPartitions;
-    Integer actualNumPartitions;
+    List<Set<Integer>> actualShards;
+    Integer actualNumShards;
     Integer actualRepFactor;
 
-    if (partitions != null) {
+    if (shards != null) {
       /* partition list is set, in this case numPartitions and repFactor are also set */
       LOGGER.info("DatasetResource.doIngest partitions set.");
       // TODO valmeida check whether all requested workers are alive.
@@ -426,16 +426,16 @@ public final class DatasetResource {
        * if (!server.getAliveWorkers().containsAll(workers)) { throw new MyriaApiException(Status.SERVICE_UNAVAILABLE,
        * "Not all requested workers are alive"); }
        */
-      actualPartitions = partitions;
-      actualNumPartitions = numPartitions;
+      actualShards = shards;
+      actualNumShards = numShards;
       actualRepFactor = repFactor;
     } else {
-      if (numPartitions != null) {
-        /* numPartitions set, repFactor can be null */
-        actualNumPartitions = numPartitions;
+      if (numShards != null) {
+        /* numShards set, repFactor can be null */
+        actualNumShards = numShards;
       } else {
-        /* numPartitions not set, we use all alive workers. */
-        actualNumPartitions = server.getAliveWorkers().size();
+        /* numShards not set, we use all alive workers. */
+        actualNumShards = server.getAliveWorkers().size();
       }
       if (repFactor == null) {
         actualRepFactor = 1;
@@ -444,11 +444,11 @@ public final class DatasetResource {
         actualRepFactor = repFactor;
       }
       LOGGER.info("DatasetResource.doIngest numPartitions and repFactor set. Retrieving samples");
-      actualPartitions = server.getSampleAliveWorkers(actualNumPartitions, actualRepFactor);
+      actualShards = server.getSampleAliveWorkers(actualNumShards, actualRepFactor);
     }
 
     /* Validate that there are enough alive workers, given the number of partitions and the replication factor. */
-    if (server.getAliveWorkers().size() < numPartitions || server.getAliveWorkers().size() < repFactor) {
+    if (server.getAliveWorkers().size() < numShards || server.getAliveWorkers().size() < repFactor) {
       throw new MyriaApiException(Status.BAD_REQUEST, "There are not enough alive workers to receive this dataset.");
     }
 
@@ -465,10 +465,10 @@ public final class DatasetResource {
     DatasetStatus status = null;
     try {
       LOGGER.info("DatasetResource.doIngest Ingesting the dataset.");
-      LOGGER.info("Partitions: " + partitions.toString());
-      LOGGER.info("numPartitions: " + numPartitions);
-      LOGGER.info("repFactor: " + repFactor);
-      status = server.ingestDataset(relationKey, actualPartitions, actualNumPartitions, repFactor, indexes, source);
+      LOGGER.info("Shards: " + actualShards.toString());
+      LOGGER.info("numShards: " + actualNumShards);
+      LOGGER.info("repFactor: " + actualRepFactor);
+      status = server.ingestDataset(relationKey, actualShards, actualNumShards, actualRepFactor, indexes, source);
       LOGGER.info("DatasetResource.doIngest Dataset ingested.");
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();

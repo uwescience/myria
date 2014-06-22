@@ -1193,19 +1193,35 @@ public final class Server {
   }
 
   /**
-   * @return the organization of partitions and replication, given the alive workers
+   * @return the organization of shards and replication, given the alive workers
    * 
-   * @param numPartitions the number of partitions
-   * @param replicationFactor the replication factor
+   * @param numShards the number of partitions
+   * @param repFactor the replication factor
    * 
    */
-  public List<Set<Integer>> getSampleAliveWorkers(final Integer numPartitions, final Integer replicationFactor) {
+  public List<Set<Integer>> getSampleAliveWorkers(final Integer numShards, final Integer repFactor) {
+    Preconditions.checkNotNull(numShards);
+    Preconditions.checkNotNull(repFactor);
+    Preconditions.checkArgument(repFactor >= 1);
+
     List<Set<Integer>> result = new ArrayList<Set<Integer>>();
     List<Integer> alive = Collections.list(aliveWorkers.keys());
-    for (int i = 0; i < numPartitions; i++) {
-      Set<Integer> partition = MyriaUtils.randomSample(alive, replicationFactor);
-      result.add(partition);
+    Set<Integer> mainShardWorkers = MyriaUtils.randomSample(alive, numShards);
+    LOGGER.info("mainShardWorkers: " + mainShardWorkers.toString());
+    for (Integer workerId : mainShardWorkers) {
+      LOGGER.info("workerId: " + workerId);
+      LOGGER.info("alive: " + alive.toString());
+      LOGGER.info("aliveWorkers: " + aliveWorkers.toString());
+      alive.remove(workerId);
+      LOGGER.info("alive: " + alive.toString());
+      LOGGER.info("aliveWorkers: " + aliveWorkers.toString());
+      Set<Integer> shards = MyriaUtils.randomSample(alive, repFactor - 1);
+      shards.add(workerId);
+      alive.add(workerId);
+      LOGGER.info("shards: " + shards.toString());
+      result.add(shards);
     }
+    LOGGER.info("result: " + result.toString());
     return result;
   }
 
