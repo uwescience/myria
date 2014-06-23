@@ -29,9 +29,15 @@ public class DatasetEncoding extends MyriaApiEncoding {
   public List<Set<Integer>> shards;
   public Integer numShards;
   public Integer repFactor;
+  public Boolean scalable;
 
   @Override
   protected void validateExtra() throws MyriaApiException {
+    // TODO valmeida check if scalable replication not allowed yet.
+    if (scalable == null) {
+      scalable = false;
+    }
+
     if (workers != null) {
       if (shards != null || numShards != null || repFactor != null) {
         throw new MyriaApiException(Status.BAD_REQUEST, "Worker list can be set only if no replication is used.");

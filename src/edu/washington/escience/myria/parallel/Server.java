@@ -1294,12 +1294,17 @@ public final class Server {
    * @param workersToIngest restrict the workers to ingest data (null for all)
    * @param indexes the indexes created.
    * @param source the source of tuples to be ingested.
+   * @param scalable flag for scalability (consistent hashing).
    * @return the status of the ingested dataset.
    * @throws InterruptedException interrupted
    * @throws DbException if there is an error
    */
   public DatasetStatus ingestDataset(final RelationKey relationKey, final Set<Integer> workersToIngest,
-      final List<List<IndexRef>> indexes, final Operator source) throws InterruptedException, DbException {
+      final List<List<IndexRef>> indexes, final Boolean scalable, final Operator source) throws InterruptedException,
+      DbException {
+
+    LOGGER.info("scalable " + scalable.toString());
+
     /* Figure out the workers we will use. If workersToIngest is null, use all active workers. */
     Set<Integer> actualWorkers = workersToIngest;
     if (workersToIngest == null) {

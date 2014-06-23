@@ -258,7 +258,7 @@ public final class DatasetResource {
     Operator source = new FileScan(new InputStreamSource(is), schema, delimiter);
 
     ResponseBuilder builder = Response.ok();
-    return doIngest(relationKey, source, null, null, true, builder);
+    return doIngest(relationKey, source, null, null, true, false, builder);
   }
 
   /**
@@ -278,7 +278,7 @@ public final class DatasetResource {
       LOGGER.info("Dataset " + dataset.relationKey.toString("sqlite") + " ingested without replication.");
       return doIngest(dataset.relationKey, new FileScan(dataset.source, dataset.schema, dataset.delimiter,
           dataset.quote, dataset.escape, dataset.numberOfSkippedLines), dataset.workers, dataset.indexes,
-          dataset.overwrite, builder);
+          dataset.overwrite, dataset.scalable, builder);
     } else {
       LOGGER.info("Dataset " + dataset.relationKey.toString("sqlite")
           + " ingested with replication. Replication factor " + dataset.repFactor);
@@ -332,7 +332,7 @@ public final class DatasetResource {
     URI datasetUri = getCanonicalResourcePath(uriInfo, relationKey);
     ResponseBuilder builder = Response.created(datasetUri);
 
-    return doIngest(relationKey, scan, null, null, overwrite, builder);
+    return doIngest(relationKey, scan, null, null, overwrite, false, builder);
   }
 
   /**
@@ -343,12 +343,14 @@ public final class DatasetResource {
    * @param workers the workers on which the data will be stored
    * @param indexes any user-requested indexes to be created
    * @param overwrite whether an existing relation should be overwritten
+   * @param scalable flag for scalability (consistent hashing).
    * @param builder the template response
    * @return the created dataset resource
    * @throws DbException on any error
    */
   private Response doIngest(final RelationKey relationKey, final Operator source, final Set<Integer> workers,
-      final List<List<IndexRef>> indexes, final Boolean overwrite, final ResponseBuilder builder) throws DbException {
+      final List<List<IndexRef>> indexes, final Boolean overwrite, final Boolean scalable, final ResponseBuilder builder)
+      throws DbException {
 
     /* Validate the workers that will ingest this dataset. */
     if (server.getAliveWorkers().size() == 0) {
@@ -376,7 +378,7 @@ public final class DatasetResource {
     /* Do the ingest, blocking until complete. */
     DatasetStatus status = null;
     try {
-      status = server.ingestDataset(relationKey, actualWorkers, indexes, source);
+      status = server.ingestDataset(relationKey, actualWorkers, indexes, scalable, source);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
     }
@@ -536,7 +538,7 @@ public final class DatasetResource {
 
     ResponseBuilder builder = Response.created(getCanonicalResourcePath(uriInfo, dataset.relationKey));
     Operator tipsyScan = new TipsyFileScan(dataset.tipsyFilename, dataset.iorderFilename, dataset.grpFilename);
-    return doIngest(dataset.relationKey, tipsyScan, dataset.workers, dataset.indexes, false, builder);
+    return doIngest(dataset.relationKey, tipsyScan, dataset.workers, dataset.indexes, false, false, builder);
   }
 
   /**
