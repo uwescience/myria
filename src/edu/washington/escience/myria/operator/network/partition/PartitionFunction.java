@@ -12,6 +12,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 
+import edu.washington.escience.myria.scaling.ConsistentHashPartitionFunction;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
@@ -23,6 +24,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 @JsonSubTypes({
     @Type(value = RoundRobinPartitionFunction.class, name = "RoundRobin"),
     @Type(value = SingleFieldHashPartitionFunction.class, name = "SingleFieldHash"),
+    @Type(value = ConsistentHashPartitionFunction.class, name = "ConsistentHash"),
     @Type(value = MultiFieldHashPartitionFunction.class, name = "MultiFieldHash"),
     @Type(value = WholeTupleHashPartitionFunction.class, name = "WholeTupleHash") })
 public abstract class PartitionFunction implements Serializable {

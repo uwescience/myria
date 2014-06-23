@@ -91,6 +91,7 @@ import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myria.proto.QueryProto.QueryMessage;
 import edu.washington.escience.myria.proto.QueryProto.QueryReport;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
+import edu.washington.escience.myria.scaling.ConsistentHashPartitionFunction;
 import edu.washington.escience.myria.tool.MyriaConfigurationReader;
 import edu.washington.escience.myria.util.DateTimeUtils;
 import edu.washington.escience.myria.util.DeploymentUtils;
@@ -1315,9 +1316,19 @@ public final class Server {
 
     /* The master plan: send the tuples out. */
     ExchangePairID scatterId = ExchangePairID.newID();
-    GenericShuffleProducer scatter =
-        new GenericShuffleProducer(source, scatterId, workersArray,
-            new RoundRobinPartitionFunction(workersArray.length));
+    GenericShuffleProducer scatter;
+    if (!scalable) {
+      LOGGER.info("Round robin shuffle producer");
+      scatter =
+          new GenericShuffleProducer(source, scatterId, workersArray, new RoundRobinPartitionFunction(
+              workersArray.length));
+    } else {
+      // TODO valmeida allow one to specify the partition field index
+      LOGGER.info("Consistent hashing shuffle producer");
+      scatter =
+          new GenericShuffleProducer(source, scatterId, workersArray, new ConsistentHashPartitionFunction(
+              workersArray.length, 0));
+    }
 
     /* The workers' plan */
     GenericShuffleConsumer gather =

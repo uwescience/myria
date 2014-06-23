@@ -48,12 +48,14 @@ public class DatasetEncoding extends MyriaApiEncoding {
       }
       if (numShards == null) {
         /* partition list is set, check upon replication factor */
-        if (shards.size() == 0) {
-          throw new MyriaApiException(Status.BAD_REQUEST, "User-specified shards (optional) cannot be empty.");
+        if (shards != null) {
+          if (shards.size() == 0) {
+            throw new MyriaApiException(Status.BAD_REQUEST, "User-specified shards (optional) cannot be empty.");
+          }
+          // TODO valmeida traverse the list of shards validating each component
+          numShards = shards.size();
+          repFactor = shards.get(0).size();
         }
-        // TODO valmeida traverse the list of shards validating each component
-        numShards = shards.size();
-        repFactor = shards.get(0).size();
       } else {
         // TODO valmeida case with no replication where numShards is set instead of workers list
       }
