@@ -157,7 +157,7 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
   public static class RelationMetadata {
     /** The workers that will store the relation. */
     private final Set<Integer> workers;
-    /** The workers partitions list */
+    /** The workers partitions list. */
     private final Map<Integer, List<Integer>> partitionsWorkers;
     /** The schema of the relation. */
     private Schema schema;
@@ -193,6 +193,10 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
 
     public Map<Integer, List<Integer>> getPartitionsWorkers() {
       return partitionsWorkers;
+    }
+
+    public Integer getNumShards() {
+      return workers.size();
     }
 
     public Integer getReplicationFactor() {

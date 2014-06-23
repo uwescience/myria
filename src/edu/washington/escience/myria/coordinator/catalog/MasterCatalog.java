@@ -535,14 +535,14 @@ public final class MasterCatalog {
             statement.bind(1, relation.getUserName());
             statement.bind(2, relation.getProgramName());
             statement.bind(3, relation.getRelationName());
-            statement.bind(4, relationMetadata.getPartitionsWorkers().size());
+            statement.bind(4, relationMetadata.getNumShards());
             statement.bind(5, relationMetadata.getReplicationFactor());
             statement.bind(6, howPartitioned);
             LOGGER.info("Insert statement on stored_relations.");
             LOGGER.info("user_name: " + relation.getUserName());
             LOGGER.info("program_name: " + relation.getProgramName());
             LOGGER.info("relation_name: " + relation.getRelationName());
-            LOGGER.info("num_shards: " + relationMetadata.getPartitionsWorkers().size());
+            LOGGER.info("num_shards: " + relationMetadata.getNumShards());
             LOGGER.info("rep_factor" + relationMetadata.getReplicationFactor());
             LOGGER.info("how_partitioned" + howPartitioned);
             statement.step();
