@@ -86,7 +86,13 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
       if (catalog.getSchema(relation) == null) {
         catalog.addRelationMetadata(relation, schema, -1, queryId);
       }
-      catalog.addStoredRelation(relation, meta, "unknown");
+      if (meta.isReplicated()) {
+        // TODO valmeida correct partition function here
+        catalog.addStoredRelation(relation, meta, "unknown");
+      } else {
+        // TODO valmeida correct partition function here
+        catalog.addStoredRelation(relation, meta.getWorkers(), "unknown");
+      }
       LOGGER.debug("Query #{} - adding {} to store shard of {}", queryId, workers, relation
           .toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
     }
@@ -165,6 +171,10 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
     public RelationMetadata() {
       workers = new TreeSet<Integer>();
       partitionsWorkers = new HashMap<Integer, List<Integer>>();
+    }
+
+    public boolean isReplicated() {
+      return getReplicationFactor() > 1;
     }
 
     /**

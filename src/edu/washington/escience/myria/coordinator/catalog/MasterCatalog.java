@@ -449,6 +449,8 @@ public final class MasterCatalog {
       throw new CatalogException("Catalog is closed.");
     }
 
+    LOGGER.info("MasterCatalog.addStoredRelation without replication");
+
     /* Do the work */
     try {
       queue.execute(new SQLiteJob<Object>() {
@@ -517,6 +519,8 @@ public final class MasterCatalog {
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
     }
+
+    LOGGER.info("MasterCatalog.addStoredRelation with replication");
 
     /* Do the work */
     try {
