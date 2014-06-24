@@ -15,6 +15,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
 
+import edu.washington.escience.myria.column.builder.IntColumnBuilder;
 import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
 import edu.washington.escience.myria.storage.TupleBatch;
 
@@ -68,11 +69,15 @@ public class ConsistentHashPartitionFunction extends PartitionFunction {
 
   @Override
   public int[] partition(@Nonnull final TupleBatch tb) {
+    IntColumnBuilder builder = new IntColumnBuilder();
     final int[] result = new int[tb.numTuples()];
     for (int i = 0; i < result.length; i++) {
       int p = tb.hashCode(i, index);
+      builder.appendInt(p);
       result[i] = consistentHash.addHashCode(p);
     }
+    tb.addColumn("hash_code", builder.build());
+    LOGGER.info("partition tb: " + tb.toString());
     return result;
   }
 }

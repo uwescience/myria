@@ -1331,8 +1331,15 @@ public final class Server {
     }
 
     /* The workers' plan */
-    GenericShuffleConsumer gather =
-        new GenericShuffleConsumer(source.getSchema(), scatterId, new int[] { MyriaConstants.MASTER_ID });
+    GenericShuffleConsumer gather;
+    if (!scalable) {
+      gather = new GenericShuffleConsumer(source.getSchema(), scatterId, new int[] { MyriaConstants.MASTER_ID });
+    } else {
+      LOGGER.info("Consistent hashing shuffle consumer");
+      Schema newSchema = Schema.appendColumn(source.getSchema(), Type.INT_TYPE, "hash_code");
+      LOGGER.info("New schema: " + newSchema.toString());
+      gather = new GenericShuffleConsumer(newSchema, scatterId, new int[] { MyriaConstants.MASTER_ID });
+    }
     DbInsert insert = new DbInsert(gather, relationKey, true, indexes);
     Map<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
     for (Integer workerId : workersArray) {

@@ -151,9 +151,9 @@ public class DbInsert extends RootOperator {
 
   @Override
   public void cleanup() {
-    
+
     LOGGER.info("DbInsert.cleanup");
-   
+
     try {
       if (accessMethod != null) {
         accessMethod.close();
@@ -169,6 +169,7 @@ public class DbInsert extends RootOperator {
     Objects.requireNonNull(tempRelationKey);
 
     LOGGER.info("DbInsert.consumeTuples");
+    LOGGER.info("TB: " + tupleBatch.toString());
 
     accessMethod.tupleBatchInsert(tempRelationKey, getSchema(), tupleBatch);
   }

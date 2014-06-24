@@ -72,7 +72,7 @@ public abstract class PartitionFunction implements Serializable {
    *         every tuple should be sent to.
    * 
    */
-  public abstract int[] partition(@Nonnull final TupleBatch data);
+  public abstract int[] partition(@Nonnull TupleBatch data);
 
   /**
    * Set the number of output partitions.

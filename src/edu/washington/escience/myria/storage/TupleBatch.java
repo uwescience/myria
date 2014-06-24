@@ -11,6 +11,7 @@ import java.util.Objects;
 import net.jcip.annotations.ThreadSafe;
 
 import org.joda.time.DateTime;
+import org.slf4j.LoggerFactory;
 
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
@@ -42,13 +43,16 @@ public class TupleBatch implements ReadableTable, Serializable {
   /** The hash function for this class. */
   private static final HashFunction HASH_FUNCTION = Hashing.murmur3_32(MAGIC_HASHCODE);
   /** Schema of tuples in this batch. */
-  private final Schema schema;
+  private Schema schema;
   /** Tuple data stored as columns in this batch. */
-  private final ImmutableList<Column<?>> columns;
+  private ImmutableList<Column<?>> columns;
   /** Number of tuples in this TB. */
   private final int numTuples;
   /** Whether this TB is an EOI TB. */
   private final boolean isEOI;
+
+  /** The logger for this class. */
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(TupleBatch.class);
 
   /**
    * EOI TB constructor.
@@ -108,6 +112,8 @@ public class TupleBatch implements ReadableTable, Serializable {
   public TupleBatch(final Schema schema, final List<Column<?>> columns, final int numTuples, final boolean isEOI) {
     this.schema = Objects.requireNonNull(schema, "schema");
     this.columns = ImmutableList.copyOf(Objects.requireNonNull(columns, "columns"));
+    LOGGER.info("columns.size: " + columns.size());
+    LOGGER.info("Schema: " + schema.toString());
     Preconditions.checkArgument(columns.size() == schema.numColumns(),
         "Number of columns in data must equal the number of fields in schema");
     for (Column<?> column : columns) {
@@ -310,6 +316,9 @@ public class TupleBatch implements ReadableTable, Serializable {
 
     final int[] partitions = pf.partition(this);
 
+    LOGGER.info("TupleBatch after partition: " + toString());
+    LOGGER.info("partitions: " + Arrays.toString(partitions));
+
     BitSet[] resultBitSet = new BitSet[result.length];
     for (int i = 0; i < partitions.length; i++) {
       int p = partitions[i];
@@ -322,8 +331,10 @@ public class TupleBatch implements ReadableTable, Serializable {
     for (int i = 0; i < result.length; i++) {
       if (resultBitSet[i] != null) {
         result[i] = filter(resultBitSet[i]);
+        LOGGER.info("partition " + i + " tb: " + result[i]);
       }
     }
+
     return result;
   }
 
@@ -418,6 +429,19 @@ public class TupleBatch implements ReadableTable, Serializable {
     Schema newSchema = Schema.appendColumn(schema, column.getType(), columnName);
     List<Column<?>> newColumns = ImmutableList.<Column<?>> builder().addAll(columns).add(column).build();
     return new TupleBatch(newSchema, newColumns, numTuples, isEOI);
+  }
+
+  /**
+   * Appends a column to this tuple batch.
+   * 
+   * @param columnName the name of the column to be added.
+   * @param column the column to be added.
+   */
+  public void addColumn(final String columnName, final Column<?> column) {
+    Preconditions.checkArgument(numTuples() == column.size(), "Cannot append column of size %s to batch of size %s",
+        column.size(), numTuples());
+    schema = Schema.appendColumn(schema, column.getType(), columnName);
+    columns = ImmutableList.<Column<?>> builder().addAll(columns).add(column).build();
   }
 
   @Override
