@@ -458,4 +458,24 @@ public final class Schema implements Serializable {
     }
     return Schema.of(types, names);
   }
+
+  /**
+   * Checks schema containment.
+   * 
+   * @param subSchema the sub-schema
+   * @return whether this schema contains the sub-schema
+   */
+  public boolean contains(final Schema subSchema) {
+    for (int i = 0; i < subSchema.getColumnNames().size(); i++) {
+      int pos = columnNames.indexOf(subSchema.getColumnName(i));
+      if (pos == -1) {
+        return false;
+      } else {
+        if (!getColumnType(pos).equals(subSchema.getColumnType(i))) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
 }

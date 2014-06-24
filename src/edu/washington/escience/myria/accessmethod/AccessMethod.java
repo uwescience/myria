@@ -129,6 +129,17 @@ public abstract class AccessMethod {
   public abstract String createIfNotExistsStatementFromSchema(Schema schema, RelationKey relationKey);
 
   /**
+   * Generates the create view statement string for a projection of a relation in the database.
+   * 
+   * @param viewRelationKey the view name
+   * @param viewSchema the view schema
+   * @param origRelationKey the view name
+   * @return the create view statement string
+   */
+  public abstract String createViewStatementFromSchema(RelationKey viewRelationKey, Schema viewSchema,
+      RelationKey origRelationKey);
+
+  /**
    * Creates a table in the database, if it does not already exist.
    * 
    * @param relationKey the relation name
@@ -136,6 +147,18 @@ public abstract class AccessMethod {
    * @throws DbException if anything goes wrong
    */
   public abstract void createTableIfNotExists(RelationKey relationKey, Schema schema) throws DbException;
+
+  /**
+   * Creates a view in the database. The created view is a projection over the original relation.
+   * 
+   * @param viewRelationKey the view name
+   * @param viewSchema the view schema
+   * @param origRelationKey the relation name
+   * @param origSchema the origin relation schema
+   * @throws DbException if anything goes wrong
+   */
+  public abstract void createView(RelationKey viewRelationKey, Schema viewSchema, RelationKey origRelationKey,
+      Schema origRelationSchema) throws DbException;
 
   /**
    * Overwrite <code>oldRelation</code> with <code>newRelation</code> by dropping <code>oldRelation</code> if it exists

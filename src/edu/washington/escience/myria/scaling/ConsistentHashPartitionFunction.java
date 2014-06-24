@@ -8,6 +8,9 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
@@ -21,12 +24,15 @@ import edu.washington.escience.myria.storage.TupleBatch;
  */
 public class ConsistentHashPartitionFunction extends PartitionFunction {
 
+  /** The logger for this class. */
+  private static final Logger LOGGER = LoggerFactory.getLogger(ConsistentHashPartitionFunction.class);
+
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /**
    * The number of replicas on the consistent hash structure. TODO valmeida change to non-fixed value.
    */
-  private static final int CONSISTENT_HASH_REPLICATION = 5;
+  private static final int CONSISTENT_HASH_REPLICATION = 1;
 
   /** The consistent hash structure. */
   private final ConsistentHash consistentHash;
@@ -57,6 +63,7 @@ public class ConsistentHashPartitionFunction extends PartitionFunction {
     for (int i = 0; i < numPartitions; i++) {
       consistentHash.addWorker(i);
     }
+    LOGGER.info("Consistent hashing: " + consistentHash.toString());
   }
 
   @Override

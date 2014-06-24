@@ -431,6 +431,37 @@ public final class SQLiteAccessMethod extends AccessMethod {
       throws DbException {
     throw new UnsupportedOperationException("create index if not exists is not supported in sqlite yet, implement me");
   }
+
+  @Override
+  public void createView(final RelationKey viewRelationKey, final Schema viewSchema, final RelationKey origRelationKey,
+      final Schema origRelationSchema) throws DbException {
+    Objects.requireNonNull(sqliteQueue);
+    Objects.requireNonNull(sqliteInfo);
+    Objects.requireNonNull(viewRelationKey);
+    Objects.requireNonNull(viewSchema);
+    Objects.requireNonNull(origRelationKey);
+    Objects.requireNonNull(origRelationSchema);
+    Preconditions.checkArgument(origRelationSchema.contains(viewSchema),
+        "The relation schema must contain the view schema");
+
+    execute(createViewStatementFromSchema(viewRelationKey, viewSchema, origRelationKey));
+  }
+
+  @Override
+  public String createViewStatementFromSchema(final RelationKey viewRelationKey, final Schema viewSchema,
+      final RelationKey origRelationKey) {
+    final StringBuilder sb = new StringBuilder();
+    sb.append("CREATE VIEW ").append(viewRelationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)).append(
+        " AS SELECT ");
+    for (int i = 0; i < viewSchema.numColumns(); ++i) {
+      if (i > 0) {
+        sb.append(", ");
+      }
+      sb.append(viewSchema.getColumnName(i));
+    }
+    sb.append(" FROM ").append(origRelationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
+    return sb.toString();
+  }
 }
 
 /**

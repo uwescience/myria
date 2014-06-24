@@ -487,7 +487,7 @@ public final class JdbcAccessMethod extends AccessMethod {
 
   /**
    * Create an index in postgres if no index with the same name already exists.
-   *
+   * 
    * @param relationKey the table on which the indexes will be created.
    * @param schema the Schema of the data in the table.
    * @param index the index to be created; each entry is a list of column indices.
@@ -524,6 +524,20 @@ public final class JdbcAccessMethod extends AccessMethod {
       StringBuilder statement = new StringBuilder("ALTER INDEX ").append(oldName).append(" RENAME TO ").append(newName);
       execute(statement.toString());
     }
+  }
+
+  @Override
+  public void createView(final RelationKey viewRelationKey, final Schema viewSchema, final RelationKey origRelationKey,
+      final Schema origRelationSchema) throws DbException {
+    // TODO Auto-generated method stub
+    throw new DbException("Not implemented yet!");
+  }
+
+  @Override
+  public String createViewStatementFromSchema(final RelationKey viewRelationKey, final Schema viewSchema,
+      final RelationKey origRelationKey) {
+    // TODO valmeida implement this method for JDBC
+    return null;
   }
 }
 

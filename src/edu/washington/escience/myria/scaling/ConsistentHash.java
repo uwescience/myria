@@ -3,6 +3,7 @@ package edu.washington.escience.myria.scaling;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -209,5 +210,24 @@ public final class ConsistentHash {
    */
   private int hashStringDataPoint(final String val) {
     return HASH_FUNCTION.newHasher().putString(val, Charsets.UTF_8).hash().asInt();
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    for (Entry<Integer, Integer> entry : circle.entrySet()) {
+      sb.append("hash_value: " + entry.getKey() + ", worker_id: " + entry.getValue());
+      sb.append("[");
+      int i = 0;
+      for (ConsistentHashInterval interval : hashNumbers.get(entry.getValue())) {
+        sb.append(interval.toString());
+        if (i < hashNumbers.size()) {
+          sb.append(", ");
+        }
+        ++i;
+      }
+      sb.append("]");
+    }
+    return sb.toString();
   }
 }

@@ -134,6 +134,6 @@ public final class ConsistentHashInterval implements Comparable<ConsistentHashIn
    */
   @Override
   public String toString() {
-    return "start: " + start + ", end: " + end;
+    return "start: " + start + ", end: " + end + ", partition: " + partition + ", worker: " + workerId;
   }
 }
