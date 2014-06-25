@@ -484,6 +484,7 @@ public final class MasterCatalog {
               statement.bind(3, workerId);
               statement.step();
               statement.reset(false);
+              ++count;
             }
             statement.dispose();
             statement = null;
