@@ -11,6 +11,7 @@ import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.storage.TupleUtils;
+import edu.washington.escience.myria.util.HashUtils;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
@@ -679,7 +680,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
     }
 
     for (int row = 0; row < tb.numTuples(); ++row) {
-      final int cntHashCode = tb.hashCode(row, doJoin.inputCmpColumns);
+      final int cntHashCode = HashUtils.hashSubRow(tb, doJoin.inputCmpColumns, row);
       TIntList tuplesWithHashCode = hashTable2IndicesLocal.get(cntHashCode);
       if (tuplesWithHashCode != null) {
         doJoin.row = row;

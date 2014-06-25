@@ -10,11 +10,9 @@ import org.joda.time.DateTime;
 
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
-import com.google.common.hash.Hasher;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
-import edu.washington.escience.myria.util.TypeFunnel;
 
 /**
  * A column that holds a constant value.
@@ -76,33 +74,6 @@ public class ConstantValueColumn extends Column<Comparable<?>> {
         break;
       case STRING_TYPE:
         stringValue = (String) value;
-        break;
-    }
-  }
-
-  @Override
-  public void addToHasher(final int row, final Hasher hasher) {
-    switch (getType()) {
-      case BOOLEAN_TYPE:
-        hasher.putBoolean(getBoolean(row));
-        break;
-      case DATETIME_TYPE:
-        hasher.putObject(getDateTime(row), TypeFunnel.INSTANCE);
-        break;
-      case DOUBLE_TYPE:
-        hasher.putDouble(getDouble(row));
-        break;
-      case FLOAT_TYPE:
-        hasher.putFloat(getFloat(row));
-        break;
-      case INT_TYPE:
-        hasher.putInt(getInt(row));
-        break;
-      case LONG_TYPE:
-        hasher.putLong(getLong(row));
-        break;
-      case STRING_TYPE:
-        hasher.putObject(getString(row), TypeFunnel.INSTANCE);
         break;
     }
   }

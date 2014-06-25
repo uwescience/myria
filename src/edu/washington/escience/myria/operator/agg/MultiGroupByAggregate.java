@@ -19,6 +19,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.storage.TupleBuffer;
 import edu.washington.escience.myria.storage.TupleUtils;
+import edu.washington.escience.myria.util.HashUtils;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
@@ -107,7 +108,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
     TupleBatch tb = child.nextReady();
     while (tb != null) {
       for (int row = 0; row < tb.numTuples(); ++row) {
-        int rowHash = tb.hashCode(row, gfields);
+        int rowHash = HashUtils.hashSubRow(tb, gfields, row);
         TIntList hashMatches = groupKeyMap.get(rowHash);
         if (hashMatches == null) {
           hashMatches = newKey(rowHash);

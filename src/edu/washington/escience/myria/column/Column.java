@@ -10,7 +10,6 @@ import org.joda.time.DateTime;
 
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
-import com.google.common.hash.Hasher;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myria.Type;
@@ -38,14 +37,6 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
-
-  /**
-   * Adds the value in the row to a hasher object.
-   * 
-   * @param row the row in this column
-   * @param hasher the hasher object to add the value
-   */
-  public abstract void addToHasher(final int row, final Hasher hasher);
 
   /**
    * Append the value indexed by leftIdx into the column builder.

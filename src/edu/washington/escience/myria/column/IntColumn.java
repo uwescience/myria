@@ -5,7 +5,6 @@ import java.sql.SQLException;
 
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
-import com.google.common.hash.Hasher;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
@@ -55,11 +54,6 @@ public abstract class IntColumn extends Column<Integer> {
   @Override
   public final void append(final int index, final ColumnBuilder<?> columnBuilder) {
     ((IntColumnBuilder) columnBuilder).appendInt(getInt(index));
-  }
-
-  @Override
-  public final void addToHasher(final int row, final Hasher hasher) {
-    hasher.putInt(getInt(row));
   }
 
   @Override

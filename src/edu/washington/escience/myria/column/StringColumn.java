@@ -5,12 +5,10 @@ import java.sql.SQLException;
 
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
-import com.google.common.hash.Hasher;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.StringColumnBuilder;
-import edu.washington.escience.myria.util.TypeFunnel;
 
 /**
  * An abstract column of String values.
@@ -67,10 +65,5 @@ public abstract class StringColumn extends Column<String> {
   @Override
   public final void append(final int index, final ColumnBuilder<?> columnBuilder) {
     ((StringColumnBuilder) columnBuilder).appendString(getString(index));
-  }
-
-  @Override
-  public final void addToHasher(final int row, final Hasher hasher) {
-    hasher.putObject(getString(row), TypeFunnel.INSTANCE);
   }
 }

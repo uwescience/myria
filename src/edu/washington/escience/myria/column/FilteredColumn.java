@@ -8,7 +8,6 @@ import org.joda.time.DateTime;
 
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
-import com.google.common.hash.Hasher;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
@@ -67,11 +66,6 @@ class FilteredColumn<T extends Comparable<?>> extends Column<T> {
    */
   private int convertRow(final int row) {
     return validIndices[row];
-  }
-
-  @Override
-  public void addToHasher(final int row, final Hasher hasher) {
-    inner.addToHasher(convertRow(row), hasher);
   }
 
   @Override

@@ -11,6 +11,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.util.HashUtils;
 
 /**
  * A simple implementation of duplicate eliminate. It keeps the references to all the TupleBatches which contain unique
@@ -99,7 +100,7 @@ public final class DupElimRefOnly extends UnaryOperator {
 
     @Override
     public int hashCode() {
-      return tb.hashCode(index);
+      return HashUtils.hashRow(tb, index);
     }
   }
 

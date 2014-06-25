@@ -5,6 +5,7 @@ import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.storage.MutableTupleBuffer;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleUtils;
+import edu.washington.escience.myria.util.HashUtils;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
@@ -66,7 +67,7 @@ public final class DupElim extends StreamingState {
     final BitSet toRemove = new BitSet(numTuples);
     for (int i = 0; i < numTuples; ++i) {
       final int nextIndex = uniqueTuples.numTuples();
-      final int cntHashCode = tb.hashCode(i);
+      final int cntHashCode = HashUtils.hashRow(tb, i);
       TIntList tupleIndexList = uniqueTupleIndices.get(cntHashCode);
       checkUniqueness.row = i;
       checkUniqueness.unique = true;

@@ -9,12 +9,10 @@ import org.joda.time.DateTime;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
-import com.google.common.hash.Hasher;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.DateTimeColumnBuilder;
-import edu.washington.escience.myria.util.TypeFunnel;
 
 /**
  * A column of Date values.
@@ -99,10 +97,5 @@ public final class DateTimeColumn extends Column<DateTime> {
   @Override
   public void append(final int index, final ColumnBuilder<?> columnBuilder) {
     ((DateTimeColumnBuilder) columnBuilder).appendDateTime(getDateTime(index));
-  }
-
-  @Override
-  public void addToHasher(final int row, final Hasher hasher) {
-    hasher.putObject(getDateTime(row), TypeFunnel.INSTANCE);
   }
 }

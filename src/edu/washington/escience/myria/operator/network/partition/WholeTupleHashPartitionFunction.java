@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.util.HashUtils;
 
 /**
  * Partition of tuples by the hash code of the whole tuple.
@@ -28,7 +29,7 @@ public final class WholeTupleHashPartitionFunction extends PartitionFunction {
   public int[] partition(@Nonnull final TupleBatch tb) {
     final int[] result = new int[tb.numTuples()];
     for (int i = 0; i < result.length; i++) {
-      int p = tb.hashCode(i) % numPartition();
+      int p = HashUtils.hashRow(tb, i) % numPartition();
       if (p < 0) {
         p = p + numPartition();
       }
