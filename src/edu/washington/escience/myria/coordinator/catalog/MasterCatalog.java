@@ -528,7 +528,7 @@ public final class MasterCatalog {
             /* To begin: start a transaction. */
             sqliteConnection.exec("BEGIN TRANSACTION;");
 
-            LOGGER.info("Relation metadata: " + relationMetadata.toString());
+            LOGGER.info("Created relation metadata: " + relationMetadata.toString());
             /* First, populate the stored_relation table. */
             SQLiteStatement statement =
                 sqliteConnection
@@ -539,18 +539,9 @@ public final class MasterCatalog {
             statement.bind(4, relationMetadata.getPartitionsWorkers().size());
             statement.bind(5, relationMetadata.getReplicationFactor());
             statement.bind(6, howPartitioned);
-            LOGGER.info("Insert statement on stored_relations.");
-            LOGGER.info("user_name: " + relation.getUserName());
-            LOGGER.info("program_name: " + relation.getProgramName());
-            LOGGER.info("relation_name: " + relation.getRelationName());
-            LOGGER.info("num_shards: " + relationMetadata.getPartitionsWorkers().size());
-            LOGGER.info("rep_factor" + relationMetadata.getReplicationFactor());
-            LOGGER.info("how_partitioned" + howPartitioned);
             statement.step();
             statement.dispose();
             statement = null;
-
-            LOGGER.info("Inserted");
 
             Long storedRelationId = sqliteConnection.getLastInsertId();
             /* Second, populate the shards table. */
@@ -562,10 +553,6 @@ public final class MasterCatalog {
               for (Integer workerId : e.getValue()) {
                 statement.bind(2, e.getKey());
                 statement.bind(3, workerId);
-                LOGGER.info("Insert statement on shards.");
-                LOGGER.info("stored_relation_id: " + storedRelationId);
-                LOGGER.info("shard_index: " + e.getKey());
-                LOGGER.info("worker_id: " + workerId);
                 statement.step();
                 statement.reset(false);
               }
@@ -1392,8 +1379,6 @@ public final class MasterCatalog {
       throw new CatalogException("Catalog is closed.");
     }
 
-    LOGGER.info("MasterCatalog.getWorkersForRelation");
-    LOGGER.info("Relation " + relationKey.toString());
     try {
       return queue.execute(new SQLiteJob<List<Integer>>() {
         @Override
@@ -1416,8 +1401,6 @@ public final class MasterCatalog {
               statement.dispose();
             }
 
-            LOGGER.info("Relation id: " + relationId);
-
             /* Get the list of associated workers. */
             SQLiteStatement statement =
                 sqliteConnection
@@ -1425,11 +1408,9 @@ public final class MasterCatalog {
             statement.bind(1, relationId);
             List<Integer> ret = new ArrayList<Integer>();
             Map<Integer, List<Integer>> shardsWorkers = new HashMap<Integer, List<Integer>>();
-            LOGGER.info("Running the query to select shards and worker ids");
             while (statement.step()) {
               Integer shardIndex = statement.columnInt(0);
               Integer workerId = statement.columnInt(1);
-              LOGGER.info("shardIndex: " + shardIndex + " workerId: " + workerId);
               if (shardsWorkers.containsKey(shardIndex)) {
                 shardsWorkers.get(shardIndex).add(workerId);
               } else {
@@ -1438,7 +1419,6 @@ public final class MasterCatalog {
                 shardsWorkers.put(shardIndex, workers);
               }
             }
-            LOGGER.info("shardWorkers: " + shardsWorkers.toString());
             statement.dispose();
             if (shardsWorkers.size() == 0) {
               return null;

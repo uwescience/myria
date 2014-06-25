@@ -280,8 +280,7 @@ public final class DatasetResource {
           dataset.quote, dataset.escape, dataset.numberOfSkippedLines), dataset.workers, dataset.indexes,
           dataset.overwrite, builder);
     } else {
-      LOGGER.info("Dataset " + dataset.relationKey.toString("sqlite")
-          + " ingested with replication. Replication factor " + dataset.repFactor);
+      LOGGER.info("Dataset " + dataset.relationKey.toString("sqlite") + " ingested with replication.");
       return doIngest(dataset.relationKey, new FileScan(dataset.source, dataset.schema, dataset.delimiter,
           dataset.quote, dataset.escape, dataset.numberOfSkippedLines), dataset.shards, dataset.numShards,
           dataset.repFactor, dataset.indexes, dataset.overwrite, builder);
@@ -405,9 +404,6 @@ public final class DatasetResource {
       final Integer numShards, final Integer repFactor, final List<List<IndexRef>> indexes, final Boolean overwrite,
       final ResponseBuilder builder) throws DbException {
 
-    LOGGER.info("DatasetResource.doIngest start.");
-    LOGGER.info("# of partitions: " + numShards + " and replication factor: " + repFactor);
-
     /* Validate the workers that will ingest this dataset. */
     if (server.getAliveWorkers().size() == 0) {
       throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "There are no alive workers to receive this dataset.");
@@ -420,7 +416,6 @@ public final class DatasetResource {
 
     if (shards != null) {
       /* partition list is set, in this case numPartitions and repFactor are also set */
-      LOGGER.info("DatasetResource.doIngest partitions set.");
       // TODO valmeida check whether all requested workers are alive.
       /*
        * if (!server.getAliveWorkers().containsAll(workers)) { throw new MyriaApiException(Status.SERVICE_UNAVAILABLE,
@@ -443,7 +438,6 @@ public final class DatasetResource {
       } else {
         actualRepFactor = repFactor;
       }
-      LOGGER.info("DatasetResource.doIngest numPartitions and repFactor set. Retrieving samples");
       actualShards = server.getSampleAliveWorkers(actualNumShards, actualRepFactor);
     }
 
@@ -469,13 +463,11 @@ public final class DatasetResource {
       LOGGER.info("numShards: " + actualNumShards);
       LOGGER.info("repFactor: " + actualRepFactor);
       status = server.ingestDataset(relationKey, actualShards, actualNumShards, actualRepFactor, indexes, source);
-      LOGGER.info("DatasetResource.doIngest Dataset ingested.");
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
     } catch (Exception e) {
       throw new MyriaApiException(Status.BAD_REQUEST, e.getMessage());
     }
-    LOGGER.info("DatasetResource.doIngest dataset ingested.");
 
     /* In the response, tell the client the path to the relation. */
     URI datasetUri = getCanonicalResourcePath(uriInfo, relationKey);

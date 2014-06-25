@@ -151,9 +151,6 @@ public class DbInsert extends RootOperator {
 
   @Override
   public void cleanup() {
-    
-    LOGGER.info("DbInsert.cleanup");
-   
     try {
       if (accessMethod != null) {
         accessMethod.close();
@@ -167,17 +164,11 @@ public class DbInsert extends RootOperator {
   protected void consumeTuples(final TupleBatch tupleBatch) throws DbException {
     Objects.requireNonNull(accessMethod);
     Objects.requireNonNull(tempRelationKey);
-
-    LOGGER.info("DbInsert.consumeTuples");
-
     accessMethod.tupleBatchInsert(tempRelationKey, getSchema(), tupleBatch);
   }
 
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-
-    LOGGER.info("DbInsert.init");
-
     /* retrieve connection information from the environment variables, if not already set */
     if (connectionInfo == null && execEnvVars != null) {
       connectionInfo = (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);

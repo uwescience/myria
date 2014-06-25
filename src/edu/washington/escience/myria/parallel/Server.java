@@ -1207,21 +1207,13 @@ public final class Server {
     List<Set<Integer>> result = new ArrayList<Set<Integer>>();
     List<Integer> alive = Collections.list(aliveWorkers.keys());
     Set<Integer> mainShardWorkers = MyriaUtils.randomSample(alive, numShards);
-    LOGGER.info("mainShardWorkers: " + mainShardWorkers.toString());
     for (Integer workerId : mainShardWorkers) {
-      LOGGER.info("workerId: " + workerId);
-      LOGGER.info("alive: " + alive.toString());
-      LOGGER.info("aliveWorkers: " + aliveWorkers.toString());
       alive.remove(workerId);
-      LOGGER.info("alive: " + alive.toString());
-      LOGGER.info("aliveWorkers: " + aliveWorkers.toString());
       Set<Integer> shards = MyriaUtils.randomSample(alive, repFactor - 1);
       shards.add(workerId);
       alive.add(workerId);
-      LOGGER.info("shards: " + shards.toString());
       result.add(shards);
     }
-    LOGGER.info("result: " + result.toString());
     return result;
   }
 
@@ -1363,10 +1355,7 @@ public final class Server {
     Preconditions.checkNotNull(numPartitions);
     Preconditions.checkNotNull(repFactor);
 
-    LOGGER.info("Server.ingestDataset start");
-
     /* Build the worker IDs and the partition indices arrays. */
-    LOGGER.info("Building intArrayPartitions and mapWorkers...");
     int[][] intArray2dPartitions = new int[numPartitions][repFactor];
     HashMap<Integer, Integer> mapWorkers = new HashMap<Integer, Integer>();
     int i = 0;
@@ -1385,44 +1374,27 @@ public final class Server {
       ++i;
     }
 
-    LOGGER.info("intArrayPartitions: " + Arrays.deepToString(intArray2dPartitions));
-    LOGGER.info("mapWorkers: " + mapWorkers.toString());
-
-    LOGGER.info("Building intArrayWorkers...");
+    /* Building intArrayWorkers. */
     int[] intArrayWorkers = new int[numPartitions * repFactor];
     int[] intArrayPartitions = new int[numPartitions * repFactor];
     i = 0;
     int j = 0;
     for (int[] partitionIndex : intArray2dPartitions) {
-      LOGGER.info("Partition: " + Arrays.toString(partitionIndex));
       for (int pi : partitionIndex) {
-        LOGGER.info("i: " + i);
-        LOGGER.info("pi: " + pi);
-        LOGGER.info("mapping: " + mapWorkers.get(pi));
         intArrayWorkers[i] = mapWorkers.get(pi);
         intArrayPartitions[i] = j;
         ++i;
-
       }
       ++j;
     }
-    LOGGER.info("intArrayWorkers: " + Arrays.toString(intArrayWorkers));
-    LOGGER.info("intArrayPartitions: " + Arrays.toString(intArrayPartitions));
 
     /* The master plan: send the tuples out. */
-    LOGGER.info("Server.ingestDataset getting id");
+    LOGGER.info("Shuffle producer shards: " + Arrays.deepToString(intArray2dPartitions) + " workers: "
+        + Arrays.toString(intArrayWorkers));
     ExchangePairID scatterId = ExchangePairID.newID();
-    LOGGER.info("Server.ingestDataset done, creating GenericShuffleProducer");
-    LOGGER.info("numPartitions: " + numPartitions);
-    LOGGER.info("repFactor: " + repFactor);
-    LOGGER.info("partitions: " + Arrays.deepToString(intArray2dPartitions));
-    LOGGER.info("workersArray: " + Arrays.toString(intArrayWorkers));
-    LOGGER.info("partitionsArray: " + Arrays.toString(intArrayPartitions));
-
     GenericShuffleProducer scatter =
         new GenericShuffleProducer(source, scatterId, intArray2dPartitions, intArrayWorkers,
             new RoundRobinPartitionFunction(numPartitions));
-    LOGGER.info("Server.ingestDataset GenericShuffleProducer created");
 
     /* The workers' plan */
     // TODO valmeida change the Consumer to add the partition number into the relationKey value
@@ -1434,31 +1406,23 @@ public final class Server {
       int workerId = intArrayWorkers[i];
       RelationKey relKey = RelationKey.of(relationKey);
       relKey.setPartitionId(intArrayPartitions[i]);
-      LOGGER.info("Creating DbInsert for worker " + workerId + " relationKey: " + relKey.toString());
       DbInsert insert = new DbInsert(gather, relKey, true, indexes);
       workerPlans.put(workerId, new SingleQueryPlanWithArgs(insert));
     }
-    LOGGER.info("Server.ingestDataset GenericShuffleConsumer created");
 
     try {
       /* Start the workers */
-      LOGGER.info("Server.ingestDataset submitting query to workers");
-
       QueryFuture qf =
           submitQuery("ingest " + relationKey.toString("sqlite"), "ingest " + relationKey.toString("sqlite"),
               "ingest " + relationKey.toString("sqlite"), new SingleQueryPlanWithArgs(scatter), workerPlans, false)
               .sync();
       if (qf == null) {
-        LOGGER.info("Server.ingestDataset qf == null");
         return null;
       }
       /* TODO(dhalperi) -- figure out how to populate the numTuples column. */
       DatasetStatus status =
           new DatasetStatus(relationKey, source.getSchema(), -1, qf.getQuery().getQueryID(), qf.getQuery()
               .getExecutionStatistics().getEndTime());
-
-      LOGGER.info("Server.ingestDataset finished correctly");
-
       return status;
     } catch (CatalogException e) {
       throw new DbException(e);
