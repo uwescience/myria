@@ -11,6 +11,7 @@ import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.storage.MutableTupleBuffer;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleUtils;
+import edu.washington.escience.myria.util.HashUtils;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
@@ -58,7 +59,7 @@ public final class Difference extends BinaryOperator {
    * @return true if this is the first time this tuple has been encountered.
    */
   private boolean markAsSeen(final TupleBatch batch, final int rowNum) {
-    final int tupleHash = batch.hashCode(rowNum);
+    final int tupleHash = HashUtils.hashRow(batch, rowNum);
 
     TIntList tupleIndexList = tupleIndices.get(tupleHash);
 

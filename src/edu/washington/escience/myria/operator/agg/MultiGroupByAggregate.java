@@ -19,6 +19,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.storage.TupleBuffer;
 import edu.washington.escience.myria.storage.TupleUtils;
+import edu.washington.escience.myria.util.HashUtils;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
@@ -107,13 +108,14 @@ public final class MultiGroupByAggregate extends UnaryOperator {
     TupleBatch tb = child.nextReady();
     while (tb != null) {
       for (int row = 0; row < tb.numTuples(); ++row) {
-        int rowHash = tb.hashCode(row, gfields);
-        TIntList possibleGroupMatches = groupKeyMap.get(rowHash);
-        if (possibleGroupMatches == null) {
-          newGroup(tb, row, rowHash);
+        int rowHash = HashUtils.hashSubRow(tb, gfields, row);
+        TIntList hashMatches = groupKeyMap.get(rowHash);
+        if (hashMatches == null) {
+          hashMatches = newKey(rowHash);
+          newGroup(tb, row, hashMatches);
           continue;
         }
-        TIntIterator matches = possibleGroupMatches.iterator();
+        TIntIterator matches = hashMatches.iterator();
         boolean found = false;
         while (!found && matches.hasNext()) {
           int curGrp = matches.next();
@@ -123,7 +125,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
           }
         }
         if (!found) {
-          newGroup(tb, row, rowHash);
+          newGroup(tb, row, hashMatches);
         }
         Preconditions.checkState(groupKeys.numTuples() == groupAggs.size());
       }
@@ -147,21 +149,32 @@ public final class MultiGroupByAggregate extends UnaryOperator {
    * 
    * @param tb the source {@link TupleBatch}
    * @param row the row in <code>tb</code> that contains the new group
-   * @param groupHash the hash of the group keys in the specified row
+   * @param hashMatches the list of all rows in the output {@link TupleBuffer}s that match this hash.
    */
-  private void newGroup(final TupleBatch tb, final int row, final int groupHash) {
+  private void newGroup(final TupleBatch tb, final int row, final TIntList hashMatches) {
     int newIndex = groupKeys.numTuples();
     for (int column = 0; column < gfields.length; ++column) {
       TupleUtils.copyValue(tb, gfields[column], row, groupKeys, column);
     }
-    TIntList groupMatches = new TIntArrayList(1);
-    groupMatches.add(newIndex);
-    groupKeyMap.put(groupHash, groupMatches);
+    hashMatches.add(newIndex);
     Aggregator<?>[] curAggs = AggUtils.allocate(getChild().getSchema(), afields, aggOps);
     groupAggs.add(curAggs);
     updateGroup(tb, row, curAggs);
     Preconditions.checkState(groupKeys.numTuples() == groupAggs.size(), "groupKeys %s != groupAggs %s", groupKeys
         .numTuples(), groupAggs.size());
+  }
+
+  /**
+   * Called when there is no list yet of which output aggregators match the specified hash. Creates a new int list to
+   * store these matches, and insert it into the {@link #groupKeyMap}.
+   * 
+   * @param groupHash the hash of the grouping columns in a tuple
+   * @return the new (empty still) int list storing which output aggregators match the specified hash
+   */
+  private TIntList newKey(final int groupHash) {
+    TIntList matches = new TIntArrayList(1);
+    groupKeyMap.put(groupHash, matches);
+    return matches;
   }
 
   /**

@@ -16,9 +16,6 @@ import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.hash.HashFunction;
-import com.google.common.hash.Hasher;
-import com.google.common.hash.Hashing;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -37,10 +34,6 @@ public class TupleBatch implements ReadableTable, Serializable {
   private static final long serialVersionUID = 1L;
   /** The hard-coded number of tuples in a batch. */
   public static final int BATCH_SIZE = 10 * 1000;
-  /** Class-specific magic number used to generate the hash code. */
-  private static final int MAGIC_HASHCODE = 243;
-  /** The hash function for this class. */
-  private static final HashFunction HASH_FUNCTION = Hashing.murmur3_32(MAGIC_HASHCODE);
   /** Schema of tuples in this batch. */
   private final Schema schema;
   /** Tuple data stored as columns in this batch. */
@@ -240,49 +233,6 @@ public class TupleBatch implements ReadableTable, Serializable {
   @Override
   public final DateTime getDateTime(final int column, final int row) {
     return columns.get(column).getDateTime(row);
-  }
-
-  /**
-   * @param row the row to be hashed.
-   * @return the hash of the tuples in the specified row.
-   */
-  public final int hashCode(final int row) {
-    Hasher hasher = HASH_FUNCTION.newHasher();
-    for (Column<?> c : columns) {
-      c.addToHasher(row, hasher);
-    }
-    return hasher.hash().asInt();
-  }
-
-  /**
-   * Returns the hash code for the specified tuple using the specified key columns.
-   * 
-   * @param row row of tuple to hash.
-   * @param hashColumns key columns for the hash.
-   * @return the hash code value for the specified tuple using the specified key columns.
-   */
-  public final int hashCode(final int row, final int[] hashColumns) {
-    Objects.requireNonNull(hashColumns);
-    Hasher hasher = HASH_FUNCTION.newHasher();
-    for (final int i : hashColumns) {
-      Column<?> c = columns.get(i);
-      c.addToHasher(row, hasher);
-    }
-    return hasher.hash().asInt();
-  }
-
-  /**
-   * Returns the hash code for a single cell.
-   * 
-   * @param row row of tuple to hash.
-   * @param hashColumn the key column for the hash.
-   * @return the hash code value for the specified tuple using the specified key columns.
-   */
-  public final int hashCode(final int row, final int hashColumn) {
-    Hasher hasher = HASH_FUNCTION.newHasher();
-    Column<?> c = columns.get(hashColumn);
-    c.addToHasher(row, hasher);
-    return hasher.hash().asInt();
   }
 
   @Override

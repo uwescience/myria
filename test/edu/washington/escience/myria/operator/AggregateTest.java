@@ -1,10 +1,16 @@
 package edu.washington.escience.myria.operator;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 import org.joda.time.DateTime;
 import org.junit.Test;
@@ -33,6 +39,8 @@ import edu.washington.escience.myria.operator.agg.MultiGroupByAggregate;
 import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.TupleBuffer;
+import edu.washington.escience.myria.util.HashUtils;
 import edu.washington.escience.myria.util.TestEnvVars;
 import edu.washington.escience.myria.util.TestUtils;
 import edu.washington.escience.myria.util.Tuple;
@@ -681,6 +689,108 @@ public class AggregateTest {
     assertEquals(1, result.numTuples());
     assertEquals(3, result.getSchema().numColumns());
     assertEquals(numTuples, result.getLong(result.numColumns() - 1, 0));
+    mga.close();
+  }
+
+  /**
+   * Finds a collision of a tuple of all integers with the given grouping.
+   * 
+   * @param numCols the columns to group by
+   * @param groupCols the number of columns in the tuples
+   * @return two rows that should have the same hash value
+   */
+  @SuppressWarnings("unused")
+  private static TupleBatch findIntsHashCollision(final int numCols, final int[] groupCols) {
+    for (int i : groupCols) {
+      assertTrue(i < numCols);
+    }
+    List<Type> types = new LinkedList<>();
+    for (int i = 0; i < numCols; ++i) {
+      types.add(Type.INT_TYPE);
+    }
+    Schema schema = new Schema(types);
+
+    TupleBuffer buffer = new TupleBuffer(schema);
+    final Map<Integer, Integer> foundSoFar = new HashMap<>();
+    for (int i = 0; i < Integer.MAX_VALUE; ++i) {
+      for (int j = 0; j < numCols; ++j) {
+        buffer.putInt(j, i);
+      }
+      int hashCode = HashUtils.hashSubRow(buffer, groupCols, i);
+      Integer old = foundSoFar.put(hashCode, i);
+      if (old != null) {
+        /* Found a match */
+        TupleBatchBuffer ret = new TupleBatchBuffer(schema);
+        for (int j = 0; j < numCols; ++j) {
+          ret.putInt(j, old);
+        }
+        for (int j = 0; j < numCols; ++j) {
+          ret.putInt(j, i);
+        }
+        return ret.popAny();
+      }
+    }
+    throw new IllegalStateException("Could not find a collision for hashColumns=" + Arrays.toString(groupCols));
+  }
+
+  @Test
+  public void testMultiGroupCountHashCollision() throws DbException {
+    int groupCols[] = new int[] { 2, 0 };
+
+    /* I used the following code to compute these two collision values. */
+    // TupleBatch collision = findIntsHashCollision(3, groupCols);
+    // System.err.println(collision.getInt(0, 0)); // 62236
+    // System.err.println(collision.getInt(1, 1)); // 115457
+
+    Schema schema = Schema.ofFields(Type.INT_TYPE, Type.INT_TYPE, Type.INT_TYPE);
+    TupleBuffer buffer = new TupleBuffer(schema);
+    /* First row */
+    buffer.putInt(0, 115457);
+    buffer.putInt(1, 115457);
+    buffer.putInt(2, 115457);
+    /* Second row */
+    buffer.putInt(0, 3);
+    buffer.putInt(1, 5);
+    buffer.putInt(2, 4);
+    /* Third row */
+    buffer.putInt(0, 62236);
+    buffer.putInt(1, 62236);
+    buffer.putInt(2, 62236);
+    /* Fourth row */
+    buffer.putInt(0, 115457);
+    buffer.putInt(1, 115457);
+    buffer.putInt(2, 115457);
+    /* Fifth row */
+    buffer.putInt(0, 115457);
+    buffer.putInt(1, 115457);
+    buffer.putInt(2, 115457);
+    /* Verify that the collisions hold where expected. */
+    assertEquals(HashUtils.hashSubRow(buffer, groupCols, 0), HashUtils.hashSubRow(buffer, groupCols, 2));
+    assertEquals(HashUtils.hashSubRow(buffer, groupCols, 0), HashUtils.hashSubRow(buffer, groupCols, 3));
+    assertEquals(HashUtils.hashSubRow(buffer, groupCols, 0), HashUtils.hashSubRow(buffer, groupCols, 4));
+    /* Verify that collisions do not hold where expected. */
+    assertNotEquals(HashUtils.hashSubRow(buffer, groupCols, 0), HashUtils.hashSubRow(buffer, groupCols, 1));
+
+    TupleSource source = new TupleSource(buffer.finalResult());
+    MultiGroupByAggregate mga =
+        new MultiGroupByAggregate(source, groupCols, new int[] { 1 }, new int[] { Aggregator.AGG_OP_COUNT });
+    mga.open(null);
+    TupleBatch result = mga.nextReady();
+    assertNotNull(result);
+    assertEquals(3, result.numTuples());
+    assertEquals(3, result.getSchema().numColumns());
+    // 115457 3 times
+    assertEquals(115457, result.getInt(0, 0));
+    assertEquals(115457, result.getInt(1, 0));
+    assertEquals(3, result.getLong(2, 0));
+    // random vals once
+    assertEquals(4, result.getInt(0, 1));
+    assertEquals(3, result.getInt(1, 1));
+    assertEquals(1, result.getLong(2, 1));
+    // 62236 once
+    assertEquals(62236, result.getInt(0, 2));
+    assertEquals(62236, result.getInt(1, 2));
+    assertEquals(1, result.getLong(2, 2));
     mga.close();
   }
 

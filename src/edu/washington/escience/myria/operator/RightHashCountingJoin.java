@@ -8,6 +8,7 @@ import edu.washington.escience.myria.storage.MutableTupleBuffer;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.storage.TupleUtils;
+import edu.washington.escience.myria.util.HashUtils;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
@@ -265,7 +266,7 @@ public class RightHashCountingJoin extends BinaryOperator {
    */
   protected void processRightChildTB(final TupleBatch tb) {
     for (int row = 0; row < tb.numTuples(); ++row) {
-      final int cntHashCode = tb.hashCode(row, rightCompareIndx);
+      final int cntHashCode = HashUtils.hashSubRow(tb, rightCompareIndx, row);
       // only build hash table on two sides if none of the children is EOS
       updateHashTableAndOccureTimes(tb, row, cntHashCode, hashTable, hashTableIndices, rightCompareIndx, occurredTimes);
     }
@@ -287,7 +288,7 @@ public class RightHashCountingJoin extends BinaryOperator {
       /*
        * update number of count of probing the other child's hash table.
        */
-      final int cntHashCode = tb.hashCode(row, doCountingJoin.inputCmpColumns);
+      final int cntHashCode = HashUtils.hashSubRow(tb, doCountingJoin.inputCmpColumns, row);
       TIntList tuplesWithHashCode = hashTableIndices.get(cntHashCode);
       if (tuplesWithHashCode != null) {
         doCountingJoin.row = row;

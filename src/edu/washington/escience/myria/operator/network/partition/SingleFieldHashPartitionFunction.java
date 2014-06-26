@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.util.HashUtils;
 
 /**
  * The default implementation of the partition function.
@@ -53,7 +54,7 @@ public final class SingleFieldHashPartitionFunction extends PartitionFunction {
   public int[] partition(final TupleBatch tb) {
     final int[] result = new int[tb.numTuples()];
     for (int i = 0; i < result.length; i++) {
-      int p = tb.hashCode(i, index) % numPartition();
+      int p = HashUtils.hashValue(tb, index, i) % numPartition();
       if (p < 0) {
         p = p + numPartition();
       }

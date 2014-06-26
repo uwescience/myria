@@ -6,7 +6,6 @@ import java.sql.SQLException;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
-import com.google.common.hash.Hasher;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
@@ -99,10 +98,5 @@ public final class DoubleColumn extends Column<Double> {
   @Override
   public void append(final int index, final ColumnBuilder<?> columnBuilder) {
     columnBuilder.appendDouble(getDouble(index));
-  }
-
-  @Override
-  public void addToHasher(final int row, final Hasher hasher) {
-    hasher.putDouble(getDouble(row));
   }
 }

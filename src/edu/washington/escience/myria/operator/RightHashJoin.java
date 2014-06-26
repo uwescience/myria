@@ -9,6 +9,7 @@ import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.storage.TupleUtils;
+import edu.washington.escience.myria.util.HashUtils;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
@@ -392,7 +393,7 @@ public final class RightHashJoin extends BinaryOperator {
     doJoin.inputTB = tb;
 
     for (int row = 0; row < tb.numTuples(); ++row) {
-      final int cntHashCode = tb.hashCode(row, doJoin.inputCmpColumns);
+      final int cntHashCode = HashUtils.hashSubRow(tb, doJoin.inputCmpColumns, row);
       TIntList tuplesWithHashCode = rightHashTableIndices.get(cntHashCode);
       if (tuplesWithHashCode != null) {
         doJoin.row = row;
@@ -409,7 +410,7 @@ public final class RightHashJoin extends BinaryOperator {
   protected void processRightChildTB(final TupleBatch tb) {
 
     for (int row = 0; row < tb.numTuples(); ++row) {
-      final int cntHashCode = tb.hashCode(row, rightCompareIndx);
+      final int cntHashCode = HashUtils.hashSubRow(tb, rightCompareIndx, row);
       // only build hash table on two sides if none of the children is EOS
       addToHashTable(tb, row, rightHashTable, rightHashTableIndices, cntHashCode);
     }
