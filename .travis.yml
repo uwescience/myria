@@ -13,6 +13,12 @@ before_install:
 - export TERM=dumb
 after_success:
 - gradle jacocoTestReport coveralls
-cache:
-  directories:
-  - $HOME/.gradle
+
+
+
+
+# Caching is only available for private repos
+# .. http://docs.travis-ci.com/user/caching/
+#cache:
+#  directories:
+#  - $HOME/.gradle

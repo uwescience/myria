@@ -66,4 +66,20 @@ public class SerializationTests {
     assertEquals(5, deserialized.numPartition());
   }
 
+  @Test
+  public void testPartitionFunctionWithNullNumPartitions() throws Exception {
+    /* Setup */
+    ObjectReader reader = mapper.reader(PartitionFunction.class);
+    PartitionFunction pf;
+    String serialized;
+    PartitionFunction deserialized;
+
+    /* Single field hash, as one representative */
+    pf = new SingleFieldHashPartitionFunction(null, 3);
+    serialized = mapper.writeValueAsString(pf);
+    deserialized = reader.readValue(serialized);
+    assertEquals(pf.getClass(), deserialized.getClass());
+    assertEquals(3, ((SingleFieldHashPartitionFunction) deserialized).getIndex());
+  }
+
 }
