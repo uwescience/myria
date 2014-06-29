@@ -62,4 +62,9 @@ public final class SingleFieldHashPartitionFunction extends PartitionFunction {
     }
     return result;
   }
+
+  @Override
+  public String toString() {
+    return "SingleFieldHash(" + index + ")";
+  }
 }

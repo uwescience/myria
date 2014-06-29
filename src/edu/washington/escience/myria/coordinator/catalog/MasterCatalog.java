@@ -37,6 +37,7 @@ import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
+import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
 import edu.washington.escience.myria.parallel.Query;
 import edu.washington.escience.myria.parallel.SocketInfo;
 
@@ -418,6 +419,94 @@ public final class MasterCatalog {
             } catch (final SQLiteException e2) {
               assert true; /* Do nothing. */
             }
+            throw new CatalogException(e);
+          }
+          return null;
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
+   * Gets the partition function information of the relation out of the catalog.
+   * 
+   * @param relation the relation to query
+   * @return the partition function information.
+   * @throws CatalogException when there is something wrong in the catalog.
+   */
+  public String getPartitionFunctionString(final RelationKey relation) throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+    /* Do the work */
+    try {
+      return queue.execute(new SQLiteJob<String>() {
+        private String retval = null;
+
+        @Override
+        protected String job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+          try {
+
+            /* First, populate the stored_relation table. */
+            SQLiteStatement statement =
+                sqliteConnection
+                    .prepare("SELECT how_partitioned FROM stored_relations WHERE user_name=? AND program_name=? AND relation_name=?;");
+            statement.bind(1, relation.getUserName());
+            statement.bind(2, relation.getProgramName());
+            statement.bind(3, relation.getRelationName());
+            statement.step();
+            retval = statement.columnString(0);
+            statement.dispose();
+            statement = null;
+          } catch (final SQLiteException e) {
+            throw new CatalogException(e);
+          }
+          return retval;
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
+   * Updates the relation with the correct partition function and its hash fields.
+   * 
+   * @param relation the relation
+   * @param partitionFunction the partition function
+   * @throws CatalogException when there is something wrong with the database.
+   */
+  public void updatePartitionFunction(final RelationKey relation, final PartitionFunction partitionFunction)
+      throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+    /* Do the work */
+    try {
+      queue.execute(new SQLiteJob<Object>() {
+        @Override
+        protected Object job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+          try {
+            /* To begin: start a transaction. */
+            sqliteConnection.exec("BEGIN TRANSACTION;");
+
+            /* First, populate the stored_relation table. */
+            SQLiteStatement statement =
+                sqliteConnection
+                    .prepare("UPDATE stored_relations SET how_partitioned=? WHERE user_name=? AND program_name=? AND relation_name=?;");
+            statement.bind(1, partitionFunction.toString());
+            statement.bind(2, relation.getUserName());
+            statement.bind(3, relation.getProgramName());
+            statement.bind(4, relation.getRelationName());
+            statement.stepThrough();
+            statement.dispose();
+            statement = null;
+
+            /* To complete: commit the transaction. */
+            sqliteConnection.exec("COMMIT TRANSACTION;");
+          } catch (final SQLiteException e) {
             throw new CatalogException(e);
           }
           return null;

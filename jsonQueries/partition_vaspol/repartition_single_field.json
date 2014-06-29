@@ -1,0 +1,48 @@
+{
+    "fragments": [
+        {
+            "operators": [
+                {
+                    "opId": 0,
+                    "opType": "TableScan",
+                    "relationKey": {
+                        "userName": "vaspol",
+                        "programName": "partition_test",
+                        "relationName": "not_partitioned"
+                    }
+                },
+                {
+                    "argChild": 0,
+                    "opId": 1,
+                    "opType": "ShuffleProducer",
+                    "argPf": {
+                        "index": "0",
+                        "type": "SingleFieldHash"
+                    }
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "argOperatorId": 1,
+                    "opId": 2,
+                    "opType": "ShuffleConsumer"
+                },
+                {
+                    "argChild": 2,
+                    "argOverwriteTable": true,
+                    "opId": 3,
+                    "opType": "DbInsert",
+                    "relationKey": {
+                        "programName": "partition_test",
+                        "relationName": "repartitioned",
+                        "userName": "vaspol"
+                    }
+                }
+            ]
+        }
+    ],
+    "logicalRa": "repartition data",
+    "rawDatalog": "repartition data"
+}

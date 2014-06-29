@@ -39,4 +39,9 @@ public final class RoundRobinPartitionFunction extends PartitionFunction {
     return result;
   }
 
+  @Override
+  public String toString() {
+    return "RoundRobin()";
+  }
+
 }

@@ -81,6 +81,7 @@ import edu.washington.escience.myria.operator.network.CollectProducer;
 import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
 import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
+import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
 import edu.washington.escience.myria.operator.network.partition.RoundRobinPartitionFunction;
 import edu.washington.escience.myria.parallel.ipc.FlowControlBagInputBuffer;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
@@ -1207,12 +1208,14 @@ public final class Server {
    * @param workersToIngest restrict the workers to ingest data (null for all)
    * @param indexes the indexes created.
    * @param source the source of tuples to be ingested.
+   * @param partitionFunction the partition function information.
    * @return the status of the ingested dataset.
    * @throws InterruptedException interrupted
    * @throws DbException if there is an error
    */
   public DatasetStatus ingestDataset(final RelationKey relationKey, final Set<Integer> workersToIngest,
-      final List<List<IndexRef>> indexes, final Operator source) throws InterruptedException, DbException {
+      final List<List<IndexRef>> indexes, final Operator source, final PartitionFunction partitionFunction)
+      throws InterruptedException, DbException {
     /* Figure out the workers we will use. If workersToIngest is null, use all active workers. */
     Set<Integer> actualWorkers = workersToIngest;
     if (workersToIngest == null) {
@@ -1220,12 +1223,14 @@ public final class Server {
     }
     Preconditions.checkArgument(actualWorkers.size() > 0, "Must use > 0 workers");
     int[] workersArray = MyriaUtils.integerCollectionToIntArray(actualWorkers);
+    PartitionFunction partitionFn =
+        Objects.firstNonNull(partitionFunction, new RoundRobinPartitionFunction(workersArray.length));
+    partitionFn.setNumPartitions(workersArray.length); // Override what is passed in with the JSON with the actual
+                                                       // number of workers to ingest
 
     /* The master plan: send the tuples out. */
     ExchangePairID scatterId = ExchangePairID.newID();
-    GenericShuffleProducer scatter =
-        new GenericShuffleProducer(source, scatterId, workersArray,
-            new RoundRobinPartitionFunction(workersArray.length));
+    GenericShuffleProducer scatter = new GenericShuffleProducer(source, scatterId, workersArray, partitionFn);
 
     /* The workers' plan */
     GenericShuffleConsumer gather =
@@ -1248,6 +1253,13 @@ public final class Server {
       qf.get();
     } catch (ExecutionException e) {
       throw new DbException("Error executing query", e.getCause());
+    }
+
+    /* Should find a way to populate the partition function without updating the value here. This is a hack. */
+    try {
+      catalog.updatePartitionFunction(relationKey, partitionFn);
+    } catch (CatalogException e) {
+      throw new DbException("Error updating the partition function", e);
     }
 
     return getDatasetStatus(relationKey);

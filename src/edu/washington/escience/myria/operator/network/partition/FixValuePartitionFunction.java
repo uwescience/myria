@@ -39,4 +39,8 @@ public final class FixValuePartitionFunction extends PartitionFunction {
     return result;
   }
 
+  @Override
+  public String toString() {
+    return "FixValue(" + value + ")";
+  }
 }
