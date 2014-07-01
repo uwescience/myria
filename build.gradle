@@ -12,11 +12,7 @@ group = "edu.washington.escience.myria"
 version = "0.1"
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '1.12'
-}
-
-jacoco {
-    toolVersion = "0.7.1.201405082137"
+    gradleVersion = '2.0'
 }
 
 /* We use Java 1.7 */
@@ -168,7 +164,7 @@ dependencies {
 }
 
 /* Tell Java to emit all compiler warnings. */
-tasks.withType(Compile) {
+tasks.withType(JavaCompile) {
   options.compilerArgs << "-Xlint"
 }
 
