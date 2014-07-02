@@ -63,6 +63,10 @@ public final class SimpleAppender extends StreamingState {
     if (tuples == null) {
       return 0;
     }
-    return tuples.size();
+    int sum = 0;
+    for (TupleBatch tb : tuples) {
+      sum += tb.numTuples();
+    }
+    return sum;
   }
 }
