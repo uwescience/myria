@@ -1237,9 +1237,10 @@ public final class Server {
     }
 
     ListenableFuture<Query> qf;
-    String ingestString = "ingest " + relationKey.toString(getDBMS());
     try {
-      qf = submitQuery(ingestString, ingestString, ingestString, new SubQueryPlan(scatter), workerPlans, false);
+      qf =
+          submitQuery("ingest " + relationKey.toString(), "ingest " + relationKey.toString(), "ingest "
+              + relationKey.toString(getDBMS()), new SubQueryPlan(scatter), workerPlans, false);
     } catch (CatalogException e) {
       throw new DbException("Error submitting query", e);
     }
@@ -1280,10 +1281,9 @@ public final class Server {
       for (Integer workerId : actualWorkers) {
         workerPlans.put(workerId, new SubQueryPlan(new SinkRoot(new EOSSource())));
       }
-      String importString = "import " + relationKey.toString(getDBMS());
       ListenableFuture<Query> qf =
-          submitQuery(importString, importString, importString, new SubQueryPlan(new SinkRoot(new EOSSource())),
-              workerPlans, false);
+          submitQuery("import " + relationKey.toString(), "import " + relationKey.toString(), "import "
+              + relationKey.toString(getDBMS()), new SubQueryPlan(new SinkRoot(new EOSSource())), workerPlans, false);
       Query queryState;
       try {
         queryState = qf.get();
