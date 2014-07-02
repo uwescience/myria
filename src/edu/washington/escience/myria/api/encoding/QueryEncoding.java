@@ -23,6 +23,8 @@ public class QueryEncoding extends MyriaApiEncoding {
   /** The logical relation algebra plan. */
   @Required
   public String logicalRa;
+  /** The language. optional. */
+  public String language;
   /** Set whether this query is run in profiling mode. (default is false) */
   public boolean profilingMode = false;
   /** The fault-tolerance mode used in this query, default: none. */
