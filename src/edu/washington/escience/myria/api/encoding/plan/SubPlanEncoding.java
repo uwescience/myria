@@ -12,7 +12,7 @@ import edu.washington.escience.myria.parallel.QueryPlan;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
     @Type(name = "DoWhile", value = DoWhileEncoding.class), @Type(name = "Sequence", value = SequenceEncoding.class),
-    @Type(name = "SubQuery", value = SubQueryEncoding.class), })
+    @Type(name = "SubQuery", value = SubQueryEncoding.class) })
 public abstract class SubPlanEncoding extends MyriaApiEncoding {
   /**
    * Generate a {@link QueryPlan} from this encoding.

@@ -31,7 +31,7 @@ public class QueryStatusEncoding {
     QueryStatusEncoding ret = new QueryStatusEncoding();
     ret.rawQuery = query.rawQuery;
     ret.logicalRa = query.logicalRa;
-    ret.physicalPlan = query;
+    ret.physicalPlan = query.plan;
     ret.profilingMode = query.profilingMode;
     ret.submitTime = DateTimeUtils.nowInISO8601();
     ret.status = Status.ACCEPTED;

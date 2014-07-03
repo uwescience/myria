@@ -37,6 +37,7 @@ import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
+import edu.washington.escience.myria.api.encoding.plan.SubPlanEncoding;
 import edu.washington.escience.myria.parallel.Query;
 import edu.washington.escience.myria.parallel.SocketInfo;
 
@@ -1053,23 +1054,23 @@ public final class MasterCatalog {
   /**
    * Insert a new query into the Catalog.
    * 
-   * @param physicalPlan the physical execution plan for the query.
+   * @param query the query encoding.
    * @return the newly generated ID of this query.
    * @throws CatalogException if there is an error adding the new query.
    */
-  public Long newQuery(final QueryEncoding physicalPlan) throws CatalogException {
-    Objects.requireNonNull(physicalPlan, "physicalPlan");
+  public Long newQuery(final QueryEncoding query) throws CatalogException {
+    Objects.requireNonNull(query, "query");
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
     }
+
+    final QueryStatusEncoding queryStatus = QueryStatusEncoding.submitted(query);
     final String physicalString;
     try {
-      physicalString = MyriaJsonMapperProvider.getMapper().writeValueAsString(physicalPlan);
+      physicalString = MyriaJsonMapperProvider.getMapper().writeValueAsString(query.plan);
     } catch (JsonProcessingException e) {
       throw new CatalogException(e);
     }
-
-    final QueryStatusEncoding queryStatus = QueryStatusEncoding.submitted(physicalPlan);
 
     try {
       return queue.execute(new SQLiteJob<Long>() {
@@ -1187,7 +1188,7 @@ public final class MasterCatalog {
     String physicalString = statement.columnString(3);
 
     try {
-      queryStatus.physicalPlan = MyriaJsonMapperProvider.getMapper().readValue(physicalString, QueryEncoding.class);
+      queryStatus.physicalPlan = MyriaJsonMapperProvider.getMapper().readValue(physicalString, SubPlanEncoding.class);
     } catch (IOException e) {
       queryStatus.physicalPlan = physicalString;
     }

@@ -991,12 +991,11 @@ public final class Server {
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
    */
-  public QueryFuture submitQuery(final QueryEncoding physicalPlan, final QueryPlan plan) throws DbException,
-      CatalogException {
+  public QueryFuture submitQuery(final QueryEncoding query, final QueryPlan plan) throws DbException, CatalogException {
     if (!canSubmitQuery()) {
       throw new DbException("Cannot submit query");
     }
-    if (physicalPlan.profilingMode) {
+    if (query.profilingMode) {
       if (!(plan instanceof SubQuery || plan instanceof JsonSubQuery)) {
         throw new DbException("Profiling mode is not supported for plans (" + plan.getClass().getSimpleName()
             + ") that may contain multiple subqueries.");
@@ -1009,8 +1008,8 @@ public final class Server {
       /* Hack to instantiate a single-fragment query for the visualization. */
       QueryConstruct.instantiate(((JsonSubQuery) plan).getFragments(), new ConstructArgs(this, -1));
     }
-    final long queryID = catalog.newQuery(physicalPlan);
-    return submitQuery(queryID, physicalPlan, plan);
+    final long queryID = catalog.newQuery(query);
+    return submitQuery(queryID, query, plan);
   }
 
   /**
