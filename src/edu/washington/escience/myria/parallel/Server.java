@@ -1549,7 +1549,7 @@ public final class Server {
       final TupleWriter writer) throws DbException {
     final QueryStatusEncoding queryStatus = checkAndReturnQueryStatus(queryId);
 
-    Set<Integer> actualWorkers = ((QueryEncoding) queryStatus.plan).getWorkers();
+    Set<Integer> actualWorkers = queryStatus.plan.getWorkers();
 
     String fragmentWhere = "";
     if (fragmentId >= 0) {
@@ -1635,7 +1635,7 @@ public final class Server {
         Schema.ofFields("opId", Type.INT_TYPE, "startTime", Type.LONG_TYPE, "endTime", Type.LONG_TYPE, "numTuples",
             Type.LONG_TYPE);
 
-    Set<Integer> actualWorkers = ((QueryEncoding) queryStatus.plan).getWorkers();
+    Set<Integer> actualWorkers = queryStatus.plan.getWorkers();
 
     String opCondition = "";
     if (onlyRootOperator) {
@@ -1717,7 +1717,7 @@ public final class Server {
     final Schema schema = Schema.ofFields("opId", Type.INT_TYPE, "nanoTime", Type.LONG_TYPE);
     final RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
 
-    Set<Integer> actualWorkers = ((QueryEncoding) queryStatus.plan).getWorkers();
+    Set<Integer> actualWorkers = queryStatus.plan.getWorkers();
 
     String filterOpnameQueryString = "";
     if (onlyRootOp) {
@@ -1784,7 +1784,7 @@ public final class Server {
     final Schema schema = Schema.ofFields("startTime", Type.LONG_TYPE, "endTime", Type.LONG_TYPE);
     final RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
 
-    Set<Integer> actualWorkers = ((QueryEncoding) queryStatus.plan).getWorkers();
+    Set<Integer> actualWorkers = queryStatus.plan.getWorkers();
 
     String opnameQueryString =
         Joiner.on(' ').join("SELECT min(starttime), max(endtime) FROM", relationKey.toString(getDBMS()),
@@ -1836,7 +1836,7 @@ public final class Server {
     final Schema schema = Schema.ofFields("opId", Type.INT_TYPE, "nanoTime", Type.LONG_TYPE);
     final RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
 
-    Set<Integer> actualWorkers = ((QueryEncoding) queryStatus.plan).getWorkers();
+    Set<Integer> actualWorkers = queryStatus.plan.getWorkers();
 
     String fragIdCondition = "";
     if (fragmentId >= 0) {

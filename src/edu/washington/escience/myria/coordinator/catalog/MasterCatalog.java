@@ -1149,7 +1149,7 @@ public final class MasterCatalog {
             final QueryStatusEncoding queryStatus = queryStatusHelper(statement);
             statement.dispose();
             return queryStatus;
-          } catch (final SQLiteException e) {
+          } catch (final SQLiteException | IOException e) {
             throw new CatalogException(e);
           }
         }
@@ -1188,19 +1188,16 @@ public final class MasterCatalog {
    * @param statement the query over the <code>queries</code> table. Has been stepped once.
    * @return the status of the first query in the result.
    * @throws SQLiteException if there is an error in the database.
+   * @throws IOException if there is an error when deserializing physical plan.
    */
-  private static QueryStatusEncoding queryStatusHelper(final SQLiteStatement statement) throws SQLiteException {
+  private static QueryStatusEncoding queryStatusHelper(final SQLiteStatement statement) throws SQLiteException,
+      IOException {
     final QueryStatusEncoding queryStatus = new QueryStatusEncoding(statement.columnLong(0));
     queryStatus.rawQuery = statement.columnString(1);
     queryStatus.logicalRa = statement.columnString(2);
     String physicalString = statement.columnString(3);
 
-    try {
-      queryStatus.plan = MyriaJsonMapperProvider.getMapper().readValue(physicalString, SubPlanEncoding.class);
-    } catch (IOException e) {
-      queryStatus.plan = physicalString;
-    }
-
+    queryStatus.plan = MyriaJsonMapperProvider.getMapper().readValue(physicalString, SubPlanEncoding.class);
     queryStatus.submitTime = statement.columnString(4);
     queryStatus.startTime = statement.columnString(5);
     queryStatus.finishTime = statement.columnString(6);

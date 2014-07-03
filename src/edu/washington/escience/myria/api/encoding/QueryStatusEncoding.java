@@ -2,6 +2,7 @@ package edu.washington.escience.myria.api.encoding;
 
 import java.net.URI;
 
+import edu.washington.escience.myria.api.encoding.plan.SubPlanEncoding;
 import edu.washington.escience.myria.util.DateTimeUtils;
 
 /**
@@ -49,7 +50,7 @@ public class QueryStatusEncoding {
   /** The logical plan. */
   public String logicalRa;
   /** The physical execution plan. */
-  public Object plan;
+  public SubPlanEncoding plan;
   /** The submit time of this query. */
   public String submitTime;
   /** The start time of this query. */
