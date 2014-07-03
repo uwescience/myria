@@ -36,6 +36,7 @@ public class QueryStatusEncoding {
     ret.ftMode = query.ftMode.toString();
     ret.submitTime = DateTimeUtils.nowInISO8601();
     ret.status = Status.ACCEPTED;
+    ret.language = query.language;
     return ret;
   }
 
@@ -65,6 +66,8 @@ public class QueryStatusEncoding {
   public Boolean profilingMode;
   /** The ftMode of the query. */
   public String ftMode;
+  /** The language of the query. */
+  public String language;
 
   /** The current status of the query. */
   public static enum Status {

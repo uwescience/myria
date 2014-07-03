@@ -85,7 +85,8 @@ public final class MasterCatalog {
     + "    status TEXT NOT NULL,\n"
     + "    message TEXT,\n"
     + "    profiling_mode BOOLEAN DEFAULT 0,\n" 
-    + "    ft_mode TEXT);";
+    + "    ft_mode TEXT,\n"
+    + "    language TEXT);";
   /** Create the relations table. */
   private static final String CREATE_RELATIONS =
       "CREATE TABLE relations (\n"
@@ -1080,7 +1081,7 @@ public final class MasterCatalog {
           try {
             SQLiteStatement statement =
                 sqliteConnection
-                    .prepare("INSERT INTO queries (raw_query, logical_ra, physical_plan, submit_time, start_time, finish_time, elapsed_nanos, status, profiling_mode, ft_mode) VALUES (?,?,?,?,?,?,?,?,?,?);");
+                    .prepare("INSERT INTO queries (raw_query, logical_ra, physical_plan, submit_time, start_time, finish_time, elapsed_nanos, status, profiling_mode, ft_mode, language) VALUES (?,?,?,?,?,?,?,?,?,?,?);");
             statement.bind(1, queryStatus.rawQuery);
             statement.bind(2, queryStatus.logicalRa);
             statement.bind(3, physicalString);
@@ -1100,6 +1101,11 @@ public final class MasterCatalog {
               statement.bind(9, 0);
             }
             statement.bind(10, queryStatus.ftMode);
+            if (queryStatus.language != null) {
+              statement.bind(11, queryStatus.language);
+            } else {
+              statement.bindNull(11);
+            }
             statement.stepThrough();
             statement.dispose();
             return sqliteConnection.getLastInsertId();
@@ -1134,7 +1140,7 @@ public final class MasterCatalog {
           try {
             SQLiteStatement statement =
                 sqliteConnection
-                    .prepare("SELECT query_id,raw_query,logical_ra,physical_plan,submit_time,start_time,finish_time,elapsed_nanos,status,message,profiling_mode,ft_mode FROM queries WHERE query_id=?;");
+                    .prepare("SELECT query_id,raw_query,logical_ra,physical_plan,submit_time,start_time,finish_time,elapsed_nanos,status,message,profiling_mode,ft_mode,language FROM queries WHERE query_id=?;");
             statement.bind(1, queryId);
             statement.step();
             if (!statement.hasRow()) {
@@ -1205,6 +1211,9 @@ public final class MasterCatalog {
     queryStatus.message = statement.columnString(9);
     queryStatus.profilingMode = statement.columnInt(10) > 0;
     queryStatus.ftMode = statement.columnString(11);
+    if (!statement.columnNull(12)) {
+      queryStatus.language = statement.columnString(12);
+    }
     return queryStatus;
   }
 
