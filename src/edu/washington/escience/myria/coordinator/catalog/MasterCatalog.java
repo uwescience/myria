@@ -77,7 +77,7 @@ public final class MasterCatalog {
     + "    query_id INTEGER NOT NULL PRIMARY KEY ASC,\n"
     + "    raw_query TEXT NOT NULL,\n"
     + "    logical_ra TEXT NOT NULL,\n"
-    + "    physical_plan TEXT NOT NULL,\n"
+    + "    plan TEXT NOT NULL,\n"
     + "    submit_time TEXT NOT NULL, -- DATES IN ISO8601 FORMAT \n"
     + "    start_time TEXT, -- DATES IN ISO8601 FORMAT \n"
     + "    finish_time TEXT, -- DATES IN ISO8601 FORMAT \n"
@@ -1081,7 +1081,7 @@ public final class MasterCatalog {
           try {
             SQLiteStatement statement =
                 sqliteConnection
-                    .prepare("INSERT INTO queries (raw_query, logical_ra, physical_plan, submit_time, start_time, finish_time, elapsed_nanos, status, profiling_mode, ft_mode, language) VALUES (?,?,?,?,?,?,?,?,?,?,?);");
+                    .prepare("INSERT INTO queries (raw_query, logical_ra, plan, submit_time, start_time, finish_time, elapsed_nanos, status, profiling_mode, ft_mode, language) VALUES (?,?,?,?,?,?,?,?,?,?,?);");
             statement.bind(1, queryStatus.rawQuery);
             statement.bind(2, queryStatus.logicalRa);
             statement.bind(3, physicalString);
@@ -1140,7 +1140,7 @@ public final class MasterCatalog {
           try {
             SQLiteStatement statement =
                 sqliteConnection
-                    .prepare("SELECT query_id,raw_query,logical_ra,physical_plan,submit_time,start_time,finish_time,elapsed_nanos,status,message,profiling_mode,ft_mode,language FROM queries WHERE query_id=?;");
+                    .prepare("SELECT query_id,raw_query,logical_ra,plan,submit_time,start_time,finish_time,elapsed_nanos,status,message,profiling_mode,ft_mode,language FROM queries WHERE query_id=?;");
             statement.bind(1, queryId);
             statement.step();
             if (!statement.hasRow()) {
@@ -1196,9 +1196,9 @@ public final class MasterCatalog {
     String physicalString = statement.columnString(3);
 
     try {
-      queryStatus.physicalPlan = MyriaJsonMapperProvider.getMapper().readValue(physicalString, SubPlanEncoding.class);
+      queryStatus.plan = MyriaJsonMapperProvider.getMapper().readValue(physicalString, SubPlanEncoding.class);
     } catch (IOException e) {
-      queryStatus.physicalPlan = physicalString;
+      queryStatus.plan = physicalString;
     }
 
     queryStatus.submitTime = statement.columnString(4);

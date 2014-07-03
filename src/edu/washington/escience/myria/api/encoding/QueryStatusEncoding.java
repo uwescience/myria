@@ -22,7 +22,7 @@ public class QueryStatusEncoding {
    * 
    * @param rawQuery the raw query submitted to the system.
    * @param logicalRa the logical plan of the query.
-   * @param physicalPlan the physical execution plan.
+   * @param plan the physical execution plan.
    * @param profilingMode whether the query executed with profiling on.
    * @return a QueryStatusEncoding object containing the submitted query, with the submit time set to
    *         DateTimeUtils.nowInISO8601().
@@ -31,7 +31,7 @@ public class QueryStatusEncoding {
     QueryStatusEncoding ret = new QueryStatusEncoding();
     ret.rawQuery = query.rawQuery;
     ret.logicalRa = query.logicalRa;
-    ret.physicalPlan = query.plan;
+    ret.plan = query.plan;
     ret.profilingMode = query.profilingMode;
     ret.ftMode = query.ftMode.toString();
     ret.submitTime = DateTimeUtils.nowInISO8601();
@@ -49,7 +49,7 @@ public class QueryStatusEncoding {
   /** The logical plan. */
   public String logicalRa;
   /** The physical execution plan. */
-  public Object physicalPlan;
+  public Object plan;
   /** The submit time of this query. */
   public String submitTime;
   /** The start time of this query. */
