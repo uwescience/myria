@@ -27,13 +27,12 @@ public class QueryStatusEncoding {
    * @return a QueryStatusEncoding object containing the submitted query, with the submit time set to
    *         DateTimeUtils.nowInISO8601().
    */
-  public static QueryStatusEncoding submitted(final String rawQuery, final String logicalRa, final Object physicalPlan,
-      final Boolean profilingMode) {
+  public static QueryStatusEncoding submitted(final QueryEncoding query) {
     QueryStatusEncoding ret = new QueryStatusEncoding();
-    ret.rawQuery = rawQuery;
-    ret.logicalRa = logicalRa;
-    ret.physicalPlan = physicalPlan;
-    ret.profilingMode = profilingMode;
+    ret.rawQuery = query.rawQuery;
+    ret.logicalRa = query.logicalRa;
+    ret.physicalPlan = query;
+    ret.profilingMode = query.profilingMode;
     ret.submitTime = DateTimeUtils.nowInISO8601();
     ret.status = Status.ACCEPTED;
     return ret;

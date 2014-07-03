@@ -1069,9 +1069,7 @@ public final class MasterCatalog {
       throw new CatalogException(e);
     }
 
-    final QueryStatusEncoding queryStatus =
-        QueryStatusEncoding.submitted(physicalPlan.rawQuery, physicalPlan.logicalRa, physicalPlan, Preconditions
-            .checkNotNull(physicalPlan.profilingMode, false));
+    final QueryStatusEncoding queryStatus = QueryStatusEncoding.submitted(physicalPlan);
 
     try {
       return queue.execute(new SQLiteJob<Long>() {
