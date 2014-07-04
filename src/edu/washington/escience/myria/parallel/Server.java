@@ -974,7 +974,7 @@ public final class Server {
       final SubQueryPlan masterPlan, final Map<Integer, SubQueryPlan> workerPlans, @Nullable final Boolean profilingMode)
       throws DbException, CatalogException {
     QueryEncoding query = new QueryEncoding();
-    query.rawDatalog = rawQuery;
+    query.rawQuery = rawQuery;
     query.logicalRa = rawQuery;
     query.fragments = ImmutableList.of();
     query.profilingMode = Objects.firstNonNull(profilingMode, false);
@@ -1240,7 +1240,7 @@ public final class Server {
     try {
       qf =
           submitQuery("ingest " + relationKey.toString(), "ingest " + relationKey.toString(), "ingest "
-              + relationKey.toString(), new SubQueryPlan(scatter), workerPlans, false);
+              + relationKey.toString(getDBMS()), new SubQueryPlan(scatter), workerPlans, false);
     } catch (CatalogException e) {
       throw new DbException("Error submitting query", e);
     }
@@ -1283,7 +1283,7 @@ public final class Server {
       }
       ListenableFuture<Query> qf =
           submitQuery("import " + relationKey.toString(), "import " + relationKey.toString(), "import "
-              + relationKey.toString(), new SubQueryPlan(new SinkRoot(new EOSSource())), workerPlans, false);
+              + relationKey.toString(getDBMS()), new SubQueryPlan(new SinkRoot(new EOSSource())), workerPlans, false);
       Query queryState;
       try {
         queryState = qf.get();

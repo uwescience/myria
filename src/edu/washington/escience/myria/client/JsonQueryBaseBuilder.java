@@ -539,7 +539,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
       result.ftMode = FTMODE.none;
       result.logicalRa = "";
       result.profilingMode = false;
-      result.rawDatalog = "";
+      result.rawQuery = "";
 
       try {
         result.validate();

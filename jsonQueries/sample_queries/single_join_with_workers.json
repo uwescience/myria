@@ -101,5 +101,5 @@
         }
     ],
     "logicalRa": "Insert(smallTable_join_smallTable)[Join(1=0; [0,3])[Shuffle(1)[Scan], Shuffle(1)[Scan]]]",
-    "rawDatalog": "smallTable_join_smallTable(x,z) :- smallTable(x,y), mallTable(y,z)"
+    "rawQuery": "smallTable_join_smallTable(x,z) :- smallTable(x,y), mallTable(y,z)"
 }

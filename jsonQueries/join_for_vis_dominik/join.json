@@ -144,5 +144,5 @@
       ]
     }
   ],
-  "rawDatalog": "T1 = scan(TwitterK);\nT2 = scan(TwitterK);\nT3 = [from T1,T2 where T1.$1 = T2.$0 and T2.$1 > 42 emit T1.$0, T2.$1];\nstore(T3, TwitterJoin);"
+  "rawQuery": "T1 = scan(TwitterK);\nT2 = scan(TwitterK);\nT3 = [from T1,T2 where T1.$1 = T2.$0 and T2.$1 > 42 emit T1.$0, T2.$1];\nstore(T3, TwitterJoin);"
 }

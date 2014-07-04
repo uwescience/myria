@@ -25,5 +25,5 @@
         }
     ],
     "logicalRa": "Insert[Scan[smallTable], smallTable2]",
-    "rawDatalog": "smallTable2(_) :- smallTable(_)."
+    "rawQuery": "smallTable2(_) :- smallTable(_)."
 }

@@ -1,5 +1,5 @@
 {
-  "rawDatalog": "Sequence[StoreTemp(JustX)[Apply(LOG(($0 + 2))=LOG(($0 + 2)))[Scan(public:adhoc:TwitterK)]]]",
+  "rawQuery": "Sequence[StoreTemp(JustX)[Apply(LOG(($0 + 2))=LOG(($0 + 2)))[Scan(public:adhoc:TwitterK)]]]",
   "fragments": [
     {
       "operators": [

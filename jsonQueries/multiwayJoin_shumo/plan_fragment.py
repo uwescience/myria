@@ -136,7 +136,7 @@ def two_dimension_multiway_join():
     whole_plan = {
         "fragments":fragments,
         "logicalRa" : "two dimension multiway join",
-        "rawDatalog" : "two dimension multiway join"
+        "rawQuery" : "two dimension multiway join"
     }
     return whole_plan
 
@@ -265,7 +265,7 @@ def partition_join():
     whole_plan = {
         "fragments":fragments,
         "logicalRa" : "partition join",
-        "rawDatalog" : "parittion join"
+        "rawQuery" : "parittion join"
     }
     return whole_plan
 

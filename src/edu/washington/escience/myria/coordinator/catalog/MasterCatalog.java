@@ -1070,7 +1070,7 @@ public final class MasterCatalog {
     }
 
     final QueryStatusEncoding queryStatus =
-        QueryStatusEncoding.submitted(physicalPlan.rawDatalog, physicalPlan.logicalRa, physicalPlan, Preconditions
+        QueryStatusEncoding.submitted(physicalPlan.rawQuery, physicalPlan.logicalRa, physicalPlan, Preconditions
             .checkNotNull(physicalPlan.profilingMode, false));
 
     try {

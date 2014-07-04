@@ -401,8 +401,9 @@ public abstract class Operator implements Serializable {
     open = true;
 
     if (isProfilingMode()) {
-      final WorkerSubQuery workerSubQuery = (WorkerSubQuery) getLocalSubQuery();
-      profilingLogger = workerSubQuery.getWorker().getProfilingLogger();
+      if (getLocalSubQuery() instanceof WorkerSubQuery) {
+        profilingLogger = ((WorkerSubQuery) getLocalSubQuery()).getWorker().getProfilingLogger();
+      }
     }
   }
 

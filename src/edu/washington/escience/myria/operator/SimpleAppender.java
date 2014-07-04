@@ -47,7 +47,9 @@ public final class SimpleAppender extends StreamingState {
 
   @Override
   public TupleBatch update(final TupleBatch tb) {
-    tuples.add(tb);
+    if (!tb.isEOI()) {
+      tuples.add(tb);
+    }
     return tb;
   }
 
@@ -58,6 +60,13 @@ public final class SimpleAppender extends StreamingState {
 
   @Override
   public int numTuples() {
-    return tuples.size();
+    if (tuples == null) {
+      return 0;
+    }
+    int sum = 0;
+    for (TupleBatch tb : tuples) {
+      sum += tb.numTuples();
+    }
+    return sum;
   }
 }

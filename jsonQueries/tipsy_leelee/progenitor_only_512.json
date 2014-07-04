@@ -320,5 +320,5 @@
         }
     ],
     "logicalRa": "progenitor512-512 holds the results of a large progenitor query",
-    "rawDatalog": "blah."
+    "rawQuery": "blah."
 }

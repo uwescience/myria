@@ -51,5 +51,5 @@
         }
     ],
     "logicalRa": "TwitterKApply :- Apply($0+5)[Scan(TwitterK)].",
-    "rawDatalog": "TwitterKApply :- Apply($0+5)[Scan(TwitterK)]."
+    "rawQuery": "TwitterKApply :- Apply($0+5)[Scan(TwitterK)]."
 }

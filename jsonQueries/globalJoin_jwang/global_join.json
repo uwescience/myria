@@ -95,5 +95,5 @@
         }
     ],
     "logicalRa": "INSERT(JOIN(SCAN1,SCAN2))",
-    "rawDatalog": "smallTableJoin(x,z) :- smallTable(x,y),smallTable(y,z)."
+    "rawQuery": "smallTableJoin(x,z) :- smallTable(x,y),smallTable(y,z)."
 }

@@ -32,7 +32,7 @@ def scan_then_insert():
        'operators' : [query_scan, insert]
     }
     whole_plan = {
-       'rawDatalog' : 'smallTable2(_) :- smallTable(_).',
+       'rawQuery' : 'smallTable2(_) :- smallTable(_).',
        'logicalRa' : 'Insert[Scan[smallTable], smallTable2]',
        'fragments' : [fragment]
     }
@@ -86,7 +86,7 @@ def repartition_on_x():
        'operators' : [gather, insert]
     }
     whole_plan = {
-       'rawDatalog' : 'smallTable_hash_follower(x,y) :- smallTable(x,y), @hash(x).',
+       'rawQuery' : 'smallTable_hash_follower(x,y) :- smallTable(x,y), @hash(x).',
        'logicalRa' : 'Insert[Shuffle(0)[Scan[smallTable], smallTable2]]',
        'fragments' : [fragment1, fragment2]
     }
@@ -183,7 +183,7 @@ def single_join():
         'operators' : [gather0, gather1, join, insert],
     }
     whole_plan = {
-       'rawDatalog' : 'smallTable_join_smallTable(x,z) :- smallTable(x,y), mallTable(y,z)',
+       'rawQuery' : 'smallTable_join_smallTable(x,z) :- smallTable(x,y), mallTable(y,z)',
        'logicalRa' : 'Insert(smallTable_join_smallTable)[Join(1=0; [0,3])[Shuffle(1)[Scan], Shuffle(1)[Scan]]]',
        'fragments' : [fragmentLeft, fragmentRight, fragmentJoin]
     }
@@ -249,7 +249,7 @@ def ingest_tipsy_rr():
 
     return {
         'logicalRa' : 'ingest tipsy rr',
-        'rawDatalog' : 'ingest tipsy rr',
+        'rawQuery' : 'ingest tipsy rr',
         'fragments' : [ scan_fragment, insert_fragment ]
     }
 
@@ -300,7 +300,7 @@ def ingest_tipsy_hash_iorder():
 
     return {
         'logicalRa' : 'ingest tipsy rr',
-        'rawDatalog' : 'ingest tipsy rr',
+        'rawQuery' : 'ingest tipsy rr',
         'fragments' : [ scan_fragment, insert_fragment ]
     }
 

@@ -130,5 +130,5 @@
         }
     ],
     "logicalRa":"two dimension multiway join",
-    "rawDatalog":"two dimension multiway join"
+    "rawQuery":"two dimension multiway join"
 }

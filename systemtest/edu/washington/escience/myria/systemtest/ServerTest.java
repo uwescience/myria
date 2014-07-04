@@ -26,7 +26,7 @@ public class ServerTest extends SystemTestBase {
     SubQueryPlan serverPlan = new SubQueryPlan(new SinkRoot(new EOSSource()));
     QueryPlan plan = new SubQuery(serverPlan, new HashMap<Integer, SubQueryPlan>());
     QueryEncoding query = new QueryEncoding();
-    query.rawDatalog = "testDatalog";
+    query.rawQuery = "testDatalog";
     query.logicalRa = "testRa";
     query.profilingMode = true;
     try {
@@ -46,7 +46,7 @@ public class ServerTest extends SystemTestBase {
     QueryPlan frag = new SubQuery(serverPlan, new HashMap<Integer, SubQueryPlan>());
     QueryPlan plan = new Sequence(ImmutableList.of(frag, frag));
     QueryEncoding query = new QueryEncoding();
-    query.rawDatalog = "testDatalog";
+    query.rawQuery = "testDatalog";
     query.logicalRa = "testRa";
     query.profilingMode = true;
 

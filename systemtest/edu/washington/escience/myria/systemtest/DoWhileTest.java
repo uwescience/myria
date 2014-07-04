@@ -106,7 +106,7 @@ public class DoWhileTest extends SystemTestBase {
     /* Execute the actual query */
     QueryPlan actualQuery = new Sequence(ImmutableList.of(pre, doWhile, post));
     QueryEncoding queryEncoding = new QueryEncoding();
-    queryEncoding.rawDatalog = "testDoWhile";
+    queryEncoding.rawQuery = "testDoWhile";
     queryEncoding.logicalRa = "testDoWhile";
     Query query = server.submitQuery(queryEncoding, actualQuery).get();
 

@@ -116,5 +116,5 @@
         }
     ],
     "logicalRa": "partiton join",
-    "rawDatalog": "partition join"
+    "rawQuery": "partition join"
 }
