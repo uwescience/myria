@@ -20,8 +20,8 @@ import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SimpleAppender;
 import edu.washington.escience.myria.operator.StreamingState;
 import edu.washington.escience.myria.parallel.ExchangePairID;
-import edu.washington.escience.myria.parallel.QueryExecutionMode;
 import edu.washington.escience.myria.parallel.LocalFragmentResourceManager;
+import edu.washington.escience.myria.parallel.QueryExecutionMode;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.IPCEvent;
 import edu.washington.escience.myria.parallel.ipc.IPCEventListener;
@@ -193,7 +193,8 @@ public abstract class Producer extends RootOperator {
   @SuppressWarnings("unchecked")
   @Override
   public final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    taskResourceManager = (LocalFragmentResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER);
+    taskResourceManager =
+        (LocalFragmentResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER);
     partitionBuffers = new TupleBatchBuffer[numOfPartition];
     for (int i = 0; i < numOfPartition; i++) {
       partitionBuffers[i] = new TupleBatchBuffer(getSchema());
@@ -287,6 +288,9 @@ public abstract class Producer extends RootOperator {
     }
   }
 
+  /** the number of tuples written to channels. */
+  private long numTuplesWrittenToChannels = 0;
+
   /**
    * @param chIdx the channel to write
    * @param msg the message.
@@ -295,12 +299,14 @@ public abstract class Producer extends RootOperator {
   protected final ChannelFuture writeMessage(final int chIdx, final TupleBatch msg) {
     StreamOutputChannel<TupleBatch> ch = ioChannels[chIdx];
     if (nonBlockingExecution) {
+      numTuplesWrittenToChannels += msg.numTuples();
       return ch.write(msg);
     } else {
       int sleepTime = 1;
       int maxSleepTime = MyriaConstants.SHORT_WAITING_INTERVAL_MS;
       while (true) {
         if (ch.isWritable()) {
+          numTuplesWrittenToChannels += msg.numTuples();
           return ch.write(msg);
         } else {
           int toSleep = sleepTime - 1;
@@ -413,6 +419,17 @@ public abstract class Producer extends RootOperator {
         }
       }
     }
+  }
+
+  /**
+   * @return the number of tuples in all buffers.
+   */
+  public final long getNumTuplesInBuffers() {
+    long sum = 0;
+    for (StreamingState state : triedToSendTuples) {
+      sum += state.numTuples();
+    }
+    return sum;
   }
 
   /**
@@ -563,5 +580,12 @@ public abstract class Producer extends RootOperator {
    */
   public int getNumOfPartition() {
     return numOfPartition;
+  }
+
+  /**
+   * @return the number of tuples written to channels.
+   */
+  public final long getNumTuplesWrittenToChannels() {
+    return numTuplesWrittenToChannels;
   }
 }

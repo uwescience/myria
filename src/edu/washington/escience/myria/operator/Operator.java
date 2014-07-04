@@ -553,4 +553,11 @@ public abstract class Operator implements Serializable {
     Objects.requireNonNull(opId);
     return opId;
   }
+
+  /**
+   * @return the number of output tuples.
+   */
+  public long getNumOutputTuples() {
+    return numOutputTuples;
+  }
 }
