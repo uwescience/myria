@@ -985,7 +985,7 @@ public final class Server {
    * Submit a query for execution. The workerPlans may be removed in the future if the query compiler and schedulers are
    * ready. Returns null if there are too many active queries.
    * 
-   * @param physicalPlan the Myria physical plan for the query.
+   * @param query the query encoding.
    * @param plan the query to be executed
    * @throws DbException if any error in non-catalog data processing
    * @throws CatalogException if any error in processing catalog

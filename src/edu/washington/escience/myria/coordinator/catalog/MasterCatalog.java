@@ -1068,10 +1068,14 @@ public final class MasterCatalog {
 
     final QueryStatusEncoding queryStatus = QueryStatusEncoding.submitted(query);
     final String physicalString;
-    try {
-      physicalString = MyriaJsonMapperProvider.getMapper().writeValueAsString(query.plan);
-    } catch (JsonProcessingException e) {
-      throw new CatalogException(e);
+    if (query.plan == null) {
+      physicalString = "";
+    } else {
+      try {
+        physicalString = MyriaJsonMapperProvider.getMapper().writeValueAsString(query.plan);
+      } catch (JsonProcessingException e) {
+        throw new CatalogException(e);
+      }
     }
 
     try {
