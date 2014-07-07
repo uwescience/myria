@@ -33,6 +33,7 @@ import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.MyriaConstants.PROFILING_MODE;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
@@ -206,10 +207,12 @@ public final class Worker {
     final long start = System.currentTimeMillis();
     for (SubQueryId id : executingSubQueries.keySet()) {
       WorkerSubQuery wqp = executingSubQueries.get(id);
-      if (resourceUsage.get(id) == null) {
-        resourceUsage.put(id, new ArrayList<ResourceStats>());
+      if (wqp.getProfilingMode().equals(PROFILING_MODE.resource) || wqp.getProfilingMode().equals(PROFILING_MODE.all)) {
+        if (resourceUsage.get(id) == null) {
+          resourceUsage.put(id, new ArrayList<ResourceStats>());
+        }
+        wqp.collectResourceMeasurements(start, resourceUsage.get(id));
       }
-      wqp.collectResourceMeasurements(start, resourceUsage.get(id));
     }
   }
 
@@ -725,7 +728,9 @@ public final class Worker {
     executingSubQueries.remove(subQueryId);
     activeQueries.remove(subQueryId.getQueryId());
     // TODO: dump to disk
-    resourceUsage.remove(subQueryId);
+    if (resourceUsage.get(subQueryId) != null) {
+      resourceUsage.remove(subQueryId);
+    }
   }
 
   /**
