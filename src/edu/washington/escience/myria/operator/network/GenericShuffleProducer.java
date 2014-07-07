@@ -3,6 +3,7 @@ package edu.washington.escience.myria.operator.network;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.MyriaConstants.PROFILING_MODE;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
@@ -92,7 +93,7 @@ public class GenericShuffleProducer extends Producer {
   protected final void consumeTuples(final TupleBatch tup) throws DbException {
     final TupleBatch[] partitions = getTupleBatchPartitions(tup);
 
-    if (isProfilingMode()) {
+    if (getProfilingMode().equals(PROFILING_MODE.query) || getProfilingMode().equals(PROFILING_MODE.all)) {
       for (int partitionIdx = 0; partitionIdx < partitions.length; partitionIdx++) {
         if (partitions[partitionIdx] != null) {
           final int numTuples = partitions[partitionIdx].numTuples();

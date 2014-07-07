@@ -116,7 +116,6 @@ public class SequenceTest extends SystemTestBase {
 
     /* Submit the query and compute its ID. */
     QueryEncoding encoding = new QueryEncoding();
-    encoding.profilingMode = false;
     encoding.rawQuery = "test";
     encoding.logicalRa = "test";
     QueryFuture qf = server.submitQuery(encoding, all);
@@ -179,7 +178,6 @@ public class SequenceTest extends SystemTestBase {
 
     /* Submit the query and compute its ID. */
     QueryEncoding encoding = new QueryEncoding();
-    encoding.profilingMode = false;
     encoding.rawQuery = "test";
     encoding.logicalRa = "test";
     QueryFuture qf = server.submitQuery(encoding, all);
@@ -218,7 +216,6 @@ public class SequenceTest extends SystemTestBase {
 
     /* Submit the query. */
     QueryEncoding encoding = new QueryEncoding();
-    encoding.profilingMode = false;
     encoding.rawQuery = "test";
     encoding.logicalRa = "test";
     QueryFuture qf = server.submitQuery(encoding, all);
@@ -406,7 +403,6 @@ public class SequenceTest extends SystemTestBase {
 
     /* Submit the query and compute its ID. */
     QueryEncoding encoding = new QueryEncoding();
-    encoding.profilingMode = false;
     encoding.rawQuery = "test";
     encoding.logicalRa = "test";
     QueryFuture qf = server.submitQuery(encoding, all);

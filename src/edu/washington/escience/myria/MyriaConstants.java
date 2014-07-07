@@ -280,4 +280,14 @@ public final class MyriaConstants {
     /** three FT modes are supported. */
     none, abandon, rejoin
   };
+
+  /** available profiling mode for each query in Myria. */
+  public static enum PROFILING_MODE {
+    // none: don't profile
+    // resource: resource usage only
+    // query: query execution only
+    // all: query + resource
+    // better names and more help functions are welcomed
+    none, resource, query, all
+  };
 }

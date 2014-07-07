@@ -47,6 +47,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.MyriaConstants.PROFILING_MODE;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
@@ -980,7 +981,7 @@ public final class Server {
       workerPlans.put(entry.getKey(), new SubQueryPlan(entry.getValue()));
     }
     return submitQuery(catalogInfoPlaceHolder, catalogInfoPlaceHolder, catalogInfoPlaceHolder, new SubQueryPlan(
-        masterRoot), workerPlans, false);
+        masterRoot), workerPlans, null);
   }
 
   /**
@@ -998,13 +999,13 @@ public final class Server {
    * @return the query future from which the query status can be looked up.
    */
   public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final String physicalPlan,
-      final SubQueryPlan masterPlan, final Map<Integer, SubQueryPlan> workerPlans, @Nullable final Boolean profilingMode)
-      throws DbException, CatalogException {
+      final SubQueryPlan masterPlan, final Map<Integer, SubQueryPlan> workerPlans,
+      @Nullable final PROFILING_MODE profilingMode) throws DbException, CatalogException {
     QueryEncoding query = new QueryEncoding();
     query.rawQuery = rawQuery;
     query.logicalRa = rawQuery;
     query.fragments = ImmutableList.of();
-    query.profilingMode = Objects.firstNonNull(profilingMode, false);
+    query.profilingMode = Objects.firstNonNull(profilingMode, PROFILING_MODE.none);
     return submitQuery(query, new SubQuery(masterPlan, workerPlans));
   }
 
@@ -1022,7 +1023,7 @@ public final class Server {
     if (!canSubmitQuery()) {
       throw new DbException("Cannot submit query");
     }
-    if (query.profilingMode) {
+    if (!query.profilingMode.equals(PROFILING_MODE.none)) {
       if (!(plan instanceof SubQuery || plan instanceof JsonSubQuery)) {
         throw new DbException("Profiling mode is not supported for plans (" + plan.getClass().getSimpleName()
             + ") that may contain multiple subqueries.");
@@ -1278,7 +1279,7 @@ public final class Server {
     try {
       qf =
           submitQuery("ingest " + relationKey.toString(), "ingest " + relationKey.toString(), "ingest "
-              + relationKey.toString(getDBMS()), new SubQueryPlan(scatter), workerPlans, false);
+              + relationKey.toString(getDBMS()), new SubQueryPlan(scatter), workerPlans, null);
     } catch (CatalogException e) {
       throw new DbException("Error submitting query", e);
     }
@@ -1321,7 +1322,7 @@ public final class Server {
       }
       ListenableFuture<Query> qf =
           submitQuery("import " + relationKey.toString(), "import " + relationKey.toString(), "import "
-              + relationKey.toString(getDBMS()), new SubQueryPlan(new SinkRoot(new EOSSource())), workerPlans, false);
+              + relationKey.toString(getDBMS()), new SubQueryPlan(new SinkRoot(new EOSSource())), workerPlans, null);
       Query queryState;
       try {
         queryState = qf.get();
@@ -1571,7 +1572,7 @@ public final class Server {
     /* Submit the plan for the download. */
     String planString = "download " + relationKey.toString();
     try {
-      return submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
+      return submitQuery(planString, planString, planString, masterPlan, workerPlans, null);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1646,7 +1647,7 @@ public final class Server {
     String planString =
         Joiner.on("").join("download profiling log data for (query=", queryId, ", fragment=", fragmentId, ")");
     try {
-      return submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
+      return submitQuery(planString, planString, planString, masterPlan, workerPlans, null);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1728,7 +1729,7 @@ public final class Server {
         Joiner.on('\0').join("download profiling data (query=", queryId, ", fragment=", fragmentId, ", range=[",
             Joiner.on(", ").join(start, end), "]", ")");
     try {
-      return submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
+      return submitQuery(planString, planString, planString, masterPlan, workerPlans, null);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1803,7 +1804,7 @@ public final class Server {
         Joiner.on('\0').join("download profiling histogram (query=", queryId, ", fragment=", fragmentId, ", range=[",
             Joiner.on(", ").join(start, end, step), "]", ")");
     try {
-      return submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
+      return submitQuery(planString, planString, planString, masterPlan, workerPlans, null);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1854,7 +1855,7 @@ public final class Server {
     /* Submit the plan for the download. */
     String planString = Joiner.on('\0').join("download time range (query=", queryId, ", fragment=", fragmentId, ")");
     try {
-      return submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
+      return submitQuery(planString, planString, planString, masterPlan, workerPlans, null);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1918,7 +1919,7 @@ public final class Server {
     String planString =
         Joiner.on('\0').join("download operator contributions (query=", queryId, ", fragment=", fragmentId, ")");
     try {
-      return submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
+      return submitQuery(planString, planString, planString, masterPlan, workerPlans, null);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1943,7 +1944,8 @@ public final class Server {
     Preconditions.checkArgument(queryStatus != null, "query %s not found", queryId);
     Preconditions.checkArgument(queryStatus.status == QueryStatusEncoding.Status.SUCCESS,
         "query %s did not succeed (%s)", queryId, queryStatus.status);
-    Preconditions.checkArgument(queryStatus.profilingMode, "query %s was not run with profiling enabled", queryId);
+    Preconditions.checkArgument(!PROFILING_MODE.valueOf(queryStatus.profilingMode).equals(PROFILING_MODE.none),
+        "query %s was not run with profiling enabled", queryId);
     return queryStatus;
   }
 
