@@ -5,7 +5,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileLock;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -185,6 +187,28 @@ public final class Worker {
         LOGGER.trace("sending heartbeat to server");
       }
       sendMessageToMaster(IPCUtils.CONTROL_WORKER_HEARTBEAT).awaitUninterruptibly();
+
+      collectResourceMeasurements();
+    }
+  }
+
+  /**
+   * An in-mem stats of resource usage.
+   */
+  private final Map<SubQueryId, List<ResourceStats>> resourceUsage =
+      new ConcurrentHashMap<SubQueryId, List<ResourceStats>>();
+
+  /**
+   * collect resource measurements of all the active queries on this worker.
+   */
+  public void collectResourceMeasurements() {
+    final long start = System.currentTimeMillis();
+    for (SubQueryId id : executingSubQueries.keySet()) {
+      WorkerSubQuery wqp = executingSubQueries.get(id);
+      if (resourceUsage.get(id) == null) {
+        resourceUsage.put(id, new ArrayList<ResourceStats>());
+      }
+      wqp.collectResourceMeasurements(start, resourceUsage.get(id));
     }
   }
 
@@ -665,7 +689,7 @@ public final class Worker {
               });
           LOGGER.info("My part of query {} finished", subQuery);
         } else {
-          LOGGER.debug("Query failed because of exception: ", future.getCause());
+          LOGGER.error("Query failed because of exception: ", future.getCause());
 
           TransportMessage tm = null;
           try {
@@ -699,6 +723,8 @@ public final class Worker {
   private void finishTask(final SubQueryId subQueryId) {
     executingSubQueries.remove(subQueryId);
     activeQueries.remove(subQueryId.getQueryId());
+    // TODO: dump to disk
+    resourceUsage.remove(subQueryId);
   }
 
   /**

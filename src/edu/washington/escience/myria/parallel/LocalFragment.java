@@ -723,4 +723,59 @@ public final class LocalFragment {
   public long getBeginMilliseconds() {
     return beginMilliseconds;
   }
+
+  /**
+   * 
+   * @param stats the stats to be added into
+   * @param timestamp the timestamp of the collecting event
+   * @param obId the operator ID
+   * @param measurement which measurement
+   * @param value the value
+   * @param subQueryId the sunquery ID
+   */
+  public void addResourceReport(final List<ResourceStats> stats, final long timestamp, final int opId,
+      final String measurement, final long value, final SubQueryId subQueryId) {
+    stats.add(new ResourceStats(timestamp, opId, measurement, value, subQueryId.getQueryId(), subQueryId
+        .getSubqueryId()));
+  }
+
+  /**
+   * 
+   * @param stats the stats
+   * @param op the current operator
+   * @param start the starting timestamp of this event in milliseconds
+   * @param subQueryId the subQuery Id
+   */
+  public void collectResourceMeasurements(final List<ResourceStats> stats, final long start, final Operator op,
+      final SubQueryId subQueryId) {
+    if (threadId == -1) {
+      return;
+    }
+    if (op == getRootOp()) {
+      long cntCpu = 0;
+      synchronized (this) {
+        cntCpu = cpuTotal;
+        if (cpuBefore > 0) {
+          cntCpu += ManagementFactory.getThreadMXBean().getThreadCpuTime(threadId) - cpuBefore;
+        }
+      }
+      addResourceReport(stats, start, op.getOpId(), "cpuTotal", cntCpu, subQueryId);
+    }
+
+    if (op instanceof Producer) {
+      addResourceReport(stats, start, op.getOpId(), "numTuplesWritten",
+          ((Producer) op).getNumTuplesWrittenToChannels(), subQueryId);
+      addResourceReport(stats, start, op.getOpId(), "numTuplesInBuffers", ((Producer) op).getNumTuplesInBuffers(),
+          subQueryId);
+    } else if (op instanceof IDBController) {
+      addResourceReport(stats, start, op.getOpId(), "numTuplesInState", ((IDBController) op).getStreamingState()
+          .numTuples(), subQueryId);
+    } else if (op instanceof SymmetricHashJoin) {
+      addResourceReport(stats, start, op.getOpId(), "numTuplesInHashTable", ((SymmetricHashJoin) op)
+          .getNumTuplesInHashTables(), subQueryId);
+    }
+    for (Operator child : op.getChildren()) {
+      collectResourceMeasurements(stats, start, child, subQueryId);
+    }
+  }
 }
