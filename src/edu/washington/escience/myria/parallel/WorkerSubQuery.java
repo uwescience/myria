@@ -293,4 +293,15 @@ public class WorkerSubQuery extends LocalSubQuery {
   public Set<LocalFragment> getFragments() {
     return fragments;
   }
+
+  /**
+   * 
+   * @param start the timestamp of this event
+   * @param stats the stats array
+   */
+  public void collectResourceMeasurements(final long start, final List<ResourceStats> stats) {
+    for (LocalFragment fragment : fragments) {
+      fragment.collectResourceMeasurements(stats, start, fragment.getRootOp(), getSubQueryId());
+    }
+  }
 }
