@@ -2012,4 +2012,25 @@ public final class Server {
     Preconditions.checkArgument(query != null, "Query #%s is not active", queryId);
     return query;
   }
+
+  /**
+   * @param queryId the query id to fetch
+   * @return resource usage.
+   */
+  public Map<Integer, List<ResourceStats>> getResourceUsage(final long queryId) {
+    Map<Integer, List<ResourceStats>> ret = new HashMap<Integer, List<ResourceStats>>();
+    for (SubQueryId subQueryId : resourceUsage.keySet()) {
+      if (subQueryId.getQueryId() == queryId) {
+        Map<Integer, List<ResourceStats>> workerStats = resourceUsage.get(subQueryId);
+        for (Integer workerId : workerStats.keySet()) {
+          if (ret.get(workerId) == null) {
+            ret.put(workerId, new ArrayList<ResourceStats>());
+          }
+          ret.get(workerId).addAll(workerStats.get(workerId));
+        }
+      }
+    }
+    // TODO: read from disk
+    return ret;
+  }
 }
