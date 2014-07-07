@@ -87,6 +87,7 @@ import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.IPCMessage;
 import edu.washington.escience.myria.parallel.ipc.InJVMLoopbackChannelSink;
 import edu.washington.escience.myria.parallel.ipc.QueueBasedShortMessageProcessor;
+import edu.washington.escience.myria.proto.ControlProto;
 import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myria.proto.QueryProto.QueryMessage;
 import edu.washington.escience.myria.proto.QueryProto.QueryReport;
@@ -132,6 +133,9 @@ public final class Server {
           case CONTROL:
             final ControlMessage controlM = m.getControlMessage();
             switch (controlM.getType()) {
+              case RESOURCE_STATS:
+                updateResourceStats(senderID, controlM);
+                break;
               case WORKER_HEARTBEAT:
                 LOGGER.trace("getting heartbeat from worker {}", senderID);
                 updateHeartbeat(senderID);
@@ -224,6 +228,9 @@ public final class Server {
    * Current alive worker set.
    */
   private final ConcurrentHashMap<Integer, Long> aliveWorkers;
+
+  /** resource usage stats of workers. */
+  private final ConcurrentHashMap<SubQueryId, Map<Integer, List<ResourceStats>>> resourceUsage;
 
   /**
    * Scheduled new workers, when a scheduled worker sends the first heartbeat, it'll be removed from this set.
@@ -448,6 +455,7 @@ public final class Server {
     aliveWorkers = new ConcurrentHashMap<>();
     scheduledWorkers = new ConcurrentHashMap<>();
     scheduledWorkersTime = new ConcurrentHashMap<>();
+    resourceUsage = new ConcurrentHashMap<SubQueryId, Map<Integer, List<ResourceStats>>>();
 
     removeWorkerAckReceived = new ConcurrentHashMap<>();
     addWorkerAckReceived = new ConcurrentHashMap<>();
@@ -555,6 +563,25 @@ public final class Server {
       }
     }
     aliveWorkers.put(workerID, System.currentTimeMillis());
+  }
+
+  /**
+   * update resource stats from messgaes.
+   * 
+   * @param senderId the sender worer id.
+   * @param m the message.
+   */
+  private void updateResourceStats(final int senderId, final ControlMessage m) {
+    for (ControlProto.ResourceStats stats : m.getResourceStatsList()) {
+      SubQueryId id = new SubQueryId(stats.getQueryId(), stats.getSubqueryId());
+      if (resourceUsage.get(id) == null) {
+        resourceUsage.put(id, new HashMap<Integer, List<ResourceStats>>());
+      }
+      if (resourceUsage.get(id).get(senderId) == null) {
+        resourceUsage.get(id).put(senderId, new ArrayList<ResourceStats>());
+      }
+      resourceUsage.get(id).get(senderId).add(ResourceStats.fromProtobuf(stats));
+    }
   }
 
   /**
@@ -1154,6 +1181,7 @@ public final class Server {
     long queryId = subQueryId.getQueryId();
     executingSubQueries.remove(subQueryId);
     getQuery(queryId).finishSubQuery();
+    resourceUsage.remove(subQueryId);
   }
 
   /**

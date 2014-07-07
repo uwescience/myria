@@ -6,6 +6,7 @@ import java.io.NotSerializableException;
 import java.io.ObjectOutputStream;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import org.jboss.netty.channel.Channel;
@@ -18,9 +19,10 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnFactory;
 import edu.washington.escience.myria.parallel.ExecutionStatistics;
+import edu.washington.escience.myria.parallel.ResourceStats;
+import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.parallel.SubQueryId;
 import edu.washington.escience.myria.parallel.SubQueryPlan;
-import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
@@ -392,8 +394,7 @@ public final class IPCUtils {
    * @throws IOException if error occurs in encoding the query.
    * @return an encoded query TM
    */
-  public static TransportMessage queryMessage(final SubQueryId taskId, final SubQueryPlan query)
-      throws IOException {
+  public static TransportMessage queryMessage(final SubQueryId taskId, final SubQueryPlan query) throws IOException {
     final ByteArrayOutputStream inMemBuffer = new ByteArrayOutputStream();
     final ObjectOutputStream oos = new ObjectOutputStream(inMemBuffer);
     oos.writeObject(query);
@@ -416,5 +417,23 @@ public final class IPCUtils {
    * util classes are not instantiable.
    * */
   private IPCUtils() {
+  }
+
+  /**
+   * Resource report message sent to master.
+   * 
+   * @param resourceUsage resource usage.
+   * @return the transport message.
+   * 
+   * */
+  public static TransportMessage resourceReport(final Map<SubQueryId, List<ResourceStats>> resourceUsage) {
+    ControlMessage.Builder ret = ControlMessage.newBuilder().setType(ControlMessage.Type.RESOURCE_STATS);
+    for (SubQueryId id : resourceUsage.keySet()) {
+      List<ResourceStats> stats = resourceUsage.get(id);
+      for (ResourceStats entry : stats) {
+        ret.addResourceStats(entry.toProtobuf());
+      }
+    }
+    return TransportMessage.newBuilder().setType(TransportMessage.Type.CONTROL).setControlMessage(ret.build()).build();
   }
 }
