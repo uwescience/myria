@@ -7,6 +7,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.MyriaConstants.PROFILING_MODE;
 import edu.washington.escience.myria.api.MyriaApiException;
 import edu.washington.escience.myria.api.encoding.plan.SubPlanEncoding;
 import edu.washington.escience.myria.api.encoding.plan.SubQueryEncoding;
@@ -26,7 +27,7 @@ public class QueryEncoding extends MyriaApiEncoding {
   /** The language. optional. */
   public String language;
   /** Set whether this query is run in profiling mode. (default is false) */
-  public boolean profilingMode = false;
+  public PROFILING_MODE profilingMode = PROFILING_MODE.none;
   /** The fault-tolerance mode used in this query, default: none. */
   public FTMODE ftMode = FTMODE.none;
 

@@ -12,6 +12,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.MyriaConstants.PROFILING_MODE;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.operator.DbReader;
 import edu.washington.escience.myria.operator.DbWriter;
@@ -41,9 +42,9 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
   private final Set<RelationKey> readSet;
 
   /**
-   * profilingMode,default:false.
+   * profilingMode,default:none.
    */
-  private boolean profilingMode = false;
+  private PROFILING_MODE profilingMode = PROFILING_MODE.valueOf("none");
 
   /** Constructor. */
   public SubQueryPlan() {
@@ -141,7 +142,7 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
   /**
    * @return the profiling mode.
    */
-  public boolean isProfilingMode() {
+  public PROFILING_MODE getProfilingMode() {
     return profilingMode;
   }
 
@@ -150,7 +151,7 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
    * 
    * @param profilingMode the profiling mode.
    */
-  public void setProfilingMode(final boolean profilingMode) {
+  public void setProfilingMode(final PROFILING_MODE profilingMode) {
     this.profilingMode = profilingMode;
   }
 

@@ -21,6 +21,7 @@ import com.google.common.collect.Maps;
 
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.MyriaConstants.PROFILING_MODE;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -103,10 +104,10 @@ public class QueryConstruct {
    * 
    * @param plans the physical query plan
    * @param ftMode the fault tolerance mode under which the query will be executed
-   * @param profilingMode <code>true</code> if the query should be profiled
+   * @param profilingMode how the query should be profiled
    */
   public static void setQueryExecutionOptions(Map<Integer, SubQueryPlan> plans, final FTMODE ftMode,
-      final boolean profilingMode) {
+      final PROFILING_MODE profilingMode) {
     for (SubQueryPlan plan : plans.values()) {
       plan.setFTMode(ftMode);
       plan.setProfilingMode(profilingMode);

@@ -323,7 +323,7 @@ public class MasterSubQuery extends LocalSubQuery {
    */
   public MasterSubQuery(final SubQuery subQuery, final Server master) {
     super(Preconditions.checkNotNull(Preconditions.checkNotNull(subQuery, "subQuery").getSubQueryId(), "subQueryId"),
-        subQuery.getMasterPlan().getFTMode(), subQuery.getMasterPlan().isProfilingMode());
+        subQuery.getMasterPlan().getFTMode(), subQuery.getMasterPlan().getProfilingMode());
     Preconditions.checkNotNull(subQuery, "subQuery");
     SubQueryPlan masterPlan = subQuery.getMasterPlan();
     Map<Integer, SubQueryPlan> workerPlans = subQuery.getWorkerPlans();
