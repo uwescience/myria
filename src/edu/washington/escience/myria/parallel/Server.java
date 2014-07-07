@@ -1155,7 +1155,9 @@ public final class Server {
     long queryId = subQueryId.getQueryId();
     executingSubQueries.remove(subQueryId);
     getQuery(queryId).finishSubQuery();
-    resourceUsage.remove(subQueryId);
+    if (resourceUsage.get(subQueryId) != null) {
+      resourceUsage.remove(subQueryId);
+    }
   }
 
   /**
