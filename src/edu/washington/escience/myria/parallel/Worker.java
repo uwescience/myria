@@ -187,6 +187,7 @@ public final class Worker {
       sendMessageToMaster(IPCUtils.CONTROL_WORKER_HEARTBEAT).awaitUninterruptibly();
 
       collectResourceMeasurements();
+      sendMessageToMaster(IPCUtils.resourceReport(resourceUsage)).awaitUninterruptibly();
     }
   }
 
