@@ -1101,11 +1101,7 @@ public final class MasterCatalog {
               statement.bind(9, 0);
             }
             statement.bind(10, queryStatus.ftMode);
-            if (queryStatus.language != null) {
-              statement.bind(11, queryStatus.language);
-            } else {
-              statement.bindNull(11);
-            }
+            statement.bind(11, queryStatus.language);
             statement.stepThrough();
             statement.dispose();
             return sqliteConnection.getLastInsertId();
