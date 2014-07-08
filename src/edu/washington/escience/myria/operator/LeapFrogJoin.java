@@ -570,6 +570,7 @@ public class LeapFrogJoin extends NAryOperator {
           return null;
         }
       }
+
       /* Initiate table iterators. */
       initIterators();
     }
@@ -623,21 +624,11 @@ public class LeapFrogJoin extends NAryOperator {
     }
   }
 
-  @Override
-  public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-
+  /**
+   * Initiate join variable order.
+   */
+  private void initVariableOrder() {
     Operator[] children = getChildren();
-
-    /* check indexOnFirst. */
-    if (indexOnFirst == null) {
-      indexOnFirst = new boolean[children.length];
-      for (int i = 0; i < children.length; ++i) {
-        indexOnFirst[i] = false;
-      }
-    }
-    Preconditions.checkArgument(children.length == indexOnFirst.length,
-        "indexOnFirst must have the same cardinality as children.");
-
     /* initiate join field mapping and field local order */
     joinFieldMapping = new ArrayList<List<JoinField>>();
     joinFieldLocalOrder = new ArrayList<>(children.length);
@@ -709,6 +700,22 @@ public class LeapFrogJoin extends NAryOperator {
         }
       }
     }
+  }
+
+  @Override
+  public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+
+    Operator[] children = getChildren();
+
+    /* check indexOnFirst. */
+    if (indexOnFirst == null) {
+      indexOnFirst = new boolean[children.length];
+      for (int i = 0; i < children.length; ++i) {
+        indexOnFirst[i] = false;
+      }
+    }
+    Preconditions.checkArgument(children.length == indexOnFirst.length,
+        "indexOnFirst must have the same cardinality as children.");
 
     /* Initiate hash tables and indices */
     tables = new MutableTupleBuffer[children.length];
@@ -719,8 +726,10 @@ public class LeapFrogJoin extends NAryOperator {
     }
 
     currentDepth = -1;
-
     ansTBB = new TupleBatchBuffer(getSchema());
+
+    /* Initiate variable order. */
+    initVariableOrder();
   }
 
   @Override
