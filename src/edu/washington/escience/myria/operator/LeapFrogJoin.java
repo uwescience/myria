@@ -47,11 +47,6 @@ public class LeapFrogJoin extends NAryOperator {
   private final int[][][] userJoinFieldMapping;
 
   /**
-   * whether to create an index on the first joined field in each relation.
-   */
-  private transient boolean[] indexOnFirst;
-
-  /**
    * {@code {@link #joinFieldMapping}[i]} is the list of JoinFields of i-th join variable.
    */
   private transient List<List<JoinField>> joinFieldMapping;
@@ -252,11 +247,6 @@ public class LeapFrogJoin extends NAryOperator {
     private int currentField = -1;
 
     /**
-     * row number on {@value firstValueIndices[tableIndex]}.
-     */
-    private int rowOnIndex = 0;
-
-    /**
      * iterator positions on different fields.
      */
     private final int[] rowIndices;
@@ -419,16 +409,6 @@ public class LeapFrogJoin extends NAryOperator {
   }
 
   /**
-   * Helper function, check whether a JoinField is ordered first in its own relation.
-   * 
-   * @param jf JoinField
-   * @return true if this JoinField is ordered first, false otherwise.
-   */
-  private boolean isIndexed(final JoinField jf) {
-    return indexOnFirst[jf.table] && getLocalOrder(jf) == 0;
-  }
-
-  /**
    * Comparator class for sorting iterators.
    */
   private class JoinIteratorCompare implements Comparator<JoinField> {
@@ -498,10 +478,9 @@ public class LeapFrogJoin extends NAryOperator {
    * @param joinFieldMapping mapping of join field to child table field
    * @param outputFieldMapping mapping of output field to child table field
    * @param outputColumnNames output column names
-   * @param indexOnFirst whether the first join field of a child is indexed or not
    */
   public LeapFrogJoin(final Operator[] children, final int[][][] joinFieldMapping, final int[][] outputFieldMapping,
-      final List<String> outputColumnNames, final boolean[] indexOnFirst) {
+      final List<String> outputColumnNames) {
     super(children);
     userJoinFieldMapping = Objects.requireNonNull(joinFieldMapping, "joinFieldMapping");
     Objects.requireNonNull(outputFieldMapping, "outputFieldMapping");
@@ -526,9 +505,6 @@ public class LeapFrogJoin extends NAryOperator {
           "An array representing join field must be at length of 2. ([tableIndex,fieldIndex])");
       this.outputFieldMapping.add(new JoinField(element[0], element[1]));
     }
-
-    /* init indexOnFirst */
-    this.indexOnFirst = indexOnFirst;
   }
 
   @Override
@@ -707,16 +683,6 @@ public class LeapFrogJoin extends NAryOperator {
 
     Operator[] children = getChildren();
 
-    /* check indexOnFirst. */
-    if (indexOnFirst == null) {
-      indexOnFirst = new boolean[children.length];
-      for (int i = 0; i < children.length; ++i) {
-        indexOnFirst[i] = false;
-      }
-    }
-    Preconditions.checkArgument(children.length == indexOnFirst.length,
-        "indexOnFirst must have the same cardinality as children.");
-
     /* Initiate hash tables and indices */
     tables = new MutableTupleBuffer[children.length];
     firstVarIndices = new TIntArrayList[children.length];
@@ -761,21 +727,6 @@ public class LeapFrogJoin extends NAryOperator {
     for (int row = 0; row < tb.numTuples(); ++row) {
       for (int column = 0; column < tb.numColumns(); column++) {
         tables[childIndex].put(column, inputColumns.get(column), row);
-        /* put value to index table if it first appears */
-        if (isIndexed(new JoinField(childIndex, column))) {
-          int thisRow = tables[childIndex].numTuples();
-          /*
-           * If this is the last column, this tuple is already built in tables[childIndex]. So numTuples() have been
-           * updated already.
-           */
-          if (column == tb.numColumns() - 1) {
-            thisRow--;
-          }
-          int lastRow = thisRow - 1;
-          if (lastRow == -1 || TupleUtils.cellCompare(tables[childIndex], column, lastRow, tb, column, row) != 0) {
-            firstVarIndices[childIndex].add(thisRow);
-          }
-        }
       }
     }
   }
@@ -793,7 +744,6 @@ public class LeapFrogJoin extends NAryOperator {
         it.ranges[jf.column].setRange(0, tables[jf.table].numTuples());
         it.setCurrentField(jf.column);
         it.setRowOfCurrentField(0);
-        it.rowOnIndex = 0;
       } else {
         /* if the join field is not ordered as the first, set the cursor to last level */
         final int lastJf = localOrderedJoinField.get(jf.table).get(localOrder - 1).column;
@@ -935,11 +885,6 @@ public class LeapFrogJoin extends NAryOperator {
    * @return at end or not.
    */
   private boolean leapfrogSeek(final JoinField jf, final CellPointer target) {
-    /* switch to indexed version if possible. */
-    if (isIndexed(jf)) {
-      return leapfrogSeekWithIndex(jf, target);
-    }
-
     int startRow = iterators[jf.table].getRow(jf.column);
     int endRow = iterators[jf.table].ranges[jf.column].getMaxRow() - 1;
     Preconditions.checkState(startRow <= endRow, "startRow must be no less than endRow");
@@ -966,50 +911,6 @@ public class LeapFrogJoin extends NAryOperator {
       if (startRow == endRow - 1) {
         cursor.setRow(endRow);
         iterators[jf.table].setRow(jf.column, endRow);
-        return false;
-      }
-    }
-  }
-
-  /**
-   * move the iterator to the element which is the first key larger than current max.
-   * 
-   * @param jf seek on which field of which table.
-   * @param target the target value of seeking.
-   * @return at end or not.
-   */
-  private boolean leapfrogSeekWithIndex(final JoinField jf, final CellPointer target) {
-    TIntList index = firstVarIndices[jf.table];
-    int startRowOnIndex = iterators[jf.table].rowOnIndex;
-    int endRowOnIndex = index.size() - 1;
-    Preconditions.checkState(startRowOnIndex <= endRowOnIndex, "startRow must be no less than endRow");
-    Preconditions.checkElementIndex(startRowOnIndex, index.size());
-    Preconditions.checkElementIndex(endRowOnIndex, index.size());
-
-    final CellPointer startCursor = new CellPointer(jf.table, jf.column, index.get(startRowOnIndex));
-    CellPointer cursor = new CellPointer(startCursor);
-
-    /* set row number to upper bound */
-    cursor.setRow(index.get(endRowOnIndex));
-    if (cellCompare(cursor, target) < 0) {
-      return true;
-    }
-
-    /* binary search: find the first row whose value is not less than target */
-    while (true) {
-      int rowOnIndex = (startRowOnIndex + endRowOnIndex) / 2;
-      cursor.setRow(index.get(rowOnIndex));
-      int compare = cellCompare(cursor, target);
-      if (compare >= 0) { // cursor > target
-        endRowOnIndex = rowOnIndex;
-      } else if (compare < 0) { // cursor < target
-        startRowOnIndex = rowOnIndex;
-      }
-
-      if (startRowOnIndex == endRowOnIndex - 1) {
-        cursor.setRow(index.get(endRowOnIndex));
-        iterators[jf.table].setRow(jf.column, index.get(endRowOnIndex));
-        iterators[jf.table].rowOnIndex = endRowOnIndex;
         return false;
       }
     }
