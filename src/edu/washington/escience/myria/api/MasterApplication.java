@@ -1,13 +1,21 @@
 package edu.washington.escience.myria.api;
 
+import java.util.Set;
+
 import javax.servlet.ServletConfig;
 import javax.ws.rs.core.Context;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import com.google.common.collect.ImmutableSet;
+import com.sun.jersey.api.container.ContainerException;
 import com.sun.jersey.api.container.filter.GZIPContentEncodingFilter;
 import com.sun.jersey.api.core.PackagesResourceConfig;
 import com.sun.jersey.api.core.ResourceConfig;
 import com.sun.jersey.spi.container.ContainerRequest;
+import com.sun.jersey.spi.container.ContainerRequestFilter;
 import com.sun.jersey.spi.container.ContainerResponse;
 import com.sun.jersey.spi.container.ContainerResponseFilter;
 import com.sun.jersey.spi.container.servlet.WebConfig;
@@ -23,6 +31,8 @@ import edu.washington.escience.myria.parallel.Server;
  * @author dhalperi, jwang
  */
 public final class MasterApplication extends PackagesResourceConfig {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(MasterApplication.class);
 
   /**
    * Instantiate the main application running on the Myria master.
@@ -57,6 +67,8 @@ public final class MasterApplication extends PackagesResourceConfig {
     getContainerRequestFilters().add(GZIPContentEncodingFilter.class);
     getContainerResponseFilters().add(GZIPContentEncodingFilter.class);
 
+    getContainerRequestFilters().add(new AuthenticationFilter("12345"));
+
     /* Swagger configuration -- must come BEFORE Swagger classes are added. */
     BeanConfig myriaBeanConfig = new BeanConfig();
     /* TODO(dhalperi): make this more dynamic based on either Catalog or runtime option. */
@@ -69,6 +81,43 @@ public final class MasterApplication extends PackagesResourceConfig {
     getContainerResponseFilters().add(new CrossOriginResponseFilter());
   }
 
+  /**
+   * Implements simple authentication based on the Myria-Auth header.
+   */
+  private static class AuthenticationFilter implements ContainerRequestFilter {
+
+    /** The authentication token. */
+    private final String token;
+
+    /**
+     * Instantiate an AuthenticationFilter.
+     * 
+     * @param token The authentication token.
+     */
+    public AuthenticationFilter(final String token) {
+      this.token = token;
+    }
+
+    /** URI paths that are exempt from authentication. */
+    private static final Set<String> NON_AUTH_PATHS = ImmutableSet.of("workers", "workers/alive");
+
+    @Override
+    public ContainerRequest filter(final ContainerRequest request) {
+      String path = request.getPath();
+      LOGGER.info("path: " + path);
+      if (NON_AUTH_PATHS.contains(path)) {
+        return request;
+      }
+
+      String authStr = request.getRequestHeaders().getFirst("Myria-Auth");
+      if (authStr == null || !authStr.trim().equals(token)) {
+        // TODO: Jersey 2.0 supports a richer error-reporting API
+        // https://jersey.java.net/documentation/latest/filters-and-interceptors.html
+        throw new ContainerException("Invalid Myria-Auth token");
+      }
+      return request;
+    }
+  }
   /**
    * This is a container response filter. It will run on all responses leaving the server and add the CORS filters
    * saying that these API calls should be allowed from any website. This is a mechanism increasingly supported by
