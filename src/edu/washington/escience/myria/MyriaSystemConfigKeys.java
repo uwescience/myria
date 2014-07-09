@@ -83,8 +83,11 @@ public final class MyriaSystemConfigKeys {
   /** */
   public static final String DEPLOYMENT_FILE = "deployment.file";
 
+  /** Authentication token. */
+  public static final String AUTH_TOKEN = "auth.token";
+
   /**
-   * Add default configurations into a configuraion.
+   * Add default configurations into a configuration.
    * 
    * @param config the configuration.
    * */
@@ -143,6 +146,9 @@ public final class MyriaSystemConfigKeys {
     }
     if (!config.containsKey(WORKER_STORAGE_DATABASE_SYSTEM) || config.get(WORKER_STORAGE_DATABASE_SYSTEM) == null) {
       config.put(WORKER_STORAGE_DATABASE_SYSTEM, deployment.get("dbms"));
+    }
+    if (!config.containsKey(AUTH_TOKEN) || config.get(AUTH_TOKEN) == null) {
+      config.put(AUTH_TOKEN, deployment.get("auth_token"));
     }
   }
 

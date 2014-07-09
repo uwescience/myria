@@ -22,6 +22,7 @@ import com.sun.jersey.spi.container.servlet.WebConfig;
 import com.sun.jersey.spi.inject.SingletonTypeInjectableProvider;
 import com.wordnik.swagger.jaxrs.config.BeanConfig;
 
+import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.daemon.MasterDaemon;
 import edu.washington.escience.myria.parallel.Server;
 
@@ -32,6 +33,7 @@ import edu.washington.escience.myria.parallel.Server;
  */
 public final class MasterApplication extends PackagesResourceConfig {
 
+  /** */
   private static final Logger LOGGER = LoggerFactory.getLogger(MasterApplication.class);
 
   /**
@@ -67,7 +69,11 @@ public final class MasterApplication extends PackagesResourceConfig {
     getContainerRequestFilters().add(GZIPContentEncodingFilter.class);
     getContainerResponseFilters().add(GZIPContentEncodingFilter.class);
 
-    getContainerRequestFilters().add(new AuthenticationFilter("12345"));
+    String authToken = server.getConfiguration(MyriaSystemConfigKeys.AUTH_TOKEN);
+    if (authToken != null) {
+      LOGGER.info("Adding authentication request filter");
+      getContainerRequestFilters().add(new AuthenticationFilter(authToken));
+    }
 
     /* Swagger configuration -- must come BEFORE Swagger classes are added. */
     BeanConfig myriaBeanConfig = new BeanConfig();
@@ -104,7 +110,6 @@ public final class MasterApplication extends PackagesResourceConfig {
     @Override
     public ContainerRequest filter(final ContainerRequest request) {
       String path = request.getPath();
-      LOGGER.info("path: " + path);
       if (NON_AUTH_PATHS.contains(path)) {
         return request;
       }
