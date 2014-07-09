@@ -18,6 +18,7 @@ import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.JdbcAccessMethod;
 import edu.washington.escience.myria.operator.Operator;
+import edu.washington.escience.myria.parallel.ResourceStats;
 import edu.washington.escience.myria.parallel.WorkerSubQuery;
 
 /**
@@ -39,11 +40,17 @@ public class ProfilingLogger {
   /** A query statement for batching. */
   private PreparedStatement statementSent;
 
+  /** A query statement for batching. */
+  private PreparedStatement statementResource;
+
   /** Number of rows in batch in {@link #statementEvent}. */
   private int batchSizeEvents = 0;
 
   /** Number of rows in batch in {@link #statementSent}. */
   private int batchSizeSent = 0;
+
+  /** Number of rows in batch in {@link #statementResource}. */
+  private int batchSizeResource = 0;
 
   /**
    * Default constructor.
@@ -61,27 +68,26 @@ public class ProfilingLogger {
 
     accessMethod.createUnloggedTableIfNotExists(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA);
     accessMethod.createTableIfNotExists(MyriaConstants.SENT_RELATION, MyriaConstants.SENT_SCHEMA);
+    accessMethod.createUnloggedTableIfNotExists(MyriaConstants.RESOURCE_RELATION, MyriaConstants.RESOURCE_SCHEMA);
 
     createProfilingIndexes();
     createSentIndex();
+    createResourceIndex();
 
     connection = accessMethod.getConnection();
     try {
       statementEvent =
           connection.prepareStatement(accessMethod.insertStatementFromSchema(MyriaConstants.PROFILING_SCHEMA,
               MyriaConstants.PROFILING_RELATION));
-    } catch (SQLException e) {
-      throw new DbException(e);
-    }
-
-    try {
       statementSent =
           connection.prepareStatement(accessMethod.insertStatementFromSchema(MyriaConstants.SENT_SCHEMA,
               MyriaConstants.SENT_RELATION));
+      statementResource =
+          connection.prepareStatement(accessMethod.insertStatementFromSchema(MyriaConstants.RESOURCE_SCHEMA,
+              MyriaConstants.RESOURCE_RELATION));
     } catch (SQLException e) {
       throw new DbException(e);
     }
-
   }
 
   /**
@@ -97,6 +103,21 @@ public class ProfilingLogger {
       accessMethod.createIndexIfNotExists(MyriaConstants.SENT_RELATION, schema, index);
     } catch (DbException e) {
       LOGGER.error("Couldn't create index for profiling logs:", e);
+    }
+  }
+
+  /**
+   * @throws DbException if index cannot be created
+   */
+  protected void createResourceIndex() throws DbException {
+    final Schema schema = MyriaConstants.RESOURCE_SCHEMA;
+    List<IndexRef> index =
+        ImmutableList
+            .of(IndexRef.of(schema, "queryId"), IndexRef.of(schema, "subqueryId"), IndexRef.of(schema, "opId"));
+    try {
+      accessMethod.createIndexIfNotExists(MyriaConstants.RESOURCE_RELATION, schema, index);
+    } catch (DbException e) {
+      LOGGER.error("Couldn't create index for profiling resource:", e);
     }
   }
 
@@ -189,6 +210,7 @@ public class ProfilingLogger {
   public synchronized void flush() throws DbException {
     flushSentBatch();
     flushProfilingEventsBatch();
+    flushProfilingResourceBatch();
   }
 
   /**
@@ -212,6 +234,30 @@ public class ProfilingLogger {
       throw new DbException(e);
     }
     LOGGER.info("Flushing the profiling events batch took {} milliseconds.", TimeUnit.NANOSECONDS.toMillis(System
+        .nanoTime()
+        - startTime));
+  }
+
+  /**
+   * Flush the tuple batch buffer that has logs about resouce usage.
+   * 
+   */
+  private void flushProfilingResourceBatch() {
+    final long startTime = System.nanoTime();
+    try {
+      if (batchSizeResource == 0) {
+        return;
+      }
+      statementResource.executeBatch();
+      statementResource.clearBatch();
+      batchSizeResource = 0;
+    } catch (SQLException e) {
+      if (e instanceof BatchUpdateException) {
+        LOGGER.error("Error writing batch: ", e.getNextException());
+      }
+      throw new RuntimeException(e);
+    }
+    LOGGER.info("Flushing the profiling resource batch took {} milliseconds.", TimeUnit.NANOSECONDS.toMillis(System
         .nanoTime()
         - startTime));
   }
@@ -264,6 +310,32 @@ public class ProfilingLogger {
 
     if (batchSizeSent > MyriaConstants.PROFILING_LOGGER_BATCH_SIZE) {
       flushSentBatch();
+    }
+  }
+
+  /**
+   * Appends a single resource stats to a batch that is flushed either after a certain number of events are in the batch
+   * or {@link #flushProfilingResourceBatch()} is called.
+   * 
+   * @param stats the resource stats.
+   */
+  public synchronized void recordResource(final ResourceStats stats) {
+
+    try {
+      statementResource.setLong(1, stats.timestamp);
+      statementResource.setInt(2, stats.opId);
+      statementResource.setString(3, stats.measurement);
+      statementResource.setLong(4, stats.value);
+      statementResource.setLong(5, stats.queryId);
+      statementResource.setLong(6, stats.subqueryId);
+      statementResource.addBatch();
+      batchSizeResource++;
+    } catch (final SQLException e) {
+      throw new RuntimeException(e);
+    }
+
+    if (batchSizeResource > MyriaConstants.PROFILING_LOGGER_BATCH_SIZE) {
+      flushProfilingResourceBatch();
     }
   }
 

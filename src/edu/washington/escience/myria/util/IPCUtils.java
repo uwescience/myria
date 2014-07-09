@@ -6,7 +6,6 @@ import java.io.NotSerializableException;
 import java.io.ObjectOutputStream;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 import org.jboss.netty.channel.Channel;
@@ -426,13 +425,10 @@ public final class IPCUtils {
    * @return the transport message.
    * 
    * */
-  public static TransportMessage resourceReport(final Map<SubQueryId, List<ResourceStats>> resourceUsage) {
+  public static TransportMessage resourceReport(final List<ResourceStats> resourceUsage) {
     ControlMessage.Builder ret = ControlMessage.newBuilder().setType(ControlMessage.Type.RESOURCE_STATS);
-    for (SubQueryId id : resourceUsage.keySet()) {
-      List<ResourceStats> stats = resourceUsage.get(id);
-      for (ResourceStats entry : stats) {
-        ret.addResourceStats(entry.toProtobuf());
-      }
+    for (ResourceStats stats : resourceUsage) {
+      ret.addResourceStats(stats.toProtobuf());
     }
     return TransportMessage.newBuilder().setType(TransportMessage.Type.CONTROL).setControlMessage(ret.build()).build();
   }

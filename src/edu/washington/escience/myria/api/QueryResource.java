@@ -175,16 +175,6 @@ public final class QueryResource {
   }
 
   /**
-   * @param queryId the query id.
-   * @return the resource usage of the query.
-   */
-  @GET
-  @Path("/resourceUsage-{queryId:\\d+}")
-  public Response getResourceUsage(@PathParam("queryId") final long queryId) {
-    return Response.ok(server.getResourceUsage(queryId)).cacheControl(MyriaApiUtils.doNotCache()).build();
-  }
-
-  /**
    * Get information about a query. This includes when it started, when it finished, its URL, etc.
    * 
    * @param uriInfo the URL of the current request.
