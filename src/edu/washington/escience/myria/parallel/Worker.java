@@ -189,29 +189,24 @@ public final class Worker {
       }
       sendMessageToMaster(IPCUtils.CONTROL_WORKER_HEARTBEAT).awaitUninterruptibly();
 
-      collectResourceMeasurements();
+      List<ResourceStats> resourceUsage = new ArrayList<ResourceStats>();
+      collectResourceMeasurements(resourceUsage);
       sendMessageToMaster(IPCUtils.resourceReport(resourceUsage)).awaitUninterruptibly();
+      for (ResourceStats stats : resourceUsage) {
+        profilingLogger.recordResource(stats);
+      }
     }
   }
 
   /**
-   * An in-mem stats of resource usage.
-   */
-  private final Map<SubQueryId, List<ResourceStats>> resourceUsage =
-      new ConcurrentHashMap<SubQueryId, List<ResourceStats>>();
-
-  /**
    * collect resource measurements of all the active queries on this worker.
    */
-  public void collectResourceMeasurements() {
+  public void collectResourceMeasurements(final List<ResourceStats> resourceUsage) {
     final long start = System.currentTimeMillis();
     for (SubQueryId id : executingSubQueries.keySet()) {
       WorkerSubQuery wqp = executingSubQueries.get(id);
       if (wqp.getProfilingMode().equals(PROFILING_MODE.resource) || wqp.getProfilingMode().equals(PROFILING_MODE.all)) {
-        if (resourceUsage.get(id) == null) {
-          resourceUsage.put(id, new ArrayList<ResourceStats>());
-        }
-        wqp.collectResourceMeasurements(start, resourceUsage.get(id));
+        wqp.collectResourceMeasurements(start, resourceUsage);
       }
     }
   }
@@ -727,10 +722,6 @@ public final class Worker {
   private void finishTask(final SubQueryId subQueryId) {
     executingSubQueries.remove(subQueryId);
     activeQueries.remove(subQueryId.getQueryId());
-    // TODO: dump to disk
-    if (resourceUsage.get(subQueryId) != null) {
-      resourceUsage.remove(subQueryId);
-    }
   }
 
   /**

@@ -8,6 +8,7 @@ import java.util.Date;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
@@ -276,6 +277,33 @@ public final class LogResource {
 
     server.startHistogramDataStream(queryId, fragmentId, start, end, step, onlyRootOp, writer);
 
+    return response.build();
+  }
+
+  /**
+   * @param queryId the query id.
+   * @param request the current request.
+   * @return the resource usage of the query.
+   * @throws DbException if there is an error in the database.
+   */
+  @GET
+  @Path("/resourceUsage-{queryId:\\d+}")
+  public Response getResourceUsage(@PathParam("queryId") final long queryId, @Context final Request request)
+      throws DbException {
+    ResponseBuilder response = Response.ok().cacheControl(MyriaApiUtils.doNotCache());
+    response.type(MediaType.TEXT_PLAIN);
+
+    PipedOutputStream writerOutput = new PipedOutputStream();
+    PipedInputStream input;
+    try {
+      input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
+    } catch (IOException e) {
+      throw new DbException(e);
+    }
+    PipedStreamingOutput entity = new PipedStreamingOutput(input);
+    response.entity(entity);
+
+    server.getResourceUsage(queryId, writerOutput);
     return response.build();
   }
 
