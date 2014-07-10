@@ -163,7 +163,7 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     assertEquals(QueryStatusEncoding.Status.SUCCESS, status.status);
     assertTrue(status.language.equals("datalog"));
     assertTrue(status.ftMode.equals("none"));
-    assertFalse(status.profilingMode);
+    assertTrue(status.profilingMode.equals("none"));
     assertTrue(status.plan instanceof SubQueryEncoding);
     assertEquals(((SubQueryEncoding) status.plan).fragments.size(), 3);
   }
