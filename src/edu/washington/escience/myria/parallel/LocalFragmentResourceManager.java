@@ -1,11 +1,17 @@
 package edu.washington.escience.myria.parallel;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.common.collect.Sets;
 
+import edu.washington.escience.myria.operator.network.Consumer;
+import edu.washington.escience.myria.parallel.ipc.FlowControlBagInputBuffer;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
+import edu.washington.escience.myria.parallel.ipc.IPCEvent;
+import edu.washington.escience.myria.parallel.ipc.IPCEventListener;
+import edu.washington.escience.myria.parallel.ipc.StreamInputBuffer;
 import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myria.storage.TupleBatch;
 
@@ -27,6 +33,11 @@ public final class LocalFragmentResourceManager {
    */
   private final Set<StreamOutputChannel<TupleBatch>> outputChannels;
 
+  /**
+   * All input buffers owned by this fragment.
+   */
+  private final Map<Consumer, StreamInputBuffer<TupleBatch>> inputBuffers;
+
   /** The corresponding fragment. */
   private final LocalFragment fragment;
 
@@ -35,8 +46,10 @@ public final class LocalFragmentResourceManager {
    * @param fragment the corresponding fragment
    */
   public LocalFragmentResourceManager(final IPCConnectionPool connectionPool, final LocalFragment fragment) {
+    inputBuffers = new ConcurrentHashMap<Consumer, StreamInputBuffer<TupleBatch>>();
     ipcPool = connectionPool;
     outputChannels = Sets.newSetFromMap(new ConcurrentHashMap<StreamOutputChannel<TupleBatch>, Boolean>());
+
     this.fragment = fragment;
   }
 
@@ -65,6 +78,36 @@ public final class LocalFragmentResourceManager {
   }
 
   /**
+   * Allocate input buffers.
+   * 
+   * @param consumer the owner of the input buffer.
+   * @return the allocated input buffer.
+   * */
+  public StreamInputBuffer<TupleBatch> allocateInputBuffer(final Consumer consumer) {
+    StreamInputBuffer<TupleBatch> inputBuffer = inputBuffers.get(consumer);
+
+    if (inputBuffer != null) {
+      return inputBuffer;
+    }
+
+    inputBuffer =
+        new FlowControlBagInputBuffer<TupleBatch>(ipcPool, consumer.getInputChannelIDs(ipcPool.getMyIPCID()), ipcPool
+            .getInputBufferCapacity(), ipcPool.getInputBufferRecoverTrigger());
+    inputBuffer.addListener(FlowControlBagInputBuffer.NEW_INPUT_DATA, new IPCEventListener() {
+
+      @Override
+      public void triggered(final IPCEvent event) {
+        fragment.notifyNewInput();
+      }
+    });
+
+    inputBuffers.put(consumer, inputBuffer);
+    inputBuffer.setAttachment(consumer.getSchema());
+    inputBuffer.start(consumer);
+    return inputBuffer;
+  }
+
+  /**
    * Remove an output channel from outputChannels. Need it when a recovery task is finished and needs to detach & attach
    * its channel to the original producer. In this case, the channel shouldn't be released when the cleanup() method of
    * the recovery task is called.
@@ -82,6 +125,12 @@ public final class LocalFragmentResourceManager {
     for (StreamOutputChannel<TupleBatch> out : outputChannels) {
       out.release();
     }
+    outputChannels.clear();
+    for (StreamInputBuffer<TupleBatch> input : inputBuffers.values()) {
+      input.clear();
+      input.getOwnerConnectionPool().deRegisterStreamInput(input);
+    }
+    inputBuffers.clear();
   }
 
   /**
