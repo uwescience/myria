@@ -112,6 +112,11 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
     return toStringBuilder.toString();
   }
 
+  @Override
+  public void postStop() {
+    this.resumeRead();
+  }
+
   /**
    * Resume the read of all IO channels that are inputs of this input buffer.
    * 

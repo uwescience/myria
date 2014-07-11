@@ -43,7 +43,11 @@ public final class WorkerShortMessageProcessor extends AttachmentableAdapter imp
 
   @Override
   public boolean processMessage(final Channel ch, final IPCMessage.Data<TransportMessage> message) {
-    TransportMessage tm = message.getPayload();
+    Object o = message.getPayload();
+    if (!(o instanceof TransportMessage)) {
+      return true;
+    }
+    TransportMessage tm = (TransportMessage) o;
     if (tm.getType() == TransportMessage.Type.QUERY) {
       return processQueryMessage(ch, message.getRemoteID(), tm.getQueryMessage());
     } else if (tm.getType() == TransportMessage.Type.CONTROL) {
@@ -72,8 +76,8 @@ public final class WorkerShortMessageProcessor extends AttachmentableAdapter imp
         q = ownerWorker.getActiveQueries().get(subQueryId);
         if (q == null) {
           if (LOGGER.isErrorEnabled()) {
-            LOGGER.error("In receiving message {}, unknown query id: {}, current active queries are: {}", qm, subQueryId,
-                ownerWorker.getActiveQueries().keySet());
+            LOGGER.error("In receiving message {}, unknown query id: {}, current active queries are: {}", qm,
+                subQueryId, ownerWorker.getActiveQueries().keySet());
           }
         } else {
           switch (qm.getType()) {

@@ -1221,7 +1221,15 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
           id = new StreamIOChannelID(id.getStreamID(), myID);
         }
         consumerChannelMap.remove(id, inputBuffer);
+        StreamInputChannel<?> sic = inputBuffer.getInputChannel(id);
+        Channel c = sic.getIOChannel();
+        if (c != null) {
+          ChannelContext cc = ChannelContext.getChannelContext(c);
+          cc.getRegisteredChannelContext().getIOPair().deMapInputChannel();
+        }
+
       }
+      inputBuffer.stop();
     } finally {
       shutdownLock.readLock().unlock();
     }

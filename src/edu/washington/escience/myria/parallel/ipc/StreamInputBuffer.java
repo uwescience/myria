@@ -103,6 +103,11 @@ public interface StreamInputBuffer<PAYLOAD> extends Attachmentable {
   void start(final Object processorIdentifier);
 
   /**
+   * Stop this input buffer. Clean up.
+   * */
+  void stop();
+
+  /**
    * @return if the input buffer is attached.
    * */
   boolean isAttached();

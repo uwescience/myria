@@ -1,6 +1,5 @@
 package edu.washington.escience.myria.parallel;
 
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -36,7 +35,7 @@ public final class LocalFragmentResourceManager {
   /**
    * All input buffers owned by this fragment.
    */
-  private final Map<Consumer, StreamInputBuffer<TupleBatch>> inputBuffers;
+  private final ConcurrentHashMap<Consumer, StreamInputBuffer<TupleBatch>> inputBuffers;
 
   /** The corresponding fragment. */
   private final LocalFragment fragment;
@@ -75,6 +74,19 @@ public final class LocalFragmentResourceManager {
     StreamOutputChannel<TupleBatch> output = ipcPool.reserveLongTermConnection(remoteWorkerID, streamID);
     outputChannels.add(output);
     return output;
+  }
+
+  /**
+   * Release input buffers.
+   * 
+   * @param consumer the owner of the input buffer.
+   * */
+  public void releaseInputBuffer(final Consumer consumer) {
+    StreamInputBuffer<TupleBatch> input = inputBuffers.remove(consumer);
+    if (input != null) {
+      input.clear();
+      input.getOwnerConnectionPool().deRegisterStreamInput(input);
+    }
   }
 
   /**
@@ -126,9 +138,8 @@ public final class LocalFragmentResourceManager {
       out.release();
     }
     outputChannels.clear();
-    for (StreamInputBuffer<TupleBatch> input : inputBuffers.values()) {
-      input.clear();
-      input.getOwnerConnectionPool().deRegisterStreamInput(input);
+    for (Consumer c : inputBuffers.keySet()) {
+      releaseInputBuffer(c);
     }
     inputBuffers.clear();
   }
