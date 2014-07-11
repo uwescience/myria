@@ -83,8 +83,7 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
    * 
    * */
   public FlowControlBagInputBuffer(final IPCConnectionPool owner,
-      final ImmutableSet<StreamIOChannelID> remoteChannelIDs, final int softCapacity, final int recoverEventTrigger,
-      final IPCConnectionPool ownerCP) {
+      final ImmutableSet<StreamIOChannelID> remoteChannelIDs, final int softCapacity, final int recoverEventTrigger) {
     super(owner, remoteChannelIDs);
     bufferEmptyListeners = new ConcurrentLinkedQueue<IPCEventListener>();
     bufferFullListeners = new ConcurrentLinkedQueue<IPCEventListener>();

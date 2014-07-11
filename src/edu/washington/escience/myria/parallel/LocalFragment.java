@@ -19,6 +19,7 @@ import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.operator.network.Producer;
+import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.StreamIOChannelID;
 import edu.washington.escience.myria.profiling.ProfilingLogger;
 import edu.washington.escience.myria.util.AtomicUtils;
@@ -70,11 +71,6 @@ public final class LocalFragment {
   private final StreamIOChannelID[] outputChannels;
 
   /**
-   * The input channels belonging to this {@link LocalFragment}.
-   */
-  private final Map<StreamIOChannelID, Consumer> inputChannels;
-
-  /**
    * The IDBController operators, if any, in this {@link LocalFragment}.
    */
   private final Set<IDBController> idbControllerSet;
@@ -107,7 +103,7 @@ public final class LocalFragment {
   /**
    * resource manager.
    */
-  private volatile LocalFragmentResourceManager resourceManager;
+  private final LocalFragmentResourceManager resourceManager;
 
   /**
    * Record nanoseconds so that we can normalize the time in {@link ProfilingLogger}.
@@ -128,14 +124,16 @@ public final class LocalFragment {
   }
 
   /**
-   * @param ipcEntityID the IPC ID of the owner worker/master.
+   * @param connectionPool the IPC connection pool.
    * @param localSubQuery the {@link LocalSubQuery} of which this {@link LocalFragment} is a part.
    * @param root the root operator this fragment will run.
    * @param executor the executor who provides the execution service for the fragment to run on
    */
-  LocalFragment(final int ipcEntityID, final LocalSubQuery localSubQuery, final RootOperator root,
+  LocalFragment(final IPCConnectionPool connectionPool, final LocalSubQuery localSubQuery, final RootOperator root,
       final ExecutorService executor) {
-    this.ipcEntityID = ipcEntityID;
+    ipcEntityID = connectionPool.getMyIPCID();
+    resourceManager = new LocalFragmentResourceManager(connectionPool, this);
+
     executionCondition = new AtomicInteger(STATE_OUTPUT_AVAILABLE | STATE_INPUT_AVAILABLE);
     this.root = root;
     myExecutor = executor;
@@ -147,7 +145,9 @@ public final class LocalFragment {
     outputChannels = outputChannelSet.toArray(new StreamIOChannelID[] {});
     HashMap<StreamIOChannelID, Consumer> inputChannelMap = new HashMap<StreamIOChannelID, Consumer>();
     collectUpChannels(root, inputChannelMap);
-    inputChannels = inputChannelMap;
+    for (final Consumer operator : inputChannelMap.values()) {
+      resourceManager.allocateInputBuffer(operator);
+    }
     Arrays.sort(outputChannels);
     outputChannelAvailable = new BitSet(outputChannels.length);
     for (int i = 0; i < outputChannels.length; i++) {
@@ -179,13 +179,6 @@ public final class LocalFragment {
         return null;
       }
     };
-  }
-
-  /**
-   * @return all input channels belonging to this {@link LocalFragment}.
-   */
-  Map<StreamIOChannelID, Consumer> getInputChannels() {
-    return inputChannels;
   }
 
   /**
@@ -625,15 +618,13 @@ public final class LocalFragment {
    * Initialize the {@link LocalFragment}.
    * 
    * @param execEnvVars execution environment variable.
-   * @param resourceManager resource manager.
    */
-  public void init(final LocalFragmentResourceManager resourceManager, final ImmutableMap<String, Object> execEnvVars) {
+  public void init(final ImmutableMap<String, Object> execEnvVars) {
     try {
       synchronized (executionLock) {
         ImmutableMap.Builder<String, Object> b = ImmutableMap.builder();
         b.put(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER, resourceManager);
         b.putAll(execEnvVars);
-        this.resourceManager = resourceManager;
         root.open(b.build());
       }
       AtomicUtils.setBitByValue(executionCondition, STATE_INITIALIZED);

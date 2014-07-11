@@ -19,12 +19,8 @@ import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.StreamingState;
 import edu.washington.escience.myria.operator.TupleSource;
-import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.operator.network.Producer;
 import edu.washington.escience.myria.operator.network.RecoverProducer;
-import edu.washington.escience.myria.parallel.ipc.FlowControlBagInputBuffer;
-import edu.washington.escience.myria.parallel.ipc.IPCEvent;
-import edu.washington.escience.myria.parallel.ipc.IPCEventListener;
 import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myria.profiling.ProfilingLogger;
 import edu.washington.escience.myria.storage.TupleBatch;
@@ -162,27 +158,11 @@ public class WorkerSubQuery extends LocalSubQuery {
    */
   public LocalFragment createFragment(final RootOperator root) {
     final LocalFragment drivingFragment =
-        new LocalFragment(worker.getIPCConnectionPool().getMyIPCID(), this, root, worker.getQueryExecutor());
+        new LocalFragment(worker.getIPCConnectionPool(), this, root, worker.getQueryExecutor());
     LocalFragmentFuture fragmentExecutionFuture = drivingFragment.getExecutionFuture();
     fragmentExecutionFuture.addListener(fragmentExecutionListener);
 
     fragments.add(drivingFragment);
-
-    HashSet<Consumer> consumerSet = new HashSet<>();
-    consumerSet.addAll(drivingFragment.getInputChannels().values());
-    for (final Consumer c : consumerSet) {
-      FlowControlBagInputBuffer<TupleBatch> inputBuffer =
-          new FlowControlBagInputBuffer<TupleBatch>(worker.getIPCConnectionPool(), c.getInputChannelIDs(worker
-              .getIPCConnectionPool().getMyIPCID()), worker.getInputBufferCapacity(), worker
-              .getInputBufferRecoverTrigger(), worker.getIPCConnectionPool());
-      inputBuffer.addListener(FlowControlBagInputBuffer.NEW_INPUT_DATA, new IPCEventListener() {
-        @Override
-        public void triggered(final IPCEvent event) {
-          drivingFragment.notifyNewInput();
-        }
-      });
-      c.setInputBuffer(inputBuffer);
-    }
 
     return drivingFragment;
   }
@@ -205,10 +185,9 @@ public class WorkerSubQuery extends LocalSubQuery {
    * @param f the {@link LocalFragment}
    */
   public final void init(final LocalFragment f) {
-    LocalFragmentResourceManager resourceManager = new LocalFragmentResourceManager(worker.getIPCConnectionPool(), f);
     ImmutableMap.Builder<String, Object> queryExecEnvVars = ImmutableMap.builder();
     queryExecEnvVars.put(MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getSubQueryId().getQueryId());
-    f.init(resourceManager, queryExecEnvVars.putAll(worker.getExecEnvVars()).build());
+    f.init(queryExecEnvVars.putAll(worker.getExecEnvVars()).build());
   }
 
   @Override
