@@ -982,7 +982,7 @@ public final class Server {
     query.rawQuery = rawQuery;
     query.logicalRa = rawQuery;
     query.fragments = ImmutableList.of();
-    query.profilingMode = Objects.firstNonNull(profilingMode, PROFILING_MODE.none);
+    query.profilingMode = Objects.firstNonNull(profilingMode, PROFILING_MODE.NONE);
     return submitQuery(query, new SubQuery(masterPlan, workerPlans));
   }
 
@@ -1000,7 +1000,7 @@ public final class Server {
     if (!canSubmitQuery()) {
       throw new DbException("Cannot submit query");
     }
-    if (!query.profilingMode.equals(PROFILING_MODE.none)) {
+    if (!query.profilingMode.equals(PROFILING_MODE.NONE)) {
       if (!(plan instanceof SubQuery || plan instanceof JsonSubQuery)) {
         throw new DbException("Profiling mode is not supported for plans (" + plan.getClass().getSimpleName()
             + ") that may contain multiple subqueries.");
@@ -1989,7 +1989,7 @@ public final class Server {
     Preconditions.checkArgument(queryStatus != null, "query %s not found", queryId);
     Preconditions.checkArgument(queryStatus.status == QueryStatusEncoding.Status.SUCCESS,
         "query %s did not succeed (%s)", queryId, queryStatus.status);
-    Preconditions.checkArgument(!PROFILING_MODE.valueOf(queryStatus.profilingMode).equals(PROFILING_MODE.none),
+    Preconditions.checkArgument(!PROFILING_MODE.valueOf(queryStatus.profilingMode).equals(PROFILING_MODE.NONE),
         "query %s was not run with profiling enabled", queryId);
     return queryStatus;
   }

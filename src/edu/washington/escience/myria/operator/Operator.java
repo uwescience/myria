@@ -158,18 +158,18 @@ public abstract class Operator implements Serializable {
   public PROFILING_MODE getProfilingMode() {
     // make sure hard coded test will pass
     if (execEnvVars == null) {
-      return PROFILING_MODE.none;
+      return PROFILING_MODE.NONE;
     }
 
     if (profilingMode == null) {
       LocalFragmentResourceManager lfrm =
           (LocalFragmentResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER);
       if (lfrm == null) {
-        return PROFILING_MODE.none;
+        return PROFILING_MODE.NONE;
       }
       LocalFragment fragment = lfrm.getFragment();
       if (fragment == null) {
-        return PROFILING_MODE.none;
+        return PROFILING_MODE.NONE;
       }
       profilingMode = fragment.getLocalSubQuery().getProfilingMode();
     }
@@ -320,7 +320,7 @@ public abstract class Operator implements Serializable {
     }
 
     long startTime = -1;
-    if (getProfilingMode().equals(PROFILING_MODE.query) || getProfilingMode().equals(PROFILING_MODE.all)) {
+    if (getProfilingMode().equals(PROFILING_MODE.QUERY) || getProfilingMode().equals(PROFILING_MODE.ALL)) {
       startTime = profilingLogger.getTime(this);
     }
 
@@ -335,7 +335,7 @@ public abstract class Operator implements Serializable {
     } catch (Exception e) {
       throw new DbException(e);
     }
-    if (getProfilingMode().equals(PROFILING_MODE.query) || getProfilingMode().equals(PROFILING_MODE.all)) {
+    if (getProfilingMode().equals(PROFILING_MODE.QUERY) || getProfilingMode().equals(PROFILING_MODE.ALL)) {
       int numberOfTupleReturned = -1;
       if (result != null) {
         numberOfTupleReturned = result.numTuples();
@@ -401,7 +401,7 @@ public abstract class Operator implements Serializable {
     }
     open = true;
 
-    if (!getProfilingMode().equals(PROFILING_MODE.none)) {
+    if (!getProfilingMode().equals(PROFILING_MODE.NONE)) {
       if (getLocalSubQuery() instanceof WorkerSubQuery) {
         profilingLogger = ((WorkerSubQuery) getLocalSubQuery()).getWorker().getProfilingLogger();
       }

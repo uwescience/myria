@@ -27,7 +27,7 @@ public class QueryEncoding extends MyriaApiEncoding {
   /** The language. optional. */
   public String language;
   /** Set whether this query is run in profiling mode. (default is false) */
-  public PROFILING_MODE profilingMode = PROFILING_MODE.none;
+  public PROFILING_MODE profilingMode = PROFILING_MODE.NONE;
   /** The fault-tolerance mode used in this query, default: none. */
   public FTMODE ftMode = FTMODE.NONE;
 

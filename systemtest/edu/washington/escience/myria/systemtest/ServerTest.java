@@ -29,7 +29,7 @@ public class ServerTest extends SystemTestBase {
     QueryEncoding query = new QueryEncoding();
     query.rawQuery = "testDatalog";
     query.logicalRa = "testRa";
-    query.profilingMode = PROFILING_MODE.query;
+    query.profilingMode = PROFILING_MODE.QUERY;
     try {
       server.submitQuery(query, plan);
     } catch (DbException e) {
@@ -49,7 +49,7 @@ public class ServerTest extends SystemTestBase {
     QueryEncoding query = new QueryEncoding();
     query.rawQuery = "testDatalog";
     query.logicalRa = "testRa";
-    query.profilingMode = PROFILING_MODE.query;
+    query.profilingMode = PROFILING_MODE.QUERY;
 
     try {
       server.submitQuery(query, plan);
