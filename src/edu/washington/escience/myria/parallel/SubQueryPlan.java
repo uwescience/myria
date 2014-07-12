@@ -34,7 +34,7 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
   private final List<RootOperator> rootOps;
 
   /** FT mode, default: none. */
-  private FTMODE ftMode = FTMODE.valueOf("none");
+  private FTMODE ftMode = FTMODE.valueOf("NONE");
 
   /** The relations that are written, along with their schemas. */
   private final Map<RelationKey, RelationWriteMetadata> writeSet;
@@ -44,7 +44,7 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
   /**
    * profilingMode,default:none.
    */
-  private PROFILING_MODE profilingMode = PROFILING_MODE.valueOf("none");
+  private PROFILING_MODE profilingMode = PROFILING_MODE.valueOf("NONE");
 
   /** Constructor. */
   public SubQueryPlan() {
