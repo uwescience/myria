@@ -537,7 +537,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
       }
 
       result.fragments = Arrays.asList(fragments.values().toArray(new PlanFragmentEncoding[] {}));
-      result.ftMode = FTMODE.none;
+      result.ftMode = FTMODE.NONE;
       result.logicalRa = "";
       result.profilingMode = PROFILING_MODE.none;
       result.rawQuery = "";

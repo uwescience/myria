@@ -289,7 +289,7 @@ public final class MyriaConstants {
   /** available fault-tolerance mode for each query in Myria. */
   public static enum FTMODE {
     /** three FT modes are supported. */
-    none, abandon, rejoin
+    NONE, ABANDON, REJOIN
   };
 
   /** available profiling mode for each query in Myria. */
