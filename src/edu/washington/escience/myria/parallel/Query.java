@@ -83,7 +83,7 @@ public final class Query {
   public Query(final long queryId, final QueryEncoding query, final QueryPlan plan, final Server server) {
     Preconditions.checkNotNull(query, "query");
     this.server = Preconditions.checkNotNull(server, "server");
-    profiling = Objects.firstNonNull(query.profilingMode, PROFILING_MODE.none);
+    profiling = Objects.firstNonNull(query.profilingMode, PROFILING_MODE.NONE);
     ftMode = Objects.firstNonNull(query.ftMode, FTMODE.NONE);
     this.queryId = queryId;
     subqueryId = 0;
@@ -175,7 +175,7 @@ public final class Query {
        * We only support profiling a single subquery, so disable profiling if subqueryId != 0.
        */
       QueryConstruct.setQueryExecutionOptions(currentSubQuery.getWorkerPlans(), ftMode, subqueryId == 0 ? profiling
-          : PROFILING_MODE.none);
+          : PROFILING_MODE.NONE);
       currentSubQuery.getMasterPlan().setFTMode(ftMode);
       ++subqueryId;
       if (subqueryId >= MyriaConstants.MAXIMUM_NUM_SUBQUERIES) {

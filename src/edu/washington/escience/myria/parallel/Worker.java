@@ -205,7 +205,7 @@ public final class Worker {
     final long start = System.currentTimeMillis();
     for (SubQueryId id : executingSubQueries.keySet()) {
       WorkerSubQuery wqp = executingSubQueries.get(id);
-      if (wqp.getProfilingMode().equals(PROFILING_MODE.resource) || wqp.getProfilingMode().equals(PROFILING_MODE.all)) {
+      if (wqp.getProfilingMode().equals(PROFILING_MODE.RESOURCE) || wqp.getProfilingMode().equals(PROFILING_MODE.ALL)) {
         wqp.collectResourceMeasurements(start, resourceUsage);
       }
     }

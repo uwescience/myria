@@ -110,7 +110,7 @@ public class WorkerSubQuery extends LocalSubQuery {
           LOGGER.info("Query #{} executed for {}", getSubQueryId(), DateTimeUtils
               .nanoElapseToHumanReadable(getExecutionStatistics().getQueryExecutionElapse()));
         }
-        if (!getProfilingMode().equals(PROFILING_MODE.none)) {
+        if (!getProfilingMode().equals(PROFILING_MODE.NONE)) {
           try {
             getWorker().getProfilingLogger().flush();
           } catch (DbException e) {

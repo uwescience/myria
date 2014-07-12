@@ -263,7 +263,7 @@ public class ConnectedComponentTest extends SystemTestBase {
       workerPlans.get(workerIDs[1]).setFTMode(FTMODE.valueOf("rejoin"));
       serverPlan.setFTMode(FTMODE.valueOf("rejoin"));
 
-      ListenableFuture<Query> qf = server.submitQuery("", "", "", serverPlan, workerPlans, PROFILING_MODE.none);
+      ListenableFuture<Query> qf = server.submitQuery("", "", "", serverPlan, workerPlans, PROFILING_MODE.NONE);
       Thread.sleep(1000);
       LOGGER.info("killing worker " + workerIDs[1] + "!");
       workerProcess[1].destroy();
