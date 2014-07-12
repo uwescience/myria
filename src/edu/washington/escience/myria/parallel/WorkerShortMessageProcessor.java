@@ -85,7 +85,7 @@ public final class WorkerShortMessageProcessor extends AttachmentableAdapter imp
               q.kill();
               break;
             case QUERY_RECOVER:
-              if (q.getFTMode().equals(FTMODE.rejoin)) {
+              if (q.getFTMode().equals(FTMODE.REJOIN)) {
                 q.addRecoveryTasks(qm.getWorkerId());
               }
               break;

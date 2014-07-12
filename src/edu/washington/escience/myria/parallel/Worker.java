@@ -107,11 +107,11 @@ public final class Worker {
                   connectionPool.removeRemote(workerId).await();
                   sendMessageToMaster(IPCUtils.removeWorkerAckTM(workerId));
                   for (WorkerSubQuery wqp : executingSubQueries.values()) {
-                    if (wqp.getFTMode().equals(FTMODE.abandon)) {
+                    if (wqp.getFTMode().equals(FTMODE.ABANDON)) {
                       wqp.getMissingWorkers().add(workerId);
                       wqp.updateProducerChannels(workerId, false);
                       wqp.triggerFragmentEosEoiChecks();
-                    } else if (wqp.getFTMode().equals(FTMODE.rejoin)) {
+                    } else if (wqp.getFTMode().equals(FTMODE.REJOIN)) {
                       wqp.getMissingWorkers().add(workerId);
                     }
                   }

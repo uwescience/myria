@@ -73,7 +73,7 @@ public class MasterSubQuery extends LocalSubQuery {
             Throwable cause = future.getCause();
             if (!(cause instanceof QueryKilledException)) {
               // Only record non-killed exceptions
-              if (getFTMode().equals(FTMODE.none)) {
+              if (getFTMode().equals(FTMODE.NONE)) {
                 failedWorkerLocalSubQueries.put(workerID, cause);
                 // if any worker fails because of some exception, kill the query.
                 kill();
@@ -81,10 +81,10 @@ public class MasterSubQuery extends LocalSubQuery {
                 if (cause != null) {
                   message = Objects.firstNonNull(message, cause.toString());
                 }
-              } else if (getFTMode().equals(FTMODE.abandon)) {
+              } else if (getFTMode().equals(FTMODE.ABANDON)) {
                 LOGGER.debug("(Abandon) ignoring failed subquery future on subquery #{}", getSubQueryId());
                 // do nothing
-              } else if (getFTMode().equals(FTMODE.rejoin)) {
+              } else if (getFTMode().equals(FTMODE.REJOIN)) {
                 LOGGER.debug("(Rejoin) ignoring failed subquery future on subquery #{}", getSubQueryId());
                 // do nothing
               }
@@ -315,7 +315,7 @@ public class MasterSubQuery extends LocalSubQuery {
     }
 
     LOGGER.info("Received query complete (fail) message from worker: {}, cause: {}", workerID, cause);
-    if (getFTMode().equals(FTMODE.rejoin) && cause.toString().endsWith("LostHeartbeatException")) {
+    if (getFTMode().equals(FTMODE.REJOIN) && cause.toString().endsWith("LostHeartbeatException")) {
       /* for rejoin, don't set it to be completed since this worker is expected to be launched again. */
       return;
     }

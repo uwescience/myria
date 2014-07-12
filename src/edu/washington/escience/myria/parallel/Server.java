@@ -152,7 +152,7 @@ public final class Server {
                 workerID = controlM.getWorkerId();
                 addWorkerAckReceived.get(workerID).add(senderID);
                 for (MasterSubQuery mqp : executingSubQueries.values()) {
-                  if (mqp.getFTMode().equals(FTMODE.rejoin) && mqp.getMissingWorkers().contains(workerID)
+                  if (mqp.getFTMode().equals(FTMODE.REJOIN) && mqp.getMissingWorkers().contains(workerID)
                       && addWorkerAckReceived.get(workerID).containsAll(mqp.getWorkerAssigned())) {
                     /* so a following ADD_WORKER_ACK won't cause queryMessage to be sent again */
                     mqp.getMissingWorkers().remove(workerID);
@@ -613,11 +613,11 @@ public final class Server {
             if (mqp.getWorkerAssigned().contains(workerId)) {
               mqp.workerFail(workerId, new LostHeartbeatException());
             }
-            if (mqp.getFTMode().equals(FTMODE.abandon)) {
+            if (mqp.getFTMode().equals(FTMODE.ABANDON)) {
               mqp.getMissingWorkers().add(workerId);
               mqp.updateProducerChannels(workerId, false);
               mqp.triggerFragmentEosEoiChecks();
-            } else if (mqp.getFTMode().equals(FTMODE.rejoin)) {
+            } else if (mqp.getFTMode().equals(FTMODE.REJOIN)) {
               mqp.getMissingWorkers().add(workerId);
               mqp.updateProducerChannels(workerId, false);
             }

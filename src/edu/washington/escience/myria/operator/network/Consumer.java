@@ -209,7 +209,7 @@ public class Consumer extends LeafOperator {
 
     int numExpecting = sourceWorkers.size();
 
-    if (taskResourceManager.getFragment().getLocalSubQuery().getFTMode().equals(FTMODE.abandon)) {
+    if (taskResourceManager.getFragment().getLocalSubQuery().getFTMode().equals(FTMODE.ABANDON)) {
       Set<Integer> expectingWorkers = new HashSet<Integer>();
       expectingWorkers.addAll(sourceWorkers);
       expectingWorkers.removeAll(taskResourceManager.getFragment().getLocalSubQuery().getMissingWorkers());

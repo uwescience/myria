@@ -352,7 +352,7 @@ public abstract class Producer extends RootOperator {
         for (int i = 0; i < numOfPartition; ++i) {
           if (partitions[i] != null) {
             for (int j : channelIndices[i]) {
-              if (!ioChannelsAvail[j] && mode.equals(FTMODE.abandon)) {
+              if (!ioChannelsAvail[j] && mode.equals(FTMODE.ABANDON)) {
                 continue;
               }
               pendingTuplesToSend.get(j).add(partitions[i]);
@@ -380,7 +380,7 @@ public abstract class Producer extends RootOperator {
             break;
           }
           for (int j : channelIndices[i]) {
-            if (!ioChannelsAvail[j] && mode.equals(FTMODE.abandon)) {
+            if (!ioChannelsAvail[j] && mode.equals(FTMODE.ABANDON)) {
               continue;
             }
             pendingTuplesToSend.get(j).add(tb);
@@ -390,7 +390,7 @@ public abstract class Producer extends RootOperator {
     }
 
     for (int i = 0; i < numChannels(); ++i) {
-      if (!ioChannelsAvail[i] && (mode.equals(FTMODE.abandon) || mode.equals(FTMODE.rejoin))) {
+      if (!ioChannelsAvail[i] && (mode.equals(FTMODE.ABANDON) || mode.equals(FTMODE.REJOIN))) {
         continue;
       }
       while (true) {
@@ -398,7 +398,7 @@ public abstract class Producer extends RootOperator {
         if (tb == null) {
           break;
         }
-        if (mode.equals(FTMODE.rejoin) && !(this instanceof LocalMultiwayProducer)) {
+        if (mode.equals(FTMODE.REJOIN) && !(this instanceof LocalMultiwayProducer)) {
           // rejoin, append the TB into the backup buffer in case of recovering
           tb = triedToSendTuples.get(i).update(tb);
         }
@@ -407,10 +407,10 @@ public abstract class Producer extends RootOperator {
             writeMessage(i, tb);
           }
         } catch (IllegalStateException e) {
-          if (mode.equals(FTMODE.abandon)) {
+          if (mode.equals(FTMODE.ABANDON)) {
             ioChannelsAvail[i] = false;
             break;
-          } else if (mode.equals(FTMODE.rejoin)) {
+          } else if (mode.equals(FTMODE.REJOIN)) {
             ioChannelsAvail[i] = false;
             break;
           } else {
@@ -551,7 +551,7 @@ public abstract class Producer extends RootOperator {
       setEOI(true);
       child.setEOI(false);
     } else if (child.eos()) {
-      if (taskResourceManager.getFragment().getLocalSubQuery().getFTMode().equals(FTMODE.rejoin)) {
+      if (taskResourceManager.getFragment().getLocalSubQuery().getFTMode().equals(FTMODE.REJOIN)) {
         for (LinkedList<TupleBatch> tbs : pendingTuplesToSend) {
           if (tbs.size() > 0) {
             // due to failure, buffers are not empty, this task needs to be executed again to push these TBs out when

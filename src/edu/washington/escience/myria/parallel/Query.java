@@ -84,7 +84,7 @@ public final class Query {
     Preconditions.checkNotNull(query, "query");
     this.server = Preconditions.checkNotNull(server, "server");
     profiling = Objects.firstNonNull(query.profilingMode, PROFILING_MODE.none);
-    ftMode = Objects.firstNonNull(query.ftMode, FTMODE.none);
+    ftMode = Objects.firstNonNull(query.ftMode, FTMODE.NONE);
     this.queryId = queryId;
     subqueryId = 0;
     synchronized (this) {
