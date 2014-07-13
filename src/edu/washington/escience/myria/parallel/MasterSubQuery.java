@@ -204,7 +204,7 @@ public class MasterSubQuery extends LocalSubQuery {
 
   /**
    * Callback when a query plan is received by a worker.
-   * 
+   *
    * @param workerID the workerID
    */
   final void queryReceivedByWorker(final int workerID) {
@@ -281,7 +281,7 @@ public class MasterSubQuery extends LocalSubQuery {
 
   /**
    * Callback when a worker completes its part of the query.
-   * 
+   *
    * @param workerID the workerID
    */
   final void workerComplete(final int workerID) {
@@ -297,7 +297,7 @@ public class MasterSubQuery extends LocalSubQuery {
 
   /**
    * Callback when a worker fails in executing its part of the query.
-   * 
+   *
    * @param workerID the workerID
    * @param cause the cause of the failure
    */
