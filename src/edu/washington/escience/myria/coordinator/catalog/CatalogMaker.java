@@ -26,7 +26,6 @@ import edu.washington.escience.myria.tool.MyriaConfigurationReader;
  * A helper class used to make Catalogs. This will contain the creation code for all the Catalogs we use for
  * experiments, and also a bunch of useful helper functions that generally aide in the creation of Catalos.
  * 
- * @author dhalperi
  * 
  */
 public final class CatalogMaker {

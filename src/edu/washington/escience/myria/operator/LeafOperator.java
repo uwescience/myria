@@ -3,7 +3,6 @@ package edu.washington.escience.myria.operator;
 /**
  * Simple abstract operator meant to make it easy to implement leaf operators.
  * 
- * @author dhalperi
  * 
  */
 public abstract class LeafOperator extends Operator {

@@ -11,7 +11,6 @@ import com.google.common.base.Preconditions;
 /**
  * Generic utilities for Myria.
  * 
- * @author dhalperi
  */
 public final class MyriaUtils {
   /**

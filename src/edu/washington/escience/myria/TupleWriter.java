@@ -18,7 +18,6 @@ import edu.washington.escience.myria.storage.ReadableTable;
  * <li>{@link done} - called when there will be no more tuples.</li>
  * </ul>
  * 
- * @author dhalperi
  * 
  */
 public interface TupleWriter {

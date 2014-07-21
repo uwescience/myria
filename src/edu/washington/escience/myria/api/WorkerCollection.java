@@ -19,7 +19,6 @@ import edu.washington.escience.myria.parallel.SocketInfo;
 /**
  * This is the class that handles API calls that return workers.
  * 
- * @author dhalperi
  */
 @Path("/workers")
 @Produces(MediaType.APPLICATION_JSON)

@@ -14,7 +14,6 @@ import edu.washington.escience.myria.storage.TupleBatch;
 /**
  * A column of Double values.
  * 
- * @author dhalperi
  * 
  */
 public final class DoubleColumn extends Column<Double> {

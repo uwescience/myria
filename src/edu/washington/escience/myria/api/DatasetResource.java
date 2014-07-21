@@ -58,7 +58,6 @@ import edu.washington.escience.myria.parallel.Server;
 /**
  * This is the class that handles API calls to create or fetch datasets.
  * 
- * @author dhalperi
  */
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)

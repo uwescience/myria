@@ -24,7 +24,6 @@ import edu.washington.escience.myria.util.ErrorUtils;
  * which is a subclass of {@link WebApplicationException} and thus already contains an HTTP Response that will be passed
  * through directly.
  * 
- * @author dhalperi
  * 
  */
 @Provider

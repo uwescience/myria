@@ -11,7 +11,6 @@ import edu.washington.escience.myria.storage.TupleBatch;
 /**
  * A partition function that simply sends one tuple to each output in turn.
  * 
- * @author dhalperi
  * 
  */
 public final class RoundRobinPartitionFunction extends PartitionFunction {

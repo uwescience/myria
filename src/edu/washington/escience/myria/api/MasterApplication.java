@@ -20,7 +20,6 @@ import edu.washington.escience.myria.parallel.Server;
 /**
  * This object simply configures which resources can be requested via the REST server.
  * 
- * @author dhalperi, jwang
  */
 public final class MasterApplication extends PackagesResourceConfig {
 
@@ -78,7 +77,6 @@ public final class MasterApplication extends PackagesResourceConfig {
    * 
    * TODO revisit the security of this model
    * 
-   * @author dhalperi
    * 
    */
   private class CrossOriginResponseFilter implements ContainerResponseFilter {

@@ -20,7 +20,6 @@ import edu.washington.escience.myria.column.builder.ColumnFactory;
  * Used for creating TupleBatch objects on the fly. A helper class used in, e.g., the Scatter operator. Currently it
  * doesn't support random access to a specific cell. Use TupleBuffer instead.
  * 
- * @author dhalperi
  * 
  */
 public class TupleBatchBuffer implements AppendableTable {

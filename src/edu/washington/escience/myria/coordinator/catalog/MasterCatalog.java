@@ -44,7 +44,6 @@ import edu.washington.escience.myria.parallel.SocketInfo;
 /**
  * This class is intended to store the configuration information for a Myria installation.
  * 
- * @author dhalperi
  * 
  */
 public final class MasterCatalog {

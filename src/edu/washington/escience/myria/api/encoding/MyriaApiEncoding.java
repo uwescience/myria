@@ -16,7 +16,6 @@ import edu.washington.escience.myria.api.MyriaApiException;
  * The interface that all encodings must support. In particular, the validate function must throw an exception
  * explaining why the deserialized object is incorrect.
  * 
- * @author dhalperi
  * 
  */
 public abstract class MyriaApiEncoding {
