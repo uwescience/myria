@@ -175,37 +175,39 @@ public final class FileScan extends LeafOperator {
             + " column(s) but expected " + schema.numColumns() + " column(s).");
       }
       for (int column = 0; column < schema.numColumns(); ++column) {
+        String s = nextLine[column].trim();
+
         try {
           switch (schema.getColumnType(column)) {
             case BOOLEAN_TYPE:
-              if (Floats.tryParse(nextLine[column]) != null) {
-                buffer.putBoolean(column, Floats.tryParse(nextLine[column]) != 0);
-              } else if (BooleanUtils.toBoolean(nextLine[column])) {
-                buffer.putBoolean(column, Boolean.parseBoolean(nextLine[column]));
+              if (Floats.tryParse(s) != null) {
+                buffer.putBoolean(column, Floats.tryParse(s) != 0);
+              } else if (BooleanUtils.toBoolean(s)) {
+                buffer.putBoolean(column, Boolean.parseBoolean(s));
               }
               break;
             case DOUBLE_TYPE:
-              buffer.putDouble(column, Double.parseDouble(nextLine[column]));
+              buffer.putDouble(column, Double.parseDouble(s));
               break;
             case FLOAT_TYPE:
-              buffer.putFloat(column, Float.parseFloat(nextLine[column]));
+              buffer.putFloat(column, Float.parseFloat(s));
               break;
             case INT_TYPE:
-              buffer.putInt(column, Integer.parseInt(nextLine[column]));
+              buffer.putInt(column, Integer.parseInt(s));
               break;
             case LONG_TYPE:
-              buffer.putLong(column, Long.parseLong(nextLine[column]));
+              buffer.putLong(column, Long.parseLong(s));
               break;
             case STRING_TYPE:
-              buffer.putString(column, nextLine[column]);
+              buffer.putString(column, s);
               break;
             case DATETIME_TYPE:
-              buffer.putDateTime(column, DateTimeUtils.parse(nextLine[column]));
+              buffer.putDateTime(column, DateTimeUtils.parse(s));
               break;
           }
         } catch (final IllegalArgumentException e) {
           throw new DbException("Error parsing column " + column + " of row " + lineNumber + ", expected type: "
-              + schema.getColumnType(column) + ", scanned value: " + nextLine[column], e);
+              + schema.getColumnType(column) + ", scanned value: " + s, e);
         }
       }
     }
