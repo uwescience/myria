@@ -10,20 +10,21 @@ import sys
 def get_hostname(node):
     return node[0]
 
-def kill_java(host_entry):
+def kill_java(host_entry, username):
     host = get_hostname(host_entry)
-    cmd = ['ssh', host, 'killall -KILL -v java']
+    cmd = ['ssh', '%s@%s' % (username, host), 'killall -KILL -v java']
     subprocess.call(cmd)
 
 def stop_all(config):
     master = config['master']
     workers = config['workers']
+    username = config['username']
 
     # Stop the Master
-    kill_java(master)
+    kill_java(master, username)
 
     for worker in workers:
-        kill_java(worker)
+        kill_java(worker, username)
 
 
 def main(argv):
