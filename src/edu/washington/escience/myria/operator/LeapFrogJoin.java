@@ -337,7 +337,7 @@ public class LeapFrogJoin extends NAryOperator {
       }
 
       /* initiate rowIndices */
-      rowIndices = new int[getChildren().length];
+      rowIndices = new int[tables[tableIndex].numColumns()];
       Arrays.fill(rowIndices, 0);
     }
 
