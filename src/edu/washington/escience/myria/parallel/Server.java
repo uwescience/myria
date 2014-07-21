@@ -985,18 +985,17 @@ public final class Server {
    * Submit a query for execution. The workerPlans may be removed in the future if the query compiler and schedulers are
    * ready. Returns null if there are too many active queries.
    * 
-   * @param physicalPlan the Myria physical plan for the query.
+   * @param query the query encoding.
    * @param plan the query to be executed
    * @throws DbException if any error in non-catalog data processing
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
    */
-  public QueryFuture submitQuery(final QueryEncoding physicalPlan, final QueryPlan plan) throws DbException,
-      CatalogException {
+  public QueryFuture submitQuery(final QueryEncoding query, final QueryPlan plan) throws DbException, CatalogException {
     if (!canSubmitQuery()) {
       throw new DbException("Cannot submit query");
     }
-    if (physicalPlan.profilingMode) {
+    if (query.profilingMode) {
       if (!(plan instanceof SubQuery || plan instanceof JsonSubQuery)) {
         throw new DbException("Profiling mode is not supported for plans (" + plan.getClass().getSimpleName()
             + ") that may contain multiple subqueries.");
@@ -1009,8 +1008,8 @@ public final class Server {
       /* Hack to instantiate a single-fragment query for the visualization. */
       QueryConstruct.instantiate(((JsonSubQuery) plan).getFragments(), new ConstructArgs(this, -1));
     }
-    final long queryID = catalog.newQuery(physicalPlan);
-    return submitQuery(queryID, physicalPlan, plan);
+    final long queryID = catalog.newQuery(query);
+    return submitQuery(queryID, query, plan);
   }
 
   /**
@@ -1550,7 +1549,7 @@ public final class Server {
       final TupleWriter writer) throws DbException {
     final QueryStatusEncoding queryStatus = checkAndReturnQueryStatus(queryId);
 
-    Set<Integer> actualWorkers = ((QueryEncoding) queryStatus.physicalPlan).getWorkers();
+    Set<Integer> actualWorkers = queryStatus.plan.getWorkers();
 
     String fragmentWhere = "";
     if (fragmentId >= 0) {
@@ -1636,7 +1635,7 @@ public final class Server {
         Schema.ofFields("opId", Type.INT_TYPE, "startTime", Type.LONG_TYPE, "endTime", Type.LONG_TYPE, "numTuples",
             Type.LONG_TYPE);
 
-    Set<Integer> actualWorkers = ((QueryEncoding) queryStatus.physicalPlan).getWorkers();
+    Set<Integer> actualWorkers = queryStatus.plan.getWorkers();
 
     String opCondition = "";
     if (onlyRootOperator) {
@@ -1718,7 +1717,7 @@ public final class Server {
     final Schema schema = Schema.ofFields("opId", Type.INT_TYPE, "nanoTime", Type.LONG_TYPE);
     final RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
 
-    Set<Integer> actualWorkers = ((QueryEncoding) queryStatus.physicalPlan).getWorkers();
+    Set<Integer> actualWorkers = queryStatus.plan.getWorkers();
 
     String filterOpnameQueryString = "";
     if (onlyRootOp) {
@@ -1785,7 +1784,7 @@ public final class Server {
     final Schema schema = Schema.ofFields("startTime", Type.LONG_TYPE, "endTime", Type.LONG_TYPE);
     final RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
 
-    Set<Integer> actualWorkers = ((QueryEncoding) queryStatus.physicalPlan).getWorkers();
+    Set<Integer> actualWorkers = queryStatus.plan.getWorkers();
 
     String opnameQueryString =
         Joiner.on(' ').join("SELECT min(starttime), max(endtime) FROM", relationKey.toString(getDBMS()),
@@ -1837,7 +1836,7 @@ public final class Server {
     final Schema schema = Schema.ofFields("opId", Type.INT_TYPE, "nanoTime", Type.LONG_TYPE);
     final RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
 
-    Set<Integer> actualWorkers = ((QueryEncoding) queryStatus.physicalPlan).getWorkers();
+    Set<Integer> actualWorkers = queryStatus.plan.getWorkers();
 
     String fragIdCondition = "";
     if (fragmentId >= 0) {

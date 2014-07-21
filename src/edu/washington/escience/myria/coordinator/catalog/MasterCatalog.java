@@ -37,6 +37,7 @@ import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
+import edu.washington.escience.myria.api.encoding.plan.SubPlanEncoding;
 import edu.washington.escience.myria.parallel.Query;
 import edu.washington.escience.myria.parallel.SocketInfo;
 
@@ -76,14 +77,16 @@ public final class MasterCatalog {
     + "    query_id INTEGER NOT NULL PRIMARY KEY ASC,\n"
     + "    raw_query TEXT NOT NULL,\n"
     + "    logical_ra TEXT NOT NULL,\n"
-    + "    physical_plan TEXT NOT NULL,\n"
+    + "    plan TEXT NOT NULL,\n"
     + "    submit_time TEXT NOT NULL, -- DATES IN ISO8601 FORMAT \n"
     + "    start_time TEXT, -- DATES IN ISO8601 FORMAT \n"
     + "    finish_time TEXT, -- DATES IN ISO8601 FORMAT \n"
     + "    elapsed_nanos INTEGER,\n"
     + "    status TEXT NOT NULL,\n"
     + "    message TEXT,\n"
-    + "    profiling_mode BOOLEAN DEFAULT 0);";
+    + "    profiling_mode BOOLEAN DEFAULT 0,\n" 
+    + "    ft_mode TEXT,\n"
+    + "    language TEXT);";
   /** Create the relations table. */
   private static final String CREATE_RELATIONS =
       "CREATE TABLE relations (\n"
@@ -1053,25 +1056,23 @@ public final class MasterCatalog {
   /**
    * Insert a new query into the Catalog.
    * 
-   * @param physicalPlan the physical execution plan for the query.
+   * @param query the query encoding.
    * @return the newly generated ID of this query.
    * @throws CatalogException if there is an error adding the new query.
    */
-  public Long newQuery(final QueryEncoding physicalPlan) throws CatalogException {
-    Objects.requireNonNull(physicalPlan, "physicalPlan");
+  public Long newQuery(final QueryEncoding query) throws CatalogException {
+    Objects.requireNonNull(query, "query");
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
     }
+
+    final QueryStatusEncoding queryStatus = QueryStatusEncoding.submitted(query);
     final String physicalString;
     try {
-      physicalString = MyriaJsonMapperProvider.getMapper().writeValueAsString(physicalPlan);
+      physicalString = MyriaJsonMapperProvider.getMapper().writeValueAsString(query.plan);
     } catch (JsonProcessingException e) {
       throw new CatalogException(e);
     }
-
-    final QueryStatusEncoding queryStatus =
-        QueryStatusEncoding.submitted(physicalPlan.rawQuery, physicalPlan.logicalRa, physicalPlan, Preconditions
-            .checkNotNull(physicalPlan.profilingMode, false));
 
     try {
       return queue.execute(new SQLiteJob<Long>() {
@@ -1080,7 +1081,7 @@ public final class MasterCatalog {
           try {
             SQLiteStatement statement =
                 sqliteConnection
-                    .prepare("INSERT INTO queries (raw_query, logical_ra, physical_plan, submit_time, start_time, finish_time, elapsed_nanos, status, profiling_mode) VALUES (?,?,?,?,?,?,?,?,?);");
+                    .prepare("INSERT INTO queries (raw_query, logical_ra, plan, submit_time, start_time, finish_time, elapsed_nanos, status, profiling_mode, ft_mode, language) VALUES (?,?,?,?,?,?,?,?,?,?,?);");
             statement.bind(1, queryStatus.rawQuery);
             statement.bind(2, queryStatus.logicalRa);
             statement.bind(3, physicalString);
@@ -1099,6 +1100,8 @@ public final class MasterCatalog {
             } else {
               statement.bind(9, 0);
             }
+            statement.bind(10, queryStatus.ftMode);
+            statement.bind(11, queryStatus.language);
             statement.stepThrough();
             statement.dispose();
             return sqliteConnection.getLastInsertId();
@@ -1133,7 +1136,7 @@ public final class MasterCatalog {
           try {
             SQLiteStatement statement =
                 sqliteConnection
-                    .prepare("SELECT query_id,raw_query,logical_ra,physical_plan,submit_time,start_time,finish_time,elapsed_nanos,status,message,profiling_mode FROM queries WHERE query_id=?;");
+                    .prepare("SELECT query_id,raw_query,logical_ra,plan,submit_time,start_time,finish_time,elapsed_nanos,status,message,profiling_mode,ft_mode,language FROM queries WHERE query_id=?;");
             statement.bind(1, queryId);
             statement.step();
             if (!statement.hasRow()) {
@@ -1142,7 +1145,7 @@ public final class MasterCatalog {
             final QueryStatusEncoding queryStatus = queryStatusHelper(statement);
             statement.dispose();
             return queryStatus;
-          } catch (final SQLiteException e) {
+          } catch (final SQLiteException | IOException e) {
             throw new CatalogException(e);
           }
         }
@@ -1181,19 +1184,16 @@ public final class MasterCatalog {
    * @param statement the query over the <code>queries</code> table. Has been stepped once.
    * @return the status of the first query in the result.
    * @throws SQLiteException if there is an error in the database.
+   * @throws IOException if there is an error when deserializing physical plan.
    */
-  private static QueryStatusEncoding queryStatusHelper(final SQLiteStatement statement) throws SQLiteException {
+  private static QueryStatusEncoding queryStatusHelper(final SQLiteStatement statement) throws SQLiteException,
+      IOException {
     final QueryStatusEncoding queryStatus = new QueryStatusEncoding(statement.columnLong(0));
     queryStatus.rawQuery = statement.columnString(1);
     queryStatus.logicalRa = statement.columnString(2);
     String physicalString = statement.columnString(3);
 
-    try {
-      queryStatus.physicalPlan = MyriaJsonMapperProvider.getMapper().readValue(physicalString, QueryEncoding.class);
-    } catch (IOException e) {
-      queryStatus.physicalPlan = physicalString;
-    }
-
+    queryStatus.plan = MyriaJsonMapperProvider.getMapper().readValue(physicalString, SubPlanEncoding.class);
     queryStatus.submitTime = statement.columnString(4);
     queryStatus.startTime = statement.columnString(5);
     queryStatus.finishTime = statement.columnString(6);
@@ -1203,6 +1203,10 @@ public final class MasterCatalog {
     queryStatus.status = QueryStatusEncoding.Status.valueOf(statement.columnString(8));
     queryStatus.message = statement.columnString(9);
     queryStatus.profilingMode = statement.columnInt(10) > 0;
+    queryStatus.ftMode = statement.columnString(11);
+    if (!statement.columnNull(12)) {
+      queryStatus.language = statement.columnString(12);
+    }
     return queryStatus;
   }
 
