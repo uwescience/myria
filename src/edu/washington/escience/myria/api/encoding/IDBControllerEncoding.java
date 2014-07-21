@@ -23,6 +23,8 @@ public class IDBControllerEncoding extends OperatorEncoding<IDBController> {
   @Required
   public Integer argEosControllerInput;
 
+  public boolean sync;
+
   private ExchangePairID realControllerOperatorId;
   public Integer realControllerWorkerId;
 
@@ -32,7 +34,7 @@ public class IDBControllerEncoding extends OperatorEncoding<IDBController> {
   @Override
   public IDBController construct(ConstructArgs args) {
     return new IDBController(argSelfIdbId, realControllerOperatorId, realControllerWorkerId, null, null, null, argState
-        .construct());
+        .construct(), sync);
   }
 
   @Override
