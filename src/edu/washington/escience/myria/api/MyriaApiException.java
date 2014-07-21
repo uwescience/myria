@@ -39,7 +39,7 @@ public final class MyriaApiException extends WebApplicationException {
    * @param explanation the message is used to explain the exception in the HTTP response.
    */
   public MyriaApiException(final Status status, final String explanation) {
-    super(MyriaExceptionMapper.getResponse(status, explanation));
+    super(new RuntimeException(explanation), MyriaExceptionMapper.getResponse(status, explanation));
     LOGGER.trace("In Status:String (log will be after getResponse)");
   }
 }
