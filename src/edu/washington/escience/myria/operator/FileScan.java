@@ -62,6 +62,8 @@ public final class FileScan extends LeafOperator {
    */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(FileScan.class);
 
+  public static final int MAX_READ_ERRORS = 20;
+
   /**
    * Construct a new FileScan object to read from the specified file. This file is assumed to be comma-separated and
    * have one record per line. '"' will be used as default quotation mark. `\` will be used as escape character.
@@ -163,6 +165,7 @@ public final class FileScan extends LeafOperator {
   protected TupleBatch fetchNextReady() throws DbException, IOException {
     /* Let's assume that the scanner always starts at the beginning of a line. */
     int lineNumberBegin = lineNumber;
+    int numErrors = 0;
 
     while ((buffer.numTuples() < TupleBatch.BATCH_SIZE)) {
       String[] nextLine = scanner.readNext();
@@ -171,8 +174,13 @@ public final class FileScan extends LeafOperator {
       }
       lineNumber++;
       if (nextLine.length != schema.numColumns()) {
-        throw new DbException("Error parsing row " + lineNumber + ": Found " + nextLine.length
-            + " column(s) but expected " + schema.numColumns() + " column(s).");
+        numErrors++;
+        LOGGER.warn("Error parsing row " + lineNumber + ": Found " + nextLine.length + " column(s) but expected "
+            + schema.numColumns() + " column(s).");
+        if (numErrors >= MAX_READ_ERRORS) {
+          throw new DbException("Bad column count");
+        }
+        continue;
       }
       for (int column = 0; column < schema.numColumns(); ++column) {
         String s = nextLine[column].trim();
@@ -206,8 +214,12 @@ public final class FileScan extends LeafOperator {
               break;
           }
         } catch (final IllegalArgumentException e) {
-          throw new DbException("Error parsing column " + column + " of row " + lineNumber + ", expected type: "
+          numErrors++;
+          LOGGER.warn("Error parsing column " + column + " of row " + lineNumber + ", expected type: "
               + schema.getColumnType(column) + ", scanned value: " + s, e);
+          if (numErrors >= MAX_READ_ERRORS) {
+            throw new DbException("Bad column type");
+          }
         }
       }
     }
