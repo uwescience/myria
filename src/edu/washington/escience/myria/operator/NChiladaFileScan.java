@@ -191,6 +191,8 @@ public class NChiladaFileScan extends LeafOperator {
    * @param starAttributeFilesToDataInput A mapping from star attribute file names to their respective DataInput object.
    * @param darkAttributeFilesToDataInput A mapping from dark attribute file names to their respective DataInput object.
    */
+  @SuppressWarnings("unused")
+  // used via reflection in the tests
   private NChiladaFileScan(final InputStream groupInputStream,
       final Map<String, DataInput> gasAttributeFilesToDataInput,
       final Map<String, DataInput> starAttributeFilesToDataInput,
