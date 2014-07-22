@@ -426,16 +426,22 @@ public final class DatasetResource {
   }
 
   /**
-   * @return a list of datasets in the system.
+   * @param queryId an optional query ID specifying which datasets to get.
+   * @return a list of datasets.
    * @throws DbException if there is an error accessing the Catalog.
    */
   @GET
-  public Response getDatasets() throws DbException {
-    List<DatasetStatus> datasets = server.getDatasets();
+  public List<DatasetStatus> getDatasets(@QueryParam("queryId") final Integer queryId) throws DbException {
+    List<DatasetStatus> datasets;
+    if (queryId != null) {
+      datasets = server.getDatasetsForQuery(queryId);
+    } else {
+      datasets = server.getDatasets();
+    }
     for (DatasetStatus status : datasets) {
       status.setUri(getCanonicalResourcePath(uriInfo, status.getRelationKey()));
     }
-    return Response.ok().cacheControl(MyriaApiUtils.doNotCache()).entity(datasets).build();
+    return datasets;
   }
 
   /**
