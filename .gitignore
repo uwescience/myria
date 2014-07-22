@@ -10,3 +10,4 @@ build
 englink-log4j.log
 /bin
 myriadeploy/federated.sqllite.cfg
+myriadeploy/federated.sqllite2.cfg
