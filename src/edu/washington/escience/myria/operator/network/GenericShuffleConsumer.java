@@ -18,8 +18,6 @@ import edu.washington.escience.myria.util.MyriaArrayUtils;
  * 
  * 3.HyperJoinShuffleConsumer
  * 
- * @author Shumo Chu <chushumo@cs.washington.edu>
- * 
  */
 public class GenericShuffleConsumer extends Consumer {
   /** Required for Java serialization. */

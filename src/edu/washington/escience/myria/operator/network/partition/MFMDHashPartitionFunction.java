@@ -9,8 +9,6 @@ import edu.washington.escience.myria.storage.TupleBatch;
 /**
  * Multiple field multiple dimension hash partition function for HyperCubeJoin.
  * 
- * @author Shumo Chu <chushumo@cs.washington.edu>
- * 
  */
 public final class MFMDHashPartitionFunction extends PartitionFunction {
 
