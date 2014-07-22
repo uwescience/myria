@@ -140,9 +140,9 @@ public class NChiladaFileScan extends LeafOperator {
   private transient TupleBatchBuffer buffer;
 
   /** The full path of the directory that contains star, dark and gas directories. */
-  private final String particleDirectoryPath;
+  private String particleDirectoryPath;
   /** The full path of the file that contains groupNumber in the order of gas, dark, star. */
-  private final String groupFilePath;
+  private String groupFilePath;
   /** The group input stream. */
   private InputStream groupInputStream;
   /** Contains matching from file name to DataInput object for star particles attributes. */
@@ -181,6 +181,28 @@ public class NChiladaFileScan extends LeafOperator {
     Objects.requireNonNull(groupFilePath);
     this.particleDirectoryPath = particleDirectoryPath;
     this.groupFilePath = groupFilePath;
+  }
+
+  /**
+   * Construct a new NChiladaFileScanObject. This constructor is only meant to be called from test.
+   * 
+   * @param groupInputStream The InputStream object for group.
+   * @param gasAttributeFilesToDataInput A mapping from gas attribute file names to their respective DataInput object.
+   * @param starAttributeFilesToDataInput A mapping from star attribute file names to their respective DataInput object.
+   * @param darkAttributeFilesToDataInput A mapping from dark attribute file names to their respective DataInput object.
+   */
+  private NChiladaFileScan(final InputStream groupInputStream,
+      final Map<String, DataInput> gasAttributeFilesToDataInput,
+      final Map<String, DataInput> starAttributeFilesToDataInput,
+      final Map<String, DataInput> darkAttributeFilesToDataInput) {
+    Objects.requireNonNull(groupInputStream);
+    Objects.requireNonNull(gasAttributeFilesToDataInput);
+    Objects.requireNonNull(starAttributeFilesToDataInput);
+    Objects.requireNonNull(darkAttributeFilesToDataInput);
+    this.darkAttributeFilesToDataInput = darkAttributeFilesToDataInput;
+    this.gasAttributeFilesToDataInput = gasAttributeFilesToDataInput;
+    this.starAttributeFilesToDataInput = starAttributeFilesToDataInput;
+    this.groupInputStream = groupInputStream;
   }
 
   @Override
