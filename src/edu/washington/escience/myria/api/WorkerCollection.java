@@ -37,7 +37,7 @@ public final class WorkerCollection {
     return Response.ok(server.getAliveWorkers()).cacheControl(MyriaApiUtils.doNotCache()).build();
   }
 
-  /*
+  /**
    * @return the list of identifiers of workers that are currently alive with their last heartbeats.
    */
   @GET

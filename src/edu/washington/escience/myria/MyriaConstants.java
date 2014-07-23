@@ -295,11 +295,21 @@ public final class MyriaConstants {
 
   /** available profiling mode for each query in Myria. */
   public static enum PROFILING_MODE {
-    // NONE: don't profile
-    // RESOURCE: resource usage only
-    // QUERY: query execution only
-    // ALL: query + resource
-    // better names and more help functions are welcomed
-    NONE, RESOURCE, QUERY, ALL
+    /**
+     * NONE: don't profile.
+     */
+    NONE,
+    /**
+     * RESOURCE: resource usage (CPU, IO, Memory) only.
+     */
+    RESOURCE,
+    /**
+     * QUERY: query execution only.
+     */
+    QUERY,
+    /**
+     * ALL: query + resource.
+     */
+    ALL
   };
 }
