@@ -719,7 +719,7 @@ public final class LocalFragment {
    * 
    * @param stats the stats to be added into
    * @param timestamp the timestamp of the collecting event
-   * @param obId the operator ID
+   * @param opId the operator ID
    * @param measurement which measurement
    * @param value the value
    * @param subQueryId the sunquery ID

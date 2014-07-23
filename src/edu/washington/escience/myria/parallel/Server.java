@@ -2084,12 +2084,12 @@ public final class Server {
         for (Integer workerId : workerStats.keySet()) {
           List<ResourceStats> statsList = workerStats.get(workerId);
           for (ResourceStats stats : statsList) {
-            tb.putLong(0, stats.timestamp);
-            tb.putInt(1, stats.opId);
-            tb.putString(2, stats.measurement);
-            tb.putLong(3, stats.value);
-            tb.putLong(4, stats.queryId);
-            tb.putLong(5, stats.subqueryId);
+            tb.putLong(0, stats.getTimestamp());
+            tb.putInt(1, stats.getOpId());
+            tb.putString(2, stats.getMeasurement());
+            tb.putLong(3, stats.getValue());
+            tb.putLong(4, stats.getQueryId());
+            tb.putLong(5, stats.getSubqueryId());
             tb.putInt(6, workerId);
           }
         }

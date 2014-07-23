@@ -198,6 +198,8 @@ public final class Worker {
 
   /**
    * collect resource measurements of all the active queries on this worker.
+   * 
+   * @param resourceUsage resource usage list.
    */
   public void collectResourceMeasurements(final List<ResourceStats> resourceUsage) {
     final long start = System.currentTimeMillis();

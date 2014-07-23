@@ -12,17 +12,59 @@ public final class ResourceStats implements Serializable {
   private static final long serialVersionUID = 1L;
 
   /** timestamp of this statistics. */
-  public long timestamp;
+  private long timestamp;
   /** operator Id. */
-  public int opId;
+  private int opId;
   /** measurement. */
-  public String measurement;
+  private String measurement;
   /** value. */
-  public long value;
+  private long value;
   /** query Id. */
-  public long queryId;
+  private long queryId;
   /** subquery Id. */
-  public long subqueryId;
+  private long subqueryId;
+
+  /**
+   * @return time of the measurement
+   */
+  public long getTimestamp() {
+    return timestamp;
+  }
+
+  /**
+   * @return the operator id of the measurement
+   */
+  public int getOpId() {
+    return opId;
+  }
+
+  /**
+   * @return name of the measurement
+   */
+  public String getMeasurement() {
+    return measurement;
+  }
+
+  /**
+   * @return value of the measurement, e.g. CPU time.
+   */
+  public long getValue() {
+    return value;
+  }
+
+  /**
+   * @return query id
+   */
+  public long getQueryId() {
+    return queryId;
+  }
+
+  /**
+   * @return sub-query id
+   */
+  public long getSubqueryId() {
+    return subqueryId;
+  }
 
   /** empty constructor, needed for jersey to build response. */
   public ResourceStats() {

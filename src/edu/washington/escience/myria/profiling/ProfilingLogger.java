@@ -322,12 +322,12 @@ public class ProfilingLogger {
   public synchronized void recordResource(final ResourceStats stats) {
 
     try {
-      statementResource.setLong(1, stats.timestamp);
-      statementResource.setInt(2, stats.opId);
-      statementResource.setString(3, stats.measurement);
-      statementResource.setLong(4, stats.value);
-      statementResource.setLong(5, stats.queryId);
-      statementResource.setLong(6, stats.subqueryId);
+      statementResource.setLong(1, stats.getTimestamp());
+      statementResource.setInt(2, stats.getOpId());
+      statementResource.setString(3, stats.getMeasurement());
+      statementResource.setLong(4, stats.getValue());
+      statementResource.setLong(5, stats.getQueryId());
+      statementResource.setLong(6, stats.getSubqueryId());
       statementResource.addBatch();
       batchSizeResource++;
     } catch (final SQLException e) {
