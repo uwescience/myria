@@ -17,6 +17,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -232,7 +233,7 @@ public final class Server {
   private final ConcurrentHashMap<Integer, Long> aliveWorkers;
 
   /** resource usage stats of workers. */
-  private final ConcurrentHashMap<SubQueryId, Map<Integer, List<ResourceStats>>> resourceUsage;
+  private final ConcurrentHashMap<SubQueryId, ConcurrentHashMap<Integer, ConcurrentLinkedDeque<ResourceStats>>> resourceUsage;
 
   /**
    * Scheduled new workers, when a scheduled worker sends the first heartbeat, it'll be removed from this set.
@@ -446,7 +447,8 @@ public final class Server {
     aliveWorkers = new ConcurrentHashMap<>();
     scheduledWorkers = new ConcurrentHashMap<>();
     scheduledWorkersTime = new ConcurrentHashMap<>();
-    resourceUsage = new ConcurrentHashMap<SubQueryId, Map<Integer, List<ResourceStats>>>();
+    resourceUsage =
+        new ConcurrentHashMap<SubQueryId, ConcurrentHashMap<Integer, ConcurrentLinkedDeque<ResourceStats>>>();
 
     removeWorkerAckReceived = new ConcurrentHashMap<>();
     addWorkerAckReceived = new ConcurrentHashMap<>();
@@ -566,12 +568,9 @@ public final class Server {
   private void updateResourceStats(final int senderId, final ControlMessage m) {
     for (ControlProto.ResourceStats stats : m.getResourceStatsList()) {
       SubQueryId id = new SubQueryId(stats.getQueryId(), stats.getSubqueryId());
-      if (resourceUsage.get(id) == null) {
-        resourceUsage.put(id, new HashMap<Integer, List<ResourceStats>>());
-      }
-      if (resourceUsage.get(id).get(senderId) == null) {
-        resourceUsage.get(id).put(senderId, new ArrayList<ResourceStats>());
-      }
+      ConcurrentHashMap<Integer, ConcurrentLinkedDeque<ResourceStats>> subqueryStats =
+          resourceUsage.putIfAbsent(id, new ConcurrentHashMap<Integer, ConcurrentLinkedDeque<ResourceStats>>());
+      subqueryStats.putIfAbsent(senderId, new ConcurrentLinkedDeque<ResourceStats>());
       resourceUsage.get(id).get(senderId).add(ResourceStats.fromProtobuf(stats));
     }
   }
@@ -2080,9 +2079,9 @@ public final class Server {
     for (SubQueryId subQueryId : resourceUsage.keySet()) {
       if (subQueryId.getQueryId() == queryId) {
         found = true;
-        Map<Integer, List<ResourceStats>> workerStats = resourceUsage.get(subQueryId);
+        Map<Integer, ConcurrentLinkedDeque<ResourceStats>> workerStats = resourceUsage.get(subQueryId);
         for (Integer workerId : workerStats.keySet()) {
-          List<ResourceStats> statsList = workerStats.get(workerId);
+          ConcurrentLinkedDeque<ResourceStats> statsList = workerStats.get(workerId);
           for (ResourceStats stats : statsList) {
             tb.putLong(0, stats.getTimestamp());
             tb.putInt(1, stats.getOpId());
