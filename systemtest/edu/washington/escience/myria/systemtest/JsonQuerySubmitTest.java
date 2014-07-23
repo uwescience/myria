@@ -25,6 +25,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.DatasetEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
+import edu.washington.escience.myria.api.encoding.plan.SubQueryEncoding;
 import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.io.EmptySource;
 import edu.washington.escience.myria.io.FileSource;
@@ -158,7 +159,13 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     while (!server.queryCompleted(queryId)) {
       Thread.sleep(100);
     }
-    assertEquals(QueryStatusEncoding.Status.SUCCESS, server.getQueryStatus(queryId).status);
+    QueryStatusEncoding status = server.getQueryStatus(queryId);
+    assertEquals(QueryStatusEncoding.Status.SUCCESS, status.status);
+    assertTrue(status.language.equals("datalog"));
+    assertTrue(status.ftMode.equals("none"));
+    assertFalse(status.profilingMode);
+    assertTrue(status.plan instanceof SubQueryEncoding);
+    assertEquals(((SubQueryEncoding) status.plan).fragments.size(), 3);
   }
 
   @Test
