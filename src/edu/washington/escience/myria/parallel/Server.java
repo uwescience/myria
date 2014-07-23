@@ -2010,7 +2010,7 @@ public final class Server {
     Preconditions.checkArgument(queryStatus != null, "query %s not found", queryId);
     Preconditions.checkArgument(queryStatus.status == QueryStatusEncoding.Status.SUCCESS,
         "query %s did not succeed (%s)", queryId, queryStatus.status);
-    Preconditions.checkArgument(!PROFILING_MODE.valueOf(queryStatus.profilingMode).equals(PROFILING_MODE.NONE),
+    Preconditions.checkArgument(!queryStatus.profilingMode.equals(PROFILING_MODE.NONE),
         "query %s was not run with profiling enabled", queryId);
     return queryStatus;
   }

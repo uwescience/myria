@@ -30,6 +30,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
+import edu.washington.escience.myria.MyriaConstants.PROFILING_MODE;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -1170,7 +1171,7 @@ public final class MasterCatalog {
     }
     queryStatus.status = QueryStatusEncoding.Status.valueOf(statement.columnString(6));
     queryStatus.message = statement.columnString(7);
-    queryStatus.profilingMode = statement.columnString(8);
+    queryStatus.profilingMode = PROFILING_MODE.valueOf(statement.columnString(8));
     return queryStatus;
   }
 
@@ -1198,7 +1199,7 @@ public final class MasterCatalog {
     }
     queryStatus.status = QueryStatusEncoding.Status.valueOf(statement.columnString(8));
     queryStatus.message = statement.columnString(9);
-    queryStatus.profilingMode = statement.columnString(10);
+    queryStatus.profilingMode = PROFILING_MODE.valueOf(statement.columnString(10));
     queryStatus.ftMode = statement.columnString(11);
     if (!statement.columnNull(12)) {
       queryStatus.language = statement.columnString(12);
