@@ -54,7 +54,7 @@ public final class LocalFragmentResourceManager {
 
   /**
    * start a data output stream.
-   * 
+   *
    * @param remoteWorkerID remoteWorker
    * @param operatorID remote receive operator
    * @return a output channel.
@@ -65,7 +65,7 @@ public final class LocalFragmentResourceManager {
 
   /**
    * start a data output stream.
-   * 
+   *
    * @param remoteWorkerID remoteWorker
    * @param streamID remote receive operator
    * @return a output channel.
@@ -78,9 +78,9 @@ public final class LocalFragmentResourceManager {
 
   /**
    * Release input buffers.
-   * 
+   *
    * @param consumer the owner of the input buffer.
-   * */
+   */
   public void releaseInputBuffer(final Consumer consumer) {
     StreamInputBuffer<TupleBatch> input = inputBuffers.remove(consumer);
     if (input != null) {
@@ -91,7 +91,7 @@ public final class LocalFragmentResourceManager {
 
   /**
    * Allocate input buffers.
-   * 
+   *
    * @param consumer the owner of the input buffer.
    * @return the allocated input buffer.
    * */
@@ -123,7 +123,7 @@ public final class LocalFragmentResourceManager {
    * Remove an output channel from outputChannels. Need it when a recovery task is finished and needs to detach & attach
    * its channel to the original producer. In this case, the channel shouldn't be released when the cleanup() method of
    * the recovery task is called.
-   * 
+   *
    * @param channel the channel to be removed.
    */
   public void removeOutputChannel(final StreamOutputChannel<TupleBatch> channel) {
