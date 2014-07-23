@@ -193,7 +193,11 @@ public final class Worker {
       collectResourceMeasurements(resourceUsage);
       sendMessageToMaster(IPCUtils.resourceReport(resourceUsage)).awaitUninterruptibly();
       for (ResourceStats stats : resourceUsage) {
-        profilingLogger.recordResource(stats);
+        try {
+          getProfilingLogger().recordResource(stats);
+        } catch (DbException e) {
+          LOGGER.error("Error flushing profiling logger", e);
+        }
       }
     }
   }
