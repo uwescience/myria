@@ -2,6 +2,7 @@ package edu.washington.escience.myria.api.encoding;
 
 import java.net.URI;
 
+import edu.washington.escience.myria.MyriaConstants.PROFILING_MODE;
 import edu.washington.escience.myria.api.encoding.plan.SubPlanEncoding;
 import edu.washington.escience.myria.util.DateTimeUtils;
 
@@ -33,7 +34,7 @@ public class QueryStatusEncoding {
     ret.rawQuery = query.rawQuery;
     ret.logicalRa = query.logicalRa;
     ret.plan = query.plan;
-    ret.profilingMode = query.profilingMode.toString();
+    ret.profilingMode = query.profilingMode;
     ret.ftMode = query.ftMode.toString();
     ret.submitTime = DateTimeUtils.nowInISO8601();
     ret.status = Status.ACCEPTED;
@@ -64,7 +65,7 @@ public class QueryStatusEncoding {
   /** The status of the query. */
   public Status status;
   /** The profilingMode of the query. */
-  public String profilingMode;
+  public PROFILING_MODE profilingMode;
   /** The ftMode of the query. */
   public String ftMode;
   /** The language of the query. */
