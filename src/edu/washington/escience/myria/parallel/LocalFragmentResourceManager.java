@@ -95,6 +95,16 @@ public final class LocalFragmentResourceManager {
    * @param consumer the owner of the input buffer.
    * @return the allocated input buffer.
    * */
+  public StreamInputBuffer<TupleBatch> getInputBuffer(final Consumer consumer) {
+    return inputBuffers.get(consumer);
+  }
+
+  /**
+   * Allocate input buffers.
+   *
+   * @param consumer the owner of the input buffer.
+   * @return the allocated input buffer.
+   * */
   public StreamInputBuffer<TupleBatch> allocateInputBuffer(final Consumer consumer) {
     StreamInputBuffer<TupleBatch> inputBuffer = inputBuffers.get(consumer);
 
