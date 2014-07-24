@@ -1157,4 +1157,16 @@ public class LeapFrogJoin extends NAryOperator {
         tables[cp2.getTableIndex()], cp2.getFieldIndex(), cp2.getRow());
   }
 
+  /**
+   * @return Memory usage of all the hash tables.
+   */
+  public long getMemSize() {
+    long sum = 0;
+    for (MutableTupleBuffer table : tables) {
+      if (table != null) {
+        sum += table.getMemSize();
+      }
+    }
+    return sum;
+  }
 }

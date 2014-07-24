@@ -17,6 +17,7 @@ import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.operator.IDBController;
+import edu.washington.escience.myria.operator.LeapFrogJoin;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
@@ -762,8 +763,9 @@ public final class LocalFragment {
       addResourceReport(stats, start, op.getOpId(), "numTuplesInState", ((IDBController) op).getStreamingState()
           .numTuples(), subQueryId);
     } else if (op instanceof SymmetricHashJoin) {
-      addResourceReport(stats, start, op.getOpId(), "numTuplesInHashTable", ((SymmetricHashJoin) op)
-          .getNumTuplesInHashTables(), subQueryId);
+      addResourceReport(stats, start, op.getOpId(), "hashTableSize", ((SymmetricHashJoin) op).getMemSize(), subQueryId);
+    } else if (op instanceof LeapFrogJoin) {
+      addResourceReport(stats, start, op.getOpId(), "hashTableSize", ((LeapFrogJoin) op).getMemSize(), subQueryId);
     }
     for (Operator child : op.getChildren()) {
       collectResourceMeasurements(stats, start, child, subQueryId);
