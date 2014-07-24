@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -27,7 +28,7 @@ import edu.washington.escience.myria.util.concurrent.ReentrantSpinLock;
 
 /**
  * Non-blocking driving code for one of the fragments in a {@link LocalSubQuery}.
- * 
+ *
  * {@link LocalFragment} state could be:<br>
  * 1) In execution.<br>
  * 2) In dormant.<br>
@@ -64,6 +65,11 @@ public final class LocalFragment {
    * The actual physical plan to be executed when this {@link LocalFragment} is run.
    */
   private final Callable<Void> executionPlan;
+
+  /**
+   * Task for executing initialization code .
+   */
+  private final Callable<Void> initTask;
 
   /**
    * The output channels belonging to this {@link LocalFragment}.
@@ -179,6 +185,36 @@ public final class LocalFragment {
         return null;
       }
     };
+
+    initTask = new Callable<Void>() {
+      @Override
+      public Void call() throws Exception {
+        // synchronized to keep memory consistency
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace("Start fragment intializatino: " + LocalFragment.this);
+        }
+        try {
+          synchronized (executionLock) {
+            LocalFragment.this.initActually();
+          }
+        } catch (Throwable e) {
+          if (LOGGER.isErrorEnabled()) {
+            LOGGER.error("Fragment failed to open because of exception:", e);
+          }
+          if (e instanceof InterruptedException) {
+            Thread.currentThread().interrupt();
+          }
+          AtomicUtils.setBitByValue(executionCondition, STATE_FAIL);
+          if (fragmentExecutionFuture.setFailure(e)) {
+            cleanup(true);
+          }
+        }
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace("End Initialization: " + LocalFragment.this);
+        }
+        return null;
+      }
+    };
   }
 
   /**
@@ -197,7 +233,7 @@ public final class LocalFragment {
 
   /**
    * gather all output (Producer or IDBController's EOI report) channel IDs.
-   * 
+   *
    * @param currentOperator current operator to check.
    * @param outputExchangeChannels the current collected output channel IDs.
    */
@@ -237,7 +273,7 @@ public final class LocalFragment {
 
   /**
    * gather all input (consumer) channel IDs.
-   * 
+   *
    * @param currentOperator current operator to check.
    * @param inputExchangeChannels the current collected input channels.
    */
@@ -274,7 +310,7 @@ public final class LocalFragment {
 
   /**
    * Called by Netty downstream IO worker threads.
-   * 
+   *
    * @param outputChannelID the logical output channel ID.
    */
   public void notifyOutputDisabled(final StreamIOChannelID outputChannelID) {
@@ -294,7 +330,7 @@ public final class LocalFragment {
 
   /**
    * Called by Netty downstream IO worker threads.
-   * 
+   *
    * @param outputChannelID the down channel ID.
    */
   public void notifyOutputEnabled(final StreamIOChannelID outputChannelID) {
@@ -365,7 +401,7 @@ public final class LocalFragment {
 
   /**
    * Actually execute this fragment.
-   * 
+   *
    * @return always null. The return value is unused.
    */
   private Object executeActually() {
@@ -551,7 +587,7 @@ public final class LocalFragment {
 
   /**
    * clean up the {@link LocalFragment}, release resources, etc.
-   * 
+   *
    * @param failed if the {@link LocalFragment} execution has already failed.
    */
   private void cleanup(final boolean failed) {
@@ -578,7 +614,7 @@ public final class LocalFragment {
 
   /**
    * Kill this {@link LocalFragment}.
-   * 
+   *
    */
   void kill() {
     if (!AtomicUtils.setBitIfUnsetByValue(executionCondition, STATE_KILLED)) {
@@ -615,33 +651,43 @@ public final class LocalFragment {
   }
 
   /**
+   * Execution environment variable.
+   */
+  private volatile ImmutableMap<String, Object> execEnvVars;
+
+  /**
    * Initialize the {@link LocalFragment}.
-   * 
+   *
    * @param execEnvVars execution environment variable.
    */
   public void init(final ImmutableMap<String, Object> execEnvVars) {
+    this.execEnvVars = execEnvVars;
     try {
-      synchronized (executionLock) {
-        ImmutableMap.Builder<String, Object> b = ImmutableMap.builder();
-        b.put(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER, resourceManager);
-        b.putAll(execEnvVars);
-        root.open(b.build());
-      }
-      AtomicUtils.setBitByValue(executionCondition, STATE_INITIALIZED);
-    } catch (Throwable e) {
-      if (LOGGER.isErrorEnabled()) {
-        LOGGER.error("Fragment failed to open because of exception:", e);
-      }
-      AtomicUtils.setBitByValue(executionCondition, STATE_FAIL);
-      if (fragmentExecutionFuture.setFailure(e)) {
-        cleanup(true);
-      }
+      myExecutor.submit(initTask).get();
+    } catch (InterruptedException e) {
+      Thread.interrupted();
+      return;
+    } catch (ExecutionException e) {
+      throw new RuntimeException(e.getCause());
     }
   }
 
   /**
+   * The actual initialization method.
+   *
+   * @throws Exception if any exception occurs.
+   */
+  private void initActually() throws Exception {
+    ImmutableMap.Builder<String, Object> b = ImmutableMap.builder();
+    b.put(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER, resourceManager);
+    b.putAll(execEnvVars);
+    root.open(b.build());
+    AtomicUtils.setBitByValue(executionCondition, STATE_INITIALIZED);
+  }
+
+  /**
    * Return the {@link LocalSubQuery} of which this {@link LocalFragment} is a part.
-   * 
+   *
    * @return the {@link LocalSubQuery} of which this {@link LocalFragment} is a part
    */
   public LocalSubQuery getLocalSubQuery() {
@@ -650,7 +696,7 @@ public final class LocalFragment {
 
   /**
    * enable/disable output channels of the root(producer) of this {@link LocalFragment}.
-   * 
+   *
    * @param workerId the worker that changed its status.
    * @param enable enable/disable all the channels that belong to the worker.
    */
@@ -662,7 +708,7 @@ public final class LocalFragment {
 
   /**
    * return the root operator of this {@link LocalFragment}.
-   * 
+   *
    * @return the root operator
    */
   public RootOperator getRootOp() {
@@ -671,7 +717,7 @@ public final class LocalFragment {
 
   /**
    * return the resource manager of this {@link LocalFragment}.
-   * 
+   *
    * @return the resource manager.
    */
   public LocalFragmentResourceManager getResourceManager() {
