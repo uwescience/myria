@@ -568,9 +568,8 @@ public final class Server {
   private void updateResourceStats(final int senderId, final ControlMessage m) {
     for (ControlProto.ResourceStats stats : m.getResourceStatsList()) {
       SubQueryId id = new SubQueryId(stats.getQueryId(), stats.getSubqueryId());
-      ConcurrentHashMap<Integer, ConcurrentLinkedDeque<ResourceStats>> subqueryStats =
-          resourceUsage.putIfAbsent(id, new ConcurrentHashMap<Integer, ConcurrentLinkedDeque<ResourceStats>>());
-      subqueryStats.putIfAbsent(senderId, new ConcurrentLinkedDeque<ResourceStats>());
+      resourceUsage.putIfAbsent(id, new ConcurrentHashMap<Integer, ConcurrentLinkedDeque<ResourceStats>>());
+      resourceUsage.get(id).putIfAbsent(senderId, new ConcurrentLinkedDeque<ResourceStats>());
       resourceUsage.get(id).get(senderId).add(ResourceStats.fromProtobuf(stats));
     }
   }
