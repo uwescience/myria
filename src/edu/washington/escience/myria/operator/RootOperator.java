@@ -9,7 +9,6 @@ import edu.washington.escience.myria.storage.TupleBatch;
 /**
  * An abstract class used to make those specialized operators that only consume tuples simpler to implement.
  * 
- * @author dhalperi
  * 
  */
 public abstract class RootOperator extends Operator {

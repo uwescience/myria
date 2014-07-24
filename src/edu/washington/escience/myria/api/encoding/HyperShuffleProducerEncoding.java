@@ -14,8 +14,6 @@ import edu.washington.escience.myria.util.MyriaUtils;
 /**
  * Producer part of JSON Encoding for HyperCube Join.
  * 
- * @author Shumo Chu <chushumo@cs.washington.edu>
- * 
  */
 public class HyperShuffleProducerEncoding extends AbstractProducerEncoding<GenericShuffleProducer> {
 

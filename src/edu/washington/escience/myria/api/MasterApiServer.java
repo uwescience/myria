@@ -23,7 +23,6 @@ import edu.washington.escience.myria.parallel.Server;
 /**
  * The main class for the Myria API server.
  * 
- * @author dhalperi
  * 
  */
 public final class MasterApiServer {

@@ -30,7 +30,6 @@ import edu.washington.escience.myria.util.DateTimeUtils;
  * output unquoted and as-is; {@link DateTime} objects are quoted and serialized in ISO8601 format, and {@link String}
  * objects are quoted and escaped for JSON.
  * 
- * @author dhalperi
  * 
  */
 public class JsonTupleWriter implements TupleWriter {
