@@ -594,9 +594,7 @@ public final class LocalFragment {
     if (AtomicUtils.unsetBitIfSetByValue(executionCondition, STATE_INITIALIZED)) {
       // Only cleanup if initialized.
       try {
-        synchronized (executionLock) {
-          root.close();
-        }
+        root.close();
       } catch (Throwable ee) {
         if (LOGGER.isErrorEnabled()) {
           LOGGER.error("Unknown exception at operator close. Root operator: " + root + ".", ee);
