@@ -12,7 +12,6 @@ import com.google.common.base.Preconditions;
 /**
  * This class holds the key that identifies a relation. The notation is user.program.relation.
  * 
- * @author dhalperi
  */
 public final class RelationKey implements Serializable {
 

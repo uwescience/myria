@@ -9,8 +9,6 @@ import edu.washington.escience.myria.util.MyriaUtils;
  * 
  * JSON wrapper for BroadcastProducer
  * 
- * @author Shumo Chu <chushumo@cs.washington.edu>
- * 
  */
 public class BroadcastProducerEncoding extends AbstractProducerEncoding<GenericShuffleProducer> {
 

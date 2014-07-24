@@ -5,7 +5,6 @@ import com.google.common.base.Preconditions;
 /**
  * An abstraction for a unary operator.
  * 
- * @author dhalperi
  * 
  */
 public abstract class UnaryOperator extends Operator {

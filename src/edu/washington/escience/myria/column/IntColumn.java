@@ -13,7 +13,6 @@ import edu.washington.escience.myria.column.builder.IntColumnBuilder;
 /**
  * An abstract Column<Integer> with a primitive type accessor.
  * 
- * @author dhalperi
  * 
  */
 public abstract class IntColumn extends Column<Integer> {

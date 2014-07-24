@@ -32,8 +32,6 @@ import gnu.trove.list.array.TIntArrayList;
  * 
  * It takes pre-sorted relations as input. The variable ordering must be implied at joinFieldMapping.
  * 
- * @author chushumo
- * 
  */
 public class LeapFrogJoin extends NAryOperator {
   /**

@@ -14,7 +14,6 @@ import edu.washington.escience.myria.parallel.Server;
  * This is the class for the main daemon for Myria. It manages all the various services, including the API server and
  * the Myria server.
  * 
- * @author dhalperi
  * 
  */
 public final class MasterDaemon {

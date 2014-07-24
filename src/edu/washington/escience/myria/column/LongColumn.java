@@ -14,7 +14,6 @@ import edu.washington.escience.myria.column.builder.LongColumnBuilder;
 /**
  * A column of Long values.
  * 
- * @author dhalperi
  * 
  */
 public final class LongColumn extends Column<Long> {

@@ -10,9 +10,6 @@ import edu.washington.escience.myria.Schema;
 
 /**
  * Metadata about a dataset that has been loaded into the system.
- * 
- * @author dhalperi
- * 
  */
 public class DatasetStatus {
 

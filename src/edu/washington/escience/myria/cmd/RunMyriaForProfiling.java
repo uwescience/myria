@@ -9,7 +9,6 @@ import edu.washington.escience.myria.parallel.Worker;
  * A simple utility class. Modify it when you want to run both the Master and the Worker in the same process for
  * profiling reasons.
  * 
- * @author dhalperi
  * 
  */
 public final class RunMyriaForProfiling {

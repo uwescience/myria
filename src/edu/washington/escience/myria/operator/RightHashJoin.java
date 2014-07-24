@@ -29,12 +29,6 @@ import com.google.common.collect.ImmutableSet;
  * This is an implementation of unbalanced hash join. This operator only builds hash tables for its right child, thus
  * will begin to output tuples after right child EOS.
  * 
- * @author Shumo Chu <chushumo@cs.washington.edu>
- * 
- */
-/**
- * This is an implementation of hash equal join. The same as in DupElim, this implementation does not keep the
- * references to the incoming TupleBatches in order to get better memory performance.
  */
 public final class RightHashJoin extends BinaryOperator {
   /** Required for Java serialization. */
