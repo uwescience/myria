@@ -27,8 +27,6 @@ import com.google.common.collect.ImmutableMap;
  * 
  * Counting join which will only build hash table of the right child.
  * 
- * @author Shumo Chu <chushumo@cs.washington.edu>
- * 
  */
 public class RightHashCountingJoin extends BinaryOperator {
   /**

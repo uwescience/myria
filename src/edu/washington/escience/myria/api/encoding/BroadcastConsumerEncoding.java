@@ -8,8 +8,6 @@ import edu.washington.escience.myria.util.MyriaUtils;
  * 
  * JSON wrapper for BroadcastConsumer
  * 
- * @author Shumo Chu <chushumo@cs.washington.edu>
- * 
  */
 public class BroadcastConsumerEncoding extends AbstractConsumerEncoding<GenericShuffleConsumer> {
 

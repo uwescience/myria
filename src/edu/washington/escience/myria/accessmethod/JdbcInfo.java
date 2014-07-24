@@ -11,7 +11,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /**
  * Holds the info for a JDBC Connection.
  * 
- * @author dhalperi
  * 
  */
 public final class JdbcInfo extends ConnectionInfo implements Serializable {

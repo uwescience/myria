@@ -10,7 +10,6 @@ import edu.washington.escience.myria.MyriaConstants;
 /**
  * Holds the info for a SQLite Connection.
  * 
- * @author dhalperi
  * 
  */
 public final class SQLiteInfo extends ConnectionInfo implements Serializable {

@@ -19,7 +19,6 @@ import edu.washington.escience.myria.parallel.SocketInfo;
 /**
  * This is the class that handles API calls that return workers.
  * 
- * @author dhalperi
  */
 @Path("/workers")
 @Produces(MediaType.APPLICATION_JSON)
@@ -51,18 +50,12 @@ public final class WorkerCollection {
    * @return the hostname and port number of the specified worker.
    */
   @GET
-  @Path("/worker-{workerId}")
-  public String getWorker(@PathParam("workerId") final String workerId) {
-    SocketInfo workerInfo;
-    try {
-      workerInfo = server.getWorkers().get(Integer.parseInt(workerId));
-    } catch (final NumberFormatException e) {
-      /* Parsing failed, throw a 400 (Bad Request) */
-      throw new MyriaApiException(Status.BAD_REQUEST, e);
-    }
+  @Path("/worker-{workerId:\\d+}")
+  public String getWorker(@PathParam("workerId") final int workerId) {
+    SocketInfo workerInfo = server.getWorkers().get(workerId);
     if (workerInfo == null) {
       /* Not found, throw a 404 (Not Found) */
-      throw new MyriaApiException(Status.NOT_FOUND, workerId);
+      throw new MyriaApiException(Status.NOT_FOUND, "Worker " + workerId);
     }
     /* Yay, worked! */
     return workerInfo.toString();

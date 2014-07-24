@@ -10,7 +10,6 @@ import edu.washington.escience.myria.proto.DataProto.IntColumnMessage;
 /**
  * An IntColumn that simply wraps a read-only Protobuf message.
  * 
- * @author dhalperi
  * 
  */
 public final class IntProtoColumn extends IntColumn {

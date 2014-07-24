@@ -5,7 +5,6 @@ import com.google.common.base.Preconditions;
 /**
  * An abstraction for a binary operator.
  * 
- * @author dhalperi
  * 
  */
 public abstract class BinaryOperator extends Operator {

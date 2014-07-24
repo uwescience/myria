@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 /**
  * Helper class to aid in Thread debugging.
  * 
- * @author dhalperi
  */
 public final class ThreadUtils {
 

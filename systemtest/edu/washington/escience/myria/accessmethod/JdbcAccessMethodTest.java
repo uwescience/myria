@@ -28,7 +28,6 @@ import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestUtils;
 
 /**
- * @author dhalperi
  * 
  */
 public class JdbcAccessMethodTest {

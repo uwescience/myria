@@ -33,7 +33,6 @@ import edu.washington.escience.myria.storage.TupleBatch;
 /**
  * Access method for a SQLite database. Exposes data as TupleBatches.
  * 
- * @author dhalperi
  * 
  */
 public final class SQLiteAccessMethod extends AccessMethod {
@@ -429,7 +428,6 @@ public final class SQLiteAccessMethod extends AccessMethod {
 /**
  * Wraps a SQLiteStatement result set in a Iterator<TupleBatch>.
  * 
- * @author dhalperi
  * 
  */
 class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {

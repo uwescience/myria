@@ -3,7 +3,6 @@ package edu.washington.escience.myria.api;
 /**
  * This class holds constants used in the Myria API server.
  * 
- * @author dhalperi
  * 
  */
 public final class MyriaApiConstants {

@@ -1531,6 +1531,19 @@ public final class Server {
   }
 
   /**
+   * @param queryId the id of the query.
+   * @return a list of datasets belonging to the specified program.
+   * @throws DbException if there is an error accessing the Catalog.
+   */
+  public List<DatasetStatus> getDatasetsForQuery(final int queryId) throws DbException {
+    try {
+      return catalog.getDatasetsForQuery(queryId);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
+
+  /**
    * @return number of queries.
    * @throws CatalogException if an error occurs
    */

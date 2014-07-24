@@ -33,7 +33,6 @@ import edu.washington.escience.myria.parallel.Server;
 /**
  * Class that handles queries.
  * 
- * @author dhalperi
  */
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
