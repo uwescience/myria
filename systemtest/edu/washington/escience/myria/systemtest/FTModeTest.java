@@ -363,9 +363,7 @@ public class FTModeTest extends SystemTestBase {
         if (s3[i][j]) {
           result.putLong(0, i);
           result.putLong(1, j);
-          if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace(i + "\t" + j);
-          }
+          LOGGER.trace("{}\t{}", i, j);
         }
       }
     }

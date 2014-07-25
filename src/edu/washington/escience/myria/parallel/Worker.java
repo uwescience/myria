@@ -179,9 +179,7 @@ public final class Worker {
   private class HeartbeatReporter extends ErrorLoggingTimerTask {
     @Override
     public synchronized void runInner() {
-      if (LOGGER.isTraceEnabled()) {
-        LOGGER.trace("sending heartbeat to server");
-      }
+      LOGGER.trace("sending heartbeat to server");
       sendMessageToMaster(IPCUtils.CONTROL_WORKER_HEARTBEAT).awaitUninterruptibly();
     }
   }
