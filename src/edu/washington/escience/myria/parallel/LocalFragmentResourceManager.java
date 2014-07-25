@@ -3,6 +3,7 @@ package edu.washington.escience.myria.parallel;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.google.common.base.Verify;
 import com.google.common.collect.Sets;
 
 import edu.washington.escience.myria.operator.network.Consumer;
@@ -96,7 +97,7 @@ public final class LocalFragmentResourceManager {
    * @return the allocated input buffer.
    * */
   public StreamInputBuffer<TupleBatch> getInputBuffer(final Consumer consumer) {
-    return inputBuffers.get(consumer);
+    return Verify.verifyNotNull(inputBuffers.get(consumer));
   }
 
   /**
