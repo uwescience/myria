@@ -78,10 +78,14 @@ public class TransportMessageSerializer implements PayloadSerializer {
   @Override
   public final Object deSerialize(final ChannelBuffer buffer, final Object processor, final Object att)
       throws IOException {
+
     TransportMessage tm = deSerializeTransportMessage(buffer);
 
     switch (tm.getType()) {
       case DATA:
+        if (att == null) {
+          return null;
+        }
         return IPCUtils.tmToTupleBatch(tm.getDataMessage(), (Schema) att);
       case QUERY:
         return tm;

@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
+import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.parallel.ipc.ChannelContext.RegisteredChannelContext;
 import edu.washington.escience.myria.util.IPCUtils;
@@ -322,6 +323,17 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   public static final int CONNECTION_ID_CHECK_TIMEOUT_IN_MS = 6000;
 
   /**
+   * Default input buffer capacity for {@link Consumer} input buffers.
+   */
+  private final int inputBufferCapacity;
+
+  /**
+   * @return the system wide default inuput buffer recover event trigger.
+   * @see FlowControlBagInputBuffer#INPUT_BUFFER_RECOVER
+   */
+  private final int inputBufferRecoverTrigger;
+
+  /**
    * pool of connections.
    */
   private final ConcurrentHashMap<Integer, IPCRemote> channelPool;
@@ -457,6 +469,21 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   }
 
   /**
+   * @return the input capacity.
+   */
+  public int getInputBufferCapacity() {
+    return inputBufferCapacity;
+  }
+
+  /**
+   * @return the system wide default inuput buffer recover event trigger.
+   * @see FlowControlBagInputBuffer#INPUT_BUFFER_RECOVER
+   */
+  public int getInputBufferRecoverTrigger() {
+    return inputBufferRecoverTrigger;
+  }
+
+  /**
    * Construct a connection pool.
    * 
    * @param myID self id.
@@ -465,11 +492,16 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    * @param clientBootstrap IPC client bootstrap
    * @param payloadSerializer the payload serializer
    * @param mp short message processor
+   * @param inputBufferCapacity input buffer capacity
+   * @param inputBufferRecoverTrigger input buffer recover trigger.
    * */
   public IPCConnectionPool(final int myID, final Map<Integer, SocketInfo> remoteAddresses,
       final ServerBootstrap serverBootstrap, final ClientBootstrap clientBootstrap,
-      final PayloadSerializer payloadSerializer, final ShortMessageProcessor<?> mp) {
+      final PayloadSerializer payloadSerializer, final ShortMessageProcessor<?> mp, final int inputBufferCapacity,
+      final int inputBufferRecoverTrigger) {
     this.myID = myID;
+    this.inputBufferCapacity = inputBufferCapacity;
+    this.inputBufferRecoverTrigger = inputBufferRecoverTrigger;
     myIDMsg = new IPCMessage.Meta.CONNECT(myID);
     myIPCServerAddress = remoteAddresses.get(myID).getBindAddress();
     this.clientBootstrap = clientBootstrap;
@@ -1189,7 +1221,15 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
           id = new StreamIOChannelID(id.getStreamID(), myID);
         }
         consumerChannelMap.remove(id, inputBuffer);
+        StreamInputChannel<?> sic = inputBuffer.getInputChannel(id);
+        Channel c = sic.getIOChannel();
+        if (c != null) {
+          ChannelContext cc = ChannelContext.getChannelContext(c);
+          cc.getRegisteredChannelContext().getIOPair().deMapInputChannel();
+        }
+
       }
+      inputBuffer.stop();
     } finally {
       shutdownLock.readLock().unlock();
     }
@@ -1337,7 +1377,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
             @Override
             public void operationComplete(final ChannelGroupFuture future) throws Exception {
               serverChannel.unbind(); // shutdown server channel only if all the accepted connections have been
-                                      // disconnected.
+              // disconnected.
             }
           });
 

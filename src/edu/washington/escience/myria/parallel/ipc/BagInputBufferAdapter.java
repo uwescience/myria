@@ -140,6 +140,29 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
     postStart(processor);
   }
 
+  /**
+   * Called before {@link #stop()} operations are conducted.
+   * 
+   * @throws IllegalStateException if the {@link #stop()} operation should not be done.
+   * */
+  protected void preStop() throws IllegalStateException {
+  }
+
+  /**
+   * Called after {@link #stop()} operations are conducted.
+   * 
+   * */
+  protected void postStop() {
+  }
+
+  @Override
+  public final void stop() {
+    this.preStop();
+    this.processor.set(null);
+    this.clear();
+    this.postStop();
+  }
+
   @Override
   public final int size() {
     return storage.size();
