@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -64,6 +65,11 @@ public final class LocalFragment {
    * The actual physical plan to be executed when this {@link LocalFragment} is run.
    */
   private final Callable<Void> executionPlan;
+
+  /**
+   * Task for executing initialization code .
+   */
+  private final Callable<Void> initTask;
 
   /**
    * The output channels belonging to this {@link LocalFragment}.
@@ -158,24 +164,42 @@ public final class LocalFragment {
       @Override
       public Void call() throws Exception {
         // synchronized to keep memory consistency
-        if (LOGGER.isTraceEnabled()) {
-          LOGGER.trace("Start fragment execution: " + LocalFragment.this);
-        }
+        LOGGER.trace("Start fragment execution: {}", LocalFragment.this);
         try {
           synchronized (executionLock) {
             LocalFragment.this.executeActually();
           }
         } catch (RuntimeException ee) {
-          if (LOGGER.isErrorEnabled()) {
-            LOGGER.error("Unexpected Error: ", ee);
-          }
+          LOGGER.error("Unexpected Error: ", ee);
           throw ee;
         } finally {
           executionHandle = null;
         }
-        if (LOGGER.isTraceEnabled()) {
-          LOGGER.trace("End execution: " + LocalFragment.this);
+        LOGGER.trace("End execution: {}", LocalFragment.this);
+        return null;
+      }
+    };
+
+    initTask = new Callable<Void>() {
+      @Override
+      public Void call() throws Exception {
+        // synchronized to keep memory consistency
+        LOGGER.trace("Start fragment initialization: ", LocalFragment.this);
+        try {
+          synchronized (executionLock) {
+            LocalFragment.this.initActually();
+          }
+        } catch (Throwable e) {
+          LOGGER.error("Fragment failed to open because of exception:", e);
+          if (e instanceof InterruptedException) {
+            Thread.currentThread().interrupt();
+          }
+          AtomicUtils.setBitByValue(executionCondition, STATE_FAIL);
+          if (fragmentExecutionFuture.setFailure(e)) {
+            cleanup(true);
+          }
         }
+        LOGGER.trace("End fragment initialization: {}", LocalFragment.this);
         return null;
       }
     };
@@ -558,9 +582,7 @@ public final class LocalFragment {
     if (AtomicUtils.unsetBitIfSetByValue(executionCondition, STATE_INITIALIZED)) {
       // Only cleanup if initialized.
       try {
-        synchronized (executionLock) {
-          root.close();
-        }
+        root.close();
       } catch (Throwable ee) {
         if (LOGGER.isErrorEnabled()) {
           LOGGER.error("Unknown exception at operator close. Root operator: " + root + ".", ee);
@@ -615,28 +637,38 @@ public final class LocalFragment {
   }
 
   /**
+   * Execution environment variable.
+   */
+  private volatile ImmutableMap<String, Object> execEnvVars;
+
+  /**
    * Initialize the {@link LocalFragment}.
    * 
    * @param execEnvVars execution environment variable.
    */
   public void init(final ImmutableMap<String, Object> execEnvVars) {
+    this.execEnvVars = execEnvVars;
     try {
-      synchronized (executionLock) {
-        ImmutableMap.Builder<String, Object> b = ImmutableMap.builder();
-        b.put(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER, resourceManager);
-        b.putAll(execEnvVars);
-        root.open(b.build());
-      }
-      AtomicUtils.setBitByValue(executionCondition, STATE_INITIALIZED);
-    } catch (Throwable e) {
-      if (LOGGER.isErrorEnabled()) {
-        LOGGER.error("Fragment failed to open because of exception:", e);
-      }
-      AtomicUtils.setBitByValue(executionCondition, STATE_FAIL);
-      if (fragmentExecutionFuture.setFailure(e)) {
-        cleanup(true);
-      }
+      myExecutor.submit(initTask).get();
+    } catch (InterruptedException e) {
+      Thread.interrupted();
+      return;
+    } catch (ExecutionException e) {
+      throw new RuntimeException(e.getCause());
     }
+  }
+
+  /**
+   * The actual initialization method.
+   * 
+   * @throws Exception if any exception occurs.
+   */
+  private void initActually() throws Exception {
+    ImmutableMap.Builder<String, Object> b = ImmutableMap.builder();
+    b.put(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER, resourceManager);
+    b.putAll(execEnvVars);
+    root.open(b.build());
+    AtomicUtils.setBitByValue(executionCondition, STATE_INITIALIZED);
   }
 
   /**

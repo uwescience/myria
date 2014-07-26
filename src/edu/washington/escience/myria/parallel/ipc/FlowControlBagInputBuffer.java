@@ -406,7 +406,7 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
   protected void fireBufferEmpty() {
     previousEvent = INPUT_BUFFER_EMPTY;
     if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("Input buffer empty triggered in " + this, new ThreadStackDump());
+      LOGGER.trace("Input buffer empty triggered in {}", this, new ThreadStackDump());
     }
     getOwnerConnectionPool().getIPCEventProcessor().execute(
         new OrderedExecutorService.KeyRunnable<StreamInputBuffer<PAYLOAD>>() {
@@ -434,7 +434,7 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
   protected void fireBufferFull() {
     previousEvent = INPUT_BUFFER_FULL;
     if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("Input buffer full triggered in " + this, new ThreadStackDump());
+      LOGGER.trace("Input buffer full triggered in {}", this, new ThreadStackDump());
     }
     getOwnerConnectionPool().getIPCEventProcessor().execute(
         new OrderedExecutorService.KeyRunnable<StreamInputBuffer<PAYLOAD>>() {
@@ -463,7 +463,7 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
   protected void fireBufferRecover() {
     previousEvent = INPUT_BUFFER_RECOVER;
     if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("Input buffer recover triggered in " + this, new ThreadStackDump());
+      LOGGER.trace("Input buffer recover triggered in {}", this, new ThreadStackDump());
     }
     getOwnerConnectionPool().getIPCEventProcessor().execute(
         new OrderedExecutorService.KeyRunnable<StreamInputBuffer<PAYLOAD>>() {

@@ -704,10 +704,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
         cc.awaitRemoteRegister(myIDMsg, remote.id, CONNECTION_ID_CHECK_TIMEOUT_IN_MS, remote.registeredChannels,
             unregisteredChannels);
 
-        if (LOGGER.isTraceEnabled()) {
-          LOGGER.trace("Created a new registered channel from: " + myID + ", to: " + remote.id + ". Channel: "
-              + channel);
-        }
+        LOGGER.trace("Created a new registered channel from: {} to {}. Channel: {}", myID, remote.id, channel);
         allPossibleChannels.add(channel);
         return channel;
       }
@@ -1035,7 +1032,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   @Nonnull
   public ChannelGroupFuture removeRemote(final int remoteID) {
     if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("remove the remote entity #" + remoteID + " from IPC connection pool", new ThreadStackDump());
+      LOGGER.trace("remove the remote entity #{} from IPC connection pool", remoteID, new ThreadStackDump());
     }
     shutdownLock.readLock().lock();
     try {
@@ -1112,7 +1109,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   @CheckForNull
   public <PAYLOAD> StreamOutputChannel<PAYLOAD> reserveLongTermConnection(final int id, final long streamID) {
     if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("reserve long term connection for (" + id + "," + streamID + ")", new ThreadStackDump());
+      LOGGER.trace("reserve long term connection for ({},{})", id, streamID, new ThreadStackDump());
     }
     shutdownLock.readLock().lock();
     try {
@@ -1122,14 +1119,10 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
       ch.write(new IPCMessage.Meta.BOS(streamID));
       ChannelContext cc = ((ChannelContext) (ch.getAttachment()));
       int remoteID = cc.getRegisteredChannelContext().getRemoteID();
-      if (LOGGER.isTraceEnabled()) {
-        LOGGER.trace("New data connection, setup flow control context.");
-      }
+      LOGGER.trace("New data connection, setup flow control context.");
       return new StreamOutputChannel<PAYLOAD>(new StreamIOChannelID(streamID, remoteID), this, ch);
     } catch (ChannelException e) {
-      if (LOGGER.isWarnEnabled()) {
-        LOGGER.warn("Unable to connect to remote. Cause is: ", e);
-      }
+      LOGGER.warn("Unable to connect to remote. Cause is: ", e);
     } finally {
       shutdownLock.readLock().unlock();
     }
@@ -1281,9 +1274,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    * */
   @Nonnull
   public ChannelGroupFuture shutdownNow() {
-    if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("Abrupt shutdown of IPC connection pool is requested!");
-    }
+    LOGGER.trace("Abrupt shutdown of IPC connection pool is requested!");
     shutdownLock.writeLock().lock();
     try {
       if (shutdown) {
