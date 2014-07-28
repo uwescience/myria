@@ -76,15 +76,22 @@ public class ProfilingLogger {
 
     connection = accessMethod.getConnection();
     try {
+      connection.setAutoCommit(true);
       statementEvent =
           connection.prepareStatement(accessMethod.insertStatementFromSchema(MyriaConstants.PROFILING_SCHEMA,
               MyriaConstants.PROFILING_RELATION));
+      // a workaround suggested by
+      // http://stackoverflow.com/questions/13114101/postgresql-error-canceling-statement-due-to-user-request
+      // statementEvent.setQueryTimeout(MyriaConstants.PROFILE_DB_WRITING_TIME_OUT);
       statementSent =
           connection.prepareStatement(accessMethod.insertStatementFromSchema(MyriaConstants.SENT_SCHEMA,
               MyriaConstants.SENT_RELATION));
+      // statementSent.setQueryTimeout(MyriaConstants.PROFILE_DB_WRITING_TIME_OUT);
       statementResource =
           connection.prepareStatement(accessMethod.insertStatementFromSchema(MyriaConstants.RESOURCE_SCHEMA,
               MyriaConstants.RESOURCE_RELATION));
+      // statementResource.setQueryTimeout(MyriaConstants.PROFILE_DB_WRITING_TIME_OUT);
+
     } catch (SQLException e) {
       throw new DbException(e);
     }
@@ -276,10 +283,9 @@ public class ProfilingLogger {
         batchSizeSent = 0;
       }
     } catch (SQLException e) {
-      if (e instanceof BatchUpdateException) {
-        LOGGER.error("Error writing batch: ", e.getNextException());
-      }
-      throw new DbException(e);
+      LOGGER.error("Next exception: ", e.getNextException());
+      System.err.println("Next exception: " + e.getNextException());
+      throw new RuntimeException(e);
     }
     LOGGER.info("Flushing the sent batch took {} milliseconds.", TimeUnit.NANOSECONDS.toMillis(System.nanoTime()
         - startTime));

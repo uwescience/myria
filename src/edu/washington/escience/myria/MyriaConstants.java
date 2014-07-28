@@ -311,4 +311,9 @@ public final class MyriaConstants {
      */
     ALL
   };
+
+  /**
+   * timeout for writing to profiling tables: Profiling, Sending, Resource time out.
+   */
+  public static final int PROFILE_DB_WRITING_TIME_OUT = 25;
 }
