@@ -30,7 +30,7 @@ public class IPCTestUtil {
       throws Exception {
     final IPCConnectionPool connectionPool =
         new IPCConnectionPool(myID, computingUnits, new ServerBootstrap(), new ClientBootstrap(), ps,
-            new QueueBasedShortMessageProcessor<PAYLOAD>(shortMessageQueue));
+            new QueueBasedShortMessageProcessor<PAYLOAD>(shortMessageQueue), 10, 8);
 
     ExecutorService bossExecutor = Executors.newCachedThreadPool();
     ExecutorService workerExecutor = Executors.newCachedThreadPool();

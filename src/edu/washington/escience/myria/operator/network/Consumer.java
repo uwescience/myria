@@ -81,7 +81,7 @@ public class Consumer extends LeafOperator {
 
   /**
    * The worker this operator is located at.
-   * 
+   *
    */
   private transient LocalFragmentResourceManager taskResourceManager;
 
@@ -132,7 +132,8 @@ public class Consumer extends LeafOperator {
 
   @Override
   public final void cleanup() {
-    setInputBuffer(null);
+    taskResourceManager.releaseInputBuffer(this);
+    inputBuffer = null;
     workerEOS.clear();
     workerEOI.clear();
   }
@@ -152,19 +153,21 @@ public class Consumer extends LeafOperator {
     taskResourceManager =
         (LocalFragmentResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER);
     nonBlockingExecution =
-        (QueryExecutionMode) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE) == QueryExecutionMode.NON_BLOCKING;;
+        (QueryExecutionMode) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE) == QueryExecutionMode.NON_BLOCKING;
+
+    inputBuffer = taskResourceManager.getInputBuffer(this);
   }
 
   /**
-   * 
+   *
    * Retrieve a batch of tuples from the buffer of ExchangeMessages. Wait if the buffer is empty.
-   * 
+   *
    * @param blocking if blocking then return only if there's actually a TupleBatch to return or null if EOS. If not
    *          blocking then return null immediately if there's no data in the input buffer.
-   * 
+   *
    * @return Iterator over the new tuples received from the source workers. Return <code>null</code> if all source
    *         workers have sent an end of file message.
-   * 
+   *
    * @throws InterruptedException a
    */
   final TupleBatch getTuplesNormal(final boolean blocking) throws InterruptedException {
@@ -255,24 +258,6 @@ public class Consumer extends LeafOperator {
   }
 
   /**
-   * set the input buffer.
-   * 
-   * @param buffer my input buffer.
-   * */
-  public final void setInputBuffer(final StreamInputBuffer<TupleBatch> buffer) {
-    if (inputBuffer != null) {
-      inputBuffer.clear();
-      inputBuffer.getOwnerConnectionPool().deRegisterStreamInput(inputBuffer);
-      inputBuffer = null;
-    }
-    if (buffer != null) {
-      buffer.setAttachment(schema);
-      buffer.start(this);
-      inputBuffer = buffer;
-    }
-  }
-
-  /**
    * @return my input buffer.
    * */
   public final StreamInputBuffer<TupleBatch> getInputBuffer() {
@@ -281,7 +266,7 @@ public class Consumer extends LeafOperator {
 
   /**
    * Read a single ExchangeMessage from the queue that buffers incoming ExchangeMessages.
-   * 
+   *
    * @param timeout Wait for at most timeout milliseconds. If the timeout is negative, wait until an element arrives.
    * @return received data.
    * @throws InterruptedException if interrupted.

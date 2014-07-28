@@ -26,11 +26,6 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.operator.RootOperator;
-import edu.washington.escience.myria.operator.network.Consumer;
-import edu.washington.escience.myria.parallel.ipc.FlowControlBagInputBuffer;
-import edu.washington.escience.myria.parallel.ipc.IPCEvent;
-import edu.washington.escience.myria.parallel.ipc.IPCEventListener;
-import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.util.DateTimeUtils;
 import edu.washington.escience.myria.util.IPCUtils;
 
@@ -209,7 +204,7 @@ public class MasterSubQuery extends LocalSubQuery {
 
   /**
    * Callback when a query plan is received by a worker.
-   * 
+   *
    * @param workerID the workerID
    */
   final void queryReceivedByWorker(final int workerID) {
@@ -286,7 +281,7 @@ public class MasterSubQuery extends LocalSubQuery {
 
   /**
    * Callback when a worker completes its part of the query.
-   * 
+   *
    * @param workerID the workerID
    */
   final void workerComplete(final int workerID) {
@@ -302,7 +297,7 @@ public class MasterSubQuery extends LocalSubQuery {
 
   /**
    * Callback when a worker fails in executing its part of the query.
-   * 
+   *
    * @param workerID the workerID
    * @param cause the cause of the failure
    */
@@ -344,25 +339,9 @@ public class MasterSubQuery extends LocalSubQuery {
 
     missingWorkers = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
 
-    fragment = new LocalFragment(MyriaConstants.MASTER_ID, this, root, master.getQueryExecutor());
+    fragment = new LocalFragment(this.master.getIPCConnectionPool(), this, root, master.getQueryExecutor());
     fragment.getExecutionFuture().addListener(fragmentExecutionListener);
-    HashSet<Consumer> consumerSet = new HashSet<>();
-    consumerSet.addAll(fragment.getInputChannels().values());
 
-    for (final Consumer operator : consumerSet) {
-      FlowControlBagInputBuffer<TupleBatch> inputBuffer =
-          new FlowControlBagInputBuffer<TupleBatch>(this.master.getIPCConnectionPool(), operator
-              .getInputChannelIDs(this.master.getIPCConnectionPool().getMyIPCID()), master.getInputBufferCapacity(),
-              master.getInputBufferRecoverTrigger(), this.master.getIPCConnectionPool());
-      operator.setInputBuffer(inputBuffer);
-      inputBuffer.addListener(FlowControlBagInputBuffer.NEW_INPUT_DATA, new IPCEventListener() {
-
-        @Override
-        public void triggered(final IPCEvent event) {
-          fragment.notifyNewInput();
-        }
-      });
-    }
   }
 
   @Override
@@ -401,11 +380,9 @@ public class MasterSubQuery extends LocalSubQuery {
 
   @Override
   public final void init() {
-    LocalFragmentResourceManager resourceManager =
-        new LocalFragmentResourceManager(master.getIPCConnectionPool(), fragment);
     ImmutableMap.Builder<String, Object> queryExecEnvVars = ImmutableMap.builder();
     queryExecEnvVars.put(MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getSubQueryId().getQueryId());
-    fragment.init(resourceManager, queryExecEnvVars.putAll(master.getExecEnvVars()).build());
+    fragment.init(queryExecEnvVars.putAll(master.getExecEnvVars()).build());
   }
 
   /**

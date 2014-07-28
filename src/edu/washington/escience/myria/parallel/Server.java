@@ -82,11 +82,9 @@ import edu.washington.escience.myria.operator.agg.MultiGroupByAggregate;
 import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
-import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
 import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
 import edu.washington.escience.myria.operator.network.partition.RoundRobinPartitionFunction;
-import edu.washington.escience.myria.parallel.ipc.FlowControlBagInputBuffer;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.IPCMessage;
 import edu.washington.escience.myria.parallel.ipc.InJVMLoopbackChannelSink;
@@ -273,17 +271,6 @@ public final class Server {
   private final MasterCatalog catalog;
 
   /**
-   * Default input buffer capacity for {@link Consumer} input buffers.
-   */
-  private final int inputBufferCapacity;
-
-  /**
-   * @return the system wide default inuput buffer recover event trigger.
-   * @see FlowControlBagInputBuffer#INPUT_BUFFER_RECOVER
-   */
-  private final int inputBufferRecoverTrigger;
-
-  /**
    * The {@link OrderedMemoryAwareThreadPoolExecutor} who gets messages from {@link workerExecutor} and further process
    * them using application specific message handlers, e.g. {@link MasterShortMessageProcessor}.
    */
@@ -444,10 +431,10 @@ public final class Server {
     workers = new ConcurrentHashMap<>(catalog.getWorkers());
     final ImmutableMap<String, String> allConfigurations = catalog.getAllConfigurations();
 
-    inputBufferCapacity =
+    int inputBufferCapacity =
         Integer.valueOf(catalog.getConfigurationValue(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY));
 
-    inputBufferRecoverTrigger =
+    int inputBufferRecoverTrigger =
         Integer.valueOf(catalog.getConfigurationValue(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER));
 
     execEnvVars = new ConcurrentHashMap<>();
@@ -477,7 +464,8 @@ public final class Server {
     connectionPool =
         new IPCConnectionPool(MyriaConstants.MASTER_ID, computingUnits, IPCConfigurations
             .createMasterIPCServerBootstrap(this), IPCConfigurations.createMasterIPCClientBootstrap(this),
-            new TransportMessageSerializer(), new QueueBasedShortMessageProcessor<TransportMessage>(messageQueue));
+            new TransportMessageSerializer(), new QueueBasedShortMessageProcessor<TransportMessage>(messageQueue),
+            inputBufferCapacity, inputBufferRecoverTrigger);
 
     scheduledTaskExecutor =
         Executors.newSingleThreadScheduledExecutor(new RenamingThreadFactory("Master global timer"));
@@ -931,21 +919,6 @@ public final class Server {
    */
   public String getDBMS() {
     return (String) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM);
-  }
-
-  /**
-   * @return the input capacity.
-   */
-  int getInputBufferCapacity() {
-    return inputBufferCapacity;
-  }
-
-  /**
-   * @return the system wide default inuput buffer recover event trigger.
-   * @see FlowControlBagInputBuffer#INPUT_BUFFER_RECOVER
-   */
-  int getInputBufferRecoverTrigger() {
-    return inputBufferRecoverTrigger;
   }
 
   /**
