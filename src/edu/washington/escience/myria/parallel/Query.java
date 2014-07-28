@@ -169,13 +169,18 @@ public final class Query {
       currentSubQuery = subQueryQ.removeFirst();
       currentSubQuery.setSubQueryId(new SubQueryId(queryId, subqueryId));
       addDerivedSubQueries(currentSubQuery);
+
       /*
        * TODO - revisit when we support profiling with sequences.
        * 
        * We only support profiling a single subquery, so disable profiling if subqueryId != 0.
        */
-      QueryConstruct.setQueryExecutionOptions(currentSubQuery.getWorkerPlans(), ftMode, subqueryId == 0 ? profiling
-          : PROFILING_MODE.NONE);
+      PROFILING_MODE profilingMode = profiling;
+      if (subqueryId != 0) {
+        profilingMode = PROFILING_MODE.NONE;
+      }
+
+      QueryConstruct.setQueryExecutionOptions(currentSubQuery.getWorkerPlans(), ftMode, profilingMode);
       currentSubQuery.getMasterPlan().setFTMode(ftMode);
       ++subqueryId;
       if (subqueryId >= MyriaConstants.MAXIMUM_NUM_SUBQUERIES) {

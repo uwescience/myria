@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.MyriaConstants.PROFILING_MODE;
 import edu.washington.escience.myria.operator.IDBController;
 import edu.washington.escience.myria.operator.LeapFrogJoin;
 import edu.washington.escience.myria.operator.Operator;
@@ -175,11 +176,13 @@ public final class LocalFragment {
         if (threadId == -1) {
           threadId = Thread.currentThread().getId();
         }
-        // otherwise threadId should always be the same based on the current design
-        // Preconditions.checkArgument(threadId == Thread.currentThread().getId());
+        // otherwise threadId should always equal to Thread.currentThread().getId() based on the current design
 
-        synchronized (this) {
-          cpuBefore = ManagementFactory.getThreadMXBean().getThreadCpuTime(threadId);
+        PROFILING_MODE mode = localSubQuery.getProfilingMode();
+        if (mode.equals(PROFILING_MODE.RESOURCE) || mode.equals(PROFILING_MODE.ALL)) {
+          synchronized (this) {
+            cpuBefore = ManagementFactory.getThreadMXBean().getThreadCpuTime(threadId);
+          }
         }
         try {
           synchronized (executionLock) {
@@ -196,9 +199,12 @@ public final class LocalFragment {
         if (LOGGER.isTraceEnabled()) {
           LOGGER.trace("End execution: " + LocalFragment.this);
         }
-        synchronized (this) {
-          cpuTotal += ManagementFactory.getThreadMXBean().getThreadCpuTime(threadId) - cpuBefore;
-          cpuBefore = 0;
+
+        if (mode.equals(PROFILING_MODE.RESOURCE) || mode.equals(PROFILING_MODE.ALL)) {
+          synchronized (this) {
+            cpuTotal += ManagementFactory.getThreadMXBean().getThreadCpuTime(threadId) - cpuBefore;
+            cpuBefore = 0;
+          }
         }
         return null;
       }
@@ -744,10 +750,10 @@ public final class LocalFragment {
    * 
    * @param stats the stats
    * @param op the current operator
-   * @param start the starting timestamp of this event in milliseconds
+   * @param timestamp the starting timestamp of this event in milliseconds
    * @param subQueryId the subQuery Id
    */
-  public void collectResourceMeasurements(final List<ResourceStats> stats, final long start, final Operator op,
+  public void collectResourceMeasurements(final List<ResourceStats> stats, final long timestamp, final Operator op,
       final SubQueryId subQueryId) {
     if (threadId == -1) {
       return;
@@ -760,24 +766,25 @@ public final class LocalFragment {
           cntCpu += ManagementFactory.getThreadMXBean().getThreadCpuTime(threadId) - cpuBefore;
         }
       }
-      addResourceReport(stats, start, op.getOpId(), "cpuTotal", cntCpu, subQueryId);
+      addResourceReport(stats, timestamp, op.getOpId(), "cpuTotal", cntCpu, subQueryId);
     }
 
     if (op instanceof Producer) {
-      addResourceReport(stats, start, op.getOpId(), "numTuplesWritten",
-          ((Producer) op).getNumTuplesWrittenToChannels(), subQueryId);
-      addResourceReport(stats, start, op.getOpId(), "numTuplesInBuffers", ((Producer) op).getNumTuplesInBuffers(),
+      addResourceReport(stats, timestamp, op.getOpId(), "numTuplesWritten", ((Producer) op)
+          .getNumTuplesWrittenToChannels(), subQueryId);
+      addResourceReport(stats, timestamp, op.getOpId(), "numTuplesInBuffers", ((Producer) op).getNumTuplesInBuffers(),
           subQueryId);
     } else if (op instanceof IDBController) {
-      addResourceReport(stats, start, op.getOpId(), "numTuplesInState", ((IDBController) op).getStreamingState()
+      addResourceReport(stats, timestamp, op.getOpId(), "numTuplesInState", ((IDBController) op).getStreamingState()
           .numTuples(), subQueryId);
     } else if (op instanceof SymmetricHashJoin) {
-      addResourceReport(stats, start, op.getOpId(), "hashTableSize", ((SymmetricHashJoin) op).getMemSize(), subQueryId);
+      addResourceReport(stats, timestamp, op.getOpId(), "hashTableSize", ((SymmetricHashJoin) op).getMemSize(),
+          subQueryId);
     } else if (op instanceof LeapFrogJoin) {
-      addResourceReport(stats, start, op.getOpId(), "hashTableSize", ((LeapFrogJoin) op).getMemSize(), subQueryId);
+      addResourceReport(stats, timestamp, op.getOpId(), "hashTableSize", ((LeapFrogJoin) op).getMemSize(), subQueryId);
     }
     for (Operator child : op.getChildren()) {
-      collectResourceMeasurements(stats, start, child, subQueryId);
+      collectResourceMeasurements(stats, timestamp, child, subQueryId);
     }
   }
 

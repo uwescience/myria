@@ -1569,8 +1569,8 @@ public final class Server {
 
     final Schema schema = MyriaConstants.RESOURCE_SCHEMA;
     String resourceQueryString =
-        Joiner.on(' ').join(
-            "SELECT * from " + MyriaConstants.RESOURCE_RELATION.toString(getDBMS()) + "WHERE queryId =", queryId);
+        Joiner.on(' ').join("SELECT * from", MyriaConstants.RESOURCE_RELATION.toString(getDBMS()), "WHERE queryId =",
+            queryId);
     DbQueryScan scan = new DbQueryScan(resourceQueryString, schema);
 
     ImmutableList.Builder<Expression> emitExpressions = ImmutableList.builder();
@@ -1678,7 +1678,7 @@ public final class Server {
 
     String sentQueryString =
         Joiner.on(' ').join("SELECT fragmentid, destworkerid, sum(numtuples) as numtuples FROM",
-            MyriaConstants.SENT_RELATION.toString(getDBMS()) + "WHERE queryid =", queryId, fragmentWhere,
+            MyriaConstants.SENT_RELATION.toString(getDBMS()), "WHERE queryid =", queryId, fragmentWhere,
             "GROUP BY queryid, fragmentid, destworkerid");
 
     DbQueryScan scan = new DbQueryScan(sentQueryString, schema);

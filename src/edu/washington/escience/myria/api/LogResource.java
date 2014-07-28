@@ -288,8 +288,11 @@ public final class LogResource {
    */
   @GET
   @Path("/resourceUsage-{queryId:\\d+}")
-  public Response getResourceUsage(@PathParam("queryId") final long queryId, @Context final Request request)
+  public Response getResourceUsage(@PathParam("queryId") final Long queryId, @Context final Request request)
       throws DbException {
+
+    Preconditions.checkArgument(queryId != null, "Missing required field queryId.");
+
     ResponseBuilder response = Response.ok().cacheControl(MyriaApiUtils.doNotCache());
     response.type(MediaType.TEXT_PLAIN);
 

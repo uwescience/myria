@@ -2,6 +2,8 @@ package edu.washington.escience.myria.parallel;
 
 import java.io.Serializable;
 
+import com.google.common.base.Joiner;
+
 import edu.washington.escience.myria.proto.ControlProto;
 
 /**
@@ -91,7 +93,7 @@ public final class ResourceStats implements Serializable {
 
   @Override
   public String toString() {
-    return timestamp + " " + opId + " " + measurement + " " + value + " " + queryId + "." + subqueryId;
+    return Joiner.on(" ").join(timestamp, opId, measurement, value, queryId + "." + subqueryId);
   }
 
   /**

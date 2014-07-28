@@ -323,12 +323,12 @@ public class WorkerSubQuery extends LocalSubQuery {
 
   /**
    * 
-   * @param start the timestamp of this event
+   * @param timestamp the timestamp of this event
    * @param stats the stats array
    */
-  public void collectResourceMeasurements(final long start, final List<ResourceStats> stats) {
+  public void collectResourceMeasurements(final long timestamp, final List<ResourceStats> stats) {
     for (LocalFragment fragment : fragments) {
-      fragment.collectResourceMeasurements(stats, start, fragment.getRootOp(), getSubQueryId());
+      fragment.collectResourceMeasurements(stats, timestamp, fragment.getRootOp(), getSubQueryId());
     }
   }
 

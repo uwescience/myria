@@ -205,14 +205,14 @@ public final class Worker {
   /**
    * collect resource measurements of all the active queries on this worker.
    * 
-   * @param resourceUsage resource usage list.
+   * @param resourceUsage the list to add resource stats of resource profiling queries to.
    */
   public void collectResourceMeasurements(final List<ResourceStats> resourceUsage) {
-    final long start = System.currentTimeMillis();
+    final long timestamp = System.currentTimeMillis();
     for (SubQueryId id : executingSubQueries.keySet()) {
       WorkerSubQuery wqp = executingSubQueries.get(id);
       if (wqp.getProfilingMode().equals(PROFILING_MODE.RESOURCE) || wqp.getProfilingMode().equals(PROFILING_MODE.ALL)) {
-        wqp.collectResourceMeasurements(start, resourceUsage);
+        wqp.collectResourceMeasurements(timestamp, resourceUsage);
       }
     }
   }
