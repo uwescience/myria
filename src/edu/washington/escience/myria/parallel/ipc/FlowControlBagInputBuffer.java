@@ -26,7 +26,7 @@ import edu.washington.escience.myria.util.concurrent.ThreadStackDump;
  * messages held in this InputBuffer can be as large as {@link Integer.MAX_VALUE}. But the soft capacity is a trigger.<br>
  * If the soft capacity is meet, an IOEvent representing the buffer full event is triggered. <br>
  * If the
- * 
+ *
  * @param <PAYLOAD> the type of application defined data the input buffer is going to hold.
  * */
 public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdapter<PAYLOAD> {
@@ -78,9 +78,9 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
 
   /**
    * {@inheritDoc}.
-   * 
+   *
    * @param softCapacity soft upper bound of the buffer size.
-   * 
+   *
    * */
   public FlowControlBagInputBuffer(final IPCConnectionPool owner,
       final ImmutableSet<StreamIOChannelID> remoteChannelIDs, final int softCapacity, final int recoverEventTrigger) {
@@ -119,7 +119,7 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
 
   /**
    * Resume the read of all IO channels that are inputs of this input buffer.
-   * 
+   *
    * @return ChannelGroupFuture denotes the future of the resume read action.
    * */
   public ChannelGroupFuture resumeRead() {
@@ -150,12 +150,12 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
   }
 
   /**
-   * 
+   *
    * Pause read of all IO channels which are inputs of the @{link Consumer} operator with ID operatorID.
-   * 
+   *
    * Called by Netty Upstream IO worker threads after pushing a data into an InputBuffer which has only a single empty
    * slot or already full.
-   * 
+   *
    * @return ChannelGroupFuture denotes the future of the pause read action.
    * */
   public ChannelGroupFuture pauseRead() {
@@ -185,30 +185,21 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
     }
 
     addListener(INPUT_BUFFER_FULL, new IPCEventListener() {
-      @SuppressWarnings("unchecked")
       @Override
       public void triggered(final IPCEvent e) {
-        if (((FlowControlBagInputBuffer<PAYLOAD>) (e.getAttachment())).remainingCapacity() <= 0) {
-          pauseRead().awaitUninterruptibly();
-        }
+        pauseRead().awaitUninterruptibly();
       }
     });
     addListener(INPUT_BUFFER_RECOVER, new IPCEventListener() {
-      @SuppressWarnings("unchecked")
       @Override
       public void triggered(final IPCEvent e) {
-        if (((FlowControlBagInputBuffer<PAYLOAD>) (e.getAttachment())).remainingCapacity() > 0) {
-          resumeRead().awaitUninterruptibly();
-        }
+        resumeRead().awaitUninterruptibly();
       }
     });
     addListener(INPUT_BUFFER_EMPTY, new IPCEventListener() {
-      @SuppressWarnings("unchecked")
       @Override
       public void triggered(final IPCEvent e) {
-        if (((FlowControlBagInputBuffer<PAYLOAD>) (e.getAttachment())).remainingCapacity() > 0) {
-          resumeRead().awaitUninterruptibly();
-        }
+        resumeRead().awaitUninterruptibly();
       }
     });
   }
@@ -379,7 +370,7 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
 
   /**
    * Fire a buffer empty event. All the buffer empty event listeners will be notified.
-   * 
+   *
    * New input event listeners are executed by trigger threads.
    * */
   protected void fireNewInput() {
@@ -400,7 +391,7 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
 
   /**
    * Fire a buffer empty event. All the buffer empty event listeners will be notified.
-   * 
+   *
    * Listeners are executed by dedicated event executors.
    * */
   protected void fireBufferEmpty() {
@@ -428,7 +419,7 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
 
   /**
    * Fire a buffer full event. All the buffer full event listeners will be notified.
-   * 
+   *
    * Listeners are executed by dedicated event executors.
    * */
   protected void fireBufferFull() {
@@ -436,9 +427,9 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace("Input buffer full triggered in {}", this, new ThreadStackDump());
     }
+
     getOwnerConnectionPool().getIPCEventProcessor().execute(
         new OrderedExecutorService.KeyRunnable<StreamInputBuffer<PAYLOAD>>() {
-
           @Override
           public void run() {
             for (IPCEventListener l : bufferFullListeners) {
@@ -456,9 +447,9 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
 
   /**
    * Fire a buffer recover event. All the buffer recover event listeners will be notified.
-   * 
+   *
    * Listeners are executed by dedicated event executors.
-   * 
+   *
    * */
   protected void fireBufferRecover() {
     previousEvent = INPUT_BUFFER_RECOVER;
