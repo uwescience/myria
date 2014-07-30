@@ -13,6 +13,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
@@ -68,6 +69,7 @@ import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
+import edu.washington.escience.myria.operator.DuplicateTBGenerator;
 import edu.washington.escience.myria.operator.EOSSource;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
@@ -89,6 +91,8 @@ import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myria.proto.QueryProto.QueryMessage;
 import edu.washington.escience.myria.proto.QueryProto.QueryReport;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.tool.MyriaConfigurationReader;
 import edu.washington.escience.myria.util.DateTimeUtils;
 import edu.washington.escience.myria.util.DeploymentUtils;
@@ -240,7 +244,7 @@ public final class Server {
 
   /**
    * All message queue.
-   * 
+   *
    * @TODO remove this queue as in {@link Worker}s.
    */
   private final LinkedBlockingQueue<IPCMessage.Data<TransportMessage>> messageQueue;
@@ -288,7 +292,7 @@ public final class Server {
 
   /**
    * Entry point for the Master.
-   * 
+   *
    * @param args the command line arguments.
    * @throws IOException if there's any error in reading catalog file.
    */
@@ -401,7 +405,7 @@ public final class Server {
 
   /**
    * Construct a server object, with configuration stored in the specified catalog file.
-   * 
+   *
    * @param catalogFileName the name of the file containing the catalog.
    * @throws FileNotFoundException the specified file not found.
    * @throws CatalogException if there is an error reading from the Catalog.
@@ -502,7 +506,7 @@ public final class Server {
 
     /**
      * constructor.
-     * 
+     *
      * @param workerID the removed worker id.
      * @param socketInfo the new worker's socket info.
      * @param numOfAck the number of REMOVE_WORKER_ACK to receive.
@@ -652,7 +656,7 @@ public final class Server {
 
     /**
      * constructor.
-     * 
+     *
      * @param workerId worker id.
      * @param address hostname.
      * @param port port number.
@@ -812,7 +816,7 @@ public final class Server {
 
   /**
    * Start all the threads that do work for the server.
-   * 
+   *
    * @throws Exception if any error occurs.
    */
   public void start() throws Exception {
@@ -886,7 +890,7 @@ public final class Server {
 
   /**
    * Kill a query with queryID.
-   * 
+   *
    * @param queryID the queryID.
    */
   public void killQuery(final long queryID) {
@@ -895,7 +899,7 @@ public final class Server {
 
   /**
    * Kill a subquery.
-   * 
+   *
    * @param subQueryId the ID of the subquery to be killed
    */
   protected void killSubQuery(final SubQueryId subQueryId) {
@@ -909,9 +913,9 @@ public final class Server {
   }
 
   /**
-   * 
+   *
    * Can be only used in test.
-   * 
+   *
    * @return true if the query plan is accepted and scheduled for execution.
    * @param masterRoot the root operator of the master plan
    * @param workerRoots the roots of the worker part of the plan, {workerID -> RootOperator[]}
@@ -932,7 +936,7 @@ public final class Server {
   /**
    * Submit a query for execution. The workerPlans may be removed in the future if the query compiler and schedulers are
    * ready. Returns null if there are too many active queries.
-   * 
+   *
    * @param rawQuery the raw user-defined query. E.g., the source Datalog program.
    * @param logicalRa the logical relational algebra of the compiled plan.
    * @param physicalPlan the Myria physical plan for the query.
@@ -957,7 +961,7 @@ public final class Server {
   /**
    * Submit a query for execution. The workerPlans may be removed in the future if the query compiler and schedulers are
    * ready. Returns null if there are too many active queries.
-   * 
+   *
    * @param query the query encoding.
    * @param plan the query to be executed
    * @throws DbException if any error in non-catalog data processing
@@ -988,7 +992,7 @@ public final class Server {
   /**
    * Submit a query for execution. The workerPlans may be removed in the future if the query compiler and schedulers are
    * ready. Returns null if there are too many active queries.
-   * 
+   *
    * @param queryId the catalog's assigned ID for this query.
    * @param query contains the query options (profiling, fault tolerance)
    * @param plan the query to be executed
@@ -1007,7 +1011,7 @@ public final class Server {
   /**
    * Advance the given query to the next {@link SubQuery}. If there is no next {@link SubQuery}, mark the entire query
    * as having succeeded.
-   * 
+   *
    * @param queryState the specified query
    * @return the future of the next {@Link SubQuery}, or <code>null</code> if this query has succeeded.
    * @throws DbException if there is an error
@@ -1037,7 +1041,7 @@ public final class Server {
 
   /**
    * Finish the specified query by updating its status in the Catalog and then removing it from the active queries.
-   * 
+   *
    * @param queryState the query to be finished
    * @throws DbException if there is an error updating the Catalog
    */
@@ -1053,7 +1057,7 @@ public final class Server {
 
   /**
    * Submit the next subquery in the query for execution, and return its future.
-   * 
+   *
    * @param queryState the query containing the subquery to be executed
    * @return the future of the subquery
    * @throws DbException if there is an error submitting the subquery for execution
@@ -1120,7 +1124,7 @@ public final class Server {
 
   /**
    * Finish the subquery by removing it from the data structures.
-   * 
+   *
    * @param subQueryId the id of the subquery to finish.
    */
   private void finishSubQuery(final SubQueryId subQueryId) {
@@ -1131,7 +1135,7 @@ public final class Server {
 
   /**
    * Tells all the workers to begin executing the specified {@link SubQuery}.
-   * 
+   *
    * @param subQueryId the id of the subquery to be started.
    */
   private void startWorkerQuery(final SubQueryId subQueryId) {
@@ -1150,7 +1154,7 @@ public final class Server {
 
   /**
    * Return a random subset of workers.
-   * 
+   *
    * @param number the number of alive workers returned
    * @return a subset of workers that are currently alive.
    */
@@ -1174,7 +1178,7 @@ public final class Server {
 
   /**
    * Ingest the given dataset.
-   * 
+   *
    * @param relationKey the name of the dataset.
    * @param workersToIngest restrict the workers to ingest data (null for all)
    * @param indexes the indexes created.
@@ -1324,7 +1328,7 @@ public final class Server {
 
   /**
    * Computes and returns the status of the requested query, or null if the query does not exist.
-   * 
+   *
    * @param queryId the identifier of the query.
    * @throws CatalogException if there is an error in the catalog.
    * @return the status of this query.
@@ -1352,7 +1356,7 @@ public final class Server {
 
   /**
    * Computes and returns the status of queries that have been submitted to Myria.
-   * 
+   *
    * @param limit the maximum number of results to return. Any value <= 0 is interpreted as all results.
    * @param maxId the largest query ID returned. If null or <= 0, all queries will be returned.
    * @throws CatalogException if there is an error in the catalog.
@@ -1398,7 +1402,7 @@ public final class Server {
 
   /**
    * Get the metadata about a relation.
-   * 
+   *
    * @param relationKey specified which relation to get the metadata about.
    * @return the metadata of the specified relation.
    * @throws DbException if there is an error getting the status.
@@ -1474,7 +1478,7 @@ public final class Server {
 
   /**
    * Start a query that streams tuples from the specified relation to the specified {@link TupleWriter}.
-   * 
+   *
    * @param relationKey the relation to be downloaded.
    * @param writer the {@link TupleWriter} which will serialize the tuples.
    * @return the query future from which the query status can be looked up.
@@ -1517,6 +1521,57 @@ public final class Server {
 
     /* Submit the plan for the download. */
     String planString = "download " + relationKey.toString();
+    try {
+      return submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
+
+  /**
+   * Start a query that streams tuples from the specified relation to the specified {@link TupleWriter}.
+   *
+   * @param numTB the number of {@link TupleBatch}es to download from each worker.
+   * @param writer the {@link TupleWriter} which will serialize the tuples.
+   * @return the query future from which the query status can be looked up.
+   * @throws DbException if there is an error in the system.
+   */
+  public ListenableFuture<Query> startTestDataStream(final int numTB, final TupleWriter writer) throws DbException {
+
+    final Schema schema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+
+    Random r = new Random();
+    final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
+    for (int i = 0; i < TupleBatch.BATCH_SIZE; i++) {
+      tbb.putLong(0, r.nextLong());
+      tbb.putString(1, new java.util.Date().toString());
+    }
+
+    TupleBatch tb = tbb.popAny();
+
+    final DuplicateTBGenerator scanTable = new DuplicateTBGenerator(tb, numTB);
+
+    /* Get the workers that store it. */
+    Set<Integer> scanWorkers = getAliveWorkers();
+
+    /* Construct the operators that go elsewhere. */
+    final ExchangePairID operatorId = ExchangePairID.newID();
+    CollectProducer producer = new CollectProducer(scanTable, operatorId, MyriaConstants.MASTER_ID);
+
+    SubQueryPlan workerPlan = new SubQueryPlan(producer);
+    Map<Integer, SubQueryPlan> workerPlans = new HashMap<>(scanWorkers.size());
+    for (Integer worker : scanWorkers) {
+      workerPlans.put(worker, workerPlan);
+    }
+
+    /* Construct the master plan. */
+    final CollectConsumer consumer = new CollectConsumer(schema, operatorId, ImmutableSet.copyOf(scanWorkers));
+    DataOutput output = new DataOutput(consumer, writer);
+    final SubQueryPlan masterPlan = new SubQueryPlan(output);
+
+    /* Submit the plan for the download. */
+    String planString = "download test";
     try {
       return submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
     } catch (CatalogException e) {
@@ -1608,7 +1663,7 @@ public final class Server {
    * @param onlyRootOperator only return data for root operator
    * @param writer writer to get data.
    * @return profiling logs for the query.
-   * 
+   *
    * @throws DbException if there is an error when accessing profiling logs.
    */
   public QueryFuture startLogDataStream(final long queryId, final long fragmentId, final long start, final long end,
@@ -1690,7 +1745,7 @@ public final class Server {
    * @param onlyRootOp return histogram only for root operator
    * @param writer writer to get data.
    * @return profiling logs for the query.
-   * 
+   *
    * @throws DbException if there is an error when accessing profiling logs.
    */
   public QueryFuture startHistogramDataStream(final long queryId, final long fragmentId, final long start,
@@ -1812,7 +1867,7 @@ public final class Server {
    * @param fragmentId the fragment id to return data for. All fragments, if < 0.
    * @param writer writer to get data.
    * @return contributions for operator.
-   * 
+   *
    * @throws DbException if there is an error when accessing profiling logs.
    */
   public QueryFuture startContributionsStream(final long queryId, final long fragmentId, final TupleWriter writer)
@@ -1873,7 +1928,7 @@ public final class Server {
 
   /**
    * Get the query status and check whether the query ran successfully with profiling enabled.
-   * 
+   *
    * @param queryId the query id
    * @return the query status
    * @throws DbException if the query cannot be retrieved
@@ -1896,7 +1951,7 @@ public final class Server {
 
   /**
    * Update the {@link MasterCatalog} so that the specified relation has the specified tuple count.
-   * 
+   *
    * @param relation the relation to update
    * @param count the number of tuples in that relation
    * @throws DbException if there is an error in the catalog
@@ -1911,7 +1966,7 @@ public final class Server {
 
   /**
    * Set the global variable owned by the specified query and named by the specified key to the specified value.
-   * 
+   *
    * @param queryId the query to whom the variable belongs.
    * @param key the name of the variable
    * @param value the new value for the variable
@@ -1924,7 +1979,7 @@ public final class Server {
 
   /**
    * Get the value of global variable owned by the specified query and named by the specified key.
-   * 
+   *
    * @param queryId the query to whom the variable belongs.
    * @param key the name of the variable
    * @return the value of the variable
@@ -1937,7 +1992,7 @@ public final class Server {
 
   /**
    * Return the schema of the specified temp relation in the specified query.
-   * 
+   *
    * @param queryId the query that owns the temp relation
    * @param name the name of the temporary relation
    * @return the schema of the specified temp relation in the specified query
@@ -1948,7 +2003,7 @@ public final class Server {
 
   /**
    * Get the query with the specified ID, ensuring that it is active.
-   * 
+   *
    * @param queryId the id of the query to return.
    * @return the query with the specified ID, ensuring that it is active
    * @throws IllegalArgumentException if there is no active query with the given ID
