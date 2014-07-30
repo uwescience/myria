@@ -9,13 +9,13 @@ import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 /**
  * Transparently export the data from child to a {@link Queue<TupleBatch>}.
- * 
+ *
  * Do not use a {@link TupleBatchBuffer} here because {@link TupleBatchBuffer} is not thread safe.
  * */
 public class TBQueueExporter extends UnaryOperator {
 
   /**
-   * 
+   *
    */
   private static final long serialVersionUID = 1L;
 
@@ -38,7 +38,14 @@ public class TBQueueExporter extends UnaryOperator {
     TupleBatch tb = getChild().nextReady();
 
     if (tb != null) {
-      queueStore.add(tb);
+      while (!queueStore.offer(tb)) {
+        try {
+          Thread.sleep(1);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          return null;
+        }
+      }
     }
     return tb;
   }
