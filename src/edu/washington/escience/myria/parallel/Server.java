@@ -13,6 +13,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
@@ -97,7 +98,6 @@ import edu.washington.escience.myria.util.DateTimeUtils;
 import edu.washington.escience.myria.util.DeploymentUtils;
 import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.MyriaUtils;
-import edu.washington.escience.myria.util.TestUtils;
 import edu.washington.escience.myria.util.concurrent.ErrorLoggingTimerTask;
 import edu.washington.escience.myria.util.concurrent.RenamingThreadFactory;
 
@@ -1538,16 +1538,14 @@ public final class Server {
    */
   public ListenableFuture<Query> startTestDataStream(final int numTB, final TupleWriter writer) throws DbException {
 
-    final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, TupleBatch.BATCH_SIZE, 20);
-    final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
-
     final Schema schema =
         new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
+    Random r = new Random();
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
-    for (int i = 0; i < names.length; i++) {
-      tbb.putLong(0, ids[i]);
-      tbb.putString(1, names[i]);
+    for (int i = 0; i < TupleBatch.BATCH_SIZE; i++) {
+      tbb.putLong(0, r.nextLong());
+      tbb.putString(1, new java.util.Date().toString());
     }
 
     TupleBatch tb = tbb.popAny();
