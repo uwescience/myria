@@ -78,7 +78,7 @@ public class BigDataTest extends SystemTestBase {
 
   }
 
-  @Test
+  @Test(timeout = 1200 * 1000)
   public void bigDownloadTest() throws Exception {
 
     final int NUM_DUPLICATES = 2000;
