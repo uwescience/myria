@@ -49,20 +49,20 @@ import edu.washington.escience.myria.util.concurrent.ThreadAffinityFixedRoundRob
 /**
  * Workers do the real query execution. A query received by the server will be pre-processed and then dispatched to the
  * workers.
- * 
+ *
  * To execute a query on a worker, 4 steps are proceeded:
- * 
+ *
  * 1) A worker receive an Operator instance as its execution plan. The worker then stores the plan and does some
  * pre-processing, e.g. initializes the data structures which are needed during the execution of the plan.
- * 
+ *
  * 2) Each worker sends back to the server a message (it's id) to notify the server that the query plan has been
  * successfully received. And then each worker waits for the server to send the "start" message.
- * 
+ *
  * 3) Each worker executes its query plan after "start" is received.
- * 
+ *
  * 4) After the query plan finishes, each worker removes the query plan and related data structures, and then waits for
  * next query plan
- * 
+ *
  */
 public final class Worker {
 
@@ -355,7 +355,7 @@ public final class Worker {
 
   /**
    * Setup system properties.
-   * 
+   *
    * @param cmdlineOptions command line options
    */
   private static void systemSetup(final HashMap<String, Object> cmdlineOptions) {
@@ -469,7 +469,7 @@ public final class Worker {
 
   /**
    * Worker process entry point.
-   * 
+   *
    * @param args command line arguments.
    */
   public static void main(final String[] args) {
@@ -601,7 +601,7 @@ public final class Worker {
 
   /**
    * It does the initialization and preparation for the execution of the subquery.
-   * 
+   *
    * @param subQuery the received query.
    * @throws DbException if any error occurs.
    */
@@ -662,7 +662,7 @@ public final class Worker {
 
   /**
    * Finish the subquery by removing it from the data structures.
-   * 
+   *
    * @param subQueryId the id of the subquery to finish.
    */
   private void finishTask(final SubQueryId subQueryId) {
@@ -680,7 +680,7 @@ public final class Worker {
 
   /**
    * This method should be called whenever the system is going to shutdown.
-   * 
+   *
    */
   void shutdown() {
     LOGGER.info("Shutdown requested. Please wait when cleaning up...");
@@ -718,16 +718,16 @@ public final class Worker {
 
   /**
    * Start the worker service.
-   * 
+   *
    * @throws Exception if any error meets.
    */
   public void start() throws Exception {
     ExecutorService bossExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("IPC boss"));
     ExecutorService workerExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("IPC worker"));
-    pipelineExecutor =
-        new OrderedMemoryAwareThreadPoolExecutor(3, 5 * MyriaConstants.MB, 0,
-            MyriaConstants.THREAD_POOL_KEEP_ALIVE_TIME_IN_MS, TimeUnit.MILLISECONDS, new RenamingThreadFactory(
-                "Pipeline executor"));
+    pipelineExecutor = null; // Remove pipeline executors
+    // new OrderedMemoryAwareThreadPoolExecutor(3, 5 * MyriaConstants.MB, 0,
+    // MyriaConstants.THREAD_POOL_KEEP_ALIVE_TIME_IN_MS, TimeUnit.MILLISECONDS, new RenamingThreadFactory(
+    // "Pipeline executor"));
 
     ChannelFactory clientChannelFactory =
         new NioClientSocketChannelFactory(bossExecutor, workerExecutor,
