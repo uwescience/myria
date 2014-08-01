@@ -16,7 +16,7 @@ public final class AtomicUtils {
   /**
    * Atomically do bitwise OR between the value in the AtomicInteger and the toOrValue, and set the new value to the
    * AtomicInteger and also return the new value.
-   * 
+   *
    * @param ai the atomic variable to operate on
    * @param toOrValue the value to do the OR operation
    * @return the new value.
@@ -27,6 +27,9 @@ public final class AtomicUtils {
     while (oldValue != newValue && !ai.compareAndSet(oldValue, newValue)) {
       oldValue = ai.get();
       newValue = oldValue | toOrValue;
+      if (Thread.currentThread().isInterrupted()) {
+        break;
+      }
     }
     return newValue;
   }
@@ -34,7 +37,7 @@ public final class AtomicUtils {
   /**
    * Atomically do bitwise AND between the value in the AtomicInteger and the toAndValue, and set the new value to the
    * AtomicInteger and also return the new value.
-   * 
+   *
    * @param ai the atomic variable to operate on
    * @param toAndValue the value to do the OR operation
    * @return the new value.
@@ -45,6 +48,9 @@ public final class AtomicUtils {
     while (oldValue != newValue && !ai.compareAndSet(oldValue, newValue)) {
       oldValue = ai.get();
       newValue = oldValue & toAndValue;
+      if (Thread.currentThread().isInterrupted()) {
+        break;
+      }
     }
     return newValue;
   }
@@ -64,6 +70,9 @@ public final class AtomicUtils {
     while (newValue != oldValue && !ai.compareAndSet(oldValue, newValue)) {
       oldValue = ai.get();
       newValue = oldValue & ~bitInt;
+      if (Thread.currentThread().isInterrupted()) {
+        break;
+      }
     }
     return newValue != oldValue;
   }
@@ -93,6 +102,9 @@ public final class AtomicUtils {
     while (newValue != oldValue && !ai.compareAndSet(oldValue, newValue)) {
       oldValue = ai.get();
       newValue = oldValue | bitInt;
+      if (Thread.currentThread().isInterrupted()) {
+        break;
+      }
     }
     return newValue != oldValue;
   }
