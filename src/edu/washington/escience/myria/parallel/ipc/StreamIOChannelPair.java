@@ -83,25 +83,35 @@ class StreamIOChannelPair {
 
   /**
    * Link the logical inputChannel with the physical ioChannel.
-   * 
+   *
    * @param inputChannel the logical channel.
    * */
   final void mapInputChannel(final StreamInputChannel<?> inputChannel) {
     Preconditions.checkNotNull(inputChannel);
     Channel ioChannel = ownerChannelContext.getChannel();
+    Channel oldChannel = null;
     inputMappingLock.lock();
     try {
       if (inputStreamChannel != null) {
-        deMapInputChannel();
+        oldChannel = inputStreamChannel.getIOChannel();
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace(String.format("Stream input channel %1$s disassociated from physical channel %2$s.",
+              inputStreamChannel, oldChannel));
+        }
+        inputStreamChannel.detachIOChannel();
       }
       inputStreamChannel = inputChannel;
       inputChannel.attachIOChannel(ioChannel);
-      if (LOGGER.isTraceEnabled()) {
-        LOGGER.trace(String.format("Stream input channel %1$s associates to physical channel %2$s.",
-            inputStreamChannel, ioChannel));
-      }
+
     } finally {
       inputMappingLock.unlock();
+    }
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace(String.format("Stream input channel %1$s associates to physical channel %2$s.", inputChannel,
+          ioChannel));
+    }
+    if (oldChannel != null) {
+      IPCUtils.resumeRead(oldChannel).awaitUninterruptibly();
     }
   }
 
@@ -110,28 +120,31 @@ class StreamIOChannelPair {
    * anyway.
    * */
   final void deMapInputChannel() {
+    Channel channel = null;
+    StreamInputChannel<?> old = null;
+
     inputMappingLock.lock();
     try {
       if (inputStreamChannel != null) {
-        Channel channel = inputStreamChannel.getIOChannel();
-        if (LOGGER.isTraceEnabled()) {
-          LOGGER.trace(String.format("Stream input channel %1$s disassociated from physical channel %2$s.",
-              inputStreamChannel, channel));
-        }
+        old = inputStreamChannel;
+        channel = inputStreamChannel.getIOChannel();
         inputStreamChannel.detachIOChannel();
         inputStreamChannel = null;
-        if (channel != null) {
-          IPCUtils.resumeRead(channel).awaitUninterruptibly();
-        }
       }
     } finally {
       inputMappingLock.unlock();
+    }
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace(String.format("Stream input channel %1$s disassociated from physical channel %2$s.", old, channel));
+    }
+    if (channel != null) {
+      IPCUtils.resumeRead(channel).awaitUninterruptibly();
     }
   }
 
   /**
    * Link the logical outputChannel with the physical ioChannel.
-   * 
+   *
    * @param outputChannel the logical channel.
    * */
   final void mapOutputChannel(final StreamOutputChannel<?> outputChannel) {
