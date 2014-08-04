@@ -1162,9 +1162,11 @@ public class LeapFrogJoin extends NAryOperator {
    */
   public long getMemSize() {
     long sum = 0;
-    for (MutableTupleBuffer table : tables) {
-      if (table != null) {
-        sum += table.getMemSize();
+    if (tables != null) {
+      for (MutableTupleBuffer table : tables) {
+        if (table != null) {
+          sum += table.getMemSize();
+        }
       }
     }
     return sum;
