@@ -18,7 +18,7 @@ public final class MyriaConfigurationReader extends ConfigParser {
 
   /**
    * entry point.
-   * 
+   *
    * @param args args.
    * @throws IOException if file system error occurs.
    * */
@@ -34,7 +34,7 @@ public final class MyriaConfigurationReader extends ConfigParser {
 
   /**
    * read and parse the config file.
-   * 
+   *
    * @param filename filename.
    * @return parsed mapping from sections to keys to values.
    * @throws IOException if anything during parsing happened.
@@ -66,12 +66,12 @@ public final class MyriaConfigurationReader extends ConfigParser {
     for (String workerId : workers.keySet()) {
       String[] tmp = workers.get(workerId).split(":");
       workers.put(workerId, tmp[0] + ":" + tmp[1]);
-      if (tmp.length >= 3) {
+      if (tmp.length >= 3 && tmp[2] != null && tmp[2].length() > 0) {
         paths.put(workerId, tmp[2]);
       } else {
         paths.put(workerId, defaultPath);
       }
-      if (tmp.length == 4) {
+      if (tmp.length >= 4 && tmp[3] != null && tmp[3].length() > 0) {
         databaseNames.put(workerId, tmp[3]);
       } else {
         databaseNames.put(workerId, defaultDatabaseName);
@@ -86,3 +86,4 @@ public final class MyriaConfigurationReader extends ConfigParser {
     return ans;
   }
 }
+

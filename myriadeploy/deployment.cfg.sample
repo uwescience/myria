@@ -15,11 +15,17 @@ rest_port = 8753
 0 = vega.cs.washington.edu:8001
 
 [workers]
-1 = aldebaran.cs.washington.edu:9001
-2 = aldebaran.cs.washington.edu:9002:/disk2/myria
-3 = aldebaran.cs.washington.edu:9003:/disk3/myria
-4 = aldebaran.cs.washington.edu:9004:/disk4/myria
-5 = altair.cs.washington.edu:9001
-6 = altair.cs.washington.edu:9002:/disk2/myria
-7 = altair.cs.washington.edu:9003:/disk3/myria
-8 = altair.cs.washington.edu:9004:/disk4/myria
+# line syntax:
+#
+# workerID = host:port:workingDir:databaseName
+#
+# if workingDir is empty, use the path in [deployment].
+# if databaseName is empty, use the database_name in [deployment].
+1 = aldebaran.cs.washington.edu:9001::worker_1_db     # use default path (path in deployment)
+2 = aldebaran.cs.washington.edu:9002:/disk2/myria:worker_2_db
+3 = aldebaran.cs.washington.edu:9003:/disk3/myria:    # use default db_name (database_name in deployment)
+4 = aldebaran.cs.washington.edu:9004:/disk4/myria     # use default db_name
+5 = altair.cs.washington.edu:9001                     # use default path and db_name
+6 = altair.cs.washington.edu:9002:/disk2/myria        # use default db_name
+7 = altair.cs.washington.edu:9003:/disk3/myria        # use default db_name
+8 = altair.cs.washington.edu:9004:/disk4/myria        # use default db_name
