@@ -16,7 +16,7 @@ import edu.washington.escience.myria.storage.ReadableTable;
 /**
  * Knows how to compute some aggregate over a DateTimeColumn.
  */
-public final class DateTimeAggregator implements PrimitiveAggregator<DateTime> {
+public final class DateTimeAggregator implements PrimitiveAggregator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -45,7 +45,8 @@ public final class DateTimeAggregator implements PrimitiveAggregator<DateTime> {
   /**
    * Aggregate operations applicable for string columns.
    * */
-  public static final int AVAILABLE_AGG = PrimitiveAggregator.AGG_OP_COUNT | PrimitiveAggregator.AGG_OP_MAX | PrimitiveAggregator.AGG_OP_MIN;
+  public static final int AVAILABLE_AGG = PrimitiveAggregator.AGG_OP_COUNT | PrimitiveAggregator.AGG_OP_MAX
+      | PrimitiveAggregator.AGG_OP_MIN;
 
   /**
    * @param aFieldName aggregate field name for use in output schema.
@@ -80,8 +81,12 @@ public final class DateTimeAggregator implements PrimitiveAggregator<DateTime> {
     resultSchema = new Schema(types, names);
   }
 
-  @Override
-  public void add(final DateTime value) {
+  /**
+   * Add the specified value to this aggregator.
+   * 
+   * @param value the value to be added
+   */
+  public void addDateTime(final DateTime value) {
     Objects.requireNonNull(value, "value");
     if (AggUtils.needsCount(aggOps)) {
       count = LongMath.checkedAdd(count, 1);
@@ -115,7 +120,7 @@ public final class DateTimeAggregator implements PrimitiveAggregator<DateTime> {
 
   @Override
   public void add(final ReadableTable table, final int column, final int row) {
-    add(Objects.requireNonNull(table, "table").getDateTime(column, row));
+    addDateTime(Objects.requireNonNull(table, "table").getDateTime(column, row));
   }
 
   /**

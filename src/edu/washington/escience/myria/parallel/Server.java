@@ -73,8 +73,10 @@ import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.agg.Aggregate;
-import edu.washington.escience.myria.operator.agg.PrimitiveAggregator;
+import edu.washington.escience.myria.operator.agg.Aggregator;
 import edu.washington.escience.myria.operator.agg.MultiGroupByAggregate;
+import edu.washington.escience.myria.operator.agg.PrimitiveAggregator;
+import edu.washington.escience.myria.operator.agg.SingleColumnAggregator;
 import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
@@ -1576,7 +1578,8 @@ public final class Server {
         new CollectConsumer(addWorkerId.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
 
     final MultiGroupByAggregate aggregate =
-        new MultiGroupByAggregate(consumer, new int[] { 0, 1, 2 }, new int[] { 3 }, new int[] { PrimitiveAggregator.AGG_OP_SUM });
+        new MultiGroupByAggregate(consumer, new int[] { 0, 1, 2 }, new int[] { 3 },
+            new int[] { PrimitiveAggregator.AGG_OP_SUM });
 
     // rename columns
     ImmutableList.Builder<Expression> renameExpressions = ImmutableList.builder();
@@ -1734,7 +1737,8 @@ public final class Server {
 
     // sum up the number of workers working
     final MultiGroupByAggregate sumAggregate =
-        new MultiGroupByAggregate(consumer, new int[] { 0, 1 }, new int[] { 1 }, new int[] { PrimitiveAggregator.AGG_OP_COUNT });
+        new MultiGroupByAggregate(consumer, new int[] { 0, 1 }, new int[] { 1 },
+            new int[] { PrimitiveAggregator.AGG_OP_COUNT });
     // rename columns
     ImmutableList.Builder<Expression> renameExpressions = ImmutableList.builder();
     renameExpressions.add(new Expression("opId", new VariableExpression(0)));
@@ -1793,7 +1797,9 @@ public final class Server {
 
     // Aggregate range on master
     final Aggregate sumAggregate =
-        new Aggregate(consumer, new int[] { 0, 1 }, new int[] { PrimitiveAggregator.AGG_OP_MIN, PrimitiveAggregator.AGG_OP_MAX });
+        new Aggregate(consumer, new Aggregator[] {
+            new SingleColumnAggregator(0, ImmutableList.of("MIN")),
+            new SingleColumnAggregator(1, ImmutableList.of("MAX")) });
 
     DataOutput output = new DataOutput(sumAggregate, writer);
     final SubQueryPlan masterPlan = new SubQueryPlan(output);

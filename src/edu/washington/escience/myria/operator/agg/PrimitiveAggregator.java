@@ -10,10 +10,8 @@ import edu.washington.escience.myria.storage.ReadableTable;
 
 /**
  * Single column aggregator.
- * 
- * @param <COLUMN_TYPE> the aggregate column type
  */
-public interface PrimitiveAggregator<COLUMN_TYPE> extends Serializable {
+public interface PrimitiveAggregator extends Serializable {
 
   /**
    * count. Count result is always of type {@link Type#LONG_TYPE}.
@@ -64,13 +62,6 @@ public interface PrimitiveAggregator<COLUMN_TYPE> extends Serializable {
    * @param row the row in <code>t</code> containing the value
    */
   void add(ReadableTable table, int column, int row);
-
-  /**
-   * Add a new value into the aggregate.
-   * 
-   * @param value the new value.
-   */
-  void add(COLUMN_TYPE value);
 
   /**
    * Output the aggregate result. Store the output to buffer.

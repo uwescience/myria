@@ -71,8 +71,6 @@ import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TipsyFileScan;
 import edu.washington.escience.myria.operator.UnionAll;
-import edu.washington.escience.myria.operator.agg.Aggregate;
-import edu.washington.escience.myria.operator.agg.PrimitiveAggregator;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
 import edu.washington.escience.myria.operator.network.LocalMultiwayConsumer;
@@ -1025,21 +1023,6 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
   }
 
   /**
-   * {@link Aggregate}.
-   * 
-   * @return builder.
-   * @param aggColumns agg columns
-   * @param aggOps agg ops.
-   */
-  public JsonQueryBaseBuilder aggregate(final int[] aggColumns, final int[] aggOps) {
-    List<List<String>> ops = AggregateEncoding.serializeAggregateOperator(aggOps);
-    JsonQueryBaseBuilder agg = buildOperator(AggregateEncoding.class, "argChild", this, NO_PREFERENCE);
-    ((AggregateEncoding) agg.op).argAggFields = aggColumns;
-    ((AggregateEncoding) agg.op).argAggOperators = ops;
-    return agg;
-  }
-
-  /**
    * {@link SymmetricHashJoin}.
    * 
    * @return builder.
@@ -1048,7 +1031,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * @param aggOps agg ops.
    */
   public JsonQueryBaseBuilder groupBy(final int groupColumn, final int[] aggColumns, final int[] aggOps) {
-    List<List<String>> ops = AggregateEncoding.serializeAggregateOperator(aggOps);
+    List<List<String>> ops = AggregateEncoding.serializeAggregateOperators(aggOps);
     JsonQueryBaseBuilder gp = buildOperator(SingleGroupByAggregateEncoding.class, "argChild", this, NO_PREFERENCE);
     ((SingleGroupByAggregateEncoding) gp.op).argAggFields = aggColumns;
     ((SingleGroupByAggregateEncoding) gp.op).argAggOperators = ops;
@@ -1182,15 +1165,6 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
       throw new UnsupportedOperationException();
     }
 
-  }
-
-  /**
-   * {@link Aggregate}. Count.
-   * 
-   * @return builder.
-   */
-  public JsonQueryBaseBuilder count() {
-    return aggregate(new int[] { 0 }, new int[] { PrimitiveAggregator.AGG_OP_COUNT });
   }
 
 }

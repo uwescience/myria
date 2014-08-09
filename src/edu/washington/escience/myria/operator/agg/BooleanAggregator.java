@@ -14,7 +14,7 @@ import edu.washington.escience.myria.storage.ReadableTable;
 /**
  * Knows how to compute some aggregates over a BooleanColumn.
  */
-public final class BooleanAggregator implements PrimitiveAggregator<Boolean> {
+public final class BooleanAggregator implements PrimitiveAggregator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -80,11 +80,6 @@ public final class BooleanAggregator implements PrimitiveAggregator<Boolean> {
   }
 
   @Override
-  public void add(final Boolean value) {
-    addBoolean(Objects.requireNonNull(value, "value"));
-  }
-
-  @Override
   public void getResult(final AppendableTable dest, final int destColumn) {
     Objects.requireNonNull(dest, "dest");
     int idx = destColumn;
@@ -102,7 +97,7 @@ public final class BooleanAggregator implements PrimitiveAggregator<Boolean> {
   @Override
   public void add(final ReadableTable table, final int column, final int row) {
     Objects.requireNonNull(table, "table");
-    add(table.getBoolean(column, row));
+    addBoolean(table.getBoolean(column, row));
   }
 
   @Override

@@ -14,7 +14,7 @@ import edu.washington.escience.myria.storage.ReadableTable;
 /**
  * Knows how to compute some aggregates over a DoubleColumn.
  */
-public final class DoubleAggregator implements PrimitiveAggregator<Double> {
+public final class DoubleAggregator implements PrimitiveAggregator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -48,8 +48,9 @@ public final class DoubleAggregator implements PrimitiveAggregator<Double> {
   /**
    * Aggregate operations applicable for double columns.
    * */
-  public static final int AVAILABLE_AGG = PrimitiveAggregator.AGG_OP_COUNT | PrimitiveAggregator.AGG_OP_SUM | PrimitiveAggregator.AGG_OP_MAX
-      | PrimitiveAggregator.AGG_OP_MIN | PrimitiveAggregator.AGG_OP_AVG | PrimitiveAggregator.AGG_OP_STDEV;
+  public static final int AVAILABLE_AGG = PrimitiveAggregator.AGG_OP_COUNT | PrimitiveAggregator.AGG_OP_SUM
+      | PrimitiveAggregator.AGG_OP_MAX | PrimitiveAggregator.AGG_OP_MIN | PrimitiveAggregator.AGG_OP_AVG
+      | PrimitiveAggregator.AGG_OP_STDEV;
 
   /**
    * @param aFieldName aggregate field name for use in output schema.
@@ -98,11 +99,6 @@ public final class DoubleAggregator implements PrimitiveAggregator<Double> {
       names.add("stdev_" + aFieldName);
     }
     resultSchema = new Schema(types, names);
-  }
-
-  @Override
-  public void add(final Double value) {
-    addDouble(Objects.requireNonNull(value, "value"));
   }
 
   @Override

@@ -14,7 +14,7 @@ import edu.washington.escience.myria.storage.ReadableTable;
 /**
  * Knows how to compute some aggregates over a LongColumn.
  */
-public final class LongAggregator implements PrimitiveAggregator<Long> {
+public final class LongAggregator implements PrimitiveAggregator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -48,8 +48,9 @@ public final class LongAggregator implements PrimitiveAggregator<Long> {
   /**
    * Aggregate operations applicable for long columns.
    * */
-  public static final int AVAILABLE_AGG = PrimitiveAggregator.AGG_OP_COUNT | PrimitiveAggregator.AGG_OP_SUM | PrimitiveAggregator.AGG_OP_MAX
-      | PrimitiveAggregator.AGG_OP_MIN | PrimitiveAggregator.AGG_OP_AVG | PrimitiveAggregator.AGG_OP_STDEV;
+  public static final int AVAILABLE_AGG = PrimitiveAggregator.AGG_OP_COUNT | PrimitiveAggregator.AGG_OP_SUM
+      | PrimitiveAggregator.AGG_OP_MAX | PrimitiveAggregator.AGG_OP_MIN | PrimitiveAggregator.AGG_OP_AVG
+      | PrimitiveAggregator.AGG_OP_STDEV;
 
   /**
    * @param aFieldName aggregate field name for use in output schema.
@@ -97,11 +98,6 @@ public final class LongAggregator implements PrimitiveAggregator<Long> {
       names.add("stdev_" + aFieldName);
     }
     resultSchema = new Schema(types, names);
-  }
-
-  @Override
-  public void add(final Long value) {
-    addLong(Objects.requireNonNull(value, "value"));
   }
 
   @Override

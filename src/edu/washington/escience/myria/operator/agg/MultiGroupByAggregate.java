@@ -40,7 +40,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
   /** Final group keys. */
   private List<TupleBatch> groupKeyList;
   /** Holds the corresponding aggregators for each group key in {@link #groupKeys}. */
-  private transient List<PrimitiveAggregator<?>[]> groupAggs;
+  private transient List<PrimitiveAggregator[]> groupAggs;
   /** Maps the hash of a grouping key to a list of indices in {@link #groupKeys}. */
   private transient TIntObjectMap<TIntList> groupKeyMap;
   /** The schema of the columns indicated by the group keys. */
@@ -157,7 +157,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
       TupleUtils.copyValue(tb, gfields[column], row, groupKeys, column);
     }
     hashMatches.add(newIndex);
-    PrimitiveAggregator<?>[] curAggs = AggUtils.allocate(getChild().getSchema(), afields, aggOps);
+    PrimitiveAggregator[] curAggs = AggUtils.allocate(getChild().getSchema(), afields, aggOps);
     groupAggs.add(curAggs);
     updateGroup(tb, row, curAggs);
     Preconditions.checkState(groupKeys.numTuples() == groupAggs.size(), "groupKeys %s != groupAggs %s", groupKeys
@@ -184,7 +184,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
    * @param row the row in <code>tb</code> that contains the new values
    * @param curAggs the aggregators to be updated.
    */
-  private void updateGroup(final TupleBatch tb, final int row, final PrimitiveAggregator<?>[] curAggs) {
+  private void updateGroup(final TupleBatch tb, final int row, final PrimitiveAggregator[] curAggs) {
     for (int aggIdx = 0; aggIdx < afields.length; ++aggIdx) {
       curAggs[aggIdx].add(tb, afields[aggIdx], row);
     }
@@ -206,7 +206,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
     TupleBatch curGroupKeys = groupKeyList.remove(0);
     TupleBatchBuffer curGroupAggs = new TupleBatchBuffer(aggSchema);
     for (int row = 0; row < curGroupKeys.numTuples(); ++row) {
-      PrimitiveAggregator<?>[] rowAggs = groupAggs.get(row);
+      PrimitiveAggregator[] rowAggs = groupAggs.get(row);
       for (int i = 0; i < rowAggs.length; ++i) {
         rowAggs[i].getResult(curGroupAggs, i);
       }
@@ -243,8 +243,8 @@ public final class MultiGroupByAggregate extends UnaryOperator {
     final ImmutableList.Builder<Type> aggTypes = ImmutableList.<Type> builder();
     final ImmutableList.Builder<String> aggNames = ImmutableList.<String> builder();
 
-    PrimitiveAggregator<?>[] aggs = AggUtils.allocate(childSchema, afields, aggOps);
-    for (PrimitiveAggregator<?> agg : aggs) {
+    PrimitiveAggregator[] aggs = AggUtils.allocate(childSchema, afields, aggOps);
+    for (PrimitiveAggregator agg : aggs) {
       Schema curAggSchema = agg.getResultSchema();
       Preconditions.checkState(curAggSchema.numColumns() == 1, "aggSchema should only have 1 column, not %s",
           curAggSchema.numColumns());

@@ -19,7 +19,8 @@ public final class AggUtils {
    * @return true if count must be computed.
    */
   public static boolean needsCount(final int aggOps) {
-    int countMask = PrimitiveAggregator.AGG_OP_COUNT | PrimitiveAggregator.AGG_OP_AVG | PrimitiveAggregator.AGG_OP_STDEV;
+    int countMask =
+        PrimitiveAggregator.AGG_OP_COUNT | PrimitiveAggregator.AGG_OP_AVG | PrimitiveAggregator.AGG_OP_STDEV;
     return 0 != (aggOps & countMask);
   }
 
@@ -63,8 +64,8 @@ public final class AggUtils {
    */
   public static boolean needsStats(final int aggOps) {
     int statsMask =
-        PrimitiveAggregator.AGG_OP_MIN | PrimitiveAggregator.AGG_OP_MAX | PrimitiveAggregator.AGG_OP_SUM | PrimitiveAggregator.AGG_OP_AVG
-            | PrimitiveAggregator.AGG_OP_STDEV;
+        PrimitiveAggregator.AGG_OP_MIN | PrimitiveAggregator.AGG_OP_MAX | PrimitiveAggregator.AGG_OP_SUM
+            | PrimitiveAggregator.AGG_OP_AVG | PrimitiveAggregator.AGG_OP_STDEV;
     return 0 != (aggOps & statsMask);
   }
 
@@ -77,13 +78,13 @@ public final class AggUtils {
    * @param agg the aggregator.
    */
   public static void addValue2Group(final ReadableTable from, final int fromRow, final int fromColumn,
-      final PrimitiveAggregator<?> agg) {
+      final PrimitiveAggregator agg) {
     switch (agg.getType()) {
       case BOOLEAN_TYPE:
         ((BooleanAggregator) agg).addBoolean(from.getBoolean(fromColumn, fromRow));
         break;
       case DATETIME_TYPE:
-        ((DateTimeAggregator) agg).add(from.getDateTime(fromColumn, fromRow));
+        ((DateTimeAggregator) agg).addDateTime(from.getDateTime(fromColumn, fromRow));
         break;
       case DOUBLE_TYPE:
         ((DoubleAggregator) agg).addDouble(from.getDouble(fromColumn, fromRow));
@@ -98,7 +99,7 @@ public final class AggUtils {
         ((LongAggregator) agg).addLong(from.getLong(fromColumn, fromRow));
         break;
       case STRING_TYPE:
-        ((StringAggregator) agg).add(from.getString(fromColumn, fromRow));
+        ((StringAggregator) agg).addString(from.getString(fromColumn, fromRow));
         break;
     }
   }
@@ -109,7 +110,7 @@ public final class AggUtils {
    * @param aggOps the aggregate operations
    * @return an {@link PrimitiveAggregator} for the specified type, column name, and operations.
    */
-  public static PrimitiveAggregator<?> allocate(final Type type, final String inputName, final int aggOps) {
+  public static PrimitiveAggregator allocate(final Type type, final String inputName, final int aggOps) {
     switch (type) {
       case BOOLEAN_TYPE:
         return new BooleanAggregator(inputName, aggOps);
@@ -135,9 +136,9 @@ public final class AggUtils {
    * @param aggOps the aggregate operations corresponding to each column
    * @return an array of {@link PrimitiveAggregator}s, one for each column and corresponding aggregate operations
    */
-  public static PrimitiveAggregator<?>[] allocate(final Schema childSchema, final int[] aggColumns, final int[] aggOps) {
+  public static PrimitiveAggregator[] allocate(final Schema childSchema, final int[] aggColumns, final int[] aggOps) {
     Preconditions.checkArgument(aggColumns.length == aggOps.length, "mismatched agg lengths");
-    PrimitiveAggregator<?>[] ret = new PrimitiveAggregator<?>[aggColumns.length];
+    PrimitiveAggregator[] ret = new PrimitiveAggregator[aggColumns.length];
     for (int i = 0; i < aggColumns.length; ++i) {
       int column = aggColumns[i];
       ret[i] = AggUtils.allocate(childSchema.getColumnType(column), childSchema.getColumnName(column), aggOps[i]);
