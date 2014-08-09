@@ -15,7 +15,7 @@ import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
-import edu.washington.escience.myria.operator.agg.Aggregator;
+import edu.washington.escience.myria.operator.agg.PrimitiveAggregator;
 import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
@@ -68,7 +68,7 @@ public class JoinQueryMonetDB implements QueryPlanGenerator, Serializable {
 
     final SingleGroupByAggregate globalAgg =
         new SingleGroupByAggregate(scLocalScan, new int[] { 1, 2, 3 }, 0, new int[] {
-            Aggregator.AGG_OP_SUM, Aggregator.AGG_OP_SUM, Aggregator.AGG_OP_SUM });
+            PrimitiveAggregator.AGG_OP_SUM, PrimitiveAggregator.AGG_OP_SUM, PrimitiveAggregator.AGG_OP_SUM });
 
     final Top1 topRevenue = new Top1(1);
     topRevenue.setChildren(new Operator[] { globalAgg });

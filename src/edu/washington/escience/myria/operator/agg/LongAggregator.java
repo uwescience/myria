@@ -14,7 +14,7 @@ import edu.washington.escience.myria.storage.ReadableTable;
 /**
  * Knows how to compute some aggregates over a LongColumn.
  */
-public final class LongAggregator implements Aggregator<Long> {
+public final class LongAggregator implements PrimitiveAggregator<Long> {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -48,8 +48,8 @@ public final class LongAggregator implements Aggregator<Long> {
   /**
    * Aggregate operations applicable for long columns.
    * */
-  public static final int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT | Aggregator.AGG_OP_SUM | Aggregator.AGG_OP_MAX
-      | Aggregator.AGG_OP_MIN | Aggregator.AGG_OP_AVG | Aggregator.AGG_OP_STDEV;
+  public static final int AVAILABLE_AGG = PrimitiveAggregator.AGG_OP_COUNT | PrimitiveAggregator.AGG_OP_SUM | PrimitiveAggregator.AGG_OP_MAX
+      | PrimitiveAggregator.AGG_OP_MIN | PrimitiveAggregator.AGG_OP_AVG | PrimitiveAggregator.AGG_OP_STDEV;
 
   /**
    * @param aFieldName aggregate field name for use in output schema.
@@ -72,27 +72,27 @@ public final class LongAggregator implements Aggregator<Long> {
     sumSquared = 0;
     final ImmutableList.Builder<Type> types = ImmutableList.builder();
     final ImmutableList.Builder<String> names = ImmutableList.builder();
-    if ((aggOps & Aggregator.AGG_OP_COUNT) != 0) {
+    if ((aggOps & PrimitiveAggregator.AGG_OP_COUNT) != 0) {
       types.add(Type.LONG_TYPE);
       names.add("count_" + aFieldName);
     }
-    if ((aggOps & Aggregator.AGG_OP_MIN) != 0) {
+    if ((aggOps & PrimitiveAggregator.AGG_OP_MIN) != 0) {
       types.add(Type.LONG_TYPE);
       names.add("min_" + aFieldName);
     }
-    if ((aggOps & Aggregator.AGG_OP_MAX) != 0) {
+    if ((aggOps & PrimitiveAggregator.AGG_OP_MAX) != 0) {
       types.add(Type.LONG_TYPE);
       names.add("max_" + aFieldName);
     }
-    if ((aggOps & Aggregator.AGG_OP_SUM) != 0) {
+    if ((aggOps & PrimitiveAggregator.AGG_OP_SUM) != 0) {
       types.add(Type.LONG_TYPE);
       names.add("sum_" + aFieldName);
     }
-    if ((aggOps & Aggregator.AGG_OP_AVG) != 0) {
+    if ((aggOps & PrimitiveAggregator.AGG_OP_AVG) != 0) {
       types.add(Type.DOUBLE_TYPE);
       names.add("avg_" + aFieldName);
     }
-    if ((aggOps & Aggregator.AGG_OP_STDEV) != 0) {
+    if ((aggOps & PrimitiveAggregator.AGG_OP_STDEV) != 0) {
       types.add(Type.DOUBLE_TYPE);
       names.add("stdev_" + aFieldName);
     }

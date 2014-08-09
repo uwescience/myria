@@ -14,7 +14,7 @@ import edu.washington.escience.myria.storage.ReadableTable;
 /**
  * Knows how to compute some aggregates over a BooleanColumn.
  */
-public final class BooleanAggregator implements Aggregator<Boolean> {
+public final class BooleanAggregator implements PrimitiveAggregator<Boolean> {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -28,14 +28,14 @@ public final class BooleanAggregator implements Aggregator<Boolean> {
    * */
   private final Schema resultSchema;
   /**
-   * Aggregate operations. An binary-or of all the operations in {@link Aggregator}.
+   * Aggregate operations. An binary-or of all the operations in {@link PrimitiveAggregator}.
    * */
   private final int aggOps;
 
   /**
    * Aggregate operations applicable for boolean columns.
    * */
-  public static final int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT;
+  public static final int AVAILABLE_AGG = PrimitiveAggregator.AGG_OP_COUNT;
 
   /**
    * @param aFieldName aggregate field name for use in output schema.
@@ -55,7 +55,7 @@ public final class BooleanAggregator implements Aggregator<Boolean> {
 
     final ImmutableList.Builder<Type> types = ImmutableList.builder();
     final ImmutableList.Builder<String> names = ImmutableList.builder();
-    if ((aggOps & Aggregator.AGG_OP_COUNT) != 0) {
+    if ((aggOps & PrimitiveAggregator.AGG_OP_COUNT) != 0) {
       types.add(Type.LONG_TYPE);
       names.add("count_" + aFieldName);
     }

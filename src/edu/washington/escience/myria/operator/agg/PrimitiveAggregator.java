@@ -13,7 +13,7 @@ import edu.washington.escience.myria.storage.ReadableTable;
  * 
  * @param <COLUMN_TYPE> the aggregate column type
  */
-public interface Aggregator<COLUMN_TYPE> extends Serializable {
+public interface PrimitiveAggregator<COLUMN_TYPE> extends Serializable {
 
   /**
    * count. Count result is always of type {@link Type#LONG_TYPE}.

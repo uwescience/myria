@@ -72,7 +72,7 @@ import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TipsyFileScan;
 import edu.washington.escience.myria.operator.UnionAll;
 import edu.washington.escience.myria.operator.agg.Aggregate;
-import edu.washington.escience.myria.operator.agg.Aggregator;
+import edu.washington.escience.myria.operator.agg.PrimitiveAggregator;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
 import edu.washington.escience.myria.operator.network.LocalMultiwayConsumer;
@@ -1190,7 +1190,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * @return builder.
    */
   public JsonQueryBaseBuilder count() {
-    return aggregate(new int[] { 0 }, new int[] { Aggregator.AGG_OP_COUNT });
+    return aggregate(new int[] { 0 }, new int[] { PrimitiveAggregator.AGG_OP_COUNT });
   }
 
 }

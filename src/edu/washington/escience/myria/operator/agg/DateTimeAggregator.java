@@ -16,7 +16,7 @@ import edu.washington.escience.myria.storage.ReadableTable;
 /**
  * Knows how to compute some aggregate over a DateTimeColumn.
  */
-public final class DateTimeAggregator implements Aggregator<DateTime> {
+public final class DateTimeAggregator implements PrimitiveAggregator<DateTime> {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -45,7 +45,7 @@ public final class DateTimeAggregator implements Aggregator<DateTime> {
   /**
    * Aggregate operations applicable for string columns.
    * */
-  public static final int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT | Aggregator.AGG_OP_MAX | Aggregator.AGG_OP_MIN;
+  public static final int AVAILABLE_AGG = PrimitiveAggregator.AGG_OP_COUNT | PrimitiveAggregator.AGG_OP_MAX | PrimitiveAggregator.AGG_OP_MIN;
 
   /**
    * @param aFieldName aggregate field name for use in output schema.
@@ -65,15 +65,15 @@ public final class DateTimeAggregator implements Aggregator<DateTime> {
     this.aggOps = aggOps;
     final ImmutableList.Builder<Type> types = ImmutableList.builder();
     final ImmutableList.Builder<String> names = ImmutableList.builder();
-    if ((aggOps & Aggregator.AGG_OP_COUNT) != 0) {
+    if ((aggOps & PrimitiveAggregator.AGG_OP_COUNT) != 0) {
       types.add(Type.LONG_TYPE);
       names.add("count_" + aFieldName);
     }
-    if ((aggOps & Aggregator.AGG_OP_MIN) != 0) {
+    if ((aggOps & PrimitiveAggregator.AGG_OP_MIN) != 0) {
       types.add(Type.DATETIME_TYPE);
       names.add("min_" + aFieldName);
     }
-    if ((aggOps & Aggregator.AGG_OP_MAX) != 0) {
+    if ((aggOps & PrimitiveAggregator.AGG_OP_MAX) != 0) {
       types.add(Type.DATETIME_TYPE);
       names.add("max_" + aFieldName);
     }

@@ -34,7 +34,7 @@ import edu.washington.escience.myria.column.builder.IntColumnBuilder;
 import edu.washington.escience.myria.column.builder.LongColumnBuilder;
 import edu.washington.escience.myria.column.builder.StringColumnBuilder;
 import edu.washington.escience.myria.operator.agg.Aggregate;
-import edu.washington.escience.myria.operator.agg.Aggregator;
+import edu.washington.escience.myria.operator.agg.PrimitiveAggregator;
 import edu.washington.escience.myria.operator.agg.MultiGroupByAggregate;
 import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
 import edu.washington.escience.myria.storage.TupleBatch;
@@ -138,14 +138,14 @@ public class AggregateTest {
     TupleBatch tb;
     int[] numericAggBitsInOrder =
         new int[] {
-            Aggregator.AGG_OP_COUNT, Aggregator.AGG_OP_MIN, Aggregator.AGG_OP_MAX, Aggregator.AGG_OP_SUM,
-            Aggregator.AGG_OP_AVG, Aggregator.AGG_OP_STDEV };
-    int[] justCount = new int[] { Aggregator.AGG_OP_COUNT };
-    int[] justMin = new int[] { Aggregator.AGG_OP_MIN };
-    int[] justMax = new int[] { Aggregator.AGG_OP_MAX };
-    int[] justSum = new int[] { Aggregator.AGG_OP_SUM };
-    int[] justAvg = new int[] { Aggregator.AGG_OP_AVG };
-    int[] justStdev = new int[] { Aggregator.AGG_OP_STDEV };
+            PrimitiveAggregator.AGG_OP_COUNT, PrimitiveAggregator.AGG_OP_MIN, PrimitiveAggregator.AGG_OP_MAX, PrimitiveAggregator.AGG_OP_SUM,
+            PrimitiveAggregator.AGG_OP_AVG, PrimitiveAggregator.AGG_OP_STDEV };
+    int[] justCount = new int[] { PrimitiveAggregator.AGG_OP_COUNT };
+    int[] justMin = new int[] { PrimitiveAggregator.AGG_OP_MIN };
+    int[] justMax = new int[] { PrimitiveAggregator.AGG_OP_MAX };
+    int[] justSum = new int[] { PrimitiveAggregator.AGG_OP_SUM };
+    int[] justAvg = new int[] { PrimitiveAggregator.AGG_OP_AVG };
+    int[] justStdev = new int[] { PrimitiveAggregator.AGG_OP_STDEV };
 
     /* Ints, all as a group */
     int[] ints = new int[] { 3, 5, 6 };
@@ -268,7 +268,7 @@ public class AggregateTest {
   public void testNonNumericAggs() throws Exception {
     ColumnBuilder<?> builder;
     TupleBatch tb;
-    int[] nonNumAggBitsInOrder = new int[] { Aggregator.AGG_OP_COUNT, Aggregator.AGG_OP_MIN, Aggregator.AGG_OP_MAX, };
+    int[] nonNumAggBitsInOrder = new int[] { PrimitiveAggregator.AGG_OP_COUNT, PrimitiveAggregator.AGG_OP_MIN, PrimitiveAggregator.AGG_OP_MAX, };
 
     /* Dates */
     DateTime[] dates =
@@ -297,7 +297,7 @@ public class AggregateTest {
     assertEquals("fghij1", tb.getString(2, 0));
 
     /* Booleans */
-    int[] booleanAggs = new int[] { Aggregator.AGG_OP_COUNT };
+    int[] booleanAggs = new int[] { PrimitiveAggregator.AGG_OP_COUNT };
     boolean[] booleans = new boolean[] { true, false, true };
     builder = new BooleanColumnBuilder();
     for (boolean b : booleans) {
@@ -331,7 +331,7 @@ public class AggregateTest {
     final TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     // group by name, aggregate on id
     final SingleGroupByAggregate agg =
-        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 0 }, 1, new int[] { Aggregator.AGG_OP_AVG });
+        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 0 }, 1, new int[] { PrimitiveAggregator.AGG_OP_AVG });
     agg.open(null);
     TupleBatch tb = null;
     final TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
@@ -353,7 +353,7 @@ public class AggregateTest {
     final TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     // group by name, aggregate on id
     SingleGroupByAggregate agg =
-        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 0 }, 1, new int[] { Aggregator.AGG_OP_MAX });
+        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 0 }, 1, new int[] { PrimitiveAggregator.AGG_OP_MAX });
     agg.open(null);
     TupleBatch tb = null;
     TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
@@ -368,7 +368,7 @@ public class AggregateTest {
     TestUtils.assertTupleBagEqual(TestUtils.groupByMax(testBase, 1, 0), actualResult);
 
     agg =
-        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 1 }, 0, new int[] { Aggregator.AGG_OP_MAX });
+        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 1 }, 0, new int[] { PrimitiveAggregator.AGG_OP_MAX });
     agg.open(null);
     tb = null;
     result = new TupleBatchBuffer(agg.getSchema());
@@ -390,7 +390,7 @@ public class AggregateTest {
     final TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     // group by name, aggregate on id
     SingleGroupByAggregate agg =
-        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 0 }, 1, new int[] { Aggregator.AGG_OP_MIN });
+        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 0 }, 1, new int[] { PrimitiveAggregator.AGG_OP_MIN });
     agg.open(null);
     TupleBatch tb = null;
     TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
@@ -405,7 +405,7 @@ public class AggregateTest {
     TestUtils.assertTupleBagEqual(TestUtils.groupByMin(testBase, 1, 0), actualResult);
 
     agg =
-        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 1 }, 0, new int[] { Aggregator.AGG_OP_MIN });
+        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 1 }, 0, new int[] { PrimitiveAggregator.AGG_OP_MIN });
     agg.open(null);
     tb = null;
     result = new TupleBatchBuffer(agg.getSchema());
@@ -427,7 +427,7 @@ public class AggregateTest {
     final TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     // group by name, aggregate on id
     final SingleGroupByAggregate agg =
-        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 0 }, 1, new int[] { Aggregator.AGG_OP_SUM });
+        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 0 }, 1, new int[] { PrimitiveAggregator.AGG_OP_SUM });
     agg.open(null);
     TupleBatch tb = null;
     final TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
@@ -469,7 +469,7 @@ public class AggregateTest {
 
     /* Group by group, aggregate on value */
     final SingleGroupByAggregate agg =
-        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 1 }, 0, new int[] { Aggregator.AGG_OP_STDEV });
+        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 1 }, 0, new int[] { PrimitiveAggregator.AGG_OP_STDEV });
     agg.open(null);
     TupleBatch tb = null;
     final TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
@@ -514,7 +514,7 @@ public class AggregateTest {
     // expected all the i / 2 to be sum up
     MultiGroupByAggregate mga =
         new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 0, 1 }, new int[] { 3 },
-            new int[] { Aggregator.AGG_OP_SUM });
+            new int[] { PrimitiveAggregator.AGG_OP_SUM });
     mga.open(null);
     TupleBatch result = mga.nextReady();
     assertNotNull(result);
@@ -526,7 +526,7 @@ public class AggregateTest {
     // expecting half of i / 2 to be sum up on each group
     MultiGroupByAggregate mgaTwo =
         new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 0, 1, 2 }, new int[] { 3 },
-            new int[] { Aggregator.AGG_OP_SUM });
+            new int[] { PrimitiveAggregator.AGG_OP_SUM });
     mgaTwo.open(null);
     TupleBatch resultTwo = mgaTwo.nextReady();
     assertNotNull(result);
@@ -559,7 +559,7 @@ public class AggregateTest {
     expected /= numTuples;
     MultiGroupByAggregate mga =
         new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 0, 1, 2 }, new int[] { 3 },
-            new int[] { Aggregator.AGG_OP_AVG });
+            new int[] { PrimitiveAggregator.AGG_OP_AVG });
     mga.open(null);
     TupleBatch result = mga.nextReady();
     assertNotNull(result);
@@ -589,7 +589,7 @@ public class AggregateTest {
     }
     MultiGroupByAggregate mga =
         new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 0, 1 }, new int[] { 3 },
-            new int[] { Aggregator.AGG_OP_MIN });
+            new int[] { PrimitiveAggregator.AGG_OP_MIN });
     mga.open(null);
     TupleBatch result = mga.nextReady();
     assertNotNull(result);
@@ -619,7 +619,7 @@ public class AggregateTest {
     }
     MultiGroupByAggregate mga =
         new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 0, 1 }, new int[] { 3 },
-            new int[] { Aggregator.AGG_OP_MAX });
+            new int[] { PrimitiveAggregator.AGG_OP_MAX });
     mga.open(null);
     TupleBatch result = mga.nextReady();
     assertNotNull(result);
@@ -651,7 +651,7 @@ public class AggregateTest {
     }
     MultiGroupByAggregate mga =
         new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 0, 1 }, new int[] { 3, 3 }, new int[] {
-            Aggregator.AGG_OP_MAX, Aggregator.AGG_OP_MIN });
+            PrimitiveAggregator.AGG_OP_MAX, PrimitiveAggregator.AGG_OP_MIN });
     mga.open(null);
     TupleBatch result = mga.nextReady();
     assertNotNull(result);
@@ -682,7 +682,7 @@ public class AggregateTest {
     }
     MultiGroupByAggregate mga =
         new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 0, 1 }, new int[] { 0 },
-            new int[] { Aggregator.AGG_OP_COUNT });
+            new int[] { PrimitiveAggregator.AGG_OP_COUNT });
     mga.open(null);
     TupleBatch result = mga.nextReady();
     assertNotNull(result);
@@ -773,7 +773,7 @@ public class AggregateTest {
 
     TupleSource source = new TupleSource(buffer.finalResult());
     MultiGroupByAggregate mga =
-        new MultiGroupByAggregate(source, groupCols, new int[] { 1 }, new int[] { Aggregator.AGG_OP_COUNT });
+        new MultiGroupByAggregate(source, groupCols, new int[] { 1 }, new int[] { PrimitiveAggregator.AGG_OP_COUNT });
     mga.open(null);
     TupleBatch result = mga.nextReady();
     assertNotNull(result);
@@ -803,7 +803,7 @@ public class AggregateTest {
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     MultiGroupByAggregate mga =
         new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 0, 1 }, new int[] { 0 },
-            new int[] { Aggregator.AGG_OP_COUNT });
+            new int[] { PrimitiveAggregator.AGG_OP_COUNT });
     mga.open(null);
     TupleBatch result = mga.nextReady();
     assertNull(result);
@@ -813,12 +813,12 @@ public class AggregateTest {
   @Test(expected = ArithmeticException.class)
   public void testLongAggOverflow() throws Exception {
     LongColumnBuilder builder = new LongColumnBuilder().appendLong(Long.MAX_VALUE - 1).appendLong(3);
-    doAggOpsToCol(builder, new int[] { Aggregator.AGG_OP_SUM });
+    doAggOpsToCol(builder, new int[] { PrimitiveAggregator.AGG_OP_SUM });
   }
 
   @Test(expected = ArithmeticException.class)
   public void testLongAggUnderflow() throws Exception {
     LongColumnBuilder builder = new LongColumnBuilder().appendLong(Long.MIN_VALUE + 1).appendLong(-3);
-    doAggOpsToCol(builder, new int[] { Aggregator.AGG_OP_SUM });
+    doAggOpsToCol(builder, new int[] { PrimitiveAggregator.AGG_OP_SUM });
   }
 }

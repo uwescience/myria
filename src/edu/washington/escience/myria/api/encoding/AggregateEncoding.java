@@ -5,7 +5,7 @@ import java.util.List;
 
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.agg.Aggregate;
-import edu.washington.escience.myria.operator.agg.Aggregator;
+import edu.washington.escience.myria.operator.agg.PrimitiveAggregator;
 
 public class AggregateEncoding extends UnaryOperatorEncoding<Aggregate> {
   @Required
@@ -34,27 +34,27 @@ public class AggregateEncoding extends UnaryOperatorEncoding<Aggregate> {
         switch (operator.toUpperCase()) {
           case "AGG_OP_MIN":
           case "MIN":
-            operations |= Aggregator.AGG_OP_MIN;
+            operations |= PrimitiveAggregator.AGG_OP_MIN;
             break;
           case "AGG_OP_MAX":
           case "MAX":
-            operations |= Aggregator.AGG_OP_MAX;
+            operations |= PrimitiveAggregator.AGG_OP_MAX;
             break;
           case "AGG_OP_COUNT":
           case "COUNT":
-            operations |= Aggregator.AGG_OP_COUNT;
+            operations |= PrimitiveAggregator.AGG_OP_COUNT;
             break;
           case "AGG_OP_SUM":
           case "SUM":
-            operations |= Aggregator.AGG_OP_SUM;
+            operations |= PrimitiveAggregator.AGG_OP_SUM;
             break;
           case "AGG_OP_AVG":
           case "AVG":
-            operations |= Aggregator.AGG_OP_AVG;
+            operations |= PrimitiveAggregator.AGG_OP_AVG;
             break;
           case "AGG_OP_STDEV":
           case "STDEV":
-            operations |= Aggregator.AGG_OP_STDEV;
+            operations |= PrimitiveAggregator.AGG_OP_STDEV;
             break;
         }
         result[i] = operations;
@@ -74,22 +74,22 @@ public class AggregateEncoding extends UnaryOperatorEncoding<Aggregate> {
     for (int op : ops) {
       ArrayList<String> opS = new ArrayList<String>(6);
       result.add(opS);
-      if ((op & Aggregator.AGG_OP_MIN) != 0) {
+      if ((op & PrimitiveAggregator.AGG_OP_MIN) != 0) {
         opS.add("MIN");
       }
-      if ((op & Aggregator.AGG_OP_MAX) != 0) {
+      if ((op & PrimitiveAggregator.AGG_OP_MAX) != 0) {
         opS.add("MAX");
       }
-      if ((op & Aggregator.AGG_OP_COUNT) != 0) {
+      if ((op & PrimitiveAggregator.AGG_OP_COUNT) != 0) {
         opS.add("COUNT");
       }
-      if ((op & Aggregator.AGG_OP_SUM) != 0) {
+      if ((op & PrimitiveAggregator.AGG_OP_SUM) != 0) {
         opS.add("SUM");
       }
-      if ((op & Aggregator.AGG_OP_AVG) != 0) {
+      if ((op & PrimitiveAggregator.AGG_OP_AVG) != 0) {
         opS.add("AVG");
       }
-      if ((op & Aggregator.AGG_OP_STDEV) != 0) {
+      if ((op & PrimitiveAggregator.AGG_OP_STDEV) != 0) {
         opS.add("STDEV");
       }
     }

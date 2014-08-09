@@ -14,7 +14,7 @@ import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.operator.agg.Aggregate;
-import edu.washington.escience.myria.operator.agg.Aggregator;
+import edu.washington.escience.myria.operator.agg.PrimitiveAggregator;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
@@ -45,7 +45,7 @@ public class CountStar implements QueryPlanGenerator {
     final CollectConsumer collectCountC = new CollectConsumer(collectCountP.getSchema(), collectCountID, allWorkers);
 
     final Aggregate agg =
-        new Aggregate(collectCountC, new int[] { 0, 2 }, new int[] { Aggregator.AGG_OP_SUM, Aggregator.AGG_OP_SUM });
+        new Aggregate(collectCountC, new int[] { 0, 2 }, new int[] { PrimitiveAggregator.AGG_OP_SUM, PrimitiveAggregator.AGG_OP_SUM });
 
     final CollectProducer sendToMaster = new CollectProducer(agg, sendToMasterID, 0);
 

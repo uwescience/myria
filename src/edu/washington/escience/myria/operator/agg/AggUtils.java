@@ -19,7 +19,7 @@ public final class AggUtils {
    * @return true if count must be computed.
    */
   public static boolean needsCount(final int aggOps) {
-    int countMask = Aggregator.AGG_OP_COUNT | Aggregator.AGG_OP_AVG | Aggregator.AGG_OP_STDEV;
+    int countMask = PrimitiveAggregator.AGG_OP_COUNT | PrimitiveAggregator.AGG_OP_AVG | PrimitiveAggregator.AGG_OP_STDEV;
     return 0 != (aggOps & countMask);
   }
 
@@ -28,7 +28,7 @@ public final class AggUtils {
    * @return true if sum must be computed.
    */
   public static boolean needsSum(final int aggOps) {
-    int sumMask = Aggregator.AGG_OP_SUM | Aggregator.AGG_OP_AVG | Aggregator.AGG_OP_STDEV;
+    int sumMask = PrimitiveAggregator.AGG_OP_SUM | PrimitiveAggregator.AGG_OP_AVG | PrimitiveAggregator.AGG_OP_STDEV;
     return 0 != (aggOps & sumMask);
   }
 
@@ -37,7 +37,7 @@ public final class AggUtils {
    * @return true if sumSq must be computed.
    */
   public static boolean needsSumSq(final int aggOps) {
-    int sumSqMask = Aggregator.AGG_OP_STDEV;
+    int sumSqMask = PrimitiveAggregator.AGG_OP_STDEV;
     return 0 != (aggOps & sumSqMask);
   }
 
@@ -46,7 +46,7 @@ public final class AggUtils {
    * @return true if min must be computed.
    */
   public static boolean needsMin(final int aggOps) {
-    return 0 != (aggOps & Aggregator.AGG_OP_MIN);
+    return 0 != (aggOps & PrimitiveAggregator.AGG_OP_MIN);
   }
 
   /**
@@ -54,7 +54,7 @@ public final class AggUtils {
    * @return true if max must be computed.
    */
   public static boolean needsMax(final int aggOps) {
-    return 0 != (aggOps & Aggregator.AGG_OP_MAX);
+    return 0 != (aggOps & PrimitiveAggregator.AGG_OP_MAX);
   }
 
   /**
@@ -63,8 +63,8 @@ public final class AggUtils {
    */
   public static boolean needsStats(final int aggOps) {
     int statsMask =
-        Aggregator.AGG_OP_MIN | Aggregator.AGG_OP_MAX | Aggregator.AGG_OP_SUM | Aggregator.AGG_OP_AVG
-            | Aggregator.AGG_OP_STDEV;
+        PrimitiveAggregator.AGG_OP_MIN | PrimitiveAggregator.AGG_OP_MAX | PrimitiveAggregator.AGG_OP_SUM | PrimitiveAggregator.AGG_OP_AVG
+            | PrimitiveAggregator.AGG_OP_STDEV;
     return 0 != (aggOps & statsMask);
   }
 
@@ -77,7 +77,7 @@ public final class AggUtils {
    * @param agg the aggregator.
    */
   public static void addValue2Group(final ReadableTable from, final int fromRow, final int fromColumn,
-      final Aggregator<?> agg) {
+      final PrimitiveAggregator<?> agg) {
     switch (agg.getType()) {
       case BOOLEAN_TYPE:
         ((BooleanAggregator) agg).addBoolean(from.getBoolean(fromColumn, fromRow));
@@ -107,9 +107,9 @@ public final class AggUtils {
    * @param type the type of the aggregator.
    * @param inputName the name of the column in the child schema
    * @param aggOps the aggregate operations
-   * @return an {@link Aggregator} for the specified type, column name, and operations.
+   * @return an {@link PrimitiveAggregator} for the specified type, column name, and operations.
    */
-  public static Aggregator<?> allocate(final Type type, final String inputName, final int aggOps) {
+  public static PrimitiveAggregator<?> allocate(final Type type, final String inputName, final int aggOps) {
     switch (type) {
       case BOOLEAN_TYPE:
         return new BooleanAggregator(inputName, aggOps);
@@ -133,11 +133,11 @@ public final class AggUtils {
    * @param childSchema the schema of the child of the aggregate operator
    * @param aggColumns which columns are aggregated over
    * @param aggOps the aggregate operations corresponding to each column
-   * @return an array of {@link Aggregator}s, one for each column and corresponding aggregate operations
+   * @return an array of {@link PrimitiveAggregator}s, one for each column and corresponding aggregate operations
    */
-  public static Aggregator<?>[] allocate(final Schema childSchema, final int[] aggColumns, final int[] aggOps) {
+  public static PrimitiveAggregator<?>[] allocate(final Schema childSchema, final int[] aggColumns, final int[] aggOps) {
     Preconditions.checkArgument(aggColumns.length == aggOps.length, "mismatched agg lengths");
-    Aggregator<?>[] ret = new Aggregator<?>[aggColumns.length];
+    PrimitiveAggregator<?>[] ret = new PrimitiveAggregator<?>[aggColumns.length];
     for (int i = 0; i < aggColumns.length; ++i) {
       int column = aggColumns[i];
       ret[i] = AggUtils.allocate(childSchema.getColumnType(column), childSchema.getColumnName(column), aggOps[i]);

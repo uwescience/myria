@@ -25,7 +25,7 @@ public final class Aggregate extends UnaryOperator {
   private static final long serialVersionUID = 1L;
 
   /** Does the actual aggregation work. */
-  private Aggregator<?>[] agg;
+  private PrimitiveAggregator<?>[] agg;
   /** Which fields the aggregate is computed over. */
   private final int[] afields;
   /** Aggregate operators. */
@@ -51,8 +51,8 @@ public final class Aggregate extends UnaryOperator {
    * The result column of the {@link Aggregate} operator is ordered in two layers. Firstly, if a column c1 appears
    * before another column c2 in the afields array, all the aggregate results of c1 appears before those of c2.
    * Secondly, if multiple aggregate operations are computed on a column, the result of these aggregate operations are
-   * orderd by the digital number representation of them in {@link Aggregator}. For example,
-   * {@link Aggregator#AGG_OP_COUNT} is 0x01, {@link Aggregator#AGG_OP_SUM} is 0x08, then count result appears before
+   * orderd by the digital number representation of them in {@link PrimitiveAggregator}. For example,
+   * {@link PrimitiveAggregator#AGG_OP_COUNT} is 0x01, {@link PrimitiveAggregator#AGG_OP_SUM} is 0x08, then count result appears before
    * sum.
    * 
    * <p>
@@ -87,7 +87,7 @@ public final class Aggregate extends UnaryOperator {
     }
     this.afields = afields;
     this.aggOps = aggOps;
-    agg = new Aggregator<?>[aggOps.length];
+    agg = new PrimitiveAggregator<?>[aggOps.length];
   }
 
   /**
@@ -114,7 +114,7 @@ public final class Aggregate extends UnaryOperator {
 
     if (child.eos()) {
       int fromIndex = 0;
-      for (final Aggregator<?> element : agg) {
+      for (final PrimitiveAggregator<?> element : agg) {
         element.getResult(aggBuffer, fromIndex);
         fromIndex += element.getResultSchema().numColumns();
       }
@@ -142,7 +142,7 @@ public final class Aggregate extends UnaryOperator {
     final ImmutableList.Builder<String> gNames = ImmutableList.builder();
 
     agg = AggUtils.allocate(childSchema, afields, aggOps);
-    for (final Aggregator<?> a : agg) {
+    for (final PrimitiveAggregator<?> a : agg) {
       gTypes.addAll(a.getResultSchema().getColumnTypes());
       gNames.addAll(a.getResultSchema().getColumnNames());
     }
