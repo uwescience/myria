@@ -3,8 +3,8 @@ package edu.washington.escience.myria.operator.agg;
 import java.util.List;
 import java.util.Objects;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import javax.annotation.Nonnull;
+
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.Schema;
@@ -20,25 +20,24 @@ public class SingleColumnAggregator implements Aggregator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** Which column of the input to aggregate over. */
-  @JsonProperty
   private final int column;
-  /** Which aggregate options are requested. See {@link PrimitiveAggregator}. */
-  @JsonProperty
-  private final List<String> aggOps;
   /** The actual aggregator doing the work. */
-  private PrimitiveAggregator agg;
+  private final PrimitiveAggregator agg;
 
   /**
    * A wrapper for the {@link PrimitiveAggregator} implementations like {@link IntegerAggregator}.
    * 
+   * @param inputSchema the schema of the input tuples.
    * @param column which column of the input to aggregate over.
    * @param aggOps which aggregate operations are requested. See {@link PrimitiveAggregator}.
    */
-  @JsonCreator
-  public SingleColumnAggregator(@JsonProperty(value = "column", required = true) final Integer column,
-      @JsonProperty(value = "aggOps", required = true) final List<String> aggOps) {
-    this.column = Objects.requireNonNull(column, "column").intValue();
-    this.aggOps = Objects.requireNonNull(aggOps, "aggOps");
+  public SingleColumnAggregator(@Nonnull final Schema inputSchema, final int column, @Nonnull final List<String> aggOps) {
+    Objects.requireNonNull(inputSchema, "inputSchema");
+    this.column = column;
+    Objects.requireNonNull(aggOps, "aggOps");
+    agg =
+        AggUtils.allocate(inputSchema.getColumnType(column), inputSchema.getColumnName(column), AggregateEncoding
+            .deserializeAggregateOperators(aggOps));
   }
 
   @Override
@@ -60,12 +59,7 @@ public class SingleColumnAggregator implements Aggregator {
   }
 
   @Override
-  public Schema getResultSchema(final Schema childSchema) {
-    if (agg == null) {
-      agg =
-          AggUtils.allocate(childSchema.getColumnType(column), childSchema.getColumnName(column), AggregateEncoding
-              .deserializeAggregateOperators(aggOps));
-    }
+  public Schema getResultSchema() {
     return agg.getResultSchema();
   }
 }

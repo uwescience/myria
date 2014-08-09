@@ -5,12 +5,12 @@ import java.util.List;
 
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.agg.Aggregate;
-import edu.washington.escience.myria.operator.agg.Aggregator;
+import edu.washington.escience.myria.operator.agg.AggregatorFactory;
 import edu.washington.escience.myria.operator.agg.PrimitiveAggregator;
 
 public class AggregateEncoding extends UnaryOperatorEncoding<Aggregate> {
   @Required
-  public Aggregator[] aggregators;
+  public AggregatorFactory[] aggregators;
 
   @Override
   public Aggregate construct(ConstructArgs args) {

@@ -20,8 +20,8 @@ import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.operator.TupleSource;
 import edu.washington.escience.myria.operator.agg.Aggregate;
-import edu.washington.escience.myria.operator.agg.Aggregator;
-import edu.washington.escience.myria.operator.agg.SingleColumnAggregator;
+import edu.washington.escience.myria.operator.agg.AggregatorFactory;
+import edu.washington.escience.myria.operator.agg.SingleColumnAggregatorFactory;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
 import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
@@ -85,7 +85,8 @@ public class SplitDataTest extends SystemTestBase {
     /* Create the Server plan: CollectConsumer and Sum. */
     final CollectConsumer receive = new CollectConsumer(countResultSchema, collectId, workerIDs);
     Aggregate sumCount =
-        new Aggregate(receive, new Aggregator[] { new SingleColumnAggregator(0, ImmutableList.of("SUM", "COUNT")) });
+        new Aggregate(receive, new AggregatorFactory[] { new SingleColumnAggregatorFactory(0, ImmutableList.of("SUM",
+            "COUNT")) });
     final LinkedBlockingQueue<TupleBatch> aggResult = new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(aggResult, sumCount);
     final SinkRoot serverPlan = new SinkRoot(queueStore);

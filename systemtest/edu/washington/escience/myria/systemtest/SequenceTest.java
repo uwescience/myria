@@ -50,8 +50,8 @@ import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.operator.TupleSource;
 import edu.washington.escience.myria.operator.agg.Aggregate;
-import edu.washington.escience.myria.operator.agg.Aggregator;
-import edu.washington.escience.myria.operator.agg.SingleColumnAggregator;
+import edu.washington.escience.myria.operator.agg.AggregatorFactory;
+import edu.washington.escience.myria.operator.agg.SingleColumnAggregatorFactory;
 import edu.washington.escience.myria.operator.failures.InitFailureInjector;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
@@ -98,13 +98,13 @@ public class SequenceTest extends SystemTestBase {
     /* Second task: count the number of tuples. */
     DbQueryScan scan = new DbQueryScan(storage, testSchema);
     Aggregate localCount =
-        new Aggregate(scan, new Aggregator[] { new SingleColumnAggregator(0, ImmutableList.of("COUNT")) });
+        new Aggregate(scan, new AggregatorFactory[] { new SingleColumnAggregatorFactory(0, ImmutableList.of("COUNT")) });
     ExchangePairID collectId = ExchangePairID.newID();
     final CollectProducer coll = new CollectProducer(localCount, collectId, MyriaConstants.MASTER_ID);
 
     final CollectConsumer cons = new CollectConsumer(Schema.ofFields(Type.LONG_TYPE, "_COUNT0_"), collectId, workerIDs);
     Aggregate masterSum =
-        new Aggregate(cons, new Aggregator[] { new SingleColumnAggregator(0, ImmutableList.of("SUM")) });
+        new Aggregate(cons, new AggregatorFactory[] { new SingleColumnAggregatorFactory(0, ImmutableList.of("SUM")) });
     final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, masterSum);
     SinkRoot root = new SinkRoot(queueStore);
@@ -163,13 +163,13 @@ public class SequenceTest extends SystemTestBase {
     /* Second task: count the number of tuples. */
     DbQueryScan scan = new DbQueryScan(storage, testSchema);
     Aggregate localCount =
-        new Aggregate(scan, new Aggregator[] { new SingleColumnAggregator(0, ImmutableList.of("COUNT")) });
+        new Aggregate(scan, new AggregatorFactory[] { new SingleColumnAggregatorFactory(0, ImmutableList.of("COUNT")) });
     ExchangePairID collectId = ExchangePairID.newID();
     final CollectProducer coll = new CollectProducer(localCount, collectId, MyriaConstants.MASTER_ID);
 
     final CollectConsumer cons = new CollectConsumer(Schema.ofFields(Type.LONG_TYPE, "_COUNT0_"), collectId, workerIDs);
     Aggregate masterSum =
-        new Aggregate(cons, new Aggregator[] { new SingleColumnAggregator(0, ImmutableList.of("SUM")) });
+        new Aggregate(cons, new AggregatorFactory[] { new SingleColumnAggregatorFactory(0, ImmutableList.of("SUM")) });
     final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, masterSum);
     SinkRoot root = new SinkRoot(queueStore);
@@ -300,7 +300,7 @@ public class SequenceTest extends SystemTestBase {
     AggregateEncoding agg = new AggregateEncoding();
     agg.argChild = cons.opId;
     agg.opId = AGG;
-    agg.aggregators = new Aggregator[] { new SingleColumnAggregator(0, ImmutableList.of("SUM")) };
+    agg.aggregators = new AggregatorFactory[] { new SingleColumnAggregatorFactory(0, ImmutableList.of("SUM")) };
     insert = new DbInsertEncoding();
     insert.opId = INSERT;
     insert.argChild = agg.opId;
@@ -390,13 +390,13 @@ public class SequenceTest extends SystemTestBase {
     /* Task to run after the first Sequence: Count the number of tuples. */
     DbQueryScan scan = new DbQueryScan(dataKey, schema);
     Aggregate localCount =
-        new Aggregate(scan, new Aggregator[] { new SingleColumnAggregator(0, ImmutableList.of("COUNT")) });
+        new Aggregate(scan, new AggregatorFactory[] { new SingleColumnAggregatorFactory(0, ImmutableList.of("COUNT")) });
     ExchangePairID collectId = ExchangePairID.newID();
     final CollectProducer coll = new CollectProducer(localCount, collectId, MyriaConstants.MASTER_ID);
 
     final CollectConsumer cons = new CollectConsumer(Schema.ofFields(Type.LONG_TYPE, "_COUNT0_"), collectId, workerIDs);
     Aggregate masterSum =
-        new Aggregate(cons, new Aggregator[] { new SingleColumnAggregator(0, ImmutableList.of("SUM")) });
+        new Aggregate(cons, new AggregatorFactory[] { new SingleColumnAggregatorFactory(0, ImmutableList.of("SUM")) });
     final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, masterSum);
     SinkRoot root = new SinkRoot(queueStore);

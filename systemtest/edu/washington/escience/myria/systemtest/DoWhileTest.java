@@ -31,8 +31,8 @@ import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.TupleSource;
 import edu.washington.escience.myria.operator.agg.Aggregate;
-import edu.washington.escience.myria.operator.agg.Aggregator;
-import edu.washington.escience.myria.operator.agg.SingleColumnAggregator;
+import edu.washington.escience.myria.operator.agg.AggregatorFactory;
+import edu.washington.escience.myria.operator.agg.SingleColumnAggregatorFactory;
 import edu.washington.escience.myria.parallel.DoWhile;
 import edu.washington.escience.myria.parallel.Query;
 import edu.washington.escience.myria.parallel.QueryPlan;
@@ -89,7 +89,8 @@ public class DoWhileTest extends SystemTestBase {
     /* Condition: condition = [from x emit max(val) < 5]. */
     DbQueryScan scanXForCondition = new DbQueryScan(x, schema);
     Aggregate maxX =
-        new Aggregate(scanXForCondition, new Aggregator[] { new SingleColumnAggregator(0, ImmutableList.of("MAX")) });
+        new Aggregate(scanXForCondition, new AggregatorFactory[] { new SingleColumnAggregatorFactory(0, ImmutableList
+            .of("MAX")) });
     Expression filterExpression =
         new Expression("f", new LessThanExpression(new VariableExpression(0), new ConstantExpression(5)));
     Apply maxXapply = new Apply(maxX, ImmutableList.of(filterExpression));

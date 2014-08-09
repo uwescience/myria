@@ -2,10 +2,6 @@ package edu.washington.escience.myria.operator.agg;
 
 import java.io.Serializable;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.storage.AppendableTable;
 import edu.washington.escience.myria.storage.ReadableTable;
@@ -13,8 +9,6 @@ import edu.washington.escience.myria.storage.ReadableTable;
 /**
  * The interface for any aggregation.
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
-@JsonSubTypes({ @Type(value = SingleColumnAggregator.class, name = "SingleColumn") })
 public interface Aggregator extends Serializable {
 
   /**
@@ -43,8 +37,7 @@ public interface Aggregator extends Serializable {
   /**
    * Compute and return the schema of the outputs of this {@link Aggregator}.
    * 
-   * @param childSchema the schema of the tuples that will come from the child.
    * @return the schema of the outputs of this {@link Aggregator}.
    */
-  Schema getResultSchema(Schema childSchema);
+  Schema getResultSchema();
 }

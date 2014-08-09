@@ -34,10 +34,10 @@ import edu.washington.escience.myria.column.builder.IntColumnBuilder;
 import edu.washington.escience.myria.column.builder.LongColumnBuilder;
 import edu.washington.escience.myria.column.builder.StringColumnBuilder;
 import edu.washington.escience.myria.operator.agg.Aggregate;
-import edu.washington.escience.myria.operator.agg.Aggregator;
+import edu.washington.escience.myria.operator.agg.AggregatorFactory;
 import edu.washington.escience.myria.operator.agg.MultiGroupByAggregate;
 import edu.washington.escience.myria.operator.agg.PrimitiveAggregator;
-import edu.washington.escience.myria.operator.agg.SingleColumnAggregator;
+import edu.washington.escience.myria.operator.agg.SingleColumnAggregatorFactory;
 import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
@@ -122,9 +122,9 @@ public class AggregateTest {
    */
   private TupleBatch doAggOpsToCol(ColumnBuilder<?> builder, String[] aggOps) throws Exception {
     TupleSource source = new TupleSource(makeTrivialTupleBatch(builder));
-    Aggregator[] aggs = new Aggregator[aggOps.length];
+    AggregatorFactory[] aggs = new AggregatorFactory[aggOps.length];
     for (int i = 0; i < aggs.length; ++i) {
-      aggs[i] = new SingleColumnAggregator(0, ImmutableList.of(aggOps[i]));
+      aggs[i] = new SingleColumnAggregatorFactory(0, ImmutableList.of(aggOps[i]));
     }
     Aggregate agg = new Aggregate(source, aggs);
     /* Do it -- this should cause an error. */
