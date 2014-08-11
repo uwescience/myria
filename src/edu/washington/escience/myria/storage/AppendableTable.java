@@ -5,7 +5,7 @@ import org.joda.time.DateTime;
 /**
  * An interface for a table that can have values appended to it.
  */
-public interface AppendableTable {
+public interface AppendableTable extends TupleTable {
   /**
    * Append the specified value to the specified column.
    * 
