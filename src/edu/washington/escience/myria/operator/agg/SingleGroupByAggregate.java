@@ -159,7 +159,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
           groupAgg = groupAggsBoolean[1];
         }
         if (groupAgg == null) {
-          groupAgg = allocateAggs();
+          groupAgg = AggUtils.allocateAggs(factories, inputSchema);
           if (groupByBool) {
             groupAggsBoolean[0] = groupAgg;
           } else {
@@ -171,7 +171,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
         String groupByString = table.getString(gColumn, row);
         groupAgg = groupAggsString.get(groupByString);
         if (groupAgg == null) {
-          groupAgg = allocateAggs();
+          groupAgg = AggUtils.allocateAggs(factories, inputSchema);
           groupAggsString.put(groupByString, groupAgg);
         }
         break;
@@ -179,7 +179,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
         DateTime groupByDateTime = table.getDateTime(gColumn, row);
         groupAgg = groupAggsDatetime.get(groupByDateTime);
         if (groupAgg == null) {
-          groupAgg = allocateAggs();
+          groupAgg = AggUtils.allocateAggs(factories, inputSchema);
           groupAggsDatetime.put(groupByDateTime, groupAgg);
         }
         break;
@@ -187,7 +187,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
         int groupByInt = table.getInt(gColumn, row);
         groupAgg = groupAggsInt.get(groupByInt);
         if (groupAgg == null) {
-          groupAgg = allocateAggs();
+          groupAgg = AggUtils.allocateAggs(factories, inputSchema);
           groupAggsInt.put(groupByInt, groupAgg);
         }
         break;
@@ -195,7 +195,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
         long groupByLong = table.getLong(gColumn, row);
         groupAgg = groupAggsLong.get(groupByLong);
         if (groupAgg == null) {
-          groupAgg = allocateAggs();
+          groupAgg = AggUtils.allocateAggs(factories, inputSchema);
           groupAggsLong.put(groupByLong, groupAgg);
         }
         break;
@@ -203,7 +203,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
         float groupByFloat = table.getFloat(gColumn, row);
         groupAgg = groupAggsFloat.get(groupByFloat);
         if (groupAgg == null) {
-          groupAgg = allocateAggs();
+          groupAgg = AggUtils.allocateAggs(factories, inputSchema);
           groupAggsFloat.put(groupByFloat, groupAgg);
         }
         break;
@@ -211,7 +211,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
         double groupByDouble = table.getDouble(gColumn, row);
         groupAgg = groupAggsDouble.get(groupByDouble);
         if (groupAgg == null) {
-          groupAgg = allocateAggs();
+          groupAgg = AggUtils.allocateAggs(factories, inputSchema);
           groupAggsDouble.put(groupByDouble, groupAgg);
         }
         break;
@@ -437,18 +437,5 @@ public class SingleGroupByAggregate extends UnaryOperator {
       outputSchema = Schema.merge(outputSchema, f.get(inputSchema).getResultSchema());
     }
     return outputSchema;
-  }
-
-  /**
-   * Utility class to allocate a set of aggregators from the factories.
-   * 
-   * @return the aggregators for this operator.
-   */
-  private Aggregator[] allocateAggs() {
-    Aggregator[] aggregators = new Aggregator[factories.length];
-    for (int j = 0; j < factories.length; ++j) {
-      aggregators[j] = factories[j].get(inputSchema);
-    }
-    return aggregators;
   }
 }

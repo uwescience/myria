@@ -22,5 +22,6 @@ public interface AggregatorFactory extends Serializable {
    * @param inputSchema the schema that incoming tuples will take.
    * @return a new aggregator for tuples of the specified schema.
    */
+  @Nonnull
   Aggregator get(@Nonnull Schema inputSchema);
 }

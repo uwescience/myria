@@ -1,6 +1,5 @@
 package edu.washington.escience.myria.operator.agg;
 
-import java.util.List;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -8,7 +7,7 @@ import javax.annotation.Nonnull;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.api.encoding.AggregateEncoding;
+import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
 import edu.washington.escience.myria.storage.AppendableTable;
 import edu.washington.escience.myria.storage.ReadableTable;
 
@@ -31,13 +30,12 @@ public class SingleColumnAggregator implements Aggregator {
    * @param column which column of the input to aggregate over.
    * @param aggOps which aggregate operations are requested. See {@link PrimitiveAggregator}.
    */
-  public SingleColumnAggregator(@Nonnull final Schema inputSchema, final int column, @Nonnull final List<String> aggOps) {
+  public SingleColumnAggregator(@Nonnull final Schema inputSchema, final int column,
+      @Nonnull final AggregationOp[] aggOps) {
     Objects.requireNonNull(inputSchema, "inputSchema");
     this.column = column;
     Objects.requireNonNull(aggOps, "aggOps");
-    agg =
-        AggUtils.allocate(inputSchema.getColumnType(column), inputSchema.getColumnName(column), AggregateEncoding
-            .deserializeAggregateOperators(aggOps));
+    agg = AggUtils.allocate(inputSchema.getColumnType(column), inputSchema.getColumnName(column), aggOps);
   }
 
   @Override

@@ -1,7 +1,5 @@
 package edu.washington.escience.myria.operator.agg;
 
-import java.util.Objects;
-
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -82,26 +80,7 @@ public final class Aggregate extends UnaryOperator {
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     aggBuffer = new TupleBatchBuffer(getSchema());
-    aggregators = getOrInitAggregators(getChild().getSchema());
-  }
-
-  /**
-   * Utility class to initialize the aggregators from the given input schema.
-   * 
-   * @param childSchema the schema of the input tuples to this operator.
-   * @return the aggregators.
-   */
-  private Aggregator[] getOrInitAggregators(final Schema childSchema) {
-    if (aggregators != null) {
-      return aggregators;
-    }
-
-    Objects.requireNonNull(childSchema, "childSchema");
-    aggregators = new Aggregator[factories.length];
-    for (int i = 0; i < factories.length; ++i) {
-      aggregators[i] = factories[i].get(childSchema);
-    }
-    return aggregators;
+    aggregators = AggUtils.allocateAggs(factories, getChild().getSchema());
   }
 
   @Override
@@ -117,7 +96,7 @@ public final class Aggregate extends UnaryOperator {
     final ImmutableList.Builder<Type> gTypes = ImmutableList.builder();
     final ImmutableList.Builder<String> gNames = ImmutableList.builder();
 
-    for (Aggregator agg : getOrInitAggregators(childSchema)) {
+    for (Aggregator agg : AggUtils.allocateAggs(factories, childSchema)) {
       gTypes.addAll(agg.getResultSchema().getColumnTypes());
       gNames.addAll(agg.getResultSchema().getColumnNames());
     }

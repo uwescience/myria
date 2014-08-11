@@ -13,6 +13,7 @@ import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.agg.AggregatorFactory;
+import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
 import edu.washington.escience.myria.operator.agg.SingleColumnAggregatorFactory;
 import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
@@ -64,7 +65,8 @@ public class AggregateQueryVariantMonetDBMyriaSubStr implements QueryPlanGenerat
       ss.setChildren(new Operator[] { lsc[i] });
 
       final SingleGroupByAggregate localAgg =
-          new SingleGroupByAggregate(ss, 1, new AggregatorFactory[] { new SingleColumnAggregatorFactory(0, "SUM") });
+          new SingleGroupByAggregate(ss, 1, new AggregatorFactory[] { new SingleColumnAggregatorFactory(0,
+              AggregationOp.SUM) });
 
       shuffleLocalGroupBys[i] = new GenericShuffleProducer(localAgg, shuffleLocalGroupByID, allWorkers, pf0);
     }
@@ -73,7 +75,8 @@ public class AggregateQueryVariantMonetDBMyriaSubStr implements QueryPlanGenerat
         new GenericShuffleConsumer(shuffleLocalGroupBys[0].getSchema(), shuffleLocalGroupByID, allWorkers);
 
     final SingleGroupByAggregate agg =
-        new SingleGroupByAggregate(sc, 0, new AggregatorFactory[] { new SingleColumnAggregatorFactory(1, "SUM") });
+        new SingleGroupByAggregate(sc, 0, new AggregatorFactory[] { new SingleColumnAggregatorFactory(1,
+            AggregationOp.SUM) });
 
     final CollectProducer sendToMaster = new CollectProducer(agg, sendToMasterID, 0);
 

@@ -11,6 +11,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
 import edu.washington.escience.myria.operator.agg.SingleColumnAggregatorFactory;
 import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
@@ -45,7 +46,7 @@ public class AggregateQueryVariantSQLiteMyriaAggregate implements QueryPlanGener
         new DbQueryScan("select substr(sourceIPAddr, 1, 7), adRevenue from UserVisits", scanSchema);
 
     final SingleGroupByAggregate localAgg =
-        new SingleGroupByAggregate(localScan, 0, new SingleColumnAggregatorFactory(1, "SUM"));
+        new SingleGroupByAggregate(localScan, 0, new SingleColumnAggregatorFactory(1, AggregationOp.SUM));
 
     final ExchangePairID shuffleLocalGroupByID = ExchangePairID.newID();
 
@@ -57,7 +58,7 @@ public class AggregateQueryVariantSQLiteMyriaAggregate implements QueryPlanGener
         new GenericShuffleConsumer(shuffleLocalGroupBy.getSchema(), shuffleLocalGroupByID, allWorkers);
 
     final SingleGroupByAggregate globalAgg =
-        new SingleGroupByAggregate(sc, 0, new SingleColumnAggregatorFactory(1, "SUM"));
+        new SingleGroupByAggregate(sc, 0, new SingleColumnAggregatorFactory(1, AggregationOp.SUM));
 
     final CollectProducer sendToMaster = new CollectProducer(globalAgg, sendToMasterID, 0);
 

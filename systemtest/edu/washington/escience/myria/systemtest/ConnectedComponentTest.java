@@ -31,6 +31,7 @@ import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.operator.UnionAll;
+import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
 import edu.washington.escience.myria.operator.agg.SingleColumnAggregatorFactory;
 import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
 import edu.washington.escience.myria.operator.failures.DelayInjector;
@@ -125,7 +126,8 @@ public class ConnectedComponentTest extends SystemTestBase {
     final LocalMultiwayConsumer mc2 = new LocalMultiwayConsumer(table1Schema, mpId2);
     final SymmetricHashJoin join =
         new SymmetricHashJoin(sc2, mc1, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 }, false, true);
-    final SingleGroupByAggregate agg = new SingleGroupByAggregate(mc2, 0, new SingleColumnAggregatorFactory(1, "MIN"));
+    final SingleGroupByAggregate agg =
+        new SingleGroupByAggregate(mc2, 0, new SingleColumnAggregatorFactory(1, AggregationOp.MIN));
     final CollectProducer cp = new CollectProducer(agg, serverOpId, MASTER_ID);
     final GenericShuffleProducer sp3 = new GenericShuffleProducer(join, joinArrayId3, workerIDs, pf0);
     if (prioritized) {

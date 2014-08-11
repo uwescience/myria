@@ -37,6 +37,7 @@ import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.UpdateCatalog;
 import edu.washington.escience.myria.operator.agg.MultiGroupByAggregate;
+import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
 import edu.washington.escience.myria.operator.agg.SingleColumnAggregatorFactory;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
@@ -422,7 +423,8 @@ public class QueryConstruct {
     /* Master plan: collect, sum, insert the updates. */
     CollectConsumer consumer = new CollectConsumer(schema, collectId, workerPlans.keySet());
     MultiGroupByAggregate aggCounts =
-        new MultiGroupByAggregate(consumer, new int[] { 0, 1, 2 }, new SingleColumnAggregatorFactory(3, "SUM"));
+        new MultiGroupByAggregate(consumer, new int[] { 0, 1, 2 }, new SingleColumnAggregatorFactory(3,
+            AggregationOp.SUM));
     UpdateCatalog catalog = new UpdateCatalog(aggCounts, server);
     SubQueryPlan masterPlan = new SubQueryPlan(catalog);
 

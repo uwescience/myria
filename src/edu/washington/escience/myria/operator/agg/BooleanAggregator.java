@@ -1,8 +1,13 @@
 package edu.washington.escience.myria.operator.agg;
 
+import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.Objects;
+import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import com.google.common.math.LongMath;
 
 import edu.washington.escience.myria.Schema;
@@ -21,43 +26,55 @@ public final class BooleanAggregator implements PrimitiveAggregator {
 
   /**
    * Count, always of long type.
-   * */
+   */
   private long count;
   /**
    * Result schema. It's automatically generated according to the {@link BooleanAggregator#aggOps}.
-   * */
+   */
   private final Schema resultSchema;
   /**
-   * Aggregate operations. An binary-or of all the operations in {@link PrimitiveAggregator}.
-   * */
-  private final int aggOps;
+   * Aggregate operations. A set of all valid aggregation operations in {@link PrimitiveAggregator}.
+   * 
+   * Note that we use a {@link LinkedHashSet} to ensure that the iteration order is consistent!
+   */
+  private final LinkedHashSet<AggregationOp> aggOps;
 
   /**
    * Aggregate operations applicable for boolean columns.
-   * */
-  public static final int AVAILABLE_AGG = PrimitiveAggregator.AGG_OP_COUNT;
+   */
+  public static final Set<AggregationOp> AVAILABLE_AGG = ImmutableSet.of(AggregationOp.COUNT);
 
   /**
    * @param aFieldName aggregate field name for use in output schema.
    * @param aggOps the aggregate operation to simultaneously compute.
-   * */
-  public BooleanAggregator(final String aFieldName, final int aggOps) {
+   */
+  public BooleanAggregator(final String aFieldName, final AggregationOp[] aggOps) {
     Objects.requireNonNull(aFieldName, "aFieldName");
-    if (aggOps <= 0) {
+    if (aggOps.length == 0) {
       throw new IllegalArgumentException("No aggregation operations are selected");
     }
 
-    if ((aggOps | AVAILABLE_AGG) != AVAILABLE_AGG) {
-      throw new IllegalArgumentException("Unsupported aggregation on boolean column. Only count is supported");
+    this.aggOps = new LinkedHashSet<>(Arrays.asList(aggOps));
+    if (!AVAILABLE_AGG.containsAll(this.aggOps)) {
+      throw new IllegalArgumentException("Unsupported aggregation(s) on boolean column: "
+          + Sets.difference(this.aggOps, AVAILABLE_AGG));
     }
-
-    this.aggOps = aggOps;
 
     final ImmutableList.Builder<Type> types = ImmutableList.builder();
     final ImmutableList.Builder<String> names = ImmutableList.builder();
-    if ((aggOps & PrimitiveAggregator.AGG_OP_COUNT) != 0) {
-      types.add(Type.LONG_TYPE);
-      names.add("count_" + aFieldName);
+    for (AggregationOp op : this.aggOps) {
+      switch (op) {
+        case COUNT:
+          types.add(Type.LONG_TYPE);
+          names.add("count_" + aFieldName);
+          break;
+        case AVG:
+        case MAX:
+        case MIN:
+        case STDEV:
+        case SUM:
+          throw new UnsupportedOperationException("Aggregate " + op + " on type Boolean");
+      }
     }
     resultSchema = new Schema(types.build(), names.build());
   }
@@ -83,8 +100,18 @@ public final class BooleanAggregator implements PrimitiveAggregator {
   public void getResult(final AppendableTable dest, final int destColumn) {
     Objects.requireNonNull(dest, "dest");
     int idx = destColumn;
-    if ((aggOps & AGG_OP_COUNT) != 0) {
-      dest.putLong(idx, count);
+    for (AggregationOp op : aggOps) {
+      switch (op) {
+        case COUNT:
+          dest.putLong(idx, count);
+          break;
+        case AVG:
+        case MAX:
+        case MIN:
+        case STDEV:
+        case SUM:
+          throw new UnsupportedOperationException("Aggregate " + op + " on type Boolean");
+      }
       idx++;
     }
   }

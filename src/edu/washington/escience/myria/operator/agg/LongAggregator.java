@@ -1,8 +1,13 @@
 package edu.washington.escience.myria.operator.agg;
 
+import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.Objects;
+import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import com.google.common.math.LongMath;
 
 import edu.washington.escience.myria.Schema;
@@ -20,10 +25,12 @@ public final class LongAggregator implements PrimitiveAggregator {
   private static final long serialVersionUID = 1L;
 
   /**
-   * Aggregate operations. An binary-or of all the applicable aggregate operations, i.e. those in
-   * {@link LongAggregator#AVAILABLE_AGG}.
-   * */
-  private final int aggOps;
+   * Aggregate operations. A set of all valid aggregation operations, i.e. those in {@link LongAggregator#AVAILABLE_AGG}
+   * .
+   * 
+   * Note that we use a {@link LinkedHashSet} to ensure that the iteration order is consistent!
+   */
+  private final LinkedHashSet<AggregationOp> aggOps;
 
   /** The minimum value in the aggregated column. */
   private long min;
@@ -37,35 +44,36 @@ public final class LongAggregator implements PrimitiveAggregator {
 
   /**
    * Count, always of long type.
-   * */
+   */
   private long count;
 
   /**
    * Result schema. It's automatically generated according to the {@link LongAggregator#aggOps}.
-   * */
+   */
   private final Schema resultSchema;
 
   /**
    * Aggregate operations applicable for long columns.
-   * */
-  public static final int AVAILABLE_AGG = PrimitiveAggregator.AGG_OP_COUNT | PrimitiveAggregator.AGG_OP_SUM
-      | PrimitiveAggregator.AGG_OP_MAX | PrimitiveAggregator.AGG_OP_MIN | PrimitiveAggregator.AGG_OP_AVG
-      | PrimitiveAggregator.AGG_OP_STDEV;
+   */
+  public static final Set<AggregationOp> AVAILABLE_AGG = ImmutableSet.of(AggregationOp.COUNT, AggregationOp.SUM,
+      AggregationOp.MAX, AggregationOp.MIN, AggregationOp.AVG, AggregationOp.STDEV);
 
   /**
    * @param aFieldName aggregate field name for use in output schema.
    * @param aggOps the aggregate operation to simultaneously compute.
-   * */
-  public LongAggregator(final String aFieldName, final int aggOps) {
+   */
+  public LongAggregator(final String aFieldName, final AggregationOp[] aggOps) {
     Objects.requireNonNull(aFieldName, "aFieldName");
-    if (aggOps <= 0) {
+    if (aggOps.length == 0) {
       throw new IllegalArgumentException("No aggregation operations are selected");
     }
 
-    if ((aggOps | AVAILABLE_AGG) != AVAILABLE_AGG) {
-      throw new IllegalArgumentException("Unsupported aggregation on long column.");
+    this.aggOps = new LinkedHashSet<>(Arrays.asList(aggOps));
+    if (!AVAILABLE_AGG.containsAll(this.aggOps)) {
+      throw new IllegalArgumentException("Unsupported aggregation(s) on long column: "
+          + Sets.difference(this.aggOps, AVAILABLE_AGG));
     }
-    this.aggOps = aggOps;
+
     min = Long.MAX_VALUE;
     max = Long.MIN_VALUE;
     sum = 0L;
@@ -73,29 +81,33 @@ public final class LongAggregator implements PrimitiveAggregator {
     sumSquared = 0;
     final ImmutableList.Builder<Type> types = ImmutableList.builder();
     final ImmutableList.Builder<String> names = ImmutableList.builder();
-    if ((aggOps & PrimitiveAggregator.AGG_OP_COUNT) != 0) {
-      types.add(Type.LONG_TYPE);
-      names.add("count_" + aFieldName);
-    }
-    if ((aggOps & PrimitiveAggregator.AGG_OP_MIN) != 0) {
-      types.add(Type.LONG_TYPE);
-      names.add("min_" + aFieldName);
-    }
-    if ((aggOps & PrimitiveAggregator.AGG_OP_MAX) != 0) {
-      types.add(Type.LONG_TYPE);
-      names.add("max_" + aFieldName);
-    }
-    if ((aggOps & PrimitiveAggregator.AGG_OP_SUM) != 0) {
-      types.add(Type.LONG_TYPE);
-      names.add("sum_" + aFieldName);
-    }
-    if ((aggOps & PrimitiveAggregator.AGG_OP_AVG) != 0) {
-      types.add(Type.DOUBLE_TYPE);
-      names.add("avg_" + aFieldName);
-    }
-    if ((aggOps & PrimitiveAggregator.AGG_OP_STDEV) != 0) {
-      types.add(Type.DOUBLE_TYPE);
-      names.add("stdev_" + aFieldName);
+    for (AggregationOp op : this.aggOps) {
+      switch (op) {
+        case AVG:
+          types.add(Type.DOUBLE_TYPE);
+          names.add("avg_" + aFieldName);
+          break;
+        case COUNT:
+          types.add(Type.LONG_TYPE);
+          names.add("count_" + aFieldName);
+          break;
+        case MAX:
+          types.add(Type.LONG_TYPE);
+          names.add("max_" + aFieldName);
+          break;
+        case MIN:
+          types.add(Type.LONG_TYPE);
+          names.add("min_" + aFieldName);
+          break;
+        case STDEV:
+          types.add(Type.DOUBLE_TYPE);
+          names.add("stdev_" + aFieldName);
+          break;
+        case SUM:
+          types.add(Type.LONG_TYPE);
+          names.add("sum_" + aFieldName);
+          break;
+      }
     }
     resultSchema = new Schema(types, names);
   }
@@ -169,31 +181,30 @@ public final class LongAggregator implements PrimitiveAggregator {
   public void getResult(final AppendableTable dest, final int destColumn) {
     Objects.requireNonNull(dest, "dest");
     int idx = destColumn;
-    if ((aggOps & AGG_OP_COUNT) != 0) {
-      dest.putLong(idx, count);
-      idx++;
-    }
-    if ((aggOps & AGG_OP_MIN) != 0) {
-      dest.putLong(idx, min);
-      idx++;
-    }
-    if ((aggOps & AGG_OP_MAX) != 0) {
-      dest.putLong(idx, max);
-      idx++;
-    }
-    if ((aggOps & AGG_OP_SUM) != 0) {
-      dest.putLong(idx, sum);
-      idx++;
-    }
-    if ((aggOps & AGG_OP_AVG) != 0) {
-      dest.putDouble(idx, ((double) sum) / count);
-      idx++;
-    }
-    if ((aggOps & AGG_OP_STDEV) != 0) {
-      double first = ((double) sumSquared) / count;
-      double second = ((double) sum) / count;
-      double stdev = Math.sqrt(first - second * second);
-      dest.putDouble(idx, stdev);
+    for (AggregationOp op : aggOps) {
+      switch (op) {
+        case AVG:
+          dest.putDouble(idx, sum * 1.0 / count);
+          break;
+        case COUNT:
+          dest.putLong(idx, count);
+          break;
+        case MAX:
+          dest.putLong(idx, max);
+          break;
+        case MIN:
+          dest.putLong(idx, min);
+          break;
+        case STDEV:
+          double first = ((double) sumSquared) / count;
+          double second = ((double) sum) / count;
+          double stdev = Math.sqrt(first - second * second);
+          dest.putDouble(idx, stdev);
+          break;
+        case SUM:
+          dest.putLong(idx, sum);
+          break;
+      }
       idx++;
     }
   }

@@ -1,10 +1,15 @@
 package edu.washington.escience.myria.operator.agg;
 
+import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.Objects;
+import java.util.Set;
 
 import org.joda.time.DateTime;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import com.google.common.math.LongMath;
 
 import edu.washington.escience.myria.Schema;
@@ -22,61 +27,71 @@ public final class DateTimeAggregator implements PrimitiveAggregator {
   private static final long serialVersionUID = 1L;
 
   /**
-   * Aggregate operations. An binary-or of all the applicable aggregate operations, i.e. those in
+   * Aggregate operations. A set of all valid aggregation operations, i.e. those in
    * {@link DateTimeAggregator#AVAILABLE_AGG}.
-   * */
-  private final int aggOps;
+   * 
+   * Note that we use a {@link LinkedHashSet} to ensure that the iteration order is consistent!
+   */
+  private final LinkedHashSet<AggregationOp> aggOps;
 
   /**
    * Count, always of long type.
-   * */
+   */
   private long count;
 
   /**
    * min and max keeps the same data type as the aggregating column.
-   * */
+   */
   private DateTime min, max;
 
   /**
    * Result schema. It's automatically generated according to the {@link DateTimeAggregator#aggOps}.
-   * */
+   */
   private final Schema resultSchema;
 
   /**
    * Aggregate operations applicable for string columns.
-   * */
-  public static final int AVAILABLE_AGG = PrimitiveAggregator.AGG_OP_COUNT | PrimitiveAggregator.AGG_OP_MAX
-      | PrimitiveAggregator.AGG_OP_MIN;
+   */
+  public static final Set<AggregationOp> AVAILABLE_AGG = ImmutableSet.of(AggregationOp.COUNT, AggregationOp.MAX,
+      AggregationOp.MIN);
 
   /**
    * @param aFieldName aggregate field name for use in output schema.
    * @param aggOps the aggregate operation to simultaneously compute.
-   * */
-  public DateTimeAggregator(final String aFieldName, final int aggOps) {
+   */
+  public DateTimeAggregator(final String aFieldName, final AggregationOp[] aggOps) {
     Objects.requireNonNull(aFieldName, "aFieldName");
-    if (aggOps <= 0) {
+    if (aggOps.length == 0) {
       throw new IllegalArgumentException("No aggregation operations are selected");
     }
 
-    if ((aggOps | AVAILABLE_AGG) != AVAILABLE_AGG) {
-      throw new IllegalArgumentException(
-          "Unsupported aggregation on string column. Only count, min and max are supported");
+    this.aggOps = new LinkedHashSet<>(Arrays.asList(aggOps));
+    if (!AVAILABLE_AGG.containsAll(this.aggOps)) {
+      throw new IllegalArgumentException("Unsupported aggregation(s) on int column: "
+          + Sets.difference(this.aggOps, AVAILABLE_AGG));
     }
 
-    this.aggOps = aggOps;
     final ImmutableList.Builder<Type> types = ImmutableList.builder();
     final ImmutableList.Builder<String> names = ImmutableList.builder();
-    if ((aggOps & PrimitiveAggregator.AGG_OP_COUNT) != 0) {
-      types.add(Type.LONG_TYPE);
-      names.add("count_" + aFieldName);
-    }
-    if ((aggOps & PrimitiveAggregator.AGG_OP_MIN) != 0) {
-      types.add(Type.DATETIME_TYPE);
-      names.add("min_" + aFieldName);
-    }
-    if ((aggOps & PrimitiveAggregator.AGG_OP_MAX) != 0) {
-      types.add(Type.DATETIME_TYPE);
-      names.add("max_" + aFieldName);
+    for (AggregationOp op : this.aggOps) {
+      switch (op) {
+        case COUNT:
+          types.add(Type.LONG_TYPE);
+          names.add("count_" + aFieldName);
+          break;
+        case MAX:
+          types.add(Type.DATETIME_TYPE);
+          names.add("max_" + aFieldName);
+          break;
+        case MIN:
+          types.add(Type.DATETIME_TYPE);
+          names.add("min_" + aFieldName);
+          break;
+        case AVG:
+        case STDEV:
+        case SUM:
+          throw new UnsupportedOperationException("Aggregate " + op + " on type DateTime");
+      }
     }
     resultSchema = new Schema(types, names);
   }
@@ -146,16 +161,23 @@ public final class DateTimeAggregator implements PrimitiveAggregator {
   public void getResult(final AppendableTable dest, final int destColumn) {
     Objects.requireNonNull(dest, "dest");
     int idx = destColumn;
-    if ((aggOps & AGG_OP_COUNT) != 0) {
-      dest.putLong(idx, count);
+    for (AggregationOp op : aggOps) {
+      switch (op) {
+        case COUNT:
+          dest.putLong(idx, count);
+          break;
+        case MAX:
+          dest.putDateTime(idx, max);
+          break;
+        case MIN:
+          dest.putDateTime(idx, min);
+          break;
+        case AVG:
+        case STDEV:
+        case SUM:
+          throw new UnsupportedOperationException("Aggregate " + op + " on type DateTime");
+      }
       idx++;
-    }
-    if ((aggOps & AGG_OP_MIN) != 0) {
-      dest.putDateTime(idx, min);
-      idx++;
-    }
-    if ((aggOps & AGG_OP_MAX) != 0) {
-      dest.putDateTime(idx, max);
     }
   }
 

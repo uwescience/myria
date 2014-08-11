@@ -156,7 +156,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
       TupleUtils.copyValue(tb, gfields[column], row, groupKeys, column);
     }
     hashMatches.add(newIndex);
-    Aggregator[] curAggs = allocateAggs();
+    Aggregator[] curAggs = AggUtils.allocateAggs(factories, inputSchema);
     groupAggs.add(curAggs);
     updateGroup(tb, row, curAggs);
     Preconditions.checkState(groupKeys.numTuples() == groupAggs.size(), "groupKeys %s != groupAggs %s", groupKeys
@@ -244,7 +244,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
     final ImmutableList.Builder<Type> aggTypes = ImmutableList.<Type> builder();
     final ImmutableList.Builder<String> aggNames = ImmutableList.<String> builder();
 
-    Aggregator[] aggs = allocateAggs();
+    Aggregator[] aggs = AggUtils.allocateAggs(factories, inputSchema);
     for (Aggregator agg : aggs) {
       Schema curAggSchema = agg.getResultSchema();
       Preconditions.checkState(curAggSchema.numColumns() == 1, "aggSchema should only have 1 column, not %s",
@@ -262,18 +262,5 @@ public final class MultiGroupByAggregate extends UnaryOperator {
     groupKeys = new TupleBuffer(groupSchema);
     groupAggs = new ArrayList<>();
     groupKeyMap = new TIntObjectHashMap<>();
-  }
-
-  /**
-   * Utility class to allocate a set of aggregators from the factories.
-   * 
-   * @return the aggregators for this operator.
-   */
-  private Aggregator[] allocateAggs() {
-    Aggregator[] aggregators = new Aggregator[factories.length];
-    for (int j = 0; j < factories.length; ++j) {
-      aggregators[j] = factories[j].get(inputSchema);
-    }
-    return aggregators;
   }
 }

@@ -20,6 +20,7 @@ import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.operator.TupleSource;
 import edu.washington.escience.myria.operator.agg.Aggregate;
+import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
 import edu.washington.escience.myria.operator.agg.SingleColumnAggregatorFactory;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
@@ -83,7 +84,8 @@ public class SplitDataTest extends SystemTestBase {
     }
     /* Create the Server plan: CollectConsumer and Sum. */
     final CollectConsumer receive = new CollectConsumer(countResultSchema, collectId, workerIDs);
-    Aggregate sumCount = new Aggregate(receive, new SingleColumnAggregatorFactory(0, ImmutableList.of("SUM", "COUNT")));
+    Aggregate sumCount =
+        new Aggregate(receive, new SingleColumnAggregatorFactory(0, AggregationOp.COUNT, AggregationOp.SUM));
     final LinkedBlockingQueue<TupleBatch> aggResult = new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(aggResult, sumCount);
     final SinkRoot serverPlan = new SinkRoot(queueStore);
@@ -93,7 +95,7 @@ public class SplitDataTest extends SystemTestBase {
     server.submitQueryPlan(serverPlan, workerPlans).get();
     TupleBatch result = aggResult.take();
 
-    /* Sanity-check the results, sum them, then confirm. */
+    /* Sanity-check the number of results and their sum. */
     assertEquals(workerIDs.length, result.getLong(0, 0));
 
     LOGGER.debug("numTuplesInsert=" + numTuplesInserted + ", sum=" + result.getLong(0, 0));

@@ -31,7 +31,6 @@ import edu.washington.escience.myria.api.MyriaApiException;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.AbstractConsumerEncoding;
 import edu.washington.escience.myria.api.encoding.AbstractProducerEncoding;
-import edu.washington.escience.myria.api.encoding.AggregateEncoding;
 import edu.washington.escience.myria.api.encoding.BroadcastConsumerEncoding;
 import edu.washington.escience.myria.api.encoding.BroadcastProducerEncoding;
 import edu.washington.escience.myria.api.encoding.CollectConsumerEncoding;
@@ -72,6 +71,7 @@ import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TipsyFileScan;
 import edu.washington.escience.myria.operator.UnionAll;
 import edu.washington.escience.myria.operator.agg.AggregatorFactory;
+import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
 import edu.washington.escience.myria.operator.agg.SingleColumnAggregatorFactory;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
@@ -1032,12 +1032,11 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * @param aggColumns agg columns
    * @param aggOps agg ops.
    */
-  public JsonQueryBaseBuilder groupBy(final int groupColumn, final int[] aggColumns, final int[] aggOps) {
+  public JsonQueryBaseBuilder groupBy(final int groupColumn, final int[] aggColumns, final List<AggregationOp[]> aggOps) {
     JsonQueryBaseBuilder gp = buildOperator(SingleGroupByAggregateEncoding.class, "argChild", this, NO_PREFERENCE);
     AggregatorFactory[] aggregators = new AggregatorFactory[aggColumns.length];
     for (int i = 0; i < aggColumns.length; ++i) {
-      aggregators[i] =
-          new SingleColumnAggregatorFactory(aggColumns[i], AggregateEncoding.serializeAggregateOperators(aggOps[i]));
+      aggregators[i] = new SingleColumnAggregatorFactory(aggColumns[i], aggOps.get(i));
     }
     ((SingleGroupByAggregateEncoding) gp.op).argGroupField = groupColumn;
     ((SingleGroupByAggregateEncoding) gp.op).aggregators = aggregators;

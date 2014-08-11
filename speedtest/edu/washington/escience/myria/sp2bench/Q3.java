@@ -14,6 +14,7 @@ import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.operator.agg.Aggregate;
+import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
 import edu.washington.escience.myria.operator.agg.SingleColumnAggregatorFactory;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
@@ -66,13 +67,14 @@ public class Q3 implements QueryPlanGenerator {
     final SymmetricHashJoin joinArticleSwrcPages =
         new SymmetricHashJoin(shuffleArticlesC, shuffleSwrcPagesC, new int[] { 0 }, new int[] { 0 });
 
-    final Aggregate agg = new Aggregate(joinArticleSwrcPages, new SingleColumnAggregatorFactory(0, "COUNT"));
+    final Aggregate agg =
+        new Aggregate(joinArticleSwrcPages, new SingleColumnAggregatorFactory(0, AggregationOp.COUNT));
 
     final CollectProducer collectCountP = new CollectProducer(agg, collectCountID, allWorkers[0]);
 
     final CollectConsumer collectCountC = new CollectConsumer(collectCountP.getSchema(), collectCountID, allWorkers);
 
-    final Aggregate aggSumCount = new Aggregate(collectCountC, new SingleColumnAggregatorFactory(0, "SUM"));
+    final Aggregate aggSumCount = new Aggregate(collectCountC, new SingleColumnAggregatorFactory(0, AggregationOp.SUM));
 
     final CollectProducer sendToMaster = new CollectProducer(aggSumCount, sendToMasterID, 0);
 

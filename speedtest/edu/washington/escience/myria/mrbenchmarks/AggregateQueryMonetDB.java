@@ -11,6 +11,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
 import edu.washington.escience.myria.operator.agg.SingleColumnAggregatorFactory;
 import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
@@ -50,7 +51,8 @@ public class AggregateQueryMonetDB implements QueryPlanGenerator {
     final GenericShuffleConsumer sc =
         new GenericShuffleConsumer(shuffleLocalGroupBy.getSchema(), shuffleLocalGroupByID, allWorkers);
 
-    final SingleGroupByAggregate agg = new SingleGroupByAggregate(sc, 0, new SingleColumnAggregatorFactory(1, "SUM"));
+    final SingleGroupByAggregate agg =
+        new SingleGroupByAggregate(sc, 0, new SingleColumnAggregatorFactory(1, AggregationOp.SUM));
 
     final CollectProducer sendToMaster = new CollectProducer(agg, sendToMasterID, 0);
 

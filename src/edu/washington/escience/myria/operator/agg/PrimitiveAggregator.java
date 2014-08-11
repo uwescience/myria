@@ -14,29 +14,25 @@ import edu.washington.escience.myria.storage.ReadableTable;
 public interface PrimitiveAggregator extends Serializable {
 
   /**
-   * count. Count result is always of type {@link Type#LONG_TYPE}.
+   * The different aggregations that can be used when aggregating built-in types.
    */
-  int AGG_OP_COUNT = 0x01;
-  /**
-   * min. Min result is always of the same type as the computed column.
-   */
-  int AGG_OP_MIN = 0x02;
-  /**
-   * max. Max result is always of the same type as the computed column.
-   */
-  int AGG_OP_MAX = 0x04;
-  /**
-   * sum. The sum is always the biggest similar type, e.g., INT->LONG and FLOAT->DOUBLE.
-   */
-  int AGG_OP_SUM = 0x08;
-  /**
-   * avg. All avg aggregates are of {@link Type#DOUBLE_TYPE} type.
-   */
-  int AGG_OP_AVG = 0x10;
-  /**
-   * stdev. All stdev aggregates are of double type
-   */
-  int AGG_OP_STDEV = 0x20;
+  public enum AggregationOp {
+    /** COUNT. Applies to all types. Result is always of type {@link Type#LONG_TYPE}. */
+    COUNT,
+    /** MIN. Applies to all types. Result is same as input type. */
+    MIN,
+    /** MAX. Applies to all types. Result is same as input type. */
+    MAX,
+    /**
+     * SUM. Applies to numeric types. Result is the bigger numeric type, i.e., {@link Type#INT_TYPE} ->
+     * {@link Type#LONG_TYPE} and . {@link Type#FLOAT_TYPE} -> {@link Type#DOUBLE_TYPE}.
+     */
+    SUM,
+    /** AVG. Applies to numeric types. Result is always {@link Type#DOUBLE_TYPE}. */
+    AVG,
+    /** STDEV. Applies to numeric types. Result is always {@link Type#DOUBLE_TYPE}. */
+    STDEV
+  };
 
   /**
    * Add the entire contents of {@link ReadableColumn} into the aggregate.

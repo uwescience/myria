@@ -15,6 +15,7 @@ import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.operator.agg.Aggregate;
 import edu.washington.escience.myria.operator.agg.AggregatorFactory;
+import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
 import edu.washington.escience.myria.operator.agg.SingleColumnAggregatorFactory;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
@@ -48,7 +49,8 @@ public class CountStar implements QueryPlanGenerator {
 
     final Aggregate agg =
         new Aggregate(collectCountC, new AggregatorFactory[] {
-            new SingleColumnAggregatorFactory(0, "SUM"), new SingleColumnAggregatorFactory(2, "SUM") });
+            new SingleColumnAggregatorFactory(0, AggregationOp.SUM),
+            new SingleColumnAggregatorFactory(2, AggregationOp.SUM) });
 
     final CollectProducer sendToMaster = new CollectProducer(agg, sendToMasterID, 0);
 
