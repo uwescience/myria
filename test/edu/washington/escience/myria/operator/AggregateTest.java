@@ -330,8 +330,8 @@ public class AggregateTest {
     final TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     // group by name, aggregate on id
     final SingleGroupByAggregate agg =
-        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 0 }, 1,
-            new int[] { PrimitiveAggregator.AGG_OP_AVG });
+        new SingleGroupByAggregate(new TupleSource(testBase), 1,
+            new AggregatorFactory[] { new SingleColumnAggregatorFactory(0, "AVG") });
     agg.open(null);
     TupleBatch tb = null;
     final TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
@@ -353,8 +353,8 @@ public class AggregateTest {
     final TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     // group by name, aggregate on id
     SingleGroupByAggregate agg =
-        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 0 }, 1,
-            new int[] { PrimitiveAggregator.AGG_OP_MAX });
+        new SingleGroupByAggregate(new TupleSource(testBase), 1,
+            new AggregatorFactory[] { new SingleColumnAggregatorFactory(0, "MAX") });
     agg.open(null);
     TupleBatch tb = null;
     TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
@@ -369,8 +369,8 @@ public class AggregateTest {
     TestUtils.assertTupleBagEqual(TestUtils.groupByMax(testBase, 1, 0), actualResult);
 
     agg =
-        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 1 }, 0,
-            new int[] { PrimitiveAggregator.AGG_OP_MAX });
+        new SingleGroupByAggregate(new TupleSource(testBase), 0,
+            new AggregatorFactory[] { new SingleColumnAggregatorFactory(1, "MAX") });
     agg.open(null);
     tb = null;
     result = new TupleBatchBuffer(agg.getSchema());
@@ -392,8 +392,8 @@ public class AggregateTest {
     final TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     // group by name, aggregate on id
     SingleGroupByAggregate agg =
-        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 0 }, 1,
-            new int[] { PrimitiveAggregator.AGG_OP_MIN });
+        new SingleGroupByAggregate(new TupleSource(testBase), 1,
+            new AggregatorFactory[] { new SingleColumnAggregatorFactory(0, "MIN") });
     agg.open(null);
     TupleBatch tb = null;
     TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
@@ -408,8 +408,8 @@ public class AggregateTest {
     TestUtils.assertTupleBagEqual(TestUtils.groupByMin(testBase, 1, 0), actualResult);
 
     agg =
-        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 1 }, 0,
-            new int[] { PrimitiveAggregator.AGG_OP_MIN });
+        new SingleGroupByAggregate(new TupleSource(testBase), 0,
+            new AggregatorFactory[] { new SingleColumnAggregatorFactory(1, "MIN") });
     agg.open(null);
     tb = null;
     result = new TupleBatchBuffer(agg.getSchema());
@@ -431,8 +431,8 @@ public class AggregateTest {
     final TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     // group by name, aggregate on id
     final SingleGroupByAggregate agg =
-        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 0 }, 1,
-            new int[] { PrimitiveAggregator.AGG_OP_SUM });
+        new SingleGroupByAggregate(new TupleSource(testBase), 1,
+            new AggregatorFactory[] { new SingleColumnAggregatorFactory(0, "SUM") });
     agg.open(null);
     TupleBatch tb = null;
     final TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
@@ -474,8 +474,8 @@ public class AggregateTest {
 
     /* Group by group, aggregate on value */
     final SingleGroupByAggregate agg =
-        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 1 }, 0,
-            new int[] { PrimitiveAggregator.AGG_OP_STDEV });
+        new SingleGroupByAggregate(new TupleSource(testBase), 0,
+            new AggregatorFactory[] { new SingleColumnAggregatorFactory(1, "STDEV") });
     agg.open(null);
     TupleBatch tb = null;
     final TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());

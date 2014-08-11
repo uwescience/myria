@@ -6,6 +6,7 @@ import java.util.Objects;
 
 import org.joda.time.DateTime;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -14,6 +15,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.UnaryOperator;
+import edu.washington.escience.myria.storage.ReadableTable;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import gnu.trove.iterator.TDoubleObjectIterator;
@@ -45,21 +47,9 @@ public class SingleGroupByAggregate extends UnaryOperator {
   private static final long serialVersionUID = 1L;
 
   /**
-   * compute multiple aggregates in the same time. The columns to compute the aggregates are
-   * {@link SingleGroupByAggregateNoIntermediateBuffer#afields}.
+   * Factories to create the {@link Aggregator}s.
    */
-  private PrimitiveAggregator[] agg;
-
-  /**
-   * Compute aggregate on each of the {@link SingleGroupByAggregateNoIntermediateBuffer#afields}, with the corresponding
-   * {@link PrimitiveAggregator} in @link SingleGroupByAggregate#agg}.
-   */
-  private final int[] afields;
-
-  /**
-   * The aggregate operations that will be computed.
-   */
-  private final int[] aggOps;
+  private final AggregatorFactory[] factories;
 
   /**
    * The group by column.
@@ -67,42 +57,47 @@ public class SingleGroupByAggregate extends UnaryOperator {
   private final int gColumn;
 
   /**
-   * The group-by column type.
+   * A cache of the group-by column type.
    */
   private Type gColumnType;
+
+  /**
+   * A cache of the input schema.
+   */
+  private Schema inputSchema;
 
   /**
    * The buffer storing in-progress group by results. {groupby-column-value -> Aggregator Array} when the group key is
    * String
    */
-  private transient HashMap<String, PrimitiveAggregator[]> groupAggsString;
+  private transient HashMap<String, Aggregator[]> groupAggsString;
 
   /**
    * The buffer storing in-progress group by results. {groupby-column-value -> Aggregator Array} when the group key is
    * DateTime.
    */
-  private transient HashMap<DateTime, PrimitiveAggregator[]> groupAggsDatetime;
+  private transient HashMap<DateTime, Aggregator[]> groupAggsDatetime;
 
   /**
    * The buffer storing in-progress group by results when the group key is int.
    */
-  private transient TIntObjectMap<PrimitiveAggregator[]> groupAggsInt;
+  private transient TIntObjectMap<Aggregator[]> groupAggsInt;
   /**
    * The buffer storing in-progress group by results when the group key is boolean.
    */
-  private transient PrimitiveAggregator[][] groupAggsBoolean;
+  private transient Aggregator[][] groupAggsBoolean;
   /**
    * The buffer storing in-progress group by results when the group key is long.
    */
-  private transient TLongObjectMap<PrimitiveAggregator[]> groupAggsLong;
+  private transient TLongObjectMap<Aggregator[]> groupAggsLong;
   /**
    * The buffer storing in-progress group by results when the group key is float.
    */
-  private transient TFloatObjectMap<PrimitiveAggregator[]> groupAggsFloat;
+  private transient TFloatObjectMap<Aggregator[]> groupAggsFloat;
   /**
    * The buffer storing in-progress group by results when the group key is double.
    */
-  private transient TDoubleObjectMap<PrimitiveAggregator[]> groupAggsDouble;
+  private transient TDoubleObjectMap<Aggregator[]> groupAggsDouble;
 
   /**
    * The buffer storing results after group by is done.
@@ -113,26 +108,25 @@ public class SingleGroupByAggregate extends UnaryOperator {
    * Constructor.
    * 
    * @param child The Operator that is feeding us tuples.
-   * @param afields The columns over which we are computing an aggregate.
-   * @param gfield The column over which we are grouping the result
-   * @param aggOps The aggregation operator to use
+   * @param gfield The column over which we are grouping the result.
+   * @param factories Factories for the aggregation operators to use.
    */
-  public SingleGroupByAggregate(final Operator child, final int[] afields, final int gfield, final int[] aggOps) {
+  public SingleGroupByAggregate(final Operator child, final int gfield, final AggregatorFactory[] factories) {
     super(child);
-    Objects.requireNonNull(afields);
-    if (afields.length == 0) {
-      throw new IllegalArgumentException("aggregation fields must not be empty");
-    }
-    gColumn = gfield;
-    this.afields = afields;
-    this.aggOps = aggOps;
+    gColumn = Objects.requireNonNull(gfield, "gfield");
+    this.factories = Objects.requireNonNull(factories, "factories");
   }
 
   /**
-   * @return the aggregate field
+   * Utility constructor for simplifying hand-written code. Constructs a SingleGroupByAggregate with only a single
+   * Aggregator.
+   * 
+   * @param child The Operator that is feeding us tuples.
+   * @param gfield The column over which we are grouping the result.
+   * @param factory Factory for the aggregation operator to use.
    */
-  public final int[] aggregateFields() {
-    return afields;
+  public SingleGroupByAggregate(final Operator child, final int gfield, final AggregatorFactory factory) {
+    this(child, gfield, new AggregatorFactory[] { Objects.requireNonNull(factory, "factory") });
   }
 
   @Override
@@ -147,217 +141,201 @@ public class SingleGroupByAggregate extends UnaryOperator {
   }
 
   /**
-   * @param tb the TupleBatch to be processed.
+   * Utility function to fetch or create/initialize the aggregators for the group corresponding to the data in the
+   * specified table and row.
+   * 
+   * @param table the data to be aggregated.
+   * @param row which row of the table is to be aggregated.
+   * @return the aggregators for that row.
    */
-  private void processTupleBatch(final TupleBatch tb) {
+  private Aggregator[] getGroupAggregators(final ReadableTable table, final int row) {
+    Aggregator[] groupAgg = null;
     switch (gColumnType) {
       case BOOLEAN_TYPE:
-        for (int i = 0; i < tb.numTuples(); i++) {
-          boolean groupByKey = tb.getBoolean(gColumn, i);
-          PrimitiveAggregator[] groupAgg = null;
-          if (groupByKey) {
-            groupAgg = groupAggsBoolean[0];
+        boolean groupByBool = table.getBoolean(gColumn, row);
+        if (groupByBool) {
+          groupAgg = groupAggsBoolean[0];
+        } else {
+          groupAgg = groupAggsBoolean[1];
+        }
+        if (groupAgg == null) {
+          groupAgg = allocateAggs();
+          if (groupByBool) {
+            groupAggsBoolean[0] = groupAgg;
           } else {
-            groupAgg = groupAggsBoolean[1];
-          }
-          if (groupAgg == null) {
-            groupAgg = AggUtils.allocate(getChild().getSchema(), afields, aggOps);
-            if (groupByKey) {
-              groupAggsBoolean[0] = groupAgg;
-            } else {
-              groupAggsBoolean[1] = groupAgg;
-            }
-          }
-          for (int j = 0; j < afields.length; j++) {
-            AggUtils.addValue2Group(tb, i, afields[j], groupAgg[j]);
+            groupAggsBoolean[1] = groupAgg;
           }
         }
         break;
       case STRING_TYPE:
-        for (int i = 0; i < tb.numTuples(); i++) {
-          String groupByKey = tb.getString(gColumn, i);
-          PrimitiveAggregator[] groupAgg = groupAggsString.get(groupByKey);
-          if (groupAgg == null) {
-            groupAgg = AggUtils.allocate(getChild().getSchema(), afields, aggOps);
-            groupAggsString.put(groupByKey, groupAgg);
-          }
-          for (int j = 0; j < afields.length; j++) {
-            AggUtils.addValue2Group(tb, i, afields[j], groupAgg[j]);
-          }
+        String groupByString = table.getString(gColumn, row);
+        groupAgg = groupAggsString.get(groupByString);
+        if (groupAgg == null) {
+          groupAgg = allocateAggs();
+          groupAggsString.put(groupByString, groupAgg);
         }
         break;
       case DATETIME_TYPE:
-        for (int i = 0; i < tb.numTuples(); i++) {
-          DateTime groupByKey = tb.getDateTime(gColumn, i);
-          PrimitiveAggregator[] groupAgg = groupAggsDatetime.get(groupByKey);
-          if (groupAgg == null) {
-            groupAgg = AggUtils.allocate(getChild().getSchema(), afields, aggOps);
-            groupAggsDatetime.put(groupByKey, groupAgg);
-          }
-          for (int j = 0; j < afields.length; j++) {
-            AggUtils.addValue2Group(tb, i, afields[j], groupAgg[j]);
-          }
+        DateTime groupByDateTime = table.getDateTime(gColumn, row);
+        groupAgg = groupAggsDatetime.get(groupByDateTime);
+        if (groupAgg == null) {
+          groupAgg = allocateAggs();
+          groupAggsDatetime.put(groupByDateTime, groupAgg);
         }
         break;
       case INT_TYPE:
-        for (int i = 0; i < tb.numTuples(); i++) {
-          int groupByKey = tb.getInt(gColumn, i);
-          PrimitiveAggregator[] groupAgg = groupAggsInt.get(groupByKey);
-          if (groupAgg == null) {
-            groupAgg = AggUtils.allocate(getChild().getSchema(), afields, aggOps);
-            groupAggsInt.put(groupByKey, groupAgg);
-          }
-          for (int j = 0; j < afields.length; j++) {
-            AggUtils.addValue2Group(tb, i, afields[j], groupAgg[j]);
-          }
+        int groupByInt = table.getInt(gColumn, row);
+        groupAgg = groupAggsInt.get(groupByInt);
+        if (groupAgg == null) {
+          groupAgg = allocateAggs();
+          groupAggsInt.put(groupByInt, groupAgg);
         }
         break;
       case LONG_TYPE:
-        for (int i = 0; i < tb.numTuples(); i++) {
-          long groupByKey = tb.getLong(gColumn, i);
-          PrimitiveAggregator[] groupAgg = groupAggsLong.get(groupByKey);
-          if (groupAgg == null) {
-            groupAgg = AggUtils.allocate(getChild().getSchema(), afields, aggOps);
-            groupAggsLong.put(groupByKey, groupAgg);
-          }
-          for (int j = 0; j < afields.length; j++) {
-            AggUtils.addValue2Group(tb, i, afields[j], groupAgg[j]);
-          }
+        long groupByLong = table.getLong(gColumn, row);
+        groupAgg = groupAggsLong.get(groupByLong);
+        if (groupAgg == null) {
+          groupAgg = allocateAggs();
+          groupAggsLong.put(groupByLong, groupAgg);
         }
         break;
       case FLOAT_TYPE:
-        for (int i = 0; i < tb.numTuples(); i++) {
-          float groupByKey = tb.getFloat(gColumn, i);
-          PrimitiveAggregator[] groupAgg = groupAggsFloat.get(groupByKey);
-          if (groupAgg == null) {
-            groupAgg = AggUtils.allocate(getChild().getSchema(), afields, aggOps);
-            groupAggsFloat.put(groupByKey, groupAgg);
-          }
-          for (int j = 0; j < afields.length; j++) {
-            AggUtils.addValue2Group(tb, i, afields[j], groupAgg[j]);
-          }
+        float groupByFloat = table.getFloat(gColumn, row);
+        groupAgg = groupAggsFloat.get(groupByFloat);
+        if (groupAgg == null) {
+          groupAgg = allocateAggs();
+          groupAggsFloat.put(groupByFloat, groupAgg);
         }
         break;
       case DOUBLE_TYPE:
-        for (int i = 0; i < tb.numTuples(); i++) {
-          double groupByKey = tb.getDouble(gColumn, i);
-          PrimitiveAggregator[] groupAgg = groupAggsDouble.get(groupByKey);
-          if (groupAgg == null) {
-            groupAgg = AggUtils.allocate(getChild().getSchema(), afields, aggOps);
-            groupAggsDouble.put(groupByKey, groupAgg);
-          }
-          for (int j = 0; j < afields.length; j++) {
-            AggUtils.addValue2Group(tb, i, afields[j], groupAgg[j]);
-          }
+        double groupByDouble = table.getDouble(gColumn, row);
+        groupAgg = groupAggsDouble.get(groupByDouble);
+        if (groupAgg == null) {
+          groupAgg = allocateAggs();
+          groupAggsDouble.put(groupByDouble, groupAgg);
         }
         break;
     }
+    if (groupAgg == null) {
+      throw new IllegalStateException("Aggregating values of unknown type.");
+    }
+    return groupAgg;
+  }
 
+  /**
+   * @param tb the TupleBatch to be processed.
+   */
+  private void processTupleBatch(final TupleBatch tb) {
+    for (int i = 0; i < tb.numTuples(); ++i) {
+      Aggregator[] groupAgg = getGroupAggregators(tb, i);
+      for (Aggregator agg : groupAgg) {
+        agg.addRow(tb, i);
+      }
+    }
   }
 
   /**
    * @param resultBuffer where the results are stored.
    */
   private void generateResult(final TupleBatchBuffer resultBuffer) {
-
     switch (gColumnType) {
       case BOOLEAN_TYPE:
-        PrimitiveAggregator[] t = groupAggsBoolean[0];
+        Aggregator[] t = groupAggsBoolean[0];
         if (t != null) {
           resultBuffer.putBoolean(0, true);
           int fromIndex = 1;
-          for (final PrimitiveAggregator element : t) {
+          for (final Aggregator element : t) {
             element.getResult(resultBuffer, fromIndex);
             fromIndex += element.getResultSchema().numColumns();
           }
         }
-        PrimitiveAggregator[] f = groupAggsBoolean[1];
+        Aggregator[] f = groupAggsBoolean[1];
         if (f != null) {
           resultBuffer.putBoolean(1, true);
           int fromIndex = 1;
-          for (final PrimitiveAggregator element : f) {
+          for (final Aggregator element : f) {
             element.getResult(resultBuffer, fromIndex);
             fromIndex += element.getResultSchema().numColumns();
           }
         }
         break;
       case STRING_TYPE:
-        for (final Map.Entry<String, PrimitiveAggregator[]> e : groupAggsString.entrySet()) {
+        for (final Map.Entry<String, Aggregator[]> e : groupAggsString.entrySet()) {
           final String groupByValue = e.getKey();
-          final PrimitiveAggregator[] aggLocal = e.getValue();
+          final Aggregator[] aggLocal = e.getValue();
           resultBuffer.putString(0, groupByValue);
           int fromIndex = 1;
-          for (final PrimitiveAggregator element : aggLocal) {
+          for (final Aggregator element : aggLocal) {
             element.getResult(resultBuffer, fromIndex);
             fromIndex += element.getResultSchema().numColumns();
           }
         }
         break;
       case DATETIME_TYPE:
-        for (final Map.Entry<DateTime, PrimitiveAggregator[]> e : groupAggsDatetime.entrySet()) {
+        for (final Map.Entry<DateTime, Aggregator[]> e : groupAggsDatetime.entrySet()) {
           final DateTime groupByValue = e.getKey();
-          final PrimitiveAggregator[] aggLocal = e.getValue();
+          final Aggregator[] aggLocal = e.getValue();
           resultBuffer.putDateTime(0, groupByValue);
           int fromIndex = 1;
-          for (final PrimitiveAggregator element : aggLocal) {
+          for (final Aggregator element : aggLocal) {
             element.getResult(resultBuffer, fromIndex);
             fromIndex += element.getResultSchema().numColumns();
           }
         }
         break;
       case INT_TYPE:
-        TIntObjectIterator<PrimitiveAggregator[]> itInt = groupAggsInt.iterator();
+        TIntObjectIterator<Aggregator[]> itInt = groupAggsInt.iterator();
         while (itInt.hasNext()) {
           itInt.advance();
           int groupByValue = itInt.key();
-          final PrimitiveAggregator[] aggLocal = itInt.value();
+          final Aggregator[] aggLocal = itInt.value();
           resultBuffer.putInt(0, groupByValue);
           int fromIndex = 1;
-          for (final PrimitiveAggregator element : aggLocal) {
+          for (final Aggregator element : aggLocal) {
             element.getResult(resultBuffer, fromIndex);
             fromIndex += element.getResultSchema().numColumns();
           }
         }
         break;
       case LONG_TYPE:
-        TLongObjectIterator<PrimitiveAggregator[]> itLong = groupAggsLong.iterator();
+        TLongObjectIterator<Aggregator[]> itLong = groupAggsLong.iterator();
         while (itLong.hasNext()) {
           itLong.advance();
           long groupByValue = itLong.key();
-          final PrimitiveAggregator[] aggLocal = itLong.value();
+          final Aggregator[] aggLocal = itLong.value();
           resultBuffer.putLong(0, groupByValue);
           int fromIndex = 1;
-          for (final PrimitiveAggregator element : aggLocal) {
+          for (final Aggregator element : aggLocal) {
             element.getResult(resultBuffer, fromIndex);
             fromIndex += element.getResultSchema().numColumns();
           }
         }
-        groupAggsLong = new TLongObjectHashMap<PrimitiveAggregator[]>();
+        groupAggsLong = new TLongObjectHashMap<Aggregator[]>();
         break;
       case FLOAT_TYPE:
-        groupAggsFloat = new TFloatObjectHashMap<PrimitiveAggregator[]>();
-        TFloatObjectIterator<PrimitiveAggregator[]> itFloat = groupAggsFloat.iterator();
+        groupAggsFloat = new TFloatObjectHashMap<Aggregator[]>();
+        TFloatObjectIterator<Aggregator[]> itFloat = groupAggsFloat.iterator();
         while (itFloat.hasNext()) {
           itFloat.advance();
           float groupByValue = itFloat.key();
-          final PrimitiveAggregator[] aggLocal = itFloat.value();
+          final Aggregator[] aggLocal = itFloat.value();
           resultBuffer.putFloat(0, groupByValue);
           int fromIndex = 1;
-          for (final PrimitiveAggregator element : aggLocal) {
+          for (final Aggregator element : aggLocal) {
             element.getResult(resultBuffer, fromIndex);
             fromIndex += element.getResultSchema().numColumns();
           }
         }
         break;
       case DOUBLE_TYPE:
-        TDoubleObjectIterator<PrimitiveAggregator[]> itDouble = groupAggsDouble.iterator();
+        TDoubleObjectIterator<Aggregator[]> itDouble = groupAggsDouble.iterator();
         while (itDouble.hasNext()) {
           itDouble.advance();
           double groupByValue = itDouble.key();
-          final PrimitiveAggregator[] aggLocal = itDouble.value();
+          final Aggregator[] aggLocal = itDouble.value();
           resultBuffer.putDouble(0, groupByValue);
           int fromIndex = 1;
-          for (final PrimitiveAggregator element : aggLocal) {
+          for (final Aggregator element : aggLocal) {
             element.getResult(resultBuffer, fromIndex);
             fromIndex += element.getResultSchema().numColumns();
           }
@@ -404,27 +382,29 @@ public class SingleGroupByAggregate extends UnaryOperator {
   @Override
   protected final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     generateSchema();
+    inputSchema = getChild().getSchema();
+    Preconditions.checkState(inputSchema != null, "child schema is null");
     switch (gColumnType) {
       case BOOLEAN_TYPE:
-        groupAggsBoolean = new PrimitiveAggregator[2][];
+        groupAggsBoolean = new Aggregator[2][];
         break;
       case INT_TYPE:
-        groupAggsInt = new TIntObjectHashMap<PrimitiveAggregator[]>();
+        groupAggsInt = new TIntObjectHashMap<Aggregator[]>();
         break;
       case LONG_TYPE:
-        groupAggsLong = new TLongObjectHashMap<PrimitiveAggregator[]>();
+        groupAggsLong = new TLongObjectHashMap<Aggregator[]>();
         break;
       case FLOAT_TYPE:
-        groupAggsFloat = new TFloatObjectHashMap<PrimitiveAggregator[]>();
+        groupAggsFloat = new TFloatObjectHashMap<Aggregator[]>();
         break;
       case DOUBLE_TYPE:
-        groupAggsDouble = new TDoubleObjectHashMap<PrimitiveAggregator[]>();
+        groupAggsDouble = new TDoubleObjectHashMap<Aggregator[]>();
         break;
       case STRING_TYPE:
-        groupAggsString = new HashMap<String, PrimitiveAggregator[]>();
+        groupAggsString = new HashMap<String, Aggregator[]>();
         break;
       case DATETIME_TYPE:
-        groupAggsDatetime = new HashMap<DateTime, PrimitiveAggregator[]>();
+        groupAggsDatetime = new HashMap<DateTime, Aggregator[]>();
         break;
     }
     resultBuffer = new TupleBatchBuffer(getSchema());
@@ -433,22 +413,42 @@ public class SingleGroupByAggregate extends UnaryOperator {
 
   @Override
   protected Schema generateSchema() {
-    final Schema childSchema = getChild().getSchema();
-    if (gColumn < 0 || gColumn >= childSchema.numColumns()) {
+    Operator child = getChild();
+    if (child == null) {
+      return null;
+    }
+    inputSchema = child.getSchema();
+    if (inputSchema == null) {
+      return null;
+    }
+
+    if (gColumn < 0 || gColumn >= inputSchema.numColumns()) {
       throw new IllegalArgumentException("Invalid group field");
     }
 
     Schema outputSchema = null;
 
     outputSchema =
-        new Schema(ImmutableList.of(childSchema.getColumnType(gColumn)), ImmutableList.of(childSchema
+        new Schema(ImmutableList.of(inputSchema.getColumnType(gColumn)), ImmutableList.of(inputSchema
             .getColumnName(gColumn)));
 
-    gColumnType = childSchema.getColumnType(gColumn);
-    agg = AggUtils.allocate(childSchema, afields, aggOps);
-    for (PrimitiveAggregator a : agg) {
-      outputSchema = Schema.merge(outputSchema, a.getResultSchema());
+    gColumnType = inputSchema.getColumnType(gColumn);
+    for (AggregatorFactory f : factories) {
+      outputSchema = Schema.merge(outputSchema, f.get(inputSchema).getResultSchema());
     }
     return outputSchema;
+  }
+
+  /**
+   * Utility class to allocate a set of aggregators from the factories.
+   * 
+   * @return the aggregators for this operator.
+   */
+  private Aggregator[] allocateAggs() {
+    Aggregator[] aggregators = new Aggregator[factories.length];
+    for (int j = 0; j < factories.length; ++j) {
+      aggregators[j] = factories[j].get(inputSchema);
+    }
+    return aggregators;
   }
 }

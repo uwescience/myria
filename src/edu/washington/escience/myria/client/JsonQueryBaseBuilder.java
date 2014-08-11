@@ -71,6 +71,8 @@ import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TipsyFileScan;
 import edu.washington.escience.myria.operator.UnionAll;
+import edu.washington.escience.myria.operator.agg.AggregatorFactory;
+import edu.washington.escience.myria.operator.agg.SingleColumnAggregatorFactory;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
 import edu.washington.escience.myria.operator.network.LocalMultiwayConsumer;
@@ -1031,11 +1033,14 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * @param aggOps agg ops.
    */
   public JsonQueryBaseBuilder groupBy(final int groupColumn, final int[] aggColumns, final int[] aggOps) {
-    List<List<String>> ops = AggregateEncoding.serializeAggregateOperators(aggOps);
     JsonQueryBaseBuilder gp = buildOperator(SingleGroupByAggregateEncoding.class, "argChild", this, NO_PREFERENCE);
-    ((SingleGroupByAggregateEncoding) gp.op).argAggFields = aggColumns;
-    ((SingleGroupByAggregateEncoding) gp.op).argAggOperators = ops;
+    AggregatorFactory[] aggregators = new AggregatorFactory[aggColumns.length];
+    for (int i = 0; i < aggColumns.length; ++i) {
+      aggregators[i] =
+          new SingleColumnAggregatorFactory(aggColumns[i], AggregateEncoding.serializeAggregateOperators(aggOps[i]));
+    }
     ((SingleGroupByAggregateEncoding) gp.op).argGroupField = groupColumn;
+    ((SingleGroupByAggregateEncoding) gp.op).aggregators = aggregators;
     return gp;
   }
 

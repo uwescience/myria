@@ -1856,7 +1856,7 @@ public final class Server {
 
     // sum up contributions
     final SingleGroupByAggregate sumAggregate =
-        new SingleGroupByAggregate(consumer, new int[] { 1 }, 0, new int[] { PrimitiveAggregator.AGG_OP_SUM });
+        new SingleGroupByAggregate(consumer, 0, new SingleColumnAggregatorFactory(1, "AVG"));
 
     // rename columns
     ImmutableList.Builder<Expression> renameExpressions = ImmutableList.builder();
