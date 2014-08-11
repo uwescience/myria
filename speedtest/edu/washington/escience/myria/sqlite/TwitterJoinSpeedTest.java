@@ -27,7 +27,6 @@ import edu.washington.escience.myria.operator.StreamingStateWrapper;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.operator.agg.Aggregate;
-import edu.washington.escience.myria.operator.agg.AggregatorFactory;
 import edu.washington.escience.myria.operator.agg.SingleColumnAggregatorFactory;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
@@ -109,9 +108,7 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final GenericShuffleProducer sp0 = new GenericShuffleProducer(localProjJoin, arrayID0, workerIDs, pf0);
     final GenericShuffleConsumer sc0 = new GenericShuffleConsumer(sp0.getSchema(), arrayID0, workerIDs);
     final StreamingStateWrapper dupelim = new StreamingStateWrapper(sc0, new DupElim());
-    final Aggregate count =
-        new Aggregate(dupelim,
-            new AggregatorFactory[] { new SingleColumnAggregatorFactory(0, ImmutableList.of("COUNT")) });
+    final Aggregate count = new Aggregate(dupelim, new SingleColumnAggregatorFactory(0, "COUNT"));
 
     /* Finally, send (CollectProduce) all the results to the master. */
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
@@ -125,9 +122,7 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     /* The server plan. Basically, collect and count tuples. */
     final Schema collectSchema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("COUNT"));
     final CollectConsumer collectCounts = new CollectConsumer(collectSchema, serverReceiveID, workerIDs);
-    Aggregate sumCount =
-        new Aggregate(collectCounts, new AggregatorFactory[] { new SingleColumnAggregatorFactory(0, ImmutableList
-            .of("SUM")) });
+    Aggregate sumCount = new Aggregate(collectCounts, new SingleColumnAggregatorFactory(0, "SUM"));
     final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
     TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, sumCount);
     SinkRoot serverPlan = new SinkRoot(queueStore);

@@ -48,8 +48,7 @@ public class CountStar implements QueryPlanGenerator {
 
     final Aggregate agg =
         new Aggregate(collectCountC, new AggregatorFactory[] {
-            new SingleColumnAggregatorFactory(0, ImmutableList.of("SUM")),
-            new SingleColumnAggregatorFactory(2, ImmutableList.of("SUM")) });
+            new SingleColumnAggregatorFactory(0, "SUM"), new SingleColumnAggregatorFactory(2, "SUM") });
 
     final CollectProducer sendToMaster = new CollectProducer(agg, sendToMasterID, 0);
 

@@ -124,7 +124,7 @@ public class AggregateTest {
     TupleSource source = new TupleSource(makeTrivialTupleBatch(builder));
     AggregatorFactory[] aggs = new AggregatorFactory[aggOps.length];
     for (int i = 0; i < aggs.length; ++i) {
-      aggs[i] = new SingleColumnAggregatorFactory(0, ImmutableList.of(aggOps[i]));
+      aggs[i] = new SingleColumnAggregatorFactory(0, aggOps[i]);
     }
     Aggregate agg = new Aggregate(source, aggs);
     /* Do it -- this should cause an error. */

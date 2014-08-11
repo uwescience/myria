@@ -42,7 +42,7 @@ public final class Aggregate extends UnaryOperator {
    * @param child The Operator that is feeding us tuples.
    * @param aggregators The {@link AggregatorFactory}s that creators the {@link Aggregator}s.
    */
-  public Aggregate(@Nullable final Operator child, @Nonnull final AggregatorFactory[] aggregators) {
+  public Aggregate(@Nullable final Operator child, @Nonnull final AggregatorFactory... aggregators) {
     super(child);
     Preconditions.checkNotNull(aggregators, "aggregators");
     int i = 0;

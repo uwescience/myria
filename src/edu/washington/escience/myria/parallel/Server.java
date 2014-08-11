@@ -73,7 +73,6 @@ import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.agg.Aggregate;
-import edu.washington.escience.myria.operator.agg.AggregatorFactory;
 import edu.washington.escience.myria.operator.agg.MultiGroupByAggregate;
 import edu.washington.escience.myria.operator.agg.PrimitiveAggregator;
 import edu.washington.escience.myria.operator.agg.SingleColumnAggregatorFactory;
@@ -1797,9 +1796,8 @@ public final class Server {
 
     // Aggregate range on master
     final Aggregate sumAggregate =
-        new Aggregate(consumer, new AggregatorFactory[] {
-            new SingleColumnAggregatorFactory(0, ImmutableList.of("MIN")),
-            new SingleColumnAggregatorFactory(1, ImmutableList.of("MAX")) });
+        new Aggregate(consumer, new SingleColumnAggregatorFactory(0, "MIN"),
+            new SingleColumnAggregatorFactory(1, "MAX"));
 
     DataOutput output = new DataOutput(sumAggregate, writer);
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
