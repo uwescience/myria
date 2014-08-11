@@ -74,7 +74,6 @@ import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.agg.Aggregate;
 import edu.washington.escience.myria.operator.agg.MultiGroupByAggregate;
-import edu.washington.escience.myria.operator.agg.PrimitiveAggregator;
 import edu.washington.escience.myria.operator.agg.SingleColumnAggregatorFactory;
 import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
@@ -1577,8 +1576,7 @@ public final class Server {
         new CollectConsumer(addWorkerId.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
 
     final MultiGroupByAggregate aggregate =
-        new MultiGroupByAggregate(consumer, new int[] { 0, 1, 2 }, new int[] { 3 },
-            new int[] { PrimitiveAggregator.AGG_OP_SUM });
+        new MultiGroupByAggregate(consumer, new int[] { 0, 1, 2 }, new SingleColumnAggregatorFactory(3, "SUM"));
 
     // rename columns
     ImmutableList.Builder<Expression> renameExpressions = ImmutableList.builder();
@@ -1736,8 +1734,7 @@ public final class Server {
 
     // sum up the number of workers working
     final MultiGroupByAggregate sumAggregate =
-        new MultiGroupByAggregate(consumer, new int[] { 0, 1 }, new int[] { 1 },
-            new int[] { PrimitiveAggregator.AGG_OP_COUNT });
+        new MultiGroupByAggregate(consumer, new int[] { 0, 1 }, new SingleColumnAggregatorFactory(1, "COUNT"));
     // rename columns
     ImmutableList.Builder<Expression> renameExpressions = ImmutableList.builder();
     renameExpressions.add(new Expression("opId", new VariableExpression(0)));

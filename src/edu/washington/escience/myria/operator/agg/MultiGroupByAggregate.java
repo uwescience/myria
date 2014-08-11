@@ -27,8 +27,11 @@ import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 
 /**
- * The Aggregation operator that computes an aggregate (e.g., sum, avg, max, min). We support aggregates over multiple
- * columns, group by multiple columns.
+ * The Aggregation operator that computes an aggregate (e.g., sum, avg, max, min). This variant supports aggregates over
+ * multiple columns, group by multiple columns.
+ * 
+ * @see Aggregate
+ * @see SingleGroupByAggregate
  */
 public final class MultiGroupByAggregate extends UnaryOperator {
 
@@ -40,40 +43,36 @@ public final class MultiGroupByAggregate extends UnaryOperator {
   /** Final group keys. */
   private List<TupleBatch> groupKeyList;
   /** Holds the corresponding aggregators for each group key in {@link #groupKeys}. */
-  private transient List<PrimitiveAggregator[]> groupAggs;
+  private transient List<Aggregator[]> groupAggs;
   /** Maps the hash of a grouping key to a list of indices in {@link #groupKeys}. */
   private transient TIntObjectMap<TIntList> groupKeyMap;
   /** The schema of the columns indicated by the group keys. */
   private Schema groupSchema;
   /** The schema of the aggregation result. */
   private Schema aggSchema;
+  /** A cache of the child's Schema. */
+  private Schema inputSchema;
 
-  /** Aggregate fields. **/
-  private final int[] afields;
+  /** Factories to make the Aggregators. **/
+  private final AggregatorFactory[] factories;
   /** Group fields. **/
   private final int[] gfields;
   /** An array [0, 1, .., gfields.length-1] used for comparing tuples. */
   private final int[] grpRange;
-  /** Aggregate operators. */
-  private final int[] aggOps;
 
   /**
-   * Groups the input tuples according to the specified grouping fields, then produces the specified aggregates over the
-   * specified aggregate fields.
+   * Groups the input tuples according to the specified grouping fields, then produces the specified aggregates.
    * 
    * @param child The Operator that is feeding us tuples.
    * @param gfields The columns over which we are grouping the result.
-   * @param afields The columns over which we are computing an aggregate, corresponding to the aggregate operations we
-   *          are performing.
-   * @param aggOps The aggregation operator to use for each column in <code>aFields</code>.
+   * @param factories The factories that will produce the {@link Aggregator}s for each group..
    */
-  public MultiGroupByAggregate(final Operator child, final int[] gfields, final int[] afields, final int[] aggOps) {
+  public MultiGroupByAggregate(final Operator child, final int[] gfields, final AggregatorFactory... factories) {
     super(child);
     this.gfields = Objects.requireNonNull(gfields, "gfields");
-    this.afields = Objects.requireNonNull(afields, "afields");
-    this.aggOps = Objects.requireNonNull(aggOps, "aggOps");
+    this.factories = Objects.requireNonNull(factories, "factories");
     Preconditions.checkArgument(gfields.length > 1, "to use MultiGroupByAggregate, must group over multiple fields");
-    Preconditions.checkArgument(afields.length != 0, "to use MultiGroupByAggregate, must specify some aggregates");
+    Preconditions.checkArgument(factories.length != 0, "to use MultiGroupByAggregate, must specify some aggregates");
     grpRange = new int[gfields.length];
     for (int i = 0; i < gfields.length; ++i) {
       grpRange[i] = i;
@@ -157,7 +156,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
       TupleUtils.copyValue(tb, gfields[column], row, groupKeys, column);
     }
     hashMatches.add(newIndex);
-    PrimitiveAggregator[] curAggs = AggUtils.allocate(getChild().getSchema(), afields, aggOps);
+    Aggregator[] curAggs = allocateAggs();
     groupAggs.add(curAggs);
     updateGroup(tb, row, curAggs);
     Preconditions.checkState(groupKeys.numTuples() == groupAggs.size(), "groupKeys %s != groupAggs %s", groupKeys
@@ -184,9 +183,9 @@ public final class MultiGroupByAggregate extends UnaryOperator {
    * @param row the row in <code>tb</code> that contains the new values
    * @param curAggs the aggregators to be updated.
    */
-  private void updateGroup(final TupleBatch tb, final int row, final PrimitiveAggregator[] curAggs) {
-    for (int aggIdx = 0; aggIdx < afields.length; ++aggIdx) {
-      curAggs[aggIdx].add(tb, afields[aggIdx], row);
+  private void updateGroup(final TupleBatch tb, final int row, final Aggregator[] curAggs) {
+    for (Aggregator agg : curAggs) {
+      agg.addRow(tb, row);
     }
   }
 
@@ -206,7 +205,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
     TupleBatch curGroupKeys = groupKeyList.remove(0);
     TupleBatchBuffer curGroupAggs = new TupleBatchBuffer(aggSchema);
     for (int row = 0; row < curGroupKeys.numTuples(); ++row) {
-      PrimitiveAggregator[] rowAggs = groupAggs.get(row);
+      Aggregator[] rowAggs = groupAggs.get(row);
       for (int i = 0; i < rowAggs.length; ++i) {
         rowAggs[i].getResult(curGroupAggs, i);
       }
@@ -228,23 +227,25 @@ public final class MultiGroupByAggregate extends UnaryOperator {
    */
   @Override
   public Schema generateSchema() {
-    Operator child = getChild();
-    if (child == null) {
-      return null;
-    }
-    Schema childSchema = child.getSchema();
-    if (childSchema == null) {
-      return null;
+    if (inputSchema == null) {
+      Operator child = getChild();
+      if (child == null) {
+        return null;
+      }
+      inputSchema = child.getSchema();
+      if (inputSchema == null) {
+        return null;
+      }
     }
 
-    groupSchema = childSchema.getSubSchema(gfields);
+    groupSchema = inputSchema.getSubSchema(gfields);
 
     /* Build the output schema from the group schema and the aggregates. */
     final ImmutableList.Builder<Type> aggTypes = ImmutableList.<Type> builder();
     final ImmutableList.Builder<String> aggNames = ImmutableList.<String> builder();
 
-    PrimitiveAggregator[] aggs = AggUtils.allocate(childSchema, afields, aggOps);
-    for (PrimitiveAggregator agg : aggs) {
+    Aggregator[] aggs = allocateAggs();
+    for (Aggregator agg : aggs) {
       Schema curAggSchema = agg.getResultSchema();
       Preconditions.checkState(curAggSchema.numColumns() == 1, "aggSchema should only have 1 column, not %s",
           curAggSchema.numColumns());
@@ -261,5 +262,18 @@ public final class MultiGroupByAggregate extends UnaryOperator {
     groupKeys = new TupleBuffer(groupSchema);
     groupAggs = new ArrayList<>();
     groupKeyMap = new TIntObjectHashMap<>();
+  }
+
+  /**
+   * Utility class to allocate a set of aggregators from the factories.
+   * 
+   * @return the aggregators for this operator.
+   */
+  private Aggregator[] allocateAggs() {
+    Aggregator[] aggregators = new Aggregator[factories.length];
+    for (int j = 0; j < factories.length; ++j) {
+      aggregators[j] = factories[j].get(inputSchema);
+    }
+    return aggregators;
   }
 }
