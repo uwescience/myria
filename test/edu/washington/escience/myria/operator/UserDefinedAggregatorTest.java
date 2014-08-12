@@ -26,6 +26,7 @@ import edu.washington.escience.myria.util.TestEnvVars;
 public class UserDefinedAggregatorTest {
 
   private final int NUM_TUPLES = 2 * TupleBatch.BATCH_SIZE;
+  private final int NUM_TUPLES_20K = 2 * 10000;
 
   @Test
   public void testCount() throws DbException {
@@ -120,7 +121,7 @@ public class UserDefinedAggregatorTest {
   public void testRowOfMax() throws DbException {
     final Schema schema = new Schema(ImmutableList.of(Type.STRING_TYPE), ImmutableList.of("name"));
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
-    for (long i = 0; i < NUM_TUPLES; i++) {
+    for (long i = 0; i < NUM_TUPLES_20K; i++) {
       tbb.putString(0, "Foo" + i);
     }
 
