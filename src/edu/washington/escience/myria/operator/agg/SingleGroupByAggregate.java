@@ -147,8 +147,9 @@ public class SingleGroupByAggregate extends UnaryOperator {
    * @param table the data to be aggregated.
    * @param row which row of the table is to be aggregated.
    * @return the aggregators for that row.
+   * @throws DbException if there is an error.
    */
-  private Aggregator[] getGroupAggregators(final ReadableTable table, final int row) {
+  private Aggregator[] getGroupAggregators(final ReadableTable table, final int row) throws DbException {
     Aggregator[] groupAgg = null;
     switch (gColumnType) {
       case BOOLEAN_TYPE:
@@ -224,8 +225,9 @@ public class SingleGroupByAggregate extends UnaryOperator {
 
   /**
    * @param tb the TupleBatch to be processed.
+   * @throws DbException if there is an error.
    */
-  private void processTupleBatch(final TupleBatch tb) {
+  private void processTupleBatch(final TupleBatch tb) throws DbException {
     for (int i = 0; i < tb.numTuples(); ++i) {
       Aggregator[] groupAgg = getGroupAggregators(tb, i);
       for (Aggregator agg : groupAgg) {
@@ -236,8 +238,9 @@ public class SingleGroupByAggregate extends UnaryOperator {
 
   /**
    * @param resultBuffer where the results are stored.
+   * @throws DbException if there is an error.
    */
-  private void generateResult(final TupleBatchBuffer resultBuffer) {
+  private void generateResult(final TupleBatchBuffer resultBuffer) throws DbException {
     switch (gColumnType) {
       case BOOLEAN_TYPE:
         Aggregator[] t = groupAggsBoolean[0];
@@ -434,7 +437,11 @@ public class SingleGroupByAggregate extends UnaryOperator {
 
     gColumnType = inputSchema.getColumnType(gColumn);
     for (AggregatorFactory f : factories) {
-      outputSchema = Schema.merge(outputSchema, f.get(inputSchema).getResultSchema());
+      try {
+        outputSchema = Schema.merge(outputSchema, f.get(inputSchema).getResultSchema());
+      } catch (DbException e) {
+        throw new RuntimeException("Error generating output schema", e);
+      }
     }
     return outputSchema;
   }

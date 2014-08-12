@@ -46,4 +46,9 @@ public class SingleColumnAggregatorFactory implements AggregatorFactory {
   public Aggregator get(@Nonnull final Schema inputSchema) {
     return new SingleColumnAggregator(inputSchema, column, aggOps);
   }
+
+  @Override
+  public Schema getResultSchema(@Nonnull final Schema inputSchema) {
+    return new SingleColumnAggregator(inputSchema, column, aggOps).getResultSchema();
+  }
 }

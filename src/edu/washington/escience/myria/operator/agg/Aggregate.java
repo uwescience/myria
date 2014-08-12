@@ -96,9 +96,10 @@ public final class Aggregate extends UnaryOperator {
     final ImmutableList.Builder<Type> gTypes = ImmutableList.builder();
     final ImmutableList.Builder<String> gNames = ImmutableList.builder();
 
-    for (Aggregator agg : AggUtils.allocateAggs(factories, childSchema)) {
-      gTypes.addAll(agg.getResultSchema().getColumnTypes());
-      gNames.addAll(agg.getResultSchema().getColumnNames());
+    for (AggregatorFactory f : factories) {
+      Schema s = f.getResultSchema(childSchema);
+      gTypes.addAll(s.getColumnTypes());
+      gNames.addAll(s.getColumnNames());
     }
     return new Schema(gTypes, gNames);
   }

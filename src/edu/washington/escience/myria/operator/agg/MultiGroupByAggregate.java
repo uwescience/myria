@@ -149,8 +149,9 @@ public final class MultiGroupByAggregate extends UnaryOperator {
    * @param tb the source {@link TupleBatch}
    * @param row the row in <code>tb</code> that contains the new group
    * @param hashMatches the list of all rows in the output {@link TupleBuffer}s that match this hash.
+   * @throws DbException if there is an error.
    */
-  private void newGroup(final TupleBatch tb, final int row, final TIntList hashMatches) {
+  private void newGroup(final TupleBatch tb, final int row, final TIntList hashMatches) throws DbException {
     int newIndex = groupKeys.numTuples();
     for (int column = 0; column < gfields.length; ++column) {
       TupleUtils.copyValue(tb, gfields[column], row, groupKeys, column);
@@ -182,8 +183,9 @@ public final class MultiGroupByAggregate extends UnaryOperator {
    * @param tb the source {@link TupleBatch}
    * @param row the row in <code>tb</code> that contains the new values
    * @param curAggs the aggregators to be updated.
+   * @throws DbException if there is an error.
    */
-  private void updateGroup(final TupleBatch tb, final int row, final Aggregator[] curAggs) {
+  private void updateGroup(final TupleBatch tb, final int row, final Aggregator[] curAggs) throws DbException {
     for (Aggregator agg : curAggs) {
       agg.addRow(tb, row);
     }
@@ -191,8 +193,9 @@ public final class MultiGroupByAggregate extends UnaryOperator {
 
   /**
    * @return A batch's worth of result tuples from this aggregate.
+   * @throws DbException if there is an error.
    */
-  private TupleBatch getResultBatch() {
+  private TupleBatch getResultBatch() throws DbException {
     Preconditions.checkState(getChild().eos(), "cannot extract results from an aggregate until child has reached EOS");
     if (groupKeyList == null) {
       groupKeyList = Lists.newLinkedList(groupKeys.finalResult());
@@ -244,9 +247,8 @@ public final class MultiGroupByAggregate extends UnaryOperator {
     final ImmutableList.Builder<Type> aggTypes = ImmutableList.<Type> builder();
     final ImmutableList.Builder<String> aggNames = ImmutableList.<String> builder();
 
-    Aggregator[] aggs = AggUtils.allocateAggs(factories, inputSchema);
-    for (Aggregator agg : aggs) {
-      Schema curAggSchema = agg.getResultSchema();
+    for (AggregatorFactory f : factories) {
+      Schema curAggSchema = f.getResultSchema(inputSchema);
       Preconditions.checkState(curAggSchema.numColumns() == 1, "aggSchema should only have 1 column, not %s",
           curAggSchema.numColumns());
       aggTypes.add(curAggSchema.getColumnType(0));
