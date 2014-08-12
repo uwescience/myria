@@ -4,11 +4,13 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.expression.ConditionalExpression;
 import edu.washington.escience.myria.expression.ConstantExpression;
 import edu.washington.escience.myria.expression.Expression;
@@ -18,6 +20,7 @@ import edu.washington.escience.myria.expression.PlusExpression;
 import edu.washington.escience.myria.expression.StateExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.operator.agg.Aggregate;
+import edu.washington.escience.myria.operator.agg.AggregatorFactory;
 import edu.washington.escience.myria.operator.agg.UserDefinedAggregatorFactory;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
@@ -25,11 +28,19 @@ import edu.washington.escience.myria.util.TestEnvVars;
 
 public class UserDefinedAggregatorTest {
 
+  private final ObjectReader reader = MyriaJsonMapperProvider.getReader().withType(AggregatorFactory.class);
+  private final ObjectWriter writer = MyriaJsonMapperProvider.getWriter();
   private final int NUM_TUPLES = 2 * TupleBatch.BATCH_SIZE;
   private final int NUM_TUPLES_20K = 2 * 10000;
 
+  /**
+   * Tests a re-implementation of the Count aggregate using a user-defined aggregate. Also tests serialization and
+   * deserialization.
+   * 
+   * @throws Exception if something goes wrong.
+   */
   @Test
-  public void testCount() throws DbException {
+  public void testCount() throws Exception {
     final Schema schema = new Schema(ImmutableList.of(Type.STRING_TYPE), ImmutableList.of("name"));
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (long i = 0; i < NUM_TUPLES; i++) {
@@ -50,8 +61,9 @@ public class UserDefinedAggregatorTest {
     ImmutableList.Builder<Expression> Emitters = ImmutableList.builder();
     Emitters.add(emitter);
 
-    UserDefinedAggregatorFactory factory =
+    AggregatorFactory factory =
         new UserDefinedAggregatorFactory(Initializers.build(), Updaters.build(), Emitters.build());
+    factory = reader.readValue(writer.writeValueAsString(factory));
 
     Aggregate agg = new Aggregate(new TupleSource(tbb), factory);
     agg.open(TestEnvVars.get());
@@ -71,8 +83,14 @@ public class UserDefinedAggregatorTest {
     agg.close();
   }
 
+  /**
+   * Tests a re-implementation of the Count aggregate using a user-defined aggregate that also implements a constant
+   * value column. Also tests serialization and deserialization.
+   * 
+   * @throws Exception if something goes wrong.
+   */
   @Test
-  public void testCountAndConst() throws DbException {
+  public void testCountAndConst() throws Exception {
     final Schema schema = new Schema(ImmutableList.of(Type.STRING_TYPE), ImmutableList.of("name"));
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (long i = 0; i < NUM_TUPLES; i++) {
@@ -95,8 +113,9 @@ public class UserDefinedAggregatorTest {
     Emitters.add(emitter);
     Emitters.add(constEmitter);
 
-    UserDefinedAggregatorFactory factory =
+    AggregatorFactory factory =
         new UserDefinedAggregatorFactory(Initializers.build(), Updaters.build(), Emitters.build());
+    factory = reader.readValue(writer.writeValueAsString(factory));
 
     Aggregate agg = new Aggregate(new TupleSource(tbb), factory);
     agg.open(TestEnvVars.get());
@@ -117,8 +136,13 @@ public class UserDefinedAggregatorTest {
     agg.close();
   }
 
+  /**
+   * Tests an arg-max-like aggregate function. Also tests serialization and deserialization.
+   * 
+   * @throws Exception if something goes wrong.
+   */
   @Test
-  public void testRowOfMax() throws DbException {
+  public void testRowOfMax() throws Exception {
     final Schema schema = new Schema(ImmutableList.of(Type.STRING_TYPE), ImmutableList.of("name"));
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (long i = 0; i < NUM_TUPLES_20K; i++) {
@@ -145,8 +169,9 @@ public class UserDefinedAggregatorTest {
     Emitters.add(new Expression("indexOfMax", new StateExpression(1)));
     Emitters.add(new Expression("max", new StateExpression(2)));
 
-    UserDefinedAggregatorFactory factory =
+    AggregatorFactory factory =
         new UserDefinedAggregatorFactory(Initializers.build(), Updaters.build(), Emitters.build());
+    factory = reader.readValue(writer.writeValueAsString(factory));
 
     Aggregate agg = new Aggregate(new TupleSource(tbb), factory);
     agg.open(TestEnvVars.get());
@@ -158,6 +183,7 @@ public class UserDefinedAggregatorTest {
         assertEquals(1, result.numTuples());
         assertEquals(2, result.numColumns());
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(0));
+        assertEquals(Type.STRING_TYPE, result.getSchema().getColumnType(1));
         assertEquals(9999, result.getLong(0, 0));
         assertEquals("Foo9999", result.getString(1, 0));
         resultSize += result.numTuples();
