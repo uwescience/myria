@@ -16,6 +16,7 @@ import edu.washington.escience.myria.Schema;
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
+    @Type(value = CountAllAggregatorFactory.class, name = "CountAll"),
     @Type(value = SingleColumnAggregatorFactory.class, name = "SingleColumn"),
     @Type(value = UserDefinedAggregatorFactory.class, name = "UserDefined") })
 public interface AggregatorFactory extends Serializable {
