@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -67,7 +69,8 @@ public final class MultiGroupByAggregate extends UnaryOperator {
    * @param gfields The columns over which we are grouping the result.
    * @param factories The factories that will produce the {@link Aggregator}s for each group..
    */
-  public MultiGroupByAggregate(final Operator child, final int[] gfields, final AggregatorFactory... factories) {
+  public MultiGroupByAggregate(@Nullable final Operator child, final int[] gfields,
+      final AggregatorFactory... factories) {
     super(child);
     this.gfields = Objects.requireNonNull(gfields, "gfields");
     this.factories = Objects.requireNonNull(factories, "factories");

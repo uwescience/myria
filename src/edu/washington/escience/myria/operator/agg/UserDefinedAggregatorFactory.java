@@ -53,13 +53,13 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
 
   @Override
   @Nonnull
-  public Aggregator get(@Nonnull final Schema inputSchema) throws DbException {
+  public Aggregator get(final Schema inputSchema) throws DbException {
     return new UserDefinedAggregator(initializers, updaters, emitters, inputSchema);
   }
 
   @Override
   @Nonnull
-  public Schema getResultSchema(@Nonnull final Schema inputSchema) {
+  public Schema getResultSchema(final Schema inputSchema) {
     ImmutableList.Builder<Type> stateTypes = ImmutableList.builder();
     ExpressionOperatorParameter initParams = new ExpressionOperatorParameter(inputSchema);
     for (Expression e : initializers) {

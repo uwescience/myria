@@ -2,8 +2,6 @@ package edu.washington.escience.myria.operator.agg;
 
 import java.util.Objects;
 
-import javax.annotation.Nonnull;
-
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.Schema;
@@ -30,8 +28,7 @@ public class SingleColumnAggregator implements Aggregator {
    * @param column which column of the input to aggregate over.
    * @param aggOps which aggregate operations are requested. See {@link PrimitiveAggregator}.
    */
-  public SingleColumnAggregator(@Nonnull final Schema inputSchema, final int column,
-      @Nonnull final AggregationOp[] aggOps) {
+  public SingleColumnAggregator(final Schema inputSchema, final int column, final AggregationOp[] aggOps) {
     Objects.requireNonNull(inputSchema, "inputSchema");
     this.column = column;
     Objects.requireNonNull(aggOps, "aggOps");

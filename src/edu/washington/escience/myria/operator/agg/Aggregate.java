@@ -1,6 +1,5 @@
 package edu.washington.escience.myria.operator.agg;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.google.common.base.Preconditions;
@@ -40,7 +39,7 @@ public final class Aggregate extends UnaryOperator {
    * @param child The Operator that is feeding us tuples.
    * @param aggregators The {@link AggregatorFactory}s that creators the {@link Aggregator}s.
    */
-  public Aggregate(@Nullable final Operator child, @Nonnull final AggregatorFactory... aggregators) {
+  public Aggregate(@Nullable final Operator child, final AggregatorFactory... aggregators) {
     super(child);
     Preconditions.checkNotNull(aggregators, "aggregators");
     int i = 0;

@@ -5,8 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import javax.annotation.Nonnull;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
@@ -70,8 +68,8 @@ public class UserDefinedAggregator implements Aggregator {
    * @param inputSchema child operator that data is fetched from
    * @throws DbException if there is an error initializing the evaluators.
    */
-  public UserDefinedAggregator(@Nonnull final List<Expression> initializers, @Nonnull final List<Expression> updaters,
-      @Nonnull final List<Expression> emitters, @Nonnull final Schema inputSchema) throws DbException {
+  public UserDefinedAggregator(final List<Expression> initializers, final List<Expression> updaters,
+      final List<Expression> emitters, final Schema inputSchema) throws DbException {
     this.initializers = ImmutableList.copyOf(MyriaUtils.checkHasNoNulls(initializers, "initializers"));
     ImmutableList.copyOf(MyriaUtils.checkHasNoNulls(updaters, "updaters"));
     this.emitters = ImmutableList.copyOf(MyriaUtils.checkHasNoNulls(emitters, "emitters"));

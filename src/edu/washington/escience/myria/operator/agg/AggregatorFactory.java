@@ -28,7 +28,7 @@ public interface AggregatorFactory extends Serializable {
    * @throws DbException if there is an error creating the aggregator.
    */
   @Nonnull
-  Aggregator get(@Nonnull Schema inputSchema) throws DbException;
+  Aggregator get(Schema inputSchema) throws DbException;
 
   /**
    * Returns the schema of the aggregates over the specified input tuples.
@@ -37,5 +37,5 @@ public interface AggregatorFactory extends Serializable {
    * @return the schema of the aggregates over the specified input tuples.
    */
   @Nonnull
-  Schema getResultSchema(@Nonnull Schema inputSchema);
+  Schema getResultSchema(Schema inputSchema);
 }

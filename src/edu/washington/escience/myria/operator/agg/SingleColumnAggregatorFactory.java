@@ -2,8 +2,6 @@ package edu.washington.escience.myria.operator.agg;
 
 import java.util.Objects;
 
-import javax.annotation.Nonnull;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
@@ -43,12 +41,12 @@ public class SingleColumnAggregatorFactory implements AggregatorFactory {
   }
 
   @Override
-  public Aggregator get(@Nonnull final Schema inputSchema) {
+  public Aggregator get(final Schema inputSchema) {
     return new SingleColumnAggregator(inputSchema, column, aggOps);
   }
 
   @Override
-  public Schema getResultSchema(@Nonnull final Schema inputSchema) {
+  public Schema getResultSchema(final Schema inputSchema) {
     return new SingleColumnAggregator(inputSchema, column, aggOps).getResultSchema();
   }
 }

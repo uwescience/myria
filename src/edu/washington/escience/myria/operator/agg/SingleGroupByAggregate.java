@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import org.joda.time.DateTime;
 
 import com.google.common.base.Preconditions;
@@ -111,7 +113,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
    * @param gfield The column over which we are grouping the result.
    * @param factories Factories for the aggregation operators to use.
    */
-  public SingleGroupByAggregate(final Operator child, final int gfield, final AggregatorFactory[] factories) {
+  public SingleGroupByAggregate(@Nullable final Operator child, final int gfield, final AggregatorFactory[] factories) {
     super(child);
     gColumn = Objects.requireNonNull(gfield, "gfield");
     this.factories = Objects.requireNonNull(factories, "factories");
