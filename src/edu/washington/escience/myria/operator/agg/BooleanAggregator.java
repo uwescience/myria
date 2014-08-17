@@ -23,7 +23,6 @@ public final class BooleanAggregator implements PrimitiveAggregator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
-
   /**
    * Count, always of long type.
    */
@@ -38,6 +37,8 @@ public final class BooleanAggregator implements PrimitiveAggregator {
    * Note that we use a {@link LinkedHashSet} to ensure that the iteration order is consistent!
    */
   private final LinkedHashSet<AggregationOp> aggOps;
+  /** Does this aggregator need to compute the count? */
+  private final boolean needsCount;
 
   /**
    * Aggregate operations applicable for boolean columns.
@@ -59,6 +60,8 @@ public final class BooleanAggregator implements PrimitiveAggregator {
       throw new IllegalArgumentException("Unsupported aggregation(s) on boolean column: "
           + Sets.difference(this.aggOps, AVAILABLE_AGG));
     }
+
+    needsCount = AggUtils.needsCount(this.aggOps);
 
     final ImmutableList.Builder<Type> types = ImmutableList.builder();
     final ImmutableList.Builder<String> names = ImmutableList.builder();
@@ -91,7 +94,7 @@ public final class BooleanAggregator implements PrimitiveAggregator {
    * @param value the value to be added
    */
   public void addBoolean(final boolean value) {
-    if (AggUtils.needsCount(aggOps)) {
+    if (needsCount) {
       count = LongMath.checkedAdd(count, 1);
     }
   }
@@ -135,7 +138,7 @@ public final class BooleanAggregator implements PrimitiveAggregator {
   @Override
   public void add(final ReadableColumn from) {
     Objects.requireNonNull(from, "from");
-    if (AggUtils.needsCount(aggOps)) {
+    if (needsCount) {
       count = LongMath.checkedAdd(count, from.size());
     }
   }

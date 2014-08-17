@@ -31,6 +31,14 @@ public final class StringAggregator implements PrimitiveAggregator {
    * Note that we use a {@link LinkedHashSet} to ensure that the iteration order is consistent!
    */
   private final LinkedHashSet<AggregationOp> aggOps;
+  /** Does this aggregator need to compute the count? */
+  private final boolean needsCount;
+  /** Does this aggregator need to compute the min? */
+  private final boolean needsMin;
+  /** Does this aggregator need to compute the max? */
+  private final boolean needsMax;
+  /** Does this aggregator need to compute tuple-level stats? */
+  private final boolean needsStats;
 
   /**
    * Count, always of long type.
@@ -69,6 +77,11 @@ public final class StringAggregator implements PrimitiveAggregator {
           + Sets.difference(this.aggOps, AVAILABLE_AGG));
     }
 
+    needsCount = AggUtils.needsCount(this.aggOps);
+    needsMin = AggUtils.needsMin(this.aggOps);
+    needsMax = AggUtils.needsMax(this.aggOps);
+    needsStats = AggUtils.needsStats(this.aggOps);
+
     final ImmutableList.Builder<Type> types = ImmutableList.builder();
     final ImmutableList.Builder<String> names = ImmutableList.builder();
     for (AggregationOp op : this.aggOps) {
@@ -101,10 +114,10 @@ public final class StringAggregator implements PrimitiveAggregator {
     if (numTuples == 0) {
       return;
     }
-    if (AggUtils.needsCount(aggOps)) {
+    if (needsCount) {
       count = LongMath.checkedAdd(count, numTuples);
     }
-    if (AggUtils.needsStats(aggOps)) {
+    if (needsStats) {
       for (int i = 0; i < from.size(); ++i) {
         addStringStats(from.getString(i));
       }
@@ -130,10 +143,10 @@ public final class StringAggregator implements PrimitiveAggregator {
    */
   public void addString(final String value) {
     Objects.requireNonNull(value, "value");
-    if (AggUtils.needsCount(aggOps)) {
+    if (needsCount) {
       count = LongMath.checkedAdd(count, 1);
     }
-    if (AggUtils.needsStats(aggOps)) {
+    if (needsStats) {
       addStringStats(value);
     }
   }
@@ -145,12 +158,12 @@ public final class StringAggregator implements PrimitiveAggregator {
    */
   private void addStringStats(final String value) {
     Objects.requireNonNull(value, "value");
-    if (AggUtils.needsMin(aggOps)) {
+    if (needsMin) {
       if ((min == null) || (min.compareTo(value) > 0)) {
         min = value;
       }
     }
-    if (AggUtils.needsMax(aggOps)) {
+    if (needsMax) {
       if (max == null || max.compareTo(value) < 0) {
         max = value;
       }

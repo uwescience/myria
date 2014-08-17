@@ -31,6 +31,18 @@ public final class IntegerAggregator implements PrimitiveAggregator {
    * Note that we use a {@link LinkedHashSet} to ensure that the iteration order is consistent!
    */
   private final LinkedHashSet<AggregationOp> aggOps;
+  /** Does this aggregator need to compute the count? */
+  private final boolean needsCount;
+  /** Does this aggregator need to compute the sum? */
+  private final boolean needsSum;
+  /** Does this aggregator need to compute the sum squared? */
+  private final boolean needsSumSq;
+  /** Does this aggregator need to compute the max? */
+  private final boolean needsMax;
+  /** Does this aggregator need to compute the min? */
+  private final boolean needsMin;
+  /** Does this aggregator need to compute tuple-level stats? */
+  private final boolean needsStats;
 
   /** The minimum value in the aggregated column. */
   private int min;
@@ -73,6 +85,13 @@ public final class IntegerAggregator implements PrimitiveAggregator {
       throw new IllegalArgumentException("Unsupported aggregation(s) on int column: "
           + Sets.difference(this.aggOps, AVAILABLE_AGG));
     }
+
+    needsCount = AggUtils.needsCount(this.aggOps);
+    needsSum = AggUtils.needsSum(this.aggOps);
+    needsSumSq = AggUtils.needsSumSq(this.aggOps);
+    needsMin = AggUtils.needsMin(this.aggOps);
+    needsMax = AggUtils.needsMax(this.aggOps);
+    needsStats = AggUtils.needsStats(this.aggOps);
 
     min = Integer.MAX_VALUE;
     max = Integer.MIN_VALUE;
@@ -120,11 +139,11 @@ public final class IntegerAggregator implements PrimitiveAggregator {
       return;
     }
 
-    if (AggUtils.needsCount(aggOps)) {
+    if (needsCount) {
       count = LongMath.checkedAdd(count, numTuples);
     }
 
-    if (!AggUtils.needsStats(aggOps)) {
+    if (!needsStats) {
       return;
     }
     for (int i = 0; i < numTuples; i++) {
@@ -150,10 +169,10 @@ public final class IntegerAggregator implements PrimitiveAggregator {
    * @param value the value to be added
    */
   public void addInt(final int value) {
-    if (AggUtils.needsCount(aggOps)) {
+    if (needsCount) {
       count = LongMath.checkedAdd(count, 1);
     }
-    if (AggUtils.needsStats(aggOps)) {
+    if (needsStats) {
       addIntStats(value);
     }
   }
@@ -164,17 +183,17 @@ public final class IntegerAggregator implements PrimitiveAggregator {
    * @param value the value to be added
    */
   private void addIntStats(final int value) {
-    if (AggUtils.needsSum(aggOps)) {
+    if (needsSum) {
       sum = LongMath.checkedAdd(sum, value);
     }
-    if (AggUtils.needsSumSq(aggOps)) {
+    if (needsSumSq) {
       // don't need to check value*value since value is an int
       sumSquared = LongMath.checkedAdd(sumSquared, ((long) value) * value);
     }
-    if (AggUtils.needsMin(aggOps)) {
+    if (needsMin) {
       min = Math.min(min, value);
     }
-    if (AggUtils.needsMax(aggOps)) {
+    if (needsMax) {
       max = Math.max(max, value);
     }
   }
