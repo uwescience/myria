@@ -1,7 +1,5 @@
 package edu.washington.escience.myria.operator.agg;
 
-import java.util.Arrays;
-import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -9,7 +7,6 @@ import org.joda.time.DateTime;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import com.google.common.math.LongMath;
 
 import edu.washington.escience.myria.Schema;
@@ -21,26 +18,10 @@ import edu.washington.escience.myria.storage.ReadableTable;
 /**
  * Knows how to compute some aggregate over a DateTimeColumn.
  */
-public final class DateTimeAggregator implements PrimitiveAggregator {
+public final class DateTimeAggregator extends PrimitiveAggregator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
-
-  /**
-   * Aggregate operations. A set of all valid aggregation operations, i.e. those in
-   * {@link DateTimeAggregator#AVAILABLE_AGG}.
-   * 
-   * Note that we use a {@link LinkedHashSet} to ensure that the iteration order is consistent!
-   */
-  private final LinkedHashSet<AggregationOp> aggOps;
-  /** Does this aggregator need to compute the count? */
-  private final boolean needsCount;
-  /** Does this aggregator need to compute the min? */
-  private final boolean needsMin;
-  /** Does this aggregator need to compute the max? */
-  private final boolean needsMax;
-  /** Does this aggregator need to compute tuple-level stats? */
-  private final boolean needsStats;
 
   /**
    * Count, always of long type.
@@ -68,21 +49,8 @@ public final class DateTimeAggregator implements PrimitiveAggregator {
    * @param aggOps the aggregate operation to simultaneously compute.
    */
   public DateTimeAggregator(final String aFieldName, final AggregationOp[] aggOps) {
+    super(aggOps);
     Objects.requireNonNull(aFieldName, "aFieldName");
-    if (aggOps.length == 0) {
-      throw new IllegalArgumentException("No aggregation operations are selected");
-    }
-
-    this.aggOps = new LinkedHashSet<>(Arrays.asList(aggOps));
-    if (!AVAILABLE_AGG.containsAll(this.aggOps)) {
-      throw new IllegalArgumentException("Unsupported aggregation(s) on int column: "
-          + Sets.difference(this.aggOps, AVAILABLE_AGG));
-    }
-
-    needsCount = AggUtils.needsCount(this.aggOps);
-    needsMin = AggUtils.needsMin(this.aggOps);
-    needsMax = AggUtils.needsMax(this.aggOps);
-    needsStats = AggUtils.needsStats(this.aggOps);
 
     final ImmutableList.Builder<Type> types = ImmutableList.builder();
     final ImmutableList.Builder<String> names = ImmutableList.builder();
@@ -202,5 +170,10 @@ public final class DateTimeAggregator implements PrimitiveAggregator {
   @Override
   public Type getType() {
     return Type.DATETIME_TYPE;
+  }
+
+  @Override
+  protected Set<AggregationOp> getAvailableAgg() {
+    return AVAILABLE_AGG;
   }
 }
