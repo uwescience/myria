@@ -21,7 +21,7 @@ public interface Aggregator extends Serializable {
   void add(ReadableTable from) throws DbException;
 
   /**
-   * Update this aggregate using the specified of the specified table.
+   * Update this aggregate using the specified row of the specified table.
    * 
    * @param from the source {@link ReadableTable}.
    * @param row the specified row.
