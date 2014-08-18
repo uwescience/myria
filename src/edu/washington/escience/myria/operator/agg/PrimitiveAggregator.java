@@ -18,6 +18,7 @@ import edu.washington.escience.myria.storage.ReadableTable;
 /**
  * Single column aggregator.
  */
+@SuppressWarnings("checkstyle:visibilitymodifier")
 public abstract class PrimitiveAggregator implements Serializable {
 
   /** Required for Java serialization. */
