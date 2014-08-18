@@ -3,8 +3,10 @@ package edu.washington.escience.myria.operator.agg;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
+import java.util.Objects;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
 import edu.washington.escience.myria.Schema;
@@ -63,11 +65,20 @@ public abstract class PrimitiveAggregator implements Serializable {
   protected final LinkedHashSet<AggregationOp> aggOps;
 
   /**
+   * Result schema. It's automatically generated according to the {@link #aggOps}.
+   */
+  private final Schema resultSchema;
+
+  /**
    * Instantiate a PrimitiveAggregator that computes the specified aggregates.
    * 
-   * @param aggOps the set, i
+   * @param fieldName the name of the field being aggregated, for naming output columns.
+   * @param aggOps the set of aggregate operations to be computed.
    */
-  protected PrimitiveAggregator(final AggregationOp[] aggOps) {
+  protected PrimitiveAggregator(final String fieldName, final AggregationOp[] aggOps) {
+    Objects.requireNonNull(aggOps, "aggOps");
+    Objects.requireNonNull(fieldName, "fieldName");
+
     this.aggOps = new LinkedHashSet<>(Arrays.asList(aggOps));
 
     if (!getAvailableAgg().containsAll(this.aggOps)) {
@@ -85,7 +96,46 @@ public abstract class PrimitiveAggregator implements Serializable {
     needsMin = AggUtils.needsMin(this.aggOps);
     needsMax = AggUtils.needsMax(this.aggOps);
     needsStats = AggUtils.needsStats(this.aggOps);
+
+    final ImmutableList.Builder<Type> types = ImmutableList.builder();
+    final ImmutableList.Builder<String> names = ImmutableList.builder();
+    for (AggregationOp op : this.aggOps) {
+      switch (op) {
+        case COUNT:
+          types.add(Type.LONG_TYPE);
+          names.add("count_" + fieldName);
+          break;
+        case MAX:
+          types.add(getType());
+          names.add("max_" + fieldName);
+          break;
+        case MIN:
+          types.add(getType());
+          names.add("min_" + fieldName);
+          break;
+        case AVG:
+          types.add(Type.DOUBLE_TYPE);
+          names.add("avg_" + fieldName);
+          break;
+        case STDEV:
+          types.add(Type.DOUBLE_TYPE);
+          names.add("stdev_" + fieldName);
+          break;
+        case SUM:
+          types.add(getSumType());
+          names.add("sum_" + fieldName);
+          break;
+      }
+    }
+    resultSchema = new Schema(types, names);
   }
+
+  /**
+   * Returns the Type of the SUM aggregate.
+   * 
+   * @return the Type of the SUM aggregate.
+   */
+  protected abstract Type getSumType();
 
   /**
    * Returns the set of aggregation operations that are supported by this aggregator.
@@ -99,7 +149,7 @@ public abstract class PrimitiveAggregator implements Serializable {
    * 
    * @param from the source {@link ReadableColumn}
    */
-  abstract void add(ReadableColumn from);
+  public abstract void add(ReadableColumn from);
 
   /**
    * Add the entire contents of the specified column from the {@link ReadableTable} into the aggregate.
@@ -107,7 +157,7 @@ public abstract class PrimitiveAggregator implements Serializable {
    * @param from the source {@link ReadableTable}
    * @param fromColumn the column in the table to add values from
    */
-  abstract void add(ReadableTable from, int fromColumn);
+  public abstract void add(ReadableTable from, int fromColumn);
 
   /**
    * Add the value in the specified <code>column</code> and <code>row</code> in the given {@link ReadableTable} into the
@@ -117,7 +167,7 @@ public abstract class PrimitiveAggregator implements Serializable {
    * @param column the column in <code>t</code> containing the value
    * @param row the row in <code>t</code> containing the value
    */
-  abstract void add(ReadableTable table, int column, int row);
+  public abstract void add(ReadableTable table, int column, int row);
 
   /**
    * Output the aggregate result. Store the output to buffer.
@@ -125,7 +175,7 @@ public abstract class PrimitiveAggregator implements Serializable {
    * @param dest the buffer to store the aggregate result.
    * @param destColumn from the fromIndex to put the result columns
    */
-  abstract void getResult(AppendableTable dest, int destColumn);
+  public abstract void getResult(AppendableTable dest, int destColumn);
 
   /**
    * All the count aggregates are of type Long. All the avg aggregates are of type Double. And each of the max/min/sum
@@ -133,10 +183,12 @@ public abstract class PrimitiveAggregator implements Serializable {
    * 
    * @return Result schema of this Aggregator.
    */
-  abstract Schema getResultSchema();
+  public final Schema getResultSchema() {
+    return resultSchema;
+  }
 
   /**
    * @return The {@link Type} of the values this aggreagtor handles.
    */
-  abstract Type getType();
+  public abstract Type getType();
 }

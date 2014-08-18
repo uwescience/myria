@@ -5,11 +5,9 @@ import java.util.Set;
 
 import org.joda.time.DateTime;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.math.LongMath;
 
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.storage.AppendableTable;
 import edu.washington.escience.myria.storage.ReadableColumn;
@@ -34,11 +32,6 @@ public final class DateTimeAggregator extends PrimitiveAggregator {
   private DateTime min, max;
 
   /**
-   * Result schema. It's automatically generated according to the {@link DateTimeAggregator#aggOps}.
-   */
-  private final Schema resultSchema;
-
-  /**
    * Aggregate operations applicable for string columns.
    */
   public static final Set<AggregationOp> AVAILABLE_AGG = ImmutableSet.of(AggregationOp.COUNT, AggregationOp.MAX,
@@ -49,32 +42,7 @@ public final class DateTimeAggregator extends PrimitiveAggregator {
    * @param aggOps the aggregate operation to simultaneously compute.
    */
   public DateTimeAggregator(final String aFieldName, final AggregationOp[] aggOps) {
-    super(aggOps);
-    Objects.requireNonNull(aFieldName, "aFieldName");
-
-    final ImmutableList.Builder<Type> types = ImmutableList.builder();
-    final ImmutableList.Builder<String> names = ImmutableList.builder();
-    for (AggregationOp op : this.aggOps) {
-      switch (op) {
-        case COUNT:
-          types.add(Type.LONG_TYPE);
-          names.add("count_" + aFieldName);
-          break;
-        case MAX:
-          types.add(Type.DATETIME_TYPE);
-          names.add("max_" + aFieldName);
-          break;
-        case MIN:
-          types.add(Type.DATETIME_TYPE);
-          names.add("min_" + aFieldName);
-          break;
-        case AVG:
-        case STDEV:
-        case SUM:
-          throw new UnsupportedOperationException("Aggregate " + op + " on type DateTime");
-      }
-    }
-    resultSchema = new Schema(types, names);
+    super(aFieldName, aggOps);
   }
 
   /**
@@ -163,8 +131,8 @@ public final class DateTimeAggregator extends PrimitiveAggregator {
   }
 
   @Override
-  public Schema getResultSchema() {
-    return resultSchema;
+  protected Type getSumType() {
+    throw new UnsupportedOperationException("SUM of DateTime values");
   }
 
   @Override

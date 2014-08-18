@@ -3,11 +3,9 @@ package edu.washington.escience.myria.operator.agg;
 import java.util.Objects;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.math.LongMath;
 
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.storage.AppendableTable;
 import edu.washington.escience.myria.storage.ReadableColumn;
@@ -37,11 +35,6 @@ public final class IntegerAggregator extends PrimitiveAggregator {
   private long count;
 
   /**
-   * Result schema. It's automatically generated according to the {@link IntegerAggregator#aggOps}.
-   */
-  private final Schema resultSchema;
-
-  /**
    * Aggregate operations applicable for int columns.
    */
   public static final Set<AggregationOp> AVAILABLE_AGG = ImmutableSet.of(AggregationOp.COUNT, AggregationOp.SUM,
@@ -52,45 +45,13 @@ public final class IntegerAggregator extends PrimitiveAggregator {
    * @param aggOps the aggregate operation to simultaneously compute.
    */
   public IntegerAggregator(final String aFieldName, final AggregationOp[] aggOps) {
-    super(aggOps);
-    Objects.requireNonNull(aFieldName, "aFieldName");
+    super(aFieldName, aggOps);
 
     min = Integer.MAX_VALUE;
     max = Integer.MIN_VALUE;
     sum = 0;
     count = 0;
     sumSquared = 0L;
-    final ImmutableList.Builder<Type> types = ImmutableList.builder();
-    final ImmutableList.Builder<String> names = ImmutableList.builder();
-    for (AggregationOp op : this.aggOps) {
-      switch (op) {
-        case AVG:
-          types.add(Type.DOUBLE_TYPE);
-          names.add("avg_" + aFieldName);
-          break;
-        case COUNT:
-          types.add(Type.LONG_TYPE);
-          names.add("count_" + aFieldName);
-          break;
-        case MAX:
-          types.add(Type.INT_TYPE);
-          names.add("max_" + aFieldName);
-          break;
-        case MIN:
-          types.add(Type.INT_TYPE);
-          names.add("min_" + aFieldName);
-          break;
-        case STDEV:
-          types.add(Type.DOUBLE_TYPE);
-          names.add("stdev_" + aFieldName);
-          break;
-        case SUM:
-          types.add(Type.LONG_TYPE);
-          names.add("sum_" + aFieldName);
-          break;
-      }
-    }
-    resultSchema = new Schema(types, names);
   }
 
   @Override
@@ -193,11 +154,6 @@ public final class IntegerAggregator extends PrimitiveAggregator {
   }
 
   @Override
-  public Schema getResultSchema() {
-    return resultSchema;
-  }
-
-  @Override
   public Type getType() {
     return Type.INT_TYPE;
   }
@@ -205,5 +161,10 @@ public final class IntegerAggregator extends PrimitiveAggregator {
   @Override
   protected Set<AggregationOp> getAvailableAgg() {
     return AVAILABLE_AGG;
+  }
+
+  @Override
+  protected Type getSumType() {
+    return Type.LONG_TYPE;
   }
 }

@@ -3,11 +3,9 @@ package edu.washington.escience.myria.operator.agg;
 import java.util.Objects;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.math.LongMath;
 
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.storage.AppendableTable;
 import edu.washington.escience.myria.storage.ReadableColumn;
@@ -32,11 +30,6 @@ public final class StringAggregator extends PrimitiveAggregator {
   private String min, max;
 
   /**
-   * Result schema. It's automatically generated according to the {@link StringAggregator#aggOps}.
-   */
-  private final Schema resultSchema;
-
-  /**
    * Aggregate operations applicable for string columns.
    */
   public static final Set<AggregationOp> AVAILABLE_AGG = ImmutableSet.of(AggregationOp.COUNT, AggregationOp.MAX,
@@ -47,32 +40,7 @@ public final class StringAggregator extends PrimitiveAggregator {
    * @param aggOps the aggregate operation to simultaneously compute.
    */
   public StringAggregator(final String aFieldName, final AggregationOp[] aggOps) {
-    super(aggOps);
-    Objects.requireNonNull(aFieldName, "aFieldName");
-
-    final ImmutableList.Builder<Type> types = ImmutableList.builder();
-    final ImmutableList.Builder<String> names = ImmutableList.builder();
-    for (AggregationOp op : this.aggOps) {
-      switch (op) {
-        case COUNT:
-          types.add(Type.LONG_TYPE);
-          names.add("count_" + aFieldName);
-          break;
-        case MAX:
-          types.add(Type.STRING_TYPE);
-          names.add("max_" + aFieldName);
-          break;
-        case MIN:
-          types.add(Type.STRING_TYPE);
-          names.add("min_" + aFieldName);
-          break;
-        case AVG:
-        case STDEV:
-        case SUM:
-          throw new UnsupportedOperationException("Aggregate " + op + " on type String");
-      }
-    }
-    resultSchema = new Schema(types, names);
+    super(aFieldName, aggOps);
   }
 
   @Override
@@ -161,8 +129,8 @@ public final class StringAggregator extends PrimitiveAggregator {
   }
 
   @Override
-  public Schema getResultSchema() {
-    return resultSchema;
+  protected Type getSumType() {
+    throw new UnsupportedOperationException("SUM of String values");
   }
 
   @Override

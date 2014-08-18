@@ -3,11 +3,9 @@ package edu.washington.escience.myria.operator.agg;
 import java.util.Objects;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.math.LongMath;
 
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.storage.AppendableTable;
 import edu.washington.escience.myria.storage.ReadableColumn;
@@ -24,10 +22,6 @@ public final class BooleanAggregator extends PrimitiveAggregator {
    * Count, always of long type.
    */
   private long count;
-  /**
-   * Result schema. It's automatically generated according to the {@link BooleanAggregator#aggOps}.
-   */
-  private final Schema resultSchema;
 
   /**
    * Aggregate operations applicable for boolean columns.
@@ -39,26 +33,7 @@ public final class BooleanAggregator extends PrimitiveAggregator {
    * @param aggOps the aggregate operation to simultaneously compute.
    */
   public BooleanAggregator(final String aFieldName, final AggregationOp[] aggOps) {
-    super(Objects.requireNonNull(aggOps, "aggOps"));
-    Objects.requireNonNull(aFieldName, "aFieldName");
-
-    final ImmutableList.Builder<Type> types = ImmutableList.builder();
-    final ImmutableList.Builder<String> names = ImmutableList.builder();
-    for (AggregationOp op : this.aggOps) {
-      switch (op) {
-        case COUNT:
-          types.add(Type.LONG_TYPE);
-          names.add("count_" + aFieldName);
-          break;
-        case AVG:
-        case MAX:
-        case MIN:
-        case STDEV:
-        case SUM:
-          throw new UnsupportedOperationException("Aggregate " + op + " on type Boolean");
-      }
-    }
-    resultSchema = new Schema(types.build(), names.build());
+    super(aFieldName, aggOps);
   }
 
   @Override
@@ -99,11 +74,6 @@ public final class BooleanAggregator extends PrimitiveAggregator {
   }
 
   @Override
-  public Schema getResultSchema() {
-    return resultSchema;
-  }
-
-  @Override
   public void add(final ReadableTable table, final int column, final int row) {
     Objects.requireNonNull(table, "table");
     addBoolean(table.getBoolean(column, row));
@@ -125,5 +95,10 @@ public final class BooleanAggregator extends PrimitiveAggregator {
   @Override
   protected Set<AggregationOp> getAvailableAgg() {
     return AVAILABLE_AGG;
+  }
+
+  @Override
+  protected Type getSumType() {
+    throw new UnsupportedOperationException("SUM of Boolean values");
   }
 }
