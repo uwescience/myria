@@ -1091,6 +1091,7 @@ public final class MasterCatalog {
    * @return the newly generated ID of this query.
    * @throws CatalogException if there is an error adding the new query.
    */
+  @SuppressWarnings("checkstyle:magicnumber")
   public Long newQuery(final QueryEncoding query) throws CatalogException {
     Objects.requireNonNull(query, "query");
     if (isClosed) {
@@ -1217,6 +1218,7 @@ public final class MasterCatalog {
    * @throws SQLiteException if there is an error in the database.
    * @throws IOException if there is an error when deserializing physical plan.
    */
+  @SuppressWarnings("checkstyle:magicnumber")
   private static QueryStatusEncoding queryStatusHelper(final SQLiteStatement statement) throws SQLiteException,
       IOException {
     final QueryStatusEncoding queryStatus = new QueryStatusEncoding(statement.columnLong(0));

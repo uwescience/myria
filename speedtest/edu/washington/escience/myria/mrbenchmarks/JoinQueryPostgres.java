@@ -15,7 +15,9 @@ import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
-import edu.washington.escience.myria.operator.agg.Aggregator;
+import edu.washington.escience.myria.operator.agg.AggregatorFactory;
+import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
+import edu.washington.escience.myria.operator.agg.SingleColumnAggregatorFactory;
 import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
@@ -70,8 +72,10 @@ public class JoinQueryPostgres implements QueryPlanGenerator, Serializable {
         new GenericShuffleConsumer(spLocalScan.getSchema(), localScanID, allWorkers);
 
     final SingleGroupByAggregate globalAgg =
-        new SingleGroupByAggregate(scLocalScan, new int[] { 1, 2, 3 }, 0, new int[] {
-            Aggregator.AGG_OP_SUM, Aggregator.AGG_OP_SUM, Aggregator.AGG_OP_SUM });
+        new SingleGroupByAggregate(scLocalScan, 0, new AggregatorFactory[] {
+            new SingleColumnAggregatorFactory(1, AggregationOp.SUM),
+            new SingleColumnAggregatorFactory(2, AggregationOp.SUM),
+            new SingleColumnAggregatorFactory(3, AggregationOp.SUM) });
 
     GlobalAvg globalAvg = new GlobalAvg(1, 0);
     globalAvg.setChildren(new Operator[] { globalAgg });

@@ -15,6 +15,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.ColumnFactory;
+import edu.washington.escience.myria.column.builder.WritableColumn;
 
 /**
  * Used for creating TupleBatch objects on the fly. A helper class used in, e.g., the Scatter operator. Currently it
@@ -207,6 +208,7 @@ public class TupleBatchBuffer implements AppendableTable {
   /**
    * @return the Schema of the tuples in this buffer.
    */
+  @Override
   public final Schema getSchema() {
     return schema;
   }
@@ -238,6 +240,7 @@ public class TupleBatchBuffer implements AppendableTable {
   /**
    * @return num columns.
    */
+  @Override
   public final int numColumns() {
     return numColumns;
   }
@@ -245,6 +248,7 @@ public class TupleBatchBuffer implements AppendableTable {
   /**
    * @return the number of complete tuples stored in this TupleBatchBuffer.
    */
+  @Override
   public final int numTuples() {
     return readyTuplesNum + currentInProgressTuples;
   }
@@ -418,6 +422,14 @@ public class TupleBatchBuffer implements AppendableTable {
   }
 
   @Override
+  @Deprecated
+  public void putObject(final int column, final Object value) {
+    checkPutIndex(column);
+    currentBuildingColumns.get(column).appendObject(value);
+    columnPut(column);
+  }
+
+  @Override
   public final void putString(final int column, final String value) {
     checkPutIndex(column);
     currentBuildingColumns.get(column).appendString(value);
@@ -444,6 +456,11 @@ public class TupleBatchBuffer implements AppendableTable {
     } else {
       tupleBatch.compactInto(this);
     }
+  }
+
+  @Override
+  public WritableColumn asWritableColumn(final int column) {
+    return new WritableSubColumn(this, column);
   }
 
 }
