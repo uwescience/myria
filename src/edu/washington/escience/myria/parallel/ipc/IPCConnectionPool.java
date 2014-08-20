@@ -934,7 +934,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
           return ch.close();
         }
       } else {
-        ChannelFuture cf = new DefaultChannelFuture(null, false);
+        ChannelFuture cf = new DefaultChannelFuture(NullChannel.NULL, false);
         cf.setSuccess();
         return cf;
       }
@@ -1097,7 +1097,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   /**
    * Send a message to a remote IPC entity without reserving a connection.
    *
-   * @return write future, may be null.
+   * @return write future, non-null.
    * @param ipcID IPC ID.
    * @param message the message to send.
    * @throws IllegalStateException if the connection pool is already shutdown
@@ -1115,7 +1115,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
       try {
         ch = getAConnection(ipcID);
       } catch (ChannelException e) {
-        DefaultChannelFuture r = new DefaultChannelFuture(null, false);
+        DefaultChannelFuture r = new DefaultChannelFuture(NullChannel.NULL, false);
         r.setFailure(e);
         return r;
       }
@@ -1326,14 +1326,14 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
         allAcceptedChannelCloseFutures.add(ch.getCloseFuture());
       }
       new DefaultChannelGroupFuture(allAcceptedRemoteChannels, allAcceptedChannelCloseFutures)
-          .addListener(new ChannelGroupFutureListener() {
+      .addListener(new ChannelGroupFutureListener() {
 
-            @Override
-            public void operationComplete(final ChannelGroupFuture future) throws Exception {
-              serverChannel.unbind(); // shutdown server channel only if all the accepted connections have been
-              // disconnected.
-            }
-          });
+        @Override
+        public void operationComplete(final ChannelGroupFuture future) throws Exception {
+          serverChannel.unbind(); // shutdown server channel only if all the accepted connections have been
+          // disconnected.
+        }
+      });
 
       inJVMShortMessageChannel.close();
 
