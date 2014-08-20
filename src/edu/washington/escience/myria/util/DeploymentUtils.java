@@ -167,8 +167,8 @@ public final class DeploymentUtils {
     StringBuilder builder = new StringBuilder();
     String path = workingDir + "/" + description + "-files";
     String workerDir = path + "/" + description + "/" + "worker_" + workerId;
-    String classpath = "'conf:libs/*'";
-    String librarypath = "sqlite4java-282";
+    String classpath = "'" + path + "/conf:" + path + "/libs/*'";
+    String librarypath = path + "/" + "sqlite4java-282";
     String heapSize = maxHeapSize;
     if (description == null) {
       /* built in system test */
