@@ -5,8 +5,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelException;
@@ -103,7 +101,7 @@ class ChannelContext extends AttachmentableAdapter {
   interface DelayedTransitionEvent {
     /**
      * apply the event.
-     * 
+     *
      * @return if successfully applied.
      * */
     boolean apply();
@@ -279,7 +277,7 @@ class ChannelContext extends AttachmentableAdapter {
 
     /**
      * Decrease the number of references by 1.
-     * 
+     *
      * @return the new number of references.
      * */
     final int decReference() {
@@ -320,7 +318,7 @@ class ChannelContext extends AttachmentableAdapter {
 
     /**
      * Increase the number of references by 1.
-     * 
+     *
      * @return the new number of references.
      * */
     final int incReference() {
@@ -437,7 +435,7 @@ class ChannelContext extends AttachmentableAdapter {
   /**
    * synchronize channel state change. The channel state machine diagram is in ipc_pool_channel_statemachine.di which
    * can be open by the Papyrus Eclipse plugin.
-   * 
+   *
    */
   private final Object stateMachineLock;
   /**
@@ -546,10 +544,10 @@ class ChannelContext extends AttachmentableAdapter {
 
   /**
    * Any error encountered, cleanup state, close the channel directly.
-   * 
+   *
    * @param unregisteredNewChannels Set of new channels who have not identified there worker IDs yet (i.e. not
    *          registered).
-   * 
+   *
    * @param trashBin channel trash bin. The place where to-be-closed channels reside.
    * @param channelPool the channel pool in which the channel resides. may be null if the channel is not registered yet
    * @param recycleBin channel recycle bin. The place where currently-unused-but-waiting-for-possible-reuse channels
@@ -584,10 +582,10 @@ class ChannelContext extends AttachmentableAdapter {
 
   /**
    * Callback if the owner channel is closed.
-   * 
+   *
    * @param unregisteredNewChannels Set of new channels who have not identified there worker IDs yet (i.e. not
    *          registered).
-   * 
+   *
    * @param trashBin channel trash bin. The place where to-be-closed channels reside.
    * @param channelPool the channel pool in which the channel resides. may be null if the channel is not registered yet
    * @param recycleBin channel recycle bin. The place where currently-unused-but-waiting-for-possible-reuse channels
@@ -653,7 +651,7 @@ class ChannelContext extends AttachmentableAdapter {
   /**
    * @param recycleBin channel recycle bin. The place where currently-unused-but-waiting-for-possible-reuse channels
    *          reside.
-   * 
+   *
    * */
   final void considerRecycle(final ConcurrentHashMap<Channel, Channel> recycleBin) {
     // undelayed, may not apply
@@ -854,7 +852,7 @@ class ChannelContext extends AttachmentableAdapter {
 
   /**
    * Record the most recent write future.
-   * 
+   *
    * @param e the most recent message write event.
    * */
   final void recordWriteFuture(final MessageEvent e) {
@@ -901,7 +899,7 @@ class ChannelContext extends AttachmentableAdapter {
   }
 
   /**
-   * 
+   *
    * @param trashBin channel trash bin. The place where to-be-closed channels reside.
    * @param unregisteredNewChannels Set of new channels who have not identified there worker IDs yet (i.e. not
    *          registered).
@@ -995,7 +993,7 @@ class ChannelContext extends AttachmentableAdapter {
   /**
    * At connection creation, the client needs to wait the server side sending its IPC ID. This is to make sure that both
    * the client side and the server side are ready to transmit data.
-   * 
+   *
    * @return the remote reply ID.
    * */
   final Integer remoteReplyID() {
@@ -1003,7 +1001,7 @@ class ChannelContext extends AttachmentableAdapter {
   }
 
   /**
-   * 
+   *
    * @param recycleBin channel recycle bin. The place where currently-unused-but-waiting-for-possible-reuse channels
    *          reside.
    * */
@@ -1059,16 +1057,13 @@ class ChannelContext extends AttachmentableAdapter {
 
   /**
    * Wait for sometime for the remote to send back it's IPC entity.
-   * 
-   * @param timeoutInMillis the time out
+   *
    * @return true if remote replied in time.
    * */
-  private boolean waitForRemoteReply(final long timeoutInMillis) {
+  private boolean waitForRemoteReply() {
     if (!remoteReply.isDone()) {
       try {
-        if (!remoteReply.await(timeoutInMillis, TimeUnit.MILLISECONDS)) {
-          remoteReply.setFailure(new ChannelException(new TimeoutException()));
-        }
+        remoteReply.await();
       } catch (final InterruptedException e) {
         remoteReply.setFailure(e);
         Thread.currentThread().interrupt();
@@ -1081,18 +1076,17 @@ class ChannelContext extends AttachmentableAdapter {
 
   /**
    * Do remote channel register
-   * 
+   *
    * For channels initiated by this IPC entity, the registration process is that this IPC entity creates a connection,
    * send my IPC ID, and wait for the remote IPC entity sending back its IPC ID within a timeout.
-   * 
+   *
    * @param myIDMsg the msg encoding my IPC ID to send to remote
    * @param remoteID the remote IPC ID
-   * @param timeoutMS timeout in milliseconds
    * @param registeredChannels registered channels
    * @param unregisteredNewChannels unregistered channels
    * @throws ChannelException if the remote channel registration fails
    */
-  final void awaitRemoteRegister(final CONNECT myIDMsg, final int remoteID, final long timeoutMS,
+  final void awaitRemoteRegister(final CONNECT myIDMsg, final int remoteID,
       final ChannelPrioritySet registeredChannels, final ConcurrentHashMap<Channel, Channel> unregisteredNewChannels)
       throws ChannelException {
     remoteReply.addPreListener(new OperationFutureListener() {
@@ -1108,7 +1102,7 @@ class ChannelContext extends AttachmentableAdapter {
     });
     ownerChannel.write(myIDMsg);
 
-    if (!waitForRemoteReply(timeoutMS)) {
+    if (!waitForRemoteReply()) {
       throw new ChannelException("ID checking timeout, failed to get the remote ID", remoteReply.getCause());
     }
 
