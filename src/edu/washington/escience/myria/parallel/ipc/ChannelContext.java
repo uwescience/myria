@@ -10,6 +10,7 @@ import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelException;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
+import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.slf4j.Logger;
@@ -1110,5 +1111,80 @@ class ChannelContext extends AttachmentableAdapter {
       throw new ChannelException("ID checking timeout, remote ID doesn't match");
     }
 
+  }
+
+  /**
+   * Sequentialize channel readability setting.
+   */
+  private final Object readabilityLock = new Object();
+
+  /**
+   * Record the last {@link Channel#setReadable(boolean)} future.
+   */
+  private ChannelFuture lastReadabilityFuture = null;
+
+  /**
+   * Pause read from the ch Channel, this will back-pressure to TCP layer. The TCP stream control will automatically
+   * pause the sending from the remote.
+   *
+   * @param ch the Channel.
+   * @return the future instance of the pausing read action
+   */
+  public static ChannelFuture pauseRead(final Channel ch) {
+    ChannelContext cc = ChannelContext.getChannelContext(ch);
+    if (cc == null) {
+      return ch.setReadable(false);
+    }
+    final ChannelFuture pauseFuture = Channels.future(ch);
+    synchronized (cc.readabilityLock) {
+      if (cc.lastReadabilityFuture != null) {
+        cc.lastReadabilityFuture.addListener(new ChannelFutureListener() {
+          @Override
+          public void operationComplete(final ChannelFuture future) throws Exception {
+            Channels.setInterestOps(ch.getPipeline().getContext(ch.getPipeline().getLast()), pauseFuture, ch
+                .getInterestOps()
+                & ~Channel.OP_READ);
+          }
+        });
+      } else {
+        Channels.setInterestOps(ch.getPipeline().getContext(ch.getPipeline().getLast()), pauseFuture, ch
+            .getInterestOps()
+            & ~Channel.OP_READ);
+      }
+      cc.lastReadabilityFuture = pauseFuture;
+    }
+    return pauseFuture;
+  }
+
+  /**
+   * Resume read.
+   *
+   * @param ch the Channel
+   * @return the future instance of the resuming read action
+   */
+  public static ChannelFuture resumeRead(final Channel ch) {
+    ChannelContext cc = ChannelContext.getChannelContext(ch);
+    if (cc == null) {
+      return ch.setReadable(true);
+    }
+    final ChannelFuture resumeFuture = Channels.future(ch);
+    synchronized (cc.readabilityLock) {
+      if (cc.lastReadabilityFuture != null) {
+        cc.lastReadabilityFuture.addListener(new ChannelFutureListener() {
+          @Override
+          public void operationComplete(final ChannelFuture future) throws Exception {
+            Channels.setInterestOps(ch.getPipeline().getContext(ch.getPipeline().getLast()), resumeFuture, ch
+                .getInterestOps()
+                | Channel.OP_READ);
+          }
+        });
+      } else {
+        Channels.setInterestOps(ch.getPipeline().getContext(ch.getPipeline().getLast()), resumeFuture, ch
+            .getInterestOps()
+            | Channel.OP_READ);
+      }
+      cc.lastReadabilityFuture = resumeFuture;
+    }
+    return resumeFuture;
   }
 }

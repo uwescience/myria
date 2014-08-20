@@ -6,7 +6,6 @@ import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.operator.network.Producer;
-import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.concurrent.ReentrantSpinLock;
 
 /**
@@ -111,7 +110,7 @@ class StreamIOChannelPair {
           ioChannel));
     }
     if (oldChannel != null) {
-      IPCUtils.resumeRead(oldChannel).awaitUninterruptibly();
+      ChannelContext.resumeRead(oldChannel).awaitUninterruptibly();
     }
   }
 
@@ -138,7 +137,7 @@ class StreamIOChannelPair {
       LOGGER.trace(String.format("Stream input channel %1$s disassociated from physical channel %2$s.", old, channel));
     }
     if (channel != null) {
-      IPCUtils.resumeRead(channel).awaitUninterruptibly();
+      ChannelContext.resumeRead(channel).awaitUninterruptibly();
     }
   }
 

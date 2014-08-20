@@ -99,7 +99,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
             // only close the connection if no one is using the connection.
             // And the connections are closed by the server side.
             if (c.getParent() != null && !c.isReadable()) {
-              IPCUtils.resumeRead(c);
+              ChannelContext.resumeRead(c);
             }
             if (c.getParent() == null || (cc.isCloseRequested())) {
               final ChannelFuture cf = cc.getMostRecentWriteFuture();
@@ -781,7 +781,6 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
       }
 
       ChannelContext.getChannelContext(channel).updateLastIOTimestamp();
-      channel.setReadable(true);
       return channel;
     } finally {
       shutdownLock.readLock().unlock();

@@ -16,7 +16,6 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.parallel.ipc.IPCEvent.EventType;
-import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.concurrent.OrderedExecutorService;
 import edu.washington.escience.myria.util.concurrent.ReentrantSpinLock;
 import edu.washington.escience.myria.util.concurrent.ThreadStackDump;
@@ -137,7 +136,7 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
           LOGGER.debug("Resume read for channel {}. Logical channel is {}", ch, inputID);
         }
         cg.add(ch);
-        allResumeFutures.add(IPCUtils.resumeRead(ch));
+        allResumeFutures.add(ChannelContext.resumeRead(ch));
       }
     }
 
@@ -168,7 +167,7 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
     for (final StreamIOChannelID inputID : getSourceChannels()) {
       Channel ch = getInputChannel(inputID).getIOChannel();
       if (ch != null && ch.isReadable()) {
-        allPauseFutures.add(IPCUtils.pauseRead(ch));
+        allPauseFutures.add(ChannelContext.pauseRead(ch));
         cg.add(ch);
         if (LOGGER.isDebugEnabled()) {
           LOGGER.debug("Pause read for channel {}, Logical channel is {}", ch, inputID);
