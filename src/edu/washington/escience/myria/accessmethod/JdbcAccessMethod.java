@@ -36,11 +36,12 @@ import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.ColumnFactory;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.util.ErrorUtils;
 
 /**
  * Access method for a JDBC database. Exposes data as TupleBatches.
- * 
- * 
+ *
+ *
  */
 public final class JdbcAccessMethod extends AccessMethod {
 
@@ -53,7 +54,7 @@ public final class JdbcAccessMethod extends AccessMethod {
 
   /**
    * The constructor. Creates an object and connects with the database
-   * 
+   *
    * @param jdbcInfo connection information
    * @param readOnly whether read-only connection or not
    * @throws DbException if there is an error making the connection.
@@ -82,9 +83,11 @@ public final class JdbcAccessMethod extends AccessMethod {
       /* Make sure JDBC driver is loaded */
       Class.forName(jdbcInfo.getDriverClass());
       jdbcConnection = DriverManager.getConnection(jdbcInfo.getConnectionString(), jdbcInfo.getProperties());
-    } catch (ClassNotFoundException | SQLException e) {
+    } catch (ClassNotFoundException e) {
       LOGGER.error(e.getMessage(), e);
       throw new DbException(e);
+    } catch (SQLException e) {
+      throw ErrorUtils.mergeSQLException(e);
     }
   }
 
@@ -97,14 +100,13 @@ public final class JdbcAccessMethod extends AccessMethod {
         jdbcConnection.setReadOnly(readOnly);
       }
     } catch (SQLException e) {
-      LOGGER.error(e.getMessage(), e);
-      throw new DbException(e);
+      throw ErrorUtils.mergeSQLException(e);
     }
   }
 
   /**
    * Helper function to copy data into PostgreSQL using the COPY command.
-   * 
+   *
    * @param relationKey the destination relation
    * @param schema the schema of the relation
    * @param tupleBatch the tuples to be inserted.
@@ -129,7 +131,9 @@ public final class JdbcAccessMethod extends AccessMethod {
       long inserted = cpManager.copyIn(copyString.toString(), reader);
       Preconditions.checkState(inserted == tupleBatch.numTuples(),
           "Error: inserted a batch of size %s but only actually inserted %s rows", tupleBatch.numTuples(), inserted);
-    } catch (final SQLException | IOException e) {
+    } catch (final SQLException e) {
+      throw ErrorUtils.mergeSQLException(e);
+    } catch (final IOException e) {
       LOGGER.error(e.getMessage(), e);
       throw new DbException(e);
     }
@@ -170,8 +174,7 @@ public final class JdbcAccessMethod extends AccessMethod {
         statement.executeBatch();
         statement.close();
       } catch (final SQLException e) {
-        LOGGER.error(e.getMessage(), e);
-        throw new DbException(e);
+        throw ErrorUtils.mergeSQLException(e);
       }
     }
     LOGGER.debug(".. done inserting batch of size {}", tupleBatch.numTuples());
@@ -207,8 +210,7 @@ public final class JdbcAccessMethod extends AccessMethod {
       final ResultSet resultSet = statement.executeQuery(queryString);
       return new JdbcTupleBatchIterator(resultSet, schema);
     } catch (final SQLException e) {
-      LOGGER.error(e.getMessage());
-      throw new DbException(e);
+      throw ErrorUtils.mergeSQLException(e);
     }
   }
 
@@ -218,8 +220,7 @@ public final class JdbcAccessMethod extends AccessMethod {
     try {
       jdbcConnection.close();
     } catch (SQLException e) {
-      LOGGER.error(e.getMessage());
-      throw new DbException(e);
+      throw ErrorUtils.mergeSQLException(e);
     }
   }
 
@@ -236,8 +237,7 @@ public final class JdbcAccessMethod extends AccessMethod {
       statement = jdbcConnection.createStatement();
       statement.execute(ddlCommand);
     } catch (SQLException e) {
-      LOGGER.error(e.getMessage());
-      throw new DbException(e);
+      throw ErrorUtils.mergeSQLException(e);
     }
   }
 
@@ -253,7 +253,7 @@ public final class JdbcAccessMethod extends AccessMethod {
 
   /**
    * Create an unlogged table.
-   * 
+   *
    * @param relationKey the relation name
    * @param schema the relation schema
    * @throws DbException if anything goes wrong
@@ -333,7 +333,7 @@ public final class JdbcAccessMethod extends AccessMethod {
 
   /**
    * Helper utility for creating JDBC CREATE TABLE statements.
-   * 
+   *
    * @param type a Myria column type.
    * @param dbms the description of the DBMS, e.g., "mysql".
    * @return the name of the DBMS type that matches the given Myria type.
@@ -494,7 +494,7 @@ public final class JdbcAccessMethod extends AccessMethod {
 
   /**
    * Create an index in postgres if no index with the same name already exists.
-   * 
+   *
    * @param relationKey the table on which the indexes will be created.
    * @param schema the Schema of the data in the table.
    * @param index the index to be created; each entry is a list of column indices.
@@ -519,7 +519,7 @@ public final class JdbcAccessMethod extends AccessMethod {
 
 /**
  * Wraps a JDBC ResultSet in a Iterator<TupleBatch>.
- * 
+ *
  * Implementation based on org.apache.commons.dbutils.ResultSetIterator. Requires ResultSet.isLast() to be implemented.
  */
 class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
@@ -534,7 +534,7 @@ class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
 
   /**
    * Constructs a JdbcTupleBatchIterator from the given ResultSet and Schema objects.
-   * 
+   *
    * @param resultSet the JDBC ResultSet containing the results.
    * @param schema the Schema of the generated TupleBatch objects.
    */
@@ -552,8 +552,7 @@ class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
         nextTB = getNextTB();
         return null != nextTB;
       } catch (final SQLException e) {
-        e.printStackTrace();
-        throw new RuntimeException(e);
+        throw new RuntimeException(ErrorUtils.mergeSQLException(e).getCause());
       }
     }
   }
