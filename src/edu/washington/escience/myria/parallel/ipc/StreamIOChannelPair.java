@@ -92,12 +92,11 @@ class StreamIOChannelPair {
     inputMappingLock.lock();
     try {
       if (inputStreamChannel != null) {
-        oldChannel = inputStreamChannel.getIOChannel();
+        oldChannel = inputStreamChannel.detachIOChannel();
         if (LOGGER.isTraceEnabled()) {
           LOGGER.trace(String.format("Stream input channel %1$s disassociated from physical channel %2$s.",
               inputStreamChannel, oldChannel));
         }
-        inputStreamChannel.detachIOChannel();
       }
       inputStreamChannel = inputChannel;
       inputChannel.attachIOChannel(ioChannel);
@@ -126,8 +125,7 @@ class StreamIOChannelPair {
     try {
       if (inputStreamChannel != null) {
         old = inputStreamChannel;
-        channel = inputStreamChannel.getIOChannel();
-        inputStreamChannel.detachIOChannel();
+        channel = inputStreamChannel.detachIOChannel();
         inputStreamChannel = null;
       }
     } finally {
