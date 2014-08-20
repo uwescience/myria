@@ -16,7 +16,6 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.parallel.ipc.IPCEvent.EventType;
-import edu.washington.escience.myria.util.concurrent.OrderedExecutorService;
 import edu.washington.escience.myria.util.concurrent.ReentrantSpinLock;
 import edu.washington.escience.myria.util.concurrent.ThreadStackDump;
 
@@ -398,22 +397,9 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace("Input buffer empty triggered in {}", this, new ThreadStackDump());
     }
-    getOwnerConnectionPool().getIPCEventProcessor().execute(
-        new OrderedExecutorService.KeyRunnable<StreamInputBuffer<PAYLOAD>>() {
-
-          @Override
-          public void run() {
-            for (IPCEventListener l : bufferEmptyListeners) {
-              l.triggered(bufferEmptyEvent);
-            }
-          }
-
-          @Override
-          public StreamInputBuffer<PAYLOAD> getKey() {
-            return FlowControlBagInputBuffer.this;
-          }
-        });
-
+    for (IPCEventListener l : bufferEmptyListeners) {
+      l.triggered(bufferEmptyEvent);
+    }
   }
 
   /**
@@ -427,21 +413,9 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
       LOGGER.trace("Input buffer full triggered in {}", this, new ThreadStackDump());
     }
 
-    getOwnerConnectionPool().getIPCEventProcessor().execute(
-        new OrderedExecutorService.KeyRunnable<StreamInputBuffer<PAYLOAD>>() {
-          @Override
-          public void run() {
-            for (IPCEventListener l : bufferFullListeners) {
-              l.triggered(bufferFullEvent);
-            }
-          }
-
-          @Override
-          public StreamInputBuffer<PAYLOAD> getKey() {
-            return FlowControlBagInputBuffer.this;
-          }
-        });
-
+    for (IPCEventListener l : bufferFullListeners) {
+      l.triggered(bufferFullEvent);
+    }
   }
 
   /**
@@ -455,22 +429,9 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace("Input buffer recover triggered in {}", this, new ThreadStackDump());
     }
-    getOwnerConnectionPool().getIPCEventProcessor().execute(
-        new OrderedExecutorService.KeyRunnable<StreamInputBuffer<PAYLOAD>>() {
-
-          @Override
-          public void run() {
-            for (IPCEventListener l : bufferRecoverListeners) {
-              l.triggered(bufferRecoverEvent);
-            }
-          }
-
-          @Override
-          public StreamInputBuffer<PAYLOAD> getKey() {
-            return FlowControlBagInputBuffer.this;
-          }
-        });
-
+    for (IPCEventListener l : bufferRecoverListeners) {
+      l.triggered(bufferRecoverEvent);
+    }
   }
 
   @Override
