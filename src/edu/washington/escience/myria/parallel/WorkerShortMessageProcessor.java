@@ -9,11 +9,12 @@ import org.jboss.netty.channel.ChannelHandler.Sharable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.parallel.Worker.QueryCommand;
 import edu.washington.escience.myria.parallel.ipc.IPCMessage;
 import edu.washington.escience.myria.parallel.ipc.ShortMessageProcessor;
 import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myria.proto.QueryProto.QueryMessage;
+import edu.washington.escience.myria.proto.QueryProto.QueryMessage.Type;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myria.util.AttachmentableAdapter;
 
@@ -22,7 +23,7 @@ import edu.washington.escience.myria.util.AttachmentableAdapter;
  * */
 @Sharable
 public final class WorkerShortMessageProcessor extends AttachmentableAdapter implements
-    ShortMessageProcessor<TransportMessage> {
+ShortMessageProcessor<TransportMessage> {
 
   /**
    * The logger for this class.
@@ -68,55 +69,34 @@ public final class WorkerShortMessageProcessor extends AttachmentableAdapter imp
   private boolean processQueryMessage(final Channel ch, final int remoteID, final QueryMessage qm) {
     SubQueryId subQueryId = new SubQueryId(qm.getQueryId(), qm.getSubqueryId());
     WorkerSubQuery q = null;
-    boolean result = true;
-    switch (qm.getType()) {
-      case QUERY_START:
-      case QUERY_KILL:
-      case QUERY_RECOVER:
-        q = ownerWorker.getActiveQueries().get(subQueryId);
-        if (q == null) {
-          if (LOGGER.isErrorEnabled()) {
-            LOGGER.error("In receiving message {}, unknown query id: {}, current active queries are: {}", qm,
-                subQueryId, ownerWorker.getActiveQueries().keySet());
-          }
-        } else {
-          switch (qm.getType()) {
-            case QUERY_START:
-              q.init();
-              q.startExecution();
-              break;
-            case QUERY_KILL:
-              q.kill();
-              break;
-            case QUERY_RECOVER:
-              if (q.getFTMode().equals(FTMODE.rejoin)) {
-                q.addRecoveryTasks(qm.getWorkerId());
-              }
-              break;
-            default:
-              break;
-          }
+
+    if (qm.getType() == Type.QUERY_DISTRIBUTE) {
+      // new received query.
+      ObjectInputStream osis = null;
+      try {
+        osis = new ObjectInputStream(new ByteArrayInputStream(qm.getQuery().getQuery().toByteArray()));
+        final SubQueryPlan operators = (SubQueryPlan) (osis.readObject());
+        q = new WorkerSubQuery(operators, subQueryId, ownerWorker);
+        if (!ownerWorker.getQueryQueue().offer(new QueryCommand(q, qm))) {
+          return false;
         }
-        break;
-      case QUERY_DISTRIBUTE:
-        ObjectInputStream osis = null;
-        try {
-          osis = new ObjectInputStream(new ByteArrayInputStream(qm.getQuery().getQuery().toByteArray()));
-          final SubQueryPlan operators = (SubQueryPlan) (osis.readObject());
-          q = new WorkerSubQuery(operators, subQueryId, ownerWorker);
-          result = ownerWorker.getQueryQueue().offer(q);
-          if (!result) {
-            break;
-          }
-          LOGGER.debug("Query received from: {}. {}", remoteID, q);
-        } catch (IOException | ClassNotFoundException e) {
-          LOGGER.error("Error decoding query", e);
+      } catch (IOException | ClassNotFoundException e) {
+        LOGGER.error("Error decoding query", e);
+      }
+    } else {
+      q = ownerWorker.getActiveQueries().get(subQueryId);
+      if (q == null) {
+        if (LOGGER.isErrorEnabled()) {
+          LOGGER.error("In receiving message {}, unknown query id: {}, current active queries are: {}", qm, subQueryId,
+              ownerWorker.getActiveQueries().keySet());
         }
-        break;
-      default:
-        break;
+      } else {
+        if (!ownerWorker.getQueryQueue().offer(new QueryCommand(q, qm))) {
+          return false;
+        }
+      }
     }
-    return result;
+    return true;
   }
 
   /**
