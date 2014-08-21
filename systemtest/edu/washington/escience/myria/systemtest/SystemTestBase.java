@@ -102,7 +102,7 @@ public class SystemTestBase {
 
   public static final int DEFAULT_REST_PORT = 8753;
 
-  public int WORKER_BOOTUP_TIMEOUT_IN_SECOND = 10; // wait for 10 seconds for workers to get booted
+  public int WORKER_BOOTUP_TIMEOUT_IN_SECOND_PER_WORKER = 5; // wait for 10 seconds for workers to get booted
 
   public volatile int masterPort;
   public volatile int masterDaemonPort = DEFAULT_REST_PORT;
@@ -314,7 +314,7 @@ public class SystemTestBase {
       targetWorkers.add(j);
     }
 
-    long milliTimeout = TimeUnit.SECONDS.toMillis(WORKER_BOOTUP_TIMEOUT_IN_SECOND);
+    long milliTimeout = TimeUnit.SECONDS.toMillis(WORKER_BOOTUP_TIMEOUT_IN_SECOND_PER_WORKER * workers.size());
     for (long start = System.currentTimeMillis(); !server.getAliveWorkers().containsAll(targetWorkers)
         && System.currentTimeMillis() - start < milliTimeout;) {
       Thread.sleep(500);
@@ -417,26 +417,14 @@ public class SystemTestBase {
   }
 
   protected HashMap<Tuple, Integer> simpleFixedJoinTestBase() throws CatalogException, IOException, DbException {
-    createTable(workerIDs[0], JOIN_TEST_TABLE_1, "id long, name varchar(20)"); // worker
-                                                                               // 1
-                                                                               // partition
-                                                                               // of
-    // table1
-    createTable(workerIDs[0], JOIN_TEST_TABLE_2, "id long, name varchar(20)"); // worker
-                                                                               // 1
-                                                                               // partition
-                                                                               // of
-    // table2
-    createTable(workerIDs[1], JOIN_TEST_TABLE_1, "id long, name varchar(20)");// worker
-                                                                              // 2
-                                                                              // partition
-                                                                              // of
-    // table1
-    createTable(workerIDs[1], JOIN_TEST_TABLE_2, "id long, name varchar(20)");// worker
-                                                                              // 2
-                                                                              // partition
-                                                                              // of
-    // table2
+    // worker 1 partition of table1
+    createTable(workerIDs[0], JOIN_TEST_TABLE_1, "id long, name varchar(20)");
+    // worker 1 partition of table2
+    createTable(workerIDs[0], JOIN_TEST_TABLE_2, "id long, name varchar(20)");
+    // worker 2 partition of table1
+    createTable(workerIDs[1], JOIN_TEST_TABLE_1, "id long, name varchar(20)");
+    // worker 2 partition of table2
+    createTable(workerIDs[1], JOIN_TEST_TABLE_2, "id long, name varchar(20)");
 
     final String[] tbl1NamesWorker1 = new String[] { "tb1_111", "tb1_222", "tb1_333" };
     final String[] tbl1NamesWorker2 = new String[] { "tb1_444", "tb1_555", "tb1_666" };
@@ -538,7 +526,8 @@ public class SystemTestBase {
           .add("-ea") // enable assertions
           .add("-Djava.library.path=" + lp).add("-classpath").add(cp) // paths
           .add("-Xmx" + MEMORY) // memory limit to MEMORY
-      ;
+          .add("-XX:+HeapDumpOnOutOfMemoryError") //
+          .add("-XX:HeapDumpPath=/tmp/worker_" + workerID + ".bin");
 
       /* If this test was run with a Java agent, then add it. */
       List<String> inputArgs = ManagementFactory.getRuntimeMXBean().getInputArguments();
@@ -607,7 +596,8 @@ public class SystemTestBase {
                 break;
               }
 
-              LOGGER.info("[" + name.getMethodName() + "]" + "@localhost:" + workerPorts[myWorkerIdx] + "$ " + line);
+              LOGGER.info("[" + name.getMethodName() + "]" + "#" + workerIDs[myWorkerIdx] + "@localhost:"
+                  + workerPorts[myWorkerIdx] + "$ " + line);
             }
           } catch (final IOException e) {
             // remote has shutdown. Not an exception.

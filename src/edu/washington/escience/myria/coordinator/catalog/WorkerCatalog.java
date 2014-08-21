@@ -322,6 +322,49 @@ public final class WorkerCatalog {
   }
 
   /**
+   * Adds workers in batch.
+   *
+   * @param id2HostPortString worker id to host:port string.
+   * @return this WorkerCatalog.
+   * @throws CatalogException if the hostPortString is invalid or there is a database exception.
+   */
+  public WorkerCatalog addWorkers(final Map<String, String> id2HostPortString) throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("WorkerCatalog is closed.");
+    }
+    try {
+      /* Just used to verify that hostPortString is legal */
+      final SQLiteStatement statement =
+          sqliteConnection.prepare("INSERT INTO workers(worker_id, host_port) VALUES(?,?);", false);
+      sqliteConnection.exec("BEGIN TRANSACTION");
+      for (Map.Entry<String, String> e : id2HostPortString.entrySet()) {
+        @SuppressWarnings("unused")
+        final SocketInfo sockInfo = SocketInfo.valueOf(e.getValue());
+        statement.bind(1, Integer.valueOf(e.getKey()));
+        statement.bind(2, e.getValue());
+        statement.step();
+        statement.reset(false);
+      }
+
+      sqliteConnection.exec("COMMIT TRANSACTION");
+      statement.dispose();
+    } catch (final SQLiteException e) {
+      if (LOGGER.isErrorEnabled()) {
+        LOGGER.error(e.toString());
+      }
+      try {
+        /* Commit transaction. */
+        sqliteConnection.exec("ROLLBACK TRANSACTION");
+      } catch (SQLiteException e1) {
+        /* Still throw the original exception */
+        throw new CatalogException(e);
+      }
+      throw new CatalogException(e);
+    }
+    return this;
+  }
+
+  /**
    * Close the connection to the database that stores the WorkerCatalog. Idempotent. Calling any methods (other than
    * close()) on this WorkerCatalog will throw a CatalogException.
    */
