@@ -27,9 +27,6 @@ public final class AtomicUtils {
     while (oldValue != newValue && !ai.compareAndSet(oldValue, newValue)) {
       oldValue = ai.get();
       newValue = oldValue | toOrValue;
-      if (Thread.currentThread().isInterrupted()) {
-        break;
-      }
     }
     return newValue;
   }
@@ -48,9 +45,6 @@ public final class AtomicUtils {
     while (oldValue != newValue && !ai.compareAndSet(oldValue, newValue)) {
       oldValue = ai.get();
       newValue = oldValue & toAndValue;
-      if (Thread.currentThread().isInterrupted()) {
-        break;
-      }
     }
     return newValue;
   }
@@ -70,9 +64,6 @@ public final class AtomicUtils {
     while (newValue != oldValue && !ai.compareAndSet(oldValue, newValue)) {
       oldValue = ai.get();
       newValue = oldValue & ~bitInt;
-      if (Thread.currentThread().isInterrupted()) {
-        break;
-      }
     }
     return newValue != oldValue;
   }
@@ -102,9 +93,6 @@ public final class AtomicUtils {
     while (newValue != oldValue && !ai.compareAndSet(oldValue, newValue)) {
       oldValue = ai.get();
       newValue = oldValue | bitInt;
-      if (Thread.currentThread().isInterrupted()) {
-        break;
-      }
     }
     return newValue != oldValue;
   }
