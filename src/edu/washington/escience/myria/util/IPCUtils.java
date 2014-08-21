@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Objects;
 
 import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelFuture;
 
 import com.google.protobuf.ByteString;
 
@@ -281,8 +282,8 @@ public final class IPCUtils {
   public static boolean isRemoteConnected(final Channel channel) {
     if (channel != null) {
       if (!channel.isReadable()) {
-        channel.setInterestOps(Channel.OP_READ).awaitUninterruptibly();
-        return channel.isReadable();
+        ChannelFuture cf = channel.setInterestOps(Channel.OP_READ).awaitUninterruptibly();
+        return cf.isSuccess();
       } else {
         return true;
       }
