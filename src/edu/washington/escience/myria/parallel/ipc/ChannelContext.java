@@ -28,7 +28,7 @@ import edu.washington.escience.myria.util.concurrent.ThreadStackDump;
  * Recording the various context information of a channel. The most important part of this class is the state machine of
  * a channel.
  * */
-class ChannelContext extends AttachmentableAdapter {
+public class ChannelContext extends AttachmentableAdapter {
 
   /**
    * Channel close requested event.
@@ -1158,7 +1158,7 @@ class ChannelContext extends AttachmentableAdapter {
    */
   final void awaitRemoteRegister(final CONNECT myIDMsg, final int remoteID,
       final ChannelPrioritySet registeredChannels, final ConcurrentHashMap<Channel, Channel> unregisteredNewChannels)
-      throws ChannelException {
+          throws ChannelException {
     remoteReply.addPreListener(new OperationFutureListener() {
 
       @Override
