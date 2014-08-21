@@ -278,11 +278,6 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   public static final int MAX_NUM_RETRY = 3;
 
   /**
-   * data transfer timeout 3 seconds.Should be moved to the system configuration in the future.
-   */
-  public static final int DATA_TRANSFER_TIMEOUT_IN_MS = 3000;
-
-  /**
    * connection wait 3 seconds. Should be moved to the system configuration in the future.
    */
   public static final int CONNECTION_WAIT_IN_MS = 3000;
@@ -420,11 +415,6 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    * initial remote addresses.
    * */
   private final Map<Integer, SocketInfo> intialRemoteAddresses;
-
-  /**
-   * To share connections or not.
-   * */
-  private volatile boolean shareConnections = false;
 
   /**
    * IPC event processor. All IPC events will be executed by this executor service.
@@ -730,38 +720,21 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
         }
         failure = null;
         try {
-          if (shareConnections) {
-            // get a connection instance and reuse connections if POOL_SIZE_UPPERBOUND is reached
-            channel = remote.registeredChannels.peekAndReserve();
-            if (channel == null) {
-              channel = createANewConnection(remote, CONNECTION_WAIT_IN_MS, remote.bootstrap);
-            } else if (remote.registeredChannels.size() < POOL_SIZE_UPPERBOUND) {
-              final ChannelContext cc = ChannelContext.getChannelContext(channel);
-              final ChannelContext.RegisteredChannelContext ecc = cc.getRegisteredChannelContext();
-              if (ecc.numReferenced() > 1) {
-                // it's not a free connection, since we have not reached the upper bound, new a
-                // connection
-                ecc.decReference();
-                channel = createANewConnection(remote, CONNECTION_WAIT_IN_MS, remote.bootstrap);
-              }
-            }
+          // always create new connections if needed.
+          channel = remote.registeredChannels.peekAndReserve();
+          if (channel == null) {
+            channel = createANewConnection(remote, CONNECTION_WAIT_IN_MS, remote.bootstrap);
           } else {
-            // always create new connections if needed.
-            channel = remote.registeredChannels.peekAndReserve();
-            if (channel == null) {
+            final ChannelContext cc = ChannelContext.getChannelContext(channel);
+            final ChannelContext.RegisteredChannelContext ecc = cc.getRegisteredChannelContext();
+            if (ecc.numReferenced() > 1) {
+              /*
+               * otherwise if createANewConnetion throws an exception, channel is still not null outside of this while
+               * loop.
+               */
+              channel = null;
+              ecc.decReference();
               channel = createANewConnection(remote, CONNECTION_WAIT_IN_MS, remote.bootstrap);
-            } else {
-              final ChannelContext cc = ChannelContext.getChannelContext(channel);
-              final ChannelContext.RegisteredChannelContext ecc = cc.getRegisteredChannelContext();
-              if (ecc.numReferenced() > 1) {
-                /*
-                 * otherwise if createANewConnetion throws an exception, channel is still not null outside of this while
-                 * loop.
-                 */
-                channel = null;
-                ecc.decReference();
-                channel = createANewConnection(remote, CONNECTION_WAIT_IN_MS, remote.bootstrap);
-              }
             }
           }
         } catch (ChannelException e) {
@@ -1081,9 +1054,6 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    */
   @CheckForNull
   public <PAYLOAD> StreamOutputChannel<PAYLOAD> reserveLongTermConnection(final int id, final long streamID) {
-    if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("reserve long term connection for ({},{})", id, streamID, new ThreadStackDump());
-    }
     shutdownLock.readLock().lock();
     try {
       checkShutdown();
@@ -1092,7 +1062,10 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
       ch.write(new IPCMessage.Meta.BOS(streamID));
       ChannelContext cc = ((ChannelContext) (ch.getAttachment()));
       int remoteID = cc.getRegisteredChannelContext().getRemoteID();
-      LOGGER.trace("New data connection, setup flow control context.");
+      if (LOGGER.isTraceEnabled()) {
+        LOGGER.trace("reserve long term connection for ({},{}), attached to physical connection {}", id, streamID,
+            ChannelContext.channelToString(ch), new ThreadStackDump());
+      }
       return new StreamOutputChannel<PAYLOAD>(new StreamIOChannelID(streamID, remoteID), this, ch);
     } catch (ChannelException e) {
       LOGGER.warn("Unable to connect to remote. Cause is: ", e);
