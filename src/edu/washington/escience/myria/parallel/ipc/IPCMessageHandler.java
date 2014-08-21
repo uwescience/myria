@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myria.parallel.ipc.ChannelContext.RegisteredChannelContext;
+import edu.washington.escience.myria.util.concurrent.ThreadStackDump;
 
 /**
  * Dealing with IPC IO messages.
@@ -229,6 +230,16 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
     }
 
     final ChannelContext cc = ChannelContext.getChannelContext(ch);
+
+    if (LOGGER.isTraceEnabled()) {
+      if (msg instanceof IPCMessage.Meta) {
+        LOGGER.trace("Received meta msg: {}, from channel {}", msg, ChannelContext.channelToString(ch));
+      } else {
+        LOGGER.trace("Received user msg of type: {}, from channel {}", msg.getClass().getName(), ChannelContext
+            .channelToString(ch));
+      }
+    }
+
     if (cc != null) {
       final ChannelContext.RegisteredChannelContext ecc = cc.getRegisteredChannelContext();
 
@@ -349,10 +360,13 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
       oc.channelInterestChangedCallback();
     }
 
-    if (!ioChannel.isReadable()) {
-      if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug("Channel {} is changed to be unreadable.", ChannelContext.channelToString(ioChannel));
+    if (LOGGER.isTraceEnabled()) {
+      String v = "readable";
+      if (!ioChannel.isReadable()) {
+        v = "unreadable";
       }
+      LOGGER.trace("Channel {} is changed to be {}.", ChannelContext.channelToString(ioChannel), v,
+          new ThreadStackDump());
     }
   }
 }

@@ -92,7 +92,8 @@ class StreamIOChannelPair {
     inputMappingLock.lock();
     try {
       if (inputStreamChannel != null) {
-        throw new IllegalStateException("Physical channel " + ownerChannelContext.getChannel()
+        throw new IllegalStateException("Physical channel "
+            + ChannelContext.channelToString(ownerChannelContext.getChannel())
             + " already attached to stream input channel " + inputStreamChannel.getID());
       }
       inputStreamChannel = inputChannel;
@@ -141,7 +142,8 @@ class StreamIOChannelPair {
     outputMappingLock.lock();
     try {
       if (outputStreamChannel != null) {
-        throw new IllegalStateException("Physical channel " + ownerChannelContext.getChannel()
+        throw new IllegalStateException("Physical channel "
+            + ChannelContext.channelToString(ownerChannelContext.getChannel())
             + " already attached to stream output channel " + outputStreamChannel.getID());
       }
       outputStreamChannel = outputChannel;

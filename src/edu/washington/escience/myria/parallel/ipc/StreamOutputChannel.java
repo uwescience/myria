@@ -202,6 +202,9 @@ public class StreamOutputChannel<PAYLOAD> extends StreamIOChannel {
     if (ch != null) {
       this.ownerPool.getShutdownLock().readLock().lock();
       try {
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace("OutputChannel {} write a message through {}", getID(), ChannelContext.channelToString(ch));
+        }
         return ch.write(message);
       } finally {
         this.ownerPool.getShutdownLock().readLock().unlock();

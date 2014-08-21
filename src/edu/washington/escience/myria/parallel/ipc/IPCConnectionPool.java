@@ -671,9 +671,10 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
         channel.setAttachment(cc);
         cc.connected();
         cc.awaitRemoteRegister(myIDMsg, remote.id, remote.registeredChannels, unregisteredChannels);
-
-        LOGGER.trace("Created a new registered channel from: {} to {}. Channel: {}", myID, remote.id, ChannelContext
-            .channelToString(channel));
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace("Created a new registered channel from: {} to {}. Channel: {}", myID, remote.id, ChannelContext
+              .channelToString(channel), new ThreadStackDump());
+        }
         allPossibleChannels.add(channel);
         return channel;
       }
@@ -725,7 +726,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
       ChannelException failure = null;
       while ((retry < MAX_NUM_RETRY) && (channel == null)) {
         if (retry > 1 && LOGGER.isDebugEnabled()) {
-          LOGGER.debug("Retry creating a connection to id#" + ipcIDP);
+          LOGGER.debug("Retry creating a connection to id#" + ipcIDP, new ThreadStackDump());
         }
         failure = null;
         try {
@@ -928,7 +929,9 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    * */
   @Nonnull
   public ChannelFuture releaseLongTermConnection(final StreamOutputChannel<?> channel) {
-    LOGGER.trace("Released long-term connection " + channel, new ThreadStackDump());
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("Released long-term connection " + channel, new ThreadStackDump());
+    }
     shutdownLock.readLock().lock();
     try {
       Channel ch = channel.getIOChannel();
@@ -1244,7 +1247,9 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    * */
   @Nonnull
   public ChannelGroupFuture shutdownNow() {
-    LOGGER.trace("Abrupt shutdown of IPC connection pool is requested!");
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("Abrupt shutdown of IPC connection pool is requested!");
+    }
     shutdownLock.writeLock().lock();
     try {
       if (shutdown) {
