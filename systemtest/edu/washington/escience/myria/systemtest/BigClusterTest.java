@@ -42,7 +42,14 @@ public class BigClusterTest extends SystemTestBase {
   @Rule
   public TestRule globalTimeout = new Timeout(1200 * 1000);
 
-  public static final int NUM_WORKERS = 30;
+  public static final int NUM_WORKERS;
+  static {
+    if (TestUtils.inTravis()) {
+      NUM_WORKERS = 2;
+    } else {
+      NUM_WORKERS = 30;
+    }
+  }
 
   @Override
   public Map<Integer, SocketInfo> getWorkers() {
@@ -74,9 +81,6 @@ public class BigClusterTest extends SystemTestBase {
   @Test
   public void collectTest() throws Exception {
     // skip in travis
-    if (TestUtils.inTravis()) {
-      return;
-    }
     final int NUM_DUPLICATES = 10;
 
     TupleBatch tb = TestUtils.generateRandomTuples(TupleBatch.BATCH_SIZE, TupleBatch.BATCH_SIZE, false).popAny();;
@@ -114,9 +118,6 @@ public class BigClusterTest extends SystemTestBase {
   @Test
   public void broadcastTest() throws Exception {
     // skip in travis
-    if (TestUtils.inTravis()) {
-      return;
-    }
     final int NUM_DUPLICATES = 10;
     final int NUM_BROADCAST = 20;
     TupleBatch tb = TestUtils.generateRandomTuples(10, 10, false).popAny();
@@ -171,9 +172,6 @@ public class BigClusterTest extends SystemTestBase {
   @Test
   public void downloadTest() throws Exception {
     // skip in travis
-    if (TestUtils.inTravis()) {
-      return;
-    }
     final int NUM_DUPLICATES = 100;
 
     URL url =
