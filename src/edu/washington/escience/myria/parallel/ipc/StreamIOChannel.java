@@ -48,8 +48,8 @@ public abstract class StreamIOChannel {
   final Channel attachIOChannel(final Channel ioChannel) {
     Channel oldOne = this.ioChannel.getAndSet(ioChannel);
     if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace(this.getClass().getSimpleName() + " ID: {} attached to physical channel: {}", id, ioChannel,
-          new ThreadStackDump());
+      LOGGER.trace(this.getClass().getSimpleName() + " ID: {} attached to physical channel: {}", id, ChannelContext
+          .channelToString(ioChannel), new ThreadStackDump());
     }
     return oldOne;
   }
@@ -62,8 +62,8 @@ public abstract class StreamIOChannel {
   final Channel detachIOChannel() {
     Channel ch = ioChannel.getAndSet(null);
     if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace(this.getClass().getSimpleName() + " ID: {} detached from physical channel: {}", id, ch,
-          new ThreadStackDump());
+      LOGGER.trace(this.getClass().getSimpleName() + " ID: {} detached from physical channel: {}", id, ChannelContext
+          .channelToString(ch), new ThreadStackDump());
     }
     return ch;
   }

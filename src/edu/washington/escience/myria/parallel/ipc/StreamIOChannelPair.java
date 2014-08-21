@@ -101,8 +101,8 @@ class StreamIOChannelPair {
       inputMappingLock.unlock();
     }
     if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("Stream input channel {} associates to physical channel {}.", inputChannel, ioChannel,
-          new ThreadStackDump());
+      LOGGER.trace("Stream input channel {} associates to physical channel {}.", inputChannel, ChannelContext
+          .channelToString(ioChannel), new ThreadStackDump());
     }
   }
 
@@ -125,8 +125,8 @@ class StreamIOChannelPair {
       inputMappingLock.unlock();
     }
     if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("Stream input channel {} disassociated from physical channel {}.", old, channel,
-          new ThreadStackDump());
+      LOGGER.trace("Stream input channel {} disassociated from physical channel {}.", old, ChannelContext
+          .channelToString(channel), new ThreadStackDump());
     }
   }
 

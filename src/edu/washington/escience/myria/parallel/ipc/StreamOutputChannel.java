@@ -11,9 +11,9 @@ import edu.washington.escience.myria.util.concurrent.OrderedExecutorService;
 import edu.washington.escience.myria.util.concurrent.ReentrantSpinLock;
 
 /**
- * 
+ *
  * An {@link StreamOutputChannel} represents a partition of {@link Producer}.
- * 
+ *
  * @param <PAYLOAD> the type of payload that this output channel will send.
  * */
 public class StreamOutputChannel<PAYLOAD> extends StreamIOChannel {
@@ -63,7 +63,7 @@ public class StreamOutputChannel<PAYLOAD> extends StreamIOChannel {
     outputRecoverListeners = new ConcurrentLinkedQueue<IPCEventListener>();
     this.ownerPool = ownerPool;
     ChannelContext.getChannelContext(initialPhysicalChannel).getRegisteredChannelContext().getIOPair()
-        .mapOutputChannel(this);
+    .mapOutputChannel(this);
   }
 
   /**
@@ -89,7 +89,8 @@ public class StreamOutputChannel<PAYLOAD> extends StreamIOChannel {
 
   @Override
   public final String toString() {
-    return "StreamOutputChannel{ ID: " + getID() + ",IOChannel: " + getIOChannel() + " }";
+    return "StreamOutputChannel{ ID: " + getID() + ",IOChannel: " + ChannelContext.channelToString(getIOChannel())
+        + " }";
   }
 
   /**

@@ -51,7 +51,7 @@ public class StreamInputChannel<PAYLOAD> extends StreamIOChannel {
 
   @Override
   public final String toString() {
-    return "StreamInput{ ID: " + getID() + ", IOChannel: " + getIOChannel() + " }";
+    return "StreamInput{ ID: " + getID() + ", IOChannel: " + ChannelContext.channelToString(getIOChannel()) + " }";
   }
 
   /**

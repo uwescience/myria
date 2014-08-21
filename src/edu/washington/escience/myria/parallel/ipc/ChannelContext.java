@@ -406,6 +406,11 @@ class ChannelContext extends AttachmentableAdapter {
   private final Channel ownerChannel;
 
   /**
+   * remote id.
+   * */
+  private final int myID;
+
+  /**
    * The most recent write future.
    * */
   private volatile ChannelFuture mostRecentWriteFuture = null;
@@ -483,8 +488,9 @@ class ChannelContext extends AttachmentableAdapter {
 
   /**
    * @param channel the owner channel
+   * @param ownerIPCID the owner {@link IPCConnectionPool}'s id.
    * */
-  ChannelContext(final Channel channel) {
+  ChannelContext(final Channel channel, final int ownerIPCID) {
     lastIOTimestamp = System.currentTimeMillis();
     ownerChannel = channel;
     closeRequested = false;
@@ -493,6 +499,7 @@ class ChannelContext extends AttachmentableAdapter {
     registerConditionFutures = new HashSet<EqualityCloseFuture<Integer>>();
     delayedEvents = new ConcurrentLinkedQueue<DelayedTransitionEvent>();
     remoteReply = new DefaultOperationFuture(false);
+    myID = ownerIPCID;
   }
 
   /**
@@ -1089,7 +1096,7 @@ class ChannelContext extends AttachmentableAdapter {
    */
   final void awaitRemoteRegister(final CONNECT myIDMsg, final int remoteID,
       final ChannelPrioritySet registeredChannels, final ConcurrentHashMap<Channel, Channel> unregisteredNewChannels)
-      throws ChannelException {
+          throws ChannelException {
     remoteReply.addPreListener(new OperationFutureListener() {
 
       @Override
@@ -1111,6 +1118,67 @@ class ChannelContext extends AttachmentableAdapter {
       throw new ChannelException("ID checking timeout, remote ID doesn't match");
     }
 
+  }
+
+  /**
+   * Get a more informative channel string.
+   *
+   * @param channel the channel
+   * @return string
+   * */
+  public static String channelToString(final Channel channel) {
+    if (channel == null) {
+      return null;
+    }
+    ChannelContext cc = getChannelContext(channel);
+    StringBuilder sb = new StringBuilder();
+    long myID = Long.MAX_VALUE;
+    long remoteID = Long.MAX_VALUE;
+    if (cc != null) {
+      myID = cc.myID;
+      RegisteredChannelContext rcc = cc.getRegisteredChannelContext();
+      if (rcc != null) {
+        remoteID = rcc.getRemoteID();
+      }
+    }
+
+    sb.append("[");
+    if (channel.getParent() == null) {
+      // client
+      sb.append("Client,");
+      if (myID != Long.MAX_VALUE) {
+        sb.append("#");
+        sb.append((int) myID);
+      } else {
+        sb.append("#?");
+      }
+      sb.append(" => ");
+      if (remoteID != Long.MAX_VALUE) {
+        sb.append("#");
+        sb.append((int) remoteID);
+      } else {
+        sb.append("#?");
+      }
+    } else {
+      // accepted
+      sb.append("Accepted,");
+      if (remoteID != Long.MAX_VALUE) {
+        sb.append("#");
+        sb.append((int) remoteID);
+      } else {
+        sb.append("#?");
+      }
+      sb.append(" => ");
+      if (myID != Long.MAX_VALUE) {
+        sb.append("#");
+        sb.append((int) myID);
+      } else {
+        sb.append("#?");
+      }
+    }
+    sb.append("] ");
+    sb.append(channel.toString());
+    return sb.toString();
   }
 
   /**
