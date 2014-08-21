@@ -4,7 +4,6 @@ import java.util.LinkedList;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.ChannelGroupFuture;
@@ -121,30 +120,19 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
    * @return ChannelGroupFuture denotes the future of the resume read action.
    * */
   public ChannelGroupFuture resumeRead() {
-
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug(this.toString());
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("Resume read {}.", this, new ThreadStackDump());
     }
 
     LinkedList<ChannelFuture> allResumeFutures = new LinkedList<ChannelFuture>();
     ChannelGroup cg = new DefaultChannelGroup();
     for (final StreamIOChannelID inputID : getSourceChannels()) {
-      Channel ch = getInputChannel(inputID).getIOChannel();
-      if (ch != null && !ch.isReadable()) {
-        if (LOGGER.isDebugEnabled()) {
-          LOGGER.debug("Resume read for channel {}. Logical channel is {}", ch, inputID);
-        }
-        cg.add(ch);
-        allResumeFutures.add(ChannelContext.resumeRead(ch));
-      }
+      ChannelFuture cf = getInputChannel(inputID).resumeRead();
+      cg.add(cf.getChannel());
+      allResumeFutures.add(cf);
     }
 
-    ChannelGroupFuture cgf = new DefaultChannelGroupFuture(cg, allResumeFutures);
-
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug("Finish resume for Stream {}", getProcessor());
-    }
-    return cgf;
+    return new DefaultChannelGroupFuture(cg, allResumeFutures);
   }
 
   /**
@@ -157,21 +145,16 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
    * @return ChannelGroupFuture denotes the future of the pause read action.
    * */
   public ChannelGroupFuture pauseRead() {
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug(this.toString());
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("Pause read {}.", this, new ThreadStackDump());
     }
 
     LinkedList<ChannelFuture> allPauseFutures = new LinkedList<ChannelFuture>();
     ChannelGroup cg = new DefaultChannelGroup();
     for (final StreamIOChannelID inputID : getSourceChannels()) {
-      Channel ch = getInputChannel(inputID).getIOChannel();
-      if (ch != null && ch.isReadable()) {
-        allPauseFutures.add(ChannelContext.pauseRead(ch));
-        cg.add(ch);
-        if (LOGGER.isDebugEnabled()) {
-          LOGGER.debug("Pause read for channel {}, Logical channel is {}", ch, inputID);
-        }
-      }
+      ChannelFuture cf = getInputChannel(inputID).pauseRead();
+      allPauseFutures.add(cf);
+      cg.add(cf.getChannel());
     }
     return new DefaultChannelGroupFuture(cg, allPauseFutures);
   }
