@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.parallel.ipc.IPCEvent.EventType;
+import edu.washington.escience.myria.util.concurrent.ClosableReentrantLock;
 import edu.washington.escience.myria.util.concurrent.ReentrantSpinLock;
 import edu.washington.escience.myria.util.concurrent.ThreadStackDump;
 
@@ -44,11 +45,6 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
    * into the inner inputbuffer. It's up to the caller applications to respond to the capacity full event.
    * */
   private final int softCapacity;
-
-  /**
-   * serialize the buffer state events (FULL, EMPTY, RECOVER).
-   * */
-  private final ReentrantSpinLock bufferStateEventSerializeLock = new ReentrantSpinLock();
 
   /**
    * serialize the events.
@@ -156,6 +152,7 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
       allPauseFutures.add(cf);
       cg.add(cf.getChannel());
     }
+
     return new DefaultChannelGroupFuture(cg, allPauseFutures);
   }
 
@@ -168,19 +165,19 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
     addListener(INPUT_BUFFER_FULL, new IPCEventListener() {
       @Override
       public void triggered(final IPCEvent e) {
-        pauseRead().awaitUninterruptibly();
+        pauseRead();
       }
     });
     addListener(INPUT_BUFFER_RECOVER, new IPCEventListener() {
       @Override
       public void triggered(final IPCEvent e) {
-        resumeRead().awaitUninterruptibly();
+        resumeRead();
       }
     });
     addListener(INPUT_BUFFER_EMPTY, new IPCEventListener() {
       @Override
       public void triggered(final IPCEvent e) {
-        resumeRead().awaitUninterruptibly();
+        resumeRead();
       }
     });
   }
@@ -216,13 +213,10 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
    * Check events triggered by data input methods, i.e. offer.
    * */
   private void checkInputBufferStateEvents() {
-    bufferStateEventSerializeLock.lock();
-    try {
+    try (ClosableReentrantLock l = getBufferSizeLock().open()) {
       if (remainingCapacity() <= 0 && previousEvent != INPUT_BUFFER_FULL) {
         fireBufferFull();
       }
-    } finally {
-      bufferStateEventSerializeLock.unlock();
     }
   }
 
@@ -230,15 +224,12 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
    * Check events triggered by data output methods, i.e. poll/take/clear.
    * */
   private void checkOutputBufferStateEvents() {
-    bufferStateEventSerializeLock.lock();
-    try {
+    try (ClosableReentrantLock l = getBufferSizeLock().open()) {
       if (isEmpty() && previousEvent != INPUT_BUFFER_EMPTY) {
         fireBufferEmpty();
       } else if (previousEvent == INPUT_BUFFER_FULL && size() <= recoverEventTrigger) {
         fireBufferRecover();
       }
-    } finally {
-      bufferStateEventSerializeLock.unlock();
     }
   }
 
