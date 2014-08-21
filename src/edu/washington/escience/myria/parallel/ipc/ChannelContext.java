@@ -194,39 +194,49 @@ class ChannelContext extends AttachmentableAdapter {
 
     @Override
     public boolean apply() {
-      if (ownerChannel.getParent() != null) {
-        // accepted channel
-        synchronized (stateMachineLock) {
-          if ((connected && registered && inPool && inRecycleBin && !inTrashBin && !newConnection && !closeRequested)
-              || (connected && registered && inPool && !inRecycleBin && !inTrashBin && !newConnection && !closeRequested)) {
-            inRecycleBin = false;
-            inTrashBin = true;
-            inPool = false;
-            recycleBin.remove(ownerChannel);
-            trashBin.add(ownerChannel);
-            if (channelPool != null) {
-              channelPool.remove(ownerChannel);
+      if (channelPool != null) {
+        channelPool.getUpdateLock().lock();
+      }
+
+      try {
+        if (ownerChannel.getParent() != null) {
+          // accepted channel
+          synchronized (stateMachineLock) {
+            if ((connected && registered && inPool && inRecycleBin && !inTrashBin && !newConnection && !closeRequested)
+                || (connected && registered && inPool && !inRecycleBin && !inTrashBin && !newConnection && !closeRequested)) {
+              inRecycleBin = false;
+              inTrashBin = true;
+              inPool = false;
+              recycleBin.remove(ownerChannel);
+              trashBin.add(ownerChannel);
+              if (channelPool != null) {
+                channelPool.remove(ownerChannel);
+              }
+            } else {
+              return false;
             }
-          } else {
-            return false;
+          }
+        } else {
+          // client channel
+          synchronized (stateMachineLock) {
+            if ((connected && registered && inPool && inRecycleBin && !inTrashBin && !newConnection)
+                || (connected && registered && inPool && !inRecycleBin && !inTrashBin && !newConnection)) {
+              inRecycleBin = false;
+              inTrashBin = true;
+              inPool = false;
+              recycleBin.remove(ownerChannel);
+              trashBin.add(ownerChannel);
+              if (channelPool != null) {
+                channelPool.remove(ownerChannel);
+              }
+            } else {
+              return false;
+            }
           }
         }
-      } else {
-        // client channel
-        synchronized (stateMachineLock) {
-          if ((connected && registered && inPool && inRecycleBin && !inTrashBin && !newConnection)
-              || (connected && registered && inPool && !inRecycleBin && !inTrashBin && !newConnection)) {
-            inRecycleBin = false;
-            inTrashBin = true;
-            inPool = false;
-            recycleBin.remove(ownerChannel);
-            trashBin.add(ownerChannel);
-            if (channelPool != null) {
-              channelPool.remove(ownerChannel);
-            }
-          } else {
-            return false;
-          }
+      } finally {
+        if (channelPool != null) {
+          channelPool.getUpdateLock().unlock();
         }
       }
       return true;
@@ -294,7 +304,7 @@ class ChannelContext extends AttachmentableAdapter {
         }
       }
       if (newRef < 0) {
-        final String msg = "Number of references is negative, channel: " + ownerChannel;
+        final String msg = "Number of references is negative, channel: " + ChannelContext.channelToString(ownerChannel);
         LOGGER.warn(msg, new ThreadStackDump());
         return 0;
       }
@@ -324,7 +334,8 @@ class ChannelContext extends AttachmentableAdapter {
      * */
     final int incReference() {
       if (LOGGER.isTraceEnabled()) {
-        LOGGER.trace("Inc reference for channel: {}", ownerChannel, new ThreadStackDump());
+        LOGGER.trace("Inc reference for channel: {}", ChannelContext.channelToString(ownerChannel),
+            new ThreadStackDump());
       }
       int newRef = 0;
       synchronized (stateMachineLock) {
@@ -339,7 +350,8 @@ class ChannelContext extends AttachmentableAdapter {
       }
       if (newRef < 0) {
         if (LOGGER.isWarnEnabled()) {
-          LOGGER.warn("Number of references is negative, channel: {}", ownerChannel, new ThreadStackDump());
+          LOGGER.warn("Number of references is negative, channel: {}", ChannelContext.channelToString(ownerChannel),
+              new ThreadStackDump());
         }
         return 1;
       }
@@ -396,7 +408,7 @@ class ChannelContext extends AttachmentableAdapter {
    * @return the channel context data structure of the given channel.
    * @param channel the owner channel
    * */
-  static final ChannelContext getChannelContext(final Channel channel) {
+  public static final ChannelContext getChannelContext(final Channel channel) {
     return (ChannelContext) channel.getAttachment();
   }
 
@@ -565,25 +577,36 @@ class ChannelContext extends AttachmentableAdapter {
   final void errorEncountered(final ConcurrentHashMap<Channel, Channel> unregisteredNewChannels,
       final ConcurrentHashMap<Channel, Channel> recycleBin, final ChannelGroup trashBin,
       final ChannelPrioritySet channelPool, final Throwable cause) {
-    synchronized (stateMachineLock) {
-      if (connected) {
-        unregisteredNewChannels.remove(ownerChannel);
-        if (channelPool != null) {
-          channelPool.remove(ownerChannel);
-        }
-        recycleBin.remove(ownerChannel);
-        trashBin.remove(ownerChannel);
-        connected = false;
-        registered = false;
-        inPool = false;
-        inRecycleBin = false;
-        inTrashBin = false;
-        newConnection = false;
-        closeRequested = false;
-        if (ownerChannel.getParent() == null) {
-          remoteReply.setFailure(cause);
+    if (channelPool != null) {
+      channelPool.getUpdateLock().lock();
+    }
+
+    try {
+      synchronized (stateMachineLock) {
+        if (connected) {
+          unregisteredNewChannels.remove(ownerChannel);
+          if (channelPool != null) {
+            channelPool.remove(ownerChannel);
+          }
+          recycleBin.remove(ownerChannel);
+          trashBin.remove(ownerChannel);
+          connected = false;
+          registered = false;
+          inPool = false;
+          inRecycleBin = false;
+          inTrashBin = false;
+          newConnection = false;
+          closeRequested = false;
+          if (ownerChannel.getParent() == null) {
+            remoteReply.setFailure(cause);
+          }
         }
       }
+    } finally {
+      if (channelPool != null) {
+        channelPool.getUpdateLock().unlock();
+      }
+
     }
     ownerChannel.close();
   }
@@ -602,35 +625,46 @@ class ChannelContext extends AttachmentableAdapter {
   final void closed(final ConcurrentHashMap<Channel, Channel> unregisteredNewChannels,
       final ConcurrentHashMap<Channel, Channel> recycleBin, final ChannelGroup trashBin,
       final ChannelPrioritySet channelPool) {
-    synchronized (stateMachineLock) {
-      if (connected) {
-        // it's an abnormal disconnect
-        RegisteredChannelContext rcc = getRegisteredChannelContext();
-        if (rcc != null) {
-          // clear the number of reference
-          rcc.clearReference();
-        }
-        connected = false;
+    if (channelPool != null) {
+      channelPool.getUpdateLock().lock();
+    }
 
-        unregisteredNewChannels.remove(ownerChannel);
-        if (channelPool != null) {
-          channelPool.remove(ownerChannel);
-        }
-        recycleBin.remove(ownerChannel);
-        trashBin.remove(ownerChannel);
-        connected = false;
-        registered = false;
-        inPool = false;
-        inRecycleBin = false;
-        inTrashBin = false;
-        newConnection = false;
-        closeRequested = false;
+    try {
 
-        if (ownerChannel.getParent() == null) {
-          remoteReply.setFailure(new ChannelException("Channel " + ownerChannel + " closed",
-              new ClosedChannelException()));
-        }
+      synchronized (stateMachineLock) {
+        if (connected) {
+          // it's an abnormal disconnect
+          RegisteredChannelContext rcc = getRegisteredChannelContext();
+          if (rcc != null) {
+            // clear the number of reference
+            rcc.clearReference();
+          }
+          connected = false;
 
+          unregisteredNewChannels.remove(ownerChannel);
+          if (channelPool != null) {
+            channelPool.remove(ownerChannel);
+          }
+          recycleBin.remove(ownerChannel);
+          trashBin.remove(ownerChannel);
+          connected = false;
+          registered = false;
+          inPool = false;
+          inRecycleBin = false;
+          inTrashBin = false;
+          newConnection = false;
+          closeRequested = false;
+
+          if (ownerChannel.getParent() == null) {
+            remoteReply.setFailure(new ChannelException("Channel " + channelToString(ownerChannel) + " closed",
+                new ClosedChannelException()));
+          }
+
+        }
+      }
+    } finally {
+      if (channelPool != null) {
+        channelPool.getUpdateLock().unlock();
       }
     }
   }
@@ -672,7 +706,7 @@ class ChannelContext extends AttachmentableAdapter {
           recycleBin.put(ownerChannel, ownerChannel);
         } else {
           if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("consider recycle unsatisfied: " + ownerChannel);
+            LOGGER.debug("consider recycle unsatisfied: " + ChannelContext.channelToString(ownerChannel));
           }
         }
       }
@@ -683,7 +717,7 @@ class ChannelContext extends AttachmentableAdapter {
           inRecycleBin = true;
           recycleBin.put(ownerChannel, ownerChannel);
         } else {
-          LOGGER.debug("consider recycle unsatisfied: " + ownerChannel);
+          LOGGER.debug("consider recycle unsatisfied: " + ChannelContext.channelToString(ownerChannel));
         }
       }
     }
@@ -779,37 +813,48 @@ class ChannelContext extends AttachmentableAdapter {
   final void reachUpperbound(final ChannelGroup trashBin, final ChannelPrioritySet channelPool) {
     // no delay, may not apply
     applyDelayedTransitionEvents();
-    if (ownerChannel.getParent() != null) {
-      // accepted channel
-      synchronized (stateMachineLock) {
-        if (connected && registered && inPool && !inRecycleBin && !inTrashBin && !newConnection && !closeRequested) {
-          inPool = false;
-          inTrashBin = true;
-          if (channelPool != null) {
-            channelPool.remove(ownerChannel);
+
+    if (channelPool != null) {
+      channelPool.getUpdateLock().lock();
+    }
+
+    try {
+      if (ownerChannel.getParent() != null) {
+        // accepted channel
+        synchronized (stateMachineLock) {
+          if (connected && registered && inPool && !inRecycleBin && !inTrashBin && !newConnection && !closeRequested) {
+            inPool = false;
+            inTrashBin = true;
+            if (channelPool != null) {
+              channelPool.remove(ownerChannel);
+            }
+            trashBin.add(ownerChannel);
+          } else {
+            if (LOGGER.isDebugEnabled()) {
+              LOGGER.debug("reach upperbound Fail: " + ChannelContext.channelToString(ownerChannel));
+            }
           }
-          trashBin.add(ownerChannel);
-        } else {
-          if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("reach upperbound Fail: " + ownerChannel);
+        }
+      } else {
+        // client channel
+        synchronized (stateMachineLock) {
+          if (connected && registered && inPool && !inRecycleBin && !inTrashBin && !newConnection) {
+            inPool = false;
+            inTrashBin = true;
+            if (channelPool != null) {
+              channelPool.remove(ownerChannel);
+            }
+            trashBin.add(ownerChannel);
+          } else {
+            if (LOGGER.isDebugEnabled()) {
+              LOGGER.debug("reach upperbound Fail: " + ChannelContext.channelToString(ownerChannel));
+            }
           }
         }
       }
-    } else {
-      // client channel
-      synchronized (stateMachineLock) {
-        if (connected && registered && inPool && !inRecycleBin && !inTrashBin && !newConnection) {
-          inPool = false;
-          inTrashBin = true;
-          if (channelPool != null) {
-            channelPool.remove(ownerChannel);
-          }
-          trashBin.add(ownerChannel);
-        } else {
-          if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("reach upperbound Fail: " + ownerChannel);
-          }
-        }
+    } finally {
+      if (channelPool != null) {
+        channelPool.getUpdateLock().unlock();
       }
     }
   }
@@ -877,31 +922,42 @@ class ChannelContext extends AttachmentableAdapter {
       final ChannelPrioritySet channelPool) {
     // nodelay, must apply
     applyDelayedTransitionEvents();
-    if (ownerChannel.getParent() != null) {
-      // accepted channel
-      synchronized (stateMachineLock) {
-        assert (connected && registered && inPool && inRecycleBin && !inTrashBin && !newConnection && !closeRequested);
-        inRecycleBin = false;
-        inTrashBin = true;
-        inPool = false;
-        recycleBin.remove(ownerChannel);
-        trashBin.add(ownerChannel);
-        if (channelPool != null) {
-          channelPool.remove(ownerChannel);
+
+    if (channelPool != null) {
+      channelPool.getUpdateLock().lock();
+    }
+
+    try {
+      if (ownerChannel.getParent() != null) {
+        // accepted channel
+        synchronized (stateMachineLock) {
+          assert (connected && registered && inPool && inRecycleBin && !inTrashBin && !newConnection && !closeRequested);
+          inRecycleBin = false;
+          inTrashBin = true;
+          inPool = false;
+          recycleBin.remove(ownerChannel);
+          trashBin.add(ownerChannel);
+          if (channelPool != null) {
+            channelPool.remove(ownerChannel);
+          }
+        }
+      } else {
+        // client channel
+        synchronized (stateMachineLock) {
+          assert (connected && registered && inPool && inRecycleBin && !inTrashBin && !newConnection);
+          inRecycleBin = false;
+          inTrashBin = true;
+          inPool = false;
+          recycleBin.remove(ownerChannel);
+          trashBin.add(ownerChannel);
+          if (channelPool != null) {
+            channelPool.remove(ownerChannel);
+          }
         }
       }
-    } else {
-      // client channel
-      synchronized (stateMachineLock) {
-        assert (connected && registered && inPool && inRecycleBin && !inTrashBin && !newConnection);
-        inRecycleBin = false;
-        inTrashBin = true;
-        inPool = false;
-        recycleBin.remove(ownerChannel);
-        trashBin.add(ownerChannel);
-        if (channelPool != null) {
-          channelPool.remove(ownerChannel);
-        }
+    } finally {
+      if (channelPool != null) {
+        channelPool.getUpdateLock().unlock();
       }
     }
   }
@@ -964,37 +1020,43 @@ class ChannelContext extends AttachmentableAdapter {
     // undelayed, must apply
     applyDelayedTransitionEvents();
     registeredContext = new RegisteredChannelContext(remoteID, channelPool);
-    if (ownerChannel.getParent() != null) {
-      // accepted channel
-      synchronized (stateMachineLock) {
-        assert (connected && !registered && !inPool && !inRecycleBin && !inTrashBin && newConnection && !closeRequested);
-        newConnection = false;
-        registered = true;
-        inPool = true;
-        unregisteredNewChannels.remove(ownerChannel);
-        channelPool.add(ownerChannel);
+    channelPool.getUpdateLock().lock();
+
+    try {
+      if (ownerChannel.getParent() != null) {
+        // accepted channel
         synchronized (stateMachineLock) {
-          for (final EqualityCloseFuture<Integer> ecf : registerConditionFutures) {
-            ecf.setActual(remoteID);
+          assert (connected && !registered && !inPool && !inRecycleBin && !inTrashBin && newConnection && !closeRequested);
+          newConnection = false;
+          registered = true;
+          inPool = true;
+          unregisteredNewChannels.remove(ownerChannel);
+          channelPool.add(ownerChannel);
+          synchronized (stateMachineLock) {
+            for (final EqualityCloseFuture<Integer> ecf : registerConditionFutures) {
+              ecf.setActual(remoteID);
+            }
+          }
+        }
+      } else {
+        // client channel
+        synchronized (stateMachineLock) {
+          assert (connected && !registered && !inPool && !inRecycleBin && !inTrashBin && newConnection);
+          newConnection = false;
+          registered = true;
+          inPool = true;
+          registeredContext.incReference();
+          channelPool.add(ownerChannel);
+          unregisteredNewChannels.remove(ownerChannel);
+          synchronized (stateMachineLock) {
+            for (final EqualityCloseFuture<Integer> ecf : registerConditionFutures) {
+              ecf.setActual(remoteID);
+            }
           }
         }
       }
-    } else {
-      // client channel
-      synchronized (stateMachineLock) {
-        assert (connected && !registered && !inPool && !inRecycleBin && !inTrashBin && newConnection);
-        newConnection = false;
-        registered = true;
-        inPool = true;
-        registeredContext.incReference();
-        channelPool.add(ownerChannel);
-        unregisteredNewChannels.remove(ownerChannel);
-        synchronized (stateMachineLock) {
-          for (final EqualityCloseFuture<Integer> ecf : registerConditionFutures) {
-            ecf.setActual(remoteID);
-          }
-        }
-      }
+    } finally {
+      channelPool.getUpdateLock().unlock();
     }
   }
 
@@ -1096,7 +1158,7 @@ class ChannelContext extends AttachmentableAdapter {
    */
   final void awaitRemoteRegister(final CONNECT myIDMsg, final int remoteID,
       final ChannelPrioritySet registeredChannels, final ConcurrentHashMap<Channel, Channel> unregisteredNewChannels)
-          throws ChannelException {
+      throws ChannelException {
     remoteReply.addPreListener(new OperationFutureListener() {
 
       @Override
