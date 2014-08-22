@@ -82,8 +82,9 @@ public class BigClusterTest extends SystemTestBase {
   public void collectTest() throws Exception {
     // skip in travis
     final int NUM_DUPLICATES = 100;
+    final int TB_SIZE = 10;
 
-    TupleBatch tb = TestUtils.generateRandomTuples(10, 10, false).popAny();;
+    TupleBatch tb = TestUtils.generateRandomTuples(TB_SIZE, TB_SIZE, false).popAny();;
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
 
@@ -111,7 +112,7 @@ public class BigClusterTest extends SystemTestBase {
       }
     }
 
-    assertEquals(NUM_DUPLICATES * TupleBatch.BATCH_SIZE * workerIDs.length, numResultTuples);
+    assertEquals(NUM_DUPLICATES * TB_SIZE * workerIDs.length, numResultTuples);
 
   }
 
