@@ -81,9 +81,9 @@ public class BigClusterTest extends SystemTestBase {
   @Test
   public void collectTest() throws Exception {
     // skip in travis
-    final int NUM_DUPLICATES = 10;
+    final int NUM_DUPLICATES = 100;
 
-    TupleBatch tb = TestUtils.generateRandomTuples(TupleBatch.BATCH_SIZE, TupleBatch.BATCH_SIZE, false).popAny();;
+    TupleBatch tb = TestUtils.generateRandomTuples(10, 10, false).popAny();;
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
 
@@ -119,7 +119,7 @@ public class BigClusterTest extends SystemTestBase {
   public void broadcastTest() throws Exception {
     // skip in travis
     final int NUM_DUPLICATES = 10;
-    final int NUM_BROADCAST = 20;
+    final int NUM_BROADCAST = 10;
     TupleBatch tb = TestUtils.generateRandomTuples(10, 10, false).popAny();
 
     final ExchangePairID[] broadcastIDs = new ExchangePairID[NUM_BROADCAST];
@@ -172,7 +172,7 @@ public class BigClusterTest extends SystemTestBase {
   @Test
   public void downloadTest() throws Exception {
     // skip in travis
-    final int NUM_DUPLICATES = 100;
+    final int NUM_DUPLICATES = 1;
 
     URL url =
         new URL(String.format("http://%s:%d/dataset/download_test?num_tb=%d&format=%s", "localhost", masterDaemonPort,

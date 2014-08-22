@@ -73,6 +73,7 @@ public class InputBufferTest {
   public void cleanup() {
     for (IPCConnectionPool p : pools) {
       p.shutdownNow().awaitUninterruptibly();
+      p.releaseExternalResources();
     }
   }
 
