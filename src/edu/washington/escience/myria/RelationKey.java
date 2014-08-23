@@ -107,10 +107,10 @@ public final class RelationKey implements Serializable {
   /**
    * Helper function for computing strings of different types.
    * 
-   * @param leftEscape the left escape character, e.g., '['.
-   * @param separate the separating character, e.g., '#'.
-   * @param rightEscape the right escape character, e.g., ']'.
-   * @return [user#program#relation].
+   * @param leftEscape the left escape character, e.g., '\"'.
+   * @param separate the separating character, e.g., ':'.
+   * @param rightEscape the right escape character, e.g., '\"'.
+   * @return <code>"user:program:relation"</code>, for example.
    */
   private String toString(final char leftEscape, final char separate, final char rightEscape) {
     StringBuilder sb = new StringBuilder();
@@ -121,17 +121,19 @@ public final class RelationKey implements Serializable {
   /**
    * Helper function for computing strings of different types.
    * 
-   * @param dbms the DBMS, e.g., "mysql".
-   * @return [user#program#relation].
+   * @param dbms the DBMS, e.g., {@link MyriaConstants.STORAGE_SYSTEM_MYSQL}.
+   * @return <code>"user:program:relation"</code>, for example.
    */
   public String toString(final String dbms) {
     switch (dbms) {
       case MyriaConstants.STORAGE_SYSTEM_SQLITE:
-        return toString('[', '#', ']');
       case MyriaConstants.STORAGE_SYSTEM_POSTGRESQL:
+        return toString('\"', ':', '\"');
       case MyriaConstants.STORAGE_SYSTEM_MONETDB:
+        /* TODO: can we switch the other DBMS to : as well? */
         return toString('\"', ' ', '\"');
       case MyriaConstants.STORAGE_SYSTEM_MYSQL:
+        /* TODO: can we switch the other DBMS to : as well? */
         return toString('`', ' ', '`');
       default:
         throw new IllegalArgumentException("Unsupported dbms " + dbms);
