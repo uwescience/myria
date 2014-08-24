@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.CsvTupleWriter;
 import edu.washington.escience.myria.DbException;
@@ -126,9 +127,8 @@ public final class JdbcAccessMethod extends AccessMethod {
 
       Reader reader = new InputStreamReader(new ByteArrayInputStream(baos.toByteArray()));
       StringBuilder copyString =
-          new StringBuilder().append("COPY ").append(relationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL))
-              .append(" FROM STDIN WITH CSV");
-      copyString.append(" FORCE NOT NULL ").append(Joiner.on(',').join(schema.getColumnNames()));
+          new StringBuilder().append("COPY ").append(quote(relationKey)).append(" FROM STDIN WITH CSV");
+      copyString.append(" FORCE NOT NULL ").append(Joiner.on(',').join(quotedColumnNames(schema)));
       long inserted = cpManager.copyIn(copyString.toString(), reader);
       Preconditions.checkState(inserted == tupleBatch.numTuples(),
           "Error: inserted a batch of size %s but only actually inserted %s rows", tupleBatch.numTuples(), inserted);
@@ -298,8 +298,8 @@ public final class JdbcAccessMethod extends AccessMethod {
     Objects.requireNonNull(relationKey, "relationKey");
     Objects.requireNonNull(schema, "schema");
     final StringBuilder sb = new StringBuilder();
-    sb.append("INSERT INTO ").append(relationKey.toString(jdbcInfo.getDbms())).append(" (");
-    sb.append(StringUtils.join(schema.getColumnNames(), ','));
+    sb.append("INSERT INTO ").append(quote(relationKey)).append(" (");
+    sb.append(StringUtils.join(quotedColumnNames(schema), ','));
     sb.append(") VALUES (");
     for (int i = 0; i < schema.numColumns(); ++i) {
       if (i > 0) {
@@ -309,6 +309,20 @@ public final class JdbcAccessMethod extends AccessMethod {
     }
     sb.append(");");
     return sb.toString();
+  }
+
+  /**
+   * Returns a list of the column names in the given schema, quoted.
+   * 
+   * @param schema the relation whose columns to quote.
+   * @return a list of the column names in the given schema, quoted.
+   */
+  private List<String> quotedColumnNames(final Schema schema) {
+    ImmutableList.Builder<String> b = ImmutableList.builder();
+    for (String col : schema.getColumnNames()) {
+      b.add(quote(col));
+    }
+    return b.build();
   }
 
   @Override
@@ -327,7 +341,7 @@ public final class JdbcAccessMethod extends AccessMethod {
     switch (jdbcInfo.getDbms()) {
       case MyriaConstants.STORAGE_SYSTEM_MYSQL:
       case MyriaConstants.STORAGE_SYSTEM_POSTGRESQL:
-        /* This function is supported for Postgres and Mysql. */
+        /* This function is supported for PostgreSQL and MySQL. */
         break;
       case MyriaConstants.STORAGE_SYSTEM_MONETDB:
         throw new UnsupportedOperationException("MonetDB cannot CREATE TABLE IF NOT EXISTS");
@@ -344,14 +358,13 @@ public final class JdbcAccessMethod extends AccessMethod {
     }
 
     final StringBuilder sb = new StringBuilder();
-    sb.append("CREATE ").append(unloggedString).append("TABLE IF NOT EXISTS ").append(
-        relationKey.toString(jdbcInfo.getDbms())).append(" (");
+    sb.append("CREATE ").append(unloggedString).append("TABLE IF NOT EXISTS ").append(quote(relationKey)).append(" (");
     for (int i = 0; i < schema.numColumns(); ++i) {
       if (i > 0) {
         sb.append(", ");
       }
-      sb.append(schema.getColumnName(i)).append(" ")
-          .append(typeToDbmsType(schema.getColumnType(i), jdbcInfo.getDbms())).append(" NOT NULL");
+      sb.append(quote(schema.getColumnName(i))).append(" ").append(
+          typeToDbmsType(schema.getColumnType(i), jdbcInfo.getDbms())).append(" NOT NULL");
     }
     sb.append(");");
     return sb.toString();
@@ -393,8 +406,8 @@ public final class JdbcAccessMethod extends AccessMethod {
   public void dropAndRenameTables(final RelationKey oldRelation, final RelationKey newRelation) throws DbException {
     Objects.requireNonNull(oldRelation, "oldRelation");
     Objects.requireNonNull(newRelation, "newRelation");
-    final String oldName = oldRelation.toString(jdbcInfo.getDbms());
-    final String newName = newRelation.toString(jdbcInfo.getDbms());
+    final String oldName = quote(oldRelation);
+    final String newName = quote(newRelation);
 
     switch (jdbcInfo.getDbms()) {
       case MyriaConstants.STORAGE_SYSTEM_MYSQL:
@@ -415,7 +428,7 @@ public final class JdbcAccessMethod extends AccessMethod {
     switch (jdbcInfo.getDbms()) {
       case MyriaConstants.STORAGE_SYSTEM_POSTGRESQL:
       case MyriaConstants.STORAGE_SYSTEM_MYSQL:
-        execute("DROP TABLE IF EXISTS " + relationKey.toString(jdbcInfo.getDbms()));
+        execute("DROP TABLE IF EXISTS " + quote(relationKey));
         break;
       case MyriaConstants.STORAGE_SYSTEM_MONETDB:
         throw new UnsupportedOperationException("MonetDB cannot DROP IF EXISTS tables");
@@ -474,7 +487,7 @@ public final class JdbcAccessMethod extends AccessMethod {
         columns.append(',');
       }
       first = false;
-      columns.append(schema.getColumnName(i.getColumn()));
+      columns.append(quote(schema.getColumnName(i.getColumn())));
       if (i.isAscending()) {
         columns.append(" ASC");
       } else {
@@ -493,9 +506,9 @@ public final class JdbcAccessMethod extends AccessMethod {
     Objects.requireNonNull(schema, "schema");
     Objects.requireNonNull(indexes, "indexes");
 
-    String sourceTableName = relationKey.toString(jdbcInfo.getDbms());
+    String sourceTableName = quote(relationKey);
     for (List<IndexRef> index : indexes) {
-      String indexName = getIndexName(relationKey, index).toString(jdbcInfo.getDbms());
+      String indexName = quote(getIndexName(relationKey, index));
       String indexColumns = getIndexColumns(schema, index);
       StringBuilder statement = new StringBuilder("CREATE INDEX ");
       statement.append(indexName).append(" ON ").append(sourceTableName).append(indexColumns);
@@ -530,8 +543,8 @@ public final class JdbcAccessMethod extends AccessMethod {
       final List<IndexRef> index) throws DbException {
     Objects.requireNonNull(index, "index");
 
-    String sourceTableName = relationKey.toString(jdbcInfo.getDbms());
-    String indexName = getIndexName(relationKey, index).toString(jdbcInfo.getDbms());
+    String sourceTableName = quote(relationKey);
+    String indexName = quote(getIndexName(relationKey, index));
     String indexNameSingleQuote = "'" + indexName.substring(1, indexName.length() - 1) + "'";
     String indexColumns = getIndexColumns(schema, index);
 
@@ -540,6 +553,38 @@ public final class JdbcAccessMethod extends AccessMethod {
             indexNameSingleQuote, ") THEN CREATE INDEX", indexName, "ON", sourceTableName, indexColumns,
             "; END IF; END$$;");
     execute(statement);
+  }
+
+  /**
+   * Returns the quoted name of the given relation for use in SQL statements.
+   * 
+   * @param relationKey the relation to be quoted.
+   * @return the quoted name of the given relation for use in SQL statements.
+   */
+  private String quote(final RelationKey relationKey) {
+    return relationKey.toString(jdbcInfo.getDatabase());
+  }
+
+  /**
+   * Returns the quoted name of the given column for use in SQL statements.
+   * 
+   * @param column the name of the column to be quoted.
+   * @return the quoted name of the given column for use in SQL statements.
+   */
+  private String quote(final String column) {
+    char quote;
+    switch (jdbcInfo.getDbms()) {
+      case MyriaConstants.STORAGE_SYSTEM_MYSQL:
+        quote = '`';
+        break;
+      case MyriaConstants.STORAGE_SYSTEM_POSTGRESQL:
+      case MyriaConstants.STORAGE_SYSTEM_MONETDB:
+        quote = '\"';
+        break;
+      default:
+        throw new UnsupportedOperationException("Don't know how to quote DBMS " + jdbcInfo.getDbms());
+    }
+    return new StringBuilder().append(quote).append(column).append(quote).toString();
   }
 }
 
