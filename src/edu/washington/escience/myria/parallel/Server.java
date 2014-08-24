@@ -73,16 +73,15 @@ import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.agg.Aggregate;
-import edu.washington.escience.myria.operator.agg.Aggregator;
 import edu.washington.escience.myria.operator.agg.MultiGroupByAggregate;
+import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
+import edu.washington.escience.myria.operator.agg.SingleColumnAggregatorFactory;
 import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
-import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
 import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
 import edu.washington.escience.myria.operator.network.partition.RoundRobinPartitionFunction;
-import edu.washington.escience.myria.parallel.ipc.FlowControlBagInputBuffer;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.IPCMessage;
 import edu.washington.escience.myria.parallel.ipc.InJVMLoopbackChannelSink;
@@ -261,17 +260,6 @@ public final class Server {
   private final MasterCatalog catalog;
 
   /**
-   * Default input buffer capacity for {@link Consumer} input buffers.
-   */
-  private final int inputBufferCapacity;
-
-  /**
-   * @return the system wide default inuput buffer recover event trigger.
-   * @see FlowControlBagInputBuffer#INPUT_BUFFER_RECOVER
-   */
-  private final int inputBufferRecoverTrigger;
-
-  /**
    * The {@link OrderedMemoryAwareThreadPoolExecutor} who gets messages from {@link workerExecutor} and further process
    * them using application specific message handlers, e.g. {@link MasterShortMessageProcessor}.
    */
@@ -432,10 +420,10 @@ public final class Server {
     workers = new ConcurrentHashMap<>(catalog.getWorkers());
     final ImmutableMap<String, String> allConfigurations = catalog.getAllConfigurations();
 
-    inputBufferCapacity =
+    int inputBufferCapacity =
         Integer.valueOf(catalog.getConfigurationValue(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY));
 
-    inputBufferRecoverTrigger =
+    int inputBufferRecoverTrigger =
         Integer.valueOf(catalog.getConfigurationValue(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER));
 
     execEnvVars = new ConcurrentHashMap<>();
@@ -463,7 +451,8 @@ public final class Server {
     connectionPool =
         new IPCConnectionPool(MyriaConstants.MASTER_ID, computingUnits, IPCConfigurations
             .createMasterIPCServerBootstrap(this), IPCConfigurations.createMasterIPCClientBootstrap(this),
-            new TransportMessageSerializer(), new QueueBasedShortMessageProcessor<TransportMessage>(messageQueue));
+            new TransportMessageSerializer(), new QueueBasedShortMessageProcessor<TransportMessage>(messageQueue),
+            inputBufferCapacity, inputBufferRecoverTrigger);
 
     scheduledTaskExecutor =
         Executors.newSingleThreadScheduledExecutor(new RenamingThreadFactory("Master global timer"));
@@ -894,21 +883,6 @@ public final class Server {
    */
   public String getDBMS() {
     return (String) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM);
-  }
-
-  /**
-   * @return the input capacity.
-   */
-  int getInputBufferCapacity() {
-    return inputBufferCapacity;
-  }
-
-  /**
-   * @return the system wide default inuput buffer recover event trigger.
-   * @see FlowControlBagInputBuffer#INPUT_BUFFER_RECOVER
-   */
-  int getInputBufferRecoverTrigger() {
-    return inputBufferRecoverTrigger;
   }
 
   /**
@@ -1479,6 +1453,19 @@ public final class Server {
   }
 
   /**
+   * @param queryId the id of the query.
+   * @return a list of datasets belonging to the specified program.
+   * @throws DbException if there is an error accessing the Catalog.
+   */
+  public List<DatasetStatus> getDatasetsForQuery(final int queryId) throws DbException {
+    try {
+      return catalog.getDatasetsForQuery(queryId);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
+
+  /**
    * @return number of queries.
    * @throws CatalogException if an error occurs
    */
@@ -1590,7 +1577,8 @@ public final class Server {
         new CollectConsumer(addWorkerId.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
 
     final MultiGroupByAggregate aggregate =
-        new MultiGroupByAggregate(consumer, new int[] { 0, 1, 2 }, new int[] { 3 }, new int[] { Aggregator.AGG_OP_SUM });
+        new MultiGroupByAggregate(consumer, new int[] { 0, 1, 2 }, new SingleColumnAggregatorFactory(3,
+            AggregationOp.SUM));
 
     // rename columns
     ImmutableList.Builder<Expression> renameExpressions = ImmutableList.builder();
@@ -1748,7 +1736,8 @@ public final class Server {
 
     // sum up the number of workers working
     final MultiGroupByAggregate sumAggregate =
-        new MultiGroupByAggregate(consumer, new int[] { 0, 1 }, new int[] { 1 }, new int[] { Aggregator.AGG_OP_COUNT });
+        new MultiGroupByAggregate(consumer, new int[] { 0, 1 }, new SingleColumnAggregatorFactory(1,
+            AggregationOp.COUNT));
     // rename columns
     ImmutableList.Builder<Expression> renameExpressions = ImmutableList.builder();
     renameExpressions.add(new Expression("opId", new VariableExpression(0)));
@@ -1807,7 +1796,8 @@ public final class Server {
 
     // Aggregate range on master
     final Aggregate sumAggregate =
-        new Aggregate(consumer, new int[] { 0, 1 }, new int[] { Aggregator.AGG_OP_MIN, Aggregator.AGG_OP_MAX });
+        new Aggregate(consumer, new SingleColumnAggregatorFactory(0, AggregationOp.MIN),
+            new SingleColumnAggregatorFactory(1, AggregationOp.MAX));
 
     DataOutput output = new DataOutput(sumAggregate, writer);
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
@@ -1864,7 +1854,7 @@ public final class Server {
 
     // sum up contributions
     final SingleGroupByAggregate sumAggregate =
-        new SingleGroupByAggregate(consumer, new int[] { 1 }, 0, new int[] { Aggregator.AGG_OP_SUM });
+        new SingleGroupByAggregate(consumer, 0, new SingleColumnAggregatorFactory(1, AggregationOp.AVG));
 
     // rename columns
     ImmutableList.Builder<Expression> renameExpressions = ImmutableList.builder();

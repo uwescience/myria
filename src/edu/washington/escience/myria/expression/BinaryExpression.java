@@ -77,8 +77,8 @@ public abstract class BinaryExpression extends ExpressionOperator {
   }
 
   /**
-   * Returns the object comparison string: right + ".compareTo(" + left + ")" + op + "0". E.g, for
-   * {@link EqualsExpression}, <code>op</code> is <code>LIKE</code> and <code>value</code> is <code>0</code>.
+   * Returns the object comparison string: left + ".compareTo(" + right + ")" + op + "0". E.g, for
+   * {@link EqualsExpression}, <code>op</code> is <code>==</code> and <code>value</code> is <code>0</code>.
    * 
    * @param op integer comparison operator >, <, ==, >=, <=.
    * @param parameters parameters that are needed to create the java expression
@@ -86,8 +86,8 @@ public abstract class BinaryExpression extends ExpressionOperator {
    */
   protected final String getObjectComparisonString(final SimplePredicate.Op op,
       final ExpressionOperatorParameter parameters) {
-    return new StringBuilder("(").append(getRight().getJavaString(parameters)).append(".compareTo(").append(
-        getLeft().getJavaString(parameters)).append(')').append(op.toJavaString()).append(0).append(")").toString();
+    return new StringBuilder("(").append(getLeft().getJavaString(parameters)).append(".compareTo(").append(
+        getRight().getJavaString(parameters)).append(')').append(op.toJavaString()).append(0).append(")").toString();
   }
 
   /**

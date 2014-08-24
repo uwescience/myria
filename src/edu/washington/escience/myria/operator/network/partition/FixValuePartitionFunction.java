@@ -8,8 +8,6 @@ import edu.washington.escience.myria.storage.TupleBatch;
  * 
  * return a fixed integer.
  * 
- * @author Shumo Chu <chushumo@cs.washington.edu>
- * 
  */
 public final class FixValuePartitionFunction extends PartitionFunction {
 

@@ -27,7 +27,7 @@ public final class DeploymentUtils {
 
   /**
    * entry point.
-   * 
+   *
    * @param args args.
    * @throws IOException if file system error occurs.
    * */
@@ -82,6 +82,8 @@ public final class DeploymentUtils {
         if (username != null) {
           hostname = username + "@" + hostname;
         }
+
+        System.out.println("Start syncing distribution files to master#" + masterId + " @ " + hostname);
         rsyncFileToRemote("libs", hostname, remotePath, true);
         rsyncFileToRemote("conf", hostname, remotePath);
         rsyncFileToRemote("sqlite4java-282", hostname, remotePath);
@@ -103,6 +105,7 @@ public final class DeploymentUtils {
         if (username != null) {
           hostname = username + "@" + hostname;
         }
+        System.out.println("Start syncing distribution files to worker#" + workerId + " @ " + hostname);
         rsyncFileToRemote("libs", hostname, remotePath, true);
         rsyncFileToRemote("conf", hostname, remotePath);
         rsyncFileToRemote("sqlite4java-282", hostname, remotePath);
@@ -149,7 +152,7 @@ public final class DeploymentUtils {
 
   /**
    * start a worker process on a remote machine.
-   * 
+   *
    * @param address e.g. beijing.cs.washington.edu
    * @param workingDir the same meaning as path in deployment.cfg
    * @param description the same meaning as name in deployment.cfg
@@ -201,7 +204,7 @@ public final class DeploymentUtils {
 
   /**
    * start a master process on a remote machine.
-   * 
+   *
    * @param address e.g. beijing.cs.washington.edu
    * @param workingDir the same meaning as path in deployment.cfg
    * @param description the same meaning as name in deployment.cfg
@@ -237,7 +240,7 @@ public final class DeploymentUtils {
 
   /**
    * Ensure that the master is alive. Wait for some time if necessary.
-   * 
+   *
    * @param hostname the hostname of the master
    * @param restPort the port number of the rest api master
    * */
@@ -266,9 +269,7 @@ public final class DeploymentUtils {
 
       } catch (IOException e) {
         // expected for the first few trials
-        if (LOGGER.isTraceEnabled()) {
-          LOGGER.trace(e.toString());
-        }
+        LOGGER.trace("expected exception occurred", e);
       }
       try {
         Thread.sleep(TimeUnit.SECONDS.toMillis(MyriaConstants.MASTER_START_UP_TIMEOUT_IN_SECOND) / 10);
@@ -285,7 +286,7 @@ public final class DeploymentUtils {
 
   /**
    * Call mkdir on a remote machine.
-   * 
+   *
    * @param address e.g. beijing.cs.washington.edu
    * @param remotePath e.g. /tmp/test
    */
@@ -300,7 +301,7 @@ public final class DeploymentUtils {
 
   /**
    * Copy a local file to a location on a remote machine, using rsync.
-   * 
+   *
    * @param localPath path to the local file that you want to copy from
    * @param address e.g. beijing.cs.washington.edu
    * @param remotePath e.g. /tmp/test
@@ -311,7 +312,7 @@ public final class DeploymentUtils {
 
   /**
    * Copy a local file to a location on a remote machine, using rsync.
-   * 
+   *
    * @param localPath path to the local file that you want to copy from
    * @param address e.g. beijing.cs.washington.edu
    * @param remotePath e.g. /tmp/test
@@ -332,7 +333,7 @@ public final class DeploymentUtils {
 
   /**
    * Remove a file on a remote machine.
-   * 
+   *
    * @param address e.g. beijing.cs.washington.edu.
    * @param path the path to the file.
    */
@@ -347,7 +348,7 @@ public final class DeploymentUtils {
 
   /**
    * start a process by ProcessBuilder.
-   * 
+   *
    * @param cmd the command.
    */
   private static void startAProcess(final String cmd) {
@@ -366,7 +367,7 @@ public final class DeploymentUtils {
 
   /**
    * Helper function to get the hostname from hostname:port.
-   * 
+   *
    * @param s the string hostname:port
    * @return the hostname.
    * */
@@ -376,7 +377,7 @@ public final class DeploymentUtils {
 
   /**
    * Helper function to get the port number from hostname:port.
-   * 
+   *
    * @param s the string hostname:port
    * @return the port number.
    * */
@@ -390,3 +391,4 @@ public final class DeploymentUtils {
   private DeploymentUtils() {
   }
 }
+

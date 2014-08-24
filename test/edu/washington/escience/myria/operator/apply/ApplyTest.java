@@ -574,8 +574,8 @@ public class ApplyTest {
 
         for (int curI = 0; curI < result.numTuples(); curI++) {
           long i = curI + resultSize;
-          String c = "Foo" + (2 - i);
-          String d = "Foo" + i;
+          String c = "Foo" + i;
+          String d = "Foo" + (2 - i);
 
           assertEquals(c.compareTo(d) == 0, result.getBoolean(0, curI));
           assertEquals(c.compareTo(d) != 0, result.getBoolean(1, curI));

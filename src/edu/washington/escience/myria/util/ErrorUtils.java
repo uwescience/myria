@@ -6,7 +6,6 @@ import java.io.StringWriter;
 /**
  * Utilities for string manipulation.
  * 
- * @author dhalperi
  * 
  */
 public final class ErrorUtils {

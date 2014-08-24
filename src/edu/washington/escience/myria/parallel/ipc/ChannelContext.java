@@ -325,7 +325,7 @@ class ChannelContext extends AttachmentableAdapter {
      * */
     final int incReference() {
       if (LOGGER.isTraceEnabled()) {
-        LOGGER.trace("Inc reference for channel: " + ownerChannel, new ThreadStackDump());
+        LOGGER.trace("Inc reference for channel: {}", ownerChannel, new ThreadStackDump());
       }
       int newRef = 0;
       synchronized (stateMachineLock) {
@@ -339,8 +339,9 @@ class ChannelContext extends AttachmentableAdapter {
         }
       }
       if (newRef < 0) {
-        final String msg = "Number of references is negative, channel: " + ownerChannel;
-        LOGGER.warn(msg, new ThreadStackDump());
+        if (LOGGER.isWarnEnabled()) {
+          LOGGER.warn("Number of references is negative, channel: {}", ownerChannel, new ThreadStackDump());
+        }
         return 1;
       }
       return newRef;

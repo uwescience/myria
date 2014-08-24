@@ -19,7 +19,6 @@ import edu.washington.escience.myria.util.ImmutableBitSet;
 /**
  * A column of Boolean values. To save space, this implementation uses a BitSet as the internal representation.
  * 
- * @author dhalperi
  * 
  */
 public final class BooleanColumn extends Column<Boolean> {

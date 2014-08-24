@@ -9,8 +9,6 @@ import edu.washington.escience.myria.operator.RightHashJoin;
  * 
  * Encoding for {@link RightHashJoin}.
  * 
- * @author Shumo Chu <chushumo@cs.washington.edu>
- * 
  */
 public class RightHashJoinEncoding extends BinaryOperatorEncoding<RightHashJoin> {
   public List<String> argColumnNames;

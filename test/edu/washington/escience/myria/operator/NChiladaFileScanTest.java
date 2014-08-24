@@ -113,6 +113,8 @@ public class NChiladaFileScanTest {
     return map;
   }
 
+  @SuppressWarnings("unused")
+  // It was used to generate test data, keep it here for posterity
   private static void generateNChiladaFiles(String dirName, int records) throws IOException {
     String starDirPath = dirName + "/star";
     String darkDirPath = dirName + "/dark";

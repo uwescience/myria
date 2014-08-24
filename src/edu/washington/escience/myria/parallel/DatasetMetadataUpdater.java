@@ -22,7 +22,6 @@ import edu.washington.escience.myria.util.concurrent.OperationFutureListener;
  * This class updates the Catalog metadata to reflect datasets that have been created by a query. This metadata updating
  * is triggered when the query finishes.
  * 
- * @author dhalperi
  * 
  */
 public final class DatasetMetadataUpdater implements OperationFutureListener {

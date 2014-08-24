@@ -40,7 +40,6 @@ import edu.washington.escience.myria.storage.TupleBatch;
 /**
  * Access method for a JDBC database. Exposes data as TupleBatches.
  * 
- * @author dhalperi
  * 
  */
 public final class JdbcAccessMethod extends AccessMethod {

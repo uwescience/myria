@@ -11,7 +11,6 @@ import com.google.common.base.Preconditions;
 /**
  * Generic utilities for Myria.
  * 
- * @author dhalperi
  */
 public final class MyriaUtils {
   /**
@@ -81,15 +80,19 @@ public final class MyriaUtils {
   }
 
   /**
-   * Throws an {@link IllegalArgumentException} if the specified collection contains a null value.
+   * Throws an {@link IllegalArgumentException} if the specified iterable contains a null value.
    * 
+   * @param <T> any object type that extends Iterable
    * @param iter the iterable
    * @param message a message to be included with the exception
    * @return {@link IllegalArgumentException} if the iterable contains a null element.
    */
-  public static Iterable<?> checkHasNoNulls(final Iterable<?> iter, final String message) {
+  public static <T extends Iterable<?>> T checkHasNoNulls(final T iter, final String message) {
+    Objects.requireNonNull(iter, message);
+    int i = 0;
     for (Object o : iter) {
-      Preconditions.checkNotNull(o, message);
+      Preconditions.checkNotNull(o, "%s [element %s]", message, i);
+      ++i;
     }
     return iter;
   }

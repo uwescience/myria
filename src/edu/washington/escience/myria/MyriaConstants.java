@@ -5,7 +5,6 @@ import java.util.concurrent.TimeUnit;
 /**
  * This class holds the constants for the Myria execution.
  * 
- * @author dhalperi
  * 
  */
 public final class MyriaConstants {

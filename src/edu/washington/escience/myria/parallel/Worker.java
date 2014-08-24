@@ -35,8 +35,6 @@ import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.WorkerCatalog;
-import edu.washington.escience.myria.operator.network.Consumer;
-import edu.washington.escience.myria.parallel.ipc.FlowControlBagInputBuffer;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.InJVMLoopbackChannelSink;
 import edu.washington.escience.myria.profiling.ProfilingLogger;
@@ -181,9 +179,7 @@ public final class Worker {
   private class HeartbeatReporter extends ErrorLoggingTimerTask {
     @Override
     public synchronized void runInner() {
-      if (LOGGER.isTraceEnabled()) {
-        LOGGER.trace("sending heartbeat to server");
-      }
+      LOGGER.trace("sending heartbeat to server");
       sendMessageToMaster(IPCUtils.CONTROL_WORKER_HEARTBEAT).awaitUninterruptibly();
     }
   }
@@ -308,18 +304,6 @@ public final class Worker {
    * {@link ExecutorService} for Netty pipelines.
    */
   private volatile OrderedMemoryAwareThreadPoolExecutor pipelineExecutor;
-
-  /**
-   * The default input buffer capacity for each {@link Consumer} input buffer.
-   */
-  private final int inputBufferCapacity;
-
-  /**
-   * the system wide default inuput buffer recover event trigger.
-   * 
-   * @see FlowControlBagInputBuffer#INPUT_BUFFER_RECOVER
-   */
-  private final int inputBufferRecoverTrigger;
 
   /**
    * Current working directory. It's the logical root of the worker. All the data the worker and the operators running
@@ -533,21 +517,6 @@ public final class Worker {
   }
 
   /**
-   * @return the system wide default inuput buffer capacity.
-   */
-  int getInputBufferCapacity() {
-    return inputBufferCapacity;
-  }
-
-  /**
-   * @return the system wide default inuput buffer recover event trigger.
-   * @see FlowControlBagInputBuffer#INPUT_BUFFER_RECOVER
-   */
-  int getInputBufferRecoverTrigger() {
-    return inputBufferRecoverTrigger;
-  }
-
-  /**
    * @return my execution environment variables for init of operators.
    */
   ConcurrentHashMap<String, Object> getExecEnvVars() {
@@ -599,18 +568,18 @@ public final class Worker {
     computingUnits.putAll(workers);
     computingUnits.put(MyriaConstants.MASTER_ID, masterSocketInfo);
 
+    int inputBufferCapacity =
+        Integer.valueOf(catalog.getConfigurationValue(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY));
+
+    int inputBufferRecoverTrigger =
+        Integer.valueOf(catalog.getConfigurationValue(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER));
+
     connectionPool =
         new IPCConnectionPool(myID, computingUnits, IPCConfigurations.createWorkerIPCServerBootstrap(this),
             IPCConfigurations.createWorkerIPCClientBootstrap(this), new TransportMessageSerializer(),
-            new WorkerShortMessageProcessor(this));
+            new WorkerShortMessageProcessor(this), inputBufferCapacity, inputBufferRecoverTrigger);
     activeQueries = new ConcurrentHashMap<>();
     executingSubQueries = new ConcurrentHashMap<>();
-
-    inputBufferCapacity =
-        Integer.valueOf(catalog.getConfigurationValue(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY));
-
-    inputBufferRecoverTrigger =
-        Integer.valueOf(catalog.getConfigurationValue(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER));
 
     execEnvVars = new ConcurrentHashMap<String, Object>();
 

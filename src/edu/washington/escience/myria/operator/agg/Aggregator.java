@@ -2,94 +2,46 @@ package edu.washington.escience.myria.operator.agg;
 
 import java.io.Serializable;
 
+import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.storage.AppendableTable;
-import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.storage.ReadableTable;
 
 /**
- * Single column aggregator.
- * 
- * @param <COLUMN_TYPE> the aggregate column type
+ * The interface for any aggregation.
  */
-public interface Aggregator<COLUMN_TYPE> extends Serializable {
+public interface Aggregator extends Serializable {
 
   /**
-   * count. Count result is always of type {@link Type#LONG_TYPE}.
-   */
-  int AGG_OP_COUNT = 0x01;
-  /**
-   * min. Min result is always of the same type as the computed column.
-   */
-  int AGG_OP_MIN = 0x02;
-  /**
-   * max. Max result is always of the same type as the computed column.
-   */
-  int AGG_OP_MAX = 0x04;
-  /**
-   * sum. The sum is always the biggest similar type, e.g., INT->LONG and FLOAT->DOUBLE.
-   */
-  int AGG_OP_SUM = 0x08;
-  /**
-   * avg. All avg aggregates are of {@link Type#DOUBLE_TYPE} type.
-   */
-  int AGG_OP_AVG = 0x10;
-  /**
-   * stdev. All stdev aggregates are of double type
-   */
-  int AGG_OP_STDEV = 0x20;
-
-  /**
-   * Add the entire contents of {@link ReadableColumn} into the aggregate.
+   * Update this aggregate using all rows of the specified table.
    * 
-   * @param from the source {@link ReadableColumn}
+   * @param from the source {@link ReadableTable}.
+   * @throws DbException if there is an error.
    */
-  void add(ReadableColumn from);
+  void add(ReadableTable from) throws DbException;
 
   /**
-   * Add the entire contents of the specified column from the {@link ReadableTable} into the aggregate.
+   * Update this aggregate using the specified row of the specified table.
    * 
-   * @param from the source {@link ReadableTable}
-   * @param fromColumn the column in the table to add values from
+   * @param from the source {@link ReadableTable}.
+   * @param row the specified row.
+   * @throws DbException if there is an error.
    */
-  void add(ReadableTable from, int fromColumn);
+  void addRow(ReadableTable from, int row) throws DbException;
 
   /**
-   * Add the value in the specified <code>column</code> and <code>row</code> in the given {@link ReadableTable} into the
-   * aggregate.
+   * Append the aggregate result(s) to the given table starting from the given column.
    * 
-   * @param table the source {@link ReadableTable}
-   * @param column the column in <code>t</code> containing the value
-   * @param row the row in <code>t</code> containing the value
+   * @param dest where to store the aggregate result.
+   * @param destColumn the starting index into which aggregates will be output.
+   * @throws DbException if there is an error.
    */
-  void add(ReadableTable table, int column, int row);
+  void getResult(AppendableTable dest, int destColumn) throws DbException;
 
   /**
-   * Add a new value into the aggregate.
+   * Compute and return the schema of the outputs of this {@link Aggregator}.
    * 
-   * @param value the new value.
-   */
-  void add(COLUMN_TYPE value);
-
-  /**
-   * Output the aggregate result. Store the output to buffer.
-   * 
-   * @param dest the buffer to store the aggregate result.
-   * @param destColumn from the fromIndex to put the result columns
-   */
-  void getResult(AppendableTable dest, int destColumn);
-
-  /**
-   * All the count aggregates are of type Long. All the avg aggregates are of type Double. And each of the max/min/sum
-   * aggregate has the same type as the column on which the aggregate is computed.
-   * 
-   * @return Result schema of this Aggregator.
+   * @return the schema of the outputs of this {@link Aggregator}.
    */
   Schema getResultSchema();
-
-  /**
-   * @return The {@link Type} of the values this aggreagtor handles.
-   */
-  Type getType();
 }

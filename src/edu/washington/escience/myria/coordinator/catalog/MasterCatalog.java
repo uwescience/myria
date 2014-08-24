@@ -44,7 +44,6 @@ import edu.washington.escience.myria.parallel.SocketInfo;
 /**
  * This class is intended to store the configuration information for a Myria installation.
  * 
- * @author dhalperi
  * 
  */
 public final class MasterCatalog {
@@ -991,6 +990,38 @@ public final class MasterCatalog {
   }
 
   /**
+   * @param queryId the id of the query.
+   * @return A list of datasets belonging to the specified program.
+   * @throws CatalogException if there is an error accessing the desired Schema.
+   */
+  public List<DatasetStatus> getDatasetsForQuery(final int queryId) throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+
+    /* Do the work */
+    try {
+      return queue.execute(new SQLiteJob<List<DatasetStatus>>() {
+        @Override
+        protected List<DatasetStatus> job(final SQLiteConnection sqliteConnection) throws CatalogException,
+            SQLiteException {
+          try {
+            SQLiteStatement statement =
+                sqliteConnection
+                    .prepare("SELECT user_name, program_name, relation_name, num_tuples, query_id, finish_time FROM relations JOIN queries USING (query_id) WHERE query_id=? ORDER BY user_name, program_name, relation_name ASC");
+            statement.bind(1, queryId);
+            return datasetStatusListHelper(statement, sqliteConnection);
+          } catch (final SQLiteException e) {
+            throw new CatalogException(e);
+          }
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
    * Fetch the schema for the specified dataset, or null if the dataset is not found.
    * 
    * @param statement a cursor over the relations table of the relation status to be generated.
@@ -1060,6 +1091,7 @@ public final class MasterCatalog {
    * @return the newly generated ID of this query.
    * @throws CatalogException if there is an error adding the new query.
    */
+  @SuppressWarnings("checkstyle:magicnumber")
   public Long newQuery(final QueryEncoding query) throws CatalogException {
     Objects.requireNonNull(query, "query");
     if (isClosed) {
@@ -1186,6 +1218,7 @@ public final class MasterCatalog {
    * @throws SQLiteException if there is an error in the database.
    * @throws IOException if there is an error when deserializing physical plan.
    */
+  @SuppressWarnings("checkstyle:magicnumber")
   private static QueryStatusEncoding queryStatusHelper(final SQLiteStatement statement) throws SQLiteException,
       IOException {
     final QueryStatusEncoding queryStatus = new QueryStatusEncoding(statement.columnLong(0));

@@ -5,7 +5,6 @@ import com.google.common.base.Preconditions;
 /**
  * A column of Int values.
  * 
- * @author dhalperi
  * 
  */
 public final class IntArrayColumn extends IntColumn {

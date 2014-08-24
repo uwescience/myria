@@ -11,7 +11,6 @@ import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 /**
  * A column of a batch of tuples.
  * 
- * @author dhalperi
  * 
  */
 public final class ColumnFactory {

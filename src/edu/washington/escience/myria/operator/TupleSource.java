@@ -15,7 +15,6 @@ import edu.washington.escience.myria.storage.TupleBatchBuffer;
 /**
  * This class creates a LeafOperator from a batch of tuples. Useful for testing.
  * 
- * @author dhalperi
  * 
  */
 public final class TupleSource extends LeafOperator {

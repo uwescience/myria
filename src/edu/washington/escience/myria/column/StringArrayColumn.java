@@ -5,7 +5,6 @@ import com.google.common.base.Preconditions;
 /**
  * A column of String values.
  * 
- * @author dhalperi
  * 
  */
 public final class StringArrayColumn extends StringColumn {

@@ -30,7 +30,6 @@ import edu.washington.escience.myria.util.ImmutableIntArray;
  * 
  * @param <T> type of the objects in this column.
  * 
- * @author dhalperi
  * 
  */
 public abstract class Column<T extends Comparable<?>> implements ReadableColumn, Serializable {
