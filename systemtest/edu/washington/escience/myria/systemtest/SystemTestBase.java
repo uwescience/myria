@@ -102,7 +102,8 @@ public class SystemTestBase {
 
   public static final int DEFAULT_REST_PORT = 8753;
 
-  public int WORKER_BOOTUP_TIMEOUT_IN_SECOND_PER_WORKER = 5; // wait for 10 seconds for workers to get booted
+  /** Wait up to 15 seconds per work for workers to start. */
+  public int WORKER_BOOTUP_TIMEOUT_IN_SECOND_PER_WORKER = 15;
 
   public volatile int masterPort;
   public volatile int masterDaemonPort = DEFAULT_REST_PORT;
