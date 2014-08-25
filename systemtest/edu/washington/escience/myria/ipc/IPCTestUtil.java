@@ -26,23 +26,20 @@ public class IPCTestUtil {
 
   public final static <PAYLOAD> IPCConnectionPool startIPCConnectionPool(final int myID,
       final HashMap<Integer, SocketInfo> computingUnits,
-      final LinkedBlockingQueue<IPCMessage.Data<PAYLOAD>> shortMessageQueue, final PayloadSerializer ps)
-      throws Exception {
+      final LinkedBlockingQueue<IPCMessage.Data<PAYLOAD>> shortMessageQueue, final PayloadSerializer ps,
+      final int inputBufferCapacity, final int recoverTrigger, final int numNettyWorker) throws Exception {
     final IPCConnectionPool connectionPool =
         new IPCConnectionPool(myID, computingUnits, new ServerBootstrap(), new ClientBootstrap(), ps,
-            new QueueBasedShortMessageProcessor<PAYLOAD>(shortMessageQueue), 10, 8);
+            new QueueBasedShortMessageProcessor<PAYLOAD>(shortMessageQueue), inputBufferCapacity, recoverTrigger);
 
     ExecutorService bossExecutor = Executors.newCachedThreadPool();
     ExecutorService workerExecutor = Executors.newCachedThreadPool();
 
     ChannelFactory clientChannelFactory =
-        new NioClientSocketChannelFactory(bossExecutor, workerExecutor,
-            Runtime.getRuntime().availableProcessors() * 2 + 1);
+        new NioClientSocketChannelFactory(bossExecutor, workerExecutor, numNettyWorker);
 
-    // Start server with Nb of active threads = 2*NB CPU + 1 as maximum.
     ChannelFactory serverChannelFactory =
-        new NioServerSocketChannelFactory(bossExecutor, workerExecutor,
-            Runtime.getRuntime().availableProcessors() * 2 + 1);
+        new NioServerSocketChannelFactory(bossExecutor, workerExecutor, numNettyWorker);
 
     ChannelPipelineFactory serverPipelineFactory =
         new TestIPCPipelineFactories.ServerPipelineFactory(connectionPool, null);

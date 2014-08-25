@@ -54,10 +54,11 @@ import edu.washington.escience.myria.operator.FileScan;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.TipsyFileScan;
 import edu.washington.escience.myria.parallel.Server;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * This is the class that handles API calls to create or fetch datasets.
- * 
+ *
  */
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
@@ -113,7 +114,7 @@ public final class DatasetResource {
 
   /**
    * Helper function to parse a format string, with default value "csv".
-   * 
+   *
    * @param format the format string, with default value "csv".
    * @return the cleaned-up format string.
    */
@@ -211,8 +212,72 @@ public final class DatasetResource {
   }
 
   /**
+   * @param numTB the number of {@link TupleBatch}es to download from each worker.
+   * @param format the format of the output data. Valid options are (case-insensitive) "csv", "tsv", and "json".
+   * @return metadata about the specified relation.
+   * @throws DbException if there is an error in the database.
+   */
+  @GET
+  @Produces({ MediaType.APPLICATION_OCTET_STREAM, MediaType.APPLICATION_JSON })
+  @Path("/download_test")
+  public Response getQueryData(@QueryParam("num_tb") final int numTB, @QueryParam("format") final String format)
+      throws DbException {
+    /* Start building the response. */
+    ResponseBuilder response = Response.ok();
+
+    /* Validate the request format. This will throw a MyriaApiException if format is invalid. */
+    String validFormat = validateFormat(format);
+
+    /*
+     * Allocate the pipes by which the {@link DataOutput} operator will talk to the {@link StreamingOutput} object that
+     * will stream data to the client.
+     */
+    PipedOutputStream writerOutput = new PipedOutputStream();
+    PipedInputStream input;
+    try {
+      input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
+    } catch (IOException e) {
+      throw new DbException(e);
+    }
+
+    /* Create a {@link PipedStreamingOutput} object that will stream the serialized results to the client. */
+    PipedStreamingOutput entity = new PipedStreamingOutput(input);
+    /* .. and make it the entity of the response. */
+    response.entity(entity);
+
+    /* Set up the TupleWriter and the Response MediaType based on the format choices. */
+    TupleWriter writer;
+    if (validFormat.equals("csv") || validFormat.equals("tsv")) {
+      /* CSV or TSV : set application/octet-stream, attachment, and filename. */
+      if (validFormat.equals("csv")) {
+        writer = new CsvTupleWriter(writerOutput);
+      } else {
+        writer = new CsvTupleWriter('\t', writerOutput);
+      }
+      ContentDisposition contentDisposition =
+          ContentDisposition.type("attachment").fileName("test" + '.' + validFormat).build();
+
+      response.header("Content-Disposition", contentDisposition);
+      response.type(MediaType.APPLICATION_OCTET_STREAM);
+    } else if (validFormat.equals("json")) {
+      /* JSON: set application/json. */
+      response.type(MediaType.APPLICATION_JSON);
+      writer = new JsonTupleWriter(writerOutput);
+    } else {
+      /* Should not be possible to get here. */
+      throw new IllegalStateException("format should have been validated by now, and yet we got here");
+    }
+
+    /* Start streaming tuples into the TupleWriter, and through the pipes to the PipedStreamingOutput. */
+    server.startTestDataStream(numTB, writer);
+
+    /* Yay, worked! Ensure the file has the correct filename. */
+    return response.build();
+  }
+
+  /**
    * Replace a dataset with new contents.
-   * 
+   *
    * @param is InputStream containing the data set * @param userName the user who owns the target relation.
    * @param userName the user who owns the target relation.
    * @param programName the program to which the target relation belongs.
@@ -275,7 +340,7 @@ public final class DatasetResource {
 
   /**
    * An endpoint for creating new datasets with streaming data.
-   * 
+   *
    * @param relationKey the name of the dataset to be ingested.
    * @param schema the {@link Schema} of the data.
    * @param binary optional: if <code>true</code>, indicates that supplied data should be interpreted as a packed binary
@@ -318,7 +383,7 @@ public final class DatasetResource {
 
   /**
    * Ingest a dataset; replace any previous version.
-   * 
+   *
    * @param relationKey the destination relation for the data
    * @param source the source of tuples to be loaded
    * @param workers the workers on which the data will be stored
