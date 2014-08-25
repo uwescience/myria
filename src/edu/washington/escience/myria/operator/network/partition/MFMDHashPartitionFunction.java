@@ -37,7 +37,8 @@ public final class MFMDHashPartitionFunction extends PartitionFunction {
       Preconditions.checkArgument(hashedColumns.length == mappedHCDimensions.length,
           "hashedColumns must have the same arity as mappedHCDimensions");
       partitionFunctions[i] =
-          new SingleFieldHashPartitionFunction(hypercubeDimensions[mappedHCDimensions[i]], hashedColumns[i]);
+          new SingleFieldHashPartitionFunction(hypercubeDimensions[mappedHCDimensions[i]], hashedColumns[i],
+              mappedHCDimensions[i]);
     }
   }
 
