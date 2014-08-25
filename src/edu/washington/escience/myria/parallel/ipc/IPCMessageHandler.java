@@ -117,7 +117,8 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
         StreamInputBuffer<Object> ib = ownerConnectionPool.getInputBuffer(ecID);
         if (ib == null) {
           if (LOGGER.isErrorEnabled()) {
-            LOGGER.error("Unknown data stream: (RemoteID {}, stream ID:{}). Denined.", remoteID, streamID);
+            LOGGER.error("Unknown data stream: (RemoteID {}, stream ID:{}). Received through {}. Denined.", remoteID,
+                streamID, ChannelContext.channelToString(ch));
           }
           return;
         }
@@ -127,8 +128,8 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
       return;
     } else if (metaMessage == IPCMessage.Meta.EOS) {
       if (existingIChannel == null) {
-        LOGGER.error(String.format("EOS received from a non-stream channel %2$s. From RemoteID:%1$s.", remoteID,
-            ChannelContext.channelToString(ch)));
+        LOGGER.error("EOS received from a non-stream channel {}. From RemoteID:{}.",
+            ChannelContext.channelToString(ch), remoteID);
       } else {
         long streamID = cc.getRegisteredChannelContext().getIOPair().getInputChannel().getID().getStreamID();
         receiveRegisteredData(ch, cc, IPCMessage.StreamData.eos(remoteID, streamID));
@@ -142,15 +143,18 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
       return;
     } else if (metaMessage == IPCMessage.Meta.DISCONNECT) {
       if (existingIChannel != null) {
-        LOGGER.error(String.format("DISCONNECT received when the channel is still in use as a stream input: %1$s.",
-            existingIChannel.getID()));
+        LOGGER.error(
+            "DISCONNECT received when the channel is still in use as a stream input: {}. Physical channel: {}",
+            existingIChannel.getID(), ChannelContext.channelToString(ch));
       } else {
         if (ch.getParent() != null) {
           // serverChannel
           ownerConnectionPool.closeChannelRequested(ch);
         } else {
           if (LOGGER.isErrorEnabled()) {
-            LOGGER.error("Disconnect should only be sent from client channel to accepted channel.");
+            LOGGER.error(
+                "Disconnect should only be sent from client channel to accepted channel. Physical channel: {}",
+                ChannelContext.channelToString(ch));
           }
         }
       }
@@ -218,7 +222,8 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
           StreamInputBuffer<?> sib = ic.getInputBuffer();
           msg = ownerConnectionPool.getPayloadSerializer().deSerialize(cb, sib.getProcessor(), sib.getAttachment());
           if (msg == null) {
-            LOGGER.error("Unknown stream message from {} to {}, msg: {}", remoteID, sib.getProcessor(), cb);
+            LOGGER.error("Unknown stream message from {} to {}, through {}, msg: {}", remoteID, sib.getProcessor(),
+                ChannelContext.channelToString(ctx.getChannel()), cb);
             return;
           }
         } else {
@@ -227,7 +232,8 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
               ownerConnectionPool.getPayloadSerializer().deSerialize(cb, null,
                   ownerConnectionPool.getShortMessageProcessor().getAttachment());
           if (msg == null) {
-            LOGGER.error("Unknown short message from {}, msg: {}", remoteID, cb);
+            LOGGER.error("Unknown short message from {}, through {}, msg: {}", remoteID, ChannelContext
+                .channelToString(ctx.getChannel()), cb);
             return;
           }
         }
