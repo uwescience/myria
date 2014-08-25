@@ -64,6 +64,17 @@ def read_config_file(filename='deployment.cfg'):
 
     return ret
 
+def get_host_port_path(node, default_path):
+    (hostname, port) = node[0:2]
+    if node[2] is None:
+        if default_path is None:
+            raise Exception("Path not specified for node %s" % str(node))
+        else:
+            path = default_path
+    else:
+        path = node[2]
+    return (hostname, port, path)
+
 def main(argv):
     "simply try and read the passed-in configuration file."
     # Usage
