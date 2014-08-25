@@ -120,83 +120,99 @@ public final class Server {
     @Override
     public void run() {
       TERMINATE_MESSAGE_PROCESSING : while (true) {
-        IPCMessage.Data<TransportMessage> mw = null;
         try {
-          mw = messageQueue.take();
-        } catch (final InterruptedException e) {
-          Thread.currentThread().interrupt();
-          break TERMINATE_MESSAGE_PROCESSING;
-        }
+          IPCMessage.Data<TransportMessage> mw = null;
+          try {
+            mw = messageQueue.take();
+          } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            break TERMINATE_MESSAGE_PROCESSING;
+          }
 
-        final TransportMessage m = mw.getPayload();
-        final int senderID = mw.getRemoteID();
+          final TransportMessage m = mw.getPayload();
+          final int senderID = mw.getRemoteID();
 
-        switch (m.getType()) {
-          case CONTROL:
-            final ControlMessage controlM = m.getControlMessage();
-            switch (controlM.getType()) {
-              case WORKER_HEARTBEAT:
-                LOGGER.trace("getting heartbeat from worker {}", senderID);
-                updateHeartbeat(senderID);
-                break;
-              case REMOVE_WORKER_ACK:
-                int workerID = controlM.getWorkerId();
-                removeWorkerAckReceived.get(workerID).add(senderID);
-                break;
-              case ADD_WORKER_ACK:
-                workerID = controlM.getWorkerId();
-                addWorkerAckReceived.get(workerID).add(senderID);
-                for (MasterSubQuery mqp : executingSubQueries.values()) {
-                  if (mqp.getFTMode().equals(FTMODE.rejoin) && mqp.getMissingWorkers().contains(workerID)
-                      && addWorkerAckReceived.get(workerID).containsAll(mqp.getWorkerAssigned())) {
-                    /* so a following ADD_WORKER_ACK won't cause queryMessage to be sent again */
-                    mqp.getMissingWorkers().remove(workerID);
-                    try {
-                      connectionPool.sendShortMessage(workerID, IPCUtils.queryMessage(mqp.getSubQueryId(), mqp
-                          .getWorkerPlans().get(workerID)));
-                    } catch (final IOException e) {
-                      throw new RuntimeException(e);
+          switch (m.getType()) {
+            case CONTROL:
+              final ControlMessage controlM = m.getControlMessage();
+              switch (controlM.getType()) {
+                case WORKER_HEARTBEAT:
+                  LOGGER.trace("getting heartbeat from worker {}", senderID);
+                  updateHeartbeat(senderID);
+                  break;
+                case REMOVE_WORKER_ACK:
+                  int workerID = controlM.getWorkerId();
+                  removeWorkerAckReceived.get(workerID).add(senderID);
+                  break;
+                case ADD_WORKER_ACK:
+                  workerID = controlM.getWorkerId();
+                  addWorkerAckReceived.get(workerID).add(senderID);
+                  for (MasterSubQuery mqp : executingSubQueries.values()) {
+                    if (mqp.getFTMode().equals(FTMODE.rejoin) && mqp.getMissingWorkers().contains(workerID)
+                        && addWorkerAckReceived.get(workerID).containsAll(mqp.getWorkerAssigned())) {
+                      /* so a following ADD_WORKER_ACK won't cause queryMessage to be sent again */
+                      mqp.getMissingWorkers().remove(workerID);
+                      try {
+                        connectionPool.sendShortMessage(workerID, IPCUtils.queryMessage(mqp.getSubQueryId(), mqp
+                            .getWorkerPlans().get(workerID)));
+                      } catch (final IOException e) {
+                        throw new RuntimeException(e);
+                      }
                     }
                   }
-                }
-                break;
-              default:
-                LOGGER.error("Unexpected control message received at master: {}", controlM);
-            }
-            break;
-          case QUERY:
-            final QueryMessage qm = m.getQueryMessage();
-            final SubQueryId subQueryId = new SubQueryId(qm.getQueryId(), qm.getSubqueryId());
-            MasterSubQuery mqp = executingSubQueries.get(subQueryId);
-            switch (qm.getType()) {
-              case QUERY_READY_TO_EXECUTE:
-                mqp.queryReceivedByWorker(senderID);
-                break;
-              case QUERY_COMPLETE:
-                QueryReport qr = qm.getQueryReport();
-                if (qr.getSuccess()) {
-                  mqp.workerComplete(senderID);
-                } else {
-                  ObjectInputStream osis = null;
-                  Throwable cause = null;
-                  try {
-                    osis = new ObjectInputStream(new ByteArrayInputStream(qr.getCause().toByteArray()));
-                    cause = (Throwable) (osis.readObject());
-                  } catch (IOException | ClassNotFoundException e) {
-                    LOGGER.error("Error decoding failure cause", e);
+                  break;
+                default:
+                  LOGGER.error("Unexpected control message received at master: {}", controlM);
+              }
+              break;
+            case QUERY:
+              final QueryMessage qm = m.getQueryMessage();
+              final SubQueryId subQueryId = new SubQueryId(qm.getQueryId(), qm.getSubqueryId());
+              MasterSubQuery mqp = executingSubQueries.get(subQueryId);
+              switch (qm.getType()) {
+                case QUERY_READY_TO_EXECUTE:
+                  LOGGER.error("Query ready to execute");
+                  mqp.queryReceivedByWorker(senderID);
+                  break;
+                case QUERY_COMPLETE:
+                  LOGGER.error("Query complete");
+                  QueryReport qr = qm.getQueryReport();
+                  if (qr.getSuccess()) {
+                    LOGGER.error("Query success");
+                    mqp.workerComplete(senderID);
+                  } else {
+                    LOGGER.error("Query failed before");
+                    ObjectInputStream osis = null;
+                    Throwable cause = null;
+                    try {
+                      osis = new ObjectInputStream(new ByteArrayInputStream(qr.getCause().toByteArray()));
+                      cause = (Throwable) (osis.readObject());
+                    } catch (IOException | ClassNotFoundException e) {
+                      LOGGER.error("Error decoding failure cause", e);
+                    }
+                    LOGGER.error("Query failed after");
+                    mqp.workerFail(senderID, cause);
+                    LOGGER.error("Worker #{} failed in executing query #{}.", senderID, subQueryId, cause);
                   }
-                  mqp.workerFail(senderID, cause);
-                  LOGGER.error("Worker #{} failed in executing query #{}.", senderID, subQueryId, cause);
-                }
-                break;
-              default:
-                LOGGER.error("Unexpected query message received at master: {}", qm);
-                break;
-            }
-            break;
-          default:
-            LOGGER.error("Unknown short message received at master: {}", m.getType());
-            break;
+                  break;
+                default:
+                  LOGGER.error("Unexpected query message received at master: {}", qm);
+                  break;
+              }
+              break;
+            default:
+              LOGGER.error("Unknown short message received at master: {}", m.getType());
+              break;
+          }
+        } catch (Throwable a) {
+          LOGGER.error("Error occured in master message processor.", a);
+          if (a instanceof Error) {
+            throw a;
+          }
+          if (a instanceof InterruptedException) {
+            Thread.currentThread().interrupt();
+            break TERMINATE_MESSAGE_PROCESSING;
+          }
         }
       }
     }
@@ -632,11 +648,11 @@ public final class Server {
           // Temporary solution: simply giving up launching this new worker
           // TODO: find a new set of hostname:port for this scheduled worker
         } else
-        /* Haven't heard heartbeats from the scheduled worker, try to launch it again. */
-        if (currentTime - time >= MyriaConstants.SCHEDULED_WORKER_FAILED_TO_START) {
-          SocketInfo info = scheduledWorkers.get(workerId);
-          new Thread(new NewWorkerScheduler(workerId, info.getHost(), info.getPort())).start();
-        }
+          /* Haven't heard heartbeats from the scheduled worker, try to launch it again. */
+          if (currentTime - time >= MyriaConstants.SCHEDULED_WORKER_FAILED_TO_START) {
+            SocketInfo info = scheduledWorkers.get(workerId);
+            new Thread(new NewWorkerScheduler(workerId, info.getHost(), info.getPort())).start();
+          }
       }
     }
   }
@@ -950,7 +966,7 @@ public final class Server {
    */
   public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final String physicalPlan,
       final SubQueryPlan masterPlan, final Map<Integer, SubQueryPlan> workerPlans, @Nullable final Boolean profilingMode)
-      throws DbException, CatalogException {
+          throws DbException, CatalogException {
     QueryEncoding query = new QueryEncoding();
     query.rawQuery = rawQuery;
     query.logicalRa = rawQuery;
