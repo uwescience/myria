@@ -32,14 +32,28 @@ def read_config_file(filename='deployment.cfg'):
     ret['rest_port'] = config.get('deployment', 'rest_port')
 
     # Helper function
-    def split_hostportpath_key(hostport):
-        "Splits host,port,path into a tuple (host, port, path)."
-        return tuple(hostport[1].split(':'))
+    def split_hostportpathdbname_key_append_id(hostport):
+        "Splits id = host,port,path,db_name into a tuple (host, port, path, db_name, id)."
+        fields = hostport[1].split(':')
+        id=int(hostport[0])
+        host=None
+        port=None
+        path=None
+        db_name=None
+        if len(fields) < 2:
+          raise Exception('At least host:port should be provided for worker. '+hostport+' given.')
+        else:
+          host,port=fields[0:2]
+          if len(fields)>=3 and fields[2] !='':
+            path=fields[2]
+          if len(fields)>=4 and fields[3] !='':
+            db_name=fields[3]
+        return tuple([host,port,path,db_name,id])
 
     # .. master is the master node of the cluster.
-    ret['master'] = split_hostportpath_key(config.items('master')[0])
+    ret['master'] = split_hostportpathdbname_key_append_id(config.items('master')[0])
     # .. workers is a list of the worker nodes in the cluster.
-    ret['workers'] = [split_hostportpath_key(w) for w in config.items('workers')]
+    ret['workers'] = [split_hostportpathdbname_key_append_id(w) for w in config.items('workers')]
     # .. nodes is master and workers
     ret['nodes'] = [ret['master']] + ret['workers']
     # .. max_heap_size is the Java maximum heap size
@@ -49,6 +63,17 @@ def read_config_file(filename='deployment.cfg'):
         ret['max_heap_size'] = ''
 
     return ret
+
+def get_host_port_path(node, default_path):
+    (hostname, port) = node[0:2]
+    if node[2] is None:
+        if default_path is None:
+            raise Exception("Path not specified for node %s" % str(node))
+        else:
+            path = default_path
+    else:
+        path = node[2]
+    return (hostname, port, path)
 
 def main(argv):
     "simply try and read the passed-in configuration file."
