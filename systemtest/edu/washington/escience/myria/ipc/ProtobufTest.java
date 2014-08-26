@@ -32,7 +32,7 @@ import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.parallel.TransportMessageSerializer;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.IPCMessage;
-import edu.washington.escience.myria.parallel.ipc.IPCMessage.Data;
+import edu.washington.escience.myria.parallel.ipc.IPCMessage.Msg;
 import edu.washington.escience.myria.parallel.ipc.SimpleBagInputBuffer;
 import edu.washington.escience.myria.parallel.ipc.StreamIOChannelID;
 import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
@@ -225,8 +225,8 @@ public class ProtobufTest {
     final int numMessagesEach = totalRestrict / numThreads;
     final HashMap<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
     computingUnits.put(serverID, new SocketInfo("localhost", 19901));
-    LinkedBlockingQueue<Data<TransportMessage>> shortMessageQueue =
-        new LinkedBlockingQueue<IPCMessage.Data<TransportMessage>>();
+    LinkedBlockingQueue<Msg<TransportMessage>> shortMessageQueue =
+        new LinkedBlockingQueue<IPCMessage.Msg<TransportMessage>>();
 
     final IPCConnectionPool connectionPool =
         IPCTestUtil.startIPCConnectionPool(serverID, computingUnits, shortMessageQueue,
@@ -259,7 +259,7 @@ public class ProtobufTest {
     LOGGER.info("Total sent: " + numSent.get() + " messages");
 
     int numReceived = 0;
-    IPCMessage.Data<TransportMessage> tmw = null;
+    IPCMessage.Msg<TransportMessage> tmw = null;
     final int timeoutInSeconds = 10;
     while (numSent.get() > numReceived) {
       tmw = (shortMessageQueue.poll(timeoutInSeconds, TimeUnit.SECONDS));
@@ -613,8 +613,8 @@ public class ProtobufTest {
     final HashMap<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
     computingUnits.put(serverID, new SocketInfo("localhost", 19901));
 
-    LinkedBlockingQueue<Data<TransportMessage>> shortMessageQueue =
-        new LinkedBlockingQueue<IPCMessage.Data<TransportMessage>>();
+    LinkedBlockingQueue<Msg<TransportMessage>> shortMessageQueue =
+        new LinkedBlockingQueue<IPCMessage.Msg<TransportMessage>>();
     final IPCConnectionPool connectionPool =
         IPCTestUtil.startIPCConnectionPool(serverID, computingUnits, shortMessageQueue,
             new TransportMessageSerializer(), 10, 8, 2);
@@ -632,7 +632,7 @@ public class ProtobufTest {
 
     int numReceived = 0;
 
-    IPCMessage.Data<TransportMessage> tmw = null;
+    IPCMessage.Msg<TransportMessage> tmw = null;
     final int timeoutInSeconds = 10;
     while (numSent.get() > numReceived) {
       tmw = shortMessageQueue.poll(timeoutInSeconds, TimeUnit.SECONDS);

@@ -26,7 +26,7 @@ public class IPCTestUtil {
 
   public final static <PAYLOAD> IPCConnectionPool startIPCConnectionPool(final int myID,
       final HashMap<Integer, SocketInfo> computingUnits,
-      final LinkedBlockingQueue<IPCMessage.Data<PAYLOAD>> shortMessageQueue, final PayloadSerializer ps,
+      final LinkedBlockingQueue<IPCMessage.Msg<PAYLOAD>> shortMessageQueue, final PayloadSerializer ps,
       final int inputBufferCapacity, final int recoverTrigger, final int numNettyWorker) throws Exception {
     final IPCConnectionPool connectionPool =
         new IPCConnectionPool(myID, computingUnits, new ServerBootstrap(), new ClientBootstrap(), ps,
