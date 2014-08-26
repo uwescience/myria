@@ -357,6 +357,7 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
     cs.updateLastIOTimestamp();
   }
 
+  @SuppressWarnings("rawtypes")
   @Override
   public void writeRequested(final ChannelHandlerContext ctx, final MessageEvent e) throws Exception {
     Channel ch = e.getChannel();
@@ -368,7 +369,7 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
       ctx.sendDownstream(e);
     } else {
       // remote channels do serialization
-      Object m = e.getMessage();
+      IPCMessage m = (IPCMessage) e.getMessage();
       ChannelBuffer codedMsg = null;
       if (m instanceof IPCMessage.Meta) {
         codedMsg = ((IPCMessage.Meta) m).serialize();
@@ -378,11 +379,22 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
          * TransportMessage.CONTROL (corresponds to IPCMessage.Data but not StreamData). In both cases m is going to be
          * serialized as an IPCMessage.Data, with the header.
          */
-        codedMsg =
-            ChannelBuffers.wrappedBuffer(IPCMessage.StreamData.SERIALIZE_HEAD, ownerConnectionPool
-                .getPayloadSerializer().serialize(m));
+        if (m instanceof IPCMessage.StreamData) {
+          codedMsg =
+              ChannelBuffers.wrappedBuffer(IPCMessage.StreamData.SERIALIZE_HEAD, ownerConnectionPool
+                  .getPayloadSerializer().serialize(((IPCMessage.StreamData) m).getPayload()));
+        } else if (m instanceof IPCMessage.Msg) {
+          codedMsg =
+              ChannelBuffers.wrappedBuffer(IPCMessage.Msg.SERIALIZE_HEAD, ownerConnectionPool.getPayloadSerializer()
+                  .serialize(((IPCMessage.Msg) m).getPayload()));
+        }
       }
-      ctx.sendDownstream(new DownstreamMessageEvent(ch, e.getFuture(), codedMsg, e.getRemoteAddress()));
+      if (codedMsg != null) {
+        ctx.sendDownstream(new DownstreamMessageEvent(ch, e.getFuture(), codedMsg, e.getRemoteAddress()));
+      } else {
+        LOGGER.error("Channel: {}. Unknown message type written: {}.", ChannelContext.channelToString(ch), m.getClass()
+            .getName());
+      }
     }
   }
 
