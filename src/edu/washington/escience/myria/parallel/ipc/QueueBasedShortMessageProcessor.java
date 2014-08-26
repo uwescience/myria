@@ -10,7 +10,7 @@ import edu.washington.escience.myria.util.AttachmentableAdapter;
 
 /**
  * The simplest implementation of {@link ShortMessageProcessor}. The messages are simply appended into a FIFO queue.
- * 
+ *
  * @param <PAYLOAD> the type of application defined data the short message processor is going to process.
  * */
 public class QueueBasedShortMessageProcessor<PAYLOAD> extends AttachmentableAdapter implements
@@ -24,17 +24,17 @@ public class QueueBasedShortMessageProcessor<PAYLOAD> extends AttachmentableAdap
   /**
    * The queue for message storage.
    * */
-  private final Queue<IPCMessage.Data<PAYLOAD>> messageQueue;
+  private final Queue<IPCMessage.Msg<PAYLOAD>> messageQueue;
 
   /**
    * @param messageQueue the storage queue.
    * */
-  public QueueBasedShortMessageProcessor(final Queue<IPCMessage.Data<PAYLOAD>> messageQueue) {
+  public QueueBasedShortMessageProcessor(final Queue<IPCMessage.Msg<PAYLOAD>> messageQueue) {
     this.messageQueue = messageQueue;
   }
 
   @Override
-  public final boolean processMessage(final Channel channel, final IPCMessage.Data<PAYLOAD> m) {
+  public final boolean processMessage(final Channel channel, final IPCMessage.Msg<PAYLOAD> m) {
     return messageQueue.offer(m);
   }
 

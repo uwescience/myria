@@ -121,7 +121,7 @@ public final class Server {
     public void run() {
       TERMINATE_MESSAGE_PROCESSING : while (true) {
         try {
-          IPCMessage.Data<TransportMessage> mw = null;
+          IPCMessage.Msg<TransportMessage> mw = null;
           try {
             mw = messageQueue.take();
           } catch (final InterruptedException e) {
@@ -264,7 +264,7 @@ public final class Server {
    *
    * @TODO remove this queue as in {@link Worker}s.
    */
-  private final LinkedBlockingQueue<IPCMessage.Data<TransportMessage>> messageQueue;
+  private final LinkedBlockingQueue<IPCMessage.Msg<TransportMessage>> messageQueue;
 
   /**
    * The IPC Connection Pool.

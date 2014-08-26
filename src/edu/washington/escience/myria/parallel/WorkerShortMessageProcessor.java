@@ -23,7 +23,7 @@ import edu.washington.escience.myria.util.AttachmentableAdapter;
  * */
 @Sharable
 public final class WorkerShortMessageProcessor extends AttachmentableAdapter implements
-ShortMessageProcessor<TransportMessage> {
+    ShortMessageProcessor<TransportMessage> {
 
   /**
    * The logger for this class.
@@ -43,7 +43,7 @@ ShortMessageProcessor<TransportMessage> {
   }
 
   @Override
-  public boolean processMessage(final Channel ch, final IPCMessage.Data<TransportMessage> message) {
+  public boolean processMessage(final Channel ch, final IPCMessage.Msg<TransportMessage> message) {
     Object o = message.getPayload();
     if (!(o instanceof TransportMessage)) {
       return true;

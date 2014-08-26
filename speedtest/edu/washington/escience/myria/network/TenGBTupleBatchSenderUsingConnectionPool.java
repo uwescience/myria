@@ -43,8 +43,9 @@ public class TenGBTupleBatchSenderUsingConnectionPool {
     computingUnits.put(IPCID, new SocketInfo(InetAddress.getLocalHost().getHostName(), PORT));
 
     final IPCConnectionPool connectionPool =
-        IPCTestUtil.startIPCConnectionPool(1, computingUnits, new LinkedBlockingQueue<IPCMessage.Data<TupleBatch>>(),
-            new TransportMessageSerializer(), 10, 8, Runtime.getRuntime().availableProcessors() * 2 + 1);
+        IPCTestUtil.startIPCConnectionPool(1, computingUnits,
+            new LinkedBlockingQueue<IPCMessage.Msg<TupleBatch>>(), new TransportMessageSerializer(), 10, 8,
+            Runtime.getRuntime().availableProcessors() * 2 + 1);
 
     long numSent = 0;
     long start = 0;
@@ -89,7 +90,7 @@ public class TenGBTupleBatchSenderUsingConnectionPool {
     System.out.println("Total sent: " + numSent + " TupleBatches");
     System.out.println("Total sent: " + realSentSize / 1024.0 / 1024.0 / 1024.0 + " G-bytes");
     System.out
-        .println("Total payload: " + numSent * tm.numTuples() * tupleSize / 1024.0 / 1024.0 / 1024.0 + " G-bytes");
+    .println("Total payload: " + numSent * tm.numTuples() * tupleSize / 1024.0 / 1024.0 / 1024.0 + " G-bytes");
     System.out.println("Speed: " + realSentSize * 1.0 / 1024 / 1024 / elapsedInSeconds(start) + "mega-bytes/s");
 
     System.out.println();

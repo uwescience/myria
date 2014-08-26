@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.parallel.ipc;
 
+import java.util.Objects;
+
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 
@@ -15,7 +17,7 @@ public interface IPCMessage {
    * */
   enum Header {
     /***/
-    EOS, BOS, CONNECT, DISCONNECT, PING, DATA
+    EOS, BOS, CONNECT, DISCONNECT, PING, DATA, MSG
   }
 
   /**
@@ -186,7 +188,7 @@ public interface IPCMessage {
 
     /**
      * Serialize the message.
-     * 
+     *
      * @return serialize result.
      * */
     public abstract ChannelBuffer serialize();
@@ -215,11 +217,76 @@ public interface IPCMessage {
   }
 
   /**
+   * IPC stand alone message. For any two messages sent, no orders guaranteed.
+   *
+   * @param <PAYLOAD> the type of payload.
+   */
+  public final class Msg<PAYLOAD> implements IPCMessage {
+
+    /**
+     * the payload.
+     * */
+    private final PAYLOAD p;
+    /**
+     * the source remote id.
+     * */
+    private final int sourceRemote;
+
+    /**
+     * @param sourceRemote the source remote id
+     * @param p the payload.
+     * */
+    private Msg(final int sourceRemote, final PAYLOAD p) {
+      this.p = Objects.requireNonNull(p);
+      this.sourceRemote = sourceRemote;
+    }
+
+    /**
+     * @return the payload
+     * */
+    public PAYLOAD getPayload() {
+      return p;
+    }
+
+    /**
+     * @return the source remote id.
+     * */
+    public int getRemoteID() {
+      return sourceRemote;
+    }
+
+    /**
+     * serialize head.
+     * */
+    static final ChannelBuffer SERIALIZE_HEAD = ChannelBuffers
+        .wrappedBuffer(new byte[] { (byte) Header.MSG.ordinal() });
+
+    /**
+     * @param sourceRemote the source remote id.
+     * @param maybePayload either a paylod or a {@link Msg} instance.
+     * @param <PAYLOAD> the payload type.
+     * @return the wrapped a {@link Msg} message.
+     * */
+    @SuppressWarnings("unchecked")
+    public static <PAYLOAD> Msg<PAYLOAD> wrap(final int sourceRemote, final Object maybePayload) {
+      if (maybePayload instanceof Msg) {
+        return (Msg<PAYLOAD>) maybePayload;
+      } else {
+        return new Msg<PAYLOAD>(sourceRemote, (PAYLOAD) maybePayload);
+      }
+    }
+
+    @Override
+    public String toString() {
+      return String.format(Msg.class.getSimpleName() + "(from:%1$d,payload:%2$s)", sourceRemote, p);
+    }
+  }
+
+  /**
    * Unit of IPC transmission.
-   * 
-   * @param <PAYLOAD> the type of payload. Currently, this PAYLOAD could only be: TransportMessage.QUERY,
-   *          TransportMessage.CONTROL.
-   * */
+   *
+   * @param <PAYLOAD> the type of payload.
+   */
   public class Data<PAYLOAD> implements IPCMessage {
 
     /**
@@ -283,7 +350,7 @@ public interface IPCMessage {
 
   /**
    * Unit of IPC Stream.
-   * 
+   *
    * @param <PAYLOAD> the type of payload. Currently, this PAYLOAD could only be TupleBatch.
    * */
   public final class StreamData<PAYLOAD> extends Data<PAYLOAD> {
