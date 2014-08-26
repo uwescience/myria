@@ -63,7 +63,7 @@ public class StreamOutputChannel<PAYLOAD> extends StreamIOChannel {
     outputRecoverListeners = new ConcurrentLinkedQueue<IPCEventListener>();
     this.ownerPool = ownerPool;
     ChannelContext.getChannelContext(initialPhysicalChannel).getRegisteredChannelContext().getIOPair()
-    .mapOutputChannel(this);
+        .mapOutputChannel(this);
   }
 
   /**
@@ -205,7 +205,7 @@ public class StreamOutputChannel<PAYLOAD> extends StreamIOChannel {
         if (LOGGER.isTraceEnabled()) {
           LOGGER.trace("OutputChannel {} write a message through {}", getID(), ChannelContext.channelToString(ch));
         }
-        return ch.write(message);
+        return ch.write(IPCMessage.StreamData.<PAYLOAD> wrap(this.ownerPool.getMyIPCID(), getID().getStreamID(), message));
       } finally {
         this.ownerPool.getShutdownLock().readLock().unlock();
       }
