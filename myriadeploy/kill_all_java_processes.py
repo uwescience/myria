@@ -10,9 +10,9 @@ import sys
 def get_hostname(node):
     return node[0]
 
-def kill_command(host_entry,commad):
+def kill_command(host_entry,command):
     host = get_hostname(host_entry)
-    cmd = ['ssh', host, 'killall -KILL -v '+commad]
+    cmd = ['ssh', host, 'killall -KILL -v '+command]
     subprocess.call(cmd)
 
 def kill_java(host_entry):

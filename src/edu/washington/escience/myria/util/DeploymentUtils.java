@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -323,15 +324,15 @@ public final class DeploymentUtils {
    */
   public static void rsyncFileToRemote(final String localPath, final String address, final String remotePath,
       final boolean useDel) {
-    StringBuilder builder = new StringBuilder();
-    builder.append("rsync");
-    builder.append(" -rtLDvz");
+    ArrayList<String> command = new ArrayList<String>();
+    command.add("rsync");
+    command.add("-rtLDvz");
     if (useDel) {
-      builder.append(" --del");
+      command.add("--del");
     }
-    builder.append(" " + localPath);
-    builder.append(" " + address + ":" + remotePath);
-    startAProcess(builder.toString().split(" "));
+    command.add(localPath);
+    command.add(address + ":" + remotePath);
+    startAProcess(command.toArray(new String[] {}));
   }
 
   /**

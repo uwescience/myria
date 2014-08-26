@@ -27,12 +27,12 @@ import edu.washington.escience.myria.util.ErrorUtils;
  * 
  */
 @Provider
-public final class MyriaExceptionMapper implements ExceptionMapper<Exception> {
+public final class MyriaExceptionMapper implements ExceptionMapper<Throwable> {
   /** The logger for this class. */
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MyriaExceptionMapper.class);
 
   @Override
-  public Response toResponse(final Exception ex) {
+  public Response toResponse(final Throwable ex) {
     /** Any WebApplicationException should be unmodified. **/
     if (ex instanceof WebApplicationException) {
       return ((WebApplicationException) ex).getResponse();

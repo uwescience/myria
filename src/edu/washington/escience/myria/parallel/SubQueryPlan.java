@@ -56,7 +56,7 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
    * Constructor.
    * 
    * @param op a root operator.
-   * */
+   */
   public SubQueryPlan(final RootOperator op) {
     this();
     addRootOp(op);
@@ -66,7 +66,7 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
    * Constructor.
    * 
    * @param ops a list of root operators.
-   * */
+   */
   public SubQueryPlan(final RootOperator[] ops) {
     this();
     addRootOp(ops);
@@ -76,7 +76,7 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
    * Return RootOperators.
    * 
    * @return the rootOps.
-   * */
+   */
   public List<RootOperator> getRootOps() {
     return rootOps;
   }
@@ -85,10 +85,10 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
    * Add a RootOperator.
    * 
    * @param op the operator.
-   * */
+   */
   public void addRootOp(final RootOperator op) {
     rootOps.add(op);
-    updateReadWriteSets(op);
+    updateReadWriteSets(op, Sets.newIdentityHashSet());
   }
 
   /**
@@ -96,8 +96,12 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
    * contention.
    * 
    * @param op a single operator, which will be recursively traversed
+   * @param visited which objects have been visited already
    */
-  private void updateReadWriteSets(final Operator op) {
+  private void updateReadWriteSets(final Operator op, final Set<Object> visited) {
+    if (!visited.add(op)) {
+      return;
+    }
     if (op instanceof DbWriter) {
       MyriaUtils.putNewVerifyOld(((DbWriter) op).writeSet(), writeSet);
     } else if (op instanceof DbReader) {
@@ -105,7 +109,7 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
     }
 
     for (Operator child : op.getChildren()) {
-      updateReadWriteSets(child);
+      updateReadWriteSets(child, visited);
     }
   }
 
@@ -113,7 +117,7 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
    * Add a list of RootOperator.
    * 
    * @param ops operators.
-   * */
+   */
   public void addRootOp(final RootOperator[] ops) {
     for (RootOperator op : ops) {
       addRootOp(op);
@@ -124,7 +128,7 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
    * Set FT mode.
    * 
    * @param ftMode the mode.
-   * */
+   */
   public void setFTMode(final FTMODE ftMode) {
     this.ftMode = ftMode;
   }
@@ -133,7 +137,7 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
    * Return FT mode.
    * 
    * @return the ft mode.
-   * */
+   */
   public FTMODE getFTMode() {
     return ftMode;
   }

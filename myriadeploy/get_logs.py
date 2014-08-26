@@ -6,18 +6,6 @@ import subprocess
 import argparse
 
 
-def get_host_port_path(node, default_path):
-    (hostname, port) = node[0:2]
-    if node[2] is None:
-        if default_path is None:
-            raise Exception("Path not specified for node %s" % str(node))
-        else:
-            path = default_path
-    else:
-        path = node[2]
-    return (hostname, port, path)
-
-
 def mkdir_if_not_exists(description):
     args = ["mkdir", "-p", description]
     return subprocess.call(args)
@@ -81,7 +69,7 @@ def getlog(config_file, from_worker_id=None):
 
     # get logs from master
     if from_worker_id is None or from_worker_id == 0:
-        (hostname, _, path) = get_host_port_path(master, default_path)
+        (hostname, _, path) = myriadeploy.get_host_port_path(master, default_path)
         if get_logs_from_master(hostname, "%s/%s-files"
            % (path, description), username, description):
             raise Exception("Error on getting logs from master %s"
@@ -91,12 +79,11 @@ def getlog(config_file, from_worker_id=None):
             raise Exception("Error on getting error logs from master %s"
                             % (hostname,))
 
-    for (i, worker) in enumerate(workers):
-        # Workers are numbered from 1, not 0
+    for worker in workers:
         worker_id = worker[-1]
         # get logs from workers
         if from_worker_id is None or from_worker_id == worker_id:
-            (hostname, _, path) = get_host_port_path(worker, default_path)
+            (hostname, _, path) = myriadeploy.get_host_port_path(worker, default_path)
             if get_std_logs_from_worker(hostname, "%s/%s-files"
                % (path, description), username, worker_id, description):
                 raise Exception("Error on getting logs from worker %d %s"
