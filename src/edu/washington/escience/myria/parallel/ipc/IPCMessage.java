@@ -196,16 +196,21 @@ public interface IPCMessage {
      * @param bb serialized data.
      * */
     public static Meta deSerialize(final ChannelBuffer bb) {
-      byte type = bb.readByte();
+      byte type = bb.getByte(bb.readerIndex());
       if (type == Header.BOS.ordinal()) {
+        bb.skipBytes(1);
         return BOS.deSerialize(bb);
       } else if (type == Header.CONNECT.ordinal()) {
+        bb.skipBytes(1);
         return CONNECT.deSerialize(bb);
       } else if (type == Header.DISCONNECT.ordinal()) {
+        bb.skipBytes(1);
         return DISCONNECT;
       } else if (type == Header.EOS.ordinal()) {
+        bb.skipBytes(1);
         return EOS;
       } else if (type == Header.PING.ordinal()) {
+        bb.skipBytes(1);
         return PING;
       } else {
         return null;
@@ -296,8 +301,8 @@ public interface IPCMessage {
   /**
    * Unit of IPC Stream.
    *
-   * @param <PAYLOAD> the type of payload. Currently, this PAYLOAD could only be TupleBatch.
-   * */
+   * @param <PAYLOAD> the type of payload.
+   */
   public final class StreamData<PAYLOAD> implements IPCMessage {
 
     /**
@@ -374,10 +379,10 @@ public interface IPCMessage {
 
     /**
      * @param sourceRemote the source remote id.
-     * @param maybePayload either a paylod or a StreamData instance.
+     * @param maybePayload either a paylod or a {@link StreamData} instance.
      * @param <PAYLOAD> the payload type.
      * @param streamID stream ID.
-     * @return the wrapped StreamData message.
+     * @return the wrapped {@link StreamData} message.
      * */
     @SuppressWarnings("unchecked")
     public static <PAYLOAD> StreamData<PAYLOAD> wrap(final int sourceRemote, final long streamID,
@@ -408,5 +413,4 @@ public interface IPCMessage {
       return false;
     }
   }
-
 }
