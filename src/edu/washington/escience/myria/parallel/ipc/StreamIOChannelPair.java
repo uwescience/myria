@@ -110,8 +110,10 @@ class StreamIOChannelPair {
   /**
    * Remove the link between a logical input channel and a physical IO channel. And the IO channel reading gets resumed
    * anyway.
-   * */
-  final void deMapInputChannel() {
+   *
+   * @param cause the cause of the demapping, null if no exceptions.
+   */
+  final void deMapInputChannel(final Throwable cause) {
     Channel channel = null;
     StreamInputChannel<?> old = null;
 
@@ -129,6 +131,15 @@ class StreamIOChannelPair {
       LOGGER.trace("Stream input channel {} disassociated from physical channel {}.", old, ChannelContext
           .channelToString(channel), new ThreadStackDump());
     }
+  }
+
+  /**
+   * Remove the link between a logical input channel and a physical IO channel. And the IO channel reading gets resumed
+   * anyway.
+   *
+   */
+  final void deMapInputChannel() {
+    this.deMapInputChannel(null);
   }
 
   /**
