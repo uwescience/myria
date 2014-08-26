@@ -717,7 +717,7 @@ public class ProtobufTest {
 
     int numReceived = 0;
     final TupleBatchBuffer actualTBB = new TupleBatchBuffer(tbb.getSchema());
-    IPCMessage.Data<TupleBatch> m = null;
+    IPCMessage.StreamData<TupleBatch> m = null;
     final int timeoutInSeconds = 10;
     try {
       while (!inputBuffer.isEOS() || !inputBuffer.isEmpty()) {

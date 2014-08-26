@@ -42,7 +42,7 @@ public class TenGBTupleBatchReceiverUsingConnectionPool {
     sib.start(TenGBTupleBatchReceiverUsingConnectionPool.class);
 
     long numReceived = 0;
-    IPCMessage.Data<TupleBatch> m = null;
+    IPCMessage.StreamData<TupleBatch> m = null;
 
     long start = 0;
     long end = 0;
