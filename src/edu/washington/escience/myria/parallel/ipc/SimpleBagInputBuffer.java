@@ -13,7 +13,7 @@ import edu.washington.escience.myria.util.concurrent.ReentrantSpinLock;
 /**
  * A simple InputBuffer implementation using bag semantic. The number of data held in this InputBuffer can be as large
  * as {@link Integer.MAX_VALUE}.
- * 
+ *
  * @param <PAYLOAD> the type of application defined data the input buffer is going to hold.
  * */
 public class SimpleBagInputBuffer<PAYLOAD> extends BagInputBufferAdapter<PAYLOAD> {
@@ -43,11 +43,16 @@ public class SimpleBagInputBuffer<PAYLOAD> extends BagInputBufferAdapter<PAYLOAD
       return NEW_INPUT_DATA;
     }
 
+    @Override
+    public Throwable getCause() {
+      return null;
+    }
+
   };
 
   /**
    * Fire a new input event. All the new arrival event listeners will be notified.
-   * 
+   *
    * New input event listeners are executed by trigger threads.
    * */
   protected final void fireNewInput() {
@@ -89,7 +94,7 @@ public class SimpleBagInputBuffer<PAYLOAD> extends BagInputBufferAdapter<PAYLOAD
 
   /**
    * {@inheritDoc}.
-   * 
+   *
    * Only new data events is supported
    * */
   @Override

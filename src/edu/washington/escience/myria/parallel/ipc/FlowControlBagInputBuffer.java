@@ -289,6 +289,11 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
       return INPUT_BUFFER_EMPTY;
     }
 
+    @Override
+    public Throwable getCause() {
+      return null;
+    }
+
   };
 
   /**
@@ -304,6 +309,11 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
     @Override
     public EventType getType() {
       return NEW_INPUT_DATA;
+    }
+
+    @Override
+    public Throwable getCause() {
+      return null;
     }
 
   };
@@ -322,6 +332,11 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
     public EventType getType() {
       return INPUT_BUFFER_FULL;
     }
+
+    @Override
+    public Throwable getCause() {
+      return null;
+    }
   };
 
   /**
@@ -337,6 +352,11 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
     @Override
     public EventType getType() {
       return INPUT_BUFFER_RECOVER;
+    }
+
+    @Override
+    public Throwable getCause() {
+      return null;
     }
   };
 

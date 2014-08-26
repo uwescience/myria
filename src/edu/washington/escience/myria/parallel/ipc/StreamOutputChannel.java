@@ -118,6 +118,11 @@ public class StreamOutputChannel<PAYLOAD> extends StreamIOChannel {
       return OUTPUT_DISABLED;
     }
 
+    @Override
+    public Throwable getCause() {
+      return null;
+    }
+
   };
 
   /**
@@ -133,6 +138,11 @@ public class StreamOutputChannel<PAYLOAD> extends StreamIOChannel {
     @Override
     public EventType getType() {
       return OUTPUT_RECOVERED;
+    }
+
+    @Override
+    public Throwable getCause() {
+      return null;
     }
 
   };
@@ -205,7 +215,8 @@ public class StreamOutputChannel<PAYLOAD> extends StreamIOChannel {
         if (LOGGER.isTraceEnabled()) {
           LOGGER.trace("OutputChannel {} write a message through {}", getID(), ChannelContext.channelToString(ch));
         }
-        return ch.write(IPCMessage.StreamData.<PAYLOAD> wrap(this.ownerPool.getMyIPCID(), getID().getStreamID(), message));
+        return ch.write(IPCMessage.StreamData.<PAYLOAD> wrap(this.ownerPool.getMyIPCID(), getID().getStreamID(),
+            message));
       } finally {
         this.ownerPool.getShutdownLock().readLock().unlock();
       }
