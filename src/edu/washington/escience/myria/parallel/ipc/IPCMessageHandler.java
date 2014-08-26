@@ -131,9 +131,8 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
         LOGGER.error("EOS received from a non-stream channel {}. From RemoteID:{}.",
             ChannelContext.channelToString(ch), remoteID);
       } else {
-        long streamID = cc.getRegisteredChannelContext().getIOPair().getInputChannel().getID().getStreamID();
-        receiveRegisteredStreamData(cc.getRegisteredChannelContext().getIOPair().getInputChannel(),
-            IPCMessage.StreamData.eos(remoteID, streamID));
+        long streamID = existingIChannel.getID().getStreamID();
+        receiveStreamData(cc.getRegisteredChannelContext(), IPCMessage.StreamData.eos(remoteID, streamID));
         cc.getRegisteredChannelContext().getIOPair().deMapInputChannel();
         ChannelContext.resumeRead(ch);
         if (LOGGER.isTraceEnabled()) {
@@ -170,14 +169,20 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
   }
 
   /**
-   * @param sic stream input channel.
+   * @param rcc registered channel context.
    * @param message the received message
    * */
-  private void receiveRegisteredStreamData(final StreamInputChannel<Object> sic,
-      final IPCMessage.StreamData<Object> message) {
-    while (!processStreamMessage(sic, message)) {
-      if (LOGGER.isErrorEnabled()) {
-        LOGGER.error("Input buffer out of memory. With the flow control input buffers, it should not happen normally.");
+  private void receiveStreamData(final RegisteredChannelContext rcc, final IPCMessage.StreamData<Object> message) {
+    StreamInputChannel<Object> sic = rcc.getIOPair().getInputChannel();
+    if (sic == null) {
+      LOGGER.error("Stream data received from a non-stream channel {}. From RemoteID:{}. Drop it.", ChannelContext
+          .channelToString(rcc.getOwnerChannelContext().getChannel()), rcc.getRemoteID());
+    } else {
+      while (!processStreamMessage(sic, message)) {
+        if (LOGGER.isErrorEnabled()) {
+          LOGGER
+              .error("Input buffer out of memory. With the flow control input buffers, it should not happen normally.");
+        }
       }
     }
   }
@@ -203,8 +208,8 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
         // it's a stream message
         StreamInputChannel<?> ic = cc.getRegisteredChannelContext().getIOPair().getInputChannel();
         if (ic == null) {
-          LOGGER.error("Stream message received from channel {}. Destination unknown. Drop it.", ChannelContext
-              .channelToString(ch));
+          LOGGER.error("Stream message received from channel {}. Destination InputBuffer unknown. Drop it.",
+              ChannelContext.channelToString(ch));
         } else {
           StreamInputBuffer<?> sib = ic.getInputBuffer();
           Object usrMsg =
@@ -284,8 +289,7 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
         if (ecc != null) {
           cc.updateLastIOTimestamp();
           if (msg instanceof IPCMessage.StreamData) {
-            StreamInputChannel<Object> sic = cc.getRegisteredChannelContext().getIOPair().getInputChannel();
-            receiveRegisteredStreamData(sic, (IPCMessage.StreamData) msg);
+            receiveStreamData(ecc, (IPCMessage.StreamData) msg);
           } else if (msg instanceof IPCMessage.Msg) {
             // connectionless message processing
             ShortMessageProcessor<Object> smp = ownerConnectionPool.getShortMessageProcessor();
