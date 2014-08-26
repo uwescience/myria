@@ -206,23 +206,31 @@ public class StreamOutputChannel<PAYLOAD> extends StreamIOChannel {
   /**
    * @param message the message to write
    * @return the write future.
-   * */
+   */
   public final ChannelFuture write(final PAYLOAD message) {
     Channel ch = getIOChannel();
     if (ch != null) {
-      this.ownerPool.getShutdownLock().readLock().lock();
+      ownerPool.getShutdownLock().readLock().lock();
       try {
         if (LOGGER.isTraceEnabled()) {
-          LOGGER.trace("OutputChannel {} write a message through {}", getID(), ChannelContext.channelToString(ch));
+          LOGGER.trace(StreamOutputChannel.class.getSimpleName() + " {} write a message through {}", getID(),
+              ChannelContext.channelToString(ch));
         }
-        return ch.write(IPCMessage.StreamData.<PAYLOAD> wrap(this.ownerPool.getMyIPCID(), getID().getStreamID(),
-            message));
+        return ch.write(IPCMessage.StreamData.<PAYLOAD> wrap(ownerPool.getMyIPCID(), getID().getStreamID(), message));
       } finally {
-        this.ownerPool.getShutdownLock().readLock().unlock();
+        ownerPool.getShutdownLock().readLock().unlock();
       }
     } else {
-      LOGGER.error("No usable physical IO channel for id={}.", getID());
-      throw new IllegalStateException("No usable physical IO channel.");
+      Throwable detachCause = getLastDetachCause();
+      if (detachCause != null) {
+        LOGGER.error("No usable physical IO channel for " + StreamOutputChannel.class.getSimpleName()
+            + " id={}, caused by an exception.", getID(), detachCause);
+        throw new IllegalStateException("No usable physical IO channel.", detachCause);
+      } else {
+        throw new IllegalStateException(StreamOutputChannel.class.getSimpleName() + " id=" + getID()
+            + "is already released");
+      }
+
     }
   }
 

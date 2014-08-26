@@ -948,7 +948,11 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
         public void operationComplete(final ChannelFuture future) throws Exception {
 
           ChannelContext cc = ChannelContext.getChannelContext(future.getChannel());
-          cc.getRegisteredChannelContext().getIOPair().deMapOutputChannel();
+          if (future.isSuccess()) {
+            cc.getRegisteredChannelContext().getIOPair().deMapOutputChannel();
+          } else {
+            cc.getRegisteredChannelContext().getIOPair().deMapOutputChannel(future.getCause());
+          }
 
           final Channel channel = future.getChannel();
           if (channel instanceof InJVMChannel) {

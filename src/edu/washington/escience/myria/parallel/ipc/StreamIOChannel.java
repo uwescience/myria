@@ -20,6 +20,11 @@ public abstract class StreamIOChannel {
   private final AtomicReference<Channel> ioChannel;
 
   /**
+   * Record last physical channel detach cause.
+   */
+  private volatile Throwable lastDetachCause = null;
+
+  /**
    * ID.
    * */
   private final StreamIOChannelID id;
@@ -55,17 +60,35 @@ public abstract class StreamIOChannel {
   }
 
   /**
-   * Detach IO channel.
+   * Detach physical IO channel from this logical stream channel.
    *
-   * @return the old
-   * */
+   * @return the old channel.
+   */
   final Channel detachIOChannel() {
+    return this.detachIOChannel(null);
+  }
+
+  /**
+   * Detach IO channel because of an exception.
+   *
+   * @param cause the cause of the detach, null if no exceptions.
+   * @return the old
+   */
+  final Channel detachIOChannel(final Throwable cause) {
     Channel ch = ioChannel.getAndSet(null);
+    lastDetachCause = cause;
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace(this.getClass().getSimpleName() + " ID: {} detached from physical channel: {}", id, ChannelContext
-          .channelToString(ch), new ThreadStackDump());
+          .channelToString(ch));
     }
     return ch;
+  }
+
+  /**
+   * @return the latest physical channel detach cause.
+   */
+  public final Throwable getLastDetachCause() {
+    return lastDetachCause;
   }
 
   /**

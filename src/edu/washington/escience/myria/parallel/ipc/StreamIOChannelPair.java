@@ -155,16 +155,26 @@ class StreamIOChannelPair {
 
   /**
    * Remove the link between a logical output channel and a physical IO channel.
+   *
+   * @param cause the cause of the demapping, null if no exceptions.
    * */
-  final void deMapOutputChannel() {
+  final void deMapOutputChannel(final Throwable cause) {
     outputMappingLock.lock();
     try {
       if (outputStreamChannel != null) {
-        outputStreamChannel.detachIOChannel();
+        outputStreamChannel.detachIOChannel(cause);
         outputStreamChannel = null;
       }
     } finally {
       outputMappingLock.unlock();
     }
   }
+
+  /**
+   * Remove the link between a logical output channel and a physical IO channel.
+   */
+  final void deMapOutputChannel() {
+    deMapOutputChannel(null);
+  }
+
 }
