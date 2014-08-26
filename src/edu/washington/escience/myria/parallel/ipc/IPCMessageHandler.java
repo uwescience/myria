@@ -108,10 +108,10 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
       final long streamID = ((IPCMessage.Meta.BOS) metaMessage).getStreamID();
       if (existingIChannel != null) {
         LOGGER
-            .error(String
-                .format(
-                    "Duplicate BOS received from a stream channel %4$s. Existing Stream: (RemoteID:%1$s, StreamID:%2$d), new BOS: (RemoteID:%1$s, StreamID:%3$d). Dropped.",
-                    remoteID, existingIChannel.getID().getStreamID(), streamID, ChannelContext.channelToString(ch)));
+        .error(String
+            .format(
+                "Duplicate BOS received from a stream channel %4$s. Existing Stream: (RemoteID:%1$s, StreamID:%2$d), new BOS: (RemoteID:%1$s, StreamID:%3$d). Dropped.",
+                remoteID, existingIChannel.getID().getStreamID(), streamID, ChannelContext.channelToString(ch)));
       } else {
         StreamIOChannelID ecID = new StreamIOChannelID(streamID, remoteID);
         StreamInputBuffer<Object> ib = ownerConnectionPool.getInputBuffer(ecID);
@@ -197,7 +197,7 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
           .wrap(remoteID, ic.getID().getStreamID(), message))) {
         if (LOGGER.isErrorEnabled()) {
           LOGGER
-              .error("Input buffer out of memory. With the flow control input buffers, it should not happen normally.");
+          .error("Input buffer out of memory. With the flow control input buffers, it should not happen normally.");
         }
       }
     }
@@ -275,7 +275,7 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
     } else {
       if (LOGGER.isDebugEnabled()) {
         LOGGER
-            .debug("Channel context is null. The IPCConnectionPool must have been shutdown. Close the channel directly.");
+        .debug("Channel context is null. The IPCConnectionPool must have been shutdown. Close the channel directly.");
       }
       ch.close();
     }
@@ -355,8 +355,8 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
          * serialized as an IPCMessage.Data, with the header.
          */
         codedMsg =
-            ChannelBuffers.wrappedBuffer(IPCMessage.Data.SERIALIZE_HEAD, ownerConnectionPool.getPayloadSerializer()
-                .serialize(m));
+            ChannelBuffers.wrappedBuffer(IPCMessage.StreamData.SERIALIZE_HEAD, ownerConnectionPool
+                .getPayloadSerializer().serialize(m));
       }
       ctx.sendDownstream(new DownstreamMessageEvent(ch, e.getFuture(), codedMsg, e.getRemoteAddress()));
     }

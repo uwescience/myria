@@ -5,8 +5,6 @@ import java.util.Objects;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 
-import com.google.common.base.Preconditions;
-
 /**
  * All IPCMessages derived from this class.
  * */
@@ -283,11 +281,11 @@ public interface IPCMessage {
   }
 
   /**
-   * Unit of IPC transmission.
+   * Unit of IPC Stream.
    *
-   * @param <PAYLOAD> the type of payload.
-   */
-  public class Data<PAYLOAD> implements IPCMessage {
+   * @param <PAYLOAD> the type of payload. Currently, this PAYLOAD could only be TupleBatch.
+   * */
+  public final class StreamData<PAYLOAD> implements IPCMessage {
 
     /**
      * the payload.
@@ -297,15 +295,6 @@ public interface IPCMessage {
      * the source remote id.
      * */
     private final int sourceRemote;
-
-    /**
-     * @param sourceRemote the source remote id
-     * @param p the payload.
-     * */
-    private Data(final int sourceRemote, final PAYLOAD p) {
-      this.p = p;
-      this.sourceRemote = sourceRemote;
-    }
 
     /**
      * @return the payload
@@ -328,34 +317,6 @@ public interface IPCMessage {
         .wrappedBuffer(new byte[] { (byte) Header.DATA.ordinal() });
 
     /**
-     * @param sourceRemote the source remote id.
-     * @param maybePayload either a paylod or a Data instance.
-     * @param <PAYLOAD> the payload type.
-     * @return the wrapped Data message.
-     * */
-    @SuppressWarnings("unchecked")
-    public static <PAYLOAD> Data<PAYLOAD> wrap(final int sourceRemote, final Object maybePayload) {
-      if (maybePayload instanceof Data) {
-        return (Data<PAYLOAD>) maybePayload;
-      } else {
-        return new Data<PAYLOAD>(sourceRemote, (PAYLOAD) maybePayload);
-      }
-    }
-
-    @Override
-    public String toString() {
-      return String.format("IPCMessage.Data(from:%1$d,payload:%2$s)", sourceRemote, p);
-    }
-  }
-
-  /**
-   * Unit of IPC Stream.
-   *
-   * @param <PAYLOAD> the type of payload. Currently, this PAYLOAD could only be TupleBatch.
-   * */
-  public final class StreamData<PAYLOAD> extends Data<PAYLOAD> {
-
-    /**
      * the stream ID.
      * */
     private final long streamID;
@@ -366,7 +327,8 @@ public interface IPCMessage {
      * @param p the payload.
      * */
     private StreamData(final int sourceRemote, final long streamID, final PAYLOAD p) {
-      super(sourceRemote, Preconditions.checkNotNull(p));
+      this.p = Objects.requireNonNull(p);
+      this.sourceRemote = sourceRemote;
       this.streamID = streamID;
     }
 
@@ -375,7 +337,8 @@ public interface IPCMessage {
      * @param streamID stream ID.
      * */
     private StreamData(final int sourceRemote, final long streamID) {
-      super(sourceRemote, null);
+      this.p = null;
+      this.sourceRemote = sourceRemote;
       this.streamID = streamID;
     }
 
@@ -415,8 +378,8 @@ public interface IPCMessage {
 
     @Override
     public String toString() {
-      return String.format("IPCMessage.StreamData(from:%1$d,stream:%2$d,payload:%3$s)", getRemoteID(), streamID,
-          getPayload());
+      return String.format(StreamData.class.getSimpleName() + "(from:%1$d,stream:%2$d,payload:%3$s)", sourceRemote,
+          streamID, p);
     }
   }
 
