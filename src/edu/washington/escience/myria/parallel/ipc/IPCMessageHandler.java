@@ -132,7 +132,8 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
             ChannelContext.channelToString(ch), remoteID);
       } else {
         long streamID = cc.getRegisteredChannelContext().getIOPair().getInputChannel().getID().getStreamID();
-        receiveRegisteredData(ch, cc, IPCMessage.StreamData.eos(remoteID, streamID));
+        receiveRegisteredStreamData(cc.getRegisteredChannelContext().getIOPair().getInputChannel(),
+            IPCMessage.StreamData.eos(remoteID, streamID));
         cc.getRegisteredChannelContext().getIOPair().deMapInputChannel();
         ChannelContext.resumeRead(ch);
         if (LOGGER.isTraceEnabled()) {
@@ -169,36 +170,14 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
   }
 
   /**
-   * @param ch the source channel.
-   * */
-  private void receiveUnregisteredData(final Channel ch) {
-    if (LOGGER.isErrorEnabled()) {
-      LOGGER.error("Channel: {}. Unknown session. Send me the remote id before data transfer.", ChannelContext
-          .channelToString(ch));
-    }
-  }
-
-  /**
-   * @param ch the source channel.
-   * @param cc channel context of ch.
+   * @param sic stream input channel.
    * @param message the received message
    * */
-  private void receiveRegisteredData(final Channel ch, final ChannelContext cc, final Object message) {
-    cc.updateLastIOTimestamp();
-    StreamIOChannelPair ecp = cc.getRegisteredChannelContext().getIOPair();
-    final int remoteID = cc.getRegisteredChannelContext().getRemoteID();
-    StreamInputChannel<Object> ic = ecp.getInputChannel();
-    if (ic == null) {
-      // connectionless message processing
-      ShortMessageProcessor<Object> smp = ownerConnectionPool.getShortMessageProcessor();
-      smp.processMessage(ch, IPCMessage.Msg.wrap(remoteID, message));
-    } else {
-      while (!processStreamMessage(ch, remoteID, IPCMessage.StreamData
-          .wrap(remoteID, ic.getID().getStreamID(), message))) {
-        if (LOGGER.isErrorEnabled()) {
-          LOGGER
-              .error("Input buffer out of memory. With the flow control input buffers, it should not happen normally.");
-        }
+  private void receiveRegisteredStreamData(final StreamInputChannel<Object> sic,
+      final IPCMessage.StreamData<Object> message) {
+    while (!processStreamMessage(sic, message)) {
+      if (LOGGER.isErrorEnabled()) {
+        LOGGER.error("Input buffer out of memory. With the flow control input buffers, it should not happen normally.");
       }
     }
   }
@@ -253,6 +232,7 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
     return msg;
   }
 
+  @SuppressWarnings({ "rawtypes", "unchecked" })
   @Override
   public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) throws Exception {
     final Channel ch = e.getChannel();
@@ -277,9 +257,12 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
     if (LOGGER.isTraceEnabled()) {
       if (msg instanceof IPCMessage.Meta) {
         LOGGER.trace("Received meta msg: {}, from channel {}", msg, ChannelContext.channelToString(ch));
-      } else {
-        LOGGER.trace("Received user msg of type: {}, from channel {}", msg.getClass().getName(), ChannelContext
-            .channelToString(ch));
+      } else if (msg instanceof IPCMessage.StreamData) {
+        LOGGER.trace("Received user stream data of type: {}, from channel {}", ((IPCMessage.StreamData) msg)
+            .getPayload().getClass().getName(), ChannelContext.channelToString(ch));
+      } else if (msg instanceof IPCMessage.Msg) {
+        LOGGER.trace("Received user short message of type: {}, from channel {}", ((IPCMessage.Msg) msg).getPayload()
+            .getClass().getName(), ChannelContext.channelToString(ch));
       }
     }
 
@@ -298,10 +281,24 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
           receiveRegisteredMeta(ch, cc, (IPCMessage.Meta) msg);
         }
       } else {
-        if (ecc == null) {
-          receiveUnregisteredData(ch);
+        if (ecc != null) {
+          cc.updateLastIOTimestamp();
+          if (msg instanceof IPCMessage.StreamData) {
+            StreamInputChannel<Object> sic = cc.getRegisteredChannelContext().getIOPair().getInputChannel();
+            receiveRegisteredStreamData(sic, (IPCMessage.StreamData) msg);
+          } else if (msg instanceof IPCMessage.Msg) {
+            // connectionless message processing
+            ShortMessageProcessor<Object> smp = ownerConnectionPool.getShortMessageProcessor();
+            smp.processMessage(ch, (IPCMessage.Msg) msg);
+          } else {
+            if (LOGGER.isErrorEnabled()) {
+              LOGGER.error("Unknown message type: {} received from channel {}.", msg.getClass().getName(),
+                  ChannelContext.channelToString(ch));
+            }
+          }
         } else {
-          receiveRegisteredData(ch, cc, msg);
+          LOGGER.error("Channel: {}. Unknown session. Send me the remote id before data transfer.", ChannelContext
+              .channelToString(ch));
         }
       }
     } else {
@@ -314,18 +311,13 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
   }
 
   /**
-   * @param ch source channel.
-   * @param remoteID source remote.
+   * @param sic stream input channel.
    * @param message the message.
    * @return true if successfully processed.
    * */
-  private boolean processStreamMessage(final Channel ch, final int remoteID, final IPCMessage.StreamData<Object> message) {
+  private boolean processStreamMessage(final StreamInputChannel<Object> sic, final IPCMessage.StreamData<Object> message) {
     boolean pushToBufferSucceed = true;
-
-    final ChannelContext cs = (ChannelContext) ch.getAttachment();
-    StreamIOChannelPair ecp = cs.getRegisteredChannelContext().getIOPair();
-    StreamInputChannel<Object> cc = ecp.getInputChannel();
-    StreamInputBuffer<Object> msgDestIB = cc.getInputBuffer();
+    StreamInputBuffer<Object> msgDestIB = sic.getInputBuffer();
 
     if (msgDestIB == null) {
       if (LOGGER.isDebugEnabled()) {
