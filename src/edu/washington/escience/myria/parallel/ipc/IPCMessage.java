@@ -15,7 +15,7 @@ public interface IPCMessage {
    * */
   enum Header {
     /***/
-    EOS, BOS, CONNECT, DISCONNECT, PING, DATA, MSG
+    EOS, BOS, CONNECT, DISCONNECT, PING, STREAM_DATA, MSG
   }
 
   /**
@@ -278,6 +278,19 @@ public interface IPCMessage {
     public String toString() {
       return String.format(Msg.class.getSimpleName() + "(from:%1$d,payload:%2$s)", sourceRemote, p);
     }
+
+    /**
+     * @return if the data buffer is a short message.
+     * @param data the data buffer.
+     */
+    public static boolean isShortMsg(final ChannelBuffer data) {
+      byte type = data.getByte(data.readerIndex());
+      if (type == Header.MSG.ordinal()) {
+        data.skipBytes(1);
+        return true;
+      }
+      return false;
+    }
   }
 
   /**
@@ -313,8 +326,8 @@ public interface IPCMessage {
     /**
      * serialize head.
      * */
-    static final ChannelBuffer SERIALIZE_HEAD = ChannelBuffers
-        .wrappedBuffer(new byte[] { (byte) Header.DATA.ordinal() });
+    static final ChannelBuffer SERIALIZE_HEAD = ChannelBuffers.wrappedBuffer(new byte[] { (byte) Header.STREAM_DATA
+        .ordinal() });
 
     /**
      * the stream ID.
@@ -380,6 +393,19 @@ public interface IPCMessage {
     public String toString() {
       return String.format(StreamData.class.getSimpleName() + "(from:%1$d,stream:%2$d,payload:%3$s)", sourceRemote,
           streamID, p);
+    }
+
+    /**
+     * @return if the data buffer is a stream data.
+     * @param data the data buffer.
+     */
+    public static boolean isStreamData(final ChannelBuffer data) {
+      byte type = data.getByte(data.readerIndex());
+      if (type == Header.STREAM_DATA.ordinal()) {
+        data.skipBytes(1);
+        return true;
+      }
+      return false;
     }
   }
 
