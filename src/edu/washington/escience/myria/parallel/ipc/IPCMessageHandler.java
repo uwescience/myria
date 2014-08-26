@@ -108,10 +108,10 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
       final long streamID = ((IPCMessage.Meta.BOS) metaMessage).getStreamID();
       if (existingIChannel != null) {
         LOGGER
-        .error(String
-            .format(
-                "Duplicate BOS received from a stream channel %4$s. Existing Stream: (RemoteID:%1$s, StreamID:%2$d), new BOS: (RemoteID:%1$s, StreamID:%3$d). Dropped.",
-                remoteID, existingIChannel.getID().getStreamID(), streamID, ChannelContext.channelToString(ch)));
+            .error(String
+                .format(
+                    "Duplicate BOS received from a stream channel %4$s. Existing Stream: (RemoteID:%1$s, StreamID:%2$d), new BOS: (RemoteID:%1$s, StreamID:%3$d). Dropped.",
+                    remoteID, existingIChannel.getID().getStreamID(), streamID, ChannelContext.channelToString(ch)));
       } else {
         StreamIOChannelID ecID = new StreamIOChannelID(streamID, remoteID);
         StreamInputBuffer<Object> ib = ownerConnectionPool.getInputBuffer(ecID);
@@ -197,47 +197,79 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
           .wrap(remoteID, ic.getID().getStreamID(), message))) {
         if (LOGGER.isErrorEnabled()) {
           LOGGER
-          .error("Input buffer out of memory. With the flow control input buffers, it should not happen normally.");
+              .error("Input buffer out of memory. With the flow control input buffers, it should not happen normally.");
         }
       }
     }
   }
 
+  /**
+   * Deserialize messages received from remote.
+   *
+   * @param ch the source channel
+   * @param cb the serialized data buffer
+   * @return deserialized {@link IPCMessage}
+   * @throws Exception if any error occurs
+   * */
+  private IPCMessage deSerializeIPCMessage(final Channel ch, final ChannelBuffer cb) throws Exception {
+    // message from remote, deserialize
+    IPCMessage msg = null;
+    msg = IPCMessage.Meta.deSerialize(cb);
+    if (msg == null) {
+      // user message
+      final ChannelContext cc = ChannelContext.getChannelContext(ch);
+      final int remoteID = cc.getRegisteredChannelContext().getRemoteID();
+
+      if (IPCMessage.StreamData.isStreamData(cb)) {
+        // it's a stream message
+        StreamInputChannel<?> ic = cc.getRegisteredChannelContext().getIOPair().getInputChannel();
+        if (ic == null) {
+          LOGGER.error("Stream message received from channel {}. Destination unknown. Drop it.", ChannelContext
+              .channelToString(ch));
+        } else {
+          StreamInputBuffer<?> sib = ic.getInputBuffer();
+          Object usrMsg =
+              ownerConnectionPool.getPayloadSerializer().deSerialize(cb, sib.getProcessor(), sib.getAttachment());
+          if (usrMsg == null) {
+            LOGGER.error("Unknown stream message type from {} to {}, drop it.", remoteID, sib.getProcessor());
+          } else {
+            msg = IPCMessage.StreamData.wrap(remoteID, ic.getID().getStreamID(), usrMsg);
+          }
+        }
+      } else if (IPCMessage.Msg.isShortMsg(cb)) {
+        // short message
+        Object usrMsg =
+            ownerConnectionPool.getPayloadSerializer().deSerialize(cb, null,
+                ownerConnectionPool.getShortMessageProcessor().getAttachment());
+        if (usrMsg == null) {
+          LOGGER.error("Unknown short message type from {}, drop it.", remoteID);
+        } else {
+          msg = IPCMessage.Msg.wrap(remoteID, usrMsg);
+        }
+      } else {
+        LOGGER.error("Unknown IPC message type received from {}.", ChannelContext.channelToString(ch));
+      }
+    }
+    return msg;
+  }
+
   @Override
   public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) throws Exception {
     final Channel ch = e.getChannel();
-    Object msg = e.getMessage();
-    if (msg instanceof ChannelBuffer) {
-      // message from remote, deserialize
-      ChannelBuffer cb = (ChannelBuffer) msg;
-      msg = IPCMessage.Meta.deSerialize(cb);
-      if (msg == null) {
-        // user message
-        final ChannelContext cc = ChannelContext.getChannelContext(ch);
-        final int remoteID = cc.getRegisteredChannelContext().getRemoteID();
+    Object msgObj = e.getMessage();
+    IPCMessage msg = null;
+    if (msgObj instanceof ChannelBuffer) {
+      msg = deSerializeIPCMessage(ch, (ChannelBuffer) msgObj);
 
-        StreamInputChannel<?> ic = cc.getRegisteredChannelContext().getIOPair().getInputChannel();
-        if (ic != null) {
-          // it's a stream message
-          StreamInputBuffer<?> sib = ic.getInputBuffer();
-          msg = ownerConnectionPool.getPayloadSerializer().deSerialize(cb, sib.getProcessor(), sib.getAttachment());
-          if (msg == null) {
-            LOGGER.error("Unknown stream message from {} to {}, through {}, msg: {}", remoteID, sib.getProcessor(),
-                ChannelContext.channelToString(ctx.getChannel()), cb);
-            return;
-          }
-        } else {
-          // short message
-          msg =
-              ownerConnectionPool.getPayloadSerializer().deSerialize(cb, null,
-                  ownerConnectionPool.getShortMessageProcessor().getAttachment());
-          if (msg == null) {
-            LOGGER.error("Unknown short message from {}, through {}, msg: {}", remoteID, ChannelContext
-                .channelToString(ctx.getChannel()), cb);
-            return;
-          }
-        }
-      }
+    } else if (msgObj instanceof IPCMessage) {
+      msg = (IPCMessage) msgObj;
+    } else {
+      LOGGER.error("Received unknown msg type: {}, from channel {}", msgObj.getClass().getName(), ChannelContext
+          .channelToString(ch));
+    }
+
+    if (msg == null) {
+      return;
     }
 
     final ChannelContext cc = ChannelContext.getChannelContext(ch);
@@ -275,7 +307,7 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
     } else {
       if (LOGGER.isDebugEnabled()) {
         LOGGER
-        .debug("Channel context is null. The IPCConnectionPool must have been shutdown. Close the channel directly.");
+            .debug("Channel context is null. The IPCConnectionPool must have been shutdown. Close the channel directly.");
       }
       ch.close();
     }
