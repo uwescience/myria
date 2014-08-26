@@ -1090,7 +1090,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
     try {
       checkShutdown();
       if (ipcID == myID || ipcID == SELF_IPC_ID) {
-        return inJVMShortMessageChannel.write(message);
+        return inJVMShortMessageChannel.write(IPCMessage.Msg.<PAYLOAD> wrap(myID, message));
       }
       Channel ch;
       try {
@@ -1100,7 +1100,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
         r.setFailure(e);
         return r;
       }
-      final ChannelFuture cf = ch.write(message);
+      final ChannelFuture cf = ch.write(IPCMessage.Msg.<PAYLOAD> wrap(myID, message));
       cf.addListener(new ChannelFutureListener() {
         @Override
         public void operationComplete(final ChannelFuture future) throws Exception {
