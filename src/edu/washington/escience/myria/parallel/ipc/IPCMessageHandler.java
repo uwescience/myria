@@ -21,7 +21,7 @@ import edu.washington.escience.myria.util.concurrent.ThreadStackDump;
 
 /**
  * Dealing with IPC IO messages.
- * */
+ */
 @Sharable
 public final class IPCMessageHandler extends SimpleChannelHandler {
 
@@ -30,14 +30,14 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
 
   /**
    * the IPC connection pool, this session manager serves to.
-   * */
+   */
   private final IPCConnectionPool ownerConnectionPool;
 
   /**
    * Help the session management for ipc connection pool at IPC server.
    *
    * @param connectionPool the IPC connection pool, this session manager serves to.
-   * */
+   */
   public IPCMessageHandler(final IPCConnectionPool connectionPool) {
     ownerConnectionPool = connectionPool;
   }
@@ -69,7 +69,7 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
    * @param cc channel context of ch.
    * @param metaMessage the received message
    * @throws InterruptedException if interrupted.
-   * */
+   */
   private void receiveUnregisteredMeta(final Channel ch, final ChannelContext cc, final IPCMessage.Meta metaMessage)
       throws InterruptedException {
     if (metaMessage instanceof IPCMessage.Meta.CONNECT) {
@@ -96,22 +96,24 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
 
   /**
    * @param ch the source channel.
-   * @param cc channel context of ch.
+   * @param rcc registered channel context of ch.
    * @param metaMessage the received message
-   * */
-  private void receiveRegisteredMeta(final Channel ch, final ChannelContext cc, final IPCMessage.Meta metaMessage) {
-    int remoteID = cc.getRegisteredChannelContext().getRemoteID();
-    StreamInputChannel<Object> existingIChannel = cc.getRegisteredChannelContext().getIOPair().getInputChannel();
+   */
+  private void receiveRegisteredMeta(final Channel ch, final RegisteredChannelContext rcc,
+      final IPCMessage.Meta metaMessage) {
+    int remoteID = rcc.getRemoteID();
+    StreamIOChannelPair streamIOPair = rcc.getIOPair();
+    StreamInputChannel<Object> existingIChannel = streamIOPair.getInputChannel();
 
     if (metaMessage instanceof IPCMessage.Meta.BOS) {
       // At the beginning of a stream, record the operator id.
       final long streamID = ((IPCMessage.Meta.BOS) metaMessage).getStreamID();
       if (existingIChannel != null) {
         LOGGER
-            .error(String
-                .format(
-                    "Duplicate BOS received from a stream channel %4$s. Existing Stream: (RemoteID:%1$s, StreamID:%2$d), new BOS: (RemoteID:%1$s, StreamID:%3$d). Dropped.",
-                    remoteID, existingIChannel.getID().getStreamID(), streamID, ChannelContext.channelToString(ch)));
+        .error(String
+            .format(
+                "Duplicate BOS received from a stream channel %4$s. Existing Stream: (RemoteID:%1$s, StreamID:%2$d), new BOS: (RemoteID:%1$s, StreamID:%3$d). Dropped.",
+                remoteID, existingIChannel.getID().getStreamID(), streamID, ChannelContext.channelToString(ch)));
       } else {
         StreamIOChannelID ecID = new StreamIOChannelID(streamID, remoteID);
         StreamInputBuffer<Object> ib = ownerConnectionPool.getInputBuffer(ecID);
@@ -123,7 +125,7 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
           return;
         }
         StreamInputChannel<Object> ic = ib.getInputChannel(ecID);
-        cc.getRegisteredChannelContext().getIOPair().mapInputChannel(ic);
+        streamIOPair.mapInputChannel(ic);
       }
       return;
     } else if (metaMessage == IPCMessage.Meta.EOS) {
@@ -132,8 +134,8 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
             ChannelContext.channelToString(ch), remoteID);
       } else {
         long streamID = existingIChannel.getID().getStreamID();
-        receiveStreamData(cc.getRegisteredChannelContext(), IPCMessage.StreamData.eos(remoteID, streamID));
-        cc.getRegisteredChannelContext().getIOPair().deMapInputChannel();
+        receiveStreamData(rcc, IPCMessage.StreamData.eos(remoteID, streamID));
+        streamIOPair.deMapInputChannel();
         ChannelContext.resumeRead(ch);
         if (LOGGER.isTraceEnabled()) {
           LOGGER.trace("EOS received from physical channel {} Logical channel is opID:{},rmtID{}.", ChannelContext
@@ -171,7 +173,7 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
   /**
    * @param rcc registered channel context.
    * @param message the received message
-   * */
+   */
   private void receiveStreamData(final RegisteredChannelContext rcc, final IPCMessage.StreamData<Object> message) {
     StreamInputChannel<Object> sic = rcc.getIOPair().getInputChannel();
     if (sic == null) {
@@ -181,7 +183,7 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
       while (!processStreamMessage(sic, message)) {
         if (LOGGER.isErrorEnabled()) {
           LOGGER
-              .error("Input buffer out of memory. With the flow control input buffers, it should not happen normally.");
+          .error("Input buffer out of memory. With the flow control input buffers, it should not happen normally.");
         }
       }
     }
@@ -194,7 +196,7 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
    * @param cb the serialized data buffer
    * @return deserialized {@link IPCMessage}
    * @throws Exception if any error occurs
-   * */
+   */
   private IPCMessage deSerializeIPCMessage(final Channel ch, final ChannelBuffer cb) throws Exception {
     // message from remote, deserialize
     IPCMessage msg = null;
@@ -283,7 +285,7 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
         if (ecc == null) {
           receiveUnregisteredMeta(ch, cc, (IPCMessage.Meta) msg);
         } else {
-          receiveRegisteredMeta(ch, cc, (IPCMessage.Meta) msg);
+          receiveRegisteredMeta(ch, ecc, (IPCMessage.Meta) msg);
         }
       } else {
         if (ecc != null) {
@@ -308,7 +310,7 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
     } else {
       if (LOGGER.isDebugEnabled()) {
         LOGGER
-            .debug("Channel context is null. The IPCConnectionPool must have been shutdown. Close the channel directly.");
+        .debug("Channel context is null. The IPCConnectionPool must have been shutdown. Close the channel directly.");
       }
       ch.close();
     }
@@ -318,7 +320,7 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
    * @param sic stream input channel.
    * @param message the message.
    * @return true if successfully processed.
-   * */
+   */
   private boolean processStreamMessage(final StreamInputChannel<Object> sic, final IPCMessage.StreamData<Object> message) {
     boolean pushToBufferSucceed = true;
     StreamInputBuffer<Object> msgDestIB = sic.getInputBuffer();
