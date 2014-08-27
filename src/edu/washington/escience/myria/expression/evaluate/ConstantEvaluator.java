@@ -8,6 +8,7 @@ import org.codehaus.janino.ExpressionEvaluator;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.ConstantValueColumn;
@@ -33,7 +34,7 @@ public final class ConstantEvaluator extends GenericEvaluator {
 
   /**
    * Default constructor.
-   * 
+   *
    * @param expression the expression for the evaluator
    * @param parameters parameters that are passed to the expression
    * @throws DbException if there is an error compiling the expression
@@ -50,8 +51,14 @@ public final class ConstantEvaluator extends GenericEvaluator {
     } catch (Exception e) {
       throw new DbException("Error when generating Java expression " + this, e);
     }
+
+    evaluator = new ExpressionEvaluator();
+    evaluator.setParameters(new String[] {}, new Class<?>[] {});
+    evaluator.setDefaultImports(MyriaConstants.DEFAULT_JANINO_IMPORTS);
+
     try {
-      evaluator = new ExpressionEvaluator(java, type.toJavaType(), new String[] {}, new Class<?>[] {});
+      evaluator.setExpressionType(type.toJavaType());
+      evaluator.cook(java);
       value = evaluator.evaluate(NO_ARGS);
     } catch (CompileException e) {
       throw new DbException("Error when compiling expression " + java, e);
@@ -76,7 +83,7 @@ public final class ConstantEvaluator extends GenericEvaluator {
 
   /**
    * Evaluates the {@link #getJavaExpression()} using the {@link #evaluator}.
-   * 
+   *
    * @return the result from the evaluation
    */
   public Object eval() {

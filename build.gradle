@@ -138,7 +138,7 @@ dependencies {
   compile "net.sf.supercsv:super-csv:2.2.0"
   
   // Expression compiler
-  compile "org.codehaus.janino:janino:2.7.5"
+  compile "org.codehaus.janino:janino:2.7.6"
 
   runtime "monetdb:monetdb-jdbc:2.11"
   runtime "mysql:mysql-connector-java:5.1.31"

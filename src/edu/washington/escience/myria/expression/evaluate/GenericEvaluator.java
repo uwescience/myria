@@ -4,11 +4,12 @@ import java.lang.reflect.InvocationTargetException;
 
 import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.commons.compiler.CompilerFactoryFactory;
-import org.codehaus.commons.compiler.IScriptEvaluator;
+import org.codehaus.commons.compiler.IExpressionEvaluator;
 
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
@@ -39,7 +40,7 @@ public class GenericEvaluator extends Evaluator {
 
   /**
    * Default constructor.
-   * 
+   *
    * @param expression the expression for the evaluator
    * @param parameters parameters that are passed to the expression
    */
@@ -49,7 +50,7 @@ public class GenericEvaluator extends Evaluator {
 
   /**
    * Compiles the {@link #javaExpression}.
-   * 
+   *
    * @throws DbException compilation failed
    */
   @Override
@@ -58,13 +59,16 @@ public class GenericEvaluator extends Evaluator {
         "This expression does not need to be compiled.");
 
     String javaExpression = getJavaExpression();
-    IScriptEvaluator se;
+    IExpressionEvaluator se;
     try {
       se = CompilerFactoryFactory.getDefaultCompilerFactory().newExpressionEvaluator();
     } catch (Exception e) {
       LOGGER.error("Could not create expression evaluator", e);
       throw new DbException("Could not create expression evaluator", e);
     }
+
+    se.setExpressionType(Void.TYPE);
+    se.setDefaultImports(MyriaConstants.DEFAULT_JANINO_IMPORTS);
 
     try {
       evaluator =
@@ -79,7 +83,7 @@ public class GenericEvaluator extends Evaluator {
   /**
    * Evaluates the {@link #getJavaExpression()} using the {@link #evaluator}. Prefer to use
    * {@link #evaluateColumn(TupleBatch)} as it can copy data without evaluating the expression.
-   * 
+   *
    * @param tb a tuple batch
    * @param rowIdx the row that should be used for input data
    * @param result the column that the result should be appended to
@@ -109,7 +113,7 @@ public class GenericEvaluator extends Evaluator {
   /**
    * Evaluate an expression over an entire TupleBatch and return the column of results. This method cannot take state
    * into consideration.
-   * 
+   *
    * @param tb the tuples to be input to this expression
    * @return a column containing the result of evaluating this expression on the entire TupleBatch
    * @throws InvocationTargetException exception thrown from janino
