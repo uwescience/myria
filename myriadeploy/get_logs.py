@@ -79,8 +79,7 @@ def getlog(config_file, from_worker_id=None):
             raise Exception("Error on getting error logs from master %s"
                             % (hostname,))
 
-    for (i, worker) in enumerate(workers):
-        # Workers are numbered from 1, not 0
+    for worker in workers:
         worker_id = worker[-1]
         # get logs from workers
         if from_worker_id is None or from_worker_id == worker_id:

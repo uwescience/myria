@@ -190,8 +190,7 @@ public final class DatasetResource {
         writer = new CsvTupleWriter('\t', writerOutput);
       }
       ContentDisposition contentDisposition =
-          ContentDisposition.type("attachment").fileName(
-              relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE) + '.' + validFormat).build();
+          ContentDisposition.type("attachment").fileName(relationKey.toString() + '.' + validFormat).build();
 
       response.header("Content-Disposition", contentDisposition);
       response.type(MediaType.APPLICATION_OCTET_STREAM);
