@@ -28,6 +28,7 @@ import java.util.logging.Logger;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.apache.commons.lang.text.StrSubstitutor;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
@@ -1683,6 +1684,9 @@ public final class Server {
     }
   }
 
+  /** Upper bound on the number of bins a profiler can ask for. */
+  private static final long MAX_BINS = 10000;
+
   /**
    * @param queryId query id.
    * @param fragmentId the fragment id to return data for. All fragments, if < 0.
@@ -1701,23 +1705,48 @@ public final class Server {
 
     Preconditions.checkArgument(start < end, "range cannot be negative");
     Preconditions.checkArgument(step > 0, "step has to be greater than 0");
+    long bins = (end - start + 1) / step;
+    Preconditions.checkArgument(bins > 0 && bins <= MAX_BINS, "bins must be in the range [1, %s]", MAX_BINS);
 
     final Schema schema = Schema.ofFields("opId", Type.INT_TYPE, "nanoTime", Type.LONG_TYPE);
     final RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
 
     Set<Integer> actualWorkers = queryStatus.plan.getWorkers();
 
+    Map<String, Object> queryArgs = new HashMap<>();
+    queryArgs.put("QUERY", queryId);
+    queryArgs.put("FRAGMENT", fragmentId);
+    queryArgs.put("START", start);
+    queryArgs.put("END", end);
+    queryArgs.put("STEP", step);
+    queryArgs.put("BINS", bins);
+    queryArgs.put("PROF_TABLE", relationKey.toString(getDBMS()));
+    StrSubstitutor sub;
+
     String filterOpnameQueryString = "";
     if (onlyRootOp) {
+      sub = new StrSubstitutor(queryArgs);
       filterOpnameQueryString =
-          Joiner.on(' ').join("AND p.opid=(SELECT opid FROM", relationKey.toString(getDBMS()), "WHERE fragmentid=",
-              fragmentId, " AND queryid=", queryId, "ORDER BY starttime ASC limit 1)");
+          sub.replace("AND p.opid=(SELECT opid FROM ${PROF_TABLE} WHERE fragmentid=${FRAGMENT} AND queryid=${QUERY} ORDER BY starttime ASC limit 1)");
     }
 
+    // Reinitialize the substitutor after including the opname filter.
+    queryArgs.put("OPNAME_FILTER", filterOpnameQueryString);
+    sub = new StrSubstitutor(queryArgs);
+
     String histogramWorkerQueryString =
-        Joiner.on(' ').join("SELECT p.opid, s.t AS nanotime FROM generate_series(", start, ", ", end, ", ", step,
-            ") AS s(t), ", relationKey.toString(getDBMS()), " AS p WHERE p.queryid=", queryId, "AND p.fragmentid=",
-            fragmentId, filterOpnameQueryString, "AND s.t BETWEEN p.starttime AND p.endtime");
+        sub.replace(Joiner
+            .on("\n")
+            .join(
+                "SELECT opid, ${START}::bigint+${STEP}::bigint*s.bin as nanotime",
+                "FROM (",
+                "SELECT p.opid, greatest((p.starttime-1-${START}::bigint)/${STEP}::bigint, -1) as startbin, least((p.endtime+1-${START}::bigint)/${STEP}::bigint, ${BINS}) AS endbin",
+                "FROM ${PROF_TABLE} p",
+                "WHERE p.queryid = ${QUERY} and p.fragmentid = ${FRAGMENT}",
+                "${OPNAME_FILTER}",
+                "AND greatest((p.starttime-${START}::bigint)/${STEP}::bigint, -1) < least((p.endtime-${START}::bigint)/${STEP}::bigint, ${BINS}) AND p.starttime < ${END}::bigint AND p.endtime >= ${START}::bigint",
+                ") times,", "generate_series(0, ${BINS}) AS s(bin)",
+                "WHERE s.bin > times.startbin and s.bin <= times.endbin;"));
 
     DbQueryScan scan = new DbQueryScan(histogramWorkerQueryString, schema);
     final ExchangePairID operatorId = ExchangePairID.newID();
