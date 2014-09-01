@@ -22,7 +22,7 @@ public class HashMd5Expression extends UnaryExpression {
   }
 
   /**
-   * Change all characters in a string to upper case.
+   * Compute MD5 hash code.
    *
    * @param operand the operand.
    */
