@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package edu.washington.escience.myria.expression;
 
@@ -26,10 +26,10 @@ import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParam
     @Type(name = "ABS", value = AbsExpression.class), @Type(name = "CAST", value = CastExpression.class),
     @Type(name = "CEIL", value = CeilExpression.class), @Type(name = "COS", value = CosExpression.class),
     @Type(name = "FLOOR", value = FloorExpression.class), @Type(name = "LEN", value = LenExpression.class),
-    @Type(name = "LOG", value = LogExpression.class), @Type(name = "NEG", value = NegateExpression.class),
-    @Type(name = "NOT", value = NotExpression.class), @Type(name = "SIN", value = SinExpression.class),
-    @Type(name = "SQRT", value = SqrtExpression.class), @Type(name = "TAN", value = TanExpression.class),
-    @Type(name = "UPPER", value = ToUpperCaseExpression.class),
+    @Type(name = "LOG", value = LogExpression.class), @Type(name = "MD5", value = HashMd5Expression.class),
+    @Type(name = "NEG", value = NegateExpression.class), @Type(name = "NOT", value = NotExpression.class),
+    @Type(name = "SIN", value = SinExpression.class), @Type(name = "SQRT", value = SqrtExpression.class),
+    @Type(name = "TAN", value = TanExpression.class), @Type(name = "UPPER", value = ToUpperCaseExpression.class),
     /* Binary */
     @Type(name = "AND", value = AndExpression.class), @Type(name = "DIVIDE", value = DivideExpression.class),
     @Type(name = "EQ", value = EqualsExpression.class), @Type(name = "GREATER", value = GreaterExpression.class),
