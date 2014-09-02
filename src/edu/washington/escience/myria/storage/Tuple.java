@@ -14,7 +14,7 @@ import edu.washington.escience.myria.Type;
 /**
  * A single row relation.
  */
-public class Tuple implements ReadableTable, Serializable {
+public class Tuple implements Cloneable, ReadableTable, Serializable {
   /***/
   private static final long serialVersionUID = 1L;
 
@@ -138,5 +138,14 @@ public class Tuple implements ReadableTable, Serializable {
   @Override
   public ReadableColumn asColumn(final int column) {
     return new ReadableSubColumn(this, Preconditions.checkElementIndex(column, schema.numColumns()));
+  }
+
+  @Override
+  public Tuple clone() {
+    Tuple t = new Tuple(getSchema());
+    for (int i = 0; i < numColumns(); ++i) {
+      t.set(i, getObject(i, 0));
+    }
+    return t;
   }
 }
