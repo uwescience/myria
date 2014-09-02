@@ -111,7 +111,7 @@ public class ApplySerializationTest {
     LesserExpression min = new LesserExpression(constant, variable);
     GreaterExpression max = new GreaterExpression(constant, variable);
     expressions.add(and).add(divide).add(idivide).add(eq).add(gt).add(gte).add(lt).add(lte).add(minus).add(ne).add(or)
-    .add(plus).add(pow).add(times).add(cast).add(modulo).add(min).add(max);
+        .add(plus).add(pow).add(times).add(cast).add(modulo).add(min).add(max);
 
     /* NAry */
     VariableExpression variable2 = new VariableExpression(2);
