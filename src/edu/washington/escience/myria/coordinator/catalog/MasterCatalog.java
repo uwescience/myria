@@ -1280,7 +1280,12 @@ public final class MasterCatalog {
     queryStatus.logicalRa = statement.columnString(2);
     String physicalString = statement.columnString(3);
 
-    queryStatus.plan = MyriaJsonMapperProvider.getMapper().readValue(physicalString, SubPlanEncoding.class);
+    try {
+      queryStatus.plan = MyriaJsonMapperProvider.getMapper().readValue(physicalString, SubPlanEncoding.class);
+    } catch (final IOException e) {
+      LOGGER.warn("Error deserializing plan for query #{}", queryStatus.queryId, e);
+      queryStatus.plan = null;
+    }
     queryStatus.submitTime = statement.columnString(4);
     queryStatus.startTime = statement.columnString(5);
     queryStatus.finishTime = statement.columnString(6);

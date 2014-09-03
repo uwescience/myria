@@ -4,7 +4,7 @@ apply plugin: "java"
 apply plugin: "eclipse"
 /* Coveralls with JaCoCo */
 apply plugin: 'jacoco'
-apply plugin: 'coveralls'
+apply plugin: 'com.github.kt3k.coveralls'
 
 /* Set up group and version info for myria */
 archivesBaseName = "myria"
@@ -26,7 +26,7 @@ buildscript {
   }
 
   dependencies {
-    classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:0.4.0'
+    classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.0.0'
   }
 }
 /* Tell gradle where the source code is located. */
@@ -138,7 +138,7 @@ dependencies {
   compile "net.sf.supercsv:super-csv:2.2.0"
   
   // Expression compiler
-  compile "org.codehaus.janino:janino:2.7.5"
+  compile "org.codehaus.janino:janino:2.7.6"
 
   runtime "monetdb:monetdb-jdbc:2.11"
   runtime "mysql:mysql-connector-java:5.1.31"
