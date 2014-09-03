@@ -176,6 +176,9 @@ public final class Server {
               case QUERY_COMPLETE:
                 QueryReport qr = qm.getQueryReport();
                 if (qr.getSuccess()) {
+                  if (LOGGER.isInfoEnabled()) {
+                    LOGGER.info("Query #{} in Worker #{} succeeded.", subQueryId, senderID);
+                  }
                   mqp.workerComplete(senderID);
                 } else {
                   ObjectInputStream osis = null;
