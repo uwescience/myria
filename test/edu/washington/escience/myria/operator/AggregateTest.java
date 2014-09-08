@@ -634,7 +634,40 @@ public class AggregateTest {
     TupleBatch result = mga.nextReady();
     assertNotNull(result);
     assertEquals(1, result.numTuples());
-    assertEquals(expected, result.getLong(result.numColumns() - 1, 0));
+    assertEquals(3, result.numColumns());
+    assertEquals(expected, result.getLong(2, 0));
+    mga.close();
+  }
+
+  @Test
+  public void testMultiGroupMaxAndMin() throws DbException {
+    final int numTuples = 10;
+    final Schema schema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of(
+            "a", "b", "c", "d"));
+
+    final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
+    long expected = numTuples - 1;
+    for (long i = 0; i < numTuples; i++) {
+      tbb.putLong(0, 0L);
+      tbb.putLong(1, 1L);
+      if (i % 2 == 0) {
+        tbb.putLong(2, 2L);
+      } else {
+        tbb.putLong(2, 4L);
+      }
+      tbb.putLong(3, i);
+    }
+    MultiGroupByAggregate mga =
+        new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 0, 1 }, new SingleColumnAggregatorFactory(3,
+            AggregationOp.MAX, AggregationOp.MIN));
+    mga.open(null);
+    TupleBatch result = mga.nextReady();
+    assertNotNull(result);
+    assertEquals(1, result.numTuples());
+    assertEquals(4, result.numColumns());
+    assertEquals(expected, result.getLong(2, 0));
+    assertEquals(0, result.getLong(3, 0));
     mga.close();
   }
 

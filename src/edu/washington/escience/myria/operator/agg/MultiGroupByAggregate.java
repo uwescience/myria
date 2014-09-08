@@ -212,8 +212,10 @@ public final class MultiGroupByAggregate extends UnaryOperator {
     TupleBatchBuffer curGroupAggs = new TupleBatchBuffer(aggSchema);
     for (int row = 0; row < curGroupKeys.numTuples(); ++row) {
       Aggregator[] rowAggs = groupAggs.get(row);
-      for (int i = 0; i < rowAggs.length; ++i) {
-        rowAggs[i].getResult(curGroupAggs, i);
+      int curCol = 0;
+      for (Aggregator rowAgg : rowAggs) {
+        rowAgg.getResult(curGroupAggs, curCol);
+        curCol += rowAgg.getResultSchema().numColumns();
       }
     }
     TupleBatch aggResults = curGroupAggs.popAny();
@@ -252,10 +254,8 @@ public final class MultiGroupByAggregate extends UnaryOperator {
 
     for (AggregatorFactory f : factories) {
       Schema curAggSchema = f.getResultSchema(inputSchema);
-      Preconditions.checkState(curAggSchema.numColumns() == 1, "aggSchema should only have 1 column, not %s",
-          curAggSchema.numColumns());
-      aggTypes.add(curAggSchema.getColumnType(0));
-      aggNames.add(curAggSchema.getColumnName(0));
+      aggTypes.addAll(curAggSchema.getColumnTypes());
+      aggNames.addAll(curAggSchema.getColumnNames());
     }
     aggSchema = new Schema(aggTypes, aggNames);
     return Schema.merge(groupSchema, aggSchema);
