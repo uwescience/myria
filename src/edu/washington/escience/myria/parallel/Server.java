@@ -172,17 +172,16 @@ public final class Server {
               MasterSubQuery mqp = executingSubQueries.get(subQueryId);
               switch (qm.getType()) {
                 case QUERY_READY_TO_EXECUTE:
-                  LOGGER.error("Query ready to execute");
                   mqp.queryReceivedByWorker(senderID);
                   break;
                 case QUERY_COMPLETE:
-                  LOGGER.error("Query complete");
                   QueryReport qr = qm.getQueryReport();
                   if (qr.getSuccess()) {
-                    LOGGER.error("Query success");
+                    if (LOGGER.isInfoEnabled()) {
+                      LOGGER.info("Query #{} in Worker #{} succeeded.", subQueryId, senderID);
+                    }
                     mqp.workerComplete(senderID);
                   } else {
-                    LOGGER.error("Query failed before");
                     ObjectInputStream osis = null;
                     Throwable cause = null;
                     try {
@@ -191,7 +190,6 @@ public final class Server {
                     } catch (IOException | ClassNotFoundException e) {
                       LOGGER.error("Error decoding failure cause", e);
                     }
-                    LOGGER.error("Query failed after");
                     mqp.workerFail(senderID, cause);
                     LOGGER.error("Worker #{} failed in executing query #{}.", senderID, subQueryId, cause);
                   }
@@ -649,11 +647,11 @@ public final class Server {
           // Temporary solution: simply giving up launching this new worker
           // TODO: find a new set of hostname:port for this scheduled worker
         } else
-          /* Haven't heard heartbeats from the scheduled worker, try to launch it again. */
-          if (currentTime - time >= MyriaConstants.SCHEDULED_WORKER_FAILED_TO_START) {
-            SocketInfo info = scheduledWorkers.get(workerId);
-            new Thread(new NewWorkerScheduler(workerId, info.getHost(), info.getPort())).start();
-          }
+        /* Haven't heard heartbeats from the scheduled worker, try to launch it again. */
+        if (currentTime - time >= MyriaConstants.SCHEDULED_WORKER_FAILED_TO_START) {
+          SocketInfo info = scheduledWorkers.get(workerId);
+          new Thread(new NewWorkerScheduler(workerId, info.getHost(), info.getPort())).start();
+        }
       }
     }
   }
@@ -967,7 +965,7 @@ public final class Server {
    */
   public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final String physicalPlan,
       final SubQueryPlan masterPlan, final Map<Integer, SubQueryPlan> workerPlans, @Nullable final Boolean profilingMode)
-          throws DbException, CatalogException {
+      throws DbException, CatalogException {
     QueryEncoding query = new QueryEncoding();
     query.rawQuery = rawQuery;
     query.logicalRa = rawQuery;
