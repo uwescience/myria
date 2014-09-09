@@ -43,7 +43,7 @@ public class LeapFrogJoinTest {
 
     int[][][] fieldMap = new int[][][] { { { 0, 0 }, { 1, 0 } } };
     int[][] outputMap = new int[][] { { 0, 0 }, { 0, 1 }, { 1, 0 }, { 1, 1 } };
-    NAryOperator join = new LeapFrogJoin(children, fieldMap, outputMap, outputColumnNames, null);
+    NAryOperator join = new LeapFrogJoin(children, fieldMap, outputMap, outputColumnNames);
     join.open(null);
     TupleBatch tb;
     TupleBatchBuffer batches = new TupleBatchBuffer(outputSchema);
@@ -81,8 +81,7 @@ public class LeapFrogJoinTest {
     final Schema outputSchema =
         new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE), outputColumnNames);
     LeapFrogJoin join =
-        new LeapFrogJoin(new Operator[] { orderR, orderS, orderT }, fieldMap, outputMap, outputColumnNames,
-            new boolean[] { true, true, true });
+        new LeapFrogJoin(new Operator[] { orderR, orderS, orderT }, fieldMap, outputMap, outputColumnNames);
     join.open(null);
     TupleBatch tb;
     TupleBatchBuffer batches = new TupleBatchBuffer(outputSchema);
@@ -162,8 +161,7 @@ public class LeapFrogJoinTest {
     final Schema outputSchema =
         new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE), outputColumnNames);
     LeapFrogJoin join =
-        new LeapFrogJoin(new Operator[] { orderR, orderS, orderT }, fieldMap, outputMap, outputColumnNames,
-            new boolean[] { true, true, false });
+        new LeapFrogJoin(new Operator[] { orderR, orderS, orderT }, fieldMap, outputMap, outputColumnNames);
     join.open(null);
     TupleBatch tb;
     TupleBatchBuffer batches = new TupleBatchBuffer(outputSchema);
@@ -217,7 +215,7 @@ public class LeapFrogJoinTest {
         new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE), outputColumnNames);
     LeapFrogJoin join =
         new LeapFrogJoin(new Operator[] { orderR, orderS, orderT, orderK, orderM }, fieldMap, outputMap,
-            outputColumnNames, new boolean[] { false, false, false, false, true });
+            outputColumnNames);
     join.open(TestEnvVars.get());
     TupleBatch tb;
     TupleBatchBuffer batches = new TupleBatchBuffer(outputSchema);
@@ -255,8 +253,7 @@ public class LeapFrogJoinTest {
     final ImmutableList<String> outputColumnNames = ImmutableList.of("x", "y");
     final Schema outputSchema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE), outputColumnNames);
     LeapFrogJoin join =
-        new LeapFrogJoin(new Operator[] { orderR, orderS, orderT }, fieldMap, outputMap, outputColumnNames,
-            new boolean[] { false, false, false });
+        new LeapFrogJoin(new Operator[] { orderR, orderS, orderT }, fieldMap, outputMap, outputColumnNames);
     join.open(null);
     TupleBatch tb;
     TupleBatchBuffer batches = new TupleBatchBuffer(outputSchema);
@@ -293,8 +290,7 @@ public class LeapFrogJoinTest {
     final ImmutableList<String> outputColumnNames = ImmutableList.of("x");
     final Schema outputSchema = new Schema(ImmutableList.of(Type.INT_TYPE), outputColumnNames);
     LeapFrogJoin join =
-        new LeapFrogJoin(new Operator[] { orderA, orderB, orderC }, fieldMap, outputMap, outputColumnNames,
-            new boolean[] { false, false, true });
+        new LeapFrogJoin(new Operator[] { orderA, orderB, orderC }, fieldMap, outputMap, outputColumnNames);
     join.open(null);
     TupleBatch tb;
     TupleBatchBuffer batches = new TupleBatchBuffer(outputSchema);
@@ -333,8 +329,7 @@ public class LeapFrogJoinTest {
     final ImmutableList<String> outputColumnNames = ImmutableList.of("k");
     final Schema outputSchema = new Schema(ImmutableList.of(Type.LONG_TYPE), outputColumnNames);
     LeapFrogJoin join =
-        new LeapFrogJoin(new Operator[] { orderO, orderP, orderQ }, fieldMap, outputMap, outputColumnNames,
-            new boolean[] { false, false, false });
+        new LeapFrogJoin(new Operator[] { orderO, orderP, orderQ }, fieldMap, outputMap, outputColumnNames);
     join.open(TestEnvVars.get());
     TupleBatch tb;
     TupleBatchBuffer batches = new TupleBatchBuffer(outputSchema);
