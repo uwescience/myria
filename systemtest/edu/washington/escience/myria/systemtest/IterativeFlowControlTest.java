@@ -69,10 +69,10 @@ public class IterativeFlowControlTest extends SystemTestBase {
 
   public TupleBatchBuffer getAJoinResult(TupleBatchBuffer startWith, TupleBatchBuffer multiWith, Schema schema) {
 
-    final Iterator<List<Column<?>>> iter1 = startWith.getAllAsRawColumn().iterator();
+    final Iterator<List<? extends Column<?>>> iter1 = startWith.getAllAsRawColumn().iterator();
     boolean s[][] = new boolean[MaxID][MaxID];
     while (iter1.hasNext()) {
-      List<Column<?>> output = iter1.next();
+      List<? extends Column<?>> output = iter1.next();
       int numRow = output.get(0).size();
       for (int i = 0; i < numRow; i++) {
         int fr = Integer.parseInt(output.get(0).getObject(i).toString());
@@ -80,10 +80,10 @@ public class IterativeFlowControlTest extends SystemTestBase {
         s[fr][fe] = true;
       }
     }
-    final Iterator<List<Column<?>>> iter2 = multiWith.getAllAsRawColumn().iterator();
+    final Iterator<List<? extends Column<?>>> iter2 = multiWith.getAllAsRawColumn().iterator();
     boolean r[][] = new boolean[MaxID][MaxID];
     while (iter2.hasNext()) {
-      List<Column<?>> output = iter2.next();
+      List<? extends Column<?>> output = iter2.next();
       int numRow = output.get(0).size();
       for (int i = 0; i < numRow; i++) {
         int fr = Integer.parseInt(output.get(0).getObject(i).toString());
@@ -366,10 +366,10 @@ public class IterativeFlowControlTest extends SystemTestBase {
   public TupleBatchBuffer getCircularJoinResult(TupleBatchBuffer a, TupleBatchBuffer b, TupleBatchBuffer c,
       Schema schema) {
 
-    final Iterator<List<Column<?>>> iter1 = a.getAllAsRawColumn().iterator();
+    final Iterator<List<? extends Column<?>>> iter1 = a.getAllAsRawColumn().iterator();
     boolean s1[][] = new boolean[MaxID][MaxID];
     while (iter1.hasNext()) {
-      List<Column<?>> output = iter1.next();
+      List<? extends Column<?>> output = iter1.next();
       int numRow = output.get(0).size();
       for (int i = 0; i < numRow; i++) {
         int fr = Integer.parseInt(output.get(0).getObject(i).toString());
@@ -377,10 +377,10 @@ public class IterativeFlowControlTest extends SystemTestBase {
         s1[fr][fe] = true;
       }
     }
-    final Iterator<List<Column<?>>> iter2 = b.getAllAsRawColumn().iterator();
+    final Iterator<List<? extends Column<?>>> iter2 = b.getAllAsRawColumn().iterator();
     boolean s2[][] = new boolean[MaxID][MaxID];
     while (iter2.hasNext()) {
-      List<Column<?>> output = iter2.next();
+      List<? extends Column<?>> output = iter2.next();
       int numRow = output.get(0).size();
       for (int i = 0; i < numRow; i++) {
         int fr = Integer.parseInt(output.get(0).getObject(i).toString());
@@ -388,10 +388,10 @@ public class IterativeFlowControlTest extends SystemTestBase {
         s2[fr][fe] = true;
       }
     }
-    final Iterator<List<Column<?>>> iter3 = c.getAllAsRawColumn().iterator();
+    final Iterator<List<? extends Column<?>>> iter3 = c.getAllAsRawColumn().iterator();
     boolean s3[][] = new boolean[MaxID][MaxID];
     while (iter3.hasNext()) {
-      List<Column<?>> output = iter3.next();
+      List<? extends Column<?>> output = iter3.next();
       int numRow = output.get(0).size();
       for (int i = 0; i < numRow; i++) {
         int fr = Integer.parseInt(output.get(0).getObject(i).toString());

@@ -19,10 +19,8 @@ public final class TupleUtils {
    * @param from the source of the value
    * @param fromRow the row of the source value
    * @param to the destination of the value
-   * @param toColumn the destination column
    */
-  public static void copyValue(final ReadableColumn from, final int fromRow, final ColumnBuilder<?> to,
-      final int toColumn) {
+  public static void copyValue(final ReadableColumn from, final int fromRow, final ColumnBuilder<?> to) {
     Type t = from.getType();
     switch (t) {
       case BOOLEAN_TYPE:
@@ -411,5 +409,4 @@ public final class TupleUtils {
     }
     return true;
   }
-
 }

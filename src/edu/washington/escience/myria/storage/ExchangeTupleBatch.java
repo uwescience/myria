@@ -42,8 +42,8 @@ public class ExchangeTupleBatch extends TupleBatch {
    * @param sourceWorkerID which worker the TB from
    * @param isEOI is EOI TB
    */
-  private ExchangeTupleBatch(final Schema schema, final ImmutableList<Column<?>> columns, final int numTuples,
-      final long startingTupleSeqNum, final long lsn, final int sourceWorkerID, final boolean isEOI) {
+  private ExchangeTupleBatch(final Schema schema, final ImmutableList<? extends Column<?>> columns,
+      final int numTuples, final long startingTupleSeqNum, final long lsn, final int sourceWorkerID, final boolean isEOI) {
     /** For a private copy constructor, no data checks are needed. Checks are only needed in the public constructor. */
     super(schema, columns, numTuples, isEOI);
     startingSeqNum = startingTupleSeqNum;

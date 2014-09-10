@@ -1,16 +1,10 @@
 package edu.washington.escience.myria.column;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.BitSet;
 
 import org.joda.time.DateTime;
 
-import com.almworks.sqlite4java.SQLiteException;
-import com.almworks.sqlite4java.SQLiteStatement;
-
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.column.builder.ColumnBuilder;
 
 /**
  * Provides the abstraction of a full Column filtered to an indicated set of rows.
@@ -69,16 +63,6 @@ class FilteredColumn<T extends Comparable<?>> extends Column<T> {
   }
 
   @Override
-  public void append(final int row, final ColumnBuilder<?> columnBuilder) {
-    inner.append(convertRow(row), columnBuilder);
-  }
-
-  @Override
-  public boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
-    return inner.equals(convertRow(leftIdx), rightColumn, rightIdx);
-  }
-
-  @Override
   public boolean getBoolean(final int row) {
     return inner.getBoolean(convertRow(row));
   }
@@ -101,17 +85,6 @@ class FilteredColumn<T extends Comparable<?>> extends Column<T> {
   @Override
   public int getInt(final int row) {
     return inner.getInt(convertRow(row));
-  }
-
-  @Override
-  public void getIntoJdbc(final int row, final PreparedStatement statement, final int jdbcIndex) throws SQLException {
-    inner.getIntoJdbc(convertRow(row), statement, jdbcIndex);
-  }
-
-  @Override
-  public void getIntoSQLite(final int row, final SQLiteStatement statement, final int sqliteIndex)
-      throws SQLiteException {
-    inner.getIntoSQLite(convertRow(row), statement, sqliteIndex);
   }
 
   @Override

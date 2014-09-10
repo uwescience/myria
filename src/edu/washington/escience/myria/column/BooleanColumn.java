@@ -1,17 +1,11 @@
 package edu.washington.escience.myria.column;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.BitSet;
 
-import com.almworks.sqlite4java.SQLiteException;
-import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.column.builder.BooleanColumnBuilder;
-import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.BooleanColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.util.ImmutableBitSet;
@@ -56,22 +50,6 @@ public final class BooleanColumn extends Column<Boolean> {
   }
 
   @Override
-  public void getIntoJdbc(final int row, final PreparedStatement statement, final int jdbcIndex) throws SQLException {
-    statement.setBoolean(jdbcIndex, getBoolean(row));
-  }
-
-  @Override
-  public void getIntoSQLite(final int row, final SQLiteStatement statement, final int sqliteIndex)
-      throws SQLiteException {
-    /* In SQLite, booleans are integers represented as 0 (false) or 1 (true). */
-    int value = 0;
-    if (getBoolean(row)) {
-      value = 1;
-    }
-    statement.bind(sqliteIndex, value);
-  }
-
-  @Override
   public Type getType() {
     return Type.BOOLEAN_TYPE;
   }
@@ -101,15 +79,5 @@ public final class BooleanColumn extends Column<Boolean> {
     }
     sb.append(']');
     return sb.toString();
-  }
-
-  @Override
-  public boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
-    return getBoolean(leftIdx) == rightColumn.getBoolean(rightIdx);
-  }
-
-  @Override
-  public void append(final int index, final ColumnBuilder<?> columnBuilder) {
-    ((BooleanColumnBuilder) columnBuilder).appendBoolean(getBoolean(index));
   }
 }

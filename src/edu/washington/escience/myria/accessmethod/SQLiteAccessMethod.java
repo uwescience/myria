@@ -132,7 +132,40 @@ public final class SQLiteAccessMethod extends AccessMethod {
             sqliteConnection.exec("BEGIN TRANSACTION");
             /* Set up and execute the query */
             statement = sqliteConnection.prepare(insertStatementFromSchema(schema, relationKey));
-            tupleBatch.getIntoSQLite(statement);
+            for (int row = 0; row < tupleBatch.numTuples(); ++row) {
+              for (int col = 0; col < tupleBatch.numColumns(); ++col) {
+                switch (schema.getColumnType(col)) {
+                  case BOOLEAN_TYPE:
+                    /* In SQLite, booleans are integers represented as 0 (false) or 1 (true). */
+                    int colVal = 0;
+                    if (tupleBatch.getBoolean(col, row)) {
+                      colVal = 1;
+                    }
+                    statement.bind(col + 1, colVal);
+                    break;
+                  case DATETIME_TYPE:
+                    statement.bind(col + 1, tupleBatch.getDateTime(col, row).getMillis()); // SQLite long
+                    break;
+                  case DOUBLE_TYPE:
+                    statement.bind(col + 1, tupleBatch.getDouble(col, row));
+                    break;
+                  case FLOAT_TYPE:
+                    statement.bind(col + 1, tupleBatch.getFloat(col, row));
+                    break;
+                  case INT_TYPE:
+                    statement.bind(col + 1, tupleBatch.getInt(col, row));
+                    break;
+                  case LONG_TYPE:
+                    statement.bind(col + 1, tupleBatch.getLong(col, row));
+                    break;
+                  case STRING_TYPE:
+                    statement.bind(col + 1, tupleBatch.getString(col, row));
+                    break;
+                }
+              }
+              statement.step();
+              statement.reset();
+            }
             /* COMMIT TRANSACTION */
             sqliteConnection.exec("COMMIT TRANSACTION");
           } catch (final SQLiteException e) {

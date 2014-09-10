@@ -746,7 +746,7 @@ public class LeapFrogJoin extends NAryOperator {
    * @param tb incoming tuple
    */
   private void storeChildTuple(final int childIndex, final TupleBatch tb) {
-    List<Column<?>> inputColumns = tb.getDataColumns();
+    List<? extends Column<?>> inputColumns = tb.getDataColumns();
     for (int row = 0; row < tb.numTuples(); ++row) {
       for (int column = 0; column < tb.numColumns(); column++) {
         tables[childIndex].put(column, inputColumns.get(column), row);
