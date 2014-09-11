@@ -1,15 +1,8 @@
 package edu.washington.escience.myria.column;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-
-import com.almworks.sqlite4java.SQLiteException;
-import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.column.builder.ColumnBuilder;
-import edu.washington.escience.myria.column.builder.FloatColumnBuilder;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
@@ -39,17 +32,6 @@ public final class FloatColumn extends Column<Float> {
   @Override
   public Float getObject(final int row) {
     return Float.valueOf(getFloat(row));
-  }
-
-  @Override
-  public void getIntoJdbc(final int row, final PreparedStatement statement, final int jdbcIndex) throws SQLException {
-    statement.setFloat(jdbcIndex, getFloat(row));
-  }
-
-  @Override
-  public void getIntoSQLite(final int row, final SQLiteStatement statement, final int sqliteIndex)
-      throws SQLiteException {
-    statement.bind(sqliteIndex, getFloat(row));
   }
 
   /**
@@ -86,15 +68,5 @@ public final class FloatColumn extends Column<Float> {
     }
     sb.append(']');
     return sb.toString();
-  }
-
-  @Override
-  public boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
-    return getFloat(leftIdx) == rightColumn.getFloat(rightIdx);
-  }
-
-  @Override
-  public void append(final int index, final ColumnBuilder<?> columnBuilder) {
-    ((FloatColumnBuilder) columnBuilder).appendFloat(getFloat(index));
   }
 }

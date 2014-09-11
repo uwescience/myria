@@ -113,10 +113,10 @@ public final class TestUtils {
   }
 
   public static HashMap<Tuple, Integer> distinct(final TupleBatchBuffer content) {
-    final Iterator<List<Column<?>>> it = content.getAllAsRawColumn().iterator();
+    final Iterator<List<? extends Column<?>>> it = content.getAllAsRawColumn().iterator();
     final HashMap<Tuple, Integer> expectedResults = new HashMap<Tuple, Integer>();
     while (it.hasNext()) {
-      final List<Column<?>> columns = it.next();
+      final List<? extends Column<?>> columns = it.next();
       final int numRow = columns.get(0).size();
       final int numColumn = columns.size();
 
@@ -169,8 +169,8 @@ public final class TestUtils {
 
     int numChild1Column = 0;
     final HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
-    final List<List<Column<?>>> child1TBIt = child1.getAllAsRawColumn();
-    for (final List<Column<?>> child1RawData : child1TBIt) {
+    final List<List<? extends Column<?>>> child1TBIt = child1.getAllAsRawColumn();
+    for (final List<? extends Column<?>> child1RawData : child1TBIt) {
       final int numRow = child1RawData.get(0).size();
       final int numColumn = child1RawData.size();
       numChild1Column = numColumn;
@@ -196,9 +196,9 @@ public final class TestUtils {
       }
     }
 
-    final Iterator<List<Column<?>>> child2TBIt = child2.getAllAsRawColumn().iterator();
+    final Iterator<List<? extends Column<?>>> child2TBIt = child2.getAllAsRawColumn().iterator();
     while (child2TBIt.hasNext()) {
-      final List<Column<?>> child2Columns = child2TBIt.next();
+      final List<? extends Column<?>> child2Columns = child2TBIt.next();
       final int numRow = child2Columns.get(0).size();
       final int numChild2Column = child2Columns.size();
       for (int i = 0; i < numRow; i++) {
@@ -234,10 +234,10 @@ public final class TestUtils {
 
   public static HashMap<Tuple, Integer> groupByAvgLongColumn(final TupleBatchBuffer source, final int groupByColumn,
       final int aggColumn) {
-    final List<List<Column<?>>> tbs = source.getAllAsRawColumn();
+    final List<List<? extends Column<?>>> tbs = source.getAllAsRawColumn();
     final HashMap<Object, Long> sum = new HashMap<Object, Long>();
     final HashMap<Object, Integer> count = new HashMap<Object, Integer>();
-    for (final List<Column<?>> rawData : tbs) {
+    for (final List<? extends Column<?>> rawData : tbs) {
       final int numTuples = rawData.get(0).size();
       for (int i = 0; i < numTuples; i++) {
         final Object groupByValue = rawData.get(groupByColumn).getObject(i);
@@ -266,9 +266,9 @@ public final class TestUtils {
   }
 
   public static HashMap<Tuple, Integer> groupByCount(final TupleBatchBuffer source, final int groupByColumn) {
-    final List<List<Column<?>>> tbs = source.getAllAsRawColumn();
+    final List<List<? extends Column<?>>> tbs = source.getAllAsRawColumn();
     final HashMap<Object, Long> count = new HashMap<Object, Long>();
-    for (final List<Column<?>> rawData : tbs) {
+    for (final List<? extends Column<?>> rawData : tbs) {
       final int numTuples = rawData.get(0).size();
       for (int i = 0; i < numTuples; i++) {
         final Object groupByValue = rawData.get(groupByColumn).getObject(i);
@@ -294,9 +294,9 @@ public final class TestUtils {
 
   public static <T extends Comparable<T>> HashMap<Tuple, Integer> groupByMax(final TupleBatchBuffer source,
       final int groupByColumn, final int aggColumn) {
-    final List<List<Column<?>>> tbs = source.getAllAsRawColumn();
+    final List<List<? extends Column<?>>> tbs = source.getAllAsRawColumn();
     final HashMap<Object, T> max = new HashMap<Object, T>();
-    for (final List<Column<?>> rawData : tbs) {
+    for (final List<? extends Column<?>> rawData : tbs) {
       final int numTuples = rawData.get(0).size();
       for (int i = 0; i < numTuples; i++) {
         final Object groupByValue = rawData.get(groupByColumn).getObject(i);
@@ -325,9 +325,9 @@ public final class TestUtils {
 
   public static <T extends Comparable<T>> HashMap<Tuple, Integer> groupByMin(final TupleBatchBuffer source,
       final int groupByColumn, final int aggColumn) {
-    final List<List<Column<?>>> tbs = source.getAllAsRawColumn();
+    final List<List<? extends Column<?>>> tbs = source.getAllAsRawColumn();
     final HashMap<Object, T> min = new HashMap<Object, T>();
-    for (final List<Column<?>> rawData : tbs) {
+    for (final List<? extends Column<?>> rawData : tbs) {
       final int numTuples = rawData.get(0).size();
       for (int i = 0; i < numTuples; i++) {
         final Object groupByValue = rawData.get(groupByColumn).getObject(i);
@@ -356,9 +356,9 @@ public final class TestUtils {
 
   public static HashMap<Tuple, Integer> groupBySumLongColumn(final TupleBatchBuffer source, final int groupByColumn,
       final int aggColumn) {
-    final List<List<Column<?>>> tbs = source.getAllAsRawColumn();
+    final List<List<? extends Column<?>>> tbs = source.getAllAsRawColumn();
     final HashMap<Object, Long> sum = new HashMap<Object, Long>();
-    for (final List<Column<?>> rawData : tbs) {
+    for (final List<? extends Column<?>> rawData : tbs) {
       final int numTuples = rawData.get(0).size();
       for (int i = 0; i < numTuples; i++) {
         final Object groupByValue = rawData.get(groupByColumn).getObject(i);
@@ -385,9 +385,9 @@ public final class TestUtils {
 
   @SuppressWarnings("unchecked")
   public static <T extends Comparable<T>> T max(final TupleBatchBuffer tbb, final int column) {
-    final List<List<Column<?>>> tbs = tbb.getAllAsRawColumn();
+    final List<List<? extends Column<?>>> tbs = tbb.getAllAsRawColumn();
     T max = (T) tbs.get(0).get(column).getObject(0);
-    for (final List<Column<?>> tb : tbs) {
+    for (final List<? extends Column<?>> tb : tbs) {
       final int numTuples = tb.get(0).size();
       final Column<?> c = tb.get(column);
       for (int i = 0; i < numTuples; i++) {
@@ -402,9 +402,9 @@ public final class TestUtils {
 
   @SuppressWarnings("unchecked")
   public static <T extends Comparable<T>> T min(final TupleBatchBuffer tbb, final int column) {
-    final List<List<Column<?>>> tbs = tbb.getAllAsRawColumn();
+    final List<List<? extends Column<?>>> tbs = tbb.getAllAsRawColumn();
     T min = (T) tbs.get(0).get(column).getObject(0);
-    for (final List<Column<?>> tb : tbs) {
+    for (final List<? extends Column<?>> tb : tbs) {
       final int numTuples = tb.get(0).size();
       final Column<?> c = tb.get(column);
       for (int i = 0; i < numTuples; i++) {
@@ -418,9 +418,9 @@ public final class TestUtils {
   }
 
   public static long sumLong(final TupleBatchBuffer tbb, final int column) {
-    final List<List<Column<?>>> tbs = tbb.getAllAsRawColumn();
+    final List<List<? extends Column<?>>> tbs = tbb.getAllAsRawColumn();
     long sum = 0;
-    for (final List<Column<?>> tb : tbs) {
+    for (final List<? extends Column<?>> tb : tbs) {
       final int numTuples = tb.get(0).size();
       final Column<?> c = tb.get(column);
       for (int i = 0; i < numTuples; i++) {
@@ -473,10 +473,10 @@ public final class TestUtils {
 
   public static HashMap<Tuple, Integer> tupleBatchToTupleBag(final TupleBatchBuffer tbb) {
     final HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
-    final Iterator<List<Column<?>>> it = tbb.getAllAsRawColumn().iterator();
+    final Iterator<List<? extends Column<?>>> it = tbb.getAllAsRawColumn().iterator();
 
     while (it.hasNext()) {
-      final List<Column<?>> columns = it.next();
+      final List<? extends Column<?>> columns = it.next();
       final int numColumn = columns.size();
       final int numRow = columns.get(0).size();
       for (int row = 0; row < numRow; row++) {
@@ -497,9 +497,9 @@ public final class TestUtils {
 
   public static HashMap<Tuple, Integer> tupleBatchToTupleSet(final TupleBatchBuffer tbb) {
     final HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
-    final Iterator<List<Column<?>>> it = tbb.getAllAsRawColumn().iterator();
+    final Iterator<List<? extends Column<?>>> it = tbb.getAllAsRawColumn().iterator();
     while (it.hasNext()) {
-      final List<Column<?>> columns = it.next();
+      final List<? extends Column<?>> columns = it.next();
       final int numColumn = columns.size();
       final int numRow = columns.get(0).size();
       for (int row = 0; row < numRow; row++) {

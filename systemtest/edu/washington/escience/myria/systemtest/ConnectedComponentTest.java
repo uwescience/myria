@@ -60,10 +60,10 @@ public class ConnectedComponentTest extends SystemTestBase {
   private final int numTbl2Worker2 = 150;
 
   public TupleBatchBuffer getConnectedComponentsResult(TupleBatchBuffer g, Schema schema) {
-    final Iterator<List<Column<?>>> iter = g.getAllAsRawColumn().iterator();
+    final Iterator<List<? extends Column<?>>> iter = g.getAllAsRawColumn().iterator();
     boolean graph[][] = new boolean[MaxID][MaxID];
     while (iter.hasNext()) {
-      List<Column<?>> output = iter.next();
+      List<? extends Column<?>> output = iter.next();
       int numRow = output.get(0).size();
       for (int i = 0; i < numRow; i++) {
         int fr = Integer.parseInt(output.get(0).getObject(i).toString());

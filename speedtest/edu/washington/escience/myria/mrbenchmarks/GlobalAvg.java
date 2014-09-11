@@ -42,7 +42,7 @@ public class GlobalAvg extends UnaryOperator {
     final Operator child = getChild();
     TupleBatch tb = child.nextReady();
     if (tb != null) {
-      ImmutableList<Column<?>> inputColumns = tb.getDataColumns();
+      ImmutableList<? extends Column<?>> inputColumns = tb.getDataColumns();
       DoubleColumnBuilder rc = new DoubleColumnBuilder();
       rc.expandAll();
       for (int idx = 0; idx < tb.numTuples(); ++idx) {

@@ -18,9 +18,9 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnFactory;
 import edu.washington.escience.myria.parallel.ExecutionStatistics;
+import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.parallel.SubQueryId;
 import edu.washington.escience.myria.parallel.SubQueryPlan;
-import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
@@ -331,7 +331,7 @@ public final class IPCUtils {
    * @param numTuples number of tuples in the columns.
    * @return a data TM encoding the data columns.
    * */
-  public static TransportMessage normalDataMessage(final List<Column<?>> dataColumns, final int numTuples) {
+  public static TransportMessage normalDataMessage(final List<? extends Column<?>> dataColumns, final int numTuples) {
     final ColumnMessage[] columnProtos = new ColumnMessage[dataColumns.size()];
 
     int i = 0;
@@ -392,8 +392,7 @@ public final class IPCUtils {
    * @throws IOException if error occurs in encoding the query.
    * @return an encoded query TM
    */
-  public static TransportMessage queryMessage(final SubQueryId taskId, final SubQueryPlan query)
-      throws IOException {
+  public static TransportMessage queryMessage(final SubQueryId taskId, final SubQueryPlan query) throws IOException {
     final ByteArrayOutputStream inMemBuffer = new ByteArrayOutputStream();
     final ObjectOutputStream oos = new ObjectOutputStream(inMemBuffer);
     oos.writeObject(query);

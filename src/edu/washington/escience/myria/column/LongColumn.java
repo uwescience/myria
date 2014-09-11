@@ -1,15 +1,8 @@
 package edu.washington.escience.myria.column;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-
-import com.almworks.sqlite4java.SQLiteException;
-import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.column.builder.ColumnBuilder;
-import edu.washington.escience.myria.column.builder.LongColumnBuilder;
 
 /**
  * A column of Long values.
@@ -41,17 +34,6 @@ public final class LongColumn extends Column<Long> {
   }
 
   @Override
-  public void getIntoJdbc(final int row, final PreparedStatement statement, final int jdbcIndex) throws SQLException {
-    statement.setLong(jdbcIndex, getLong(row));
-  }
-
-  @Override
-  public void getIntoSQLite(final int row, final SQLiteStatement statement, final int sqliteIndex)
-      throws SQLiteException {
-    statement.bind(sqliteIndex, getLong(row));
-  }
-
-  @Override
   public long getLong(final int row) {
     Preconditions.checkElementIndex(row, position);
     return data[row];
@@ -79,15 +61,5 @@ public final class LongColumn extends Column<Long> {
     }
     sb.append(']');
     return sb.toString();
-  }
-
-  @Override
-  public boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
-    return getLong(leftIdx) == rightColumn.getLong(rightIdx);
-  }
-
-  @Override
-  public void append(final int index, final ColumnBuilder<?> columnBuilder) {
-    ((LongColumnBuilder) columnBuilder).appendLong(getLong(index));
   }
 }

@@ -43,11 +43,11 @@ public class IterativeSelfJoinTest extends SystemTestBase {
   public TupleBatchBuffer getResultInMemory(final TupleBatchBuffer table1, final Schema schema, final int numIteration) {
     // a brute force check
 
-    final Iterator<List<Column<?>>> tbs = table1.getAllAsRawColumn().iterator();
+    final Iterator<List<? extends Column<?>>> tbs = table1.getAllAsRawColumn().iterator();
     final boolean graph[][] = new boolean[MaxID][MaxID];
     final boolean cntgraph[][] = new boolean[MaxID][MaxID];
     while (tbs.hasNext()) {
-      final List<Column<?>> output = tbs.next();
+      final List<? extends Column<?>> output = tbs.next();
       final int numRow = output.get(0).size();
       for (int i = 0; i < numRow; i++) {
         final int fr = Integer.parseInt(output.get(0).getObject(i).toString());

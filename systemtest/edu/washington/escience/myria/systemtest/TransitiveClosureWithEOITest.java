@@ -50,10 +50,10 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
   public boolean[][] allNodeTransitiveClosure(TupleBatchBuffer table1, Schema schema) {
     // a brute force check
 
-    final Iterator<List<Column<?>>> tbs = table1.getAllAsRawColumn().iterator();
+    final Iterator<List<? extends Column<?>>> tbs = table1.getAllAsRawColumn().iterator();
     boolean graph[][] = new boolean[MaxID][MaxID];
     while (tbs.hasNext()) {
-      List<Column<?>> output = tbs.next();
+      List<? extends Column<?>> output = tbs.next();
       int numRow = output.get(0).size();
       for (int i = 0; i < numRow; i++) {
         int fr = Integer.parseInt(output.get(0).getObject(i).toString());

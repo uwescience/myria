@@ -1,18 +1,10 @@
 package edu.washington.escience.myria.column;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-
 import org.joda.time.DateTime;
 
-import com.almworks.sqlite4java.SQLiteException;
-import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.column.builder.ColumnBuilder;
-import edu.washington.escience.myria.column.builder.DateTimeColumnBuilder;
 
 /**
  * A column of Date values.
@@ -40,17 +32,6 @@ public final class DateTimeColumn extends Column<DateTime> {
   @Override
   public DateTime getObject(final int row) {
     return getDateTime(row);
-  }
-
-  @Override
-  public void getIntoJdbc(final int row, final PreparedStatement statement, final int jdbcIndex) throws SQLException {
-    statement.setTimestamp(jdbcIndex, new Timestamp(getDateTime(row).getMillis()));
-  }
-
-  @Override
-  public void getIntoSQLite(final int row, final SQLiteStatement statement, final int sqliteIndex)
-      throws SQLiteException {
-    statement.bind(sqliteIndex, getDateTime(row).getMillis()); // SQLite long
   }
 
   /**
@@ -87,15 +68,5 @@ public final class DateTimeColumn extends Column<DateTime> {
     }
     sb.append(']');
     return sb.toString();
-  }
-
-  @Override
-  public boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
-    return getDateTime(leftIdx).equals(rightColumn.getObject(rightIdx));
-  }
-
-  @Override
-  public void append(final int index, final ColumnBuilder<?> columnBuilder) {
-    ((DateTimeColumnBuilder) columnBuilder).appendDateTime(getDateTime(index));
   }
 }

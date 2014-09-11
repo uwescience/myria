@@ -63,7 +63,7 @@ public final class DupElim extends StreamingState {
       return tb;
     }
     checkUniqueness.inputTB = tb;
-    List<Column<?>> columns = tb.getDataColumns();
+    List<? extends Column<?>> columns = tb.getDataColumns();
     final BitSet toRemove = new BitSet(numTuples);
     for (int i = 0; i < numTuples; ++i) {
       final int nextIndex = uniqueTuples.numTuples();

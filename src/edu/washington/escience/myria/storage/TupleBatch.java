@@ -1,8 +1,6 @@
 package edu.washington.escience.myria.storage;
 
 import java.io.Serializable;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
@@ -12,8 +10,6 @@ import net.jcip.annotations.ThreadSafe;
 
 import org.joda.time.DateTime;
 
-import com.almworks.sqlite4java.SQLiteException;
-import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
@@ -37,7 +33,7 @@ public class TupleBatch implements ReadableTable, Serializable {
   /** Schema of tuples in this batch. */
   private final Schema schema;
   /** Tuple data stored as columns in this batch. */
-  private final ImmutableList<Column<?>> columns;
+  private final ImmutableList<? extends Column<?>> columns;
   /** Number of tuples in this TB. */
   private final int numTuples;
   /** Whether this TB is an EOI TB. */
@@ -76,7 +72,7 @@ public class TupleBatch implements ReadableTable, Serializable {
    * @param columns contains the column-stored data. Must match schema.
    * @param numTuples the number of tuples in this TupleBatch.
    */
-  public TupleBatch(final Schema schema, final List<Column<?>> columns, final int numTuples) {
+  public TupleBatch(final Schema schema, final List<? extends Column<?>> columns, final int numTuples) {
     this(schema, columns, numTuples, false);
   }
 
@@ -86,7 +82,7 @@ public class TupleBatch implements ReadableTable, Serializable {
    * @param schema schema of the tuples in this batch. Must match columns.
    * @param columns contains the column-stored data. Must match schema.
    */
-  public TupleBatch(final Schema schema, final List<Column<?>> columns) {
+  public TupleBatch(final Schema schema, final List<? extends Column<?>> columns) {
     this(schema, columns, columns.get(0).size());
   }
 
@@ -98,7 +94,8 @@ public class TupleBatch implements ReadableTable, Serializable {
    * @param numTuples the number of tuples in this batch. Must match columns.
    * @param isEOI whether this is an EOI TupleBatch.
    */
-  public TupleBatch(final Schema schema, final List<Column<?>> columns, final int numTuples, final boolean isEOI) {
+  public TupleBatch(final Schema schema, final List<? extends Column<?>> columns, final int numTuples,
+      final boolean isEOI) {
     this.schema = Objects.requireNonNull(schema, "schema");
     this.columns = ImmutableList.copyOf(Objects.requireNonNull(columns, "columns"));
     Preconditions.checkArgument(columns.size() == schema.numColumns(),
@@ -172,39 +169,6 @@ public class TupleBatch implements ReadableTable, Serializable {
   @Override
   public final int getInt(final int column, final int row) {
     return columns.get(column).getInt(row);
-  }
-
-  /**
-   * store this TB into JDBC.
-   * 
-   * @param statement JDBC statement.
-   * @throws SQLException any exception caused by JDBC.
-   * */
-  public final void getIntoJdbc(final PreparedStatement statement) throws SQLException {
-    for (int i = 0; i < numTuples; i++) {
-      int column = 0;
-      for (final Column<?> c : columns) {
-        c.getIntoJdbc(i, statement, ++column);
-      }
-      statement.addBatch();
-    }
-  }
-
-  /**
-   * store this TB into SQLite.
-   * 
-   * @param statement SQLite statement.
-   * @throws SQLiteException any exception caused by SQLite.
-   * */
-  public final void getIntoSQLite(final SQLiteStatement statement) throws SQLiteException {
-    for (int i = 0; i < numTuples; i++) {
-      int column = 0;
-      for (final Column<?> c : columns) {
-        c.getIntoSQLite(i, statement, ++column);
-      }
-      statement.step();
-      statement.reset();
-    }
   }
 
   @Override
@@ -328,7 +292,7 @@ public class TupleBatch implements ReadableTable, Serializable {
   /**
    * @return the data columns.
    */
-  public final ImmutableList<Column<?>> getDataColumns() {
+  public final ImmutableList<? extends Column<?>> getDataColumns() {
     return columns;
   }
 

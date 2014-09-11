@@ -250,7 +250,7 @@ public final class RightHashJoin extends BinaryOperator {
    * @param index the index of hashTable, which the cntTuple is to join with
    */
   protected void addToAns(final TupleBatch cntTB, final int row, final MutableTupleBuffer hashTable, final int index) {
-    List<Column<?>> tbColumns = cntTB.getDataColumns();
+    List<? extends Column<?>> tbColumns = cntTB.getDataColumns();
     ReadableColumn[] hashTblColumns = hashTable.getColumns(index);
     int tupleIdx = hashTable.getTupleIndexInContainingTB(index);
 
@@ -427,7 +427,7 @@ public final class RightHashJoin extends BinaryOperator {
       hashTable1IndicesLocal.put(hashCode, tupleIndicesList);
     }
     tupleIndicesList.add(nextIndex);
-    List<Column<?>> inputColumns = tb.getDataColumns();
+    List<? extends Column<?>> inputColumns = tb.getDataColumns();
     for (int column = 0; column < tb.numColumns(); column++) {
       hashTable.put(column, inputColumns.get(column), row);
     }
