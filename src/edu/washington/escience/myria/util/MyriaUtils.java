@@ -6,6 +6,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import org.joda.time.DateTime;
+
 import com.google.common.base.Preconditions;
 
 /**
@@ -118,5 +120,31 @@ public final class MyriaUtils {
             newK, oldV);
       }
     }
+  }
+
+  /**
+   * Ensure that the given object is a valid Myria object type and can be stored in e.g., a Column or a Field.
+   * 
+   * @param o the object to be tested.
+   * @return o.
+   * @throws IllegalArgumentException if the object is not a valid Myria type.
+   */
+  public static Object ensureObjectIsValidType(final Object o) throws IllegalArgumentException {
+    if (o instanceof Boolean) {
+      return o;
+    }
+    if (o instanceof Double || o instanceof Float) {
+      return o;
+    }
+    if (o instanceof Integer || o instanceof Long) {
+      return o;
+    }
+    if (o instanceof DateTime) {
+      return o;
+    }
+    if (o instanceof String) {
+      return o;
+    }
+    throw new IllegalArgumentException("Object of type " + o.getClass() + " is not a valid Myria type");
   }
 }

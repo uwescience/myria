@@ -8,6 +8,7 @@ import org.joda.time.DateTime;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.column.builder.WritableColumn;
+import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * A trivial wrapper to expose a single column of a {@link WritableTable}.
@@ -69,7 +70,7 @@ public final class WritableSubColumn implements WritableColumn {
   @Override
   @Deprecated
   public WritableColumn appendObject(final Object value) throws BufferOverflowException {
-    inner.putObject(column, value);
+    inner.putObject(column, MyriaUtils.ensureObjectIsValidType(value));
     return this;
   }
 

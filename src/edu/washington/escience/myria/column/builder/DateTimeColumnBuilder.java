@@ -18,6 +18,7 @@ import edu.washington.escience.myria.column.mutable.DateTimeMutableColumn;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.DateTimeColumnMessage;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * A column of Date values.
@@ -164,7 +165,7 @@ public final class DateTimeColumnBuilder extends ColumnBuilder<DateTime> {
   @Override
   public DateTimeColumnBuilder appendObject(final Object value) throws BufferOverflowException {
     Preconditions.checkState(!built, "No further changes are allowed after the builder has built the column.");
-    return appendDateTime((DateTime) value);
+    return appendDateTime((DateTime) MyriaUtils.ensureObjectIsValidType(value));
   }
 
   @Override
