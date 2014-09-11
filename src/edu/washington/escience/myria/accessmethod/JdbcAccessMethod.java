@@ -11,6 +11,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -40,8 +41,8 @@ import edu.washington.escience.myria.util.ErrorUtils;
 
 /**
  * Access method for a JDBC database. Exposes data as TupleBatches.
- *
- *
+ * 
+ * 
  */
 public final class JdbcAccessMethod extends AccessMethod {
 
@@ -54,7 +55,7 @@ public final class JdbcAccessMethod extends AccessMethod {
 
   /**
    * The constructor. Creates an object and connects with the database
-   *
+   * 
    * @param jdbcInfo connection information
    * @param readOnly whether read-only connection or not
    * @throws DbException if there is an error making the connection.
@@ -106,7 +107,7 @@ public final class JdbcAccessMethod extends AccessMethod {
 
   /**
    * Helper function to copy data into PostgreSQL using the COPY command.
-   *
+   * 
    * @param relationKey the destination relation
    * @param schema the schema of the relation
    * @param tupleBatch the tuples to be inserted.
@@ -168,9 +169,34 @@ public final class JdbcAccessMethod extends AccessMethod {
         /* Set up and execute the query */
         final PreparedStatement statement =
             jdbcConnection.prepareStatement(insertStatementFromSchema(schema, relationKey));
-        tupleBatch.getIntoJdbc(statement);
-        // TODO make it also independent. should be getIntoJdbc(statement,
-        // tupleBatch)
+        for (int row = 0; row < tupleBatch.numTuples(); ++row) {
+          for (int col = 0; col < tupleBatch.numColumns(); ++col) {
+            switch (schema.getColumnType(col)) {
+              case BOOLEAN_TYPE:
+                statement.setBoolean(col + 1, tupleBatch.getBoolean(col, row));
+                break;
+              case DATETIME_TYPE:
+                statement.setTimestamp(col + 1, new Timestamp(tupleBatch.getDateTime(col, row).getMillis()));
+                break;
+              case DOUBLE_TYPE:
+                statement.setDouble(col + 1, tupleBatch.getDouble(col, row));
+                break;
+              case FLOAT_TYPE:
+                statement.setFloat(col + 1, tupleBatch.getFloat(col, row));
+                break;
+              case INT_TYPE:
+                statement.setInt(col + 1, tupleBatch.getInt(col, row));
+                break;
+              case LONG_TYPE:
+                statement.setLong(col + 1, tupleBatch.getLong(col, row));
+                break;
+              case STRING_TYPE:
+                statement.setString(col + 1, tupleBatch.getString(col, row));
+                break;
+            }
+          }
+          statement.addBatch();
+        }
         statement.executeBatch();
         statement.close();
       } catch (final SQLException e) {
@@ -253,7 +279,7 @@ public final class JdbcAccessMethod extends AccessMethod {
 
   /**
    * Create an unlogged table.
-   *
+   * 
    * @param relationKey the relation name
    * @param schema the relation schema
    * @throws DbException if anything goes wrong
@@ -333,7 +359,7 @@ public final class JdbcAccessMethod extends AccessMethod {
 
   /**
    * Helper utility for creating JDBC CREATE TABLE statements.
-   *
+   * 
    * @param type a Myria column type.
    * @param dbms the description of the DBMS, e.g., "mysql".
    * @return the name of the DBMS type that matches the given Myria type.
@@ -494,7 +520,7 @@ public final class JdbcAccessMethod extends AccessMethod {
 
   /**
    * Create an index in postgres if no index with the same name already exists.
-   *
+   * 
    * @param relationKey the table on which the indexes will be created.
    * @param schema the Schema of the data in the table.
    * @param index the index to be created; each entry is a list of column indices.
@@ -519,7 +545,7 @@ public final class JdbcAccessMethod extends AccessMethod {
 
 /**
  * Wraps a JDBC ResultSet in a Iterator<TupleBatch>.
- *
+ * 
  * Implementation based on org.apache.commons.dbutils.ResultSetIterator. Requires ResultSet.isLast() to be implemented.
  */
 class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
@@ -534,7 +560,7 @@ class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
 
   /**
    * Constructs a JdbcTupleBatchIterator from the given ResultSet and Schema objects.
-   *
+   * 
    * @param resultSet the JDBC ResultSet containing the results.
    * @param schema the Schema of the generated TupleBatch objects.
    */

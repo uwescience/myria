@@ -148,7 +148,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
     public boolean execute(final int index) {
       if (TupleUtils.tupleEquals(inputTB, keyColumns, row, hashTable, keyColumns, index)) {
         replaced = true;
-        List<Column<?>> columns = inputTB.getDataColumns();
+        List<? extends Column<?>> columns = inputTB.getDataColumns();
         for (int j = 0; j < inputTB.numColumns(); ++j) {
           hashTable.replace(j, index, columns.get(j), row);
         }
@@ -365,7 +365,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
    */
   protected void addToAns(final TupleBatch cntTB, final int row, final MutableTupleBuffer hashTable, final int index,
       final boolean fromLeft) {
-    List<Column<?>> tbColumns = cntTB.getDataColumns();
+    List<? extends Column<?>> tbColumns = cntTB.getDataColumns();
     ReadableColumn[] hashTblColumns = hashTable.getColumns(index);
     int tupleIdx = hashTable.getTupleIndexInContainingTB(index);
     if (fromLeft) {
@@ -720,7 +720,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
     if (!doReplace.replaced) {
       /* not using set semantics || using set semantics but found nothing to replace (i.e. new) */
       tupleIndicesList.add(nextIndex);
-      List<Column<?>> inputColumns = tb.getDataColumns();
+      List<? extends Column<?>> inputColumns = tb.getDataColumns();
       for (int column = 0; column < tb.numColumns(); column++) {
         hashTable.put(column, inputColumns.get(column), row);
       }

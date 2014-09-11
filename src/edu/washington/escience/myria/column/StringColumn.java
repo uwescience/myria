@@ -1,14 +1,6 @@
 package edu.washington.escience.myria.column;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-
-import com.almworks.sqlite4java.SQLiteException;
-import com.almworks.sqlite4java.SQLiteStatement;
-
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.column.builder.ColumnBuilder;
-import edu.washington.escience.myria.column.builder.StringColumnBuilder;
 
 /**
  * An abstract column of String values.
@@ -21,18 +13,6 @@ public abstract class StringColumn extends Column<String> {
   @Override
   public final String getObject(final int row) {
     return getString(row);
-  }
-
-  @Override
-  public final void getIntoJdbc(final int row, final PreparedStatement statement, final int jdbcIndex)
-      throws SQLException {
-    statement.setString(jdbcIndex, getString(row));
-  }
-
-  @Override
-  public final void getIntoSQLite(final int row, final SQLiteStatement statement, final int sqliteIndex)
-      throws SQLiteException {
-    statement.bind(sqliteIndex, getString(row));
   }
 
   @Override
@@ -55,15 +35,5 @@ public abstract class StringColumn extends Column<String> {
     }
     sb.append(']');
     return sb.toString();
-  }
-
-  @Override
-  public final boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
-    return getString(leftIdx).equals(rightColumn.getObject(rightIdx));
-  }
-
-  @Override
-  public final void append(final int index, final ColumnBuilder<?> columnBuilder) {
-    ((StringColumnBuilder) columnBuilder).appendString(getString(index));
   }
 }

@@ -165,8 +165,8 @@ public class TupleBatchBuffer implements AppendableTable {
    * 
    * @return a List<TupleBatch> containing all complete tuples that have been inserted into this buffer.
    */
-  public final List<List<Column<?>>> getAllAsRawColumn() {
-    final List<List<Column<?>>> output = new ArrayList<List<Column<?>>>();
+  public final List<List<? extends Column<?>>> getAllAsRawColumn() {
+    final List<List<? extends Column<?>>> output = new ArrayList<>();
     for (final TupleBatch batch : readyTuples) {
       output.add(batch.getDataColumns());
     }
@@ -343,11 +343,11 @@ public class TupleBatchBuffer implements AppendableTable {
   public final void put(final TupleBatch leftTb, final int leftIdx, final int[] leftAnswerColumns,
       final TupleBatch rightTb, final int rightIdx, final int[] rightAnswerColumns) {
     for (int i = 0; i < leftAnswerColumns.length; ++i) {
-      leftTb.getDataColumns().get(leftAnswerColumns[i]).append(leftIdx, currentBuildingColumns.get(i));
+      TupleUtils.copyValue(leftTb.getDataColumns().get(leftAnswerColumns[i]), leftIdx, currentBuildingColumns.get(i));
     }
     for (int i = 0; i < rightAnswerColumns.length; ++i) {
-      rightTb.getDataColumns().get(rightAnswerColumns[i]).append(rightIdx,
-          currentBuildingColumns.get(i + leftAnswerColumns.length));
+      TupleUtils.copyValue(rightTb.getDataColumns().get(rightAnswerColumns[i]), rightIdx, currentBuildingColumns.get(i
+          + leftAnswerColumns.length));
     }
     currentInProgressTuples++;
     if (currentInProgressTuples == TupleBatch.BATCH_SIZE) {
@@ -373,7 +373,7 @@ public class TupleBatchBuffer implements AppendableTable {
    * @param sourceRow the row in the source column from which data will be retrieved.
    */
   public final void put(final TupleBatch sourceBatch, final int sourceRow) {
-    List<Column<?>> sourceColumns = sourceBatch.getDataColumns();
+    List<? extends Column<?>> sourceColumns = sourceBatch.getDataColumns();
     for (int col = 0; col < sourceColumns.size(); ++col) {
       put(col, sourceColumns.get(col), sourceRow);
     }

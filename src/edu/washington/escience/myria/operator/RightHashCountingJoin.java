@@ -319,7 +319,7 @@ public class RightHashCountingJoin extends BinaryOperator {
     }
 
     Preconditions.checkArgument(hashTable.numColumns() == compareColumns.length);
-    List<Column<?>> inputColumns = tb.getDataColumns();
+    List<? extends Column<?>> inputColumns = tb.getDataColumns();
 
     /* find whether this tuple's comparing key has occurred before. If it is, only update occurred times */
     boolean found = false;

@@ -1,18 +1,11 @@
 package edu.washington.escience.myria.column;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.util.BitSet;
 import java.util.Objects;
 
 import org.joda.time.DateTime;
 
-import com.almworks.sqlite4java.SQLiteException;
-import com.almworks.sqlite4java.SQLiteStatement;
-
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.column.builder.ColumnBuilder;
 
 /**
  * A column that holds a constant value.
@@ -79,16 +72,6 @@ public class ConstantValueColumn extends Column<Comparable<?>> {
   }
 
   @Override
-  public void append(final int index, final ColumnBuilder<?> columnBuilder) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
   public Column<Comparable<?>> filter(final BitSet filter) {
     return new ConstantValueColumn(value, type, filter.cardinality());
   }
@@ -131,66 +114,6 @@ public class ConstantValueColumn extends Column<Comparable<?>> {
       return intValue;
     }
     throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public void getIntoJdbc(final int row, final PreparedStatement statement, final int jdbcIndex) throws SQLException {
-    switch (getType()) {
-      case BOOLEAN_TYPE:
-        statement.setBoolean(jdbcIndex, getBoolean(row));
-        break;
-      case DATETIME_TYPE:
-        statement.setTimestamp(jdbcIndex, new Timestamp(getDateTime(row).getMillis()));
-        break;
-      case DOUBLE_TYPE:
-        statement.setDouble(jdbcIndex, getDouble(row));
-        break;
-      case FLOAT_TYPE:
-        statement.setFloat(jdbcIndex, getFloat(row));
-        break;
-      case INT_TYPE:
-        statement.setInt(jdbcIndex, getInt(row));
-        break;
-      case LONG_TYPE:
-        statement.setLong(jdbcIndex, getLong(row));
-        break;
-      case STRING_TYPE:
-        statement.setString(jdbcIndex, getString(row));
-        break;
-    }
-  }
-
-  @Override
-  public void getIntoSQLite(final int row, final SQLiteStatement statement, final int sqliteIndex)
-      throws SQLiteException {
-    switch (getType()) {
-      case BOOLEAN_TYPE:
-        /* In SQLite, booleans are integers represented as 0 (false) or 1 (true). */
-        int colVal = 0;
-        if (getBoolean(row)) {
-          colVal = 1;
-        }
-        statement.bind(sqliteIndex, colVal);
-        break;
-      case DATETIME_TYPE:
-        statement.bind(sqliteIndex, getDateTime(row).getMillis()); // SQLite long
-        break;
-      case DOUBLE_TYPE:
-        statement.bind(sqliteIndex, getDouble(row));
-        break;
-      case FLOAT_TYPE:
-        statement.bind(sqliteIndex, getFloat(row));
-        break;
-      case INT_TYPE:
-        statement.bind(sqliteIndex, getInt(row));
-        break;
-      case LONG_TYPE:
-        statement.bind(sqliteIndex, getLong(row));
-        break;
-      case STRING_TYPE:
-        statement.bind(sqliteIndex, getString(row));
-        break;
-    }
   }
 
   @Override

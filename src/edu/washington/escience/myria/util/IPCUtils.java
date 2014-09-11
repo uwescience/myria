@@ -310,7 +310,7 @@ public final class IPCUtils {
    * @param numTuples number of tuples in the columns.
    * @return a data TM encoding the data columns.
    * */
-  public static TransportMessage normalDataMessage(final List<Column<?>> dataColumns, final int numTuples) {
+  public static TransportMessage normalDataMessage(final List<? extends Column<?>> dataColumns, final int numTuples) {
     final ColumnMessage[] columnProtos = new ColumnMessage[dataColumns.size()];
 
     int i = 0;
