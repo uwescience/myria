@@ -44,9 +44,6 @@ public class CrossWithSingleton extends BinaryOperator {
         }
         return null;
       }
-      if (tb.numTuples() == 0) {
-        continue;
-      }
       Preconditions.checkState(rightTuple == null,
           "Expecting a singleton right child, but received a batch with %s additional tuples", tb.numTuples());
       Preconditions.checkState(tb.numTuples() == 1,
@@ -66,18 +63,12 @@ public class CrossWithSingleton extends BinaryOperator {
         break;
       }
 
-      int numTuples = tb.numTuples();
-
-      if (numTuples == 0) {
-        continue;
-      }
-
       ImmutableList.Builder<Column<?>> columns = ImmutableList.builder();
       for (Column<?> c : tb.getDataColumns()) {
         columns.add(c);
       }
       for (Column<?> c : rightTuple.getDataColumns()) {
-        columns.add(new ConstantValueColumn(c.getObject(0), c.getType(), numTuples));
+        columns.add(new ConstantValueColumn(c.getObject(0), c.getType(), tb.numTuples()));
       }
       return new TupleBatch(schema, columns.build());
     }
