@@ -9,9 +9,13 @@ import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
+
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.column.ConstantValueColumn;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestEnvVars;
@@ -64,6 +68,23 @@ public class CrossWithSingletonTest {
   @Test
   public void testWithSingleton() throws DbException {
     TupleSource singletonSource = new TupleSource(singleton);
+    CrossWithSingleton cross = new CrossWithSingleton(dataSource, singletonSource);
+    assertEquals(Schema.merge(dataSource.getSchema(), singleton.getSchema()), cross.getSchema());
+    verifyMatch(cross);
+  }
+
+  @Test
+  public void testWithSingletonPlusEmptyTb() throws DbException {
+    /* Construct empty TB */
+    ImmutableList.Builder<Column<?>> b = ImmutableList.builder();
+    for (Column<?> c : singleton.getDataColumns()) {
+      b.add(new ConstantValueColumn(c.getObject(0), c.getType(), 0));
+    }
+    TupleBatch emptyTb = new TupleBatch(singleton.getSchema(), b.build());
+
+    /* Construct singleton source with interleaved TBs */
+    ImmutableList<TupleBatch> tbs = ImmutableList.of(emptyTb, singleton, emptyTb);
+    TupleSource singletonSource = new TupleSource(tbs);
     CrossWithSingleton cross = new CrossWithSingleton(dataSource, singletonSource);
     assertEquals(Schema.merge(dataSource.getSchema(), singleton.getSchema()), cross.getSchema());
     verifyMatch(cross);
