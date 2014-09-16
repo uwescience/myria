@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 
 import com.google.common.base.Preconditions;
 
@@ -50,7 +51,7 @@ public final class MyriaUtils {
   }
 
   /**
-   * Convert a collection of integers to an int[].
+   * Convert a collection of integers to a sorted int[].
    * 
    * @param input the collection of integers.
    * @return an int[] containing the given integers.
@@ -58,7 +59,7 @@ public final class MyriaUtils {
   public static int[] integerCollectionToIntArray(final Collection<Integer> input) {
     int[] output = new int[input.size()];
     int i = 0;
-    for (int value : input) {
+    for (int value : new TreeSet<>(input)) {
       output[i] = value;
       ++i;
     }
