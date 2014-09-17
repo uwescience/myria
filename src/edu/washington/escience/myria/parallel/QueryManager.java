@@ -79,16 +79,9 @@ public class QueryManager {
   }
 
   /**
-   * @return if no query is running.
-   */
-  public boolean allQueriesCompleted() {
-    return activeQueries.isEmpty();
-  }
-
-  /**
    * @return whether this master can handle more queries or not.
    */
-  public boolean canSubmitQuery() {
+  private boolean canSubmitQuery() {
     return (activeQueries.size() < MyriaConstants.MAX_ACTIVE_QUERIES);
   }
 
@@ -358,7 +351,7 @@ public class QueryManager {
    * @return the query dispatch {@link LocalSubQueryFuture}.
    * @throws DbException if any error occurs.
    */
-  public LocalSubQueryFuture dispatchWorkerQueryPlans(final MasterSubQuery mqp) throws DbException {
+  private LocalSubQueryFuture dispatchWorkerQueryPlans(final MasterSubQuery mqp) throws DbException {
     if (!server.getAliveWorkers().containsAll(mqp.getWorkerPlans().keySet())) {
       throw new DbException("Not all requested workers are alive.");
     }
@@ -482,7 +475,7 @@ public class QueryManager {
   /**
    * Kill all queries currently executing.
    */
-  public void killAll() {
+  protected void killAll() {
     for (MasterSubQuery p : executingSubQueries.values()) {
       p.kill();
     }
@@ -494,7 +487,7 @@ public class QueryManager {
    * 
    * @param workerId the worker that died.
    */
-  public void workerDied(final int workerId) {
+  protected void workerDied(final int workerId) {
     for (MasterSubQuery mqp : executingSubQueries.values()) {
       /* for each alive query that the failed worker is assigned to, tell the query that the worker failed. */
       if (mqp.getWorkerAssigned().contains(workerId)) {
@@ -519,7 +512,7 @@ public class QueryManager {
    * @param workerId the worker that has restarted.
    * @param workersAcked the workers that have acknowledged its rebirth.
    */
-  public void workerRestarted(final int workerId, final Set<Integer> workersAcked) {
+  protected void workerRestarted(final int workerId, final Set<Integer> workersAcked) {
     for (MasterSubQuery mqp : executingSubQueries.values()) {
       if (mqp.getFTMode().equals(FTMODE.rejoin) && mqp.getMissingWorkers().contains(workerId)
           && workersAcked.containsAll(mqp.getWorkerAssigned())) {
