@@ -17,6 +17,7 @@ import edu.washington.escience.myria.column.mutable.StringMutableColumn;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.StringColumnMessage;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * A column of String values.
@@ -163,7 +164,7 @@ public final class StringColumnBuilder extends ColumnBuilder<String> {
   @Override
   public ColumnBuilder<String> appendObject(final Object value) throws BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return appendString((String) value);
+    return appendString((String) MyriaUtils.ensureObjectIsValidType(value));
   }
 
   @Override

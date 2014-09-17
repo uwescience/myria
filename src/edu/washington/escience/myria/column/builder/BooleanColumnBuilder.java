@@ -14,6 +14,7 @@ import edu.washington.escience.myria.column.BooleanColumn;
 import edu.washington.escience.myria.column.mutable.BooleanMutableColumn;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * A column of Boolean values. To save space, this implementation uses a BitSet as the internal representation.
@@ -93,7 +94,7 @@ public final class BooleanColumnBuilder extends ColumnBuilder<Boolean> {
   @Override
   public BooleanColumnBuilder appendObject(final Object value) throws BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return appendBoolean((Boolean) value);
+    return appendBoolean((Boolean) MyriaUtils.ensureObjectIsValidType(value));
   }
 
   @Override

@@ -15,6 +15,7 @@ import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.ColumnFactory;
 import edu.washington.escience.myria.column.builder.WritableColumn;
+import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * A simple collection of tuples that provides random access to the inner tuples and can be appended to. Once the user
@@ -241,7 +242,7 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
   @Deprecated
   public final void putObject(final int column, final Object value) {
     checkPutIndex(column);
-    currentBatch.get(column).appendObject(value);
+    currentBatch.get(column).appendObject(MyriaUtils.ensureObjectIsValidType(value));
     columnPut(column);
   }
 
