@@ -1193,7 +1193,7 @@ public final class Server {
       actualWorkers = getAliveWorkers();
     }
     Preconditions.checkArgument(actualWorkers.size() > 0, "Must use > 0 workers");
-    int[] workersArray = MyriaUtils.integerCollectionToIntArray(actualWorkers);
+    int[] workersArray = MyriaUtils.integerSetToIntArray(actualWorkers);
 
     /* The master plan: send the tuples out. */
     ExchangePairID scatterId = ExchangePairID.newID();
