@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
 
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +46,10 @@ public class QueryManager {
    */
   private final ConcurrentHashMap<Long, Query> activeQueries;
 
+  /** The queries that are queued. */
+  @GuardedBy("queryQueue")
+  private final LinkedList<Query> queryQueue;
+
   /**
    * Subqueries currently in execution.
    */
@@ -66,6 +71,7 @@ public class QueryManager {
   public QueryManager(final MasterCatalog catalog, final Server server) {
     this.catalog = catalog;
     this.server = server;
+    queryQueue = new LinkedList<>();
     activeQueries = new ConcurrentHashMap<>();
     executingSubQueries = new ConcurrentHashMap<>();
   }
@@ -82,7 +88,9 @@ public class QueryManager {
    * @return whether this master can handle more queries or not.
    */
   private boolean canSubmitQuery() {
-    return (activeQueries.size() < MyriaConstants.MAX_ACTIVE_QUERIES);
+    synchronized (queryQueue) {
+      return ((activeQueries.size() + queryQueue.size()) < MyriaConstants.MAX_ACTIVE_QUERIES);
+    }
   }
 
   /**
@@ -98,6 +106,18 @@ public class QueryManager {
       throw new DbException("Error finishing query " + queryState.getQueryId(), e);
     } finally {
       activeQueries.remove(queryState.getQueryId());
+      /* Now see if the query queue has anything for us. */
+      Query q = null;
+      synchronized (queryQueue) {
+        q = queryQueue.peek();
+        if (q != null && activeQueries.isEmpty()) {
+          queryQueue.removeFirst();
+        }
+      }
+      if (q != null) {
+        activeQueries.put(q.getQueryId(), q);
+        advanceQuery(q);
+      }
     }
   }
 
@@ -191,8 +211,18 @@ public class QueryManager {
   private QueryFuture submitQuery(final long queryId, final QueryEncoding query, final QueryPlan plan)
       throws DbException, CatalogException {
     final Query queryState = new Query(queryId, query, plan, server);
-    activeQueries.put(queryId, queryState);
-    advanceQuery(queryState);
+    boolean canStart = false;
+    synchronized (queryQueue) {
+      if (queryQueue.isEmpty() && activeQueries.isEmpty()) {
+        canStart = true;
+      } else {
+        queryQueue.add(queryState);
+      }
+    }
+    if (canStart) {
+      activeQueries.put(queryId, queryState);
+      advanceQuery(queryState);
+    }
     return queryState.getFuture();
   }
 
