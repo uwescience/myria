@@ -16,6 +16,7 @@ import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.ColumnFactory;
 import edu.washington.escience.myria.column.builder.WritableColumn;
+import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * Used for creating TupleBatch objects on the fly. A helper class used in, e.g., the Scatter operator. Currently it
@@ -425,7 +426,7 @@ public class TupleBatchBuffer implements AppendableTable {
   @Deprecated
   public void putObject(final int column, final Object value) {
     checkPutIndex(column);
-    currentBuildingColumns.get(column).appendObject(value);
+    currentBuildingColumns.get(column).appendObject(MyriaUtils.ensureObjectIsValidType(value));
     columnPut(column);
   }
 

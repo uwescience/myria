@@ -10,6 +10,7 @@ import com.google.common.collect.Lists;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * A single row relation.
@@ -132,7 +133,7 @@ public class Tuple implements Cloneable, ReadableTable, Serializable {
    * @param value the value to set
    */
   public void set(final int columnIdx, final Object value) {
-    getColumn(columnIdx).appendObject(value);
+    getColumn(columnIdx).appendObject(MyriaUtils.ensureObjectIsValidType(value));
   }
 
   @Override

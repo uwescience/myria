@@ -16,6 +16,7 @@ import edu.washington.escience.myria.column.IntProtoColumn;
 import edu.washington.escience.myria.column.mutable.IntMutableColumn;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * A column of Integer values.
@@ -77,7 +78,7 @@ public final class IntColumnBuilder extends ColumnBuilder<Integer> {
   @Override
   public IntColumnBuilder appendObject(final Object value) throws BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return appendInt((Integer) value);
+    return appendInt((Integer) MyriaUtils.ensureObjectIsValidType(value));
   }
 
   @Override

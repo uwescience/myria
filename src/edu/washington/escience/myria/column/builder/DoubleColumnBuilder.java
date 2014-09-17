@@ -15,6 +15,7 @@ import edu.washington.escience.myria.column.DoubleColumn;
 import edu.washington.escience.myria.column.mutable.DoubleMutableColumn;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * A column of Double values.
@@ -81,7 +82,7 @@ public final class DoubleColumnBuilder extends ColumnBuilder<Double> {
   @Override
   public DoubleColumnBuilder appendObject(final Object value) throws BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return appendDouble((Double) value);
+    return appendDouble((Double) MyriaUtils.ensureObjectIsValidType(value));
   }
 
   @Override
