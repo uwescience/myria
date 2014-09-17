@@ -1,10 +1,10 @@
 package edu.washington.escience.myria.util;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.TreeSet;
 
 import org.joda.time.DateTime;
@@ -58,10 +58,16 @@ public final class MyriaUtils {
    * @param input the collection of integers.
    * @return an int[] containing the given integers.
    */
-  public static int[] integerCollectionToIntArray(final Collection<Integer> input) {
+  public static int[] integerSetToIntArray(final Set<Integer> input) {
+    SortedSet<Integer> set;
+    if (input instanceof SortedSet) {
+      set = (SortedSet<Integer>) input;
+    } else {
+      set = new TreeSet<>(input);
+    }
     int[] output = new int[input.size()];
     int i = 0;
-    for (int value : new TreeSet<>(input)) {
+    for (int value : set) {
       output[i] = value;
       ++i;
     }

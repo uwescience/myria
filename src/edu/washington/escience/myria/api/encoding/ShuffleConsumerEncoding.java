@@ -13,6 +13,6 @@ public class ShuffleConsumerEncoding extends AbstractConsumerEncoding<GenericShu
   @Override
   public GenericShuffleConsumer construct(ConstructArgs args) {
     return new GenericShuffleConsumer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
-        .integerCollectionToIntArray(getRealWorkerIds()));
+        .integerSetToIntArray(getRealWorkerIds()));
   }
 }
