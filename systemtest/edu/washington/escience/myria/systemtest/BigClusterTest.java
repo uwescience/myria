@@ -14,9 +14,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Assert;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestRule;
 import org.junit.rules.Timeout;
 
 import edu.washington.escience.myria.MyriaConstants;
@@ -39,8 +37,9 @@ import edu.washington.escience.myria.util.TestUtils;
 
 public class BigClusterTest extends SystemTestBase {
 
-  @Rule
-  public TestRule globalTimeout = new Timeout(1200 * 1000);
+  public BigClusterTest() {
+    globalTimeout = new Timeout(1200 * 1000);
+  }
 
   public static final int NUM_WORKERS;
   static {

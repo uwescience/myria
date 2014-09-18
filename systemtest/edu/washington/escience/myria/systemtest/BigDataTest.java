@@ -10,9 +10,7 @@ import java.util.HashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestRule;
 import org.junit.rules.Timeout;
 
 import edu.washington.escience.myria.operator.DuplicateTBGenerator;
@@ -28,8 +26,9 @@ import edu.washington.escience.myria.util.TestUtils;
 
 public class BigDataTest extends SystemTestBase {
 
-  @Rule
-  public TestRule globalTimeout = new Timeout(1200 * 1000);
+  public BigDataTest() {
+    globalTimeout = new Timeout(1200 * 1000);
+  }
 
   @Test
   public void bigCollectTest() throws Exception {
