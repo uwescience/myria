@@ -562,7 +562,7 @@ public final class JdbcAccessMethod extends AccessMethod {
    * @return the quoted name of the given relation for use in SQL statements.
    */
   private String quote(final RelationKey relationKey) {
-    return relationKey.toString(jdbcInfo.getDatabase());
+    return relationKey.toString(jdbcInfo.getDbms());
   }
 
   /**
