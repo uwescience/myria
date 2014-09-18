@@ -15,6 +15,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
@@ -36,6 +37,7 @@ import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.util.TestUtils;
 
+@Ignore
 public class BigClusterTest extends SystemTestBase {
 
   public BigClusterTest() {
