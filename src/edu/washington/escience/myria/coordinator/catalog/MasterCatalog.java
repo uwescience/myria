@@ -54,18 +54,18 @@ public final class MasterCatalog {
   /** Create the configurations table. */
   private static final String CREATE_CONFIGURATION =
       "CREATE TABLE configuration (\n"
-    + "    key STRING UNIQUE NOT NULL,\n"
-    + "    value STRING NOT NULL);";
+    + "    key TEXT UNIQUE NOT NULL,\n"
+    + "    value TEXT NOT NULL);";
   /** Create the masters table. */
   private static final String CREATE_MASTERS =
       "CREATE TABLE masters (\n"
     + "    master_id INTEGER PRIMARY KEY ASC,\n"
-    + "    host_port STRING NOT NULL);";
+    + "    host_port TEXT NOT NULL);";
   /** Create the workers table. */
   private static final String CREATE_WORKERS =
       "CREATE TABLE workers (\n"
     + "    worker_id INTEGER PRIMARY KEY ASC,\n"
-    + "    host_port STRING NOT NULL);";
+    + "    host_port TEXT NOT NULL);";
   /** Create the alive_workers table. */
   private static final String CREATE_ALIVE_WORKERS =
       "CREATE TABLE alive_workers (\n"
@@ -89,31 +89,31 @@ public final class MasterCatalog {
   /** Create the relations table. */
   private static final String CREATE_RELATIONS =
       "CREATE TABLE relations (\n"
-    + "    user_name STRING NOT NULL,\n"
-    + "    program_name STRING NOT NULL,\n"
-    + "    relation_name STRING NOT NULL,\n"
+    + "    user_name TEXT NOT NULL,\n"
+    + "    program_name TEXT NOT NULL,\n"
+    + "    relation_name TEXT NOT NULL,\n"
     + "    num_tuples LONG NOT NULL,\n"
     + "    query_id LONG NOT NULL REFERENCES queries(query_id),\n"
     + "    PRIMARY KEY (user_name,program_name,relation_name));";
   /** Create the relation_schema table. */
   private static final String CREATE_RELATION_SCHEMA =
       "CREATE TABLE relation_schema (\n"
-    + "    user_name STRING NOT NULL,\n"
-    + "    program_name STRING NOT NULL,\n"
-    + "    relation_name STRING NOT NULL,\n"
+    + "    user_name TEXT NOT NULL,\n"
+    + "    program_name TEXT NOT NULL,\n"
+    + "    relation_name TEXT NOT NULL,\n"
     + "    col_index INTEGER NOT NULL,\n"
-    + "    col_name STRING,\n"
-    + "    col_type STRING NOT NULL,\n"
+    + "    col_name TEXT,\n"
+    + "    col_type TEXT NOT NULL,\n"
     + "    FOREIGN KEY (user_name,program_name,relation_name) REFERENCES relations ON DELETE CASCADE);";
   /** Create the stored_relations table. */
   private static final String CREATE_STORED_RELATIONS =
       "CREATE TABLE stored_relations (\n"
     + "    stored_relation_id INTEGER PRIMARY KEY ASC,\n"
-    + "    user_name STRING NOT NULL,\n"
-    + "    program_name STRING NOT NULL,\n"
-    + "    relation_name STRING NOT NULL,\n"
+    + "    user_name TEXT NOT NULL,\n"
+    + "    program_name TEXT NOT NULL,\n"
+    + "    relation_name TEXT NOT NULL,\n"
     + "    num_shards INTEGER NOT NULL,\n"
-    + "    how_partitioned STRING NOT NULL,\n"
+    + "    how_partitioned TEXT NOT NULL,\n"
     + "    FOREIGN KEY (user_name,program_name,relation_name) REFERENCES relations ON DELETE CASCADE);";
   /** Create the stored_relations table. */
   private static final String CREATE_SHARDS =
