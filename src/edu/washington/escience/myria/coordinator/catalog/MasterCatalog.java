@@ -92,8 +92,8 @@ public final class MasterCatalog {
     + "    user_name TEXT NOT NULL,\n"
     + "    program_name TEXT NOT NULL,\n"
     + "    relation_name TEXT NOT NULL,\n"
-    + "    num_tuples LONG NOT NULL,\n"
-    + "    query_id LONG NOT NULL REFERENCES queries(query_id),\n"
+    + "    num_tuples INTEGER NOT NULL,\n"
+    + "    query_id INTEGER NOT NULL REFERENCES queries(query_id),\n"
     + "    PRIMARY KEY (user_name,program_name,relation_name));";
   /** Create the relation_schema table. */
   private static final String CREATE_RELATION_SCHEMA =
