@@ -118,6 +118,9 @@ public final class RelationKey implements Serializable {
     return sb.toString();
   }
 
+  /** The maximum length of a postgres identifier is 63 chars. Ugh. */
+  private static final int MAX_POSTGRESQL_IDENTIFIER_LENGTH = 63;
+
   /**
    * Helper function for computing strings of different types.
    * 
@@ -126,8 +129,13 @@ public final class RelationKey implements Serializable {
    */
   public String toString(final String dbms) {
     switch (dbms) {
-      case MyriaConstants.STORAGE_SYSTEM_SQLITE:
       case MyriaConstants.STORAGE_SYSTEM_POSTGRESQL:
+        String ret = toString('\"', ':', '\"');
+        Preconditions.checkArgument(ret.length() <= MAX_POSTGRESQL_IDENTIFIER_LENGTH,
+            "PostgreSQL does not allow relation names longer than %s characters: %s", MAX_POSTGRESQL_IDENTIFIER_LENGTH,
+            ret);
+        return ret;
+      case MyriaConstants.STORAGE_SYSTEM_SQLITE:
         return toString('\"', ':', '\"');
       case MyriaConstants.STORAGE_SYSTEM_MONETDB:
         /* TODO: can we switch the other DBMS to : as well? */
