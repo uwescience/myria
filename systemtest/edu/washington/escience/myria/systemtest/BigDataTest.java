@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.systemtest;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,6 +33,8 @@ public class BigDataTest extends SystemTestBase {
 
   @Test
   public void bigCollectTest() throws Exception {
+    // skip always, because this test destroys my computer every time
+    assumeTrue(false);
     // skip in travis
     if (TestUtils.inTravis()) {
       return;
@@ -72,6 +75,8 @@ public class BigDataTest extends SystemTestBase {
 
   @Test
   public void bigDownloadTest() throws Exception {
+    // skip always, because these tests destroy my computer
+    assumeTrue(false);
     // skip in travis
     if (TestUtils.inTravis()) {
       return;
