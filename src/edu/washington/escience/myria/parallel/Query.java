@@ -347,7 +347,7 @@ public final class Query {
     }
     status = Status.KILLING;
     if (currentSubQuery != null) {
-      server.killSubQuery(currentSubQuery.getSubQueryId());
+      server.getQueryManager().killSubQuery(currentSubQuery.getSubQueryId());
       currentSubQuery = null;
     }
   }

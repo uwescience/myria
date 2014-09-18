@@ -121,11 +121,11 @@ public class SequenceTest extends SystemTestBase {
     encoding.profilingMode = false;
     encoding.rawQuery = "test";
     encoding.logicalRa = "test";
-    QueryFuture qf = server.submitQuery(encoding, all);
+    QueryFuture qf = server.getQueryManager().submitQuery(encoding, all);
     long queryId = qf.getQueryId();
     /* Wait for the query to finish, succeed, and check the result. */
     qf.get();
-    QueryStatusEncoding status = server.getQueryStatus(queryId);
+    QueryStatusEncoding status = server.getQueryManager().getQueryStatus(queryId);
     assertEquals(Status.SUCCESS, status.status);
     long expectedTuples = numVals * workerIDs.length;
     assertEquals(expectedTuples, server.getDatasetStatus(storage).getNumTuples());
@@ -184,11 +184,11 @@ public class SequenceTest extends SystemTestBase {
     encoding.profilingMode = false;
     encoding.rawQuery = "test";
     encoding.logicalRa = "test";
-    QueryFuture qf = server.submitQuery(encoding, all);
+    QueryFuture qf = server.getQueryManager().submitQuery(encoding, all);
     long queryId = qf.getQueryId();
     /* Wait for the query to finish, succeed, and check the result. */
     qf.get();
-    QueryStatusEncoding status = server.getQueryStatus(queryId);
+    QueryStatusEncoding status = server.getQueryManager().getQueryStatus(queryId);
     assertEquals(Status.SUCCESS, status.status);
     long expectedTuples = numVals * workerIDs.length;
     assertEquals(expectedTuples, server.getDatasetStatus(storage).getNumTuples());
@@ -223,7 +223,7 @@ public class SequenceTest extends SystemTestBase {
     encoding.profilingMode = false;
     encoding.rawQuery = "test";
     encoding.logicalRa = "test";
-    QueryFuture qf = server.submitQuery(encoding, all);
+    QueryFuture qf = server.getQueryManager().submitQuery(encoding, all);
 
     /* Wait for query to finish, expecting an exception. */
     try {
@@ -234,7 +234,7 @@ public class SequenceTest extends SystemTestBase {
        * the API. See https://github.com/uwescience/myria/issues/542
        */
       assertTrue(ErrorUtils.getStackTrace(e).contains("Failure in init"));
-      String message = server.getQueryStatus(qf.getQueryId()).message;
+      String message = server.getQueryManager().getQueryStatus(qf.getQueryId()).message;
       assertNotNull(message);
       assertTrue(message.contains("Failure in init"));
       throw e;
@@ -321,10 +321,10 @@ public class SequenceTest extends SystemTestBase {
     assertEquals(HttpStatus.SC_ACCEPTED, conn.getResponseCode());
     long queryId = getQueryStatus(conn).queryId;
     conn.disconnect();
-    while (!server.queryCompleted(queryId)) {
+    while (!server.getQueryManager().queryCompleted(queryId)) {
       Thread.sleep(1);
     }
-    QueryStatusEncoding status = server.getQueryStatus(queryId);
+    QueryStatusEncoding status = server.getQueryManager().getQueryStatus(queryId);
     assertEquals(Status.SUCCESS, status.status);
     assertEquals(1, server.getDatasetStatus(resultKey).getNumTuples());
 
@@ -410,12 +410,12 @@ public class SequenceTest extends SystemTestBase {
     encoding.profilingMode = false;
     encoding.rawQuery = "test";
     encoding.logicalRa = "test";
-    QueryFuture qf = server.submitQuery(encoding, all);
+    QueryFuture qf = server.getQueryManager().submitQuery(encoding, all);
     long queryId = qf.getQueryId();
     /* Wait for the query to finish, succeed, and check the result. */
     Query query = qf.get();
     assertEquals(Status.SUCCESS, query.getStatus());
-    QueryStatusEncoding status = server.getQueryStatus(queryId);
+    QueryStatusEncoding status = server.getQueryManager().getQueryStatus(queryId);
     assertEquals(Status.SUCCESS, status.status);
 
     long expectedNumTuples = numVals * numCopies * workerIDs.length;

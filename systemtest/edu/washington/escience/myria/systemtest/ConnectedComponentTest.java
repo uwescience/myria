@@ -257,18 +257,18 @@ public class ConnectedComponentTest extends SystemTestBase {
     SubQueryPlan serverPlan = new SubQueryPlan(new SinkRoot(queueStore));
 
     if (!failure) {
-      server.submitQuery("", "", "", serverPlan, workerPlans, false).get();
+      server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans, false).get();
     } else {
       workerPlans.get(workerIDs[0]).setFTMode(FTMODE.valueOf("rejoin"));
       workerPlans.get(workerIDs[1]).setFTMode(FTMODE.valueOf("rejoin"));
       serverPlan.setFTMode(FTMODE.valueOf("rejoin"));
 
-      ListenableFuture<Query> qf = server.submitQuery("", "", "", serverPlan, workerPlans, false);
+      ListenableFuture<Query> qf = server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans, false);
       Thread.sleep(1000);
       LOGGER.info("killing worker " + workerIDs[1] + "!");
       workerProcess[1].destroy();
       Query queryState = qf.get();
-      assertTrue(server.queryCompleted(queryState.getQueryId()));
+      assertTrue(server.getQueryManager().queryCompleted(queryState.getQueryId()));
       LOGGER.info("query {} finished.", queryState.getQueryId());
       assertEquals(Status.SUCCESS, queryState.getStatus());
     }

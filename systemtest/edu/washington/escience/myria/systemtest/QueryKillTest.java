@@ -87,13 +87,13 @@ public class QueryKillTest extends SystemTestBase {
       /* The above command had better time out -- the query should not finish. Thus the above behavior is expected. */
     }
 
-    server.killQuery(qf.getQueryId());
+    server.getQueryManager().killQuery(qf.getQueryId());
     try {
       qf.get();
       fail();
     } catch (CancellationException e) {
       /* This is the desired behavior. */
     }
-    assertEquals(Status.KILLED, server.getQueryStatus(qf.getQueryId()).status);
+    assertEquals(Status.KILLED, server.getQueryManager().getQueryStatus(qf.getQueryId()).status);
   }
 }
