@@ -29,7 +29,9 @@ public class ReentrantSpinLock implements Lock {
     Thread currentT = Thread.currentThread();
     if (spinLock.get() != currentT) {
       while (!spinLock.compareAndSet(null, currentT)) {
-        ;
+        if (currentT.isInterrupted()) {
+          return;
+        }
       }
     }
     numHoldCount++;

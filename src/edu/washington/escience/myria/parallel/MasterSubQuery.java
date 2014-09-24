@@ -74,7 +74,7 @@ public class MasterSubQuery extends LocalSubQuery {
                 kill();
                 /* Record the reason for failure. */
                 if (cause != null) {
-                  message = Objects.firstNonNull(message, cause.toString());
+                  message = Objects.firstNonNull(message, "Error in worker#" + workerID + ", " + cause.toString());
                 }
               } else if (getFTMode().equals(FTMODE.abandon)) {
                 LOGGER.debug("(Abandon) ignoring failed subquery future on subquery #{}", getSubQueryId());
@@ -220,7 +220,7 @@ public class MasterSubQuery extends LocalSubQuery {
         }
         if (!e.getValue().workerCompleteQuery.isDone() && e.getKey() != MyriaConstants.MASTER_ID) {
           master.getIPCConnectionPool()
-              .sendShortMessage(e.getKey(), IPCUtils.recoverQueryTM(getSubQueryId(), workerID));
+          .sendShortMessage(e.getKey(), IPCUtils.recoverQueryTM(getSubQueryId(), workerID));
         }
       }
     } else {
@@ -341,7 +341,6 @@ public class MasterSubQuery extends LocalSubQuery {
 
     fragment = new LocalFragment(this.master.getIPCConnectionPool(), this, root, master.getQueryExecutor());
     fragment.getExecutionFuture().addListener(fragmentExecutionListener);
-
   }
 
   @Override

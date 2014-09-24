@@ -6,8 +6,8 @@ import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.operator.network.Producer;
-import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.concurrent.ReentrantSpinLock;
+import edu.washington.escience.myria.util.concurrent.ThreadStackDump;
 
 /**
  * The data structure recording the logical role of {@link StreamInputChannel} and {@link StreamOutputChannel} that an
@@ -83,7 +83,7 @@ class StreamIOChannelPair {
 
   /**
    * Link the logical inputChannel with the physical ioChannel.
-   * 
+   *
    * @param inputChannel the logical channel.
    * */
   final void mapInputChannel(final StreamInputChannel<?> inputChannel) {
@@ -92,16 +92,18 @@ class StreamIOChannelPair {
     inputMappingLock.lock();
     try {
       if (inputStreamChannel != null) {
-        deMapInputChannel();
+        throw new IllegalStateException("Physical channel "
+            + ChannelContext.channelToString(ownerChannelContext.getChannel())
+            + " already attached to stream input channel " + inputStreamChannel.getID());
       }
       inputStreamChannel = inputChannel;
       inputChannel.attachIOChannel(ioChannel);
-      if (LOGGER.isTraceEnabled()) {
-        LOGGER.trace(String.format("Stream input channel %1$s associates to physical channel %2$s.",
-            inputStreamChannel, ioChannel));
-      }
     } finally {
       inputMappingLock.unlock();
+    }
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("Stream input channel {} associates to physical channel {}.", inputChannel, ChannelContext
+          .channelToString(ioChannel), new ThreadStackDump());
     }
   }
 
@@ -110,28 +112,28 @@ class StreamIOChannelPair {
    * anyway.
    * */
   final void deMapInputChannel() {
+    Channel channel = null;
+    StreamInputChannel<?> old = null;
+
     inputMappingLock.lock();
     try {
       if (inputStreamChannel != null) {
-        Channel channel = inputStreamChannel.getIOChannel();
-        if (LOGGER.isTraceEnabled()) {
-          LOGGER.trace(String.format("Stream input channel %1$s disassociated from physical channel %2$s.",
-              inputStreamChannel, channel));
-        }
-        inputStreamChannel.detachIOChannel();
+        old = inputStreamChannel;
+        old.release();
         inputStreamChannel = null;
-        if (channel != null) {
-          IPCUtils.resumeRead(channel).awaitUninterruptibly();
-        }
       }
     } finally {
       inputMappingLock.unlock();
+    }
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("Stream input channel {} disassociated from physical channel {}.", old, ChannelContext
+          .channelToString(channel), new ThreadStackDump());
     }
   }
 
   /**
    * Link the logical outputChannel with the physical ioChannel.
-   * 
+   *
    * @param outputChannel the logical channel.
    * */
   final void mapOutputChannel(final StreamOutputChannel<?> outputChannel) {
@@ -140,7 +142,9 @@ class StreamIOChannelPair {
     outputMappingLock.lock();
     try {
       if (outputStreamChannel != null) {
-        deMapOutputChannel();
+        throw new IllegalStateException("Physical channel "
+            + ChannelContext.channelToString(ownerChannelContext.getChannel())
+            + " already attached to stream output channel " + outputStreamChannel.getID());
       }
       outputStreamChannel = outputChannel;
       outputChannel.attachIOChannel(ioChannel);
@@ -163,5 +167,4 @@ class StreamIOChannelPair {
       outputMappingLock.unlock();
     }
   }
-
 }
