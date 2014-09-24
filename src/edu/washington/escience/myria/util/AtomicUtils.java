@@ -16,7 +16,7 @@ public final class AtomicUtils {
   /**
    * Atomically do bitwise OR between the value in the AtomicInteger and the toOrValue, and set the new value to the
    * AtomicInteger and also return the new value.
-   * 
+   *
    * @param ai the atomic variable to operate on
    * @param toOrValue the value to do the OR operation
    * @return the new value.
@@ -34,7 +34,7 @@ public final class AtomicUtils {
   /**
    * Atomically do bitwise AND between the value in the AtomicInteger and the toAndValue, and set the new value to the
    * AtomicInteger and also return the new value.
-   * 
+   *
    * @param ai the atomic variable to operate on
    * @param toAndValue the value to do the OR operation
    * @return the new value.

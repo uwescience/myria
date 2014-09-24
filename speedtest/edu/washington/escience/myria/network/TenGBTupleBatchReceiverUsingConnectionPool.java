@@ -31,7 +31,8 @@ public class TenGBTupleBatchReceiverUsingConnectionPool {
         TenGBTupleBatchSenderUsingConnectionPool.PORT));
 
     final IPCConnectionPool connectionPool =
-        IPCTestUtil.startIPCConnectionPool(IPCID, computingUnits, null, new TransportMessageSerializer());
+        IPCTestUtil.startIPCConnectionPool(IPCID, computingUnits, null, new TransportMessageSerializer(), 10, 8,
+            Runtime.getRuntime().availableProcessors() * 2 + 1);
     ImmutableSet.Builder<StreamIOChannelID> sourceChannelSetBuilder = ImmutableSet.builder();
     SimpleBagInputBuffer<TupleBatch> sib =
         new SimpleBagInputBuffer<TupleBatch>(connectionPool, sourceChannelSetBuilder.add(

@@ -542,6 +542,60 @@ public final class MasterCatalog {
   }
 
   /**
+   * Add workers.
+   *
+   * @param workers workerId -> "host:port"
+   * @return this Catalog
+   * @throws CatalogException if the hostPortString is invalid or there is a database exception.
+   */
+  public MasterCatalog addWorkers(final Map<String, String> workers) throws CatalogException {
+    Objects.requireNonNull(workers);
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+    try {
+      queue.execute(new SQLiteJob<Object>() {
+        @Override
+        protected Object job(final SQLiteConnection sqliteConnection) throws SQLiteException, CatalogException {
+          try {
+            final SQLiteStatement statement =
+                sqliteConnection.prepare("INSERT INTO workers(worker_id, host_port) VALUES(?,?);", false);
+            /* To begin: start a transaction. */
+            sqliteConnection.exec("BEGIN TRANSACTION;");
+
+            for (final Map.Entry<String, String> e : workers.entrySet()) {
+              @SuppressWarnings("unused")
+              /* Just used to verify that hostPortString is legal */
+              final SocketInfo sockInfo = SocketInfo.valueOf(e.getValue());
+              statement.bind(1, Integer.valueOf(e.getKey()));
+              statement.bind(2, e.getValue());
+              statement.step();
+              statement.reset(false);
+            }
+            /* To complete: commit the transaction. */
+            sqliteConnection.exec("COMMIT TRANSACTION;");
+            statement.dispose();
+          } catch (final SQLiteException e) {
+            if (LOGGER.isErrorEnabled()) {
+              LOGGER.error(e.toString());
+            }
+            try {
+              sqliteConnection.exec("ABORT TRANSACTION;");
+            } catch (final SQLiteException e2) {
+              assert true; /* Do nothing. */
+            }
+            throw new CatalogException(e);
+          }
+          return null;
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+    return this;
+  }
+
+  /**
    * Close the connection to the database that stores the Catalog. Idempotent. Calling any methods (other than close())
    * on this Catalog will throw a CatalogException.
    */

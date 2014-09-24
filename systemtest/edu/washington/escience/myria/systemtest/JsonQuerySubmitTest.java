@@ -5,10 +5,14 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
@@ -31,6 +35,7 @@ import edu.washington.escience.myria.io.EmptySource;
 import edu.washington.escience.myria.io.FileSource;
 import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.util.JsonAPIUtils;
+import edu.washington.escience.myria.util.TestUtils;
 
 public class JsonQuerySubmitTest extends SystemTestBase {
 
@@ -38,7 +43,7 @@ public class JsonQuerySubmitTest extends SystemTestBase {
 
   /**
    * Construct an empty ingest request.
-   * 
+   *
    * @return a request to ingest an empty dataset called "public:adhoc:smallTable"
    * @throws JsonProcessingException if there is an error producing the JSON
    */
@@ -219,5 +224,49 @@ public class JsonQuerySubmitTest extends SystemTestBase {
       Thread.sleep(100);
     }
     assertEquals(QueryStatusEncoding.Status.SUCCESS, server.getQueryStatus(queryId).status);
+  }
+
+  @Test
+  public void abortedDownloadTest() throws Exception {
+    // skip in travis
+    if (TestUtils.inTravis()) {
+      return;
+    }
+    final int NUM_DUPLICATES = 2000;
+    final int BYTES_TO_READ = 1024; // read 1 kb
+
+    URL url =
+        new URL(String.format("http://%s:%d/dataset/download_test?num_tb=%d&format=%s", "localhost", masterDaemonPort,
+            NUM_DUPLICATES, "json"));
+    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+    conn.setDoOutput(true);
+    conn.setRequestMethod("GET");
+
+    long start = System.nanoTime();
+    if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
+      throw new IOException("Failed to download result:" + conn.getResponseCode());
+    }
+
+    long numBytesRead = 0;
+    try {
+      InputStream is = conn.getInputStream();
+      while (is.read() >= 0) {
+        numBytesRead++;
+        if (numBytesRead >= BYTES_TO_READ) {
+          break;
+        }
+      }
+    } finally {
+      conn.disconnect();
+    }
+    long nanoElapse = System.nanoTime() - start;
+    System.out.println("Download size: " + (numBytesRead * 1.0 / 1024 / 1024 / 1024) + " GB");
+    System.out.println("Speed is: " + (numBytesRead * 1.0 / 1024 / 1024 / TimeUnit.NANOSECONDS.toSeconds(nanoElapse))
+        + " MB/s");
+    while (server.getQueries(1, 0).get(0).finishTime == null) {
+      Thread.sleep(100);
+    }
+    QueryStatusEncoding qs = server.getQueries(1, 0).get(0);
+    assertTrue(qs.status == QueryStatusEncoding.Status.ERROR);
   }
 }

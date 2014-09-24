@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myria.parallel.ipc.ChannelContext.RegisteredChannelContext;
+import edu.washington.escience.myria.util.concurrent.ThreadStackDump;
 
 /**
  * Dealing with IPC IO messages.
@@ -34,7 +35,7 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
 
   /**
    * Help the session management for ipc connection pool at IPC server.
-   * 
+   *
    * @param connectionPool the IPC connection pool, this session manager serves to.
    * */
   public IPCMessageHandler(final IPCConnectionPool connectionPool) {
@@ -88,7 +89,8 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
     }
 
     if (LOGGER.isErrorEnabled()) {
-      LOGGER.error("Channel: " + ch + ". Unknown session. Send me the remote id before data transfer.");
+      LOGGER.error("Channel: {}. Unknown session. Send me the remote id before data transfer.", ChannelContext
+          .channelToString(ch));
     }
   }
 
@@ -106,16 +108,17 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
       final long streamID = ((IPCMessage.Meta.BOS) metaMessage).getStreamID();
       if (existingIChannel != null) {
         LOGGER
-            .error(String
-                .format(
-                    "Duplicate BOS received from a stream channel %4$s. Existing Stream: (RemoteID:%1$s, StreamID:%2$d), new BOS: (RemoteID:%1$s, StreamID:%3$d). Dropped.",
-                    remoteID, existingIChannel.getID().getStreamID(), streamID, ch));
+        .error(String
+            .format(
+                "Duplicate BOS received from a stream channel %4$s. Existing Stream: (RemoteID:%1$s, StreamID:%2$d), new BOS: (RemoteID:%1$s, StreamID:%3$d). Dropped.",
+                remoteID, existingIChannel.getID().getStreamID(), streamID, ChannelContext.channelToString(ch)));
       } else {
         StreamIOChannelID ecID = new StreamIOChannelID(streamID, remoteID);
         StreamInputBuffer<Object> ib = ownerConnectionPool.getInputBuffer(ecID);
         if (ib == null) {
           if (LOGGER.isErrorEnabled()) {
-            LOGGER.error("Unknown data stream: (RemoteID {}, stream ID:{}). Denined.", remoteID, streamID);
+            LOGGER.error("Unknown data stream: (RemoteID {}, stream ID:{}). Received through {}. Denined.", remoteID,
+                streamID, ChannelContext.channelToString(ch));
           }
           return;
         }
@@ -125,31 +128,41 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
       return;
     } else if (metaMessage == IPCMessage.Meta.EOS) {
       if (existingIChannel == null) {
-        LOGGER.error(String.format("EOS received from a non-stream channel %2$s. From RemoteID:%1$s.", remoteID, ch));
+        LOGGER.error("EOS received from a non-stream channel {}. From RemoteID:{}.",
+            ChannelContext.channelToString(ch), remoteID);
       } else {
-        receiveRegisteredData(ch, cc, IPCMessage.StreamData.eos(remoteID, cc.getRegisteredChannelContext().getIOPair()
-            .getInputChannel().getID().getStreamID()));
+        long streamID = cc.getRegisteredChannelContext().getIOPair().getInputChannel().getID().getStreamID();
+        receiveRegisteredData(ch, cc, IPCMessage.StreamData.eos(remoteID, streamID));
         cc.getRegisteredChannelContext().getIOPair().deMapInputChannel();
+        ChannelContext.resumeRead(ch);
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace("EOS received from physical channel {} Logical channel is opID:{},rmtID{}.", ChannelContext
+              .channelToString(ch), streamID, remoteID);
+        }
       }
       return;
     } else if (metaMessage == IPCMessage.Meta.DISCONNECT) {
       if (existingIChannel != null) {
-        LOGGER.error(String.format("DISCONNECT received when the channel is still in use as a stream input: %1$s.",
-            existingIChannel.getID()));
+        LOGGER.error(
+            "DISCONNECT received when the channel is still in use as a stream input: {}. Physical channel: {}",
+            existingIChannel.getID(), ChannelContext.channelToString(ch));
       } else {
         if (ch.getParent() != null) {
           // serverChannel
           ownerConnectionPool.closeChannelRequested(ch);
         } else {
           if (LOGGER.isErrorEnabled()) {
-            LOGGER.error("Disconnect should only be sent from client channel to accepted channel.");
+            LOGGER.error(
+                "Disconnect should only be sent from client channel to accepted channel. Physical channel: {}",
+                ChannelContext.channelToString(ch));
           }
         }
       }
       return;
     } else if (metaMessage instanceof IPCMessage.Meta.CONNECT) {
       if (LOGGER.isErrorEnabled()) {
-        LOGGER.error("Duplicate Channel CONNECT message. Channel: {}, remoteID: {}. Dropped.", ch, remoteID);
+        LOGGER.error("Duplicate Channel CONNECT message. Channel: {}, remoteID: {}. Dropped.", ChannelContext
+            .channelToString(ch), remoteID);
       }
       return;
     }
@@ -160,7 +173,8 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
    * */
   private void receiveUnregisteredData(final Channel ch) {
     if (LOGGER.isErrorEnabled()) {
-      LOGGER.error("Channel: {}. Unknown session. Send me the remote id before data transfer.", ch);
+      LOGGER.error("Channel: {}. Unknown session. Send me the remote id before data transfer.", ChannelContext
+          .channelToString(ch));
     }
   }
 
@@ -183,7 +197,7 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
           .wrap(remoteID, ic.getID().getStreamID(), message))) {
         if (LOGGER.isErrorEnabled()) {
           LOGGER
-              .error("Input buffer out of memory. With the flow control input buffers, it should not happen normally.");
+          .error("Input buffer out of memory. With the flow control input buffers, it should not happen normally.");
         }
       }
     }
@@ -208,7 +222,8 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
           StreamInputBuffer<?> sib = ic.getInputBuffer();
           msg = ownerConnectionPool.getPayloadSerializer().deSerialize(cb, sib.getProcessor(), sib.getAttachment());
           if (msg == null) {
-            LOGGER.error("Unknown stream message from {} to {}, msg: {}", remoteID, sib.getProcessor(), cb);
+            LOGGER.error("Unknown stream message from {} to {}, through {}, msg: {}", remoteID, sib.getProcessor(),
+                ChannelContext.channelToString(ctx.getChannel()), cb);
             return;
           }
         } else {
@@ -217,7 +232,8 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
               ownerConnectionPool.getPayloadSerializer().deSerialize(cb, null,
                   ownerConnectionPool.getShortMessageProcessor().getAttachment());
           if (msg == null) {
-            LOGGER.error("Unknown short message from {}, msg: {}", remoteID, cb);
+            LOGGER.error("Unknown short message from {}, through {}, msg: {}", remoteID, ChannelContext
+                .channelToString(ctx.getChannel()), cb);
             return;
           }
         }
@@ -225,6 +241,16 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
     }
 
     final ChannelContext cc = ChannelContext.getChannelContext(ch);
+
+    if (LOGGER.isTraceEnabled()) {
+      if (msg instanceof IPCMessage.Meta) {
+        LOGGER.trace("Received meta msg: {}, from channel {}", msg, ChannelContext.channelToString(ch));
+      } else {
+        LOGGER.trace("Received user msg of type: {}, from channel {}", msg.getClass().getName(), ChannelContext
+            .channelToString(ch));
+      }
+    }
+
     if (cc != null) {
       final ChannelContext.RegisteredChannelContext ecc = cc.getRegisteredChannelContext();
 
@@ -249,7 +275,7 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
     } else {
       if (LOGGER.isDebugEnabled()) {
         LOGGER
-            .debug("Channel context is null. The IPCConnectionPool must have been shutdown. Close the channel directly.");
+        .debug("Channel context is null. The IPCConnectionPool must have been shutdown. Close the channel directly.");
       }
       ch.close();
     }
@@ -286,7 +312,7 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
     final Throwable cause = e.getCause();
     ChannelContext cc = ChannelContext.getChannelContext(c);
     if (cc != null) {
-      LOGGER.warn("Error occur in managed Netty Channel: {}, deregistering.", c, cause);
+      LOGGER.warn("Error occur in managed Netty Channel: {}, deregistering.", ChannelContext.channelToString(c), cause);
       RegisteredChannelContext rcc = cc.getRegisteredChannelContext();
       if (rcc != null) {
         StreamIOChannelPair pair = rcc.getIOPair();
@@ -295,7 +321,8 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
       }
       ownerConnectionPool.errorEncountered(c, cause);
     } else {
-      LOGGER.warn("Unknown error occur in unmanaged Netty Channel: {}, close directly.", c, cause);
+      LOGGER.warn("Unknown error occur in unmanaged Netty Channel: {}, close directly.", ChannelContext
+          .channelToString(c), cause);
       c.close();
     }
   }
@@ -344,10 +371,13 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
       oc.channelInterestChangedCallback();
     }
 
-    if (!ioChannel.isReadable()) {
-      if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug("Channel {} is changed to be unreadable.", ioChannel);
+    if (LOGGER.isTraceEnabled()) {
+      String v = "readable";
+      if (!ioChannel.isReadable()) {
+        v = "unreadable";
       }
+      LOGGER.trace("Channel {} is changed to be {}.", ChannelContext.channelToString(ioChannel), v,
+          new ThreadStackDump());
     }
   }
 }
