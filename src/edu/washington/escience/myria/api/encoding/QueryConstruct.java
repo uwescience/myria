@@ -130,6 +130,8 @@ public class QueryConstruct {
 
       /* The workers are *not* set in the plan. Let's find out what they are. */
       fragment.workers = new ArrayList<Integer>();
+      /* Set this flag if we encounter an operator that implies this fragment must run on at most one worker. */
+      OperatorEncoding<?> singletonOp = null;
 
       /* If the plan has scans, it has to run on all of those workers. */
       for (OperatorEncoding<?> operator : fragment.operators) {
@@ -144,6 +146,9 @@ public class QueryConstruct {
           scanRelation = "temporary relation " + scan.table;
           scanWorkers =
               server.getWorkersForTempRelation(args.getQueryId(), RelationKey.ofTemp(args.getQueryId(), scan.table));
+        } else if (operator instanceof CollectConsumerEncoding || operator instanceof SingletonEncoding) {
+          singletonOp = operator;
+          continue;
         } else {
           continue;
         }
@@ -165,19 +170,17 @@ public class QueryConstruct {
         }
       }
       if (fragment.workers.size() > 0) {
+        if (singletonOp != null && fragment.workers.size() != 1) {
+          throw new MyriaApiException(Status.BAD_REQUEST, "A fragment with " + singletonOp
+              + " requires exactly one worker, but " + fragment.workers.size() + " workers specified.");
+        }
         continue;
       }
 
-      /* No scans found: See if there's a CollectConsumer. */
-      for (OperatorEncoding<?> operator : fragment.operators) {
-        /* If the fragment has a CollectConsumer, it has to run on a single worker. */
-        if (operator instanceof CollectConsumerEncoding || operator instanceof SingletonEncoding) {
-          /* Just pick the first alive worker. */
-          fragment.workers.add(server.getAliveWorkers().iterator().next());
-          break;
-        }
-      }
-      if (fragment.workers.size() > 0) {
+      /* No workers pre-specified / no scans found. Is there a singleton op? */
+      if (singletonOp != null) {
+        /* Just pick the first alive worker. */
+        fragment.workers.add(server.getAliveWorkers().iterator().next());
         continue;
       }
 
