@@ -439,7 +439,7 @@ public class QueryConstruct {
     // scan the relation
     TempTableScanEncoding scan = new TempTableScanEncoding();
     scan.opId = opId++;
-    scan.opName = "Scan[" + condition.toString() + "]";
+    scan.opName = "Scan[" + condition + "]";
     scan.table = condition;
     // send it to master
     CollectProducerEncoding producer = new CollectProducerEncoding();
@@ -461,9 +461,9 @@ public class QueryConstruct {
     // update the variable
     SetGlobalEncoding setGlobal = new SetGlobalEncoding();
     setGlobal.opId = opId++;
-    setGlobal.opName = "SetGlobal[" + condition.toString() + "]";
+    setGlobal.opName = "SetGlobal[" + condition + "]";
     setGlobal.argChild = consumer.opId;
-    setGlobal.key = condition.toString();
+    setGlobal.key = condition;
     // the fragment, and it must only run at the master.
     PlanFragmentEncoding masterFragment = new PlanFragmentEncoding();
     masterFragment.operators = ImmutableList.of(consumer, setGlobal);
