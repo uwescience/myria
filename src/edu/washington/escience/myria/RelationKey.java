@@ -171,6 +171,6 @@ public final class RelationKey implements Serializable {
    * @return the default relation key for this temp table created for the given query
    */
   public static RelationKey ofTemp(final long queryId, final String table) {
-    return RelationKey.of("myria_q_" + queryId, "__temp__", table);
+    return RelationKey.of("q_" + queryId, "temp", table);
   }
 }
