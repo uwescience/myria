@@ -256,7 +256,7 @@ def collect_insert(relation_key, schema, worker_id):
     }
     fragment = {
         "operators": [collect_consumer, insert],
-        "workers": [ worker_id ]
+        "overrideWorkers": [ worker_id ]
     }
     return fragment
 

@@ -58,7 +58,7 @@ if __name__ == "__main__":
     frags = uniquify_fragments(myria_json_plan['query_plan'])
     for (ws,ops) in frags:
         fragments.append({
-            'workers' : ws,
+            'overrideWorkers' : ws,
             'operators' : clean_up(ops)
         })
     output = {
