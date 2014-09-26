@@ -231,6 +231,7 @@ eclipse.classpath {
 tasks.withType(Test) {
     /* Optional: uncomment the next line to print which test is running. Useful for debugging. */
     beforeTest { desc -> println "Executing test ${desc.name} [${desc.className}]" }
+    testLogging { exceptionFormat = 'full' }
 }
 
 /*

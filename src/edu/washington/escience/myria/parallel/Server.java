@@ -1223,16 +1223,16 @@ public final class Server {
 
     String fragmentWhere = "";
     if (fragmentId >= 0) {
-      fragmentWhere = "AND fragmentid = " + fragmentId;
+      fragmentWhere = "AND \"fragmentId\" = " + fragmentId;
     }
 
     final Schema schema =
-        Schema.ofFields("fragmentid", Type.INT_TYPE, "destworker", Type.INT_TYPE, "numTuples", Type.LONG_TYPE);
+        Schema.ofFields("fragmentId", Type.INT_TYPE, "destWorker", Type.INT_TYPE, "numTuples", Type.LONG_TYPE);
 
     String sentQueryString =
-        Joiner.on(' ').join("SELECT fragmentid, destworkerid, sum(numtuples) as numtuples FROM",
-            MyriaConstants.SENT_RELATION.toString(getDBMS()) + "WHERE queryid =", queryId, fragmentWhere,
-            "GROUP BY queryid, fragmentid, destworkerid");
+        Joiner.on(' ').join("SELECT \"fragmentId\", \"destWorkerId\", sum(\"numTuples\") as \"numTuples\" FROM",
+            MyriaConstants.SENT_RELATION.toString(getDBMS()) + "WHERE \"queryId\" =", queryId, fragmentWhere,
+            "GROUP BY \"queryId\", \"fragmentId\", \"destWorkerId\"");
 
     DbQueryScan scan = new DbQueryScan(sentQueryString, schema);
     final ExchangePairID operatorId = ExchangePairID.newID();
@@ -1311,20 +1311,21 @@ public final class Server {
     String opCondition = "";
     if (onlyRootOperator) {
       opCondition =
-          Joiner.on(' ').join("AND opid = (SELECT opid FROM", MyriaConstants.PROFILING_RELATION.toString(getDBMS()),
-              "WHERE", fragmentId, "=fragmentId AND", queryId, "=queryId ORDER BY starttime ASC limit 1)");;
+          Joiner.on(' ').join("AND \"opId\" = (SELECT \"opId\" FROM",
+              MyriaConstants.PROFILING_RELATION.toString(getDBMS()), "WHERE", fragmentId, "=\"fragmentId\" AND",
+              queryId, "=\"queryId\" ORDER BY \"startTime\" ASC LIMIT 1)");;
     }
 
     String spanCondition = "";
     if (minSpanLength > 0) {
-      spanCondition = Joiner.on(' ').join("AND endtime - starttime >", minSpanLength);
+      spanCondition = Joiner.on(' ').join("AND \"endTime\" - \"startTime\" >", minSpanLength);
     }
 
     String queryString =
-        Joiner.on(' ').join("SELECT opid, starttime, endtime, numtuples FROM",
-            MyriaConstants.PROFILING_RELATION.toString(getDBMS()), "WHERE fragmentId =", fragmentId, "AND queryid =",
-            queryId, "AND endtime >", start, "AND starttime <", end, opCondition, spanCondition,
-            "ORDER BY starttime ASC");
+        Joiner.on(' ').join("SELECT \"opId\", \"startTime\", \"endTime\", \"numTuples\" FROM",
+            MyriaConstants.PROFILING_RELATION.toString(getDBMS()), "WHERE \"fragmentId\" =", fragmentId,
+            "AND \"queryId\" =", queryId, "AND \"endTime\" >", start, "AND \"startTime\" <", end, opCondition,
+            spanCondition, "ORDER BY \"startTime\" ASC");
 
     DbQueryScan scan = new DbQueryScan(queryString, schema);
 
@@ -1409,7 +1410,7 @@ public final class Server {
     if (onlyRootOp) {
       sub = new StrSubstitutor(queryArgs);
       filterOpnameQueryString =
-          sub.replace("AND p.opid=(SELECT opid FROM ${PROF_TABLE} WHERE fragmentid=${FRAGMENT} AND queryid=${QUERY} ORDER BY starttime ASC limit 1)");
+          sub.replace("AND p.\"opId\"=(SELECT \"opId\" FROM ${PROF_TABLE} WHERE \"fragmentId\"=${FRAGMENT} AND \"queryId\"=${QUERY} ORDER BY \"startTime\" ASC LIMIT 1)");
     }
 
     // Reinitialize the substitutor after including the opname filter.
@@ -1420,15 +1421,15 @@ public final class Server {
         sub.replace(Joiner
             .on("\n")
             .join(
-                "SELECT opid, ${START}::bigint+${STEP}::bigint*s.bin as nanotime",
+                "SELECT \"opId\", ${START}::bigint+${STEP}::bigint*s.bin as \"nanoTime\"",
                 "FROM (",
-                "SELECT p.opid, greatest((p.starttime-1-${START}::bigint)/${STEP}::bigint, -1) as startbin, least((p.endtime+1-${START}::bigint)/${STEP}::bigint, ${BINS}) AS endbin",
+                "SELECT p.\"opId\", greatest((p.\"startTime\"-1-${START}::bigint)/${STEP}::bigint, -1) as \"startBin\", least((p.\"endTime\"+1-${START}::bigint)/${STEP}::bigint, ${BINS}) AS \"endBin\"",
                 "FROM ${PROF_TABLE} p",
-                "WHERE p.queryid = ${QUERY} and p.fragmentid = ${FRAGMENT}",
+                "WHERE p.\"queryId\" = ${QUERY} and p.\"fragmentId\" = ${FRAGMENT}",
                 "${OPNAME_FILTER}",
-                "AND greatest((p.starttime-${START}::bigint)/${STEP}::bigint, -1) < least((p.endtime-${START}::bigint)/${STEP}::bigint, ${BINS}) AND p.starttime < ${END}::bigint AND p.endtime >= ${START}::bigint",
+                "AND greatest((p.\"startTime\"-${START}::bigint)/${STEP}::bigint, -1) < least((p.\"endTime\"-${START}::bigint)/${STEP}::bigint, ${BINS}) AND p.\"startTime\" < ${END}::bigint AND p.\"endTime\" >= ${START}::bigint",
                 ") times,", "generate_series(0, ${BINS}) AS s(bin)",
-                "WHERE s.bin > times.startbin and s.bin <= times.endbin;"));
+                "WHERE s.bin > times.\"startBin\" and s.bin <= times.\"endBin\";"));
 
     DbQueryScan scan = new DbQueryScan(histogramWorkerQueryString, schema);
     final ExchangePairID operatorId = ExchangePairID.newID();
@@ -1487,8 +1488,8 @@ public final class Server {
     Set<Integer> actualWorkers = queryStatus.plan.getWorkers();
 
     String opnameQueryString =
-        Joiner.on(' ').join("SELECT min(starttime), max(endtime) FROM", relationKey.toString(getDBMS()),
-            "WHERE queryid=", queryId, "AND fragmentid=", fragmentId);
+        Joiner.on(' ').join("SELECT min(\"startTime\"), max(\"endTime\") FROM", relationKey.toString(getDBMS()),
+            "WHERE \"queryId\"=", queryId, "AND \"fragmentId\"=", fragmentId);
 
     DbQueryScan scan = new DbQueryScan(opnameQueryString, schema);
     final ExchangePairID operatorId = ExchangePairID.newID();
@@ -1541,12 +1542,12 @@ public final class Server {
 
     String fragIdCondition = "";
     if (fragmentId >= 0) {
-      fragIdCondition = "AND fragmentid=" + fragmentId;
+      fragIdCondition = "AND \"fragmentId\"=" + fragmentId;
     }
 
     String opContributionsQueryString =
-        Joiner.on(' ').join("SELECT opid, sum(endtime - starttime) FROM ", relationKey.toString(getDBMS()),
-            "WHERE queryid=", queryId, fragIdCondition, "GROUP BY opid");
+        Joiner.on(' ').join("SELECT \"opId\", sum(\"endTime\" - \"startTime\") FROM ", relationKey.toString(getDBMS()),
+            "WHERE \"queryId\"=", queryId, fragIdCondition, "GROUP BY \"opId\"");
 
     DbQueryScan scan = new DbQueryScan(opContributionsQueryString, schema);
     final ExchangePairID operatorId = ExchangePairID.newID();
@@ -1660,5 +1661,4 @@ public final class Server {
   public Schema getTempSchema(@Nonnull final Long queryId, @Nonnull final String name) {
     return queryManager.getQuery(queryId).getTempSchema(RelationKey.ofTemp(queryId, name));
   }
-
 }

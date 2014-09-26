@@ -194,6 +194,7 @@ public class QueryManager {
     queryStatus.finishTime = state.getEndTime();
     queryStatus.elapsedNanos = state.getElapsedTime();
     queryStatus.status = state.getStatus();
+    queryStatus.message = state.getMessage();
     return queryStatus;
   }
 

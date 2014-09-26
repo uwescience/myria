@@ -59,10 +59,9 @@ public final class DoWhile extends QueryPlan {
     QueryPlan checkTask = planQ.peekFirst();
     Verify.verify(checkTask == this, "this %s should be the first object on the queue, not %s!", this, checkTask);
     if (hasRun) {
-      Boolean b = (Boolean) args.getServer().getQueryGlobal(args.getQueryId(), condition.toString());
+      Boolean b = (Boolean) args.getServer().getQueryGlobal(args.getQueryId(), condition);
       Preconditions.checkState(b != null,
-          "Query %s: DoWhile Loop has run, but global variable for loop condition (%s) has not been set", condition
-              .toString());
+          "Query %s: DoWhile Loop has run, but global variable for loop condition (%s) has not been set", condition);
       if (!b.booleanValue()) {
         planQ.removeFirst();
         return;
