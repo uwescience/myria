@@ -14,8 +14,11 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 
+import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.RelationKey;
+import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
+import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
@@ -189,12 +192,15 @@ public final class SubQuery extends QueryPlan {
    * {@link RelationWriteMetadata} about these relations. This function is like {@link #getRelationWriteMetadata()}, but
    * returns only those relations that are persisted.
    * 
+   * @param server the {@link Server} on which this query will be executed.
    * @return a mapping showing what persistent relations are written and the corresponding {@link RelationWriteMetadata}
    *         .
+   * @throws DbException if there is an error getting metadata about existing relations from the Server.
    */
-  public Map<RelationKey, RelationWriteMetadata> getPersistentRelationWriteMetadata() {
+  public Map<RelationKey, RelationWriteMetadata> getPersistentRelationWriteMetadata(final Server server)
+      throws DbException {
     ImmutableMap.Builder<RelationKey, RelationWriteMetadata> ret = ImmutableMap.builder();
-    for (Map.Entry<RelationKey, RelationWriteMetadata> entry : getRelationWriteMetadata().entrySet()) {
+    for (Map.Entry<RelationKey, RelationWriteMetadata> entry : getRelationWriteMetadata(server).entrySet()) {
       RelationWriteMetadata meta = entry.getValue();
       if (!meta.isTemporary()) {
         ret.put(entry);
@@ -207,9 +213,12 @@ public final class SubQuery extends QueryPlan {
    * Returns a mapping showing what relations this subquery will write, and all the associated
    * {@link RelationWriteMetadata} about these relations.
    * 
+   * @param server the {@link Server} on which this query will be executed.
+   * 
    * @return a mapping showing what relations are written and the corresponding {@link RelationWriteMetadata}.
+   * @throws DbException if there is an error getting metadata about existing relations from the Server.
    */
-  public Map<RelationKey, RelationWriteMetadata> getRelationWriteMetadata() {
+  public Map<RelationKey, RelationWriteMetadata> getRelationWriteMetadata(final Server server) throws DbException {
     Map<RelationKey, RelationWriteMetadata> ret = new HashMap<>();
 
     /* Loop through each subquery plan, finding what relations it writes. */
@@ -228,14 +237,52 @@ public final class SubQuery extends QueryPlan {
         } else {
           /* We have an entry for this relation. Make sure that schema and overwrite match. */
           Preconditions.checkArgument(meta.isOverwrite() == metadata.isOverwrite(),
-              "cannot mix overwriting and appending to %s in the same subquery %s", relation, getSubQueryId());
-          Preconditions.checkArgument(meta.getSchema() == metadata.getSchema(),
-              "cannot write to %s with two different Schemas %s and %s in the same subquery %s", relation, meta
+              "Cannot mix overwriting and appending to %s in the same subquery %s", relation, getSubQueryId());
+          Preconditions.checkArgument(meta.getSchema().equals(metadata.getSchema()),
+              "Cannot write to %s with two different Schemas %s and %s in the same subquery %s", relation, meta
                   .getSchema(), metadata.getSchema(), getSubQueryId());
         }
         meta.addWorker(workerId);
       }
     }
+
+    /*
+     * Loop through all appending operators. Verify that the Schema does not change and ensure that the relation still
+     * contains all workers.
+     */
+    for (Map.Entry<RelationKey, RelationWriteMetadata> metaEntry : ret.entrySet()) {
+      RelationWriteMetadata metadata = metaEntry.getValue();
+      if (metadata.isOverwrite()) {
+        continue;
+      }
+
+      RelationKey relationKey = metaEntry.getKey();
+      final long queryId = getSubQueryId().getQueryId();
+      Schema schema = metadata.getSchema();
+      Schema existingSchema;
+      Set<Integer> existingWorkers;
+      if (metadata.isTemporary()) {
+        existingSchema = server.getTempSchema(queryId, relationKey.getRelationName());
+        Preconditions.checkArgument(existingSchema != null,
+            "Attempting to append to non-existent temporary relation %s", relationKey);
+        existingWorkers = server.getWorkersForTempRelation(queryId, relationKey);
+      } else {
+        try {
+          existingSchema = server.getSchema(relationKey);
+          Preconditions.checkArgument(existingSchema != null,
+              "Attempting to append to non-existent relation %s that is not in the Catalog", relationKey);
+          existingWorkers = server.getWorkersForRelation(relationKey, null);
+        } catch (CatalogException e) {
+          throw new DbException("Error verifying schema when appending to relation " + relationKey, e);
+        }
+      }
+      Preconditions.checkArgument(schema.equals(existingSchema),
+          "Cannot append to %s with changed Schema %s (old Schema: %s)", relationKey, schema, existingSchema);
+      for (int w : existingWorkers) {
+        metadata.addWorker(w);
+      }
+    }
+
     return ret;
   }
 
