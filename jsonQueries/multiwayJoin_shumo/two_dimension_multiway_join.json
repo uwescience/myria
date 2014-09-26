@@ -124,7 +124,7 @@
                     }
                 }
             ],
-            "workers":[
+            "overrideWorkers":[
                 1
             ]
         }

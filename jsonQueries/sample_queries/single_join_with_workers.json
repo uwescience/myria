@@ -21,7 +21,7 @@
                     "opType": "ShuffleProducer"
                 }
             ],
-            "workers": [
+            "overrideWorkers": [
                 1,
                 2
             ]
@@ -47,7 +47,7 @@
                     "opType": "ShuffleProducer"
                 }
             ],
-            "workers": [
+            "overrideWorkers": [
                 1,
                 2
             ]
@@ -94,7 +94,7 @@
                     }
                 }
             ],
-            "workers": [
+            "overrideWorkers": [
                 3,
                 4
             ]

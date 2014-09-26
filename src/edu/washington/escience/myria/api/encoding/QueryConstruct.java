@@ -123,13 +123,16 @@ public class QueryConstruct {
       throws CatalogException {
     Server server = args.getServer();
     for (PlanFragmentEncoding fragment : fragments) {
-      if (fragment.workers != null && fragment.workers.size() > 0) {
+      if (fragment.overrideWorkers != null && fragment.overrideWorkers.size() > 0) {
         /* The workers are set in the plan. */
+        fragment.workers = fragment.overrideWorkers;
         continue;
       }
 
       /* The workers are *not* set in the plan. Let's find out what they are. */
       fragment.workers = new ArrayList<Integer>();
+      /* Set this flag if we encounter an operator that implies this fragment must run on at most one worker. */
+      OperatorEncoding<?> singletonOp = null;
 
       /* If the plan has scans, it has to run on all of those workers. */
       for (OperatorEncoding<?> operator : fragment.operators) {
@@ -144,6 +147,9 @@ public class QueryConstruct {
           scanRelation = "temporary relation " + scan.table;
           scanWorkers =
               server.getWorkersForTempRelation(args.getQueryId(), RelationKey.ofTemp(args.getQueryId(), scan.table));
+        } else if (operator instanceof CollectConsumerEncoding || operator instanceof SingletonEncoding) {
+          singletonOp = operator;
+          continue;
         } else {
           continue;
         }
@@ -165,19 +171,17 @@ public class QueryConstruct {
         }
       }
       if (fragment.workers.size() > 0) {
+        if (singletonOp != null && fragment.workers.size() != 1) {
+          throw new MyriaApiException(Status.BAD_REQUEST, "A fragment with " + singletonOp
+              + " requires exactly one worker, but " + fragment.workers.size() + " workers specified.");
+        }
         continue;
       }
 
-      /* No scans found: See if there's a CollectConsumer. */
-      for (OperatorEncoding<?> operator : fragment.operators) {
-        /* If the fragment has a CollectConsumer, it has to run on a single worker. */
-        if (operator instanceof CollectConsumerEncoding || operator instanceof SingletonEncoding) {
-          /* Just pick the first alive worker. */
-          fragment.workers.add(server.getAliveWorkers().iterator().next());
-          break;
-        }
-      }
-      if (fragment.workers.size() > 0) {
+      /* No workers pre-specified / no scans found. Is there a singleton op? */
+      if (singletonOp != null) {
+        /* Just pick the first alive worker. */
+        fragment.workers.add(server.getAliveWorkers().iterator().next());
         continue;
       }
 
@@ -439,7 +443,7 @@ public class QueryConstruct {
     // scan the relation
     TempTableScanEncoding scan = new TempTableScanEncoding();
     scan.opId = opId++;
-    scan.opName = "Scan[" + condition.toString() + "]";
+    scan.opName = "Scan[" + condition + "]";
     scan.table = condition;
     // send it to master
     CollectProducerEncoding producer = new CollectProducerEncoding();
@@ -461,13 +465,13 @@ public class QueryConstruct {
     // update the variable
     SetGlobalEncoding setGlobal = new SetGlobalEncoding();
     setGlobal.opId = opId++;
-    setGlobal.opName = "SetGlobal[" + condition.toString() + "]";
+    setGlobal.opName = "SetGlobal[" + condition + "]";
     setGlobal.argChild = consumer.opId;
-    setGlobal.key = condition.toString();
+    setGlobal.key = condition;
     // the fragment, and it must only run at the master.
     PlanFragmentEncoding masterFragment = new PlanFragmentEncoding();
     masterFragment.operators = ImmutableList.of(consumer, setGlobal);
-    masterFragment.workers = ImmutableList.of(MyriaConstants.MASTER_ID);
+    masterFragment.overrideWorkers = ImmutableList.of(MyriaConstants.MASTER_ID);
     fragments.add(masterFragment);
 
     // Done!

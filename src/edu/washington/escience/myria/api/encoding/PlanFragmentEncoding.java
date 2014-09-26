@@ -18,6 +18,8 @@ import edu.washington.escience.myria.operator.Operator;
 public final class PlanFragmentEncoding extends MyriaApiEncoding {
   /** Which workers execute this plan. */
   public List<Integer> workers;
+  /** Override the workers that will execute this fragment. */
+  public List<Integer> overrideWorkers;
   /** The Operators in this plan fragment. */
   @Required
   public List<OperatorEncoding<? extends Operator>> operators;

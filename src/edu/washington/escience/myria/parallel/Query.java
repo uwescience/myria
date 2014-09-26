@@ -140,9 +140,11 @@ public final class Query {
    * "update tuple relation count" sub-query to be run next.
    * 
    * @param subQuery the subquery about to be executed. This subquery must have already been removed from the queue.
+   * @throws DbException if there is an error getting metadata about existing relations from the Server.
    */
-  private synchronized void addDerivedSubQueries(final SubQuery subQuery) {
-    Map<RelationKey, RelationWriteMetadata> relationsWritten = currentSubQuery.getPersistentRelationWriteMetadata();
+  private synchronized void addDerivedSubQueries(final SubQuery subQuery) throws DbException {
+    Map<RelationKey, RelationWriteMetadata> relationsWritten =
+        currentSubQuery.getPersistentRelationWriteMetadata(server);
     if (!relationsWritten.isEmpty()) {
       SubQuery updateCatalog = QueryConstruct.getRelationTupleUpdateSubQuery(relationsWritten, server);
       subQueryQ.addFirst(updateCatalog);
@@ -364,7 +366,7 @@ public final class Query {
   public synchronized void addDatasetMetadataUpdater(final MasterCatalog catalog, final LocalSubQueryFuture future)
       throws DbException {
     SubQuery subQuery = currentSubQuery;
-    final Map<RelationKey, RelationWriteMetadata> relationsCreated = subQuery.getRelationWriteMetadata();
+    final Map<RelationKey, RelationWriteMetadata> relationsCreated = subQuery.getRelationWriteMetadata(server);
     if (relationsCreated.size() == 0) {
       return;
     }
@@ -400,7 +402,7 @@ public final class Query {
       }
     }
 
-    Map<RelationKey, RelationWriteMetadata> persistentRelations = subQuery.getPersistentRelationWriteMetadata();
+    Map<RelationKey, RelationWriteMetadata> persistentRelations = subQuery.getPersistentRelationWriteMetadata(server);
     if (persistentRelations.size() == 0) {
       return;
     }

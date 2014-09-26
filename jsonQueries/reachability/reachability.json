@@ -10,7 +10,7 @@
 			  "argOperatorId" : 16
 			}
 			],
-			"workers":
+			"overrideWorkers":
 			[
 				0
 			]
@@ -34,7 +34,7 @@
 				"argChild" : 2
 			}
 			],
-			"workers":
+			"overrideWorkers":
 			[
 				1
 			]
