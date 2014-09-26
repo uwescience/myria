@@ -3,6 +3,7 @@ package edu.washington.escience.myria.systemtest;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.net.HttpURLConnection;
 import java.util.HashMap;
@@ -228,6 +229,7 @@ public class SequenceTest extends SystemTestBase {
     /* Wait for query to finish, expecting an exception. */
     try {
       qf.get();
+      fail();
     } catch (Exception e) {
       /*
        * Assert both 1) that the cause of the exception is in the stack trace and 2) that this message is visible via
