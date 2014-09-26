@@ -123,8 +123,9 @@ public class QueryConstruct {
       throws CatalogException {
     Server server = args.getServer();
     for (PlanFragmentEncoding fragment : fragments) {
-      if (fragment.workers != null && fragment.workers.size() > 0) {
+      if (fragment.overrideWorkers != null && fragment.overrideWorkers.size() > 0) {
         /* The workers are set in the plan. */
+        fragment.workers = fragment.overrideWorkers;
         continue;
       }
 
@@ -470,7 +471,7 @@ public class QueryConstruct {
     // the fragment, and it must only run at the master.
     PlanFragmentEncoding masterFragment = new PlanFragmentEncoding();
     masterFragment.operators = ImmutableList.of(consumer, setGlobal);
-    masterFragment.workers = ImmutableList.of(MyriaConstants.MASTER_ID);
+    masterFragment.overrideWorkers = ImmutableList.of(MyriaConstants.MASTER_ID);
     fragments.add(masterFragment);
 
     // Done!
