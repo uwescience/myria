@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
@@ -24,6 +25,7 @@ import edu.washington.escience.myria.parallel.QueryFuture;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.util.TestUtils;
 
+@Ignore
 public class BigDataTest extends SystemTestBase {
 
   public BigDataTest() {

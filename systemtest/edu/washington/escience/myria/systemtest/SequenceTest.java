@@ -276,6 +276,7 @@ public class SequenceTest extends SystemTestBase {
     insert.opId = INSERT;
     insert.argChild = apply.opId;
     insert.relationKey = interKey;
+    insert.argOverwriteTable = true;
     PlanFragmentEncoding fragment = new PlanFragmentEncoding();
     fragment.operators = ImmutableList.of(scan, apply, insert);
     SubQueryEncoding firstJson = new SubQueryEncoding(ImmutableList.of(fragment));
@@ -302,6 +303,7 @@ public class SequenceTest extends SystemTestBase {
     insert.opId = INSERT;
     insert.argChild = agg.opId;
     insert.relationKey = resultKey;
+    insert.argOverwriteTable = true;
     PlanFragmentEncoding fragment2 = new PlanFragmentEncoding();
     fragment2.operators = ImmutableList.of(cons, agg, insert);
     SubQueryEncoding secondJson = new SubQueryEncoding(ImmutableList.of(fragment, fragment2));
@@ -325,7 +327,7 @@ public class SequenceTest extends SystemTestBase {
       Thread.sleep(1);
     }
     QueryStatusEncoding status = server.getQueryStatus(queryId);
-    assertEquals(Status.SUCCESS, status.status);
+    assertEquals(status.message, Status.SUCCESS, status.status);
     assertEquals(1, server.getDatasetStatus(resultKey).getNumTuples());
 
     String ret =

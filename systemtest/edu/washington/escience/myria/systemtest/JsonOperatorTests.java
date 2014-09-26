@@ -63,6 +63,7 @@ public class JsonOperatorTests extends SystemTestBase {
     insert.opId = 3;
     insert.argChild = cross.opId;
     insert.relationKey = outputRelation;
+    insert.argOverwriteTable = true;
     PlanFragmentEncoding frag = PlanFragmentEncoding.of(singleton, empty, cross, insert);
 
     QueryEncoding query = new QueryEncoding();
@@ -78,6 +79,6 @@ public class JsonOperatorTests extends SystemTestBase {
       Thread.sleep(1);
     }
     QueryStatusEncoding status = server.getQueryStatus(queryId);
-    assertEquals(Status.SUCCESS, status.status);
+    assertEquals(status.message, Status.SUCCESS, status.status);
   }
 }
