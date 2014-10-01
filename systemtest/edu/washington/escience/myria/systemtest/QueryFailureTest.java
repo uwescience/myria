@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -30,7 +29,6 @@ import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestUtils;
 
-@Ignore
 public class QueryFailureTest extends SystemTestBase {
 
   @Test(expected = DbException.class, timeout = 50000)
@@ -87,9 +85,8 @@ public class QueryFailureTest extends SystemTestBase {
     final SinkRoot serverPlan = new SinkRoot(serverCollect);
 
     ListenableFuture<Query> qf = server.submitQueryPlan(serverPlan, workerPlans);
-    Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     try {
-      qf.get();
+      Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     } catch (ExecutionException e) {
       e.getCause().printStackTrace();
       throw e.getCause();
@@ -147,9 +144,8 @@ public class QueryFailureTest extends SystemTestBase {
     final SinkRoot serverPlan = new SinkRoot(srfi);
 
     ListenableFuture<Query> qf = server.submitQueryPlan(serverPlan, workerPlans);
-    Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     try {
-      qf.get();
+      Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     } catch (ExecutionException e) {
       e.getCause().printStackTrace();
       throw e.getCause();
@@ -212,9 +208,8 @@ public class QueryFailureTest extends SystemTestBase {
     final SinkRoot serverPlan = new SinkRoot(srfiMaster);
 
     ListenableFuture<Query> qf = server.submitQueryPlan(serverPlan, workerPlans);
-    Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     try {
-      qf.get();
+      Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     } catch (ExecutionException e) {
       e.getCause().printStackTrace();
       throw e.getCause();
@@ -275,9 +270,8 @@ public class QueryFailureTest extends SystemTestBase {
     final SinkRoot serverPlan = new SinkRoot(serverCollect);
 
     ListenableFuture<Query> qf = server.submitQueryPlan(serverPlan, workerPlans);
-    Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     try {
-      qf.get();
+      Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     } catch (ExecutionException e) {
       e.getCause().printStackTrace();
       throw e.getCause();
@@ -335,9 +329,8 @@ public class QueryFailureTest extends SystemTestBase {
     final SinkRoot serverPlan = new SinkRoot(srfi);
 
     ListenableFuture<Query> qf = server.submitQueryPlan(serverPlan, workerPlans);
-    Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     try {
-      qf.get();
+      Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     } catch (ExecutionException e) {
       e.getCause().printStackTrace();
       throw e.getCause();
@@ -400,9 +393,8 @@ public class QueryFailureTest extends SystemTestBase {
     final SinkRoot serverPlan = new SinkRoot(srfiMaster);
 
     ListenableFuture<Query> qf = server.submitQueryPlan(serverPlan, workerPlans);
-    Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     try {
-      qf.get();
+      Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     } catch (ExecutionException e) {
       e.getCause().printStackTrace();
       throw e.getCause();
@@ -463,9 +455,8 @@ public class QueryFailureTest extends SystemTestBase {
     final SinkRoot serverPlan = new SinkRoot(serverCollect);
 
     ListenableFuture<Query> qf = server.submitQueryPlan(serverPlan, workerPlans);
-    Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     try {
-      qf.get();
+      Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     } catch (ExecutionException e) {
       e.getCause().printStackTrace();
       throw e.getCause();
@@ -524,9 +515,8 @@ public class QueryFailureTest extends SystemTestBase {
     final SinkRoot serverPlan = new SinkRoot(srfi);
 
     ListenableFuture<Query> qf = server.submitQueryPlan(serverPlan, workerPlans);
-    Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     try {
-      qf.get();
+      Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     } catch (ExecutionException e) {
       e.getCause().printStackTrace();
       throw e.getCause();
