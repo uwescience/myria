@@ -100,6 +100,7 @@ public class QueryManager {
    * @throws DbException if there is an error updating the Catalog
    */
   private void finishQuery(final Query queryState) throws DbException {
+    LOGGER.info("Finishing query {} with status {}", queryState.getQueryId(), queryState.getStatus());
     try {
       catalog.queryFinished(queryState);
     } catch (CatalogException e) {
@@ -115,6 +116,7 @@ public class QueryManager {
         }
       }
       if (q != null) {
+        LOGGER.info("Now advancing to query {}", q.getQueryId());
         activeQueries.put(q.getQueryId(), q);
         advanceQuery(q);
       }
@@ -418,6 +420,7 @@ public class QueryManager {
    * @param subQueryId the id of the subquery to finish.
    */
   private void finishSubQuery(final SubQueryId subQueryId) {
+    LOGGER.info("Finishing subquery {}", subQueryId);
     long queryId = subQueryId.getQueryId();
     executingSubQueries.remove(subQueryId);
     getQuery(queryId).finishSubQuery();
