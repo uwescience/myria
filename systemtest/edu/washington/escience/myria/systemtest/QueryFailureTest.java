@@ -53,7 +53,7 @@ public class QueryFailureTest extends SystemTestBase {
       tbb.putLong(0, TestUtils.randomLong(0, 100000, 1)[0]);
       tbb.putString(1, TestUtils.randomFixedLengthNumericString(0, 100000, 1, 20)[0]);
       while ((tb = tbb.popFilled()) != null) {
-        LOGGER.debug("Insert a TB into testbed. #" + numTB + ".");
+        LOGGER.debug("Insert a TB into testbed. #{}", numTB);
         numTB++;
         insert(workerIDs[0], testtableKey, schema, tb);
         insert(workerIDs[1], testtableKey, schema, tb);
@@ -115,7 +115,7 @@ public class QueryFailureTest extends SystemTestBase {
       tbb.putLong(0, TestUtils.randomLong(0, 100000, 1)[0]);
       tbb.putString(1, TestUtils.randomFixedLengthNumericString(0, 100000, 1, 20)[0]);
       while ((tb = tbb.popFilled()) != null) {
-        LOGGER.debug("Insert a TB into testbed. #" + numTB + ".");
+        LOGGER.debug("Insert a TB into testbed. #{}.", numTB);
         numTB++;
         insert(workerIDs[0], testtableKey, schema, tb);
         insert(workerIDs[1], testtableKey, schema, tb);
@@ -174,7 +174,7 @@ public class QueryFailureTest extends SystemTestBase {
       tbb.putLong(0, TestUtils.randomLong(0, 100000, 1)[0]);
       tbb.putString(1, TestUtils.randomFixedLengthNumericString(0, 100000, 1, 20)[0]);
       while ((tb = tbb.popFilled()) != null) {
-        LOGGER.debug("Insert a TB into testbed. #" + numTB + ".");
+        LOGGER.debug("Insert a TB into testbed. #{}.", numTB);
         numTB++;
         insert(workerIDs[0], testtableKey, schema, tb);
         insert(workerIDs[1], testtableKey, schema, tb);
@@ -238,7 +238,7 @@ public class QueryFailureTest extends SystemTestBase {
       tbb.putLong(0, TestUtils.randomLong(0, 100000, 1)[0]);
       tbb.putString(1, TestUtils.randomFixedLengthNumericString(0, 100000, 1, 20)[0]);
       while ((tb = tbb.popFilled()) != null) {
-        LOGGER.debug("Insert a TB into testbed. #" + numTB + ".");
+        LOGGER.debug("Insert a TB into testbed. #{}.", numTB);
         numTB++;
         insert(workerIDs[0], testtableKey, schema, tb);
         insert(workerIDs[1], testtableKey, schema, tb);
@@ -300,7 +300,7 @@ public class QueryFailureTest extends SystemTestBase {
       tbb.putLong(0, TestUtils.randomLong(0, 100000, 1)[0]);
       tbb.putString(1, TestUtils.randomFixedLengthNumericString(0, 100000, 1, 20)[0]);
       while ((tb = tbb.popFilled()) != null) {
-        LOGGER.debug("Insert a TB into testbed. #" + numTB + ".");
+        LOGGER.debug("Insert a TB into testbed. #{}.", numTB);
         numTB++;
         insert(workerIDs[0], testtableKey, schema, tb);
         insert(workerIDs[1], testtableKey, schema, tb);
@@ -359,7 +359,7 @@ public class QueryFailureTest extends SystemTestBase {
       tbb.putLong(0, TestUtils.randomLong(0, 100000, 1)[0]);
       tbb.putString(1, TestUtils.randomFixedLengthNumericString(0, 100000, 1, 20)[0]);
       while ((tb = tbb.popFilled()) != null) {
-        LOGGER.debug("Insert a TB into testbed. #" + numTB + ".");
+        LOGGER.debug("Insert a TB into testbed. #{}.", numTB);
         numTB++;
         insert(workerIDs[0], testtableKey, schema, tb);
         insert(workerIDs[1], testtableKey, schema, tb);
@@ -423,7 +423,7 @@ public class QueryFailureTest extends SystemTestBase {
       tbb.putLong(0, TestUtils.randomLong(0, 100000, 1)[0]);
       tbb.putString(1, TestUtils.randomFixedLengthNumericString(0, 100000, 1, 20)[0]);
       while ((tb = tbb.popFilled()) != null) {
-        LOGGER.debug("Insert a TB into testbed. #" + numTB + ".");
+        LOGGER.debug("Insert a TB into testbed. #{}.", numTB);
         numTB++;
         insert(workerIDs[0], testtableKey, schema, tb);
         insert(workerIDs[1], testtableKey, schema, tb);
@@ -485,7 +485,7 @@ public class QueryFailureTest extends SystemTestBase {
       tbb.putLong(0, TestUtils.randomLong(0, 100000, 1)[0]);
       tbb.putString(1, TestUtils.randomFixedLengthNumericString(0, 100000, 1, 20)[0]);
       while ((tb = tbb.popFilled()) != null) {
-        LOGGER.debug("Insert a TB into testbed. #" + numTB + ".");
+        LOGGER.debug("Insert a TB into testbed. #{}.", numTB);
         numTB++;
         insert(workerIDs[0], testtableKey, schema, tb);
         insert(workerIDs[1], testtableKey, schema, tb);
