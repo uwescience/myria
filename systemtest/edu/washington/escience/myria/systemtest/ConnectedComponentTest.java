@@ -146,8 +146,8 @@ public class ConnectedComponentTest extends SystemTestBase {
   }
 
   public void connectedComponents(final boolean failure, final boolean prioritized) throws Exception {
-    if (TestUtils.inTravis() && failure) {
-      System.err.println("Skipping test because in Travis.");
+    if (failure) {
+      TestUtils.skipIfInTravis();
       return;
     }
 

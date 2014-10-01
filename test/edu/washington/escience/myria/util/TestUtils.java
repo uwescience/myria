@@ -13,6 +13,7 @@ import java.util.Map.Entry;
 import java.util.Random;
 
 import org.junit.Assert;
+import org.junit.Assume;
 
 import com.google.common.collect.ImmutableList;
 
@@ -46,6 +47,20 @@ public final class TestUtils {
   public static boolean inTravis() {
     String travis = System.getenv("TRAVIS");
     return (travis != null) && travis.equals("true");
+  }
+
+  /**
+   * Only run this test in Travis.
+   */
+  public static void requireTravis() {
+    Assume.assumeTrue(inTravis());
+  }
+
+  /**
+   * Skip this test if in Travis.
+   */
+  public static void skipIfInTravis() {
+    Assume.assumeFalse(inTravis());
   }
 
   private synchronized static Random getRandom() {

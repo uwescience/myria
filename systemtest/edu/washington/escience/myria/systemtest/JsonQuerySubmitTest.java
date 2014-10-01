@@ -230,9 +230,7 @@ public class JsonQuerySubmitTest extends SystemTestBase {
   @Test
   public void abortedDownloadTest() throws Exception {
     // skip in travis
-    if (TestUtils.inTravis()) {
-      return;
-    }
+    TestUtils.skipIfInTravis();
     final int NUM_DUPLICATES = 2000;
     final int BYTES_TO_READ = 1024; // read 1 kb
 

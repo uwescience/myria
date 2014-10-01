@@ -38,9 +38,7 @@ public class BigDataTest extends SystemTestBase {
     // skip always, because this test destroys my computer every time
     assumeTrue(false);
     // skip in travis
-    if (TestUtils.inTravis()) {
-      return;
-    }
+    TestUtils.skipIfInTravis();
     final int NUM_DUPLICATES = 10000;
 
     TupleBatch tb = TestUtils.generateRandomTuples(TupleBatch.BATCH_SIZE, TupleBatch.BATCH_SIZE, false).popAny();;
@@ -80,9 +78,7 @@ public class BigDataTest extends SystemTestBase {
     // skip always, because these tests destroy my computer
     assumeTrue(false);
     // skip in travis
-    if (TestUtils.inTravis()) {
-      return;
-    }
+    TestUtils.skipIfInTravis();
     final int NUM_DUPLICATES = 2000;
 
     URL url =
