@@ -228,7 +228,7 @@ public final class MyriaConstants {
   /**
    * The maximum number of currently active (running, queued, paused, ...) queries at the master.
    */
-  public static final int MAX_ACTIVE_QUERIES = 5;
+  public static final int MAX_ACTIVE_QUERIES = 25;
 
   /**
    * The relation that stores profiling information.
