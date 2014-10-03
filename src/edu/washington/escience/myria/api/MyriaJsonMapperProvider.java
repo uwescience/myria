@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.jaxrs.json.JacksonJaxbJsonProvider;
 
 /**
@@ -56,6 +57,7 @@ public class MyriaJsonMapperProvider extends JacksonJaxbJsonProvider {
    */
   private static ObjectMapper newMapper() {
     ObjectMapper mapper = new ObjectMapper();
+    mapper.registerModule(new JodaModule());
 
     /*
      * These are recommended by Swagger devs but I want to hold and see what we want. Leaving the code here for future
