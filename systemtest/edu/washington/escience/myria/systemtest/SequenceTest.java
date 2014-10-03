@@ -79,7 +79,7 @@ public class SequenceTest extends SystemTestBase {
   @Test
   public void testSequence() throws Exception {
     final int numVals = TupleBatch.BATCH_SIZE + 2;
-    TupleSource source = new TupleSource(range(numVals).getAll());
+    TupleSource source = new TupleSource(TestUtils.range(numVals).getAll());
     Schema testSchema = source.getSchema();
     RelationKey storage = RelationKey.of("test", "testi", "step1");
     PartitionFunction pf = new SingleFieldHashPartitionFunction(workerIDs.length, 0);
@@ -128,7 +128,7 @@ public class SequenceTest extends SystemTestBase {
   @Test
   public void testNestedSequenceBug() throws Exception {
     final int numVals = TupleBatch.BATCH_SIZE + 2;
-    TupleSource source = new TupleSource(range(numVals).getAll());
+    TupleSource source = new TupleSource(TestUtils.range(numVals).getAll());
     Schema testSchema = source.getSchema();
     RelationKey storage = RelationKey.of("test", "testNestedSequenceBug", "data");
 
@@ -326,26 +326,11 @@ public class SequenceTest extends SystemTestBase {
     assertEquals("sum_value\r\n9\r\n", ret);
   }
 
-  /**
-   * Returns a {@link TupleBatchBuffer} containing the values 0 to {@code n-1}. The column is of type {@Link
-   * Type#INT_TYPE} and the column name is {@code "val"}.
-   * 
-   * @param n the number of values in the buffer.
-   * @return a {@link TupleBatchBuffer} containing the values 0 to {@code n-1}
-   */
-  public static TupleBatchBuffer range(int n) {
-    TupleBatchBuffer sourceBuffer = new TupleBatchBuffer(Schema.ofFields(Type.INT_TYPE, "val"));
-    for (int i = 0; i < n; ++i) {
-      sourceBuffer.putInt(0, i);
-    }
-    return sourceBuffer;
-  }
-
   @Test
   public void testNestedSequence() throws Exception {
     final int numVals = TupleBatch.BATCH_SIZE + 2;
     final int numCopies = 3;
-    TupleBatchBuffer data = range(numVals);
+    TupleBatchBuffer data = TestUtils.range(numVals);
     Schema schema = data.getSchema();
     RelationKey dataKey = RelationKey.of("test", "testi", "step");
     List<RootOperator[]> seqs = Lists.newLinkedList();

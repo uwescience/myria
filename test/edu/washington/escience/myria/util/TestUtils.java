@@ -489,4 +489,19 @@ public final class TestUtils {
 
     return new SubQuery(masterPlan, workerPlans);
   }
+
+  /**
+   * Returns a {@link TupleBatchBuffer} containing the values 0 to {@code n-1}. The column is of type {@Link
+   * Type#INT_TYPE} and the column name is {@code "val"}.
+   * 
+   * @param n the number of values in the buffer.
+   * @return a {@link TupleBatchBuffer} containing the values 0 to {@code n-1}
+   */
+  public static TupleBatchBuffer range(int n) {
+    TupleBatchBuffer sourceBuffer = new TupleBatchBuffer(Schema.ofFields(Type.INT_TYPE, "val"));
+    for (int i = 0; i < n; ++i) {
+      sourceBuffer.putInt(0, i);
+    }
+    return sourceBuffer;
+  }
 }
