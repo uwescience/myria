@@ -498,12 +498,30 @@ public class QueryManager {
   public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final String physicalPlan,
       final SubQueryPlan masterPlan, final Map<Integer, SubQueryPlan> workerPlans, @Nullable final Boolean profilingMode)
       throws DbException, CatalogException {
+    return submitQuery(rawQuery, logicalRa, physicalPlan, new SubQuery(masterPlan, workerPlans), profilingMode);
+  }
+
+  /**
+   * Submit a query for execution. The workerPlans may be removed in the future if the query compiler and schedulers are
+   * ready. Returns null if there are too many active queries.
+   * 
+   * @param rawQuery the raw user-defined query. E.g., the source Datalog program.
+   * @param logicalRa the logical relational algebra of the compiled plan.
+   * @param physicalPlan the Myria physical plan for the query.
+   * @param plan the query plan.
+   * @param profilingMode is the profiling mode of the query on.
+   * @throws DbException if any error in non-catalog data processing
+   * @throws CatalogException if any error in processing catalog
+   * @return the query future from which the query status can be looked up.
+   */
+  public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final String physicalPlan,
+      final QueryPlan plan, @Nullable final Boolean profilingMode) throws DbException, CatalogException {
     QueryEncoding query = new QueryEncoding();
     query.rawQuery = rawQuery;
     query.logicalRa = rawQuery;
     query.fragments = ImmutableList.of();
     query.profilingMode = Objects.firstNonNull(profilingMode, false);
-    return submitQuery(query, new SubQuery(masterPlan, workerPlans));
+    return submitQuery(query, plan);
   }
 
   /**
