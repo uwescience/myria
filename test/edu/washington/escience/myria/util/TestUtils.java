@@ -11,15 +11,30 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.Set;
 
+import javax.annotation.Nonnull;
+
+import org.apache.commons.lang.ArrayUtils;
 import org.junit.Assert;
 import org.junit.Assume;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Maps;
 
+import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.operator.DbInsert;
+import edu.washington.escience.myria.operator.Operator;
+import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
+import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
+import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
+import edu.washington.escience.myria.parallel.ExchangePairID;
+import edu.washington.escience.myria.parallel.SubQuery;
+import edu.washington.escience.myria.parallel.SubQueryPlan;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 public final class TestUtils {
@@ -429,4 +444,49 @@ public final class TestUtils {
     return tbb;
   }
 
+  /**
+   * Construct a SubQuery that will insert the given tuples (starting on the master) on the specified workers using the
+   * specified relation key and partition function.
+   * 
+   * @param masterSource the source of tuples, from the master.
+   * @param dest the name of the relation into which tuples will be inserted (using overwrite!).
+   * @param pf how tuples will be partitioned on the cluster.
+   * @param workers the set of workers on which the data will be stored.
+   * @return a SubQuery that will insert the given tuples (starting on the master) on the specified workers using the
+   *         specified relation key and partition function.
+   */
+  public static final SubQuery insertRelation(@Nonnull final Operator masterSource, @Nonnull final RelationKey dest,
+      @Nonnull PartitionFunction pf, @Nonnull Set<Integer> workers) {
+    return insertRelation(masterSource, dest, pf, ArrayUtils.toPrimitive(workers.toArray(new Integer[workers.size()])));
+  }
+
+  /**
+   * Construct a SubQuery that will insert the given tuples (starting on the master) on the specified workers using the
+   * specified relation key and partition function.
+   * 
+   * @param masterSource the source of tuples, from the master.
+   * @param dest the name of the relation into which tuples will be inserted (using overwrite!).
+   * @param pf how tuples will be partitioned on the cluster.
+   * @param workers the set of workers on which the data will be stored.
+   * @return a SubQuery that will insert the given tuples (starting on the master) on the specified workers using the
+   *         specified relation key and partition function.
+   */
+  public static final SubQuery insertRelation(@Nonnull final Operator masterSource, @Nonnull final RelationKey dest,
+      @Nonnull PartitionFunction pf, @Nonnull int[] workers) {
+    final ExchangePairID id = ExchangePairID.newID();
+    /* Master plan */
+    GenericShuffleProducer sp = new GenericShuffleProducer(masterSource, id, workers, pf);
+    SubQueryPlan masterPlan = new SubQueryPlan(sp);
+
+    /* Worker plan */
+    GenericShuffleConsumer sc =
+        new GenericShuffleConsumer(masterSource.getSchema(), id, new int[] { MyriaConstants.MASTER_ID });
+    DbInsert insert = new DbInsert(sc, dest, true);
+    Map<Integer, SubQueryPlan> workerPlans = Maps.newHashMap();
+    for (int i : workers) {
+      workerPlans.put(i, new SubQueryPlan(insert));
+    }
+
+    return new SubQuery(masterPlan, workerPlans);
+  }
 }

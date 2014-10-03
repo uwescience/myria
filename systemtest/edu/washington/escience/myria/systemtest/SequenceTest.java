@@ -59,6 +59,7 @@ import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
 import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
 import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
+import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
 import edu.washington.escience.myria.operator.network.partition.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.Query;
@@ -71,6 +72,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.ErrorUtils;
 import edu.washington.escience.myria.util.JsonAPIUtils;
+import edu.washington.escience.myria.util.TestUtils;
 
 public class SequenceTest extends SystemTestBase {
 
@@ -80,22 +82,9 @@ public class SequenceTest extends SystemTestBase {
     TupleSource source = new TupleSource(range(numVals).getAll());
     Schema testSchema = source.getSchema();
     RelationKey storage = RelationKey.of("test", "testi", "step1");
+    PartitionFunction pf = new SingleFieldHashPartitionFunction(workerIDs.length, 0);
 
-    ExchangePairID shuffleId = ExchangePairID.newID();
-    final GenericShuffleProducer sp =
-        new GenericShuffleProducer(source, shuffleId, workerIDs, new SingleFieldHashPartitionFunction(workerIDs.length,
-            0));
-
-    final GenericShuffleConsumer cc = new GenericShuffleConsumer(testSchema, shuffleId, workerIDs);
-    final DbInsert insert = new DbInsert(cc, storage, true);
-
-    /* First task: create, shuffle, insert the tuples. */
-    Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
-    for (int i : workerIDs) {
-      workerPlans.put(i, new SubQueryPlan(new RootOperator[] { insert, sp }));
-    }
-    SubQueryPlan serverPlan = new SubQueryPlan(new SinkRoot(new EOSSource()));
-    QueryPlan first = new SubQuery(serverPlan, workerPlans);
+    QueryPlan first = TestUtils.insertRelation(source, storage, pf, workerIDs);
 
     /* Second task: count the number of tuples. */
     DbQueryScan scan = new DbQueryScan(storage, testSchema);
@@ -108,7 +97,7 @@ public class SequenceTest extends SystemTestBase {
     final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, masterSum);
     SinkRoot root = new SinkRoot(queueStore);
-    workerPlans = new HashMap<>();
+    Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
     for (int i : workerIDs) {
       workerPlans.put(i, new SubQueryPlan(coll));
     }
@@ -127,14 +116,13 @@ public class SequenceTest extends SystemTestBase {
     /* Wait for the query to finish, succeed, and check the result. */
     qf.get();
     QueryStatusEncoding status = server.getQueryManager().getQueryStatus(queryId);
-    assertEquals(Status.SUCCESS, status.status);
-    long expectedTuples = numVals * workerIDs.length;
-    assertEquals(expectedTuples, server.getDatasetStatus(storage).getNumTuples());
+    assertEquals(status.message, Status.SUCCESS, status.status);
+    assertEquals(numVals, server.getDatasetStatus(storage).getNumTuples());
 
     List<TupleBatch> tbs = Lists.newLinkedList(receivedTupleBatches);
     assertEquals(1, tbs.size());
     TupleBatch tb = tbs.get(0);
-    assertEquals(expectedTuples, tb.getLong(0, 0));
+    assertEquals(numVals, tb.getLong(0, 0));
   }
 
   @Test
