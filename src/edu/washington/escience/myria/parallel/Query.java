@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.GuardedBy;
 
+import org.joda.time.DateTime;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Joiner;
@@ -204,7 +205,7 @@ public final class Query {
    * 
    * @return the time this query started, in ISO8601 format, or <code>null</code> if the query has not yet been started
    */
-  public synchronized String getStartTime() {
+  public synchronized DateTime getStartTime() {
     return executionStats.getStartTime();
   }
 
@@ -259,7 +260,7 @@ public final class Query {
    * 
    * @return the time this query ended, in ISO8601 format, or <code>null</code> if the query has not yet ended
    */
-  public synchronized String getEndTime() {
+  public synchronized DateTime getEndTime() {
     return executionStats.getEndTime();
   }
 

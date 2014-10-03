@@ -14,6 +14,9 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 
+import javax.annotation.Nullable;
+
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -543,7 +546,7 @@ public final class MasterCatalog {
 
   /**
    * Add workers.
-   *
+   * 
    * @param workers workerId -> "host:port"
    * @return this Catalog
    * @throws CatalogException if the hostPortString is invalid or there is a database exception.
@@ -1171,9 +1174,9 @@ public final class MasterCatalog {
             statement.bind(1, queryStatus.rawQuery);
             statement.bind(2, queryStatus.logicalRa);
             statement.bind(3, physicalString);
-            statement.bind(4, queryStatus.submitTime);
-            statement.bind(5, queryStatus.startTime);
-            statement.bind(6, queryStatus.finishTime);
+            statement.bind(4, toStringOrNull(queryStatus.submitTime));
+            statement.bind(5, toStringOrNull(queryStatus.startTime));
+            statement.bind(6, toStringOrNull(queryStatus.finishTime));
             if (queryStatus.elapsedNanos != null) {
               statement.bind(7, queryStatus.elapsedNanos);
             } else {
@@ -1252,9 +1255,9 @@ public final class MasterCatalog {
   private static QueryStatusEncoding querySimpleStatusHelper(final SQLiteStatement statement) throws SQLiteException {
     final QueryStatusEncoding queryStatus = new QueryStatusEncoding(statement.columnLong(0));
     queryStatus.rawQuery = statement.columnString(1);
-    queryStatus.submitTime = statement.columnString(2);
-    queryStatus.startTime = statement.columnString(3);
-    queryStatus.finishTime = statement.columnString(4);
+    queryStatus.submitTime = parseDateTime(statement.columnString(2));
+    queryStatus.startTime = parseDateTime(statement.columnString(3));
+    queryStatus.finishTime = parseDateTime(statement.columnString(4));
     if (!statement.columnNull(5)) {
       queryStatus.elapsedNanos = statement.columnLong(5);
     }
@@ -1262,6 +1265,32 @@ public final class MasterCatalog {
     queryStatus.message = statement.columnString(7);
     queryStatus.profilingMode = statement.columnInt(8) > 0;
     return queryStatus;
+  }
+
+  /**
+   * A wrapper for {@link DateTime.parse} that returns null if the string is null.
+   * 
+   * @param dateTime a string in ISO8601 datetime format.
+   * @return the parsed DateTime, or null if the parameter is null.
+   */
+  private static DateTime parseDateTime(@Nullable final String dateTime) {
+    if (dateTime == null) {
+      return null;
+    }
+    return DateTime.parse(dateTime);
+  }
+
+  /**
+   * A wrapper for {@link Object#toString()} that returns null if the Object is null.
+   * 
+   * @param o an object.
+   * @return o.toString(), or null if o is null.
+   */
+  private static String toStringOrNull(@Nullable final Object o) {
+    if (o == null) {
+      return null;
+    }
+    return o.toString();
   }
 
   /**
@@ -1286,9 +1315,9 @@ public final class MasterCatalog {
       LOGGER.warn("Error deserializing plan for query #{}", queryStatus.queryId, e);
       queryStatus.plan = null;
     }
-    queryStatus.submitTime = statement.columnString(4);
-    queryStatus.startTime = statement.columnString(5);
-    queryStatus.finishTime = statement.columnString(6);
+    queryStatus.submitTime = parseDateTime(statement.columnString(4));
+    queryStatus.startTime = parseDateTime(statement.columnString(5));
+    queryStatus.finishTime = parseDateTime(statement.columnString(6));
     if (!statement.columnNull(7)) {
       queryStatus.elapsedNanos = statement.columnLong(7);
     }
@@ -1447,8 +1476,8 @@ public final class MasterCatalog {
             SQLiteStatement statement =
                 sqliteConnection
                     .prepare("UPDATE queries SET start_time=?, finish_time=?, elapsed_nanos=?, status=?, message=? WHERE query_id=?;");
-            statement.bind(1, query.getStartTime());
-            statement.bind(2, query.getEndTime());
+            statement.bind(1, toStringOrNull(query.getStartTime()));
+            statement.bind(2, toStringOrNull(query.getEndTime()));
             if (query.getElapsedTime() == null) {
               statement.bindNull(3);
             } else {
@@ -1531,7 +1560,7 @@ public final class MasterCatalog {
             return ret;
           } catch (final SQLiteException e) {
             if (LOGGER.isErrorEnabled()) {
-              LOGGER.error(e.toString());
+              LOGGER.error("Getting the number of queries", e);
             }
             throw new CatalogException(e);
           }
