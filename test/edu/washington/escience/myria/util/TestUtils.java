@@ -127,26 +127,6 @@ public final class TestUtils {
     }
   }
 
-  public static HashMap<Tuple, Integer> distinct(final TupleBatchBuffer content) {
-    final Iterator<List<? extends Column<?>>> it = content.getAllAsRawColumn().iterator();
-    final HashMap<Tuple, Integer> expectedResults = new HashMap<Tuple, Integer>();
-    while (it.hasNext()) {
-      final List<? extends Column<?>> columns = it.next();
-      final int numRow = columns.get(0).size();
-      final int numColumn = columns.size();
-
-      for (int i = 0; i < numRow; i++) {
-        final Tuple t = new Tuple(numColumn);
-        for (int j = 0; j < numColumn; j++) {
-          t.set(j, columns.get(j).getObject(i));
-        }
-        expectedResults.put(t, 1);
-      }
-    }
-    return expectedResults;
-
-  }
-
   public static String intToString(final long v, final int length) {
     final StringBuilder sb = new StringBuilder("" + v);
     while (sb.length() < length) {
@@ -280,33 +260,6 @@ public final class TestUtils {
     return result;
   }
 
-  public static HashMap<Tuple, Integer> groupByCount(final TupleBatchBuffer source, final int groupByColumn) {
-    final List<List<? extends Column<?>>> tbs = source.getAllAsRawColumn();
-    final HashMap<Object, Long> count = new HashMap<Object, Long>();
-    for (final List<? extends Column<?>> rawData : tbs) {
-      final int numTuples = rawData.get(0).size();
-      for (int i = 0; i < numTuples; i++) {
-        final Object groupByValue = rawData.get(groupByColumn).getObject(i);
-        Long currentCount = count.get(groupByValue);
-        if (currentCount == null) {
-          currentCount = 0L;
-        }
-        count.put(groupByValue, ++currentCount);
-      }
-    }
-    final HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
-
-    for (final Map.Entry<Object, Long> e : count.entrySet()) {
-      final Object gValue = e.getKey();
-      final Long countV = e.getValue();
-      final Tuple t = new Tuple(2);
-      t.set(0, (Comparable<?>) gValue);
-      t.set(1, countV);
-      result.put(t, 1);
-    }
-    return result;
-  }
-
   public static <T extends Comparable<T>> HashMap<Tuple, Integer> groupByMax(final TupleBatchBuffer source,
       final int groupByColumn, final int aggColumn) {
     final List<List<? extends Column<?>>> tbs = source.getAllAsRawColumn();
@@ -398,54 +351,6 @@ public final class TestUtils {
     return result;
   }
 
-  @SuppressWarnings("unchecked")
-  public static <T extends Comparable<T>> T max(final TupleBatchBuffer tbb, final int column) {
-    final List<List<? extends Column<?>>> tbs = tbb.getAllAsRawColumn();
-    T max = (T) tbs.get(0).get(column).getObject(0);
-    for (final List<? extends Column<?>> tb : tbs) {
-      final int numTuples = tb.get(0).size();
-      final Column<?> c = tb.get(column);
-      for (int i = 0; i < numTuples; i++) {
-        final T current = (T) c.getObject(i);
-        if (max.compareTo(current) < 0) {
-          max = current;
-        }
-      }
-    }
-    return max;
-  }
-
-  @SuppressWarnings("unchecked")
-  public static <T extends Comparable<T>> T min(final TupleBatchBuffer tbb, final int column) {
-    final List<List<? extends Column<?>>> tbs = tbb.getAllAsRawColumn();
-    T min = (T) tbs.get(0).get(column).getObject(0);
-    for (final List<? extends Column<?>> tb : tbs) {
-      final int numTuples = tb.get(0).size();
-      final Column<?> c = tb.get(column);
-      for (int i = 0; i < numTuples; i++) {
-        final T current = (T) c.getObject(i);
-        if (min.compareTo(current) > 0) {
-          min = current;
-        }
-      }
-    }
-    return min;
-  }
-
-  public static long sumLong(final TupleBatchBuffer tbb, final int column) {
-    final List<List<? extends Column<?>>> tbs = tbb.getAllAsRawColumn();
-    long sum = 0;
-    for (final List<? extends Column<?>> tb : tbs) {
-      final int numTuples = tb.get(0).size();
-      final Column<?> c = tb.get(column);
-      for (int i = 0; i < numTuples; i++) {
-        final Long current = (Long) c.getObject(i);
-        sum += current;
-      }
-    }
-    return sum;
-  }
-
   /***/
   public static String[] randomFixedLengthNumericString(final int min, final int max, final int size, final int length) {
 
@@ -458,30 +363,11 @@ public final class TestUtils {
     return result;
   }
 
-  public static int[] randomInt(final int min, final int max, final int size) {
-    final int[] result = new int[size];
-    final Random r = new Random();
-    final int top = max - min + 1;
-    for (int i = 0; i < size; i++) {
-      result[i] = r.nextInt(top) + min;
-    }
-    return result;
-  }
-
   public static long[] randomLong(final long min, final long max, final int size) {
     final long[] result = new long[size];
     final long top = max - min + 1;
     for (int i = 0; i < size; i++) {
       result[i] = getRandom().nextInt((int) top) + min;
-    }
-    return result;
-  }
-
-  public static float[] randomFloat(final float min, final float max, final int size) {
-    final float[] result = new float[size];
-    final float range = max - min;
-    for (int i = 0; i < size; i++) {
-      result[i] = getRandom().nextFloat() * range + min;
     }
     return result;
   }
@@ -508,30 +394,6 @@ public final class TestUtils {
       }
     }
     return result;
-  }
-
-  public static HashMap<Tuple, Integer> tupleBatchToTupleSet(final TupleBatchBuffer tbb) {
-    final HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
-    final Iterator<List<? extends Column<?>>> it = tbb.getAllAsRawColumn().iterator();
-    while (it.hasNext()) {
-      final List<? extends Column<?>> columns = it.next();
-      final int numColumn = columns.size();
-      final int numRow = columns.get(0).size();
-      for (int row = 0; row < numRow; row++) {
-        final Tuple t = new Tuple(numColumn);
-        for (int column = 0; column < numColumn; column++) {
-          t.set(column, columns.get(column).getObject(row));
-        }
-        result.put(t, 1);
-      }
-    }
-    return result;
-  }
-
-  public static ImmutableList.Builder<Number> generateListBuilderWithElement(long element) {
-    ImmutableList.Builder<Number> sourceListBuilder = ImmutableList.builder();
-    sourceListBuilder.add(element);
-    return sourceListBuilder;
   }
 
   /**
