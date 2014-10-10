@@ -28,7 +28,10 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.operator.DbInsert;
+import edu.washington.escience.myria.operator.EOSSource;
 import edu.washington.escience.myria.operator.Operator;
+import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.failures.InitFailureInjector;
 import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
 import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
 import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
@@ -488,6 +491,20 @@ public final class TestUtils {
     }
 
     return new SubQuery(masterPlan, workerPlans);
+  }
+
+  /**
+   * Construct a SubQuery that will fail on the master. Useful for testing failures.
+   */
+  public static final SubQuery failOnMaster() {
+    /* Master plan */
+    EOSSource src = new EOSSource();
+    Operator fail = new InitFailureInjector(src);
+    SinkRoot root = new SinkRoot(fail);
+
+    Map<Integer, SubQueryPlan> workerPlans = Maps.newHashMap();
+
+    return new SubQuery(new SubQueryPlan(root), workerPlans);
   }
 
   /**
