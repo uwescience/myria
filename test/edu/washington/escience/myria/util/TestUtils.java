@@ -19,6 +19,7 @@ import org.apache.commons.lang.ArrayUtils;
 import org.junit.Assert;
 import org.junit.Assume;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 
@@ -494,9 +495,9 @@ public final class TestUtils {
   }
 
   /**
-   * Construct a SubQuery that will fail on the master. Useful for testing failures.
+   * Construct a SubQuery that will fail on the master during initialization. Useful for testing failures.
    */
-  public static final SubQuery failOnMaster() {
+  public static final SubQuery failOnMasterInit() {
     /* Master plan */
     EOSSource src = new EOSSource();
     Operator fail = new InitFailureInjector(src);
@@ -505,6 +506,22 @@ public final class TestUtils {
     Map<Integer, SubQueryPlan> workerPlans = Maps.newHashMap();
 
     return new SubQuery(new SubQueryPlan(root), workerPlans);
+  }
+
+  /**
+   * Construct a SubQuery that will fail on one worker during initialization. Useful for testing failures.
+   */
+  public static final SubQuery failOnFirstWorkerInit(@Nonnull int[] workers) {
+    Preconditions.checkElementIndex(1, workers.length);
+
+    /* Master plan */
+    SubQueryPlan masterPlan = new SubQueryPlan(new SinkRoot(new EOSSource()));
+
+    /* Worker plans */
+    Map<Integer, SubQueryPlan> workerPlans = Maps.newHashMap();
+    /* First worker */
+    workerPlans.put(workers[0], new SubQueryPlan(new SinkRoot(new InitFailureInjector(new EOSSource()))));
+    return new SubQuery(masterPlan, workerPlans);
   }
 
   /**
