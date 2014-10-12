@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.jaxrs.json.JacksonJaxbJsonProvider;
 
@@ -57,6 +58,8 @@ public class MyriaJsonMapperProvider extends JacksonJaxbJsonProvider {
    */
   private static ObjectMapper newMapper() {
     ObjectMapper mapper = new ObjectMapper();
+
+    /* Serialize DateTimes as Strings */
     mapper.registerModule(new JodaModule());
 
     /*
@@ -65,7 +68,7 @@ public class MyriaJsonMapperProvider extends JacksonJaxbJsonProvider {
      */
     // mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
     // mapper.setSerializationInclusion(JsonInclude.Include.NON_DEFAULT);
-    // mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+    mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
     // mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     /* Don't automatically detect getters, explicit is better than implicit. */
