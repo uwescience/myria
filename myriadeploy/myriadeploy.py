@@ -30,6 +30,10 @@ def read_config_file(filename='deployment.cfg'):
     except ConfigParser.NoOptionError:
         ret['username'] = getpass.getuser()
     ret['rest_port'] = config.get('deployment', 'rest_port')
+    try:
+        ret['ssl'] = config.getboolean('deployment', 'ssl')
+    except ConfigParser.NoOptionError:
+        ret['ssl'] = False
 
     # Helper function
     def split_hostportpathdbname_key_append_id(hostport):
