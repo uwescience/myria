@@ -43,7 +43,7 @@ public class SubStr extends UnaryOperator {
     if (tb != null) {
       StringColumnBuilder builder = new StringColumnBuilder();
       builder.expandAll();
-      ImmutableList<Column<?>> source = tb.getDataColumns();
+      ImmutableList<? extends Column<?>> source = tb.getDataColumns();
       for (int idx = 0; idx < tb.numTuples(); ++idx) {
         String subStr = source.get(substrColumnIdx).getString(idx).substring(fromCharIdx, endCharIdx);
         builder.replaceString(subStr, idx);

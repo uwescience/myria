@@ -11,6 +11,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -24,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.CsvTupleWriter;
 import edu.washington.escience.myria.DbException;
@@ -36,11 +38,11 @@ import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.ColumnFactory;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.util.ErrorUtils;
 
 /**
  * Access method for a JDBC database. Exposes data as TupleBatches.
  * 
- * @author dhalperi
  * 
  */
 public final class JdbcAccessMethod extends AccessMethod {
@@ -83,9 +85,11 @@ public final class JdbcAccessMethod extends AccessMethod {
       /* Make sure JDBC driver is loaded */
       Class.forName(jdbcInfo.getDriverClass());
       jdbcConnection = DriverManager.getConnection(jdbcInfo.getConnectionString(), jdbcInfo.getProperties());
-    } catch (ClassNotFoundException | SQLException e) {
+    } catch (ClassNotFoundException e) {
       LOGGER.error(e.getMessage(), e);
       throw new DbException(e);
+    } catch (SQLException e) {
+      throw ErrorUtils.mergeSQLException(e);
     }
   }
 
@@ -98,8 +102,7 @@ public final class JdbcAccessMethod extends AccessMethod {
         jdbcConnection.setReadOnly(readOnly);
       }
     } catch (SQLException e) {
-      LOGGER.error(e.getMessage(), e);
-      throw new DbException(e);
+      throw ErrorUtils.mergeSQLException(e);
     }
   }
 
@@ -124,13 +127,14 @@ public final class JdbcAccessMethod extends AccessMethod {
 
       Reader reader = new InputStreamReader(new ByteArrayInputStream(baos.toByteArray()));
       StringBuilder copyString =
-          new StringBuilder().append("COPY ").append(relationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL))
-              .append(" FROM STDIN WITH CSV");
-      copyString.append(" FORCE NOT NULL ").append(Joiner.on(',').join(schema.getColumnNames()));
+          new StringBuilder().append("COPY ").append(quote(relationKey)).append(" FROM STDIN WITH CSV");
+      copyString.append(" FORCE NOT NULL ").append(Joiner.on(',').join(quotedColumnNames(schema)));
       long inserted = cpManager.copyIn(copyString.toString(), reader);
       Preconditions.checkState(inserted == tupleBatch.numTuples(),
           "Error: inserted a batch of size %s but only actually inserted %s rows", tupleBatch.numTuples(), inserted);
-    } catch (final SQLException | IOException e) {
+    } catch (final SQLException e) {
+      throw ErrorUtils.mergeSQLException(e);
+    } catch (final IOException e) {
       LOGGER.error(e.getMessage(), e);
       throw new DbException(e);
     }
@@ -165,14 +169,38 @@ public final class JdbcAccessMethod extends AccessMethod {
         /* Set up and execute the query */
         final PreparedStatement statement =
             jdbcConnection.prepareStatement(insertStatementFromSchema(schema, relationKey));
-        tupleBatch.getIntoJdbc(statement);
-        // TODO make it also independent. should be getIntoJdbc(statement,
-        // tupleBatch)
+        for (int row = 0; row < tupleBatch.numTuples(); ++row) {
+          for (int col = 0; col < tupleBatch.numColumns(); ++col) {
+            switch (schema.getColumnType(col)) {
+              case BOOLEAN_TYPE:
+                statement.setBoolean(col + 1, tupleBatch.getBoolean(col, row));
+                break;
+              case DATETIME_TYPE:
+                statement.setTimestamp(col + 1, new Timestamp(tupleBatch.getDateTime(col, row).getMillis()));
+                break;
+              case DOUBLE_TYPE:
+                statement.setDouble(col + 1, tupleBatch.getDouble(col, row));
+                break;
+              case FLOAT_TYPE:
+                statement.setFloat(col + 1, tupleBatch.getFloat(col, row));
+                break;
+              case INT_TYPE:
+                statement.setInt(col + 1, tupleBatch.getInt(col, row));
+                break;
+              case LONG_TYPE:
+                statement.setLong(col + 1, tupleBatch.getLong(col, row));
+                break;
+              case STRING_TYPE:
+                statement.setString(col + 1, tupleBatch.getString(col, row));
+                break;
+            }
+          }
+          statement.addBatch();
+        }
         statement.executeBatch();
         statement.close();
       } catch (final SQLException e) {
-        LOGGER.error(e.getMessage(), e);
-        throw new DbException(e);
+        throw ErrorUtils.mergeSQLException(e);
       }
     }
     LOGGER.debug(".. done inserting batch of size {}", tupleBatch.numTuples());
@@ -208,8 +236,7 @@ public final class JdbcAccessMethod extends AccessMethod {
       final ResultSet resultSet = statement.executeQuery(queryString);
       return new JdbcTupleBatchIterator(resultSet, schema);
     } catch (final SQLException e) {
-      LOGGER.error(e.getMessage());
-      throw new DbException(e);
+      throw ErrorUtils.mergeSQLException(e);
     }
   }
 
@@ -219,8 +246,7 @@ public final class JdbcAccessMethod extends AccessMethod {
     try {
       jdbcConnection.close();
     } catch (SQLException e) {
-      LOGGER.error(e.getMessage());
-      throw new DbException(e);
+      throw ErrorUtils.mergeSQLException(e);
     }
   }
 
@@ -237,8 +263,7 @@ public final class JdbcAccessMethod extends AccessMethod {
       statement = jdbcConnection.createStatement();
       statement.execute(ddlCommand);
     } catch (SQLException e) {
-      LOGGER.error(e.getMessage());
-      throw new DbException(e);
+      throw ErrorUtils.mergeSQLException(e);
     }
   }
 
@@ -273,8 +298,8 @@ public final class JdbcAccessMethod extends AccessMethod {
     Objects.requireNonNull(relationKey, "relationKey");
     Objects.requireNonNull(schema, "schema");
     final StringBuilder sb = new StringBuilder();
-    sb.append("INSERT INTO ").append(relationKey.toString(jdbcInfo.getDbms())).append(" (");
-    sb.append(StringUtils.join(schema.getColumnNames(), ','));
+    sb.append("INSERT INTO ").append(quote(relationKey)).append(" (");
+    sb.append(StringUtils.join(quotedColumnNames(schema), ','));
     sb.append(") VALUES (");
     for (int i = 0; i < schema.numColumns(); ++i) {
       if (i > 0) {
@@ -284,6 +309,20 @@ public final class JdbcAccessMethod extends AccessMethod {
     }
     sb.append(");");
     return sb.toString();
+  }
+
+  /**
+   * Returns a list of the column names in the given schema, quoted.
+   * 
+   * @param schema the relation whose columns to quote.
+   * @return a list of the column names in the given schema, quoted.
+   */
+  private List<String> quotedColumnNames(final Schema schema) {
+    ImmutableList.Builder<String> b = ImmutableList.builder();
+    for (String col : schema.getColumnNames()) {
+      b.add(quote(col));
+    }
+    return b.build();
   }
 
   @Override
@@ -302,7 +341,7 @@ public final class JdbcAccessMethod extends AccessMethod {
     switch (jdbcInfo.getDbms()) {
       case MyriaConstants.STORAGE_SYSTEM_MYSQL:
       case MyriaConstants.STORAGE_SYSTEM_POSTGRESQL:
-        /* This function is supported for Postgres and Mysql. */
+        /* This function is supported for PostgreSQL and MySQL. */
         break;
       case MyriaConstants.STORAGE_SYSTEM_MONETDB:
         throw new UnsupportedOperationException("MonetDB cannot CREATE TABLE IF NOT EXISTS");
@@ -319,14 +358,13 @@ public final class JdbcAccessMethod extends AccessMethod {
     }
 
     final StringBuilder sb = new StringBuilder();
-    sb.append("CREATE ").append(unloggedString).append("TABLE IF NOT EXISTS ").append(
-        relationKey.toString(jdbcInfo.getDbms())).append(" (");
+    sb.append("CREATE ").append(unloggedString).append("TABLE IF NOT EXISTS ").append(quote(relationKey)).append(" (");
     for (int i = 0; i < schema.numColumns(); ++i) {
       if (i > 0) {
         sb.append(", ");
       }
-      sb.append(schema.getColumnName(i)).append(" ")
-          .append(typeToDbmsType(schema.getColumnType(i), jdbcInfo.getDbms())).append(" NOT NULL");
+      sb.append(quote(schema.getColumnName(i))).append(" ").append(
+          typeToDbmsType(schema.getColumnType(i), jdbcInfo.getDbms())).append(" NOT NULL");
     }
     sb.append(");");
     return sb.toString();
@@ -368,8 +406,8 @@ public final class JdbcAccessMethod extends AccessMethod {
   public void dropAndRenameTables(final RelationKey oldRelation, final RelationKey newRelation) throws DbException {
     Objects.requireNonNull(oldRelation, "oldRelation");
     Objects.requireNonNull(newRelation, "newRelation");
-    final String oldName = oldRelation.toString(jdbcInfo.getDbms());
-    final String newName = newRelation.toString(jdbcInfo.getDbms());
+    final String oldName = quote(oldRelation);
+    final String newName = quote(newRelation);
 
     switch (jdbcInfo.getDbms()) {
       case MyriaConstants.STORAGE_SYSTEM_MYSQL:
@@ -390,7 +428,7 @@ public final class JdbcAccessMethod extends AccessMethod {
     switch (jdbcInfo.getDbms()) {
       case MyriaConstants.STORAGE_SYSTEM_POSTGRESQL:
       case MyriaConstants.STORAGE_SYSTEM_MYSQL:
-        execute("DROP TABLE IF EXISTS " + relationKey.toString(jdbcInfo.getDbms()));
+        execute("DROP TABLE IF EXISTS " + quote(relationKey));
         break;
       case MyriaConstants.STORAGE_SYSTEM_MONETDB:
         throw new UnsupportedOperationException("MonetDB cannot DROP IF EXISTS tables");
@@ -449,7 +487,7 @@ public final class JdbcAccessMethod extends AccessMethod {
         columns.append(',');
       }
       first = false;
-      columns.append(schema.getColumnName(i.getColumn()));
+      columns.append(quote(schema.getColumnName(i.getColumn())));
       if (i.isAscending()) {
         columns.append(" ASC");
       } else {
@@ -468,9 +506,9 @@ public final class JdbcAccessMethod extends AccessMethod {
     Objects.requireNonNull(schema, "schema");
     Objects.requireNonNull(indexes, "indexes");
 
-    String sourceTableName = relationKey.toString(jdbcInfo.getDbms());
+    String sourceTableName = quote(relationKey);
     for (List<IndexRef> index : indexes) {
-      String indexName = getIndexName(relationKey, index).toString(jdbcInfo.getDbms());
+      String indexName = quote(getIndexName(relationKey, index));
       String indexColumns = getIndexColumns(schema, index);
       StringBuilder statement = new StringBuilder("CREATE INDEX ");
       statement.append(indexName).append(" ON ").append(sourceTableName).append(indexColumns);
@@ -505,8 +543,8 @@ public final class JdbcAccessMethod extends AccessMethod {
       final List<IndexRef> index) throws DbException {
     Objects.requireNonNull(index, "index");
 
-    String sourceTableName = relationKey.toString(jdbcInfo.getDbms());
-    String indexName = getIndexName(relationKey, index).toString(jdbcInfo.getDbms());
+    String sourceTableName = quote(relationKey);
+    String indexName = quote(getIndexName(relationKey, index));
     String indexNameSingleQuote = "'" + indexName.substring(1, indexName.length() - 1) + "'";
     String indexColumns = getIndexColumns(schema, index);
 
@@ -515,6 +553,38 @@ public final class JdbcAccessMethod extends AccessMethod {
             indexNameSingleQuote, ") THEN CREATE INDEX", indexName, "ON", sourceTableName, indexColumns,
             "; END IF; END$$;");
     execute(statement);
+  }
+
+  /**
+   * Returns the quoted name of the given relation for use in SQL statements.
+   * 
+   * @param relationKey the relation to be quoted.
+   * @return the quoted name of the given relation for use in SQL statements.
+   */
+  private String quote(final RelationKey relationKey) {
+    return relationKey.toString(jdbcInfo.getDbms());
+  }
+
+  /**
+   * Returns the quoted name of the given column for use in SQL statements.
+   * 
+   * @param column the name of the column to be quoted.
+   * @return the quoted name of the given column for use in SQL statements.
+   */
+  private String quote(final String column) {
+    char quote;
+    switch (jdbcInfo.getDbms()) {
+      case MyriaConstants.STORAGE_SYSTEM_MYSQL:
+        quote = '`';
+        break;
+      case MyriaConstants.STORAGE_SYSTEM_POSTGRESQL:
+      case MyriaConstants.STORAGE_SYSTEM_MONETDB:
+        quote = '\"';
+        break;
+      default:
+        throw new UnsupportedOperationException("Don't know how to quote DBMS " + jdbcInfo.getDbms());
+    }
+    return new StringBuilder().append(quote).append(column).append(quote).toString();
   }
 }
 
@@ -553,8 +623,7 @@ class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
         nextTB = getNextTB();
         return null != nextTB;
       } catch (final SQLException e) {
-        e.printStackTrace();
-        throw new RuntimeException(e);
+        throw new RuntimeException(ErrorUtils.mergeSQLException(e).getCause());
       }
     }
   }

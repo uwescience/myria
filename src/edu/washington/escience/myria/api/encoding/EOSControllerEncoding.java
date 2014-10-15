@@ -13,7 +13,7 @@ public class EOSControllerEncoding extends AbstractProducerEncoding<EOSControlle
   public EOSController construct(ConstructArgs args) {
     List<ExchangePairID> ids = getRealOperatorIds();
     return new EOSController(null, ids.toArray(new ExchangePairID[ids.size()]), MyriaUtils
-        .integerCollectionToIntArray(getRealWorkerIds()));
+        .integerSetToIntArray(getRealWorkerIds()));
   }
 
 }

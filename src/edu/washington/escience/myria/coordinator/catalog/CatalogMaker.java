@@ -26,7 +26,6 @@ import edu.washington.escience.myria.tool.MyriaConfigurationReader;
  * A helper class used to make Catalogs. This will contain the creation code for all the Catalogs we use for
  * experiments, and also a bunch of useful helper functions that generally aide in the creation of Catalos.
  * 
- * @author dhalperi
  * 
  */
 public final class CatalogMaker {
@@ -128,9 +127,7 @@ public final class CatalogMaker {
         c.addMaster(masters.get(id));
       }
       final Map<String, String> workers = config.get("workers");
-      for (final String id : workers.keySet()) {
-        c.addWorker(Integer.parseInt(id), workers.get(id));
-      }
+      c.addWorkers(workers);
 
       HashMap<String, String> configurationValues = new HashMap<String, String>(masterConfigurations);
       MyriaSystemConfigKeys.addDeploymentKeysFromConfigFile(configurationValues, config.get("deployment"));
@@ -198,9 +195,7 @@ public final class CatalogMaker {
         wc.addMaster(masters.get(id));
       }
       final Map<String, String> workers = config.get("workers");
-      for (final String id : workers.keySet()) {
-        wc.addWorker(Integer.parseInt(id), workers.get(id));
-      }
+      wc.addWorkers(workers);
 
       /*
        * the working directory of this worker. Note: it may not be the same as dirName, which means where the catalog is

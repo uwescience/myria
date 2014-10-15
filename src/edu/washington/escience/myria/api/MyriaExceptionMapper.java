@@ -24,16 +24,15 @@ import edu.washington.escience.myria.util.ErrorUtils;
  * which is a subclass of {@link WebApplicationException} and thus already contains an HTTP Response that will be passed
  * through directly.
  * 
- * @author dhalperi
  * 
  */
 @Provider
-public final class MyriaExceptionMapper implements ExceptionMapper<Exception> {
+public final class MyriaExceptionMapper implements ExceptionMapper<Throwable> {
   /** The logger for this class. */
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MyriaExceptionMapper.class);
 
   @Override
-  public Response toResponse(final Exception ex) {
+  public Response toResponse(final Throwable ex) {
     /** Any WebApplicationException should be unmodified. **/
     if (ex instanceof WebApplicationException) {
       return ((WebApplicationException) ex).getResponse();

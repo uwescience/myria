@@ -22,9 +22,8 @@ import edu.washington.escience.myria.parallel.SocketInfo;
 
 /**
  * This class is intended to store the configuration and catalog information for a Myria worker.
- * 
- * @author dhalperi
- * 
+ *
+ *
  */
 public final class WorkerCatalog {
   /** The logger for this class. */
@@ -34,7 +33,7 @@ public final class WorkerCatalog {
    * @param filename the path to the SQLite database storing the worker catalog.
    * @return a fresh WorkerCatalog fitting the specified description.
    * @throws CatalogException if there is an error creating the database or the file already exists.
-   * 
+   *
    *           TODO add some sanity checks to the filename?
    */
   public static WorkerCatalog create(final String filename) throws CatalogException {
@@ -47,7 +46,7 @@ public final class WorkerCatalog {
    * @param overwrite specifies whether to overwrite an existing WorkerCatalog.
    * @return a fresh WorkerCatalog fitting the specified description.
    * @throws CatalogException if the database already exists, or there is an error creating it.
-   * 
+   *
    *           TODO add some sanity checks to the filename?
    */
   public static WorkerCatalog create(final String filename, final boolean overwrite) throws CatalogException {
@@ -62,12 +61,12 @@ public final class WorkerCatalog {
   }
 
   /**
-   * 
+   *
    * @param catalogFile a File object pointing to the SQLite database that will store the WorkerCatalog. If catalogFile
    *          is null, this creates an in-memory SQLite database.
    * @return a fresh WorkerCatalog fitting the specified description.
    * @throws CatalogException if there is an error opening the database.
-   * 
+   *
    *           TODO add some sanity checks to the filename?
    */
   private static WorkerCatalog createFromFile(final File catalogFile) throws CatalogException {
@@ -90,36 +89,36 @@ public final class WorkerCatalog {
       sqliteConnection.exec("DROP TABLE IF EXISTS configuration");
       sqliteConnection.exec(
           "CREATE TABLE configuration (\n"
-        + "    key STRING UNIQUE NOT NULL,\n"
-        + "    value STRING NOT NULL);");
+              + "    key STRING UNIQUE NOT NULL,\n"
+              + "    value STRING NOT NULL);");
       sqliteConnection.exec("DROP TABLE IF EXISTS masters");
       sqliteConnection.exec(
           "CREATE TABLE masters (\n"
-        + "    master_id INTEGER PRIMARY KEY ASC,\n"
-        + "    host_port STRING NOT NULL);");
+              + "    master_id INTEGER PRIMARY KEY ASC,\n"
+              + "    host_port STRING NOT NULL);");
       sqliteConnection.exec("DROP TABLE IF EXISTS workers");
       sqliteConnection.exec(
           "CREATE TABLE workers (\n"
-        + "    worker_id INTEGER PRIMARY KEY ASC,\n"
-        + "    host_port STRING NOT NULL);");
+              + "    worker_id INTEGER PRIMARY KEY ASC,\n"
+              + "    host_port STRING NOT NULL);");
       sqliteConnection.exec("DROP TABLE IF EXISTS relations");
       sqliteConnection.exec(
           "CREATE TABLE relations (\n"
-        + "    relation_id INTEGER PRIMARY KEY ASC,\n"
-        + "    relation_name STRING NOT NULL UNIQUE);");
+              + "    relation_id INTEGER PRIMARY KEY ASC,\n"
+              + "    relation_name STRING NOT NULL UNIQUE);");
       sqliteConnection.exec("DROP TABLE IF EXISTS relation_schema");
       sqliteConnection.exec(
           "CREATE TABLE relation_schema (\n"
-        + "    relation_id INTEGER NOT NULL REFERENCES relations(relation_id),\n"
-        + "    col_index INTEGER NOT NULL,\n"
-        + "    col_name STRING,\n"
-        + "    col_type STRING NOT NULL);");
+              + "    relation_id INTEGER NOT NULL REFERENCES relations(relation_id),\n"
+              + "    col_index INTEGER NOT NULL,\n"
+              + "    col_name STRING,\n"
+              + "    col_type STRING NOT NULL);");
       sqliteConnection.exec("DROP TABLE IF EXISTS shards");
       sqliteConnection.exec(
           "CREATE TABLE shards (\n"
-        + "    stored_relation_id INTEGER NOT NULL REFERENCES stored_relations(stored_relation_id),\n"
-        + "    shard_index INTEGER NOT NULL,\n"
-        + "    location STRING NOT NULL);");
+              + "    stored_relation_id INTEGER NOT NULL REFERENCES stored_relations(stored_relation_id),\n"
+              + "    shard_index INTEGER NOT NULL,\n"
+              + "    location STRING NOT NULL);");
       sqliteConnection.exec("COMMIT TRANSACTION");
       /* @formatter:on*/
     } catch (final SQLiteException e) {
@@ -148,7 +147,7 @@ public final class WorkerCatalog {
   /**
    * @return a fresh WorkerCatalog fitting the specified description.
    * @throws CatalogException if there is an error opening the database.
-   * 
+   *
    *           TODO add some sanity checks to the filename?
    */
   public static WorkerCatalog createInMemory() throws CatalogException {
@@ -157,12 +156,12 @@ public final class WorkerCatalog {
 
   /**
    * Opens the worker catalog stored as a SQLite database in the specified file.
-   * 
+   *
    * @param filename the path to the SQLite database storing the catalog.
    * @return an initialized WorkerCatalog object ready to be used for experiments.
    * @throws FileNotFoundException if the given file does not exist.
    * @throws CatalogException if there is an error connecting to the database.
-   * 
+   *
    *           TODO add some sanity checks to the filename?
    */
   public static WorkerCatalog open(final String filename) throws FileNotFoundException, CatalogException {
@@ -196,7 +195,7 @@ public final class WorkerCatalog {
 
   /**
    * Not publicly accessible.
-   * 
+   *
    * @param sqliteConnection connection to the SQLite database that stores the WorkerCatalog.
    * @throws SQLiteException if there is an error turning on foreign keys.
    */
@@ -209,7 +208,7 @@ public final class WorkerCatalog {
 
   /**
    * Adds a master using the specified host and port to the WorkerCatalog.
-   * 
+   *
    * @param hostPortString specifies the path to the master in the format "host:port"
    * @return this WorkerCatalog
    * @throws CatalogException if the hostPortString is invalid or there is a database exception.
@@ -238,13 +237,13 @@ public final class WorkerCatalog {
 
   /**
    * Adds the metadata for a relation into the WorkerCatalog.
-   * 
+   *
    * @param name the name of the relation.
    * @param schema the schema of the relation.
    * @throws CatalogException if the relation is already in the WorkerCatalog or there is an error in the database.
-   * 
+   *
    *           TODO if we use SQLite in a multithreaded way this will need to be revisited.
-   * 
+   *
    */
   public void addRelationMetadata(final String name, final Schema schema) throws CatalogException {
     Objects.requireNonNull(name);
@@ -292,7 +291,7 @@ public final class WorkerCatalog {
 
   /**
    * Adds a worker using the specified host and port to the WorkerCatalog.
-   * 
+   *
    * @param workerId specifies the global identifier of this worker.
    * @param hostPortString specifies the path to the worker in the format "host:port".
    * @return this WorkerCatalog.
@@ -323,6 +322,48 @@ public final class WorkerCatalog {
   }
 
   /**
+   * Adds workers in batch.
+   *
+   * @param id2HostPortString worker id to host:port string.
+   * @return this WorkerCatalog.
+   * @throws CatalogException if the hostPortString is invalid or there is a database exception.
+   */
+  public WorkerCatalog addWorkers(final Map<String, String> id2HostPortString) throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("WorkerCatalog is closed.");
+    }
+    try {
+      final SQLiteStatement statement =
+          sqliteConnection.prepare("INSERT INTO workers(worker_id, host_port) VALUES(?,?);", false);
+      sqliteConnection.exec("BEGIN TRANSACTION");
+      for (Map.Entry<String, String> e : id2HostPortString.entrySet()) {
+        @SuppressWarnings("unused")
+        final SocketInfo sockInfo = SocketInfo.valueOf(e.getValue());
+        statement.bind(1, Integer.valueOf(e.getKey()));
+        statement.bind(2, e.getValue());
+        statement.step();
+        statement.reset(false);
+      }
+
+      sqliteConnection.exec("COMMIT TRANSACTION");
+      statement.dispose();
+    } catch (final SQLiteException e) {
+      if (LOGGER.isErrorEnabled()) {
+        LOGGER.error(e.toString());
+      }
+      try {
+        /* Commit transaction. */
+        sqliteConnection.exec("ROLLBACK TRANSACTION");
+      } catch (SQLiteException e1) {
+        /* Still throw the original exception */
+        throw new CatalogException(e);
+      }
+      throw new CatalogException(e);
+    }
+    return this;
+  }
+
+  /**
    * Close the connection to the database that stores the WorkerCatalog. Idempotent. Calling any methods (other than
    * close()) on this WorkerCatalog will throw a CatalogException.
    */
@@ -337,7 +378,7 @@ public final class WorkerCatalog {
   /**
    * Extract the value of a particular configuration parameter from the database. Returns null if the parameter is not
    * configured.
-   * 
+   *
    * @param key the name of the configuration parameter.
    * @return the value of the configuration parameter, or null if that configuration is not supported.
    * @throws CatalogException if there is an error in the backing database.
@@ -447,7 +488,7 @@ public final class WorkerCatalog {
   /**
    * Extract the value of a particular configuration parameter from the database. Returns null if the parameter is not
    * configured.
-   * 
+   *
    * @param key the name of the configuration parameter.
    * @param value the value of the configuration parameter.
    * @throws CatalogException if there is an error in the backing database.
@@ -473,7 +514,7 @@ public final class WorkerCatalog {
 
   /**
    * Set all the configuration values in the provided map in a single transaction.
-   * 
+   *
    * @param entries the value of the configuration parameter.
    * @throws CatalogException if there is an error in the backing database.
    */

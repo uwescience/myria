@@ -4,9 +4,11 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myria.MyriaConstants;
@@ -27,7 +29,7 @@ public final class DeploymentUtils {
 
   /**
    * entry point.
-   * 
+   *
    * @param args args.
    * @throws IOException if file system error occurs.
    * */
@@ -82,6 +84,8 @@ public final class DeploymentUtils {
         if (username != null) {
           hostname = username + "@" + hostname;
         }
+
+        System.out.println("Start syncing distribution files to master#" + masterId + " @ " + hostname);
         rsyncFileToRemote("libs", hostname, remotePath, true);
         rsyncFileToRemote("conf", hostname, remotePath);
         rsyncFileToRemote("sqlite4java-282", hostname, remotePath);
@@ -103,6 +107,7 @@ public final class DeploymentUtils {
         if (username != null) {
           hostname = username + "@" + hostname;
         }
+        System.out.println("Start syncing distribution files to worker#" + workerId + " @ " + hostname);
         rsyncFileToRemote("libs", hostname, remotePath, true);
         rsyncFileToRemote("conf", hostname, remotePath);
         rsyncFileToRemote("sqlite4java-282", hostname, remotePath);
@@ -149,7 +154,7 @@ public final class DeploymentUtils {
 
   /**
    * start a worker process on a remote machine.
-   * 
+   *
    * @param address e.g. beijing.cs.washington.edu
    * @param workingDir the same meaning as path in deployment.cfg
    * @param description the same meaning as name in deployment.cfg
@@ -163,8 +168,8 @@ public final class DeploymentUtils {
     StringBuilder builder = new StringBuilder();
     String path = workingDir + "/" + description + "-files";
     String workerDir = path + "/" + description + "/" + "worker_" + workerId;
-    String classpath = "'conf:libs/*'";
-    String librarypath = "sqlite4java-282";
+    String classpath = "'" + path + "/conf:" + path + "/libs/*'";
+    String librarypath = path + "/" + "sqlite4java-282";
     String heapSize = maxHeapSize;
     if (description == null) {
       /* built in system test */
@@ -174,9 +179,12 @@ public final class DeploymentUtils {
       librarypath = System.getProperty("java.library.path");
       heapSize = "";
     }
+    String[] command = new String[3];
+    command[0] = "ssh";
+    command[1] = address;
 
-    builder.append("ssh " + address);
-    builder.append(" cd " + path + ";");
+    builder.append("mkdir -p " + workerDir + ";");
+    builder.append(" cd " + workerDir + ";");
     builder.append(" nohup java -ea");
     builder.append(" -cp " + classpath);
     builder.append(" -Djava.util.logging.config.file=logging.properties");
@@ -192,27 +200,30 @@ public final class DeploymentUtils {
     builder.append(" edu.washington.escience.myria.parallel.Worker");
     builder.append(" --workingDir " + workerDir);
     builder.append(" 0</dev/null");
-    builder.append(" 1>worker_" + workerId + "_stdout");
-    builder.append(" 2>worker_" + workerId + "_stderr");
+    builder.append(" 1>" + path + "/worker_" + workerId + "_stdout");
+    builder.append(" 2>" + path + "/worker_" + workerId + "_stderr");
     builder.append(" &");
+    command[2] = builder.toString();
     System.out.println(workerId + " = " + address);
-    startAProcess(builder.toString());
+    startAProcess(command);
   }
 
   /**
    * start a master process on a remote machine.
-   * 
+   *
    * @param address e.g. beijing.cs.washington.edu
-   * @param workingDir the same meaning as path in deployment.cfg
+   * @param path the same meaning as path in deployment.cfg
    * @param description the same meaning as name in deployment.cfg
    * @param maxHeapSize the same meaning as max_heap_size in deployment.cfg
    * @param restPort the port number for restlet.
    */
-  public static void startMaster(final String address, String workingDir, final String description,
+  public static void startMaster(final String address, final String path, final String description,
       final String maxHeapSize, final int restPort) {
-    workingDir += "/" + description + "-files";
+    String workingDir = path + "/" + description + "-files";
     StringBuilder builder = new StringBuilder();
-    builder.append("ssh " + address);
+    String[] command = new String[3];
+    command[0] = "ssh";
+    command[1] = address;
     builder.append(" cd " + workingDir + ";");
     builder.append(" nohup java -cp 'conf:libs/*'");
     builder.append(" -Djava.util.logging.config.file=logging.properties");
@@ -225,8 +236,9 @@ public final class DeploymentUtils {
     builder.append(" 1>master_stdout");
     builder.append(" 2>master_stderr");
     builder.append(" &");
+    command[2] = builder.toString();
     System.out.println(address);
-    startAProcess(builder.toString());
+    startAProcess(command);
     String hostname = address;
     if (hostname.indexOf('@') != -1) {
       hostname = address.substring(hostname.indexOf('@') + 1);
@@ -237,7 +249,7 @@ public final class DeploymentUtils {
 
   /**
    * Ensure that the master is alive. Wait for some time if necessary.
-   * 
+   *
    * @param hostname the hostname of the master
    * @param restPort the port number of the rest api master
    * */
@@ -266,9 +278,7 @@ public final class DeploymentUtils {
 
       } catch (IOException e) {
         // expected for the first few trials
-        if (LOGGER.isTraceEnabled()) {
-          LOGGER.trace(e.toString());
-        }
+        LOGGER.trace("expected exception occurred", e);
       }
       try {
         Thread.sleep(TimeUnit.SECONDS.toMillis(MyriaConstants.MASTER_START_UP_TIMEOUT_IN_SECOND) / 10);
@@ -285,22 +295,17 @@ public final class DeploymentUtils {
 
   /**
    * Call mkdir on a remote machine.
-   * 
+   *
    * @param address e.g. beijing.cs.washington.edu
    * @param remotePath e.g. /tmp/test
    */
   public static void mkdir(final String address, final String remotePath) {
-    StringBuilder builder = new StringBuilder();
-    builder.append("ssh");
-    builder.append(" " + address);
-    builder.append(" mkdir -p");
-    builder.append(" " + remotePath);
-    startAProcess(builder.toString());
+    startAProcess(new String[] { "ssh", address, "mkdir -p " + remotePath });
   }
 
   /**
    * Copy a local file to a location on a remote machine, using rsync.
-   * 
+   *
    * @param localPath path to the local file that you want to copy from
    * @param address e.g. beijing.cs.washington.edu
    * @param remotePath e.g. /tmp/test
@@ -311,7 +316,7 @@ public final class DeploymentUtils {
 
   /**
    * Copy a local file to a location on a remote machine, using rsync.
-   * 
+   *
    * @param localPath path to the local file that you want to copy from
    * @param address e.g. beijing.cs.washington.edu
    * @param remotePath e.g. /tmp/test
@@ -319,54 +324,49 @@ public final class DeploymentUtils {
    */
   public static void rsyncFileToRemote(final String localPath, final String address, final String remotePath,
       final boolean useDel) {
-    StringBuilder builder = new StringBuilder();
-    builder.append("rsync");
-    builder.append(" -rtLDvz");
+    ArrayList<String> command = new ArrayList<String>();
+    command.add("rsync");
+    command.add("-rtLDvz");
     if (useDel) {
-      builder.append(" --del");
+      command.add("--del");
     }
-    builder.append(" " + localPath);
-    builder.append(" " + address + ":" + remotePath);
-    startAProcess(builder.toString());
+    command.add(localPath);
+    command.add(address + ":" + remotePath);
+    startAProcess(command.toArray(new String[] {}));
   }
 
   /**
    * Remove a file on a remote machine.
-   * 
+   *
    * @param address e.g. beijing.cs.washington.edu.
    * @param path the path to the file.
    */
   public static void rmFile(final String address, final String path) {
-    StringBuilder builder = new StringBuilder();
-    builder.append("ssh");
-    builder.append(" " + address);
-    builder.append(" rm -rf");
-    builder.append(" " + path);
-    startAProcess(builder.toString());
+    startAProcess(new String[] { "ssh", address, "rm -rf " + path });
   }
 
   /**
    * start a process by ProcessBuilder.
-   * 
-   * @param cmd the command.
+   *
+   * @param cmd cmd[0] is the command name, from cmd[1] are arguments.
    */
-  private static void startAProcess(final String cmd) {
-    LOGGER.debug(cmd);
+  private static void startAProcess(final String[] cmd) {
+    LOGGER.debug(StringUtils.join(cmd, " "));
     int ret;
     try {
-      ret = new ProcessBuilder().inheritIO().command(cmd.split(" ")).start().waitFor();
+      ret = new ProcessBuilder().inheritIO().command(cmd).start().waitFor();
     } catch (IOException | InterruptedException e) {
       e.printStackTrace();
       throw new RuntimeException(e);
     }
     if (ret != 0) {
-      throw new RuntimeException("Error " + ret + " executing command: " + cmd);
+      throw new RuntimeException("Error " + ret + " executing command: " + StringUtils.join(cmd, " "));
     }
   }
 
   /**
    * Helper function to get the hostname from hostname:port.
-   * 
+   *
    * @param s the string hostname:port
    * @return the hostname.
    * */
@@ -376,7 +376,7 @@ public final class DeploymentUtils {
 
   /**
    * Helper function to get the port number from hostname:port.
-   * 
+   *
    * @param s the string hostname:port
    * @return the port number.
    * */

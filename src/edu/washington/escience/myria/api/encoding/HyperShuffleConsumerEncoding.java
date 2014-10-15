@@ -7,14 +7,12 @@ import edu.washington.escience.myria.util.MyriaUtils;
 /**
  * Consumer part of JSON encoding for HyperCube Join.
  * 
- * @author Shumo Chu <chushumo@cs.washington.edu>
- * 
  */
 public class HyperShuffleConsumerEncoding extends AbstractConsumerEncoding<GenericShuffleConsumer> {
 
   @Override
   public GenericShuffleConsumer construct(ConstructArgs args) {
     return new GenericShuffleConsumer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
-        .integerCollectionToIntArray(getRealWorkerIds()));
+        .integerSetToIntArray(getRealWorkerIds()));
   }
 }

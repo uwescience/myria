@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.api.encoding;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -17,6 +18,8 @@ import edu.washington.escience.myria.operator.Operator;
 public final class PlanFragmentEncoding extends MyriaApiEncoding {
   /** Which workers execute this plan. */
   public List<Integer> workers;
+  /** Override the workers that will execute this fragment. */
+  public List<Integer> overrideWorkers;
   /** The Operators in this plan fragment. */
   @Required
   public List<OperatorEncoding<? extends Operator>> operators;
@@ -24,6 +27,18 @@ public final class PlanFragmentEncoding extends MyriaApiEncoding {
   public int fragmentIndex = -1;
   /** List of required fields. */
   public static final List<String> requiredFields = ImmutableList.of("operators");
+
+  /**
+   * Construct a PlanFragmentEncoding wrapping the given operators
+   * 
+   * @param operators
+   */
+  @SafeVarargs
+  public static PlanFragmentEncoding of(final OperatorEncoding<? extends Operator>... operators) {
+    PlanFragmentEncoding ret = new PlanFragmentEncoding();
+    ret.operators = Arrays.asList(operators);
+    return ret;
+  }
 
   public void setFragmentIndex(int fragmentIndex) {
     this.fragmentIndex = fragmentIndex;

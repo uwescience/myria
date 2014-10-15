@@ -15,6 +15,7 @@ import edu.washington.escience.myria.column.FloatColumn;
 import edu.washington.escience.myria.column.mutable.FloatMutableColumn;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * A column of Float values.
@@ -81,7 +82,7 @@ public final class FloatColumnBuilder extends ColumnBuilder<Float> {
   @Override
   public FloatColumnBuilder appendObject(final Object value) throws BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return appendFloat((Float) value);
+    return appendFloat((Float) MyriaUtils.ensureObjectIsValidType(value));
   }
 
   @Override

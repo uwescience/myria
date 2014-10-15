@@ -127,7 +127,7 @@ def collect_result():
     }
     fragment = {
         "operators": [ gather, insert],
-        "workers" : [ 1 ]
+        "overrideWorkers" : [ 1 ]
     }
     return fragment
 
@@ -255,7 +255,7 @@ def collect_partition_join_result():
     }
     fragment = {
         "operators": [gather, insert],
-        "workers" : [ 1 ]
+        "overrideWorkers" : [ 1 ]
     }
     return fragment
 

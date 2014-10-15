@@ -12,7 +12,6 @@ import com.google.common.base.Preconditions;
 /**
  * This class holds the key that identifies a relation. The notation is user.program.relation.
  * 
- * @author dhalperi
  */
 public final class RelationKey implements Serializable {
 
@@ -108,10 +107,10 @@ public final class RelationKey implements Serializable {
   /**
    * Helper function for computing strings of different types.
    * 
-   * @param leftEscape the left escape character, e.g., '['.
-   * @param separate the separating character, e.g., '#'.
-   * @param rightEscape the right escape character, e.g., ']'.
-   * @return [user#program#relation].
+   * @param leftEscape the left escape character, e.g., '\"'.
+   * @param separate the separating character, e.g., ':'.
+   * @param rightEscape the right escape character, e.g., '\"'.
+   * @return <code>"user:program:relation"</code>, for example.
    */
   private String toString(final char leftEscape, final char separate, final char rightEscape) {
     StringBuilder sb = new StringBuilder();
@@ -119,20 +118,30 @@ public final class RelationKey implements Serializable {
     return sb.toString();
   }
 
+  /** The maximum length of a postgres identifier is 63 chars. Ugh. */
+  private static final int MAX_POSTGRESQL_IDENTIFIER_LENGTH = 63;
+
   /**
    * Helper function for computing strings of different types.
    * 
-   * @param dbms the DBMS, e.g., "mysql".
-   * @return [user#program#relation].
+   * @param dbms the DBMS, e.g., {@link MyriaConstants.STORAGE_SYSTEM_MYSQL}.
+   * @return <code>"user:program:relation"</code>, for example.
    */
   public String toString(final String dbms) {
     switch (dbms) {
-      case MyriaConstants.STORAGE_SYSTEM_SQLITE:
-        return toString('[', '#', ']');
       case MyriaConstants.STORAGE_SYSTEM_POSTGRESQL:
+        String ret = toString('\"', ':', '\"');
+        Preconditions.checkArgument(ret.length() <= MAX_POSTGRESQL_IDENTIFIER_LENGTH,
+            "PostgreSQL does not allow relation names longer than %s characters: %s", MAX_POSTGRESQL_IDENTIFIER_LENGTH,
+            ret);
+        return ret;
+      case MyriaConstants.STORAGE_SYSTEM_SQLITE:
+        return toString('\"', ':', '\"');
       case MyriaConstants.STORAGE_SYSTEM_MONETDB:
+        /* TODO: can we switch the other DBMS to : as well? */
         return toString('\"', ' ', '\"');
       case MyriaConstants.STORAGE_SYSTEM_MYSQL:
+        /* TODO: can we switch the other DBMS to : as well? */
         return toString('`', ' ', '`');
       default:
         throw new IllegalArgumentException("Unsupported dbms " + dbms);
@@ -162,6 +171,6 @@ public final class RelationKey implements Serializable {
    * @return the default relation key for this temp table created for the given query
    */
   public static RelationKey ofTemp(final long queryId, final String table) {
-    return RelationKey.of("myria_q_" + queryId, "__temp__", table);
+    return RelationKey.of("q_" + queryId, "temp", table);
   }
 }

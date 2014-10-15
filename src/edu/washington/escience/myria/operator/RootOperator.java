@@ -1,15 +1,21 @@
 package edu.washington.escience.myria.operator;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.annotation.Nonnull;
+
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.storage.ConcatColumn;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * An abstract class used to make those specialized operators that only consume tuples simpler to implement.
  * 
- * @author dhalperi
  * 
  */
 public abstract class RootOperator extends Operator {
@@ -18,6 +24,8 @@ public abstract class RootOperator extends Operator {
   private static final long serialVersionUID = 1L;
   /** Source of the tuples to be consumed. */
   private Operator child;
+  /** The coalescing threshold. 0 or negative means do not coalesce. */
+  private final int threshold;
 
   /**
    * Sets important parameters for successful operation.
@@ -26,6 +34,18 @@ public abstract class RootOperator extends Operator {
    */
   public RootOperator(final Operator child) {
     this.child = child;
+    threshold = 0;
+  }
+
+  /**
+   * Sets important parameters for successful operation.
+   * 
+   * @param child the source of tuples that this Root operator consumes.
+   * @param coalesce if set to a positive integer, will gather ready tuple batches until this many tuples are available.
+   */
+  public RootOperator(final Operator child, final int coalesce) {
+    this.child = child;
+    threshold = coalesce;
   }
 
   /**
@@ -51,12 +71,55 @@ public abstract class RootOperator extends Operator {
    * */
   protected abstract void childEOI() throws DbException;
 
+  /**
+   * Implement coalescing tuples together if necessary.
+   * 
+   * @param first the first, non-null tuple batch to be handled.
+   * @return a coalesced tuple batch consisting of either all ready tuples or at least {@link #threshold} tuples.
+   * @throws DbException if there is an error.
+   */
+  private TupleBatch getCoalesced(@Nonnull final TupleBatch first) throws DbException {
+    if (first.numTuples() > threshold) {
+      return first;
+    }
+    TupleBatch next = child.nextReady();
+    if (next == null) {
+      return first;
+    }
+
+    /* Start a concat column of the first two batches we found. */
+    List<ConcatColumn<?>> cols = new ArrayList<>(first.numColumns());
+    for (Column<?> c : first.getDataColumns()) {
+      ConcatColumn<?> col = new ConcatColumn<>(c.getType());
+      col.addColumn(c);
+      cols.add(col);
+    }
+    int i = 0;
+    for (Column<?> c : next.getDataColumns()) {
+      cols.get(i).addColumn(c);
+      ++i;
+    }
+
+    while (cols.get(0).size() < threshold) {
+      next = child.nextReady();
+      if (next == null) {
+        break;
+      }
+      i = 0;
+      for (Column<?> c : next.getDataColumns()) {
+        cols.get(i).addColumn(c);
+        ++i;
+      }
+    }
+    return new TupleBatch(getSchema(), cols);
+  }
+
   @Override
   protected final TupleBatch fetchNextReady() throws DbException {
     TupleBatch tb = null;
     tb = child.nextReady();
     if (tb != null) {
-      consumeTuples(tb);
+      consumeTuples(getCoalesced(tb));
     } else if (child.eoi()) {
       childEOI();
     } else if (child.eos()) {

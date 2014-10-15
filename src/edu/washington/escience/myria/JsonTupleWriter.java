@@ -19,19 +19,18 @@ import edu.washington.escience.myria.util.DateTimeUtils;
 /**
  * JsonTupleWriter is a {@link TupleWriter} that serializes tuples to JavaScript Object Notation (JSON). The output is a
  * list of objects, each of which has one field 'attribute' : 'value' per column.
- * 
+ *
  * For a dataset that has two integer columns names 'x' and 'y', and three rows, the output will look like
- * 
+ *
  * <pre>
  * [{"x":1,"y":2},{"x":3,"y":4},{"x":5,"y":6}]
  * </pre>
- * 
+ *
  * Attribute names (column names) are {@link String} objects that are escaped for JSON. For values, primitive types are
  * output unquoted and as-is; {@link DateTime} objects are quoted and serialized in ISO8601 format, and {@link String}
  * objects are quoted and escaped for JSON.
- * 
- * @author dhalperi
- * 
+ *
+ *
  */
 public class JsonTupleWriter implements TupleWriter {
 
@@ -44,11 +43,77 @@ public class JsonTupleWriter implements TupleWriter {
 
   /**
    * Constructs a {@link JsonTupleWriter}.
-   * 
+   *
    * @param output the {@link OutputStream} to which the data will be written.
    */
   public JsonTupleWriter(final OutputStream output) {
     this.output = new PrintWriter(new BufferedWriter(new OutputStreamWriter(output)));
+  }
+
+  /**
+   * @param ch the data to print
+   * @throws IOException if the {@link PrintWriter} has errors.
+   */
+  private void print(final char ch) throws IOException {
+    output.print(ch);
+    if (output.checkError()) {
+      throw new IOException("Broken pipe");
+    }
+  }
+
+  /**
+   * @param ch the data to print
+   * @throws IOException if the {@link PrintWriter} has errors.
+   */
+  private void print(final boolean ch) throws IOException {
+    output.print(ch);
+    if (output.checkError()) {
+      throw new IOException("Broken pipe");
+    }
+  }
+
+  /**
+   * @param ch the data to print
+   * @throws IOException if the {@link PrintWriter} has errors.
+   */
+  private void print(final double ch) throws IOException {
+    output.print(ch);
+    if (output.checkError()) {
+      throw new IOException("Broken pipe");
+    }
+  }
+
+  /**
+   * @param ch the data to print
+   * @throws IOException if the {@link PrintWriter} has errors.
+   */
+  private void print(final int ch) throws IOException {
+    output.print(ch);
+    if (output.checkError()) {
+      throw new IOException("Broken pipe");
+    }
+  }
+
+  /**
+   * @param ch the data to print
+   * @throws IOException if the {@link PrintWriter} has errors.
+   */
+  private void print(final long ch) throws IOException {
+    output.print(ch);
+    if (output.checkError()) {
+      throw new IOException("Broken pipe");
+    }
+  }
+
+  /**
+   * @param str the data to print
+   * @throws IOException if the {@link PrintWriter} has errors.
+   */
+  private void print(final String str) throws IOException {
+    output.print(str);
+    if (output.checkError()) {
+      throw new IOException("Broken pipe");
+    }
   }
 
   @Override
@@ -62,7 +127,7 @@ public class JsonTupleWriter implements TupleWriter {
     escapedColumnNames = escapedNames.build();
 
     /* Start the JSON with a '[' to open the list of objects. */
-    output.print('[');
+    print('[');
   }
 
   @Override
@@ -73,10 +138,10 @@ public class JsonTupleWriter implements TupleWriter {
     for (int i = 0; i < tuples.numTuples(); ++i) {
       /* Add the record separator (except first record) and open the record with '{'. */
       if (haveWritten) {
-        output.print(",{");
+        print(",{");
       } else {
         haveWritten = true;
-        output.print('{');
+        print('{');
       }
 
       /*
@@ -85,47 +150,47 @@ public class JsonTupleWriter implements TupleWriter {
        */
       for (int j = 0; j < tuples.numColumns(); ++j) {
         if (j > 0) {
-          output.print(',');
+          print(',');
         }
-        output.print('"');
-        output.print(escapedColumnNames.get(j));
-        output.print("\":");
+        print('"');
+        print(escapedColumnNames.get(j));
+        print("\":");
         switch (columnTypes.get(j)) {
           case BOOLEAN_TYPE:
-            output.print(tuples.getBoolean(j, i));
+            print(tuples.getBoolean(j, i));
             break;
           case DOUBLE_TYPE:
-            output.print(tuples.getDouble(j, i));
+            print(tuples.getDouble(j, i));
             break;
           case FLOAT_TYPE:
-            output.print(tuples.getFloat(j, i));
+            print(tuples.getFloat(j, i));
             break;
           case INT_TYPE:
-            output.print(tuples.getInt(j, i));
+            print(tuples.getInt(j, i));
             break;
           case LONG_TYPE:
-            output.print(tuples.getLong(j, i));
+            print(tuples.getLong(j, i));
             break;
           case DATETIME_TYPE:
-            output.print('"');
-            output.print(DateTimeUtils.dateTimeToISO8601(tuples.getDateTime(j, i)));
-            output.print('"');
+            print('"');
+            print(DateTimeUtils.dateTimeToISO8601(tuples.getDateTime(j, i)));
+            print('"');
             break;
           case STRING_TYPE:
-            output.print('"');
-            output.print(JsonEncoder.encode(tuples.getString(j, i)));
-            output.print('"');
+            print('"');
+            print(JsonEncoder.encode(tuples.getString(j, i)));
+            print('"');
             break;
         }
       }
-      output.print('}');
+      print('}');
     }
   }
 
   @Override
   public void done() throws IOException {
     /* Close the list with ']'. */
-    output.print(']');
+    print(']');
     output.flush();
     output.close();
   }

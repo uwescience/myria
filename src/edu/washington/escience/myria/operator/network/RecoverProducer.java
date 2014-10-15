@@ -49,8 +49,8 @@ public final class RecoverProducer extends CollectProducer {
     if (!oriProducer.eos()) {
       StreamOutputChannel<TupleBatch> tmp = getChannels()[0];
       if (LOGGER.isTraceEnabled()) {
-        LOGGER.trace("recovery task " + getOpName() + " detach & attach channel " + tmp.getID() + " old channel "
-            + oriProducer.getChannels()[channelIndx] + " new channel " + tmp);
+        LOGGER.trace("recovery task {} detach & attach channel {} old channel {} new channel {}", getOpName(), tmp
+            .getID(), oriProducer.getChannels()[channelIndx], tmp);
       }
       oriProducer.getChannels()[channelIndx] = tmp;
       /* have to do this otherwise the channel will be released in resourceManager.cleanup() */

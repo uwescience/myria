@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 /**
  * A helper function to easily create HTTP error responses in the API server.
  * 
- * @author dhalperi
  * 
  */
 public final class MyriaApiException extends WebApplicationException {

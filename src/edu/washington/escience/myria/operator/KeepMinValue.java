@@ -102,7 +102,7 @@ public final class KeepMinValue extends StreamingState {
       return tb;
     }
     doReplace.inputTB = tb;
-    final List<Column<?>> columns = tb.getDataColumns();
+    final List<? extends Column<?>> columns = tb.getDataColumns();
     final BitSet toRemove = new BitSet(numTuples);
     for (int i = 0; i < numTuples; ++i) {
       final int nextIndex = uniqueTuples.numTuples();

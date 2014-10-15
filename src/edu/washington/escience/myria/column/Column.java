@@ -2,18 +2,13 @@ package edu.washington.escience.myria.column;
 
 import java.io.Serializable;
 import java.nio.ByteBuffer;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.BitSet;
 
 import org.joda.time.DateTime;
 
-import com.almworks.sqlite4java.SQLiteException;
-import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.BooleanColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.DateTimeColumnMessage;
@@ -30,32 +25,12 @@ import edu.washington.escience.myria.util.ImmutableIntArray;
  * 
  * @param <T> type of the objects in this column.
  * 
- * @author dhalperi
  * 
  */
 public abstract class Column<T extends Comparable<?>> implements ReadableColumn, Serializable {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
-
-  /**
-   * Append the value indexed by leftIdx into the column builder.
-   * 
-   * @param index the index on this column
-   * @param columnBuilder the column builder to append the value
-   */
-  public abstract void append(final int index, final ColumnBuilder<?> columnBuilder);
-
-  /**
-   * Check whether the value indexed by leftIdx in this column is equal to the value of the column rightColumn indexed
-   * by rightIdx.
-   * 
-   * @param leftIdx the index on this column
-   * @param rightColumn the right column
-   * @param rightIdx the index of the value to compare with on the right column
-   * @return true if equals, false otherwise
-   */
-  public abstract boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx);
 
   @Override
   public boolean getBoolean(final int row) {
@@ -81,26 +56,6 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
   public int getInt(final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }
-
-  /**
-   * Inserts the value in the specified row into the JDBC PreparedStatement at the specified index.
-   * 
-   * @param row position in this column of the specified element.
-   * @param statement destination JDBC PreparedStatement.
-   * @param jdbcIndex index in the JDBC PreparedStatement where the element should be placed. 1-indexed.
-   * @throws SQLException if there are JDBC errors.
-   */
-  public abstract void getIntoJdbc(int row, PreparedStatement statement, int jdbcIndex) throws SQLException;
-
-  /**
-   * Inserts the value in the specified row into the SQLiteStatement at the specified index.
-   * 
-   * @param row position in this column of the specified element.
-   * @param statement destination SQLiteStatement.
-   * @param sqliteIndex index in the SQLiteStatement where the element should be placed. 1-indexed.
-   * @throws SQLiteException if there are SQLite errors.
-   */
-  public abstract void getIntoSQLite(int row, SQLiteStatement statement, int sqliteIndex) throws SQLiteException;
 
   @Override
   public long getLong(final int row) {

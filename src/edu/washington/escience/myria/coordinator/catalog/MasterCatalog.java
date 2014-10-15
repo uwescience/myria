@@ -37,13 +37,13 @@ import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
+import edu.washington.escience.myria.api.encoding.plan.SubPlanEncoding;
 import edu.washington.escience.myria.parallel.Query;
 import edu.washington.escience.myria.parallel.SocketInfo;
 
 /**
  * This class is intended to store the configuration information for a Myria installation.
  * 
- * @author dhalperi
  * 
  */
 public final class MasterCatalog {
@@ -54,18 +54,18 @@ public final class MasterCatalog {
   /** Create the configurations table. */
   private static final String CREATE_CONFIGURATION =
       "CREATE TABLE configuration (\n"
-    + "    key STRING UNIQUE NOT NULL,\n"
-    + "    value STRING NOT NULL);";
+    + "    key TEXT UNIQUE NOT NULL,\n"
+    + "    value TEXT NOT NULL);";
   /** Create the masters table. */
   private static final String CREATE_MASTERS =
       "CREATE TABLE masters (\n"
     + "    master_id INTEGER PRIMARY KEY ASC,\n"
-    + "    host_port STRING NOT NULL);";
+    + "    host_port TEXT NOT NULL);";
   /** Create the workers table. */
   private static final String CREATE_WORKERS =
       "CREATE TABLE workers (\n"
     + "    worker_id INTEGER PRIMARY KEY ASC,\n"
-    + "    host_port STRING NOT NULL);";
+    + "    host_port TEXT NOT NULL);";
   /** Create the alive_workers table. */
   private static final String CREATE_ALIVE_WORKERS =
       "CREATE TABLE alive_workers (\n"
@@ -76,42 +76,44 @@ public final class MasterCatalog {
     + "    query_id INTEGER NOT NULL PRIMARY KEY ASC,\n"
     + "    raw_query TEXT NOT NULL,\n"
     + "    logical_ra TEXT NOT NULL,\n"
-    + "    physical_plan TEXT NOT NULL,\n"
+    + "    plan TEXT NOT NULL,\n"
     + "    submit_time TEXT NOT NULL, -- DATES IN ISO8601 FORMAT \n"
     + "    start_time TEXT, -- DATES IN ISO8601 FORMAT \n"
     + "    finish_time TEXT, -- DATES IN ISO8601 FORMAT \n"
     + "    elapsed_nanos INTEGER,\n"
     + "    status TEXT NOT NULL,\n"
     + "    message TEXT,\n"
-    + "    profiling_mode BOOLEAN DEFAULT 0);";
+    + "    profiling_mode BOOLEAN DEFAULT 0,\n" 
+    + "    ft_mode TEXT,\n"
+    + "    language TEXT);";
   /** Create the relations table. */
   private static final String CREATE_RELATIONS =
       "CREATE TABLE relations (\n"
-    + "    user_name STRING NOT NULL,\n"
-    + "    program_name STRING NOT NULL,\n"
-    + "    relation_name STRING NOT NULL,\n"
-    + "    num_tuples LONG NOT NULL,\n"
-    + "    query_id LONG NOT NULL REFERENCES queries(query_id),\n"
+    + "    user_name TEXT NOT NULL,\n"
+    + "    program_name TEXT NOT NULL,\n"
+    + "    relation_name TEXT NOT NULL,\n"
+    + "    num_tuples INTEGER NOT NULL,\n"
+    + "    query_id INTEGER NOT NULL REFERENCES queries(query_id),\n"
     + "    PRIMARY KEY (user_name,program_name,relation_name));";
   /** Create the relation_schema table. */
   private static final String CREATE_RELATION_SCHEMA =
       "CREATE TABLE relation_schema (\n"
-    + "    user_name STRING NOT NULL,\n"
-    + "    program_name STRING NOT NULL,\n"
-    + "    relation_name STRING NOT NULL,\n"
+    + "    user_name TEXT NOT NULL,\n"
+    + "    program_name TEXT NOT NULL,\n"
+    + "    relation_name TEXT NOT NULL,\n"
     + "    col_index INTEGER NOT NULL,\n"
-    + "    col_name STRING,\n"
-    + "    col_type STRING NOT NULL,\n"
+    + "    col_name TEXT,\n"
+    + "    col_type TEXT NOT NULL,\n"
     + "    FOREIGN KEY (user_name,program_name,relation_name) REFERENCES relations ON DELETE CASCADE);";
   /** Create the stored_relations table. */
   private static final String CREATE_STORED_RELATIONS =
       "CREATE TABLE stored_relations (\n"
     + "    stored_relation_id INTEGER PRIMARY KEY ASC,\n"
-    + "    user_name STRING NOT NULL,\n"
-    + "    program_name STRING NOT NULL,\n"
-    + "    relation_name STRING NOT NULL,\n"
+    + "    user_name TEXT NOT NULL,\n"
+    + "    program_name TEXT NOT NULL,\n"
+    + "    relation_name TEXT NOT NULL,\n"
     + "    num_shards INTEGER NOT NULL,\n"
-    + "    how_partitioned STRING NOT NULL,\n"
+    + "    how_partitioned TEXT NOT NULL,\n"
     + "    FOREIGN KEY (user_name,program_name,relation_name) REFERENCES relations ON DELETE CASCADE);";
   /** Create the stored_relations table. */
   private static final String CREATE_SHARDS =
@@ -527,6 +529,60 @@ public final class MasterCatalog {
           } catch (final SQLiteException e) {
             if (LOGGER.isErrorEnabled()) {
               LOGGER.error(e.toString());
+            }
+            throw new CatalogException(e);
+          }
+          return null;
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+    return this;
+  }
+
+  /**
+   * Add workers.
+   *
+   * @param workers workerId -> "host:port"
+   * @return this Catalog
+   * @throws CatalogException if the hostPortString is invalid or there is a database exception.
+   */
+  public MasterCatalog addWorkers(final Map<String, String> workers) throws CatalogException {
+    Objects.requireNonNull(workers);
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+    try {
+      queue.execute(new SQLiteJob<Object>() {
+        @Override
+        protected Object job(final SQLiteConnection sqliteConnection) throws SQLiteException, CatalogException {
+          try {
+            final SQLiteStatement statement =
+                sqliteConnection.prepare("INSERT INTO workers(worker_id, host_port) VALUES(?,?);", false);
+            /* To begin: start a transaction. */
+            sqliteConnection.exec("BEGIN TRANSACTION;");
+
+            for (final Map.Entry<String, String> e : workers.entrySet()) {
+              @SuppressWarnings("unused")
+              /* Just used to verify that hostPortString is legal */
+              final SocketInfo sockInfo = SocketInfo.valueOf(e.getValue());
+              statement.bind(1, Integer.valueOf(e.getKey()));
+              statement.bind(2, e.getValue());
+              statement.step();
+              statement.reset(false);
+            }
+            /* To complete: commit the transaction. */
+            sqliteConnection.exec("COMMIT TRANSACTION;");
+            statement.dispose();
+          } catch (final SQLiteException e) {
+            if (LOGGER.isErrorEnabled()) {
+              LOGGER.error(e.toString());
+            }
+            try {
+              sqliteConnection.exec("ABORT TRANSACTION;");
+            } catch (final SQLiteException e2) {
+              assert true; /* Do nothing. */
             }
             throw new CatalogException(e);
           }
@@ -988,6 +1044,38 @@ public final class MasterCatalog {
   }
 
   /**
+   * @param queryId the id of the query.
+   * @return A list of datasets belonging to the specified program.
+   * @throws CatalogException if there is an error accessing the desired Schema.
+   */
+  public List<DatasetStatus> getDatasetsForQuery(final int queryId) throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+
+    /* Do the work */
+    try {
+      return queue.execute(new SQLiteJob<List<DatasetStatus>>() {
+        @Override
+        protected List<DatasetStatus> job(final SQLiteConnection sqliteConnection) throws CatalogException,
+            SQLiteException {
+          try {
+            SQLiteStatement statement =
+                sqliteConnection
+                    .prepare("SELECT user_name, program_name, relation_name, num_tuples, query_id, finish_time FROM relations JOIN queries USING (query_id) WHERE query_id=? ORDER BY user_name, program_name, relation_name ASC");
+            statement.bind(1, queryId);
+            return datasetStatusListHelper(statement, sqliteConnection);
+          } catch (final SQLiteException e) {
+            throw new CatalogException(e);
+          }
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
    * Fetch the schema for the specified dataset, or null if the dataset is not found.
    * 
    * @param statement a cursor over the relations table of the relation status to be generated.
@@ -1053,25 +1141,24 @@ public final class MasterCatalog {
   /**
    * Insert a new query into the Catalog.
    * 
-   * @param physicalPlan the physical execution plan for the query.
+   * @param query the query encoding.
    * @return the newly generated ID of this query.
    * @throws CatalogException if there is an error adding the new query.
    */
-  public Long newQuery(final QueryEncoding physicalPlan) throws CatalogException {
-    Objects.requireNonNull(physicalPlan, "physicalPlan");
+  @SuppressWarnings("checkstyle:magicnumber")
+  public Long newQuery(final QueryEncoding query) throws CatalogException {
+    Objects.requireNonNull(query, "query");
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
     }
+
+    final QueryStatusEncoding queryStatus = QueryStatusEncoding.submitted(query);
     final String physicalString;
     try {
-      physicalString = MyriaJsonMapperProvider.getMapper().writeValueAsString(physicalPlan);
+      physicalString = MyriaJsonMapperProvider.getMapper().writeValueAsString(query.plan);
     } catch (JsonProcessingException e) {
       throw new CatalogException(e);
     }
-
-    final QueryStatusEncoding queryStatus =
-        QueryStatusEncoding.submitted(physicalPlan.rawQuery, physicalPlan.logicalRa, physicalPlan, Preconditions
-            .checkNotNull(physicalPlan.profilingMode, false));
 
     try {
       return queue.execute(new SQLiteJob<Long>() {
@@ -1080,7 +1167,7 @@ public final class MasterCatalog {
           try {
             SQLiteStatement statement =
                 sqliteConnection
-                    .prepare("INSERT INTO queries (raw_query, logical_ra, physical_plan, submit_time, start_time, finish_time, elapsed_nanos, status, profiling_mode) VALUES (?,?,?,?,?,?,?,?,?);");
+                    .prepare("INSERT INTO queries (raw_query, logical_ra, plan, submit_time, start_time, finish_time, elapsed_nanos, status, profiling_mode, ft_mode, language) VALUES (?,?,?,?,?,?,?,?,?,?,?);");
             statement.bind(1, queryStatus.rawQuery);
             statement.bind(2, queryStatus.logicalRa);
             statement.bind(3, physicalString);
@@ -1099,6 +1186,8 @@ public final class MasterCatalog {
             } else {
               statement.bind(9, 0);
             }
+            statement.bind(10, queryStatus.ftMode);
+            statement.bind(11, queryStatus.language);
             statement.stepThrough();
             statement.dispose();
             return sqliteConnection.getLastInsertId();
@@ -1133,7 +1222,7 @@ public final class MasterCatalog {
           try {
             SQLiteStatement statement =
                 sqliteConnection
-                    .prepare("SELECT query_id,raw_query,logical_ra,physical_plan,submit_time,start_time,finish_time,elapsed_nanos,status,message,profiling_mode FROM queries WHERE query_id=?;");
+                    .prepare("SELECT query_id,raw_query,logical_ra,plan,submit_time,start_time,finish_time,elapsed_nanos,status,message,profiling_mode,ft_mode,language FROM queries WHERE query_id=?;");
             statement.bind(1, queryId);
             statement.step();
             if (!statement.hasRow()) {
@@ -1142,7 +1231,7 @@ public final class MasterCatalog {
             final QueryStatusEncoding queryStatus = queryStatusHelper(statement);
             statement.dispose();
             return queryStatus;
-          } catch (final SQLiteException e) {
+          } catch (final SQLiteException | IOException e) {
             throw new CatalogException(e);
           }
         }
@@ -1181,19 +1270,22 @@ public final class MasterCatalog {
    * @param statement the query over the <code>queries</code> table. Has been stepped once.
    * @return the status of the first query in the result.
    * @throws SQLiteException if there is an error in the database.
+   * @throws IOException if there is an error when deserializing physical plan.
    */
-  private static QueryStatusEncoding queryStatusHelper(final SQLiteStatement statement) throws SQLiteException {
+  @SuppressWarnings("checkstyle:magicnumber")
+  private static QueryStatusEncoding queryStatusHelper(final SQLiteStatement statement) throws SQLiteException,
+      IOException {
     final QueryStatusEncoding queryStatus = new QueryStatusEncoding(statement.columnLong(0));
     queryStatus.rawQuery = statement.columnString(1);
     queryStatus.logicalRa = statement.columnString(2);
     String physicalString = statement.columnString(3);
 
     try {
-      queryStatus.physicalPlan = MyriaJsonMapperProvider.getMapper().readValue(physicalString, QueryEncoding.class);
-    } catch (IOException e) {
-      queryStatus.physicalPlan = physicalString;
+      queryStatus.plan = MyriaJsonMapperProvider.getMapper().readValue(physicalString, SubPlanEncoding.class);
+    } catch (final IOException e) {
+      LOGGER.warn("Error deserializing plan for query #{}", queryStatus.queryId, e);
+      queryStatus.plan = null;
     }
-
     queryStatus.submitTime = statement.columnString(4);
     queryStatus.startTime = statement.columnString(5);
     queryStatus.finishTime = statement.columnString(6);
@@ -1203,6 +1295,10 @@ public final class MasterCatalog {
     queryStatus.status = QueryStatusEncoding.Status.valueOf(statement.columnString(8));
     queryStatus.message = statement.columnString(9);
     queryStatus.profilingMode = statement.columnInt(10) > 0;
+    queryStatus.ftMode = statement.columnString(11);
+    if (!statement.columnNull(12)) {
+      queryStatus.language = statement.columnString(12);
+    }
     return queryStatus;
   }
 

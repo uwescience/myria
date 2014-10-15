@@ -8,11 +8,11 @@ import java.nio.channels.FileLock;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -35,12 +35,11 @@ import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.WorkerCatalog;
-import edu.washington.escience.myria.operator.network.Consumer;
-import edu.washington.escience.myria.parallel.ipc.FlowControlBagInputBuffer;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.InJVMLoopbackChannelSink;
 import edu.washington.escience.myria.profiling.ProfilingLogger;
 import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
+import edu.washington.escience.myria.proto.QueryProto.QueryMessage;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.JVMUtils;
@@ -51,20 +50,20 @@ import edu.washington.escience.myria.util.concurrent.ThreadAffinityFixedRoundRob
 /**
  * Workers do the real query execution. A query received by the server will be pre-processed and then dispatched to the
  * workers.
- * 
+ *
  * To execute a query on a worker, 4 steps are proceeded:
- * 
+ *
  * 1) A worker receive an Operator instance as its execution plan. The worker then stores the plan and does some
  * pre-processing, e.g. initializes the data structures which are needed during the execution of the plan.
- * 
+ *
  * 2) Each worker sends back to the server a message (it's id) to notify the server that the query plan has been
  * successfully received. And then each worker waits for the server to send the "start" message.
- * 
+ *
  * 3) Each worker executes its query plan after "start" is received.
- * 
+ *
  * 4) After the query plan finishes, each worker removes the query plan and related data structures, and then waits for
  * next query plan
- * 
+ *
  */
 public final class Worker {
 
@@ -140,6 +139,29 @@ public final class Worker {
   }
 
   /**
+   * Query related command from master.
+   * */
+  static final class QueryCommand {
+    /**
+     * @param q the target query.
+     * @param queryMsg the command message.
+     * */
+    public QueryCommand(final WorkerSubQuery q, final QueryMessage queryMsg) {
+      this.q = q;
+      this.queryMsg = queryMsg;
+    }
+
+    /**
+     * the target query.
+     * */
+    private final WorkerSubQuery q;
+
+    /**
+     * the command message.
+     * */
+    private final QueryMessage queryMsg;
+  }
+  /**
    * The non-blocking query driver. It calls root.nextReady() to start a query.
    */
   private class QueryMessageProcessor implements Runnable {
@@ -147,7 +169,7 @@ public final class Worker {
     @Override
     public final void run() {
       try {
-        WorkerSubQuery q = null;
+        QueryCommand q = null;
         while (true) {
           try {
             q = queryQueue.take();
@@ -156,17 +178,35 @@ public final class Worker {
             break;
           }
 
-          if (q != null) {
-            try {
-              receiveQuery(q);
-              sendMessageToMaster(IPCUtils.queryReadyTM(q.getSubQueryId()));
-            } catch (DbException e) {
-              if (LOGGER.isErrorEnabled()) {
-                LOGGER.error("Unexpected exception at preparing query. Drop the query.", e);
+          switch (q.queryMsg.getType()) {
+            case QUERY_START:
+              q.q.init();
+              q.q.startExecution();
+              break;
+            case QUERY_KILL:
+              q.q.kill();
+              break;
+            case QUERY_RECOVER:
+              if (q.q.getFTMode().equals(FTMODE.rejoin)) {
+                q.q.addRecoveryTasks(q.queryMsg.getWorkerId());
               }
-              q = null;
-            }
+              break;
+            case QUERY_DISTRIBUTE:
+              try {
+                receiveQuery(q.q);
+                sendMessageToMaster(IPCUtils.queryReadyTM(q.q.getSubQueryId()));
+              } catch (DbException e) {
+                if (LOGGER.isErrorEnabled()) {
+                  LOGGER.error("Unexpected exception at preparing query. Drop the query.", e);
+                }
+                q = null;
+              }
+
+              break;
+            default:
+              break;
           }
+
         }
       } catch (Throwable ee) {
         if (LOGGER.isErrorEnabled()) {
@@ -181,9 +221,7 @@ public final class Worker {
   private class HeartbeatReporter extends ErrorLoggingTimerTask {
     @Override
     public synchronized void runInner() {
-      if (LOGGER.isTraceEnabled()) {
-        LOGGER.trace("sending heartbeat to server");
-      }
+      LOGGER.trace("sending heartbeat to server");
       sendMessageToMaster(IPCUtils.CONTROL_WORKER_HEARTBEAT).awaitUninterruptibly();
     }
   }
@@ -287,7 +325,7 @@ public final class Worker {
   /**
    * Message queue for queries.
    */
-  private final PriorityBlockingQueue<WorkerSubQuery> queryQueue;
+  private final LinkedBlockingQueue<QueryCommand> queryQueue;
 
   /**
    * My catalog.
@@ -308,18 +346,6 @@ public final class Worker {
    * {@link ExecutorService} for Netty pipelines.
    */
   private volatile OrderedMemoryAwareThreadPoolExecutor pipelineExecutor;
-
-  /**
-   * The default input buffer capacity for each {@link Consumer} input buffer.
-   */
-  private final int inputBufferCapacity;
-
-  /**
-   * the system wide default inuput buffer recover event trigger.
-   * 
-   * @see FlowControlBagInputBuffer#INPUT_BUFFER_RECOVER
-   */
-  private final int inputBufferRecoverTrigger;
 
   /**
    * Current working directory. It's the logical root of the worker. All the data the worker and the operators running
@@ -371,7 +397,7 @@ public final class Worker {
 
   /**
    * Setup system properties.
-   * 
+   *
    * @param cmdlineOptions command line options
    */
   private static void systemSetup(final HashMap<String, Object> cmdlineOptions) {
@@ -485,7 +511,7 @@ public final class Worker {
 
   /**
    * Worker process entry point.
-   * 
+   *
    * @param args command line arguments.
    */
   public static void main(final String[] args) {
@@ -514,7 +540,7 @@ public final class Worker {
   /**
    * @return my query queue.
    */
-  PriorityBlockingQueue<WorkerSubQuery> getQueryQueue() {
+  BlockingQueue<QueryCommand> getQueryQueue() {
     return queryQueue;
   }
 
@@ -530,21 +556,6 @@ public final class Worker {
    */
   OrderedMemoryAwareThreadPoolExecutor getPipelineExecutor() {
     return pipelineExecutor;
-  }
-
-  /**
-   * @return the system wide default inuput buffer capacity.
-   */
-  int getInputBufferCapacity() {
-    return inputBufferCapacity;
-  }
-
-  /**
-   * @return the system wide default inuput buffer recover event trigger.
-   * @see FlowControlBagInputBuffer#INPUT_BUFFER_RECOVER
-   */
-  int getInputBufferRecoverTrigger() {
-    return inputBufferRecoverTrigger;
   }
 
   /**
@@ -590,7 +601,7 @@ public final class Worker {
     myID = Integer.parseInt(catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_IDENTIFIER));
 
     controlMessageQueue = new LinkedBlockingQueue<ControlMessage>();
-    queryQueue = new PriorityBlockingQueue<WorkerSubQuery>();
+    queryQueue = new LinkedBlockingQueue<QueryCommand>();
 
     masterSocketInfo = catalog.getMasters().get(0);
 
@@ -599,18 +610,18 @@ public final class Worker {
     computingUnits.putAll(workers);
     computingUnits.put(MyriaConstants.MASTER_ID, masterSocketInfo);
 
+    int inputBufferCapacity =
+        Integer.valueOf(catalog.getConfigurationValue(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY));
+
+    int inputBufferRecoverTrigger =
+        Integer.valueOf(catalog.getConfigurationValue(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER));
+
     connectionPool =
         new IPCConnectionPool(myID, computingUnits, IPCConfigurations.createWorkerIPCServerBootstrap(this),
             IPCConfigurations.createWorkerIPCClientBootstrap(this), new TransportMessageSerializer(),
-            new WorkerShortMessageProcessor(this));
+            new WorkerShortMessageProcessor(this), inputBufferCapacity, inputBufferRecoverTrigger);
     activeQueries = new ConcurrentHashMap<>();
     executingSubQueries = new ConcurrentHashMap<>();
-
-    inputBufferCapacity =
-        Integer.valueOf(catalog.getConfigurationValue(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY));
-
-    inputBufferRecoverTrigger =
-        Integer.valueOf(catalog.getConfigurationValue(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER));
 
     execEnvVars = new ConcurrentHashMap<String, Object>();
 
@@ -632,7 +643,7 @@ public final class Worker {
 
   /**
    * It does the initialization and preparation for the execution of the subquery.
-   * 
+   *
    * @param subQuery the received query.
    * @throws DbException if any error occurs.
    */
@@ -693,7 +704,7 @@ public final class Worker {
 
   /**
    * Finish the subquery by removing it from the data structures.
-   * 
+   *
    * @param subQueryId the id of the subquery to finish.
    */
   private void finishTask(final SubQueryId subQueryId) {
@@ -711,7 +722,7 @@ public final class Worker {
 
   /**
    * This method should be called whenever the system is going to shutdown.
-   * 
+   *
    */
   void shutdown() {
     LOGGER.info("Shutdown requested. Please wait when cleaning up...");
@@ -749,16 +760,16 @@ public final class Worker {
 
   /**
    * Start the worker service.
-   * 
+   *
    * @throws Exception if any error meets.
    */
   public void start() throws Exception {
     ExecutorService bossExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("IPC boss"));
     ExecutorService workerExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("IPC worker"));
-    pipelineExecutor =
-        new OrderedMemoryAwareThreadPoolExecutor(3, 5 * MyriaConstants.MB, 0,
-            MyriaConstants.THREAD_POOL_KEEP_ALIVE_TIME_IN_MS, TimeUnit.MILLISECONDS, new RenamingThreadFactory(
-                "Pipeline executor"));
+    pipelineExecutor = null; // Remove pipeline executors
+    // new OrderedMemoryAwareThreadPoolExecutor(3, 5 * MyriaConstants.MB, 0,
+    // MyriaConstants.THREAD_POOL_KEEP_ALIVE_TIME_IN_MS, TimeUnit.MILLISECONDS, new RenamingThreadFactory(
+    // "Pipeline executor"));
 
     ChannelFactory clientChannelFactory =
         new NioClientSocketChannelFactory(bossExecutor, workerExecutor,

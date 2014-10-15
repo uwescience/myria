@@ -7,8 +7,6 @@ import edu.washington.escience.myria.operator.RightHashCountingJoin;
  * 
  * Encoding for {@link RightHashCountingJoin}.
  * 
- * @author Shumo Chu <chushumo@cs.washington.edu>
- * 
  */
 public class RightHashCountingJoinEncoding extends BinaryOperatorEncoding<RightHashCountingJoin> {
   @Required

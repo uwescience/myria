@@ -26,3 +26,5 @@ mysql
 valmeida
 metadata
 aggregator
+aggregators
+accessor

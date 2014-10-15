@@ -1,20 +1,13 @@
 package edu.washington.escience.myria.column;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-
-import com.almworks.sqlite4java.SQLiteException;
-import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * A column of Double values.
  * 
- * @author dhalperi
  * 
  */
 public final class DoubleColumn extends Column<Double> {
@@ -41,17 +34,6 @@ public final class DoubleColumn extends Column<Double> {
   @Override
   public Double getObject(final int row) {
     return Double.valueOf(getDouble(row));
-  }
-
-  @Override
-  public void getIntoJdbc(final int row, final PreparedStatement statement, final int jdbcIndex) throws SQLException {
-    statement.setDouble(jdbcIndex, getDouble(row));
-  }
-
-  @Override
-  public void getIntoSQLite(final int row, final SQLiteStatement statement, final int sqliteIndex)
-      throws SQLiteException {
-    statement.bind(sqliteIndex, getDouble(row));
   }
 
   /**
@@ -88,15 +70,5 @@ public final class DoubleColumn extends Column<Double> {
     }
     sb.append(']');
     return sb.toString();
-  }
-
-  @Override
-  public boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
-    return getDouble(leftIdx) == rightColumn.getDouble(rightIdx);
-  }
-
-  @Override
-  public void append(final int index, final ColumnBuilder<?> columnBuilder) {
-    columnBuilder.appendDouble(getDouble(index));
   }
 }

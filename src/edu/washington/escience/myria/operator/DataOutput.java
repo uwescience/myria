@@ -12,7 +12,6 @@ import edu.washington.escience.myria.storage.TupleBatch;
  * DataOutput is a {@link RootOperator} that can be used to serialize data in a streaming fashion. It consumes
  * {@link TupleBatch}es from its child and passes them to a {@link TupleWriter}.
  * 
- * @author dhalperi
  * 
  */
 public final class DataOutput extends RootOperator {

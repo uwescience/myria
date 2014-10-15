@@ -29,12 +29,6 @@ import com.google.common.collect.ImmutableSet;
  * This is an implementation of unbalanced hash join. This operator only builds hash tables for its right child, thus
  * will begin to output tuples after right child EOS.
  * 
- * @author Shumo Chu <chushumo@cs.washington.edu>
- * 
- */
-/**
- * This is an implementation of hash equal join. The same as in DupElim, this implementation does not keep the
- * references to the incoming TupleBatches in order to get better memory performance.
  */
 public final class RightHashJoin extends BinaryOperator {
   /** Required for Java serialization. */
@@ -256,7 +250,7 @@ public final class RightHashJoin extends BinaryOperator {
    * @param index the index of hashTable, which the cntTuple is to join with
    */
   protected void addToAns(final TupleBatch cntTB, final int row, final MutableTupleBuffer hashTable, final int index) {
-    List<Column<?>> tbColumns = cntTB.getDataColumns();
+    List<? extends Column<?>> tbColumns = cntTB.getDataColumns();
     ReadableColumn[] hashTblColumns = hashTable.getColumns(index);
     int tupleIdx = hashTable.getTupleIndexInContainingTB(index);
 
@@ -433,7 +427,7 @@ public final class RightHashJoin extends BinaryOperator {
       hashTable1IndicesLocal.put(hashCode, tupleIndicesList);
     }
     tupleIndicesList.add(nextIndex);
-    List<Column<?>> inputColumns = tb.getDataColumns();
+    List<? extends Column<?>> inputColumns = tb.getDataColumns();
     for (int column = 0; column < tb.numColumns(); column++) {
       hashTable.put(column, inputColumns.get(column), row);
     }

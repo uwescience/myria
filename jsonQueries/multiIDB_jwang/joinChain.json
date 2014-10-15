@@ -8,7 +8,7 @@
                     "opType": "CollectConsumer"
                 }
             ],
-            "workers": [
+            "overrideWorkers": [
                 "0"
             ]
         },
@@ -44,7 +44,7 @@
                     "opType": "EOSController"
                 }
             ],
-            "workers": [
+            "overrideWorkers": [
                 "1"
             ]
         },

@@ -5,8 +5,6 @@ import java.util.concurrent.TimeUnit;
 /**
  * This class holds the constants for the Myria execution.
  * 
- * @author dhalperi
- * 
  */
 public final class MyriaConstants {
   /**
@@ -269,7 +267,13 @@ public final class MyriaConstants {
    * The maximum number of subqueries we will allow a query to execute before killing it. This is a safeguard against an
    * infinite loop.
    */
-  public static final int MAXIMUM_NUM_SUBQUERIES = 100;
+  public static final int MAXIMUM_NUM_SUBQUERIES = 1000;
+
+  /**
+   * Default imports for janino. Modules imported here can be used in expressions.
+   */
+  public static final String[] DEFAULT_JANINO_IMPORTS =
+      { "com.google.common.hash.Hashing", "java.nio.charset.Charset" };
 
   /** Private constructor to disallow building utility class. */
   private MyriaConstants() {

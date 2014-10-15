@@ -1,19 +1,10 @@
 package edu.washington.escience.myria.column;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-
-import com.almworks.sqlite4java.SQLiteException;
-import com.almworks.sqlite4java.SQLiteStatement;
-
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.column.builder.ColumnBuilder;
-import edu.washington.escience.myria.column.builder.IntColumnBuilder;
 
 /**
  * An abstract Column<Integer> with a primitive type accessor.
  * 
- * @author dhalperi
  * 
  */
 public abstract class IntColumn extends Column<Integer> {
@@ -32,28 +23,6 @@ public abstract class IntColumn extends Column<Integer> {
   @Override
   public final Type getType() {
     return Type.INT_TYPE;
-  }
-
-  @Override
-  public final void getIntoJdbc(final int row, final PreparedStatement statement, final int jdbcIndex)
-      throws SQLException {
-    statement.setInt(jdbcIndex, getInt(row));
-  }
-
-  @Override
-  public final void getIntoSQLite(final int row, final SQLiteStatement statement, final int sqliteIndex)
-      throws SQLiteException {
-    statement.bind(sqliteIndex, getInt(row));
-  }
-
-  @Override
-  public final boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
-    return getInt(leftIdx) == rightColumn.getInt(rightIdx);
-  }
-
-  @Override
-  public final void append(final int index, final ColumnBuilder<?> columnBuilder) {
-    ((IntColumnBuilder) columnBuilder).appendInt(getInt(index));
   }
 
   @Override

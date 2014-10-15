@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 
-import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
@@ -22,7 +21,6 @@ import edu.washington.escience.myria.util.concurrent.OperationFutureListener;
  * This class updates the Catalog metadata to reflect datasets that have been created by a query. This metadata updating
  * is triggered when the query finishes.
  * 
- * @author dhalperi
  * 
  */
 public final class DatasetMetadataUpdater implements OperationFutureListener {
@@ -74,11 +72,12 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
       }
       Schema schema = meta.getSchema();
       if (catalog.getSchema(relation) == null) {
+        /* Overwrite or new relation. */
         catalog.addRelationMetadata(relation, schema, -1, subQueryId.getQueryId());
+        catalog.addStoredRelation(relation, workers, "unknown");
+        LOGGER.debug("SubQuery #{} - adding {} to store shard of {}", subQueryId.getQueryId(), workers, relation
+            .toString());
       }
-      catalog.addStoredRelation(relation, workers, "unknown");
-      LOGGER.debug("SubQuery #{} - adding {} to store shard of {}", subQueryId.getQueryId(), workers, relation
-          .toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
     }
   }
 }

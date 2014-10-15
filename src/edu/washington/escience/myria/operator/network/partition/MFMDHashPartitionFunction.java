@@ -9,8 +9,6 @@ import edu.washington.escience.myria.storage.TupleBatch;
 /**
  * Multiple field multiple dimension hash partition function for HyperCubeJoin.
  * 
- * @author Shumo Chu <chushumo@cs.washington.edu>
- * 
  */
 public final class MFMDHashPartitionFunction extends PartitionFunction {
 
@@ -39,7 +37,8 @@ public final class MFMDHashPartitionFunction extends PartitionFunction {
       Preconditions.checkArgument(hashedColumns.length == mappedHCDimensions.length,
           "hashedColumns must have the same arity as mappedHCDimensions");
       partitionFunctions[i] =
-          new SingleFieldHashPartitionFunction(hypercubeDimensions[mappedHCDimensions[i]], hashedColumns[i]);
+          new SingleFieldHashPartitionFunction(hypercubeDimensions[mappedHCDimensions[i]], hashedColumns[i],
+              mappedHCDimensions[i]);
     }
   }
 

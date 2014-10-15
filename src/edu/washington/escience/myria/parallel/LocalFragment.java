@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -19,6 +20,7 @@ import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.operator.network.Producer;
+import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.StreamIOChannelID;
 import edu.washington.escience.myria.profiling.ProfilingLogger;
 import edu.washington.escience.myria.util.AtomicUtils;
@@ -65,14 +67,14 @@ public final class LocalFragment {
   private final Callable<Void> executionPlan;
 
   /**
+   * Task for executing initialization code .
+   */
+  private final Callable<Void> initTask;
+
+  /**
    * The output channels belonging to this {@link LocalFragment}.
    */
   private final StreamIOChannelID[] outputChannels;
-
-  /**
-   * The input channels belonging to this {@link LocalFragment}.
-   */
-  private final Map<StreamIOChannelID, Consumer> inputChannels;
 
   /**
    * The IDBController operators, if any, in this {@link LocalFragment}.
@@ -107,7 +109,7 @@ public final class LocalFragment {
   /**
    * resource manager.
    */
-  private volatile LocalFragmentResourceManager resourceManager;
+  private final LocalFragmentResourceManager resourceManager;
 
   /**
    * Record nanoseconds so that we can normalize the time in {@link ProfilingLogger}.
@@ -128,14 +130,16 @@ public final class LocalFragment {
   }
 
   /**
-   * @param ipcEntityID the IPC ID of the owner worker/master.
+   * @param connectionPool the IPC connection pool.
    * @param localSubQuery the {@link LocalSubQuery} of which this {@link LocalFragment} is a part.
    * @param root the root operator this fragment will run.
    * @param executor the executor who provides the execution service for the fragment to run on
    */
-  LocalFragment(final int ipcEntityID, final LocalSubQuery localSubQuery, final RootOperator root,
+  LocalFragment(final IPCConnectionPool connectionPool, final LocalSubQuery localSubQuery, final RootOperator root,
       final ExecutorService executor) {
-    this.ipcEntityID = ipcEntityID;
+    ipcEntityID = connectionPool.getMyIPCID();
+    resourceManager = new LocalFragmentResourceManager(connectionPool, this);
+
     executionCondition = new AtomicInteger(STATE_OUTPUT_AVAILABLE | STATE_INPUT_AVAILABLE);
     this.root = root;
     myExecutor = executor;
@@ -147,7 +151,9 @@ public final class LocalFragment {
     outputChannels = outputChannelSet.toArray(new StreamIOChannelID[] {});
     HashMap<StreamIOChannelID, Consumer> inputChannelMap = new HashMap<StreamIOChannelID, Consumer>();
     collectUpChannels(root, inputChannelMap);
-    inputChannels = inputChannelMap;
+    for (final Consumer operator : inputChannelMap.values()) {
+      resourceManager.allocateInputBuffer(operator);
+    }
     Arrays.sort(outputChannels);
     outputChannelAvailable = new BitSet(outputChannels.length);
     for (int i = 0; i < outputChannels.length; i++) {
@@ -158,34 +164,45 @@ public final class LocalFragment {
       @Override
       public Void call() throws Exception {
         // synchronized to keep memory consistency
-        if (LOGGER.isTraceEnabled()) {
-          LOGGER.trace("Start fragment execution: " + LocalFragment.this);
-        }
+        LOGGER.trace("Start fragment execution: {}", LocalFragment.this);
         try {
           synchronized (executionLock) {
             LocalFragment.this.executeActually();
           }
         } catch (RuntimeException ee) {
-          if (LOGGER.isErrorEnabled()) {
-            LOGGER.error("Unexpected Error: ", ee);
-          }
+          LOGGER.error("Unexpected Error: ", ee);
           throw ee;
         } finally {
           executionHandle = null;
         }
-        if (LOGGER.isTraceEnabled()) {
-          LOGGER.trace("End execution: " + LocalFragment.this);
-        }
+        LOGGER.trace("End execution: {}", LocalFragment.this);
         return null;
       }
     };
-  }
 
-  /**
-   * @return all input channels belonging to this {@link LocalFragment}.
-   */
-  Map<StreamIOChannelID, Consumer> getInputChannels() {
-    return inputChannels;
+    initTask = new Callable<Void>() {
+      @Override
+      public Void call() throws Exception {
+        // synchronized to keep memory consistency
+        LOGGER.trace("Start fragment initialization: ", LocalFragment.this);
+        try {
+          synchronized (executionLock) {
+            LocalFragment.this.initActually();
+          }
+        } catch (Throwable e) {
+          LOGGER.error("Fragment failed to open because of exception:", e);
+          if (e instanceof InterruptedException) {
+            Thread.currentThread().interrupt();
+          }
+          AtomicUtils.setBitByValue(executionCondition, STATE_FAIL);
+          if (fragmentExecutionFuture.setFailure(e)) {
+            cleanup(true);
+          }
+        }
+        LOGGER.trace("End fragment initialization: {}", LocalFragment.this);
+        return null;
+      }
+    };
   }
 
   /**
@@ -565,9 +582,7 @@ public final class LocalFragment {
     if (AtomicUtils.unsetBitIfSetByValue(executionCondition, STATE_INITIALIZED)) {
       // Only cleanup if initialized.
       try {
-        synchronized (executionLock) {
-          root.close();
-        }
+        root.close();
       } catch (Throwable ee) {
         if (LOGGER.isErrorEnabled()) {
           LOGGER.error("Unknown exception at operator close. Root operator: " + root + ".", ee);
@@ -622,30 +637,38 @@ public final class LocalFragment {
   }
 
   /**
+   * Execution environment variable.
+   */
+  private volatile ImmutableMap<String, Object> execEnvVars;
+
+  /**
    * Initialize the {@link LocalFragment}.
    * 
    * @param execEnvVars execution environment variable.
-   * @param resourceManager resource manager.
    */
-  public void init(final LocalFragmentResourceManager resourceManager, final ImmutableMap<String, Object> execEnvVars) {
+  public void init(final ImmutableMap<String, Object> execEnvVars) {
+    this.execEnvVars = execEnvVars;
     try {
-      synchronized (executionLock) {
-        ImmutableMap.Builder<String, Object> b = ImmutableMap.builder();
-        b.put(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER, resourceManager);
-        b.putAll(execEnvVars);
-        this.resourceManager = resourceManager;
-        root.open(b.build());
-      }
-      AtomicUtils.setBitByValue(executionCondition, STATE_INITIALIZED);
-    } catch (Throwable e) {
-      if (LOGGER.isErrorEnabled()) {
-        LOGGER.error("Fragment failed to open because of exception:", e);
-      }
-      AtomicUtils.setBitByValue(executionCondition, STATE_FAIL);
-      if (fragmentExecutionFuture.setFailure(e)) {
-        cleanup(true);
-      }
+      myExecutor.submit(initTask).get();
+    } catch (InterruptedException e) {
+      Thread.interrupted();
+      return;
+    } catch (ExecutionException e) {
+      throw new RuntimeException(e.getCause());
     }
+  }
+
+  /**
+   * The actual initialization method.
+   * 
+   * @throws Exception if any exception occurs.
+   */
+  private void initActually() throws Exception {
+    ImmutableMap.Builder<String, Object> b = ImmutableMap.builder();
+    b.put(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER, resourceManager);
+    b.putAll(execEnvVars);
+    root.open(b.build());
+    AtomicUtils.setBitByValue(executionCondition, STATE_INITIALIZED);
   }
 
   /**

@@ -3,6 +3,8 @@
  */
 package edu.washington.escience.myria.operator;
 
+import edu.washington.escience.myria.storage.TupleBatch;
+
 /**
  * A temporary relation that is inserted into the database.
  */
@@ -16,6 +18,6 @@ public abstract class AbstractDbInsert extends RootOperator implements DbWriter 
    * @param child the source of tuples.
    */
   public AbstractDbInsert(final Operator child) {
-    super(child);
+    super(child, TupleBatch.BATCH_SIZE);
   }
 }

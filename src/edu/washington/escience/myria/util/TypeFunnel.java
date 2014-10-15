@@ -6,7 +6,6 @@ import com.google.common.hash.PrimitiveSink;
 /**
  * A TypeFunnel is a Guava {@link Funnel} intended for use in hashing.
  * 
- * @author dhalperi
  * 
  */
 public enum TypeFunnel implements Funnel<Object> {

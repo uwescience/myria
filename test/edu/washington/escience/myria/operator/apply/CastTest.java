@@ -361,4 +361,10 @@ public class CastTest {
     cast.getOutputType(new ExpressionOperatorParameter());
   }
 
+  @Test
+  public void supportedNoopCast() throws IllegalArgumentException {
+    ExpressionOperator cast = new CastExpression(new ConstantExpression(12L), new TypeExpression(Type.LONG_TYPE));
+    assertEquals(Type.LONG_TYPE, cast.getOutputType(new ExpressionOperatorParameter()));
+  }
+
 }

@@ -14,8 +14,6 @@ import edu.washington.escience.myria.util.MyriaUtils;
 /**
  * Producer part of JSON Encoding for HyperCube Join.
  * 
- * @author Shumo Chu <chushumo@cs.washington.edu>
- * 
  */
 public class HyperShuffleProducerEncoding extends AbstractProducerEncoding<GenericShuffleProducer> {
 
@@ -51,7 +49,7 @@ public class HyperShuffleProducerEncoding extends AbstractProducerEncoding<Gener
         new MFMDHashPartitionFunction(cellPartition.length, hyperCubeDimensions, hashedColumns, mappedHCDimensions);
 
     return new GenericShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), cellPartition,
-        MyriaUtils.integerCollectionToIntArray(args.getServer().getRandomWorkers(numCells)), pf);
+        MyriaUtils.integerSetToIntArray(args.getServer().getRandomWorkers(numCells)), pf);
   }
 
   @Override

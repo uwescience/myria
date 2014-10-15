@@ -1,17 +1,19 @@
 package edu.washington.escience.myria.util;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+
+import org.joda.time.DateTime;
 
 import com.google.common.base.Preconditions;
 
 /**
  * Generic utilities for Myria.
  * 
- * @author dhalperi
  */
 public final class MyriaUtils {
   /**
@@ -51,15 +53,21 @@ public final class MyriaUtils {
   }
 
   /**
-   * Convert a collection of integers to an int[].
+   * Convert a collection of integers to a sorted int[].
    * 
    * @param input the collection of integers.
    * @return an int[] containing the given integers.
    */
-  public static int[] integerCollectionToIntArray(final Collection<Integer> input) {
+  public static int[] integerSetToIntArray(final Set<Integer> input) {
+    SortedSet<Integer> set;
+    if (input instanceof SortedSet) {
+      set = (SortedSet<Integer>) input;
+    } else {
+      set = new TreeSet<>(input);
+    }
     int[] output = new int[input.size()];
     int i = 0;
-    for (int value : input) {
+    for (int value : set) {
       output[i] = value;
       ++i;
     }
@@ -81,15 +89,19 @@ public final class MyriaUtils {
   }
 
   /**
-   * Throws an {@link IllegalArgumentException} if the specified collection contains a null value.
+   * Throws an {@link IllegalArgumentException} if the specified iterable contains a null value.
    * 
+   * @param <T> any object type that extends Iterable
    * @param iter the iterable
    * @param message a message to be included with the exception
    * @return {@link IllegalArgumentException} if the iterable contains a null element.
    */
-  public static Iterable<?> checkHasNoNulls(final Iterable<?> iter, final String message) {
+  public static <T extends Iterable<?>> T checkHasNoNulls(final T iter, final String message) {
+    Objects.requireNonNull(iter, message);
+    int i = 0;
     for (Object o : iter) {
-      Preconditions.checkNotNull(o, message);
+      Preconditions.checkNotNull(o, "%s [element %s]", message, i);
+      ++i;
     }
     return iter;
   }
@@ -115,5 +127,31 @@ public final class MyriaUtils {
             newK, oldV);
       }
     }
+  }
+
+  /**
+   * Ensure that the given object is a valid Myria object type and can be stored in e.g., a Column or a Field.
+   * 
+   * @param o the object to be tested.
+   * @return o.
+   * @throws IllegalArgumentException if the object is not a valid Myria type.
+   */
+  public static Object ensureObjectIsValidType(final Object o) throws IllegalArgumentException {
+    if (o instanceof Boolean) {
+      return o;
+    }
+    if (o instanceof Double || o instanceof Float) {
+      return o;
+    }
+    if (o instanceof Integer || o instanceof Long) {
+      return o;
+    }
+    if (o instanceof DateTime) {
+      return o;
+    }
+    if (o instanceof String) {
+      return o;
+    }
+    throw new IllegalArgumentException("Object of type " + o.getClass() + " is not a valid Myria type");
   }
 }

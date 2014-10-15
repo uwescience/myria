@@ -10,11 +10,12 @@ import com.google.common.collect.Lists;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * A single row relation.
  */
-public class Tuple implements ReadableTable, Serializable {
+public class Tuple implements Cloneable, ReadableTable, Serializable {
   /***/
   private static final long serialVersionUID = 1L;
 
@@ -132,11 +133,20 @@ public class Tuple implements ReadableTable, Serializable {
    * @param value the value to set
    */
   public void set(final int columnIdx, final Object value) {
-    getColumn(columnIdx).appendObject(value);
+    getColumn(columnIdx).appendObject(MyriaUtils.ensureObjectIsValidType(value));
   }
 
   @Override
   public ReadableColumn asColumn(final int column) {
     return new ReadableSubColumn(this, Preconditions.checkElementIndex(column, schema.numColumns()));
+  }
+
+  @Override
+  public Tuple clone() {
+    Tuple t = new Tuple(getSchema());
+    for (int i = 0; i < numColumns(); ++i) {
+      t.set(i, getObject(i, 0));
+    }
+    return t;
   }
 }

@@ -36,8 +36,13 @@ public abstract class Evaluator {
   public Evaluator(final Expression expression, final ExpressionOperatorParameter parameters) {
     this.expression = Preconditions.checkNotNull(expression, "expression");
     this.parameters = Preconditions.checkNotNull(parameters, "parameters");
-    Preconditions.checkNotNull(parameters.getSchema(), "parameters.getSchema()");
+    if (getExpression().hasOperator(VariableExpression.class)) {
+      Preconditions.checkNotNull(parameters.getSchema(), "ExpressionOperatorParameter input schema");
+    }
     needsState = getExpression().hasOperator(StateExpression.class);
+    if (needsState) {
+      Preconditions.checkNotNull(parameters.getStateSchema(), "ExpressionOperatorParameter state schema");
+    }
   }
 
   /**

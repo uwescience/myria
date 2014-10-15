@@ -33,7 +33,6 @@ import edu.washington.escience.myria.parallel.Server;
 /**
  * Class that handles queries.
  * 
- * @author dhalperi
  */
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
@@ -92,7 +91,7 @@ public final class QueryResource {
       throw e;
     } catch (CatalogException e) {
       throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, e);
-    } catch (Exception e) {
+    } catch (Throwable e) {
       /* Other exceptions mean that the request itself was likely bad. */
       throw new MyriaApiException(Status.BAD_REQUEST, e);
     }
