@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import javax.net.ssl.SSLException;
+
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
 
@@ -290,8 +292,12 @@ public final class DeploymentUtils {
         }
 
       } catch (IOException e) {
+        if (e instanceof SSLException) {
+          /* SSL error means the server is up! */
+          break;
+        }
         // expected for the first few trials
-        LOGGER.trace("expected exception occurred", e);
+        LOGGER.warn("expected exception occurred", e);
       }
       try {
         Thread.sleep(TimeUnit.SECONDS.toMillis(MyriaConstants.MASTER_START_UP_TIMEOUT_IN_SECOND) / 10);
