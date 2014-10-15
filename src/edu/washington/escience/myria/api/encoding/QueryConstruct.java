@@ -146,7 +146,8 @@ public class QueryConstruct {
           TempTableScanEncoding scan = ((TempTableScanEncoding) operator);
           scanRelation = "temporary relation " + scan.table;
           scanWorkers =
-              server.getWorkersForTempRelation(args.getQueryId(), RelationKey.ofTemp(args.getQueryId(), scan.table));
+              server.getQueryManager().getWorkersForTempRelation(args.getQueryId(),
+                  RelationKey.ofTemp(args.getQueryId(), scan.table));
         } else if (operator instanceof CollectConsumerEncoding || operator instanceof SingletonEncoding) {
           singletonOp = operator;
           continue;

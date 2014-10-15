@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.systemtest;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -81,7 +82,8 @@ public class BigClusterTest extends SystemTestBase {
 
   @Test
   public void collectTest() throws Exception {
-    // skip in travis
+    // skip always, because this test destroys my computer every time
+    assumeTrue(false);
     final int NUM_DUPLICATES = 100;
     final int TB_SIZE = 10;
 
@@ -119,7 +121,8 @@ public class BigClusterTest extends SystemTestBase {
 
   @Test
   public void broadcastTest() throws Exception {
-    // skip in travis
+    // skip always, because this test destroys my computer every time
+    assumeTrue(false);
     final int NUM_DUPLICATES = 10;
     final int NUM_BROADCAST = 10;
     TupleBatch tb = TestUtils.generateRandomTuples(10, 10, false).popAny();
@@ -173,7 +176,8 @@ public class BigClusterTest extends SystemTestBase {
 
   @Test
   public void downloadTest() throws Exception {
-    // skip in travis
+    // skip always, because this test destroys my computer every time
+    assumeTrue(false);
     final int NUM_DUPLICATES = 1;
 
     URL url =

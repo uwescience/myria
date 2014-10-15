@@ -109,7 +109,7 @@ public class DoWhileTest extends SystemTestBase {
     QueryEncoding queryEncoding = new QueryEncoding();
     queryEncoding.rawQuery = "testDoWhile";
     queryEncoding.logicalRa = "testDoWhile";
-    Query query = server.submitQuery(queryEncoding, actualQuery).get();
+    Query query = server.getQueryManager().submitQuery(queryEncoding, actualQuery).get();
 
     /* Tests. */
     assertEquals(query.getStatus(), Status.SUCCESS);

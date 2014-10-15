@@ -167,6 +167,9 @@ public final class SymmetricHashJoin extends BinaryOperator {
    * */
   private transient ReplaceProcedure doReplace;
 
+  /** Whether the last child polled was the left child. */
+  private boolean pollLeft;
+
   /** if the hash table of the left child should use set semantics. */
   private boolean setSemanticsLeft = false;
   /** if the hash table of the right child should use set semantics. */
@@ -285,7 +288,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
     rightCompareIndx = MyriaArrayUtils.warnIfNotSet(compareIndx2);
     leftAnswerColumns = MyriaArrayUtils.warnIfNotSet(answerColumns1);
     rightAnswerColumns = MyriaArrayUtils.warnIfNotSet(answerColumns2);
-
+    pollLeft = false;
   }
 
   /**
@@ -521,66 +524,43 @@ public final class SymmetricHashJoin extends BinaryOperator {
       return nexttb;
     }
 
-    int numOfChildNoData = 0;
-    while (numOfChildNoData < 2 && (!left.eos() || !right.eos())) {
+    int noDataStreak = 0;
+    while (noDataStreak < 2 && (!left.eos() || !right.eos())) {
+      pollLeft = !pollLeft;
 
-      /*
-       * If one of the children is already EOS, we need to set numOfChildNoData to 1 since "numOfChildNoData++" for this
-       * child will not be called.
-       */
-      if (left.eos() || right.eos()) {
-        numOfChildNoData = 1;
+      Operator current;
+      if (pollLeft) {
+        current = left;
       } else {
-        numOfChildNoData = 0;
+        current = right;
       }
 
-      /* process tuple from left child */
-      if (!left.eos()) {
-        TupleBatch leftTB = left.nextReady();
-        if (leftTB != null) { // process the data that is pulled from left child
-          processChildTB(leftTB, true);
-          nexttb = ans.popAnyUsingTimeout();
-          if (nexttb != null) {
-            return nexttb;
-          }
-        } else {
-          /* if left eoi, consume it, check whether it will cause EOI of this operator */
-          if (left.eoi()) {
-            consumeChildEOI(true);
-            /*
-             * If this operator is ready to emit EOI ( reminder that it might need to clear buffer), break to EOI handle
-             * part
-             */
-            if (isEOIReady()) {
-              break;
-            }
-          }
-          numOfChildNoData++;
+      if (current.eos()) {
+        noDataStreak++;
+        continue;
+      }
+
+      /* process tuple from child */
+      TupleBatch tb = current.nextReady();
+      if (tb != null) {
+        noDataStreak = 0;
+        processChildTB(tb, pollLeft);
+        nexttb = ans.popAnyUsingTimeout();
+        if (nexttb != null) {
+          return nexttb;
         }
-      }
-
-      /* process tuple from right child */
-      if (!right.eos()) {
-        TupleBatch rightTB = right.nextReady();
-        if (rightTB != null) { // process the data that is pulled from right child
-          processChildTB(rightTB, false);
-          nexttb = ans.popAnyUsingTimeout();
-          if (nexttb != null) {
-            return nexttb;
+      } else {
+        noDataStreak++;
+        /* if current operator is eoi, consume it, check whether it will cause EOI of this operator */
+        if (current.eoi()) {
+          consumeChildEOI(pollLeft);
+          /*
+           * If this operator is ready to emit EOI ( reminder that it might need to clear buffer), break to EOI handle
+           * part
+           */
+          if (isEOIReady()) {
+            break;
           }
-        } else {
-          /* if right eoi, consume it, check whether it will cause EOI of this operator */
-          if (right.eoi()) {
-            consumeChildEOI(false);
-            /*
-             * If this operator is ready to emit EOI ( reminder that it might need to clear buffer), break to EOI handle
-             * part
-             */
-            if (isEOIReady()) {
-              break;
-            }
-          }
-          numOfChildNoData++;
         }
       }
     }

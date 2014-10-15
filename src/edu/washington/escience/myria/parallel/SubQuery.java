@@ -8,6 +8,8 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import org.joda.time.DateTime;
+
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableMap;
@@ -126,7 +128,7 @@ public final class SubQuery extends QueryPlan {
    * @return the time this {@link SubQuery} started, in ISO8601 format, or <code>null</code> if the {@link SubQuery} has
    *         not yet been started
    */
-  public String getStartTime() {
+  public DateTime getStartTime() {
     return executionStats.getStartTime();
   }
 
@@ -151,7 +153,7 @@ public final class SubQuery extends QueryPlan {
    * @return the time this {@link SubQuery} ended, in ISO8601 format, or <code>null</code> if the {@link SubQuery} has
    *         not yet ended
    */
-  public String getEndTime() {
+  public DateTime getEndTime() {
     return executionStats.getEndTime();
   }
 

@@ -75,10 +75,10 @@ public class JsonOperatorTests extends SystemTestBase {
     assertEquals(HttpStatus.SC_ACCEPTED, conn.getResponseCode());
     long queryId = getQueryStatus(conn).queryId;
     conn.disconnect();
-    while (!server.queryCompleted(queryId)) {
+    while (!server.getQueryManager().queryCompleted(queryId)) {
       Thread.sleep(1);
     }
-    QueryStatusEncoding status = server.getQueryStatus(queryId);
+    QueryStatusEncoding status = server.getQueryManager().getQueryStatus(queryId);
     assertEquals(status.message, Status.SUCCESS, status.status);
   }
 }
