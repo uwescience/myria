@@ -1158,13 +1158,13 @@ public class LeapFrogJoin extends NAryOperator {
   }
 
   /**
-   * @return Memory usage of all the hash tables.
+   * @return number of tuples in all the hash tables.
    */
-  public long getMemSize() {
+  public long getNumTuplesInHashTables() {
     long sum = 0;
     for (MutableTupleBuffer table : tables) {
       if (table != null) {
-        sum += table.getMemSize();
+        sum += table.numTuples();
       }
     }
     return sum;

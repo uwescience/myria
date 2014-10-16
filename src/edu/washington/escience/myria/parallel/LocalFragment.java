@@ -801,10 +801,11 @@ public final class LocalFragment {
       addResourceReport(stats, timestamp, op.getOpId(), "numTuplesInState", ((IDBController) op).getStreamingState()
           .numTuples(), subQueryId);
     } else if (op instanceof SymmetricHashJoin) {
-      addResourceReport(stats, timestamp, op.getOpId(), "hashTableSize", ((SymmetricHashJoin) op).getMemSize(),
-          subQueryId);
+      addResourceReport(stats, timestamp, op.getOpId(), "hashTableSize", ((SymmetricHashJoin) op)
+          .getNumTuplesInHashTables(), subQueryId);
     } else if (op instanceof LeapFrogJoin) {
-      addResourceReport(stats, timestamp, op.getOpId(), "hashTableSize", ((LeapFrogJoin) op).getMemSize(), subQueryId);
+      addResourceReport(stats, timestamp, op.getOpId(), "hashTableSize",
+          ((LeapFrogJoin) op).getNumTuplesInHashTables(), subQueryId);
     }
     for (Operator child : op.getChildren()) {
       collectResourceMeasurements(stats, timestamp, child, subQueryId);

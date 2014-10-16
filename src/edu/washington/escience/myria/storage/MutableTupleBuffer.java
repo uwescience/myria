@@ -34,8 +34,6 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
   private int numColumnsReady;
   /** Internal state representing the number of tuples in the in-progress TupleBatch. */
   private int currentInProgressTuples;
-  /** Size in memory. */
-  private long memSize;
 
   /**
    * Constructs an empty TupleBuffer to hold tuples matching the specified Schema.
@@ -50,7 +48,6 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
     columnsReady = new BitSet(numColumns);
     numColumnsReady = 0;
     currentInProgressTuples = 0;
-    memSize = 0;
   }
 
   /**
@@ -62,13 +59,6 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
     currentInProgressTuples = 0;
     numColumnsReady = 0;
     readyTuples.clear();
-  }
-
-  /**
-   * @return memory size of this MutableTupleBuffer
-   */
-  public long getMemSize() {
-    return memSize;
   }
 
   /**
@@ -328,26 +318,6 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
    * @param sourceRow the row in the source column from which data will be retrieved.
    */
   public final void put(final int destColumn, final Column<?> sourceColumn, final int sourceRow) {
-    Type t = sourceColumn.getType();
-    switch (t) {
-      case BOOLEAN_TYPE:
-        memSize++;
-        break;
-      case DATETIME_TYPE:
-        // DO NOTHING
-        break;
-      case DOUBLE_TYPE:
-      case LONG_TYPE:
-        memSize += 8;
-        break;
-      case FLOAT_TYPE:
-      case INT_TYPE:
-        memSize += 4;
-        break;
-      case STRING_TYPE:
-        memSize += sourceColumn.getString(sourceRow).length();
-        break;
-    }
     TupleUtils.copyValue(sourceColumn, sourceRow, this, destColumn);
   }
 

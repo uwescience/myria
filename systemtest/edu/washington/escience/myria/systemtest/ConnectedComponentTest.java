@@ -259,9 +259,9 @@ public class ConnectedComponentTest extends SystemTestBase {
     if (!failure) {
       server.submitQuery("", "", "", serverPlan, workerPlans, null).get();
     } else {
-      workerPlans.get(workerIDs[0]).setFTMode(FTMODE.valueOf("rejoin"));
-      workerPlans.get(workerIDs[1]).setFTMode(FTMODE.valueOf("rejoin"));
-      serverPlan.setFTMode(FTMODE.valueOf("rejoin"));
+      workerPlans.get(workerIDs[0]).setFTMode(FTMODE.REJOIN);
+      workerPlans.get(workerIDs[1]).setFTMode(FTMODE.REJOIN);
+      serverPlan.setFTMode(FTMODE.REJOIN);
 
       ListenableFuture<Query> qf = server.submitQuery("", "", "", serverPlan, workerPlans, PROFILING_MODE.NONE);
       Thread.sleep(1000);

@@ -730,13 +730,13 @@ public final class SymmetricHashJoin extends BinaryOperator {
   /**
    * @return the sum of the numbers of tuples in both hash tables.
    */
-  public long getMemSize() {
+  public long getNumTuplesInHashTables() {
     long sum = 0;
     if (hashTable1 != null) {
-      sum += hashTable1.getMemSize();
+      sum += hashTable1.numTuples();
     }
     if (hashTable2 != null) {
-      sum += hashTable2.getMemSize();
+      sum += hashTable2.numTuples();
     }
     return sum;
   }
