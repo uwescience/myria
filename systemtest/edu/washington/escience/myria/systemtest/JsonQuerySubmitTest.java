@@ -43,7 +43,7 @@ public class JsonQuerySubmitTest extends SystemTestBase {
 
   /**
    * Construct an empty ingest request.
-   *
+   * 
    * @return a request to ingest an empty dataset called "public:adhoc:smallTable"
    * @throws JsonProcessingException if there is an error producing the JSON
    */
@@ -161,10 +161,10 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     assertEquals(HttpURLConnection.HTTP_ACCEPTED, conn.getResponseCode());
     long queryId = getQueryStatus(conn).queryId;
     conn.disconnect();
-    while (!server.queryCompleted(queryId)) {
+    while (!server.getQueryManager().queryCompleted(queryId)) {
       Thread.sleep(100);
     }
-    QueryStatusEncoding status = server.getQueryStatus(queryId);
+    QueryStatusEncoding status = server.getQueryManager().getQueryStatus(queryId);
     assertEquals(QueryStatusEncoding.Status.SUCCESS, status.status);
     assertTrue(status.language.equals("datalog"));
     assertTrue(status.ftMode.equals("none"));
@@ -209,7 +209,8 @@ public class JsonQuerySubmitTest extends SystemTestBase {
       throw new IllegalStateException(getContents(conn));
     }
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
-    assertEquals(QueryStatusEncoding.Status.SUCCESS, server.getQueryStatus(getDatasetStatus(conn).getQueryId()).status);
+    assertEquals(QueryStatusEncoding.Status.SUCCESS, server.getQueryManager().getQueryStatus(
+        getDatasetStatus(conn).getQueryId()).status);
     conn.disconnect();
 
     File queryJson = new File("./jsonQueries/multiIDB_jwang/joinChain.json");
@@ -220,18 +221,16 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     assertEquals(HttpURLConnection.HTTP_ACCEPTED, conn.getResponseCode());
     long queryId = getQueryStatus(conn).queryId;
     conn.disconnect();
-    while (!server.queryCompleted(queryId)) {
+    while (!server.getQueryManager().queryCompleted(queryId)) {
       Thread.sleep(100);
     }
-    assertEquals(QueryStatusEncoding.Status.SUCCESS, server.getQueryStatus(queryId).status);
+    assertEquals(QueryStatusEncoding.Status.SUCCESS, server.getQueryManager().getQueryStatus(queryId).status);
   }
 
   @Test
   public void abortedDownloadTest() throws Exception {
     // skip in travis
-    if (TestUtils.inTravis()) {
-      return;
-    }
+    TestUtils.skipIfInTravis();
     final int NUM_DUPLICATES = 2000;
     final int BYTES_TO_READ = 1024; // read 1 kb
 
@@ -263,10 +262,10 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     System.out.println("Download size: " + (numBytesRead * 1.0 / 1024 / 1024 / 1024) + " GB");
     System.out.println("Speed is: " + (numBytesRead * 1.0 / 1024 / 1024 / TimeUnit.NANOSECONDS.toSeconds(nanoElapse))
         + " MB/s");
-    while (server.getQueries(1, 0).get(0).finishTime == null) {
+    while (server.getQueryManager().getQueries(1, 0).get(0).finishTime == null) {
       Thread.sleep(100);
     }
-    QueryStatusEncoding qs = server.getQueries(1, 0).get(0);
+    QueryStatusEncoding qs = server.getQueryManager().getQueries(1, 0).get(0);
     assertTrue(qs.status == QueryStatusEncoding.Status.ERROR);
   }
 }

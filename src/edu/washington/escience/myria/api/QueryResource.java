@@ -85,7 +85,7 @@ public final class QueryResource {
     /* Start the query, and get its Server-assigned Query ID */
     QueryFuture qf;
     try {
-      qf = server.submitQuery(query, query.plan.getPlan());
+      qf = server.getQueryManager().submitQuery(query, query.plan.getPlan());
     } catch (MyriaApiException e) {
       /* Passthrough MyriaApiException. */
       throw e;
@@ -103,7 +103,7 @@ public final class QueryResource {
 
     long queryId = qf.getQueryId();
     /* And return the queryStatus as it is now. */
-    QueryStatusEncoding qs = server.getQueryStatus(queryId);
+    QueryStatusEncoding qs = server.getQueryManager().getQueryStatus(queryId);
     URI queryUri = getCanonicalResourcePath(uriInfo, queryId);
     qs.url = queryUri;
     return Response.status(Status.ACCEPTED).cacheControl(MyriaApiUtils.doNotCache()).location(queryUri).entity(qs)
@@ -122,7 +122,7 @@ public final class QueryResource {
   @Path("query-{queryId:\\d+}")
   public Response getQueryStatus(@PathParam("queryId") final long queryId, @Context final UriInfo uriInfo)
       throws CatalogException {
-    final QueryStatusEncoding queryStatus = server.getQueryStatus(queryId);
+    final QueryStatusEncoding queryStatus = server.getQueryManager().getQueryStatus(queryId);
     final URI uri = uriInfo.getAbsolutePath();
     if (queryStatus == null) {
       return Response.status(Status.NOT_FOUND).contentLocation(uri).entity("Query " + queryId + " was not found")
@@ -163,11 +163,11 @@ public final class QueryResource {
   public Response cancelQuery(@PathParam("queryId") final long queryId, @Context final UriInfo uriInfo)
       throws CatalogException {
     try {
-      server.killQuery(queryId);
+      server.getQueryManager().killQuery(queryId);
     } catch (NullPointerException e) {
       throw new MyriaApiException(Status.BAD_REQUEST, "That query is not running.");
     }
-    final QueryStatusEncoding queryStatus = server.getQueryStatus(queryId);
+    final QueryStatusEncoding queryStatus = server.getQueryManager().getQueryStatus(queryId);
     final URI uri = uriInfo.getAbsolutePath();
     queryStatus.url = uri;
     ResponseBuilder response = Response.ok().location(uri).entity(queryStatus);
@@ -190,7 +190,7 @@ public final class QueryResource {
       @QueryParam("max") final Long maxId) throws CatalogException {
     long realLimit = Objects.firstNonNull(limit, MyriaApiConstants.MYRIA_API_DEFAULT_NUM_RESULTS);
     long realMaxId = Objects.firstNonNull(maxId, 0L);
-    List<QueryStatusEncoding> queries = server.getQueries(realLimit, realMaxId);
+    List<QueryStatusEncoding> queries = server.getQueryManager().getQueries(realLimit, realMaxId);
     for (QueryStatusEncoding status : queries) {
       status.url = getCanonicalResourcePath(uriInfo, status.queryId);
     }

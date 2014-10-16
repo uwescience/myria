@@ -26,6 +26,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.mina.util.AvailablePortFinder;
 import org.junit.After;
@@ -615,7 +616,12 @@ public class SystemTestBase {
 
   public static QueryStatusEncoding getQueryStatus(HttpURLConnection conn) throws IOException {
     ObjectReader reader = MyriaJsonMapperProvider.getReader().withType(QueryStatusEncoding.class);
-    return reader.readValue(conn.getInputStream());
+    String s = IOUtils.toString(conn.getInputStream());
+    try {
+      return reader.readValue(s);
+    } catch (IOException e) {
+      throw new IOException("Error deserializing QueryStatusEncoding from " + s, e);
+    }
   }
 
   public static DatasetStatus getDatasetStatus(HttpURLConnection conn) throws IOException {
