@@ -27,6 +27,7 @@ import edu.washington.escience.myria.expression.FloorExpression;
 import edu.washington.escience.myria.expression.GreaterExpression;
 import edu.washington.escience.myria.expression.GreaterThanExpression;
 import edu.washington.escience.myria.expression.GreaterThanOrEqualsExpression;
+import edu.washington.escience.myria.expression.HashMd5Expression;
 import edu.washington.escience.myria.expression.IntDivideExpression;
 import edu.washington.escience.myria.expression.LenExpression;
 import edu.washington.escience.myria.expression.LessThanExpression;
@@ -78,6 +79,7 @@ public class ApplySerializationTest {
     CeilExpression ceil = new CeilExpression(constant);
     FloorExpression floor = new FloorExpression(constant);
     LogExpression log = new LogExpression(constant);
+    HashMd5Expression md5 = new HashMd5Expression(constant);
     NegateExpression negate = new NegateExpression(constant);
     CosExpression cos = new CosExpression(constant);
     SinExpression sin = new SinExpression(constant);
@@ -86,8 +88,8 @@ public class ApplySerializationTest {
     ToUpperCaseExpression upper = new ToUpperCaseExpression(constant);
     NotExpression not = new NotExpression(constant);
     LenExpression len = new LenExpression(constant);
-    expressions.add(abs).add(ceil).add(cos).add(floor).add(log).add(negate).add(not).add(sin).add(sqrt).add(tan).add(
-        upper).add(len);
+    expressions.add(abs).add(ceil).add(cos).add(floor).add(log).add(md5).add(negate).add(not).add(sin).add(sqrt).add(
+        tan).add(upper).add(len);
 
     /* Binary */
     DivideExpression divide = new DivideExpression(constant, variable);

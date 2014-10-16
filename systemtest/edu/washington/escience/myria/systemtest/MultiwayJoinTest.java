@@ -65,7 +65,7 @@ public class MultiwayJoinTest extends SystemTestBase {
     }
     assertEquals(HttpURLConnection.HTTP_ACCEPTED, conn.getResponseCode());
     conn.disconnect();
-    while (!server.queryCompleted(3)) {
+    while (!server.getQueryManager().queryCompleted(3)) {
       Thread.sleep(100);
     }
 

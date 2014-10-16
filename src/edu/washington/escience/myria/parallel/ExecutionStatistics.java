@@ -2,11 +2,12 @@ package edu.washington.escience.myria.parallel;
 
 import javax.annotation.Nullable;
 
+import org.joda.time.DateTime;
+
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.proto.QueryProto;
-import edu.washington.escience.myria.util.DateTimeUtils;
 
 /**
  * This data structure records the various statistics of the execution of a query or subquery.
@@ -26,11 +27,11 @@ public class ExecutionStatistics {
    */
   private transient volatile long endAtInNano = MISSING_TIME;
 
-  /** Start time, in ISO8601 datetime format. */
-  private transient volatile String startTime;
+  /** Start time. */
+  private transient volatile DateTime startTime;
 
-  /** End time, in ISO8601 datetime format. */
-  private transient volatile String endTime;
+  /** End time. */
+  private transient volatile DateTime endTime;
 
   /**
    * Set the start time to now.
@@ -38,7 +39,7 @@ public class ExecutionStatistics {
   public final void markStart() {
     Preconditions.checkArgument(startTime == null, "can't re-mark start");
     startAtInNano = System.nanoTime();
-    startTime = DateTimeUtils.nowInISO8601();
+    startTime = DateTime.now();
   }
 
   /**
@@ -47,7 +48,7 @@ public class ExecutionStatistics {
   public final void markEnd() {
     Preconditions.checkArgument(endTime == null, "can't re-mark end");
     endAtInNano = System.nanoTime();
-    endTime = DateTimeUtils.nowInISO8601();
+    endTime = DateTime.now();
   }
 
   /**
@@ -75,14 +76,14 @@ public class ExecutionStatistics {
   /**
    * @return the start time, in ISO8601 datetime format.
    */
-  protected final String getStartTime() {
+  protected final DateTime getStartTime() {
     return startTime;
   }
 
   /**
    * @return the end time, in ISO8601 datetime format.
    */
-  protected final String getEndTime() {
+  protected final DateTime getEndTime() {
     return endTime;
   }
 

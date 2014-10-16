@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -30,15 +29,11 @@ import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestUtils;
 
-@Ignore
 public class QueryFailureTest extends SystemTestBase {
 
   @Test(expected = DbException.class, timeout = 50000)
   public void workerInitFailureTest() throws Throwable {
-    if (TestUtils.inTravis()) {
-      System.err.println("Skipping test because in Travis.");
-      throw new DbException("Skipping test because in Travis.");
-    }
+    TestUtils.skipIfInTravis();
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
     createTable(workerIDs[0], testtableKey, "id long, name varchar(20)");
     createTable(workerIDs[1], testtableKey, "id long, name varchar(20)");
@@ -55,7 +50,7 @@ public class QueryFailureTest extends SystemTestBase {
       tbb.putLong(0, TestUtils.randomLong(0, 100000, 1)[0]);
       tbb.putString(1, TestUtils.randomFixedLengthNumericString(0, 100000, 1, 20)[0]);
       while ((tb = tbb.popFilled()) != null) {
-        LOGGER.debug("Insert a TB into testbed. #" + numTB + ".");
+        LOGGER.debug("Insert a TB into testbed. #{}", numTB);
         numTB++;
         insert(workerIDs[0], testtableKey, schema, tb);
         insert(workerIDs[1], testtableKey, schema, tb);
@@ -87,9 +82,8 @@ public class QueryFailureTest extends SystemTestBase {
     final SinkRoot serverPlan = new SinkRoot(serverCollect);
 
     ListenableFuture<Query> qf = server.submitQueryPlan(serverPlan, workerPlans);
-    Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     try {
-      qf.get();
+      Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     } catch (ExecutionException e) {
       e.getCause().printStackTrace();
       throw e.getCause();
@@ -98,10 +92,7 @@ public class QueryFailureTest extends SystemTestBase {
 
   @Test(expected = DbException.class, timeout = 50000)
   public void masterInitFailureTest() throws Throwable {
-    if (TestUtils.inTravis()) {
-      System.err.println("Skipping test because in Travis.");
-      throw new DbException("Skipping test because in Travis.");
-    }
+    TestUtils.skipIfInTravis();
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
     createTable(workerIDs[0], testtableKey, "id long, name varchar(20)");
     createTable(workerIDs[1], testtableKey, "id long, name varchar(20)");
@@ -118,7 +109,7 @@ public class QueryFailureTest extends SystemTestBase {
       tbb.putLong(0, TestUtils.randomLong(0, 100000, 1)[0]);
       tbb.putString(1, TestUtils.randomFixedLengthNumericString(0, 100000, 1, 20)[0]);
       while ((tb = tbb.popFilled()) != null) {
-        LOGGER.debug("Insert a TB into testbed. #" + numTB + ".");
+        LOGGER.debug("Insert a TB into testbed. #{}.", numTB);
         numTB++;
         insert(workerIDs[0], testtableKey, schema, tb);
         insert(workerIDs[1], testtableKey, schema, tb);
@@ -147,9 +138,8 @@ public class QueryFailureTest extends SystemTestBase {
     final SinkRoot serverPlan = new SinkRoot(srfi);
 
     ListenableFuture<Query> qf = server.submitQueryPlan(serverPlan, workerPlans);
-    Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     try {
-      qf.get();
+      Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     } catch (ExecutionException e) {
       e.getCause().printStackTrace();
       throw e.getCause();
@@ -158,10 +148,7 @@ public class QueryFailureTest extends SystemTestBase {
 
   @Test(expected = DbException.class, timeout = 50000)
   public void workerAndMasterInitFailureTest() throws Throwable {
-    if (TestUtils.inTravis()) {
-      System.err.println("Skipping test because in Travis.");
-      throw new DbException("Skipping test because in Travis.");
-    }
+    TestUtils.skipIfInTravis();
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
     createTable(workerIDs[0], testtableKey, "id long, name varchar(20)");
     createTable(workerIDs[1], testtableKey, "id long, name varchar(20)");
@@ -178,7 +165,7 @@ public class QueryFailureTest extends SystemTestBase {
       tbb.putLong(0, TestUtils.randomLong(0, 100000, 1)[0]);
       tbb.putString(1, TestUtils.randomFixedLengthNumericString(0, 100000, 1, 20)[0]);
       while ((tb = tbb.popFilled()) != null) {
-        LOGGER.debug("Insert a TB into testbed. #" + numTB + ".");
+        LOGGER.debug("Insert a TB into testbed. #{}.", numTB);
         numTB++;
         insert(workerIDs[0], testtableKey, schema, tb);
         insert(workerIDs[1], testtableKey, schema, tb);
@@ -212,9 +199,8 @@ public class QueryFailureTest extends SystemTestBase {
     final SinkRoot serverPlan = new SinkRoot(srfiMaster);
 
     ListenableFuture<Query> qf = server.submitQueryPlan(serverPlan, workerPlans);
-    Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     try {
-      qf.get();
+      Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     } catch (ExecutionException e) {
       e.getCause().printStackTrace();
       throw e.getCause();
@@ -223,10 +209,7 @@ public class QueryFailureTest extends SystemTestBase {
 
   @Test(expected = DbException.class, timeout = 50000)
   public void workerCleanupFailureTest() throws Throwable {
-    if (TestUtils.inTravis()) {
-      System.err.println("Skipping test because in Travis.");
-      throw new DbException("Skipping test because in Travis.");
-    }
+    TestUtils.skipIfInTravis();
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
     createTable(workerIDs[0], testtableKey, "id long, name varchar(20)");
     createTable(workerIDs[1], testtableKey, "id long, name varchar(20)");
@@ -243,7 +226,7 @@ public class QueryFailureTest extends SystemTestBase {
       tbb.putLong(0, TestUtils.randomLong(0, 100000, 1)[0]);
       tbb.putString(1, TestUtils.randomFixedLengthNumericString(0, 100000, 1, 20)[0]);
       while ((tb = tbb.popFilled()) != null) {
-        LOGGER.debug("Insert a TB into testbed. #" + numTB + ".");
+        LOGGER.debug("Insert a TB into testbed. #{}.", numTB);
         numTB++;
         insert(workerIDs[0], testtableKey, schema, tb);
         insert(workerIDs[1], testtableKey, schema, tb);
@@ -275,9 +258,8 @@ public class QueryFailureTest extends SystemTestBase {
     final SinkRoot serverPlan = new SinkRoot(serverCollect);
 
     ListenableFuture<Query> qf = server.submitQueryPlan(serverPlan, workerPlans);
-    Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     try {
-      qf.get();
+      Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     } catch (ExecutionException e) {
       e.getCause().printStackTrace();
       throw e.getCause();
@@ -286,10 +268,7 @@ public class QueryFailureTest extends SystemTestBase {
 
   @Test(expected = DbException.class, timeout = 50000)
   public void masterCleanupFailureTest() throws Throwable {
-    if (TestUtils.inTravis()) {
-      System.err.println("Skipping test because in Travis.");
-      throw new DbException("Skipping test because in Travis.");
-    }
+    TestUtils.skipIfInTravis();
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
     createTable(workerIDs[0], testtableKey, "id long, name varchar(20)");
     createTable(workerIDs[1], testtableKey, "id long, name varchar(20)");
@@ -306,7 +285,7 @@ public class QueryFailureTest extends SystemTestBase {
       tbb.putLong(0, TestUtils.randomLong(0, 100000, 1)[0]);
       tbb.putString(1, TestUtils.randomFixedLengthNumericString(0, 100000, 1, 20)[0]);
       while ((tb = tbb.popFilled()) != null) {
-        LOGGER.debug("Insert a TB into testbed. #" + numTB + ".");
+        LOGGER.debug("Insert a TB into testbed. #{}.", numTB);
         numTB++;
         insert(workerIDs[0], testtableKey, schema, tb);
         insert(workerIDs[1], testtableKey, schema, tb);
@@ -335,9 +314,8 @@ public class QueryFailureTest extends SystemTestBase {
     final SinkRoot serverPlan = new SinkRoot(srfi);
 
     ListenableFuture<Query> qf = server.submitQueryPlan(serverPlan, workerPlans);
-    Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     try {
-      qf.get();
+      Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     } catch (ExecutionException e) {
       e.getCause().printStackTrace();
       throw e.getCause();
@@ -346,10 +324,7 @@ public class QueryFailureTest extends SystemTestBase {
 
   @Test(expected = DbException.class, timeout = 50000)
   public void workerAndMasterCleanupFailureTest() throws Throwable {
-    if (TestUtils.inTravis()) {
-      System.err.println("Skipping test because in Travis.");
-      throw new DbException("Skipping test because in Travis.");
-    }
+    TestUtils.skipIfInTravis();
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
     createTable(workerIDs[0], testtableKey, "id long, name varchar(20)");
     createTable(workerIDs[1], testtableKey, "id long, name varchar(20)");
@@ -366,7 +341,7 @@ public class QueryFailureTest extends SystemTestBase {
       tbb.putLong(0, TestUtils.randomLong(0, 100000, 1)[0]);
       tbb.putString(1, TestUtils.randomFixedLengthNumericString(0, 100000, 1, 20)[0]);
       while ((tb = tbb.popFilled()) != null) {
-        LOGGER.debug("Insert a TB into testbed. #" + numTB + ".");
+        LOGGER.debug("Insert a TB into testbed. #{}.", numTB);
         numTB++;
         insert(workerIDs[0], testtableKey, schema, tb);
         insert(workerIDs[1], testtableKey, schema, tb);
@@ -400,9 +375,8 @@ public class QueryFailureTest extends SystemTestBase {
     final SinkRoot serverPlan = new SinkRoot(srfiMaster);
 
     ListenableFuture<Query> qf = server.submitQueryPlan(serverPlan, workerPlans);
-    Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     try {
-      qf.get();
+      Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     } catch (ExecutionException e) {
       e.getCause().printStackTrace();
       throw e.getCause();
@@ -411,10 +385,7 @@ public class QueryFailureTest extends SystemTestBase {
 
   @Test(expected = DbException.class, timeout = 50000)
   public void workerPartitionFailureTest() throws Throwable {
-    if (TestUtils.inTravis()) {
-      System.err.println("Skipping test because in Travis.");
-      throw new DbException("Skipping test because in Travis.");
-    }
+    TestUtils.skipIfInTravis();
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
     createTable(workerIDs[0], testtableKey, "id long, name varchar(20)");
     createTable(workerIDs[1], testtableKey, "id long, name varchar(20)");
@@ -431,7 +402,7 @@ public class QueryFailureTest extends SystemTestBase {
       tbb.putLong(0, TestUtils.randomLong(0, 100000, 1)[0]);
       tbb.putString(1, TestUtils.randomFixedLengthNumericString(0, 100000, 1, 20)[0]);
       while ((tb = tbb.popFilled()) != null) {
-        LOGGER.debug("Insert a TB into testbed. #" + numTB + ".");
+        LOGGER.debug("Insert a TB into testbed. #{}.", numTB);
         numTB++;
         insert(workerIDs[0], testtableKey, schema, tb);
         insert(workerIDs[1], testtableKey, schema, tb);
@@ -463,9 +434,8 @@ public class QueryFailureTest extends SystemTestBase {
     final SinkRoot serverPlan = new SinkRoot(serverCollect);
 
     ListenableFuture<Query> qf = server.submitQueryPlan(serverPlan, workerPlans);
-    Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     try {
-      qf.get();
+      Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     } catch (ExecutionException e) {
       e.getCause().printStackTrace();
       throw e.getCause();
@@ -474,10 +444,7 @@ public class QueryFailureTest extends SystemTestBase {
 
   @Test(expected = DbException.class, timeout = 50000)
   public void masterPartitionFailureTest() throws Throwable {
-    if (TestUtils.inTravis()) {
-      System.err.println("Skipping test because in Travis.");
-      throw new DbException("Skipping test because in Travis.");
-    }
+    TestUtils.skipIfInTravis();
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
     createTable(workerIDs[0], testtableKey, "id long, name varchar(20)");
     createTable(workerIDs[1], testtableKey, "id long, name varchar(20)");
@@ -494,7 +461,7 @@ public class QueryFailureTest extends SystemTestBase {
       tbb.putLong(0, TestUtils.randomLong(0, 100000, 1)[0]);
       tbb.putString(1, TestUtils.randomFixedLengthNumericString(0, 100000, 1, 20)[0]);
       while ((tb = tbb.popFilled()) != null) {
-        LOGGER.debug("Insert a TB into testbed. #" + numTB + ".");
+        LOGGER.debug("Insert a TB into testbed. #{}.", numTB);
         numTB++;
         insert(workerIDs[0], testtableKey, schema, tb);
         insert(workerIDs[1], testtableKey, schema, tb);
@@ -524,9 +491,8 @@ public class QueryFailureTest extends SystemTestBase {
     final SinkRoot serverPlan = new SinkRoot(srfi);
 
     ListenableFuture<Query> qf = server.submitQueryPlan(serverPlan, workerPlans);
-    Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     try {
-      qf.get();
+      Uninterruptibles.getUninterruptibly(qf, 50, TimeUnit.SECONDS);
     } catch (ExecutionException e) {
       e.getCause().printStackTrace();
       throw e.getCause();

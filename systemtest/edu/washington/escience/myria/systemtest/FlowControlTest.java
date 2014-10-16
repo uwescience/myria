@@ -45,10 +45,7 @@ public class FlowControlTest extends SystemTestBase {
 
   @Test
   public void flowControlTest() throws Exception {
-    if (TestUtils.inTravis()) {
-      System.err.println("Skipping test because in Travis.");
-      return;
-    }
+    TestUtils.skipIfInTravis();
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
     createTable(workerIDs[0], testtableKey, "id long, name varchar(20)");
 

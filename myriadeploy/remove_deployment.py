@@ -5,17 +5,6 @@ import myriadeploy
 import subprocess
 import sys
 
-def get_host_port_path(node, default_path):
-    if len(node) == 2:
-        (hostname, port) = node
-        if default_path is None:
-            raise Exception("Path not specified for node %s" % str(node))
-        else:
-            path = default_path
-    else:
-        (hostname, port, path) = node[0:3]
-    return (hostname, port, path)
-
 def remote_rm(hostname, dirname, username):
     print hostname
     if hostname != 'localhost':
@@ -33,7 +22,7 @@ def rm_deployment(config):
     username = config['username']
 
     # Remove directories on master
-    (hostname, _, path) = get_host_port_path(master, default_path)
+    (hostname, _, path) = myriadeploy.get_host_port_path(master, default_path)
     if remote_rm(hostname, "%s/%s-files" \
             % (path, description), username):
         raise Exception("Error removing directory on master %s" \
@@ -45,7 +34,7 @@ def rm_deployment(config):
         worker_id = i + 1
 
         # Remove directories on the worker
-        (hostname, _, path) = get_host_port_path(worker, default_path)
+        (hostname, _, path) = myriadeploy.get_host_port_path(worker, default_path)
         if remote_rm(hostname, "%s/%s-files" \
                 % (path, description), username):
             raise Exception("Error removing directory on worker %d %s" \

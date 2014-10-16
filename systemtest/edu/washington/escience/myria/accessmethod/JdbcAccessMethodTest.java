@@ -113,19 +113,13 @@ public class JdbcAccessMethodTest {
 
   @Test
   public void testInsertTuplesAndCountThemMySQL() throws DbException {
-    if (!TestUtils.inTravis()) {
-      LOGGER.warn("Skipping MySQL test since not in Travis.");
-      return;
-    }
+    TestUtils.requireTravis();
     testInsertTuplesAndCountThem(MyriaConstants.STORAGE_SYSTEM_MYSQL);
   }
 
   @Test
   public void testInsertTuplesAndCountThemPostgreSQL() throws DbException {
-    if (!TestUtils.inTravis()) {
-      LOGGER.warn("Skipping PostgreSQL test since not in Travis.");
-      return;
-    }
+    TestUtils.requireTravis();
     testInsertTuplesAndCountThem(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL);
     testInsertTuplesAndCountThemWithNull(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL);
   }

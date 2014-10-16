@@ -11,14 +11,34 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.Set;
 
+import javax.annotation.Nonnull;
+
+import org.apache.commons.lang.ArrayUtils;
 import org.junit.Assert;
+import org.junit.Assume;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Maps;
 
+import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.operator.DbInsert;
+import edu.washington.escience.myria.operator.EOSSource;
+import edu.washington.escience.myria.operator.Operator;
+import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.failures.InitFailureInjector;
+import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
+import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
+import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
+import edu.washington.escience.myria.parallel.ExchangePairID;
+import edu.washington.escience.myria.parallel.SubQuery;
+import edu.washington.escience.myria.parallel.SubQueryPlan;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 public final class TestUtils {
@@ -46,6 +66,20 @@ public final class TestUtils {
   public static boolean inTravis() {
     String travis = System.getenv("TRAVIS");
     return (travis != null) && travis.equals("true");
+  }
+
+  /**
+   * Only run this test in Travis.
+   */
+  public static void requireTravis() {
+    Assume.assumeTrue(inTravis());
+  }
+
+  /**
+   * Skip this test if in Travis.
+   */
+  public static void skipIfInTravis() {
+    Assume.assumeFalse(inTravis());
   }
 
   private synchronized static Random getRandom() {
@@ -112,26 +146,6 @@ public final class TestUtils {
     }
   }
 
-  public static HashMap<Tuple, Integer> distinct(final TupleBatchBuffer content) {
-    final Iterator<List<Column<?>>> it = content.getAllAsRawColumn().iterator();
-    final HashMap<Tuple, Integer> expectedResults = new HashMap<Tuple, Integer>();
-    while (it.hasNext()) {
-      final List<Column<?>> columns = it.next();
-      final int numRow = columns.get(0).size();
-      final int numColumn = columns.size();
-
-      for (int i = 0; i < numRow; i++) {
-        final Tuple t = new Tuple(numColumn);
-        for (int j = 0; j < numColumn; j++) {
-          t.set(j, columns.get(j).getObject(i));
-        }
-        expectedResults.put(t, 1);
-      }
-    }
-    return expectedResults;
-
-  }
-
   public static String intToString(final long v, final int length) {
     final StringBuilder sb = new StringBuilder("" + v);
     while (sb.length() < length) {
@@ -169,8 +183,8 @@ public final class TestUtils {
 
     int numChild1Column = 0;
     final HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
-    final List<List<Column<?>>> child1TBIt = child1.getAllAsRawColumn();
-    for (final List<Column<?>> child1RawData : child1TBIt) {
+    final List<List<? extends Column<?>>> child1TBIt = child1.getAllAsRawColumn();
+    for (final List<? extends Column<?>> child1RawData : child1TBIt) {
       final int numRow = child1RawData.get(0).size();
       final int numColumn = child1RawData.size();
       numChild1Column = numColumn;
@@ -196,9 +210,9 @@ public final class TestUtils {
       }
     }
 
-    final Iterator<List<Column<?>>> child2TBIt = child2.getAllAsRawColumn().iterator();
+    final Iterator<List<? extends Column<?>>> child2TBIt = child2.getAllAsRawColumn().iterator();
     while (child2TBIt.hasNext()) {
-      final List<Column<?>> child2Columns = child2TBIt.next();
+      final List<? extends Column<?>> child2Columns = child2TBIt.next();
       final int numRow = child2Columns.get(0).size();
       final int numChild2Column = child2Columns.size();
       for (int i = 0; i < numRow; i++) {
@@ -234,10 +248,10 @@ public final class TestUtils {
 
   public static HashMap<Tuple, Integer> groupByAvgLongColumn(final TupleBatchBuffer source, final int groupByColumn,
       final int aggColumn) {
-    final List<List<Column<?>>> tbs = source.getAllAsRawColumn();
+    final List<List<? extends Column<?>>> tbs = source.getAllAsRawColumn();
     final HashMap<Object, Long> sum = new HashMap<Object, Long>();
     final HashMap<Object, Integer> count = new HashMap<Object, Integer>();
-    for (final List<Column<?>> rawData : tbs) {
+    for (final List<? extends Column<?>> rawData : tbs) {
       final int numTuples = rawData.get(0).size();
       for (int i = 0; i < numTuples; i++) {
         final Object groupByValue = rawData.get(groupByColumn).getObject(i);
@@ -265,38 +279,11 @@ public final class TestUtils {
     return result;
   }
 
-  public static HashMap<Tuple, Integer> groupByCount(final TupleBatchBuffer source, final int groupByColumn) {
-    final List<List<Column<?>>> tbs = source.getAllAsRawColumn();
-    final HashMap<Object, Long> count = new HashMap<Object, Long>();
-    for (final List<Column<?>> rawData : tbs) {
-      final int numTuples = rawData.get(0).size();
-      for (int i = 0; i < numTuples; i++) {
-        final Object groupByValue = rawData.get(groupByColumn).getObject(i);
-        Long currentCount = count.get(groupByValue);
-        if (currentCount == null) {
-          currentCount = 0L;
-        }
-        count.put(groupByValue, ++currentCount);
-      }
-    }
-    final HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
-
-    for (final Map.Entry<Object, Long> e : count.entrySet()) {
-      final Object gValue = e.getKey();
-      final Long countV = e.getValue();
-      final Tuple t = new Tuple(2);
-      t.set(0, (Comparable<?>) gValue);
-      t.set(1, countV);
-      result.put(t, 1);
-    }
-    return result;
-  }
-
   public static <T extends Comparable<T>> HashMap<Tuple, Integer> groupByMax(final TupleBatchBuffer source,
       final int groupByColumn, final int aggColumn) {
-    final List<List<Column<?>>> tbs = source.getAllAsRawColumn();
+    final List<List<? extends Column<?>>> tbs = source.getAllAsRawColumn();
     final HashMap<Object, T> max = new HashMap<Object, T>();
-    for (final List<Column<?>> rawData : tbs) {
+    for (final List<? extends Column<?>> rawData : tbs) {
       final int numTuples = rawData.get(0).size();
       for (int i = 0; i < numTuples; i++) {
         final Object groupByValue = rawData.get(groupByColumn).getObject(i);
@@ -325,9 +312,9 @@ public final class TestUtils {
 
   public static <T extends Comparable<T>> HashMap<Tuple, Integer> groupByMin(final TupleBatchBuffer source,
       final int groupByColumn, final int aggColumn) {
-    final List<List<Column<?>>> tbs = source.getAllAsRawColumn();
+    final List<List<? extends Column<?>>> tbs = source.getAllAsRawColumn();
     final HashMap<Object, T> min = new HashMap<Object, T>();
-    for (final List<Column<?>> rawData : tbs) {
+    for (final List<? extends Column<?>> rawData : tbs) {
       final int numTuples = rawData.get(0).size();
       for (int i = 0; i < numTuples; i++) {
         final Object groupByValue = rawData.get(groupByColumn).getObject(i);
@@ -356,9 +343,9 @@ public final class TestUtils {
 
   public static HashMap<Tuple, Integer> groupBySumLongColumn(final TupleBatchBuffer source, final int groupByColumn,
       final int aggColumn) {
-    final List<List<Column<?>>> tbs = source.getAllAsRawColumn();
+    final List<List<? extends Column<?>>> tbs = source.getAllAsRawColumn();
     final HashMap<Object, Long> sum = new HashMap<Object, Long>();
-    for (final List<Column<?>> rawData : tbs) {
+    for (final List<? extends Column<?>> rawData : tbs) {
       final int numTuples = rawData.get(0).size();
       for (int i = 0; i < numTuples; i++) {
         final Object groupByValue = rawData.get(groupByColumn).getObject(i);
@@ -383,54 +370,6 @@ public final class TestUtils {
     return result;
   }
 
-  @SuppressWarnings("unchecked")
-  public static <T extends Comparable<T>> T max(final TupleBatchBuffer tbb, final int column) {
-    final List<List<Column<?>>> tbs = tbb.getAllAsRawColumn();
-    T max = (T) tbs.get(0).get(column).getObject(0);
-    for (final List<Column<?>> tb : tbs) {
-      final int numTuples = tb.get(0).size();
-      final Column<?> c = tb.get(column);
-      for (int i = 0; i < numTuples; i++) {
-        final T current = (T) c.getObject(i);
-        if (max.compareTo(current) < 0) {
-          max = current;
-        }
-      }
-    }
-    return max;
-  }
-
-  @SuppressWarnings("unchecked")
-  public static <T extends Comparable<T>> T min(final TupleBatchBuffer tbb, final int column) {
-    final List<List<Column<?>>> tbs = tbb.getAllAsRawColumn();
-    T min = (T) tbs.get(0).get(column).getObject(0);
-    for (final List<Column<?>> tb : tbs) {
-      final int numTuples = tb.get(0).size();
-      final Column<?> c = tb.get(column);
-      for (int i = 0; i < numTuples; i++) {
-        final T current = (T) c.getObject(i);
-        if (min.compareTo(current) > 0) {
-          min = current;
-        }
-      }
-    }
-    return min;
-  }
-
-  public static long sumLong(final TupleBatchBuffer tbb, final int column) {
-    final List<List<Column<?>>> tbs = tbb.getAllAsRawColumn();
-    long sum = 0;
-    for (final List<Column<?>> tb : tbs) {
-      final int numTuples = tb.get(0).size();
-      final Column<?> c = tb.get(column);
-      for (int i = 0; i < numTuples; i++) {
-        final Long current = (Long) c.getObject(i);
-        sum += current;
-      }
-    }
-    return sum;
-  }
-
   /***/
   public static String[] randomFixedLengthNumericString(final int min, final int max, final int size, final int length) {
 
@@ -439,16 +378,6 @@ public final class TestUtils {
 
     for (int i = 0; i < size; i++) {
       result[i] = intToString(intV[i], length);
-    }
-    return result;
-  }
-
-  public static int[] randomInt(final int min, final int max, final int size) {
-    final int[] result = new int[size];
-    final Random r = new Random();
-    final int top = max - min + 1;
-    for (int i = 0; i < size; i++) {
-      result[i] = r.nextInt(top) + min;
     }
     return result;
   }
@@ -462,21 +391,12 @@ public final class TestUtils {
     return result;
   }
 
-  public static float[] randomFloat(final float min, final float max, final int size) {
-    final float[] result = new float[size];
-    final float range = max - min;
-    for (int i = 0; i < size; i++) {
-      result[i] = getRandom().nextFloat() * range + min;
-    }
-    return result;
-  }
-
   public static HashMap<Tuple, Integer> tupleBatchToTupleBag(final TupleBatchBuffer tbb) {
     final HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
-    final Iterator<List<Column<?>>> it = tbb.getAllAsRawColumn().iterator();
+    final Iterator<List<? extends Column<?>>> it = tbb.getAllAsRawColumn().iterator();
 
     while (it.hasNext()) {
-      final List<Column<?>> columns = it.next();
+      final List<? extends Column<?>> columns = it.next();
       final int numColumn = columns.size();
       final int numRow = columns.get(0).size();
       for (int row = 0; row < numRow; row++) {
@@ -493,30 +413,6 @@ public final class TestUtils {
       }
     }
     return result;
-  }
-
-  public static HashMap<Tuple, Integer> tupleBatchToTupleSet(final TupleBatchBuffer tbb) {
-    final HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
-    final Iterator<List<Column<?>>> it = tbb.getAllAsRawColumn().iterator();
-    while (it.hasNext()) {
-      final List<Column<?>> columns = it.next();
-      final int numColumn = columns.size();
-      final int numRow = columns.get(0).size();
-      for (int row = 0; row < numRow; row++) {
-        final Tuple t = new Tuple(numColumn);
-        for (int column = 0; column < numColumn; column++) {
-          t.set(column, columns.get(column).getObject(row));
-        }
-        result.put(t, 1);
-      }
-    }
-    return result;
-  }
-
-  public static ImmutableList.Builder<Number> generateListBuilderWithElement(long element) {
-    ImmutableList.Builder<Number> sourceListBuilder = ImmutableList.builder();
-    sourceListBuilder.add(element);
-    return sourceListBuilder;
   }
 
   /**
@@ -552,4 +448,94 @@ public final class TestUtils {
     return tbb;
   }
 
+  /**
+   * Construct a SubQuery that will insert the given tuples (starting on the master) on the specified workers using the
+   * specified relation key and partition function.
+   * 
+   * @param masterSource the source of tuples, from the master.
+   * @param dest the name of the relation into which tuples will be inserted (using overwrite!).
+   * @param pf how tuples will be partitioned on the cluster.
+   * @param workers the set of workers on which the data will be stored.
+   * @return a SubQuery that will insert the given tuples (starting on the master) on the specified workers using the
+   *         specified relation key and partition function.
+   */
+  public static final SubQuery insertRelation(@Nonnull final Operator masterSource, @Nonnull final RelationKey dest,
+      @Nonnull PartitionFunction pf, @Nonnull Set<Integer> workers) {
+    return insertRelation(masterSource, dest, pf, ArrayUtils.toPrimitive(workers.toArray(new Integer[workers.size()])));
+  }
+
+  /**
+   * Construct a SubQuery that will insert the given tuples (starting on the master) on the specified workers using the
+   * specified relation key and partition function.
+   * 
+   * @param masterSource the source of tuples, from the master.
+   * @param dest the name of the relation into which tuples will be inserted (using overwrite!).
+   * @param pf how tuples will be partitioned on the cluster.
+   * @param workers the set of workers on which the data will be stored.
+   * @return a SubQuery that will insert the given tuples (starting on the master) on the specified workers using the
+   *         specified relation key and partition function.
+   */
+  public static final SubQuery insertRelation(@Nonnull final Operator masterSource, @Nonnull final RelationKey dest,
+      @Nonnull PartitionFunction pf, @Nonnull int[] workers) {
+    final ExchangePairID id = ExchangePairID.newID();
+    /* Master plan */
+    GenericShuffleProducer sp = new GenericShuffleProducer(masterSource, id, workers, pf);
+    SubQueryPlan masterPlan = new SubQueryPlan(sp);
+
+    /* Worker plan */
+    GenericShuffleConsumer sc =
+        new GenericShuffleConsumer(masterSource.getSchema(), id, new int[] { MyriaConstants.MASTER_ID });
+    DbInsert insert = new DbInsert(sc, dest, true);
+    Map<Integer, SubQueryPlan> workerPlans = Maps.newHashMap();
+    for (int i : workers) {
+      workerPlans.put(i, new SubQueryPlan(insert));
+    }
+
+    return new SubQuery(masterPlan, workerPlans);
+  }
+
+  /**
+   * Construct a SubQuery that will fail on the master during initialization. Useful for testing failures.
+   */
+  public static final SubQuery failOnMasterInit() {
+    /* Master plan */
+    EOSSource src = new EOSSource();
+    Operator fail = new InitFailureInjector(src);
+    SinkRoot root = new SinkRoot(fail);
+
+    Map<Integer, SubQueryPlan> workerPlans = Maps.newHashMap();
+
+    return new SubQuery(new SubQueryPlan(root), workerPlans);
+  }
+
+  /**
+   * Construct a SubQuery that will fail on one worker during initialization. Useful for testing failures.
+   */
+  public static final SubQuery failOnFirstWorkerInit(@Nonnull int[] workers) {
+    Preconditions.checkElementIndex(1, workers.length);
+
+    /* Master plan */
+    SubQueryPlan masterPlan = new SubQueryPlan(new SinkRoot(new EOSSource()));
+
+    /* Worker plans */
+    Map<Integer, SubQueryPlan> workerPlans = Maps.newHashMap();
+    /* First worker */
+    workerPlans.put(workers[0], new SubQueryPlan(new SinkRoot(new InitFailureInjector(new EOSSource()))));
+    return new SubQuery(masterPlan, workerPlans);
+  }
+
+  /**
+   * Returns a {@link TupleBatchBuffer} containing the values 0 to {@code n-1}. The column is of type {@Link
+   * Type#INT_TYPE} and the column name is {@code "val"}.
+   * 
+   * @param n the number of values in the buffer.
+   * @return a {@link TupleBatchBuffer} containing the values 0 to {@code n-1}
+   */
+  public static TupleBatchBuffer range(int n) {
+    TupleBatchBuffer sourceBuffer = new TupleBatchBuffer(Schema.ofFields(Type.INT_TYPE, "val"));
+    for (int i = 0; i < n; ++i) {
+      sourceBuffer.putInt(0, i);
+    }
+    return sourceBuffer;
+  }
 }

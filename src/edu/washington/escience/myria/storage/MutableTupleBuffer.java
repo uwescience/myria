@@ -15,7 +15,9 @@ import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.ColumnFactory;
 import edu.washington.escience.myria.column.builder.DateTimeColumnBuilder;
+import edu.washington.escience.myria.column.builder.WritableColumn;
 import edu.washington.escience.myria.column.mutable.MutableColumn;
+import edu.washington.escience.myria.util.MyriaUtils;
 
 /** A simplified TupleBatchBuffer which supports random access. Designed for hash tables to use. */
 
@@ -274,6 +276,14 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
   }
 
   @Override
+  @Deprecated
+  public final void putObject(final int column, final Object value) {
+    checkPutIndex(column);
+    currentBuildingColumns[column].appendObject(MyriaUtils.ensureObjectIsValidType(value));
+    columnPut(column);
+  }
+
+  @Override
   public final void putString(final int column, final String value) {
     checkPutIndex(column);
     currentBuildingColumns[column].appendString(value);
@@ -502,5 +512,10 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
   @Override
   public ReadableColumn asColumn(final int column) {
     return new ReadableSubColumn(this, Preconditions.checkElementIndex(column, numColumns));
+  }
+
+  @Override
+  public WritableColumn asWritableColumn(final int column) {
+    return new WritableSubColumn(this, column);
   }
 }

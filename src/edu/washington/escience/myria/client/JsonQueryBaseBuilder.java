@@ -32,7 +32,6 @@ import edu.washington.escience.myria.api.MyriaApiException;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.AbstractConsumerEncoding;
 import edu.washington.escience.myria.api.encoding.AbstractProducerEncoding;
-import edu.washington.escience.myria.api.encoding.AggregateEncoding;
 import edu.washington.escience.myria.api.encoding.BroadcastConsumerEncoding;
 import edu.washington.escience.myria.api.encoding.BroadcastProducerEncoding;
 import edu.washington.escience.myria.api.encoding.CollectConsumerEncoding;
@@ -72,8 +71,9 @@ import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TipsyFileScan;
 import edu.washington.escience.myria.operator.UnionAll;
-import edu.washington.escience.myria.operator.agg.Aggregate;
-import edu.washington.escience.myria.operator.agg.Aggregator;
+import edu.washington.escience.myria.operator.agg.AggregatorFactory;
+import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
+import edu.washington.escience.myria.operator.agg.SingleColumnAggregatorFactory;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
 import edu.washington.escience.myria.operator.network.LocalMultiwayConsumer;
@@ -1026,21 +1026,6 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
   }
 
   /**
-   * {@link Aggregate}.
-   * 
-   * @return builder.
-   * @param aggColumns agg columns
-   * @param aggOps agg ops.
-   */
-  public JsonQueryBaseBuilder aggregate(final int[] aggColumns, final int[] aggOps) {
-    List<List<String>> ops = AggregateEncoding.serializeAggregateOperator(aggOps);
-    JsonQueryBaseBuilder agg = buildOperator(AggregateEncoding.class, "argChild", this, NO_PREFERENCE);
-    ((AggregateEncoding) agg.op).argAggFields = aggColumns;
-    ((AggregateEncoding) agg.op).argAggOperators = ops;
-    return agg;
-  }
-
-  /**
    * {@link SymmetricHashJoin}.
    * 
    * @return builder.
@@ -1048,12 +1033,14 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * @param aggColumns agg columns
    * @param aggOps agg ops.
    */
-  public JsonQueryBaseBuilder groupBy(final int groupColumn, final int[] aggColumns, final int[] aggOps) {
-    List<List<String>> ops = AggregateEncoding.serializeAggregateOperator(aggOps);
+  public JsonQueryBaseBuilder groupBy(final int groupColumn, final int[] aggColumns, final List<AggregationOp[]> aggOps) {
     JsonQueryBaseBuilder gp = buildOperator(SingleGroupByAggregateEncoding.class, "argChild", this, NO_PREFERENCE);
-    ((SingleGroupByAggregateEncoding) gp.op).argAggFields = aggColumns;
-    ((SingleGroupByAggregateEncoding) gp.op).argAggOperators = ops;
+    AggregatorFactory[] aggregators = new AggregatorFactory[aggColumns.length];
+    for (int i = 0; i < aggColumns.length; ++i) {
+      aggregators[i] = new SingleColumnAggregatorFactory(aggColumns[i], aggOps.get(i));
+    }
     ((SingleGroupByAggregateEncoding) gp.op).argGroupField = groupColumn;
+    ((SingleGroupByAggregateEncoding) gp.op).aggregators = aggregators;
     return gp;
   }
 
@@ -1183,15 +1170,6 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
       throw new UnsupportedOperationException();
     }
 
-  }
-
-  /**
-   * {@link Aggregate}. Count.
-   * 
-   * @return builder.
-   */
-  public JsonQueryBaseBuilder count() {
-    return aggregate(new int[] { 0 }, new int[] { Aggregator.AGG_OP_COUNT });
   }
 
 }

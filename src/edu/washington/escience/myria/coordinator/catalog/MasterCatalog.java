@@ -14,6 +14,9 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 
+import javax.annotation.Nullable;
+
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,18 +58,18 @@ public final class MasterCatalog {
   /** Create the configurations table. */
   private static final String CREATE_CONFIGURATION =
       "CREATE TABLE configuration (\n"
-    + "    key STRING UNIQUE NOT NULL,\n"
-    + "    value STRING NOT NULL);";
+    + "    key TEXT UNIQUE NOT NULL,\n"
+    + "    value TEXT NOT NULL);";
   /** Create the masters table. */
   private static final String CREATE_MASTERS =
       "CREATE TABLE masters (\n"
     + "    master_id INTEGER PRIMARY KEY ASC,\n"
-    + "    host_port STRING NOT NULL);";
+    + "    host_port TEXT NOT NULL);";
   /** Create the workers table. */
   private static final String CREATE_WORKERS =
       "CREATE TABLE workers (\n"
     + "    worker_id INTEGER PRIMARY KEY ASC,\n"
-    + "    host_port STRING NOT NULL);";
+    + "    host_port TEXT NOT NULL);";
   /** Create the alive_workers table. */
   private static final String CREATE_ALIVE_WORKERS =
       "CREATE TABLE alive_workers (\n"
@@ -90,31 +93,31 @@ public final class MasterCatalog {
   /** Create the relations table. */
   private static final String CREATE_RELATIONS =
       "CREATE TABLE relations (\n"
-    + "    user_name STRING NOT NULL,\n"
-    + "    program_name STRING NOT NULL,\n"
-    + "    relation_name STRING NOT NULL,\n"
-    + "    num_tuples LONG NOT NULL,\n"
-    + "    query_id LONG NOT NULL REFERENCES queries(query_id),\n"
+    + "    user_name TEXT NOT NULL,\n"
+    + "    program_name TEXT NOT NULL,\n"
+    + "    relation_name TEXT NOT NULL,\n"
+    + "    num_tuples INTEGER NOT NULL,\n"
+    + "    query_id INTEGER NOT NULL REFERENCES queries(query_id),\n"
     + "    PRIMARY KEY (user_name,program_name,relation_name));";
   /** Create the relation_schema table. */
   private static final String CREATE_RELATION_SCHEMA =
       "CREATE TABLE relation_schema (\n"
-    + "    user_name STRING NOT NULL,\n"
-    + "    program_name STRING NOT NULL,\n"
-    + "    relation_name STRING NOT NULL,\n"
+    + "    user_name TEXT NOT NULL,\n"
+    + "    program_name TEXT NOT NULL,\n"
+    + "    relation_name TEXT NOT NULL,\n"
     + "    col_index INTEGER NOT NULL,\n"
-    + "    col_name STRING,\n"
-    + "    col_type STRING NOT NULL,\n"
+    + "    col_name TEXT,\n"
+    + "    col_type TEXT NOT NULL,\n"
     + "    FOREIGN KEY (user_name,program_name,relation_name) REFERENCES relations ON DELETE CASCADE);";
   /** Create the stored_relations table. */
   private static final String CREATE_STORED_RELATIONS =
       "CREATE TABLE stored_relations (\n"
     + "    stored_relation_id INTEGER PRIMARY KEY ASC,\n"
-    + "    user_name STRING NOT NULL,\n"
-    + "    program_name STRING NOT NULL,\n"
-    + "    relation_name STRING NOT NULL,\n"
+    + "    user_name TEXT NOT NULL,\n"
+    + "    program_name TEXT NOT NULL,\n"
+    + "    relation_name TEXT NOT NULL,\n"
     + "    num_shards INTEGER NOT NULL,\n"
-    + "    how_partitioned STRING NOT NULL,\n"
+    + "    how_partitioned TEXT NOT NULL,\n"
     + "    FOREIGN KEY (user_name,program_name,relation_name) REFERENCES relations ON DELETE CASCADE);";
   /** Create the stored_relations table. */
   private static final String CREATE_SHARDS =
@@ -530,6 +533,60 @@ public final class MasterCatalog {
           } catch (final SQLiteException e) {
             if (LOGGER.isErrorEnabled()) {
               LOGGER.error(e.toString());
+            }
+            throw new CatalogException(e);
+          }
+          return null;
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+    return this;
+  }
+
+  /**
+   * Add workers.
+   * 
+   * @param workers workerId -> "host:port"
+   * @return this Catalog
+   * @throws CatalogException if the hostPortString is invalid or there is a database exception.
+   */
+  public MasterCatalog addWorkers(final Map<String, String> workers) throws CatalogException {
+    Objects.requireNonNull(workers);
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+    try {
+      queue.execute(new SQLiteJob<Object>() {
+        @Override
+        protected Object job(final SQLiteConnection sqliteConnection) throws SQLiteException, CatalogException {
+          try {
+            final SQLiteStatement statement =
+                sqliteConnection.prepare("INSERT INTO workers(worker_id, host_port) VALUES(?,?);", false);
+            /* To begin: start a transaction. */
+            sqliteConnection.exec("BEGIN TRANSACTION;");
+
+            for (final Map.Entry<String, String> e : workers.entrySet()) {
+              @SuppressWarnings("unused")
+              /* Just used to verify that hostPortString is legal */
+              final SocketInfo sockInfo = SocketInfo.valueOf(e.getValue());
+              statement.bind(1, Integer.valueOf(e.getKey()));
+              statement.bind(2, e.getValue());
+              statement.step();
+              statement.reset(false);
+            }
+            /* To complete: commit the transaction. */
+            sqliteConnection.exec("COMMIT TRANSACTION;");
+            statement.dispose();
+          } catch (final SQLiteException e) {
+            if (LOGGER.isErrorEnabled()) {
+              LOGGER.error(e.toString());
+            }
+            try {
+              sqliteConnection.exec("ABORT TRANSACTION;");
+            } catch (final SQLiteException e2) {
+              assert true; /* Do nothing. */
             }
             throw new CatalogException(e);
           }
@@ -1092,6 +1149,7 @@ public final class MasterCatalog {
    * @return the newly generated ID of this query.
    * @throws CatalogException if there is an error adding the new query.
    */
+  @SuppressWarnings("checkstyle:magicnumber")
   public Long newQuery(final QueryEncoding query) throws CatalogException {
     Objects.requireNonNull(query, "query");
     if (isClosed) {
@@ -1117,9 +1175,9 @@ public final class MasterCatalog {
             statement.bind(1, queryStatus.rawQuery);
             statement.bind(2, queryStatus.logicalRa);
             statement.bind(3, physicalString);
-            statement.bind(4, queryStatus.submitTime);
-            statement.bind(5, queryStatus.startTime);
-            statement.bind(6, queryStatus.finishTime);
+            statement.bind(4, toStringOrNull(queryStatus.submitTime));
+            statement.bind(5, toStringOrNull(queryStatus.startTime));
+            statement.bind(6, toStringOrNull(queryStatus.finishTime));
             if (queryStatus.elapsedNanos != null) {
               statement.bind(7, queryStatus.elapsedNanos);
             } else {
@@ -1194,9 +1252,9 @@ public final class MasterCatalog {
   private static QueryStatusEncoding querySimpleStatusHelper(final SQLiteStatement statement) throws SQLiteException {
     final QueryStatusEncoding queryStatus = new QueryStatusEncoding(statement.columnLong(0));
     queryStatus.rawQuery = statement.columnString(1);
-    queryStatus.submitTime = statement.columnString(2);
-    queryStatus.startTime = statement.columnString(3);
-    queryStatus.finishTime = statement.columnString(4);
+    queryStatus.submitTime = parseDateTime(statement.columnString(2));
+    queryStatus.startTime = parseDateTime(statement.columnString(3));
+    queryStatus.finishTime = parseDateTime(statement.columnString(4));
     if (!statement.columnNull(5)) {
       queryStatus.elapsedNanos = statement.columnLong(5);
     }
@@ -1207,6 +1265,32 @@ public final class MasterCatalog {
   }
 
   /**
+   * A wrapper for {@link DateTime.parse} that returns null if the string is null.
+   * 
+   * @param dateTime a string in ISO8601 datetime format.
+   * @return the parsed DateTime, or null if the parameter is null.
+   */
+  private static DateTime parseDateTime(@Nullable final String dateTime) {
+    if (dateTime == null) {
+      return null;
+    }
+    return DateTime.parse(dateTime);
+  }
+
+  /**
+   * A wrapper for {@link Object#toString()} that returns null if the Object is null.
+   * 
+   * @param o an object.
+   * @return o.toString(), or null if o is null.
+   */
+  private static String toStringOrNull(@Nullable final Object o) {
+    if (o == null) {
+      return null;
+    }
+    return o.toString();
+  }
+
+  /**
    * Helper function to get a {@link QueryStatusEncoding} from a query over the <code>queries</code> table..
    * 
    * @param statement the query over the <code>queries</code> table. Has been stepped once.
@@ -1214,6 +1298,7 @@ public final class MasterCatalog {
    * @throws SQLiteException if there is an error in the database.
    * @throws IOException if there is an error when deserializing physical plan.
    */
+  @SuppressWarnings("checkstyle:magicnumber")
   private static QueryStatusEncoding queryStatusHelper(final SQLiteStatement statement) throws SQLiteException,
       IOException {
     final QueryStatusEncoding queryStatus = new QueryStatusEncoding(statement.columnLong(0));
@@ -1221,10 +1306,15 @@ public final class MasterCatalog {
     queryStatus.logicalRa = statement.columnString(2);
     String physicalString = statement.columnString(3);
 
-    queryStatus.plan = MyriaJsonMapperProvider.getMapper().readValue(physicalString, SubPlanEncoding.class);
-    queryStatus.submitTime = statement.columnString(4);
-    queryStatus.startTime = statement.columnString(5);
-    queryStatus.finishTime = statement.columnString(6);
+    try {
+      queryStatus.plan = MyriaJsonMapperProvider.getMapper().readValue(physicalString, SubPlanEncoding.class);
+    } catch (final IOException e) {
+      LOGGER.warn("Error deserializing plan for query #{}", queryStatus.queryId, e);
+      queryStatus.plan = null;
+    }
+    queryStatus.submitTime = parseDateTime(statement.columnString(4));
+    queryStatus.startTime = parseDateTime(statement.columnString(5));
+    queryStatus.finishTime = parseDateTime(statement.columnString(6));
     if (!statement.columnNull(7)) {
       queryStatus.elapsedNanos = statement.columnLong(7);
     }
@@ -1383,8 +1473,8 @@ public final class MasterCatalog {
             SQLiteStatement statement =
                 sqliteConnection
                     .prepare("UPDATE queries SET start_time=?, finish_time=?, elapsed_nanos=?, status=?, message=? WHERE query_id=?;");
-            statement.bind(1, query.getStartTime());
-            statement.bind(2, query.getEndTime());
+            statement.bind(1, toStringOrNull(query.getStartTime()));
+            statement.bind(2, toStringOrNull(query.getEndTime()));
             if (query.getElapsedTime() == null) {
               statement.bindNull(3);
             } else {
@@ -1467,7 +1557,7 @@ public final class MasterCatalog {
             return ret;
           } catch (final SQLiteException e) {
             if (LOGGER.isErrorEnabled()) {
-              LOGGER.error(e.toString());
+              LOGGER.error("Getting the number of queries", e);
             }
             throw new CatalogException(e);
           }

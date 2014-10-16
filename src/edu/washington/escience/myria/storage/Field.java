@@ -6,6 +6,7 @@ import java.nio.BufferOverflowException;
 import org.joda.time.DateTime;
 
 import edu.washington.escience.myria.column.builder.WritableColumn;
+import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * A field used in {@link Tuple}.
@@ -59,7 +60,7 @@ public class Field<T extends Comparable<?>> implements WritableColumn, Serializa
 
   @Override
   public WritableColumn appendObject(final Object value) throws BufferOverflowException {
-    this.value = value;
+    this.value = MyriaUtils.ensureObjectIsValidType(value);
     return this;
   }
 

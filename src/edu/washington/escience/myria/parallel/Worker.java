@@ -10,11 +10,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -42,6 +42,7 @@ import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.InJVMLoopbackChannelSink;
 import edu.washington.escience.myria.profiling.ProfilingLogger;
 import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
+import edu.washington.escience.myria.proto.QueryProto.QueryMessage;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.JVMUtils;
@@ -141,6 +142,29 @@ public final class Worker {
   }
 
   /**
+   * Query related command from master.
+   * */
+  static final class QueryCommand {
+    /**
+     * @param q the target query.
+     * @param queryMsg the command message.
+     * */
+    public QueryCommand(final WorkerSubQuery q, final QueryMessage queryMsg) {
+      this.q = q;
+      this.queryMsg = queryMsg;
+    }
+
+    /**
+     * the target query.
+     * */
+    private final WorkerSubQuery q;
+
+    /**
+     * the command message.
+     * */
+    private final QueryMessage queryMsg;
+  }
+  /**
    * The non-blocking query driver. It calls root.nextReady() to start a query.
    */
   private class QueryMessageProcessor implements Runnable {
@@ -148,7 +172,7 @@ public final class Worker {
     @Override
     public final void run() {
       try {
-        WorkerSubQuery q = null;
+        QueryCommand q = null;
         while (true) {
           try {
             q = queryQueue.take();
@@ -157,17 +181,35 @@ public final class Worker {
             break;
           }
 
-          if (q != null) {
-            try {
-              receiveQuery(q);
-              sendMessageToMaster(IPCUtils.queryReadyTM(q.getSubQueryId()));
-            } catch (DbException e) {
-              if (LOGGER.isErrorEnabled()) {
-                LOGGER.error("Unexpected exception at preparing query. Drop the query.", e);
+          switch (q.queryMsg.getType()) {
+            case QUERY_START:
+              q.q.init();
+              q.q.startExecution();
+              break;
+            case QUERY_KILL:
+              q.q.kill();
+              break;
+            case QUERY_RECOVER:
+              if (q.q.getFTMode().equals(FTMODE.REJOIN)) {
+                q.q.addRecoveryTasks(q.queryMsg.getWorkerId());
               }
-              q = null;
-            }
+              break;
+            case QUERY_DISTRIBUTE:
+              try {
+                receiveQuery(q.q);
+                sendMessageToMaster(IPCUtils.queryReadyTM(q.q.getSubQueryId()));
+              } catch (DbException e) {
+                if (LOGGER.isErrorEnabled()) {
+                  LOGGER.error("Unexpected exception at preparing query. Drop the query.", e);
+                }
+                q = null;
+              }
+
+              break;
+            default:
+              break;
           }
+
         }
       } catch (Throwable ee) {
         if (LOGGER.isErrorEnabled()) {
@@ -312,7 +354,7 @@ public final class Worker {
   /**
    * Message queue for queries.
    */
-  private final PriorityBlockingQueue<WorkerSubQuery> queryQueue;
+  private final LinkedBlockingQueue<QueryCommand> queryQueue;
 
   /**
    * My catalog.
@@ -527,7 +569,7 @@ public final class Worker {
   /**
    * @return my query queue.
    */
-  PriorityBlockingQueue<WorkerSubQuery> getQueryQueue() {
+  BlockingQueue<QueryCommand> getQueryQueue() {
     return queryQueue;
   }
 
@@ -588,7 +630,7 @@ public final class Worker {
     myID = Integer.parseInt(catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_IDENTIFIER));
 
     controlMessageQueue = new LinkedBlockingQueue<ControlMessage>();
-    queryQueue = new PriorityBlockingQueue<WorkerSubQuery>();
+    queryQueue = new LinkedBlockingQueue<QueryCommand>();
 
     masterSocketInfo = catalog.getMasters().get(0);
 
@@ -753,10 +795,10 @@ public final class Worker {
   public void start() throws Exception {
     ExecutorService bossExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("IPC boss"));
     ExecutorService workerExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("IPC worker"));
-    pipelineExecutor =
-        new OrderedMemoryAwareThreadPoolExecutor(3, 5 * MyriaConstants.MB, 0,
-            MyriaConstants.THREAD_POOL_KEEP_ALIVE_TIME_IN_MS, TimeUnit.MILLISECONDS, new RenamingThreadFactory(
-                "Pipeline executor"));
+    pipelineExecutor = null; // Remove pipeline executors
+    // new OrderedMemoryAwareThreadPoolExecutor(3, 5 * MyriaConstants.MB, 0,
+    // MyriaConstants.THREAD_POOL_KEEP_ALIVE_TIME_IN_MS, TimeUnit.MILLISECONDS, new RenamingThreadFactory(
+    // "Pipeline executor"));
 
     ChannelFactory clientChannelFactory =
         new NioClientSocketChannelFactory(bossExecutor, workerExecutor,

@@ -15,6 +15,8 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.ColumnFactory;
+import edu.washington.escience.myria.column.builder.WritableColumn;
+import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * Used for creating TupleBatch objects on the fly. A helper class used in, e.g., the Scatter operator. Currently it
@@ -164,8 +166,8 @@ public class TupleBatchBuffer implements AppendableTable {
    * 
    * @return a List<TupleBatch> containing all complete tuples that have been inserted into this buffer.
    */
-  public final List<List<Column<?>>> getAllAsRawColumn() {
-    final List<List<Column<?>>> output = new ArrayList<List<Column<?>>>();
+  public final List<List<? extends Column<?>>> getAllAsRawColumn() {
+    final List<List<? extends Column<?>>> output = new ArrayList<>();
     for (final TupleBatch batch : readyTuples) {
       output.add(batch.getDataColumns());
     }
@@ -207,6 +209,7 @@ public class TupleBatchBuffer implements AppendableTable {
   /**
    * @return the Schema of the tuples in this buffer.
    */
+  @Override
   public final Schema getSchema() {
     return schema;
   }
@@ -238,6 +241,7 @@ public class TupleBatchBuffer implements AppendableTable {
   /**
    * @return num columns.
    */
+  @Override
   public final int numColumns() {
     return numColumns;
   }
@@ -245,6 +249,7 @@ public class TupleBatchBuffer implements AppendableTable {
   /**
    * @return the number of complete tuples stored in this TupleBatchBuffer.
    */
+  @Override
   public final int numTuples() {
     return readyTuplesNum + currentInProgressTuples;
   }
@@ -339,11 +344,11 @@ public class TupleBatchBuffer implements AppendableTable {
   public final void put(final TupleBatch leftTb, final int leftIdx, final int[] leftAnswerColumns,
       final TupleBatch rightTb, final int rightIdx, final int[] rightAnswerColumns) {
     for (int i = 0; i < leftAnswerColumns.length; ++i) {
-      leftTb.getDataColumns().get(leftAnswerColumns[i]).append(leftIdx, currentBuildingColumns.get(i));
+      TupleUtils.copyValue(leftTb.getDataColumns().get(leftAnswerColumns[i]), leftIdx, currentBuildingColumns.get(i));
     }
     for (int i = 0; i < rightAnswerColumns.length; ++i) {
-      rightTb.getDataColumns().get(rightAnswerColumns[i]).append(rightIdx,
-          currentBuildingColumns.get(i + leftAnswerColumns.length));
+      TupleUtils.copyValue(rightTb.getDataColumns().get(rightAnswerColumns[i]), rightIdx, currentBuildingColumns.get(i
+          + leftAnswerColumns.length));
     }
     currentInProgressTuples++;
     if (currentInProgressTuples == TupleBatch.BATCH_SIZE) {
@@ -369,7 +374,7 @@ public class TupleBatchBuffer implements AppendableTable {
    * @param sourceRow the row in the source column from which data will be retrieved.
    */
   public final void put(final TupleBatch sourceBatch, final int sourceRow) {
-    List<Column<?>> sourceColumns = sourceBatch.getDataColumns();
+    List<? extends Column<?>> sourceColumns = sourceBatch.getDataColumns();
     for (int col = 0; col < sourceColumns.size(); ++col) {
       put(col, sourceColumns.get(col), sourceRow);
     }
@@ -418,6 +423,14 @@ public class TupleBatchBuffer implements AppendableTable {
   }
 
   @Override
+  @Deprecated
+  public void putObject(final int column, final Object value) {
+    checkPutIndex(column);
+    currentBuildingColumns.get(column).appendObject(MyriaUtils.ensureObjectIsValidType(value));
+    columnPut(column);
+  }
+
+  @Override
   public final void putString(final int column, final String value) {
     checkPutIndex(column);
     currentBuildingColumns.get(column).appendString(value);
@@ -444,6 +457,11 @@ public class TupleBatchBuffer implements AppendableTable {
     } else {
       tupleBatch.compactInto(this);
     }
+  }
+
+  @Override
+  public WritableColumn asWritableColumn(final int column) {
+    return new WritableSubColumn(this, column);
   }
 
 }

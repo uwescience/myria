@@ -15,6 +15,7 @@ import edu.washington.escience.myria.column.LongColumn;
 import edu.washington.escience.myria.column.mutable.LongMutableColumn;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * A column of Long values.
@@ -95,7 +96,7 @@ public final class LongColumnBuilder extends ColumnBuilder<Long> {
   @Override
   public ColumnBuilder<Long> appendObject(final Object value) throws BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return appendLong((Long) value);
+    return appendLong((Long) MyriaUtils.ensureObjectIsValidType(value));
   }
 
   @Override

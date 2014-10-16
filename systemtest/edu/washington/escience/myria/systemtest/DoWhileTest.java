@@ -31,7 +31,8 @@ import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.TupleSource;
 import edu.washington.escience.myria.operator.agg.Aggregate;
-import edu.washington.escience.myria.operator.agg.Aggregator;
+import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
+import edu.washington.escience.myria.operator.agg.SingleColumnAggregatorFactory;
 import edu.washington.escience.myria.parallel.DoWhile;
 import edu.washington.escience.myria.parallel.Query;
 import edu.washington.escience.myria.parallel.QueryPlan;
@@ -87,7 +88,7 @@ public class DoWhileTest extends SystemTestBase {
 
     /* Condition: condition = [from x emit max(val) < 5]. */
     DbQueryScan scanXForCondition = new DbQueryScan(x, schema);
-    Aggregate maxX = new Aggregate(scanXForCondition, new int[] { 0 }, new int[] { Aggregator.AGG_OP_MAX });
+    Aggregate maxX = new Aggregate(scanXForCondition, new SingleColumnAggregatorFactory(0, AggregationOp.MAX));
     Expression filterExpression =
         new Expression("f", new LessThanExpression(new VariableExpression(0), new ConstantExpression(5)));
     Apply maxXapply = new Apply(maxX, ImmutableList.of(filterExpression));
@@ -108,7 +109,7 @@ public class DoWhileTest extends SystemTestBase {
     QueryEncoding queryEncoding = new QueryEncoding();
     queryEncoding.rawQuery = "testDoWhile";
     queryEncoding.logicalRa = "testDoWhile";
-    Query query = server.submitQuery(queryEncoding, actualQuery).get();
+    Query query = server.getQueryManager().submitQuery(queryEncoding, actualQuery).get();
 
     /* Tests. */
     assertEquals(query.getStatus(), Status.SUCCESS);

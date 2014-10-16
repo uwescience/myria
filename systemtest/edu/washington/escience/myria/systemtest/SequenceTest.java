@@ -3,6 +3,7 @@ package edu.washington.escience.myria.systemtest;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.net.HttpURLConnection;
 import java.util.HashMap;
@@ -50,12 +51,15 @@ import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.operator.TupleSource;
 import edu.washington.escience.myria.operator.agg.Aggregate;
-import edu.washington.escience.myria.operator.agg.Aggregator;
+import edu.washington.escience.myria.operator.agg.AggregatorFactory;
+import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
+import edu.washington.escience.myria.operator.agg.SingleColumnAggregatorFactory;
 import edu.washington.escience.myria.operator.failures.InitFailureInjector;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
 import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
 import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
+import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
 import edu.washington.escience.myria.operator.network.partition.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.Query;
@@ -68,44 +72,32 @@ import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.ErrorUtils;
 import edu.washington.escience.myria.util.JsonAPIUtils;
+import edu.washington.escience.myria.util.TestUtils;
 
 public class SequenceTest extends SystemTestBase {
 
   @Test
   public void testSequence() throws Exception {
     final int numVals = TupleBatch.BATCH_SIZE + 2;
-    TupleSource source = new TupleSource(range(numVals).getAll());
+    TupleSource source = new TupleSource(TestUtils.range(numVals).getAll());
     Schema testSchema = source.getSchema();
     RelationKey storage = RelationKey.of("test", "testi", "step1");
+    PartitionFunction pf = new SingleFieldHashPartitionFunction(workerIDs.length, 0);
 
-    ExchangePairID shuffleId = ExchangePairID.newID();
-    final GenericShuffleProducer sp =
-        new GenericShuffleProducer(source, shuffleId, workerIDs, new SingleFieldHashPartitionFunction(workerIDs.length,
-            0));
-
-    final GenericShuffleConsumer cc = new GenericShuffleConsumer(testSchema, shuffleId, workerIDs);
-    final DbInsert insert = new DbInsert(cc, storage, true);
-
-    /* First task: create, shuffle, insert the tuples. */
-    Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
-    for (int i : workerIDs) {
-      workerPlans.put(i, new SubQueryPlan(new RootOperator[] { insert, sp }));
-    }
-    SubQueryPlan serverPlan = new SubQueryPlan(new SinkRoot(new EOSSource()));
-    QueryPlan first = new SubQuery(serverPlan, workerPlans);
+    QueryPlan first = TestUtils.insertRelation(source, storage, pf, workerIDs);
 
     /* Second task: count the number of tuples. */
     DbQueryScan scan = new DbQueryScan(storage, testSchema);
-    Aggregate localCount = new Aggregate(scan, new int[] { 0 }, new int[] { Aggregator.AGG_OP_COUNT });
+    Aggregate localCount = new Aggregate(scan, new SingleColumnAggregatorFactory(0, AggregationOp.COUNT));
     ExchangePairID collectId = ExchangePairID.newID();
     final CollectProducer coll = new CollectProducer(localCount, collectId, MyriaConstants.MASTER_ID);
 
     final CollectConsumer cons = new CollectConsumer(Schema.ofFields(Type.LONG_TYPE, "_COUNT0_"), collectId, workerIDs);
-    Aggregate masterSum = new Aggregate(cons, new int[] { 0 }, new int[] { Aggregator.AGG_OP_SUM });
+    Aggregate masterSum = new Aggregate(cons, new SingleColumnAggregatorFactory(0, AggregationOp.SUM));
     final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, masterSum);
     SinkRoot root = new SinkRoot(queueStore);
-    workerPlans = new HashMap<>();
+    Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
     for (int i : workerIDs) {
       workerPlans.put(i, new SubQueryPlan(coll));
     }
@@ -118,25 +110,24 @@ public class SequenceTest extends SystemTestBase {
     QueryEncoding encoding = new QueryEncoding();
     encoding.rawQuery = "test";
     encoding.logicalRa = "test";
-    QueryFuture qf = server.submitQuery(encoding, all);
+    QueryFuture qf = server.getQueryManager().submitQuery(encoding, all);
     long queryId = qf.getQueryId();
     /* Wait for the query to finish, succeed, and check the result. */
     qf.get();
-    QueryStatusEncoding status = server.getQueryStatus(queryId);
-    assertEquals(Status.SUCCESS, status.status);
-    long expectedTuples = numVals * workerIDs.length;
-    assertEquals(expectedTuples, server.getDatasetStatus(storage).getNumTuples());
+    QueryStatusEncoding status = server.getQueryManager().getQueryStatus(queryId);
+    assertEquals(status.message, Status.SUCCESS, status.status);
+    assertEquals(numVals, server.getDatasetStatus(storage).getNumTuples());
 
     List<TupleBatch> tbs = Lists.newLinkedList(receivedTupleBatches);
     assertEquals(1, tbs.size());
     TupleBatch tb = tbs.get(0);
-    assertEquals(expectedTuples, tb.getLong(0, 0));
+    assertEquals(numVals, tb.getLong(0, 0));
   }
 
   @Test
   public void testNestedSequenceBug() throws Exception {
     final int numVals = TupleBatch.BATCH_SIZE + 2;
-    TupleSource source = new TupleSource(range(numVals).getAll());
+    TupleSource source = new TupleSource(TestUtils.range(numVals).getAll());
     Schema testSchema = source.getSchema();
     RelationKey storage = RelationKey.of("test", "testNestedSequenceBug", "data");
 
@@ -158,12 +149,12 @@ public class SequenceTest extends SystemTestBase {
 
     /* Second task: count the number of tuples. */
     DbQueryScan scan = new DbQueryScan(storage, testSchema);
-    Aggregate localCount = new Aggregate(scan, new int[] { 0 }, new int[] { Aggregator.AGG_OP_COUNT });
+    Aggregate localCount = new Aggregate(scan, new SingleColumnAggregatorFactory(0, AggregationOp.COUNT));
     ExchangePairID collectId = ExchangePairID.newID();
     final CollectProducer coll = new CollectProducer(localCount, collectId, MyriaConstants.MASTER_ID);
 
     final CollectConsumer cons = new CollectConsumer(Schema.ofFields(Type.LONG_TYPE, "_COUNT0_"), collectId, workerIDs);
-    Aggregate masterSum = new Aggregate(cons, new int[] { 0 }, new int[] { Aggregator.AGG_OP_SUM });
+    Aggregate masterSum = new Aggregate(cons, new SingleColumnAggregatorFactory(0, AggregationOp.SUM));
     final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, masterSum);
     SinkRoot root = new SinkRoot(queueStore);
@@ -180,11 +171,11 @@ public class SequenceTest extends SystemTestBase {
     QueryEncoding encoding = new QueryEncoding();
     encoding.rawQuery = "test";
     encoding.logicalRa = "test";
-    QueryFuture qf = server.submitQuery(encoding, all);
+    QueryFuture qf = server.getQueryManager().submitQuery(encoding, all);
     long queryId = qf.getQueryId();
     /* Wait for the query to finish, succeed, and check the result. */
     qf.get();
-    QueryStatusEncoding status = server.getQueryStatus(queryId);
+    QueryStatusEncoding status = server.getQueryManager().getQueryStatus(queryId);
     assertEquals(Status.SUCCESS, status.status);
     long expectedTuples = numVals * workerIDs.length;
     assertEquals(expectedTuples, server.getDatasetStatus(storage).getNumTuples());
@@ -218,18 +209,19 @@ public class SequenceTest extends SystemTestBase {
     QueryEncoding encoding = new QueryEncoding();
     encoding.rawQuery = "test";
     encoding.logicalRa = "test";
-    QueryFuture qf = server.submitQuery(encoding, all);
+    QueryFuture qf = server.getQueryManager().submitQuery(encoding, all);
 
     /* Wait for query to finish, expecting an exception. */
     try {
       qf.get();
+      fail();
     } catch (Exception e) {
       /*
        * Assert both 1) that the cause of the exception is in the stack trace and 2) that this message is visible via
        * the API. See https://github.com/uwescience/myria/issues/542
        */
       assertTrue(ErrorUtils.getStackTrace(e).contains("Failure in init"));
-      String message = server.getQueryStatus(qf.getQueryId()).message;
+      String message = server.getQueryManager().getQueryStatus(qf.getQueryId()).message;
       assertNotNull(message);
       assertTrue(message.contains("Failure in init"));
       throw e;
@@ -271,6 +263,7 @@ public class SequenceTest extends SystemTestBase {
     insert.opId = INSERT;
     insert.argChild = apply.opId;
     insert.relationKey = interKey;
+    insert.argOverwriteTable = true;
     PlanFragmentEncoding fragment = new PlanFragmentEncoding();
     fragment.operators = ImmutableList.of(scan, apply, insert);
     SubQueryEncoding firstJson = new SubQueryEncoding(ImmutableList.of(fragment));
@@ -292,12 +285,12 @@ public class SequenceTest extends SystemTestBase {
     AggregateEncoding agg = new AggregateEncoding();
     agg.argChild = cons.opId;
     agg.opId = AGG;
-    agg.argAggFields = new int[] { 0 };
-    agg.argAggOperators = ImmutableList.of((List<String>) ImmutableList.of("AGG_OP_SUM"));
+    agg.aggregators = new AggregatorFactory[] { new SingleColumnAggregatorFactory(0, AggregationOp.SUM) };
     insert = new DbInsertEncoding();
     insert.opId = INSERT;
     insert.argChild = agg.opId;
     insert.relationKey = resultKey;
+    insert.argOverwriteTable = true;
     PlanFragmentEncoding fragment2 = new PlanFragmentEncoding();
     fragment2.operators = ImmutableList.of(cons, agg, insert);
     SubQueryEncoding secondJson = new SubQueryEncoding(ImmutableList.of(fragment, fragment2));
@@ -317,11 +310,11 @@ public class SequenceTest extends SystemTestBase {
     assertEquals(HttpStatus.SC_ACCEPTED, conn.getResponseCode());
     long queryId = getQueryStatus(conn).queryId;
     conn.disconnect();
-    while (!server.queryCompleted(queryId)) {
+    while (!server.getQueryManager().queryCompleted(queryId)) {
       Thread.sleep(1);
     }
-    QueryStatusEncoding status = server.getQueryStatus(queryId);
-    assertEquals(Status.SUCCESS, status.status);
+    QueryStatusEncoding status = server.getQueryManager().getQueryStatus(queryId);
+    assertEquals(status.message, Status.SUCCESS, status.status);
     assertEquals(1, server.getDatasetStatus(resultKey).getNumTuples());
 
     String ret =
@@ -330,26 +323,11 @@ public class SequenceTest extends SystemTestBase {
     assertEquals("sum_value\r\n9\r\n", ret);
   }
 
-  /**
-   * Returns a {@link TupleBatchBuffer} containing the values 0 to {@code n-1}. The column is of type {@Link
-   * Type#INT_TYPE} and the column name is {@code "val"}.
-   * 
-   * @param n the number of values in the buffer.
-   * @return a {@link TupleBatchBuffer} containing the values 0 to {@code n-1}
-   */
-  public static TupleBatchBuffer range(int n) {
-    TupleBatchBuffer sourceBuffer = new TupleBatchBuffer(Schema.ofFields(Type.INT_TYPE, "val"));
-    for (int i = 0; i < n; ++i) {
-      sourceBuffer.putInt(0, i);
-    }
-    return sourceBuffer;
-  }
-
   @Test
   public void testNestedSequence() throws Exception {
     final int numVals = TupleBatch.BATCH_SIZE + 2;
     final int numCopies = 3;
-    TupleBatchBuffer data = range(numVals);
+    TupleBatchBuffer data = TestUtils.range(numVals);
     Schema schema = data.getSchema();
     RelationKey dataKey = RelationKey.of("test", "testi", "step");
     List<RootOperator[]> seqs = Lists.newLinkedList();
@@ -382,12 +360,12 @@ public class SequenceTest extends SystemTestBase {
 
     /* Task to run after the first Sequence: Count the number of tuples. */
     DbQueryScan scan = new DbQueryScan(dataKey, schema);
-    Aggregate localCount = new Aggregate(scan, new int[] { 0 }, new int[] { Aggregator.AGG_OP_COUNT });
+    Aggregate localCount = new Aggregate(scan, new SingleColumnAggregatorFactory(0, AggregationOp.COUNT));
     ExchangePairID collectId = ExchangePairID.newID();
     final CollectProducer coll = new CollectProducer(localCount, collectId, MyriaConstants.MASTER_ID);
 
     final CollectConsumer cons = new CollectConsumer(Schema.ofFields(Type.LONG_TYPE, "_COUNT0_"), collectId, workerIDs);
-    Aggregate masterSum = new Aggregate(cons, new int[] { 0 }, new int[] { Aggregator.AGG_OP_SUM });
+    Aggregate masterSum = new Aggregate(cons, new SingleColumnAggregatorFactory(0, AggregationOp.SUM));
     final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, masterSum);
     SinkRoot root = new SinkRoot(queueStore);
@@ -405,12 +383,12 @@ public class SequenceTest extends SystemTestBase {
     QueryEncoding encoding = new QueryEncoding();
     encoding.rawQuery = "test";
     encoding.logicalRa = "test";
-    QueryFuture qf = server.submitQuery(encoding, all);
+    QueryFuture qf = server.getQueryManager().submitQuery(encoding, all);
     long queryId = qf.getQueryId();
     /* Wait for the query to finish, succeed, and check the result. */
     Query query = qf.get();
     assertEquals(Status.SUCCESS, query.getStatus());
-    QueryStatusEncoding status = server.getQueryStatus(queryId);
+    QueryStatusEncoding status = server.getQueryManager().getQueryStatus(queryId);
     assertEquals(Status.SUCCESS, status.status);
 
     long expectedNumTuples = numVals * numCopies * workerIDs.length;

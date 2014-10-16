@@ -10,7 +10,7 @@
 			  "argOperatorId" : "cpc"
 			}
 			],
-			"workers": 
+			"overrideWorkers": 
 			[
 				0
 			]
@@ -34,7 +34,7 @@
 				"argChild" : "merge"
 			}
 			],
-			"workers": 
+			"overrideWorkers": 
 			[
 				1
 			]

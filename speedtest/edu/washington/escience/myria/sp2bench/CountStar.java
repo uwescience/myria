@@ -9,12 +9,14 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.DbQueryScan;
-import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.operator.agg.Aggregate;
-import edu.washington.escience.myria.operator.agg.Aggregator;
+import edu.washington.escience.myria.operator.agg.AggregatorFactory;
+import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
+import edu.washington.escience.myria.operator.agg.SingleColumnAggregatorFactory;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
@@ -39,13 +41,16 @@ public class CountStar implements QueryPlanGenerator {
     final DbQueryScan countDictionary = new DbQueryScan("select count(*),0 from Dictionary", countSchema);
     final DbQueryScan countTriples = new DbQueryScan("select count(*),0 from Triples", countSchema);
 
-    final SymmetricHashJoin countMergeJoin = new SymmetricHashJoin(countDictionary, countTriples, new int[] { 1 }, new int[] { 1 });
+    final SymmetricHashJoin countMergeJoin =
+        new SymmetricHashJoin(countDictionary, countTriples, new int[] { 1 }, new int[] { 1 });
 
     final CollectProducer collectCountP = new CollectProducer(countMergeJoin, collectCountID, allWorkers[0]);
     final CollectConsumer collectCountC = new CollectConsumer(collectCountP.getSchema(), collectCountID, allWorkers);
 
     final Aggregate agg =
-        new Aggregate(collectCountC, new int[] { 0, 2 }, new int[] { Aggregator.AGG_OP_SUM, Aggregator.AGG_OP_SUM });
+        new Aggregate(collectCountC, new AggregatorFactory[] {
+            new SingleColumnAggregatorFactory(0, AggregationOp.SUM),
+            new SingleColumnAggregatorFactory(2, AggregationOp.SUM) });
 
     final CollectProducer sendToMaster = new CollectProducer(agg, sendToMasterID, 0);
 

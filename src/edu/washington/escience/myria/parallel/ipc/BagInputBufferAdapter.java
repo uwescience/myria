@@ -3,8 +3,8 @@ package edu.washington.escience.myria.parallel.ipc;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -17,6 +17,7 @@ import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.parallel.ipc.IPCMessage.StreamData;
 import edu.washington.escience.myria.util.AttachmentableAdapter;
+import edu.washington.escience.myria.util.concurrent.ClosableReentrantLock;
 
 /**
  * A simple InputBuffer implementation. The number of messages held in this InputBuffer can be as large as
@@ -66,7 +67,7 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
   /**
    * Num of EOS.
    * */
-  private final AtomicInteger numEOS;
+  private int numInputEOS;
 
   /**
    * Num threads waiting data by poll(timeout) or take.
@@ -84,14 +85,31 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
   private final AtomicReference<Object> processor;
 
   /**
-   * wait on empty.
-   * */
-  private final Object emptyWaitingLock = new Object();
-
-  /**
    * owner.
    * */
   private final IPCConnectionPool ownerConnectionPool;
+
+  /**
+   * Input buffer size.
+   * */
+  private int size = 0;
+
+  /**
+   * Serialize buffer size access.
+   * */
+  private final ClosableReentrantLock bufferSizeLock = new ClosableReentrantLock();
+
+  /**
+   * @return buffer size lock.
+   * */
+  public final ClosableReentrantLock getBufferSizeLock() {
+    return bufferSizeLock;
+  }
+
+  /**
+   * wait on empty.
+   * */
+  private final Condition emptySize = bufferSizeLock.newCondition();
 
   /**
    * @param owner the owner IPC pool.
@@ -106,7 +124,7 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
     }
     inputChannels = b.build();
     processor = new AtomicReference<Object>();
-    numEOS = new AtomicInteger(0);
+    numInputEOS = 0;
     numWaiting = 0;
     ownerConnectionPool = owner;
   }
@@ -165,12 +183,16 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
 
   @Override
   public final int size() {
-    return storage.size();
+    try (ClosableReentrantLock l = bufferSizeLock.open()) {
+      return this.size;
+    }
   }
 
   @Override
   public final boolean isEmpty() {
-    return storage.isEmpty();
+    try (ClosableReentrantLock l = bufferSizeLock.open()) {
+      return this.size == 0;
+    }
   }
 
   /**
@@ -192,6 +214,9 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
     preClear();
     storage.clear();
     postClear();
+    try (ClosableReentrantLock l = bufferSizeLock.open()) {
+      this.size = 0;
+    }
   }
 
   /**
@@ -230,7 +255,6 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
       }
       /* temp solution, better to check if it's from a recover worker */
       return false;
-      // throw new IllegalStateException("Message received from an already EOS channele: " + e);
     }
     return true;
   }
@@ -269,7 +293,6 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
       ics.eosLock.writeLock().lock();
       checkNotEOS(ics, msg);
       ics.eos.set(true);
-      numEOS.incrementAndGet();
     } else {
       ics.eosLock.readLock().lock();
       checkNotEOS(ics, msg);
@@ -280,12 +303,16 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
 
       inserted = storage.offer(msg);
       if (inserted) {
-        synchronized (emptyWaitingLock) {
+        try (ClosableReentrantLock l = bufferSizeLock.open()) {
+          if (msg.getPayload() == null) {
+            this.numInputEOS += 1;
+          }
+          this.size += 1;
           if (numWaiting > 0) {
             if (isEOS()) {
-              emptyWaitingLock.notifyAll();
+              emptySize.signalAll();
             } else if (!isEmpty()) {
-              emptyWaitingLock.notify();
+              emptySize.signal();
             }
           }
         }
@@ -298,6 +325,7 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
       }
     }
     this.postOffer(msg, inserted);
+
     return inserted;
   }
 
@@ -319,36 +347,31 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
 
   @Override
   public final IPCMessage.StreamData<PAYLOAD> take() throws InterruptedException {
-    if (!isAttached()) {
-      if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug("Input buffer not attached.");
-      }
-      return null;
-    }
+    checkAttached();
 
     if (isEOS() && isEmpty()) {
       return null;
     }
     preTake();
 
-    IPCMessage.StreamData<PAYLOAD> m = storage.poll();
-    while (m == null) {
-      if (isEOS()) {
-        return null;
-      }
-      synchronized (emptyWaitingLock) {
-        if (isEmpty() && !isEOS()) {
-          numWaiting++;
-          try {
-            emptyWaitingLock.wait();
-          } finally {
-            numWaiting--;
-          }
+    try (ClosableReentrantLock l = bufferSizeLock.open()) {
+      if (isEmpty() && !isEOS()) {
+        numWaiting++;
+        try {
+          emptySize.await();
+        } finally {
+          numWaiting--;
         }
       }
-      m = storage.poll();
+      if (!isEmpty()) {
+        size -= 1;
+      } else {
+        return null;
+      }
     }
+    IPCMessage.StreamData<PAYLOAD> m = storage.poll();
     postTake(m);
+
     return m;
   }
 
@@ -374,42 +397,31 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
 
   @Override
   public final IPCMessage.StreamData<PAYLOAD> poll(final long time, final TimeUnit unit) throws InterruptedException {
-    if (!isAttached()) {
-      if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug("Input buffer not attached.");
-      }
-      return null;
-    }
+    checkAttached();
 
     if (isEOS() && isEmpty()) {
       return null;
     }
     preTimeoutPoll(time, unit);
-    long toWaitMilli = unit.toMillis(time);
-    long startNano = System.nanoTime();
 
-    IPCMessage.StreamData<PAYLOAD> m = storage.poll();
-    while (m == null) {
-      if (isEOS() && isEmpty()) {
-        return null;
-      }
-      long wt = toWaitMilli - TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNano);
-      if (wt <= 0) {
-        break;
-      }
-      synchronized (emptyWaitingLock) {
-        if (isEmpty() && !isEOS()) {
-          numWaiting++;
-          try {
-            emptyWaitingLock.wait(wt);
-          } finally {
-            numWaiting--;
-          }
+    try (ClosableReentrantLock l = bufferSizeLock.open()) {
+      if (isEmpty() && !isEOS()) {
+        numWaiting++;
+        try {
+          emptySize.await(time, unit);
+        } finally {
+          numWaiting--;
+        }
+        if (isEmpty()) {
+          return null;
         }
       }
-      m = storage.poll();
+      this.size -= 1;
     }
+    IPCMessage.StreamData<PAYLOAD> m = this.storage.poll();
+
     postTimeoutPoll(time, unit, m);
+
     return m;
   }
 
@@ -431,26 +443,25 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
 
   @Override
   public final IPCMessage.StreamData<PAYLOAD> poll() {
-    if (!isAttached()) {
-      if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug("Input buffer not attached.");
-      }
-      return null;
-    }
+    checkAttached();
+
     prePoll();
+    try (ClosableReentrantLock l = bufferSizeLock.open()) {
+      if (isEmpty()) {
+        return null;
+      }
+      size -= 1;
+    }
     IPCMessage.StreamData<PAYLOAD> m = storage.poll();
     postPoll(m);
+
     return m;
   }
 
   @Override
   public final IPCMessage.StreamData<PAYLOAD> peek() {
-    if (!isAttached()) {
-      if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug("Input buffer not attached.");
-      }
-      return null;
-    }
+    checkAttached();
+
     return storage.peek();
   }
 
@@ -461,7 +472,9 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
 
   @Override
   public final boolean isEOS() {
-    return numEOS.get() >= inputChannels.size();
+    try (ClosableReentrantLock l = bufferSizeLock.open()) {
+      return numInputEOS >= inputChannels.size();
+    }
   }
 
   @Override

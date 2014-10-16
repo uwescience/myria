@@ -38,27 +38,6 @@ import edu.washington.escience.myria.storage.TupleBatch;
 public final class IPCUtils {
 
   /**
-   * Pause read from the ch Channel, this will back-pressure to TCP layer. The TCP stream control will automatically
-   * pause the sending from the remote.
-   * 
-   * @param ch the Channel.
-   * @return the future instance of the pausing read action
-   * */
-  public static ChannelFuture pauseRead(final Channel ch) {
-    return ch.setReadable(false);
-  }
-
-  /**
-   * Resume read.
-   * 
-   * @param ch the Channel
-   * @return the future instance of the resuming read action
-   * */
-  public static ChannelFuture resumeRead(final Channel ch) {
-    return ch.setReadable(true);
-  }
-
-  /**
    * Thread local TransportMessage builder. May reduce the cost of creating builder instances.
    * 
    * @return builder.
@@ -304,8 +283,8 @@ public final class IPCUtils {
   public static boolean isRemoteConnected(final Channel channel) {
     if (channel != null) {
       if (!channel.isReadable()) {
-        channel.setInterestOps(Channel.OP_READ).awaitUninterruptibly();
-        return channel.isReadable();
+        ChannelFuture cf = channel.setInterestOps(Channel.OP_READ).awaitUninterruptibly();
+        return cf.isSuccess();
       } else {
         return true;
       }
@@ -332,7 +311,7 @@ public final class IPCUtils {
    * @param numTuples number of tuples in the columns.
    * @return a data TM encoding the data columns.
    * */
-  public static TransportMessage normalDataMessage(final List<Column<?>> dataColumns, final int numTuples) {
+  public static TransportMessage normalDataMessage(final List<? extends Column<?>> dataColumns, final int numTuples) {
     final ColumnMessage[] columnProtos = new ColumnMessage[dataColumns.size()];
 
     int i = 0;

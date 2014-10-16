@@ -31,7 +31,7 @@ public class ServerTest extends SystemTestBase {
     query.logicalRa = "testRa";
     query.profilingMode = PROFILING_MODE.QUERY;
     try {
-      server.submitQuery(query, plan);
+      server.getQueryManager().submitQuery(query, plan);
     } catch (DbException e) {
       assertTrue(e.getMessage().contains("Profiling mode is only supported when using Postgres as the storage system."));
       throw e;
@@ -52,7 +52,7 @@ public class ServerTest extends SystemTestBase {
     query.profilingMode = PROFILING_MODE.QUERY;
 
     try {
-      server.submitQuery(query, plan);
+      server.getQueryManager().submitQuery(query, plan);
     } catch (DbException e) {
       assertTrue(e.getMessage().contains("Profiling mode is not supported for plans"));
       throw e;

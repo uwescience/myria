@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.GuardedBy;
 
+import org.joda.time.DateTime;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Joiner;
@@ -141,9 +142,11 @@ public final class Query {
    * "update tuple relation count" sub-query to be run next.
    * 
    * @param subQuery the subquery about to be executed. This subquery must have already been removed from the queue.
+   * @throws DbException if there is an error getting metadata about existing relations from the Server.
    */
-  private synchronized void addDerivedSubQueries(final SubQuery subQuery) {
-    Map<RelationKey, RelationWriteMetadata> relationsWritten = currentSubQuery.getPersistentRelationWriteMetadata();
+  private synchronized void addDerivedSubQueries(final SubQuery subQuery) throws DbException {
+    Map<RelationKey, RelationWriteMetadata> relationsWritten =
+        currentSubQuery.getPersistentRelationWriteMetadata(server);
     if (!relationsWritten.isEmpty()) {
       SubQuery updateCatalog = QueryConstruct.getRelationTupleUpdateSubQuery(relationsWritten, server);
       subQueryQ.addFirst(updateCatalog);
@@ -209,7 +212,7 @@ public final class Query {
    * 
    * @return the time this query started, in ISO8601 format, or <code>null</code> if the query has not yet been started
    */
-  public synchronized String getStartTime() {
+  public synchronized DateTime getStartTime() {
     return executionStats.getStartTime();
   }
 
@@ -264,7 +267,7 @@ public final class Query {
    * 
    * @return the time this query ended, in ISO8601 format, or <code>null</code> if the query has not yet ended
    */
-  public synchronized String getEndTime() {
+  public synchronized DateTime getEndTime() {
     return executionStats.getEndTime();
   }
 
@@ -354,7 +357,7 @@ public final class Query {
     }
     status = Status.KILLING;
     if (currentSubQuery != null) {
-      server.killSubQuery(currentSubQuery.getSubQueryId());
+      server.getQueryManager().killSubQuery(currentSubQuery.getSubQueryId());
       currentSubQuery = null;
     }
   }
@@ -371,7 +374,7 @@ public final class Query {
   public synchronized void addDatasetMetadataUpdater(final MasterCatalog catalog, final LocalSubQueryFuture future)
       throws DbException {
     SubQuery subQuery = currentSubQuery;
-    final Map<RelationKey, RelationWriteMetadata> relationsCreated = subQuery.getRelationWriteMetadata();
+    final Map<RelationKey, RelationWriteMetadata> relationsCreated = subQuery.getRelationWriteMetadata(server);
     if (relationsCreated.size() == 0) {
       return;
     }
@@ -407,7 +410,7 @@ public final class Query {
       }
     }
 
-    Map<RelationKey, RelationWriteMetadata> persistentRelations = subQuery.getPersistentRelationWriteMetadata();
+    Map<RelationKey, RelationWriteMetadata> persistentRelations = subQuery.getPersistentRelationWriteMetadata(server);
     if (persistentRelations.size() == 0) {
       return;
     }

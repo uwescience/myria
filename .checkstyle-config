@@ -12,6 +12,8 @@ Slightly modified version of Sun Checks that better matches the default code for
 <module name="Checker">
   <property name="severity" value="warning"/>
   <module name="TreeWalker">
+    <!-- Make the @SuppressWarnings annotations available to Checkstyle -->
+    <module name="SuppressWarningsHolder" />
     <property name="tabWidth" value="4"/>
     <module name="JavadocMethod">
       <property name="allowUndeclaredRTE" value="true"/>
@@ -87,6 +89,7 @@ Slightly modified version of Sun Checks that better matches the default code for
     </module>
     <module name="UpperEll"/>
   </module>
+  <module name="SuppressWarningsFilter"/>
   <module name="JavadocPackage"/>
   <module name="NewlineAtEndOfFile">
     <property name="severity" value="ignore"/>

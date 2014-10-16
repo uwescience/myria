@@ -1,11 +1,15 @@
 package edu.washington.escience.myria.storage;
 
+import javax.annotation.Nonnull;
+
 import org.joda.time.DateTime;
+
+import edu.washington.escience.myria.column.builder.WritableColumn;
 
 /**
  * An interface for a table that can have values appended to it.
  */
-public interface AppendableTable {
+public interface AppendableTable extends TupleTable {
   /**
    * Append the specified value to the specified column.
    * 
@@ -20,7 +24,7 @@ public interface AppendableTable {
    * @param column index of the column.
    * @param value value to be appended.
    */
-  void putDateTime(final int column, final DateTime value);
+  void putDateTime(final int column, @Nonnull final DateTime value);
 
   /**
    * Append the specified value to the specified column.
@@ -60,5 +64,21 @@ public interface AppendableTable {
    * @param column index of the column.
    * @param value value to be appended.
    */
-  void putString(final int column, final String value);
+  void putString(final int column, @Nonnull final String value);
+
+  /**
+   * Append the specified value to the specified column.
+   * 
+   * @param column index of the column.
+   * @param value value to be appended.
+   */
+  @Deprecated
+  void putObject(final int column, @Nonnull final Object value);
+
+  /**
+   * @param column the index of the column to be returned.
+   * @return a {@link ReadableColumn} representation of the specified column of this table.
+   */
+  @Nonnull
+  WritableColumn asWritableColumn(final int column);
 }

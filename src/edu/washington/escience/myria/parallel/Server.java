@@ -9,13 +9,11 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutionException;
@@ -30,6 +28,7 @@ import java.util.logging.Logger;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.apache.commons.lang.text.StrSubstitutor;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
@@ -38,9 +37,7 @@ import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -49,7 +46,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import edu.washington.escience.myria.CsvTupleWriter;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.MyriaConstants.PROFILING_MODE;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.RelationKey;
@@ -58,9 +54,6 @@ import edu.washington.escience.myria.TupleWriter;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
-import edu.washington.escience.myria.api.encoding.QueryConstruct;
-import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
-import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.CatalogMaker;
@@ -72,13 +65,15 @@ import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
+import edu.washington.escience.myria.operator.DuplicateTBGenerator;
 import edu.washington.escience.myria.operator.EOSSource;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.agg.Aggregate;
-import edu.washington.escience.myria.operator.agg.Aggregator;
 import edu.washington.escience.myria.operator.agg.MultiGroupByAggregate;
+import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
+import edu.washington.escience.myria.operator.agg.SingleColumnAggregatorFactory;
 import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
@@ -94,9 +89,10 @@ import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myria.proto.QueryProto.QueryMessage;
 import edu.washington.escience.myria.proto.QueryProto.QueryReport;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.storage.TupleBuffer;
 import edu.washington.escience.myria.tool.MyriaConfigurationReader;
-import edu.washington.escience.myria.util.DateTimeUtils;
 import edu.washington.escience.myria.util.DeploymentUtils;
 import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.MyriaUtils;
@@ -121,86 +117,83 @@ public final class Server {
     @Override
     public void run() {
       TERMINATE_MESSAGE_PROCESSING : while (true) {
-        IPCMessage.Data<TransportMessage> mw = null;
         try {
-          mw = messageQueue.take();
-        } catch (final InterruptedException e) {
-          Thread.currentThread().interrupt();
-          break TERMINATE_MESSAGE_PROCESSING;
-        }
+          IPCMessage.Data<TransportMessage> mw = null;
+          try {
+            mw = messageQueue.take();
+          } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            break TERMINATE_MESSAGE_PROCESSING;
+          }
 
-        final TransportMessage m = mw.getPayload();
-        final int senderID = mw.getRemoteID();
+          final TransportMessage m = mw.getPayload();
+          final int senderID = mw.getRemoteID();
 
-        switch (m.getType()) {
-          case CONTROL:
-            final ControlMessage controlM = m.getControlMessage();
-            switch (controlM.getType()) {
-              case RESOURCE_STATS:
-                updateResourceStats(senderID, controlM);
-                break;
-              case WORKER_HEARTBEAT:
-                LOGGER.trace("getting heartbeat from worker {}", senderID);
-                updateHeartbeat(senderID);
-                break;
-              case REMOVE_WORKER_ACK:
-                int workerID = controlM.getWorkerId();
-                removeWorkerAckReceived.get(workerID).add(senderID);
-                break;
-              case ADD_WORKER_ACK:
-                workerID = controlM.getWorkerId();
-                addWorkerAckReceived.get(workerID).add(senderID);
-                for (MasterSubQuery mqp : executingSubQueries.values()) {
-                  if (mqp.getFTMode().equals(FTMODE.REJOIN) && mqp.getMissingWorkers().contains(workerID)
-                      && addWorkerAckReceived.get(workerID).containsAll(mqp.getWorkerAssigned())) {
-                    /* so a following ADD_WORKER_ACK won't cause queryMessage to be sent again */
-                    mqp.getMissingWorkers().remove(workerID);
+          switch (m.getType()) {
+            case CONTROL:
+              final ControlMessage controlM = m.getControlMessage();
+              switch (controlM.getType()) {
+                case WORKER_HEARTBEAT:
+                  LOGGER.trace("getting heartbeat from worker {}", senderID);
+                  updateHeartbeat(senderID);
+                  break;
+                case REMOVE_WORKER_ACK:
+                  int workerID = controlM.getWorkerId();
+                  removeWorkerAckReceived.get(workerID).add(senderID);
+                  break;
+                case ADD_WORKER_ACK:
+                  workerID = controlM.getWorkerId();
+                  addWorkerAckReceived.get(workerID).add(senderID);
+                  queryManager.workerRestarted(workerID, addWorkerAckReceived.get(workerID));
+                  break;
+                default:
+                  LOGGER.error("Unexpected control message received at master: {}", controlM);
+              }
+              break;
+            case QUERY:
+              final QueryMessage qm = m.getQueryMessage();
+              final SubQueryId subQueryId = new SubQueryId(qm.getQueryId(), qm.getSubqueryId());
+              switch (qm.getType()) {
+                case QUERY_READY_TO_EXECUTE:
+                  LOGGER.info("Worker #{} is ready to execute query #{}.", senderID, subQueryId);
+                  queryManager.workerReady(subQueryId, senderID);
+                  break;
+                case QUERY_COMPLETE:
+                  QueryReport qr = qm.getQueryReport();
+                  if (qr.getSuccess()) {
+                    LOGGER.info("Worker #{} succeeded in executing query #{}.", senderID, subQueryId);
+                    queryManager.workerComplete(subQueryId, senderID);
+                  } else {
+                    ObjectInputStream osis = null;
+                    Throwable cause = null;
                     try {
-                      connectionPool.sendShortMessage(workerID, IPCUtils.queryMessage(mqp.getSubQueryId(), mqp
-                          .getWorkerPlans().get(workerID)));
-                    } catch (final IOException e) {
-                      throw new RuntimeException(e);
+                      osis = new ObjectInputStream(new ByteArrayInputStream(qr.getCause().toByteArray()));
+                      cause = (Throwable) (osis.readObject());
+                    } catch (IOException | ClassNotFoundException e) {
+                      LOGGER.error("Error decoding failure cause", e);
                     }
+                    LOGGER.error("Worker #{} failed in executing query #{}.", senderID, subQueryId, cause);
+                    queryManager.workerFailed(subQueryId, senderID, cause);
                   }
-                }
-                break;
-              default:
-                LOGGER.error("Unexpected control message received at master: {}", controlM);
-            }
-            break;
-          case QUERY:
-            final QueryMessage qm = m.getQueryMessage();
-            final SubQueryId subQueryId = new SubQueryId(qm.getQueryId(), qm.getSubqueryId());
-            MasterSubQuery mqp = executingSubQueries.get(subQueryId);
-            switch (qm.getType()) {
-              case QUERY_READY_TO_EXECUTE:
-                mqp.queryReceivedByWorker(senderID);
-                break;
-              case QUERY_COMPLETE:
-                QueryReport qr = qm.getQueryReport();
-                if (qr.getSuccess()) {
-                  mqp.workerComplete(senderID);
-                } else {
-                  ObjectInputStream osis = null;
-                  Throwable cause = null;
-                  try {
-                    osis = new ObjectInputStream(new ByteArrayInputStream(qr.getCause().toByteArray()));
-                    cause = (Throwable) (osis.readObject());
-                  } catch (IOException | ClassNotFoundException e) {
-                    LOGGER.error("Error decoding failure cause", e);
-                  }
-                  mqp.workerFail(senderID, cause);
-                  LOGGER.error("Worker #{} failed in executing query #{}.", senderID, subQueryId, cause);
-                }
-                break;
-              default:
-                LOGGER.error("Unexpected query message received at master: {}", qm);
-                break;
-            }
-            break;
-          default:
-            LOGGER.error("Unknown short message received at master: {}", m.getType());
-            break;
+                  break;
+                default:
+                  LOGGER.error("Unexpected query message received at master: {}", qm);
+                  break;
+              }
+              break;
+            default:
+              LOGGER.error("Unknown short message received at master: {}", m.getType());
+              break;
+          }
+        } catch (Throwable a) {
+          LOGGER.error("Error occured in master message processor.", a);
+          if (a instanceof Error) {
+            throw a;
+          }
+          if (a instanceof InterruptedException) {
+            Thread.currentThread().interrupt();
+            break TERMINATE_MESSAGE_PROCESSING;
+          }
         }
       }
     }
@@ -217,15 +210,15 @@ public final class Server {
    */
   private final ConcurrentHashMap<Integer, SocketInfo> workers;
 
-  /**
-   * Queries currently active (queued, executing, being killed, etc.).
-   */
-  private final ConcurrentHashMap<Long, Query> activeQueries;
+  /** Manages the queries executing in this instance of Myria. */
+  private final QueryManager queryManager;
 
   /**
-   * Subqueries currently in execution.
+   * @return the query manager.
    */
-  private final ConcurrentHashMap<SubQueryId, MasterSubQuery> executingSubQueries;
+  public QueryManager getQueryManager() {
+    return queryManager;
+  }
 
   /**
    * Current alive worker set.
@@ -453,8 +446,7 @@ public final class Server {
     removeWorkerAckReceived = new ConcurrentHashMap<>();
     addWorkerAckReceived = new ConcurrentHashMap<>();
 
-    activeQueries = new ConcurrentHashMap<>();
-    executingSubQueries = new ConcurrentHashMap<>();
+    queryManager = new QueryManager(catalog, this);
 
     messageQueue = new LinkedBlockingQueue<>();
 
@@ -591,23 +583,9 @@ public final class Server {
             continue;
           }
 
-          LOGGER.info("worker {} doesn't have heartbeats, treat it as dead.", workerId);
+          LOGGER.info("Worker {} doesn't have heartbeats, treat it as dead.", workerId);
           aliveWorkers.remove(workerId);
-
-          for (MasterSubQuery mqp : executingSubQueries.values()) {
-            /* for each alive query that the failed worker is assigned to, tell the query that the worker failed. */
-            if (mqp.getWorkerAssigned().contains(workerId)) {
-              mqp.workerFail(workerId, new LostHeartbeatException());
-            }
-            if (mqp.getFTMode().equals(FTMODE.ABANDON)) {
-              mqp.getMissingWorkers().add(workerId);
-              mqp.updateProducerChannels(workerId, false);
-              mqp.triggerFragmentEosEoiChecks();
-            } else if (mqp.getFTMode().equals(FTMODE.REJOIN)) {
-              mqp.getMissingWorkers().add(workerId);
-              mqp.updateProducerChannels(workerId, false);
-            }
-          }
+          queryManager.workerDied(workerId);
 
           removeWorkerAckReceived.put(workerId, Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>()));
           addWorkerAckReceived.put(workerId, Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>()));
@@ -740,9 +718,7 @@ public final class Server {
       }
     }
 
-    for (MasterSubQuery p : executingSubQueries.values()) {
-      p.kill();
-    }
+    queryManager.killAll();
 
     if (messageProcessingExecutor != null && !messageProcessingExecutor.isShutdown()) {
       messageProcessingExecutor.shutdownNow();
@@ -792,47 +768,6 @@ public final class Server {
   }
 
   /**
-   * @param mqp the master query
-   * @return the query dispatch {@link LocalSubQueryFuture}.
-   * @throws DbException if any error occurs.
-   */
-  private LocalSubQueryFuture dispatchWorkerQueryPlans(final MasterSubQuery mqp) throws DbException {
-    // directly set the master part as already received.
-    mqp.queryReceivedByWorker(MyriaConstants.MASTER_ID);
-    for (final Map.Entry<Integer, SubQueryPlan> e : mqp.getWorkerPlans().entrySet()) {
-      final Integer workerID = e.getKey();
-      while (!aliveWorkers.containsKey(workerID)) {
-        try {
-          Thread.sleep(MyriaConstants.SHORT_WAITING_INTERVAL_MS);
-        } catch (InterruptedException e1) {
-          Thread.currentThread().interrupt();
-        }
-      }
-      try {
-        connectionPool.sendShortMessage(workerID, IPCUtils.queryMessage(mqp.getSubQueryId(), e.getValue()));
-      } catch (final IOException ee) {
-        throw new DbException(ee);
-      }
-    }
-    return mqp.getWorkerReceiveFuture();
-  }
-
-  /**
-   * @return if a query is running.
-   * @param queryId queryID.
-   */
-  public boolean queryCompleted(final long queryId) {
-    return !activeQueries.containsKey(queryId);
-  }
-
-  /**
-   * @return if no query is running.
-   */
-  public boolean allQueriesCompleted() {
-    return activeQueries.isEmpty();
-  }
-
-  /**
    * Shutdown the master.
    */
   public void shutdown() {
@@ -865,10 +800,10 @@ public final class Server {
      */
     ExecutorService ipcWorkerExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("Master IPC worker"));
 
-    ipcPipelineExecutor =
-        new OrderedMemoryAwareThreadPoolExecutor(Runtime.getRuntime().availableProcessors() * 2 + 1,
-            5 * MyriaConstants.MB, 0, MyriaConstants.THREAD_POOL_KEEP_ALIVE_TIME_IN_MS, TimeUnit.MILLISECONDS,
-            new RenamingThreadFactory("Master Pipeline executor"));
+    ipcPipelineExecutor = null; // Remove the pipeline executor.
+    // new OrderedMemoryAwareThreadPoolExecutor(Runtime.getRuntime().availableProcessors() * 2 + 1,
+    // 5 * MyriaConstants.MB, 0, MyriaConstants.THREAD_POOL_KEEP_ALIVE_TIME_IN_MS, TimeUnit.MILLISECONDS,
+    // new RenamingThreadFactory("Master Pipeline executor"));
 
     /**
      * The {@link ChannelFactory} for creating client side connections.
@@ -922,30 +857,6 @@ public final class Server {
   }
 
   /**
-   * Kill a query with queryID.
-   * 
-   * @param queryID the queryID.
-   */
-  public void killQuery(final long queryID) {
-    getQuery(queryID).kill();
-  }
-
-  /**
-   * Kill a subquery.
-   * 
-   * @param subQueryId the ID of the subquery to be killed
-   */
-  protected void killSubQuery(final SubQueryId subQueryId) {
-    Preconditions.checkNotNull(subQueryId, "subQueryId");
-    MasterSubQuery subQuery = executingSubQueries.get(subQueryId);
-    if (subQuery != null) {
-      subQuery.kill();
-    } else {
-      LOGGER.warn("tried to kill subquery {} but it is not executing.", subQueryId);
-    }
-  }
-
-  /**
    * 
    * Can be only used in test.
    * 
@@ -962,223 +873,8 @@ public final class Server {
     for (Entry<Integer, RootOperator[]> entry : workerRoots.entrySet()) {
       workerPlans.put(entry.getKey(), new SubQueryPlan(entry.getValue()));
     }
-    return submitQuery(catalogInfoPlaceHolder, catalogInfoPlaceHolder, catalogInfoPlaceHolder, new SubQueryPlan(
-        masterRoot), workerPlans, null);
-  }
-
-  /**
-   * Submit a query for execution. The workerPlans may be removed in the future if the query compiler and schedulers are
-   * ready. Returns null if there are too many active queries.
-   * 
-   * @param rawQuery the raw user-defined query. E.g., the source Datalog program.
-   * @param logicalRa the logical relational algebra of the compiled plan.
-   * @param physicalPlan the Myria physical plan for the query.
-   * @param workerPlans the physical parallel plan fragments for each worker.
-   * @param masterPlan the physical parallel plan fragment for the master.
-   * @param profilingMode is the profiling mode of the query on.
-   * @throws DbException if any error in non-catalog data processing
-   * @throws CatalogException if any error in processing catalog
-   * @return the query future from which the query status can be looked up.
-   */
-  public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final String physicalPlan,
-      final SubQueryPlan masterPlan, final Map<Integer, SubQueryPlan> workerPlans,
-      @Nullable final PROFILING_MODE profilingMode) throws DbException, CatalogException {
-    QueryEncoding query = new QueryEncoding();
-    query.rawQuery = rawQuery;
-    query.logicalRa = rawQuery;
-    query.fragments = ImmutableList.of();
-    query.profilingMode = Objects.firstNonNull(profilingMode, PROFILING_MODE.NONE);
-    return submitQuery(query, new SubQuery(masterPlan, workerPlans));
-  }
-
-  /**
-   * Submit a query for execution. The workerPlans may be removed in the future if the query compiler and schedulers are
-   * ready. Returns null if there are too many active queries.
-   * 
-   * @param query the query encoding.
-   * @param plan the query to be executed
-   * @throws DbException if any error in non-catalog data processing
-   * @throws CatalogException if any error in processing catalog
-   * @return the query future from which the query status can be looked up.
-   */
-  public QueryFuture submitQuery(final QueryEncoding query, final QueryPlan plan) throws DbException, CatalogException {
-    if (!canSubmitQuery()) {
-      throw new DbException("Cannot submit query");
-    }
-    if (!query.profilingMode.equals(PROFILING_MODE.NONE)) {
-      if (!(plan instanceof SubQuery || plan instanceof JsonSubQuery)) {
-        throw new DbException("Profiling mode is not supported for plans (" + plan.getClass().getSimpleName()
-            + ") that may contain multiple subqueries.");
-      }
-      if (!getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
-        throw new DbException("Profiling mode is only supported when using Postgres as the storage system.");
-      }
-    }
-    if (plan instanceof JsonSubQuery) {
-      /* Hack to instantiate a single-fragment query for the visualization. */
-      QueryConstruct.instantiate(((JsonSubQuery) plan).getFragments(), new ConstructArgs(this, -1));
-    }
-    final long queryID = catalog.newQuery(query);
-    return submitQuery(queryID, query, plan);
-  }
-
-  /**
-   * Submit a query for execution. The workerPlans may be removed in the future if the query compiler and schedulers are
-   * ready. Returns null if there are too many active queries.
-   * 
-   * @param queryId the catalog's assigned ID for this query.
-   * @param query contains the query options (profiling, fault tolerance)
-   * @param plan the query to be executed
-   * @throws DbException if any error in non-catalog data processing
-   * @throws CatalogException if any error in processing catalog
-   * @return the query future from which the query status can be looked up.
-   */
-  private QueryFuture submitQuery(final long queryId, final QueryEncoding query, final QueryPlan plan)
-      throws DbException, CatalogException {
-    final Query queryState = new Query(queryId, query, plan, this);
-    activeQueries.put(queryId, queryState);
-    advanceQuery(queryState);
-    return queryState.getFuture();
-  }
-
-  /**
-   * Advance the given query to the next {@link SubQuery}. If there is no next {@link SubQuery}, mark the entire query
-   * as having succeeded.
-   * 
-   * @param queryState the specified query
-   * @return the future of the next {@Link SubQuery}, or <code>null</code> if this query has succeeded.
-   * @throws DbException if there is an error
-   */
-  private LocalSubQueryFuture advanceQuery(final Query queryState) throws DbException {
-    Verify.verify(queryState.getCurrentSubQuery() == null, "expected queryState current task is null");
-
-    SubQuery task;
-    try {
-      task = queryState.nextSubQuery();
-    } catch (QueryKilledException qke) {
-      queryState.markKilled();
-      finishQuery(queryState);
-      return null;
-    } catch (RuntimeException | DbException e) {
-      queryState.markFailed(e);
-      finishQuery(queryState);
-      return null;
-    }
-    if (task == null) {
-      queryState.markSuccess();
-      finishQuery(queryState);
-      return null;
-    }
-    return submitSubQuery(queryState);
-  }
-
-  /**
-   * Finish the specified query by updating its status in the Catalog and then removing it from the active queries.
-   * 
-   * @param queryState the query to be finished
-   * @throws DbException if there is an error updating the Catalog
-   */
-  private void finishQuery(final Query queryState) throws DbException {
-    try {
-      catalog.queryFinished(queryState);
-    } catch (CatalogException e) {
-      throw new DbException("Error finishing query " + queryState.getQueryId(), e);
-    } finally {
-      activeQueries.remove(queryState.getQueryId());
-    }
-  }
-
-  /**
-   * Submit the next subquery in the query for execution, and return its future.
-   * 
-   * @param queryState the query containing the subquery to be executed
-   * @return the future of the subquery
-   * @throws DbException if there is an error submitting the subquery for execution
-   */
-  private LocalSubQueryFuture submitSubQuery(final Query queryState) throws DbException {
-    final SubQuery subQuery =
-        Verify.verifyNotNull(queryState.getCurrentSubQuery(), "query state should have a current subquery");
-    final SubQueryId subQueryId = subQuery.getSubQueryId();
-    try {
-      final MasterSubQuery mqp = new MasterSubQuery(subQuery, this);
-      executingSubQueries.put(subQueryId, mqp);
-
-      final LocalSubQueryFuture queryExecutionFuture = mqp.getExecutionFuture();
-
-      /* Add the future to update the metadata about created relations, if there are any. */
-      queryState.addDatasetMetadataUpdater(catalog, queryExecutionFuture);
-
-      queryExecutionFuture.addListener(new LocalSubQueryFutureListener() {
-        @Override
-        public void operationComplete(final LocalSubQueryFuture future) throws Exception {
-
-          finishSubQuery(subQueryId);
-
-          final Long elapsedNanos = mqp.getExecutionStatistics().getQueryExecutionElapse();
-          if (future.isSuccess()) {
-            LOGGER.info("Subquery #{} succeeded. Time elapsed: {}.", subQueryId, DateTimeUtils
-                .nanoElapseToHumanReadable(elapsedNanos));
-            // TODO success management.
-            advanceQuery(queryState);
-          } else {
-            Throwable cause = future.getCause();
-            LOGGER.info("Subquery #{} failed. Time elapsed: {}. Failure cause is {}.", subQueryId, DateTimeUtils
-                .nanoElapseToHumanReadable(elapsedNanos), cause);
-            if (cause instanceof QueryKilledException) {
-              queryState.markKilled();
-            } else {
-              queryState.markFailed(cause);
-            }
-            finishQuery(queryState);
-          }
-        }
-      });
-
-      dispatchWorkerQueryPlans(mqp).addListener(new LocalSubQueryFutureListener() {
-        @Override
-        public void operationComplete(final LocalSubQueryFuture future) throws Exception {
-          mqp.init();
-          if (subQueryId.getSubqueryId() == 0) {
-            getQuery(subQueryId.getQueryId()).markStart();
-          }
-          mqp.startExecution();
-          Server.this.startWorkerQuery(future.getLocalSubQuery().getSubQueryId());
-        }
-      });
-
-      return mqp.getExecutionFuture();
-    } catch (DbException | RuntimeException e) {
-      finishSubQuery(subQueryId);
-      queryState.markFailed(e);
-      finishQuery(queryState);
-      throw e;
-    }
-  }
-
-  /**
-   * Finish the subquery by removing it from the data structures.
-   * 
-   * @param subQueryId the id of the subquery to finish.
-   */
-  private void finishSubQuery(final SubQueryId subQueryId) {
-    long queryId = subQueryId.getQueryId();
-    executingSubQueries.remove(subQueryId);
-    getQuery(queryId).finishSubQuery();
-    if (resourceUsage.get(subQueryId) != null) {
-      resourceUsage.remove(subQueryId);
-    }
-  }
-
-  /**
-   * Tells all the workers to begin executing the specified {@link SubQuery}.
-   * 
-   * @param subQueryId the id of the subquery to be started.
-   */
-  private void startWorkerQuery(final SubQueryId subQueryId) {
-    final MasterSubQuery mqp = executingSubQueries.get(subQueryId);
-    for (final Integer workerID : mqp.getWorkerAssigned()) {
-      connectionPool.sendShortMessage(workerID, IPCUtils.startQueryTM(subQueryId));
-    }
+    return queryManager.submitQuery(catalogInfoPlaceHolder, catalogInfoPlaceHolder, catalogInfoPlaceHolder,
+        new SubQueryPlan(masterRoot), workerPlans, PROFILING_MODE.NONE);
   }
 
   /**
@@ -1242,7 +938,7 @@ public final class Server {
       actualWorkers = getAliveWorkers();
     }
     Preconditions.checkArgument(actualWorkers.size() > 0, "Must use > 0 workers");
-    int[] workersArray = MyriaUtils.integerCollectionToIntArray(actualWorkers);
+    int[] workersArray = MyriaUtils.integerSetToIntArray(actualWorkers);
 
     /* The master plan: send the tuples out. */
     ExchangePairID scatterId = ExchangePairID.newID();
@@ -1262,7 +958,7 @@ public final class Server {
     ListenableFuture<Query> qf;
     try {
       qf =
-          submitQuery("ingest " + relationKey.toString(), "ingest " + relationKey.toString(), "ingest "
+          queryManager.submitQuery("ingest " + relationKey.toString(), "ingest " + relationKey.toString(), "ingest "
               + relationKey.toString(getDBMS()), new SubQueryPlan(scatter), workerPlans, null);
     } catch (CatalogException e) {
       throw new DbException("Error submitting query", e);
@@ -1274,13 +970,6 @@ public final class Server {
     }
 
     return getDatasetStatus(relationKey);
-  }
-
-  /**
-   * @return whether this master can handle more queries or not.
-   */
-  public boolean canSubmitQuery() {
-    return (activeQueries.size() < MyriaConstants.MAX_ACTIVE_QUERIES);
   }
 
   /**
@@ -1305,7 +994,7 @@ public final class Server {
         workerPlans.put(workerId, new SubQueryPlan(new SinkRoot(new EOSSource())));
       }
       ListenableFuture<Query> qf =
-          submitQuery("import " + relationKey.toString(), "import " + relationKey.toString(), "import "
+          queryManager.submitQuery("import " + relationKey.toString(), "import " + relationKey.toString(), "import "
               + relationKey.toString(getDBMS()), new SubQueryPlan(new SinkRoot(new EOSSource())), workerPlans, null);
       Query queryState;
       try {
@@ -1350,7 +1039,7 @@ public final class Server {
    * @return the list of workers that store the specified relation.
    */
   public Set<Integer> getWorkersForTempRelation(@Nonnull final Long queryId, @Nonnull final RelationKey relationKey) {
-    return getQuery(queryId).getWorkersForTempRelation(relationKey);
+    return queryManager.getQuery(queryId).getWorkersForTempRelation(relationKey);
   }
 
   /**
@@ -1371,68 +1060,6 @@ public final class Server {
    */
   protected SocketInfo getSocketInfo() {
     return masterSocketInfo;
-  }
-
-  /**
-   * Computes and returns the status of the requested query, or null if the query does not exist.
-   * 
-   * @param queryId the identifier of the query.
-   * @throws CatalogException if there is an error in the catalog.
-   * @return the status of this query.
-   */
-  public QueryStatusEncoding getQueryStatus(final long queryId) throws CatalogException {
-    /* Get the stored data for this query, e.g., the submitted program. */
-    QueryStatusEncoding queryStatus = catalog.getQuery(queryId);
-    if (queryStatus == null) {
-      return null;
-    }
-
-    Query state = activeQueries.get(queryId);
-    if (state == null) {
-      /* Not active, so the information from the Catalog is authoritative. */
-      return queryStatus;
-    }
-
-    /* Currently active, so fill in the latest information about the query. */
-    queryStatus.startTime = state.getStartTime();
-    queryStatus.finishTime = state.getEndTime();
-    queryStatus.elapsedNanos = state.getElapsedTime();
-    queryStatus.status = state.getStatus();
-    return queryStatus;
-  }
-
-  /**
-   * Computes and returns the status of queries that have been submitted to Myria.
-   * 
-   * @param limit the maximum number of results to return. Any value <= 0 is interpreted as all results.
-   * @param maxId the largest query ID returned. If null or <= 0, all queries will be returned.
-   * @throws CatalogException if there is an error in the catalog.
-   * @return a list of the status of every query that has been submitted to Myria.
-   */
-  public List<QueryStatusEncoding> getQueries(final long limit, final long maxId) throws CatalogException {
-    List<QueryStatusEncoding> ret = new LinkedList<>();
-
-    /* Begin by adding the status for all the active queries. */
-    TreeSet<Long> activeQueryIds = new TreeSet<>(activeQueries.keySet());
-    final Iterator<Long> iter = activeQueryIds.descendingIterator();
-    while (iter.hasNext()) {
-      long queryId = iter.next();
-      final QueryStatusEncoding status = getQueryStatus(queryId);
-      if (status == null) {
-        LOGGER.warn("Weird: query status for active query {} is null.", queryId);
-        continue;
-      }
-      ret.add(status);
-    }
-
-    /* Now add in the status for all the inactive (finished, killed, etc.) queries. */
-    for (QueryStatusEncoding q : catalog.getQueries(limit, maxId)) {
-      if (!activeQueryIds.contains(q.queryId)) {
-        ret.add(q);
-      }
-    }
-
-    return ret;
   }
 
   /**
@@ -1570,7 +1197,7 @@ public final class Server {
     /* Submit the plan for the download. */
     String planString = Joiner.on("").join("download resource log for (query=", queryId, ")");
     try {
-      return submitQuery(planString, planString, planString, masterPlan, workerPlans, null);
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, PROFILING_MODE.NONE);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1622,7 +1249,58 @@ public final class Server {
     /* Submit the plan for the download. */
     String planString = "download " + relationKey.toString();
     try {
-      return submitQuery(planString, planString, planString, masterPlan, workerPlans, null);
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, null);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
+
+  /**
+   * Start a query that streams tuples from the specified relation to the specified {@link TupleWriter}.
+   * 
+   * @param numTB the number of {@link TupleBatch}es to download from each worker.
+   * @param writer the {@link TupleWriter} which will serialize the tuples.
+   * @return the query future from which the query status can be looked up.
+   * @throws DbException if there is an error in the system.
+   */
+  public ListenableFuture<Query> startTestDataStream(final int numTB, final TupleWriter writer) throws DbException {
+
+    final Schema schema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+
+    Random r = new Random();
+    final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
+    for (int i = 0; i < TupleBatch.BATCH_SIZE; i++) {
+      tbb.putLong(0, r.nextLong());
+      tbb.putString(1, new java.util.Date().toString());
+    }
+
+    TupleBatch tb = tbb.popAny();
+
+    final DuplicateTBGenerator scanTable = new DuplicateTBGenerator(tb, numTB);
+
+    /* Get the workers that store it. */
+    Set<Integer> scanWorkers = getAliveWorkers();
+
+    /* Construct the operators that go elsewhere. */
+    final ExchangePairID operatorId = ExchangePairID.newID();
+    CollectProducer producer = new CollectProducer(scanTable, operatorId, MyriaConstants.MASTER_ID);
+
+    SubQueryPlan workerPlan = new SubQueryPlan(producer);
+    Map<Integer, SubQueryPlan> workerPlans = new HashMap<>(scanWorkers.size());
+    for (Integer worker : scanWorkers) {
+      workerPlans.put(worker, workerPlan);
+    }
+
+    /* Construct the master plan. */
+    final CollectConsumer consumer = new CollectConsumer(schema, operatorId, ImmutableSet.copyOf(scanWorkers));
+    DataOutput output = new DataOutput(consumer, writer);
+    final SubQueryPlan masterPlan = new SubQueryPlan(output);
+
+    /* Submit the plan for the download. */
+    String planString = "download test";
+    try {
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, PROFILING_MODE.NONE);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1643,16 +1321,16 @@ public final class Server {
 
     String fragmentWhere = "";
     if (fragmentId >= 0) {
-      fragmentWhere = "AND fragmentid = " + fragmentId;
+      fragmentWhere = "AND \"fragmentId\" = " + fragmentId;
     }
 
     final Schema schema =
-        Schema.ofFields("fragmentid", Type.INT_TYPE, "destworker", Type.INT_TYPE, "numTuples", Type.LONG_TYPE);
+        Schema.ofFields("fragmentId", Type.INT_TYPE, "destWorker", Type.INT_TYPE, "numTuples", Type.LONG_TYPE);
 
     String sentQueryString =
-        Joiner.on(' ').join("SELECT fragmentid, destworkerid, sum(numtuples) as numtuples FROM",
-            MyriaConstants.SENT_RELATION.toString(getDBMS()), "WHERE queryid =", queryId, fragmentWhere,
-            "GROUP BY queryid, fragmentid, destworkerid");
+        Joiner.on(' ').join("SELECT \"fragmentId\", \"destWorkerId\", sum(\"numTuples\") as \"numTuples\" FROM",
+            MyriaConstants.SENT_RELATION.toString(getDBMS()) + "WHERE \"queryId\" =", queryId, fragmentWhere,
+            "GROUP BY \"queryId\", \"fragmentId\", \"destWorkerId\"");
 
     DbQueryScan scan = new DbQueryScan(sentQueryString, schema);
     final ExchangePairID operatorId = ExchangePairID.newID();
@@ -1680,7 +1358,8 @@ public final class Server {
         new CollectConsumer(addWorkerId.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
 
     final MultiGroupByAggregate aggregate =
-        new MultiGroupByAggregate(consumer, new int[] { 0, 1, 2 }, new int[] { 3 }, new int[] { Aggregator.AGG_OP_SUM });
+        new MultiGroupByAggregate(consumer, new int[] { 0, 1, 2 }, new SingleColumnAggregatorFactory(3,
+            AggregationOp.SUM));
 
     // rename columns
     ImmutableList.Builder<Expression> renameExpressions = ImmutableList.builder();
@@ -1697,7 +1376,7 @@ public final class Server {
     String planString =
         Joiner.on("").join("download profiling log data for (query=", queryId, ", fragment=", fragmentId, ")");
     try {
-      return submitQuery(planString, planString, planString, masterPlan, workerPlans, null);
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, null);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1730,20 +1409,21 @@ public final class Server {
     String opCondition = "";
     if (onlyRootOperator) {
       opCondition =
-          Joiner.on(' ').join("AND opid = (SELECT opid FROM", MyriaConstants.PROFILING_RELATION.toString(getDBMS()),
-              "WHERE", fragmentId, "=fragmentId AND", queryId, "=queryId ORDER BY starttime ASC limit 1)");;
+          Joiner.on(' ').join("AND \"opId\" = (SELECT \"opId\" FROM",
+              MyriaConstants.PROFILING_RELATION.toString(getDBMS()), "WHERE", fragmentId, "=\"fragmentId\" AND",
+              queryId, "=\"queryId\" ORDER BY \"startTime\" ASC LIMIT 1)");;
     }
 
     String spanCondition = "";
     if (minSpanLength > 0) {
-      spanCondition = Joiner.on(' ').join("AND endtime - starttime >", minSpanLength);
+      spanCondition = Joiner.on(' ').join("AND \"endTime\" - \"startTime\" >", minSpanLength);
     }
 
     String queryString =
-        Joiner.on(' ').join("SELECT opid, starttime, endtime, numtuples FROM",
-            MyriaConstants.PROFILING_RELATION.toString(getDBMS()), "WHERE fragmentId =", fragmentId, "AND queryid =",
-            queryId, "AND endtime >", start, "AND starttime <", end, opCondition, spanCondition,
-            "ORDER BY starttime ASC");
+        Joiner.on(' ').join("SELECT \"opId\", \"startTime\", \"endTime\", \"numTuples\" FROM",
+            MyriaConstants.PROFILING_RELATION.toString(getDBMS()), "WHERE \"fragmentId\" =", fragmentId,
+            "AND \"queryId\" =", queryId, "AND \"endTime\" >", start, "AND \"startTime\" <", end, opCondition,
+            spanCondition, "ORDER BY \"startTime\" ASC");
 
     DbQueryScan scan = new DbQueryScan(queryString, schema);
 
@@ -1779,11 +1459,14 @@ public final class Server {
         Joiner.on('\0').join("download profiling data (query=", queryId, ", fragment=", fragmentId, ", range=[",
             Joiner.on(", ").join(start, end), "]", ")");
     try {
-      return submitQuery(planString, planString, planString, masterPlan, workerPlans, null);
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, null);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
   }
+
+  /** Upper bound on the number of bins a profiler can ask for. */
+  private static final long MAX_BINS = 10000;
 
   /**
    * @param queryId query id.
@@ -1803,23 +1486,48 @@ public final class Server {
 
     Preconditions.checkArgument(start < end, "range cannot be negative");
     Preconditions.checkArgument(step > 0, "step has to be greater than 0");
+    long bins = (end - start + 1) / step;
+    Preconditions.checkArgument(bins > 0 && bins <= MAX_BINS, "bins must be in the range [1, %s]", MAX_BINS);
 
     final Schema schema = Schema.ofFields("opId", Type.INT_TYPE, "nanoTime", Type.LONG_TYPE);
     final RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
 
     Set<Integer> actualWorkers = queryStatus.plan.getWorkers();
 
+    Map<String, Object> queryArgs = new HashMap<>();
+    queryArgs.put("QUERY", queryId);
+    queryArgs.put("FRAGMENT", fragmentId);
+    queryArgs.put("START", start);
+    queryArgs.put("END", end);
+    queryArgs.put("STEP", step);
+    queryArgs.put("BINS", bins);
+    queryArgs.put("PROF_TABLE", relationKey.toString(getDBMS()));
+    StrSubstitutor sub;
+
     String filterOpnameQueryString = "";
     if (onlyRootOp) {
+      sub = new StrSubstitutor(queryArgs);
       filterOpnameQueryString =
-          Joiner.on(' ').join("AND p.opid=(SELECT opid FROM", relationKey.toString(getDBMS()), "WHERE fragmentid=",
-              fragmentId, " AND queryid=", queryId, "ORDER BY starttime ASC limit 1)");
+          sub.replace("AND p.\"opId\"=(SELECT \"opId\" FROM ${PROF_TABLE} WHERE \"fragmentId\"=${FRAGMENT} AND \"queryId\"=${QUERY} ORDER BY \"startTime\" ASC LIMIT 1)");
     }
 
+    // Reinitialize the substitutor after including the opname filter.
+    queryArgs.put("OPNAME_FILTER", filterOpnameQueryString);
+    sub = new StrSubstitutor(queryArgs);
+
     String histogramWorkerQueryString =
-        Joiner.on(' ').join("SELECT p.opid, s.t AS nanotime FROM generate_series(", start, ", ", end, ", ", step,
-            ") AS s(t), ", relationKey.toString(getDBMS()), " AS p WHERE p.queryid=", queryId, "AND p.fragmentid=",
-            fragmentId, filterOpnameQueryString, "AND s.t BETWEEN p.starttime AND p.endtime");
+        sub.replace(Joiner
+            .on("\n")
+            .join(
+                "SELECT \"opId\", ${START}::bigint+${STEP}::bigint*s.bin as \"nanoTime\"",
+                "FROM (",
+                "SELECT p.\"opId\", greatest((p.\"startTime\"-1-${START}::bigint)/${STEP}::bigint, -1) as \"startBin\", least((p.\"endTime\"+1-${START}::bigint)/${STEP}::bigint, ${BINS}) AS \"endBin\"",
+                "FROM ${PROF_TABLE} p",
+                "WHERE p.\"queryId\" = ${QUERY} and p.\"fragmentId\" = ${FRAGMENT}",
+                "${OPNAME_FILTER}",
+                "AND greatest((p.\"startTime\"-${START}::bigint)/${STEP}::bigint, -1) < least((p.\"endTime\"-${START}::bigint)/${STEP}::bigint, ${BINS}) AND p.\"startTime\" < ${END}::bigint AND p.\"endTime\" >= ${START}::bigint",
+                ") times,", "generate_series(0, ${BINS}) AS s(bin)",
+                "WHERE s.bin > times.\"startBin\" and s.bin <= times.\"endBin\";"));
 
     DbQueryScan scan = new DbQueryScan(histogramWorkerQueryString, schema);
     final ExchangePairID operatorId = ExchangePairID.newID();
@@ -1838,7 +1546,8 @@ public final class Server {
 
     // sum up the number of workers working
     final MultiGroupByAggregate sumAggregate =
-        new MultiGroupByAggregate(consumer, new int[] { 0, 1 }, new int[] { 1 }, new int[] { Aggregator.AGG_OP_COUNT });
+        new MultiGroupByAggregate(consumer, new int[] { 0, 1 }, new SingleColumnAggregatorFactory(1,
+            AggregationOp.COUNT));
     // rename columns
     ImmutableList.Builder<Expression> renameExpressions = ImmutableList.builder();
     renameExpressions.add(new Expression("opId", new VariableExpression(0)));
@@ -1854,7 +1563,7 @@ public final class Server {
         Joiner.on('\0').join("download profiling histogram (query=", queryId, ", fragment=", fragmentId, ", range=[",
             Joiner.on(", ").join(start, end, step), "]", ")");
     try {
-      return submitQuery(planString, planString, planString, masterPlan, workerPlans, null);
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, null);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1877,8 +1586,8 @@ public final class Server {
     Set<Integer> actualWorkers = queryStatus.plan.getWorkers();
 
     String opnameQueryString =
-        Joiner.on(' ').join("SELECT min(starttime), max(endtime) FROM", relationKey.toString(getDBMS()),
-            "WHERE queryid=", queryId, "AND fragmentid=", fragmentId);
+        Joiner.on(' ').join("SELECT min(\"startTime\"), max(\"endTime\") FROM", relationKey.toString(getDBMS()),
+            "WHERE \"queryId\"=", queryId, "AND \"fragmentId\"=", fragmentId);
 
     DbQueryScan scan = new DbQueryScan(opnameQueryString, schema);
     final ExchangePairID operatorId = ExchangePairID.newID();
@@ -1897,7 +1606,8 @@ public final class Server {
 
     // Aggregate range on master
     final Aggregate sumAggregate =
-        new Aggregate(consumer, new int[] { 0, 1 }, new int[] { Aggregator.AGG_OP_MIN, Aggregator.AGG_OP_MAX });
+        new Aggregate(consumer, new SingleColumnAggregatorFactory(0, AggregationOp.MIN),
+            new SingleColumnAggregatorFactory(1, AggregationOp.MAX));
 
     DataOutput output = new DataOutput(sumAggregate, writer);
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
@@ -1905,7 +1615,7 @@ public final class Server {
     /* Submit the plan for the download. */
     String planString = Joiner.on('\0').join("download time range (query=", queryId, ", fragment=", fragmentId, ")");
     try {
-      return submitQuery(planString, planString, planString, masterPlan, workerPlans, null);
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, null);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1930,12 +1640,12 @@ public final class Server {
 
     String fragIdCondition = "";
     if (fragmentId >= 0) {
-      fragIdCondition = "AND fragmentid=" + fragmentId;
+      fragIdCondition = "AND \"fragmentId\"=" + fragmentId;
     }
 
     String opContributionsQueryString =
-        Joiner.on(' ').join("SELECT opid, sum(endtime - starttime) FROM ", relationKey.toString(getDBMS()),
-            "WHERE queryid=", queryId, fragIdCondition, "GROUP BY opid");
+        Joiner.on(' ').join("SELECT \"opId\", sum(\"endTime\" - \"startTime\") FROM ", relationKey.toString(getDBMS()),
+            "WHERE \"queryId\"=", queryId, fragIdCondition, "GROUP BY \"opId\"");
 
     DbQueryScan scan = new DbQueryScan(opContributionsQueryString, schema);
     final ExchangePairID operatorId = ExchangePairID.newID();
@@ -1954,7 +1664,7 @@ public final class Server {
 
     // sum up contributions
     final SingleGroupByAggregate sumAggregate =
-        new SingleGroupByAggregate(consumer, new int[] { 1 }, 0, new int[] { Aggregator.AGG_OP_SUM });
+        new SingleGroupByAggregate(consumer, 0, new SingleColumnAggregatorFactory(1, AggregationOp.AVG));
 
     // rename columns
     ImmutableList.Builder<Expression> renameExpressions = ImmutableList.builder();
@@ -1969,7 +1679,7 @@ public final class Server {
     String planString =
         Joiner.on('\0').join("download operator contributions (query=", queryId, ", fragment=", fragmentId, ")");
     try {
-      return submitQuery(planString, planString, planString, masterPlan, workerPlans, null);
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, null);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -2024,7 +1734,7 @@ public final class Server {
   public void setQueryGlobal(final long queryId, @Nonnull final String key, @Nonnull final Object value) {
     Preconditions.checkNotNull(key, "key");
     Preconditions.checkNotNull(value, "value");
-    getQuery(queryId).setGlobal(key, value);
+    queryManager.getQuery(queryId).setGlobal(key, value);
   }
 
   /**
@@ -2037,7 +1747,7 @@ public final class Server {
   @Nullable
   public Object getQueryGlobal(final long queryId, @Nonnull final String key) {
     Preconditions.checkNotNull(key, "key");
-    return getQuery(queryId).getGlobal(key);
+    return queryManager.getQuery(queryId).getGlobal(key);
   }
 
   /**
@@ -2048,21 +1758,7 @@ public final class Server {
    * @return the schema of the specified temp relation in the specified query
    */
   public Schema getTempSchema(@Nonnull final Long queryId, @Nonnull final String name) {
-    return getQuery(queryId).getTempSchema(RelationKey.ofTemp(queryId, name));
-  }
-
-  /**
-   * Get the query with the specified ID, ensuring that it is active.
-   * 
-   * @param queryId the id of the query to return.
-   * @return the query with the specified ID, ensuring that it is active
-   * @throws IllegalArgumentException if there is no active query with the given ID
-   */
-  @Nonnull
-  private Query getQuery(@Nonnull final Long queryId) {
-    Query query = activeQueries.get(Preconditions.checkNotNull(queryId, "queryId"));
-    Preconditions.checkArgument(query != null, "Query #%s is not active", queryId);
-    return query;
+    return queryManager.getQuery(queryId).getTempSchema(RelationKey.ofTemp(queryId, name));
   }
 
   /**

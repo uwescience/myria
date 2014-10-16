@@ -52,6 +52,7 @@ import edu.washington.escience.myria.operator.Operator;
     @Type(name = "ShuffleProducer", value = ShuffleProducerEncoding.class),
     @Type(name = "SingleGroupByAggregate", value = SingleGroupByAggregateEncoding.class),
     @Type(name = "Singleton", value = SingletonEncoding.class),
+    @Type(name = "CrossWithSingleton", value = CrossWithSingletonEncoding.class),
     @Type(name = "SinkRoot", value = SinkRootEncoding.class),
     @Type(name = "StatefulApply", value = StatefulApplyEncoding.class),
     @Type(name = "SymmetricHashJoin", value = SymmetricHashJoinEncoding.class),

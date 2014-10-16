@@ -3,11 +3,12 @@ package edu.washington.escience.myria.expression.evaluate;
 import java.lang.reflect.InvocationTargetException;
 
 import org.codehaus.commons.compiler.CompilerFactoryFactory;
-import org.codehaus.commons.compiler.IScriptEvaluator;
+import org.codehaus.commons.compiler.IExpressionEvaluator;
 
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.storage.TupleBatch;
@@ -23,7 +24,7 @@ public class BooleanEvaluator extends Evaluator {
 
   /**
    * Default constructor.
-   * 
+   *
    * @param expression the expression for the evaluator
    * @param parameters parameters that are passed to the expression
    */
@@ -34,13 +35,15 @@ public class BooleanEvaluator extends Evaluator {
 
   /**
    * Compiles the {@link #javaExpression}.
-   * 
+   *
    * @throws DbException compilation failed
    */
   @Override
   public void compile() throws DbException {
     try {
-      IScriptEvaluator se = CompilerFactoryFactory.getDefaultCompilerFactory().newExpressionEvaluator();
+      IExpressionEvaluator se = CompilerFactoryFactory.getDefaultCompilerFactory().newExpressionEvaluator();
+
+      se.setDefaultImports(MyriaConstants.DEFAULT_JANINO_IMPORTS);
 
       evaluator =
           (BooleanEvalInterface) se.createFastEvaluator(getJavaExpression(), BooleanEvalInterface.class, new String[] {
@@ -52,7 +55,7 @@ public class BooleanEvaluator extends Evaluator {
 
   /**
    * Evaluates the {@link #getJavaExpression()} using the {@link #evaluator}.
-   * 
+   *
    * @param tb a tuple batch
    * @param rowId the row that should be used for input data
    * @return the result from the evaluation

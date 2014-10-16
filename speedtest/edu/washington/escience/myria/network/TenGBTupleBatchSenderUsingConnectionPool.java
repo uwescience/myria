@@ -44,7 +44,7 @@ public class TenGBTupleBatchSenderUsingConnectionPool {
 
     final IPCConnectionPool connectionPool =
         IPCTestUtil.startIPCConnectionPool(1, computingUnits, new LinkedBlockingQueue<IPCMessage.Data<TupleBatch>>(),
-            new TransportMessageSerializer());
+            new TransportMessageSerializer(), 10, 8, Runtime.getRuntime().availableProcessors() * 2 + 1);
 
     long numSent = 0;
     long start = 0;

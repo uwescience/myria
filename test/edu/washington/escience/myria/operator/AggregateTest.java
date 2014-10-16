@@ -34,8 +34,10 @@ import edu.washington.escience.myria.column.builder.IntColumnBuilder;
 import edu.washington.escience.myria.column.builder.LongColumnBuilder;
 import edu.washington.escience.myria.column.builder.StringColumnBuilder;
 import edu.washington.escience.myria.operator.agg.Aggregate;
-import edu.washington.escience.myria.operator.agg.Aggregator;
+import edu.washington.escience.myria.operator.agg.AggregatorFactory;
 import edu.washington.escience.myria.operator.agg.MultiGroupByAggregate;
+import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
+import edu.washington.escience.myria.operator.agg.SingleColumnAggregatorFactory;
 import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
@@ -118,13 +120,13 @@ public class AggregateTest {
    * @return a single TupleBatch containing the results of the aggregation
    * @throws Exception if there is an error
    */
-  private TupleBatch doAggOpsToCol(ColumnBuilder<?> builder, int[] aggOps) throws Exception {
+  private TupleBatch doAggOpsToCol(ColumnBuilder<?> builder, AggregationOp[] aggOps) throws Exception {
     TupleSource source = new TupleSource(makeTrivialTupleBatch(builder));
-    int[] fields = new int[aggOps.length];
-    for (int i = 0; i < fields.length; ++i) {
-      fields[i] = 0;
+    AggregatorFactory[] aggs = new AggregatorFactory[aggOps.length];
+    for (int i = 0; i < aggs.length; ++i) {
+      aggs[i] = new SingleColumnAggregatorFactory(0, aggOps[i]);
     }
-    Aggregate agg = new Aggregate(source, fields, aggOps);
+    Aggregate agg = new Aggregate(source, aggs);
     /* Do it -- this should cause an error. */
     agg.open(TestEnvVars.get());
     TupleBatch tb = agg.nextReady();
@@ -136,16 +138,16 @@ public class AggregateTest {
   public void testNumericAggs() throws Exception {
     ColumnBuilder<?> builder;
     TupleBatch tb;
-    int[] numericAggBitsInOrder =
-        new int[] {
-            Aggregator.AGG_OP_COUNT, Aggregator.AGG_OP_MIN, Aggregator.AGG_OP_MAX, Aggregator.AGG_OP_SUM,
-            Aggregator.AGG_OP_AVG, Aggregator.AGG_OP_STDEV };
-    int[] justCount = new int[] { Aggregator.AGG_OP_COUNT };
-    int[] justMin = new int[] { Aggregator.AGG_OP_MIN };
-    int[] justMax = new int[] { Aggregator.AGG_OP_MAX };
-    int[] justSum = new int[] { Aggregator.AGG_OP_SUM };
-    int[] justAvg = new int[] { Aggregator.AGG_OP_AVG };
-    int[] justStdev = new int[] { Aggregator.AGG_OP_STDEV };
+    AggregationOp[] numericAggBitsInOrder =
+        new AggregationOp[] {
+            AggregationOp.COUNT, AggregationOp.MIN, AggregationOp.MAX, AggregationOp.SUM, AggregationOp.AVG,
+            AggregationOp.STDEV };
+    AggregationOp[] justCount = new AggregationOp[] { AggregationOp.COUNT };
+    AggregationOp[] justMin = new AggregationOp[] { AggregationOp.MIN };
+    AggregationOp[] justMax = new AggregationOp[] { AggregationOp.MAX };
+    AggregationOp[] justSum = new AggregationOp[] { AggregationOp.SUM };
+    AggregationOp[] justAvg = new AggregationOp[] { AggregationOp.AVG };
+    AggregationOp[] justStdev = new AggregationOp[] { AggregationOp.STDEV };
 
     /* Ints, all as a group */
     int[] ints = new int[] { 3, 5, 6 };
@@ -268,7 +270,8 @@ public class AggregateTest {
   public void testNonNumericAggs() throws Exception {
     ColumnBuilder<?> builder;
     TupleBatch tb;
-    int[] nonNumAggBitsInOrder = new int[] { Aggregator.AGG_OP_COUNT, Aggregator.AGG_OP_MIN, Aggregator.AGG_OP_MAX, };
+    AggregationOp[] nonNumAggBitsInOrder =
+        new AggregationOp[] { AggregationOp.COUNT, AggregationOp.MIN, AggregationOp.MAX };
 
     /* Dates */
     DateTime[] dates =
@@ -297,7 +300,7 @@ public class AggregateTest {
     assertEquals("fghij1", tb.getString(2, 0));
 
     /* Booleans */
-    int[] booleanAggs = new int[] { Aggregator.AGG_OP_COUNT };
+    AggregationOp[] booleanAggs = new AggregationOp[] { AggregationOp.COUNT };
     boolean[] booleans = new boolean[] { true, false, true };
     builder = new BooleanColumnBuilder();
     for (boolean b : booleans) {
@@ -331,7 +334,8 @@ public class AggregateTest {
     final TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     // group by name, aggregate on id
     final SingleGroupByAggregate agg =
-        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 0 }, 1, new int[] { Aggregator.AGG_OP_AVG });
+        new SingleGroupByAggregate(new TupleSource(testBase), 1,
+            new AggregatorFactory[] { new SingleColumnAggregatorFactory(0, AggregationOp.AVG) });
     agg.open(null);
     TupleBatch tb = null;
     final TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
@@ -353,7 +357,8 @@ public class AggregateTest {
     final TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     // group by name, aggregate on id
     SingleGroupByAggregate agg =
-        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 0 }, 1, new int[] { Aggregator.AGG_OP_MAX });
+        new SingleGroupByAggregate(new TupleSource(testBase), 1,
+            new AggregatorFactory[] { new SingleColumnAggregatorFactory(0, AggregationOp.MAX) });
     agg.open(null);
     TupleBatch tb = null;
     TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
@@ -368,7 +373,8 @@ public class AggregateTest {
     TestUtils.assertTupleBagEqual(TestUtils.groupByMax(testBase, 1, 0), actualResult);
 
     agg =
-        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 1 }, 0, new int[] { Aggregator.AGG_OP_MAX });
+        new SingleGroupByAggregate(new TupleSource(testBase), 0,
+            new AggregatorFactory[] { new SingleColumnAggregatorFactory(1, AggregationOp.MAX) });
     agg.open(null);
     tb = null;
     result = new TupleBatchBuffer(agg.getSchema());
@@ -390,7 +396,8 @@ public class AggregateTest {
     final TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     // group by name, aggregate on id
     SingleGroupByAggregate agg =
-        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 0 }, 1, new int[] { Aggregator.AGG_OP_MIN });
+        new SingleGroupByAggregate(new TupleSource(testBase), 1,
+            new AggregatorFactory[] { new SingleColumnAggregatorFactory(0, AggregationOp.MIN) });
     agg.open(null);
     TupleBatch tb = null;
     TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
@@ -405,7 +412,8 @@ public class AggregateTest {
     TestUtils.assertTupleBagEqual(TestUtils.groupByMin(testBase, 1, 0), actualResult);
 
     agg =
-        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 1 }, 0, new int[] { Aggregator.AGG_OP_MIN });
+        new SingleGroupByAggregate(new TupleSource(testBase), 0,
+            new AggregatorFactory[] { new SingleColumnAggregatorFactory(1, AggregationOp.MIN) });
     agg.open(null);
     tb = null;
     result = new TupleBatchBuffer(agg.getSchema());
@@ -427,7 +435,8 @@ public class AggregateTest {
     final TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     // group by name, aggregate on id
     final SingleGroupByAggregate agg =
-        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 0 }, 1, new int[] { Aggregator.AGG_OP_SUM });
+        new SingleGroupByAggregate(new TupleSource(testBase), 1,
+            new AggregatorFactory[] { new SingleColumnAggregatorFactory(0, AggregationOp.SUM) });
     agg.open(null);
     TupleBatch tb = null;
     final TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
@@ -469,7 +478,8 @@ public class AggregateTest {
 
     /* Group by group, aggregate on value */
     final SingleGroupByAggregate agg =
-        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 1 }, 0, new int[] { Aggregator.AGG_OP_STDEV });
+        new SingleGroupByAggregate(new TupleSource(testBase), 0,
+            new AggregatorFactory[] { new SingleColumnAggregatorFactory(1, AggregationOp.STDEV) });
     agg.open(null);
     TupleBatch tb = null;
     final TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
@@ -513,8 +523,8 @@ public class AggregateTest {
     // test for grouping at the first and second column
     // expected all the i / 2 to be sum up
     MultiGroupByAggregate mga =
-        new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 0, 1 }, new int[] { 3 },
-            new int[] { Aggregator.AGG_OP_SUM });
+        new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 0, 1 }, new SingleColumnAggregatorFactory(3,
+            AggregationOp.SUM));
     mga.open(null);
     TupleBatch result = mga.nextReady();
     assertNotNull(result);
@@ -525,8 +535,8 @@ public class AggregateTest {
     // test for grouping at the first, second and third column
     // expecting half of i / 2 to be sum up on each group
     MultiGroupByAggregate mgaTwo =
-        new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 0, 1, 2 }, new int[] { 3 },
-            new int[] { Aggregator.AGG_OP_SUM });
+        new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 0, 1, 2 }, new SingleColumnAggregatorFactory(3,
+            AggregationOp.SUM));
     mgaTwo.open(null);
     TupleBatch resultTwo = mgaTwo.nextReady();
     assertNotNull(result);
@@ -558,8 +568,8 @@ public class AggregateTest {
     }
     expected /= numTuples;
     MultiGroupByAggregate mga =
-        new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 0, 1, 2 }, new int[] { 3 },
-            new int[] { Aggregator.AGG_OP_AVG });
+        new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 0, 1, 2 }, new SingleColumnAggregatorFactory(3,
+            AggregationOp.AVG));
     mga.open(null);
     TupleBatch result = mga.nextReady();
     assertNotNull(result);
@@ -588,8 +598,8 @@ public class AggregateTest {
       tbb.putLong(3, i / 2);
     }
     MultiGroupByAggregate mga =
-        new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 0, 1 }, new int[] { 3 },
-            new int[] { Aggregator.AGG_OP_MIN });
+        new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 0, 1 }, new SingleColumnAggregatorFactory(3,
+            AggregationOp.MIN));
     mga.open(null);
     TupleBatch result = mga.nextReady();
     assertNotNull(result);
@@ -618,13 +628,46 @@ public class AggregateTest {
       tbb.putLong(3, i);
     }
     MultiGroupByAggregate mga =
-        new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 0, 1 }, new int[] { 3 },
-            new int[] { Aggregator.AGG_OP_MAX });
+        new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 0, 1 }, new SingleColumnAggregatorFactory(3,
+            AggregationOp.MAX));
     mga.open(null);
     TupleBatch result = mga.nextReady();
     assertNotNull(result);
     assertEquals(1, result.numTuples());
-    assertEquals(expected, result.getLong(result.numColumns() - 1, 0));
+    assertEquals(3, result.numColumns());
+    assertEquals(expected, result.getLong(2, 0));
+    mga.close();
+  }
+
+  @Test
+  public void testMultiGroupMaxAndMin() throws DbException {
+    final int numTuples = 10;
+    final Schema schema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of(
+            "a", "b", "c", "d"));
+
+    final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
+    long expected = numTuples - 1;
+    for (long i = 0; i < numTuples; i++) {
+      tbb.putLong(0, 0L);
+      tbb.putLong(1, 1L);
+      if (i % 2 == 0) {
+        tbb.putLong(2, 2L);
+      } else {
+        tbb.putLong(2, 4L);
+      }
+      tbb.putLong(3, i);
+    }
+    MultiGroupByAggregate mga =
+        new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 0, 1 }, new SingleColumnAggregatorFactory(3,
+            AggregationOp.MAX, AggregationOp.MIN));
+    mga.open(null);
+    TupleBatch result = mga.nextReady();
+    assertNotNull(result);
+    assertEquals(1, result.numTuples());
+    assertEquals(4, result.numColumns());
+    assertEquals(expected, result.getLong(2, 0));
+    assertEquals(0, result.getLong(3, 0));
     mga.close();
   }
 
@@ -650,8 +693,8 @@ public class AggregateTest {
       tbb.putLong(3, i);
     }
     MultiGroupByAggregate mga =
-        new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 0, 1 }, new int[] { 3, 3 }, new int[] {
-            Aggregator.AGG_OP_MAX, Aggregator.AGG_OP_MIN });
+        new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 0, 1 }, new SingleColumnAggregatorFactory(3,
+            AggregationOp.MAX), new SingleColumnAggregatorFactory(3, AggregationOp.MIN));
     mga.open(null);
     TupleBatch result = mga.nextReady();
     assertNotNull(result);
@@ -681,8 +724,8 @@ public class AggregateTest {
       tbb.putLong(3, i);
     }
     MultiGroupByAggregate mga =
-        new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 0, 1 }, new int[] { 0 },
-            new int[] { Aggregator.AGG_OP_COUNT });
+        new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 0, 1 }, new SingleColumnAggregatorFactory(0,
+            AggregationOp.COUNT));
     mga.open(null);
     TupleBatch result = mga.nextReady();
     assertNotNull(result);
@@ -773,7 +816,7 @@ public class AggregateTest {
 
     TupleSource source = new TupleSource(buffer.finalResult());
     MultiGroupByAggregate mga =
-        new MultiGroupByAggregate(source, groupCols, new int[] { 1 }, new int[] { Aggregator.AGG_OP_COUNT });
+        new MultiGroupByAggregate(source, groupCols, new SingleColumnAggregatorFactory(1, AggregationOp.COUNT));
     mga.open(null);
     TupleBatch result = mga.nextReady();
     assertNotNull(result);
@@ -802,8 +845,8 @@ public class AggregateTest {
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     MultiGroupByAggregate mga =
-        new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 0, 1 }, new int[] { 0 },
-            new int[] { Aggregator.AGG_OP_COUNT });
+        new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 0, 1 }, new SingleColumnAggregatorFactory(0,
+            AggregationOp.COUNT));
     mga.open(null);
     TupleBatch result = mga.nextReady();
     assertNull(result);
@@ -813,12 +856,12 @@ public class AggregateTest {
   @Test(expected = ArithmeticException.class)
   public void testLongAggOverflow() throws Exception {
     LongColumnBuilder builder = new LongColumnBuilder().appendLong(Long.MAX_VALUE - 1).appendLong(3);
-    doAggOpsToCol(builder, new int[] { Aggregator.AGG_OP_SUM });
+    doAggOpsToCol(builder, new AggregationOp[] { AggregationOp.SUM });
   }
 
   @Test(expected = ArithmeticException.class)
   public void testLongAggUnderflow() throws Exception {
     LongColumnBuilder builder = new LongColumnBuilder().appendLong(Long.MIN_VALUE + 1).appendLong(-3);
-    doAggOpsToCol(builder, new int[] { Aggregator.AGG_OP_SUM });
+    doAggOpsToCol(builder, new AggregationOp[] { AggregationOp.SUM });
   }
 }

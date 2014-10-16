@@ -4,7 +4,6 @@ import java.util.LinkedList;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.ChannelGroupFuture;
@@ -16,8 +15,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.parallel.ipc.IPCEvent.EventType;
-import edu.washington.escience.myria.util.IPCUtils;
-import edu.washington.escience.myria.util.concurrent.OrderedExecutorService;
+import edu.washington.escience.myria.util.concurrent.ClosableReentrantLock;
 import edu.washington.escience.myria.util.concurrent.ReentrantSpinLock;
 import edu.washington.escience.myria.util.concurrent.ThreadStackDump;
 
@@ -26,7 +24,7 @@ import edu.washington.escience.myria.util.concurrent.ThreadStackDump;
  * messages held in this InputBuffer can be as large as {@link Integer.MAX_VALUE}. But the soft capacity is a trigger.<br>
  * If the soft capacity is meet, an IOEvent representing the buffer full event is triggered. <br>
  * If the
- * 
+ *
  * @param <PAYLOAD> the type of application defined data the input buffer is going to hold.
  * */
 public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdapter<PAYLOAD> {
@@ -47,11 +45,6 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
    * into the inner inputbuffer. It's up to the caller applications to respond to the capacity full event.
    * */
   private final int softCapacity;
-
-  /**
-   * serialize the buffer state events (FULL, EMPTY, RECOVER).
-   * */
-  private final ReentrantSpinLock bufferStateEventSerializeLock = new ReentrantSpinLock();
 
   /**
    * serialize the events.
@@ -78,9 +71,9 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
 
   /**
    * {@inheritDoc}.
-   * 
+   *
    * @param softCapacity soft upper bound of the buffer size.
-   * 
+   *
    * */
   public FlowControlBagInputBuffer(final IPCConnectionPool owner,
       final ImmutableSet<StreamIOChannelID> remoteChannelIDs, final int softCapacity, final int recoverEventTrigger) {
@@ -119,62 +112,47 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
 
   /**
    * Resume the read of all IO channels that are inputs of this input buffer.
-   * 
+   *
    * @return ChannelGroupFuture denotes the future of the resume read action.
    * */
   public ChannelGroupFuture resumeRead() {
-
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug(this.toString());
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("Resume read {}.", this, new ThreadStackDump());
     }
 
     LinkedList<ChannelFuture> allResumeFutures = new LinkedList<ChannelFuture>();
     ChannelGroup cg = new DefaultChannelGroup();
     for (final StreamIOChannelID inputID : getSourceChannels()) {
-      Channel ch = getInputChannel(inputID).getIOChannel();
-      if (ch != null && !ch.isReadable()) {
-        if (LOGGER.isDebugEnabled()) {
-          LOGGER.debug("Resume read for channel {}. Logical channel is {}", ch, inputID);
-        }
-        cg.add(ch);
-        allResumeFutures.add(IPCUtils.resumeRead(ch));
-      }
+      ChannelFuture cf = getInputChannel(inputID).resumeRead();
+      cg.add(cf.getChannel());
+      allResumeFutures.add(cf);
     }
 
-    ChannelGroupFuture cgf = new DefaultChannelGroupFuture(cg, allResumeFutures);
-
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug("Finish resume for Stream {}", getProcessor());
-    }
-    return cgf;
+    return new DefaultChannelGroupFuture(cg, allResumeFutures);
   }
 
   /**
-   * 
+   *
    * Pause read of all IO channels which are inputs of the @{link Consumer} operator with ID operatorID.
-   * 
+   *
    * Called by Netty Upstream IO worker threads after pushing a data into an InputBuffer which has only a single empty
    * slot or already full.
-   * 
+   *
    * @return ChannelGroupFuture denotes the future of the pause read action.
    * */
   public ChannelGroupFuture pauseRead() {
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug(this.toString());
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("Pause read {}.", this, new ThreadStackDump());
     }
 
     LinkedList<ChannelFuture> allPauseFutures = new LinkedList<ChannelFuture>();
     ChannelGroup cg = new DefaultChannelGroup();
     for (final StreamIOChannelID inputID : getSourceChannels()) {
-      Channel ch = getInputChannel(inputID).getIOChannel();
-      if (ch != null && ch.isReadable()) {
-        allPauseFutures.add(IPCUtils.pauseRead(ch));
-        cg.add(ch);
-        if (LOGGER.isDebugEnabled()) {
-          LOGGER.debug("Pause read for channel {}, Logical channel is {}", ch, inputID);
-        }
-      }
+      ChannelFuture cf = getInputChannel(inputID).pauseRead();
+      allPauseFutures.add(cf);
+      cg.add(cf.getChannel());
     }
+
     return new DefaultChannelGroupFuture(cg, allPauseFutures);
   }
 
@@ -185,30 +163,21 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
     }
 
     addListener(INPUT_BUFFER_FULL, new IPCEventListener() {
-      @SuppressWarnings("unchecked")
       @Override
       public void triggered(final IPCEvent e) {
-        if (((FlowControlBagInputBuffer<PAYLOAD>) (e.getAttachment())).remainingCapacity() <= 0) {
-          pauseRead().awaitUninterruptibly();
-        }
+        pauseRead();
       }
     });
     addListener(INPUT_BUFFER_RECOVER, new IPCEventListener() {
-      @SuppressWarnings("unchecked")
       @Override
       public void triggered(final IPCEvent e) {
-        if (((FlowControlBagInputBuffer<PAYLOAD>) (e.getAttachment())).remainingCapacity() > 0) {
-          resumeRead().awaitUninterruptibly();
-        }
+        resumeRead();
       }
     });
     addListener(INPUT_BUFFER_EMPTY, new IPCEventListener() {
-      @SuppressWarnings("unchecked")
       @Override
       public void triggered(final IPCEvent e) {
-        if (((FlowControlBagInputBuffer<PAYLOAD>) (e.getAttachment())).remainingCapacity() > 0) {
-          resumeRead().awaitUninterruptibly();
-        }
+        resumeRead();
       }
     });
   }
@@ -244,13 +213,10 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
    * Check events triggered by data input methods, i.e. offer.
    * */
   private void checkInputBufferStateEvents() {
-    bufferStateEventSerializeLock.lock();
-    try {
+    try (ClosableReentrantLock l = getBufferSizeLock().open()) {
       if (remainingCapacity() <= 0 && previousEvent != INPUT_BUFFER_FULL) {
         fireBufferFull();
       }
-    } finally {
-      bufferStateEventSerializeLock.unlock();
     }
   }
 
@@ -258,15 +224,12 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
    * Check events triggered by data output methods, i.e. poll/take/clear.
    * */
   private void checkOutputBufferStateEvents() {
-    bufferStateEventSerializeLock.lock();
-    try {
+    try (ClosableReentrantLock l = getBufferSizeLock().open()) {
       if (isEmpty() && previousEvent != INPUT_BUFFER_EMPTY) {
         fireBufferEmpty();
       } else if (previousEvent == INPUT_BUFFER_FULL && size() <= recoverEventTrigger) {
         fireBufferRecover();
       }
-    } finally {
-      bufferStateEventSerializeLock.unlock();
     }
   }
 
@@ -379,7 +342,7 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
 
   /**
    * Fire a buffer empty event. All the buffer empty event listeners will be notified.
-   * 
+   *
    * New input event listeners are executed by trigger threads.
    * */
   protected void fireNewInput() {
@@ -400,7 +363,7 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
 
   /**
    * Fire a buffer empty event. All the buffer empty event listeners will be notified.
-   * 
+   *
    * Listeners are executed by dedicated event executors.
    * */
   protected void fireBufferEmpty() {
@@ -408,27 +371,14 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace("Input buffer empty triggered in {}", this, new ThreadStackDump());
     }
-    getOwnerConnectionPool().getIPCEventProcessor().execute(
-        new OrderedExecutorService.KeyRunnable<StreamInputBuffer<PAYLOAD>>() {
-
-          @Override
-          public void run() {
-            for (IPCEventListener l : bufferEmptyListeners) {
-              l.triggered(bufferEmptyEvent);
-            }
-          }
-
-          @Override
-          public StreamInputBuffer<PAYLOAD> getKey() {
-            return FlowControlBagInputBuffer.this;
-          }
-        });
-
+    for (IPCEventListener l : bufferEmptyListeners) {
+      l.triggered(bufferEmptyEvent);
+    }
   }
 
   /**
    * Fire a buffer full event. All the buffer full event listeners will be notified.
-   * 
+   *
    * Listeners are executed by dedicated event executors.
    * */
   protected void fireBufferFull() {
@@ -436,51 +386,26 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace("Input buffer full triggered in {}", this, new ThreadStackDump());
     }
-    getOwnerConnectionPool().getIPCEventProcessor().execute(
-        new OrderedExecutorService.KeyRunnable<StreamInputBuffer<PAYLOAD>>() {
 
-          @Override
-          public void run() {
-            for (IPCEventListener l : bufferFullListeners) {
-              l.triggered(bufferFullEvent);
-            }
-          }
-
-          @Override
-          public StreamInputBuffer<PAYLOAD> getKey() {
-            return FlowControlBagInputBuffer.this;
-          }
-        });
-
+    for (IPCEventListener l : bufferFullListeners) {
+      l.triggered(bufferFullEvent);
+    }
   }
 
   /**
    * Fire a buffer recover event. All the buffer recover event listeners will be notified.
-   * 
+   *
    * Listeners are executed by dedicated event executors.
-   * 
+   *
    * */
   protected void fireBufferRecover() {
     previousEvent = INPUT_BUFFER_RECOVER;
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace("Input buffer recover triggered in {}", this, new ThreadStackDump());
     }
-    getOwnerConnectionPool().getIPCEventProcessor().execute(
-        new OrderedExecutorService.KeyRunnable<StreamInputBuffer<PAYLOAD>>() {
-
-          @Override
-          public void run() {
-            for (IPCEventListener l : bufferRecoverListeners) {
-              l.triggered(bufferRecoverEvent);
-            }
-          }
-
-          @Override
-          public StreamInputBuffer<PAYLOAD> getKey() {
-            return FlowControlBagInputBuffer.this;
-          }
-        });
-
+    for (IPCEventListener l : bufferRecoverListeners) {
+      l.triggered(bufferRecoverEvent);
+    }
   }
 
   @Override

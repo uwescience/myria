@@ -1,7 +1,6 @@
 package edu.washington.escience.myria.expression;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
@@ -23,7 +22,7 @@ public class ToUpperCaseExpression extends UnaryExpression {
 
   /**
    * Change all characters in a string to upper case.
-   * 
+   *
    * @param operand the operand.
    */
   public ToUpperCaseExpression(final ExpressionOperator operand) {
@@ -33,9 +32,7 @@ public class ToUpperCaseExpression extends UnaryExpression {
   @Override
   public Type getOutputType(final ExpressionOperatorParameter parameters) {
     Type operandType = getOperand().getOutputType(parameters);
-    ImmutableList<Type> validTypes = ImmutableList.of(Type.STRING_TYPE);
-    int operandIdx = validTypes.indexOf(operandType);
-    Preconditions.checkArgument(operandIdx != -1, "%s cannot handle operand [%s] of Type %s", getClass()
+    Preconditions.checkArgument(operandType == Type.STRING_TYPE, "%s cannot handle operand [%s] of Type %s", getClass()
         .getSimpleName(), getOperand(), operandType);
     return Type.STRING_TYPE;
   }

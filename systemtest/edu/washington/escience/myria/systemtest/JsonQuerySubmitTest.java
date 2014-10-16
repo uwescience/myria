@@ -5,10 +5,14 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
@@ -32,6 +36,7 @@ import edu.washington.escience.myria.io.EmptySource;
 import edu.washington.escience.myria.io.FileSource;
 import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.util.JsonAPIUtils;
+import edu.washington.escience.myria.util.TestUtils;
 
 public class JsonQuerySubmitTest extends SystemTestBase {
 
@@ -157,10 +162,10 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     assertEquals(HttpURLConnection.HTTP_ACCEPTED, conn.getResponseCode());
     long queryId = getQueryStatus(conn).queryId;
     conn.disconnect();
-    while (!server.queryCompleted(queryId)) {
+    while (!server.getQueryManager().queryCompleted(queryId)) {
       Thread.sleep(100);
     }
-    QueryStatusEncoding status = server.getQueryStatus(queryId);
+    QueryStatusEncoding status = server.getQueryManager().getQueryStatus(queryId);
     assertEquals(QueryStatusEncoding.Status.SUCCESS, status.status);
     assertTrue(status.language.equals("datalog"));
     assertTrue(status.ftMode.equals("NONE"));
@@ -205,7 +210,8 @@ public class JsonQuerySubmitTest extends SystemTestBase {
       throw new IllegalStateException(getContents(conn));
     }
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
-    assertEquals(QueryStatusEncoding.Status.SUCCESS, server.getQueryStatus(getDatasetStatus(conn).getQueryId()).status);
+    assertEquals(QueryStatusEncoding.Status.SUCCESS, server.getQueryManager().getQueryStatus(
+        getDatasetStatus(conn).getQueryId()).status);
     conn.disconnect();
 
     File queryJson = new File("./jsonQueries/multiIDB_jwang/joinChain.json");
@@ -216,9 +222,51 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     assertEquals(HttpURLConnection.HTTP_ACCEPTED, conn.getResponseCode());
     long queryId = getQueryStatus(conn).queryId;
     conn.disconnect();
-    while (!server.queryCompleted(queryId)) {
+    while (!server.getQueryManager().queryCompleted(queryId)) {
       Thread.sleep(100);
     }
-    assertEquals(QueryStatusEncoding.Status.SUCCESS, server.getQueryStatus(queryId).status);
+    assertEquals(QueryStatusEncoding.Status.SUCCESS, server.getQueryManager().getQueryStatus(queryId).status);
+  }
+
+  @Test
+  public void abortedDownloadTest() throws Exception {
+    // skip in travis
+    TestUtils.skipIfInTravis();
+    final int NUM_DUPLICATES = 2000;
+    final int BYTES_TO_READ = 1024; // read 1 kb
+
+    URL url =
+        new URL(String.format("http://%s:%d/dataset/download_test?num_tb=%d&format=%s", "localhost", masterDaemonPort,
+            NUM_DUPLICATES, "json"));
+    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+    conn.setDoOutput(true);
+    conn.setRequestMethod("GET");
+
+    long start = System.nanoTime();
+    if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
+      throw new IOException("Failed to download result:" + conn.getResponseCode());
+    }
+
+    long numBytesRead = 0;
+    try {
+      InputStream is = conn.getInputStream();
+      while (is.read() >= 0) {
+        numBytesRead++;
+        if (numBytesRead >= BYTES_TO_READ) {
+          break;
+        }
+      }
+    } finally {
+      conn.disconnect();
+    }
+    long nanoElapse = System.nanoTime() - start;
+    System.out.println("Download size: " + (numBytesRead * 1.0 / 1024 / 1024 / 1024) + " GB");
+    System.out.println("Speed is: " + (numBytesRead * 1.0 / 1024 / 1024 / TimeUnit.NANOSECONDS.toSeconds(nanoElapse))
+        + " MB/s");
+    while (server.getQueryManager().getQueries(1, 0).get(0).finishTime == null) {
+      Thread.sleep(100);
+    }
+    QueryStatusEncoding qs = server.getQueryManager().getQueries(1, 0).get(0);
+    assertTrue(qs.status == QueryStatusEncoding.Status.ERROR);
   }
 }
