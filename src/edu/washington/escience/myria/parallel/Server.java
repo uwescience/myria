@@ -1150,8 +1150,8 @@ public final class Server {
 
     final Schema schema = MyriaConstants.RESOURCE_SCHEMA;
     String resourceQueryString =
-        Joiner.on(' ').join("SELECT * from", MyriaConstants.RESOURCE_RELATION.toString(getDBMS()), "WHERE queryId =",
-            queryId);
+        Joiner.on(' ').join("SELECT * from", MyriaConstants.RESOURCE_RELATION.toString(getDBMS()),
+            "WHERE \"queryId\" =", queryId);
     DbQueryScan scan = new DbQueryScan(resourceQueryString, schema);
 
     ImmutableList.Builder<Expression> emitExpressions = ImmutableList.builder();
