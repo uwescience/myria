@@ -15,7 +15,6 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -84,7 +83,6 @@ import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.IPCMessage;
 import edu.washington.escience.myria.parallel.ipc.InJVMLoopbackChannelSink;
 import edu.washington.escience.myria.parallel.ipc.QueueBasedShortMessageProcessor;
-import edu.washington.escience.myria.proto.ControlProto;
 import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myria.proto.QueryProto.QueryMessage;
 import edu.washington.escience.myria.proto.QueryProto.QueryReport;
@@ -136,6 +134,9 @@ public final class Server {
                 case WORKER_HEARTBEAT:
                   LOGGER.trace("getting heartbeat from worker {}", senderID);
                   updateHeartbeat(senderID);
+                  break;
+                case RESOURCE_STATS:
+                  queryManager.updateResourceStats(senderID, controlM);
                   break;
                 case REMOVE_WORKER_ACK:
                   int workerID = controlM.getWorkerId();
@@ -224,9 +225,6 @@ public final class Server {
    * Current alive worker set.
    */
   private final ConcurrentHashMap<Integer, Long> aliveWorkers;
-
-  /** resource usage stats of workers. */
-  private final ConcurrentHashMap<SubQueryId, ConcurrentHashMap<Integer, ConcurrentLinkedDeque<ResourceStats>>> resourceUsage;
 
   /**
    * Scheduled new workers, when a scheduled worker sends the first heartbeat, it'll be removed from this set.
@@ -440,8 +438,6 @@ public final class Server {
     aliveWorkers = new ConcurrentHashMap<>();
     scheduledWorkers = new ConcurrentHashMap<>();
     scheduledWorkersTime = new ConcurrentHashMap<>();
-    resourceUsage =
-        new ConcurrentHashMap<SubQueryId, ConcurrentHashMap<Integer, ConcurrentLinkedDeque<ResourceStats>>>();
 
     removeWorkerAckReceived = new ConcurrentHashMap<>();
     addWorkerAckReceived = new ConcurrentHashMap<>();
@@ -549,21 +545,6 @@ public final class Server {
       }
     }
     aliveWorkers.put(workerID, System.currentTimeMillis());
-  }
-
-  /**
-   * update resource stats from messgaes.
-   * 
-   * @param senderId the sender worer id.
-   * @param m the message.
-   */
-  private void updateResourceStats(final int senderId, final ControlMessage m) {
-    for (ControlProto.ResourceStats stats : m.getResourceStatsList()) {
-      SubQueryId id = new SubQueryId(stats.getQueryId(), stats.getSubqueryId());
-      resourceUsage.putIfAbsent(id, new ConcurrentHashMap<Integer, ConcurrentLinkedDeque<ResourceStats>>());
-      resourceUsage.get(id).putIfAbsent(senderId, new ConcurrentLinkedDeque<ResourceStats>());
-      resourceUsage.get(id).get(senderId).add(ResourceStats.fromProtobuf(stats));
-    }
   }
 
   /**
@@ -1770,26 +1751,7 @@ public final class Server {
     Schema schema = Schema.appendColumn(MyriaConstants.RESOURCE_SCHEMA, Type.INT_TYPE, "workerId");
     TupleBuffer tb = new TupleBuffer(schema);
     TupleWriter writer = new CsvTupleWriter(writerOutput);
-    boolean found = false;
-    for (SubQueryId subQueryId : resourceUsage.keySet()) {
-      if (subQueryId.getQueryId() == queryId) {
-        found = true;
-        Map<Integer, ConcurrentLinkedDeque<ResourceStats>> workerStats = resourceUsage.get(subQueryId);
-        for (Integer workerId : workerStats.keySet()) {
-          ConcurrentLinkedDeque<ResourceStats> statsList = workerStats.get(workerId);
-          for (ResourceStats stats : statsList) {
-            tb.putLong(0, stats.getTimestamp());
-            tb.putInt(1, stats.getOpId());
-            tb.putString(2, stats.getMeasurement());
-            tb.putLong(3, stats.getValue());
-            tb.putLong(4, stats.getQueryId());
-            tb.putLong(5, stats.getSubqueryId());
-            tb.putInt(6, workerId);
-          }
-        }
-      }
-    }
-    if (found) {
+    if (queryManager.getResourceUsage(queryId, tb)) {
       try {
         writer.writeColumnHeaders(schema.getColumnNames());
         writer.writeTuples(tb);

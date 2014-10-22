@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -31,6 +32,9 @@ import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
+import edu.washington.escience.myria.proto.ControlProto;
+import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
+import edu.washington.escience.myria.storage.TupleBuffer;
 import edu.washington.escience.myria.util.DateTimeUtils;
 import edu.washington.escience.myria.util.IPCUtils;
 
@@ -46,6 +50,9 @@ public class QueryManager {
    * Queries currently active (queued, executing, being killed, etc.).
    */
   private final ConcurrentHashMap<Long, Query> activeQueries;
+
+  /** resource usage stats of workers. */
+  private final ConcurrentHashMap<SubQueryId, ConcurrentHashMap<Integer, ConcurrentLinkedDeque<ResourceStats>>> resourceUsage;
 
   /** The queries that are queued. */
   @GuardedBy("queryQueue")
@@ -75,6 +82,8 @@ public class QueryManager {
     queryQueue = new LinkedList<>();
     activeQueries = new ConcurrentHashMap<>();
     executingSubQueries = new ConcurrentHashMap<>();
+    resourceUsage =
+        new ConcurrentHashMap<SubQueryId, ConcurrentHashMap<Integer, ConcurrentLinkedDeque<ResourceStats>>>();
   }
 
   /**
@@ -83,6 +92,21 @@ public class QueryManager {
    */
   public boolean queryCompleted(final long queryId) {
     return !activeQueries.containsKey(queryId);
+  }
+
+  /**
+   * update resource stats from messgaes.
+   * 
+   * @param senderId the sender worer id.
+   * @param m the message.
+   */
+  public void updateResourceStats(final int senderId, final ControlMessage m) {
+    for (ControlProto.ResourceStats stats : m.getResourceStatsList()) {
+      SubQueryId id = new SubQueryId(stats.getQueryId(), stats.getSubqueryId());
+      resourceUsage.putIfAbsent(id, new ConcurrentHashMap<Integer, ConcurrentLinkedDeque<ResourceStats>>());
+      resourceUsage.get(id).putIfAbsent(senderId, new ConcurrentLinkedDeque<ResourceStats>());
+      resourceUsage.get(id).get(senderId).add(ResourceStats.fromProtobuf(stats));
+    }
   }
 
   /**
@@ -381,6 +405,35 @@ public class QueryManager {
   }
 
   /**
+   * @param queryId the query id to fetch
+   * @param tb the TupleBuffer to write into.
+   * @return if found the running query
+   * @throws DbException if there is an error in the database.
+   */
+  public boolean getResourceUsage(final long queryId, final TupleBuffer tb) throws DbException {
+    boolean found = false;
+    for (SubQueryId subQueryId : resourceUsage.keySet()) {
+      if (subQueryId.getQueryId() == queryId) {
+        found = true;
+        Map<Integer, ConcurrentLinkedDeque<ResourceStats>> workerStats = resourceUsage.get(subQueryId);
+        for (Integer workerId : workerStats.keySet()) {
+          ConcurrentLinkedDeque<ResourceStats> statsList = workerStats.get(workerId);
+          for (ResourceStats stats : statsList) {
+            tb.putLong(0, stats.getTimestamp());
+            tb.putInt(1, stats.getOpId());
+            tb.putString(2, stats.getMeasurement());
+            tb.putLong(3, stats.getValue());
+            tb.putLong(4, stats.getQueryId());
+            tb.putLong(5, stats.getSubqueryId());
+            tb.putInt(6, workerId);
+          }
+        }
+      }
+    }
+    return found;
+  }
+
+  /**
    * @param mqp the master query
    * @return the query dispatch {@link LocalSubQueryFuture}.
    * @throws DbException if any error occurs.
@@ -425,6 +478,7 @@ public class QueryManager {
     long queryId = subQueryId.getQueryId();
     executingSubQueries.remove(subQueryId);
     getQuery(queryId).finishSubQuery();
+    resourceUsage.remove(subQueryId);
   }
 
   /**
@@ -497,8 +551,8 @@ public class QueryManager {
    * @return the query future from which the query status can be looked up.
    */
   public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final String physicalPlan,
-      final SubQueryPlan masterPlan, final Map<Integer, SubQueryPlan> workerPlans, @Nullable final PROFILING_MODE profilingMode)
-      throws DbException, CatalogException {
+      final SubQueryPlan masterPlan, final Map<Integer, SubQueryPlan> workerPlans,
+      @Nullable final PROFILING_MODE profilingMode) throws DbException, CatalogException {
     return submitQuery(rawQuery, logicalRa, physicalPlan, new SubQuery(masterPlan, workerPlans), profilingMode);
   }
 
