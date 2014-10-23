@@ -367,4 +367,47 @@ public class CastTest {
     assertEquals(Type.LONG_TYPE, cast.getOutputType(new ExpressionOperatorParameter()));
   }
 
+  /* Self-cast tests. */
+  @Test
+  public void testSelfCastBoolean() throws Throwable {
+    ConstantExpression val1 = new ConstantExpression(true);
+    Object ans = evaluateCastAndUnrollException(val1, Type.BOOLEAN_TYPE);
+    assertEquals(true, ans);
+  }
+
+  @Test
+  public void testSelfCastDouble() throws Throwable {
+    ConstantExpression val1 = new ConstantExpression(2.0);
+    Object ans = evaluateCastAndUnrollException(val1, Type.DOUBLE_TYPE);
+    assertEquals(2.0, ans);
+  }
+
+  @Test
+  public void testSelfCastFloat() throws Throwable {
+    ConstantExpression val1 = new ConstantExpression(2.0f);
+    Object ans = evaluateCastAndUnrollException(val1, Type.FLOAT_TYPE);
+    assertEquals(2.0f, ans);
+  }
+
+  @Test
+  public void testSelfCastInt() throws Throwable {
+    ConstantExpression val1 = new ConstantExpression(Integer.MAX_VALUE);
+    Object ans = evaluateCastAndUnrollException(val1, Type.INT_TYPE);
+    assertEquals(Integer.MAX_VALUE, ans);
+  }
+
+  @Test
+  public void testSelfCastLong() throws Throwable {
+    ConstantExpression val1 = new ConstantExpression(Long.MAX_VALUE);
+    Object ans = evaluateCastAndUnrollException(val1, Type.LONG_TYPE);
+    assertEquals(Long.MAX_VALUE, ans);
+  }
+
+  @Test
+  public void testSelfCastString() throws Throwable {
+    ConstantExpression val1 = new ConstantExpression("abc123");
+    Object ans = evaluateCastAndUnrollException(val1, Type.STRING_TYPE);
+    assertEquals("abc123", ans);
+  }
+
 }
