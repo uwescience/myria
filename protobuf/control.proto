@@ -9,11 +9,13 @@ message ControlMessage {
     ADD_WORKER = 4; // master -> workers
     REMOVE_WORKER_ACK = 5; // worker -> master
     ADD_WORKER_ACK = 6; // worker -> master
+    RESOURCE_STATS = 7; // worker -> master
   }
 
   required ControlMessage.Type type = 1;		// See enum above
   optional int32 worker_id = 2;
   optional SocketInfo remote_address = 3;
+  repeated ResourceStats resource_stats = 4;
 }
 
 message SocketInfo {
@@ -21,4 +23,11 @@ message SocketInfo {
   required int32 port = 2; 
 }
 
-
+message ResourceStats {
+  required int64 timestamp = 1;
+  required int32 opId = 2;
+  required string measurement = 3;
+  required int64 value = 4;
+  required int64 queryId = 5;
+  required int64 subqueryId = 6;
+}

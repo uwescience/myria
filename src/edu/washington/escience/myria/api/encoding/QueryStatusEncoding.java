@@ -4,6 +4,7 @@ import java.net.URI;
 
 import org.joda.time.DateTime;
 
+import edu.washington.escience.myria.MyriaConstants.PROFILING_MODE;
 import edu.washington.escience.myria.api.encoding.plan.SubPlanEncoding;
 
 /**
@@ -25,7 +26,7 @@ public class QueryStatusEncoding {
    * @param rawQuery the raw query submitted to the system.
    * @param logicalRa the logical plan of the query.
    * @param plan the physical execution plan.
-   * @param profilingMode whether the query executed with profiling on.
+   * @param profilingMode which profiling mode the query is executed with.
    * @return a QueryStatusEncoding object containing the submitted query, with the submit time set to
    *         DateTimeUtils.nowInISO8601().
    */
@@ -65,7 +66,7 @@ public class QueryStatusEncoding {
   /** The status of the query. */
   public Status status;
   /** The profilingMode of the query. */
-  public Boolean profilingMode;
+  public PROFILING_MODE profilingMode;
   /** The ftMode of the query. */
   public String ftMode;
   /** The language of the query. */

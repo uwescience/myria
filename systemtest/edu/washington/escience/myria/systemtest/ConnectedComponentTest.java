@@ -17,6 +17,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.MyriaConstants.PROFILING_MODE;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -257,13 +258,14 @@ public class ConnectedComponentTest extends SystemTestBase {
     SubQueryPlan serverPlan = new SubQueryPlan(new SinkRoot(queueStore));
 
     if (!failure) {
-      server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans, false).get();
+      server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans, null).get();
     } else {
-      workerPlans.get(workerIDs[0]).setFTMode(FTMODE.valueOf("rejoin"));
-      workerPlans.get(workerIDs[1]).setFTMode(FTMODE.valueOf("rejoin"));
-      serverPlan.setFTMode(FTMODE.valueOf("rejoin"));
+      workerPlans.get(workerIDs[0]).setFTMode(FTMODE.REJOIN);
+      workerPlans.get(workerIDs[1]).setFTMode(FTMODE.REJOIN);
+      serverPlan.setFTMode(FTMODE.REJOIN);
 
-      ListenableFuture<Query> qf = server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans, false);
+      ListenableFuture<Query> qf =
+          server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans, PROFILING_MODE.NONE);
       Thread.sleep(1000);
       LOGGER.info("killing worker " + workerIDs[1] + "!");
       workerProcess[1].destroy();

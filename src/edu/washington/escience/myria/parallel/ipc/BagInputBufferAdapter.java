@@ -23,7 +23,7 @@ import edu.washington.escience.myria.util.concurrent.ClosableReentrantLock;
  * A simple InputBuffer implementation. The number of messages held in this InputBuffer can be as large as
  * {@link Integer.MAX_VALUE}. All the input data from different input channels are treated by bag semantic. No order is
  * is guaranteed.
- *
+ * 
  * @param <PAYLOAD> the type of application defined data the input buffer is going to hold.
  * */
 public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapter implements
@@ -131,7 +131,7 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
 
   /**
    * Called before {@link #start(Object)} operations are conducted.
-   *
+   * 
    * @param processor {@link #start(Object)}
    * @throws IllegalStateException if the {@link #start(Object)} operation should not be done.
    * */
@@ -140,7 +140,7 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
 
   /**
    * Called after {@link #start(Object)} operations are conducted.
-   *
+   * 
    * @param processor {@link #start(Object)}
    * */
   protected void postStart(final Object processor) {
@@ -160,7 +160,7 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
 
   /**
    * Called before {@link #stop()} operations are conducted.
-   *
+   * 
    * @throws IllegalStateException if the {@link #stop()} operation should not be done.
    * */
   protected void preStop() throws IllegalStateException {
@@ -168,7 +168,7 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
 
   /**
    * Called after {@link #stop()} operations are conducted.
-   *
+   * 
    * */
   protected void postStop() {
   }
@@ -197,7 +197,7 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
 
   /**
    * Called before {@link #clear()} is executed.
-   *
+   * 
    * @throws IllegalStateException if the {@link #clear()} operation should not be done.
    * */
   protected void preClear() throws IllegalStateException {
@@ -261,7 +261,7 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
 
   /**
    * Called before {@link #offer(StreamData)} operations are conducted.
-   *
+   * 
    * @param msg {@link #offer(edu.washington.escience.myria.parallel.ipc.IPCMessage.StreamData)}
    * @throws IllegalStateException if the
    *           {@link #offer(edu.washington.escience.myria.parallel.ipc.IPCMessage.StreamData)} operation should not be
@@ -272,7 +272,7 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
 
   /**
    * Called after {@link #offer(StreamData)} operations are conducted.
-   *
+   * 
    * @param msg {@link #offer(StreamData)}
    * @param isSucceed if the offer operation succeeds
    * */
@@ -331,7 +331,7 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
 
   /**
    * Called before {@link #take()} operations are conducted.
-   *
+   * 
    * @throws IllegalStateException if the {@link #take()} operation should not be done.
    * */
   protected void preTake() throws IllegalStateException {
@@ -339,7 +339,7 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
 
   /**
    * Called after {@link #take()} operations are conducted.
-   *
+   * 
    * @param msg the result of {@link #take()}.
    * */
   protected void postTake(final IPCMessage.StreamData<PAYLOAD> msg) {
@@ -377,7 +377,7 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
 
   /**
    * Called before {@link #poll(long, TimeUnit)} operations are conducted.
-   *
+   * 
    * @param time param of {@link #poll(long, TimeUnit)}
    * @param unit param of {@link #poll(long, TimeUnit)}
    * @throws IllegalStateException if the {@link #poll(long, TimeUnit)} operation should not be done.
@@ -387,7 +387,7 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
 
   /**
    * Called after {@link #poll(long, TimeUnit)} operations are conducted.
-   *
+   * 
    * @param time param of {@link #poll(long, TimeUnit)}
    * @param unit param of {@link #poll(long, TimeUnit)}
    * @param msg the result of {@link #poll(long, TimeUnit)}.
@@ -427,7 +427,7 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
 
   /**
    * Called before {@link #poll()} operations are conducted.
-   *
+   * 
    * @throws IllegalStateException if the {@link #poll()} operation should not be done.
    * */
   protected void prePoll() throws IllegalStateException {
@@ -435,7 +435,7 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
 
   /**
    * Called after {@link #poll()} operations are conducted.
-   *
+   * 
    * @param msg the result of {@link #poll()}.
    * */
   protected void postPoll(final IPCMessage.StreamData<PAYLOAD> msg) {

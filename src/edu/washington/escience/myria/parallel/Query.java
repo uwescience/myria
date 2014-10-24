@@ -19,6 +19,7 @@ import com.google.common.base.Verify;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.MyriaConstants.PROFILING_MODE;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.api.encoding.QueryConstruct;
@@ -64,7 +65,7 @@ public final class Query {
   /** The future for this query. */
   private final QueryFuture future;
   /** True if the query should be run with profiling enabled. */
-  private final boolean profiling;
+  private final PROFILING_MODE profiling;
   /** Indicates whether the query should be run with a particular fault tolerance mode. */
   private final FTMODE ftMode;
   /** Global variables that are part of this query. */
@@ -83,8 +84,8 @@ public final class Query {
   public Query(final long queryId, final QueryEncoding query, final QueryPlan plan, final Server server) {
     Preconditions.checkNotNull(query, "query");
     this.server = Preconditions.checkNotNull(server, "server");
-    profiling = Objects.firstNonNull(query.profilingMode, false);
-    ftMode = Objects.firstNonNull(query.ftMode, FTMODE.none);
+    profiling = Objects.firstNonNull(query.profilingMode, PROFILING_MODE.NONE);
+    ftMode = Objects.firstNonNull(query.ftMode, FTMODE.NONE);
     this.queryId = queryId;
     subqueryId = 0;
     synchronized (this) {
@@ -171,12 +172,18 @@ public final class Query {
       currentSubQuery = subQueryQ.removeFirst();
       currentSubQuery.setSubQueryId(new SubQueryId(queryId, subqueryId));
       addDerivedSubQueries(currentSubQuery);
+
       /*
        * TODO - revisit when we support profiling with sequences.
        * 
        * We only support profiling a single subquery, so disable profiling if subqueryId != 0.
        */
-      QueryConstruct.setQueryExecutionOptions(currentSubQuery.getWorkerPlans(), ftMode, profiling && (subqueryId == 0));
+      PROFILING_MODE profilingMode = profiling;
+      if (subqueryId != 0) {
+        profilingMode = PROFILING_MODE.NONE;
+      }
+
+      QueryConstruct.setQueryExecutionOptions(currentSubQuery.getWorkerPlans(), ftMode, profilingMode);
       currentSubQuery.getMasterPlan().setFTMode(ftMode);
       ++subqueryId;
       if (subqueryId >= MyriaConstants.MAXIMUM_NUM_SUBQUERIES) {
@@ -316,7 +323,7 @@ public final class Query {
   /**
    * @return true if this query should be profiled.
    */
-  protected boolean isProfilingMode() {
+  protected PROFILING_MODE getProfilingMode() {
     return profiling;
   }
 

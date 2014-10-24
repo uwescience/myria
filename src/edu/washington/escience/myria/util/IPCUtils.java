@@ -18,6 +18,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnFactory;
 import edu.washington.escience.myria.parallel.ExecutionStatistics;
+import edu.washington.escience.myria.parallel.ResourceStats;
 import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.parallel.SubQueryId;
 import edu.washington.escience.myria.parallel.SubQueryPlan;
@@ -38,55 +39,55 @@ public final class IPCUtils {
 
   /**
    * Thread local TransportMessage builder. May reduce the cost of creating builder instances.
-   *
+   * 
    * @return builder.
    * */
   protected static final ThreadLocal<TransportMessage.Builder> DATA_TM_BUILDER =
       new ThreadLocal<TransportMessage.Builder>() {
-    @Override
-    protected TransportMessage.Builder initialValue() {
-      return TransportMessage.newBuilder().setType(TransportMessage.Type.DATA);
-    }
-  };
+        @Override
+        protected TransportMessage.Builder initialValue() {
+          return TransportMessage.newBuilder().setType(TransportMessage.Type.DATA);
+        }
+      };
 
   /**
    * Thread local TransportMessage builder. May reduce the cost of creating builder instances.
-   *
+   * 
    * @return builder.
    * */
   protected static final ThreadLocal<TransportMessage.Builder> CONTROL_TM_BUILDER =
       new ThreadLocal<TransportMessage.Builder>() {
-    @Override
-    protected TransportMessage.Builder initialValue() {
-      return TransportMessage.newBuilder().setType(TransportMessage.Type.CONTROL);
-    }
-  };
+        @Override
+        protected TransportMessage.Builder initialValue() {
+          return TransportMessage.newBuilder().setType(TransportMessage.Type.CONTROL);
+        }
+      };
 
   /**
    * Thread local TransportMessage builder. May reduce the cost of creating builder instances.
-   *
+   * 
    * @return builder.
    * */
   protected static final ThreadLocal<TransportMessage.Builder> QUERY_TM_BUILDER =
       new ThreadLocal<TransportMessage.Builder>() {
-    @Override
-    protected TransportMessage.Builder initialValue() {
-      return TransportMessage.newBuilder().setType(TransportMessage.Type.QUERY);
-    }
-  };
+        @Override
+        protected TransportMessage.Builder initialValue() {
+          return TransportMessage.newBuilder().setType(TransportMessage.Type.QUERY);
+        }
+      };
 
   /**
    * Thread local DataMessage builder. May reduce the cost of creating builder instances.
-   *
+   * 
    * @return builder.
    * */
   protected static final ThreadLocal<DataMessage.Builder> NORMAL_DATAMESSAGE_BUILDER =
       new ThreadLocal<DataMessage.Builder>() {
-    @Override
-    protected DataMessage.Builder initialValue() {
-      return DataMessage.newBuilder().setType(DataMessage.Type.NORMAL);
-    }
-  };
+        @Override
+        protected DataMessage.Builder initialValue() {
+          return DataMessage.newBuilder().setType(DataMessage.Type.NORMAL);
+        }
+      };
 
   /**
    * EOI TM.
@@ -99,23 +100,23 @@ public final class IPCUtils {
    * */
   protected static final ThreadLocal<DataMessage.Builder> EOI_DATAMESSAGE_BUILDER =
       new ThreadLocal<DataMessage.Builder>() {
-    @Override
-    protected DataMessage.Builder initialValue() {
-      return DataMessage.newBuilder().setType(DataMessage.Type.EOI);
-    }
-  };
+        @Override
+        protected DataMessage.Builder initialValue() {
+          return DataMessage.newBuilder().setType(DataMessage.Type.EOI);
+        }
+      };
 
   /**
    * shutdown TM.
    * */
   public static final TransportMessage CONTROL_SHUTDOWN = TransportMessage.newBuilder().setType(
       TransportMessage.Type.CONTROL).setControlMessage(
-          ControlMessage.newBuilder().setType(ControlMessage.Type.SHUTDOWN)).build();
+      ControlMessage.newBuilder().setType(ControlMessage.Type.SHUTDOWN)).build();
 
   /** Heartbeat message sent from a worker to tell the master that it is alive. */
   public static final TransportMessage CONTROL_WORKER_HEARTBEAT = TransportMessage.newBuilder().setType(
       TransportMessage.Type.CONTROL).setControlMessage(
-          ControlMessage.newBuilder().setType(ControlMessage.Type.WORKER_HEARTBEAT)).build();
+      ControlMessage.newBuilder().setType(ControlMessage.Type.WORKER_HEARTBEAT)).build();
 
   /**
    * @param workerId the id of the worker to be removed.
@@ -201,7 +202,7 @@ public final class IPCUtils {
    * Make sure a {@link Throwable} is serializable. If any of the {@Throwable}s in the given err error
    * hierarchy (The hierarchy formed by caused-by and suppressed) is not serializable, it will be replaced by a
    * {@link DbException}. The stack trace of the original {@link Throwable} is kept.
-   *
+   * 
    * @param err the {@link Throwable}
    * @return A {@link Throwable} that is guaranteed to be serializable.
    * */
@@ -275,7 +276,7 @@ public final class IPCUtils {
 
   /**
    * Check if the remote side of the channel is still connected.
-   *
+   * 
    * @param channel the channel to check.
    * @return true if the remote side is still connected, false otherwise.
    * */
@@ -294,7 +295,7 @@ public final class IPCUtils {
 
   /**
    * Check if the remote side of the channel is still connected.
-   *
+   * 
    * @param ch the channel to check.
    * @return true if the remote side is still connected, false otherwise.
    * */
@@ -394,5 +395,20 @@ public final class IPCUtils {
    * util classes are not instantiable.
    * */
   private IPCUtils() {
+  }
+
+  /**
+   * Resource report message sent to master.
+   * 
+   * @param resourceUsage resource usage.
+   * @return the transport message.
+   * 
+   * */
+  public static TransportMessage resourceReport(final List<ResourceStats> resourceUsage) {
+    ControlMessage.Builder ret = ControlMessage.newBuilder().setType(ControlMessage.Type.RESOURCE_STATS);
+    for (ResourceStats stats : resourceUsage) {
+      ret.addResourceStats(stats.toProtobuf());
+    }
+    return TransportMessage.newBuilder().setType(TransportMessage.Type.CONTROL).setControlMessage(ret.build()).build();
   }
 }

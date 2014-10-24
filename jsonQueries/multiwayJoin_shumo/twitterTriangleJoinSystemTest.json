@@ -74,6 +74,6 @@
         }
     ],
     "logicalRa":"local triangle ",
-    "profilingMode":false,
+    "profilingMode":"NONE",
     "rawQuery":"T(x,y,z) =: S(x,y), R(y,z), T(z,x)"
 } 

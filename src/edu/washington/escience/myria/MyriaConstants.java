@@ -254,6 +254,18 @@ public final class MyriaConstants {
       Type.LONG_TYPE, Type.INT_TYPE, "queryId", "fragmentId", "nanoTime", "numTuples", "destWorkerId");
 
   /**
+   * The relation that stores resource profiling information.
+   */
+  public static final RelationKey RESOURCE_RELATION = new RelationKey("public", "logs", "Resource");
+
+  /**
+   * The schema of the {@link #RESOURCE_RELATION}.
+   */
+  public static final Schema RESOURCE_SCHEMA = Schema.ofFields(Type.LONG_TYPE, Type.INT_TYPE, Type.STRING_TYPE,
+      Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, "timestamp", "opId", "measurement", "value", "queryId",
+      "subqueryId");
+
+  /**
    * For how long cached versions of the profiling data should be valid.
    */
   public static final long PROFILING_CACHE_AGE = TimeUnit.HOURS.toMillis(1);
@@ -282,6 +294,26 @@ public final class MyriaConstants {
   /** available fault-tolerance mode for each query in Myria. */
   public static enum FTMODE {
     /** three FT modes are supported. */
-    none, abandon, rejoin
+    NONE, ABANDON, REJOIN
+  };
+
+  /** available profiling mode for each query in Myria. */
+  public static enum PROFILING_MODE {
+    /**
+     * NONE: don't profile.
+     */
+    NONE,
+    /**
+     * RESOURCE: resource usage (CPU, IO, Memory) only.
+     */
+    RESOURCE,
+    /**
+     * QUERY: query execution only.
+     */
+    QUERY,
+    /**
+     * ALL: query + resource.
+     */
+    ALL
   };
 }
