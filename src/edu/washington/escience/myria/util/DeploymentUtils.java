@@ -29,7 +29,7 @@ public final class DeploymentUtils {
 
   /**
    * entry point.
-   *
+   * 
    * @param args args.
    * @throws IOException if file system error occurs.
    * */
@@ -130,7 +130,6 @@ public final class DeploymentUtils {
         rsyncFileToRemote(configFileName, hostname, remotePath);
         startMaster(hostname, workingDir, description, maxHeapSize, restPort);
       }
-
     } else if (action.equals("-start_workers")) {
       String maxHeapSize = config.get("deployment").get("max_heap_size");
       if (maxHeapSize == null) {
@@ -154,7 +153,7 @@ public final class DeploymentUtils {
 
   /**
    * start a worker process on a remote machine.
-   *
+   * 
    * @param address e.g. beijing.cs.washington.edu
    * @param workingDir the same meaning as path in deployment.cfg
    * @param description the same meaning as name in deployment.cfg
@@ -205,12 +204,12 @@ public final class DeploymentUtils {
     builder.append(" &");
     command[2] = builder.toString();
     System.out.println(workerId + " = " + address);
-    startAProcess(command);
+    startAProcess(command, false);
   }
 
   /**
    * start a master process on a remote machine.
-   *
+   * 
    * @param address e.g. beijing.cs.washington.edu
    * @param path the same meaning as path in deployment.cfg
    * @param description the same meaning as name in deployment.cfg
@@ -238,18 +237,17 @@ public final class DeploymentUtils {
     builder.append(" &");
     command[2] = builder.toString();
     System.out.println(address);
-    startAProcess(command);
+    startAProcess(command, false);
     String hostname = address;
     if (hostname.indexOf('@') != -1) {
       hostname = address.substring(hostname.indexOf('@') + 1);
     }
     ensureMasterStart(hostname, restPort);
-
   }
 
   /**
    * Ensure that the master is alive. Wait for some time if necessary.
-   *
+   * 
    * @param hostname the hostname of the master
    * @param restPort the port number of the rest api master
    * */
@@ -281,7 +279,7 @@ public final class DeploymentUtils {
         LOGGER.trace("expected exception occurred", e);
       }
       try {
-        Thread.sleep(TimeUnit.SECONDS.toMillis(MyriaConstants.MASTER_START_UP_TIMEOUT_IN_SECOND) / 10);
+        Thread.sleep(TimeUnit.SECONDS.toMillis(MyriaConstants.MASTER_START_UP_TIMEOUT_IN_SECOND) / 50);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         break;
@@ -295,7 +293,7 @@ public final class DeploymentUtils {
 
   /**
    * Call mkdir on a remote machine.
-   *
+   * 
    * @param address e.g. beijing.cs.washington.edu
    * @param remotePath e.g. /tmp/test
    */
@@ -305,7 +303,7 @@ public final class DeploymentUtils {
 
   /**
    * Copy a local file to a location on a remote machine, using rsync.
-   *
+   * 
    * @param localPath path to the local file that you want to copy from
    * @param address e.g. beijing.cs.washington.edu
    * @param remotePath e.g. /tmp/test
@@ -316,7 +314,7 @@ public final class DeploymentUtils {
 
   /**
    * Copy a local file to a location on a remote machine, using rsync.
-   *
+   * 
    * @param localPath path to the local file that you want to copy from
    * @param address e.g. beijing.cs.washington.edu
    * @param remotePath e.g. /tmp/test
@@ -337,7 +335,7 @@ public final class DeploymentUtils {
 
   /**
    * Remove a file on a remote machine.
-   *
+   * 
    * @param address e.g. beijing.cs.washington.edu.
    * @param path the path to the file.
    */
@@ -346,27 +344,39 @@ public final class DeploymentUtils {
   }
 
   /**
-   * start a process by ProcessBuilder.
-   *
+   * start a process by ProcessBuilder, wait for the process to finish.
+   * 
    * @param cmd cmd[0] is the command name, from cmd[1] are arguments.
    */
   private static void startAProcess(final String[] cmd) {
+    startAProcess(cmd, true);
+  }
+
+  /**
+   * start a process by ProcessBuilder.
+   * 
+   * @param cmd cmd[0] is the command name, from cmd[1] are arguments.
+   * @param waitFor do we wait for the process to finish.
+   */
+  private static void startAProcess(final String[] cmd, final boolean waitFor) {
     LOGGER.debug(StringUtils.join(cmd, " "));
-    int ret;
     try {
-      ret = new ProcessBuilder().inheritIO().command(cmd).start().waitFor();
+      Process p = new ProcessBuilder().inheritIO().command(cmd).start();
+      if (waitFor) {
+        int ret = p.waitFor();
+        if (ret != 0) {
+          throw new RuntimeException("Error " + ret + " executing command: " + StringUtils.join(cmd, " "));
+        }
+      }
     } catch (IOException | InterruptedException e) {
       e.printStackTrace();
       throw new RuntimeException(e);
-    }
-    if (ret != 0) {
-      throw new RuntimeException("Error " + ret + " executing command: " + StringUtils.join(cmd, " "));
     }
   }
 
   /**
    * Helper function to get the hostname from hostname:port.
-   *
+   * 
    * @param s the string hostname:port
    * @return the hostname.
    * */
@@ -376,7 +386,7 @@ public final class DeploymentUtils {
 
   /**
    * Helper function to get the port number from hostname:port.
-   *
+   * 
    * @param s the string hostname:port
    * @return the port number.
    * */
