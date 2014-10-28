@@ -68,4 +68,9 @@ public abstract class StreamingState implements Serializable {
    * @return the number of tuples of state.
    */
   public abstract int numTuples();
+
+  /**
+   * @return a new instance of StreamingState with all the constructor arguments copied.
+   * */
+  public abstract StreamingState newInstanceFromMyself();
 }

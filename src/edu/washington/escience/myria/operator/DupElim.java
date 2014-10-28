@@ -151,4 +151,9 @@ public final class DupElim extends StreamingState {
       return unique;
     }
   };
+
+  @Override
+  public StreamingState newInstanceFromMyself() {
+    return new DupElim();
+  }
 }
