@@ -86,6 +86,7 @@ public class Apply extends UnaryOperator {
     List<Column<?>> output = Lists.newLinkedList();
     for (GenericEvaluator evaluator : emitEvaluators) {
       output.add(evaluator.evaluateColumn(tb));
+      System.out.println("Hello world, this is Ryan.");
     }
     return new TupleBatch(getSchema(), output);
   }

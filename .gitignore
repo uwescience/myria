@@ -9,3 +9,4 @@ build
 *catalog-journal
 englink-log4j.log
 /bin
+/conf
