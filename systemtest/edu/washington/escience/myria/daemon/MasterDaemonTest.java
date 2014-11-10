@@ -16,8 +16,10 @@ import com.google.common.io.Files;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
+import com.sun.jersey.api.client.filter.HTTPBasicAuthFilter;
 
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.coordinator.catalog.CatalogMaker;
 import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.util.FSUtils;
@@ -72,8 +74,8 @@ public class MasterDaemonTest {
       CatalogMaker.makeNNodesLocalParallelCatalog(tmpFolder.getAbsolutePath(), ImmutableMap
           .<Integer, SocketInfo> builder().put(MyriaConstants.MASTER_ID, new SocketInfo(8001)).build(), ImmutableMap
           .<Integer, SocketInfo> builder().put(MyriaConstants.MASTER_ID + 1, new SocketInfo(9001)).put(
-              MyriaConstants.MASTER_ID + 2, new SocketInfo(9002)).build(), Collections.<String, String> emptyMap(),
-          Collections.<String, String> emptyMap());
+              MyriaConstants.MASTER_ID + 2, new SocketInfo(9002)).build(), Collections.<String, String> singletonMap(
+          MyriaSystemConfigKeys.ADMIN_PASSWORD, "admin"), Collections.<String, String> emptyMap());
 
       /* Remember which threads were there when the test starts. */
       Set<Thread> startThreads = ThreadUtils.getCurrentThreads();
@@ -94,9 +96,15 @@ public class MasterDaemonTest {
         }
       }
 
-      /* Stop the master. */
+      /* Try to stop the master without providing the correct password. */
       WebResource shutdownRest = client.resource("http://localhost:" + REST_PORT + "/server/shutdown");
       ClientResponse response = shutdownRest.get(ClientResponse.class);
+      assertEquals(Status.FORBIDDEN.getStatusCode(), response.getStatus());
+
+      /* Provide the password and stop the master. */
+      client.addFilter(new HTTPBasicAuthFilter("admin", "admin"));
+      shutdownRest = client.resource("http://localhost:" + REST_PORT + "/server/shutdown");
+      response = shutdownRest.get(ClientResponse.class);
       assertEquals(Status.NO_CONTENT.getStatusCode(), response.getStatus());
       client.destroy();
 
