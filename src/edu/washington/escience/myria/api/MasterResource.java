@@ -6,6 +6,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.SecurityContext;
 
 import edu.washington.escience.myria.api.encoding.VersionEncoding;
 import edu.washington.escience.myria.daemon.MasterDaemon;
@@ -24,11 +25,17 @@ public final class MasterResource {
    * Shutdown the server.
    * 
    * @param daemon the Myria {@link MasterDaemon} to be shutdown.
+   * @param sc security context.
    * @return an HTTP 204 (NO CONTENT) response.
    */
   @GET
   @Path("/shutdown")
-  public Response shutdown(@Context final MasterDaemon daemon) {
+  public Response shutdown(@Context final MasterDaemon daemon, @Context final SecurityContext sc) {
+    if (!sc.isUserInRole("admin")) {
+      return Response.status(403).type("text/plain").entity(
+          "Admin authentication failed, you don't have the permission to shut it down.").build();
+    }
+
     /* A thread to stop the daemon after this request finishes. */
     Thread shutdownThread = new Thread("MasterResource-Shutdown") {
       @Override

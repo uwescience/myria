@@ -1,13 +1,19 @@
 package edu.washington.escience.myria.api;
 
+import java.security.Principal;
+
 import javax.servlet.ServletConfig;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.SecurityContext;
+import javax.ws.rs.core.UriInfo;
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.sun.jersey.api.container.filter.GZIPContentEncodingFilter;
 import com.sun.jersey.api.core.PackagesResourceConfig;
 import com.sun.jersey.api.core.ResourceConfig;
+import com.sun.jersey.core.util.Base64;
 import com.sun.jersey.spi.container.ContainerRequest;
+import com.sun.jersey.spi.container.ContainerRequestFilter;
 import com.sun.jersey.spi.container.ContainerResponse;
 import com.sun.jersey.spi.container.ContainerResponseFilter;
 import com.sun.jersey.spi.container.servlet.WebConfig;
@@ -66,6 +72,8 @@ public final class MasterApplication extends PackagesResourceConfig {
 
     /* Add a response filter (i.e., runs on all responses) that sets headers for cross-origin objects. */
     getContainerResponseFilters().add(new CrossOriginResponseFilter());
+
+    getContainerRequestFilters().add(new AuthenticateFilter());
   }
 
   /**
@@ -86,6 +94,88 @@ public final class MasterApplication extends PackagesResourceConfig {
       response.getHttpHeaders().add("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT");
       response.getHttpHeaders().add("Access-Control-Allow-Headers", "Content-Type");
       return response;
+    }
+  }
+
+  /**
+   * Check the authentication information and set roles. Currently there are only two roles: "admin" and "user". By
+   * default the role is set to "user" unless the authentication specifies "admin" with the correct password.
+   * 
+   */
+  private class AuthenticateFilter implements ContainerRequestFilter {
+    /** UriInfo. */
+    @Context
+    private UriInfo uriInfo;
+
+    @Override
+    public ContainerRequest filter(final ContainerRequest request) {
+      request.setSecurityContext(new Authorizer("user"));
+      String authentication = request.getHeaderValue(ContainerRequest.AUTHORIZATION);
+      if (authentication != null && authentication.startsWith("Basic ")) {
+        authentication = authentication.substring("Basic ".length());
+        String[] values = new String(Base64.base64Decode(authentication)).split(":");
+        if (values.length == 2 && checkAdminPassword(values[0], values[1])) {
+          request.setSecurityContext(new Authorizer("admin"));
+        }
+      }
+      return request;
+    }
+
+    /**
+     * Check if the user is an admin with a correct password.
+     * 
+     * @param user username.
+     * @param passwd password.
+     * @return if the authentication succeeded.
+     */
+    boolean checkAdminPassword(final String user, final String passwd) {
+      // TODO(jwang): check catalog to get the correct password.
+      return user.equals("admin");
+    }
+
+    /**
+     * The customized SecurityContext.
+     */
+    private class Authorizer implements SecurityContext {
+      /** user name. */
+      private String user;
+      /** principal. */
+      private Principal principal;
+
+      /**
+       * Constructor.
+       * 
+       * @param user username.
+       * */
+      Authorizer(final String user) {
+        this.user = user;
+        principal = new Principal() {
+          @Override
+          public String getName() {
+            return user;
+          }
+        };
+      }
+
+      @Override
+      public Principal getUserPrincipal() {
+        return principal;
+      }
+
+      @Override
+      public boolean isUserInRole(final String role) {
+        return (role.equals(user));
+      }
+
+      @Override
+      public String getAuthenticationScheme() {
+        return SecurityContext.BASIC_AUTH;
+      }
+
+      @Override
+      public boolean isSecure() {
+        return "https".equals(uriInfo.getRequestUri().getScheme());
+      }
     }
   }
 }

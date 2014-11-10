@@ -122,6 +122,8 @@ dependencies {
   compile "com.sun.jersey:jersey-grizzly2:${jerseyVersion}"
   compile "com.sun.jersey.contribs:jersey-multipart:${jerseyVersion}"
 
+  compile "javax.annotation:javax.annotation-api:1.2-b01"
+
   compile "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:2.4.1"
   compile "com.fasterxml.jackson.datatype:jackson-datatype-joda:2.4.1"
 
