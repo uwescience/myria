@@ -1,15 +1,17 @@
 package edu.washington.escience.myria.api;
 
+import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.SecurityContext;
 
+import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.api.encoding.VersionEncoding;
 import edu.washington.escience.myria.daemon.MasterDaemon;
+import edu.washington.escience.myria.parallel.Server;
 
 /**
  * This is the class that handles API calls that return workers.
@@ -29,13 +31,9 @@ public final class MasterResource {
    * @return an HTTP 204 (NO CONTENT) response.
    */
   @GET
+  @RolesAllowed({ "admin" })
   @Path("/shutdown")
-  public Response shutdown(@Context final MasterDaemon daemon, @Context final SecurityContext sc) {
-    if (!sc.isUserInRole("admin")) {
-      return Response.status(403).type("text/plain").entity(
-          "Admin authentication failed, you don't have the permission to shut it down.").build();
-    }
-
+  public Response shutdown(@Context final MasterDaemon daemon) {
     /* A thread to stop the daemon after this request finishes. */
     Thread shutdownThread = new Thread("MasterResource-Shutdown") {
       @Override
@@ -63,5 +61,16 @@ public final class MasterResource {
   @Produces(MediaType.APPLICATION_JSON)
   public Response getVersion() {
     return Response.ok(new VersionEncoding()).build();
+  }
+
+  @GET
+  @RolesAllowed({ "admin" })
+  @Path("/deployment_cfg")
+  public Response getDeploymentCfg(@Context final Server server) {
+    String workingDir = server.getConfiguration(MyriaSystemConfigKeys.WORKING_DIRECTORY);
+    String description = server.getConfiguration(MyriaSystemConfigKeys.DESCRIPTION);
+    String fileName = server.getConfiguration(MyriaSystemConfigKeys.DEPLOYMENT_FILE);
+    String deploymentFile = workingDir + "/" + description + "-files" + "/" + description + "/" + fileName;
+    return Response.ok(deploymentFile).build();
   }
 }

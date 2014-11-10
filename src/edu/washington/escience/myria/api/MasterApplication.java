@@ -9,6 +9,7 @@ import javax.ws.rs.core.UriInfo;
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.sun.jersey.api.container.filter.GZIPContentEncodingFilter;
+import com.sun.jersey.api.container.filter.RolesAllowedResourceFilterFactory;
 import com.sun.jersey.api.core.PackagesResourceConfig;
 import com.sun.jersey.api.core.ResourceConfig;
 import com.sun.jersey.core.util.Base64;
@@ -75,6 +76,8 @@ public final class MasterApplication extends PackagesResourceConfig {
     getContainerResponseFilters().add(new CrossOriginResponseFilter());
 
     getContainerRequestFilters().add(new AuthenticateFilter());
+    /* TODO(jwang): change the class if jersey is upgraded to 2.x */
+    getResourceFilterFactories().add(RolesAllowedResourceFilterFactory.class.getName());
   }
 
   /**
