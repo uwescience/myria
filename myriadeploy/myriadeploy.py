@@ -61,6 +61,10 @@ def read_config_file(filename='deployment.cfg'):
         ret['max_heap_size'] = config.get('deployment', 'max_heap_size')
     except ConfigParser.NoOptionError:
         ret['max_heap_size'] = ''
+    try:
+        ret['admin_password'] = config.get('deployment', 'admin_password')
+    except ConfigParser.NoOptionError:
+        ret['admin_password'] = ''
 
     return ret
 

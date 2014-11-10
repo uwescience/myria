@@ -20,6 +20,7 @@ import com.sun.jersey.spi.container.servlet.WebConfig;
 import com.sun.jersey.spi.inject.SingletonTypeInjectableProvider;
 import com.wordnik.swagger.jaxrs.config.BeanConfig;
 
+import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.daemon.MasterDaemon;
 import edu.washington.escience.myria.parallel.Server;
 
@@ -106,6 +107,9 @@ public final class MasterApplication extends PackagesResourceConfig {
     /** UriInfo. */
     @Context
     private UriInfo uriInfo;
+    /** the server. */
+    @Context
+    private Server server;
 
     @Override
     public ContainerRequest filter(final ContainerRequest request) {
@@ -129,8 +133,10 @@ public final class MasterApplication extends PackagesResourceConfig {
      * @return if the authentication succeeded.
      */
     boolean checkAdminPassword(final String user, final String passwd) {
-      // TODO(jwang): check catalog to get the correct password.
-      return user.equals("admin");
+      if (user == null || passwd == null) {
+        return false;
+      }
+      return user.equals("admin") && passwd.equals(server.getConfiguration(MyriaSystemConfigKeys.ADMIN_PASSWORD));
     }
 
     /**
