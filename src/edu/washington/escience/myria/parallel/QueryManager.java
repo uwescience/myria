@@ -15,7 +15,7 @@ import javax.annotation.concurrent.GuardedBy;
 
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableList;
@@ -520,7 +520,7 @@ public class QueryManager {
     query.rawQuery = rawQuery;
     query.logicalRa = rawQuery;
     query.fragments = ImmutableList.of();
-    query.profilingMode = Objects.firstNonNull(profilingMode, false);
+    query.profilingMode = MoreObjects.firstNonNull(profilingMode, false);
     return submitQuery(query, plan);
   }
 

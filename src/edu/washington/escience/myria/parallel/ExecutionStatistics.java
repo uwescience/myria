@@ -4,7 +4,7 @@ import javax.annotation.Nullable;
 
 import org.joda.time.DateTime;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.proto.QueryProto;
@@ -69,7 +69,7 @@ public class ExecutionStatistics {
    * @return the protobuf message representation of this class.
    */
   public final QueryProto.ExecutionStatistics toProtobuf() {
-    Long elapsed = Objects.firstNonNull(getQueryExecutionElapse(), MISSING_TIME);
+    Long elapsed = MoreObjects.firstNonNull(getQueryExecutionElapse(), MISSING_TIME);
     return QueryProto.ExecutionStatistics.newBuilder().setElapse(elapsed).build();
   }
 

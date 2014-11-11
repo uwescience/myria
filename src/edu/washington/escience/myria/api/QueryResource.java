@@ -21,7 +21,7 @@ import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
@@ -188,8 +188,8 @@ public final class QueryResource {
   @GET
   public Response getQueries(@Context final UriInfo uriInfo, @QueryParam("limit") final Long limit,
       @QueryParam("max") final Long maxId) throws CatalogException {
-    long realLimit = Objects.firstNonNull(limit, MyriaApiConstants.MYRIA_API_DEFAULT_NUM_RESULTS);
-    long realMaxId = Objects.firstNonNull(maxId, 0L);
+    long realLimit = MoreObjects.firstNonNull(limit, MyriaApiConstants.MYRIA_API_DEFAULT_NUM_RESULTS);
+    long realMaxId = MoreObjects.firstNonNull(maxId, 0L);
     List<QueryStatusEncoding> queries = server.getQueryManager().getQueries(realLimit, realMaxId);
     for (QueryStatusEncoding status : queries) {
       status.url = getCanonicalResourcePath(uriInfo, status.queryId);

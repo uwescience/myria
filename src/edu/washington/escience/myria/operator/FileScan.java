@@ -11,7 +11,7 @@ import org.apache.commons.lang.BooleanUtils;
 import au.com.bytecode.opencsv.CSVParser;
 import au.com.bytecode.opencsv.CSVReader;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Floats;
@@ -145,10 +145,10 @@ public final class FileScan extends LeafOperator {
       @Nullable final Character quote, final Character escape, final Integer numberOfSkippedLines) {
     this.source = Preconditions.checkNotNull(source, "source");
     this.schema = Preconditions.checkNotNull(schema, "schema");
-    this.delimiter = Objects.firstNonNull(delimiter, CSVParser.DEFAULT_SEPARATOR);
-    this.quote = Objects.firstNonNull(quote, CSVParser.DEFAULT_QUOTE_CHARACTER);
-    this.escape = Objects.firstNonNull(escape, CSVParser.DEFAULT_ESCAPE_CHARACTER);
-    this.numberOfSkippedLines = Objects.firstNonNull(numberOfSkippedLines, CSVReader.DEFAULT_SKIP_LINES);
+    this.delimiter = MoreObjects.firstNonNull(delimiter, CSVParser.DEFAULT_SEPARATOR);
+    this.quote = MoreObjects.firstNonNull(quote, CSVParser.DEFAULT_QUOTE_CHARACTER);
+    this.escape = MoreObjects.firstNonNull(escape, CSVParser.DEFAULT_ESCAPE_CHARACTER);
+    this.numberOfSkippedLines = MoreObjects.firstNonNull(numberOfSkippedLines, CSVReader.DEFAULT_SKIP_LINES);
   }
 
   @Override
