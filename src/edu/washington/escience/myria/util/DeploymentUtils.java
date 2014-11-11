@@ -8,8 +8,12 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import javax.net.ssl.SSLException;
+
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Objects;
 
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.tool.MyriaConfigurationReader;
@@ -29,7 +33,7 @@ public final class DeploymentUtils {
 
   /**
    * entry point.
-   *
+   * 
    * @param args args.
    * @throws IOException if file system error occurs.
    * */
@@ -116,9 +120,11 @@ public final class DeploymentUtils {
       String workingDir = config.get("deployment").get("path");
       String remotePath = workingDir + "/" + description + "-files";
       int restPort = Integer.parseInt(config.get("deployment").get("rest_port"));
-      String maxHeapSize = config.get("deployment").get("max_heap_size");
-      if (maxHeapSize == null) {
-        maxHeapSize = "";
+      String maxHeapSize = Objects.firstNonNull(config.get("deployment").get("max_heap_size"), "");
+      String sslStr = Objects.firstNonNull(config.get("deployment").get("ssl"), "false").toLowerCase();
+      boolean ssl = false;
+      if (sslStr.equals("true") || sslStr.equals("on") || sslStr.equals("1")) {
+        ssl = true;
       }
       Map<String, String> masters = config.get("master");
       for (String masterId : masters.keySet()) {
@@ -128,7 +134,7 @@ public final class DeploymentUtils {
         }
         // server needs the config file to create catalogs for new workers
         rsyncFileToRemote(configFileName, hostname, remotePath);
-        startMaster(hostname, workingDir, description, maxHeapSize, restPort);
+        startMaster(hostname, workingDir, description, maxHeapSize, restPort, ssl);
       }
 
     } else if (action.equals("-start_workers")) {
@@ -154,7 +160,7 @@ public final class DeploymentUtils {
 
   /**
    * start a worker process on a remote machine.
-   *
+   * 
    * @param address e.g. beijing.cs.washington.edu
    * @param workingDir the same meaning as path in deployment.cfg
    * @param description the same meaning as name in deployment.cfg
@@ -210,15 +216,16 @@ public final class DeploymentUtils {
 
   /**
    * start a master process on a remote machine.
-   *
+   * 
    * @param address e.g. beijing.cs.washington.edu
    * @param path the same meaning as path in deployment.cfg
    * @param description the same meaning as name in deployment.cfg
    * @param maxHeapSize the same meaning as max_heap_size in deployment.cfg
    * @param restPort the port number for restlet.
+   * @param ssl whether the master uses SSL for the rest server.
    */
   public static void startMaster(final String address, final String path, final String description,
-      final String maxHeapSize, final int restPort) {
+      final String maxHeapSize, final int restPort, final boolean ssl) {
     String workingDir = path + "/" + description + "-files";
     StringBuilder builder = new StringBuilder();
     String[] command = new String[3];
@@ -243,21 +250,26 @@ public final class DeploymentUtils {
     if (hostname.indexOf('@') != -1) {
       hostname = address.substring(hostname.indexOf('@') + 1);
     }
-    ensureMasterStart(hostname, restPort);
+    ensureMasterStart(hostname, restPort, ssl);
 
   }
 
   /**
    * Ensure that the master is alive. Wait for some time if necessary.
-   *
+   * 
    * @param hostname the hostname of the master
    * @param restPort the port number of the rest api master
+   * @param ssl whether the master is using SSL.
    * */
-  public static void ensureMasterStart(final String hostname, final int restPort) {
+  public static void ensureMasterStart(final String hostname, final int restPort, final boolean ssl) {
 
     URL masterAliveUrl;
     try {
-      masterAliveUrl = new URL("http://" + hostname + ":" + restPort + "/workers/alive");
+      String protocol = "http";
+      if (ssl) {
+        protocol += 's';
+      }
+      masterAliveUrl = new URL(protocol + "://" + hostname + ":" + restPort + "/workers/alive");
     } catch (MalformedURLException e) {
       throw new RuntimeException(e);
     }
@@ -277,8 +289,12 @@ public final class DeploymentUtils {
         }
 
       } catch (IOException e) {
+        if (e instanceof SSLException) {
+          /* SSL error means the server is up! */
+          break;
+        }
         // expected for the first few trials
-        LOGGER.trace("expected exception occurred", e);
+        LOGGER.warn("expected exception occurred", e);
       }
       try {
         Thread.sleep(TimeUnit.SECONDS.toMillis(MyriaConstants.MASTER_START_UP_TIMEOUT_IN_SECOND) / 10);
@@ -295,7 +311,7 @@ public final class DeploymentUtils {
 
   /**
    * Call mkdir on a remote machine.
-   *
+   * 
    * @param address e.g. beijing.cs.washington.edu
    * @param remotePath e.g. /tmp/test
    */
@@ -305,7 +321,7 @@ public final class DeploymentUtils {
 
   /**
    * Copy a local file to a location on a remote machine, using rsync.
-   *
+   * 
    * @param localPath path to the local file that you want to copy from
    * @param address e.g. beijing.cs.washington.edu
    * @param remotePath e.g. /tmp/test
@@ -316,7 +332,7 @@ public final class DeploymentUtils {
 
   /**
    * Copy a local file to a location on a remote machine, using rsync.
-   *
+   * 
    * @param localPath path to the local file that you want to copy from
    * @param address e.g. beijing.cs.washington.edu
    * @param remotePath e.g. /tmp/test
@@ -337,7 +353,7 @@ public final class DeploymentUtils {
 
   /**
    * Remove a file on a remote machine.
-   *
+   * 
    * @param address e.g. beijing.cs.washington.edu.
    * @param path the path to the file.
    */
@@ -347,7 +363,7 @@ public final class DeploymentUtils {
 
   /**
    * start a process by ProcessBuilder.
-   *
+   * 
    * @param cmd cmd[0] is the command name, from cmd[1] are arguments.
    */
   private static void startAProcess(final String[] cmd) {
@@ -366,7 +382,7 @@ public final class DeploymentUtils {
 
   /**
    * Helper function to get the hostname from hostname:port.
-   *
+   * 
    * @param s the string hostname:port
    * @return the hostname.
    * */
@@ -376,7 +392,7 @@ public final class DeploymentUtils {
 
   /**
    * Helper function to get the port number from hostname:port.
-   *
+   * 
    * @param s the string hostname:port
    * @return the port number.
    * */
