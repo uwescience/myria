@@ -121,9 +121,6 @@ public final class DeploymentUtils {
       String remotePath = workingDir + "/" + description + "-files";
       int restPort = Integer.parseInt(config.get("deployment").get("rest_port"));
       String maxHeapSize = Objects.firstNonNull(config.get("deployment").get("max_heap_size"), "");
-      if (maxHeapSize == null) {
-        maxHeapSize = "";
-      }
       String sslStr = Objects.firstNonNull(config.get("deployment").get("ssl"), "false").toLowerCase();
       boolean ssl = false;
       if (sslStr.equals("true") || sslStr.equals("on") || sslStr.equals("1")) {
