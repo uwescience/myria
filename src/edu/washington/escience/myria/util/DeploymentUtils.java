@@ -136,7 +136,6 @@ public final class DeploymentUtils {
         rsyncFileToRemote(configFileName, hostname, remotePath);
         startMaster(hostname, workingDir, description, maxHeapSize, restPort, ssl);
       }
-
     } else if (action.equals("-start_workers")) {
       String maxHeapSize = config.get("deployment").get("max_heap_size");
       if (maxHeapSize == null) {
@@ -211,7 +210,7 @@ public final class DeploymentUtils {
     builder.append(" &");
     command[2] = builder.toString();
     System.out.println(workerId + " = " + address);
-    startAProcess(command);
+    startAProcess(command, false);
   }
 
   /**
@@ -245,13 +244,12 @@ public final class DeploymentUtils {
     builder.append(" &");
     command[2] = builder.toString();
     System.out.println(address);
-    startAProcess(command);
+    startAProcess(command, false);
     String hostname = address;
     if (hostname.indexOf('@') != -1) {
       hostname = address.substring(hostname.indexOf('@') + 1);
     }
     ensureMasterStart(hostname, restPort, ssl);
-
   }
 
   /**
@@ -297,7 +295,7 @@ public final class DeploymentUtils {
         LOGGER.warn("expected exception occurred", e);
       }
       try {
-        Thread.sleep(TimeUnit.SECONDS.toMillis(MyriaConstants.MASTER_START_UP_TIMEOUT_IN_SECOND) / 10);
+        Thread.sleep(TimeUnit.SECONDS.toMillis(MyriaConstants.MASTER_START_UP_TIMEOUT_IN_SECOND) / 50);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         break;
@@ -362,21 +360,33 @@ public final class DeploymentUtils {
   }
 
   /**
-   * start a process by ProcessBuilder.
+   * start a process by ProcessBuilder, wait for the process to finish.
    * 
    * @param cmd cmd[0] is the command name, from cmd[1] are arguments.
    */
   private static void startAProcess(final String[] cmd) {
+    startAProcess(cmd, true);
+  }
+
+  /**
+   * start a process by ProcessBuilder.
+   * 
+   * @param cmd cmd[0] is the command name, from cmd[1] are arguments.
+   * @param waitFor do we wait for the process to finish.
+   */
+  private static void startAProcess(final String[] cmd, final boolean waitFor) {
     LOGGER.debug(StringUtils.join(cmd, " "));
-    int ret;
     try {
-      ret = new ProcessBuilder().inheritIO().command(cmd).start().waitFor();
+      Process p = new ProcessBuilder().inheritIO().command(cmd).start();
+      if (waitFor) {
+        int ret = p.waitFor();
+        if (ret != 0) {
+          throw new RuntimeException("Error " + ret + " executing command: " + StringUtils.join(cmd, " "));
+        }
+      }
     } catch (IOException | InterruptedException e) {
       e.printStackTrace();
       throw new RuntimeException(e);
-    }
-    if (ret != 0) {
-      throw new RuntimeException("Error " + ret + " executing command: " + StringUtils.join(cmd, " "));
     }
   }
 
