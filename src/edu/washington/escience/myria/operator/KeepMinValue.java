@@ -200,4 +200,9 @@ public final class KeepMinValue extends StreamingState {
     }
     return uniqueTuples.numTuples();
   }
+
+  @Override
+  public StreamingState newInstanceFromMyself() {
+    return new KeepMinValue(keyColIndices, valueColIndex);
+  }
 }

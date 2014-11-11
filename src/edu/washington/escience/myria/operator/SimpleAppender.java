@@ -69,4 +69,9 @@ public final class SimpleAppender extends StreamingState {
     }
     return sum;
   }
+
+  @Override
+  public StreamingState newInstanceFromMyself() {
+    return new SimpleAppender();
+  }
 }

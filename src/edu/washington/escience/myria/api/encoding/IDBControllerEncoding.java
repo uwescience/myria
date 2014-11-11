@@ -3,6 +3,7 @@ package edu.washington.escience.myria.api.encoding;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Objects;
 
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.IDBController;
@@ -23,6 +24,8 @@ public class IDBControllerEncoding extends OperatorEncoding<IDBController> {
   @Required
   public Integer argEosControllerInput;
 
+  public Boolean sync;
+
   private ExchangePairID realControllerOperatorId;
   public Integer realControllerWorkerId;
 
@@ -32,7 +35,7 @@ public class IDBControllerEncoding extends OperatorEncoding<IDBController> {
   @Override
   public IDBController construct(ConstructArgs args) {
     return new IDBController(argSelfIdbId, realControllerOperatorId, realControllerWorkerId, null, null, null, argState
-        .construct());
+        .construct(), Objects.firstNonNull(sync, Boolean.FALSE));
   }
 
   @Override

@@ -1,5 +1,9 @@
 package edu.washington.escience.myria.operator;
 
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -80,6 +84,19 @@ public class IDBController extends Operator implements StreamingStateful {
   /** The state. */
   private StreamingState state;
 
+  /** the buffered tuples came from the previous iteration. */
+  private ArrayList<TupleBatch> bufferedIterTBs;
+
+  /** delta tuples of the previous iteration. */
+
+  private LinkedList<TupleBatch> deltaTuples;
+
+  /** if the buffer of previous iteration tuples has been cleaned. */
+  private boolean bufferCleared = false;
+
+  /** if this IDBController uses sync mode. */
+  private final boolean sync;
+
   /**
    * The index of the initialIDBInput in children array.
    * */
@@ -107,6 +124,23 @@ public class IDBController extends Operator implements StreamingStateful {
   public IDBController(final int selfIDBIdx, final ExchangePairID controllerOpID, final int controllerWorkerID,
       final Operator initialIDBInput, final Operator iterationInput, final Consumer eosControllerInput,
       final StreamingState state) {
+    this(selfIDBIdx, controllerOpID, controllerWorkerID, initialIDBInput, iterationInput, eosControllerInput, state,
+        false);
+  }
+
+  /**
+   * @param selfIDBIdx see the corresponding field comment.
+   * @param controllerOpID see the corresponding field comment.
+   * @param controllerWorkerID see the corresponding field comment.
+   * @param initialIDBInput see the corresponding field comment.
+   * @param iterationInput see the corresponding field comment.
+   * @param eosControllerInput see the corresponding field comment.
+   * @param state the internal state.
+   * @param sync if it's sync or async.
+   * */
+  public IDBController(final int selfIDBIdx, final ExchangePairID controllerOpID, final int controllerWorkerID,
+      final Operator initialIDBInput, final Operator iterationInput, final Consumer eosControllerInput,
+      final StreamingState state, final Boolean sync) {
     Preconditions.checkNotNull(selfIDBIdx);
     Preconditions.checkNotNull(controllerOpID);
     Preconditions.checkNotNull(controllerWorkerID);
@@ -119,10 +153,14 @@ public class IDBController extends Operator implements StreamingStateful {
     this.eosControllerInput = eosControllerInput;
     this.state = state;
     this.state.setAttachedOperator(this);
+    this.sync = sync;
   }
 
   @Override
   public final TupleBatch fetchNextReady() throws DbException {
+    if (sync) {
+      return fetchNextReadySync();
+    }
     TupleBatch tb;
     if (!initialInputEnded) {
       while ((tb = initialIDBInput.nextReady()) != null) {
@@ -143,6 +181,59 @@ public class IDBController extends Operator implements StreamingStateful {
       }
     }
 
+    return null;
+  }
+
+  /**
+   * Synchronous mode of IDBController fetchNextReady.
+   * 
+   * @return next ready output TupleBatch.
+   * @throws DbException if any error occurs
+   */
+  public final TupleBatch fetchNextReadySync() throws DbException {
+    // 1. keeps all the incoming tuples in a buffer without passing them through the streaming state.
+    // 2. receives an EOI from iterationInput.
+    // 3. generating delta tuples of the previous iteration by passing buffered tuples through the streaming state.
+    // 4. feeding the delta tuples to the downstream operator as input.
+
+    TupleBatch tb;
+    if (!initialInputEnded) {
+      while ((tb = initialIDBInput.nextReady()) != null) {
+        tb = state.update(tb);
+        if (tb != null && tb.numTuples() > 0) {
+          emptyDelta = false;
+          return tb;
+        }
+      }
+      return null;
+    }
+
+    while ((tb = iterationInput.nextReady()) != null) {
+      bufferedIterTBs.add(tb);
+    }
+    if (iterationInput.eoi() && !bufferCleared) {
+      StreamingState tmpState = state.newInstanceFromMyself();
+      tmpState.setAttachedOperator(this);
+      tmpState.init(null);
+      for (TupleBatch tb1 : bufferedIterTBs) {
+        tmpState.update(tb1);
+      }
+      List<TupleBatch> tmp = tmpState.exportState();
+      Preconditions.checkArgument(deltaTuples.size() == 0);
+      for (TupleBatch tb1 : tmp) {
+        tb = state.update(tb1);
+        if (tb != null) {
+          deltaTuples.add(tb);
+        }
+      }
+      emptyDelta = (deltaTuples.size() == 0);
+      bufferedIterTBs.clear();
+      bufferCleared = true;
+    }
+    if (deltaTuples.size() > 0) {
+      TupleBatch tmp = deltaTuples.pop();
+      return tmp;
+    }
     return null;
   }
 
@@ -167,6 +258,7 @@ public class IDBController extends Operator implements StreamingStateful {
         } else if (iterationInput.eoi()) {
           iterationInput.setEOI(false);
           setEOI(true);
+          bufferCleared = false;
           final TupleBatchBuffer buffer = new TupleBatchBuffer(EOI_REPORT_SCHEMA);
           buffer.putInt(0, selfIDBIdx);
           buffer.putBoolean(1, emptyDelta);
@@ -215,6 +307,8 @@ public class IDBController extends Operator implements StreamingStateful {
         (LocalFragmentResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER);
     eoiReportChannel = resourceManager.startAStream(controllerWorkerID, controllerOpID);
     state.init(execEnvVars);
+    deltaTuples = new LinkedList<TupleBatch>();
+    bufferedIterTBs = new ArrayList<TupleBatch>();
   }
 
   @Override

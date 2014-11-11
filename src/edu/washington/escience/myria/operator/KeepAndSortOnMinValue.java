@@ -276,4 +276,9 @@ public final class KeepAndSortOnMinValue extends StreamingState {
   public int numTuples() {
     return uniqueTuples.numTuples();
   }
+
+  @Override
+  public StreamingState newInstanceFromMyself() {
+    return new KeepAndSortOnMinValue(keyColIndices, valueColIndex);
+  }
 }
