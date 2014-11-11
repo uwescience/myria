@@ -3,7 +3,9 @@ package edu.washington.escience.myria.api;
 import java.security.Principal;
 
 import javax.servlet.ServletConfig;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
 
@@ -121,7 +123,17 @@ public final class MasterApplication extends PackagesResourceConfig {
       if (authentication != null && authentication.startsWith("Basic ")) {
         authentication = authentication.substring("Basic ".length());
         String[] values = new String(Base64.base64Decode(authentication)).split(":");
-        if (values.length == 2 && checkAdminPassword(values[0], values[1])) {
+        if (values.length != 2 || values[0] == null || values[1] == null) {
+          /* Bad format. */
+          throw new WebApplicationException(Status.BAD_REQUEST);
+        }
+        if (values[0].toLowerCase().equals("admin")) {
+          /* User says it's admin. */
+          if (!checkAdminPassword(values[1])) {
+            /* But the password is incorrect. */
+            throw new WebApplicationException(Status.UNAUTHORIZED);
+          }
+          /* Correct, set its role to be admin. */
           request.setSecurityContext(new Authorizer("admin"));
         }
       }
@@ -131,15 +143,11 @@ public final class MasterApplication extends PackagesResourceConfig {
     /**
      * Check if the user is an admin with a correct password.
      * 
-     * @param user username.
      * @param passwd password.
      * @return if the authentication succeeded.
      */
-    boolean checkAdminPassword(final String user, final String passwd) {
-      if (user == null || passwd == null) {
-        return false;
-      }
-      return user.equals("admin") && passwd.equals(server.getConfiguration(MyriaSystemConfigKeys.ADMIN_PASSWORD));
+    boolean checkAdminPassword(final String passwd) {
+      return passwd.equals(server.getConfiguration(MyriaSystemConfigKeys.ADMIN_PASSWORD));
     }
 
     /**

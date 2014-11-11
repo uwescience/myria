@@ -75,7 +75,7 @@ public class MasterDaemonTest {
           .<Integer, SocketInfo> builder().put(MyriaConstants.MASTER_ID, new SocketInfo(8001)).build(), ImmutableMap
           .<Integer, SocketInfo> builder().put(MyriaConstants.MASTER_ID + 1, new SocketInfo(9001)).put(
               MyriaConstants.MASTER_ID + 2, new SocketInfo(9002)).build(), Collections.<String, String> singletonMap(
-          MyriaSystemConfigKeys.ADMIN_PASSWORD, "admin"), Collections.<String, String> emptyMap());
+          MyriaSystemConfigKeys.ADMIN_PASSWORD, "password"), Collections.<String, String> emptyMap());
 
       /* Remember which threads were there when the test starts. */
       Set<Thread> startThreads = ThreadUtils.getCurrentThreads();
@@ -96,14 +96,19 @@ public class MasterDaemonTest {
         }
       }
 
-      /* Try to stop the master without providing the correct password. */
+      /* Try to stop the master without saying I'm admin. */
       WebResource shutdownRest = client.resource("http://localhost:" + REST_PORT + "/server/shutdown");
       ClientResponse response = shutdownRest.get(ClientResponse.class);
       assertEquals(Status.FORBIDDEN.getStatusCode(), response.getStatus());
 
+      /* Try to stop the master with a wrong admin password. */
+      client.addFilter(new HTTPBasicAuthFilter("admin", "wrongpassword"));
+      response = shutdownRest.get(ClientResponse.class);
+      assertEquals(Status.UNAUTHORIZED.getStatusCode(), response.getStatus());
+      client.removeAllFilters();
+
       /* Provide the password and stop the master. */
-      client.addFilter(new HTTPBasicAuthFilter("admin", "admin"));
-      shutdownRest = client.resource("http://localhost:" + REST_PORT + "/server/shutdown");
+      client.addFilter(new HTTPBasicAuthFilter("admin", "password"));
       response = shutdownRest.get(ClientResponse.class);
       assertEquals(Status.NO_CONTENT.getStatusCode(), response.getStatus());
       client.destroy();
