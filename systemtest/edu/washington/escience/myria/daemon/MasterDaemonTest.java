@@ -110,7 +110,7 @@ public class MasterDaemonTest {
       /* Provide the password and stop the master. */
       client.addFilter(new HTTPBasicAuthFilter("admin", "password"));
       response = shutdownRest.get(ClientResponse.class);
-      assertEquals(Status.NO_CONTENT.getStatusCode(), response.getStatus());
+      assertEquals(Status.OK.getStatusCode(), response.getStatus());
       client.destroy();
 
       /* Wait for all threads that weren't there when we started to finish. */
