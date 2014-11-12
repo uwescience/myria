@@ -61,7 +61,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
  * 
  */
 @Consumes(MediaType.APPLICATION_JSON)
-@Produces(MediaType.APPLICATION_JSON)
+@Produces(MyriaApiConstants.JSON_UTF_8)
 @Path("/dataset")
 @Api(value = "/dataset", description = "Operations on datasets")
 public final class DatasetResource {
@@ -148,7 +148,7 @@ public final class DatasetResource {
    * @throws DbException if there is an error in the database.
    */
   @GET
-  @Produces({ MediaType.APPLICATION_OCTET_STREAM, MediaType.APPLICATION_JSON })
+  @Produces({ MediaType.APPLICATION_OCTET_STREAM, MyriaApiConstants.JSON_UTF_8 })
   @Path("/user-{userName}/program-{programName}/relation-{relationName}/data")
   public Response getDatasetData(@PathParam("userName") final String userName,
       @PathParam("programName") final String programName, @PathParam("relationName") final String relationName,
@@ -196,7 +196,7 @@ public final class DatasetResource {
       response.type(MediaType.APPLICATION_OCTET_STREAM);
     } else if (validFormat.equals("json")) {
       /* JSON: set application/json. */
-      response.type(MediaType.APPLICATION_JSON);
+      response.type(MyriaApiConstants.JSON_UTF_8);
       writer = new JsonTupleWriter(writerOutput);
     } else {
       /* Should not be possible to get here. */
@@ -217,7 +217,7 @@ public final class DatasetResource {
    * @throws DbException if there is an error in the database.
    */
   @GET
-  @Produces({ MediaType.APPLICATION_OCTET_STREAM, MediaType.APPLICATION_JSON })
+  @Produces({ MediaType.APPLICATION_OCTET_STREAM, MyriaApiConstants.JSON_UTF_8 })
   @Path("/download_test")
   public Response getQueryData(@QueryParam("num_tb") final int numTB, @QueryParam("format") final String format)
       throws DbException {
@@ -260,7 +260,7 @@ public final class DatasetResource {
       response.type(MediaType.APPLICATION_OCTET_STREAM);
     } else if (validFormat.equals("json")) {
       /* JSON: set application/json. */
-      response.type(MediaType.APPLICATION_JSON);
+      response.type(MyriaApiConstants.JSON_UTF_8);
       writer = new JsonTupleWriter(writerOutput);
     } else {
       /* Should not be possible to get here. */
@@ -287,7 +287,6 @@ public final class DatasetResource {
    */
   @PUT
   @Consumes(MediaType.APPLICATION_OCTET_STREAM)
-  @Produces(MediaType.APPLICATION_JSON)
   @Path("/user-{userName}/program-{programName}/relation-{relationName}/data")
   public Response replaceDataset(final InputStream is, @PathParam("userName") final String userName,
       @PathParam("programName") final String programName, @PathParam("relationName") final String relationName,
