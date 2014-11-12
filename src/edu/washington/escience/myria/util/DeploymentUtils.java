@@ -13,7 +13,7 @@ import javax.net.ssl.SSLException;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.tool.MyriaConfigurationReader;
@@ -120,8 +120,8 @@ public final class DeploymentUtils {
       String workingDir = config.get("deployment").get("path");
       String remotePath = workingDir + "/" + description + "-files";
       int restPort = Integer.parseInt(config.get("deployment").get("rest_port"));
-      String maxHeapSize = Objects.firstNonNull(config.get("deployment").get("max_heap_size"), "");
-      String sslStr = Objects.firstNonNull(config.get("deployment").get("ssl"), "false").toLowerCase();
+      String maxHeapSize = MoreObjects.firstNonNull(config.get("deployment").get("max_heap_size"), "");
+      String sslStr = MoreObjects.firstNonNull(config.get("deployment").get("ssl"), "false").toLowerCase();
       boolean ssl = false;
       if (sslStr.equals("true") || sslStr.equals("on") || sslStr.equals("1")) {
         ssl = true;

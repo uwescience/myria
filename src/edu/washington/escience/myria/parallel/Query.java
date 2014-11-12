@@ -12,7 +12,7 @@ import org.joda.time.DateTime;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 
@@ -83,8 +83,8 @@ public final class Query {
   public Query(final long queryId, final QueryEncoding query, final QueryPlan plan, final Server server) {
     Preconditions.checkNotNull(query, "query");
     this.server = Preconditions.checkNotNull(server, "server");
-    profiling = Objects.firstNonNull(query.profilingMode, false);
-    ftMode = Objects.firstNonNull(query.ftMode, FTMODE.none);
+    profiling = MoreObjects.firstNonNull(query.profilingMode, false);
+    ftMode = MoreObjects.firstNonNull(query.ftMode, FTMODE.none);
     this.queryId = queryId;
     subqueryId = 0;
     synchronized (this) {

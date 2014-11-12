@@ -27,7 +27,7 @@ import javax.ws.rs.core.UriInfo;
 import org.apache.commons.httpclient.HttpStatus;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.sun.jersey.core.header.ContentDisposition;
 import com.sun.jersey.multipart.FormDataParam;
@@ -58,7 +58,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * This is the class that handles API calls to create or fetch datasets.
- *
+ * 
  */
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
@@ -114,7 +114,7 @@ public final class DatasetResource {
 
   /**
    * Helper function to parse a format string, with default value "csv".
-   *
+   * 
    * @param format the format string, with default value "csv".
    * @return the cleaned-up format string.
    */
@@ -276,7 +276,7 @@ public final class DatasetResource {
 
   /**
    * Replace a dataset with new contents.
-   *
+   * 
    * @param is InputStream containing the data set * @param userName the user who owns the target relation.
    * @param userName the user who owns the target relation.
    * @param programName the program to which the target relation belongs.
@@ -339,7 +339,7 @@ public final class DatasetResource {
 
   /**
    * An endpoint for creating new datasets with streaming data.
-   *
+   * 
    * @param relationKey the name of the dataset to be ingested.
    * @param schema the {@link Schema} of the data.
    * @param binary optional: if <code>true</code>, indicates that supplied data should be interpreted as a packed binary
@@ -367,8 +367,8 @@ public final class DatasetResource {
     Preconditions.checkArgument(data != null, "Missing required field data.");
 
     Operator scan;
-    if (Objects.firstNonNull(binary, false)) {
-      scan = new BinaryFileScan(schema, new InputStreamSource(data), Objects.firstNonNull(isLittleEndian, false));
+    if (MoreObjects.firstNonNull(binary, false)) {
+      scan = new BinaryFileScan(schema, new InputStreamSource(data), MoreObjects.firstNonNull(isLittleEndian, false));
     } else {
       scan = new FileScan(new InputStreamSource(data), schema, delimiter);
     }
@@ -382,7 +382,7 @@ public final class DatasetResource {
 
   /**
    * Ingest a dataset; replace any previous version.
-   *
+   * 
    * @param relationKey the destination relation for the data
    * @param source the source of tuples to be loaded
    * @param workers the workers on which the data will be stored
@@ -407,11 +407,11 @@ public final class DatasetResource {
         throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "Not all requested workers are alive");
       }
     }
-    Set<Integer> actualWorkers = Objects.firstNonNull(workers, server.getAliveWorkers());
+    Set<Integer> actualWorkers = MoreObjects.firstNonNull(workers, server.getAliveWorkers());
 
     /* Check overwriting existing dataset. */
     try {
-      if (!Objects.firstNonNull(overwrite, false) && server.getSchema(relationKey) != null) {
+      if (!MoreObjects.firstNonNull(overwrite, false) && server.getSchema(relationKey) != null) {
         throw new MyriaApiException(Status.CONFLICT, "That dataset already exists.");
       }
     } catch (CatalogException e) {
@@ -446,7 +446,7 @@ public final class DatasetResource {
 
     /* If we already have a dataset by this name, tell the user there's a conflict. */
     try {
-      if (!Objects.firstNonNull(dataset.overwrite, Boolean.FALSE) && server.getSchema(dataset.relationKey) != null) {
+      if (!MoreObjects.firstNonNull(dataset.overwrite, Boolean.FALSE) && server.getSchema(dataset.relationKey) != null) {
         /* Found, throw a 409 (Conflict) */
         throw new MyriaApiException(Status.CONFLICT, "That dataset already exists.");
       }
