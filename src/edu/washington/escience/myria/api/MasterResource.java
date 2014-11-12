@@ -28,7 +28,7 @@ public final class MasterResource {
    * 
    * @param daemon the Myria {@link MasterDaemon} to be shutdown.
    * @param sc security context.
-   * @return an HTTP 204 (NO CONTENT) response.
+   * @return a success message.
    */
   @GET
   @RolesAllowed({ "admin" })
@@ -49,7 +49,7 @@ public final class MasterResource {
 
     /* Start the thread, then return an empty success response. */
     shutdownThread.start();
-    return Response.noContent().build();
+    return Response.ok("Success").build();
   }
 
   /**
