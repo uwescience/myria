@@ -15,9 +15,6 @@ def kill_command(host_entry,command):
     cmd = ['ssh', host, 'killall -KILL -v '+command]
     subprocess.call(cmd)
 
-def kill_java(host_entry):
-    kill_command(host,'java')
-
 def stop_all(config,command):
     master = config['master']
     workers = config['workers']
