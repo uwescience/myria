@@ -10,24 +10,24 @@ def make_catalog(config_file):
 given deployment configuration."""
     args = ["./run_catalog_maker.sh", config_file]
     if subprocess.call(args):
-        raise Exception("Error making the catalogs")
+        print "Error making the catalogs"
 
 
 def copy_catalogs(config_file):
     """Copies the master and worker catalogs to the remote hosts."""
     args = ["./using_deployment_utils.sh", config_file, "-copy_master_catalog"]
     if subprocess.call(args):
-        raise Exception("Error copying master catalog")
+        print "Error copying master catalog"
     args = ["./using_deployment_utils.sh", config_file, "-copy_worker_catalogs"]
     if subprocess.call(args):
-        raise Exception("Error copying worker catalogs")
+        print "Error copying worker catalogs"
 
 
 def copy_distribution(config_file):
     "Copy the distribution (jar and libs and conf) to compute nodes."
     args = ["./using_deployment_utils.sh", config_file, "-copy_distribution"]
     if subprocess.call(args):
-        raise Exception("Error copying distribution")
+        print "Error copying distribution"
 
 
 def main(argv):

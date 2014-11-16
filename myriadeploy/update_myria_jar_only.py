@@ -27,7 +27,7 @@ def copy_distribution(config):
         to_copy = ["libs", "conf"]
         args = ["rsync", "-e", "ssh -c arcfour", "--del", "-rtLDvz"] + to_copy + [remote_path]
         if subprocess.call(args):
-            raise Exception("Error copying distribution to %s" % (hostname,))
+            print "Error copying distribution to %s" % (hostname,)
 
 
 def main(argv):
