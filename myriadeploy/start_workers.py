@@ -4,11 +4,14 @@
 
 import subprocess
 import sys
+import logging
+
 
 def start_workers(config_file):
     args = ["./using_deployment_utils.sh", config_file, "-start_workers"]
     if subprocess.call(args):
-        print "Error starting workers"
+        logging.error("Error starting workers")
+
 
 def main(argv):
     "Start all Myria workers in the specified deployment."

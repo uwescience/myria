@@ -6,9 +6,12 @@ import myriadeploy
 
 import subprocess
 import sys
+import logging
+
 
 def get_hostname(node):
     return node[0]
+
 
 def stop_all(config):
     "Kill all Myria processes on the nodes in this cluster."
@@ -23,7 +26,7 @@ def stop_all(config):
     pids = subprocess.check_output(cmd, shell=True).split('\n')
     for pid in pids:
         if pid != "":
-            print  "killing %s on %s" % (pid, hostname)
+            logging.info("killing %s on %s" % (pid, hostname))
             cmd = "ssh -o ConnectTimeout=6 %s@%s kill -9 %s" % (username, hostname, pid)
             subprocess.call(cmd, shell=True)
 
@@ -41,9 +44,10 @@ def stop_all(config):
             continue
         for pid in pids:
             if pid != "":
-                print  "killing %s on %s" % (pid, hostname)
+                logging.info("killing %s on %s" % (pid, hostname))
                 cmd = "ssh -o ConnectTimeout=6 %s@%s kill -9 %s" % (username, hostname, pid)
                 subprocess.call(cmd, shell=True)
+
 
 def main(argv):
     "Kill all Myria processes on the nodes in this cluster."
