@@ -29,7 +29,6 @@ public final class MasterResource {
    * Shutdown the server.
    * 
    * @param daemon the Myria {@link MasterDaemon} to be shutdown.
-   * @param sc security context.
    * @return a success message.
    */
   @GET
