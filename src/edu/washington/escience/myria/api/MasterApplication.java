@@ -3,7 +3,6 @@ package edu.washington.escience.myria.api;
 import java.security.Principal;
 
 import javax.servlet.ServletConfig;
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.SecurityContext;
@@ -23,6 +22,7 @@ import com.sun.jersey.spi.container.servlet.WebConfig;
 import com.sun.jersey.spi.inject.SingletonTypeInjectableProvider;
 import com.wordnik.swagger.jaxrs.config.BeanConfig;
 
+import edu.washington.escience.myria.MyriaConstants.ROLE;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.daemon.MasterDaemon;
 import edu.washington.escience.myria.parallel.Server;
@@ -118,23 +118,24 @@ public final class MasterApplication extends PackagesResourceConfig {
 
     @Override
     public ContainerRequest filter(final ContainerRequest request) {
-      request.setSecurityContext(new Authorizer("user"));
+      request.setSecurityContext(new Authorizer(ROLE.user));
       String authentication = request.getHeaderValue(ContainerRequest.AUTHORIZATION);
       if (authentication != null && authentication.startsWith("Basic ")) {
         authentication = authentication.substring("Basic ".length());
         String[] values = new String(Base64.base64Decode(authentication)).split(":");
         if (values.length != 2 || values[0] == null || values[1] == null) {
           /* Bad format. */
-          throw new WebApplicationException(Status.BAD_REQUEST);
+          throw new MyriaApiException(Status.BAD_REQUEST,
+              "Bad format. Usage: a string \"username:password\" encoded in Base64");
         }
-        if (values[0].toLowerCase().equals("admin")) {
+        if (values[0].toLowerCase().equals(ROLE.admin)) {
           /* User says it's admin. */
           if (!checkAdminPassword(values[1])) {
             /* But the password is incorrect. */
-            throw new WebApplicationException(Status.UNAUTHORIZED);
+            throw new MyriaApiException(Status.UNAUTHORIZED, "Admin password incorrect");
           }
           /* Correct, set its role to be admin. */
-          request.setSecurityContext(new Authorizer("admin"));
+          request.setSecurityContext(new Authorizer(ROLE.admin));
         }
       }
       return request;
@@ -154,8 +155,9 @@ public final class MasterApplication extends PackagesResourceConfig {
      * The customized SecurityContext.
      */
     private class Authorizer implements SecurityContext {
+
       /** user name. */
-      private String user;
+      private ROLE user;
       /** principal. */
       private Principal principal;
 
@@ -164,12 +166,12 @@ public final class MasterApplication extends PackagesResourceConfig {
        * 
        * @param user username.
        * */
-      Authorizer(final String user) {
+      Authorizer(final ROLE user) {
         this.user = user;
         principal = new Principal() {
           @Override
           public String getName() {
-            return user;
+            return user.toString();
           }
         };
       }

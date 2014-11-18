@@ -284,4 +284,11 @@ public final class MyriaConstants {
     /** three FT modes are supported. */
     none, abandon, rejoin
   };
+
+  /** REST API roles in Myria. */
+  public static enum ROLE {
+    /* two roles, user is non-admin */
+    admin, user
+  };
+
 }

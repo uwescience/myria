@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.api;
 
+import java.io.File;
+
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -63,6 +65,11 @@ public final class MasterResource {
     return Response.ok(new VersionEncoding()).build();
   }
 
+  /**
+   * Get the path to the deployment.cfg file.
+   * 
+   * @return the file path.
+   */
   @GET
   @RolesAllowed({ "admin" })
   @Path("/deployment_cfg")
@@ -70,7 +77,9 @@ public final class MasterResource {
     String workingDir = server.getConfiguration(MyriaSystemConfigKeys.WORKING_DIRECTORY);
     String description = server.getConfiguration(MyriaSystemConfigKeys.DESCRIPTION);
     String fileName = server.getConfiguration(MyriaSystemConfigKeys.DEPLOYMENT_FILE);
-    String deploymentFile = workingDir + "/" + description + "-files" + "/" + description + "/" + fileName;
+    String deploymentFile =
+        workingDir + File.separatorChar + description + "-files" + File.separatorChar + description
+            + File.separatorChar + fileName;
     return Response.ok(deploymentFile).build();
   }
 }
