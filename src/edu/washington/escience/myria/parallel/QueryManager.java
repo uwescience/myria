@@ -6,6 +6,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -19,6 +20,7 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Maps;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
@@ -42,13 +44,13 @@ public class QueryManager {
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MasterCatalog.class);
 
   /**
-   * Queries currently active (queued, executing, being killed, etc.).
+   * Queries currently running (executing or being killed).
    */
-  private final ConcurrentHashMap<Long, Query> activeQueries;
+  private final ConcurrentHashMap<Long, Query> runningQueries;
 
   /** The queries that are queued. */
   @GuardedBy("queryQueue")
-  private final LinkedList<Query> queryQueue;
+  private final TreeMap<Long, Query> queryQueue;
 
   /**
    * Subqueries currently in execution.
@@ -71,8 +73,8 @@ public class QueryManager {
   public QueryManager(final MasterCatalog catalog, final Server server) {
     this.catalog = catalog;
     this.server = server;
-    queryQueue = new LinkedList<>();
-    activeQueries = new ConcurrentHashMap<>();
+    queryQueue = Maps.newTreeMap();
+    runningQueries = new ConcurrentHashMap<>();
     executingSubQueries = new ConcurrentHashMap<>();
   }
 
@@ -81,7 +83,7 @@ public class QueryManager {
    * @param queryId queryID.
    */
   public boolean queryCompleted(final long queryId) {
-    return !activeQueries.containsKey(queryId);
+    return !runningQueries.containsKey(queryId);
   }
 
   /**
@@ -89,7 +91,7 @@ public class QueryManager {
    */
   private boolean canSubmitQuery() {
     synchronized (queryQueue) {
-      return ((activeQueries.size() + queryQueue.size()) < MyriaConstants.MAX_ACTIVE_QUERIES);
+      return ((runningQueries.size() + queryQueue.size()) < MyriaConstants.MAX_ACTIVE_QUERIES);
     }
   }
 
@@ -106,18 +108,18 @@ public class QueryManager {
     } catch (CatalogException e) {
       throw new DbException("Error finishing query " + queryState.getQueryId(), e);
     } finally {
-      activeQueries.remove(queryState.getQueryId());
+      runningQueries.remove(queryState.getQueryId());
       /* Now see if the query queue has anything for us. */
       Query q = null;
       synchronized (queryQueue) {
-        q = queryQueue.peek();
-        if (q != null && activeQueries.isEmpty()) {
-          queryQueue.removeFirst();
+        q = queryQueue.firstEntry().getValue();
+        if (q != null && runningQueries.isEmpty()) {
+          queryQueue.remove(q.getQueryId());
         }
       }
       if (q != null) {
         LOGGER.info("Now advancing to query {}", q.getQueryId());
-        activeQueries.put(q.getQueryId(), q);
+        runningQueries.put(q.getQueryId(), q);
         advanceQuery(q);
       }
     }
@@ -135,7 +137,7 @@ public class QueryManager {
     List<QueryStatusEncoding> ret = new LinkedList<>();
 
     /* Begin by adding the status for all the active queries. */
-    TreeSet<Long> activeQueryIds = new TreeSet<>(activeQueries.keySet());
+    TreeSet<Long> activeQueryIds = new TreeSet<>(runningQueries.keySet());
     final Iterator<Long> iter = activeQueryIds.descendingIterator();
     while (iter.hasNext()) {
       long queryId = iter.next();
@@ -166,7 +168,14 @@ public class QueryManager {
    */
   @Nonnull
   public Query getQuery(@Nonnull final Long queryId) {
-    Query query = activeQueries.get(Preconditions.checkNotNull(queryId, "queryId"));
+    Long qId = Preconditions.checkNotNull(queryId, "queryId");
+    Query query;
+    synchronized (queryQueue) {
+      query = runningQueries.get(qId);
+      if (query == null) {
+        query = queryQueue.get(qId);
+      }
+    }
     Preconditions.checkArgument(query != null, "Query #%s is not active", queryId);
     return query;
   }
@@ -185,7 +194,7 @@ public class QueryManager {
       return null;
     }
 
-    Query state = activeQueries.get(queryId);
+    Query state = runningQueries.get(queryId);
     if (state == null) {
       /* Not active, so the information from the Catalog is authoritative. */
       return queryStatus;
@@ -216,14 +225,14 @@ public class QueryManager {
     final Query queryState = new Query(queryId, query, plan, server);
     boolean canStart = false;
     synchronized (queryQueue) {
-      if (queryQueue.isEmpty() && activeQueries.isEmpty()) {
+      if (queryQueue.isEmpty() && runningQueries.isEmpty()) {
         canStart = true;
       } else {
-        queryQueue.add(queryState);
+        queryQueue.put(queryId, queryState);
       }
     }
     if (canStart) {
-      activeQueries.put(queryId, queryState);
+      runningQueries.put(queryId, queryState);
       advanceQuery(queryState);
     }
     return queryState.getFuture();
@@ -528,6 +537,12 @@ public class QueryManager {
    * Kill all queries currently executing.
    */
   protected void killAll() {
+    synchronized (queryQueue) {
+      for (Query q : queryQueue.values()) {
+        q.kill();
+      }
+      queryQueue.clear();
+    }
     for (MasterSubQuery p : executingSubQueries.values()) {
       p.kill();
     }

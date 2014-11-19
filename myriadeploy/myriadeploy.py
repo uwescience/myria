@@ -8,7 +8,7 @@ import sys
 
 def read_config_file(filename='deployment.cfg'):
     "reads a Myria deployment configuration file."
-    
+
     # Return value is a dictionary of keys -> values
     ret = dict()
 
