@@ -118,27 +118,48 @@ public final class MasterApplication extends PackagesResourceConfig {
 
     @Override
     public ContainerRequest filter(final ContainerRequest request) {
-      request.setSecurityContext(new Authorizer(ROLE.user));
       String authentication = request.getHeaderValue(ContainerRequest.AUTHORIZATION);
       if (authentication != null && authentication.startsWith("Basic ")) {
         authentication = authentication.substring("Basic ".length());
         String[] values = new String(Base64.base64Decode(authentication)).split(":");
-        if (values.length != 2 || values[0] == null || values[1] == null) {
+        if (values.length != 2) {
           /* Bad format. */
           throw new MyriaApiException(Status.BAD_REQUEST,
               "Bad format. Usage: a string \"username:password\" encoded in Base64");
         }
-        if (values[0].toLowerCase().equals(ROLE.admin)) {
+        String username = values[0];
+        String password = values[1];
+        if (isUserInRole(username, ROLE.admin)) {
           /* User says it's admin. */
-          if (!checkAdminPassword(values[1])) {
+          if (!checkAdminPassword(password)) {
             /* But the password is incorrect. */
             throw new MyriaApiException(Status.UNAUTHORIZED, "Admin password incorrect");
           }
-          /* Correct, set its role to be admin. */
-          request.setSecurityContext(new Authorizer(ROLE.admin));
         }
+        /* Otherwise we don't check the password for now since it's not necessary. */
+        request.setSecurityContext(new Authorizer(username));
+      } else {
+        /* No user name, set it to be empty. */
+        request.setSecurityContext(new Authorizer(""));
       }
       return request;
+    }
+
+    /**
+     * Check if the given user is in the given role.
+     * 
+     * @param username the user name.
+     * @param role the role.
+     * 
+     * @return true or false
+     */
+    public boolean isUserInRole(final String username, final ROLE role) {
+      if (role.equals(ROLE.admin)) {
+        /* Temporary solution: only true when username.toLowerCase() is "admin" */
+        return username.toLowerCase().equals(ROLE.admin.toString());
+      }
+      /* Otherwise we don't care for now. */
+      return true;
     }
 
     /**
@@ -157,7 +178,7 @@ public final class MasterApplication extends PackagesResourceConfig {
     private class Authorizer implements SecurityContext {
 
       /** user name. */
-      private ROLE user;
+      private String user;
       /** principal. */
       private Principal principal;
 
@@ -166,12 +187,12 @@ public final class MasterApplication extends PackagesResourceConfig {
        * 
        * @param user username.
        * */
-      Authorizer(final ROLE user) {
+      Authorizer(final String user) {
         this.user = user;
         principal = new Principal() {
           @Override
           public String getName() {
-            return user.toString();
+            return user;
           }
         };
       }
@@ -183,7 +204,7 @@ public final class MasterApplication extends PackagesResourceConfig {
 
       @Override
       public boolean isUserInRole(final String role) {
-        return (role.equals(user));
+        return AuthenticateFilter.this.isUserInRole(user, ROLE.valueOf(role));
       }
 
       @Override
