@@ -4,7 +4,6 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import edu.washington.escience.myria.api.encoding.VersionEncoding;
@@ -53,7 +52,7 @@ public final class MasterResource {
    * @return a {@link VersionEncoding}.
    */
   @GET
-  @Produces(MediaType.APPLICATION_JSON)
+  @Produces(MyriaApiConstants.JSON_UTF_8)
   public Response getVersion() {
     return Response.ok(new VersionEncoding()).build();
   }

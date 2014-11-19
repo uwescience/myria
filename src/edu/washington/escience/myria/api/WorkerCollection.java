@@ -9,7 +9,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
@@ -21,7 +20,7 @@ import edu.washington.escience.myria.parallel.SocketInfo;
  * 
  */
 @Path("/workers")
-@Produces(MediaType.APPLICATION_JSON)
+@Produces(MyriaApiConstants.JSON_UTF_8)
 public final class WorkerCollection {
   /** The Myria server running on the master. */
   @Context

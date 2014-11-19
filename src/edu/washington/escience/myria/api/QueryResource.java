@@ -35,7 +35,7 @@ import edu.washington.escience.myria.parallel.Server;
  * 
  */
 @Consumes(MediaType.APPLICATION_JSON)
-@Produces(MediaType.APPLICATION_JSON)
+@Produces(MyriaApiConstants.JSON_UTF_8)
 @Path("/query")
 public final class QueryResource {
   /** The Myria server running on the master. */
