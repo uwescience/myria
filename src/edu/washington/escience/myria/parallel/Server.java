@@ -1231,7 +1231,7 @@ public final class Server {
 
     String sentQueryString =
         Joiner.on(' ').join("SELECT \"fragmentId\", \"destWorkerId\", sum(\"numTuples\") as \"numTuples\" FROM",
-            MyriaConstants.SENT_RELATION.toString(getDBMS()) + "WHERE \"queryId\" =", queryId, fragmentWhere,
+            MyriaConstants.SENT_RELATION.toString(getDBMS()), "WHERE \"queryId\" =", queryId, fragmentWhere,
             "GROUP BY \"queryId\", \"fragmentId\", \"destWorkerId\"");
 
     DbQueryScan scan = new DbQueryScan(sentQueryString, schema);
@@ -1300,7 +1300,7 @@ public final class Server {
 
     String sentQueryString =
         Joiner.on(' ').join("SELECT \"fragmentId\", sum(\"numTuples\") as \"numTuples\" FROM",
-            MyriaConstants.SENT_RELATION.toString(getDBMS()) + "WHERE \"queryId\" =", queryId,
+            MyriaConstants.SENT_RELATION.toString(getDBMS()), "WHERE \"queryId\" =", queryId,
             "GROUP BY \"queryId\", \"fragmentId\"");
 
     DbQueryScan scan = new DbQueryScan(sentQueryString, schema);
