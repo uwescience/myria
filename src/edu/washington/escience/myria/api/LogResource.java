@@ -40,7 +40,7 @@ public final class LogResource {
 
   /**
    * Get profiling logs of a query.
-   * 
+   *
    * @param queryId query id.
    * @param fragmentId the fragment id.
    * @param start the earliest time where we need data
@@ -93,7 +93,7 @@ public final class LogResource {
 
   /**
    * Get contribution of each operator to runtime.
-   * 
+   *
    * @param queryId query id.
    * @param fragmentId the fragment id, default is all.
    * @param request the current request.
@@ -138,7 +138,7 @@ public final class LogResource {
 
   /**
    * Get information about where tuples were sent.
-   * 
+   *
    * @param queryId query id.
    * @param fragmentId the fragment id. < 0 means all
    * @param request the current request.
@@ -176,6 +176,48 @@ public final class LogResource {
     TupleWriter writer = new CsvTupleWriter(writerOutput);
 
     server.startSentLogDataStream(queryId, fragmentId, writer);
+
+    return response.build();
+  }
+
+  /**
+   * Get aggregated summary of all data sent.
+   *
+   * @param queryId query id.
+   * @param request the current request.
+   * @return the profiling logs of the query across all workers
+   * @throws DbException if there is an error in the database.
+   */
+  @GET
+  @Path("aggregated_sent")
+  public Response getAggregatedSentLogs(@QueryParam("queryId") final Long queryId, @Context final Request request)
+      throws DbException {
+
+    Preconditions.checkArgument(queryId != null, "Missing required field queryId.");
+
+    EntityTag eTag = new EntityTag(Integer.toString(Joiner.on('-').join("aggregated-sent", queryId).hashCode()));
+    Object obj = checkAndAddCache(request, eTag);
+    if (obj instanceof Response) {
+      return (Response) obj;
+    }
+    ResponseBuilder response = (ResponseBuilder) obj;
+
+    response.type(MediaType.TEXT_PLAIN);
+
+    PipedOutputStream writerOutput = new PipedOutputStream();
+    PipedInputStream input;
+    try {
+      input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
+    } catch (IOException e) {
+      throw new DbException(e);
+    }
+
+    PipedStreamingOutput entity = new PipedStreamingOutput(input);
+    response.entity(entity);
+
+    TupleWriter writer = new CsvTupleWriter(writerOutput);
+
+    server.startAggregatedSentLogDataStream(queryId, writer);
 
     return response.build();
   }
@@ -224,7 +266,7 @@ public final class LogResource {
 
   /**
    * Get the number of workers working on a fragment based on profiling logs of a query for the root operators.
-   * 
+   *
    * @param queryId query id.
    * @param fragmentId the fragment id.
    * @param start the start of the range
@@ -283,7 +325,7 @@ public final class LogResource {
    * Checks whether the response was cached by the client (checking eTag) and whether it is not too old (checking last
    * modified). Returns a {@link Response} if the content is cached and a {@link ResponseBuilder} if not. In the second
    * case, the caller needs to add to the builder and then return it.
-   * 
+   *
    * @param request the request
    * @param eTag a unique identifier for the version of the resource to be cached
    * @return {@link Response} if the content is cached and a {@link ResponseBuilder} otherwise

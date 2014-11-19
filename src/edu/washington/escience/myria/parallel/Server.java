@@ -236,7 +236,7 @@ public final class Server {
 
   /**
    * All message queue.
-   * 
+   *
    * @TODO remove this queue as in {@link Worker}s.
    */
   private final LinkedBlockingQueue<IPCMessage.Data<TransportMessage>> messageQueue;
@@ -284,7 +284,7 @@ public final class Server {
 
   /**
    * Entry point for the Master.
-   * 
+   *
    * @param args the command line arguments.
    * @throws IOException if there's any error in reading catalog file.
    */
@@ -397,7 +397,7 @@ public final class Server {
 
   /**
    * Construct a server object, with configuration stored in the specified catalog file.
-   * 
+   *
    * @param catalogFileName the name of the file containing the catalog.
    * @throws FileNotFoundException the specified file not found.
    * @throws CatalogException if there is an error reading from the Catalog.
@@ -497,7 +497,7 @@ public final class Server {
 
     /**
      * constructor.
-     * 
+     *
      * @param workerID the removed worker id.
      * @param socketInfo the new worker's socket info.
      * @param numOfAck the number of REMOVE_WORKER_ACK to receive.
@@ -633,7 +633,7 @@ public final class Server {
 
     /**
      * constructor.
-     * 
+     *
      * @param workerId worker id.
      * @param address hostname.
      * @param port port number.
@@ -750,7 +750,7 @@ public final class Server {
 
   /**
    * Start all the threads that do work for the server.
-   * 
+   *
    * @throws Exception if any error occurs.
    */
   public void start() throws Exception {
@@ -823,9 +823,9 @@ public final class Server {
   }
 
   /**
-   * 
+   *
    * Can be only used in test.
-   * 
+   *
    * @return true if the query plan is accepted and scheduled for execution.
    * @param masterRoot the root operator of the master plan
    * @param workerRoots the roots of the worker part of the plan, {workerID -> RootOperator[]}
@@ -852,7 +852,7 @@ public final class Server {
 
   /**
    * Return a random subset of workers.
-   * 
+   *
    * @param number the number of alive workers returned
    * @return a subset of workers that are currently alive.
    */
@@ -876,7 +876,7 @@ public final class Server {
 
   /**
    * Ingest the given dataset.
-   * 
+   *
    * @param relationKey the name of the dataset.
    * @param workersToIngest restrict the workers to ingest data (null for all)
    * @param indexes the indexes created.
@@ -1031,7 +1031,7 @@ public final class Server {
 
   /**
    * Get the metadata about a relation.
-   * 
+   *
    * @param relationKey specified which relation to get the metadata about.
    * @return the metadata of the specified relation.
    * @throws DbException if there is an error getting the status.
@@ -1107,7 +1107,7 @@ public final class Server {
 
   /**
    * Start a query that streams tuples from the specified relation to the specified {@link TupleWriter}.
-   * 
+   *
    * @param relationKey the relation to be downloaded.
    * @param writer the {@link TupleWriter} which will serialize the tuples.
    * @return the query future from which the query status can be looked up.
@@ -1159,7 +1159,7 @@ public final class Server {
 
   /**
    * Start a query that streams tuples from the specified relation to the specified {@link TupleWriter}.
-   * 
+   *
    * @param numTB the number of {@link TupleBatch}es to download from each worker.
    * @param writer the {@link TupleWriter} which will serialize the tuples.
    * @return the query future from which the query status can be looked up.
@@ -1276,7 +1276,61 @@ public final class Server {
 
     /* Submit the plan for the download. */
     String planString =
-        Joiner.on("").join("download profiling log data for (query=", queryId, ", fragment=", fragmentId, ")");
+        Joiner.on("").join("download profiling sent data for (query=", queryId, ", fragment=", fragmentId, ")");
+    try {
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
+
+  /**
+   * @param queryId query id.
+   * @param writer writer to get data.
+   * @return profiling logs for the query.
+   * @throws DbException if there is an error when accessing profiling logs.
+   */
+  public ListenableFuture<Query> startAggregatedSentLogDataStream(final long queryId, final TupleWriter writer)
+      throws DbException {
+    final QueryStatusEncoding queryStatus = checkAndReturnQueryStatus(queryId);
+
+    Set<Integer> actualWorkers = queryStatus.plan.getWorkers();
+
+    final Schema schema = Schema.ofFields("fragmentId", Type.INT_TYPE, "numTuples", Type.LONG_TYPE);
+
+    String sentQueryString =
+        Joiner.on(' ').join("SELECT \"fragmentId\", sum(\"numTuples\") as \"numTuples\" FROM",
+            MyriaConstants.SENT_RELATION.toString(getDBMS()) + "WHERE \"queryId\" =", queryId,
+            "GROUP BY \"queryId\", \"fragmentId\"");
+
+    DbQueryScan scan = new DbQueryScan(sentQueryString, schema);
+    final ExchangePairID operatorId = ExchangePairID.newID();
+
+    CollectProducer producer = new CollectProducer(scan, operatorId, MyriaConstants.MASTER_ID);
+
+    SubQueryPlan workerPlan = new SubQueryPlan(producer);
+    Map<Integer, SubQueryPlan> workerPlans = new HashMap<>(actualWorkers.size());
+    for (Integer worker : actualWorkers) {
+      workerPlans.put(worker, workerPlan);
+    }
+
+    final CollectConsumer consumer =
+        new CollectConsumer(scan.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
+
+    final MultiGroupByAggregate aggregate =
+        new MultiGroupByAggregate(consumer, new int[] { 0, 1 }, new SingleColumnAggregatorFactory(0, AggregationOp.SUM));
+
+    // rename columns
+    ImmutableList.Builder<Expression> renameExpressions = ImmutableList.builder();
+    renameExpressions.add(new Expression("fragmentId", new VariableExpression(0)));
+    renameExpressions.add(new Expression("numTuples", new VariableExpression(1)));
+    final Apply rename = new Apply(aggregate, renameExpressions.build());
+
+    DataOutput output = new DataOutput(rename, writer);
+    final SubQueryPlan masterPlan = new SubQueryPlan(output);
+
+    /* Submit the plan for the download. */
+    String planString = Joiner.on("").join("download profiling aggregated sent data for (query=", queryId, ")");
     try {
       return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
     } catch (CatalogException e) {
@@ -1293,7 +1347,7 @@ public final class Server {
    * @param onlyRootOperator only return data for root operator
    * @param writer writer to get data.
    * @return profiling logs for the query.
-   * 
+   *
    * @throws DbException if there is an error when accessing profiling logs.
    */
   public QueryFuture startLogDataStream(final long queryId, final long fragmentId, final long start, final long end,
@@ -1379,7 +1433,7 @@ public final class Server {
    * @param onlyRootOp return histogram only for root operator
    * @param writer writer to get data.
    * @return profiling logs for the query.
-   * 
+   *
    * @throws DbException if there is an error when accessing profiling logs.
    */
   public QueryFuture startHistogramDataStream(final long queryId, final long fragmentId, final long start,
@@ -1528,7 +1582,7 @@ public final class Server {
    * @param fragmentId the fragment id to return data for. All fragments, if < 0.
    * @param writer writer to get data.
    * @return contributions for operator.
-   * 
+   *
    * @throws DbException if there is an error when accessing profiling logs.
    */
   public QueryFuture startContributionsStream(final long queryId, final long fragmentId, final TupleWriter writer)
@@ -1589,7 +1643,7 @@ public final class Server {
 
   /**
    * Get the query status and check whether the query ran successfully with profiling enabled.
-   * 
+   *
    * @param queryId the query id
    * @return the query status
    * @throws DbException if the query cannot be retrieved
@@ -1612,7 +1666,7 @@ public final class Server {
 
   /**
    * Update the {@link MasterCatalog} so that the specified relation has the specified tuple count.
-   * 
+   *
    * @param relation the relation to update
    * @param count the number of tuples in that relation
    * @throws DbException if there is an error in the catalog
@@ -1627,7 +1681,7 @@ public final class Server {
 
   /**
    * Set the global variable owned by the specified query and named by the specified key to the specified value.
-   * 
+   *
    * @param queryId the query to whom the variable belongs.
    * @param key the name of the variable
    * @param value the new value for the variable
@@ -1640,7 +1694,7 @@ public final class Server {
 
   /**
    * Get the value of global variable owned by the specified query and named by the specified key.
-   * 
+   *
    * @param queryId the query to whom the variable belongs.
    * @param key the name of the variable
    * @return the value of the variable
@@ -1653,7 +1707,7 @@ public final class Server {
 
   /**
    * Return the schema of the specified temp relation in the specified query.
-   * 
+   *
    * @param queryId the query that owns the temp relation
    * @param name the name of the temporary relation
    * @return the schema of the specified temp relation in the specified query
