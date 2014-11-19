@@ -35,7 +35,7 @@ def main(argv):
         print >> sys.stderr, "Usage: %s <deployment.cfg> <command>\n By default command is java." % (argv[0])
         sys.exit(1)
 
-    command ='java'
+    command = 'java'
     config = myriadeploy.read_config_file(argv[1])
 
     if len(argv) > 2:
