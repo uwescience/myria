@@ -1317,8 +1317,8 @@ public final class Server {
     final CollectConsumer consumer =
         new CollectConsumer(scan.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
 
-    final MultiGroupByAggregate aggregate =
-        new MultiGroupByAggregate(consumer, new int[] { 0, 1 }, new SingleColumnAggregatorFactory(0, AggregationOp.SUM));
+    final SingleGroupByAggregate aggregate =
+        new SingleGroupByAggregate(consumer, 0, new SingleColumnAggregatorFactory(1, AggregationOp.SUM));
 
     // rename columns
     ImmutableList.Builder<Expression> renameExpressions = ImmutableList.builder();
