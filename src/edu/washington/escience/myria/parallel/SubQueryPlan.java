@@ -33,7 +33,7 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
   private final List<RootOperator> rootOps;
 
   /** FT mode, default: NONE. */
-  private FTMODE ftMode = FTMODE.valueOf("NONE");
+  private FTMODE ftMode = FTMODE.NONE;
 
   /** The relations that are written, along with their schemas. */
   private final Map<RelationKey, RelationWriteMetadata> writeSet;
