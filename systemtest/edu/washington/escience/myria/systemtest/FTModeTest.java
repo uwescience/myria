@@ -438,8 +438,8 @@ public class FTModeTest extends SystemTestBase {
     HashMap<Integer, SubQueryPlan> workerPlans = new HashMap<Integer, SubQueryPlan>();
     workerPlans.put(workerIDs[0], new SubQueryPlan());
     workerPlans.put(workerIDs[1], new SubQueryPlan());
-    workerPlans.get(workerIDs[0]).setFTMode(FTMODE.valueOf("abandon"));
-    workerPlans.get(workerIDs[1]).setFTMode(FTMODE.valueOf("abandon"));
+    workerPlans.get(workerIDs[0]).setFTMode(FTMODE.valueOf("ABANDON"));
+    workerPlans.get(workerIDs[1]).setFTMode(FTMODE.valueOf("ABANDON"));
     for (int i = 0; i < workerPlan.get(0).size(); ++i) {
       workerPlans.get(workerIDs[0]).addRootOp(workerPlan.get(0).get(i));
     }
@@ -451,7 +451,7 @@ public class FTModeTest extends SystemTestBase {
     final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
     SubQueryPlan serverPlan = new SubQueryPlan(new SinkRoot(queueStore));
-    serverPlan.setFTMode(FTMODE.valueOf("abandon"));
+    serverPlan.setFTMode(FTMODE.valueOf("ABANDON"));
 
     ListenableFuture<Query> qf = server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans, false);
     Thread.sleep(2000);
@@ -544,8 +544,8 @@ public class FTModeTest extends SystemTestBase {
     HashMap<Integer, SubQueryPlan> workerPlans = new HashMap<Integer, SubQueryPlan>();
     workerPlans.put(workerIDs[0], new SubQueryPlan());
     workerPlans.put(workerIDs[1], new SubQueryPlan());
-    workerPlans.get(workerIDs[0]).setFTMode(FTMODE.valueOf("rejoin"));
-    workerPlans.get(workerIDs[1]).setFTMode(FTMODE.valueOf("rejoin"));
+    workerPlans.get(workerIDs[0]).setFTMode(FTMODE.valueOf("REJOIN"));
+    workerPlans.get(workerIDs[1]).setFTMode(FTMODE.valueOf("REJOIN"));
     for (int i = 0; i < workerPlan.get(0).size(); ++i) {
       workerPlans.get(workerIDs[0]).addRootOp(workerPlan.get(0).get(i));
     }
@@ -554,7 +554,7 @@ public class FTModeTest extends SystemTestBase {
     }
 
     SubQueryPlan serverPlan = new SubQueryPlan(new SinkRoot(new EOSSource()));
-    serverPlan.setFTMode(FTMODE.valueOf("rejoin"));
+    serverPlan.setFTMode(FTMODE.valueOf("REJOIN"));
     ListenableFuture<Query> qf = server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans, false);
     Thread.sleep(3000);
     /* kill the one without EOSController */
