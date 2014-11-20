@@ -13,7 +13,7 @@ import javax.ws.rs.core.Response.Status;
 
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -308,7 +308,7 @@ public class QueryConstruct {
 
       Operator op = encoding.construct(args);
       /* helpful for debugging. */
-      op.setOpName(Objects.firstNonNull(encoding.opName, "Operator" + String.valueOf(encoding.opId)));
+      op.setOpName(MoreObjects.firstNonNull(encoding.opName, "Operator" + String.valueOf(encoding.opId)));
       op.setOpId(encoding.opId);
       op.setFragmentId(planFragment.fragmentIndex);
       myOperators.put(encoding.opId, op);

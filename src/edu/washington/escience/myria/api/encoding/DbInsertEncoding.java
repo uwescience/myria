@@ -2,7 +2,7 @@ package edu.washington.escience.myria.api.encoding;
 
 import java.util.List;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
@@ -31,7 +31,7 @@ public class DbInsertEncoding extends UnaryOperatorEncoding<DbInsert> {
   @Override
   public DbInsert construct(ConstructArgs args) {
     /* default overwrite to {@code false}, so we append. */
-    argOverwriteTable = Objects.firstNonNull(argOverwriteTable, Boolean.FALSE);
+    argOverwriteTable = MoreObjects.firstNonNull(argOverwriteTable, Boolean.FALSE);
     return new DbInsert(null, relationKey, connectionInfo, argOverwriteTable, indexes);
   }
 }

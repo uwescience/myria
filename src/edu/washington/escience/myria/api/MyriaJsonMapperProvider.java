@@ -1,7 +1,6 @@
 package edu.washington.escience.myria.api;
 
 import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.Provider;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
@@ -20,7 +19,7 @@ import com.fasterxml.jackson.jaxrs.json.JacksonJaxbJsonProvider;
  * 
  */
 @Provider
-@Produces(MediaType.APPLICATION_JSON)
+@Produces(MyriaApiConstants.JSON_UTF_8)
 public class MyriaJsonMapperProvider extends JacksonJaxbJsonProvider {
   /** Only create this object once, and share it among instances. */
   private static final ObjectMapper MAPPER = newMapper();

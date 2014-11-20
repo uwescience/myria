@@ -17,7 +17,7 @@ import org.jboss.netty.channel.group.DefaultChannelGroupFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -74,7 +74,7 @@ public class MasterSubQuery extends LocalSubQuery {
                 kill();
                 /* Record the reason for failure. */
                 if (cause != null) {
-                  message = Objects.firstNonNull(message, "Error in worker#" + workerID + ", " + cause.toString());
+                  message = MoreObjects.firstNonNull(message, "Error in worker#" + workerID + ", " + cause.toString());
                 }
               } else if (getFTMode().equals(FTMODE.ABANDON)) {
                 LOGGER.debug("(Abandon) ignoring failed subquery future on subquery #{}", getSubQueryId());
@@ -204,7 +204,7 @@ public class MasterSubQuery extends LocalSubQuery {
 
   /**
    * Callback when a query plan is received by a worker.
-   *
+   * 
    * @param workerID the workerID
    */
   final void queryReceivedByWorker(final int workerID) {
@@ -220,7 +220,7 @@ public class MasterSubQuery extends LocalSubQuery {
         }
         if (!e.getValue().workerCompleteQuery.isDone() && e.getKey() != MyriaConstants.MASTER_ID) {
           master.getIPCConnectionPool()
-          .sendShortMessage(e.getKey(), IPCUtils.recoverQueryTM(getSubQueryId(), workerID));
+              .sendShortMessage(e.getKey(), IPCUtils.recoverQueryTM(getSubQueryId(), workerID));
         }
       }
     } else {
@@ -281,7 +281,7 @@ public class MasterSubQuery extends LocalSubQuery {
 
   /**
    * Callback when a worker completes its part of the query.
-   *
+   * 
    * @param workerID the workerID
    */
   final void workerComplete(final int workerID) {
@@ -297,7 +297,7 @@ public class MasterSubQuery extends LocalSubQuery {
 
   /**
    * Callback when a worker fails in executing its part of the query.
-   *
+   * 
    * @param workerID the workerID
    * @param cause the cause of the failure
    */

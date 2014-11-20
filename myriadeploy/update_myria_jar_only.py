@@ -4,6 +4,7 @@ import myriadeploy
 
 import subprocess
 import sys
+import logging
 
 
 def host_port_list(workers):
@@ -27,7 +28,7 @@ def copy_distribution(config):
         to_copy = ["libs", "conf"]
         args = ["rsync", "-e", "ssh -c arcfour", "--del", "-rtLDvz"] + to_copy + [remote_path]
         if subprocess.call(args):
-            raise Exception("Error copying distribution to %s" % (hostname,))
+            logging.error("Error copying distribution to %s" % (hostname,))
 
 
 def main(argv):

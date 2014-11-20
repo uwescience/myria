@@ -3,6 +3,7 @@
 import subprocess
 import sys
 import remove_deployment
+import logging
 
 
 def make_catalog(config_file):
@@ -10,24 +11,24 @@ def make_catalog(config_file):
 given deployment configuration."""
     args = ["./run_catalog_maker.sh", config_file]
     if subprocess.call(args):
-        raise Exception("Error making the catalogs")
+        logging.error("Error making the catalogs")
 
 
 def copy_catalogs(config_file):
     """Copies the master and worker catalogs to the remote hosts."""
     args = ["./using_deployment_utils.sh", config_file, "-copy_master_catalog"]
     if subprocess.call(args):
-        raise Exception("Error copying master catalog")
+        logging.error("Error copying master catalog")
     args = ["./using_deployment_utils.sh", config_file, "-copy_worker_catalogs"]
     if subprocess.call(args):
-        raise Exception("Error copying worker catalogs")
+        logging.error("Error copying worker catalogs")
 
 
 def copy_distribution(config_file):
     "Copy the distribution (jar and libs and conf) to compute nodes."
     args = ["./using_deployment_utils.sh", config_file, "-copy_distribution"]
     if subprocess.call(args):
-        raise Exception("Error copying distribution")
+        logging.error("Error copying distribution")
 
 
 def main(argv):
