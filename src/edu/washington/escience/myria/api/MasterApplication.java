@@ -104,8 +104,8 @@ public final class MasterApplication extends PackagesResourceConfig {
   }
 
   /**
-   * Check the authentication information and set roles. Currently there are only two roles: "admin" and "user". By
-   * default the role is set to "user" unless the authentication specifies "admin" with the correct password.
+   * Check the authentication information and set roles. Currently there are only two roles: "ADMIN" and "USER". By
+   * default the role is set to "user" unless the authentication specifies "ADMIN" with the correct password.
    * 
    */
   private class AuthenticateFilter implements ContainerRequestFilter {
@@ -129,7 +129,7 @@ public final class MasterApplication extends PackagesResourceConfig {
         }
         String username = values[0];
         String password = values[1];
-        if (isUserInRole(username, ROLE.admin)) {
+        if (isUserInRole(username, ROLE.ADMIN)) {
           /* User says it's admin. */
           if (!checkAdminPassword(password)) {
             /* But the password is incorrect. */
@@ -154,9 +154,9 @@ public final class MasterApplication extends PackagesResourceConfig {
      * @return true or false
      */
     public boolean isUserInRole(final String username, final ROLE role) {
-      if (role.equals(ROLE.admin)) {
-        /* Temporary solution: only true when username.toLowerCase() is "admin" */
-        return username.toLowerCase().equals(ROLE.admin.toString());
+      if (role.equals(ROLE.ADMIN)) {
+        /* Temporary solution: only true when username.toUpperCase() is "ADMIN" */
+        return username.toUpperCase().equals(ROLE.ADMIN.toString());
       }
       /* Otherwise we don't care for now. */
       return true;

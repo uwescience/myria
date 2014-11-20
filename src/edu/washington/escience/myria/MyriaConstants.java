@@ -282,13 +282,13 @@ public final class MyriaConstants {
   /** available fault-tolerance mode for each query in Myria. */
   public static enum FTMODE {
     /** three FT modes are supported. */
-    none, abandon, rejoin
+    NONE, ABANDON, REJOIN
   };
 
   /** REST API roles in Myria. */
   public static enum ROLE {
-    /* two roles, user is non-admin */
-    admin, user
+    /* two roles, USER is non-ADMIN */
+    ADMIN, USER
   };
 
 }

@@ -32,7 +32,7 @@ public final class MasterResource {
    * @return a success message.
    */
   @GET
-  @RolesAllowed({ "admin" })
+  @RolesAllowed({ "ADMIN" })
   @Path("/shutdown")
   public Response shutdown(@Context final MasterDaemon daemon) {
     /* A thread to stop the daemon after this request finishes. */
@@ -70,7 +70,7 @@ public final class MasterResource {
    * @return the file path.
    */
   @GET
-  @RolesAllowed({ "admin" })
+  @RolesAllowed({ "ADMIN" })
   @Path("/deployment_cfg")
   public Response getDeploymentCfg(@Context final Server server) {
     String workingDir = server.getConfiguration(MyriaSystemConfigKeys.WORKING_DIRECTORY);
