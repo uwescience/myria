@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 
 import org.junit.Test;
@@ -39,7 +40,7 @@ public class QueryQueueTest extends SystemTestBase {
     QueryPlan q2 = TestUtils.insertRelation(source2, table2Key, pf, workerIDs);
 
     QueryFuture qf1 = server.getQueryManager().submitQuery("long query 1", "long query 1", "long query 1", q1, null);
-    QueryFuture qf2 = server.getQueryManager().submitQuery("short query 2", "short query 2", "short query 1", q2, null);
+    QueryFuture qf2 = server.getQueryManager().submitQuery("short query 2", "short query 2", "short query 2", q2, null);
     Query query1 = qf1.get();
     Query query2 = qf2.get();
     assertEquals(query1.getMessage(), query1.getStatus(), Status.SUCCESS);
@@ -60,7 +61,7 @@ public class QueryQueueTest extends SystemTestBase {
     QueryPlan q2 = TestUtils.insertRelation(source2, table2Key, pf, workerIDs);
 
     QueryFuture qf1 = server.getQueryManager().submitQuery("fail query 1", "fail query 1", "fail query 1", q1, null);
-    QueryFuture qf2 = server.getQueryManager().submitQuery("short query 2", "short query 2", "short query 1", q2, null);
+    QueryFuture qf2 = server.getQueryManager().submitQuery("short query 2", "short query 2", "short query 2", q2, null);
     QueryStatusEncoding query1 = null;
     try {
       qf1.get();
@@ -89,7 +90,7 @@ public class QueryQueueTest extends SystemTestBase {
     QueryPlan q2 = TestUtils.insertRelation(source2, table2Key, pf, workerIDs);
 
     QueryFuture qf1 = server.getQueryManager().submitQuery("fail query 1", "fail query 1", "fail query 1", q1, null);
-    QueryFuture qf2 = server.getQueryManager().submitQuery("short query 2", "short query 2", "short query 1", q2, null);
+    QueryFuture qf2 = server.getQueryManager().submitQuery("short query 2", "short query 2", "short query 2", q2, null);
     QueryStatusEncoding query1 = null;
     try {
       qf1.get();
@@ -135,5 +136,42 @@ public class QueryQueueTest extends SystemTestBase {
     assertTrue("expect number of successful query submissions " + numSubmitted + " to be less than " + numQueries,
         numSubmitted < numQueries);
     assertNull(qfs[numSubmitted + 1]);
+  }
+
+  @Test
+  public void testKillAcceptedQuery() throws Exception {
+    TupleSource source1 = new TupleSource(TestUtils.range(TupleBatch.BATCH_SIZE * 250));
+    TupleSource source2 = new TupleSource(TestUtils.range(10));
+    TupleSource source3 = new TupleSource(TestUtils.range(20));
+    final RelationKey table1Key = RelationKey.of("test", "test", "bigtable");
+    final RelationKey table2Key = RelationKey.of("test", "test", "tinytable");
+    final RelationKey table3Key = RelationKey.of("test", "test", "tinytable3");
+    PartitionFunction pf = new SingleFieldHashPartitionFunction(workerIDs.length, 0);
+    /* One long query. */
+    QueryPlan q1 = TestUtils.insertRelation(source1, table1Key, pf, workerIDs);
+    /* One very short query. */
+    QueryPlan q2 = TestUtils.insertRelation(source2, table2Key, pf, workerIDs);
+    /* One very short query. */
+    QueryPlan q3 = TestUtils.insertRelation(source3, table3Key, pf, workerIDs);
+
+    QueryFuture qf1 = server.getQueryManager().submitQuery("long query 1", "long query 1", "long query 1", q1, null);
+    QueryFuture qf2 = server.getQueryManager().submitQuery("short query 2", "short query 2", "short query 2", q2, null);
+    QueryFuture qf3 = server.getQueryManager().submitQuery("short query 3", "short query 3", "short query 3", q3, null);
+    /* Kill Query 2 before it even gets to start. */
+    server.getQueryManager().killQuery(qf2.getQueryId());
+    Query query1 = qf1.get();
+    try {
+      Query query2 = qf2.get();
+      fail("Query 2 should have been canceled, instead has status " + query2.getStatus());
+    } catch (CancellationException e) {
+      /* pass */
+    }
+    QueryStatusEncoding qs2 = server.getQueryManager().getQueryStatus(qf2.getQueryId());
+    Query query3 = qf3.get();
+    assertEquals(query1.getMessage(), query1.getStatus(), Status.SUCCESS);
+    assertEquals(qs2.status, Status.KILLED);
+    assertEquals(query3.getMessage(), query3.getStatus(), Status.SUCCESS);
+    /* The goal: query 2 should have been canceled, also never started. */
+    assertNull(qs2.startTime);
   }
 }
