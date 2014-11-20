@@ -181,6 +181,48 @@ public final class LogResource {
   }
 
   /**
+   * Get aggregated summary of all data sent.
+   * 
+   * @param queryId query id.
+   * @param request the current request.
+   * @return the profiling logs of the query across all workers
+   * @throws DbException if there is an error in the database.
+   */
+  @GET
+  @Path("aggregated_sent")
+  public Response getAggregatedSentLogs(@QueryParam("queryId") final Long queryId, @Context final Request request)
+      throws DbException {
+
+    Preconditions.checkArgument(queryId != null, "Missing required field queryId.");
+
+    EntityTag eTag = new EntityTag(Integer.toString(Joiner.on('-').join("aggregated-sent", queryId).hashCode()));
+    Object obj = checkAndAddCache(request, eTag);
+    if (obj instanceof Response) {
+      return (Response) obj;
+    }
+    ResponseBuilder response = (ResponseBuilder) obj;
+
+    response.type(MediaType.TEXT_PLAIN);
+
+    PipedOutputStream writerOutput = new PipedOutputStream();
+    PipedInputStream input;
+    try {
+      input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
+    } catch (IOException e) {
+      throw new DbException(e);
+    }
+
+    PipedStreamingOutput entity = new PipedStreamingOutput(input);
+    response.entity(entity);
+
+    TupleWriter writer = new CsvTupleWriter(writerOutput);
+
+    server.startAggregatedSentLogDataStream(queryId, writer);
+
+    return response.build();
+  }
+
+  /**
    * @param queryId query id.
    * @param fragmentId the fragment id.
    * @param request the current request.

@@ -1231,7 +1231,7 @@ public final class Server {
 
     String sentQueryString =
         Joiner.on(' ').join("SELECT \"fragmentId\", \"destWorkerId\", sum(\"numTuples\") as \"numTuples\" FROM",
-            MyriaConstants.SENT_RELATION.toString(getDBMS()) + "WHERE \"queryId\" =", queryId, fragmentWhere,
+            MyriaConstants.SENT_RELATION.toString(getDBMS()), "WHERE \"queryId\" =", queryId, fragmentWhere,
             "GROUP BY \"queryId\", \"fragmentId\", \"destWorkerId\"");
 
     DbQueryScan scan = new DbQueryScan(sentQueryString, schema);
@@ -1276,7 +1276,61 @@ public final class Server {
 
     /* Submit the plan for the download. */
     String planString =
-        Joiner.on("").join("download profiling log data for (query=", queryId, ", fragment=", fragmentId, ")");
+        Joiner.on("").join("download profiling sent data for (query=", queryId, ", fragment=", fragmentId, ")");
+    try {
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
+
+  /**
+   * @param queryId query id.
+   * @param writer writer to get data.
+   * @return profiling logs for the query.
+   * @throws DbException if there is an error when accessing profiling logs.
+   */
+  public ListenableFuture<Query> startAggregatedSentLogDataStream(final long queryId, final TupleWriter writer)
+      throws DbException {
+    final QueryStatusEncoding queryStatus = checkAndReturnQueryStatus(queryId);
+
+    Set<Integer> actualWorkers = queryStatus.plan.getWorkers();
+
+    final Schema schema = Schema.ofFields("fragmentId", Type.INT_TYPE, "numTuples", Type.LONG_TYPE);
+
+    String sentQueryString =
+        Joiner.on(' ').join("SELECT \"fragmentId\", sum(\"numTuples\") as \"numTuples\" FROM",
+            MyriaConstants.SENT_RELATION.toString(getDBMS()), "WHERE \"queryId\" =", queryId,
+            "GROUP BY \"queryId\", \"fragmentId\"");
+
+    DbQueryScan scan = new DbQueryScan(sentQueryString, schema);
+    final ExchangePairID operatorId = ExchangePairID.newID();
+
+    CollectProducer producer = new CollectProducer(scan, operatorId, MyriaConstants.MASTER_ID);
+
+    SubQueryPlan workerPlan = new SubQueryPlan(producer);
+    Map<Integer, SubQueryPlan> workerPlans = new HashMap<>(actualWorkers.size());
+    for (Integer worker : actualWorkers) {
+      workerPlans.put(worker, workerPlan);
+    }
+
+    final CollectConsumer consumer =
+        new CollectConsumer(scan.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
+
+    final MultiGroupByAggregate aggregate =
+        new MultiGroupByAggregate(consumer, new int[] { 0, 1 }, new SingleColumnAggregatorFactory(0, AggregationOp.SUM));
+
+    // rename columns
+    ImmutableList.Builder<Expression> renameExpressions = ImmutableList.builder();
+    renameExpressions.add(new Expression("fragmentId", new VariableExpression(0)));
+    renameExpressions.add(new Expression("numTuples", new VariableExpression(1)));
+    final Apply rename = new Apply(aggregate, renameExpressions.build());
+
+    DataOutput output = new DataOutput(rename, writer);
+    final SubQueryPlan masterPlan = new SubQueryPlan(output);
+
+    /* Submit the plan for the download. */
+    String planString = Joiner.on("").join("download profiling aggregated sent data for (query=", queryId, ")");
     try {
       return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
     } catch (CatalogException e) {
