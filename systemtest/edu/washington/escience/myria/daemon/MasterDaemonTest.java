@@ -99,7 +99,7 @@ public class MasterDaemonTest {
       /* Try to stop the master without saying I'm admin. */
       WebResource shutdownRest = client.resource("http://localhost:" + REST_PORT + "/server/shutdown");
       ClientResponse response = shutdownRest.get(ClientResponse.class);
-      assertEquals(Status.FORBIDDEN.getStatusCode(), response.getStatus());
+      assertEquals(Status.UNAUTHORIZED.getStatusCode(), response.getStatus());
 
       /* Try to stop the master with a wrong admin password. */
       client.addFilter(new HTTPBasicAuthFilter("admin", "wrongpassword"));
