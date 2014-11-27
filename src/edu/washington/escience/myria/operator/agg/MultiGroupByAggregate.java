@@ -52,8 +52,6 @@ public final class MultiGroupByAggregate extends UnaryOperator {
   private Schema groupSchema;
   /** The schema of the aggregation result. */
   private Schema aggSchema;
-  /** A cache of the child's Schema. */
-  private Schema inputSchema;
 
   /** Factories to make the Aggregators. **/
   private final AggregatorFactory[] factories;
@@ -238,33 +236,29 @@ public final class MultiGroupByAggregate extends UnaryOperator {
    */
   @Override
   protected Schema generateSchema() {
+    Operator child = getChild();
+    if (child == null) {
+      return null;
+    }
+    Schema inputSchema = child.getSchema();
     if (inputSchema == null) {
-      Operator child = getChild();
-      if (child == null) {
-        return null;
-      }
-      inputSchema = child.getSchema();
-      if (inputSchema == null) {
-        return null;
-      }
+      return null;
     }
 
     groupSchema = inputSchema.getSubSchema(gfields);
-
-    try {
-      aggregators = AggUtils.allocateAggs(factories, inputSchema);
-    } catch (DbException e) {
-      throw new RuntimeException("unable to allocate aggregators", e);
-    }
 
     /* Build the output schema from the group schema and the aggregates. */
     final ImmutableList.Builder<Type> aggTypes = ImmutableList.<Type> builder();
     final ImmutableList.Builder<String> aggNames = ImmutableList.<String> builder();
 
-    for (Aggregator agg : aggregators) {
-      Schema curAggSchema = agg.getResultSchema();
-      aggTypes.addAll(curAggSchema.getColumnTypes());
-      aggNames.addAll(curAggSchema.getColumnNames());
+    try {
+      for (Aggregator agg : AggUtils.allocateAggs(factories, inputSchema)) {
+        Schema curAggSchema = agg.getResultSchema();
+        aggTypes.addAll(curAggSchema.getColumnTypes());
+        aggNames.addAll(curAggSchema.getColumnNames());
+      }
+    } catch (DbException e) {
+      throw new RuntimeException("unable to allocate aggregators to determine output schema", e);
     }
     aggSchema = new Schema(aggTypes, aggNames);
     return Schema.merge(groupSchema, aggSchema);
@@ -273,6 +267,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     Preconditions.checkState(getSchema() != null, "unable to determine schema in init");
+    aggregators = AggUtils.allocateAggs(factories, getChild().getSchema());
     groupKeys = new TupleBuffer(groupSchema);
     aggStates = new ArrayList<>();
     groupKeyMap = new TIntObjectHashMap<>();

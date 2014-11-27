@@ -81,6 +81,7 @@ public final class Aggregate extends UnaryOperator {
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     Preconditions.checkState(getSchema() != null, "unable to determine schema in init");
+    aggregators = AggUtils.allocateAggs(factories, getChild().getSchema());
     aggregatorStates = AggUtils.allocateAggStates(aggregators);
     aggBuffer = new TupleBatchBuffer(getSchema());
   }
@@ -95,19 +96,17 @@ public final class Aggregate extends UnaryOperator {
       return null;
     }
 
-    try {
-      aggregators = AggUtils.allocateAggs(factories, inputSchema);
-    } catch (DbException e) {
-      throw new RuntimeException("unable to allocate aggregators", e);
-    }
-
     final ImmutableList.Builder<Type> gTypes = ImmutableList.builder();
     final ImmutableList.Builder<String> gNames = ImmutableList.builder();
 
-    for (Aggregator agg : aggregators) {
-      Schema s = agg.getResultSchema();
-      gTypes.addAll(s.getColumnTypes());
-      gNames.addAll(s.getColumnNames());
+    try {
+      for (Aggregator agg : AggUtils.allocateAggs(factories, inputSchema)) {
+        Schema s = agg.getResultSchema();
+        gTypes.addAll(s.getColumnTypes());
+        gNames.addAll(s.getColumnNames());
+      }
+    } catch (DbException e) {
+      throw new RuntimeException("unable to allocate aggregators", e);
     }
     return new Schema(gTypes, gNames);
   }

@@ -343,6 +343,8 @@ public class SingleGroupByAggregate extends UnaryOperator {
   @Override
   protected final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     Preconditions.checkState(getSchema() != null, "unable to determine schema in init");
+
+    aggregators = AggUtils.allocateAggs(factories, getChild().getSchema());
     resultBuffer = new TupleBatchBuffer(getSchema());
 
     switch (gColumnType) {
@@ -383,17 +385,15 @@ public class SingleGroupByAggregate extends UnaryOperator {
 
     Preconditions.checkElementIndex(gColumn, inputSchema.numColumns(), "group column");
 
-    try {
-      aggregators = AggUtils.allocateAggs(factories, inputSchema);
-    } catch (DbException e) {
-      throw new RuntimeException("unable to allocate aggregators", e);
-    }
-
     Schema outputSchema = Schema.ofFields(inputSchema.getColumnType(gColumn), inputSchema.getColumnName(gColumn));
 
     gColumnType = inputSchema.getColumnType(gColumn);
-    for (Aggregator a : aggregators) {
-      outputSchema = Schema.merge(outputSchema, a.getResultSchema());
+    try {
+      for (Aggregator a : AggUtils.allocateAggs(factories, inputSchema)) {
+        outputSchema = Schema.merge(outputSchema, a.getResultSchema());
+      }
+    } catch (DbException e) {
+      throw new RuntimeException("unable to allocate aggregators to determine output schema", e);
     }
     return outputSchema;
   }
