@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
 
 /**
@@ -42,11 +43,26 @@ public class SingleColumnAggregatorFactory implements AggregatorFactory {
 
   @Override
   public Aggregator get(final Schema inputSchema) {
-    return new SingleColumnAggregator(inputSchema, column, aggOps);
-  }
-
-  @Override
-  public Schema getResultSchema(final Schema inputSchema) {
-    return new SingleColumnAggregator(inputSchema, column, aggOps).getResultSchema();
+    Objects.requireNonNull(inputSchema, "inputSchema");
+    Objects.requireNonNull(aggOps, "aggOps");
+    String inputName = inputSchema.getColumnName(column);
+    Type type = inputSchema.getColumnType(column);
+    switch (type) {
+      case BOOLEAN_TYPE:
+        return new BooleanAggregator(inputName, aggOps, column);
+      case DATETIME_TYPE:
+        return new DateTimeAggregator(inputName, aggOps, column);
+      case DOUBLE_TYPE:
+        return new DoubleAggregator(inputName, aggOps, column);
+      case FLOAT_TYPE:
+        return new FloatAggregator(inputName, aggOps, column);
+      case INT_TYPE:
+        return new IntegerAggregator(inputName, aggOps, column);
+      case LONG_TYPE:
+        return new LongAggregator(inputName, aggOps, column);
+      case STRING_TYPE:
+        return new StringAggregator(inputName, aggOps, column);
+    }
+    throw new IllegalArgumentException("Unknown column type: " + type);
   }
 }

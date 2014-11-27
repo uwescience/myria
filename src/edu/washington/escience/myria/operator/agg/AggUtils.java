@@ -7,7 +7,6 @@ import com.google.common.collect.Sets;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
 
 /**
@@ -77,32 +76,6 @@ public final class AggUtils {
   }
 
   /**
-   * @param type the type of the aggregator.
-   * @param inputName the name of the column in the child schema
-   * @param aggOps the aggregate operations
-   * @return an {@link PrimitiveAggregator} for the specified type, column name, and operations.
-   */
-  public static PrimitiveAggregator allocate(final Type type, final String inputName, final AggregationOp[] aggOps) {
-    switch (type) {
-      case BOOLEAN_TYPE:
-        return new BooleanAggregator(inputName, aggOps);
-      case DATETIME_TYPE:
-        return new DateTimeAggregator(inputName, aggOps);
-      case DOUBLE_TYPE:
-        return new DoubleAggregator(inputName, aggOps);
-      case FLOAT_TYPE:
-        return new FloatAggregator(inputName, aggOps);
-      case INT_TYPE:
-        return new IntegerAggregator(inputName, aggOps);
-      case LONG_TYPE:
-        return new LongAggregator(inputName, aggOps);
-      case STRING_TYPE:
-        return new StringAggregator(inputName, aggOps);
-    }
-    throw new IllegalArgumentException("Unknown column type: " + type);
-  }
-
-  /**
    * Utility class to allocate a set of aggregators from the factories.
    * 
    * @param factories The factories that will produce the aggregators.
@@ -117,5 +90,19 @@ public final class AggUtils {
       aggregators[j] = factories[j].get(inputSchema);
     }
     return aggregators;
+  }
+
+  /**
+   * Utility class to allocate the initial aggregation states from a set of {@link Aggregator}s.
+   * 
+   * @param aggregators the {@link Aggregator}s that will update the states.
+   * @return the initial aggregation states for the specified {@link Aggregator}s.
+   */
+  public static Object[] allocateAggStates(final Aggregator[] aggregators) {
+    Object[] states = new Object[aggregators.length];
+    for (int j = 0; j < aggregators.length; ++j) {
+      states[j] = aggregators[j].getInitialState();
+    }
+    return states;
   }
 }

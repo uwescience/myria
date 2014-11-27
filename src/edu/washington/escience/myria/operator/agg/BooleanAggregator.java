@@ -6,9 +6,9 @@ import java.util.Set;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.math.LongMath;
 
+import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.storage.AppendableTable;
-import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.storage.ReadableTable;
 
 /**
@@ -18,10 +18,8 @@ public final class BooleanAggregator extends PrimitiveAggregator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
-  /**
-   * Count, always of long type.
-   */
-  private long count;
+  /** Which column of the input this aggregator operates over. */
+  private final int fromColumn;
 
   /**
    * Aggregate operations applicable for boolean columns.
@@ -31,36 +29,42 @@ public final class BooleanAggregator extends PrimitiveAggregator {
   /**
    * @param aFieldName aggregate field name for use in output schema.
    * @param aggOps the aggregate operation to simultaneously compute.
+   * @param column the column being aggregated over.
    */
-  public BooleanAggregator(final String aFieldName, final AggregationOp[] aggOps) {
+  public BooleanAggregator(final String aFieldName, final AggregationOp[] aggOps, final int column) {
     super(aFieldName, aggOps);
+    fromColumn = column;
   }
 
   @Override
-  public void add(final ReadableTable from, final int fromColumn) {
+  public void add(final ReadableTable from, final Object state) {
     Objects.requireNonNull(from, "from");
-    add(from.asColumn(fromColumn));
+    BooleanAggState b = (BooleanAggState) state;
+    b.count += from.numTuples();
   }
 
   /**
    * Add the specified value to this aggregator.
    * 
-   * @param value the value to be added
+   * @param value the value to be added.
+   * @param state the current state of the aggregate.
    */
-  public void addBoolean(final boolean value) {
+  public void addBoolean(final boolean value, final Object state) {
+    BooleanAggState b = (BooleanAggState) state;
     if (needsCount) {
-      count = LongMath.checkedAdd(count, 1);
+      b.count = LongMath.checkedAdd(b.count, 1);
     }
   }
 
   @Override
-  public void getResult(final AppendableTable dest, final int destColumn) {
+  public void getResult(final AppendableTable dest, final int destColumn, final Object state) {
+    BooleanAggState b = (BooleanAggState) state;
     Objects.requireNonNull(dest, "dest");
     int idx = destColumn;
     for (AggregationOp op : aggOps) {
       switch (op) {
         case COUNT:
-          dest.putLong(idx, count);
+          dest.putLong(idx, b.count);
           break;
         case AVG:
         case MAX:
@@ -74,22 +78,8 @@ public final class BooleanAggregator extends PrimitiveAggregator {
   }
 
   @Override
-  public void add(final ReadableTable table, final int column, final int row) {
-    Objects.requireNonNull(table, "table");
-    addBoolean(table.getBoolean(column, row));
-  }
-
-  @Override
   public Type getType() {
     return Type.BOOLEAN_TYPE;
-  }
-
-  @Override
-  public void add(final ReadableColumn from) {
-    Objects.requireNonNull(from, "from");
-    if (needsCount) {
-      count = LongMath.checkedAdd(count, from.size());
-    }
   }
 
   @Override
@@ -100,5 +90,21 @@ public final class BooleanAggregator extends PrimitiveAggregator {
   @Override
   protected Type getSumType() {
     throw new UnsupportedOperationException("SUM of Boolean values");
+  }
+
+  @Override
+  public void addRow(final ReadableTable from, final int row, final Object state) throws DbException {
+    addBoolean(from.getBoolean(fromColumn, row), state);
+  }
+
+  @Override
+  public Object getInitialState() {
+    return new BooleanAggState();
+  }
+
+  /** Private internal class that wraps the state required by this Aggregator as an object. */
+  private final class BooleanAggState {
+    /** The number of tuples seen so far. */
+    private long count = 0;
   }
 }

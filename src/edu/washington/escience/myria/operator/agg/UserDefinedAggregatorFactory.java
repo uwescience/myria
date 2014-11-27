@@ -122,7 +122,15 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
         emitEvaluators.add(evaluator);
       }
 
-      resultSchema = getResultSchema(inputSchema);
+      /* Compute the result schema. */
+      ExpressionOperatorParameter emitParams = new ExpressionOperatorParameter(null, stateSchema);
+      ImmutableList.Builder<Type> types = ImmutableList.builder();
+      ImmutableList.Builder<String> names = ImmutableList.builder();
+      for (Expression e : emitters) {
+        types.add(e.getOutputType(emitParams));
+        names.add(e.getOutputName());
+      }
+      resultSchema = new Schema(types, names);
     }
     return new UserDefinedAggregator(state.clone(), updateEvaluators, emitEvaluators, resultSchema);
   }
@@ -142,25 +150,5 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
       namesBuilder.add(expr.getOutputName());
     }
     return new Schema(typesBuilder.build(), namesBuilder.build());
-  }
-
-  @Override
-  @Nonnull
-  public Schema getResultSchema(final Schema inputSchema) {
-    ImmutableList.Builder<Type> stateTypes = ImmutableList.builder();
-    ExpressionOperatorParameter initParams = new ExpressionOperatorParameter(inputSchema);
-    for (Expression e : initializers) {
-      stateTypes.add(e.getOutputType(initParams));
-    }
-    Schema stateSchema = new Schema(stateTypes.build());
-
-    ExpressionOperatorParameter emitParams = new ExpressionOperatorParameter(null, stateSchema);
-    ImmutableList.Builder<Type> types = ImmutableList.builder();
-    ImmutableList.Builder<String> names = ImmutableList.builder();
-    for (Expression e : emitters) {
-      types.add(e.getOutputType(emitParams));
-      names.add(e.getOutputName());
-    }
-    return new Schema(types, names);
   }
 }

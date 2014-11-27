@@ -8,7 +8,6 @@ import com.google.common.math.LongMath;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.storage.AppendableTable;
-import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.storage.ReadableTable;
 
 /**
@@ -18,21 +17,8 @@ public final class DoubleAggregator extends PrimitiveAggregator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
-
-  /** The minimum value in the aggregated column. */
-  private double min;
-  /** The maximum value in the aggregated column. */
-  private double max;
-  /** The sum of values in the aggregated column. */
-  private double sum;
-
-  /** private temp variables for computing stdev. */
-  private double sumSquared;
-
-  /**
-   * Count, always of long type.
-   */
-  private long count;
+  /** Which column of the input this aggregator operates over. */
+  private final int fromColumn;
 
   /**
    * Aggregate operations applicable for double columns.
@@ -43,58 +29,41 @@ public final class DoubleAggregator extends PrimitiveAggregator {
   /**
    * @param aFieldName aggregate field name for use in output schema.
    * @param aggOps the aggregate operation to simultaneously compute.
+   * @param column the column being aggregated over.
    */
-  public DoubleAggregator(final String aFieldName, final AggregationOp[] aggOps) {
+  public DoubleAggregator(final String aFieldName, final AggregationOp[] aggOps, final int column) {
     super(aFieldName, aggOps);
-
-    min = Double.MAX_VALUE;
-    max = Double.MIN_VALUE;
-    sum = 0.0;
-    count = 0;
-    sumSquared = 0.0;
+    fromColumn = column;
   }
 
   @Override
-  public void add(final ReadableColumn from) {
+  public void add(final ReadableTable from, final Object state) {
     Objects.requireNonNull(from, "from");
-    final int numTuples = from.size();
+    DoubleAggState d = (DoubleAggState) state;
+    final int numTuples = from.numTuples();
     if (numTuples == 0) {
       return;
     }
     if (needsCount) {
-      count = LongMath.checkedAdd(count, numTuples);
+      d.count = LongMath.checkedAdd(d.count, numTuples);
     }
     if (!needsStats) {
       return;
     }
     for (int i = 0; i < numTuples; i++) {
-      addDoubleStats(from.getDouble(i));
+      addDoubleStats(from.getDouble(fromColumn, i), d);
     }
   }
 
   @Override
-  public void add(final ReadableTable from, final int fromColumn) {
-    Objects.requireNonNull(from, "from");
-    add(from.asColumn(fromColumn));
-  }
-
-  @Override
-  public void add(final ReadableTable table, final int column, final int row) {
+  public void addRow(final ReadableTable table, final int row, final Object state) {
     Objects.requireNonNull(table, "table");
-    addDouble(table.getDouble(column, row));
-  }
-
-  /**
-   * Add the specified value to this aggregator.
-   * 
-   * @param value the value to be added
-   */
-  public void addDouble(final double value) {
+    DoubleAggState d = (DoubleAggState) state;
     if (needsCount) {
-      count = LongMath.checkedAdd(count, 1);
+      d.count = LongMath.checkedAdd(d.count, 1);
     }
     if (needsStats) {
-      addDoubleStats(value);
+      addDoubleStats(table.getFloat(fromColumn, row), d);
     }
   }
 
@@ -102,48 +71,50 @@ public final class DoubleAggregator extends PrimitiveAggregator {
    * Helper function to add value to this aggregator. Note this does NOT update count.
    * 
    * @param value the value to be added
+   * @param state the state of the aggregate, which will be mutated.
    */
-  private void addDoubleStats(final double value) {
+  private void addDoubleStats(final double value, final DoubleAggState state) {
     if (needsSum) {
-      sum += value;
+      state.sum += value;
     }
     if (needsSumSq) {
-      sumSquared += value * value;
+      state.sumSquared += value * value;
     }
     if (needsMin) {
-      min = Math.min(min, value);
+      state.min = Math.min(state.min, value);
     }
     if (needsMax) {
-      max = Math.max(max, value);
+      state.max = Math.max(state.max, value);
     }
   }
 
   @Override
-  public void getResult(final AppendableTable dest, final int destColumn) {
+  public void getResult(final AppendableTable dest, final int destColumn, final Object state) {
     Objects.requireNonNull(dest, "dest");
+    DoubleAggState d = (DoubleAggState) state;
     int idx = destColumn;
     for (AggregationOp op : aggOps) {
       switch (op) {
         case AVG:
-          dest.putDouble(idx, sum * 1.0 / count);
+          dest.putDouble(idx, d.sum * 1.0 / d.count);
           break;
         case COUNT:
-          dest.putLong(idx, count);
+          dest.putLong(idx, d.count);
           break;
         case MAX:
-          dest.putDouble(idx, max);
+          dest.putDouble(idx, d.max);
           break;
         case MIN:
-          dest.putDouble(idx, min);
+          dest.putDouble(idx, d.min);
           break;
         case STDEV:
-          double first = sumSquared / count;
-          double second = sum / count;
+          double first = d.sumSquared / d.count;
+          double second = d.sum / d.count;
           double stdev = Math.sqrt(first - second * second);
           dest.putDouble(idx, stdev);
           break;
         case SUM:
-          dest.putDouble(idx, sum);
+          dest.putDouble(idx, d.sum);
           break;
       }
       idx++;
@@ -163,5 +134,24 @@ public final class DoubleAggregator extends PrimitiveAggregator {
   @Override
   protected Type getSumType() {
     return Type.DOUBLE_TYPE;
+  }
+
+  @Override
+  public Object getInitialState() {
+    return new DoubleAggState();
+  }
+
+  /** Private internal class that wraps the state required by this Aggregator as an object. */
+  private final class DoubleAggState {
+    /** The number of tuples seen so far. */
+    private long count = 0;
+    /** The minimum value in the aggregated column. */
+    private double min = Double.MAX_VALUE;
+    /** The maximum value in the aggregated column. */
+    private double max = Double.MIN_VALUE;
+    /** The sum of values in the aggregated column. */
+    private double sum = 0;
+    /** private temp variables for computing stdev. */
+    private double sumSquared = 0;
   }
 }

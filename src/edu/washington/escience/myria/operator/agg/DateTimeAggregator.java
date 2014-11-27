@@ -10,7 +10,6 @@ import com.google.common.math.LongMath;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.storage.AppendableTable;
-import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.storage.ReadableTable;
 
 /**
@@ -20,16 +19,8 @@ public final class DateTimeAggregator extends PrimitiveAggregator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
-
-  /**
-   * Count, always of long type.
-   */
-  private long count;
-
-  /**
-   * min and max keeps the same data type as the aggregating column.
-   */
-  private DateTime min, max;
+  /** Which column of the input this aggregator operates over. */
+  private final int fromColumn;
 
   /**
    * Aggregate operations applicable for string columns.
@@ -40,86 +31,88 @@ public final class DateTimeAggregator extends PrimitiveAggregator {
   /**
    * @param aFieldName aggregate field name for use in output schema.
    * @param aggOps the aggregate operation to simultaneously compute.
+   * @param column the column being aggregated over.
    */
-  public DateTimeAggregator(final String aFieldName, final AggregationOp[] aggOps) {
+  public DateTimeAggregator(final String aFieldName, final AggregationOp[] aggOps, final int column) {
     super(aFieldName, aggOps);
+    fromColumn = column;
   }
 
   /**
    * Add the specified value to this aggregator.
    * 
    * @param value the value to be added
+   * @param state the state of the aggregate, which will be mutated.
    */
-  public void addDateTime(final DateTime value) {
+  public void addDateTime(final DateTime value, final Object state) {
     Objects.requireNonNull(value, "value");
+    DateTimeAggState d = (DateTimeAggState) state;
     if (needsCount) {
-      count = LongMath.checkedAdd(count, 1);
+      d.count = LongMath.checkedAdd(d.count, 1);
     }
     if (needsStats) {
-      addDateTimeStats(value);
+      addDateTimeStats(value, d);
     }
   }
 
   @Override
-  public void add(final ReadableColumn from) {
+  public void add(final ReadableTable from, final Object state) {
     Objects.requireNonNull(from, "from");
-    final int numTuples = from.size();
+    DateTimeAggState d = (DateTimeAggState) state;
+    final int numTuples = from.numTuples();
     if (numTuples == 0) {
       return;
     }
     if (needsCount) {
-      count = LongMath.checkedAdd(count, numTuples);
+      d.count = LongMath.checkedAdd(d.count, numTuples);
     }
     if (needsStats) {
       for (int row = 0; row < numTuples; ++row) {
-        addDateTimeStats(from.getDateTime(row));
+        addDateTimeStats(from.getDateTime(fromColumn, row), d);
       }
     }
   }
 
   @Override
-  public void add(final ReadableTable from, final int fromColumn) {
-    add(from.asColumn(Objects.requireNonNull(fromColumn, "fromColumn")));
-  }
-
-  @Override
-  public void add(final ReadableTable table, final int column, final int row) {
-    addDateTime(Objects.requireNonNull(table, "table").getDateTime(column, row));
+  public void addRow(final ReadableTable table, final int row, final Object state) {
+    addDateTime(Objects.requireNonNull(table, "table").getDateTime(fromColumn, row), state);
   }
 
   /**
    * Helper function to add value to this aggregator. Note this does NOT update count.
    * 
    * @param value the value to be added
+   * @param state the state of the aggregate, which will be mutated.
    */
-  private void addDateTimeStats(final DateTime value) {
+  private void addDateTimeStats(final DateTime value, final DateTimeAggState state) {
     Objects.requireNonNull(value, "value");
     if (needsMin) {
-      if ((min == null) || (min.compareTo(value) > 0)) {
-        min = value;
+      if ((state.min == null) || (state.min.compareTo(value) > 0)) {
+        state.min = value;
       }
     }
     if (needsMax) {
-      if ((max == null) || (max.compareTo(value) < 0)) {
-        max = value;
+      if ((state.max == null) || (state.max.compareTo(value) < 0)) {
+        state.max = value;
       }
     }
   }
 
   @Override
-  public void getResult(final AppendableTable dest, final int destColumn) {
+  public void getResult(final AppendableTable dest, final int destColumn, final Object state) {
+    DateTimeAggState d = (DateTimeAggState) state;
     Objects.requireNonNull(dest, "dest");
     int idx = destColumn;
     for (AggregationOp op : aggOps) {
       switch (op) {
         case COUNT:
-          dest.putLong(idx, count);
+          dest.putLong(idx, d.count);
           break;
         case MAX:
-          dest.putDateTime(idx, max);
+          dest.putDateTime(idx, d.max);
           break;
         case MIN:
-          dest.putDateTime(idx, min);
+          dest.putDateTime(idx, d.min);
           break;
         case AVG:
         case STDEV:
@@ -143,5 +136,20 @@ public final class DateTimeAggregator extends PrimitiveAggregator {
   @Override
   protected Set<AggregationOp> getAvailableAgg() {
     return AVAILABLE_AGG;
+  }
+
+  @Override
+  public Object getInitialState() {
+    return new DateTimeAggState();
+  }
+
+  /** Private internal class that wraps the state required by this Aggregator as an object. */
+  private final class DateTimeAggState {
+    /** The number of tuples seen so far. */
+    private long count = 0;
+    /** The minimum value in the aggregated column. */
+    private DateTime min = null;
+    /** The maximum value in the aggregated column. */
+    private DateTime max = null;
   }
 }
