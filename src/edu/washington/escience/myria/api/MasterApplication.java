@@ -1,17 +1,17 @@
 package edu.washington.escience.myria.api;
 
-import javax.servlet.ServletConfig;
-import javax.ws.rs.core.Context;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ContainerResponseContext;
+import javax.ws.rs.container.ContainerResponseFilter;
+
+import org.glassfish.grizzly.compression.zip.GZipEncoder;
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
+import org.glassfish.jersey.media.multipart.MultiPartFeature;
+import org.glassfish.jersey.server.ResourceConfig;
+import org.glassfish.jersey.server.ServerProperties;
+import org.glassfish.jersey.server.filter.EncodingFilter;
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
-import com.sun.jersey.api.container.filter.GZIPContentEncodingFilter;
-import com.sun.jersey.api.core.PackagesResourceConfig;
-import com.sun.jersey.api.core.ResourceConfig;
-import com.sun.jersey.spi.container.ContainerRequest;
-import com.sun.jersey.spi.container.ContainerResponse;
-import com.sun.jersey.spi.container.ContainerResponseFilter;
-import com.sun.jersey.spi.container.servlet.WebConfig;
-import com.sun.jersey.spi.inject.SingletonTypeInjectableProvider;
 import com.wordnik.swagger.jaxrs.config.BeanConfig;
 
 import edu.washington.escience.myria.daemon.MasterDaemon;
@@ -21,7 +21,7 @@ import edu.washington.escience.myria.parallel.Server;
  * This object simply configures which resources can be requested via the REST server.
  * 
  */
-public final class MasterApplication extends PackagesResourceConfig {
+public final class MasterApplication extends ResourceConfig {
 
   /**
    * Instantiate the main application running on the Myria master.
@@ -29,43 +29,70 @@ public final class MasterApplication extends PackagesResourceConfig {
    * @param server the Myria server running on this master.
    * @param daemon the Myria daemon running on this master.
    */
-  @SuppressWarnings("unchecked")
   public MasterApplication(final Server server, final MasterDaemon daemon) {
     /*
      * Tell Jersey to look for resources inside the entire project, and also for Swagger.
      */
-    super(new String[] { "edu.washington.escience.myria", "com.wordnik.swagger.jersey.listing" });
+    packages(new String[] { "edu.washington.escience.myria", "com.wordnik.swagger.jersey.listing" });
 
-    /* Disable WADL - throws error messages when using Swagger, and not needed. */
-    getFeatures().put(ResourceConfig.FEATURE_DISABLE_WADL, true);
-
-    /* Whenever @Context Server or @Context MasterDaemon is used during a web request, these object will be supplied. */
-    getSingletons().add(new SingletonTypeInjectableProvider<Context, Server>(Server.class, server) {
-    });
-    getSingletons().add(new SingletonTypeInjectableProvider<Context, MasterDaemon>(MasterDaemon.class, daemon) {
-    });
-    getSingletons().add(new SingletonTypeInjectableProvider<Context, ServletConfig>(ServletConfig.class, null) {
-    });
-    getSingletons().add(new SingletonTypeInjectableProvider<Context, WebConfig>(WebConfig.class, null) {
-    });
+    /*
+     * Disable WADL - throws error messages when using Swagger, and not needed.
+     */
+    property(ServerProperties.WADL_FEATURE_DISABLE, true);
 
     /* Enable Jackson's JSON Serialization/Deserialization. */
-    getClasses().add(JacksonJsonProvider.class);
+    register(JacksonJsonProvider.class);
+
+    /* Enable Multipart. */
+    register(MultiPartFeature.class);
+
+    /* Register the binder. */
+    registerInstances(new SingletonBinder(server, daemon));
 
     /* Enable GZIP compression/decompression */
-    getContainerRequestFilters().add(GZIPContentEncodingFilter.class);
-    getContainerResponseFilters().add(GZIPContentEncodingFilter.class);
+    register(EncodingFilter.class);
+    register(GZipEncoder.class);
 
     /* Swagger configuration -- must come BEFORE Swagger classes are added. */
     BeanConfig myriaBeanConfig = new BeanConfig();
-    /* TODO(dhalperi): make this more dynamic based on either Catalog or runtime option. */
+    /*
+     * TODO(dhalperi): make this more dynamic based on either Catalog or runtime option.
+     */
     myriaBeanConfig.setBasePath("http://rest.myria.cs.washington.edu:1776");
     myriaBeanConfig.setVersion("0.1.0");
     myriaBeanConfig.setResourcePackage("edu.washington.escience.myria.api");
     myriaBeanConfig.setScan(true);
 
-    /* Add a response filter (i.e., runs on all responses) that sets headers for cross-origin objects. */
-    getContainerResponseFilters().add(new CrossOriginResponseFilter());
+    /*
+     * Add a response filter (i.e., runs on all responses) that sets headers for cross-origin objects.
+     */
+    register(new CrossOriginResponseFilter());
+  }
+
+  /** Binder to bind server and daemon. */
+  public static class SingletonBinder extends AbstractBinder {
+
+    /** the server singleton. */
+    private final Server server;
+    /** the master daemon singleton. */
+    private final MasterDaemon daemon;
+
+    /**
+     * Constructor.
+     * 
+     * @param server the server singleton.
+     * @param daemon the master daemon singleton.
+     * */
+    SingletonBinder(final Server server, final MasterDaemon daemon) {
+      this.server = server;
+      this.daemon = daemon;
+    }
+
+    @Override
+    protected void configure() {
+      bind(server).to(Server.class);
+      bind(daemon).to(MasterDaemon.class);
+    }
   }
 
   /**
@@ -81,11 +108,10 @@ public final class MasterApplication extends PackagesResourceConfig {
    */
   private class CrossOriginResponseFilter implements ContainerResponseFilter {
     @Override
-    public ContainerResponse filter(final ContainerRequest request, final ContainerResponse response) {
-      response.getHttpHeaders().add("Access-Control-Allow-Origin", "*");
-      response.getHttpHeaders().add("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT");
-      response.getHttpHeaders().add("Access-Control-Allow-Headers", "Content-Type");
-      return response;
+    public void filter(final ContainerRequestContext request, final ContainerResponseContext response) {
+      response.getHeaders().add("Access-Control-Allow-Origin", "*");
+      response.getHeaders().add("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT");
+      response.getHeaders().add("Access-Control-Allow-Headers", "Content-Type");
     }
   }
 }
