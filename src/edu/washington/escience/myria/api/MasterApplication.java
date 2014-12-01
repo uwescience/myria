@@ -1,28 +1,28 @@
 package edu.washington.escience.myria.api;
 
-import java.security.Principal;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 
-import javax.servlet.ServletConfig;
+import javax.ws.rs.NameBinding;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ContainerRequestFilter;
+import javax.ws.rs.container.ContainerResponseContext;
+import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.core.SecurityContext;
-import javax.ws.rs.core.UriInfo;
+
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
+import org.glassfish.jersey.internal.util.Base64;
+import org.glassfish.jersey.media.multipart.MultiPartFeature;
+import org.glassfish.jersey.message.GZipEncoder;
+import org.glassfish.jersey.server.ContainerRequest;
+import org.glassfish.jersey.server.ResourceConfig;
+import org.glassfish.jersey.server.ServerProperties;
+import org.glassfish.jersey.server.filter.EncodingFilter;
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
-import com.sun.jersey.api.container.filter.GZIPContentEncodingFilter;
-import com.sun.jersey.api.container.filter.RolesAllowedResourceFilterFactory;
-import com.sun.jersey.api.core.PackagesResourceConfig;
-import com.sun.jersey.api.core.ResourceConfig;
-import com.sun.jersey.core.util.Base64;
-import com.sun.jersey.spi.container.ContainerRequest;
-import com.sun.jersey.spi.container.ContainerRequestFilter;
-import com.sun.jersey.spi.container.ContainerResponse;
-import com.sun.jersey.spi.container.ContainerResponseFilter;
-import com.sun.jersey.spi.container.servlet.WebConfig;
-import com.sun.jersey.spi.inject.SingletonTypeInjectableProvider;
 import com.wordnik.swagger.jaxrs.config.BeanConfig;
 
-import edu.washington.escience.myria.MyriaConstants.ROLE;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.daemon.MasterDaemon;
 import edu.washington.escience.myria.parallel.Server;
@@ -31,7 +31,7 @@ import edu.washington.escience.myria.parallel.Server;
  * This object simply configures which resources can be requested via the REST server.
  * 
  */
-public final class MasterApplication extends PackagesResourceConfig {
+public final class MasterApplication extends ResourceConfig {
 
   /**
    * Instantiate the main application running on the Myria master.
@@ -39,47 +39,51 @@ public final class MasterApplication extends PackagesResourceConfig {
    * @param server the Myria server running on this master.
    * @param daemon the Myria daemon running on this master.
    */
-  @SuppressWarnings("unchecked")
   public MasterApplication(final Server server, final MasterDaemon daemon) {
     /*
      * Tell Jersey to look for resources inside the entire project, and also for Swagger.
      */
-    super(new String[] { "edu.washington.escience.myria", "com.wordnik.swagger.jersey.listing" });
+    packages(new String[] { "edu.washington.escience.myria", "com.wordnik.swagger.jersey.listing" });
 
-    /* Disable WADL - throws error messages when using Swagger, and not needed. */
-    getFeatures().put(ResourceConfig.FEATURE_DISABLE_WADL, true);
-
-    /* Whenever @Context Server or @Context MasterDaemon is used during a web request, these object will be supplied. */
-    getSingletons().add(new SingletonTypeInjectableProvider<Context, Server>(Server.class, server) {
-    });
-    getSingletons().add(new SingletonTypeInjectableProvider<Context, MasterDaemon>(MasterDaemon.class, daemon) {
-    });
-    getSingletons().add(new SingletonTypeInjectableProvider<Context, ServletConfig>(ServletConfig.class, null) {
-    });
-    getSingletons().add(new SingletonTypeInjectableProvider<Context, WebConfig>(WebConfig.class, null) {
-    });
+    /*
+     * Disable WADL - throws error messages when using Swagger, and not needed.
+     */
+    property(ServerProperties.WADL_FEATURE_DISABLE, true);
 
     /* Enable Jackson's JSON Serialization/Deserialization. */
-    getClasses().add(JacksonJsonProvider.class);
+    register(JacksonJsonProvider.class);
+
+    /* Enable Multipart. */
+    register(MultiPartFeature.class);
+
+    /* Register the singleton binder. */
+    register(new AbstractBinder() {
+      @Override
+      protected void configure() {
+        /* Singletons binding. */
+        bind(server).to(Server.class);
+        bind(daemon).to(MasterDaemon.class);
+      }
+    });
 
     /* Enable GZIP compression/decompression */
-    getContainerRequestFilters().add(GZIPContentEncodingFilter.class);
-    getContainerResponseFilters().add(GZIPContentEncodingFilter.class);
+    register(EncodingFilter.class);
+    register(GZipEncoder.class);
 
     /* Swagger configuration -- must come BEFORE Swagger classes are added. */
     BeanConfig myriaBeanConfig = new BeanConfig();
-    /* TODO(dhalperi): make this more dynamic based on either Catalog or runtime option. */
+    /*
+     * TODO(dhalperi): make this more dynamic based on either Catalog or runtime option.
+     */
     myriaBeanConfig.setBasePath("http://rest.myria.cs.washington.edu:1776");
     myriaBeanConfig.setVersion("0.1.0");
     myriaBeanConfig.setResourcePackage("edu.washington.escience.myria.api");
     myriaBeanConfig.setScan(true);
 
     /* Add a response filter (i.e., runs on all responses) that sets headers for cross-origin objects. */
-    getContainerResponseFilters().add(new CrossOriginResponseFilter());
-
-    getContainerRequestFilters().add(new AuthenticateFilter());
-    /* TODO(jwang): change the class if jersey is upgraded to 2.x */
-    getResourceFilterFactories().add(RolesAllowedResourceFilterFactory.class.getName());
+    register(new CrossOriginResponseFilter());
+    /* Add an admin authentication filter. */
+    register(new AdminAuthFilter());
   }
 
   /**
@@ -91,131 +95,81 @@ public final class MasterApplication extends PackagesResourceConfig {
    * 
    * TODO revisit the security of this model
    * 
-   * 
    */
   private class CrossOriginResponseFilter implements ContainerResponseFilter {
     @Override
-    public ContainerResponse filter(final ContainerRequest request, final ContainerResponse response) {
-      response.getHttpHeaders().add("Access-Control-Allow-Origin", "*");
-      response.getHttpHeaders().add("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT");
-      response.getHttpHeaders().add("Access-Control-Allow-Headers", "Content-Type");
-      return response;
+    public void filter(final ContainerRequestContext request, final ContainerResponseContext response) {
+      response.getHeaders().add("Access-Control-Allow-Origin", "*");
+      response.getHeaders().add("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT");
+      response.getHeaders().add("Access-Control-Allow-Headers", "Content-Type");
     }
   }
 
   /**
-   * Check the authentication information and set roles. Currently there are only two roles: "ADMIN" and "USER". By
-   * default the role is set to "user" unless the authentication specifies "ADMIN" with the correct password.
-   * 
+   * Annotation that indicates a REST API requires admin authentication. Only filters annotated with the same annotation
+   * will be invoked.
    */
-  private class AuthenticateFilter implements ContainerRequestFilter {
-    /** UriInfo. */
-    @Context
-    private UriInfo uriInfo;
+  @NameBinding
+  @Retention(RetentionPolicy.RUNTIME)
+  public @interface ADMIN {
+  }
+
+  /**
+   * Check the admin authentication information.
+   */
+  @ADMIN
+  private class AdminAuthFilter implements ContainerRequestFilter {
     /** the server. */
     @Context
     private Server server;
 
     @Override
-    public ContainerRequest filter(final ContainerRequest request) {
-      String authentication = request.getHeaderValue(ContainerRequest.AUTHORIZATION);
-      if (authentication != null && authentication.startsWith("Basic ")) {
-        authentication = authentication.substring("Basic ".length());
-        String[] values = new String(Base64.base64Decode(authentication)).split(":");
-        if (values.length != 2) {
-          /* Bad format. */
-          throw new MyriaApiException(Status.BAD_REQUEST,
-              "Bad format. Usage: a string \"username:password\" encoded in Base64");
-        }
-        String username = values[0];
-        String password = values[1];
-        if (isUserInRole(username, ROLE.ADMIN)) {
-          /* User says it's admin. */
-          if (!checkAdminPassword(password)) {
-            /* But the password is incorrect. */
-            throw new MyriaApiException(Status.UNAUTHORIZED, "Admin password incorrect");
-          }
-        }
-        /* Otherwise we don't check the password for now since it's not necessary. */
-        request.setSecurityContext(new Authorizer(username));
-      } else {
-        /* No user name, set it to be empty. */
-        request.setSecurityContext(new Authorizer(""));
+    public void filter(final ContainerRequestContext request) {
+      String authentication = request.getHeaderString(ContainerRequest.AUTHORIZATION);
+      if (authentication == null || !authentication.startsWith("Basic ")) {
+        /* No valid basic auth information. Return 401 to let the browser pop up a dialog. */
+        throw new MyriaApiException(Status.UNAUTHORIZED, "No basic authentication information provided.");
       }
-      return request;
+      authentication = authentication.substring("Basic ".length());
+      String[] values = new String(Base64.decodeAsString(authentication)).split(":");
+      if (values.length != 2) {
+        throw new MyriaApiException(Status.BAD_REQUEST,
+            "Bad format. Usage: a string \"username:password\" encoded in Base64");
+      }
+      String username = values[0];
+      String password = values[1];
+      if (userIsAdmin(username)) {
+        /* User says it's admin. */
+        if (!checkAdminPassword(password)) {
+          /* But the password is incorrect. */
+          throw new MyriaApiException(Status.UNAUTHORIZED, "Admin password incorrect");
+        }
+        /* Otherwise, pass! */
+      } else {
+        /* Otherwise it's a normal user so FORBIDDEN */
+        throw new MyriaApiException(Status.FORBIDDEN, "Please provide admin authentication information.");
+      }
     }
 
     /**
-     * Check if the given user is in the given role.
+     * Check if the given user is an admin.
      * 
      * @param username the user name.
-     * @param role the role.
-     * 
-     * @return true or false
+     * @return if the given user is an admin.
      */
-    public boolean isUserInRole(final String username, final ROLE role) {
-      if (role.equals(ROLE.ADMIN)) {
-        /* Temporary solution: only true when username.toUpperCase() is "ADMIN" */
-        return username.toUpperCase().equals(ROLE.ADMIN.toString());
-      }
-      /* Otherwise we don't care for now. */
-      return true;
+    private boolean userIsAdmin(final String username) {
+      /* Temporary approach: only true when username.toLowerCase() is "admin" */
+      return username.toLowerCase().equals("admin");
     }
 
     /**
      * Check if the user is an admin with a correct password.
      * 
      * @param passwd password.
-     * @return if the authentication succeeded.
+     * @return if the password is correct.
      */
-    boolean checkAdminPassword(final String passwd) {
+    private boolean checkAdminPassword(final String passwd) {
       return passwd.equals(server.getConfiguration(MyriaSystemConfigKeys.ADMIN_PASSWORD));
-    }
-
-    /**
-     * The customized SecurityContext.
-     */
-    private class Authorizer implements SecurityContext {
-
-      /** user name. */
-      private String user;
-      /** principal. */
-      private Principal principal;
-
-      /**
-       * Constructor.
-       * 
-       * @param user username.
-       * */
-      Authorizer(final String user) {
-        this.user = user;
-        principal = new Principal() {
-          @Override
-          public String getName() {
-            return user;
-          }
-        };
-      }
-
-      @Override
-      public Principal getUserPrincipal() {
-        return principal;
-      }
-
-      @Override
-      public boolean isUserInRole(final String role) {
-        return AuthenticateFilter.this.isUserInRole(user, ROLE.valueOf(role));
-      }
-
-      @Override
-      public String getAuthenticationScheme() {
-        return SecurityContext.BASIC_AUTH;
-      }
-
-      @Override
-      public boolean isSecure() {
-        return "https".equals(uriInfo.getRequestUri().getScheme());
-      }
     }
   }
 }

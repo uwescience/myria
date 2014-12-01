@@ -6,17 +6,19 @@ import java.io.File;
 import java.util.Collections;
 import java.util.Set;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Invocation;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
 import org.apache.mina.util.AvailablePortFinder;
+import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
-import com.sun.jersey.api.client.filter.HTTPBasicAuthFilter;
 
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
@@ -85,33 +87,39 @@ public class MasterDaemonTest {
       md.start();
 
       /* Allocate the client that we'll use to make requests. */
-      Client client = Client.create();
+      Client client = ClientBuilder.newClient();
 
       /* First, make sure the server is up by waiting for a successful 404 response. */
-      WebResource invalidResource = client.resource("http://localhost:" + REST_PORT + "/invalid");
+      WebTarget invalidResource = client.target("http://localhost:" + REST_PORT + "/invalid");
+      Invocation.Builder invalidInvocation = invalidResource.request(MediaType.TEXT_PLAIN_TYPE);
       while (true) {
-        ClientResponse response = invalidResource.get(ClientResponse.class);
-        if (response.getStatus() == Status.NOT_FOUND.getStatusCode()) {
+        if (invalidInvocation.get().getStatus() == Status.NOT_FOUND.getStatusCode()) {
           break;
         }
       }
 
-      /* Try to stop the master without saying I'm admin. */
-      WebResource shutdownRest = client.resource("http://localhost:" + REST_PORT + "/server/shutdown");
-      ClientResponse response = shutdownRest.get(ClientResponse.class);
-      assertEquals(Status.UNAUTHORIZED.getStatusCode(), response.getStatus());
+      /* Try to stop the master with no auth header. */
+      Invocation.Builder shutdownInvocation =
+          client.target("http://localhost:" + REST_PORT + "/server/shutdown").request(MediaType.TEXT_PLAIN_TYPE);
+      assertEquals(Status.UNAUTHORIZED.getStatusCode(), shutdownInvocation.get().getStatus());
+
+      client.register(HttpAuthenticationFeature.basicBuilder().build());
+      shutdownInvocation =
+          client.target("http://localhost:" + REST_PORT + "/server/shutdown").request(MediaType.TEXT_PLAIN_TYPE);
+      /* Try to stop the master with a non-admin username. */
+      shutdownInvocation.property(HttpAuthenticationFeature.HTTP_AUTHENTICATION_BASIC_USERNAME, "jwang").property(
+          HttpAuthenticationFeature.HTTP_AUTHENTICATION_BASIC_PASSWORD, "somepassword");
+      assertEquals(Status.FORBIDDEN.getStatusCode(), shutdownInvocation.get().getStatus());
 
       /* Try to stop the master with a wrong admin password. */
-      client.addFilter(new HTTPBasicAuthFilter("admin", "wrongpassword"));
-      response = shutdownRest.get(ClientResponse.class);
-      assertEquals(Status.UNAUTHORIZED.getStatusCode(), response.getStatus());
-      client.removeAllFilters();
+      shutdownInvocation.property(HttpAuthenticationFeature.HTTP_AUTHENTICATION_BASIC_USERNAME, "admin").property(
+          HttpAuthenticationFeature.HTTP_AUTHENTICATION_BASIC_PASSWORD, "wrongpassword");
+      assertEquals(Status.UNAUTHORIZED.getStatusCode(), shutdownInvocation.get().getStatus());
 
-      /* Provide the password and stop the master. */
-      client.addFilter(new HTTPBasicAuthFilter("admin", "password"));
-      response = shutdownRest.get(ClientResponse.class);
-      assertEquals(Status.OK.getStatusCode(), response.getStatus());
-      client.destroy();
+      /* Provide the correct admin password and stop the master. */
+      shutdownInvocation.property(HttpAuthenticationFeature.HTTP_AUTHENTICATION_BASIC_PASSWORD, "password");
+      assertEquals(Status.OK.getStatusCode(), shutdownInvocation.get().getStatus());
+      client.close();
 
       /* Wait for all threads that weren't there when we started to finish. */
       Set<Thread> doneThreads = ThreadUtils.getCurrentThreads();

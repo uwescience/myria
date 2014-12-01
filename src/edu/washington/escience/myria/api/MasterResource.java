@@ -2,7 +2,6 @@ package edu.washington.escience.myria.api;
 
 import java.io.File;
 
-import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -10,6 +9,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
+import edu.washington.escience.myria.api.MasterApplication.ADMIN;
 import edu.washington.escience.myria.api.encoding.VersionEncoding;
 import edu.washington.escience.myria.daemon.MasterDaemon;
 import edu.washington.escience.myria.parallel.Server;
@@ -31,8 +31,8 @@ public final class MasterResource {
    * @return a success message.
    */
   @GET
-  @RolesAllowed({ "ADMIN" })
   @Path("/shutdown")
+  @ADMIN
   public Response shutdown(@Context final MasterDaemon daemon) {
     /* A thread to stop the daemon after this request finishes. */
     Thread shutdownThread = new Thread("MasterResource-Shutdown") {
@@ -69,8 +69,8 @@ public final class MasterResource {
    * @return the file path.
    */
   @GET
-  @RolesAllowed({ "ADMIN" })
   @Path("/deployment_cfg")
+  @ADMIN
   public Response getDeploymentCfg(@Context final Server server) {
     String workingDir = server.getConfiguration(MyriaSystemConfigKeys.WORKING_DIRECTORY);
     String description = server.getConfiguration(MyriaSystemConfigKeys.DESCRIPTION);

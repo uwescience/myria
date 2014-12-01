@@ -335,7 +335,7 @@ public class AggregateTest {
     // group by name, aggregate on id
     final SingleGroupByAggregate agg =
         new SingleGroupByAggregate(new TupleSource(testBase), 1,
-            new AggregatorFactory[] { new SingleColumnAggregatorFactory(0, AggregationOp.AVG) });
+            new SingleColumnAggregatorFactory(0, AggregationOp.AVG));
     agg.open(null);
     TupleBatch tb = null;
     final TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
@@ -358,7 +358,7 @@ public class AggregateTest {
     // group by name, aggregate on id
     SingleGroupByAggregate agg =
         new SingleGroupByAggregate(new TupleSource(testBase), 1,
-            new AggregatorFactory[] { new SingleColumnAggregatorFactory(0, AggregationOp.MAX) });
+            new SingleColumnAggregatorFactory(0, AggregationOp.MAX));
     agg.open(null);
     TupleBatch tb = null;
     TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
@@ -374,7 +374,7 @@ public class AggregateTest {
 
     agg =
         new SingleGroupByAggregate(new TupleSource(testBase), 0,
-            new AggregatorFactory[] { new SingleColumnAggregatorFactory(1, AggregationOp.MAX) });
+            new SingleColumnAggregatorFactory(1, AggregationOp.MAX));
     agg.open(null);
     tb = null;
     result = new TupleBatchBuffer(agg.getSchema());
@@ -397,7 +397,7 @@ public class AggregateTest {
     // group by name, aggregate on id
     SingleGroupByAggregate agg =
         new SingleGroupByAggregate(new TupleSource(testBase), 1,
-            new AggregatorFactory[] { new SingleColumnAggregatorFactory(0, AggregationOp.MIN) });
+            new SingleColumnAggregatorFactory(0, AggregationOp.MIN));
     agg.open(null);
     TupleBatch tb = null;
     TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
@@ -413,7 +413,7 @@ public class AggregateTest {
 
     agg =
         new SingleGroupByAggregate(new TupleSource(testBase), 0,
-            new AggregatorFactory[] { new SingleColumnAggregatorFactory(1, AggregationOp.MIN) });
+            new SingleColumnAggregatorFactory(1, AggregationOp.MIN));
     agg.open(null);
     tb = null;
     result = new TupleBatchBuffer(agg.getSchema());
@@ -436,7 +436,7 @@ public class AggregateTest {
     // group by name, aggregate on id
     final SingleGroupByAggregate agg =
         new SingleGroupByAggregate(new TupleSource(testBase), 1,
-            new AggregatorFactory[] { new SingleColumnAggregatorFactory(0, AggregationOp.SUM) });
+            new SingleColumnAggregatorFactory(0, AggregationOp.SUM));
     agg.open(null);
     TupleBatch tb = null;
     final TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
@@ -478,8 +478,8 @@ public class AggregateTest {
 
     /* Group by group, aggregate on value */
     final SingleGroupByAggregate agg =
-        new SingleGroupByAggregate(new TupleSource(testBase), 0,
-            new AggregatorFactory[] { new SingleColumnAggregatorFactory(1, AggregationOp.STDEV) });
+        new SingleGroupByAggregate(new TupleSource(testBase), 0, new SingleColumnAggregatorFactory(1,
+            AggregationOp.STDEV));
     agg.open(null);
     TupleBatch tb = null;
     final TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
