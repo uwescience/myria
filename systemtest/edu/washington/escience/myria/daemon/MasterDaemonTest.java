@@ -72,18 +72,19 @@ public class MasterDaemonTest {
   public void testStartAndRestShutdown() throws Exception {
 
     File tmpFolder = Files.createTempDir();
+
+    CatalogMaker.makeNNodesLocalParallelCatalog(tmpFolder.getAbsolutePath(), ImmutableMap
+        .<Integer, SocketInfo> builder().put(MyriaConstants.MASTER_ID, new SocketInfo(8001)).build(), ImmutableMap
+        .<Integer, SocketInfo> builder().put(MyriaConstants.MASTER_ID + 1, new SocketInfo(9001)).put(
+            MyriaConstants.MASTER_ID + 2, new SocketInfo(9002)).build(), Collections.<String, String> singletonMap(
+        MyriaSystemConfigKeys.ADMIN_PASSWORD, "password"), Collections.<String, String> emptyMap());
+
+    /* Remember which threads were there when the test starts. */
+    Set<Thread> startThreads = ThreadUtils.getCurrentThreads();
+    MasterDaemon md = new MasterDaemon(tmpFolder.getAbsolutePath(), REST_PORT);
+
     try {
-      CatalogMaker.makeNNodesLocalParallelCatalog(tmpFolder.getAbsolutePath(), ImmutableMap
-          .<Integer, SocketInfo> builder().put(MyriaConstants.MASTER_ID, new SocketInfo(8001)).build(), ImmutableMap
-          .<Integer, SocketInfo> builder().put(MyriaConstants.MASTER_ID + 1, new SocketInfo(9001)).put(
-              MyriaConstants.MASTER_ID + 2, new SocketInfo(9002)).build(), Collections.<String, String> singletonMap(
-          MyriaSystemConfigKeys.ADMIN_PASSWORD, "password"), Collections.<String, String> emptyMap());
-
-      /* Remember which threads were there when the test starts. */
-      Set<Thread> startThreads = ThreadUtils.getCurrentThreads();
-
       /* Start the master. */
-      MasterDaemon md = new MasterDaemon(tmpFolder.getAbsolutePath(), REST_PORT);
       md.start();
 
       /* Allocate the client that we'll use to make requests. */
@@ -121,6 +122,11 @@ public class MasterDaemonTest {
       assertEquals(Status.OK.getStatusCode(), shutdownInvocation.get().getStatus());
       client.close();
 
+    } catch (Throwable e) {
+      /* Stop the master. */
+      md.stop();
+      throw e;
+    } finally {
       /* Wait for all threads that weren't there when we started to finish. */
       Set<Thread> doneThreads = ThreadUtils.getCurrentThreads();
       for (Thread t : doneThreads) {
@@ -128,7 +134,7 @@ public class MasterDaemonTest {
           t.join();
         }
       }
-    } finally {
+
       FSUtils.deleteFileFolder(tmpFolder);
       while (!AvailablePortFinder.available(8001) || !AvailablePortFinder.available(REST_PORT)) {
         Thread.sleep(100);
