@@ -46,8 +46,15 @@ public final class MasterApplication extends ResourceConfig {
     /* Enable Multipart. */
     register(MultiPartFeature.class);
 
-    /* Register the binder. */
-    registerInstances(new SingletonBinder(server, daemon));
+    /* Register the singleton binder. */
+    register(new AbstractBinder() {
+      @Override
+      protected void configure() {
+        /* Singletons binding. */
+        bind(server).to(Server.class);
+        bind(daemon).to(MasterDaemon.class);
+      }
+    });
 
     /* Enable GZIP compression/decompression */
     register(EncodingFilter.class);
@@ -67,32 +74,6 @@ public final class MasterApplication extends ResourceConfig {
      * Add a response filter (i.e., runs on all responses) that sets headers for cross-origin objects.
      */
     register(new CrossOriginResponseFilter());
-  }
-
-  /** Binder to bind server and daemon. */
-  public static class SingletonBinder extends AbstractBinder {
-
-    /** the server singleton. */
-    private final Server server;
-    /** the master daemon singleton. */
-    private final MasterDaemon daemon;
-
-    /**
-     * Constructor.
-     * 
-     * @param server the server singleton.
-     * @param daemon the master daemon singleton.
-     * */
-    SingletonBinder(final Server server, final MasterDaemon daemon) {
-      this.server = server;
-      this.daemon = daemon;
-    }
-
-    @Override
-    protected void configure() {
-      bind(server).to(Server.class);
-      bind(daemon).to(MasterDaemon.class);
-    }
   }
 
   /**
