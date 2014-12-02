@@ -98,7 +98,7 @@ ext.swaggerMinorVersion = "1.3.11"
 dependencies {
   compile ("org.apache.hadoop:hadoop-core:1.1.2") {
     /* Hadoop depends on Jersey 1 but we don't need it. Exclude it to prevent
-	 * Classloader picking the wrong version of Jersey classes. */
+     * Classloader picking the wrong version of Jersey classes. */
     exclude group: "com.sun.jersey"
   }
 
