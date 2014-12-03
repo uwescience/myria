@@ -6,18 +6,22 @@ import java.io.File;
 import java.util.Collections;
 import java.util.Set;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Invocation;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
 import org.apache.mina.util.AvailablePortFinder;
+import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
 
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.coordinator.catalog.CatalogMaker;
 import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.util.FSUtils;
@@ -68,38 +72,61 @@ public class MasterDaemonTest {
   public void testStartAndRestShutdown() throws Exception {
 
     File tmpFolder = Files.createTempDir();
+
+    CatalogMaker.makeNNodesLocalParallelCatalog(tmpFolder.getAbsolutePath(), ImmutableMap
+        .<Integer, SocketInfo> builder().put(MyriaConstants.MASTER_ID, new SocketInfo(8001)).build(), ImmutableMap
+        .<Integer, SocketInfo> builder().put(MyriaConstants.MASTER_ID + 1, new SocketInfo(9001)).put(
+            MyriaConstants.MASTER_ID + 2, new SocketInfo(9002)).build(), Collections.<String, String> singletonMap(
+        MyriaSystemConfigKeys.ADMIN_PASSWORD, "password"), Collections.<String, String> emptyMap());
+
+    /* Remember which threads were there when the test starts. */
+    Set<Thread> startThreads = ThreadUtils.getCurrentThreads();
+    MasterDaemon md = new MasterDaemon(tmpFolder.getAbsolutePath(), REST_PORT);
+
     try {
-      CatalogMaker.makeNNodesLocalParallelCatalog(tmpFolder.getAbsolutePath(), ImmutableMap
-          .<Integer, SocketInfo> builder().put(MyriaConstants.MASTER_ID, new SocketInfo(8001)).build(), ImmutableMap
-          .<Integer, SocketInfo> builder().put(MyriaConstants.MASTER_ID + 1, new SocketInfo(9001)).put(
-              MyriaConstants.MASTER_ID + 2, new SocketInfo(9002)).build(), Collections.<String, String> emptyMap(),
-          Collections.<String, String> emptyMap());
-
-      /* Remember which threads were there when the test starts. */
-      Set<Thread> startThreads = ThreadUtils.getCurrentThreads();
-
       /* Start the master. */
-      MasterDaemon md = new MasterDaemon(tmpFolder.getAbsolutePath(), REST_PORT);
       md.start();
 
       /* Allocate the client that we'll use to make requests. */
-      Client client = Client.create();
+      Client client = ClientBuilder.newClient();
 
       /* First, make sure the server is up by waiting for a successful 404 response. */
-      WebResource invalidResource = client.resource("http://localhost:" + REST_PORT + "/invalid");
+      WebTarget invalidResource = client.target("http://localhost:" + REST_PORT + "/invalid");
+      Invocation.Builder invalidInvocation = invalidResource.request(MediaType.TEXT_PLAIN_TYPE);
       while (true) {
-        ClientResponse response = invalidResource.get(ClientResponse.class);
-        if (response.getStatus() == Status.NOT_FOUND.getStatusCode()) {
+        if (invalidInvocation.get().getStatus() == Status.NOT_FOUND.getStatusCode()) {
           break;
         }
       }
 
-      /* Stop the master. */
-      WebResource shutdownRest = client.resource("http://localhost:" + REST_PORT + "/server/shutdown");
-      ClientResponse response = shutdownRest.get(ClientResponse.class);
-      assertEquals(Status.NO_CONTENT.getStatusCode(), response.getStatus());
-      client.destroy();
+      /* Try to stop the master with no auth header. */
+      Invocation.Builder shutdownInvocation =
+          client.target("http://localhost:" + REST_PORT + "/server/shutdown").request(MediaType.TEXT_PLAIN_TYPE);
+      assertEquals(Status.UNAUTHORIZED.getStatusCode(), shutdownInvocation.get().getStatus());
 
+      client.register(HttpAuthenticationFeature.basicBuilder().build());
+      shutdownInvocation =
+          client.target("http://localhost:" + REST_PORT + "/server/shutdown").request(MediaType.TEXT_PLAIN_TYPE);
+      /* Try to stop the master with a non-admin username. */
+      shutdownInvocation.property(HttpAuthenticationFeature.HTTP_AUTHENTICATION_BASIC_USERNAME, "jwang").property(
+          HttpAuthenticationFeature.HTTP_AUTHENTICATION_BASIC_PASSWORD, "somepassword");
+      assertEquals(Status.FORBIDDEN.getStatusCode(), shutdownInvocation.get().getStatus());
+
+      /* Try to stop the master with a wrong admin password. */
+      shutdownInvocation.property(HttpAuthenticationFeature.HTTP_AUTHENTICATION_BASIC_USERNAME, "admin").property(
+          HttpAuthenticationFeature.HTTP_AUTHENTICATION_BASIC_PASSWORD, "wrongpassword");
+      assertEquals(Status.UNAUTHORIZED.getStatusCode(), shutdownInvocation.get().getStatus());
+
+      /* Provide the correct admin password and stop the master. */
+      shutdownInvocation.property(HttpAuthenticationFeature.HTTP_AUTHENTICATION_BASIC_PASSWORD, "password");
+      assertEquals(Status.OK.getStatusCode(), shutdownInvocation.get().getStatus());
+      client.close();
+
+    } catch (Throwable e) {
+      /* Stop the master. */
+      md.stop();
+      throw e;
+    } finally {
       /* Wait for all threads that weren't there when we started to finish. */
       Set<Thread> doneThreads = ThreadUtils.getCurrentThreads();
       for (Thread t : doneThreads) {
@@ -107,7 +134,7 @@ public class MasterDaemonTest {
           t.join();
         }
       }
-    } finally {
+
       FSUtils.deleteFileFolder(tmpFolder);
       while (!AvailablePortFinder.available(8001) || !AvailablePortFinder.available(REST_PORT)) {
         Thread.sleep(100);

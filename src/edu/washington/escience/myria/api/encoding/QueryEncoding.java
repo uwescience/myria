@@ -28,7 +28,7 @@ public class QueryEncoding extends MyriaApiEncoding {
   /** Set whether this query is run in profiling mode. (default is false) */
   public boolean profilingMode = false;
   /** The fault-tolerance mode used in this query, default: none. */
-  public FTMODE ftMode = FTMODE.none;
+  public FTMODE ftMode = FTMODE.NONE;
 
   /** The old physical query plan encoding. */
   public List<PlanFragmentEncoding> fragments;

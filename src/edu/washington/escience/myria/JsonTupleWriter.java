@@ -8,10 +8,10 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.Objects;
 
+import org.glassfish.jersey.media.json.internal.writer.JsonEncoder;
 import org.joda.time.DateTime;
 
 import com.google.common.collect.ImmutableList;
-import com.sun.jersey.json.impl.writer.JsonEncoder;
 
 import edu.washington.escience.myria.storage.ReadableTable;
 import edu.washington.escience.myria.util.DateTimeUtils;
@@ -19,18 +19,18 @@ import edu.washington.escience.myria.util.DateTimeUtils;
 /**
  * JsonTupleWriter is a {@link TupleWriter} that serializes tuples to JavaScript Object Notation (JSON). The output is a
  * list of objects, each of which has one field 'attribute' : 'value' per column.
- *
+ * 
  * For a dataset that has two integer columns names 'x' and 'y', and three rows, the output will look like
- *
+ * 
  * <pre>
  * [{"x":1,"y":2},{"x":3,"y":4},{"x":5,"y":6}]
  * </pre>
- *
+ * 
  * Attribute names (column names) are {@link String} objects that are escaped for JSON. For values, primitive types are
  * output unquoted and as-is; {@link DateTime} objects are quoted and serialized in ISO8601 format, and {@link String}
  * objects are quoted and escaped for JSON.
- *
- *
+ * 
+ * 
  */
 public class JsonTupleWriter implements TupleWriter {
 
@@ -43,7 +43,7 @@ public class JsonTupleWriter implements TupleWriter {
 
   /**
    * Constructs a {@link JsonTupleWriter}.
-   *
+   * 
    * @param output the {@link OutputStream} to which the data will be written.
    */
   public JsonTupleWriter(final OutputStream output) {

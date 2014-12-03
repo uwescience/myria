@@ -1,12 +1,23 @@
 package edu.washington.escience.myria.api;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+
+import javax.ws.rs.NameBinding;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
 
-import org.glassfish.grizzly.compression.zip.GZipEncoder;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
+import org.glassfish.jersey.internal.util.Base64;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
+import org.glassfish.jersey.message.GZipEncoder;
+import org.glassfish.jersey.server.ContainerRequest;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.ServerProperties;
 import org.glassfish.jersey.server.filter.EncodingFilter;
@@ -14,6 +25,7 @@ import org.glassfish.jersey.server.filter.EncodingFilter;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.wordnik.swagger.jaxrs.config.BeanConfig;
 
+import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.daemon.MasterDaemon;
 import edu.washington.escience.myria.parallel.Server;
 
@@ -70,10 +82,10 @@ public final class MasterApplication extends ResourceConfig {
     myriaBeanConfig.setResourcePackage("edu.washington.escience.myria.api");
     myriaBeanConfig.setScan(true);
 
-    /*
-     * Add a response filter (i.e., runs on all responses) that sets headers for cross-origin objects.
-     */
+    /* Add a response filter (i.e., runs on all responses) that sets headers for cross-origin objects. */
     register(new CrossOriginResponseFilter());
+    /* Add an admin authentication filter. */
+    register(new AdminAuthFilter());
   }
 
   /**
@@ -85,7 +97,6 @@ public final class MasterApplication extends ResourceConfig {
    * 
    * TODO revisit the security of this model
    * 
-   * 
    */
   private class CrossOriginResponseFilter implements ContainerResponseFilter {
     @Override
@@ -93,6 +104,75 @@ public final class MasterApplication extends ResourceConfig {
       response.getHeaders().add("Access-Control-Allow-Origin", "*");
       response.getHeaders().add("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT");
       response.getHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+    }
+  }
+
+  /**
+   * Annotation that indicates a REST API requires admin authentication. Only filters annotated with the same annotation
+   * will be invoked.
+   */
+  @NameBinding
+  @Retention(RetentionPolicy.RUNTIME)
+  public @interface ADMIN {
+  }
+
+  /**
+   * Check the admin authentication information.
+   */
+  @ADMIN
+  private class AdminAuthFilter implements ContainerRequestFilter {
+    /** the server. */
+    @Context
+    private Server server;
+
+    @Override
+    public void filter(final ContainerRequestContext request) {
+      String authentication = request.getHeaderString(ContainerRequest.AUTHORIZATION);
+      if (authentication == null || !authentication.startsWith("Basic ")) {
+        /* No valid basic auth information. Return 401 to let the browser pop up a dialog. */
+        throw new WebApplicationException(Response.status(Status.UNAUTHORIZED).header("WWW-Authenticate",
+            "Basic realm=\"Myria admin credentials\"").entity("No basic authentication information provided.").build());
+      }
+      authentication = authentication.substring("Basic ".length());
+      String[] values = new String(Base64.decodeAsString(authentication)).split(":");
+      if (values.length != 2) {
+        throw new MyriaApiException(Status.BAD_REQUEST,
+            "Bad format. Usage: a string \"username:password\" encoded in Base64");
+      }
+      String username = values[0];
+      String password = values[1];
+      if (userIsAdmin(username)) {
+        /* User says it's admin. */
+        if (!checkAdminPassword(password)) {
+          /* But the password is incorrect. */
+          throw new MyriaApiException(Status.UNAUTHORIZED, "Admin password incorrect");
+        }
+        /* Otherwise, pass! */
+      } else {
+        /* Otherwise it's a normal user so FORBIDDEN */
+        throw new MyriaApiException(Status.FORBIDDEN, "Please provide admin authentication information.");
+      }
+    }
+
+    /**
+     * Check if the given user is an admin.
+     * 
+     * @param username the user name.
+     * @return if the given user is an admin.
+     */
+    private boolean userIsAdmin(final String username) {
+      /* Temporary approach: only true when username.toLowerCase() is "admin" */
+      return username.toLowerCase().equals("admin");
+    }
+
+    /**
+     * Check if the user is an admin with a correct password.
+     * 
+     * @param passwd password.
+     * @return if the password is correct.
+     */
+    private boolean checkAdminPassword(final String passwd) {
+      return passwd.equals(server.getConfiguration(MyriaSystemConfigKeys.ADMIN_PASSWORD));
     }
   }
 }
