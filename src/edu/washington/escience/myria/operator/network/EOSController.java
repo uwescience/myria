@@ -97,7 +97,7 @@ public class EOSController extends Producer {
     }
 
     int numExpecting = eosZeroColValue;
-    if (getTaskResourceManager().getFragment().getLocalSubQuery().getFTMode().equals(FTMODE.abandon)) {
+    if (getTaskResourceManager().getFragment().getLocalSubQuery().getFTMode().equals(FTMODE.ABANDON)) {
       Set<Integer> missingWorkers = getTaskResourceManager().getFragment().getLocalSubQuery().getMissingWorkers();
       for (Integer id : missingWorkers) {
         if (workerIdToIndex.containsKey(id)) {

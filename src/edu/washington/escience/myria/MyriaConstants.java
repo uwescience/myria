@@ -111,10 +111,14 @@ public final class MyriaConstants {
   /** timeout of returning a tuple batch even not filled. */
   public static final long PUSHING_TB_TIMEOUT = 1000000000;
 
-  /** How long do we treat a scheduled new worker as failed to start, in milliseconds. */
+  /**
+   * How long do we treat a scheduled new worker as failed to start, in milliseconds.
+   */
   public static final long SCHEDULED_WORKER_FAILED_TO_START = 5000;
 
-  /** How long do we treat a scheduled new worker as unable to start, in milliseconds. */
+  /**
+   * How long do we treat a scheduled new worker as unable to start, in milliseconds.
+   */
   public static final long SCHEDULED_WORKER_UNABLE_TO_START = 15000;
 
   /**
@@ -211,7 +215,9 @@ public final class MyriaConstants {
   /** How long do we wait for next worker liveness check, in milliseconds. */
   public static final long WORKER_LIVENESS_CHECKER_INTERVAL = 1000;
 
-  /** The time interval in milliseconds for check if the worker should be shutdown. */
+  /**
+   * The time interval in milliseconds for check if the worker should be shutdown.
+   */
   public static final int WORKER_SHUTDOWN_CHECKER_INTERVAL = 1000;
 
   /**
@@ -282,6 +288,6 @@ public final class MyriaConstants {
   /** available fault-tolerance mode for each query in Myria. */
   public static enum FTMODE {
     /** three FT modes are supported. */
-    none, abandon, rejoin
+    NONE, ABANDON, REJOIN
   };
 }

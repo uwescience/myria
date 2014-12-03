@@ -4,6 +4,7 @@ import java.net.URI;
 
 import org.joda.time.DateTime;
 
+import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.api.encoding.plan.SubPlanEncoding;
 
 /**
@@ -35,7 +36,7 @@ public class QueryStatusEncoding {
     ret.logicalRa = query.logicalRa;
     ret.plan = query.plan;
     ret.profilingMode = query.profilingMode;
-    ret.ftMode = query.ftMode.toString();
+    ret.ftMode = query.ftMode;
     ret.submitTime = DateTime.now();
     ret.status = Status.ACCEPTED;
     ret.language = query.language;
@@ -67,7 +68,7 @@ public class QueryStatusEncoding {
   /** The profilingMode of the query. */
   public Boolean profilingMode;
   /** The ftMode of the query. */
-  public String ftMode;
+  public FTMODE ftMode;
   /** The language of the query. */
   public String language;
 
