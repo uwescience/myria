@@ -4,11 +4,13 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 import javax.ws.rs.NameBinding;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
@@ -128,7 +130,8 @@ public final class MasterApplication extends ResourceConfig {
       String authentication = request.getHeaderString(ContainerRequest.AUTHORIZATION);
       if (authentication == null || !authentication.startsWith("Basic ")) {
         /* No valid basic auth information. Return 401 to let the browser pop up a dialog. */
-        throw new MyriaApiException(Status.UNAUTHORIZED, "No basic authentication information provided.");
+        throw new WebApplicationException(Response.status(Status.UNAUTHORIZED).header("WWW-Authenticate",
+            "Basic realm=\"Myria admin credentials\"").entity("No basic authentication information provided.").build());
       }
       authentication = authentication.substring("Basic ".length());
       String[] values = new String(Base64.decodeAsString(authentication)).split(":");
