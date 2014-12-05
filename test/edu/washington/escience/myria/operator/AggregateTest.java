@@ -25,6 +25,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.column.ConstantValueColumn;
 import edu.washington.escience.myria.column.builder.BooleanColumnBuilder;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.DateTimeColumnBuilder;
@@ -117,10 +118,16 @@ public class AggregateTest {
    * 
    * @param builder the tuples to be aggregated
    * @param aggOps the aggregate operations over the column
+   * @param noColumns whether to group by no columns (if true) or to append a constant value single column and group by
+   *          it (if false).
    * @return a single TupleBatch containing the results of the aggregation
    * @throws Exception if there is an error
    */
-  private TupleBatch doAggOpsToCol(ColumnBuilder<?> builder, AggregationOp[] aggOps) throws Exception {
+  private TupleBatch doAggOpsToCol(ColumnBuilder<?> builder, AggregationOp[] aggOps, boolean noColumns)
+      throws Exception {
+    if (noColumns == false) {
+      return doAggOpsToSingleCol(builder, aggOps);
+    }
     TupleSource source = new TupleSource(makeTrivialTupleBatch(builder));
     AggregatorFactory[] aggs = new AggregatorFactory[aggOps.length];
     for (int i = 0; i < aggs.length; ++i) {
@@ -132,6 +139,42 @@ public class AggregateTest {
     TupleBatch tb = agg.nextReady();
     agg.close();
     return tb;
+  }
+
+  /**
+   * Helper function to instantiate an aggregator and do the aggregation. Do not use if more than one TupleBatch are
+   * expected.
+   * 
+   * This variant uses a SingleGroupByAggregate in order to do extra testing of the Aggregators by hitting a function
+   * that Aggregate does not use.
+   * 
+   * @param builder the tuples to be aggregated
+   * @param aggOps the aggregate operations over the column
+   * @return a single TupleBatch containing the results of the aggregation
+   * @throws Exception if there is an error
+   */
+  private TupleBatch doAggOpsToSingleCol(ColumnBuilder<?> builder, AggregationOp[] aggOps) throws Exception {
+    TupleBatch trivialTb = makeTrivialTupleBatch(builder);
+    ConstantValueColumn constCol = new ConstantValueColumn(3, Type.INT_TYPE, trivialTb.numTuples());
+    Schema newSchema = Schema.merge(trivialTb.getSchema(), Schema.ofFields("_const_col", Type.INT_TYPE));
+    List<Column<?>> columns =
+        ImmutableList.<Column<?>> builder().addAll(trivialTb.getDataColumns()).add(constCol).build();
+    TupleSource source = new TupleSource(new TupleBatch(newSchema, columns));
+    AggregatorFactory[] aggs = new AggregatorFactory[aggOps.length];
+    for (int i = 0; i < aggs.length; ++i) {
+      aggs[i] = new SingleColumnAggregatorFactory(0, aggOps[i]);
+    }
+    SingleGroupByAggregate agg = new SingleGroupByAggregate(source, trivialTb.numColumns(), aggs);
+    /* Do it -- this should cause an error. */
+    agg.open(TestEnvVars.get());
+    TupleBatch tb = agg.nextReady();
+    agg.close();
+    /* Take the 1st through nth column, because the first column is the thing we grouped by. */
+    int[] colsToKeep = new int[tb.numColumns() - 1];
+    for (int i = 0; i < colsToKeep.length; ++i) {
+      colsToKeep[i] = i + 1;
+    }
+    return tb.selectColumns(colsToKeep, tb.getSchema().getSubSchema(colsToKeep));
   }
 
   @Test
@@ -149,121 +192,126 @@ public class AggregateTest {
     AggregationOp[] justAvg = new AggregationOp[] { AggregationOp.AVG };
     AggregationOp[] justStdev = new AggregationOp[] { AggregationOp.STDEV };
 
-    /* Ints, all as a group */
-    int[] ints = new int[] { 3, 5, 6 };
-    builder = new IntColumnBuilder();
-    for (int i : ints) {
-      builder.appendInt(i);
-    }
-    tb = doAggOpsToCol(builder, numericAggBitsInOrder);
-    allNumericAggsTestSchema(tb.getSchema(), builder.getType());
-    assertEquals(ints.length, tb.getLong(0, 0));
-    assertEquals(Ints.min(ints), tb.getInt(1, 0));
-    assertEquals(Ints.max(ints), tb.getInt(2, 0));
-    assertEquals(3 + 5 + 6, tb.getLong(3, 0));
-    assertEquals((3 + 5 + 6) / 3.0, tb.getDouble(4, 0), 0.0001);
-    // Wolfram Alpha: population standard deviation {3,5,6}
-    assertEquals(1.2472, tb.getDouble(5, 0), 0.0001);
-    /* Ints, one aggregate at a time */
-    tb = doAggOpsToCol(builder, justCount);
-    assertEquals(ints.length, tb.getLong(0, 0));
-    tb = doAggOpsToCol(builder, justMin);
-    assertEquals(Ints.min(ints), tb.getInt(0, 0));
-    tb = doAggOpsToCol(builder, justMax);
-    assertEquals(Ints.max(ints), tb.getInt(0, 0));
-    tb = doAggOpsToCol(builder, justSum);
-    assertEquals(3 + 5 + 6, tb.getLong(0, 0));
-    tb = doAggOpsToCol(builder, justAvg);
-    assertEquals((3 + 5 + 6) / 3.0, tb.getDouble(0, 0), 0.0001);
-    tb = doAggOpsToCol(builder, justStdev);
-    assertEquals(1.2472, tb.getDouble(0, 0), 0.0001);
+    for (int variant = 0; variant < 2; ++variant) {
+      /* Whether to group by zero or 1 columns. */
+      boolean noColumns = (variant == 0);
 
-    /* Longs */
-    long[] longs = new long[] { 3, 5, 9 };
-    builder = new LongColumnBuilder();
-    for (long l : longs) {
-      builder.appendLong(l);
-    }
-    tb = doAggOpsToCol(builder, numericAggBitsInOrder);
-    allNumericAggsTestSchema(tb.getSchema(), builder.getType());
-    assertEquals(longs.length, tb.getLong(0, 0));
-    assertEquals(Longs.min(longs), tb.getLong(1, 0));
-    assertEquals(Longs.max(longs), tb.getLong(2, 0));
-    assertEquals(3 + 5 + 9, tb.getLong(3, 0));
-    assertEquals((3 + 5 + 9) / 3.0, tb.getDouble(4, 0), 0.0001);
-    // Wolfram Alpha: population standard deviation {3,5,9}
-    assertEquals(2.4944, tb.getDouble(5, 0), 0.0001);
-    /* Longs, one aggregate at a time */
-    tb = doAggOpsToCol(builder, justCount);
-    assertEquals(longs.length, tb.getLong(0, 0));
-    tb = doAggOpsToCol(builder, justMin);
-    assertEquals(Longs.min(longs), tb.getLong(0, 0));
-    tb = doAggOpsToCol(builder, justMax);
-    assertEquals(Longs.max(longs), tb.getLong(0, 0));
-    tb = doAggOpsToCol(builder, justSum);
-    assertEquals(3 + 5 + 9, tb.getLong(0, 0));
-    tb = doAggOpsToCol(builder, justAvg);
-    assertEquals((3 + 5 + 9) / 3.0, tb.getDouble(0, 0), 0.0001);
-    tb = doAggOpsToCol(builder, justStdev);
-    assertEquals(2.4944, tb.getDouble(0, 0), 0.0001);
+      /* Ints, all as a group */
+      int[] ints = new int[] { 3, 5, 6 };
+      builder = new IntColumnBuilder();
+      for (int i : ints) {
+        builder.appendInt(i);
+      }
+      tb = doAggOpsToCol(builder, numericAggBitsInOrder, noColumns);
+      allNumericAggsTestSchema(tb.getSchema(), builder.getType());
+      assertEquals(ints.length, tb.getLong(0, 0));
+      assertEquals(Ints.min(ints), tb.getInt(1, 0));
+      assertEquals(Ints.max(ints), tb.getInt(2, 0));
+      assertEquals(3 + 5 + 6, tb.getLong(3, 0));
+      assertEquals((3 + 5 + 6) / 3.0, tb.getDouble(4, 0), 0.0001);
+      // Wolfram Alpha: population standard deviation {3,5,6}
+      assertEquals(1.2472, tb.getDouble(5, 0), 0.0001);
+      /* Ints, one aggregate at a time */
+      tb = doAggOpsToCol(builder, justCount, noColumns);
+      assertEquals(ints.length, tb.getLong(0, 0));
+      tb = doAggOpsToCol(builder, justMin, noColumns);
+      assertEquals(Ints.min(ints), tb.getInt(0, 0));
+      tb = doAggOpsToCol(builder, justMax, noColumns);
+      assertEquals(Ints.max(ints), tb.getInt(0, 0));
+      tb = doAggOpsToCol(builder, justSum, noColumns);
+      assertEquals(3 + 5 + 6, tb.getLong(0, 0));
+      tb = doAggOpsToCol(builder, justAvg, noColumns);
+      assertEquals((3 + 5 + 6) / 3.0, tb.getDouble(0, 0), 0.0001);
+      tb = doAggOpsToCol(builder, justStdev, noColumns);
+      assertEquals(1.2472, tb.getDouble(0, 0), 0.0001);
 
-    /* Floats */
-    float[] floats = new float[] { 3, 5, 11 };
-    builder = new FloatColumnBuilder();
-    for (float f : floats) {
-      builder.appendFloat(f);
-    }
-    tb = doAggOpsToCol(builder, numericAggBitsInOrder);
-    allNumericAggsTestSchema(tb.getSchema(), builder.getType());
-    assertEquals(floats.length, tb.getLong(0, 0));
-    assertEquals(Floats.min(floats), tb.getFloat(1, 0), 0.000001);
-    assertEquals(Floats.max(floats), tb.getFloat(2, 0), 0.000001);
-    assertEquals(3f + 5f + 11f, tb.getDouble(3, 0), 0.0000001);
-    assertEquals((3 + 5 + 11) / 3.0, tb.getDouble(4, 0), 0.0001);
-    // Wolfram Alpha: population standard deviation {3,5,11}
-    assertEquals(3.3993, tb.getDouble(5, 0), 0.0001);
-    /* Floats, one aggregate at a time */
-    tb = doAggOpsToCol(builder, justCount);
-    assertEquals(floats.length, tb.getLong(0, 0));
-    tb = doAggOpsToCol(builder, justMin);
-    assertEquals(Floats.min(floats), tb.getFloat(0, 0), 0.000001);
-    tb = doAggOpsToCol(builder, justMax);
-    assertEquals(Floats.max(floats), tb.getFloat(0, 0), 0.000001);
-    tb = doAggOpsToCol(builder, justSum);
-    assertEquals(3f + 5f + 11f, tb.getDouble(0, 0), 0.000001);
-    tb = doAggOpsToCol(builder, justAvg);
-    assertEquals((3f + 5f + 11f) / 3.0, tb.getDouble(0, 0), 0.0001);
-    tb = doAggOpsToCol(builder, justStdev);
-    assertEquals(3.3993, tb.getDouble(0, 0), 0.0001);
+      /* Longs */
+      long[] longs = new long[] { 3, 5, 9 };
+      builder = new LongColumnBuilder();
+      for (long l : longs) {
+        builder.appendLong(l);
+      }
+      tb = doAggOpsToCol(builder, numericAggBitsInOrder, noColumns);
+      allNumericAggsTestSchema(tb.getSchema(), builder.getType());
+      assertEquals(longs.length, tb.getLong(0, 0));
+      assertEquals(Longs.min(longs), tb.getLong(1, 0));
+      assertEquals(Longs.max(longs), tb.getLong(2, 0));
+      assertEquals(3 + 5 + 9, tb.getLong(3, 0));
+      assertEquals((3 + 5 + 9) / 3.0, tb.getDouble(4, 0), 0.0001);
+      // Wolfram Alpha: population standard deviation {3,5,9}
+      assertEquals(2.4944, tb.getDouble(5, 0), 0.0001);
+      /* Longs, one aggregate at a time */
+      tb = doAggOpsToCol(builder, justCount, noColumns);
+      assertEquals(longs.length, tb.getLong(0, 0));
+      tb = doAggOpsToCol(builder, justMin, noColumns);
+      assertEquals(Longs.min(longs), tb.getLong(0, 0));
+      tb = doAggOpsToCol(builder, justMax, noColumns);
+      assertEquals(Longs.max(longs), tb.getLong(0, 0));
+      tb = doAggOpsToCol(builder, justSum, noColumns);
+      assertEquals(3 + 5 + 9, tb.getLong(0, 0));
+      tb = doAggOpsToCol(builder, justAvg, noColumns);
+      assertEquals((3 + 5 + 9) / 3.0, tb.getDouble(0, 0), 0.0001);
+      tb = doAggOpsToCol(builder, justStdev, noColumns);
+      assertEquals(2.4944, tb.getDouble(0, 0), 0.0001);
 
-    /* Double */
-    double[] doubles = new double[] { 3, 5, 13 };
-    builder = new DoubleColumnBuilder();
-    for (double d : doubles) {
-      builder.appendDouble(d);
+      /* Floats */
+      float[] floats = new float[] { 3, 5, 11 };
+      builder = new FloatColumnBuilder();
+      for (float f : floats) {
+        builder.appendFloat(f);
+      }
+      tb = doAggOpsToCol(builder, numericAggBitsInOrder, noColumns);
+      allNumericAggsTestSchema(tb.getSchema(), builder.getType());
+      assertEquals(floats.length, tb.getLong(0, 0));
+      assertEquals(Floats.min(floats), tb.getFloat(1, 0), 0.000001);
+      assertEquals(Floats.max(floats), tb.getFloat(2, 0), 0.000001);
+      assertEquals(3f + 5f + 11f, tb.getDouble(3, 0), 0.0000001);
+      assertEquals((3 + 5 + 11) / 3.0, tb.getDouble(4, 0), 0.0001);
+      // Wolfram Alpha: population standard deviation {3,5,11}
+      assertEquals(3.3993, tb.getDouble(5, 0), 0.0001);
+      /* Floats, one aggregate at a time */
+      tb = doAggOpsToCol(builder, justCount, noColumns);
+      assertEquals(floats.length, tb.getLong(0, 0));
+      tb = doAggOpsToCol(builder, justMin, noColumns);
+      assertEquals(Floats.min(floats), tb.getFloat(0, 0), 0.000001);
+      tb = doAggOpsToCol(builder, justMax, noColumns);
+      assertEquals(Floats.max(floats), tb.getFloat(0, 0), 0.000001);
+      tb = doAggOpsToCol(builder, justSum, noColumns);
+      assertEquals(3f + 5f + 11f, tb.getDouble(0, 0), 0.000001);
+      tb = doAggOpsToCol(builder, justAvg, noColumns);
+      assertEquals((3f + 5f + 11f) / 3.0, tb.getDouble(0, 0), 0.0001);
+      tb = doAggOpsToCol(builder, justStdev, noColumns);
+      assertEquals(3.3993, tb.getDouble(0, 0), 0.0001);
+
+      /* Double */
+      double[] doubles = new double[] { 3, 5, 13 };
+      builder = new DoubleColumnBuilder();
+      for (double d : doubles) {
+        builder.appendDouble(d);
+      }
+      tb = doAggOpsToCol(builder, numericAggBitsInOrder, noColumns);
+      allNumericAggsTestSchema(tb.getSchema(), builder.getType());
+      assertEquals(doubles.length, tb.getLong(0, 0));
+      assertEquals(Doubles.min(doubles), tb.getDouble(1, 0), 0.000001);
+      assertEquals(Doubles.max(doubles), tb.getDouble(2, 0), 0.000001);
+      assertEquals(3 + 5 + 13, tb.getDouble(3, 0), 0.0000001);
+      assertEquals((3 + 5 + 13) / 3.0, tb.getDouble(4, 0), 0.0001);
+      // Wolfram Alpha: population standard deviation {3,5,13}
+      assertEquals(4.3205, tb.getDouble(5, 0), 0.0001);
+      /* Doubles, one aggregate at a time */
+      tb = doAggOpsToCol(builder, justCount, noColumns);
+      assertEquals(doubles.length, tb.getLong(0, 0));
+      tb = doAggOpsToCol(builder, justMin, noColumns);
+      assertEquals(Doubles.min(doubles), tb.getDouble(0, 0), 0.000001);
+      tb = doAggOpsToCol(builder, justMax, noColumns);
+      assertEquals(Doubles.max(doubles), tb.getDouble(0, 0), 0.000001);
+      tb = doAggOpsToCol(builder, justSum, noColumns);
+      assertEquals(3f + 5f + 13f, tb.getDouble(0, 0), 0.000001);
+      tb = doAggOpsToCol(builder, justAvg, noColumns);
+      assertEquals((3f + 5f + 13f) / 3.0, tb.getDouble(0, 0), 0.0001);
+      tb = doAggOpsToCol(builder, justStdev, noColumns);
+      assertEquals(4.3205, tb.getDouble(0, 0), 0.0001);
     }
-    tb = doAggOpsToCol(builder, numericAggBitsInOrder);
-    allNumericAggsTestSchema(tb.getSchema(), builder.getType());
-    assertEquals(doubles.length, tb.getLong(0, 0));
-    assertEquals(Doubles.min(doubles), tb.getDouble(1, 0), 0.000001);
-    assertEquals(Doubles.max(doubles), tb.getDouble(2, 0), 0.000001);
-    assertEquals(3 + 5 + 13, tb.getDouble(3, 0), 0.0000001);
-    assertEquals((3 + 5 + 13) / 3.0, tb.getDouble(4, 0), 0.0001);
-    // Wolfram Alpha: population standard deviation {3,5,13}
-    assertEquals(4.3205, tb.getDouble(5, 0), 0.0001);
-    /* Doubles, one aggregate at a time */
-    tb = doAggOpsToCol(builder, justCount);
-    assertEquals(doubles.length, tb.getLong(0, 0));
-    tb = doAggOpsToCol(builder, justMin);
-    assertEquals(Doubles.min(doubles), tb.getDouble(0, 0), 0.000001);
-    tb = doAggOpsToCol(builder, justMax);
-    assertEquals(Doubles.max(doubles), tb.getDouble(0, 0), 0.000001);
-    tb = doAggOpsToCol(builder, justSum);
-    assertEquals(3f + 5f + 13f, tb.getDouble(0, 0), 0.000001);
-    tb = doAggOpsToCol(builder, justAvg);
-    assertEquals((3f + 5f + 13f) / 3.0, tb.getDouble(0, 0), 0.0001);
-    tb = doAggOpsToCol(builder, justStdev);
-    assertEquals(4.3205, tb.getDouble(0, 0), 0.0001);
   }
 
   @Test
@@ -273,43 +321,47 @@ public class AggregateTest {
     AggregationOp[] nonNumAggBitsInOrder =
         new AggregationOp[] { AggregationOp.COUNT, AggregationOp.MIN, AggregationOp.MAX };
 
-    /* Dates */
-    DateTime[] dates =
-        new DateTime[] {
-            DateTime.parse("2014-04-01T11:30"), DateTime.parse("2014-04-01T11:31"), DateTime.parse("2012-02-29T12:00") };
-    builder = new DateTimeColumnBuilder();
-    for (DateTime d : dates) {
-      builder.appendDateTime(d);
-    }
-    tb = doAggOpsToCol(builder, nonNumAggBitsInOrder);
-    allNonNumericAggsTestSchema(tb.getSchema(), builder.getType());
-    assertEquals(dates.length, tb.getLong(0, 0));
-    assertEquals(DateTime.parse("2012-02-29T12:00"), tb.getDateTime(1, 0));
-    assertEquals(DateTime.parse("2014-04-01T11:31"), tb.getDateTime(2, 0));
+    for (int variant = 0; variant < 2; ++variant) {
+      boolean noColumns = (variant == 0);
+      /* Dates */
+      DateTime[] dates =
+          new DateTime[] {
+              DateTime.parse("2014-04-01T11:30"), DateTime.parse("2014-04-01T11:31"),
+              DateTime.parse("2012-02-29T12:00") };
+      builder = new DateTimeColumnBuilder();
+      for (DateTime d : dates) {
+        builder.appendDateTime(d);
+      }
+      tb = doAggOpsToCol(builder, nonNumAggBitsInOrder, noColumns);
+      allNonNumericAggsTestSchema(tb.getSchema(), builder.getType());
+      assertEquals(dates.length, tb.getLong(0, 0));
+      assertEquals(DateTime.parse("2012-02-29T12:00"), tb.getDateTime(1, 0));
+      assertEquals(DateTime.parse("2014-04-01T11:31"), tb.getDateTime(2, 0));
 
-    /* Strings */
-    String[] strings = new String[] { "abcd", "abc", "abcde", "fghij0", "fghij1" };
-    builder = new StringColumnBuilder();
-    for (String s : strings) {
-      builder.appendString(s);
-    }
-    tb = doAggOpsToCol(builder, nonNumAggBitsInOrder);
-    allNonNumericAggsTestSchema(tb.getSchema(), builder.getType());
-    assertEquals(strings.length, tb.getLong(0, 0));
-    assertEquals("abc", tb.getString(1, 0));
-    assertEquals("fghij1", tb.getString(2, 0));
+      /* Strings */
+      String[] strings = new String[] { "abcd", "abc", "abcde", "fghij0", "fghij1" };
+      builder = new StringColumnBuilder();
+      for (String s : strings) {
+        builder.appendString(s);
+      }
+      tb = doAggOpsToCol(builder, nonNumAggBitsInOrder, noColumns);
+      allNonNumericAggsTestSchema(tb.getSchema(), builder.getType());
+      assertEquals(strings.length, tb.getLong(0, 0));
+      assertEquals("abc", tb.getString(1, 0));
+      assertEquals("fghij1", tb.getString(2, 0));
 
-    /* Booleans */
-    AggregationOp[] booleanAggs = new AggregationOp[] { AggregationOp.COUNT };
-    boolean[] booleans = new boolean[] { true, false, true };
-    builder = new BooleanColumnBuilder();
-    for (boolean b : booleans) {
-      builder.appendBoolean(b);
+      /* Booleans */
+      AggregationOp[] booleanAggs = new AggregationOp[] { AggregationOp.COUNT };
+      boolean[] booleans = new boolean[] { true, false, true };
+      builder = new BooleanColumnBuilder();
+      for (boolean b : booleans) {
+        builder.appendBoolean(b);
+      }
+      tb = doAggOpsToCol(builder, booleanAggs, noColumns);
+      assertEquals(1, tb.getSchema().numColumns());
+      assertEquals(Type.LONG_TYPE, tb.getSchema().getColumnType(0));
+      assertEquals(booleans.length, tb.getLong(0, 0));
     }
-    tb = doAggOpsToCol(builder, booleanAggs);
-    assertEquals(1, tb.getSchema().numColumns());
-    assertEquals(Type.LONG_TYPE, tb.getSchema().getColumnType(0));
-    assertEquals(booleans.length, tb.getLong(0, 0));
   }
 
   public TupleBatchBuffer generateRandomTuples(final int numTuples) {
@@ -856,12 +908,12 @@ public class AggregateTest {
   @Test(expected = ArithmeticException.class)
   public void testLongAggOverflow() throws Exception {
     LongColumnBuilder builder = new LongColumnBuilder().appendLong(Long.MAX_VALUE - 1).appendLong(3);
-    doAggOpsToCol(builder, new AggregationOp[] { AggregationOp.SUM });
+    doAggOpsToCol(builder, new AggregationOp[] { AggregationOp.SUM }, true);
   }
 
   @Test(expected = ArithmeticException.class)
   public void testLongAggUnderflow() throws Exception {
     LongColumnBuilder builder = new LongColumnBuilder().appendLong(Long.MIN_VALUE + 1).appendLong(-3);
-    doAggOpsToCol(builder, new AggregationOp[] { AggregationOp.SUM });
+    doAggOpsToCol(builder, new AggregationOp[] { AggregationOp.SUM }, true);
   }
 }
