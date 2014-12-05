@@ -20,11 +20,7 @@ public class UserDefinedAggregator implements Aggregator {
   /**
    * The state of the aggregate variables.
    */
-  private Tuple state;
-  /**
-   * The old state of the aggregate variables.
-   */
-  private Tuple oldState;
+  private final Tuple initialState;
   /**
    * Evaluators that update the {@link #state}. One evaluator for each expression in {@link #updateExpressions}.
    */
@@ -46,30 +42,28 @@ public class UserDefinedAggregator implements Aggregator {
    */
   public UserDefinedAggregator(final Tuple state, final ArrayList<GenericEvaluator> updateEvaluators,
       final ArrayList<GenericEvaluator> emitEvaluators, final Schema resultSchema) {
-    this.state = state;
-    oldState = state.clone();
+    initialState = state;
     this.updateEvaluators = updateEvaluators;
     this.emitEvaluators = emitEvaluators;
     this.resultSchema = resultSchema;
   }
 
   @Override
-  public void add(final ReadableTable from) throws DbException {
+  public void add(final ReadableTable from, final Object state) throws DbException {
     for (int row = 0; row < from.numTuples(); ++row) {
-      addRow(from, row);
+      addRow(from, row, state);
     }
   }
 
   @Override
-  public void addRow(final ReadableTable from, final int row) throws DbException {
+  public void addRow(final ReadableTable from, final int row, final Object state) throws DbException {
+    Tuple stateTuple = (Tuple) state;
     // set the old state to the current state
-    Tuple tmp = state;
-    state = oldState;
-    oldState = tmp;
+    Tuple oldState = stateTuple.clone();
     // update state
-    for (int columnIdx = 0; columnIdx < tmp.getSchema().numColumns(); columnIdx++) {
+    for (int columnIdx = 0; columnIdx < oldState.getSchema().numColumns(); columnIdx++) {
       try {
-        updateEvaluators.get(columnIdx).eval(from, row, state.getColumn(columnIdx), oldState);
+        updateEvaluators.get(columnIdx).eval(from, row, stateTuple.getColumn(columnIdx), oldState);
       } catch (InvocationTargetException e) {
         throw new DbException("Error updating state", e);
       }
@@ -77,11 +71,12 @@ public class UserDefinedAggregator implements Aggregator {
   }
 
   @Override
-  public void getResult(final AppendableTable dest, final int destColumn) throws DbException {
+  public void getResult(final AppendableTable dest, final int destColumn, final Object state) throws DbException {
+    Tuple stateTuple = (Tuple) state;
     for (int index = 0; index < emitEvaluators.size(); index++) {
       final GenericEvaluator evaluator = emitEvaluators.get(index);
       try {
-        evaluator.eval(null, 0, dest.asWritableColumn(destColumn + index), state);
+        evaluator.eval(null, 0, dest.asWritableColumn(destColumn + index), stateTuple);
       } catch (InvocationTargetException e) {
         throw new DbException("Error finalizing aggregate", e);
       }
@@ -91,5 +86,10 @@ public class UserDefinedAggregator implements Aggregator {
   @Override
   public Schema getResultSchema() {
     return resultSchema;
+  }
+
+  @Override
+  public Object getInitialState() {
+    return initialState.clone();
   }
 }

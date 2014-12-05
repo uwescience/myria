@@ -24,13 +24,15 @@ public final class Aggregate extends UnaryOperator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  /** The actual aggregators. */
-  private Aggregator[] aggregators;
   /** Use to create the aggregators. */
   private final AggregatorFactory[] factories;
+  /** The actual aggregators. */
+  private Aggregator[] aggregators;
+  /** The state of the aggregators. */
+  private Object[] aggregatorStates;
   /**
    * buffer for holding results.
-   * */
+   */
   private transient TupleBatchBuffer aggBuffer;
 
   /**
@@ -60,16 +62,16 @@ public final class Aggregate extends UnaryOperator {
     }
 
     while ((tb = child.nextReady()) != null) {
-      for (Aggregator agg : aggregators) {
-        agg.add(tb);
+      for (int agg = 0; agg < aggregators.length; ++agg) {
+        aggregators[agg].add(tb, aggregatorStates[agg]);
       }
     }
 
     if (child.eos()) {
       int fromIndex = 0;
-      for (Aggregator agg : aggregators) {
-        agg.getResult(aggBuffer, fromIndex);
-        fromIndex += agg.getResultSchema().numColumns();
+      for (int agg = 0; agg < aggregators.length; ++agg) {
+        aggregators[agg].getResult(aggBuffer, fromIndex, aggregatorStates[agg]);
+        fromIndex += aggregators[agg].getResultSchema().numColumns();
       }
       return aggBuffer.popAny();
     }
@@ -78,8 +80,10 @@ public final class Aggregate extends UnaryOperator {
 
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    aggBuffer = new TupleBatchBuffer(getSchema());
+    Preconditions.checkState(getSchema() != null, "unable to determine schema in init");
     aggregators = AggUtils.allocateAggs(factories, getChild().getSchema());
+    aggregatorStates = AggUtils.allocateAggStates(aggregators);
+    aggBuffer = new TupleBatchBuffer(getSchema());
   }
 
   @Override
@@ -87,18 +91,22 @@ public final class Aggregate extends UnaryOperator {
     if (getChild() == null) {
       return null;
     }
-    final Schema childSchema = getChild().getSchema();
-    if (childSchema == null) {
+    final Schema inputSchema = getChild().getSchema();
+    if (inputSchema == null) {
       return null;
     }
 
     final ImmutableList.Builder<Type> gTypes = ImmutableList.builder();
     final ImmutableList.Builder<String> gNames = ImmutableList.builder();
 
-    for (AggregatorFactory f : factories) {
-      Schema s = f.getResultSchema(childSchema);
-      gTypes.addAll(s.getColumnTypes());
-      gNames.addAll(s.getColumnNames());
+    try {
+      for (Aggregator agg : AggUtils.allocateAggs(factories, inputSchema)) {
+        Schema s = agg.getResultSchema();
+        gTypes.addAll(s.getColumnTypes());
+        gNames.addAll(s.getColumnNames());
+      }
+    } catch (DbException e) {
+      throw new RuntimeException("unable to allocate aggregators", e);
     }
     return new Schema(gTypes, gNames);
   }

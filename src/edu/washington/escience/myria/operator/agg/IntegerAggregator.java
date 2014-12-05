@@ -8,7 +8,6 @@ import com.google.common.math.LongMath;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.storage.AppendableTable;
-import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.storage.ReadableTable;
 
 /**
@@ -18,21 +17,8 @@ public final class IntegerAggregator extends PrimitiveAggregator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
-
-  /** The minimum value in the aggregated column. */
-  private int min;
-  /** The maximum value in the aggregated column. */
-  private int max;
-  /** The sum of values in the aggregated column. */
-  private long sum;
-
-  /** Private temp variables for computing stdev. */
-  private long sumSquared;
-
-  /**
-   * Count, always of long type.
-   */
-  private long count;
+  /** Which column of the input this aggregator operates over. */
+  private final int fromColumn;
 
   /**
    * Aggregate operations applicable for int columns.
@@ -43,60 +29,43 @@ public final class IntegerAggregator extends PrimitiveAggregator {
   /**
    * @param aFieldName aggregate field name for use in output schema.
    * @param aggOps the aggregate operation to simultaneously compute.
+   * @param column the column being aggregated over.
    */
-  public IntegerAggregator(final String aFieldName, final AggregationOp[] aggOps) {
+  public IntegerAggregator(final String aFieldName, final AggregationOp[] aggOps, final int column) {
     super(aFieldName, aggOps);
-
-    min = Integer.MAX_VALUE;
-    max = Integer.MIN_VALUE;
-    sum = 0;
-    count = 0;
-    sumSquared = 0L;
+    fromColumn = column;
   }
 
   @Override
-  public void add(final ReadableColumn from) {
+  public void add(final ReadableTable from, final Object state) {
     Objects.requireNonNull(from, "from");
-    final int numTuples = from.size();
+    IntAggState istate = (IntAggState) state;
+    final int numTuples = from.numTuples();
     if (numTuples == 0) {
       return;
     }
 
     if (needsCount) {
-      count = LongMath.checkedAdd(count, numTuples);
+      istate.count = LongMath.checkedAdd(istate.count, numTuples);
     }
 
     if (!needsStats) {
       return;
     }
     for (int i = 0; i < numTuples; i++) {
-      addIntStats(from.getInt(i));
+      addIntStats(from.getInt(fromColumn, i), istate);
     }
   }
 
   @Override
-  public void add(final ReadableTable from, final int fromColumn) {
-    Objects.requireNonNull(from, "from");
-    add(from.asColumn(fromColumn));
-  }
-
-  @Override
-  public void add(final ReadableTable table, final int column, final int row) {
+  public void addRow(final ReadableTable table, final int row, final Object state) {
     Objects.requireNonNull(table, "table");
-    addInt(table.getInt(column, row));
-  }
-
-  /**
-   * Add the specified value to this aggregator.
-   * 
-   * @param value the value to be added
-   */
-  public void addInt(final int value) {
+    IntAggState istate = (IntAggState) state;
     if (needsCount) {
-      count = LongMath.checkedAdd(count, 1);
+      istate.count = LongMath.checkedAdd(istate.count, 1);
     }
     if (needsStats) {
-      addIntStats(value);
+      addIntStats(table.getInt(fromColumn, row), istate);
     }
   }
 
@@ -104,49 +73,51 @@ public final class IntegerAggregator extends PrimitiveAggregator {
    * Helper function to add value to this aggregator. Note this does NOT update count.
    * 
    * @param value the value to be added
+   * @param state the state of the aggregate, which will be mutated.
    */
-  private void addIntStats(final int value) {
+  private void addIntStats(final int value, final IntAggState state) {
     if (needsSum) {
-      sum = LongMath.checkedAdd(sum, value);
+      state.sum = LongMath.checkedAdd(state.sum, value);
     }
     if (needsSumSq) {
       // don't need to check value*value since value is an int
-      sumSquared = LongMath.checkedAdd(sumSquared, ((long) value) * value);
+      state.sumSquared = LongMath.checkedAdd(state.sumSquared, ((long) value) * value);
     }
     if (needsMin) {
-      min = Math.min(min, value);
+      state.min = Math.min(state.min, value);
     }
     if (needsMax) {
-      max = Math.max(max, value);
+      state.max = Math.max(state.max, value);
     }
   }
 
   @Override
-  public void getResult(final AppendableTable dest, final int destColumn) {
+  public void getResult(final AppendableTable dest, final int destColumn, final Object state) {
     Objects.requireNonNull(dest, "dest");
+    IntAggState istate = (IntAggState) state;
     int idx = destColumn;
     for (AggregationOp op : aggOps) {
       switch (op) {
         case AVG:
-          dest.putDouble(idx, sum * 1.0 / count);
+          dest.putDouble(idx, istate.sum * 1.0 / istate.count);
           break;
         case COUNT:
-          dest.putLong(idx, count);
+          dest.putLong(idx, istate.count);
           break;
         case MAX:
-          dest.putInt(idx, max);
+          dest.putInt(idx, istate.max);
           break;
         case MIN:
-          dest.putInt(idx, min);
+          dest.putInt(idx, istate.min);
           break;
         case STDEV:
-          double first = ((double) sumSquared) / count;
-          double second = ((double) sum) / count;
+          double first = ((double) istate.sumSquared) / istate.count;
+          double second = ((double) istate.sum) / istate.count;
           double stdev = Math.sqrt(first - second * second);
           dest.putDouble(idx, stdev);
           break;
         case SUM:
-          dest.putLong(idx, sum);
+          dest.putLong(idx, istate.sum);
           break;
       }
       idx++;
@@ -166,5 +137,24 @@ public final class IntegerAggregator extends PrimitiveAggregator {
   @Override
   protected Type getSumType() {
     return Type.LONG_TYPE;
+  }
+
+  @Override
+  public Object getInitialState() {
+    return new IntAggState();
+  }
+
+  /** Private internal class that wraps the state required by this Aggregator as an object. */
+  private final class IntAggState {
+    /** The number of tuples seen so far. */
+    private long count = 0;
+    /** The minimum value in the aggregated column. */
+    private int min = Integer.MAX_VALUE;
+    /** The maximum value in the aggregated column. */
+    private int max = Integer.MIN_VALUE;
+    /** The sum of values in the aggregated column. */
+    private long sum = 0;
+    /** private temp variables for computing stdev. */
+    private long sumSquared = 0;
   }
 }

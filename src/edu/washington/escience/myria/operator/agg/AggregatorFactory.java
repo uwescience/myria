@@ -29,13 +29,4 @@ public interface AggregatorFactory extends Serializable {
    */
   @Nonnull
   Aggregator get(Schema inputSchema) throws DbException;
-
-  /**
-   * Returns the schema of the aggregates over the specified input tuples.
-   * 
-   * @param inputSchema the schema of the input tuples.
-   * @return the schema of the aggregates over the specified input tuples.
-   */
-  @Nonnull
-  Schema getResultSchema(Schema inputSchema);
 }

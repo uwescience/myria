@@ -11,15 +11,12 @@ import com.google.common.collect.Sets;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.storage.AppendableTable;
-import edu.washington.escience.myria.storage.ReadableColumn;
-import edu.washington.escience.myria.storage.ReadableTable;
 
 /**
  * Single column aggregator.
  */
 @SuppressWarnings("checkstyle:visibilitymodifier")
-public abstract class PrimitiveAggregator implements Serializable {
+public abstract class PrimitiveAggregator implements Aggregator, Serializable {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -146,50 +143,12 @@ public abstract class PrimitiveAggregator implements Serializable {
   protected abstract Set<AggregationOp> getAvailableAgg();
 
   /**
-   * Add the entire contents of {@link ReadableColumn} into the aggregate.
-   * 
-   * @param from the source {@link ReadableColumn}
+   * @return The {@link Type} of the values this aggregator handles.
    */
-  public abstract void add(ReadableColumn from);
+  public abstract Type getType();
 
-  /**
-   * Add the entire contents of the specified column from the {@link ReadableTable} into the aggregate.
-   * 
-   * @param from the source {@link ReadableTable}
-   * @param fromColumn the column in the table to add values from
-   */
-  public abstract void add(ReadableTable from, int fromColumn);
-
-  /**
-   * Add the value in the specified <code>column</code> and <code>row</code> in the given {@link ReadableTable} into the
-   * aggregate.
-   * 
-   * @param table the source {@link ReadableTable}
-   * @param column the column in <code>t</code> containing the value
-   * @param row the row in <code>t</code> containing the value
-   */
-  public abstract void add(ReadableTable table, int column, int row);
-
-  /**
-   * Output the aggregate result. Store the output to buffer.
-   * 
-   * @param dest the buffer to store the aggregate result.
-   * @param destColumn from the fromIndex to put the result columns
-   */
-  public abstract void getResult(AppendableTable dest, int destColumn);
-
-  /**
-   * All the count aggregates are of type Long. All the avg aggregates are of type Double. And each of the max/min/sum
-   * aggregate has the same type as the column on which the aggregate is computed.
-   * 
-   * @return Result schema of this Aggregator.
-   */
+  @Override
   public final Schema getResultSchema() {
     return resultSchema;
   }
-
-  /**
-   * @return The {@link Type} of the values this aggreagtor handles.
-   */
-  public abstract Type getType();
 }
