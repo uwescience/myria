@@ -63,7 +63,7 @@ public final class DoubleAggregator extends PrimitiveAggregator {
       d.count = LongMath.checkedAdd(d.count, 1);
     }
     if (needsStats) {
-      addDoubleStats(table.getFloat(fromColumn, row), d);
+      addDoubleStats(table.getDouble(fromColumn, row), d);
     }
   }
 
