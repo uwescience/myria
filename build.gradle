@@ -107,7 +107,7 @@ dependencies {
   compile "com.google.code.findbugs:findbugs:3.0.0"
   compile "net.jcip:jcip-annotations:1.0"
   compile "org.ini4j:ini4j:0.5.2"
-  compile "com.almworks.sqlite4java:sqlite4java:0.282"
+  compile "com.almworks.sqlite4java:sqlite4java:1.0.392"
 
   compile "com.google.guava:guava:18.0"
   compile "com.google.protobuf:protobuf-java:2.5.0"
@@ -178,7 +178,7 @@ tasks.withType(JavaCompile) {
 
 /* Tell all tasks to add sqlite library to their classpath when running. */
 tasks.withType(Test) {
-  systemProperty "java.library.path", file("lib/sqlite4java-282")
+  systemProperty "java.library.path", file("lib/sqlite4java-392")
   getReports().getHtml().setDestination(file('build/reports/'+name))
 
   // set heap size for the test JVM(s)
@@ -216,7 +216,7 @@ eclipse.classpath {
       provider -> 
       provider.asNode().findAll { it.@path.contains("sqlite") }.each { 
         it.children().each {
-          it.appendNode('attribute', [name: 'org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY', value:'myria/lib/sqlite4java-282'])
+          it.appendNode('attribute', [name: 'org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY', value:'myria/lib/sqlite4java-392'])
         }
       }
     }
