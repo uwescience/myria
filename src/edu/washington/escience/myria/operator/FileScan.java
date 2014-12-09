@@ -172,15 +172,20 @@ public final class FileScan extends LeafOperator {
       if (scanner.isClosed()) {
         break;
       }
-      if (!csvIterator.hasNext()) {
-        scanner.close();
-        break;
+      try {
+        if (!csvIterator.hasNext()) {
+          scanner.close();
+          break;
+        }
+      } catch (final RuntimeException e) {
+        throw new DbException("Error parsing row ", e);
       }
       CSVRecord nextLine = csvIterator.next();
+
       lineNumber++;
-      if (!nextLine.isConsistent()) {
-        throw new DbException("Error parsing row " + lineNumber
-            + ": Row is inconsistent (unexpected number of columns).");
+      if (nextLine.size() != schema.numColumns()) {
+        throw new DbException("Error parsing row " + nextLine.getRecordNumber() + ": Found " + nextLine.size()
+            + " column(s) but expected " + schema.numColumns() + " column(s).");
       }
       for (int column = 0; column < schema.numColumns(); ++column) {
         String cell = nextLine.get(column);

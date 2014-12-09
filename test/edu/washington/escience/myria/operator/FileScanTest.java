@@ -115,7 +115,7 @@ public class FileScanTest {
   public void testCsvNestedQuote() throws DbException, InterruptedException {
     final String filename = "escape_quote_two_col_string.txt";
     final Schema schema = new Schema(ImmutableList.of(Type.STRING_TYPE, Type.STRING_TYPE));
-    assertEquals(7, getRowCount(filename, schema));
+    assertEquals(7, getRowCount(filename, schema, ',', '#'));
   }
 
   @Test
