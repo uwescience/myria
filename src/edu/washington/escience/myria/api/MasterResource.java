@@ -66,6 +66,7 @@ public final class MasterResource {
   /**
    * Get the path to the deployment.cfg file.
    * 
+   * @param server the Myria {@link Server}.
    * @return the file path.
    */
   @GET
