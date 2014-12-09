@@ -263,10 +263,10 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     System.out.println("Download size: " + (numBytesRead * 1.0 / 1024 / 1024 / 1024) + " GB");
     System.out.println("Speed is: " + (numBytesRead * 1.0 / 1024 / 1024 / TimeUnit.NANOSECONDS.toSeconds(nanoElapse))
         + " MB/s");
-    while (server.getQueryManager().getQueries(1, 0).get(0).finishTime == null) {
+    while (server.getQueryManager().getQueries(1, 0, null).get(0).finishTime == null) {
       Thread.sleep(100);
     }
-    QueryStatusEncoding qs = server.getQueryManager().getQueries(1, 0).get(0);
+    QueryStatusEncoding qs = server.getQueryManager().getQueries(1, 0, null).get(0);
     assertTrue(qs.status == QueryStatusEncoding.Status.ERROR);
   }
 }
