@@ -138,7 +138,7 @@ public class QueryManager {
    * @throws CatalogException if there is an error in the catalog.
    * @return a list of the status of every query that has been submitted to Myria.
    */
-  public List<QueryStatusEncoding> getQueries(final long limit, final long maxId, final @Nullable String searchTerm)
+  public List<QueryStatusEncoding> getQueries(final long limit, final long maxId, @Nullable final String searchTerm)
       throws CatalogException {
     List<QueryStatusEncoding> ret = new LinkedList<>();
 

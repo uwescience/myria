@@ -1590,17 +1590,28 @@ public final class MasterCatalog {
   }
 
   /**
+   * @param searchTerm a token to match against the raw queries. If null, all queries will be returned.
    * @return number of queries in catalog.
    * @throws CatalogException if an error occurs
    */
-  public int getNumQueries() throws CatalogException {
+  public int getNumQueries(@Nullable final String searchTerm) throws CatalogException {
+    Preconditions.checkArgument(searchTerm == null || searchTerm.length() >= 3,
+        "when present, search term must be at least 3 characters long [given: %s]", searchTerm);
+
     try {
       return queue.execute(new SQLiteJob<Integer>() {
         @Override
         protected Integer job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
           try {
             /* Getting this out is a simple query, which does not need to be cached. */
-            final SQLiteStatement statement = sqliteConnection.prepare("SELECT count(*) FROM queries;", false);
+            final SQLiteStatement statement;
+            if (searchTerm == null) {
+              statement = sqliteConnection.prepare("SELECT count(*) FROM queries_fts;");
+            } else {
+              statement = sqliteConnection.prepare("SELECT count(*) FROM queries_fts WHERE raw_query_fts MATCH ?;");
+              statement.bind(1, searchTerm);
+            }
+
             Preconditions.checkArgument(statement.step(), "Count should return a row");
             final Integer ret = statement.columnInt(0);
             statement.dispose();
