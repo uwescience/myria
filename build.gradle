@@ -140,7 +140,7 @@ dependencies {
   runtime "org.slf4j:slf4j-log4j12:${slf4jVersion}"
 
   // OpenCSV for reading CSV files
-  compile "net.sf.opencsv:opencsv:2.3"
+  compile "org.apache.commons:commons-csv:1.1"
   
   // SuperCSV for writing
   compile "net.sf.supercsv:super-csv:2.2.0"
