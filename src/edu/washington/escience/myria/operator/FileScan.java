@@ -28,20 +28,20 @@ import edu.washington.escience.myria.util.DateTimeUtils;
 /**
  * Reads data from a file. For CSV files, the default parser follows the RFC 4180 (http://tools.ietf.org/html/rfc4180).
  * However, this operator can be used to scan files with different delimiters, etc.
- * 
+ *
  * This operator assumes the input file is be comma-separated CSV files and have one record per line. For input files in
  * other formats, delimiter need to be specified, e.g `\t` for tab delimited file, '|' for pipe delimited file. Each
  * cell of the input can be enclosed by the default quotation mark '"'. Other quotation mark like '\'' can be specified
  * by user as well. Note that the enclosure by quotation is not required in the input file.
- * 
+ *
  */
 public final class FileScan extends LeafOperator {
   /** The Schema of the relation stored in this file. */
   private final Schema schema;
   /** Scanner used to parse the file. */
-  private transient CSVParser scanner = null;
+  private transient CSVParser parser = null;
   /** Iterator over CSV records. */
-  private transient Iterator<CSVRecord> csvIterator = null;
+  private transient Iterator<CSVRecord> iterator = null;
   /** A user-provided file delimiter; if null, the system uses the default comma as delimiter. */
   private final Character delimiter;
   /** A user-provided quotation mark, if null, the system uses '"'. */
@@ -55,7 +55,7 @@ public final class FileScan extends LeafOperator {
   /** Holds the tuples that are ready for release. */
   private transient TupleBatchBuffer buffer;
   /** Which line of the file the scanner is currently on. */
-  private int lineNumber = 0;
+  private long lineNumber = 0;
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -68,7 +68,7 @@ public final class FileScan extends LeafOperator {
   /**
    * Construct a new FileScan object to read from the specified file. This file is assumed to be comma-separated and
    * have one record per line. '"' will be used as default quotation mark. `\` will be used as escape character.
-   * 
+   *
    * @param filename file containing the data to be scanned.
    * @param schema the Schema of the relation contained in the file.
    */
@@ -79,7 +79,7 @@ public final class FileScan extends LeafOperator {
   /**
    * Construct a new FileScan object to read from the specified file. This file is assumed to be comma-separated and
    * have one record per line. '"' will be used as default quotation mark. `\` will be used as escape character.
-   * 
+   *
    * @param source the data source containing the relation.
    * @param schema the Schema of the relation contained in the file.
    */
@@ -91,7 +91,7 @@ public final class FileScan extends LeafOperator {
    * Construct a new FileScan object to read from the specified file. This file is assumed to be comma-separated and
    * have one record per line. If delimiter is non-null, the system uses its value as a delimiter. '"' will be used as
    * default quotation mark. `\` will be used as escape character.
-   * 
+   *
    * @param filename file containing the data to be scanned.
    * @param schema the Schema of the relation contained in the file.
    * @param delimiter An optional override file delimiter.
@@ -104,7 +104,7 @@ public final class FileScan extends LeafOperator {
    * Construct a new FileScan object to read from the specified file. This file is assumed to be comma-separated and
    * have one record per line. If delimiter is non-null, the system uses its value as a delimiter. '"' will be used as
    * default quotation mark. `\` will be used as escape character.
-   * 
+   *
    * @param source file containing the data to be scanned.
    * @param schema the Schema of the relation contained in the file.
    * @param delimiter An optional override file delimiter.
@@ -118,7 +118,7 @@ public final class FileScan extends LeafOperator {
    * have one record per line. If delimiter is non-null, the system uses its value as a delimiter. If quote is null, '"'
    * will be used as default quotation mark. If escape is null, `\` will be used as escape character. If
    * numberOfSkippedLines is null, no line will be skipped.
-   * 
+   *
    * @param filename file containing the data to be scanned.
    * @param schema the Schema of the relation contained in the file.
    * @param delimiter An optional override file delimiter.
@@ -136,7 +136,7 @@ public final class FileScan extends LeafOperator {
    * have one record per line. If delimiter is non-null, the system uses its value as a delimiter. If quote is null, '"'
    * will be used as default quotation mark. If escape is null, `\` will be used as escape character. If
    * numberOfSkippedLines is null, no line will be skipped.
-   * 
+   *
    * @param source the data source containing the relation.
    * @param schema the Schema of the relation contained in the file.
    * @param delimiter An optional override file delimiter.
@@ -157,7 +157,7 @@ public final class FileScan extends LeafOperator {
 
   @Override
   public void cleanup() {
-    scanner = null;
+    parser = null;
     while (buffer.numTuples() > 0) {
       buffer.popAny();
     }
@@ -166,29 +166,29 @@ public final class FileScan extends LeafOperator {
   @Override
   protected TupleBatch fetchNextReady() throws DbException, IOException {
     /* Let's assume that the scanner always starts at the beginning of a line. */
-    int lineNumberBegin = lineNumber;
+    long lineNumberBegin = lineNumber;
 
     while ((buffer.numTuples() < TupleBatch.BATCH_SIZE)) {
-      if (scanner.isClosed()) {
+      if (parser.isClosed()) {
         break;
       }
       try {
-        if (!csvIterator.hasNext()) {
-          scanner.close();
+        if (!iterator.hasNext()) {
+          parser.close();
           break;
         }
       } catch (final RuntimeException e) {
         throw new DbException("Error parsing row ", e);
       }
-      CSVRecord nextLine = csvIterator.next();
+      CSVRecord record = iterator.next();
+      lineNumber = record.getRecordNumber();
 
-      lineNumber++;
-      if (nextLine.size() != schema.numColumns()) {
-        throw new DbException("Error parsing row " + nextLine.getRecordNumber() + ": Found " + nextLine.size()
+      if (record.size() != schema.numColumns()) {
+        throw new DbException("Error parsing row " + record.getRecordNumber() + ": Found " + record.size()
             + " column(s) but expected " + schema.numColumns() + " column(s).");
       }
       for (int column = 0; column < schema.numColumns(); ++column) {
-        String cell = nextLine.get(column);
+        String cell = record.get(column);
         try {
           switch (schema.getColumnType(column)) {
             case BOOLEAN_TYPE:
@@ -238,12 +238,12 @@ public final class FileScan extends LeafOperator {
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     buffer = new TupleBatchBuffer(getSchema());
     try {
-      scanner =
+      parser =
           new CSVParser(new BufferedReader(new InputStreamReader(source.getInputStream())), CSVFormat.newFormat(
               delimiter).withQuote(quote).withEscape(escape));
-      csvIterator = scanner.iterator();
+      iterator = parser.iterator();
       for (int i = 0; i < numberOfSkippedLines; i++) {
-        csvIterator.next();
+        iterator.next();
       }
     } catch (IOException e) {
       throw new DbException(e);
