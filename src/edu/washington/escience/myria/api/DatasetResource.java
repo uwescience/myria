@@ -184,10 +184,14 @@ public final class DatasetResource {
     TupleWriter writer;
     if (validFormat.equals("csv") || validFormat.equals("tsv")) {
       /* CSV or TSV : set application/octet-stream, attachment, and filename. */
-      if (validFormat.equals("csv")) {
-        writer = new CsvTupleWriter(writerOutput);
-      } else {
-        writer = new CsvTupleWriter('\t', writerOutput);
+      try {
+        if (validFormat.equals("csv")) {
+          writer = new CsvTupleWriter(writerOutput);
+        } else {
+          writer = new CsvTupleWriter('\t', writerOutput);
+        }
+      } catch (IOException e) {
+        throw new DbException(e);
       }
       ContentDisposition contentDisposition =
           ContentDisposition.type("attachment").fileName(relationKey.toString() + '.' + validFormat).build();
@@ -248,10 +252,14 @@ public final class DatasetResource {
     TupleWriter writer;
     if (validFormat.equals("csv") || validFormat.equals("tsv")) {
       /* CSV or TSV : set application/octet-stream, attachment, and filename. */
-      if (validFormat.equals("csv")) {
-        writer = new CsvTupleWriter(writerOutput);
-      } else {
-        writer = new CsvTupleWriter('\t', writerOutput);
+      try {
+        if (validFormat.equals("csv")) {
+          writer = new CsvTupleWriter(writerOutput);
+        } else {
+          writer = new CsvTupleWriter('\t', writerOutput);
+        }
+      } catch (IOException e) {
+        throw new DbException(e);
       }
       ContentDisposition contentDisposition =
           ContentDisposition.type("attachment").fileName("test" + '.' + validFormat).build();

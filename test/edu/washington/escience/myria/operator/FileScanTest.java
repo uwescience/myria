@@ -75,7 +75,7 @@ public class FileScanTest {
    * @throws DbException if the file does not match the given Schema.
    * @throws InterruptedException
    */
-  private static int getRowCount(FileScan fileScan) throws DbException, InterruptedException {
+  private static int getRowCount(final FileScan fileScan) throws DbException, InterruptedException {
     fileScan.open(null);
 
     int count = 0;

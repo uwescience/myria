@@ -76,16 +76,16 @@ public final class LogResource {
 
     PipedOutputStream writerOutput = new PipedOutputStream();
     PipedInputStream input;
+    TupleWriter writer;
     try {
       input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
+      writer = new CsvTupleWriter(writerOutput);
     } catch (IOException e) {
       throw new DbException(e);
     }
 
     PipedStreamingOutput entity = new PipedStreamingOutput(input);
     response.entity(entity);
-
-    TupleWriter writer = new CsvTupleWriter(writerOutput);
 
     server.startLogDataStream(queryId, fragmentId, start, end, minLength, onlyRootOp, writer);
     return response.build();
@@ -120,16 +120,16 @@ public final class LogResource {
 
     PipedOutputStream writerOutput = new PipedOutputStream();
     PipedInputStream input;
+    TupleWriter writer;
     try {
       input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
+      writer = new CsvTupleWriter(writerOutput);
     } catch (IOException e) {
       throw new DbException(e);
     }
 
     PipedStreamingOutput entity = new PipedStreamingOutput(input);
     response.entity(entity);
-
-    TupleWriter writer = new CsvTupleWriter(writerOutput);
 
     server.startContributionsStream(queryId, fragmentId, writer);
 
@@ -164,16 +164,16 @@ public final class LogResource {
 
     PipedOutputStream writerOutput = new PipedOutputStream();
     PipedInputStream input;
+    TupleWriter writer;
     try {
       input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
+      writer = new CsvTupleWriter(writerOutput);
     } catch (IOException e) {
       throw new DbException(e);
     }
 
     PipedStreamingOutput entity = new PipedStreamingOutput(input);
     response.entity(entity);
-
-    TupleWriter writer = new CsvTupleWriter(writerOutput);
 
     server.startSentLogDataStream(queryId, fragmentId, writer);
 
@@ -206,16 +206,16 @@ public final class LogResource {
 
     PipedOutputStream writerOutput = new PipedOutputStream();
     PipedInputStream input;
+    TupleWriter writer;
     try {
       input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
+      writer = new CsvTupleWriter(writerOutput);
     } catch (IOException e) {
       throw new DbException(e);
     }
 
     PipedStreamingOutput entity = new PipedStreamingOutput(input);
     response.entity(entity);
-
-    TupleWriter writer = new CsvTupleWriter(writerOutput);
 
     server.startAggregatedSentLogDataStream(queryId, writer);
 
@@ -248,16 +248,16 @@ public final class LogResource {
 
     PipedOutputStream writerOutput = new PipedOutputStream();
     PipedInputStream input;
+    TupleWriter writer;
     try {
       input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
+      writer = new CsvTupleWriter(writerOutput);
     } catch (IOException e) {
       throw new DbException(e);
     }
 
     PipedStreamingOutput entity = new PipedStreamingOutput(input);
     response.entity(entity);
-
-    TupleWriter writer = new CsvTupleWriter(writerOutput);
 
     server.startRangeDataStream(queryId, fragmentId, writer);
 
@@ -305,16 +305,16 @@ public final class LogResource {
 
     PipedOutputStream writerOutput = new PipedOutputStream();
     PipedInputStream input;
+    TupleWriter writer;
     try {
       input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
+      writer = new CsvTupleWriter(writerOutput);
     } catch (IOException e) {
       throw new DbException(e);
     }
 
     PipedStreamingOutput entity = new PipedStreamingOutput(input);
     response.entity(entity);
-
-    TupleWriter writer = new CsvTupleWriter(writerOutput);
 
     server.startHistogramDataStream(queryId, fragmentId, start, end, step, onlyRootOp, writer);
 

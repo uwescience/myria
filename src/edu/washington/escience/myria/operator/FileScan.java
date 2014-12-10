@@ -3,13 +3,14 @@ package edu.washington.escience.myria.operator;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Iterator;
 
 import javax.annotation.Nullable;
 
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.lang.BooleanUtils;
-
-import au.com.bytecode.opencsv.CSVParser;
-import au.com.bytecode.opencsv.CSVReader;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
@@ -38,7 +39,9 @@ public final class FileScan extends LeafOperator {
   /** The Schema of the relation stored in this file. */
   private final Schema schema;
   /** Scanner used to parse the file. */
-  private transient CSVReader scanner = null;
+  private transient CSVParser parser = null;
+  /** Iterator over CSV records. */
+  private transient Iterator<CSVRecord> iterator = null;
   /** A user-provided file delimiter; if null, the system uses the default comma as delimiter. */
   private final Character delimiter;
   /** A user-provided quotation mark, if null, the system uses '"'. */
@@ -52,7 +55,7 @@ public final class FileScan extends LeafOperator {
   /** Holds the tuples that are ready for release. */
   private transient TupleBatchBuffer buffer;
   /** Which line of the file the scanner is currently on. */
-  private int lineNumber = 0;
+  private long lineNumber = 0;
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -141,19 +144,20 @@ public final class FileScan extends LeafOperator {
    * @param escape An optional escape character.
    * @param numberOfSkippedLines number of lines to be skipped (number of lines in header).
    */
-  public FileScan(final DataSource source, final Schema schema, final Character delimiter,
-      @Nullable final Character quote, final Character escape, final Integer numberOfSkippedLines) {
+  public FileScan(final DataSource source, final Schema schema, @Nullable final Character delimiter,
+      @Nullable final Character quote, @Nullable final Character escape, @Nullable final Integer numberOfSkippedLines) {
     this.source = Preconditions.checkNotNull(source, "source");
     this.schema = Preconditions.checkNotNull(schema, "schema");
-    this.delimiter = MoreObjects.firstNonNull(delimiter, CSVParser.DEFAULT_SEPARATOR);
-    this.quote = MoreObjects.firstNonNull(quote, CSVParser.DEFAULT_QUOTE_CHARACTER);
-    this.escape = MoreObjects.firstNonNull(escape, CSVParser.DEFAULT_ESCAPE_CHARACTER);
-    this.numberOfSkippedLines = MoreObjects.firstNonNull(numberOfSkippedLines, CSVReader.DEFAULT_SKIP_LINES);
+
+    this.delimiter = MoreObjects.firstNonNull(delimiter, CSVFormat.DEFAULT.getDelimiter());
+    this.quote = MoreObjects.firstNonNull(quote, CSVFormat.DEFAULT.getQuoteCharacter());
+    this.escape = MoreObjects.firstNonNull(escape, '\\');
+    this.numberOfSkippedLines = MoreObjects.firstNonNull(numberOfSkippedLines, 0);
   }
 
   @Override
   public void cleanup() {
-    scanner = null;
+    parser = null;
     while (buffer.numTuples() > 0) {
       buffer.popAny();
     }
@@ -162,50 +166,60 @@ public final class FileScan extends LeafOperator {
   @Override
   protected TupleBatch fetchNextReady() throws DbException, IOException {
     /* Let's assume that the scanner always starts at the beginning of a line. */
-    int lineNumberBegin = lineNumber;
+    long lineNumberBegin = lineNumber;
 
     while ((buffer.numTuples() < TupleBatch.BATCH_SIZE)) {
-      String[] nextLine = scanner.readNext();
-      if (nextLine == null) {
+      if (parser.isClosed()) {
         break;
       }
-      lineNumber++;
-      if (nextLine.length != schema.numColumns()) {
-        throw new DbException("Error parsing row " + lineNumber + ": Found " + nextLine.length
+      try {
+        if (!iterator.hasNext()) {
+          parser.close();
+          break;
+        }
+      } catch (final RuntimeException e) {
+        throw new DbException("Error parsing row ", e);
+      }
+      CSVRecord record = iterator.next();
+      lineNumber = record.getRecordNumber();
+
+      if (record.size() != schema.numColumns()) {
+        throw new DbException("Error parsing row " + record.getRecordNumber() + ": Found " + record.size()
             + " column(s) but expected " + schema.numColumns() + " column(s).");
       }
       for (int column = 0; column < schema.numColumns(); ++column) {
+        String cell = record.get(column);
         try {
           switch (schema.getColumnType(column)) {
             case BOOLEAN_TYPE:
-              if (Floats.tryParse(nextLine[column]) != null) {
-                buffer.putBoolean(column, Floats.tryParse(nextLine[column]) != 0);
-              } else if (BooleanUtils.toBoolean(nextLine[column])) {
-                buffer.putBoolean(column, Boolean.parseBoolean(nextLine[column]));
+              if (Floats.tryParse(cell) != null) {
+                buffer.putBoolean(column, Floats.tryParse(cell) != 0);
+              } else if (BooleanUtils.toBoolean(cell)) {
+                buffer.putBoolean(column, Boolean.parseBoolean(cell));
               }
               break;
             case DOUBLE_TYPE:
-              buffer.putDouble(column, Double.parseDouble(nextLine[column]));
+              buffer.putDouble(column, Double.parseDouble(cell));
               break;
             case FLOAT_TYPE:
-              buffer.putFloat(column, Float.parseFloat(nextLine[column]));
+              buffer.putFloat(column, Float.parseFloat(cell));
               break;
             case INT_TYPE:
-              buffer.putInt(column, Integer.parseInt(nextLine[column]));
+              buffer.putInt(column, Integer.parseInt(cell));
               break;
             case LONG_TYPE:
-              buffer.putLong(column, Long.parseLong(nextLine[column]));
+              buffer.putLong(column, Long.parseLong(cell));
               break;
             case STRING_TYPE:
-              buffer.putString(column, nextLine[column]);
+              buffer.putString(column, cell);
               break;
             case DATETIME_TYPE:
-              buffer.putDateTime(column, DateTimeUtils.parse(nextLine[column]));
+              buffer.putDateTime(column, DateTimeUtils.parse(cell));
               break;
           }
         } catch (final IllegalArgumentException e) {
           throw new DbException("Error parsing column " + column + " of row " + lineNumber + ", expected type: "
-              + schema.getColumnType(column) + ", scanned value: " + nextLine[column], e);
+              + schema.getColumnType(column) + ", scanned value: " + cell, e);
         }
       }
     }
@@ -224,10 +238,13 @@ public final class FileScan extends LeafOperator {
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     buffer = new TupleBatchBuffer(getSchema());
     try {
-      scanner =
-          new CSVReader(new BufferedReader(new InputStreamReader(source.getInputStream())), delimiter, quote, escape,
-              numberOfSkippedLines);
-
+      parser =
+          new CSVParser(new BufferedReader(new InputStreamReader(source.getInputStream())), CSVFormat.newFormat(
+              delimiter).withQuote(quote).withEscape(escape));
+      iterator = parser.iterator();
+      for (int i = 0; i < numberOfSkippedLines; i++) {
+        iterator.next();
+      }
     } catch (IOException e) {
       throw new DbException(e);
     }

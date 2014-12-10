@@ -14,9 +14,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 import org.junit.Test;
-
-import au.com.bytecode.opencsv.CSVReader;
 
 import com.google.common.collect.ImmutableList;
 
@@ -125,34 +126,32 @@ public class MultiwayJoinTest extends SystemTestBase {
     Path table1Worker2FilePath = Paths.get("testdata", "multiwayjoin", "testtable1_worker2.csv");
     Path table2Worker2FilePath = Paths.get("testdata", "multiwayjoin", "testtable2_worker2.csv");
 
-    CSVReader csv1 = new CSVReader(new FileReader(table1Worker1FilePath.toFile()));
-    CSVReader csv2 = new CSVReader(new FileReader(table2Worker1FilePath.toFile()));
-    CSVReader csv3 = new CSVReader(new FileReader(table1Worker2FilePath.toFile()));
-    CSVReader csv4 = new CSVReader(new FileReader(table2Worker2FilePath.toFile()));
+    CSVParser csv1 = new CSVParser(new FileReader(table1Worker1FilePath.toFile()), CSVFormat.DEFAULT);
+    CSVParser csv2 = new CSVParser(new FileReader(table2Worker1FilePath.toFile()), CSVFormat.DEFAULT);
+    CSVParser csv3 = new CSVParser(new FileReader(table1Worker2FilePath.toFile()), CSVFormat.DEFAULT);
+    CSVParser csv4 = new CSVParser(new FileReader(table2Worker2FilePath.toFile()), CSVFormat.DEFAULT);
 
-    String[] line;
-
-    while ((line = csv1.readNext()) != null) {
-      tb1w1.putLong(0, Long.parseLong(line[0]));
-      tb1w1.putString(1, line[1]);
+    for (final CSVRecord record : csv1) {
+      tb1w1.putLong(0, Long.parseLong(record.get(0)));
+      tb1w1.putString(1, record.get(1));
     }
     csv1.close();
 
-    while ((line = csv2.readNext()) != null) {
-      tb2w1.putLong(0, Long.parseLong(line[0]));
-      tb2w1.putString(1, line[1]);
+    for (final CSVRecord record : csv2) {
+      tb2w1.putLong(0, Long.parseLong(record.get(0)));
+      tb2w1.putString(1, record.get(1));
     }
     csv2.close();
 
-    while ((line = csv3.readNext()) != null) {
-      tb1w2.putLong(0, Long.parseLong(line[0]));
-      tb1w2.putString(1, line[1]);
+    for (final CSVRecord record : csv3) {
+      tb1w2.putLong(0, Long.parseLong(record.get(0)));
+      tb1w2.putString(1, record.get(1));
     }
     csv3.close();
 
-    while ((line = csv4.readNext()) != null) {
-      tb2w2.putLong(0, Long.parseLong(line[0]));
-      tb2w2.putString(1, line[1]);
+    for (final CSVRecord record : csv4) {
+      tb2w2.putLong(0, Long.parseLong(record.get(0)));
+      tb2w2.putString(1, record.get(1));
     }
     csv4.close();
 
