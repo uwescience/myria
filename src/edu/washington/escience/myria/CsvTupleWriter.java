@@ -6,11 +6,10 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.List;
 
-import org.supercsv.encoder.DefaultCsvEncoder;
-import org.supercsv.io.CsvListWriter;
-import org.supercsv.prefs.CsvPreference;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
+import org.hsqldb.util.CSVWriter;
 
-import au.com.bytecode.opencsv.CSVWriter;
 import edu.washington.escience.myria.storage.ReadableTable;
 
 /**
@@ -18,49 +17,50 @@ import edu.washington.escience.myria.storage.ReadableTable;
  * {@link CSVWriter} to do the underlying serialization. The fields to be output may contain special characters such as
  * newlines, because every field is quoted (using double quotes '"'). Double quotation marks inside of fields are
  * escaped using the CSV-standard trick of replacing '"' with '""'.
- * 
+ *
  * CSV files should be compatible with Microsoft Excel.
- * 
+ *
  */
 public class CsvTupleWriter implements TupleWriter {
 
   /** The CSVWriter used to write the output. */
-  private final CsvListWriter csvWriter;
+  private final CSVPrinter csvPrinter;
 
   /**
    * Constructs a {@link CsvTupleWriter} object that will produce an Excel-compatible comma-separated value (CSV) file
    * from the provided tuples.
-   * 
+   *
    * @param out the {@link OutputStream} to which the data will be written.
+   * @throws IOException if there is an IO exception
    */
-  public CsvTupleWriter(final OutputStream out) {
-    this(out, CsvPreference.STANDARD_PREFERENCE);
+  public CsvTupleWriter(final OutputStream out) throws IOException {
+    this(out, CSVFormat.DEFAULT);
   }
 
   /**
    * Constructs a {@link CsvTupleWriter} object that will produce Excel-compatible comma-separated and tab-separated
    * files from the tuples in the provided queue.
-   * 
+   *
    * @param separator the character used to separate fields in a line.
    * @param out the {@link OutputStream} to which the data will be written.
+   * @throws IOException if there is an IO exception
    */
-  public CsvTupleWriter(final char separator, final OutputStream out) {
-    this(out, new CsvPreference.Builder(Character.toChars(CsvPreference.STANDARD_PREFERENCE.getQuoteChar())[0],
-        separator, CsvPreference.STANDARD_PREFERENCE.getEndOfLineSymbols()).build());
+  public CsvTupleWriter(final char separator, final OutputStream out) throws IOException {
+    this(out, CSVFormat.DEFAULT.withRecordSeparator(separator));
   }
 
   /**
    * @param out the {@link OutputStream} to which the data will be written.
-   * @param csvPref the CSV preference.
+   * @param csvFormat the CSV format.
+   * @throws IOException if there is an IO exception
    */
-  private CsvTupleWriter(final OutputStream out, final CsvPreference csvPref) {
-    final CsvPreference pref = new CsvPreference.Builder(csvPref).useEncoder(new DefaultCsvEncoder()).build();
-    csvWriter = new CsvListWriter(new BufferedWriter(new OutputStreamWriter(out)), pref);
+  private CsvTupleWriter(final OutputStream out, final CSVFormat csvFormat) throws IOException {
+    csvPrinter = new CSVPrinter(new BufferedWriter(new OutputStreamWriter(out)), csvFormat.withRecordSeparator('\n'));
   }
 
   @Override
   public void writeColumnHeaders(final List<String> columnNames) throws IOException {
-    csvWriter.write(columnNames);
+    csvPrinter.printRecord(columnNames);
   }
 
   @Override
@@ -71,22 +71,22 @@ public class CsvTupleWriter implements TupleWriter {
       for (int j = 0; j < tuples.numColumns(); ++j) {
         row[j] = tuples.getObject(j, i).toString();
       }
-      csvWriter.write(row);
+      csvPrinter.printRecord((Object[]) row);
     }
   }
 
   @Override
   public void done() throws IOException {
-    csvWriter.flush();
-    csvWriter.close();
+    csvPrinter.flush();
+    csvPrinter.close();
   }
 
   @Override
   public void error() throws IOException {
     try {
-      csvWriter.write("There was an error. Investigate the query status to see the message");
+      csvPrinter.print("There was an error. Investigate the query status to see the message");
     } finally {
-      csvWriter.close();
+      csvPrinter.close();
     }
   }
 }
