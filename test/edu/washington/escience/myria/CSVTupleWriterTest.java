@@ -33,6 +33,6 @@ public class CSVTupleWriterTest {
     writer.writeTuples(tuples);
     writer.done();
 
-    assertEquals("foo,bar,baz\n0,hello world,\"a, b\"\n1,\"\"\"heya\"\"\",last\n", out.toString());
+    assertEquals("foo,bar,baz\r\n0,hello world,\"a, b\"\r\n1,\"\"\"heya\"\"\",last\r\n", out.toString());
   }
 }

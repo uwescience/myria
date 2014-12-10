@@ -55,7 +55,7 @@ public class CsvTupleWriter implements TupleWriter {
    * @throws IOException if there is an IO exception
    */
   private CsvTupleWriter(final OutputStream out, final CSVFormat csvFormat) throws IOException {
-    csvPrinter = new CSVPrinter(new BufferedWriter(new OutputStreamWriter(out)), csvFormat.withRecordSeparator('\n'));
+    csvPrinter = new CSVPrinter(new BufferedWriter(new OutputStreamWriter(out)), csvFormat);
   }
 
   @Override
