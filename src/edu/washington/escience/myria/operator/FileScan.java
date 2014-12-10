@@ -28,12 +28,12 @@ import edu.washington.escience.myria.util.DateTimeUtils;
 /**
  * Reads data from a file. For CSV files, the default parser follows the RFC 4180 (http://tools.ietf.org/html/rfc4180).
  * However, this operator can be used to scan files with different delimiters, etc.
- *
+ * 
  * This operator assumes the input file is be comma-separated CSV files and have one record per line. For input files in
  * other formats, delimiter need to be specified, e.g `\t` for tab delimited file, '|' for pipe delimited file. Each
  * cell of the input can be enclosed by the default quotation mark '"'. Other quotation mark like '\'' can be specified
  * by user as well. Note that the enclosure by quotation is not required in the input file.
- *
+ * 
  */
 public final class FileScan extends LeafOperator {
   /** The Schema of the relation stored in this file. */
@@ -68,7 +68,7 @@ public final class FileScan extends LeafOperator {
   /**
    * Construct a new FileScan object to read from the specified file. This file is assumed to be comma-separated and
    * have one record per line. '"' will be used as default quotation mark. `\` will be used as escape character.
-   *
+   * 
    * @param filename file containing the data to be scanned.
    * @param schema the Schema of the relation contained in the file.
    */
@@ -79,7 +79,7 @@ public final class FileScan extends LeafOperator {
   /**
    * Construct a new FileScan object to read from the specified file. This file is assumed to be comma-separated and
    * have one record per line. '"' will be used as default quotation mark. `\` will be used as escape character.
-   *
+   * 
    * @param source the data source containing the relation.
    * @param schema the Schema of the relation contained in the file.
    */
@@ -91,7 +91,7 @@ public final class FileScan extends LeafOperator {
    * Construct a new FileScan object to read from the specified file. This file is assumed to be comma-separated and
    * have one record per line. If delimiter is non-null, the system uses its value as a delimiter. '"' will be used as
    * default quotation mark. `\` will be used as escape character.
-   *
+   * 
    * @param filename file containing the data to be scanned.
    * @param schema the Schema of the relation contained in the file.
    * @param delimiter An optional override file delimiter.
@@ -104,7 +104,7 @@ public final class FileScan extends LeafOperator {
    * Construct a new FileScan object to read from the specified file. This file is assumed to be comma-separated and
    * have one record per line. If delimiter is non-null, the system uses its value as a delimiter. '"' will be used as
    * default quotation mark. `\` will be used as escape character.
-   *
+   * 
    * @param source file containing the data to be scanned.
    * @param schema the Schema of the relation contained in the file.
    * @param delimiter An optional override file delimiter.
@@ -118,7 +118,7 @@ public final class FileScan extends LeafOperator {
    * have one record per line. If delimiter is non-null, the system uses its value as a delimiter. If quote is null, '"'
    * will be used as default quotation mark. If escape is null, `\` will be used as escape character. If
    * numberOfSkippedLines is null, no line will be skipped.
-   *
+   * 
    * @param filename file containing the data to be scanned.
    * @param schema the Schema of the relation contained in the file.
    * @param delimiter An optional override file delimiter.
@@ -136,7 +136,7 @@ public final class FileScan extends LeafOperator {
    * have one record per line. If delimiter is non-null, the system uses its value as a delimiter. If quote is null, '"'
    * will be used as default quotation mark. If escape is null, `\` will be used as escape character. If
    * numberOfSkippedLines is null, no line will be skipped.
-   *
+   * 
    * @param source the data source containing the relation.
    * @param schema the Schema of the relation contained in the file.
    * @param delimiter An optional override file delimiter.
