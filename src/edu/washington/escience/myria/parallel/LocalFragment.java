@@ -1,9 +1,11 @@
 package edu.washington.escience.myria.parallel;
 
+import java.lang.management.ManagementFactory;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -15,6 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.MyriaConstants.PROFILING_MODE;
 import edu.washington.escience.myria.operator.IDBController;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
@@ -129,6 +132,13 @@ public final class LocalFragment {
     return fragmentExecutionFuture;
   }
 
+  /** total used CPU time of this task so far. */
+  private volatile long cpuTotal = 0;
+  /** total used CPU time of this task before starting the current execution. */
+  private volatile long cpuBefore = 0;
+  /** the thread id of this task. */
+  private volatile long threadId = -1;
+
   /**
    * @param connectionPool the IPC connection pool.
    * @param localSubQuery the {@link LocalSubQuery} of which this {@link LocalFragment} is a part.
@@ -164,7 +174,20 @@ public final class LocalFragment {
       @Override
       public Void call() throws Exception {
         // synchronized to keep memory consistency
-        LOGGER.trace("Start fragment execution: {}", LocalFragment.this);
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace("Start fragment execution: " + LocalFragment.this);
+        }
+        if (threadId == -1) {
+          threadId = Thread.currentThread().getId();
+        }
+        // otherwise threadId should always equal to Thread.currentThread().getId() based on the current design
+
+        PROFILING_MODE mode = localSubQuery.getProfilingMode();
+        if (mode.equals(PROFILING_MODE.RESOURCE) || mode.equals(PROFILING_MODE.ALL)) {
+          synchronized (LocalFragment.this) {
+            cpuBefore = ManagementFactory.getThreadMXBean().getThreadCpuTime(threadId);
+          }
+        }
         try {
           synchronized (executionLock) {
             LocalFragment.this.executeActually();
@@ -175,7 +198,16 @@ public final class LocalFragment {
         } finally {
           executionHandle = null;
         }
-        LOGGER.trace("End execution: {}", LocalFragment.this);
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace("End execution: " + LocalFragment.this);
+        }
+
+        if (mode.equals(PROFILING_MODE.RESOURCE) || mode.equals(PROFILING_MODE.ALL)) {
+          synchronized (LocalFragment.this) {
+            cpuTotal += ManagementFactory.getThreadMXBean().getThreadCpuTime(threadId) - cpuBefore;
+            cpuBefore = 0;
+          }
+        }
         return null;
       }
     };
