@@ -16,6 +16,7 @@ import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.MyriaConstants.PROFILING_MODE;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.StreamingState;
 import edu.washington.escience.myria.operator.TupleSource;
@@ -105,7 +106,7 @@ public class WorkerSubQuery extends LocalSubQuery {
           LOGGER.info("Query #{} executed for {}", getSubQueryId(), DateTimeUtils
               .nanoElapseToHumanReadable(getExecutionStatistics().getQueryExecutionElapse()));
         }
-        if (isProfilingMode()) {
+        if (!getProfilingMode().equals(PROFILING_MODE.NONE)) {
           try {
             getWorker().getProfilingLogger().flush();
           } catch (DbException e) {
@@ -139,7 +140,7 @@ public class WorkerSubQuery extends LocalSubQuery {
    * @param ownerWorker the worker on which this {@link WorkerSubQuery} is going to run
    */
   public WorkerSubQuery(final SubQueryPlan plan, final SubQueryId subQueryId, final Worker ownerWorker) {
-    super(subQueryId, plan.getFTMode(), plan.isProfilingMode());
+    super(subQueryId, plan.getFTMode(), plan.getProfilingMode());
     List<RootOperator> operators = plan.getRootOps();
     fragments = new HashSet<LocalFragment>(operators.size());
     numFinishedFragments = new AtomicInteger(0);

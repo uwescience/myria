@@ -34,6 +34,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.MyriaConstants.PROFILING_MODE;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -87,7 +88,7 @@ public final class MasterCatalog {
     + "    elapsed_nanos INTEGER,\n"
     + "    status TEXT NOT NULL,\n"
     + "    message TEXT,\n"
-    + "    profiling_mode BOOLEAN DEFAULT 0,\n" 
+    + "    profiling_mode TEXT,\n" 
     + "    ft_mode TEXT,\n"
     + "    language TEXT);";
   /** Create the relations table. */
@@ -1185,11 +1186,7 @@ public final class MasterCatalog {
               statement.bindNull(7);
             }
             statement.bind(8, queryStatus.status.toString());
-            if (queryStatus.profilingMode) {
-              statement.bind(9, 1);
-            } else {
-              statement.bind(9, 0);
-            }
+            statement.bind(9, queryStatus.profilingMode.toString());
             statement.bind(10, queryStatus.ftMode.toString());
             statement.bind(11, queryStatus.language);
             statement.stepThrough();
@@ -1264,7 +1261,7 @@ public final class MasterCatalog {
     }
     queryStatus.status = QueryStatusEncoding.Status.valueOf(statement.columnString(6));
     queryStatus.message = statement.columnString(7);
-    queryStatus.profilingMode = statement.columnInt(8) > 0;
+    queryStatus.profilingMode = PROFILING_MODE.valueOf(statement.columnString(8));
     return queryStatus;
   }
 
@@ -1324,7 +1321,7 @@ public final class MasterCatalog {
     }
     queryStatus.status = QueryStatusEncoding.Status.valueOf(statement.columnString(8));
     queryStatus.message = statement.columnString(9);
-    queryStatus.profilingMode = statement.columnInt(10) > 0;
+    queryStatus.profilingMode = PROFILING_MODE.valueOf(statement.columnString(10));
     queryStatus.ftMode = FTMODE.valueOf(statement.columnString(11));
     if (!statement.columnNull(12)) {
       queryStatus.language = statement.columnString(12);

@@ -141,7 +141,7 @@ public class IDBSyncModeTest extends SystemTestBase {
     workerPlans.put(workerIDs[0], new SubQueryPlan(plan1.toArray(new RootOperator[plan1.size()])));
     workerPlans.put(workerIDs[1], new SubQueryPlan(plan2.toArray(new RootOperator[plan2.size()])));
 
-    QueryFuture qf1 = server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans, false);
+    QueryFuture qf1 = server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans, null);
     // sleep for about half of the query execution time.
     Thread.sleep(MaxID * delayPerTuple / 2);
     // get number of received TBs before the query finishes.
@@ -167,7 +167,7 @@ public class IDBSyncModeTest extends SystemTestBase {
     workerPlans.put(workerIDs[0], new SubQueryPlan(plan1.toArray(new RootOperator[plan1.size()])));
     workerPlans.put(workerIDs[1], new SubQueryPlan(plan2.toArray(new RootOperator[plan2.size()])));
 
-    QueryFuture qf2 = server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans, false);
+    QueryFuture qf2 = server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans, null);
     // sleep for about half of the query execution time.
     Thread.sleep(MaxID * delayPerTuple / 2);
     // get number of received TBs before the query finishes.

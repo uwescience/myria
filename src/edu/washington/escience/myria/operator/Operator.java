@@ -10,6 +10,7 @@ import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.MyriaConstants.PROFILING_MODE;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.parallel.LocalFragment;
 import edu.washington.escience.myria.parallel.LocalFragmentResourceManager;
@@ -89,7 +90,7 @@ public abstract class Operator implements Serializable {
   /**
    * Cache for profiling mode.
    */
-  private Boolean profilingMode;
+  private PROFILING_MODE profilingMode;
 
   /**
    * @return the profilingLogger
@@ -154,23 +155,23 @@ public abstract class Operator implements Serializable {
   /**
    * @return return profiling mode.
    */
-  public boolean isProfilingMode() {
+  public PROFILING_MODE getProfilingMode() {
     // make sure hard coded test will pass
     if (execEnvVars == null) {
-      return false;
+      return PROFILING_MODE.NONE;
     }
 
     if (profilingMode == null) {
       LocalFragmentResourceManager lfrm =
           (LocalFragmentResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER);
       if (lfrm == null) {
-        return false;
+        return PROFILING_MODE.NONE;
       }
       LocalFragment fragment = lfrm.getFragment();
       if (fragment == null) {
-        return false;
+        return PROFILING_MODE.NONE;
       }
-      profilingMode = fragment.getLocalSubQuery().isProfilingMode();
+      profilingMode = fragment.getLocalSubQuery().getProfilingMode();
     }
     return profilingMode;
   }
@@ -319,7 +320,7 @@ public abstract class Operator implements Serializable {
     }
 
     long startTime = -1;
-    if (isProfilingMode()) {
+    if (getProfilingMode().equals(PROFILING_MODE.QUERY) || getProfilingMode().equals(PROFILING_MODE.ALL)) {
       startTime = profilingLogger.getTime(this);
     }
 
@@ -334,7 +335,7 @@ public abstract class Operator implements Serializable {
     } catch (Exception e) {
       throw new DbException(e);
     }
-    if (isProfilingMode()) {
+    if (getProfilingMode().equals(PROFILING_MODE.QUERY) || getProfilingMode().equals(PROFILING_MODE.ALL)) {
       int numberOfTupleReturned = -1;
       if (result != null) {
         numberOfTupleReturned = result.numTuples();
@@ -400,7 +401,7 @@ public abstract class Operator implements Serializable {
     }
     open = true;
 
-    if (isProfilingMode()) {
+    if (!getProfilingMode().equals(PROFILING_MODE.NONE)) {
       if (getLocalSubQuery() instanceof WorkerSubQuery) {
         profilingLogger = ((WorkerSubQuery) getLocalSubQuery()).getWorker().getProfilingLogger();
       }

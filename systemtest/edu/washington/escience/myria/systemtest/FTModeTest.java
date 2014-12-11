@@ -453,7 +453,7 @@ public class FTModeTest extends SystemTestBase {
     SubQueryPlan serverPlan = new SubQueryPlan(new SinkRoot(queueStore));
     serverPlan.setFTMode(FTMODE.ABANDON);
 
-    ListenableFuture<Query> qf = server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans, false);
+    ListenableFuture<Query> qf = server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans, null);
     Thread.sleep(2000);
     /* kill the one without EOSController */
     LOGGER.info("killing worker " + workerIDs[1]);
@@ -555,7 +555,7 @@ public class FTModeTest extends SystemTestBase {
 
     SubQueryPlan serverPlan = new SubQueryPlan(new SinkRoot(new EOSSource()));
     serverPlan.setFTMode(FTMODE.REJOIN);
-    ListenableFuture<Query> qf = server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans, false);
+    ListenableFuture<Query> qf = server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans, null);
     Thread.sleep(3000);
     /* kill the one without EOSController */
     LOGGER.info("killing worker " + workerIDs[1]);
@@ -579,7 +579,7 @@ public class FTModeTest extends SystemTestBase {
     send2server.setOpName("send2server query 2");
     workerPlans.put(workerIDs[0], new SubQueryPlan(send2server));
     workerPlans.put(workerIDs[1], new SubQueryPlan(send2server));
-    server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans, false).get();
+    server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans, null).get();
 
     TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
     while (!receivedTupleBatches.isEmpty()) {
