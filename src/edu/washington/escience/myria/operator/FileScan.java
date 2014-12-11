@@ -151,7 +151,7 @@ public final class FileScan extends LeafOperator {
 
     this.delimiter = MoreObjects.firstNonNull(delimiter, CSVFormat.DEFAULT.getDelimiter());
     this.quote = MoreObjects.firstNonNull(quote, CSVFormat.DEFAULT.getQuoteCharacter());
-    this.escape = MoreObjects.firstNonNull(escape, '"');
+    this.escape = escape != null ? escape : CSVFormat.DEFAULT.getEscapeCharacter();
     this.numberOfSkippedLines = MoreObjects.firstNonNull(numberOfSkippedLines, 0);
   }
 
@@ -169,6 +169,7 @@ public final class FileScan extends LeafOperator {
     long lineNumberBegin = lineNumber;
 
     while ((buffer.numTuples() < TupleBatch.BATCH_SIZE)) {
+      lineNumber++;
       if (parser.isClosed()) {
         break;
       }
@@ -178,13 +179,12 @@ public final class FileScan extends LeafOperator {
           break;
         }
       } catch (final RuntimeException e) {
-        throw new DbException("Error parsing row ", e);
+        throw new DbException("Error parsing row " + lineNumber, e);
       }
       CSVRecord record = iterator.next();
-      lineNumber = record.getRecordNumber();
 
       if (record.size() != schema.numColumns()) {
-        throw new DbException("Error parsing row " + record.getRecordNumber() + ": Found " + record.size()
+        throw new DbException("Error parsing row " + lineNumber + ": Found " + record.size()
             + " column(s) but expected " + schema.numColumns() + " column(s).");
       }
       for (int column = 0; column < schema.numColumns(); ++column) {
