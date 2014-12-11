@@ -4,6 +4,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.GuardedBy;
@@ -30,6 +31,7 @@ import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
+import edu.washington.escience.myria.storage.TupleBuffer;
 import edu.washington.escience.myria.util.ErrorUtils;
 
 /**
@@ -73,6 +75,8 @@ public final class Query {
   private final ConcurrentHashMap<String, Object> globals;
   /** Temporary relations created during the execution of this query. */
   private final ConcurrentHashMap<RelationKey, RelationWriteMetadata> tempRelations;
+  /** resource usage stats of workers. */
+  private final ConcurrentHashMap<Integer, ConcurrentLinkedDeque<ResourceStats>> resourceUsage;
 
   /**
    * Construct a new {@link Query} object for this query.
@@ -100,6 +104,7 @@ public final class Query {
     future = QueryFuture.create(queryId);
     globals = new ConcurrentHashMap<>();
     tempRelations = new ConcurrentHashMap<>();
+    resourceUsage = new ConcurrentHashMap<Integer, ConcurrentLinkedDeque<ResourceStats>>();
   }
 
   /**
@@ -455,5 +460,35 @@ public final class Query {
     RelationWriteMetadata meta = tempRelations.get(relationKey);
     Preconditions.checkArgument(meta != null, "Query #%s, no temp relation with key %s found", queryId, relationKey);
     return meta;
+  }
+
+  /**
+   * @param senderId from whicht worker the stats were sent from
+   * @param stats the stats
+   */
+  public void addResourceStats(final int senderId, final ResourceStats stats) {
+    resourceUsage.putIfAbsent(senderId, new ConcurrentLinkedDeque<ResourceStats>());
+    resourceUsage.get(senderId).add(stats);
+  }
+
+  /**
+   * @return resource usage stats in a tuple buffer.
+   */
+  public TupleBuffer getResourceUsage() {
+    Schema schema = Schema.appendColumn(MyriaConstants.RESOURCE_SCHEMA, Type.INT_TYPE, "workerId");
+    TupleBuffer tb = new TupleBuffer(schema);
+    for (int workerId : resourceUsage.keySet()) {
+      ConcurrentLinkedDeque<ResourceStats> statsList = resourceUsage.get(workerId);
+      for (ResourceStats stats : statsList) {
+        tb.putLong(0, stats.getTimestamp());
+        tb.putInt(1, stats.getOpId());
+        tb.putString(2, stats.getMeasurement());
+        tb.putLong(3, stats.getValue());
+        tb.putLong(4, stats.getQueryId());
+        tb.putLong(5, stats.getSubqueryId());
+        tb.putInt(6, workerId);
+      }
+    }
+    return tb;
   }
 }

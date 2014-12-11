@@ -90,6 +90,9 @@ public final class MyriaConstants {
   /** Time interval between two heartbeats. */
   public static final int HEARTBEAT_INTERVAL = 1000;
 
+  /** Time interval between two resource usage reports. */
+  public static final int RESOURCE_REPORT_INTERVAL = 1000;
+
   /** The identity of the master worker is current always zero. */
   public static final int MASTER_ID = 0;
 

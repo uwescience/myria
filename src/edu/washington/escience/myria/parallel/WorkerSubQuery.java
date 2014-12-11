@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -26,6 +27,8 @@ import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myria.profiling.ProfilingLogger;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.util.DateTimeUtils;
+import edu.washington.escience.myria.util.IPCUtils;
+import edu.washington.escience.myria.util.concurrent.ErrorLoggingTimerTask;
 
 /**
  * A {@link LocalSubQuery} running at a worker.
@@ -74,6 +77,9 @@ public class WorkerSubQuery extends LocalSubQuery {
    */
   private volatile long startMilliseconds = 0;
 
+  /** Report resource usage at a fixed rate. Only enabled when the profiling mode has resource. */
+  private Timer resourceReportTimer;
+
   /**
    * The future listener for processing the complete events of the execution of all the subquery's fragments.
    */
@@ -108,6 +114,9 @@ public class WorkerSubQuery extends LocalSubQuery {
         }
         if (!getProfilingMode().equals(PROFILING_MODE.NONE)) {
           try {
+            if (resourceReportTimer != null) {
+              resourceReportTimer.cancel();
+            }
             getWorker().getProfilingLogger().flush();
           } catch (DbException e) {
             LOGGER.error("Error flushing profiling logger", e);
@@ -200,9 +209,44 @@ public class WorkerSubQuery extends LocalSubQuery {
   public final void startExecution() {
     LOGGER.info("Subquery #{} start processing", getSubQueryId());
     getExecutionStatistics().markStart();
+    if (getProfilingMode().equals(PROFILING_MODE.RESOURCE) || getProfilingMode().equals(PROFILING_MODE.ALL)) {
+      resourceReportTimer = new Timer();
+      resourceReportTimer.scheduleAtFixedRate(new ResourceUsageReporter(), 0, MyriaConstants.RESOURCE_REPORT_INTERVAL);
+    }
     startMilliseconds = System.currentTimeMillis();
     for (LocalFragment t : fragments) {
       t.start();
+    }
+  }
+
+  /** Send resource usage reports to server periodically. */
+  private class ResourceUsageReporter extends ErrorLoggingTimerTask {
+    @Override
+    public synchronized void runInner() {
+      List<ResourceStats> resourceUsage = new ArrayList<ResourceStats>();
+      collectResourceMeasurements(resourceUsage);
+      worker.sendMessageToMaster(IPCUtils.resourceReport(resourceUsage)).awaitUninterruptibly();
+      for (ResourceStats stats : resourceUsage) {
+        try {
+          worker.getProfilingLogger().recordResource(stats);
+        } catch (DbException e) {
+          LOGGER.error("Error flushing profiling logger", e);
+        }
+      }
+    }
+  }
+
+  /**
+   * collect resource measurements of this subquery.
+   * 
+   * @param resourceUsage the list to add resource stats of resource profiling queries to.
+   */
+  public void collectResourceMeasurements(final List<ResourceStats> resourceUsage) {
+    if (getProfilingMode().equals(PROFILING_MODE.RESOURCE) || getProfilingMode().equals(PROFILING_MODE.ALL)) {
+      long timestamp = System.currentTimeMillis();
+      for (LocalFragment fragment : fragments) {
+        fragment.collectResourceMeasurements(resourceUsage, timestamp, fragment.getRootOp(), getSubQueryId());
+      }
     }
   }
 

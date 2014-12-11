@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.PipedOutputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -88,6 +89,7 @@ import edu.washington.escience.myria.proto.QueryProto.QueryReport;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.TupleBuffer;
 import edu.washington.escience.myria.tool.MyriaConfigurationReader;
 import edu.washington.escience.myria.util.DeploymentUtils;
 import edu.washington.escience.myria.util.IPCUtils;
@@ -124,11 +126,13 @@ public final class Server {
 
           final TransportMessage m = mw.getPayload();
           final int senderID = mw.getRemoteID();
-
           switch (m.getType()) {
             case CONTROL:
               final ControlMessage controlM = m.getControlMessage();
               switch (controlM.getType()) {
+                case RESOURCE_STATS:
+                  queryManager.updateResourceStats(senderID, controlM);
+                  break;
                 case WORKER_HEARTBEAT:
                   LOGGER.trace("getting heartbeat from worker {}", senderID);
                   updateHeartbeat(senderID);
@@ -1725,5 +1729,80 @@ public final class Server {
    */
   public Schema getTempSchema(@Nonnull final Long queryId, @Nonnull final String name) {
     return queryManager.getQuery(queryId).getTempSchema(RelationKey.ofTemp(queryId, name));
+  }
+
+  /**
+   * @param queryId the query id to fetch
+   * @param writerOutput the output stream to write results to.
+   * @throws DbException if there is an error in the database.
+   */
+  public void getResourceUsage(final long queryId, final PipedOutputStream writerOutput) throws DbException {
+    Schema schema = Schema.appendColumn(MyriaConstants.RESOURCE_SCHEMA, Type.INT_TYPE, "workerId");
+    TupleWriter writer = new CsvTupleWriter(writerOutput);
+    TupleBuffer tb = queryManager.getResourceUsage(queryId);
+    if (tb != null) {
+      try {
+        writer.writeColumnHeaders(schema.getColumnNames());
+        writer.writeTuples(tb);
+        writer.done();
+      } catch (IOException e) {
+        throw new DbException(e);
+      }
+      return;
+    }
+    getResourceLog(queryId, writer);
+  }
+
+  /**
+   * @param queryId query id.
+   * @param writer writer to get data.
+   * @return resource logs for the query.
+   * @throws DbException if there is an error when accessing profiling logs.
+   */
+  public ListenableFuture<Query> getResourceLog(final long queryId, final TupleWriter writer) throws DbException {
+    final QueryStatusEncoding queryStatus;
+    try {
+      queryStatus = catalog.getQuery(queryId);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+    Preconditions.checkArgument(queryStatus != null, "query %s not found", queryId);
+
+    Set<Integer> actualWorkers = queryStatus.plan.getWorkers();
+
+    final Schema schema = MyriaConstants.RESOURCE_SCHEMA;
+    String resourceQueryString =
+        Joiner.on(' ').join("SELECT * from", MyriaConstants.RESOURCE_RELATION.toString(getDBMS()),
+            "WHERE \"queryId\" =", queryId);
+    DbQueryScan scan = new DbQueryScan(resourceQueryString, schema);
+
+    ImmutableList.Builder<Expression> emitExpressions = ImmutableList.builder();
+    for (int column = 0; column < schema.numColumns(); column++) {
+      VariableExpression copy = new VariableExpression(column);
+      emitExpressions.add(new Expression(schema.getColumnName(column), copy));
+    }
+    emitExpressions.add(new Expression("workerId", new WorkerIdExpression()));
+    Apply addWorkerId = new Apply(scan, emitExpressions.build());
+
+    final ExchangePairID operatorId = ExchangePairID.newID();
+    CollectProducer producer = new CollectProducer(addWorkerId, operatorId, MyriaConstants.MASTER_ID);
+    SubQueryPlan workerPlan = new SubQueryPlan(producer);
+    Map<Integer, SubQueryPlan> workerPlans = new HashMap<>(actualWorkers.size());
+    for (Integer worker : actualWorkers) {
+      workerPlans.put(worker, workerPlan);
+    }
+    final CollectConsumer consumer =
+        new CollectConsumer(addWorkerId.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
+
+    DataOutput output = new DataOutput(consumer, writer);
+    final SubQueryPlan masterPlan = new SubQueryPlan(output);
+
+    /* Submit the plan for the download. */
+    String planString = Joiner.on("").join("download resource log for (query=", queryId, ")");
+    try {
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, null);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
   }
 }

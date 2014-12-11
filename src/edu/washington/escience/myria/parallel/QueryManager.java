@@ -33,6 +33,9 @@ import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
+import edu.washington.escience.myria.proto.ControlProto;
+import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
+import edu.washington.escience.myria.storage.TupleBuffer;
 import edu.washington.escience.myria.util.DateTimeUtils;
 import edu.washington.escience.myria.util.IPCUtils;
 
@@ -85,6 +88,18 @@ public class QueryManager {
    */
   public boolean queryCompleted(final long queryId) {
     return !runningQueries.containsKey(queryId);
+  }
+
+  /**
+   * update resource stats from messgaes.
+   * 
+   * @param senderId the sender worer id.
+   * @param m the message.
+   */
+  public void updateResourceStats(final int senderId, final ControlMessage m) {
+    for (ControlProto.ResourceStats stats : m.getResourceStatsList()) {
+      runningQueries.get(stats.getQueryId()).addResourceStats(senderId, ResourceStats.fromProtobuf(stats));
+    }
   }
 
   /**
@@ -393,6 +408,18 @@ public class QueryManager {
       finishQuery(queryState);
       throw e;
     }
+  }
+
+  /**
+   * @param queryId the query id to fetch
+   * @return resource usage stats in a tuple buffer or null if the query is not running.
+   */
+  public TupleBuffer getResourceUsage(final long queryId) {
+    Query q = runningQueries.get(queryId);
+    if (q == null) {
+      return null;
+    }
+    return q.getResourceUsage();
   }
 
   /**
