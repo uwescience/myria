@@ -109,19 +109,25 @@ public class QueryManager {
       throw new DbException("Error finishing query " + queryState.getQueryId(), e);
     } finally {
       runningQueries.remove(queryState.getQueryId());
+
+      /* See if we can submit a new query. */
+      if (!runningQueries.isEmpty()) {
+        /* TODO replace with proper scheduler as opposed to single-query-at-a-time. */
+        return;
+      }
+
       /* Now see if the query queue has anything for us. */
-      Query q = null;
+      Map.Entry<Long, Query> qEntry;
       synchronized (queryQueue) {
-        q = queryQueue.firstEntry().getValue();
-        if (q != null && runningQueries.isEmpty()) {
-          queryQueue.remove(q.getQueryId());
-        }
+        qEntry = queryQueue.pollFirstEntry();
       }
-      if (q != null) {
-        LOGGER.info("Now advancing to query {}", q.getQueryId());
-        runningQueries.put(q.getQueryId(), q);
-        advanceQuery(q);
+      if (qEntry == null) {
+        return;
       }
+      Query q = qEntry.getValue();
+      LOGGER.info("Now advancing to query {}", q.getQueryId());
+      runningQueries.put(q.getQueryId(), q);
+      advanceQuery(q);
     }
   }
 
