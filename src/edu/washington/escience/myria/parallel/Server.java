@@ -809,11 +809,19 @@ public final class Server {
     messageProcessingExecutor.submit(new MessageProcessor());
     LOGGER.info("Server started on {}", masterSocketInfo);
 
+    final Set<Integer> workerIds = workers.keySet();
     if (getSchema(MyriaConstants.PROFILING_RELATION) == null
         && getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
-      final Set<Integer> workerIds = workers.keySet();
       importDataset(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA, workerIds);
+    }
+
+    if (getSchema(MyriaConstants.SENT_RELATION) == null && getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
       importDataset(MyriaConstants.SENT_RELATION, MyriaConstants.SENT_SCHEMA, workerIds);
+    }
+
+    if (getSchema(MyriaConstants.RESOURCE_RELATION) == null
+        && getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
+      importDataset(MyriaConstants.RESOURCE_RELATION, MyriaConstants.RESOURCE_SCHEMA, workerIds);
     }
   }
 
