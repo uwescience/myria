@@ -882,6 +882,17 @@ public final class Server {
   }
 
   /**
+   * @return the set of workers that are currently alive with the time that the last heartbeats were received.
+   */
+  public Map<Integer, Long> getAliveWorkersWithLastHeartbeat() {
+    Map<Integer, Long> ret = new HashMap<Integer, Long>();
+    ret.putAll(aliveWorkers);
+    // add the current master time too
+    ret.put(MyriaConstants.MASTER_ID, System.currentTimeMillis());
+    return ret;
+  }
+
+  /**
    * @return the set of known workers in this Master.
    */
   public Map<Integer, SocketInfo> getWorkers() {
