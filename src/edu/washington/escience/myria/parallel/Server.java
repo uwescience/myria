@@ -1749,19 +1749,19 @@ public final class Server {
    */
   public void getResourceUsage(final long queryId, final PipedOutputStream writerOutput) throws DbException {
     Schema schema = Schema.appendColumn(MyriaConstants.RESOURCE_SCHEMA, Type.INT_TYPE, "workerId");
-    TupleWriter writer = new CsvTupleWriter(writerOutput);
-    TupleBuffer tb = queryManager.getResourceUsage(queryId);
-    if (tb != null) {
-      try {
+    try {
+      TupleWriter writer = new CsvTupleWriter(writerOutput);
+      TupleBuffer tb = queryManager.getResourceUsage(queryId);
+      if (tb != null) {
         writer.writeColumnHeaders(schema.getColumnNames());
         writer.writeTuples(tb);
         writer.done();
-      } catch (IOException e) {
-        throw new DbException(e);
+        return;
       }
-      return;
+      getResourceLog(queryId, writer);
+    } catch (IOException e) {
+      throw new DbException(e);
     }
-    getResourceLog(queryId, writer);
   }
 
   /**
