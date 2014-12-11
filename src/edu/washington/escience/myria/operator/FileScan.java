@@ -151,7 +151,7 @@ public final class FileScan extends LeafOperator {
 
     this.delimiter = MoreObjects.firstNonNull(delimiter, CSVFormat.DEFAULT.getDelimiter());
     this.quote = MoreObjects.firstNonNull(quote, CSVFormat.DEFAULT.getQuoteCharacter());
-    this.escape = MoreObjects.firstNonNull(escape, '\\');
+    this.escape = MoreObjects.firstNonNull(escape, '"');
     this.numberOfSkippedLines = MoreObjects.firstNonNull(numberOfSkippedLines, 0);
   }
 
