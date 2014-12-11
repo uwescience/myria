@@ -268,6 +268,7 @@ public class WorkerSubQuery extends LocalSubQuery {
    * @param workerId the id of the failed worker.
    */
   public void addRecoveryTasks(final int workerId) {
+    int newOpId = getMaxOpId() + 1;
     List<RootOperator> recoveryTasks = new ArrayList<>();
     for (LocalFragment fragment : fragments) {
       if (fragment.getRootOp() instanceof Producer) {
@@ -281,10 +282,14 @@ public class WorkerSubQuery extends LocalSubQuery {
           int j = indices.get(i);
           /* buffers.get(j) might be an empty List<TupleBatch>, so need to set its schema explicitly. */
           TupleSource scan = new TupleSource(buffers.get(j).exportState(), buffers.get(j).getSchema());
+          scan.setOpId(newOpId);
+          newOpId++;
           scan.setOpName("tuplesource for " + fragment.getRootOp().getOpName() + channels[j].getID());
           RecoverProducer rp =
               new RecoverProducer(scan, ExchangePairID.fromExisting(channels[j].getID().getStreamID()), channels[j]
                   .getID().getRemoteID(), (Producer) fragment.getRootOp(), j);
+          scan.setOpId(newOpId);
+          newOpId++;
           rp.setOpName("recProducer_for_" + fragment.getRootOp().getOpName());
           recoveryTasks.add(rp);
           scan.setFragmentId(0 - recoveryTasks.size());
@@ -306,6 +311,7 @@ public class WorkerSubQuery extends LocalSubQuery {
             for (LocalFragment fragment : list) {
               init(fragment);
               /* input might be null but we still need it to run */
+              fragment.start();
               fragment.notifyNewInput();
             }
             break;
@@ -337,5 +343,17 @@ public class WorkerSubQuery extends LocalSubQuery {
   @Override
   public Set<LocalFragment> getFragments() {
     return fragments;
+  }
+
+  /**
+   * 
+   * @return the max op id in this fragment.
+   */
+  private int getMaxOpId() {
+    int ret = Integer.MIN_VALUE;
+    for (LocalFragment t : fragments) {
+      ret = Math.max(ret, t.getMaxOpId(t.getRootOp()));
+    }
+    return ret;
   }
 }

@@ -815,4 +815,16 @@ public final class LocalFragment {
       collectResourceMeasurements(stats, timestamp, child, subQueryId);
     }
   }
+
+  /**
+   * @param op the current operator.
+   * @return the max op id in this subtree.
+   */
+  public int getMaxOpId(final Operator op) {
+    int ret = op.getOpId();
+    for (Operator child : op.getChildren()) {
+      ret = Math.max(ret, getMaxOpId(child));
+    }
+    return ret;
+  }
 }
