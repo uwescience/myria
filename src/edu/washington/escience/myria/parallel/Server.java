@@ -1098,12 +1098,21 @@ public final class Server {
   }
 
   /**
-   * @return number of queries.
-   * @param searchTerm a token to match against the raw queries. If null, all queries will be returned.
+   * @return the maximum query id that matches the search.
+   * @param searchTerm a token to match against the raw queries. If null, all queries match.
    * @throws CatalogException if an error occurs
    */
-  public int getNumQueries(final String searchTerm) throws CatalogException {
-    return catalog.getNumQueries(searchTerm);
+  public long getMaxQuery(final String searchTerm) throws CatalogException {
+    return catalog.getMaxQuery(searchTerm);
+  }
+
+  /**
+   * @return the minimum query id that matches the search.
+   * @param searchTerm a token to match against the raw queries. If null, all queries match.
+   * @throws CatalogException if an error occurs
+   */
+  public long getMinQuery(final String searchTerm) throws CatalogException {
+    return catalog.getMinQuery(searchTerm);
   }
 
   /**

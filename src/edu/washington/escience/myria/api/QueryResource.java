@@ -25,6 +25,7 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
+import edu.washington.escience.myria.api.encoding.QuerySearchResults;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.parallel.QueryFuture;
@@ -202,8 +203,12 @@ public final class QueryResource {
     for (QueryStatusEncoding status : queries) {
       status.url = getCanonicalResourcePath(uriInfo, status.queryId);
     }
-    return Response.ok().cacheControl(MyriaApiUtils.doNotCache()).header("X-Count",
-        server.getNumQueries(realSearchTerm)).entity(queries).build();
+    QuerySearchResults results = new QuerySearchResults();
+    results.results = queries;
+
+    results.max = server.getMaxQuery(realSearchTerm);
+    results.min = server.getMinQuery(realSearchTerm);
+    return Response.ok().cacheControl(MyriaApiUtils.doNotCache()).entity(results).build();
   }
 
   /**
