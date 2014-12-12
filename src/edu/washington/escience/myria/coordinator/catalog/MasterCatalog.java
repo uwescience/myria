@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.joda.time.DateTime;
@@ -1347,16 +1348,54 @@ public final class MasterCatalog {
   }
 
   /**
+   * Helper function to bind arguments to their corresponding positions in a SQLite statement. Object types are used to
+   * determine which version of the {@link SQLiteStatement#bind} function is to be used.
+   * 
+   * @param statement the SQLite statement
+   * @param args a list of the arguments to be bound
+   * @param startPos the starting position at which to bind arguments in the statement
+   * @throws SQLiteException if something goes wrong.
+   */
+  private static void bindArgs(@Nonnull final SQLiteStatement statement, @Nonnull final List<Object> args,
+      final int startPos) throws SQLiteException {
+    Preconditions.checkNotNull(statement, "statement");
+    Preconditions.checkNotNull(args, "args");
+    Preconditions.checkArgument(startPos >= 1, "starting index position must be >= 1 [%s]", startPos);
+
+    int pos = startPos;
+    for (Object arg : args) {
+      if (arg == null) {
+        statement.bindNull(pos);
+      } else if (arg instanceof Double) {
+        statement.bind(pos, (Double) arg);
+      } else if (arg instanceof Float) {
+        statement.bind(pos, (Float) arg);
+      } else if (arg instanceof Integer) {
+        statement.bind(pos, (Integer) arg);
+      } else if (arg instanceof Long) {
+        statement.bind(pos, (Long) arg);
+      } else if (arg instanceof String) {
+        statement.bind(pos, (String) arg);
+      } else {
+        throw new IllegalArgumentException("Unexpected SQLite parameter of type " + arg.getClass() + " at position pos");
+      }
+      pos++;
+    }
+  }
+
+  /**
    * Get the simple status (no logical or physical plan) for all queries in the system.
    * 
    * @param limit the maximum number of results to return. Any value <= 0 is interpreted as all results.
    * @param maxId return only queries with queryId <= maxId. Any value <= 0 is interpreted as no maximum.
+   * @param minId return only queries with queryId >= minId. Any value <= 0 is interpreted as no minimum. Ignored if
+   *          maxId is present.
    * @param searchTerm a token to match against the raw queries. If null, all queries will be returned.
    * @return a list of the status of all queries.
    * @throws CatalogException if there is an error in the MasterCatalog.
    */
-  public List<QueryStatusEncoding> getQueries(final long limit, final long maxId, @Nullable final String searchTerm)
-      throws CatalogException {
+  public List<QueryStatusEncoding> getQueries(@Nullable final Long limit, @Nullable final Long maxId,
+      @Nullable final Long minId, @Nullable final String searchTerm) throws CatalogException {
     if (isClosed) {
       throw new CatalogException("MasterCatalog is closed.");
     }
@@ -1364,67 +1403,63 @@ public final class MasterCatalog {
     Preconditions.checkArgument(searchTerm == null || searchTerm.length() >= 3,
         "when present, search term must be at least 3 characters long [given: %s]", searchTerm);
 
+    /* The query arguments, if any. */
+    final List<Object> bindArgs = Lists.newLinkedList();
+    List<String> whereClause = Lists.newLinkedList();
+
+    /* Is there a search? */
+    String fromClause = "FROM queries";
+    if (searchTerm != null) {
+      fromClause = "FROM queries JOIN queries_fts USING (query_id)";
+      whereClause.add("raw_query_fts MATCH ?");
+      bindArgs.add(searchTerm);
+    }
+
+    /* If there a max? */
+    boolean min = false;
+    if (maxId != null && maxId > 0) {
+      whereClause.add("query_id <= ?");
+      bindArgs.add(maxId);
+    } else if (minId != null && minId > 0) {
+      whereClause.add("query_id >= ?");
+      bindArgs.add(minId);
+      min = true;
+    }
+
+    String selectClause =
+        "SELECT query_id,raw_query,submit_time,start_time,finish_time,elapsed_nanos,status,message,profiling_mode";
+    StringBuilder coreQuery = new StringBuilder();
+    Joiner.on(' ').appendTo(coreQuery, selectClause, fromClause);
+    if (whereClause.size() > 0) {
+      coreQuery.append(" WHERE ");
+      Joiner.on(" AND ").appendTo(coreQuery, whereClause);
+    }
+
+    if (limit != null && limit > 0) {
+      if (!min) {
+        coreQuery.append(" ORDER BY query_id DESC LIMIT ?");
+        bindArgs.add(limit);
+      } else {
+        coreQuery.append(" ORDER BY query_id ASC LIMIT ?");
+        bindArgs.add(limit);
+        coreQuery = new StringBuilder("SELECT * FROM (").append(coreQuery).append(") ORDER BY query_id DESC");
+      }
+    } else {
+      coreQuery.append(" ORDER BY query_id DESC");
+    }
+
+    final String query = coreQuery.toString();
+
     try {
       return queue.execute(new SQLiteJob<List<QueryStatusEncoding>>() {
         @Override
         protected List<QueryStatusEncoding> job(final SQLiteConnection sqliteConnection) throws CatalogException,
             SQLiteException {
           try {
-            /* The base of the query */
-            StringBuilder sb =
-                new StringBuilder(
-                    "SELECT query_id,raw_query,submit_time,start_time,finish_time,elapsed_nanos,status,message,profiling_mode FROM queries");
-            /* The query arguments, if any. */
-            List<Object> bound = Lists.newLinkedList();
-
-            boolean where = false;
-            StringBuilder whereString = new StringBuilder();
-            /* If there is a search term, add the join and the where. */
-            if (searchTerm != null) {
-              sb.append(" JOIN queries_fts USING (query_id)");
-              if (where) {
-                whereString.append(" AND");
-              } else {
-                where = true;
-                whereString.append(" WHERE");
-              }
-              whereString.append(" raw_query_fts MATCH ?");
-              bound.add(searchTerm);
-            }
-
-            /* If there is a max query id, add the WHERE clause. */
-            if (maxId > 0) {
-              if (where) {
-                whereString.append(" AND");
-              } else {
-                where = true;
-                whereString.append(" WHERE");
-              }
-              whereString.append(" query_id <= ?");
-              bound.add(maxId);
-            }
-
-            sb.append(whereString);
-            sb.append(" ORDER BY query_id DESC");
-
-            /* If there is a limit supplied, add the LIMIT clause */
-            if (limit > 0) {
-              sb.append(" LIMIT ?");
-              bound.add(limit);
-            }
-            sb.append(";");
-
             /* Build it and bind any arguments present. */
-            SQLiteStatement statement = sqliteConnection.prepare(sb.toString());
-            int argPos = 1;
-            for (Object arg : bound) {
-              if (arg instanceof Long) {
-                statement.bind(argPos, (Long) arg);
-              } else {
-                statement.bind(argPos, (String) arg);
-              }
-              argPos++;
-            }
+            SQLiteStatement statement = sqliteConnection.prepare(query);
+            bindArgs(statement, bindArgs, 1);
+
             /* Step it. */
             statement.step();
 

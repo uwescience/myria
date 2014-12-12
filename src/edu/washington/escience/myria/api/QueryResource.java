@@ -182,6 +182,8 @@ public final class QueryResource {
    *          {@link MyriaApiConstants.MYRIA_API_DEFAULT_NUM_RESULTS} is used. Any value <= 0 is interpreted as all
    *          results.
    * @param maxId the largest query ID returned. If null or <= 0, all queries will be returned.
+   * @param minId the smallest query ID returned. If null or <= 0, all queries will be returned. Ignored if maxId is
+   *          present.
    * @param searchTerm an optional search term on the raw query string. If present, only queries with this token will be
    *          returned. If present, must be at least 3 characters long.
    * @return information about the query.
@@ -189,14 +191,14 @@ public final class QueryResource {
    */
   @GET
   public Response getQueries(@Context final UriInfo uriInfo, @QueryParam("limit") final Long limit,
-      @QueryParam("max") final Long maxId, @QueryParam("q") final String searchTerm) throws CatalogException {
+      @QueryParam("max") final Long maxId, @QueryParam("min") final Long minId, @QueryParam("q") final String searchTerm)
+      throws CatalogException {
     long realLimit = MoreObjects.firstNonNull(limit, MyriaApiConstants.MYRIA_API_DEFAULT_NUM_RESULTS);
-    long realMaxId = MoreObjects.firstNonNull(maxId, 0L);
     String realSearchTerm = searchTerm;
     if ("".equals(realSearchTerm)) {
       realSearchTerm = null;
     }
-    List<QueryStatusEncoding> queries = server.getQueryManager().getQueries(realLimit, realMaxId, realSearchTerm);
+    List<QueryStatusEncoding> queries = server.getQueryManager().getQueries(realLimit, maxId, minId, realSearchTerm);
     for (QueryStatusEncoding status : queries) {
       status.url = getCanonicalResourcePath(uriInfo, status.queryId);
     }

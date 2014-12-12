@@ -50,17 +50,17 @@ public class QueryQueueTest extends SystemTestBase {
     assertTrue(query1.getEndTime().compareTo(query2.getStartTime()) < 0);
 
     /* Test the query matching functionality. */
-    List<QueryStatusEncoding> qs = server.getQueryManager().getQueries(0, 0, "long");
+    List<QueryStatusEncoding> qs = server.getQueryManager().getQueries(null, null, null, "long");
     assertEquals(1, qs.size());
     assertEquals(query1.getQueryId(), qs.get(0).queryId.longValue());
-    qs = server.getQueryManager().getQueries(0, 0, "short");
+    qs = server.getQueryManager().getQueries(null, null, null, "short");
     assertEquals(1, qs.size());
     assertEquals(query2.getQueryId(), qs.get(0).queryId.longValue());
-    qs = server.getQueryManager().getQueries(0, 0, "query");
+    qs = server.getQueryManager().getQueries(null, null, null, "query");
     assertEquals(2, qs.size());
     assertEquals(query2.getQueryId(), qs.get(0).queryId.longValue());
     assertEquals(query1.getQueryId(), qs.get(1).queryId.longValue());
-    qs = server.getQueryManager().getQueries(0, 0, "que");
+    qs = server.getQueryManager().getQueries(null, null, null, "que");
     assertEquals(0, qs.size());
   }
 

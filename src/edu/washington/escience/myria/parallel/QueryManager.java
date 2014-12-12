@@ -134,16 +134,18 @@ public class QueryManager {
    * 
    * @param limit the maximum number of results to return. Any value <= 0 is interpreted as all results.
    * @param maxId the largest query ID returned. If null or <= 0, all queries will be returned.
+   * @param minId the smallest query ID returned. If null or <= 0, all queries will be returned. Ignored if maxId is
+   *          present.
    * @param searchTerm a token to match against the raw queries. If null, all queries will be returned.
    * @throws CatalogException if there is an error in the catalog.
    * @return a list of the status of every query that has been submitted to Myria.
    */
-  public List<QueryStatusEncoding> getQueries(final long limit, final long maxId, @Nullable final String searchTerm)
-      throws CatalogException {
+  public List<QueryStatusEncoding> getQueries(@Nullable final Long limit, @Nullable final Long maxId,
+      @Nullable final Long minId, @Nullable final String searchTerm) throws CatalogException {
     List<QueryStatusEncoding> ret = new LinkedList<>();
 
     /* Now add in the status for all the inactive (finished, killed, etc.) queries. */
-    for (QueryStatusEncoding q : catalog.getQueries(limit, maxId, searchTerm)) {
+    for (QueryStatusEncoding q : catalog.getQueries(limit, maxId, minId, searchTerm)) {
       if (QueryStatusEncoding.Status.finished(q.status)) {
         ret.add(q);
       } else {
