@@ -206,9 +206,7 @@ public final class MasterCatalog {
             sqliteConnection.exec("END TRANSACTION");
           } catch (final SQLiteException e) {
             sqliteConnection.exec("ROLLBACK TRANSACTION");
-            if (LOGGER.isErrorEnabled()) {
-              LOGGER.error(e.toString());
-            }
+            LOGGER.error("Creating catalog tables", e);
             throw new CatalogException("SQLiteException while creating new Catalog tables", e);
           }
           return null;
@@ -538,9 +536,7 @@ public final class MasterCatalog {
             statement.step();
             statement.dispose();
           } catch (final SQLiteException e) {
-            if (LOGGER.isErrorEnabled()) {
-              LOGGER.error(e.toString());
-            }
+            LOGGER.error("adding a worker", e);
             throw new CatalogException(e);
           }
           return null;
@@ -587,9 +583,7 @@ public final class MasterCatalog {
             sqliteConnection.exec("COMMIT TRANSACTION;");
             statement.dispose();
           } catch (final SQLiteException e) {
-            if (LOGGER.isErrorEnabled()) {
-              LOGGER.error(e.toString());
-            }
+            LOGGER.error("adding a set of workers", e);
             try {
               sqliteConnection.exec("ABORT TRANSACTION;");
             } catch (final SQLiteException e2) {
@@ -644,9 +638,7 @@ public final class MasterCatalog {
             }
             statement.dispose();
           } catch (final SQLiteException e) {
-            if (LOGGER.isErrorEnabled()) {
-              LOGGER.error(e.toString());
-            }
+            LOGGER.error("getting the alive workers", e);
             throw new CatalogException(e);
           }
 
@@ -681,9 +673,7 @@ public final class MasterCatalog {
             statement.dispose();
             return configurations.build();
           } catch (final SQLiteException e) {
-            if (LOGGER.isErrorEnabled()) {
-              LOGGER.error(e.toString());
-            }
+            LOGGER.error("getting the configurations", e);
             throw new CatalogException(e);
           }
         }
@@ -724,9 +714,7 @@ public final class MasterCatalog {
             statement.dispose();
             return ret;
           } catch (final SQLiteException e) {
-            if (LOGGER.isErrorEnabled()) {
-              LOGGER.error(e.toString());
-            }
+            LOGGER.error("getting the configuration value for key {}", key, e);
             throw new CatalogException(e);
           }
         }
@@ -769,9 +757,7 @@ public final class MasterCatalog {
             statement.dispose();
             return null;
           } catch (final SQLiteException e) {
-            if (LOGGER.isErrorEnabled()) {
-              LOGGER.error(e.toString());
-            }
+            LOGGER.error("adding a set of configuration values", e);
             /* Commit transaction. */
             sqliteConnection.exec("ROLLBACK TRANSACTION");
             throw new CatalogException(e);
@@ -811,9 +797,7 @@ public final class MasterCatalog {
             statement.dispose();
             return null;
           } catch (final SQLiteException e) {
-            if (LOGGER.isErrorEnabled()) {
-              LOGGER.error(e.toString());
-            }
+            LOGGER.error("adding a configuration value [{}:{}]", key, value, e);
             throw new CatalogException(e);
           }
         }
@@ -862,9 +846,7 @@ public final class MasterCatalog {
             }
             statement.dispose();
           } catch (final SQLiteException e) {
-            if (LOGGER.isErrorEnabled()) {
-              LOGGER.error(e.toString());
-            }
+            LOGGER.error("getting the master(s)", e);
             throw new CatalogException(e);
           }
 
@@ -899,9 +881,7 @@ public final class MasterCatalog {
             }
             statement.dispose();
           } catch (final SQLiteException e) {
-            if (LOGGER.isErrorEnabled()) {
-              LOGGER.error(e.toString());
-            }
+            LOGGER.error("getting the workers", e);
             throw new CatalogException(e);
           }
 
