@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.carrotsearch.hppc.IntIntOpenHashMap;
 import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -27,9 +28,6 @@ import edu.washington.escience.myria.parallel.ipc.StreamInputBuffer;
 import edu.washington.escience.myria.storage.ExchangeTupleBatch;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
-import gnu.trove.impl.unmodifiable.TUnmodifiableIntIntMap;
-import gnu.trove.map.TIntIntMap;
-import gnu.trove.map.hash.TIntIntHashMap;
 
 /**
  * A Consumer is the counterpart of a producer. It collects data from Producers through IPC. A Consumer can have a
@@ -68,7 +66,7 @@ public class Consumer extends LeafOperator {
   /**
    * workerID to index.
    * */
-  private transient TIntIntMap workerIdToIndex;
+  private transient IntIntOpenHashMap workerIdToIndex;
   /**
    * From which workers to receive data.
    * */
@@ -81,7 +79,7 @@ public class Consumer extends LeafOperator {
 
   /**
    * The worker this operator is located at.
-   *
+   * 
    */
   private transient LocalFragmentResourceManager taskResourceManager;
 
@@ -143,12 +141,11 @@ public class Consumer extends LeafOperator {
     workerEOS = new BitSet(sourceWorkers.size());
     workerEOI = new BitSet(sourceWorkers.size());
 
-    TIntIntMap tmp = new TIntIntHashMap();
     int idx = 0;
+    workerIdToIndex = new IntIntOpenHashMap();
     for (int sourceWorker : sourceWorkers) {
-      tmp.put(sourceWorker, idx++);
+      workerIdToIndex.put(sourceWorker, idx++);
     }
-    workerIdToIndex = new TUnmodifiableIntIntMap(tmp);
 
     taskResourceManager =
         (LocalFragmentResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER);
@@ -159,15 +156,15 @@ public class Consumer extends LeafOperator {
   }
 
   /**
-   *
+   * 
    * Retrieve a batch of tuples from the buffer of ExchangeMessages. Wait if the buffer is empty.
-   *
+   * 
    * @param blocking if blocking then return only if there's actually a TupleBatch to return or null if EOS. If not
    *          blocking then return null immediately if there's no data in the input buffer.
-   *
+   * 
    * @return Iterator over the new tuples received from the source workers. Return <code>null</code> if all source
    *         workers have sent an end of file message.
-   *
+   * 
    * @throws InterruptedException a
    */
   final TupleBatch getTuplesNormal(final boolean blocking) throws InterruptedException {
@@ -266,7 +263,7 @@ public class Consumer extends LeafOperator {
 
   /**
    * Read a single ExchangeMessage from the queue that buffers incoming ExchangeMessages.
-   *
+   * 
    * @param timeout Wait for at most timeout milliseconds. If the timeout is negative, wait until an element arrives.
    * @return received data.
    * @throws InterruptedException if interrupted.
