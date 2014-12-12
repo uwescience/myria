@@ -3,6 +3,8 @@ package edu.washington.escience.myria.operator;
 import java.util.BitSet;
 import java.util.List;
 
+import com.carrotsearch.hppc.IntArrayList;
+import com.carrotsearch.hppc.IntObjectOpenHashMap;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
@@ -12,10 +14,6 @@ import edu.washington.escience.myria.storage.MutableTupleBuffer;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.HashUtils;
-import gnu.trove.list.TIntList;
-import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
 
 /**
  * Implementation of set difference. Duplicates are not preserved.
@@ -38,7 +36,7 @@ public final class Difference extends BinaryOperator {
   /**
    * Mapping from tuple hash code to indices in the tuplesToRemove buffer.
    * */
-  private transient TIntObjectMap<TIntList> tupleIndices;
+  private transient IntObjectOpenHashMap<IntArrayList> tupleIndices;
 
   /**
    * Instantiate a set difference operator: left EXCEPT right.
@@ -61,10 +59,10 @@ public final class Difference extends BinaryOperator {
   private boolean markAsSeen(final TupleBatch batch, final int rowNum) {
     final int tupleHash = HashUtils.hashRow(batch, rowNum);
 
-    TIntList tupleIndexList = tupleIndices.get(tupleHash);
+    IntArrayList tupleIndexList = tupleIndices.get(tupleHash);
 
     if (tupleIndexList == null) {
-      tupleIndexList = new TIntArrayList();
+      tupleIndexList = new IntArrayList();
       tupleIndices.put(tupleHash, tupleIndexList);
     }
 
@@ -163,7 +161,7 @@ public final class Difference extends BinaryOperator {
       throw new DbException("Incompatible input schemas");
     }
 
-    tupleIndices = new TIntObjectHashMap<TIntList>();
+    tupleIndices = new IntObjectOpenHashMap<IntArrayList>();
     tuplesToRemove = new MutableTupleBuffer(getSchema());
   }
 

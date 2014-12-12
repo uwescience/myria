@@ -1,5 +1,16 @@
 package edu.washington.escience.myria.operator;
 
+import java.util.BitSet;
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.carrotsearch.hppc.IntArrayList;
+import com.carrotsearch.hppc.IntObjectOpenHashMap;
+import com.carrotsearch.hppc.procedures.IntProcedure;
+import com.google.common.collect.ImmutableMap;
+
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
@@ -7,19 +18,6 @@ import edu.washington.escience.myria.storage.MutableTupleBuffer;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.HashUtils;
-import gnu.trove.list.TIntList;
-import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
-import gnu.trove.procedure.TIntProcedure;
-
-import java.util.BitSet;
-import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.ImmutableMap;
 
 /**
  * Keeps min value. It adds newly met unique tuples into a buffer so that the source TupleBatches are not referenced.
@@ -38,7 +36,7 @@ public final class KeepAndSortOnMinValue extends StreamingState {
   /**
    * Indices to unique tuples.
    * */
-  private transient TIntObjectMap<TIntList> uniqueTupleIndices;
+  private transient IntObjectOpenHashMap<IntArrayList> uniqueTupleIndices;
 
   /**
    * The buffer for storing unique tuples.
@@ -107,10 +105,10 @@ public final class KeepAndSortOnMinValue extends StreamingState {
     for (int i = 0; i < numTuples; ++i) {
       final int nextIndex = uniqueTuples.numTuples();
       final int cntHashCode = HashUtils.hashSubRow(tb, keyColIndices, i);
-      TIntList tupleIndexList = uniqueTupleIndices.get(cntHashCode);
+      IntArrayList tupleIndexList = uniqueTupleIndices.get(cntHashCode);
       doReplace.unique = true;
       if (tupleIndexList == null) {
-        tupleIndexList = new TIntArrayList();
+        tupleIndexList = new IntArrayList();
         tupleIndexList.add(nextIndex);
         uniqueTupleIndices.put(cntHashCode, tupleIndexList);
       } else {
@@ -138,7 +136,7 @@ public final class KeepAndSortOnMinValue extends StreamingState {
 
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) {
-    uniqueTupleIndices = new TIntObjectHashMap<TIntList>();
+    uniqueTupleIndices = new IntObjectOpenHashMap<IntArrayList>();
     uniqueTuples = new MutableTupleBuffer(getSchema());
     doReplace = new ReplaceProcedure();
   }
@@ -167,7 +165,7 @@ public final class KeepAndSortOnMinValue extends StreamingState {
   /**
    * Traverse through the list of tuples with the same hash code.
    * */
-  private final class ReplaceProcedure implements TIntProcedure {
+  private final class ReplaceProcedure implements IntProcedure {
 
     /** row index of the tuple. */
     private int row;
@@ -182,16 +180,14 @@ public final class KeepAndSortOnMinValue extends StreamingState {
     private boolean unique;
 
     @Override
-    public boolean execute(final int index) {
+    public void apply(final int index) {
       if (TupleUtils.tupleEquals(inputTB, keyColIndices, row, uniqueTuples, keyColIndices, index)) {
         unique = false;
         Column<?> valueColumn = inputTB.getDataColumns().get(valueColIndex);
         if (shouldReplace(index, valueColumn, row)) {
           uniqueTuples.replace(valueColIndex, index, valueColumn, row);
-          replaced = true;
         }
       }
-      return unique;
     }
   };
 

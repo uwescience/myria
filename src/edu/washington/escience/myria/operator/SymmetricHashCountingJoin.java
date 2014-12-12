@@ -1,5 +1,16 @@
 package edu.washington.escience.myria.operator;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+
+import com.carrotsearch.hppc.IntArrayList;
+import com.carrotsearch.hppc.IntObjectOpenHashMap;
+import com.carrotsearch.hppc.procedures.IntProcedure;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -9,19 +20,6 @@ import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.HashUtils;
-import gnu.trove.list.TIntList;
-import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
-import gnu.trove.procedure.TIntProcedure;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 /**
  * This is an implementation of hash equal join. The same as in DupElim, this implementation does not keep the
@@ -36,17 +34,17 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
   /** The column indices for comparing of right child. */
   private final int[] rightCompareIndx;
   /** A hash table for tuples from left child. {Hashcode -> List of tuple indices with the same hash code} */
-  private transient TIntObjectMap<TIntList> leftHashTableIndices;
+  private transient IntObjectOpenHashMap<IntArrayList> leftHashTableIndices;
   /** A hash table for tuples from right child. {Hashcode -> List of tuple indices with the same hash code} */
-  private transient TIntObjectMap<TIntList> rightHashTableIndices;
+  private transient IntObjectOpenHashMap<IntArrayList> rightHashTableIndices;
   /** The buffer holding the valid tuples from left. */
   private transient MutableTupleBuffer leftHashTable;
   /** The buffer holding the valid tuples from right. */
   private transient MutableTupleBuffer rightHashTable;
   /** How many times each key occurred from left. */
-  private transient TIntList occuredTimesOnLeft;
+  private transient IntArrayList occuredTimesOnLeft;
   /** How many times each key occurred from right. */
-  private transient TIntList occuredTimesOnRight;
+  private transient IntArrayList occuredTimesOnRight;
   /** The number of join output tuples so far. */
   private long ans;
   /** The buffer for storing and returning answer. */
@@ -66,7 +64,7 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
   /**
    * Traverse through the list of tuples with the same hash code.
    */
-  private final class CountingJoinProcedure implements TIntProcedure {
+  private final class CountingJoinProcedure implements IntProcedure {
 
     /**
      * Hash table.
@@ -76,7 +74,7 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
     /**
      * times of occure of a key.
      */
-    private TIntList occuredTimesOnJoinAgainstChild;
+    private IntArrayList occuredTimesOnJoinAgainstChild;
     /**
      * Join columns in the input.
      */
@@ -98,11 +96,10 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
     private TupleBatch inputTB;
 
     @Override
-    public boolean execute(final int index) {
+    public void apply(final int index) {
       if (TupleUtils.tupleEquals(inputTB, inputCmpColumns, row, joinAgainstHashTable, otherCmpColumns, index)) {
         ans += occuredTimesOnJoinAgainstChild.get(index);
       }
-      return true;
     }
   };
 
@@ -286,10 +283,10 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
 
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    leftHashTableIndices = new TIntObjectHashMap<TIntList>();
-    rightHashTableIndices = new TIntObjectHashMap<TIntList>();
-    occuredTimesOnLeft = new TIntArrayList();
-    occuredTimesOnRight = new TIntArrayList();
+    leftHashTableIndices = new IntObjectOpenHashMap<IntArrayList>();
+    rightHashTableIndices = new IntObjectOpenHashMap<IntArrayList>();
+    occuredTimesOnLeft = new IntArrayList();
+    occuredTimesOnRight = new IntArrayList();
     leftHashTable = new MutableTupleBuffer(getLeft().getSchema().getSubSchema(leftCompareIndx));
     rightHashTable = new MutableTupleBuffer(getRight().getSchema().getSubSchema(rightCompareIndx));
     ans = 0;
@@ -307,9 +304,9 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
     final Operator right = getRight();
 
     MutableTupleBuffer hashTable1Local = null;
-    TIntObjectMap<TIntList> hashTable1IndicesLocal = null;
-    TIntObjectMap<TIntList> hashTable2IndicesLocal = null;
-    TIntList ownOccuredTimes = null;
+    IntObjectOpenHashMap<IntArrayList> hashTable1IndicesLocal = null;
+    IntObjectOpenHashMap<IntArrayList> hashTable2IndicesLocal = null;
+    IntArrayList ownOccuredTimes = null;
     if (fromLeft) {
       hashTable1Local = leftHashTable;
       doCountingJoin.joinAgainstHashTable = rightHashTable;
@@ -353,7 +350,7 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
        * update number of count of probing the other child's hash table.
        */
       final int cntHashCode = HashUtils.hashSubRow(tb, doCountingJoin.inputCmpColumns, row);
-      TIntList tuplesWithHashCode = hashTable2IndicesLocal.get(cntHashCode);
+      IntArrayList tuplesWithHashCode = hashTable2IndicesLocal.get(cntHashCode);
       if (tuplesWithHashCode != null) {
         doCountingJoin.row = row;
         tuplesWithHashCode.forEach(doCountingJoin);
@@ -397,16 +394,16 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
    * @param occuredTimes occuredTimes array to be updated
    */
   private void updateHashTableAndOccureTimes(final TupleBatch tb, final int row, final int hashCode,
-      final MutableTupleBuffer hashTable, final TIntObjectMap<TIntList> hashTableIndices, final int[] compareColumns,
-      final TIntList occuredTimes) {
+      final MutableTupleBuffer hashTable, final IntObjectOpenHashMap<IntArrayList> hashTableIndices,
+      final int[] compareColumns, final IntArrayList occuredTimes) {
 
     /* get the index of the tuple's hash code corresponding to */
     final int nextIndex = hashTable.numTuples();
-    TIntList tupleIndicesList = hashTableIndices.get(hashCode);
+    IntArrayList tupleIndicesList = hashTableIndices.get(hashCode);
 
     /* create one is there is no such a index yet (there is no tuple with the same hash code has been processed ) */
     if (tupleIndicesList == null) {
-      tupleIndicesList = new TIntArrayList(1);
+      tupleIndicesList = new IntArrayList(1);
       hashTableIndices.put(hashCode, tupleIndicesList);
     }
 

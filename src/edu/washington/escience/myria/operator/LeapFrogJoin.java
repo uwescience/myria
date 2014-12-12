@@ -8,6 +8,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
+import com.carrotsearch.hppc.IntArrayList;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -22,8 +23,6 @@ import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.storage.TupleUtils;
-import gnu.trove.list.TIntList;
-import gnu.trove.list.array.TIntArrayList;
 
 /**
  * 
@@ -117,7 +116,7 @@ public class LeapFrogJoin extends NAryOperator {
   /**
    * index on field with first local order in each table.
    */
-  private transient TIntList[] firstVarIndices;
+  private transient IntArrayList[] firstVarIndices;
 
   /**
    * Pointer to a cell in a table.
@@ -710,10 +709,10 @@ public class LeapFrogJoin extends NAryOperator {
 
     /* Initiate hash tables and indices */
     tables = new MutableTupleBuffer[children.length];
-    firstVarIndices = new TIntArrayList[children.length];
+    firstVarIndices = new IntArrayList[children.length];
     for (int i = 0; i < children.length; ++i) {
       tables[i] = new MutableTupleBuffer(children[i].getSchema());
-      firstVarIndices[i] = new TIntArrayList();
+      firstVarIndices[i] = new IntArrayList();
     }
 
     currentDepth = -1;
@@ -968,7 +967,7 @@ public class LeapFrogJoin extends NAryOperator {
    * @return at end or not.
    */
   private boolean leapfrogSeekWithIndex(final JoinField jf, final CellPointer target) {
-    TIntList index = firstVarIndices[jf.table];
+    IntArrayList index = firstVarIndices[jf.table];
     int startRowOnIndex = iterators[jf.table].rowOnIndex;
     int endRowOnIndex = index.size() - 1;
     Preconditions.checkState(startRowOnIndex <= endRowOnIndex, "startRow must be no less than endRow");

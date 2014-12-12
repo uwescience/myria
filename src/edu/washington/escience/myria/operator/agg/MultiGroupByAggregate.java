@@ -6,6 +6,9 @@ import java.util.Objects;
 
 import javax.annotation.Nullable;
 
+import com.carrotsearch.hppc.IntArrayList;
+import com.carrotsearch.hppc.IntObjectOpenHashMap;
+import com.carrotsearch.hppc.cursors.IntCursor;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -22,11 +25,6 @@ import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.storage.TupleBuffer;
 import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.HashUtils;
-import gnu.trove.iterator.TIntIterator;
-import gnu.trove.list.TIntList;
-import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
 
 /**
  * The Aggregation operator that computes an aggregate (e.g., sum, avg, max, min). This variant supports aggregates over
@@ -47,7 +45,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
   /** Holds the corresponding aggregation state for each group key in {@link #groupKeys}. */
   private transient List<Object[]> aggStates;
   /** Maps the hash of a grouping key to a list of indices in {@link #groupKeys}. */
-  private transient TIntObjectMap<TIntList> groupKeyMap;
+  private transient IntObjectOpenHashMap<IntArrayList> groupKeyMap;
   /** The schema of the columns indicated by the group keys. */
   private Schema groupSchema;
   /** The schema of the aggregation result. */
@@ -111,21 +109,21 @@ public final class MultiGroupByAggregate extends UnaryOperator {
     while (tb != null) {
       for (int row = 0; row < tb.numTuples(); ++row) {
         int rowHash = HashUtils.hashSubRow(tb, gfields, row);
-        TIntList hashMatches = groupKeyMap.get(rowHash);
+        IntArrayList hashMatches = groupKeyMap.get(rowHash);
         if (hashMatches == null) {
           hashMatches = newKey(rowHash);
           newGroup(tb, row, hashMatches);
           continue;
         }
-        TIntIterator matches = hashMatches.iterator();
         boolean found = false;
-        while (!found && matches.hasNext()) {
-          int curGrp = matches.next();
-          if (TupleUtils.tupleEquals(tb, gfields, row, groupKeys, grpRange, curGrp)) {
-            updateGroup(tb, row, aggStates.get(curGrp));
+        for (IntCursor c : hashMatches) {
+          if (TupleUtils.tupleEquals(tb, gfields, row, groupKeys, grpRange, c.value)) {
+            updateGroup(tb, row, aggStates.get(c.value));
             found = true;
+            break;
           }
         }
+
         if (!found) {
           newGroup(tb, row, hashMatches);
         }
@@ -154,7 +152,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
    * @param hashMatches the list of all rows in the output {@link TupleBuffer}s that match this hash.
    * @throws DbException if there is an error.
    */
-  private void newGroup(final TupleBatch tb, final int row, final TIntList hashMatches) throws DbException {
+  private void newGroup(final TupleBatch tb, final int row, final IntArrayList hashMatches) throws DbException {
     int newIndex = groupKeys.numTuples();
     for (int column = 0; column < gfields.length; ++column) {
       TupleUtils.copyValue(tb, gfields[column], row, groupKeys, column);
@@ -174,8 +172,8 @@ public final class MultiGroupByAggregate extends UnaryOperator {
    * @param groupHash the hash of the grouping columns in a tuple
    * @return the new (empty still) int list storing which output aggregators match the specified hash
    */
-  private TIntList newKey(final int groupHash) {
-    TIntList matches = new TIntArrayList(1);
+  private IntArrayList newKey(final int groupHash) {
+    IntArrayList matches = new IntArrayList(1);
     groupKeyMap.put(groupHash, matches);
     return matches;
   }
@@ -270,6 +268,6 @@ public final class MultiGroupByAggregate extends UnaryOperator {
     aggregators = AggUtils.allocateAggs(factories, getChild().getSchema());
     groupKeys = new TupleBuffer(groupSchema);
     aggStates = new ArrayList<>();
-    groupKeyMap = new TIntObjectHashMap<>();
+    groupKeyMap = new IntObjectOpenHashMap<>();
   }
 };

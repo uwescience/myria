@@ -8,6 +8,14 @@ import javax.annotation.Nullable;
 
 import org.joda.time.DateTime;
 
+import com.carrotsearch.hppc.DoubleObjectOpenHashMap;
+import com.carrotsearch.hppc.FloatObjectOpenHashMap;
+import com.carrotsearch.hppc.IntObjectOpenHashMap;
+import com.carrotsearch.hppc.LongObjectOpenHashMap;
+import com.carrotsearch.hppc.cursors.DoubleObjectCursor;
+import com.carrotsearch.hppc.cursors.FloatObjectCursor;
+import com.carrotsearch.hppc.cursors.IntObjectCursor;
+import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 
@@ -19,18 +27,6 @@ import edu.washington.escience.myria.operator.UnaryOperator;
 import edu.washington.escience.myria.storage.ReadableTable;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
-import gnu.trove.iterator.TDoubleObjectIterator;
-import gnu.trove.iterator.TFloatObjectIterator;
-import gnu.trove.iterator.TIntObjectIterator;
-import gnu.trove.iterator.TLongObjectIterator;
-import gnu.trove.map.TDoubleObjectMap;
-import gnu.trove.map.TFloatObjectMap;
-import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.TLongObjectMap;
-import gnu.trove.map.hash.TDoubleObjectHashMap;
-import gnu.trove.map.hash.TFloatObjectHashMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
-import gnu.trove.map.hash.TLongObjectHashMap;
 
 /**
  * The Aggregation operator that computes an aggregate (e.g., sum, avg, max, min) with a single group by column.
@@ -77,7 +73,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
   /**
    * The buffer storing in-progress group by results when the group key is int.
    */
-  private transient TIntObjectMap<Object[]> intAggState;
+  private transient IntObjectOpenHashMap<Object[]> intAggState;
   /**
    * The buffer storing in-progress group by results when the group key is boolean.
    */
@@ -85,15 +81,15 @@ public class SingleGroupByAggregate extends UnaryOperator {
   /**
    * The buffer storing in-progress group by results when the group key is long.
    */
-  private transient TLongObjectMap<Object[]> longAggState;
+  private transient LongObjectOpenHashMap<Object[]> longAggState;
   /**
    * The buffer storing in-progress group by results when the group key is float.
    */
-  private transient TFloatObjectMap<Object[]> floatAggState;
+  private transient FloatObjectOpenHashMap<Object[]> floatAggState;
   /**
    * The buffer storing in-progress group by results when the group key is double.
    */
-  private transient TDoubleObjectMap<Object[]> doubleAggState;
+  private transient DoubleObjectOpenHashMap<Object[]> doubleAggState;
   /**
    * The aggregators that will initialize and update the state.
    */
@@ -271,35 +267,27 @@ public class SingleGroupByAggregate extends UnaryOperator {
         }
         break;
       case INT_TYPE:
-        TIntObjectIterator<Object[]> itInt = intAggState.iterator();
-        while (itInt.hasNext()) {
-          itInt.advance();
-          resultBuffer.putInt(0, itInt.key());
-          concatResults(resultBuffer, itInt.value());
+        for (IntObjectCursor<Object[]> itInt : intAggState) {
+          resultBuffer.putInt(0, itInt.key);
+          concatResults(resultBuffer, itInt.value);
         }
         break;
       case LONG_TYPE:
-        TLongObjectIterator<Object[]> itLong = longAggState.iterator();
-        while (itLong.hasNext()) {
-          itLong.advance();
-          resultBuffer.putLong(0, itLong.key());
-          concatResults(resultBuffer, itLong.value());
+        for (LongObjectCursor<Object[]> itLong : longAggState) {
+          resultBuffer.putLong(0, itLong.key);
+          concatResults(resultBuffer, itLong.value);
         }
         break;
       case FLOAT_TYPE:
-        TFloatObjectIterator<Object[]> itFloat = floatAggState.iterator();
-        while (itFloat.hasNext()) {
-          itFloat.advance();
-          resultBuffer.putFloat(0, itFloat.key());
-          concatResults(resultBuffer, itFloat.value());
+        for (FloatObjectCursor<Object[]> itFloat : floatAggState) {
+          resultBuffer.putFloat(0, itFloat.key);
+          concatResults(resultBuffer, itFloat.value);
         }
         break;
       case DOUBLE_TYPE:
-        TDoubleObjectIterator<Object[]> itDouble = doubleAggState.iterator();
-        while (itDouble.hasNext()) {
-          itDouble.advance();
-          resultBuffer.putDouble(0, itDouble.key());
-          concatResults(resultBuffer, itDouble.value());
+        for (DoubleObjectCursor<Object[]> itDouble : doubleAggState) {
+          resultBuffer.putDouble(0, itDouble.key);
+          concatResults(resultBuffer, itDouble.value);
         }
         break;
     }
@@ -352,16 +340,16 @@ public class SingleGroupByAggregate extends UnaryOperator {
         booleanAggState = new Object[2][];
         break;
       case INT_TYPE:
-        intAggState = new TIntObjectHashMap<Object[]>();
+        intAggState = new IntObjectOpenHashMap<Object[]>();
         break;
       case LONG_TYPE:
-        longAggState = new TLongObjectHashMap<Object[]>();
+        longAggState = new LongObjectOpenHashMap<Object[]>();
         break;
       case FLOAT_TYPE:
-        floatAggState = new TFloatObjectHashMap<Object[]>();
+        floatAggState = new FloatObjectOpenHashMap<Object[]>();
         break;
       case DOUBLE_TYPE:
-        doubleAggState = new TDoubleObjectHashMap<Object[]>();
+        doubleAggState = new DoubleObjectOpenHashMap<Object[]>();
         break;
       case STRING_TYPE:
         stringAggState = new HashMap<String, Object[]>();
