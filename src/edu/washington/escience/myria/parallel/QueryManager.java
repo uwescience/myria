@@ -186,13 +186,19 @@ public class QueryManager {
    * @return the status of this query.
    */
   public QueryStatusEncoding getQueryStatus(final long queryId) throws CatalogException {
+    Query state = null;
+    try {
+      state = getQuery(queryId);
+    } catch (IllegalArgumentException e) {
+      ; /* Expected, if the query is not running. */
+    }
+
     /* Get the stored data for this query, e.g., the submitted program. */
     QueryStatusEncoding queryStatus = catalog.getQuery(queryId);
     if (queryStatus == null) {
       return null;
     }
 
-    Query state = runningQueries.get(queryId);
     if (state == null) {
       /* Not active, so the information from the Catalog is authoritative. */
       return queryStatus;
