@@ -182,20 +182,26 @@ public final class QueryResource {
    *          {@link MyriaApiConstants.MYRIA_API_DEFAULT_NUM_RESULTS} is used. Any value <= 0 is interpreted as all
    *          results.
    * @param maxId the largest query ID returned. If null or <= 0, all queries will be returned.
+   * @param searchTerm an optional search term on the raw query string. If present, only queries with this token will be
+   *          returned. If present, must be at least 3 characters long.
    * @return information about the query.
    * @throws CatalogException if there is an error in the catalog.
    */
   @GET
   public Response getQueries(@Context final UriInfo uriInfo, @QueryParam("limit") final Long limit,
-      @QueryParam("max") final Long maxId) throws CatalogException {
+      @QueryParam("max") final Long maxId, @QueryParam("q") final String searchTerm) throws CatalogException {
     long realLimit = MoreObjects.firstNonNull(limit, MyriaApiConstants.MYRIA_API_DEFAULT_NUM_RESULTS);
     long realMaxId = MoreObjects.firstNonNull(maxId, 0L);
-    List<QueryStatusEncoding> queries = server.getQueryManager().getQueries(realLimit, realMaxId);
+    String realSearchTerm = searchTerm;
+    if ("".equals(realSearchTerm)) {
+      realSearchTerm = null;
+    }
+    List<QueryStatusEncoding> queries = server.getQueryManager().getQueries(realLimit, realMaxId, realSearchTerm);
     for (QueryStatusEncoding status : queries) {
       status.url = getCanonicalResourcePath(uriInfo, status.queryId);
     }
-    return Response.ok().cacheControl(MyriaApiUtils.doNotCache()).header("X-Count", server.getNumQueries()).entity(
-        queries).build();
+    return Response.ok().cacheControl(MyriaApiUtils.doNotCache()).header("X-Count",
+        server.getNumQueries(realSearchTerm)).entity(queries).build();
   }
 
   /**

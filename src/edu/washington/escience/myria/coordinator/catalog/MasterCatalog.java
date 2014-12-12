@@ -90,6 +90,11 @@ public final class MasterCatalog {
     + "    profiling_mode BOOLEAN DEFAULT 0,\n" 
     + "    ft_mode TEXT,\n"
     + "    language TEXT);";
+  /** Create the queries table. */
+  private static final String CREATE_QUERIES_FTS =
+      "CREATE VIRTUAL TABLE queries_fts USING FTS4(\n"
+    + "    query_id INTEGER NOT NULL PRIMARY KEY ASC REFERENCES queries (query_id),\n"
+    + "    raw_query_fts TEXT NOT NULL);";
   /** Create the relations table. */
   private static final String CREATE_RELATIONS =
       "CREATE TABLE relations (\n"
@@ -192,6 +197,7 @@ public final class MasterCatalog {
             sqliteConnection.exec(CREATE_WORKERS);
             sqliteConnection.exec(CREATE_ALIVE_WORKERS);
             sqliteConnection.exec(CREATE_QUERIES);
+            sqliteConnection.exec(CREATE_QUERIES_FTS);
             sqliteConnection.exec(CREATE_RELATIONS);
             sqliteConnection.exec(CREATE_RELATION_SCHEMA);
             sqliteConnection.exec(CREATE_STORED_RELATIONS);
@@ -1194,7 +1200,15 @@ public final class MasterCatalog {
             statement.bind(11, queryStatus.language);
             statement.stepThrough();
             statement.dispose();
-            return sqliteConnection.getLastInsertId();
+            Long queryId = sqliteConnection.getLastInsertId();
+
+            // Full-text search also
+            statement = sqliteConnection.prepare("INSERT INTO queries_fts (query_id, raw_query_fts) VALUES (?,?);");
+            statement.bind(1, queryId);
+            statement.bind(2, queryStatus.rawQuery);
+            statement.stepThrough();
+            statement.dispose();
+            return queryId;
           } catch (final SQLiteException e) {
             throw new CatalogException(e);
           }
@@ -1337,13 +1351,18 @@ public final class MasterCatalog {
    * 
    * @param limit the maximum number of results to return. Any value <= 0 is interpreted as all results.
    * @param maxId return only queries with queryId <= maxId. Any value <= 0 is interpreted as no maximum.
+   * @param searchTerm a token to match against the raw queries. If null, all queries will be returned.
    * @return a list of the status of all queries.
    * @throws CatalogException if there is an error in the MasterCatalog.
    */
-  public List<QueryStatusEncoding> getQueries(final long limit, final long maxId) throws CatalogException {
+  public List<QueryStatusEncoding> getQueries(final long limit, final long maxId, @Nullable final String searchTerm)
+      throws CatalogException {
     if (isClosed) {
       throw new CatalogException("MasterCatalog is closed.");
     }
+
+    Preconditions.checkArgument(searchTerm == null || searchTerm.length() >= 3,
+        "when present, search term must be at least 3 characters long [given: %s]", searchTerm);
 
     try {
       return queue.execute(new SQLiteJob<List<QueryStatusEncoding>>() {
@@ -1356,13 +1375,36 @@ public final class MasterCatalog {
                 new StringBuilder(
                     "SELECT query_id,raw_query,submit_time,start_time,finish_time,elapsed_nanos,status,message,profiling_mode FROM queries");
             /* The query arguments, if any. */
-            List<Long> bound = Lists.newLinkedList();
+            List<Object> bound = Lists.newLinkedList();
+
+            boolean where = false;
+            StringBuilder whereString = new StringBuilder();
+            /* If there is a search term, add the join and the where. */
+            if (searchTerm != null) {
+              sb.append(" JOIN queries_fts USING (query_id)");
+              if (where) {
+                whereString.append(" AND");
+              } else {
+                where = true;
+                whereString.append(" WHERE");
+              }
+              whereString.append(" raw_query_fts MATCH ?");
+              bound.add(searchTerm);
+            }
+
             /* If there is a max query id, add the WHERE clause. */
             if (maxId > 0) {
-              sb.append(" WHERE query_id <= ?");
+              if (where) {
+                whereString.append(" AND");
+              } else {
+                where = true;
+                whereString.append(" WHERE");
+              }
+              whereString.append(" query_id <= ?");
               bound.add(maxId);
             }
 
+            sb.append(whereString);
             sb.append(" ORDER BY query_id DESC");
 
             /* If there is a limit supplied, add the LIMIT clause */
@@ -1375,8 +1417,12 @@ public final class MasterCatalog {
             /* Build it and bind any arguments present. */
             SQLiteStatement statement = sqliteConnection.prepare(sb.toString());
             int argPos = 1;
-            for (Long arg : bound) {
-              statement.bind(argPos, arg);
+            for (Object arg : bound) {
+              if (arg instanceof Long) {
+                statement.bind(argPos, (Long) arg);
+              } else {
+                statement.bind(argPos, (String) arg);
+              }
               argPos++;
             }
             /* Step it. */
@@ -1544,17 +1590,28 @@ public final class MasterCatalog {
   }
 
   /**
+   * @param searchTerm a token to match against the raw queries. If null, all queries will be returned.
    * @return number of queries in catalog.
    * @throws CatalogException if an error occurs
    */
-  public int getNumQueries() throws CatalogException {
+  public int getNumQueries(@Nullable final String searchTerm) throws CatalogException {
+    Preconditions.checkArgument(searchTerm == null || searchTerm.length() >= 3,
+        "when present, search term must be at least 3 characters long [given: %s]", searchTerm);
+
     try {
       return queue.execute(new SQLiteJob<Integer>() {
         @Override
         protected Integer job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
           try {
             /* Getting this out is a simple query, which does not need to be cached. */
-            final SQLiteStatement statement = sqliteConnection.prepare("SELECT count(*) FROM queries;", false);
+            final SQLiteStatement statement;
+            if (searchTerm == null) {
+              statement = sqliteConnection.prepare("SELECT count(*) FROM queries_fts;");
+            } else {
+              statement = sqliteConnection.prepare("SELECT count(*) FROM queries_fts WHERE raw_query_fts MATCH ?;");
+              statement.bind(1, searchTerm);
+            }
+
             Preconditions.checkArgument(statement.step(), "Count should return a row");
             final Integer ret = statement.columnInt(0);
             statement.dispose();

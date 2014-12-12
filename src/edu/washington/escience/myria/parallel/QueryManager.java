@@ -1,13 +1,11 @@
 package edu.washington.escience.myria.parallel;
 
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nonnull;
@@ -136,29 +134,21 @@ public class QueryManager {
    * 
    * @param limit the maximum number of results to return. Any value <= 0 is interpreted as all results.
    * @param maxId the largest query ID returned. If null or <= 0, all queries will be returned.
+   * @param searchTerm a token to match against the raw queries. If null, all queries will be returned.
    * @throws CatalogException if there is an error in the catalog.
    * @return a list of the status of every query that has been submitted to Myria.
    */
-  public List<QueryStatusEncoding> getQueries(final long limit, final long maxId) throws CatalogException {
+  public List<QueryStatusEncoding> getQueries(final long limit, final long maxId, @Nullable final String searchTerm)
+      throws CatalogException {
     List<QueryStatusEncoding> ret = new LinkedList<>();
 
-    /* Begin by adding the status for all the active queries. */
-    TreeSet<Long> activeQueryIds = new TreeSet<>(runningQueries.keySet());
-    final Iterator<Long> iter = activeQueryIds.descendingIterator();
-    while (iter.hasNext()) {
-      long queryId = iter.next();
-      final QueryStatusEncoding status = getQueryStatus(queryId);
-      if (status == null) {
-        LOGGER.warn("Weird: query status for active query {} is null.", queryId);
-        continue;
-      }
-      ret.add(status);
-    }
-
     /* Now add in the status for all the inactive (finished, killed, etc.) queries. */
-    for (QueryStatusEncoding q : catalog.getQueries(limit, maxId)) {
-      if (!activeQueryIds.contains(q.queryId)) {
+    for (QueryStatusEncoding q : catalog.getQueries(limit, maxId, searchTerm)) {
+      if (QueryStatusEncoding.Status.finished(q.status)) {
         ret.add(q);
+      } else {
+        // If the query is not yet finished, refresh its status now.
+        ret.add(getQueryStatus(q.queryId));
       }
     }
 

@@ -1099,10 +1099,11 @@ public final class Server {
 
   /**
    * @return number of queries.
+   * @param searchTerm a token to match against the raw queries. If null, all queries will be returned.
    * @throws CatalogException if an error occurs
    */
-  public int getNumQueries() throws CatalogException {
-    return catalog.getNumQueries();
+  public int getNumQueries(final String searchTerm) throws CatalogException {
+    return catalog.getNumQueries(searchTerm);
   }
 
   /**
