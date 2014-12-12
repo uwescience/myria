@@ -1,14 +1,11 @@
 package edu.washington.escience.myria.operator.network;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.commons.lang.ArrayUtils;
-
-import com.carrotsearch.hppc.IntIntMap;
-import com.carrotsearch.hppc.IntIntOpenHashMap;
+import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
@@ -50,7 +47,7 @@ public class EOSController extends Producer {
   /**
    * Mapping from workerID to index.
    * */
-  private final IntIntMap workerIdToIndex;
+  private final ImmutableMap<Integer, Integer> workerIdToIndex;
 
   // /**
   // * Mapping from EOSReceiver ID to index.
@@ -75,10 +72,11 @@ public class EOSController extends Producer {
     eosZeroColValue = idbOpIDs.length * workerIDs.length;
 
     int idx = 0;
-    workerIdToIndex = new IntIntOpenHashMap();
+    HashMap<Integer, Integer> tmp = new HashMap<>();
     for (int workerId : workerIDs) {
-      workerIdToIndex.put(workerId, idx++);
+      tmp.put(workerId, idx++);
     }
+    workerIdToIndex = ImmutableMap.copyOf(tmp);
 
   }
 
@@ -112,7 +110,7 @@ public class EOSController extends Producer {
         }
       }
       Set<Integer> expectingWorkers = new HashSet<Integer>();
-      expectingWorkers.addAll(Arrays.asList(ArrayUtils.toObject(workerIdToIndex.keys().toArray())));
+      expectingWorkers.addAll(workerIdToIndex.keySet().asList());
       expectingWorkers.removeAll(missingWorkers);
       /* only count EOI reports from alive workers. */
       numExpecting = expectingWorkers.size() * numEOI.length;
