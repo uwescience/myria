@@ -1605,36 +1605,74 @@ public final class MasterCatalog {
   }
 
   /**
-   * @param searchTerm a token to match against the raw queries. If null, all queries will be returned.
-   * @return number of queries in catalog.
+   * @return the maximum query id that matches the search.
+   * @param searchTerm a token to match against the raw queries. If null, all queries match.
    * @throws CatalogException if an error occurs
    */
-  public int getNumQueries(@Nullable final String searchTerm) throws CatalogException {
+  public long getMaxQuery(@Nullable final String searchTerm) throws CatalogException {
     Preconditions.checkArgument(searchTerm == null || searchTerm.length() >= 3,
         "when present, search term must be at least 3 characters long [given: %s]", searchTerm);
 
     try {
-      return queue.execute(new SQLiteJob<Integer>() {
+      return queue.execute(new SQLiteJob<Long>() {
         @Override
-        protected Integer job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+        protected Long job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
           try {
             /* Getting this out is a simple query, which does not need to be cached. */
             final SQLiteStatement statement;
             if (searchTerm == null) {
-              statement = sqliteConnection.prepare("SELECT count(*) FROM queries_fts;");
+              statement = sqliteConnection.prepare("SELECT max(query_id) FROM queries_fts;");
             } else {
-              statement = sqliteConnection.prepare("SELECT count(*) FROM queries_fts WHERE raw_query_fts MATCH ?;");
+              statement =
+                  sqliteConnection.prepare("SELECT max(query_id) FROM queries_fts WHERE raw_query_fts MATCH ?;");
               statement.bind(1, searchTerm);
             }
 
             Preconditions.checkArgument(statement.step(), "Count should return a row");
-            final Integer ret = statement.columnInt(0);
+            final Long ret = statement.columnLong(0);
             statement.dispose();
             return ret;
           } catch (final SQLiteException e) {
-            if (LOGGER.isErrorEnabled()) {
-              LOGGER.error("Getting the number of queries", e);
+            LOGGER.error("Getting the max query", e);
+            throw new CatalogException(e);
+          }
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
+   * @return the minimum query id that matches the search.
+   * @param searchTerm a token to match against the raw queries. If null, all queries match.
+   * @throws CatalogException if an error occurs
+   */
+  public long getMinQuery(@Nullable final String searchTerm) throws CatalogException {
+    Preconditions.checkArgument(searchTerm == null || searchTerm.length() >= 3,
+        "when present, search term must be at least 3 characters long [given: %s]", searchTerm);
+
+    try {
+      return queue.execute(new SQLiteJob<Long>() {
+        @Override
+        protected Long job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+          try {
+            /* Getting this out is a simple query, which does not need to be cached. */
+            final SQLiteStatement statement;
+            if (searchTerm == null) {
+              statement = sqliteConnection.prepare("SELECT min(query_id) FROM queries_fts;");
+            } else {
+              statement =
+                  sqliteConnection.prepare("SELECT min(query_id) FROM queries_fts WHERE raw_query_fts MATCH ?;");
+              statement.bind(1, searchTerm);
             }
+
+            Preconditions.checkArgument(statement.step(), "Count should return a row");
+            final Long ret = statement.columnLong(0);
+            statement.dispose();
+            return ret;
+          } catch (final SQLiteException e) {
+            LOGGER.error("Getting the min query", e);
             throw new CatalogException(e);
           }
         }
