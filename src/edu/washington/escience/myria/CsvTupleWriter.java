@@ -46,7 +46,7 @@ public class CsvTupleWriter implements TupleWriter {
    * @throws IOException if there is an IO exception
    */
   public CsvTupleWriter(final char separator, final OutputStream out) throws IOException {
-    this(out, CSVFormat.DEFAULT.withRecordSeparator(separator));
+    this(out, CSVFormat.DEFAULT.withDelimiter(separator));
   }
 
   /**
