@@ -18,8 +18,8 @@ import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.JdbcAccessMethod;
 import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.parallel.ResourceStats;
 import edu.washington.escience.myria.parallel.WorkerSubQuery;
+import edu.washington.escience.myria.proto.ControlProto.ResourceStats;
 
 /**
  * A logger for profiling data.
@@ -172,7 +172,7 @@ public class ProfilingLogger {
 
   /**
    * Appends a single event appearing in an operator to a batch that is flushed either after a certain number of events
-   * are in the batch or {@link #flushProfilingEventsBatch()} is called.
+   * are in the batch or {@link #flushEventsBatch()} is called.
    * 
    * @param operator the operator where this record was logged
    * @param numTuples the number of tuples
@@ -198,7 +198,7 @@ public class ProfilingLogger {
     }
 
     if (batchSizeEvents > MyriaConstants.PROFILING_LOGGER_BATCH_SIZE) {
-      flushProfilingEventsBatch();
+      flushEventsBatch();
     }
   }
 
@@ -209,8 +209,8 @@ public class ProfilingLogger {
    */
   public synchronized void flush() throws DbException {
     flushSentBatch();
-    flushProfilingEventsBatch();
-    flushProfilingResourceBatch();
+    flushEventsBatch();
+    flushResourceBatch();
   }
 
   /**
@@ -218,7 +218,7 @@ public class ProfilingLogger {
    * 
    * @throws DbException if insertion in the database fails
    */
-  private void flushProfilingEventsBatch() throws DbException {
+  private void flushEventsBatch() throws DbException {
     final long startTime = System.nanoTime();
     try {
       if (batchSizeEvents == 0) {
@@ -233,8 +233,7 @@ public class ProfilingLogger {
       }
       throw new DbException(e);
     }
-    LOGGER.info("Flushing the profiling events batch took {} milliseconds.", TimeUnit.NANOSECONDS.toMillis(System
-        .nanoTime()
+    LOGGER.info("Flushing the events batch took {} milliseconds.", TimeUnit.NANOSECONDS.toMillis(System.nanoTime()
         - startTime));
   }
 
@@ -242,7 +241,7 @@ public class ProfilingLogger {
    * Flush the tuple batch buffer that has logs about resouce usage.
    * 
    */
-  private void flushProfilingResourceBatch() {
+  private void flushResourceBatch() {
     final long startTime = System.nanoTime();
     try {
       if (batchSizeResource == 0) {
@@ -257,8 +256,7 @@ public class ProfilingLogger {
       }
       throw new RuntimeException(e);
     }
-    LOGGER.info("Flushing the profiling resource batch took {} milliseconds.", TimeUnit.NANOSECONDS.toMillis(System
-        .nanoTime()
+    LOGGER.info("Flushing the resource batch took {} milliseconds.", TimeUnit.NANOSECONDS.toMillis(System.nanoTime()
         - startTime));
   }
 
@@ -315,7 +313,7 @@ public class ProfilingLogger {
 
   /**
    * Appends a single resource stats to a batch that is flushed either after a certain number of events are in the batch
-   * or {@link #flushProfilingResourceBatch()} is called.
+   * or {@link #flushResourceBatch()} is called.
    * 
    * @param stats the resource stats.
    */
@@ -335,7 +333,7 @@ public class ProfilingLogger {
     }
 
     if (batchSizeResource > MyriaConstants.PROFILING_LOGGER_BATCH_SIZE) {
-      flushProfilingResourceBatch();
+      flushResourceBatch();
     }
   }
 
