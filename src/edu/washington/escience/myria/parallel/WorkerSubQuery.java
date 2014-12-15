@@ -25,6 +25,7 @@ import edu.washington.escience.myria.operator.network.Producer;
 import edu.washington.escience.myria.operator.network.RecoverProducer;
 import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myria.profiling.ProfilingLogger;
+import edu.washington.escience.myria.proto.ControlProto.ResourceStats;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.util.DateTimeUtils;
 import edu.washington.escience.myria.util.IPCUtils;
@@ -288,7 +289,7 @@ public class WorkerSubQuery extends LocalSubQuery {
           RecoverProducer rp =
               new RecoverProducer(scan, ExchangePairID.fromExisting(channels[j].getID().getStreamID()), channels[j]
                   .getID().getRemoteID(), (Producer) fragment.getRootOp(), j);
-          scan.setOpId(newOpId);
+          rp.setOpId(newOpId);
           newOpId++;
           rp.setOpName("recProducer_for_" + fragment.getRootOp().getOpName());
           recoveryTasks.add(rp);
