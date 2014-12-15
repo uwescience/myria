@@ -1,0 +1,7 @@
+a,b
+aab,ab
+a,abc
+abc,äbc
+abc,abc c
+abc,def
+de d,aft
