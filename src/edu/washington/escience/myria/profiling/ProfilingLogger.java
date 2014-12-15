@@ -18,8 +18,8 @@ import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.JdbcAccessMethod;
 import edu.washington.escience.myria.operator.Operator;
+import edu.washington.escience.myria.parallel.ResourceStats;
 import edu.washington.escience.myria.parallel.WorkerSubQuery;
-import edu.washington.escience.myria.proto.ControlProto.ResourceStats;
 
 /**
  * A logger for profiling data.
