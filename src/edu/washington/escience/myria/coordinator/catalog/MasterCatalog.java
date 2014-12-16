@@ -109,6 +109,10 @@ public final class MasterCatalog {
     + "    col_name TEXT,\n"
     + "    col_type TEXT NOT NULL,\n"
     + "    FOREIGN KEY (user_name,program_name,relation_name) REFERENCES relations ON DELETE CASCADE);";
+  /** Create an index on the relation_schema table. */
+  private static final String CREATE_RELATION_SCHEMA_INDEX =
+      "CREATE INDEX relation_schema_idx ON relation_schema (\n"
+    + "    user_name, program_name, relation_name, col_index);";
   /** Create the stored_relations table. */
   private static final String CREATE_STORED_RELATIONS =
       "CREATE TABLE stored_relations (\n"
@@ -194,6 +198,7 @@ public final class MasterCatalog {
             sqliteConnection.exec(CREATE_QUERIES);
             sqliteConnection.exec(CREATE_RELATIONS);
             sqliteConnection.exec(CREATE_RELATION_SCHEMA);
+            sqliteConnection.exec(CREATE_RELATION_SCHEMA_INDEX);
             sqliteConnection.exec(CREATE_STORED_RELATIONS);
             sqliteConnection.exec(CREATE_SHARDS);
             sqliteConnection.exec("END TRANSACTION");
