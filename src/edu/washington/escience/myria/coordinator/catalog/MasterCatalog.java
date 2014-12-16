@@ -1395,7 +1395,7 @@ public final class MasterCatalog {
       bindArgs.add(searchTerm);
     }
 
-    /* If there a max? */
+    /* Is there a max? */
     boolean min = false;
     if (maxId != null && maxId > 0) {
       whereClause.add("query_id <= ?");
