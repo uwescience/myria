@@ -45,7 +45,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import edu.washington.escience.myria.CsvTupleWriter;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.MyriaConstants.PROFILINGMODE;
+import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
@@ -1685,7 +1685,7 @@ public final class Server {
     Preconditions.checkArgument(queryStatus != null, "query %s not found", queryId);
     Preconditions.checkArgument(queryStatus.status == QueryStatusEncoding.Status.SUCCESS,
         "query %s did not succeed (%s)", queryId, queryStatus.status);
-    Preconditions.checkArgument(!queryStatus.profilingMode.equals(PROFILINGMODE.NONE),
+    Preconditions.checkArgument(!queryStatus.profilingMode.equals(ProfilingMode.NONE),
         "query %s was not run with profiling enabled", queryId);
     return queryStatus;
   }

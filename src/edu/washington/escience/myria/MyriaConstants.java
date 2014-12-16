@@ -307,7 +307,7 @@ public final class MyriaConstants {
   };
 
   /** available profiling mode for each query in Myria. */
-  public static enum PROFILINGMODE {
+  public static enum ProfilingMode {
     /**
      * NONE: don't profile.
      */

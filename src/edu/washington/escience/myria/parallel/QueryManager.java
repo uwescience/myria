@@ -25,7 +25,7 @@ import com.google.common.collect.Maps;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
-import edu.washington.escience.myria.MyriaConstants.PROFILINGMODE;
+import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.api.encoding.QueryConstruct;
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
@@ -483,7 +483,7 @@ public class QueryManager {
     if (!canSubmitQuery()) {
       throw new DbException("Cannot submit query");
     }
-    if (!query.profilingMode.equals(PROFILINGMODE.NONE)) {
+    if (!query.profilingMode.equals(ProfilingMode.NONE)) {
       if (!(plan instanceof SubQuery || plan instanceof JsonSubQuery)) {
         throw new DbException("Profiling mode is not supported for plans (" + plan.getClass().getSimpleName()
             + ") that may contain multiple subqueries.");
@@ -540,7 +540,7 @@ public class QueryManager {
    */
   public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final String physicalPlan,
       final SubQueryPlan masterPlan, final Map<Integer, SubQueryPlan> workerPlans,
-      @Nullable final PROFILINGMODE profilingMode) throws DbException, CatalogException {
+      @Nullable final ProfilingMode profilingMode) throws DbException, CatalogException {
     return submitQuery(rawQuery, logicalRa, physicalPlan, new SubQuery(masterPlan, workerPlans), profilingMode);
   }
 
@@ -558,12 +558,12 @@ public class QueryManager {
    * @return the query future from which the query status can be looked up.
    */
   public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final String physicalPlan,
-      final QueryPlan plan, @Nullable final PROFILINGMODE profilingMode) throws DbException, CatalogException {
+      final QueryPlan plan, @Nullable final ProfilingMode profilingMode) throws DbException, CatalogException {
     QueryEncoding query = new QueryEncoding();
     query.rawQuery = rawQuery;
     query.logicalRa = rawQuery;
     query.fragments = ImmutableList.of();
-    query.profilingMode = MoreObjects.firstNonNull(profilingMode, PROFILINGMODE.NONE);
+    query.profilingMode = MoreObjects.firstNonNull(profilingMode, ProfilingMode.NONE);
     return submitQuery(query, plan);
   }
 

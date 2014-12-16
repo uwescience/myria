@@ -9,7 +9,7 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.MyriaConstants.PROFILINGMODE;
+import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.operator.EOSSource;
 import edu.washington.escience.myria.operator.SinkRoot;
@@ -29,7 +29,7 @@ public class ServerTest extends SystemTestBase {
     QueryEncoding query = new QueryEncoding();
     query.rawQuery = "testDatalog";
     query.logicalRa = "testRa";
-    query.profilingMode = PROFILINGMODE.QUERY;
+    query.profilingMode = ProfilingMode.QUERY;
     try {
       server.getQueryManager().submitQuery(query, plan);
     } catch (DbException e) {
@@ -49,7 +49,7 @@ public class ServerTest extends SystemTestBase {
     QueryEncoding query = new QueryEncoding();
     query.rawQuery = "testDatalog";
     query.logicalRa = "testRa";
-    query.profilingMode = PROFILINGMODE.QUERY;
+    query.profilingMode = ProfilingMode.QUERY;
 
     try {
       server.getQueryManager().submitQuery(query, plan);

@@ -20,7 +20,7 @@ import com.google.common.base.Verify;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
-import edu.washington.escience.myria.MyriaConstants.PROFILINGMODE;
+import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -68,7 +68,7 @@ public final class Query {
   /** The future for this query. */
   private final QueryFuture future;
   /** True if the query should be run with profiling enabled. */
-  private final PROFILINGMODE profiling;
+  private final ProfilingMode profiling;
   /** Indicates whether the query should be run with a particular fault tolerance mode. */
   private final FTMODE ftMode;
   /** Global variables that are part of this query. */
@@ -89,7 +89,7 @@ public final class Query {
   public Query(final long queryId, final QueryEncoding query, final QueryPlan plan, final Server server) {
     Preconditions.checkNotNull(query, "query");
     this.server = Preconditions.checkNotNull(server, "server");
-    profiling = MoreObjects.firstNonNull(query.profilingMode, PROFILINGMODE.NONE);
+    profiling = MoreObjects.firstNonNull(query.profilingMode, ProfilingMode.NONE);
     ftMode = MoreObjects.firstNonNull(query.ftMode, FTMODE.NONE);
     this.queryId = queryId;
     subqueryId = 0;
@@ -184,9 +184,9 @@ public final class Query {
        * 
        * We only support profiling a single subquery, so disable profiling if subqueryId != 0.
        */
-      PROFILINGMODE profilingMode = profiling;
+      ProfilingMode profilingMode = profiling;
       if (subqueryId != 0) {
-        profilingMode = PROFILINGMODE.NONE;
+        profilingMode = ProfilingMode.NONE;
       }
 
       QueryConstruct.setQueryExecutionOptions(currentSubQuery.getWorkerPlans(), ftMode, profilingMode);
@@ -329,7 +329,7 @@ public final class Query {
   /**
    * @return true if this query should be profiled.
    */
-  protected PROFILINGMODE getProfilingMode() {
+  protected ProfilingMode getProfilingMode() {
     return profiling;
   }
 

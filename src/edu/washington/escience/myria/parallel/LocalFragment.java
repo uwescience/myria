@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.MyriaConstants.PROFILINGMODE;
+import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 import edu.washington.escience.myria.operator.IDBController;
 import edu.washington.escience.myria.operator.LeapFrogJoin;
 import edu.washington.escience.myria.operator.Operator;
@@ -184,8 +184,8 @@ public final class LocalFragment {
         }
         // otherwise threadId should always equal to Thread.currentThread().getId() based on the current design
 
-        PROFILINGMODE mode = localSubQuery.getProfilingMode();
-        if (mode.equals(PROFILINGMODE.RESOURCE) || mode.equals(PROFILINGMODE.ALL)) {
+        ProfilingMode mode = localSubQuery.getProfilingMode();
+        if (mode.equals(ProfilingMode.RESOURCE) || mode.equals(ProfilingMode.ALL)) {
           synchronized (LocalFragment.this) {
             cpuBefore = ManagementFactory.getThreadMXBean().getThreadCpuTime(threadId);
           }
@@ -204,7 +204,7 @@ public final class LocalFragment {
           LOGGER.trace("End execution: " + LocalFragment.this);
         }
 
-        if (mode.equals(PROFILINGMODE.RESOURCE) || mode.equals(PROFILINGMODE.ALL)) {
+        if (mode.equals(ProfilingMode.RESOURCE) || mode.equals(ProfilingMode.ALL)) {
           synchronized (LocalFragment.this) {
             cpuTotal += ManagementFactory.getThreadMXBean().getThreadCpuTime(threadId) - cpuBefore;
             cpuBefore = 0;
