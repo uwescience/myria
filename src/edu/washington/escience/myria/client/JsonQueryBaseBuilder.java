@@ -25,7 +25,7 @@ import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
-import edu.washington.escience.myria.MyriaConstants.PROFILING_MODE;
+import edu.washington.escience.myria.MyriaConstants.PROFILINGMODE;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.api.MyriaApiException;
@@ -539,7 +539,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
       result.fragments = Arrays.asList(fragments.values().toArray(new PlanFragmentEncoding[] {}));
       result.ftMode = FTMODE.NONE;
       result.logicalRa = "";
-      result.profilingMode = PROFILING_MODE.NONE;
+      result.profilingMode = PROFILINGMODE.NONE;
       result.rawQuery = "";
 
       try {

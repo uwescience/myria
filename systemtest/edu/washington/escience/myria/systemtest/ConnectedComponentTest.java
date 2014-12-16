@@ -17,7 +17,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
-import edu.washington.escience.myria.MyriaConstants.PROFILING_MODE;
+import edu.washington.escience.myria.MyriaConstants.PROFILINGMODE;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -265,7 +265,7 @@ public class ConnectedComponentTest extends SystemTestBase {
       serverPlan.setFTMode(FTMODE.REJOIN);
 
       ListenableFuture<Query> qf =
-          server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans, PROFILING_MODE.NONE);
+          server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans, PROFILINGMODE.NONE);
       Thread.sleep(1000);
       LOGGER.info("killing worker " + workerIDs[1] + "!");
       workerProcess[1].destroy();

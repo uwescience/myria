@@ -24,7 +24,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
-import edu.washington.escience.myria.MyriaConstants.PROFILING_MODE;
+import edu.washington.escience.myria.MyriaConstants.PROFILINGMODE;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -170,7 +170,7 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     assertEquals(QueryStatusEncoding.Status.SUCCESS, status.status);
     assertTrue(status.language.equals("datalog"));
     assertEquals(status.ftMode, FTMODE.NONE);
-    assertTrue(status.profilingMode.equals(PROFILING_MODE.NONE));
+    assertTrue(status.profilingMode.equals(PROFILINGMODE.NONE));
     assertTrue(status.plan instanceof SubQueryEncoding);
     assertEquals(((SubQueryEncoding) status.plan).fragments.size(), 3);
   }

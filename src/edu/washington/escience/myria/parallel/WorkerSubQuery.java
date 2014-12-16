@@ -17,7 +17,7 @@ import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.MyriaConstants.PROFILING_MODE;
+import edu.washington.escience.myria.MyriaConstants.PROFILINGMODE;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.StreamingState;
 import edu.washington.escience.myria.operator.TupleSource;
@@ -112,7 +112,7 @@ public class WorkerSubQuery extends LocalSubQuery {
           LOGGER.info("Query #{} executed for {}", getSubQueryId(), DateTimeUtils
               .nanoElapseToHumanReadable(getExecutionStatistics().getQueryExecutionElapse()));
         }
-        if (!getProfilingMode().equals(PROFILING_MODE.NONE)) {
+        if (!getProfilingMode().equals(PROFILINGMODE.NONE)) {
           try {
             if (resourceReportTimer != null) {
               resourceReportTimer.cancel();
@@ -209,7 +209,7 @@ public class WorkerSubQuery extends LocalSubQuery {
   public final void startExecution() {
     LOGGER.info("Subquery #{} start processing", getSubQueryId());
     getExecutionStatistics().markStart();
-    if (getProfilingMode().equals(PROFILING_MODE.RESOURCE) || getProfilingMode().equals(PROFILING_MODE.ALL)) {
+    if (getProfilingMode().equals(PROFILINGMODE.RESOURCE) || getProfilingMode().equals(PROFILINGMODE.ALL)) {
       resourceReportTimer = new Timer();
       resourceReportTimer.scheduleAtFixedRate(new ResourceUsageReporter(), 0, MyriaConstants.RESOURCE_REPORT_INTERVAL);
     }
@@ -242,7 +242,7 @@ public class WorkerSubQuery extends LocalSubQuery {
    * @param resourceUsage the list to add resource stats of resource profiling queries to.
    */
   public void collectResourceMeasurements(final List<ResourceStats> resourceUsage) {
-    if (getProfilingMode().equals(PROFILING_MODE.RESOURCE) || getProfilingMode().equals(PROFILING_MODE.ALL)) {
+    if (getProfilingMode().equals(PROFILINGMODE.RESOURCE) || getProfilingMode().equals(PROFILINGMODE.ALL)) {
       long timestamp = System.currentTimeMillis();
       for (LocalFragment fragment : fragments) {
         fragment.collectResourceMeasurements(resourceUsage, timestamp, fragment.getRootOp(), getSubQueryId());

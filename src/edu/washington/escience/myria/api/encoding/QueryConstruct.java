@@ -21,7 +21,7 @@ import com.google.common.collect.Maps;
 
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
-import edu.washington.escience.myria.MyriaConstants.PROFILING_MODE;
+import edu.washington.escience.myria.MyriaConstants.PROFILINGMODE;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -108,7 +108,7 @@ public class QueryConstruct {
    * @param profilingMode how the query should be profiled
    */
   public static void setQueryExecutionOptions(Map<Integer, SubQueryPlan> plans, final FTMODE ftMode,
-      final PROFILING_MODE profilingMode) {
+      final PROFILINGMODE profilingMode) {
     for (SubQueryPlan plan : plans.values()) {
       plan.setFTMode(ftMode);
       plan.setProfilingMode(profilingMode);

@@ -5,7 +5,7 @@ import java.net.URI;
 import org.joda.time.DateTime;
 
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
-import edu.washington.escience.myria.MyriaConstants.PROFILING_MODE;
+import edu.washington.escience.myria.MyriaConstants.PROFILINGMODE;
 import edu.washington.escience.myria.api.encoding.plan.SubPlanEncoding;
 
 /**
@@ -67,7 +67,7 @@ public class QueryStatusEncoding {
   /** The status of the query. */
   public Status status;
   /** The profilingMode of the query. */
-  public PROFILING_MODE profilingMode;
+  public PROFILINGMODE profilingMode;
   /** The ftMode of the query. */
   public FTMODE ftMode;
   /** The language of the query. */
