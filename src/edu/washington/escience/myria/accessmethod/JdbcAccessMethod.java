@@ -121,7 +121,7 @@ public final class JdbcAccessMethod extends AccessMethod {
       CopyManager cpManager = ((PGConnection) jdbcConnection).getCopyAPI();
 
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      TupleWriter tw = new CsvTupleWriter(',', baos);
+      TupleWriter tw = new CsvTupleWriter(baos);
       tw.writeTuples(tupleBatch);
       tw.done();
 
