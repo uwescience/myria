@@ -1,8 +1,8 @@
 "a","b"
 "a""a""b","ab"
 "a","a""b""c"
-"abc","abc"
+"abc","äbc"
 "a""b""c","ab'
 cc"
-"abc","def"
-"de d","aft"
+"abc","d,ef"
+"de d",",aft"
