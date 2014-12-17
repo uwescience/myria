@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 
@@ -47,6 +48,20 @@ public class QueryQueueTest extends SystemTestBase {
     assertEquals(query2.getMessage(), query2.getStatus(), Status.SUCCESS);
     /* The goal: query 2 should have been started after query 1 finished. */
     assertTrue(query1.getEndTime().compareTo(query2.getStartTime()) < 0);
+
+    /* Test the query matching functionality. */
+    List<QueryStatusEncoding> qs = server.getQueryManager().getQueries(null, null, null, "long");
+    assertEquals(1, qs.size());
+    assertEquals(query1.getQueryId(), qs.get(0).queryId.longValue());
+    qs = server.getQueryManager().getQueries(null, null, null, "short");
+    assertEquals(1, qs.size());
+    assertEquals(query2.getQueryId(), qs.get(0).queryId.longValue());
+    qs = server.getQueryManager().getQueries(null, null, null, "query");
+    assertEquals(2, qs.size());
+    assertEquals(query2.getQueryId(), qs.get(0).queryId.longValue());
+    assertEquals(query1.getQueryId(), qs.get(1).queryId.longValue());
+    qs = server.getQueryManager().getQueries(null, null, null, "que");
+    assertEquals(0, qs.size());
   }
 
   @Test

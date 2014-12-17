@@ -55,8 +55,8 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     return ingest(key, schema, new EmptySource(), null);
   }
 
-  public static String ingest(RelationKey key, Schema schema, DataSource source, @Nullable Character delimiter)
-      throws JsonProcessingException {
+  public static String ingest(final RelationKey key, final Schema schema, final DataSource source,
+      @Nullable final Character delimiter) throws JsonProcessingException {
     DatasetEncoding ingest = new DatasetEncoding();
     ingest.relationKey = key;
     ingest.schema = schema;
@@ -263,10 +263,10 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     System.out.println("Download size: " + (numBytesRead * 1.0 / 1024 / 1024 / 1024) + " GB");
     System.out.println("Speed is: " + (numBytesRead * 1.0 / 1024 / 1024 / TimeUnit.NANOSECONDS.toSeconds(nanoElapse))
         + " MB/s");
-    while (server.getQueryManager().getQueries(1, 0).get(0).finishTime == null) {
+    while (server.getQueryManager().getQueries(1L, null, null, null).get(0).finishTime == null) {
       Thread.sleep(100);
     }
-    QueryStatusEncoding qs = server.getQueryManager().getQueries(1, 0).get(0);
+    QueryStatusEncoding qs = server.getQueryManager().getQueries(1L, null, null, null).get(0);
     assertTrue(qs.status == QueryStatusEncoding.Status.ERROR);
   }
 }
