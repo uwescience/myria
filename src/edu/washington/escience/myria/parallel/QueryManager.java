@@ -11,12 +11,10 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableList;
@@ -25,7 +23,6 @@ import com.google.common.collect.Maps;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMode;
-import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.api.encoding.QueryConstruct;
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
@@ -483,7 +480,7 @@ public class QueryManager {
     if (!canSubmitQuery()) {
       throw new DbException("Cannot submit query");
     }
-    if (!query.profilingMode.equals(ProfilingMode.NONE)) {
+    if (query.profilingMode.size() > 0) {
       if (!(plan instanceof SubQuery || plan instanceof JsonSubQuery)) {
         throw new DbException("Profiling mode is not supported for plans (" + plan.getClass().getSimpleName()
             + ") that may contain multiple subqueries.");
@@ -539,9 +536,8 @@ public class QueryManager {
    * @return the query future from which the query status can be looked up.
    */
   public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final String physicalPlan,
-      final SubQueryPlan masterPlan, final Map<Integer, SubQueryPlan> workerPlans,
-      @Nullable final ProfilingMode profilingMode) throws DbException, CatalogException {
-    return submitQuery(rawQuery, logicalRa, physicalPlan, new SubQuery(masterPlan, workerPlans), profilingMode);
+      final SubQueryPlan masterPlan, final Map<Integer, SubQueryPlan> workerPlans) throws DbException, CatalogException {
+    return submitQuery(rawQuery, logicalRa, physicalPlan, new SubQuery(masterPlan, workerPlans));
   }
 
   /**
@@ -552,18 +548,16 @@ public class QueryManager {
    * @param logicalRa the logical relational algebra of the compiled plan.
    * @param physicalPlan the Myria physical plan for the query.
    * @param plan the query plan.
-   * @param profilingMode is the profiling mode of the query on.
    * @throws DbException if any error in non-catalog data processing
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
    */
   public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final String physicalPlan,
-      final QueryPlan plan, @Nullable final ProfilingMode profilingMode) throws DbException, CatalogException {
+      final QueryPlan plan) throws DbException, CatalogException {
     QueryEncoding query = new QueryEncoding();
     query.rawQuery = rawQuery;
     query.logicalRa = rawQuery;
     query.fragments = ImmutableList.of();
-    query.profilingMode = MoreObjects.firstNonNull(profilingMode, ProfilingMode.NONE);
     return submitQuery(query, plan);
   }
 

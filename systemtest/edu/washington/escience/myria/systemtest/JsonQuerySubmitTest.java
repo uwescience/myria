@@ -24,7 +24,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.MyriaConstants.FTMode;
-import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -56,8 +55,8 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     return ingest(key, schema, new EmptySource(), null);
   }
 
-  public static String ingest(RelationKey key, Schema schema, DataSource source, @Nullable Character delimiter)
-      throws JsonProcessingException {
+  public static String ingest(final RelationKey key, final Schema schema, final DataSource source,
+      @Nullable final Character delimiter) throws JsonProcessingException {
     DatasetEncoding ingest = new DatasetEncoding();
     ingest.relationKey = key;
     ingest.schema = schema;
@@ -170,7 +169,7 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     assertEquals(QueryStatusEncoding.Status.SUCCESS, status.status);
     assertTrue(status.language.equals("datalog"));
     assertEquals(status.ftMode, FTMode.NONE);
-    assertTrue(status.profilingMode.equals(ProfilingMode.NONE));
+    assertEquals(status.profilingMode.size(), 0);
     assertTrue(status.plan instanceof SubQueryEncoding);
     assertEquals(((SubQueryEncoding) status.plan).fragments.size(), 3);
   }

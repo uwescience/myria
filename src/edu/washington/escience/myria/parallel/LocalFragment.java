@@ -184,8 +184,8 @@ public final class LocalFragment {
         }
         // otherwise threadId should always equal to Thread.currentThread().getId() based on the current design
 
-        ProfilingMode mode = localSubQuery.getProfilingMode();
-        if (mode.equals(ProfilingMode.RESOURCE) || mode.equals(ProfilingMode.ALL)) {
+        Set<ProfilingMode> mode = localSubQuery.getProfilingMode();
+        if (mode.contains(ProfilingMode.RESOURCE)) {
           synchronized (LocalFragment.this) {
             cpuBefore = ManagementFactory.getThreadMXBean().getThreadCpuTime(threadId);
           }
@@ -204,7 +204,7 @@ public final class LocalFragment {
           LOGGER.trace("End execution: " + LocalFragment.this);
         }
 
-        if (mode.equals(ProfilingMode.RESOURCE) || mode.equals(ProfilingMode.ALL)) {
+        if (mode.contains(ProfilingMode.RESOURCE)) {
           synchronized (LocalFragment.this) {
             cpuTotal += ManagementFactory.getThreadMXBean().getThreadCpuTime(threadId) - cpuBefore;
             cpuBefore = 0;

@@ -854,7 +854,7 @@ public final class Server {
       workerPlans.put(entry.getKey(), new SubQueryPlan(entry.getValue()));
     }
     return queryManager.submitQuery(catalogInfoPlaceHolder, catalogInfoPlaceHolder, catalogInfoPlaceHolder,
-        new SubQueryPlan(masterRoot), workerPlans, null);
+        new SubQueryPlan(masterRoot), workerPlans);
   }
 
   /**
@@ -939,7 +939,7 @@ public final class Server {
     try {
       qf =
           queryManager.submitQuery("ingest " + relationKey.toString(), "ingest " + relationKey.toString(), "ingest "
-              + relationKey.toString(getDBMS()), new SubQueryPlan(scatter), workerPlans, null);
+              + relationKey.toString(getDBMS()), new SubQueryPlan(scatter), workerPlans);
     } catch (CatalogException e) {
       throw new DbException("Error submitting query", e);
     }
@@ -975,7 +975,7 @@ public final class Server {
       }
       ListenableFuture<Query> qf =
           queryManager.submitQuery("import " + relationKey.toString(), "import " + relationKey.toString(), "import "
-              + relationKey.toString(getDBMS()), new SubQueryPlan(new SinkRoot(new EOSSource())), workerPlans, null);
+              + relationKey.toString(getDBMS()), new SubQueryPlan(new SinkRoot(new EOSSource())), workerPlans);
       Query queryState;
       try {
         queryState = qf.get();
@@ -1176,7 +1176,7 @@ public final class Server {
     /* Submit the plan for the download. */
     String planString = "download " + relationKey.toString();
     try {
-      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, null);
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1227,7 +1227,7 @@ public final class Server {
     /* Submit the plan for the download. */
     String planString = "download test";
     try {
-      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, null);
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1303,7 +1303,7 @@ public final class Server {
     String planString =
         Joiner.on("").join("download profiling sent data for (query=", queryId, ", fragment=", fragmentId, ")");
     try {
-      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, null);
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1357,7 +1357,7 @@ public final class Server {
     /* Submit the plan for the download. */
     String planString = Joiner.on("").join("download profiling aggregated sent data for (query=", queryId, ")");
     try {
-      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, null);
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1440,7 +1440,7 @@ public final class Server {
         Joiner.on('\0').join("download profiling data (query=", queryId, ", fragment=", fragmentId, ", range=[",
             Joiner.on(", ").join(start, end), "]", ")");
     try {
-      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, null);
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1544,7 +1544,7 @@ public final class Server {
         Joiner.on('\0').join("download profiling histogram (query=", queryId, ", fragment=", fragmentId, ", range=[",
             Joiner.on(", ").join(start, end, step), "]", ")");
     try {
-      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, null);
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1596,7 +1596,7 @@ public final class Server {
     /* Submit the plan for the download. */
     String planString = Joiner.on('\0').join("download time range (query=", queryId, ", fragment=", fragmentId, ")");
     try {
-      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, null);
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1660,7 +1660,7 @@ public final class Server {
     String planString =
         Joiner.on('\0').join("download operator contributions (query=", queryId, ", fragment=", fragmentId, ")");
     try {
-      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, null);
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1685,8 +1685,8 @@ public final class Server {
     Preconditions.checkArgument(queryStatus != null, "query %s not found", queryId);
     Preconditions.checkArgument(queryStatus.status == QueryStatusEncoding.Status.SUCCESS,
         "query %s did not succeed (%s)", queryId, queryStatus.status);
-    Preconditions.checkArgument(!queryStatus.profilingMode.equals(ProfilingMode.NONE),
-        "query %s was not run with profiling enabled", queryId);
+    Preconditions.checkArgument(!queryStatus.profilingMode.contains(ProfilingMode.QUERY),
+        "query %s was not run with profiling mode QUERY enabled", queryId);
     return queryStatus;
   }
 
@@ -1811,7 +1811,7 @@ public final class Server {
     /* Submit the plan for the download. */
     String planString = Joiner.on("").join("download resource log for (query=", queryId, ")");
     try {
-      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, null);
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
     } catch (CatalogException e) {
       throw new DbException(e);
     }

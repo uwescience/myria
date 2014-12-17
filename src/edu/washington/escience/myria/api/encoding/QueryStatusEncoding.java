@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.api.encoding;
 
 import java.net.URI;
+import java.util.List;
 
 import org.joda.time.DateTime;
 
@@ -67,7 +68,7 @@ public class QueryStatusEncoding {
   /** The status of the query. */
   public Status status;
   /** The profilingMode of the query. */
-  public ProfilingMode profilingMode;
+  public List<ProfilingMode> profilingMode;
   /** The ftMode of the query. */
   public FTMode ftMode;
   /** The language of the query. */

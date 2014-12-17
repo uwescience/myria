@@ -13,9 +13,9 @@ import org.joda.time.DateTime;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
+import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
@@ -89,8 +89,8 @@ public final class Query {
   public Query(final long queryId, final QueryEncoding query, final QueryPlan plan, final Server server) {
     Preconditions.checkNotNull(query, "query");
     this.server = Preconditions.checkNotNull(server, "server");
-    profiling = MoreObjects.firstNonNull(query.profilingMode, ProfilingMode.NONE);
-    ftMode = MoreObjects.firstNonNull(query.ftMode, FTMode.NONE);
+    profiling = ImmutableSet.copyOf(query.profilingMode);
+    ftMode = query.ftMode;
     this.queryId = queryId;
     subqueryId = 0;
     synchronized (this) {
@@ -184,13 +184,14 @@ public final class Query {
        * 
        * We only support profiling a single subquery, so disable profiling if subqueryId != 0.
        */
-      ProfilingMode profilingMode = profiling;
+      Set<ProfilingMode> profilingMode = getProfilingMode();
       if (subqueryId != 0) {
-        profilingMode = ProfilingMode.NONE;
+        profilingMode = ImmutableSet.of();
       }
 
       QueryConstruct.setQueryExecutionOptions(currentSubQuery.getWorkerPlans(), ftMode, profilingMode);
       currentSubQuery.getMasterPlan().setFTMode(ftMode);
+      currentSubQuery.getMasterPlan().setProfilingMode(profilingMode);
       ++subqueryId;
       if (subqueryId >= MyriaConstants.MAXIMUM_NUM_SUBQUERIES) {
         throw new DbException("Infinite-loop safeguard: quitting after " + MyriaConstants.MAXIMUM_NUM_SUBQUERIES
@@ -329,7 +330,8 @@ public final class Query {
   /**
    * @return true if this query should be profiled.
    */
-  protected ProfilingMode getProfilingMode() {
+  @Nonnull
+  protected Set<ProfilingMode> getProfilingMode() {
     return profiling;
   }
 

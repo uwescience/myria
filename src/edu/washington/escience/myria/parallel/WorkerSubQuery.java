@@ -112,7 +112,7 @@ public class WorkerSubQuery extends LocalSubQuery {
           LOGGER.info("Query #{} executed for {}", getSubQueryId(), DateTimeUtils
               .nanoElapseToHumanReadable(getExecutionStatistics().getQueryExecutionElapse()));
         }
-        if (!getProfilingMode().equals(ProfilingMode.NONE)) {
+        if (getProfilingMode().size() > 0) {
           try {
             if (resourceReportTimer != null) {
               resourceReportTimer.cancel();
@@ -209,7 +209,7 @@ public class WorkerSubQuery extends LocalSubQuery {
   public final void startExecution() {
     LOGGER.info("Subquery #{} start processing", getSubQueryId());
     getExecutionStatistics().markStart();
-    if (getProfilingMode().equals(ProfilingMode.RESOURCE) || getProfilingMode().equals(ProfilingMode.ALL)) {
+    if (getProfilingMode().contains(ProfilingMode.RESOURCE)) {
       resourceReportTimer = new Timer();
       resourceReportTimer.scheduleAtFixedRate(new ResourceUsageReporter(), 0, MyriaConstants.RESOURCE_REPORT_INTERVAL);
     }
@@ -242,7 +242,7 @@ public class WorkerSubQuery extends LocalSubQuery {
    * @param resourceUsage the list to add resource stats of resource profiling queries to.
    */
   public void collectResourceMeasurements(final List<ResourceStats> resourceUsage) {
-    if (getProfilingMode().equals(ProfilingMode.RESOURCE) || getProfilingMode().equals(ProfilingMode.ALL)) {
+    if (getProfilingMode().contains(ProfilingMode.RESOURCE)) {
       long timestamp = System.currentTimeMillis();
       for (LocalFragment fragment : fragments) {
         fragment.collectResourceMeasurements(resourceUsage, timestamp, fragment.getRootOp(), getSubQueryId());

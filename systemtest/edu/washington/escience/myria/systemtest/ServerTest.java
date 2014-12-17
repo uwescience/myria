@@ -29,7 +29,7 @@ public class ServerTest extends SystemTestBase {
     QueryEncoding query = new QueryEncoding();
     query.rawQuery = "testDatalog";
     query.logicalRa = "testRa";
-    query.profilingMode = ProfilingMode.QUERY;
+    query.profilingMode = ImmutableList.of(ProfilingMode.QUERY);
     try {
       server.getQueryManager().submitQuery(query, plan);
     } catch (DbException e) {
@@ -49,8 +49,7 @@ public class ServerTest extends SystemTestBase {
     QueryEncoding query = new QueryEncoding();
     query.rawQuery = "testDatalog";
     query.logicalRa = "testRa";
-    query.profilingMode = ProfilingMode.QUERY;
-
+    query.profilingMode = ImmutableList.of(ProfilingMode.QUERY);
     try {
       server.getQueryManager().submitQuery(query, plan);
     } catch (DbException e) {

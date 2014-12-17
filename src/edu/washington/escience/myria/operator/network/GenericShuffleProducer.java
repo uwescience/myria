@@ -93,7 +93,7 @@ public class GenericShuffleProducer extends Producer {
   protected final void consumeTuples(final TupleBatch tup) throws DbException {
     final TupleBatch[] partitions = getTupleBatchPartitions(tup);
 
-    if (getProfilingMode().equals(ProfilingMode.QUERY) || getProfilingMode().equals(ProfilingMode.ALL)) {
+    if (getProfilingMode().contains(ProfilingMode.QUERY)) {
       for (int partitionIdx = 0; partitionIdx < partitions.length; partitionIdx++) {
         if (partitions[partitionIdx] != null) {
           final int numTuples = partitions[partitionIdx].numTuples();

@@ -65,8 +65,8 @@ public class QueryConstruct {
    * @return the physical plan
    * @throws CatalogException if there is an error instantiating the plan
    */
-  public static Map<Integer, SubQueryPlan> instantiate(List<PlanFragmentEncoding> fragments, final ConstructArgs args)
-      throws CatalogException {
+  public static Map<Integer, SubQueryPlan> instantiate(final List<PlanFragmentEncoding> fragments,
+      final ConstructArgs args) throws CatalogException {
     /* First, we need to know which workers run on each plan. */
     setupWorkersForFragments(fragments, args);
     /* Next, we need to know which pipes (operators) are produced and consumed on which workers. */
@@ -107,8 +107,8 @@ public class QueryConstruct {
    * @param ftMode the fault tolerance mode under which the query will be executed
    * @param profilingMode how the query should be profiled
    */
-  public static void setQueryExecutionOptions(Map<Integer, SubQueryPlan> plans, final FTMode ftMode,
-      final ProfilingMode profilingMode) {
+  public static void setQueryExecutionOptions(final Map<Integer, SubQueryPlan> plans, final FTMode ftMode,
+      @Nonnull final Set<ProfilingMode> profilingMode) {
     for (SubQueryPlan plan : plans.values()) {
       plan.setFTMode(ftMode);
       plan.setProfilingMode(profilingMode);
@@ -120,7 +120,7 @@ public class QueryConstruct {
    * 
    * @throws CatalogException if there is an error in the Catalog.
    */
-  private static void setupWorkersForFragments(List<PlanFragmentEncoding> fragments, final ConstructArgs args)
+  private static void setupWorkersForFragments(final List<PlanFragmentEncoding> fragments, final ConstructArgs args)
       throws CatalogException {
     Server server = args.getServer();
     for (PlanFragmentEncoding fragment : fragments) {
@@ -195,7 +195,7 @@ public class QueryConstruct {
   /**
    * Loop through all the operators in a plan fragment and connect them up.
    */
-  private static void setupWorkerNetworkOperators(List<PlanFragmentEncoding> fragments) {
+  private static void setupWorkerNetworkOperators(final List<PlanFragmentEncoding> fragments) {
     Map<Integer, Set<Integer>> producerWorkerMap = new HashMap<Integer, Set<Integer>>();
     Map<ExchangePairID, Set<Integer>> consumerWorkerMap = new HashMap<ExchangePairID, Set<Integer>>();
     Map<Integer, List<ExchangePairID>> producerOutputChannels = new HashMap<Integer, List<ExchangePairID>>();

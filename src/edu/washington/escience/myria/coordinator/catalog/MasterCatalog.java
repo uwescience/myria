@@ -1186,7 +1186,14 @@ public final class MasterCatalog {
               statement.bindNull(7);
             }
             statement.bind(8, queryStatus.status.toString());
-            statement.bind(9, queryStatus.profilingMode.toString());
+            String modes = "";
+            for (ProfilingMode mode : queryStatus.profilingMode) {
+              if (!modes.equals("")) {
+                modes += ",";
+              }
+              modes += mode.toString();
+            }
+            statement.bind(9, modes);
             statement.bind(10, queryStatus.ftMode.toString());
             statement.bind(11, queryStatus.language);
             statement.stepThrough();
@@ -1261,7 +1268,13 @@ public final class MasterCatalog {
     }
     queryStatus.status = QueryStatusEncoding.Status.valueOf(statement.columnString(6));
     queryStatus.message = statement.columnString(7);
-    queryStatus.profilingMode = ProfilingMode.valueOf(statement.columnString(8));
+    List<ProfilingMode> modes = new ArrayList<ProfilingMode>();
+    for (String mode : statement.columnString(8).split(",")) {
+      if (!mode.equals("")) {
+        modes.add(ProfilingMode.valueOf(mode));
+      }
+    }
+    queryStatus.profilingMode = ImmutableList.copyOf(modes);
     return queryStatus;
   }
 
@@ -1321,7 +1334,13 @@ public final class MasterCatalog {
     }
     queryStatus.status = QueryStatusEncoding.Status.valueOf(statement.columnString(8));
     queryStatus.message = statement.columnString(9);
-    queryStatus.profilingMode = ProfilingMode.valueOf(statement.columnString(10));
+    List<ProfilingMode> modes = new ArrayList<ProfilingMode>();
+    for (String mode : statement.columnString(10).split(",")) {
+      if (!mode.equals("")) {
+        modes.add(ProfilingMode.valueOf(mode));
+      }
+    }
+    queryStatus.profilingMode = ImmutableList.copyOf(modes);
     queryStatus.ftMode = FTMode.valueOf(statement.columnString(11));
     if (!statement.columnNull(12)) {
       queryStatus.language = statement.columnString(12);

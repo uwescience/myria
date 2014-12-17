@@ -5,6 +5,7 @@ import java.util.Set;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
+import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
@@ -26,8 +27,8 @@ public class QueryEncoding extends MyriaApiEncoding {
   public String logicalRa;
   /** The language. optional. */
   public String language;
-  /** Set whether this query is run in profiling mode. (default is false) */
-  public ProfilingMode profilingMode = ProfilingMode.NONE;
+  /** A list of profiling options that this query is enabled. Default: empty */
+  public List<ProfilingMode> profilingMode = ImmutableList.of();
   /** The fault-tolerance mode used in this query, default: none. */
   public FTMode ftMode = FTMode.NONE;
 

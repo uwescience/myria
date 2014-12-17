@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.Nonnull;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
@@ -41,10 +43,8 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
   /** The relations that are read. */
   private final Set<RelationKey> readSet;
 
-  /**
-   * profilingMode,default:none.
-   */
-  private ProfilingMode profilingMode = ProfilingMode.NONE;
+  /** profilingMode. */
+  private Set<ProfilingMode> profilingMode;
 
   /** Constructor. */
   public SubQueryPlan() {
@@ -146,7 +146,8 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
   /**
    * @return the profiling mode.
    */
-  public ProfilingMode getProfilingMode() {
+  @Nonnull
+  public Set<ProfilingMode> getProfilingMode() {
     return profilingMode;
   }
 
@@ -155,7 +156,7 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
    * 
    * @param profilingMode the profiling mode.
    */
-  public void setProfilingMode(final ProfilingMode profilingMode) {
+  public void setProfilingMode(@Nonnull final Set<ProfilingMode> profilingMode) {
     this.profilingMode = profilingMode;
   }
 
