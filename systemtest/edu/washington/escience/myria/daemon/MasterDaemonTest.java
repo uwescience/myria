@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.daemon;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.util.Collections;
@@ -11,6 +12,7 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import org.apache.mina.util.AvailablePortFinder;
@@ -140,5 +142,33 @@ public class MasterDaemonTest {
         Thread.sleep(100);
       }
     }
+  }
+
+  @Test(timeout = TIMEOUT_MS)
+  public void testNoAdminPasswordCfgFile() throws Exception {
+    File tmpFolder = Files.createTempDir();
+    CatalogMaker.makeNNodesLocalParallelCatalog(tmpFolder.getAbsolutePath(), ImmutableMap
+        .<Integer, SocketInfo> builder().put(MyriaConstants.MASTER_ID, new SocketInfo(8001)).build(), ImmutableMap
+        .<Integer, SocketInfo> builder().put(MyriaConstants.MASTER_ID + 1, new SocketInfo(9001)).put(
+            MyriaConstants.MASTER_ID + 2, new SocketInfo(9002)).build(), Collections.<String, String> emptyMap(),
+        Collections.<String, String> emptyMap());
+
+    MasterDaemon md = new MasterDaemon(tmpFolder.getAbsolutePath(), REST_PORT);
+    md.start();
+    Client client = ClientBuilder.newClient();
+    Invocation.Builder invocation =
+        client.target("http://localhost:" + REST_PORT + "/server/deployment_cfg").request(MediaType.TEXT_PLAIN_TYPE);
+    Response response = invocation.get();
+    assertEquals(Status.OK.getStatusCode(), response.getStatus());
+    String deploymentFile = md.getClusterMaster().getConfiguration(MyriaSystemConfigKeys.DEPLOYMENT_FILE);
+    String respond = response.readEntity(String.class);
+    /*
+     * Tests and cluster deployments have different working directory hierarchies (no description-files). So here we
+     * only compare the suffix. TODO: unify these two.
+     */
+    assertTrue(respond.endsWith(deploymentFile));
+    client.close();
+    md.stop();
+    FSUtils.deleteFileFolder(tmpFolder);
   }
 }
