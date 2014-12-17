@@ -24,7 +24,7 @@ import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.util.DateTimeUtils;
 import edu.washington.escience.myria.util.IPCUtils;
@@ -68,7 +68,7 @@ public class MasterSubQuery extends LocalSubQuery {
             Throwable cause = future.getCause();
             if (!(cause instanceof QueryKilledException)) {
               // Only record non-killed exceptions
-              if (getFTMode().equals(FTMODE.NONE)) {
+              if (getFTMode().equals(FTMode.NONE)) {
                 failedWorkerLocalSubQueries.put(workerID, cause);
                 // if any worker fails because of some exception, kill the query.
                 kill();
@@ -76,10 +76,10 @@ public class MasterSubQuery extends LocalSubQuery {
                 if (cause != null) {
                   message = MoreObjects.firstNonNull(message, "Error in worker#" + workerID + ", " + cause.toString());
                 }
-              } else if (getFTMode().equals(FTMODE.ABANDON)) {
+              } else if (getFTMode().equals(FTMode.ABANDON)) {
                 LOGGER.debug("(Abandon) ignoring failed subquery future on subquery #{}", getSubQueryId());
                 // do nothing
-              } else if (getFTMode().equals(FTMODE.REJOIN)) {
+              } else if (getFTMode().equals(FTMode.REJOIN)) {
                 LOGGER.debug("(Rejoin) ignoring failed subquery future on subquery #{}", getSubQueryId());
                 // do nothing
               }
@@ -310,7 +310,7 @@ public class MasterSubQuery extends LocalSubQuery {
     }
 
     LOGGER.info("Received query complete (fail) message from worker: {}, cause: {}", workerID, cause);
-    if (getFTMode().equals(FTMODE.REJOIN) && cause.toString().endsWith("LostHeartbeatException")) {
+    if (getFTMode().equals(FTMode.REJOIN) && cause.toString().endsWith("LostHeartbeatException")) {
       /* for rejoin, don't set it to be completed since this worker is expected to be launched again. */
       return;
     }

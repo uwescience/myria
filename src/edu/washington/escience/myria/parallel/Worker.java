@@ -30,7 +30,7 @@ import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
@@ -103,11 +103,11 @@ public final class Worker {
                   connectionPool.removeRemote(workerId).await();
                   sendMessageToMaster(IPCUtils.removeWorkerAckTM(workerId));
                   for (WorkerSubQuery wqp : executingSubQueries.values()) {
-                    if (wqp.getFTMode().equals(FTMODE.ABANDON)) {
+                    if (wqp.getFTMode().equals(FTMode.ABANDON)) {
                       wqp.getMissingWorkers().add(workerId);
                       wqp.updateProducerChannels(workerId, false);
                       wqp.triggerFragmentEosEoiChecks();
-                    } else if (wqp.getFTMode().equals(FTMODE.REJOIN)) {
+                    } else if (wqp.getFTMode().equals(FTMode.REJOIN)) {
                       wqp.getMissingWorkers().add(workerId);
                     }
                   }
@@ -187,7 +187,7 @@ public final class Worker {
               q.q.kill();
               break;
             case QUERY_RECOVER:
-              if (q.q.getFTMode().equals(FTMODE.REJOIN)) {
+              if (q.q.getFTMode().equals(FTMode.REJOIN)) {
                 q.q.addRecoveryTasks(q.queryMsg.getWorkerId());
               }
               break;

@@ -11,7 +11,7 @@ import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.KeepAndSortOnMinValue;
 import edu.washington.escience.myria.operator.KeepMinValue;
@@ -345,14 +345,14 @@ public abstract class Producer extends RootOperator {
    * */
   protected final void writePartitionsIntoChannels(final boolean usingTimeout, final int[][] channelIndices,
       final TupleBatch[] partitions) {
-    FTMODE mode = taskResourceManager.getFragment().getLocalSubQuery().getFTMode();
+    FTMode mode = taskResourceManager.getFragment().getLocalSubQuery().getFTMode();
 
     if (totallyLocal) {
       if (partitions != null) {
         for (int i = 0; i < numOfPartition; ++i) {
           if (partitions[i] != null) {
             for (int j : channelIndices[i]) {
-              if (!ioChannelsAvail[j] && mode.equals(FTMODE.ABANDON)) {
+              if (!ioChannelsAvail[j] && mode.equals(FTMode.ABANDON)) {
                 continue;
               }
               pendingTuplesToSend.get(j).add(partitions[i]);
@@ -380,7 +380,7 @@ public abstract class Producer extends RootOperator {
             break;
           }
           for (int j : channelIndices[i]) {
-            if (!ioChannelsAvail[j] && mode.equals(FTMODE.ABANDON)) {
+            if (!ioChannelsAvail[j] && mode.equals(FTMode.ABANDON)) {
               continue;
             }
             pendingTuplesToSend.get(j).add(tb);
@@ -390,7 +390,7 @@ public abstract class Producer extends RootOperator {
     }
 
     for (int i = 0; i < numChannels(); ++i) {
-      if (!ioChannelsAvail[i] && (mode.equals(FTMODE.ABANDON) || mode.equals(FTMODE.REJOIN))) {
+      if (!ioChannelsAvail[i] && (mode.equals(FTMode.ABANDON) || mode.equals(FTMode.REJOIN))) {
         continue;
       }
       while (true) {
@@ -398,7 +398,7 @@ public abstract class Producer extends RootOperator {
         if (tb == null) {
           break;
         }
-        if (mode.equals(FTMODE.REJOIN) && !(this instanceof LocalMultiwayProducer)) {
+        if (mode.equals(FTMode.REJOIN) && !(this instanceof LocalMultiwayProducer)) {
           // rejoin, append the TB into the backup buffer in case of recovering
           tb = triedToSendTuples.get(i).update(tb);
         }
@@ -407,10 +407,10 @@ public abstract class Producer extends RootOperator {
             writeMessage(i, tb);
           }
         } catch (IllegalStateException e) {
-          if (mode.equals(FTMODE.ABANDON)) {
+          if (mode.equals(FTMode.ABANDON)) {
             ioChannelsAvail[i] = false;
             break;
-          } else if (mode.equals(FTMODE.REJOIN)) {
+          } else if (mode.equals(FTMode.REJOIN)) {
             ioChannelsAvail[i] = false;
             break;
           } else {
@@ -551,7 +551,7 @@ public abstract class Producer extends RootOperator {
       setEOI(true);
       child.setEOI(false);
     } else if (child.eos()) {
-      if (taskResourceManager.getFragment().getLocalSubQuery().getFTMode().equals(FTMODE.REJOIN)) {
+      if (taskResourceManager.getFragment().getLocalSubQuery().getFTMode().equals(FTMode.REJOIN)) {
         for (LinkedList<TupleBatch> tbs : pendingTuplesToSend) {
           if (tbs.size() > 0) {
             // due to failure, buffers are not empty, this task needs to be executed again to push these TBs out when

@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
@@ -169,7 +169,7 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     QueryStatusEncoding status = server.getQueryManager().getQueryStatus(queryId);
     assertEquals(QueryStatusEncoding.Status.SUCCESS, status.status);
     assertTrue(status.language.equals("datalog"));
-    assertEquals(status.ftMode, FTMODE.NONE);
+    assertEquals(status.ftMode, FTMode.NONE);
     assertTrue(status.profilingMode.equals(ProfilingMode.NONE));
     assertTrue(status.plan instanceof SubQueryEncoding);
     assertEquals(((SubQueryEncoding) status.plan).fragments.size(), 3);

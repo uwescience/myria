@@ -20,7 +20,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 
 import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
@@ -107,7 +107,7 @@ public class QueryConstruct {
    * @param ftMode the fault tolerance mode under which the query will be executed
    * @param profilingMode how the query should be profiled
    */
-  public static void setQueryExecutionOptions(Map<Integer, SubQueryPlan> plans, final FTMODE ftMode,
+  public static void setQueryExecutionOptions(Map<Integer, SubQueryPlan> plans, final FTMode ftMode,
       final ProfilingMode profilingMode) {
     for (SubQueryPlan plan : plans.values()) {
       plan.setFTMode(ftMode);

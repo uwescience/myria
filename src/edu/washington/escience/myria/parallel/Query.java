@@ -19,7 +19,7 @@ import com.google.common.base.Verify;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
@@ -68,9 +68,9 @@ public final class Query {
   /** The future for this query. */
   private final QueryFuture future;
   /** True if the query should be run with profiling enabled. */
-  private final ProfilingMode profiling;
+  private final Set<ProfilingMode> profiling;
   /** Indicates whether the query should be run with a particular fault tolerance mode. */
-  private final FTMODE ftMode;
+  private final FTMode ftMode;
   /** Global variables that are part of this query. */
   private final ConcurrentHashMap<String, Object> globals;
   /** Temporary relations created during the execution of this query. */
@@ -90,7 +90,7 @@ public final class Query {
     Preconditions.checkNotNull(query, "query");
     this.server = Preconditions.checkNotNull(server, "server");
     profiling = MoreObjects.firstNonNull(query.profilingMode, ProfilingMode.NONE);
-    ftMode = MoreObjects.firstNonNull(query.ftMode, FTMODE.NONE);
+    ftMode = MoreObjects.firstNonNull(query.ftMode, FTMode.NONE);
     this.queryId = queryId;
     subqueryId = 0;
     synchronized (this) {
@@ -322,7 +322,7 @@ public final class Query {
   /**
    * @return the fault tolerance mode for this query.
    */
-  protected FTMODE getFtMode() {
+  protected FTMode getFTMode() {
     return ftMode;
   }
 

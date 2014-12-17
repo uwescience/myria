@@ -16,7 +16,7 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListenableFuture;
 
-import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
@@ -260,9 +260,9 @@ public class ConnectedComponentTest extends SystemTestBase {
     if (!failure) {
       server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans, null).get();
     } else {
-      workerPlans.get(workerIDs[0]).setFTMode(FTMODE.REJOIN);
-      workerPlans.get(workerIDs[1]).setFTMode(FTMODE.REJOIN);
-      serverPlan.setFTMode(FTMODE.REJOIN);
+      workerPlans.get(workerIDs[0]).setFTMode(FTMode.REJOIN);
+      workerPlans.get(workerIDs[1]).setFTMode(FTMode.REJOIN);
+      serverPlan.setFTMode(FTMode.REJOIN);
 
       ListenableFuture<Query> qf =
           server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans, ProfilingMode.NONE);

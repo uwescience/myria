@@ -2,7 +2,7 @@ package edu.washington.escience.myria.parallel;
 
 import java.util.Set;
 
-import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 
 /**
@@ -20,7 +20,7 @@ public abstract class LocalSubQuery implements Comparable<LocalSubQuery> {
   /**
    * The fault tolerance mode.
    */
-  private final FTMODE ftMode;
+  private final FTMode ftMode;
 
   /**
    * Priority, currently not used.
@@ -32,7 +32,7 @@ public abstract class LocalSubQuery implements Comparable<LocalSubQuery> {
    * 
    * @return the ft mode.
    */
-  public final FTMODE getFTMode() {
+  public final FTMode getFTMode() {
     return ftMode;
   }
 
@@ -48,7 +48,7 @@ public abstract class LocalSubQuery implements Comparable<LocalSubQuery> {
    * @param ftMode the fault-tolerance mode of this subquery.
    * @param profilingMode the profiling mode of this subquery.
    */
-  public LocalSubQuery(final SubQueryId subQueryId, final FTMODE ftMode, final ProfilingMode profilingMode) {
+  public LocalSubQuery(final SubQueryId subQueryId, final FTMode ftMode, final ProfilingMode profilingMode) {
     this.subQueryId = subQueryId;
     this.ftMode = ftMode;
     this.profilingMode = profilingMode;

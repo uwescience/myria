@@ -24,7 +24,7 @@ import com.google.common.collect.Maps;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.api.encoding.QueryConstruct;
@@ -595,11 +595,11 @@ public class QueryManager {
         mqp.workerFail(workerId, new LostHeartbeatException());
       }
 
-      if (mqp.getFTMode().equals(FTMODE.ABANDON)) {
+      if (mqp.getFTMode().equals(FTMode.ABANDON)) {
         mqp.getMissingWorkers().add(workerId);
         mqp.updateProducerChannels(workerId, false);
         mqp.triggerFragmentEosEoiChecks();
-      } else if (mqp.getFTMode().equals(FTMODE.REJOIN)) {
+      } else if (mqp.getFTMode().equals(FTMode.REJOIN)) {
         mqp.getMissingWorkers().add(workerId);
         mqp.updateProducerChannels(workerId, false);
       }
@@ -615,7 +615,7 @@ public class QueryManager {
    */
   protected void workerRestarted(final int workerId, final Set<Integer> workersAcked) {
     for (MasterSubQuery mqp : executingSubQueries.values()) {
-      if (mqp.getFTMode().equals(FTMODE.REJOIN) && mqp.getMissingWorkers().contains(workerId)
+      if (mqp.getFTMode().equals(FTMode.REJOIN) && mqp.getMissingWorkers().contains(workerId)
           && workersAcked.containsAll(mqp.getWorkerAssigned())) {
         /* so a following ADD_WORKER_ACK won't cause queryMessage to be sent again */
         mqp.getMissingWorkers().remove(workerId);

@@ -19,7 +19,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -438,8 +438,8 @@ public class FTModeTest extends SystemTestBase {
     HashMap<Integer, SubQueryPlan> workerPlans = new HashMap<Integer, SubQueryPlan>();
     workerPlans.put(workerIDs[0], new SubQueryPlan());
     workerPlans.put(workerIDs[1], new SubQueryPlan());
-    workerPlans.get(workerIDs[0]).setFTMode(FTMODE.ABANDON);
-    workerPlans.get(workerIDs[1]).setFTMode(FTMODE.ABANDON);
+    workerPlans.get(workerIDs[0]).setFTMode(FTMode.ABANDON);
+    workerPlans.get(workerIDs[1]).setFTMode(FTMode.ABANDON);
     for (int i = 0; i < workerPlan.get(0).size(); ++i) {
       workerPlans.get(workerIDs[0]).addRootOp(workerPlan.get(0).get(i));
     }
@@ -451,7 +451,7 @@ public class FTModeTest extends SystemTestBase {
     final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
     SubQueryPlan serverPlan = new SubQueryPlan(new SinkRoot(queueStore));
-    serverPlan.setFTMode(FTMODE.ABANDON);
+    serverPlan.setFTMode(FTMode.ABANDON);
 
     ListenableFuture<Query> qf = server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans, null);
     Thread.sleep(2000);
@@ -544,8 +544,8 @@ public class FTModeTest extends SystemTestBase {
     HashMap<Integer, SubQueryPlan> workerPlans = new HashMap<Integer, SubQueryPlan>();
     workerPlans.put(workerIDs[0], new SubQueryPlan());
     workerPlans.put(workerIDs[1], new SubQueryPlan());
-    workerPlans.get(workerIDs[0]).setFTMode(FTMODE.REJOIN);
-    workerPlans.get(workerIDs[1]).setFTMode(FTMODE.REJOIN);
+    workerPlans.get(workerIDs[0]).setFTMode(FTMode.REJOIN);
+    workerPlans.get(workerIDs[1]).setFTMode(FTMode.REJOIN);
     for (int i = 0; i < workerPlan.get(0).size(); ++i) {
       workerPlans.get(workerIDs[0]).addRootOp(workerPlan.get(0).get(i));
     }
@@ -554,7 +554,7 @@ public class FTModeTest extends SystemTestBase {
     }
 
     SubQueryPlan serverPlan = new SubQueryPlan(new SinkRoot(new EOSSource()));
-    serverPlan.setFTMode(FTMODE.REJOIN);
+    serverPlan.setFTMode(FTMode.REJOIN);
     ListenableFuture<Query> qf = server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans, null);
     Thread.sleep(3000);
     /* kill the one without EOSController */

@@ -11,7 +11,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
-import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.operator.DbReader;
@@ -34,7 +34,7 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
   private final List<RootOperator> rootOps;
 
   /** FT mode, default: NONE. */
-  private FTMODE ftMode = FTMODE.NONE;
+  private FTMode ftMode = FTMode.NONE;
 
   /** The relations that are written, along with their schemas. */
   private final Map<RelationKey, RelationWriteMetadata> writeSet;
@@ -130,7 +130,7 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
    * 
    * @param ftMode the mode.
    */
-  public void setFTMode(final FTMODE ftMode) {
+  public void setFTMode(final FTMode ftMode) {
     this.ftMode = ftMode;
   }
 
@@ -139,7 +139,7 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
    * 
    * @return the ft mode.
    */
-  public FTMODE getFTMode() {
+  public FTMode getFTMode() {
     return ftMode;
   }
 
