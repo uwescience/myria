@@ -8,15 +8,14 @@ import java.util.List;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
-import org.hsqldb.util.CSVWriter;
 
 import edu.washington.escience.myria.storage.ReadableTable;
 
 /**
  * CsvTupleWriter is a {@link TupleWriter} that serializes tuples to a delimited file, usually a CSV. It uses a
- * {@link CSVWriter} to do the underlying serialization. The fields to be output may contain special characters such as
- * newlines, because every field is quoted (using double quotes '"'). Double quotation marks inside of fields are
- * escaped using the CSV-standard trick of replacing '"' with '""'.
+ * {@link CSVPrinter} to do the underlying serialization. The fields to be output may contain special characters such as
+ * newlines, because fields may be quoted (using double quotes '"'). Double quotation marks inside of fields are escaped
+ * using the CSV-standard trick of replacing '"' with '""'.
  * 
  * CSV files should be compatible with Microsoft Excel.
  * 

@@ -3,8 +3,7 @@ package edu.washington.escience.myria.accessmethod;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
+import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -27,9 +26,9 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myria.CsvTupleWriter;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.PostgresBinaryTupleWriter;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleWriter;
@@ -121,14 +120,13 @@ public final class JdbcAccessMethod extends AccessMethod {
       CopyManager cpManager = ((PGConnection) jdbcConnection).getCopyAPI();
 
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      TupleWriter tw = new CsvTupleWriter(',', baos);
+      TupleWriter tw = new PostgresBinaryTupleWriter(baos);
       tw.writeTuples(tupleBatch);
       tw.done();
 
-      Reader reader = new InputStreamReader(new ByteArrayInputStream(baos.toByteArray()));
+      InputStream reader = new ByteArrayInputStream(baos.toByteArray());
       StringBuilder copyString =
-          new StringBuilder().append("COPY ").append(quote(relationKey)).append(" FROM STDIN WITH CSV");
-      copyString.append(" FORCE NOT NULL ").append(Joiner.on(',').join(quotedColumnNames(schema)));
+          new StringBuilder().append("COPY ").append(quote(relationKey)).append(" FROM STDIN WITH BINARY");
       long inserted = cpManager.copyIn(copyString.toString(), reader);
       Preconditions.checkState(inserted == tupleBatch.numTuples(),
           "Error: inserted a batch of size %s but only actually inserted %s rows", tupleBatch.numTuples(), inserted);
