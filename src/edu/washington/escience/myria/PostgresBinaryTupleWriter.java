@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.joda.time.DateTime;
-import org.postgresql.jdbc2.TimestampUtils;
 
 import edu.washington.escience.myria.storage.ReadableTable;
 
@@ -16,25 +15,20 @@ import edu.washington.escience.myria.storage.ReadableTable;
  * PostgresBinaryTupleWriter is a {@link TupleWriter} that serializes tuples to a a binary format that can be directly
  * imported into PostgreSQL. See http://www.postgresql.org/docs/current/interactive/sql-copy.html.
  * 
+ * This requires integer time stamps.
  */
 public class PostgresBinaryTupleWriter implements TupleWriter {
 
   /** The ByteBuffer to write the output. */
   private final DataOutputStream buffer;
 
-  /** Timstamp utils. */
-  private final TimestampUtils timestampUtils;
-
   /**
    * Constructs a {@link PostgresBinaryTupleWriter} object.
    * 
    * @param out the {@link OutputStream} to which the data will be written.
-   * @param timestampUtils the postgres jdbc timestamp util
    * @throws IOException if there is an IO exception
    */
-  public PostgresBinaryTupleWriter(final OutputStream out, final TimestampUtils timestampUtils) throws IOException {
-    this.timestampUtils = timestampUtils;
-
+  public PostgresBinaryTupleWriter(final OutputStream out) throws IOException {
     buffer = new DataOutputStream(new BufferedOutputStream(out));
     // 11 bytes required header
     buffer.writeBytes("PGCOPY\n\377\r\n\0");
@@ -96,6 +90,7 @@ public class PostgresBinaryTupleWriter implements TupleWriter {
         switch (columnTypes.get(j)) {
           case BOOLEAN_TYPE:
             // https://github.com/postgres/postgres/blob/master/src/backend/utils/adt/bool.c
+
             buffer.writeInt(1);
             if (tuples.getBoolean(j, i)) {
               buffer.writeByte(1);
@@ -105,34 +100,40 @@ public class PostgresBinaryTupleWriter implements TupleWriter {
             break;
           case DOUBLE_TYPE:
             // https://github.com/postgres/postgres/blob/master/src/backend/utils/adt/float.c
+
             buffer.writeInt(8);
             buffer.writeDouble(tuples.getDouble(j, i));
             break;
           case FLOAT_TYPE:
             // https://github.com/postgres/postgres/blob/master/src/backend/utils/adt/float.c
+
             buffer.writeInt(4);
             buffer.writeFloat(tuples.getFloat(j, i));
             break;
           case INT_TYPE:
             // https://github.com/postgres/postgres/blob/master/src/backend/utils/adt/int.c
+
             buffer.writeInt(4);
             buffer.writeInt(tuples.getInt(j, i));
             break;
           case LONG_TYPE:
             // https://github.com/postgres/postgres/blob/master/src/backend/utils/adt/int8.c
+
             buffer.writeInt(8);
             buffer.writeLong(tuples.getLong(j, i));
             break;
           case DATETIME_TYPE:
-            // requires eight-byte integers for time stamps.
-            // See http://www.postgresql.org/docs/9.1/static/datatype-datetime.html
             // https://github.com/postgres/postgres/blob/master/src/backend/utils/adt/timestamp.c
+
+            // requires eight-byte integers for time stamps! This should be the default.
+            // See http://www.postgresql.org/docs/9.1/static/datatype-datetime.html
+
             buffer.writeInt(8);
 
             DateTime theTime = tuples.getDateTime(j, i);
             long millis = theTime.getMillis();
 
-            // adjust timezone offset
+            // adjust time zone offset
             millis += theTime.getZone().getOffset(millis);
 
             // pg time 0 is 2000-01-01 00:00:00
@@ -142,6 +143,7 @@ public class PostgresBinaryTupleWriter implements TupleWriter {
             break;
           case STRING_TYPE:
             // https://github.com/postgres/postgres/blob/master/src/backend/utils/adt/varchar.c
+
             String string = tuples.getString(j, i);
             final byte[] utf8Bytes = string.getBytes("UTF-8");
             buffer.writeInt(utf8Bytes.length);

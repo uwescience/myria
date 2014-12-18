@@ -19,8 +19,6 @@ import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyManager;
-import org.postgresql.core.BaseConnection;
-import org.postgresql.jdbc2.TimestampUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -120,10 +118,9 @@ public final class JdbcAccessMethod extends AccessMethod {
     // Use the postgres COPY command which is much faster
     try {
       CopyManager cpManager = ((PGConnection) jdbcConnection).getCopyAPI();
-      TimestampUtils timestampUtils = ((BaseConnection) jdbcConnection).getTimestampUtils();
 
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      TupleWriter tw = new PostgresBinaryTupleWriter(baos, timestampUtils);
+      TupleWriter tw = new PostgresBinaryTupleWriter(baos);
       tw.writeTuples(tupleBatch);
       tw.done();
 

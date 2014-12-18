@@ -10,7 +10,6 @@ import java.nio.file.Paths;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.joda.time.DateTime;
 import org.junit.Test;
-import org.postgresql.jdbc2.TimestampUtils;
 
 import com.google.common.collect.ImmutableList;
 
@@ -22,8 +21,7 @@ public class PostgresBinaryTupleWriterTest {
   public void testBinaryOutput() throws IOException {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-    TimestampUtils timestampUtils = null;
-    PostgresBinaryTupleWriter writer = new PostgresBinaryTupleWriter(out, timestampUtils);
+    PostgresBinaryTupleWriter writer = new PostgresBinaryTupleWriter(out);
 
     TupleBuffer tuples =
         new TupleBuffer(new Schema(ImmutableList.of(Type.BOOLEAN_TYPE, Type.INT_TYPE, Type.LONG_TYPE, Type.FLOAT_TYPE,
