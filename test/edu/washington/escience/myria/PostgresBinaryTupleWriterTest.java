@@ -56,9 +56,6 @@ public class PostgresBinaryTupleWriterTest {
 
     byte[] actual = out.toByteArray();
 
-    Path path = Paths.get("/private/tmp/pg2.bin");
-    Files.write(path, actual);
-
     /*
      * // generate file:
      * 
