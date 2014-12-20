@@ -1422,7 +1422,7 @@ public final class Server {
 
     /* Submit the plan for the download. */
     String planString =
-        Joiner.on('\0').join("download profiling data (query=", queryId, ", fragment=", fragmentId, ", range=[",
+        Joiner.on("").join("download profiling data (query=", queryId, ", fragment=", fragmentId, ", range=[",
             Joiner.on(", ").join(start, end), "]", ")");
     try {
       return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
@@ -1526,7 +1526,7 @@ public final class Server {
 
     /* Submit the plan for the download. */
     String planString =
-        Joiner.on('\0').join("download profiling histogram (query=", queryId, ", fragment=", fragmentId, ", range=[",
+        Joiner.on("").join("download profiling histogram (query=", queryId, ", fragment=", fragmentId, ", range=[",
             Joiner.on(", ").join(start, end, step), "]", ")");
     try {
       return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
@@ -1579,7 +1579,7 @@ public final class Server {
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
     /* Submit the plan for the download. */
-    String planString = Joiner.on('\0').join("download time range (query=", queryId, ", fragment=", fragmentId, ")");
+    String planString = Joiner.on("").join("download time range (query=", queryId, ", fragment=", fragmentId, ")");
     try {
       return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
     } catch (CatalogException e) {
@@ -1643,7 +1643,7 @@ public final class Server {
 
     /* Submit the plan for the download. */
     String planString =
-        Joiner.on('\0').join("download operator contributions (query=", queryId, ", fragment=", fragmentId, ")");
+        Joiner.on("").join("download operator contributions (query=", queryId, ", fragment=", fragmentId, ")");
     try {
       return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
     } catch (CatalogException e) {
