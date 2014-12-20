@@ -90,9 +90,7 @@ public class ProfilingLogger {
   protected void createSentIndex() throws DbException {
     final Schema schema = MyriaConstants.SENT_SCHEMA;
 
-    List<IndexRef> index =
-        ImmutableList.of(IndexRef.of(schema, "queryId"), IndexRef.of(schema, "fragmentId"), IndexRef.of(schema,
-            "nanoTime"));
+    List<IndexRef> index = ImmutableList.of(IndexRef.of(schema, "queryId"), IndexRef.of(schema, "fragmentId"));
     try {
       accessMethod.createIndexIfNotExists(MyriaConstants.SENT_RELATION, schema, index);
     } catch (DbException e) {
