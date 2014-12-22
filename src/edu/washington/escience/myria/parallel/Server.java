@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.PipedOutputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -41,8 +42,10 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import edu.washington.escience.myria.CsvTupleWriter;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
@@ -87,6 +90,7 @@ import edu.washington.escience.myria.proto.QueryProto.QueryReport;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.TupleBuffer;
 import edu.washington.escience.myria.tool.MyriaConfigurationReader;
 import edu.washington.escience.myria.util.DeploymentUtils;
 import edu.washington.escience.myria.util.IPCUtils;
@@ -123,11 +127,13 @@ public final class Server {
 
           final TransportMessage m = mw.getPayload();
           final int senderID = mw.getRemoteID();
-
           switch (m.getType()) {
             case CONTROL:
               final ControlMessage controlM = m.getControlMessage();
               switch (controlM.getType()) {
+                case RESOURCE_STATS:
+                  queryManager.updateResourceStats(senderID, controlM);
+                  break;
                 case WORKER_HEARTBEAT:
                   LOGGER.trace("getting heartbeat from worker {}", senderID);
                   updateHeartbeat(senderID);
@@ -808,11 +814,19 @@ public final class Server {
     messageProcessingExecutor.submit(new MessageProcessor());
     LOGGER.info("Server started on {}", masterSocketInfo);
 
+    final Set<Integer> workerIds = workers.keySet();
     if (getSchema(MyriaConstants.PROFILING_RELATION) == null
         && getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
-      final Set<Integer> workerIds = workers.keySet();
       importDataset(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA, workerIds);
+    }
+
+    if (getSchema(MyriaConstants.SENT_RELATION) == null && getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
       importDataset(MyriaConstants.SENT_RELATION, MyriaConstants.SENT_SCHEMA, workerIds);
+    }
+
+    if (getSchema(MyriaConstants.RESOURCE_RELATION) == null
+        && getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
+      importDataset(MyriaConstants.RESOURCE_RELATION, MyriaConstants.RESOURCE_SCHEMA, workerIds);
     }
   }
 
@@ -841,7 +855,7 @@ public final class Server {
       workerPlans.put(entry.getKey(), new SubQueryPlan(entry.getValue()));
     }
     return queryManager.submitQuery(catalogInfoPlaceHolder, catalogInfoPlaceHolder, catalogInfoPlaceHolder,
-        new SubQueryPlan(masterRoot), workerPlans, false);
+        new SubQueryPlan(masterRoot), workerPlans);
   }
 
   /**
@@ -866,6 +880,17 @@ public final class Server {
     List<Integer> workerList = new ArrayList<>(aliveWorkers.keySet());
     Collections.shuffle(workerList);
     return ImmutableSet.copyOf(workerList.subList(0, number));
+  }
+
+  /**
+   * @return the set of workers that are currently alive with the time that the last heartbeats were received.
+   */
+  public Map<Integer, Long> getAliveWorkersWithLastHeartbeat() {
+    Map<Integer, Long> ret = new HashMap<Integer, Long>();
+    ret.putAll(aliveWorkers);
+    // add the current master time too
+    ret.put(MyriaConstants.MASTER_ID, System.currentTimeMillis());
+    return ret;
   }
 
   /**
@@ -915,7 +940,7 @@ public final class Server {
     try {
       qf =
           queryManager.submitQuery("ingest " + relationKey.toString(), "ingest " + relationKey.toString(), "ingest "
-              + relationKey.toString(getDBMS()), new SubQueryPlan(scatter), workerPlans, false);
+              + relationKey.toString(getDBMS()), new SubQueryPlan(scatter), workerPlans);
     } catch (CatalogException e) {
       throw new DbException("Error submitting query", e);
     }
@@ -951,7 +976,7 @@ public final class Server {
       }
       ListenableFuture<Query> qf =
           queryManager.submitQuery("import " + relationKey.toString(), "import " + relationKey.toString(), "import "
-              + relationKey.toString(getDBMS()), new SubQueryPlan(new SinkRoot(new EOSSource())), workerPlans, false);
+              + relationKey.toString(getDBMS()), new SubQueryPlan(new SinkRoot(new EOSSource())), workerPlans);
       Query queryState;
       try {
         queryState = qf.get();
@@ -1162,7 +1187,7 @@ public final class Server {
     /* Submit the plan for the download. */
     String planString = "download " + relationKey.toString();
     try {
-      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1213,7 +1238,7 @@ public final class Server {
     /* Submit the plan for the download. */
     String planString = "download test";
     try {
-      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1289,7 +1314,7 @@ public final class Server {
     String planString =
         Joiner.on("").join("download profiling sent data for (query=", queryId, ", fragment=", fragmentId, ")");
     try {
-      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1352,7 +1377,7 @@ public final class Server {
     /* Submit the plan for the download. */
     String planString = Joiner.on("").join("download profiling aggregated sent data for (query=", queryId, ")");
     try {
-      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1435,7 +1460,7 @@ public final class Server {
         Joiner.on("").join("download profiling data (query=", queryId, ", fragment=", fragmentId, ", range=[",
             Joiner.on(", ").join(start, end), "]", ")");
     try {
-      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1539,7 +1564,7 @@ public final class Server {
         Joiner.on("").join("download profiling histogram (query=", queryId, ", fragment=", fragmentId, ", range=[",
             Joiner.on(", ").join(start, end, step), "]", ")");
     try {
-      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1591,7 +1616,7 @@ public final class Server {
     /* Submit the plan for the download. */
     String planString = Joiner.on("").join("download time range (query=", queryId, ", fragment=", fragmentId, ")");
     try {
-      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1655,7 +1680,7 @@ public final class Server {
     String planString =
         Joiner.on("").join("download operator contributions (query=", queryId, ", fragment=", fragmentId, ")");
     try {
-      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1680,7 +1705,8 @@ public final class Server {
     Preconditions.checkArgument(queryStatus != null, "query %s not found", queryId);
     Preconditions.checkArgument(queryStatus.status == QueryStatusEncoding.Status.SUCCESS,
         "query %s did not succeed (%s)", queryId, queryStatus.status);
-    Preconditions.checkArgument(queryStatus.profilingMode, "query %s was not run with profiling enabled", queryId);
+    Preconditions.checkArgument(queryStatus.profilingMode.contains(ProfilingMode.QUERY),
+        "query %s was not run with profiling mode QUERY enabled", queryId);
     return queryStatus;
   }
 
@@ -1734,5 +1760,80 @@ public final class Server {
    */
   public Schema getTempSchema(@Nonnull final Long queryId, @Nonnull final String name) {
     return queryManager.getQuery(queryId).getTempSchema(RelationKey.ofTemp(queryId, name));
+  }
+
+  /**
+   * @param queryId the query id to fetch
+   * @param writerOutput the output stream to write results to.
+   * @throws DbException if there is an error in the database.
+   */
+  public void getResourceUsage(final long queryId, final PipedOutputStream writerOutput) throws DbException {
+    Schema schema = Schema.appendColumn(MyriaConstants.RESOURCE_SCHEMA, Type.INT_TYPE, "workerId");
+    try {
+      TupleWriter writer = new CsvTupleWriter(writerOutput);
+      TupleBuffer tb = queryManager.getResourceUsage(queryId);
+      if (tb != null) {
+        writer.writeColumnHeaders(schema.getColumnNames());
+        writer.writeTuples(tb);
+        writer.done();
+        return;
+      }
+      getResourceLog(queryId, writer);
+    } catch (IOException e) {
+      throw new DbException(e);
+    }
+  }
+
+  /**
+   * @param queryId query id.
+   * @param writer writer to get data.
+   * @return resource logs for the query.
+   * @throws DbException if there is an error when accessing profiling logs.
+   */
+  public ListenableFuture<Query> getResourceLog(final long queryId, final TupleWriter writer) throws DbException {
+    final QueryStatusEncoding queryStatus;
+    try {
+      queryStatus = catalog.getQuery(queryId);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+    Preconditions.checkArgument(queryStatus != null, "query %s not found", queryId);
+
+    Set<Integer> actualWorkers = queryStatus.plan.getWorkers();
+
+    final Schema schema = MyriaConstants.RESOURCE_SCHEMA;
+    String resourceQueryString =
+        Joiner.on(' ').join("SELECT * from", MyriaConstants.RESOURCE_RELATION.toString(getDBMS()),
+            "WHERE \"queryId\" =", queryId);
+    DbQueryScan scan = new DbQueryScan(resourceQueryString, schema);
+
+    ImmutableList.Builder<Expression> emitExpressions = ImmutableList.builder();
+    for (int column = 0; column < schema.numColumns(); column++) {
+      VariableExpression copy = new VariableExpression(column);
+      emitExpressions.add(new Expression(schema.getColumnName(column), copy));
+    }
+    emitExpressions.add(new Expression("workerId", new WorkerIdExpression()));
+    Apply addWorkerId = new Apply(scan, emitExpressions.build());
+
+    final ExchangePairID operatorId = ExchangePairID.newID();
+    CollectProducer producer = new CollectProducer(addWorkerId, operatorId, MyriaConstants.MASTER_ID);
+    SubQueryPlan workerPlan = new SubQueryPlan(producer);
+    Map<Integer, SubQueryPlan> workerPlans = new HashMap<>(actualWorkers.size());
+    for (Integer worker : actualWorkers) {
+      workerPlans.put(worker, workerPlan);
+    }
+    final CollectConsumer consumer =
+        new CollectConsumer(addWorkerId.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
+
+    DataOutput output = new DataOutput(consumer, writer);
+    final SubQueryPlan masterPlan = new SubQueryPlan(output);
+
+    /* Submit the plan for the download. */
+    String planString = Joiner.on("").join("download resource log for (query=", queryId, ")");
+    try {
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
   }
 }

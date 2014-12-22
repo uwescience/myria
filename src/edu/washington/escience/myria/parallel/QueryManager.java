@@ -14,7 +14,6 @@ import javax.annotation.concurrent.GuardedBy;
 
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableList;
@@ -22,7 +21,7 @@ import com.google.common.collect.Maps;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.api.encoding.QueryConstruct;
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
@@ -30,6 +29,9 @@ import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
+import edu.washington.escience.myria.proto.ControlProto;
+import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
+import edu.washington.escience.myria.storage.TupleBuffer;
 import edu.washington.escience.myria.util.DateTimeUtils;
 import edu.washington.escience.myria.util.IPCUtils;
 
@@ -82,6 +84,18 @@ public class QueryManager {
    */
   public boolean queryCompleted(final long queryId) {
     return !runningQueries.containsKey(queryId);
+  }
+
+  /**
+   * update resource stats from messgaes.
+   * 
+   * @param senderId the sender worer id.
+   * @param m the message.
+   */
+  public void updateResourceStats(final int senderId, final ControlMessage m) {
+    for (ControlProto.ResourceStats stats : m.getResourceStatsList()) {
+      runningQueries.get(stats.getQueryId()).addResourceStats(senderId, ResourceStats.fromProtobuf(stats));
+    }
   }
 
   /**
@@ -393,6 +407,18 @@ public class QueryManager {
   }
 
   /**
+   * @param queryId the query id to fetch
+   * @return resource usage stats in a tuple buffer or null if the query is not running.
+   */
+  public TupleBuffer getResourceUsage(final long queryId) {
+    Query q = runningQueries.get(queryId);
+    if (q == null) {
+      return null;
+    }
+    return q.getResourceUsage();
+  }
+
+  /**
    * @param mqp the master query
    * @return the query dispatch {@link LocalSubQueryFuture}.
    * @throws DbException if any error occurs.
@@ -453,7 +479,7 @@ public class QueryManager {
     if (!canSubmitQuery()) {
       throw new DbException("Cannot submit query");
     }
-    if (query.profilingMode) {
+    if (query.profilingMode.size() > 0) {
       if (!(plan instanceof SubQuery || plan instanceof JsonSubQuery)) {
         throw new DbException("Profiling mode is not supported for plans (" + plan.getClass().getSimpleName()
             + ") that may contain multiple subqueries.");
@@ -509,9 +535,8 @@ public class QueryManager {
    * @return the query future from which the query status can be looked up.
    */
   public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final String physicalPlan,
-      final SubQueryPlan masterPlan, final Map<Integer, SubQueryPlan> workerPlans, @Nullable final Boolean profilingMode)
-      throws DbException, CatalogException {
-    return submitQuery(rawQuery, logicalRa, physicalPlan, new SubQuery(masterPlan, workerPlans), profilingMode);
+      final SubQueryPlan masterPlan, final Map<Integer, SubQueryPlan> workerPlans) throws DbException, CatalogException {
+    return submitQuery(rawQuery, logicalRa, physicalPlan, new SubQuery(masterPlan, workerPlans));
   }
 
   /**
@@ -522,18 +547,16 @@ public class QueryManager {
    * @param logicalRa the logical relational algebra of the compiled plan.
    * @param physicalPlan the Myria physical plan for the query.
    * @param plan the query plan.
-   * @param profilingMode is the profiling mode of the query on.
    * @throws DbException if any error in non-catalog data processing
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
    */
   public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final String physicalPlan,
-      final QueryPlan plan, @Nullable final Boolean profilingMode) throws DbException, CatalogException {
+      final QueryPlan plan) throws DbException, CatalogException {
     QueryEncoding query = new QueryEncoding();
     query.rawQuery = rawQuery;
     query.logicalRa = rawQuery;
     query.fragments = ImmutableList.of();
-    query.profilingMode = MoreObjects.firstNonNull(profilingMode, false);
     return submitQuery(query, plan);
   }
 
@@ -565,11 +588,11 @@ public class QueryManager {
         mqp.workerFail(workerId, new LostHeartbeatException());
       }
 
-      if (mqp.getFTMode().equals(FTMODE.ABANDON)) {
+      if (mqp.getFTMode().equals(FTMode.ABANDON)) {
         mqp.getMissingWorkers().add(workerId);
         mqp.updateProducerChannels(workerId, false);
         mqp.triggerFragmentEosEoiChecks();
-      } else if (mqp.getFTMode().equals(FTMODE.REJOIN)) {
+      } else if (mqp.getFTMode().equals(FTMode.REJOIN)) {
         mqp.getMissingWorkers().add(workerId);
         mqp.updateProducerChannels(workerId, false);
       }
@@ -585,7 +608,7 @@ public class QueryManager {
    */
   protected void workerRestarted(final int workerId, final Set<Integer> workersAcked) {
     for (MasterSubQuery mqp : executingSubQueries.values()) {
-      if (mqp.getFTMode().equals(FTMODE.REJOIN) && mqp.getMissingWorkers().contains(workerId)
+      if (mqp.getFTMode().equals(FTMode.REJOIN) && mqp.getMissingWorkers().contains(workerId)
           && workersAcked.containsAll(mqp.getWorkerAssigned())) {
         /* so a following ADD_WORKER_ACK won't cause queryMessage to be sent again */
         mqp.getMissingWorkers().remove(workerId);
