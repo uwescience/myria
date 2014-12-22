@@ -191,7 +191,7 @@ public final class Query {
 
       QueryConstruct.setQueryExecutionOptions(currentSubQuery.getWorkerPlans(), ftMode, profilingMode);
       currentSubQuery.getMasterPlan().setFTMode(ftMode);
-      currentSubQuery.getMasterPlan().setProfilingMode(profilingMode);
+      currentSubQuery.getMasterPlan().setProfilingMode(ImmutableSet.<ProfilingMode> of());
       ++subqueryId;
       if (subqueryId >= MyriaConstants.MAXIMUM_NUM_SUBQUERIES) {
         throw new DbException("Infinite-loop safeguard: quitting after " + MyriaConstants.MAXIMUM_NUM_SUBQUERIES
