@@ -1178,13 +1178,7 @@ public final class MasterCatalog {
               statement.bindNull(7);
             }
             statement.bind(8, queryStatus.status.toString());
-            String modes = "";
-            for (ProfilingMode mode : queryStatus.profilingMode) {
-              if (!modes.equals("")) {
-                modes += ",";
-              }
-              modes += mode.toString();
-            }
+            String modes = Joiner.on(',').join(queryStatus.profilingMode);
             statement.bind(9, modes);
             statement.bind(10, queryStatus.ftMode.toString());
             statement.bind(11, queryStatus.language);
