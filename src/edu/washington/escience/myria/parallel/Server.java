@@ -58,6 +58,7 @@ import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.CatalogMaker;
 import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
 import edu.washington.escience.myria.expression.Expression;
+import edu.washington.escience.myria.expression.MinusExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.expression.WorkerIdExpression;
 import edu.washington.escience.myria.operator.Apply;
@@ -1331,12 +1332,17 @@ public final class Server {
 
     Set<Integer> actualWorkers = queryStatus.plan.getWorkers();
 
-    final Schema schema = Schema.ofFields("fragmentId", Type.INT_TYPE, "numTuples", Type.LONG_TYPE);
+    final Schema schema =
+        Schema.ofFields("fragmentId", Type.INT_TYPE, "numTuples", Type.LONG_TYPE, "minTime", Type.LONG_TYPE, "maxTime",
+            Type.LONG_TYPE);
 
     String sentQueryString =
-        Joiner.on(' ').join("SELECT \"fragmentId\", sum(\"numTuples\") as \"numTuples\" FROM",
-            MyriaConstants.SENT_RELATION.toString(getDBMS()), "WHERE \"queryId\" =", queryId,
-            "GROUP BY \"queryId\", \"fragmentId\"");
+        Joiner
+            .on(' ')
+            .join(
+                "SELECT \"fragmentId\", sum(\"numTuples\") as \"numTuples\", min(\"nanoTime\") as \"minTime\", max(\"nanoTime\") as \"maxTime\" FROM",
+                MyriaConstants.SENT_RELATION.toString(getDBMS()), "WHERE \"queryId\" =", queryId,
+                "GROUP BY \"queryId\", \"fragmentId\"");
 
     DbQueryScan scan = new DbQueryScan(sentQueryString, schema);
     final ExchangePairID operatorId = ExchangePairID.newID();
@@ -1353,12 +1359,16 @@ public final class Server {
         new CollectConsumer(scan.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
 
     final SingleGroupByAggregate aggregate =
-        new SingleGroupByAggregate(consumer, 0, new SingleColumnAggregatorFactory(1, AggregationOp.SUM));
+        new SingleGroupByAggregate(consumer, 0, new SingleColumnAggregatorFactory(1, AggregationOp.SUM),
+            new SingleColumnAggregatorFactory(2, AggregationOp.MIN), new SingleColumnAggregatorFactory(3,
+                AggregationOp.MAX));
 
     // rename columns
     ImmutableList.Builder<Expression> renameExpressions = ImmutableList.builder();
     renameExpressions.add(new Expression("fragmentId", new VariableExpression(0)));
     renameExpressions.add(new Expression("numTuples", new VariableExpression(1)));
+    renameExpressions.add(new Expression("duration", new MinusExpression(new VariableExpression(3),
+        new VariableExpression(2))));
     final Apply rename = new Apply(aggregate, renameExpressions.build());
 
     DataOutput output = new DataOutput(rename, writer);
@@ -1447,7 +1457,7 @@ public final class Server {
 
     /* Submit the plan for the download. */
     String planString =
-        Joiner.on('\0').join("download profiling data (query=", queryId, ", fragment=", fragmentId, ", range=[",
+        Joiner.on("").join("download profiling data (query=", queryId, ", fragment=", fragmentId, ", range=[",
             Joiner.on(", ").join(start, end), "]", ")");
     try {
       return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
@@ -1551,7 +1561,7 @@ public final class Server {
 
     /* Submit the plan for the download. */
     String planString =
-        Joiner.on('\0').join("download profiling histogram (query=", queryId, ", fragment=", fragmentId, ", range=[",
+        Joiner.on("").join("download profiling histogram (query=", queryId, ", fragment=", fragmentId, ", range=[",
             Joiner.on(", ").join(start, end, step), "]", ")");
     try {
       return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
@@ -1604,7 +1614,7 @@ public final class Server {
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
     /* Submit the plan for the download. */
-    String planString = Joiner.on('\0').join("download time range (query=", queryId, ", fragment=", fragmentId, ")");
+    String planString = Joiner.on("").join("download time range (query=", queryId, ", fragment=", fragmentId, ")");
     try {
       return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
     } catch (CatalogException e) {
@@ -1668,7 +1678,7 @@ public final class Server {
 
     /* Submit the plan for the download. */
     String planString =
-        Joiner.on('\0').join("download operator contributions (query=", queryId, ", fragment=", fragmentId, ")");
+        Joiner.on("").join("download operator contributions (query=", queryId, ", fragment=", fragmentId, ")");
     try {
       return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
     } catch (CatalogException e) {

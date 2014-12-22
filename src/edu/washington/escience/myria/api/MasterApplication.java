@@ -127,6 +127,11 @@ public final class MasterApplication extends ResourceConfig {
 
     @Override
     public void filter(final ContainerRequestContext request) {
+      String adminPassword = server.getConfiguration(MyriaSystemConfigKeys.ADMIN_PASSWORD);
+      if (adminPassword == null) {
+        /* No admin password is required, pass. */
+        return;
+      }
       String authentication = request.getHeaderString(ContainerRequest.AUTHORIZATION);
       if (authentication == null || !authentication.startsWith("Basic ")) {
         /* No valid basic auth information. Return 401 to let the browser pop up a dialog. */
@@ -143,7 +148,7 @@ public final class MasterApplication extends ResourceConfig {
       String password = values[1];
       if (userIsAdmin(username)) {
         /* User says it's admin. */
-        if (!checkAdminPassword(password)) {
+        if (!password.equals(adminPassword)) {
           /* But the password is incorrect. */
           throw new MyriaApiException(Status.UNAUTHORIZED, "Admin password incorrect");
         }
@@ -163,16 +168,6 @@ public final class MasterApplication extends ResourceConfig {
     private boolean userIsAdmin(final String username) {
       /* Temporary approach: only true when username.toLowerCase() is "admin" */
       return username.toLowerCase().equals("admin");
-    }
-
-    /**
-     * Check if the user is an admin with a correct password.
-     * 
-     * @param passwd password.
-     * @return if the password is correct.
-     */
-    private boolean checkAdminPassword(final String passwd) {
-      return passwd.equals(server.getConfiguration(MyriaSystemConfigKeys.ADMIN_PASSWORD));
     }
   }
 }

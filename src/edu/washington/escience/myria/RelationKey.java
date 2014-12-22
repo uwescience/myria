@@ -131,7 +131,8 @@ public final class RelationKey implements Serializable {
     switch (dbms) {
       case MyriaConstants.STORAGE_SYSTEM_POSTGRESQL:
         String ret = toString('\"', ':', '\"');
-        Preconditions.checkArgument(ret.length() <= MAX_POSTGRESQL_IDENTIFIER_LENGTH,
+        /* Subtract 2 because of the open and close quotes. */
+        Preconditions.checkArgument((ret.length() - 2) <= MAX_POSTGRESQL_IDENTIFIER_LENGTH,
             "PostgreSQL does not allow relation names longer than %s characters: %s", MAX_POSTGRESQL_IDENTIFIER_LENGTH,
             ret);
         return ret;
