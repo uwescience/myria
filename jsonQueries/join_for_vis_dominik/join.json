@@ -1,6 +1,6 @@
 {
   "logicalRa": "Sequence[Store(public:adhoc:TwitterJoin)[Apply(column0=$0,column11=$3)[Select((($1 = $2) and ($3 > 42)))[CrossProduct[Scan(public:adhoc:TwitterK), Scan(public:adhoc:TwitterK)]]]]]",
-  "profilingMode": 1,
+  "profilingMode": ["QUERY"],
   "fragments": [
     {
       "operators": [

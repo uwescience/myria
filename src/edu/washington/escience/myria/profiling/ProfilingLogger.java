@@ -16,6 +16,7 @@ import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.JdbcAccessMethod;
 import edu.washington.escience.myria.operator.Operator;
+import edu.washington.escience.myria.parallel.ResourceStats;
 import edu.washington.escience.myria.parallel.WorkerSubQuery;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
@@ -52,9 +53,11 @@ public class ProfilingLogger {
 
     accessMethod.createUnloggedTableIfNotExists(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA);
     accessMethod.createTableIfNotExists(MyriaConstants.SENT_RELATION, MyriaConstants.SENT_SCHEMA);
+    accessMethod.createUnloggedTableIfNotExists(MyriaConstants.RESOURCE_RELATION, MyriaConstants.RESOURCE_SCHEMA);
 
     createProfilingIndexes();
     createSentIndex();
+    createResourceIndex();
 
     eventTuples = new TupleBatchBuffer(MyriaConstants.PROFILING_SCHEMA);
     sentTuples = new TupleBatchBuffer(MyriaConstants.SENT_SCHEMA);
@@ -71,6 +74,21 @@ public class ProfilingLogger {
       accessMethod.createIndexIfNotExists(MyriaConstants.SENT_RELATION, schema, index);
     } catch (DbException e) {
       LOGGER.error("Couldn't create index for profiling logs:", e);
+    }
+  }
+
+  /**
+   * @throws DbException if index cannot be created
+   */
+  protected void createResourceIndex() throws DbException {
+    final Schema schema = MyriaConstants.RESOURCE_SCHEMA;
+    List<IndexRef> index =
+        ImmutableList
+            .of(IndexRef.of(schema, "queryId"), IndexRef.of(schema, "subqueryId"), IndexRef.of(schema, "opId"));
+    try {
+      accessMethod.createIndexIfNotExists(MyriaConstants.RESOURCE_RELATION, schema, index);
+    } catch (DbException e) {
+      LOGGER.error("Couldn't create index for profiling resource:", e);
     }
   }
 
@@ -125,7 +143,7 @@ public class ProfilingLogger {
 
   /**
    * Appends a single event appearing in an operator to a batch that is flushed either after a certain number of events
-   * are in the batch or {@link #flushProfilingEventsBatch()} is called.
+   * are in the batch or {@link #flushEventsBatch()} is called.
    * 
    * @param operator the operator where this record was logged
    * @param numTuples the number of tuples
@@ -195,6 +213,32 @@ public class ProfilingLogger {
     LOGGER.info("Writing profiling data to {} took {} milliseconds.", relationKey, TimeUnit.NANOSECONDS.toMillis(System
         .nanoTime()
         - startTime));
+  }
+
+  /**
+   * Appends a single resource stats to a batch that is flushed either after a certain number of events are in the batch
+   * or {@link #flushResourceBatch()} is called.
+   * 
+   * @param stats the resource stats.
+   */
+  public synchronized void recordResource(final ResourceStats stats) {
+
+    try {
+      statementResource.setLong(1, stats.getTimestamp());
+      statementResource.setInt(2, stats.getOpId());
+      statementResource.setString(3, stats.getMeasurement());
+      statementResource.setLong(4, stats.getValue());
+      statementResource.setLong(5, stats.getQueryId());
+      statementResource.setLong(6, stats.getSubqueryId());
+      statementResource.addBatch();
+      batchSizeResource++;
+    } catch (final SQLException e) {
+      throw new RuntimeException(e);
+    }
+
+    if (batchSizeResource > MyriaConstants.PROFILING_LOGGER_BATCH_SIZE) {
+      flushResourceBatch();
+    }
   }
 
   /**

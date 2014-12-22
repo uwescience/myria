@@ -1,9 +1,11 @@
 package edu.washington.escience.myria.parallel;
 
+import java.lang.management.ManagementFactory;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -15,9 +17,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 import edu.washington.escience.myria.operator.IDBController;
+import edu.washington.escience.myria.operator.LeapFrogJoin;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
+import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.operator.network.Producer;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
@@ -129,6 +134,13 @@ public final class LocalFragment {
     return fragmentExecutionFuture;
   }
 
+  /** total used CPU time of this task so far. */
+  private volatile long cpuTotal = 0;
+  /** total used CPU time of this task before starting the current execution. */
+  private volatile long cpuBefore = 0;
+  /** the thread id of this task. */
+  private volatile long threadId = -1;
+
   /**
    * @param connectionPool the IPC connection pool.
    * @param localSubQuery the {@link LocalSubQuery} of which this {@link LocalFragment} is a part.
@@ -164,7 +176,20 @@ public final class LocalFragment {
       @Override
       public Void call() throws Exception {
         // synchronized to keep memory consistency
-        LOGGER.trace("Start fragment execution: {}", LocalFragment.this);
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace("Start fragment execution: " + LocalFragment.this);
+        }
+        if (threadId == -1) {
+          threadId = Thread.currentThread().getId();
+        }
+        // otherwise threadId should always equal to Thread.currentThread().getId() based on the current design
+
+        Set<ProfilingMode> mode = localSubQuery.getProfilingMode();
+        if (mode.contains(ProfilingMode.RESOURCE)) {
+          synchronized (LocalFragment.this) {
+            cpuBefore = ManagementFactory.getThreadMXBean().getThreadCpuTime(threadId);
+          }
+        }
         try {
           synchronized (executionLock) {
             LocalFragment.this.executeActually();
@@ -175,7 +200,16 @@ public final class LocalFragment {
         } finally {
           executionHandle = null;
         }
-        LOGGER.trace("End execution: {}", LocalFragment.this);
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace("End execution: " + LocalFragment.this);
+        }
+
+        if (mode.contains(ProfilingMode.RESOURCE)) {
+          synchronized (LocalFragment.this) {
+            cpuTotal += ManagementFactory.getThreadMXBean().getThreadCpuTime(threadId) - cpuBefore;
+            cpuBefore = 0;
+          }
+        }
         return null;
       }
     };
@@ -722,5 +756,75 @@ public final class LocalFragment {
    */
   public long getBeginMilliseconds() {
     return beginMilliseconds;
+  }
+
+  /**
+   * 
+   * @param stats the stats to be added into
+   * @param timestamp the timestamp of the collecting event
+   * @param opId the operator ID
+   * @param measurement which measurement
+   * @param value the value
+   * @param subQueryId the sunquery ID
+   */
+  public void addResourceReport(final List<ResourceStats> stats, final long timestamp, final int opId,
+      final String measurement, final long value, final SubQueryId subQueryId) {
+    stats.add(new ResourceStats(timestamp, opId, measurement, value, subQueryId.getQueryId(), subQueryId
+        .getSubqueryId()));
+  }
+
+  /**
+   * 
+   * @param stats the stats
+   * @param op the current operator
+   * @param timestamp the starting timestamp of this event in milliseconds
+   * @param subQueryId the subQuery Id
+   */
+  public void collectResourceMeasurements(final List<ResourceStats> stats, final long timestamp, final Operator op,
+      final SubQueryId subQueryId) {
+    if (threadId == -1) {
+      return;
+    }
+    if (op == getRootOp()) {
+      long cntCpu = 0;
+      synchronized (this) {
+        cntCpu = cpuTotal;
+        if (cpuBefore > 0) {
+          cntCpu += ManagementFactory.getThreadMXBean().getThreadCpuTime(threadId) - cpuBefore;
+        }
+      }
+      addResourceReport(stats, timestamp, op.getOpId(), "cpuTotal", cntCpu, subQueryId);
+    }
+
+    if (op instanceof Producer) {
+      addResourceReport(stats, timestamp, op.getOpId(), "numTuplesWritten", ((Producer) op)
+          .getNumTuplesWrittenToChannels(), subQueryId);
+      addResourceReport(stats, timestamp, op.getOpId(), "numTuplesInBuffers", ((Producer) op).getNumTuplesInBuffers(),
+          subQueryId);
+    } else if (op instanceof IDBController) {
+      addResourceReport(stats, timestamp, op.getOpId(), "numTuplesInState", ((IDBController) op).getStreamingState()
+          .numTuples(), subQueryId);
+    } else if (op instanceof SymmetricHashJoin) {
+      addResourceReport(stats, timestamp, op.getOpId(), "hashTableSize", ((SymmetricHashJoin) op)
+          .getNumTuplesInHashTables(), subQueryId);
+    } else if (op instanceof LeapFrogJoin) {
+      addResourceReport(stats, timestamp, op.getOpId(), "hashTableSize",
+          ((LeapFrogJoin) op).getNumTuplesInHashTables(), subQueryId);
+    }
+    for (Operator child : op.getChildren()) {
+      collectResourceMeasurements(stats, timestamp, child, subQueryId);
+    }
+  }
+
+  /**
+   * @param op the current operator.
+   * @return the max op id in this subtree.
+   */
+  public int getMaxOpId(final Operator op) {
+    int ret = op.getOpId();
+    for (Operator child : op.getChildren()) {
+      ret = Math.max(ret, getMaxOpId(child));
+    }
+    return ret;
   }
 }

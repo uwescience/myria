@@ -5,8 +5,10 @@ import java.util.Set;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
+import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.MyriaConstants.FTMode;
+import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 import edu.washington.escience.myria.api.MyriaApiException;
 import edu.washington.escience.myria.api.encoding.plan.SubPlanEncoding;
 import edu.washington.escience.myria.api.encoding.plan.SubQueryEncoding;
@@ -25,10 +27,10 @@ public class QueryEncoding extends MyriaApiEncoding {
   public String logicalRa;
   /** The language. optional. */
   public String language;
-  /** Set whether this query is run in profiling mode. (default is false) */
-  public boolean profilingMode = false;
+  /** A list of profiling options that this query is enabled. Default: empty */
+  public List<ProfilingMode> profilingMode = ImmutableList.of();
   /** The fault-tolerance mode used in this query, default: none. */
-  public FTMODE ftMode = FTMODE.NONE;
+  public FTMode ftMode = FTMode.NONE;
 
   /** The old physical query plan encoding. */
   public List<PlanFragmentEncoding> fragments;

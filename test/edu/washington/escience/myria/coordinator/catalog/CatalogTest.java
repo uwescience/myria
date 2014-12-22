@@ -20,9 +20,12 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.parallel.SocketInfo;
@@ -251,4 +254,61 @@ public class CatalogTest {
     assertEquals(Long.valueOf(2L), queries.get(1).queryId);
   }
 
+  /**
+   * Test the query search functionality in the catalog.
+   * 
+   * @throws CatalogException if there is an error creating the Catalog.
+   */
+  @Test
+  public void testCatalogProfilingModeList() throws CatalogException {
+    /* Turn off SQLite logging, it's annoying. */
+    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.OFF);
+
+    MasterCatalog catalog = MasterCatalog.createInMemory();
+    QueryEncoding query = new QueryEncoding();
+    QueryStatusEncoding qs;
+
+    /* Q1 */
+    query.rawQuery = "query 1";
+    query.logicalRa = "";
+    catalog.newQuery(query);
+
+    qs = catalog.getQuery(1L);
+    assertEquals(qs.rawQuery, query.rawQuery);
+    assertEquals(qs.logicalRa, query.logicalRa);
+    assertEquals(qs.profilingMode, ImmutableList.<ProfilingMode> of());
+
+    /* Q2 */
+    query.rawQuery = "query 2";
+    query.logicalRa = "";
+    query.profilingMode = ImmutableList.of(ProfilingMode.QUERY);
+    catalog.newQuery(query);
+
+    qs = catalog.getQuery(2L);
+    assertEquals(qs.rawQuery, query.rawQuery);
+    assertEquals(qs.logicalRa, query.logicalRa);
+    assertEquals(ImmutableSet.copyOf(qs.profilingMode), ImmutableSet.copyOf(query.profilingMode));
+
+    /* Q3 */
+    query.rawQuery = "query 3";
+    query.logicalRa = "";
+    query.profilingMode = ImmutableList.of(ProfilingMode.QUERY, ProfilingMode.RESOURCE);
+    catalog.newQuery(query);
+
+    qs = catalog.getQuery(3L);
+    assertEquals(qs.rawQuery, query.rawQuery);
+    assertEquals(qs.logicalRa, query.logicalRa);
+    assertEquals(ImmutableSet.copyOf(qs.profilingMode), ImmutableSet.copyOf(query.profilingMode));
+
+    /* Q4 */
+    query.rawQuery = "query 4";
+    query.logicalRa = "";
+    query.profilingMode = ImmutableList.of(ProfilingMode.RESOURCE, ProfilingMode.QUERY);
+    catalog.newQuery(query);
+
+    qs = catalog.getQuery(4L);
+    assertEquals(qs.rawQuery, query.rawQuery);
+    assertEquals(qs.logicalRa, query.logicalRa);
+    assertEquals(ImmutableSet.copyOf(qs.profilingMode), ImmutableSet.copyOf(query.profilingMode));
+  }
 }

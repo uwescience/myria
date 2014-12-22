@@ -90,6 +90,9 @@ public final class MyriaConstants {
   /** Time interval between two heartbeats. */
   public static final int HEARTBEAT_INTERVAL = 1000;
 
+  /** Time interval between two resource usage reports. */
+  public static final int RESOURCE_REPORT_INTERVAL = 1000;
+
   /** The identity of the master worker is current always zero. */
   public static final int MASTER_ID = 0;
 
@@ -260,6 +263,18 @@ public final class MyriaConstants {
       Type.LONG_TYPE, Type.INT_TYPE, "queryId", "fragmentId", "nanoTime", "numTuples", "destWorkerId");
 
   /**
+   * The relation that stores resource profiling information.
+   */
+  public static final RelationKey RESOURCE_RELATION = new RelationKey("public", "logs", "Resource");
+
+  /**
+   * The schema of the {@link #RESOURCE_RELATION}.
+   */
+  public static final Schema RESOURCE_SCHEMA = Schema.ofFields(Type.LONG_TYPE, Type.INT_TYPE, Type.STRING_TYPE,
+      Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, "timestamp", "opId", "measurement", "value", "queryId",
+      "subqueryId");
+
+  /**
    * For how long cached versions of the profiling data should be valid.
    */
   public static final long PROFILING_CACHE_AGE = TimeUnit.HOURS.toMillis(1);
@@ -281,8 +296,20 @@ public final class MyriaConstants {
   }
 
   /** available fault-tolerance mode for each query in Myria. */
-  public static enum FTMODE {
+  public static enum FTMode {
     /** three FT modes are supported. */
     NONE, ABANDON, REJOIN
+  };
+
+  /** available profiling mode for each query in Myria. */
+  public static enum ProfilingMode {
+    /**
+     * RESOURCE: resource usage (CPU, IO, Memory) only.
+     */
+    RESOURCE,
+    /**
+     * QUERY: query execution only.
+     */
+    QUERY
   };
 }

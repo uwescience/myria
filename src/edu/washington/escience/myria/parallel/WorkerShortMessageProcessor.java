@@ -23,7 +23,7 @@ import edu.washington.escience.myria.util.AttachmentableAdapter;
  * */
 @Sharable
 public final class WorkerShortMessageProcessor extends AttachmentableAdapter implements
-ShortMessageProcessor<TransportMessage> {
+    ShortMessageProcessor<TransportMessage> {
 
   /**
    * The logger for this class.
