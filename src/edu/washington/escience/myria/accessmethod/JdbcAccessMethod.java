@@ -1,9 +1,6 @@
 package edu.washington.escience.myria.accessmethod;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -18,7 +15,9 @@ import java.util.Objects;
 
 import org.apache.commons.lang3.StringUtils;
 import org.postgresql.PGConnection;
+import org.postgresql.copy.CopyIn;
 import org.postgresql.copy.CopyManager;
+import org.postgresql.copy.PGCopyOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -118,16 +117,15 @@ public final class JdbcAccessMethod extends AccessMethod {
     // Use the postgres COPY command which is much faster
     try {
       CopyManager cpManager = ((PGConnection) jdbcConnection).getCopyAPI();
+      StringBuilder copyString =
+          new StringBuilder().append("COPY ").append(quote(relationKey)).append(" FROM STDIN WITH BINARY");
+      CopyIn copyIn = cpManager.copyIn(copyString.toString());
 
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      TupleWriter tw = new PostgresBinaryTupleWriter(baos);
+      TupleWriter tw = new PostgresBinaryTupleWriter(new PGCopyOutputStream(copyIn));
       tw.writeTuples(tupleBatch);
       tw.done();
 
-      InputStream reader = new ByteArrayInputStream(baos.toByteArray());
-      StringBuilder copyString =
-          new StringBuilder().append("COPY ").append(quote(relationKey)).append(" FROM STDIN WITH BINARY");
-      long inserted = cpManager.copyIn(copyString.toString(), reader);
+      long inserted = copyIn.getHandledRowCount();
       Preconditions.checkState(inserted == tupleBatch.numTuples(),
           "Error: inserted a batch of size %s but only actually inserted %s rows", tupleBatch.numTuples(), inserted);
     } catch (final SQLException e) {
