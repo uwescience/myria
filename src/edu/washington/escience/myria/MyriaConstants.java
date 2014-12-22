@@ -265,11 +265,6 @@ public final class MyriaConstants {
   public static final long PROFILING_CACHE_AGE = TimeUnit.HOURS.toMillis(1);
 
   /**
-   * Number of entries in profiling logger before it is flushed.
-   */
-  public static final int PROFILING_LOGGER_BATCH_SIZE = 10000;
-
-  /**
    * The maximum number of subqueries we will allow a query to execute before killing it. This is a safeguard against an
    * infinite loop.
    */
