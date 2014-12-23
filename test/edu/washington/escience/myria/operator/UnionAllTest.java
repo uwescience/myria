@@ -8,12 +8,19 @@ import java.util.List;
 import org.junit.Test;
 
 import com.google.common.collect.HashMultiset;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multiset;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.expression.CastExpression;
+import edu.washington.escience.myria.expression.Expression;
+import edu.washington.escience.myria.expression.TypeExpression;
+import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.util.TestEnvVars;
 import edu.washington.escience.myria.util.TestUtils;
 
 public class UnionAllTest {
@@ -122,5 +129,21 @@ public class UnionAllTest {
     }
     union.close();
     assertEquals(12300 + 4200 + 19900, count);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testUnionIncompatibleSchemas() throws DbException {
+    Operator[] children = new Operator[3];
+    // range always returns INT_TYPE
+    children[0] = new TupleSource(TestUtils.range(5));
+    children[1] = new TupleSource(TestUtils.range(50));
+
+    /* Child 2 will have tuples with different type -- cast int to long */
+    children[2] =
+        new Apply(new TupleSource(TestUtils.range(50)), ImmutableList.of(new Expression("long", new CastExpression(
+            new VariableExpression(0), new TypeExpression(Type.LONG_TYPE)))));
+
+    UnionAll union = new UnionAll(children);
+    union.open(TestEnvVars.get(2));
   }
 }
