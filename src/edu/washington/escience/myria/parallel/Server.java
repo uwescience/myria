@@ -53,6 +53,7 @@ import edu.washington.escience.myria.TupleWriter;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
+import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.CatalogMaker;
@@ -814,20 +815,54 @@ public final class Server {
     messageProcessingExecutor.submit(new MessageProcessor());
     LOGGER.info("Server started on {}", masterSocketInfo);
 
-    final Set<Integer> workerIds = workers.keySet();
-    if (getSchema(MyriaConstants.EVENT_PROFILING_RELATION) == null
-        && getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
-      importDataset(MyriaConstants.EVENT_PROFILING_RELATION, MyriaConstants.EVENT_PROFILING_SCHEMA, workerIds);
+    if (getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
+      final Set<Integer> workerIds = workers.keySet();
+      addRelationToCatalogIfNotExists(MyriaConstants.EVENT_PROFILING_RELATION, MyriaConstants.EVENT_PROFILING_SCHEMA,
+          workerIds);
+      addRelationToCatalogIfNotExists(MyriaConstants.SENT_PROFILING_RELATION, MyriaConstants.SENT_PROFILING_SCHEMA,
+          workerIds);
+      addRelationToCatalogIfNotExists(MyriaConstants.RESOURCE_PROFILING_RELATION,
+          MyriaConstants.RESOURCE_PROFILING_SCHEMA, workerIds);
+
+    }
+  }
+
+  /**
+   * Manually add a relation to the catalog if it not already exists.
+   * 
+   * @param relationKey the relation to add
+   * @param schema the schema of the relation to add
+   * @param workers the workers that have the relation
+   * 
+   * @throws DbException if the catalog cannot be accessed
+   */
+  private void addRelationToCatalogIfNotExists(final RelationKey relationKey, final Schema schema,
+      final Set<Integer> workers) throws DbException {
+    try {
+      if (getSchema(relationKey) != null) {
+        return;
+      }
+
+      QueryEncoding query = new QueryEncoding();
+      query.rawQuery = String.format("Add %s to catalog", relationKey);
+      query.logicalRa = query.rawQuery;
+      query.fragments = ImmutableList.of();
+
+      long queryId = catalog.newQuery(query);
+
+      final Query queryState =
+          new Query(queryId, query, new SubQuery(new SubQueryPlan(new SinkRoot(new EOSSource())),
+              new HashMap<Integer, SubQueryPlan>()), this);
+      queryState.markSuccess();
+      catalog.queryFinished(queryState);
+
+      // set a number of tuples so the data can be downloaded
+      catalog.addRelationMetadata(relationKey, schema, 0, queryId);
+      catalog.addStoredRelation(relationKey, workers, "AsRecorded");
+    } catch (CatalogException e) {
+      throw new DbException(e);
     }
 
-    if (getSchema(MyriaConstants.SENT_PROFILING_RELATION) == null && getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
-      importDataset(MyriaConstants.SENT_PROFILING_RELATION, MyriaConstants.SENT_PROFILING_SCHEMA, workerIds);
-    }
-
-    if (getSchema(MyriaConstants.RESOURCE_PROFILING_RELATION) == null
-        && getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
-      importDataset(MyriaConstants.RESOURCE_PROFILING_RELATION, MyriaConstants.RESOURCE_PROFILING_SCHEMA, workerIds);
-    }
   }
 
   /**
