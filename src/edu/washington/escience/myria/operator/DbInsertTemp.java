@@ -103,7 +103,7 @@ public class DbInsertTemp extends AbstractDbInsert {
   @Override
   protected void consumeTuples(final TupleBatch tupleBatch) throws DbException {
     Preconditions.checkState(accessMethod != null, "accessMethod must not be null");
-    accessMethod.tupleBatchInsert(stagingRelationKey, getSchema(), tupleBatch);
+    accessMethod.tupleBatchInsert(stagingRelationKey, tupleBatch);
   }
 
   @Override

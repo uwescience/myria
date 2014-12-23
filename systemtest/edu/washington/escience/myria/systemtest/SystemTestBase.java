@@ -334,8 +334,8 @@ public class SystemTestBase {
 
   public static void insert(final int workerID, final RelationKey relationKey, final Schema schema,
       final TupleBatch data) throws CatalogException, FileNotFoundException, DbException {
-    SQLiteAccessMethod.tupleBatchInsert(SQLiteInfo.of(getAbsoluteDBFile(workerID).getAbsolutePath()), relationKey,
-        schema, data);
+    SQLiteAccessMethod
+        .tupleBatchInsert(SQLiteInfo.of(getAbsoluteDBFile(workerID).getAbsolutePath()), relationKey, data);
   }
 
   protected HashMap<Tuple, Integer> simpleRandomJoinTestBase() throws CatalogException, IOException, DbException {

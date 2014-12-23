@@ -239,7 +239,7 @@ public class ProfilingLogger {
 
     final long startTime = System.nanoTime();
 
-    accessMethod.tupleBatchInsert(relationKey, tupleBatch.getSchema(), tupleBatch);
+    accessMethod.tupleBatchInsert(relationKey, tupleBatch);
 
     LOGGER.info("Writing profiling data to {} took {} milliseconds.", relationKey, TimeUnit.NANOSECONDS.toMillis(System
         .nanoTime()

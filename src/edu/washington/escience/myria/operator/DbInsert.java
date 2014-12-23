@@ -161,7 +161,7 @@ public class DbInsert extends AbstractDbInsert {
   protected void consumeTuples(final TupleBatch tupleBatch) throws DbException {
     Objects.requireNonNull(accessMethod);
     Objects.requireNonNull(tempRelationKey);
-    accessMethod.tupleBatchInsert(tempRelationKey, getSchema(), tupleBatch);
+    accessMethod.tupleBatchInsert(tempRelationKey, tupleBatch);
   }
 
   @Override
