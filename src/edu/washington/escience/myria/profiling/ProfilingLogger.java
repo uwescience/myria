@@ -32,10 +32,13 @@ public class ProfilingLogger {
   private final JdbcAccessMethod accessMethod;
 
   /** Buffer for recorded events. */
-  private final TupleBatchBuffer eventTuples;
+  private final TupleBatchBuffer events;
 
   /** Buffer for tuples sent. */
-  private final TupleBatchBuffer sentTuples;
+  private final TupleBatchBuffer sent;
+
+  /** Buffer for tuples sent. */
+  private final TupleBatchBuffer resources;
 
   /**
    * Default constructor.
@@ -51,27 +54,30 @@ public class ProfilingLogger {
     /* open the database connection */
     accessMethod = (JdbcAccessMethod) AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
 
-    accessMethod.createUnloggedTableIfNotExists(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA);
-    accessMethod.createTableIfNotExists(MyriaConstants.SENT_RELATION, MyriaConstants.SENT_SCHEMA);
-    accessMethod.createUnloggedTableIfNotExists(MyriaConstants.RESOURCE_RELATION, MyriaConstants.RESOURCE_SCHEMA);
+    accessMethod.createUnloggedTableIfNotExists(MyriaConstants.EVENT_PROFILING_RELATION,
+        MyriaConstants.EVENT_PROFILING_SCHEMA);
+    accessMethod.createTableIfNotExists(MyriaConstants.SENT_PROFILING_RELATION, MyriaConstants.SENT_PROFILING_SCHEMA);
+    accessMethod.createUnloggedTableIfNotExists(MyriaConstants.RESOURCE_PROFILING_RELATION,
+        MyriaConstants.RESOURCE_PROFILING_SCHEMA);
 
-    createProfilingIndexes();
+    createEventIndexes();
     createSentIndex();
     createResourceIndex();
 
-    eventTuples = new TupleBatchBuffer(MyriaConstants.PROFILING_SCHEMA);
-    sentTuples = new TupleBatchBuffer(MyriaConstants.SENT_SCHEMA);
+    events = new TupleBatchBuffer(MyriaConstants.EVENT_PROFILING_SCHEMA);
+    sent = new TupleBatchBuffer(MyriaConstants.SENT_PROFILING_SCHEMA);
+    resources = new TupleBatchBuffer(MyriaConstants.RESOURCE_PROFILING_SCHEMA);
   }
 
   /**
    * @throws DbException if index cannot be created
    */
   protected void createSentIndex() throws DbException {
-    final Schema schema = MyriaConstants.SENT_SCHEMA;
+    final Schema schema = MyriaConstants.SENT_PROFILING_SCHEMA;
 
     List<IndexRef> index = ImmutableList.of(IndexRef.of(schema, "queryId"), IndexRef.of(schema, "fragmentId"));
     try {
-      accessMethod.createIndexIfNotExists(MyriaConstants.SENT_RELATION, schema, index);
+      accessMethod.createIndexIfNotExists(MyriaConstants.SENT_PROFILING_RELATION, schema, index);
     } catch (DbException e) {
       LOGGER.error("Couldn't create index for profiling logs:", e);
     }
@@ -81,12 +87,12 @@ public class ProfilingLogger {
    * @throws DbException if index cannot be created
    */
   protected void createResourceIndex() throws DbException {
-    final Schema schema = MyriaConstants.RESOURCE_SCHEMA;
+    final Schema schema = MyriaConstants.RESOURCE_PROFILING_SCHEMA;
     List<IndexRef> index =
         ImmutableList
             .of(IndexRef.of(schema, "queryId"), IndexRef.of(schema, "subqueryId"), IndexRef.of(schema, "opId"));
     try {
-      accessMethod.createIndexIfNotExists(MyriaConstants.RESOURCE_RELATION, schema, index);
+      accessMethod.createIndexIfNotExists(MyriaConstants.RESOURCE_PROFILING_RELATION, schema, index);
     } catch (DbException e) {
       LOGGER.error("Couldn't create index for profiling resource:", e);
     }
@@ -95,8 +101,8 @@ public class ProfilingLogger {
   /**
    * @throws DbException if index cannot be created
    */
-  protected void createProfilingIndexes() throws DbException {
-    final Schema schema = MyriaConstants.PROFILING_SCHEMA;
+  protected void createEventIndexes() throws DbException {
+    final Schema schema = MyriaConstants.EVENT_PROFILING_SCHEMA;
 
     List<IndexRef> rootOpsIndex =
         ImmutableList.of(IndexRef.of(schema, "queryId"), IndexRef.of(schema, "fragmentId"), IndexRef.of(schema,
@@ -106,8 +112,8 @@ public class ProfilingLogger {
             IndexRef.of(schema, "opId"), IndexRef.of(schema, "startTime"), IndexRef.of(schema, "endTime"));
 
     try {
-      accessMethod.createIndexIfNotExists(MyriaConstants.PROFILING_RELATION, schema, rootOpsIndex);
-      accessMethod.createIndexIfNotExists(MyriaConstants.PROFILING_RELATION, schema, filterIndex);
+      accessMethod.createIndexIfNotExists(MyriaConstants.EVENT_PROFILING_RELATION, schema, rootOpsIndex);
+      accessMethod.createIndexIfNotExists(MyriaConstants.EVENT_PROFILING_RELATION, schema, filterIndex);
     } catch (DbException e) {
       LOGGER.error("Couldn't create index for profiling logs:", e);
     }
@@ -154,18 +160,19 @@ public class ProfilingLogger {
   public synchronized void recordEvent(final Operator operator, final long numTuples, final long startTime)
       throws DbException {
 
-    eventTuples.putLong(0, operator.getQueryId());
-    eventTuples.putInt(1, operator.getFragmentId());
-    eventTuples.putInt(2, operator.getOpId());
-    eventTuples.putLong(3, startTime);
-    eventTuples.putLong(4, getTime(operator));
-    eventTuples.putLong(5, numTuples);
+    events.putLong(0, operator.getQueryId());
+    events.putInt(1, operator.getFragmentId());
+    events.putInt(2, operator.getOpId());
+    events.putLong(3, startTime);
+    events.putLong(4, getTime(operator));
+    events.putLong(5, numTuples);
 
-    flush(MyriaConstants.PROFILING_RELATION, eventTuples.popFilled());
+    flush(MyriaConstants.EVENT_PROFILING_RELATION, events.popFilled());
   }
 
   /**
-   * Record that data was sent to a worker.
+   * Record that data was sent to a worker. The buffer is flushed at a particular number of tuples or on a call to
+   * {@link #flush()}.
    * 
    * @param operator the operator where this record was logged
    * @param numTuples the number of tuples sent.
@@ -174,23 +181,47 @@ public class ProfilingLogger {
    */
   public synchronized void recordSent(final Operator operator, final int numTuples, final int destWorkerId)
       throws DbException {
-    sentTuples.putLong(0, operator.getQueryId());
-    sentTuples.putInt(1, operator.getFragmentId());
-    sentTuples.putLong(2, getTime(operator));
-    sentTuples.putLong(3, numTuples);
-    sentTuples.putInt(4, destWorkerId);
+    sent.putLong(0, operator.getQueryId());
+    sent.putInt(1, operator.getFragmentId());
+    sent.putLong(2, getTime(operator));
+    sent.putLong(3, numTuples);
+    sent.putInt(4, destWorkerId);
 
-    flush(MyriaConstants.SENT_RELATION, sentTuples.popFilled());
+    flush(MyriaConstants.SENT_PROFILING_RELATION, sent.popFilled());
   }
 
   /**
-   * Flush the tuple batch buffer and transform the profiling data.
+   * Record a single resource stats. The buffer is flushed at a particular number of tuples or on a call to
+   * {@link #flush()}.
+   * 
+   * @param stats the resource stats.
+   * @throws DbException if insertion in the database fails
+   */
+  public synchronized void recordResource(final ResourceStats stats) throws DbException {
+    resources.putLong(0, stats.getTimestamp());
+    resources.putInt(1, stats.getOpId());
+    resources.putString(2, stats.getMeasurement());
+    resources.putLong(3, stats.getValue());
+    resources.putLong(4, stats.getQueryId());
+    resources.putLong(5, stats.getSubqueryId());
+
+    flush(MyriaConstants.RESOURCE_PROFILING_RELATION, resources.popFilled());
+  }
+
+  /**
+   * Flush the profiling buffers. The buffer is flushed at a particular number of tuples or on a call to
+   * {@link #flush()}.
    * 
    * @throws DbException if insertion in the database fails
    */
   public synchronized void flush() throws DbException {
-    flush(MyriaConstants.SENT_RELATION, sentTuples.popAny());
-    flush(MyriaConstants.PROFILING_RELATION, eventTuples.popAny());
+    flush(MyriaConstants.SENT_PROFILING_RELATION, sent.popAny());
+    flush(MyriaConstants.EVENT_PROFILING_RELATION, events.popAny());
+    flush(MyriaConstants.RESOURCE_PROFILING_RELATION, resources.popAny());
+
+    Preconditions.checkState(sent.numTuples() == 0, "Unwritten sent profiling data.");
+    Preconditions.checkState(events.numTuples() == 0, "Unwritten event profiling data.");
+    Preconditions.checkState(resources.numTuples() == 0, "Unwritten resource profiling data.");
   }
 
   /**
@@ -213,32 +244,6 @@ public class ProfilingLogger {
     LOGGER.info("Writing profiling data to {} took {} milliseconds.", relationKey, TimeUnit.NANOSECONDS.toMillis(System
         .nanoTime()
         - startTime));
-  }
-
-  /**
-   * Appends a single resource stats to a batch that is flushed either after a certain number of events are in the batch
-   * or {@link #flushResourceBatch()} is called.
-   * 
-   * @param stats the resource stats.
-   */
-  public synchronized void recordResource(final ResourceStats stats) {
-
-    try {
-      statementResource.setLong(1, stats.getTimestamp());
-      statementResource.setInt(2, stats.getOpId());
-      statementResource.setString(3, stats.getMeasurement());
-      statementResource.setLong(4, stats.getValue());
-      statementResource.setLong(5, stats.getQueryId());
-      statementResource.setLong(6, stats.getSubqueryId());
-      statementResource.addBatch();
-      batchSizeResource++;
-    } catch (final SQLException e) {
-      throw new RuntimeException(e);
-    }
-
-    if (batchSizeResource > MyriaConstants.PROFILING_LOGGER_BATCH_SIZE) {
-      flushResourceBatch();
-    }
   }
 
   /**

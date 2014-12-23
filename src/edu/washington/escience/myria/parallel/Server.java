@@ -815,18 +815,18 @@ public final class Server {
     LOGGER.info("Server started on {}", masterSocketInfo);
 
     final Set<Integer> workerIds = workers.keySet();
-    if (getSchema(MyriaConstants.PROFILING_RELATION) == null
+    if (getSchema(MyriaConstants.EVENT_PROFILING_RELATION) == null
         && getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
-      importDataset(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA, workerIds);
+      importDataset(MyriaConstants.EVENT_PROFILING_RELATION, MyriaConstants.EVENT_PROFILING_SCHEMA, workerIds);
     }
 
-    if (getSchema(MyriaConstants.SENT_RELATION) == null && getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
-      importDataset(MyriaConstants.SENT_RELATION, MyriaConstants.SENT_SCHEMA, workerIds);
+    if (getSchema(MyriaConstants.SENT_PROFILING_RELATION) == null && getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
+      importDataset(MyriaConstants.SENT_PROFILING_RELATION, MyriaConstants.SENT_PROFILING_SCHEMA, workerIds);
     }
 
-    if (getSchema(MyriaConstants.RESOURCE_RELATION) == null
+    if (getSchema(MyriaConstants.RESOURCE_PROFILING_RELATION) == null
         && getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
-      importDataset(MyriaConstants.RESOURCE_RELATION, MyriaConstants.RESOURCE_SCHEMA, workerIds);
+      importDataset(MyriaConstants.RESOURCE_PROFILING_RELATION, MyriaConstants.RESOURCE_PROFILING_SCHEMA, workerIds);
     }
   }
 
@@ -1267,7 +1267,7 @@ public final class Server {
 
     String sentQueryString =
         Joiner.on(' ').join("SELECT \"fragmentId\", \"destWorkerId\", sum(\"numTuples\") as \"numTuples\" FROM",
-            MyriaConstants.SENT_RELATION.toString(getDBMS()), "WHERE \"queryId\" =", queryId, fragmentWhere,
+            MyriaConstants.SENT_PROFILING_RELATION.toString(getDBMS()), "WHERE \"queryId\" =", queryId, fragmentWhere,
             "GROUP BY \"queryId\", \"fragmentId\", \"destWorkerId\"");
 
     DbQueryScan scan = new DbQueryScan(sentQueryString, schema);
@@ -1341,7 +1341,7 @@ public final class Server {
             .on(' ')
             .join(
                 "SELECT \"fragmentId\", sum(\"numTuples\") as \"numTuples\", min(\"nanoTime\") as \"minTime\", max(\"nanoTime\") as \"maxTime\" FROM",
-                MyriaConstants.SENT_RELATION.toString(getDBMS()), "WHERE \"queryId\" =", queryId,
+                MyriaConstants.SENT_PROFILING_RELATION.toString(getDBMS()), "WHERE \"queryId\" =", queryId,
                 "GROUP BY \"queryId\", \"fragmentId\"");
 
     DbQueryScan scan = new DbQueryScan(sentQueryString, schema);
@@ -1411,7 +1411,7 @@ public final class Server {
     if (onlyRootOperator) {
       opCondition =
           Joiner.on(' ').join("AND \"opId\" = (SELECT \"opId\" FROM",
-              MyriaConstants.PROFILING_RELATION.toString(getDBMS()), "WHERE", fragmentId, "=\"fragmentId\" AND",
+              MyriaConstants.EVENT_PROFILING_RELATION.toString(getDBMS()), "WHERE", fragmentId, "=\"fragmentId\" AND",
               queryId, "=\"queryId\" ORDER BY \"startTime\" ASC LIMIT 1)");;
     }
 
@@ -1422,7 +1422,7 @@ public final class Server {
 
     String queryString =
         Joiner.on(' ').join("SELECT \"opId\", \"startTime\", \"endTime\", \"numTuples\" FROM",
-            MyriaConstants.PROFILING_RELATION.toString(getDBMS()), "WHERE \"fragmentId\" =", fragmentId,
+            MyriaConstants.EVENT_PROFILING_RELATION.toString(getDBMS()), "WHERE \"fragmentId\" =", fragmentId,
             "AND \"queryId\" =", queryId, "AND \"endTime\" >", start, "AND \"startTime\" <", end, opCondition,
             spanCondition, "ORDER BY \"startTime\" ASC");
 
@@ -1491,7 +1491,7 @@ public final class Server {
     Preconditions.checkArgument(bins > 0 && bins <= MAX_BINS, "bins must be in the range [1, %s]", MAX_BINS);
 
     final Schema schema = Schema.ofFields("opId", Type.INT_TYPE, "nanoTime", Type.LONG_TYPE);
-    final RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
+    final RelationKey relationKey = MyriaConstants.EVENT_PROFILING_RELATION;
 
     Set<Integer> actualWorkers = queryStatus.plan.getWorkers();
 
@@ -1582,7 +1582,7 @@ public final class Server {
     final QueryStatusEncoding queryStatus = checkAndReturnQueryStatus(queryId);
 
     final Schema schema = Schema.ofFields("startTime", Type.LONG_TYPE, "endTime", Type.LONG_TYPE);
-    final RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
+    final RelationKey relationKey = MyriaConstants.EVENT_PROFILING_RELATION;
 
     Set<Integer> actualWorkers = queryStatus.plan.getWorkers();
 
@@ -1635,7 +1635,7 @@ public final class Server {
     final QueryStatusEncoding queryStatus = checkAndReturnQueryStatus(queryId);
 
     final Schema schema = Schema.ofFields("opId", Type.INT_TYPE, "nanoTime", Type.LONG_TYPE);
-    final RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
+    final RelationKey relationKey = MyriaConstants.EVENT_PROFILING_RELATION;
 
     Set<Integer> actualWorkers = queryStatus.plan.getWorkers();
 
@@ -1768,7 +1768,7 @@ public final class Server {
    * @throws DbException if there is an error in the database.
    */
   public void getResourceUsage(final long queryId, final PipedOutputStream writerOutput) throws DbException {
-    Schema schema = Schema.appendColumn(MyriaConstants.RESOURCE_SCHEMA, Type.INT_TYPE, "workerId");
+    Schema schema = Schema.appendColumn(MyriaConstants.RESOURCE_PROFILING_SCHEMA, Type.INT_TYPE, "workerId");
     try {
       TupleWriter writer = new CsvTupleWriter(writerOutput);
       TupleBuffer tb = queryManager.getResourceUsage(queryId);
@@ -1801,9 +1801,9 @@ public final class Server {
 
     Set<Integer> actualWorkers = queryStatus.plan.getWorkers();
 
-    final Schema schema = MyriaConstants.RESOURCE_SCHEMA;
+    final Schema schema = MyriaConstants.RESOURCE_PROFILING_SCHEMA;
     String resourceQueryString =
-        Joiner.on(' ').join("SELECT * from", MyriaConstants.RESOURCE_RELATION.toString(getDBMS()),
+        Joiner.on(' ').join("SELECT * from", MyriaConstants.RESOURCE_PROFILING_RELATION.toString(getDBMS()),
             "WHERE \"queryId\" =", queryId);
     DbQueryScan scan = new DbQueryScan(resourceQueryString, schema);
 

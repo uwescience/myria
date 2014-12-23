@@ -240,39 +240,39 @@ public final class MyriaConstants {
   public static final int MAX_ACTIVE_QUERIES = 25;
 
   /**
-   * The relation that stores profiling information.
+   * The relation that stores profiling information about which operators executed when.
    */
-  public static final RelationKey PROFILING_RELATION = new RelationKey("public", "logs", "Profiling");
+  public static final RelationKey EVENT_PROFILING_RELATION = new RelationKey("public", "logs", "Profiling");
 
   /**
-   * The schema of the {@link #PROFILING_RELATION}.
+   * The schema of the {@link #EVENT_PROFILING_RELATION}.
    */
-  public static final Schema PROFILING_SCHEMA = Schema.ofFields(Type.LONG_TYPE, Type.INT_TYPE, Type.INT_TYPE,
+  public static final Schema EVENT_PROFILING_SCHEMA = Schema.ofFields(Type.LONG_TYPE, Type.INT_TYPE, Type.INT_TYPE,
       Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, "queryId", "fragmentId", "opId", "startTime", "endTime",
       "numTuples");
 
   /**
-   * The relation that stores profiling information.
+   * The relation that stores profiling information about sent tuples.
    */
-  public static final RelationKey SENT_RELATION = new RelationKey("public", "logs", "Sending");
+  public static final RelationKey SENT_PROFILING_RELATION = new RelationKey("public", "logs", "Sending");
 
   /**
-   * The schema of the {@link #SENT_RELATION}.
+   * The schema of the {@link #SENT_PROFILING_RELATION}.
    */
-  public static final Schema SENT_SCHEMA = Schema.ofFields(Type.LONG_TYPE, Type.INT_TYPE, Type.LONG_TYPE,
+  public static final Schema SENT_PROFILING_SCHEMA = Schema.ofFields(Type.LONG_TYPE, Type.INT_TYPE, Type.LONG_TYPE,
       Type.LONG_TYPE, Type.INT_TYPE, "queryId", "fragmentId", "nanoTime", "numTuples", "destWorkerId");
 
   /**
    * The relation that stores resource profiling information.
    */
-  public static final RelationKey RESOURCE_RELATION = new RelationKey("public", "logs", "Resource");
+  public static final RelationKey RESOURCE_PROFILING_RELATION = new RelationKey("public", "logs", "Resource");
 
   /**
-   * The schema of the {@link #RESOURCE_RELATION}.
+   * The schema of the {@link #RESOURCE_PROFILING_RELATION}.
    */
-  public static final Schema RESOURCE_SCHEMA = Schema.ofFields(Type.LONG_TYPE, Type.INT_TYPE, Type.STRING_TYPE,
-      Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, "timestamp", "opId", "measurement", "value", "queryId",
-      "subqueryId");
+  public static final Schema RESOURCE_PROFILING_SCHEMA = Schema.ofFields(Type.LONG_TYPE, Type.INT_TYPE,
+      Type.STRING_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, "timestamp", "opId", "measurement", "value",
+      "queryId", "subqueryId");
 
   /**
    * For how long cached versions of the profiling data should be valid.
