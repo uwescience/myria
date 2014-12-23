@@ -13,8 +13,7 @@ before_install:
 - export TERM=dumb
 after_success:
 - ./gradlew jacocoTestReport coveralls
-
-
+sudo: false
 
 
 # Caching is only available for private repos
