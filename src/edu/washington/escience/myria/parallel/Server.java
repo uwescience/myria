@@ -53,6 +53,7 @@ import edu.washington.escience.myria.TupleWriter;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
+import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.CatalogMaker;
@@ -820,7 +821,8 @@ public final class Server {
       importDataset(MyriaConstants.EVENT_PROFILING_RELATION, MyriaConstants.EVENT_PROFILING_SCHEMA, workerIds);
     }
 
-    if (getSchema(MyriaConstants.SENT_PROFILING_RELATION) == null && getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
+    if (getSchema(MyriaConstants.SENT_PROFILING_RELATION) == null
+        && getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
       importDataset(MyriaConstants.SENT_PROFILING_RELATION, MyriaConstants.SENT_PROFILING_SCHEMA, workerIds);
     }
 
@@ -974,15 +976,19 @@ public final class Server {
       for (Integer workerId : actualWorkers) {
         workerPlans.put(workerId, new SubQueryPlan(new SinkRoot(new EOSSource())));
       }
-      ListenableFuture<Query> qf =
-          queryManager.submitQuery("import " + relationKey.toString(), "import " + relationKey.toString(), "import "
-              + relationKey.toString(getDBMS()), new SubQueryPlan(new SinkRoot(new EOSSource())), workerPlans);
-      Query queryState;
-      try {
-        queryState = qf.get();
-      } catch (ExecutionException e) {
-        throw new DbException("Error executing query", e.getCause());
-      }
+
+      QueryEncoding query = new QueryEncoding();
+
+      query.rawQuery = "import " + relationKey.toString();
+      query.logicalRa = "import " + relationKey.toString();
+      query.fragments = ImmutableList.of();
+
+      long queryId = catalog.newQuery(query);
+
+      final Query queryState =
+          new Query(queryId, query, new SubQuery(new SubQueryPlan(new SinkRoot(new EOSSource())), workerPlans), this);
+      queryState.markSuccess();
+      catalog.queryFinished(queryState);
 
       /* TODO(dhalperi) -- figure out how to populate the numTuples column. */
       catalog.addRelationMetadata(relationKey, schema, -1, queryState.getQueryId());
@@ -991,7 +997,6 @@ public final class Server {
     } catch (CatalogException e) {
       throw new DbException(e);
     }
-
   }
 
   /**
