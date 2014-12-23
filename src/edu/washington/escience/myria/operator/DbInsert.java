@@ -116,7 +116,7 @@ public class DbInsert extends AbstractDbInsert {
   public DbInsert(final Operator child, final RelationKey relationKey, final ConnectionInfo connectionInfo,
       final boolean overwriteTable, final List<List<IndexRef>> indexes) {
     super(child);
-    Objects.requireNonNull(relationKey);
+    Objects.requireNonNull(relationKey, "relationKey");
     this.connectionInfo = connectionInfo;
     this.relationKey = relationKey;
     this.overwriteTable = overwriteTable;
@@ -159,8 +159,10 @@ public class DbInsert extends AbstractDbInsert {
 
   @Override
   protected void consumeTuples(final TupleBatch tupleBatch) throws DbException {
-    Objects.requireNonNull(accessMethod);
-    Objects.requireNonNull(tempRelationKey);
+    Objects.requireNonNull(accessMethod, "accessMethod");
+    Objects.requireNonNull(tempRelationKey, "tempRelationKey");
+    Preconditions.checkArgument(tupleBatch.getSchema().equals(getSchema()),
+        "tuple schema %s does not match operator schema %s", tupleBatch.getSchema(), getSchema());
     accessMethod.tupleBatchInsert(tempRelationKey, tupleBatch);
   }
 

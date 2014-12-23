@@ -103,6 +103,8 @@ public class DbInsertTemp extends AbstractDbInsert {
   @Override
   protected void consumeTuples(final TupleBatch tupleBatch) throws DbException {
     Preconditions.checkState(accessMethod != null, "accessMethod must not be null");
+    Preconditions.checkArgument(tupleBatch.getSchema().equals(getSchema()),
+        "tuple schema %s does not match operator schema %s", tupleBatch.getSchema(), getSchema());
     accessMethod.tupleBatchInsert(stagingRelationKey, tupleBatch);
   }
 
