@@ -133,6 +133,7 @@ dependencies {
 
   compile "com.fasterxml.jackson.jaxrs:jackson-jaxrs-providers:${jacksonVersion}"
   compile "com.fasterxml.jackson.datatype:jackson-datatype-joda:${jacksonVersion}"
+  compile "com.fasterxml.jackson.datatype:jackson-datatype-guava:${jacksonVersion}"
 
   compile "com.wordnik:swagger-jersey2-jaxrs_${swaggerVersion}:${swaggerMinorVersion}"
 
