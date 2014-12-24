@@ -55,7 +55,7 @@ public class SQLiteAccessMethodTest {
 
     TupleBatch tb = null;
     while ((tb = tbb.popAny()) != null) {
-      SQLiteAccessMethod.tupleBatchInsert(SQLiteInfo.of(dbFile.getAbsolutePath()), testtableKey, schema, tb);
+      SQLiteAccessMethod.tupleBatchInsert(SQLiteInfo.of(dbFile.getAbsolutePath()), testtableKey, tb);
     }
 
     final Thread[] threads = new Thread[numThreads];
@@ -122,8 +122,8 @@ public class SQLiteAccessMethodTest {
 
     TupleBatch tb = null;
     while ((tb = tbb.popAny()) != null) {
-      SQLiteAccessMethod.tupleBatchInsert(SQLiteInfo.of(dbFile.getAbsolutePath()), testtable0Key, schema, tb);
-      SQLiteAccessMethod.tupleBatchInsert(SQLiteInfo.of(dbFile.getAbsolutePath()), testtable1Key, schema, tb);
+      SQLiteAccessMethod.tupleBatchInsert(SQLiteInfo.of(dbFile.getAbsolutePath()), testtable0Key, tb);
+      SQLiteAccessMethod.tupleBatchInsert(SQLiteInfo.of(dbFile.getAbsolutePath()), testtable1Key, tb);
     }
 
     final Thread[] threads = new Thread[numThreads];
@@ -182,7 +182,7 @@ public class SQLiteAccessMethodTest {
 
     TupleBatch tb = null;
     while ((tb = tbl1.popAny()) != null) {
-      SQLiteAccessMethod.tupleBatchInsert(SQLiteInfo.of(dbFile.getAbsolutePath()), inputKey, tableSchema, tb);
+      SQLiteAccessMethod.tupleBatchInsert(SQLiteInfo.of(dbFile.getAbsolutePath()), inputKey, tb);
     }
 
     final RelationKey outputKey = RelationKey.of("test", "testWrite", "output");

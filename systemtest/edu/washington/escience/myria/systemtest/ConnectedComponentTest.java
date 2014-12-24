@@ -185,8 +185,8 @@ public class ConnectedComponentTest extends SystemTestBase {
     long[] tbl2ID1Worker2 = TestUtils.randomLong(0, MaxID - 1, numTbl2Worker2);
     long[] tbl2ID2Worker1 = TestUtils.randomLong(0, MaxID - 1, numTbl2Worker1);
     long[] tbl2ID2Worker2 = TestUtils.randomLong(0, MaxID - 1, numTbl2Worker2);
-    TupleBatchBuffer tbl2Worker1 = new TupleBatchBuffer(table1Schema);
-    TupleBatchBuffer tbl2Worker2 = new TupleBatchBuffer(table1Schema);
+    TupleBatchBuffer tbl2Worker1 = new TupleBatchBuffer(table2Schema);
+    TupleBatchBuffer tbl2Worker2 = new TupleBatchBuffer(table2Schema);
     for (int i = 0; i < numTbl2Worker1; i++) {
       tbl2Worker1.putLong(0, tbl2ID1Worker1[i]);
       tbl2Worker1.putLong(1, tbl2ID2Worker1[i]);

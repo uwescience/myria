@@ -56,7 +56,7 @@ public class SQLiteTest {
     }
 
     for (final TupleBatch tb : tbb.getAll()) {
-      SQLiteAccessMethod.tupleBatchInsert(SQLiteInfo.of(dbAbsolutePath), testtableKey, outputSchema, tb);
+      SQLiteAccessMethod.tupleBatchInsert(SQLiteInfo.of(dbAbsolutePath), testtableKey, tb);
     }
 
     final HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleBag(tbb);

@@ -477,7 +477,7 @@ public final class Query {
    * @return resource usage stats in a tuple buffer.
    */
   public TupleBuffer getResourceUsage() {
-    Schema schema = Schema.appendColumn(MyriaConstants.RESOURCE_SCHEMA, Type.INT_TYPE, "workerId");
+    Schema schema = Schema.appendColumn(MyriaConstants.RESOURCE_PROFILING_SCHEMA, Type.INT_TYPE, "workerId");
     TupleBuffer tb = new TupleBuffer(schema);
     for (int workerId : resourceUsage.keySet()) {
       ConcurrentLinkedDeque<ResourceStats> statsList = resourceUsage.get(workerId);

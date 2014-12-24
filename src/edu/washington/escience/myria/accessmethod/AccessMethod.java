@@ -68,13 +68,11 @@ public abstract class AccessMethod {
    * Insert the tuples in this TupleBatch into the database.
    * 
    * @param relationKey the table to insert into.
-   * @param schema the schema of the relation.
    * @param tupleBatch the tupleBatch to be inserted.
    * 
    * @throws DbException if there is an error inserting the tuples.
    */
-  public abstract void tupleBatchInsert(final RelationKey relationKey, final Schema schema, final TupleBatch tupleBatch)
-      throws DbException;
+  public abstract void tupleBatchInsert(final RelationKey relationKey, final TupleBatch tupleBatch) throws DbException;
 
   /**
    * Runs a query and expose the results as an Iterator<TupleBatch>.

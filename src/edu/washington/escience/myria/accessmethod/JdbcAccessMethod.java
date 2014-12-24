@@ -137,10 +137,12 @@ public final class JdbcAccessMethod extends AccessMethod {
   }
 
   @Override
-  public void tupleBatchInsert(final RelationKey relationKey, final Schema schema, final TupleBatch tupleBatch)
-      throws DbException {
+  public void tupleBatchInsert(final RelationKey relationKey, final TupleBatch tupleBatch) throws DbException {
     LOGGER.debug("Inserting batch of size {}", tupleBatch.numTuples());
     Objects.requireNonNull(jdbcConnection, "jdbcConnection");
+
+    Schema schema = tupleBatch.getSchema();
+
     boolean writeSucceeds = false;
     if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
       /*

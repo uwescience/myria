@@ -53,6 +53,7 @@ import edu.washington.escience.myria.TupleWriter;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
+import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.CatalogMaker;
@@ -814,20 +815,54 @@ public final class Server {
     messageProcessingExecutor.submit(new MessageProcessor());
     LOGGER.info("Server started on {}", masterSocketInfo);
 
-    final Set<Integer> workerIds = workers.keySet();
-    if (getSchema(MyriaConstants.PROFILING_RELATION) == null
-        && getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
-      importDataset(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA, workerIds);
+    if (getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
+      final Set<Integer> workerIds = workers.keySet();
+      addRelationToCatalogIfNotExists(MyriaConstants.EVENT_PROFILING_RELATION, MyriaConstants.EVENT_PROFILING_SCHEMA,
+          workerIds);
+      addRelationToCatalogIfNotExists(MyriaConstants.SENT_PROFILING_RELATION, MyriaConstants.SENT_PROFILING_SCHEMA,
+          workerIds);
+      addRelationToCatalogIfNotExists(MyriaConstants.RESOURCE_PROFILING_RELATION,
+          MyriaConstants.RESOURCE_PROFILING_SCHEMA, workerIds);
+
+    }
+  }
+
+  /**
+   * Manually add a relation to the catalog if it not already exists.
+   * 
+   * @param relationKey the relation to add
+   * @param schema the schema of the relation to add
+   * @param workers the workers that have the relation
+   * 
+   * @throws DbException if the catalog cannot be accessed
+   */
+  private void addRelationToCatalogIfNotExists(final RelationKey relationKey, final Schema schema,
+      final Set<Integer> workers) throws DbException {
+    try {
+      if (getSchema(relationKey) != null) {
+        return;
+      }
+
+      QueryEncoding query = new QueryEncoding();
+      query.rawQuery = String.format("Add %s to catalog", relationKey);
+      query.logicalRa = query.rawQuery;
+      query.fragments = ImmutableList.of();
+
+      long queryId = catalog.newQuery(query);
+
+      final Query queryState =
+          new Query(queryId, query, new SubQuery(new SubQueryPlan(new SinkRoot(new EOSSource())),
+              new HashMap<Integer, SubQueryPlan>()), this);
+      queryState.markSuccess();
+      catalog.queryFinished(queryState);
+
+      // set a number of tuples so the data can be downloaded
+      catalog.addRelationMetadata(relationKey, schema, 0, queryId);
+      catalog.addStoredRelation(relationKey, workers, "AsRecorded");
+    } catch (CatalogException e) {
+      throw new DbException(e);
     }
 
-    if (getSchema(MyriaConstants.SENT_RELATION) == null && getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
-      importDataset(MyriaConstants.SENT_RELATION, MyriaConstants.SENT_SCHEMA, workerIds);
-    }
-
-    if (getSchema(MyriaConstants.RESOURCE_RELATION) == null
-        && getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
-      importDataset(MyriaConstants.RESOURCE_RELATION, MyriaConstants.RESOURCE_SCHEMA, workerIds);
-    }
   }
 
   /**
@@ -1267,7 +1302,7 @@ public final class Server {
 
     String sentQueryString =
         Joiner.on(' ').join("SELECT \"fragmentId\", \"destWorkerId\", sum(\"numTuples\") as \"numTuples\" FROM",
-            MyriaConstants.SENT_RELATION.toString(getDBMS()), "WHERE \"queryId\" =", queryId, fragmentWhere,
+            MyriaConstants.SENT_PROFILING_RELATION.toString(getDBMS()), "WHERE \"queryId\" =", queryId, fragmentWhere,
             "GROUP BY \"queryId\", \"fragmentId\", \"destWorkerId\"");
 
     DbQueryScan scan = new DbQueryScan(sentQueryString, schema);
@@ -1341,7 +1376,7 @@ public final class Server {
             .on(' ')
             .join(
                 "SELECT \"fragmentId\", sum(\"numTuples\") as \"numTuples\", min(\"nanoTime\") as \"minTime\", max(\"nanoTime\") as \"maxTime\" FROM",
-                MyriaConstants.SENT_RELATION.toString(getDBMS()), "WHERE \"queryId\" =", queryId,
+                MyriaConstants.SENT_PROFILING_RELATION.toString(getDBMS()), "WHERE \"queryId\" =", queryId,
                 "GROUP BY \"queryId\", \"fragmentId\"");
 
     DbQueryScan scan = new DbQueryScan(sentQueryString, schema);
@@ -1411,7 +1446,7 @@ public final class Server {
     if (onlyRootOperator) {
       opCondition =
           Joiner.on(' ').join("AND \"opId\" = (SELECT \"opId\" FROM",
-              MyriaConstants.PROFILING_RELATION.toString(getDBMS()), "WHERE", fragmentId, "=\"fragmentId\" AND",
+              MyriaConstants.EVENT_PROFILING_RELATION.toString(getDBMS()), "WHERE", fragmentId, "=\"fragmentId\" AND",
               queryId, "=\"queryId\" ORDER BY \"startTime\" ASC LIMIT 1)");;
     }
 
@@ -1422,7 +1457,7 @@ public final class Server {
 
     String queryString =
         Joiner.on(' ').join("SELECT \"opId\", \"startTime\", \"endTime\", \"numTuples\" FROM",
-            MyriaConstants.PROFILING_RELATION.toString(getDBMS()), "WHERE \"fragmentId\" =", fragmentId,
+            MyriaConstants.EVENT_PROFILING_RELATION.toString(getDBMS()), "WHERE \"fragmentId\" =", fragmentId,
             "AND \"queryId\" =", queryId, "AND \"endTime\" >", start, "AND \"startTime\" <", end, opCondition,
             spanCondition, "ORDER BY \"startTime\" ASC");
 
@@ -1491,7 +1526,7 @@ public final class Server {
     Preconditions.checkArgument(bins > 0 && bins <= MAX_BINS, "bins must be in the range [1, %s]", MAX_BINS);
 
     final Schema schema = Schema.ofFields("opId", Type.INT_TYPE, "nanoTime", Type.LONG_TYPE);
-    final RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
+    final RelationKey relationKey = MyriaConstants.EVENT_PROFILING_RELATION;
 
     Set<Integer> actualWorkers = queryStatus.plan.getWorkers();
 
@@ -1582,7 +1617,7 @@ public final class Server {
     final QueryStatusEncoding queryStatus = checkAndReturnQueryStatus(queryId);
 
     final Schema schema = Schema.ofFields("startTime", Type.LONG_TYPE, "endTime", Type.LONG_TYPE);
-    final RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
+    final RelationKey relationKey = MyriaConstants.EVENT_PROFILING_RELATION;
 
     Set<Integer> actualWorkers = queryStatus.plan.getWorkers();
 
@@ -1635,7 +1670,7 @@ public final class Server {
     final QueryStatusEncoding queryStatus = checkAndReturnQueryStatus(queryId);
 
     final Schema schema = Schema.ofFields("opId", Type.INT_TYPE, "nanoTime", Type.LONG_TYPE);
-    final RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
+    final RelationKey relationKey = MyriaConstants.EVENT_PROFILING_RELATION;
 
     Set<Integer> actualWorkers = queryStatus.plan.getWorkers();
 
@@ -1768,7 +1803,7 @@ public final class Server {
    * @throws DbException if there is an error in the database.
    */
   public void getResourceUsage(final long queryId, final PipedOutputStream writerOutput) throws DbException {
-    Schema schema = Schema.appendColumn(MyriaConstants.RESOURCE_SCHEMA, Type.INT_TYPE, "workerId");
+    Schema schema = Schema.appendColumn(MyriaConstants.RESOURCE_PROFILING_SCHEMA, Type.INT_TYPE, "workerId");
     try {
       TupleWriter writer = new CsvTupleWriter(writerOutput);
       TupleBuffer tb = queryManager.getResourceUsage(queryId);
@@ -1801,9 +1836,9 @@ public final class Server {
 
     Set<Integer> actualWorkers = queryStatus.plan.getWorkers();
 
-    final Schema schema = MyriaConstants.RESOURCE_SCHEMA;
+    final Schema schema = MyriaConstants.RESOURCE_PROFILING_SCHEMA;
     String resourceQueryString =
-        Joiner.on(' ').join("SELECT * from", MyriaConstants.RESOURCE_RELATION.toString(getDBMS()),
+        Joiner.on(' ').join("SELECT * from", MyriaConstants.RESOURCE_PROFILING_RELATION.toString(getDBMS()),
             "WHERE \"queryId\" =", queryId);
     DbQueryScan scan = new DbQueryScan(resourceQueryString, schema);
 
