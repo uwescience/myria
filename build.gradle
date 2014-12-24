@@ -91,20 +91,21 @@ repositories.localRepository {
 
 /* List constants that we use in multiple places. */
 ext.slf4jVersion = "1.7.9"
+ext.jacksonVersion = "2.4.4"
 ext.jerseyVersion = "2.14"
 ext.swaggerVersion = "2.11"
 ext.swaggerMinorVersion = "1.3.11"
 
 dependencies {
-  compile ("org.apache.hadoop:hadoop-core:1.1.2") {
+  compile ("org.apache.hadoop:hadoop-core:1.2.1") {
     /* Hadoop depends on Jersey 1 but we don't need it. Exclude it to prevent
      * Classloader picking the wrong version of Jersey classes. */
     exclude group: "com.sun.jersey"
   }
 
-  compile "xerces:xercesImpl:2.9.1"
-  compile "xalan:xalan:2.7.1"
-  compile "com.google.code.findbugs:findbugs:3.0.0"
+  compile "xerces:xercesImpl:2.11.0"
+  compile "xalan:xalan:2.7.2"
+  compile "com.google.code.findbugs:annotations:3.0.0"
   compile "net.jcip:jcip-annotations:1.0"
   compile "org.ini4j:ini4j:0.5.2"
   compile "com.almworks.sqlite4java:sqlite4java:1.0.392"
@@ -112,10 +113,10 @@ dependencies {
   compile "com.google.guava:guava:18.0"
   compile "com.google.protobuf:protobuf-java:2.6.1"
 
-  compile "io.netty:netty:3.9.2.Final"
+  compile "io.netty:netty:3.9.6.Final"
   compile "net.sf.trove4j:trove4j:3.0.3"
 
-  compile "joda-time:joda-time:2.3"
+  compile "joda-time:joda-time:2.6"
 
   compile "commons-io:commons-io:2.4"
   compile "org.apache.commons:commons-lang3:3.3.2"
@@ -130,8 +131,8 @@ dependencies {
 
   compile "javax.annotation:javax.annotation-api:1.2"
 
-  compile "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:2.4.1"
-  compile "com.fasterxml.jackson.datatype:jackson-datatype-joda:2.4.1"
+  compile "com.fasterxml.jackson.jaxrs:jackson-jaxrs-providers:${jacksonVersion}"
+  compile "com.fasterxml.jackson.datatype:jackson-datatype-joda:${jacksonVersion}"
 
   compile "com.wordnik:swagger-jersey2-jaxrs_${swaggerVersion}:${swaggerMinorVersion}"
 
@@ -142,13 +143,13 @@ dependencies {
   compile "org.apache.commons:commons-csv:1.1"
   
   // Expression compiler
-  compile "org.codehaus.janino:janino:2.7.6"
+  compile "org.codehaus.janino:janino:2.7.7"
 
   runtime "monetdb:monetdb-jdbc:2.11"
   runtime "mysql:mysql-connector-java:5.1.31"
   compile "org.postgresql:postgresql:9.3-1102-jdbc41"
 
-  testCompile "junit:junit:4.11"
+  testCompile "junit:junit:4.12"
   testCompile "com.carrotsearch:junit-benchmarks:0.7.2"
 
   systemtestCompile sourceSets.main.output
