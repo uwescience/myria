@@ -3,8 +3,6 @@ package edu.washington.escience.myria.util;
 import java.io.File;
 import java.io.IOException;
 
-import org.slf4j.LoggerFactory;
-
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
@@ -18,9 +16,6 @@ import edu.washington.escience.myria.Type;
  * 
  * */
 public final class SQLiteUtils {
-  /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(SQLiteUtils.class);
-
   /**
    * Helper utility for creating SQLite CREATE TABLE statements.
    * 

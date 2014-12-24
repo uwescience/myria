@@ -30,7 +30,7 @@ import edu.washington.escience.myria.util.TestUtils;
 public class BigDataTest extends SystemTestBase {
 
   public BigDataTest() {
-    globalTimeout = new Timeout(1200 * 1000);
+    globalTimeout = Timeout.seconds(1200);
   }
 
   @Test
