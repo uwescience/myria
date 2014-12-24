@@ -90,6 +90,9 @@ public final class MyriaConstants {
   /** Time interval between two heartbeats. */
   public static final int HEARTBEAT_INTERVAL = 1000;
 
+  /** Time interval between two resource usage reports. */
+  public static final int RESOURCE_REPORT_INTERVAL = 1000;
+
   /** The identity of the master worker is current always zero. */
   public static final int MASTER_ID = 0;
 
@@ -237,37 +240,44 @@ public final class MyriaConstants {
   public static final int MAX_ACTIVE_QUERIES = 25;
 
   /**
-   * The relation that stores profiling information.
+   * The relation that stores profiling information about which operators executed when.
    */
-  public static final RelationKey PROFILING_RELATION = new RelationKey("public", "logs", "Profiling");
+  public static final RelationKey EVENT_PROFILING_RELATION = new RelationKey("public", "logs", "Profiling");
 
   /**
-   * The schema of the {@link #PROFILING_RELATION}.
+   * The schema of the {@link #EVENT_PROFILING_RELATION}.
    */
-  public static final Schema PROFILING_SCHEMA = Schema.ofFields(Type.LONG_TYPE, Type.INT_TYPE, Type.INT_TYPE,
+  public static final Schema EVENT_PROFILING_SCHEMA = Schema.ofFields(Type.LONG_TYPE, Type.INT_TYPE, Type.INT_TYPE,
       Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, "queryId", "fragmentId", "opId", "startTime", "endTime",
       "numTuples");
 
   /**
-   * The relation that stores profiling information.
+   * The relation that stores profiling information about sent tuples.
    */
-  public static final RelationKey SENT_RELATION = new RelationKey("public", "logs", "Sending");
+  public static final RelationKey SENT_PROFILING_RELATION = new RelationKey("public", "logs", "Sending");
 
   /**
-   * The schema of the {@link #SENT_RELATION}.
+   * The schema of the {@link #SENT_PROFILING_RELATION}.
    */
-  public static final Schema SENT_SCHEMA = Schema.ofFields(Type.LONG_TYPE, Type.INT_TYPE, Type.LONG_TYPE,
+  public static final Schema SENT_PROFILING_SCHEMA = Schema.ofFields(Type.LONG_TYPE, Type.INT_TYPE, Type.LONG_TYPE,
       Type.LONG_TYPE, Type.INT_TYPE, "queryId", "fragmentId", "nanoTime", "numTuples", "destWorkerId");
+
+  /**
+   * The relation that stores resource profiling information.
+   */
+  public static final RelationKey RESOURCE_PROFILING_RELATION = new RelationKey("public", "logs", "Resource");
+
+  /**
+   * The schema of the {@link #RESOURCE_PROFILING_RELATION}.
+   */
+  public static final Schema RESOURCE_PROFILING_SCHEMA = Schema.ofFields(Type.LONG_TYPE, Type.INT_TYPE,
+      Type.STRING_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, "timestamp", "opId", "measurement", "value",
+      "queryId", "subqueryId");
 
   /**
    * For how long cached versions of the profiling data should be valid.
    */
   public static final long PROFILING_CACHE_AGE = TimeUnit.HOURS.toMillis(1);
-
-  /**
-   * Number of entries in profiling logger before it is flushed.
-   */
-  public static final int PROFILING_LOGGER_BATCH_SIZE = 10000;
 
   /**
    * The maximum number of subqueries we will allow a query to execute before killing it. This is a safeguard against an
@@ -286,8 +296,20 @@ public final class MyriaConstants {
   }
 
   /** available fault-tolerance mode for each query in Myria. */
-  public static enum FTMODE {
+  public static enum FTMode {
     /** three FT modes are supported. */
     NONE, ABANDON, REJOIN
+  };
+
+  /** available profiling mode for each query in Myria. */
+  public static enum ProfilingMode {
+    /**
+     * RESOURCE: resource usage (CPU, IO, Memory) only.
+     */
+    RESOURCE,
+    /**
+     * QUERY: query execution only.
+     */
+    QUERY
   };
 }

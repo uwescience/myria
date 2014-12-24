@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.operator;
 
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Objects;
 
 import com.google.common.base.Preconditions;
@@ -12,11 +13,14 @@ import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * Unions the output of a set of operators without eliminating duplicates.
- * */
+ */
 public final class UnionAll extends NAryOperator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
+
+  /** The column names from the first child, whose names we pass on. */
+  private List<String> outputColumnNames = null;
 
   /**
    * List of children that have not yet returned EOS.
@@ -25,7 +29,7 @@ public final class UnionAll extends NAryOperator {
 
   /**
    * @param children the children to be united.
-   * */
+   */
   public UnionAll(final Operator[] children) {
     super(children);
   }
@@ -59,7 +63,11 @@ public final class UnionAll extends NAryOperator {
       }
 
       if (tb != null) {
-        return tb;
+        if (tb.getSchema().getColumnNames().equals(outputColumnNames)) {
+          return tb;
+        } else {
+          return tb.rename(outputColumnNames);
+        }
       }
     }
 
@@ -68,16 +76,16 @@ public final class UnionAll extends NAryOperator {
 
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    final Operator[] children = Objects.requireNonNull(getChildren());
-    Preconditions.checkArgument(children.length > 0);
+    final Operator[] children = Objects.requireNonNull(getChildren(), "children");
+    Preconditions.checkArgument(children.length > 0, "UnionAll requires at least one child");
+    outputColumnNames = children[0].getSchema().getColumnNames();
 
     childrenWithData = new LinkedList<Operator>();
     for (Operator child : getChildren()) {
-      Preconditions.checkNotNull(child);
+      Preconditions.checkNotNull(child, "child");
 
-      if (!getSchema().compatible(child.getSchema())) {
-        throw new DbException("Incompatible input schema");
-      }
+      Preconditions.checkArgument(getSchema().compatible(child.getSchema()), "Child schema %s is incompatible with %s",
+          child.getSchema(), getSchema());
       childrenWithData.add(child);
     }
   }

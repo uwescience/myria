@@ -1,6 +1,8 @@
 package edu.washington.escience.myria;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.util.List;
 
@@ -145,4 +147,19 @@ public class SchemaTest {
   public void testBadNameHasParentheses() {
     Schema.ofFields(Type.INT_TYPE, Type.LONG_TYPE, "Mycol(0)", "Mycol1");
   }
+
+  public void testCompatible() {
+    assertTrue(Schema.ofFields("a", Type.INT_TYPE).compatible(Schema.ofFields("a", Type.INT_TYPE)));
+    assertTrue(Schema.ofFields("a", Type.INT_TYPE).compatible(Schema.ofFields("b", Type.INT_TYPE)));
+    assertTrue(Schema.ofFields("a", Type.INT_TYPE).compatible(Schema.ofFields(Type.INT_TYPE)));
+    assertTrue(Schema.ofFields(Type.INT_TYPE, Type.DOUBLE_TYPE, Type.LONG_TYPE, Type.DATETIME_TYPE).compatible(
+        Schema.ofFields("a", Type.INT_TYPE, "b", Type.DOUBLE_TYPE, "c", Type.LONG_TYPE, "d", Type.DATETIME_TYPE)));
+
+    assertFalse(Schema.ofFields("a", Type.INT_TYPE).compatible(Schema.ofFields("a", Type.LONG_TYPE)));
+    assertFalse(Schema.ofFields("a", Type.INT_TYPE)
+        .compatible(Schema.ofFields("a", Type.INT_TYPE, "b", Type.LONG_TYPE)));
+    assertFalse(Schema.ofFields(Type.INT_TYPE, Type.DOUBLE_TYPE, Type.LONG_TYPE, Type.DATETIME_TYPE).compatible(
+        Schema.ofFields(Type.INT_TYPE, Type.DOUBLE_TYPE, Type.LONG_TYPE, Type.BOOLEAN_TYPE)));
+  }
+
 }

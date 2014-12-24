@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 
@@ -39,14 +40,28 @@ public class QueryQueueTest extends SystemTestBase {
     /* One very short query. */
     QueryPlan q2 = TestUtils.insertRelation(source2, table2Key, pf, workerIDs);
 
-    QueryFuture qf1 = server.getQueryManager().submitQuery("long query 1", "long query 1", "long query 1", q1, null);
-    QueryFuture qf2 = server.getQueryManager().submitQuery("short query 2", "short query 2", "short query 2", q2, null);
+    QueryFuture qf1 = server.getQueryManager().submitQuery("long query 1", "long query 1", "long query 1", q1);
+    QueryFuture qf2 = server.getQueryManager().submitQuery("short query 2", "short query 2", "short query 2", q2);
     Query query1 = qf1.get();
     Query query2 = qf2.get();
     assertEquals(query1.getMessage(), query1.getStatus(), Status.SUCCESS);
     assertEquals(query2.getMessage(), query2.getStatus(), Status.SUCCESS);
     /* The goal: query 2 should have been started after query 1 finished. */
     assertTrue(query1.getEndTime().compareTo(query2.getStartTime()) < 0);
+
+    /* Test the query matching functionality. */
+    List<QueryStatusEncoding> qs = server.getQueryManager().getQueries(null, null, null, "long");
+    assertEquals(1, qs.size());
+    assertEquals(query1.getQueryId(), qs.get(0).queryId.longValue());
+    qs = server.getQueryManager().getQueries(null, null, null, "short");
+    assertEquals(1, qs.size());
+    assertEquals(query2.getQueryId(), qs.get(0).queryId.longValue());
+    qs = server.getQueryManager().getQueries(null, null, null, "query");
+    assertEquals(2, qs.size());
+    assertEquals(query2.getQueryId(), qs.get(0).queryId.longValue());
+    assertEquals(query1.getQueryId(), qs.get(1).queryId.longValue());
+    qs = server.getQueryManager().getQueries(null, null, null, "que");
+    assertEquals(0, qs.size());
   }
 
   @Test
@@ -60,8 +75,8 @@ public class QueryQueueTest extends SystemTestBase {
     PartitionFunction pf = new SingleFieldHashPartitionFunction(workerIDs.length, 0);
     QueryPlan q2 = TestUtils.insertRelation(source2, table2Key, pf, workerIDs);
 
-    QueryFuture qf1 = server.getQueryManager().submitQuery("fail query 1", "fail query 1", "fail query 1", q1, null);
-    QueryFuture qf2 = server.getQueryManager().submitQuery("short query 2", "short query 2", "short query 2", q2, null);
+    QueryFuture qf1 = server.getQueryManager().submitQuery("fail query 1", "fail query 1", "fail query 1", q1);
+    QueryFuture qf2 = server.getQueryManager().submitQuery("short query 2", "short query 2", "short query 2", q2);
     QueryStatusEncoding query1 = null;
     try {
       qf1.get();
@@ -89,8 +104,8 @@ public class QueryQueueTest extends SystemTestBase {
     PartitionFunction pf = new SingleFieldHashPartitionFunction(workerIDs.length, 0);
     QueryPlan q2 = TestUtils.insertRelation(source2, table2Key, pf, workerIDs);
 
-    QueryFuture qf1 = server.getQueryManager().submitQuery("fail query 1", "fail query 1", "fail query 1", q1, null);
-    QueryFuture qf2 = server.getQueryManager().submitQuery("short query 2", "short query 2", "short query 2", q2, null);
+    QueryFuture qf1 = server.getQueryManager().submitQuery("fail query 1", "fail query 1", "fail query 1", q1);
+    QueryFuture qf2 = server.getQueryManager().submitQuery("short query 2", "short query 2", "short query 2", q2);
     QueryStatusEncoding query1 = null;
     try {
       qf1.get();
@@ -119,7 +134,7 @@ public class QueryQueueTest extends SystemTestBase {
       RelationKey tableKey = RelationKey.of("test", "test", "tinytable" + i);
       QueryPlan q = TestUtils.insertRelation(source, tableKey, pf, workerIDs);
       try {
-        qfs[i] = server.getQueryManager().submitQuery("fail query 1", "fail query 1", "fail query 1", q, null);
+        qfs[i] = server.getQueryManager().submitQuery("fail query 1", "fail query 1", "fail query 1", q);
         numSubmitted = i;
       } catch (DbException e) {
         /* Expect a "too many active queries" message. */
@@ -154,9 +169,9 @@ public class QueryQueueTest extends SystemTestBase {
     /* One very short query. */
     QueryPlan q3 = TestUtils.insertRelation(source3, table3Key, pf, workerIDs);
 
-    QueryFuture qf1 = server.getQueryManager().submitQuery("long query 1", "long query 1", "long query 1", q1, null);
-    QueryFuture qf2 = server.getQueryManager().submitQuery("short query 2", "short query 2", "short query 2", q2, null);
-    QueryFuture qf3 = server.getQueryManager().submitQuery("short query 3", "short query 3", "short query 3", q3, null);
+    QueryFuture qf1 = server.getQueryManager().submitQuery("long query 1", "long query 1", "long query 1", q1);
+    QueryFuture qf2 = server.getQueryManager().submitQuery("short query 2", "short query 2", "short query 2", q2);
+    QueryFuture qf3 = server.getQueryManager().submitQuery("short query 3", "short query 3", "short query 3", q3);
     /* Kill Query 2 before it even gets to start. */
     server.getQueryManager().killQuery(qf2.getQueryId());
     Query query1 = qf1.get();

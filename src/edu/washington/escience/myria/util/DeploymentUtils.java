@@ -92,7 +92,7 @@ public final class DeploymentUtils {
         System.out.println("Start syncing distribution files to master#" + masterId + " @ " + hostname);
         rsyncFileToRemote("libs", hostname, remotePath, true);
         rsyncFileToRemote("conf", hostname, remotePath);
-        rsyncFileToRemote("sqlite4java-282", hostname, remotePath);
+        rsyncFileToRemote("sqlite4java-392", hostname, remotePath);
         // server needs the config file to create catalogs for new workers
         rsyncFileToRemote(configFileName, hostname, remotePath);
         rsyncFileToRemote("get_logs.py", hostname, remotePath);
@@ -114,7 +114,7 @@ public final class DeploymentUtils {
         System.out.println("Start syncing distribution files to worker#" + workerId + " @ " + hostname);
         rsyncFileToRemote("libs", hostname, remotePath, true);
         rsyncFileToRemote("conf", hostname, remotePath);
-        rsyncFileToRemote("sqlite4java-282", hostname, remotePath);
+        rsyncFileToRemote("sqlite4java-392", hostname, remotePath);
       }
     } else if (action.equals("-start_master")) {
       String workingDir = config.get("deployment").get("path");
@@ -174,7 +174,7 @@ public final class DeploymentUtils {
     String path = workingDir + "/" + description + "-files";
     String workerDir = path + "/" + description + "/" + "worker_" + workerId;
     String classpath = "'" + path + "/conf:" + path + "/libs/*'";
-    String librarypath = path + "/" + "sqlite4java-282";
+    String librarypath = path + "/" + "sqlite4java-392";
     String heapSize = maxHeapSize;
     if (description == null) {
       /* built in system test */
@@ -234,7 +234,7 @@ public final class DeploymentUtils {
     builder.append(" nohup java -cp 'conf:libs/*'");
     builder.append(" -Djava.util.logging.config.file=logging.properties");
     builder.append(" -Dlog4j.configuration=log4j.properties");
-    builder.append(" -Djava.library.path=sqlite4java-282");
+    builder.append(" -Djava.library.path=sqlite4java-392");
     builder.append(" " + maxHeapSize);
     builder.append(" edu.washington.escience.myria.daemon.MasterDaemon");
     builder.append(" " + workingDir + "/" + description + " " + restPort);

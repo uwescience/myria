@@ -118,8 +118,7 @@ public final class SQLiteAccessMethod extends AccessMethod {
   }
 
   @Override
-  public void tupleBatchInsert(final RelationKey relationKey, final Schema schema, final TupleBatch tupleBatch)
-      throws DbException {
+  public void tupleBatchInsert(final RelationKey relationKey, final TupleBatch tupleBatch) throws DbException {
     Objects.requireNonNull(sqliteQueue);
 
     try {
@@ -127,6 +126,7 @@ public final class SQLiteAccessMethod extends AccessMethod {
         @Override
         protected Object job(final SQLiteConnection sqliteConnection) throws DbException {
           SQLiteStatement statement = null;
+          Schema schema = tupleBatch.getSchema();
           try {
             /* BEGIN TRANSACTION */
             sqliteConnection.exec("BEGIN TRANSACTION");
@@ -278,17 +278,16 @@ public final class SQLiteAccessMethod extends AccessMethod {
    * 
    * @param sqliteInfo SQLite connection information
    * @param relationKey the table to insert into.
-   * @param schema the schema of the relation.
    * @param tupleBatch TupleBatch that contains the data to be inserted.
    * @throws DbException if there is an error in the database.
    */
   public static synchronized void tupleBatchInsert(final SQLiteInfo sqliteInfo, final RelationKey relationKey,
-      final Schema schema, final TupleBatch tupleBatch) throws DbException {
+      final TupleBatch tupleBatch) throws DbException {
 
     SQLiteAccessMethod sqliteAccessMethod = null;
     try {
       sqliteAccessMethod = new SQLiteAccessMethod(sqliteInfo, false);
-      sqliteAccessMethod.tupleBatchInsert(relationKey, schema, tupleBatch);
+      sqliteAccessMethod.tupleBatchInsert(relationKey, tupleBatch);
     } catch (DbException e) {
       throw e;
     } finally {

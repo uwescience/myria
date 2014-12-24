@@ -2,7 +2,10 @@ package edu.washington.escience.myria.parallel;
 
 import java.util.Set;
 
-import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import javax.annotation.Nonnull;
+
+import edu.washington.escience.myria.MyriaConstants.FTMode;
+import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 
 /**
  * A {@link LocalSubQuery} is the instantiation of the part of a distributed subquery that executes at one node. It
@@ -14,12 +17,12 @@ public abstract class LocalSubQuery implements Comparable<LocalSubQuery> {
   /**
    * The profiling mode.
    */
-  private final boolean profilingMode;
+  private final Set<ProfilingMode> profilingMode;
 
   /**
    * The fault tolerance mode.
    */
-  private final FTMODE ftMode;
+  private final FTMode ftMode;
 
   /**
    * Priority, currently not used.
@@ -31,7 +34,7 @@ public abstract class LocalSubQuery implements Comparable<LocalSubQuery> {
    * 
    * @return the ft mode.
    */
-  public final FTMODE getFTMode() {
+  public final FTMode getFTMode() {
     return ftMode;
   }
 
@@ -47,7 +50,7 @@ public abstract class LocalSubQuery implements Comparable<LocalSubQuery> {
    * @param ftMode the fault-tolerance mode of this subquery.
    * @param profilingMode the profiling mode of this subquery.
    */
-  public LocalSubQuery(final SubQueryId subQueryId, final FTMODE ftMode, final boolean profilingMode) {
+  public LocalSubQuery(final SubQueryId subQueryId, final FTMode ftMode, @Nonnull final Set<ProfilingMode> profilingMode) {
     this.subQueryId = subQueryId;
     this.ftMode = ftMode;
     this.profilingMode = profilingMode;
@@ -56,7 +59,8 @@ public abstract class LocalSubQuery implements Comparable<LocalSubQuery> {
   /**
    * @return the profiling mode.
    */
-  public final boolean isProfilingMode() {
+  @Nonnull
+  public final Set<ProfilingMode> getProfilingMode() {
     return profilingMode;
   }
 

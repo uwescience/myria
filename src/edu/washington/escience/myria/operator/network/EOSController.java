@@ -8,7 +8,7 @@ import java.util.Set;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.operator.IDBController;
 import edu.washington.escience.myria.operator.Operator;
@@ -88,7 +88,7 @@ public class EOSController extends Producer {
     }
 
     int numExpecting = eosZeroColValue;
-    if (getTaskResourceManager().getFragment().getLocalSubQuery().getFTMode().equals(FTMODE.ABANDON)) {
+    if (getTaskResourceManager().getFragment().getLocalSubQuery().getFTMode().equals(FTMode.ABANDON)) {
       Set<Integer> missingWorkers = getTaskResourceManager().getFragment().getLocalSubQuery().getMissingWorkers();
       for (Integer id : missingWorkers) {
         if (workerIdToIndex.containsKey(id)) {
