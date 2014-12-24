@@ -8,7 +8,7 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.Objects;
 
-import org.glassfish.jersey.media.json.internal.writer.JsonEncoder;
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.joda.time.DateTime;
 
 import com.google.common.collect.ImmutableList;
@@ -122,7 +122,7 @@ public class JsonTupleWriter implements TupleWriter {
     Objects.requireNonNull(columnNames);
     ImmutableList.Builder<String> escapedNames = ImmutableList.builder();
     for (String name : columnNames) {
-      escapedNames.add(JsonEncoder.encode(name));
+      escapedNames.add(StringEscapeUtils.escapeJson(name));
     }
     escapedColumnNames = escapedNames.build();
 
@@ -178,7 +178,7 @@ public class JsonTupleWriter implements TupleWriter {
             break;
           case STRING_TYPE:
             print('"');
-            print(JsonEncoder.encode(tuples.getString(j, i)));
+            print(StringEscapeUtils.escapeJson(tuples.getString(j, i)));
             print('"');
             break;
         }
