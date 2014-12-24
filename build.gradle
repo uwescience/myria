@@ -126,7 +126,7 @@ dependencies {
   compile "org.glassfish.jersey.core:jersey-common:${jerseyVersion}"
   compile "org.glassfish.jersey.containers:jersey-container-grizzly2-http:${jerseyVersion}"
   compile "org.glassfish.jersey.media:jersey-media-multipart:${jerseyVersion}"
-  compile 'org.glassfish.jersey.media:jersey-media-json:2.0-m05-1'
+  compile "org.glassfish.jersey.media:jersey-media-json-jackson:${jerseyVersion}"
 
   compile "javax.annotation:javax.annotation-api:1.2"
 
