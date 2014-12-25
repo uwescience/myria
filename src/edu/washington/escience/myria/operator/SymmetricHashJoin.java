@@ -168,7 +168,10 @@ public final class SymmetricHashJoin extends BinaryOperator {
   private transient ReplaceProcedure doReplace;
 
   /** Whether the last child polled was the left child. */
-  private boolean pollLeft;
+  private boolean pollLeft = true;
+
+  /** Join pull order, default: ALTER. */
+  private JoinPullOrder order = JoinPullOrder.ALTER;
 
   /** if the hash table of the left child should use set semantics. */
   private boolean setSemanticsLeft = false;
@@ -288,7 +291,6 @@ public final class SymmetricHashJoin extends BinaryOperator {
     rightCompareIndx = MyriaArrayUtils.warnIfNotSet(compareIndx2);
     leftAnswerColumns = MyriaArrayUtils.warnIfNotSet(answerColumns1);
     rightAnswerColumns = MyriaArrayUtils.warnIfNotSet(answerColumns2);
-    pollLeft = false;
   }
 
   /**
@@ -503,8 +505,11 @@ public final class SymmetricHashJoin extends BinaryOperator {
       return fetchNextReadySynchronousEOI();
     }
 
-    final Operator left = getLeft();
-    final Operator right = getRight();
+    if (order.equals(JoinPullOrder.LEFT)) {
+      pollLeft = true;
+    } else if (order.equals(JoinPullOrder.RIGHT)) {
+      pollLeft = false;
+    }
 
     /* If any full tuple batches are ready, output them. */
     TupleBatch nexttb = ans.popFilled();
@@ -524,6 +529,8 @@ public final class SymmetricHashJoin extends BinaryOperator {
       return nexttb;
     }
 
+    final Operator left = getLeft();
+    final Operator right = getRight();
     int noDataStreak = 0;
     while (noDataStreak < 2 && (!left.eos() || !right.eos())) {
       pollLeft = !pollLeft;
@@ -719,5 +726,24 @@ public final class SymmetricHashJoin extends BinaryOperator {
       sum += hashTable2.numTuples();
     }
     return sum;
+  }
+
+  /** Join pull order options. */
+  public enum JoinPullOrder {
+    /** Alternatively. */
+    ALTER,
+    /** Pull from the left child whenever there is data available. */
+    LEFT,
+    /** Pull from the right child whenever there is data available. */
+    RIGHT
+  }
+
+  /**
+   * Set the pull order.
+   * 
+   * @param order the pull order.
+   */
+  public void setPullOrder(final JoinPullOrder order) {
+    this.order = order;
   }
 }
