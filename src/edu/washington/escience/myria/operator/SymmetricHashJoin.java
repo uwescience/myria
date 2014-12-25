@@ -168,7 +168,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
   private transient ReplaceProcedure doReplace;
 
   /** Whether the last child polled was the left child. */
-  private boolean pollLeft = true;
+  private boolean pollLeft = false;
 
   /** Join pull order, default: ALTER. */
   private JoinPullOrder order = JoinPullOrder.ALTER;
@@ -533,7 +533,6 @@ public final class SymmetricHashJoin extends BinaryOperator {
     final Operator right = getRight();
     int noDataStreak = 0;
     while (noDataStreak < 2 && (!left.eos() || !right.eos())) {
-      pollLeft = !pollLeft;
 
       Operator current;
       if (pollLeft) {
@@ -542,33 +541,34 @@ public final class SymmetricHashJoin extends BinaryOperator {
         current = right;
       }
 
-      if (current.eos()) {
-        noDataStreak++;
-        continue;
-      }
-
       /* process tuple from child */
       TupleBatch tb = current.nextReady();
       if (tb != null) {
-        noDataStreak = 0;
         processChildTB(tb, pollLeft);
+        noDataStreak = 0;
+        /* ALTER: switch to the other child */
+        if (order.equals(JoinPullOrder.ALTER)) {
+          pollLeft = !pollLeft;
+        }
         nexttb = ans.popAnyUsingTimeout();
         if (nexttb != null) {
           return nexttb;
         }
-      } else {
-        noDataStreak++;
+      } else if (current.eoi()) {
         /* if current operator is eoi, consume it, check whether it will cause EOI of this operator */
-        if (current.eoi()) {
-          consumeChildEOI(pollLeft);
-          /*
-           * If this operator is ready to emit EOI ( reminder that it might need to clear buffer), break to EOI handle
-           * part
-           */
-          if (isEOIReady()) {
-            break;
-          }
+        consumeChildEOI(pollLeft);
+        noDataStreak = 0;
+        if (order.equals(JoinPullOrder.ALTER)) {
+          pollLeft = !pollLeft;
         }
+        /* If this operator is ready to emit EOI (reminder that it needs to clear buffer), break to EOI handle part */
+        if (isEOIReady()) {
+          break;
+        }
+      } else {
+        /* current.eos() or no data, switch to the other child */
+        pollLeft = !pollLeft;
+        noDataStreak++;
       }
     }
 
