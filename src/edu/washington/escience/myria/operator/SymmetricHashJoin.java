@@ -3,13 +3,13 @@ package edu.washington.escience.myria.operator;
 import java.util.Arrays;
 import java.util.List;
 
-import com.carrotsearch.hppc.IntArrayList;
-import com.carrotsearch.hppc.IntObjectOpenHashMap;
-import com.carrotsearch.hppc.procedures.IntProcedure;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.gs.collections.api.block.procedure.primitive.IntProcedure;
+import com.gs.collections.impl.list.mutable.primitive.IntArrayList;
+import com.gs.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
@@ -49,11 +49,11 @@ public final class SymmetricHashJoin extends BinaryOperator {
   /**
    * A hash table for tuples from child 1. {Hashcode -> List of tuple indices with the same hash code}
    */
-  private transient IntObjectOpenHashMap<IntArrayList> leftHashTableIndices;
+  private transient IntObjectHashMap<IntArrayList> leftHashTableIndices;
   /**
    * A hash table for tuples from child 2. {Hashcode -> List of tuple indices with the same hash code}
    */
-  private transient IntObjectOpenHashMap<IntArrayList> rightHashTableIndices;
+  private transient IntObjectHashMap<IntArrayList> rightHashTableIndices;
 
   /**
    * The buffer holding the valid tuples from left.
@@ -106,7 +106,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
     private boolean fromLeft;
 
     @Override
-    public void apply(final int index) {
+    public void value(final int index) {
       if (TupleUtils.tupleEquals(inputTB, inputCmpColumns, row, joinAgainstHashTable, joinAgainstCmpColumns, index)) {
 
         addToAns(inputTB, row, joinAgainstHashTable, index, fromLeft);
@@ -142,7 +142,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
     private boolean replaced;
 
     @Override
-    public void apply(final int index) {
+    public void value(final int index) {
       if (TupleUtils.tupleEquals(inputTB, keyColumns, row, hashTable, keyColumns, index)) {
         replaced = true;
         List<? extends Column<?>> columns = inputTB.getDataColumns();
@@ -578,8 +578,8 @@ public final class SymmetricHashJoin extends BinaryOperator {
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     final Operator left = getLeft();
     final Operator right = getRight();
-    leftHashTableIndices = new IntObjectOpenHashMap<IntArrayList>();
-    rightHashTableIndices = new IntObjectOpenHashMap<IntArrayList>();
+    leftHashTableIndices = new IntObjectHashMap<IntArrayList>();
+    rightHashTableIndices = new IntObjectHashMap<IntArrayList>();
 
     hashTable1 = new MutableTupleBuffer(left.getSchema());
     hashTable2 = new MutableTupleBuffer(right.getSchema());
@@ -624,8 +624,8 @@ public final class SymmetricHashJoin extends BinaryOperator {
 
     final boolean useSetSemantics = fromLeft && setSemanticsLeft || !fromLeft && setSemanticsRight;
     MutableTupleBuffer hashTable1Local = null;
-    IntObjectOpenHashMap<IntArrayList> hashTable1IndicesLocal = null;
-    IntObjectOpenHashMap<IntArrayList> hashTable2IndicesLocal = null;
+    IntObjectHashMap<IntArrayList> hashTable1IndicesLocal = null;
+    IntObjectHashMap<IntArrayList> hashTable2IndicesLocal = null;
     if (fromLeft) {
       hashTable1Local = hashTable1;
       doJoin.joinAgainstHashTable = hashTable2;
@@ -679,7 +679,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
    * @param useSetSemantics if need to update the hash table using set semantics.
    * */
   private void addToHashTable(final TupleBatch tb, final int row, final MutableTupleBuffer hashTable,
-      final IntObjectOpenHashMap<IntArrayList> hashTable1IndicesLocal, final int hashCode, final boolean useSetSemantics) {
+      final IntObjectHashMap<IntArrayList> hashTable1IndicesLocal, final int hashCode, final boolean useSetSemantics) {
 
     final int nextIndex = hashTable.numTuples();
     IntArrayList tupleIndicesList = hashTable1IndicesLocal.get(hashCode);

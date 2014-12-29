@@ -116,6 +116,9 @@ dependencies {
   compile "io.netty:netty:3.9.6.Final"
   compile "com.carrotsearch:hppc:0.6.1"
 
+  compile "com.goldmansachs:gs-collections:5.1.0"
+  compile "com.goldmansachs:gs-collections-api:5.1.0"
+
   compile "joda-time:joda-time:2.6"
 
   compile "commons-io:commons-io:2.4"
