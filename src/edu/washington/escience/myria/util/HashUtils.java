@@ -23,10 +23,10 @@ public final class HashUtils {
 
   /** The hash functions. */
   private static final HashFunction[] HASH_FUNCTIONS = {
-      Hashing.murmur3_32(SEEDS[0]), Hashing.murmur3_32(SEEDS[1]), Hashing.murmur3_32(SEEDS[2]),
-      Hashing.murmur3_32(SEEDS[3]), Hashing.murmur3_32(SEEDS[4]), Hashing.murmur3_32(SEEDS[5]),
-      Hashing.murmur3_32(SEEDS[6]), Hashing.murmur3_32(SEEDS[7]), Hashing.murmur3_32(SEEDS[8]),
-      Hashing.murmur3_32(SEEDS[9]) };
+      Hashing.murmur3_128(SEEDS[0]), Hashing.murmur3_128(SEEDS[1]), Hashing.murmur3_128(SEEDS[2]),
+      Hashing.murmur3_128(SEEDS[3]), Hashing.murmur3_128(SEEDS[4]), Hashing.murmur3_128(SEEDS[5]),
+      Hashing.murmur3_128(SEEDS[6]), Hashing.murmur3_128(SEEDS[7]), Hashing.murmur3_128(SEEDS[8]),
+      Hashing.murmur3_128(SEEDS[9]) };
 
   /**
    * Size of the hash function pool.
