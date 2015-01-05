@@ -8,6 +8,7 @@ import java.util.List;
 import javax.ws.rs.core.Response.Status;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.api.MyriaApiException;
@@ -57,16 +58,8 @@ public abstract class MyriaApiEncoding {
     } catch (final NullPointerException e1) {
       /* Some field is missing; throw a 400 (BAD REQUEST) exception with the list of required fields. */
       final StringBuilder sb = new StringBuilder(getClass().getName()).append(" has required fields: ");
-      boolean first = true;
-      for (final String f : fields) {
-        if (!first) {
-          sb.append(", ");
-        }
-        first = false;
-        sb.append(f);
-      }
-      sb.append(". Error on ");
-      sb.append(current);
+      sb.append(Joiner.on(", ").join(fields));
+      sb.append(". Missing ").append(current);
       throw new MyriaApiException(Status.BAD_REQUEST, sb.toString());
     }
     validateExtra();
