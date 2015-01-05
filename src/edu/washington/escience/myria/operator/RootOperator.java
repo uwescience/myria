@@ -119,7 +119,8 @@ public abstract class RootOperator extends Operator {
     TupleBatch tb = null;
     tb = child.nextReady();
     if (tb != null) {
-      consumeTuples(getCoalesced(tb));
+      tb = getCoalesced(tb);
+      consumeTuples(tb);
     } else if (child.eoi()) {
       childEOI();
     } else if (child.eos()) {
