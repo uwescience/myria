@@ -107,7 +107,7 @@ public class AggregateTest {
    * @param builder the column builder
    * @return the TupleBatch
    */
-  private TupleBatch makeTrivialTupleBatch(ColumnBuilder<?> builder) {
+  private TupleBatch makeTrivialTupleBatch(final ColumnBuilder<?> builder) {
     Schema schema = Schema.of(ImmutableList.of(builder.getType()), ImmutableList.of("col0"));
     return new TupleBatch(schema, ImmutableList.<Column<?>> of(builder.build()));
   }
@@ -123,7 +123,7 @@ public class AggregateTest {
    * @return a single TupleBatch containing the results of the aggregation
    * @throws Exception if there is an error
    */
-  private TupleBatch doAggOpsToCol(ColumnBuilder<?> builder, AggregationOp[] aggOps, boolean noColumns)
+  private TupleBatch doAggOpsToCol(final ColumnBuilder<?> builder, final AggregationOp[] aggOps, final boolean noColumns)
       throws Exception {
     if (noColumns == false) {
       return doAggOpsToSingleCol(builder, aggOps);
@@ -153,7 +153,7 @@ public class AggregateTest {
    * @return a single TupleBatch containing the results of the aggregation
    * @throws Exception if there is an error
    */
-  private TupleBatch doAggOpsToSingleCol(ColumnBuilder<?> builder, AggregationOp[] aggOps) throws Exception {
+  private TupleBatch doAggOpsToSingleCol(final ColumnBuilder<?> builder, final AggregationOp[] aggOps) throws Exception {
     TupleBatch trivialTb = makeTrivialTupleBatch(builder);
     ConstantValueColumn constCol = new ConstantValueColumn(3, Type.INT_TYPE, trivialTb.numTuples());
     Schema newSchema = Schema.merge(trivialTb.getSchema(), Schema.ofFields("_const_col", Type.INT_TYPE));
@@ -834,31 +834,31 @@ public class AggregateTest {
 
     /* I used the following code to compute these two collision values. */
     // TupleBatch collision = findIntsHashCollision(3, groupCols);
-    // System.err.println(collision.getInt(0, 0)); // 62236
-    // System.err.println(collision.getInt(1, 1)); // 115457
+    // System.err.println(collision.getInt(0, 0)); // 94328
+    // System.err.println(collision.getInt(1, 1)); // 113814
 
     Schema schema = Schema.ofFields(Type.INT_TYPE, Type.INT_TYPE, Type.INT_TYPE);
     TupleBuffer buffer = new TupleBuffer(schema);
     /* First row */
-    buffer.putInt(0, 115457);
-    buffer.putInt(1, 115457);
-    buffer.putInt(2, 115457);
+    buffer.putInt(0, 113814);
+    buffer.putInt(1, 113814);
+    buffer.putInt(2, 113814);
     /* Second row */
     buffer.putInt(0, 3);
     buffer.putInt(1, 5);
     buffer.putInt(2, 4);
     /* Third row */
-    buffer.putInt(0, 62236);
-    buffer.putInt(1, 62236);
-    buffer.putInt(2, 62236);
+    buffer.putInt(0, 94328);
+    buffer.putInt(1, 94328);
+    buffer.putInt(2, 94328);
     /* Fourth row */
-    buffer.putInt(0, 115457);
-    buffer.putInt(1, 115457);
-    buffer.putInt(2, 115457);
+    buffer.putInt(0, 113814);
+    buffer.putInt(1, 113814);
+    buffer.putInt(2, 113814);
     /* Fifth row */
-    buffer.putInt(0, 115457);
-    buffer.putInt(1, 115457);
-    buffer.putInt(2, 115457);
+    buffer.putInt(0, 113814);
+    buffer.putInt(1, 113814);
+    buffer.putInt(2, 113814);
     /* Verify that the collisions hold where expected. */
     assertEquals(HashUtils.hashSubRow(buffer, groupCols, 0), HashUtils.hashSubRow(buffer, groupCols, 2));
     assertEquals(HashUtils.hashSubRow(buffer, groupCols, 0), HashUtils.hashSubRow(buffer, groupCols, 3));
@@ -874,17 +874,17 @@ public class AggregateTest {
     assertNotNull(result);
     assertEquals(3, result.numTuples());
     assertEquals(3, result.getSchema().numColumns());
-    // 115457 3 times
-    assertEquals(115457, result.getInt(0, 0));
-    assertEquals(115457, result.getInt(1, 0));
+    // 113814 3 times
+    assertEquals(113814, result.getInt(0, 0));
+    assertEquals(113814, result.getInt(1, 0));
     assertEquals(3, result.getLong(2, 0));
     // random vals once
     assertEquals(4, result.getInt(0, 1));
     assertEquals(3, result.getInt(1, 1));
     assertEquals(1, result.getLong(2, 1));
-    // 62236 once
-    assertEquals(62236, result.getInt(0, 2));
-    assertEquals(62236, result.getInt(1, 2));
+    // 94328 once
+    assertEquals(94328, result.getInt(0, 2));
+    assertEquals(94328, result.getInt(1, 2));
     assertEquals(1, result.getLong(2, 2));
     mga.close();
   }
