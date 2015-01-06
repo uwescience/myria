@@ -35,7 +35,7 @@ public class JdbcAccessMethodTest {
   protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(JdbcAccessMethod.class);
 
   private static final String POSTGRES_DRIVER_CLASS = "org.postgresql.Driver";
-  private static final int POSTGRES_PORT = 5401;
+  private static final int POSTGRES_PORT = 5432;
   private static final String POSTGRES_DATABASE_NAME = "myria_test";
 
   private JdbcInfo getJdbcInfo(final String dbms) {
