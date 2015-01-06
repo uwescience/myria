@@ -1,5 +1,16 @@
 package edu.washington.escience.myria.operator;
 
+import java.util.Arrays;
+import java.util.List;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.gs.collections.api.block.procedure.primitive.IntProcedure;
+import com.gs.collections.impl.list.mutable.primitive.IntArrayList;
+import com.gs.collections.impl.map.mutable.primitive.IntObjectHashMap;
+
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -11,19 +22,6 @@ import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.HashUtils;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
-import gnu.trove.list.TIntList;
-import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
-import gnu.trove.procedure.TIntProcedure;
-
-import java.util.Arrays;
-import java.util.List;
-
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 
 /**
  * This is an implementation of unbalanced hash join. This operator only builds hash tables for its right child, thus
@@ -51,7 +49,7 @@ public final class RightHashJoin extends BinaryOperator {
   /**
    * A hash table for tuples from child 2. {Hashcode -> List of tuple indices with the same hash code}
    */
-  private transient TIntObjectMap<TIntList> rightHashTableIndices;
+  private transient IntObjectHashMap<IntArrayList> rightHashTableIndices;
 
   /**
    * The buffer holding the valid tuples from right.
@@ -69,7 +67,10 @@ public final class RightHashJoin extends BinaryOperator {
   /**
    * Traverse through the list of tuples with the same hash code.
    * */
-  private final class JoinProcedure implements TIntProcedure {
+  private final class JoinProcedure implements IntProcedure {
+
+    /** serial version id. */
+    private static final long serialVersionUID = 1L;
 
     /**
      * Hash table.
@@ -96,11 +97,10 @@ public final class RightHashJoin extends BinaryOperator {
     private TupleBatch inputTB;
 
     @Override
-    public boolean execute(final int index) {
+    public void value(final int index) {
       if (TupleUtils.tupleEquals(inputTB, inputCmpColumns, row, joinAgainstHashTable, joinAgainstCmpColumns, index)) {
         addToAns(inputTB, row, joinAgainstHashTable, index);
       }
-      return true;
     }
   };
 
@@ -368,7 +368,7 @@ public final class RightHashJoin extends BinaryOperator {
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     final Operator right = getRight();
 
-    rightHashTableIndices = new TIntObjectHashMap<TIntList>();
+    rightHashTableIndices = new IntObjectHashMap<>();
     rightHashTable = new MutableTupleBuffer(right.getSchema());
 
     ans = new TupleBatchBuffer(getSchema());
@@ -388,7 +388,7 @@ public final class RightHashJoin extends BinaryOperator {
 
     for (int row = 0; row < tb.numTuples(); ++row) {
       final int cntHashCode = HashUtils.hashSubRow(tb, doJoin.inputCmpColumns, row);
-      TIntList tuplesWithHashCode = rightHashTableIndices.get(cntHashCode);
+      IntArrayList tuplesWithHashCode = rightHashTableIndices.get(cntHashCode);
       if (tuplesWithHashCode != null) {
         doJoin.row = row;
         tuplesWithHashCode.forEach(doJoin);
@@ -419,11 +419,11 @@ public final class RightHashJoin extends BinaryOperator {
    * @param hashCode the hashCode of the tb.
    * */
   private void addToHashTable(final TupleBatch tb, final int row, final MutableTupleBuffer hashTable,
-      final TIntObjectMap<TIntList> hashTable1IndicesLocal, final int hashCode) {
+      final IntObjectHashMap<IntArrayList> hashTable1IndicesLocal, final int hashCode) {
     final int nextIndex = hashTable.numTuples();
-    TIntList tupleIndicesList = hashTable1IndicesLocal.get(hashCode);
+    IntArrayList tupleIndicesList = hashTable1IndicesLocal.get(hashCode);
     if (tupleIndicesList == null) {
-      tupleIndicesList = new TIntArrayList(1);
+      tupleIndicesList = new IntArrayList(1);
       hashTable1IndicesLocal.put(hashCode, tupleIndicesList);
     }
     tupleIndicesList.add(nextIndex);

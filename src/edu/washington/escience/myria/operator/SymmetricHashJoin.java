@@ -1,5 +1,16 @@
 package edu.washington.escience.myria.operator;
 
+import java.util.Arrays;
+import java.util.List;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.gs.collections.api.block.procedure.primitive.IntProcedure;
+import com.gs.collections.impl.list.mutable.primitive.IntArrayList;
+import com.gs.collections.impl.map.mutable.primitive.IntObjectHashMap;
+
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Schema;
@@ -13,19 +24,6 @@ import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.HashUtils;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
-import gnu.trove.list.TIntList;
-import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
-import gnu.trove.procedure.TIntProcedure;
-
-import java.util.Arrays;
-import java.util.List;
-
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 
 /**
  * This is an implementation of hash equal join. The same as in DupElim, this implementation does not keep the
@@ -51,11 +49,11 @@ public final class SymmetricHashJoin extends BinaryOperator {
   /**
    * A hash table for tuples from child 1. {Hashcode -> List of tuple indices with the same hash code}
    */
-  private transient TIntObjectMap<TIntList> leftHashTableIndices;
+  private transient IntObjectHashMap<IntArrayList> leftHashTableIndices;
   /**
    * A hash table for tuples from child 2. {Hashcode -> List of tuple indices with the same hash code}
    */
-  private transient TIntObjectMap<TIntList> rightHashTableIndices;
+  private transient IntObjectHashMap<IntArrayList> rightHashTableIndices;
 
   /**
    * The buffer holding the valid tuples from left.
@@ -77,7 +75,10 @@ public final class SymmetricHashJoin extends BinaryOperator {
   /**
    * Traverse through the list of tuples with the same hash code.
    * */
-  private final class JoinProcedure implements TIntProcedure {
+  private final class JoinProcedure implements IntProcedure {
+
+    /** serialization id. */
+    private static final long serialVersionUID = 1L;
 
     /**
      * Hash table.
@@ -108,19 +109,21 @@ public final class SymmetricHashJoin extends BinaryOperator {
     private boolean fromLeft;
 
     @Override
-    public boolean execute(final int index) {
+    public void value(final int index) {
       if (TupleUtils.tupleEquals(inputTB, inputCmpColumns, row, joinAgainstHashTable, joinAgainstCmpColumns, index)) {
 
         addToAns(inputTB, row, joinAgainstHashTable, index, fromLeft);
       }
-      return true;
     }
   };
 
   /**
    * Traverse through the list of tuples with the same hash code.
    * */
-  private final class ReplaceProcedure implements TIntProcedure {
+  private final class ReplaceProcedure implements IntProcedure {
+
+    /** serialization id. */
+    private static final long serialVersionUID = 1L;
 
     /**
      * Hash table.
@@ -145,7 +148,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
     private boolean replaced;
 
     @Override
-    public boolean execute(final int index) {
+    public void value(final int index) {
       if (TupleUtils.tupleEquals(inputTB, keyColumns, row, hashTable, keyColumns, index)) {
         replaced = true;
         List<? extends Column<?>> columns = inputTB.getDataColumns();
@@ -153,7 +156,6 @@ public final class SymmetricHashJoin extends BinaryOperator {
           hashTable.replace(j, index, columns.get(j), row);
         }
       }
-      return replaced;
     }
   };
 
@@ -582,8 +584,8 @@ public final class SymmetricHashJoin extends BinaryOperator {
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     final Operator left = getLeft();
     final Operator right = getRight();
-    leftHashTableIndices = new TIntObjectHashMap<TIntList>();
-    rightHashTableIndices = new TIntObjectHashMap<TIntList>();
+    leftHashTableIndices = new IntObjectHashMap<IntArrayList>();
+    rightHashTableIndices = new IntObjectHashMap<IntArrayList>();
 
     hashTable1 = new MutableTupleBuffer(left.getSchema());
     hashTable2 = new MutableTupleBuffer(right.getSchema());
@@ -628,8 +630,8 @@ public final class SymmetricHashJoin extends BinaryOperator {
 
     final boolean useSetSemantics = fromLeft && setSemanticsLeft || !fromLeft && setSemanticsRight;
     MutableTupleBuffer hashTable1Local = null;
-    TIntObjectMap<TIntList> hashTable1IndicesLocal = null;
-    TIntObjectMap<TIntList> hashTable2IndicesLocal = null;
+    IntObjectHashMap<IntArrayList> hashTable1IndicesLocal = null;
+    IntObjectHashMap<IntArrayList> hashTable2IndicesLocal = null;
     if (fromLeft) {
       hashTable1Local = hashTable1;
       doJoin.joinAgainstHashTable = hashTable2;
@@ -661,7 +663,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
 
     for (int row = 0; row < tb.numTuples(); ++row) {
       final int cntHashCode = HashUtils.hashSubRow(tb, doJoin.inputCmpColumns, row);
-      TIntList tuplesWithHashCode = hashTable2IndicesLocal.get(cntHashCode);
+      IntArrayList tuplesWithHashCode = hashTable2IndicesLocal.get(cntHashCode);
       if (tuplesWithHashCode != null) {
         doJoin.row = row;
         tuplesWithHashCode.forEach(doJoin);
@@ -683,12 +685,12 @@ public final class SymmetricHashJoin extends BinaryOperator {
    * @param useSetSemantics if need to update the hash table using set semantics.
    * */
   private void addToHashTable(final TupleBatch tb, final int row, final MutableTupleBuffer hashTable,
-      final TIntObjectMap<TIntList> hashTable1IndicesLocal, final int hashCode, final boolean useSetSemantics) {
+      final IntObjectHashMap<IntArrayList> hashTable1IndicesLocal, final int hashCode, final boolean useSetSemantics) {
 
     final int nextIndex = hashTable.numTuples();
-    TIntList tupleIndicesList = hashTable1IndicesLocal.get(hashCode);
+    IntArrayList tupleIndicesList = hashTable1IndicesLocal.get(hashCode);
     if (tupleIndicesList == null) {
-      tupleIndicesList = new TIntArrayList(1);
+      tupleIndicesList = new IntArrayList(1);
       hashTable1IndicesLocal.put(hashCode, tupleIndicesList);
     }
 

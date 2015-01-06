@@ -1,5 +1,16 @@
 package edu.washington.escience.myria.operator;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.gs.collections.api.block.procedure.primitive.IntProcedure;
+import com.gs.collections.impl.list.mutable.primitive.IntArrayList;
+import com.gs.collections.impl.map.mutable.primitive.IntObjectHashMap;
+
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -9,19 +20,6 @@ import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.HashUtils;
-import gnu.trove.list.TIntList;
-import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
-import gnu.trove.procedure.TIntProcedure;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 /**
  * 
@@ -46,7 +44,7 @@ public class RightHashCountingJoin extends BinaryOperator {
   /**
    * A hash table for tuples from child 2. {Hashcode -> List of tuple indices with the same hash code}
    */
-  private transient TIntObjectHashMap<TIntList> hashTableIndices;
+  private transient IntObjectHashMap<IntArrayList> hashTableIndices;
 
   /**
    * The buffer holding the valid tuples from right.
@@ -55,7 +53,7 @@ public class RightHashCountingJoin extends BinaryOperator {
   /**
    * How many times each key occurred from right.
    */
-  private transient TIntArrayList occurredTimes;
+  private transient IntArrayList occurredTimes;
   /**
    * The buffer holding the results.
    */
@@ -80,7 +78,10 @@ public class RightHashCountingJoin extends BinaryOperator {
   /**
    * Traverse through the list of tuples with the same hash code.
    * */
-  private final class CountingJoinProcedure implements TIntProcedure {
+  private final class CountingJoinProcedure implements IntProcedure {
+
+    /** serial version id. */
+    private static final long serialVersionUID = 1L;
 
     /**
      * Hash table.
@@ -90,7 +91,7 @@ public class RightHashCountingJoin extends BinaryOperator {
     /**
      * times of occure of a key.
      * */
-    private TIntList occuredTimesOnJoinAgainstChild;
+    private IntArrayList occuredTimesOnJoinAgainstChild;
     /**
      * 
      * */
@@ -107,11 +108,10 @@ public class RightHashCountingJoin extends BinaryOperator {
     private TupleBatch inputTB;
 
     @Override
-    public boolean execute(final int index) {
+    public void value(final int index) {
       if (TupleUtils.tupleEquals(inputTB, inputCmpColumns, row, joinAgainstHashTable, index)) {
         ans += occuredTimesOnJoinAgainstChild.get(index);
       }
-      return true;
     }
   };
 
@@ -249,9 +249,9 @@ public class RightHashCountingJoin extends BinaryOperator {
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     final Operator right = getRight();
-    hashTableIndices = new TIntObjectHashMap<TIntList>();
+    hashTableIndices = new IntObjectHashMap<>();
     hashTable = new MutableTupleBuffer(right.getSchema().getSubSchema(rightCompareIndx));
-    occurredTimes = new TIntArrayList();
+    occurredTimes = new IntArrayList();
     doCountingJoin = new CountingJoinProcedure();
     ans = 0;
     ansTBB = new TupleBatchBuffer(getSchema());
@@ -287,7 +287,7 @@ public class RightHashCountingJoin extends BinaryOperator {
        * update number of count of probing the other child's hash table.
        */
       final int cntHashCode = HashUtils.hashSubRow(tb, doCountingJoin.inputCmpColumns, row);
-      TIntList tuplesWithHashCode = hashTableIndices.get(cntHashCode);
+      IntArrayList tuplesWithHashCode = hashTableIndices.get(cntHashCode);
       if (tuplesWithHashCode != null) {
         doCountingJoin.row = row;
         tuplesWithHashCode.forEach(doCountingJoin);
@@ -305,16 +305,16 @@ public class RightHashCountingJoin extends BinaryOperator {
    * @param occuredTimes occuredTimes array to be updated
    * */
   private void updateHashTableAndOccureTimes(final TupleBatch tb, final int row, final int hashCode,
-      final MutableTupleBuffer hashTable, final TIntObjectMap<TIntList> hashTableIndices, final int[] compareColumns,
-      final TIntList occuredTimes) {
+      final MutableTupleBuffer hashTable, final IntObjectHashMap<IntArrayList> hashTableIndices,
+      final int[] compareColumns, final IntArrayList occuredTimes) {
 
     /* get the index of the tuple's hash code corresponding to */
     final int nextIndex = hashTable.numTuples();
-    TIntList tupleIndicesList = hashTableIndices.get(hashCode);
+    IntArrayList tupleIndicesList = hashTableIndices.get(hashCode);
 
     /* create one is there is no such a index yet (there is no tuple with the same hash code has been processed ) */
     if (tupleIndicesList == null) {
-      tupleIndicesList = new TIntArrayList(1);
+      tupleIndicesList = new IntArrayList(1);
       hashTableIndices.put(hashCode, tupleIndicesList);
     }
 

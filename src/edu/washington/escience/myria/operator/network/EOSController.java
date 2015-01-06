@@ -1,11 +1,11 @@
 package edu.washington.escience.myria.operator.network;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.commons.lang.ArrayUtils;
+import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants.FTMode;
@@ -16,9 +16,6 @@ import edu.washington.escience.myria.operator.UnionAll;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.storage.ExchangeTupleBatch;
 import edu.washington.escience.myria.storage.TupleBatch;
-import gnu.trove.impl.unmodifiable.TUnmodifiableIntIntMap;
-import gnu.trove.map.TIntIntMap;
-import gnu.trove.map.hash.TIntIntHashMap;
 
 /**
  * The producer part of the Shuffle Exchange operator.
@@ -50,7 +47,7 @@ public class EOSController extends Producer {
   /**
    * Mapping from workerID to index.
    * */
-  private final TIntIntMap workerIdToIndex;
+  private final ImmutableMap<Integer, Integer> workerIdToIndex;
 
   // /**
   // * Mapping from EOSReceiver ID to index.
@@ -74,19 +71,13 @@ public class EOSController extends Producer {
     zeroCol = new ArrayList<Integer>();
     eosZeroColValue = idbOpIDs.length * workerIDs.length;
 
-    TIntIntMap tmp = new TIntIntHashMap();
     int idx = 0;
-    for (int workerID : workerIDs) {
-      tmp.put(workerID, idx++);
+    HashMap<Integer, Integer> tmp = new HashMap<>();
+    for (int workerId : workerIDs) {
+      tmp.put(workerId, idx++);
     }
-    workerIdToIndex = new TUnmodifiableIntIntMap(tmp);
+    workerIdToIndex = ImmutableMap.copyOf(tmp);
 
-    // TLongIntMap tmp2 = new TLongIntHashMap();
-    // idx = 0;
-    // for (ExchangePairID idbID : idbOpIDs) {
-    // tmp2.put(idbID.getLong(), idx++);
-    // }
-    // idbEOSReceiverIDToIndex = new TUnmodifiableLongIntMap(tmp2);
   }
 
   @Override
@@ -119,7 +110,7 @@ public class EOSController extends Producer {
         }
       }
       Set<Integer> expectingWorkers = new HashSet<Integer>();
-      expectingWorkers.addAll(Arrays.asList(ArrayUtils.toObject(workerIdToIndex.keySet().toArray())));
+      expectingWorkers.addAll(workerIdToIndex.keySet().asList());
       expectingWorkers.removeAll(missingWorkers);
       /* only count EOI reports from alive workers. */
       numExpecting = expectingWorkers.size() * numEOI.length;
