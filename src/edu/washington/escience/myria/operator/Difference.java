@@ -3,9 +3,9 @@ package edu.washington.escience.myria.operator;
 import java.util.BitSet;
 import java.util.List;
 
-import com.carrotsearch.hppc.IntArrayList;
-import com.carrotsearch.hppc.IntObjectOpenHashMap;
 import com.google.common.collect.ImmutableMap;
+import com.gs.collections.impl.list.mutable.primitive.IntArrayList;
+import com.gs.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
@@ -36,7 +36,7 @@ public final class Difference extends BinaryOperator {
   /**
    * Mapping from tuple hash code to indices in the tuplesToRemove buffer.
    * */
-  private transient IntObjectOpenHashMap<IntArrayList> tupleIndices;
+  private transient IntObjectHashMap<IntArrayList> tupleIndices;
 
   /**
    * Instantiate a set difference operator: left EXCEPT right.
@@ -161,7 +161,7 @@ public final class Difference extends BinaryOperator {
       throw new DbException("Incompatible input schemas");
     }
 
-    tupleIndices = new IntObjectOpenHashMap<IntArrayList>();
+    tupleIndices = new IntObjectHashMap<>();
     tuplesToRemove = new MutableTupleBuffer(getSchema());
   }
 

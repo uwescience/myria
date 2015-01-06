@@ -3,13 +3,13 @@ package edu.washington.escience.myria.operator;
 import java.util.Arrays;
 import java.util.List;
 
-import com.carrotsearch.hppc.IntArrayList;
-import com.carrotsearch.hppc.IntObjectOpenHashMap;
-import com.carrotsearch.hppc.procedures.IntProcedure;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.gs.collections.api.block.procedure.primitive.IntProcedure;
+import com.gs.collections.impl.list.mutable.primitive.IntArrayList;
+import com.gs.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
@@ -49,7 +49,7 @@ public final class RightHashJoin extends BinaryOperator {
   /**
    * A hash table for tuples from child 2. {Hashcode -> List of tuple indices with the same hash code}
    */
-  private transient IntObjectOpenHashMap<IntArrayList> rightHashTableIndices;
+  private transient IntObjectHashMap<IntArrayList> rightHashTableIndices;
 
   /**
    * The buffer holding the valid tuples from right.
@@ -68,6 +68,9 @@ public final class RightHashJoin extends BinaryOperator {
    * Traverse through the list of tuples with the same hash code.
    * */
   private final class JoinProcedure implements IntProcedure {
+
+    /** serial version id. */
+    private static final long serialVersionUID = 1L;
 
     /**
      * Hash table.
@@ -94,7 +97,7 @@ public final class RightHashJoin extends BinaryOperator {
     private TupleBatch inputTB;
 
     @Override
-    public void apply(final int index) {
+    public void value(final int index) {
       if (TupleUtils.tupleEquals(inputTB, inputCmpColumns, row, joinAgainstHashTable, joinAgainstCmpColumns, index)) {
         addToAns(inputTB, row, joinAgainstHashTable, index);
       }
@@ -365,7 +368,7 @@ public final class RightHashJoin extends BinaryOperator {
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     final Operator right = getRight();
 
-    rightHashTableIndices = new IntObjectOpenHashMap<IntArrayList>();
+    rightHashTableIndices = new IntObjectHashMap<>();
     rightHashTable = new MutableTupleBuffer(right.getSchema());
 
     ans = new TupleBatchBuffer(getSchema());
@@ -416,7 +419,7 @@ public final class RightHashJoin extends BinaryOperator {
    * @param hashCode the hashCode of the tb.
    * */
   private void addToHashTable(final TupleBatch tb, final int row, final MutableTupleBuffer hashTable,
-      final IntObjectOpenHashMap<IntArrayList> hashTable1IndicesLocal, final int hashCode) {
+      final IntObjectHashMap<IntArrayList> hashTable1IndicesLocal, final int hashCode) {
     final int nextIndex = hashTable.numTuples();
     IntArrayList tupleIndicesList = hashTable1IndicesLocal.get(hashCode);
     if (tupleIndicesList == null) {

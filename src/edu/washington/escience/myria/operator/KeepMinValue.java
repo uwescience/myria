@@ -6,10 +6,10 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.carrotsearch.hppc.IntArrayList;
-import com.carrotsearch.hppc.IntObjectOpenHashMap;
-import com.carrotsearch.hppc.procedures.IntProcedure;
 import com.google.common.collect.ImmutableMap;
+import com.gs.collections.api.block.procedure.primitive.IntProcedure;
+import com.gs.collections.impl.list.mutable.primitive.IntArrayList;
+import com.gs.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -36,7 +36,7 @@ public final class KeepMinValue extends StreamingState {
   /**
    * Indices to unique tuples.
    * */
-  private transient IntObjectOpenHashMap<IntArrayList> uniqueTupleIndices;
+  private transient IntObjectHashMap<IntArrayList> uniqueTupleIndices;
 
   /**
    * The buffer for stroing unique tuples.
@@ -136,7 +136,7 @@ public final class KeepMinValue extends StreamingState {
 
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) {
-    uniqueTupleIndices = new IntObjectOpenHashMap<IntArrayList>();
+    uniqueTupleIndices = new IntObjectHashMap<>();
     uniqueTuples = new MutableTupleBuffer(getSchema());
     doReplace = new ReplaceProcedure();
   }
@@ -165,6 +165,9 @@ public final class KeepMinValue extends StreamingState {
    * */
   private final class ReplaceProcedure implements IntProcedure {
 
+    /** serial version id. */
+    private static final long serialVersionUID = 1L;
+
     /** row index of the tuple. */
     private int row;
 
@@ -178,7 +181,7 @@ public final class KeepMinValue extends StreamingState {
     private boolean unique;
 
     @Override
-    public void apply(final int index) {
+    public void value(final int index) {
       if (TupleUtils.tupleEquals(inputTB, keyColIndices, row, uniqueTuples, keyColIndices, index)) {
         unique = false;
         Column<?> valueColumn = inputTB.getDataColumns().get(valueColIndex);

@@ -114,7 +114,6 @@ dependencies {
   compile "com.google.protobuf:protobuf-java:2.6.1"
 
   compile "io.netty:netty:3.9.6.Final"
-  compile "com.carrotsearch:hppc:0.6.1"
 
   compile "com.goldmansachs:gs-collections:5.1.0"
   compile "com.goldmansachs:gs-collections-api:5.1.0"

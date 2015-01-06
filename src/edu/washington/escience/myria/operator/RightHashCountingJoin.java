@@ -4,12 +4,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-import com.carrotsearch.hppc.IntArrayList;
-import com.carrotsearch.hppc.IntObjectOpenHashMap;
-import com.carrotsearch.hppc.procedures.IntProcedure;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.gs.collections.api.block.procedure.primitive.IntProcedure;
+import com.gs.collections.impl.list.mutable.primitive.IntArrayList;
+import com.gs.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
@@ -44,7 +44,7 @@ public class RightHashCountingJoin extends BinaryOperator {
   /**
    * A hash table for tuples from child 2. {Hashcode -> List of tuple indices with the same hash code}
    */
-  private transient IntObjectOpenHashMap<IntArrayList> hashTableIndices;
+  private transient IntObjectHashMap<IntArrayList> hashTableIndices;
 
   /**
    * The buffer holding the valid tuples from right.
@@ -80,6 +80,9 @@ public class RightHashCountingJoin extends BinaryOperator {
    * */
   private final class CountingJoinProcedure implements IntProcedure {
 
+    /** serial version id. */
+    private static final long serialVersionUID = 1L;
+
     /**
      * Hash table.
      * */
@@ -105,7 +108,7 @@ public class RightHashCountingJoin extends BinaryOperator {
     private TupleBatch inputTB;
 
     @Override
-    public void apply(final int index) {
+    public void value(final int index) {
       if (TupleUtils.tupleEquals(inputTB, inputCmpColumns, row, joinAgainstHashTable, index)) {
         ans += occuredTimesOnJoinAgainstChild.get(index);
       }
@@ -246,7 +249,7 @@ public class RightHashCountingJoin extends BinaryOperator {
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     final Operator right = getRight();
-    hashTableIndices = new IntObjectOpenHashMap<IntArrayList>();
+    hashTableIndices = new IntObjectHashMap<>();
     hashTable = new MutableTupleBuffer(right.getSchema().getSubSchema(rightCompareIndx));
     occurredTimes = new IntArrayList();
     doCountingJoin = new CountingJoinProcedure();
@@ -302,7 +305,7 @@ public class RightHashCountingJoin extends BinaryOperator {
    * @param occuredTimes occuredTimes array to be updated
    * */
   private void updateHashTableAndOccureTimes(final TupleBatch tb, final int row, final int hashCode,
-      final MutableTupleBuffer hashTable, final IntObjectOpenHashMap<IntArrayList> hashTableIndices,
+      final MutableTupleBuffer hashTable, final IntObjectHashMap<IntArrayList> hashTableIndices,
       final int[] compareColumns, final IntArrayList occuredTimes) {
 
     /* get the index of the tuple's hash code corresponding to */

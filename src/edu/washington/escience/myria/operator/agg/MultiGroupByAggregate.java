@@ -6,13 +6,12 @@ import java.util.Objects;
 
 import javax.annotation.Nullable;
 
-import com.carrotsearch.hppc.IntArrayList;
-import com.carrotsearch.hppc.IntObjectOpenHashMap;
-import com.carrotsearch.hppc.cursors.IntCursor;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.gs.collections.impl.list.mutable.primitive.IntArrayList;
+import com.gs.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
@@ -45,7 +44,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
   /** Holds the corresponding aggregation state for each group key in {@link #groupKeys}. */
   private transient List<Object[]> aggStates;
   /** Maps the hash of a grouping key to a list of indices in {@link #groupKeys}. */
-  private transient IntObjectOpenHashMap<IntArrayList> groupKeyMap;
+  private transient IntObjectHashMap<IntArrayList> groupKeyMap;
   /** The schema of the columns indicated by the group keys. */
   private Schema groupSchema;
   /** The schema of the aggregation result. */
@@ -116,9 +115,10 @@ public final class MultiGroupByAggregate extends UnaryOperator {
           continue;
         }
         boolean found = false;
-        for (IntCursor c : hashMatches) {
-          if (TupleUtils.tupleEquals(tb, gfields, row, groupKeys, grpRange, c.value)) {
-            updateGroup(tb, row, aggStates.get(c.value));
+        for (int i = 0; i < hashMatches.size(); i++) {
+          int value = hashMatches.get(i);
+          if (TupleUtils.tupleEquals(tb, gfields, row, groupKeys, grpRange, value)) {
+            updateGroup(tb, row, aggStates.get(value));
             found = true;
             break;
           }
@@ -268,6 +268,6 @@ public final class MultiGroupByAggregate extends UnaryOperator {
     aggregators = AggUtils.allocateAggs(factories, getChild().getSchema());
     groupKeys = new TupleBuffer(groupSchema);
     aggStates = new ArrayList<>();
-    groupKeyMap = new IntObjectOpenHashMap<>();
+    groupKeyMap = new IntObjectHashMap<>();
   }
 };

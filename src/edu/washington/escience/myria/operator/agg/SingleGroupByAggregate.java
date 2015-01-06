@@ -8,16 +8,12 @@ import javax.annotation.Nullable;
 
 import org.joda.time.DateTime;
 
-import com.carrotsearch.hppc.DoubleObjectOpenHashMap;
-import com.carrotsearch.hppc.FloatObjectOpenHashMap;
-import com.carrotsearch.hppc.IntObjectOpenHashMap;
-import com.carrotsearch.hppc.LongObjectOpenHashMap;
-import com.carrotsearch.hppc.cursors.DoubleObjectCursor;
-import com.carrotsearch.hppc.cursors.FloatObjectCursor;
-import com.carrotsearch.hppc.cursors.IntObjectCursor;
-import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.gs.collections.impl.map.mutable.primitive.DoubleObjectHashMap;
+import com.gs.collections.impl.map.mutable.primitive.FloatObjectHashMap;
+import com.gs.collections.impl.map.mutable.primitive.IntObjectHashMap;
+import com.gs.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
@@ -73,7 +69,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
   /**
    * The buffer storing in-progress group by results when the group key is int.
    */
-  private transient IntObjectOpenHashMap<Object[]> intAggState;
+  private transient IntObjectHashMap<Object[]> intAggState;
   /**
    * The buffer storing in-progress group by results when the group key is boolean.
    */
@@ -81,15 +77,15 @@ public class SingleGroupByAggregate extends UnaryOperator {
   /**
    * The buffer storing in-progress group by results when the group key is long.
    */
-  private transient LongObjectOpenHashMap<Object[]> longAggState;
+  private transient LongObjectHashMap<Object[]> longAggState;
   /**
    * The buffer storing in-progress group by results when the group key is float.
    */
-  private transient FloatObjectOpenHashMap<Object[]> floatAggState;
+  private transient FloatObjectHashMap<Object[]> floatAggState;
   /**
    * The buffer storing in-progress group by results when the group key is double.
    */
-  private transient DoubleObjectOpenHashMap<Object[]> doubleAggState;
+  private transient DoubleObjectHashMap<Object[]> doubleAggState;
   /**
    * The aggregators that will initialize and update the state.
    */
@@ -267,27 +263,27 @@ public class SingleGroupByAggregate extends UnaryOperator {
         }
         break;
       case INT_TYPE:
-        for (IntObjectCursor<Object[]> itInt : intAggState) {
-          resultBuffer.putInt(0, itInt.key);
-          concatResults(resultBuffer, itInt.value);
+        for (int key : intAggState.keySet().toArray()) {
+          resultBuffer.putInt(0, key);
+          concatResults(resultBuffer, intAggState.get(key));
         }
         break;
       case LONG_TYPE:
-        for (LongObjectCursor<Object[]> itLong : longAggState) {
-          resultBuffer.putLong(0, itLong.key);
-          concatResults(resultBuffer, itLong.value);
+        for (long key : longAggState.keySet().toArray()) {
+          resultBuffer.putLong(0, key);
+          concatResults(resultBuffer, longAggState.get(key));
         }
         break;
       case FLOAT_TYPE:
-        for (FloatObjectCursor<Object[]> itFloat : floatAggState) {
-          resultBuffer.putFloat(0, itFloat.key);
-          concatResults(resultBuffer, itFloat.value);
+        for (float key : floatAggState.keySet().toArray()) {
+          resultBuffer.putFloat(0, key);
+          concatResults(resultBuffer, floatAggState.get(key));
         }
         break;
       case DOUBLE_TYPE:
-        for (DoubleObjectCursor<Object[]> itDouble : doubleAggState) {
-          resultBuffer.putDouble(0, itDouble.key);
-          concatResults(resultBuffer, itDouble.value);
+        for (double key : doubleAggState.keySet().toArray()) {
+          resultBuffer.putDouble(0, key);
+          concatResults(resultBuffer, doubleAggState.get(key));
         }
         break;
     }
@@ -340,16 +336,16 @@ public class SingleGroupByAggregate extends UnaryOperator {
         booleanAggState = new Object[2][];
         break;
       case INT_TYPE:
-        intAggState = new IntObjectOpenHashMap<Object[]>();
+        intAggState = new IntObjectHashMap<Object[]>();
         break;
       case LONG_TYPE:
-        longAggState = new LongObjectOpenHashMap<Object[]>();
+        longAggState = new LongObjectHashMap<Object[]>();
         break;
       case FLOAT_TYPE:
-        floatAggState = new FloatObjectOpenHashMap<Object[]>();
+        floatAggState = new FloatObjectHashMap<Object[]>();
         break;
       case DOUBLE_TYPE:
-        doubleAggState = new DoubleObjectOpenHashMap<Object[]>();
+        doubleAggState = new DoubleObjectHashMap<Object[]>();
         break;
       case STRING_TYPE:
         stringAggState = new HashMap<String, Object[]>();

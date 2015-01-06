@@ -77,6 +77,9 @@ public final class SymmetricHashJoin extends BinaryOperator {
    * */
   private final class JoinProcedure implements IntProcedure {
 
+    /** serialization id. */
+    private static final long serialVersionUID = 1L;
+
     /**
      * Hash table.
      * */
@@ -118,6 +121,9 @@ public final class SymmetricHashJoin extends BinaryOperator {
    * Traverse through the list of tuples with the same hash code.
    * */
   private final class ReplaceProcedure implements IntProcedure {
+
+    /** serialization id. */
+    private static final long serialVersionUID = 1L;
 
     /**
      * Hash table.

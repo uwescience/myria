@@ -4,12 +4,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-import com.carrotsearch.hppc.IntArrayList;
-import com.carrotsearch.hppc.IntObjectOpenHashMap;
-import com.carrotsearch.hppc.procedures.IntProcedure;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.gs.collections.api.block.procedure.primitive.IntProcedure;
+import com.gs.collections.impl.list.mutable.primitive.IntArrayList;
+import com.gs.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
@@ -34,9 +34,9 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
   /** The column indices for comparing of right child. */
   private final int[] rightCompareIndx;
   /** A hash table for tuples from left child. {Hashcode -> List of tuple indices with the same hash code} */
-  private transient IntObjectOpenHashMap<IntArrayList> leftHashTableIndices;
+  private transient IntObjectHashMap<IntArrayList> leftHashTableIndices;
   /** A hash table for tuples from right child. {Hashcode -> List of tuple indices with the same hash code} */
-  private transient IntObjectOpenHashMap<IntArrayList> rightHashTableIndices;
+  private transient IntObjectHashMap<IntArrayList> rightHashTableIndices;
   /** The buffer holding the valid tuples from left. */
   private transient MutableTupleBuffer leftHashTable;
   /** The buffer holding the valid tuples from right. */
@@ -65,6 +65,9 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
    * Traverse through the list of tuples with the same hash code.
    */
   private final class CountingJoinProcedure implements IntProcedure {
+
+    /** serial version id. */
+    private static final long serialVersionUID = 1L;
 
     /**
      * Hash table.
@@ -96,7 +99,7 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
     private TupleBatch inputTB;
 
     @Override
-    public void apply(final int index) {
+    public void value(final int index) {
       if (TupleUtils.tupleEquals(inputTB, inputCmpColumns, row, joinAgainstHashTable, otherCmpColumns, index)) {
         ans += occuredTimesOnJoinAgainstChild.get(index);
       }
@@ -283,8 +286,8 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
 
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    leftHashTableIndices = new IntObjectOpenHashMap<IntArrayList>();
-    rightHashTableIndices = new IntObjectOpenHashMap<IntArrayList>();
+    leftHashTableIndices = new IntObjectHashMap<>();
+    rightHashTableIndices = new IntObjectHashMap<>();
     occuredTimesOnLeft = new IntArrayList();
     occuredTimesOnRight = new IntArrayList();
     leftHashTable = new MutableTupleBuffer(getLeft().getSchema().getSubSchema(leftCompareIndx));
@@ -304,8 +307,8 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
     final Operator right = getRight();
 
     MutableTupleBuffer hashTable1Local = null;
-    IntObjectOpenHashMap<IntArrayList> hashTable1IndicesLocal = null;
-    IntObjectOpenHashMap<IntArrayList> hashTable2IndicesLocal = null;
+    IntObjectHashMap<IntArrayList> hashTable1IndicesLocal = null;
+    IntObjectHashMap<IntArrayList> hashTable2IndicesLocal = null;
     IntArrayList ownOccuredTimes = null;
     if (fromLeft) {
       hashTable1Local = leftHashTable;
@@ -394,7 +397,7 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
    * @param occuredTimes occuredTimes array to be updated
    */
   private void updateHashTableAndOccureTimes(final TupleBatch tb, final int row, final int hashCode,
-      final MutableTupleBuffer hashTable, final IntObjectOpenHashMap<IntArrayList> hashTableIndices,
+      final MutableTupleBuffer hashTable, final IntObjectHashMap<IntArrayList> hashTableIndices,
       final int[] compareColumns, final IntArrayList occuredTimes) {
 
     /* get the index of the tuple's hash code corresponding to */

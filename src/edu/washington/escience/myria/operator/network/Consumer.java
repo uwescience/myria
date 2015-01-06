@@ -8,10 +8,10 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.carrotsearch.hppc.IntIntOpenHashMap;
 import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.gs.collections.impl.map.mutable.primitive.IntIntHashMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
@@ -66,7 +66,7 @@ public class Consumer extends LeafOperator {
   /**
    * workerID to index.
    * */
-  private transient IntIntOpenHashMap workerIdToIndex;
+  private transient IntIntHashMap workerIdToIndex;
   /**
    * From which workers to receive data.
    * */
@@ -142,7 +142,7 @@ public class Consumer extends LeafOperator {
     workerEOI = new BitSet(sourceWorkers.size());
 
     int idx = 0;
-    workerIdToIndex = new IntIntOpenHashMap();
+    workerIdToIndex = new IntIntHashMap();
     for (int sourceWorker : sourceWorkers) {
       workerIdToIndex.put(sourceWorker, idx++);
     }
