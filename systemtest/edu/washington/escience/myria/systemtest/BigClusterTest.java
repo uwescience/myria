@@ -41,7 +41,7 @@ import edu.washington.escience.myria.util.TestUtils;
 public class BigClusterTest extends SystemTestBase {
 
   public BigClusterTest() {
-    globalTimeout = new Timeout(1200 * 1000);
+    globalTimeout = Timeout.seconds(1200);
   }
 
   public static final int NUM_WORKERS;

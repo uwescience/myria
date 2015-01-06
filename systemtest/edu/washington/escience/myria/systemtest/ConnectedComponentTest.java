@@ -16,7 +16,7 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListenableFuture;
 
-import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -59,7 +59,7 @@ public class ConnectedComponentTest extends SystemTestBase {
   private final int numTbl2Worker1 = 100;
   private final int numTbl2Worker2 = 150;
 
-  public TupleBatchBuffer getConnectedComponentsResult(TupleBatchBuffer g, Schema schema) {
+  public TupleBatchBuffer getConnectedComponentsResult(final TupleBatchBuffer g, final Schema schema) {
     final Iterator<List<? extends Column<?>>> iter = g.getAllAsRawColumn().iterator();
     boolean graph[][] = new boolean[MaxID][MaxID];
     while (iter.hasNext()) {
@@ -185,8 +185,8 @@ public class ConnectedComponentTest extends SystemTestBase {
     long[] tbl2ID1Worker2 = TestUtils.randomLong(0, MaxID - 1, numTbl2Worker2);
     long[] tbl2ID2Worker1 = TestUtils.randomLong(0, MaxID - 1, numTbl2Worker1);
     long[] tbl2ID2Worker2 = TestUtils.randomLong(0, MaxID - 1, numTbl2Worker2);
-    TupleBatchBuffer tbl2Worker1 = new TupleBatchBuffer(table1Schema);
-    TupleBatchBuffer tbl2Worker2 = new TupleBatchBuffer(table1Schema);
+    TupleBatchBuffer tbl2Worker1 = new TupleBatchBuffer(table2Schema);
+    TupleBatchBuffer tbl2Worker2 = new TupleBatchBuffer(table2Schema);
     for (int i = 0; i < numTbl2Worker1; i++) {
       tbl2Worker1.putLong(0, tbl2ID1Worker1[i]);
       tbl2Worker1.putLong(1, tbl2ID2Worker1[i]);
@@ -257,13 +257,13 @@ public class ConnectedComponentTest extends SystemTestBase {
     SubQueryPlan serverPlan = new SubQueryPlan(new SinkRoot(queueStore));
 
     if (!failure) {
-      server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans, false).get();
+      server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans).get();
     } else {
-      workerPlans.get(workerIDs[0]).setFTMode(FTMODE.valueOf("rejoin"));
-      workerPlans.get(workerIDs[1]).setFTMode(FTMODE.valueOf("rejoin"));
-      serverPlan.setFTMode(FTMODE.valueOf("rejoin"));
+      workerPlans.get(workerIDs[0]).setFTMode(FTMode.REJOIN);
+      workerPlans.get(workerIDs[1]).setFTMode(FTMode.REJOIN);
+      serverPlan.setFTMode(FTMode.REJOIN);
 
-      ListenableFuture<Query> qf = server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans, false);
+      ListenableFuture<Query> qf = server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans);
       Thread.sleep(1000);
       LOGGER.info("killing worker " + workerIDs[1] + "!");
       workerProcess[1].destroy();

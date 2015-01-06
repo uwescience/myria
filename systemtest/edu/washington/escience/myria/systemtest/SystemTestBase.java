@@ -75,7 +75,7 @@ public class SystemTestBase {
   @Rule
   public TestRule watcher = new TestWatcher() {
     @Override
-    protected void starting(Description description) {
+    protected void starting(final Description description) {
       LOGGER.warn("*********************************************");
       LOGGER.warn(String.format("Starting test: %s()...", description.getMethodName()));
       LOGGER.warn("*********************************************");
@@ -85,7 +85,7 @@ public class SystemTestBase {
   /** Automatically fail system tests that take longer than this many milliseconds. */
   private final int SYSTEM_TEST_TIMEOUT_MILLIS = 120 * 1000;
   @Rule
-  public TestRule globalTimeout = new Timeout(SYSTEM_TEST_TIMEOUT_MILLIS);
+  public TestRule globalTimeout = Timeout.millis(SYSTEM_TEST_TIMEOUT_MILLIS);
   @Rule
   public TestName name = new TestName();
 
@@ -145,7 +145,7 @@ public class SystemTestBase {
     return ret;
   }
 
-  protected static String getContents(HttpURLConnection conn) {
+  protected static String getContents(final HttpURLConnection conn) {
     /* If there was any content returned, get it. */
     String content = null;
     try {
@@ -334,8 +334,8 @@ public class SystemTestBase {
 
   public static void insert(final int workerID, final RelationKey relationKey, final Schema schema,
       final TupleBatch data) throws CatalogException, FileNotFoundException, DbException {
-    SQLiteAccessMethod.tupleBatchInsert(SQLiteInfo.of(getAbsoluteDBFile(workerID).getAbsolutePath()), relationKey,
-        schema, data);
+    SQLiteAccessMethod
+        .tupleBatchInsert(SQLiteInfo.of(getAbsoluteDBFile(workerID).getAbsolutePath()), relationKey, data);
   }
 
   protected HashMap<Tuple, Integer> simpleRandomJoinTestBase() throws CatalogException, IOException, DbException {
@@ -614,7 +614,7 @@ public class SystemTestBase {
     }
   }
 
-  public static QueryStatusEncoding getQueryStatus(HttpURLConnection conn) throws IOException {
+  public static QueryStatusEncoding getQueryStatus(final HttpURLConnection conn) throws IOException {
     ObjectReader reader = MyriaJsonMapperProvider.getReader().withType(QueryStatusEncoding.class);
     String s = IOUtils.toString(conn.getInputStream());
     try {
@@ -624,7 +624,7 @@ public class SystemTestBase {
     }
   }
 
-  public static DatasetStatus getDatasetStatus(HttpURLConnection conn) throws IOException {
+  public static DatasetStatus getDatasetStatus(final HttpURLConnection conn) throws IOException {
     ObjectReader reader = MyriaJsonMapperProvider.getReader().withType(DatasetStatus.class);
     return reader.readValue(conn.getInputStream());
   }

@@ -21,9 +21,4 @@ public final class CountAllAggregatorFactory implements AggregatorFactory {
     return new CountAllAggregator();
   }
 
-  @Override
-  public Schema getResultSchema(final Schema inputSchema) {
-    return CountAllAggregator.SCHEMA;
-  }
-
 }

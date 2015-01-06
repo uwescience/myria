@@ -8,6 +8,8 @@ name = testMyriadeploy
 #max_heap_size=-Xmx2g
 # Uncomment if want to launch workers in debug mode
 #debug_mode = true
+# Uncomment if want to set admin password
+#admin_password = apple
 rest_port = 8753
 
 # Compute nodes configuration

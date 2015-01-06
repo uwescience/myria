@@ -13,14 +13,15 @@ import javax.ws.rs.core.Response.Status;
 
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 
 import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.MyriaConstants.FTMode;
+import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -64,8 +65,8 @@ public class QueryConstruct {
    * @return the physical plan
    * @throws CatalogException if there is an error instantiating the plan
    */
-  public static Map<Integer, SubQueryPlan> instantiate(List<PlanFragmentEncoding> fragments, final ConstructArgs args)
-      throws CatalogException {
+  public static Map<Integer, SubQueryPlan> instantiate(final List<PlanFragmentEncoding> fragments,
+      final ConstructArgs args) throws CatalogException {
     /* First, we need to know which workers run on each plan. */
     setupWorkersForFragments(fragments, args);
     /* Next, we need to know which pipes (operators) are produced and consumed on which workers. */
@@ -104,10 +105,10 @@ public class QueryConstruct {
    * 
    * @param plans the physical query plan
    * @param ftMode the fault tolerance mode under which the query will be executed
-   * @param profilingMode <code>true</code> if the query should be profiled
+   * @param profilingMode how the query should be profiled
    */
-  public static void setQueryExecutionOptions(Map<Integer, SubQueryPlan> plans, final FTMODE ftMode,
-      final boolean profilingMode) {
+  public static void setQueryExecutionOptions(final Map<Integer, SubQueryPlan> plans, final FTMode ftMode,
+      @Nonnull final Set<ProfilingMode> profilingMode) {
     for (SubQueryPlan plan : plans.values()) {
       plan.setFTMode(ftMode);
       plan.setProfilingMode(profilingMode);
@@ -119,7 +120,7 @@ public class QueryConstruct {
    * 
    * @throws CatalogException if there is an error in the Catalog.
    */
-  private static void setupWorkersForFragments(List<PlanFragmentEncoding> fragments, final ConstructArgs args)
+  private static void setupWorkersForFragments(final List<PlanFragmentEncoding> fragments, final ConstructArgs args)
       throws CatalogException {
     Server server = args.getServer();
     for (PlanFragmentEncoding fragment : fragments) {
@@ -194,7 +195,7 @@ public class QueryConstruct {
   /**
    * Loop through all the operators in a plan fragment and connect them up.
    */
-  private static void setupWorkerNetworkOperators(List<PlanFragmentEncoding> fragments) {
+  private static void setupWorkerNetworkOperators(final List<PlanFragmentEncoding> fragments) {
     Map<Integer, Set<Integer>> producerWorkerMap = new HashMap<Integer, Set<Integer>>();
     Map<ExchangePairID, Set<Integer>> consumerWorkerMap = new HashMap<ExchangePairID, Set<Integer>>();
     Map<Integer, List<ExchangePairID>> producerOutputChannels = new HashMap<Integer, List<ExchangePairID>>();
@@ -308,7 +309,7 @@ public class QueryConstruct {
 
       Operator op = encoding.construct(args);
       /* helpful for debugging. */
-      op.setOpName(Objects.firstNonNull(encoding.opName, "Operator" + String.valueOf(encoding.opId)));
+      op.setOpName(MoreObjects.firstNonNull(encoding.opName, "Operator" + String.valueOf(encoding.opId)));
       op.setOpId(encoding.opId);
       op.setFragmentId(planFragment.fragmentIndex);
       myOperators.put(encoding.opId, op);

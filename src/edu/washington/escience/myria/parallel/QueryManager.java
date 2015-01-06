@@ -1,12 +1,11 @@
 package edu.washington.escience.myria.parallel;
 
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nonnull;
@@ -15,14 +14,14 @@ import javax.annotation.concurrent.GuardedBy;
 
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Maps;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.api.encoding.QueryConstruct;
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
@@ -30,6 +29,9 @@ import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
+import edu.washington.escience.myria.proto.ControlProto;
+import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
+import edu.washington.escience.myria.storage.TupleBuffer;
 import edu.washington.escience.myria.util.DateTimeUtils;
 import edu.washington.escience.myria.util.IPCUtils;
 
@@ -42,13 +44,13 @@ public class QueryManager {
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MasterCatalog.class);
 
   /**
-   * Queries currently active (queued, executing, being killed, etc.).
+   * Queries currently running (executing or being killed).
    */
-  private final ConcurrentHashMap<Long, Query> activeQueries;
+  private final ConcurrentHashMap<Long, Query> runningQueries;
 
   /** The queries that are queued. */
   @GuardedBy("queryQueue")
-  private final LinkedList<Query> queryQueue;
+  private final TreeMap<Long, Query> queryQueue;
 
   /**
    * Subqueries currently in execution.
@@ -71,8 +73,8 @@ public class QueryManager {
   public QueryManager(final MasterCatalog catalog, final Server server) {
     this.catalog = catalog;
     this.server = server;
-    queryQueue = new LinkedList<>();
-    activeQueries = new ConcurrentHashMap<>();
+    queryQueue = Maps.newTreeMap();
+    runningQueries = new ConcurrentHashMap<>();
     executingSubQueries = new ConcurrentHashMap<>();
   }
 
@@ -81,7 +83,19 @@ public class QueryManager {
    * @param queryId queryID.
    */
   public boolean queryCompleted(final long queryId) {
-    return !activeQueries.containsKey(queryId);
+    return !runningQueries.containsKey(queryId);
+  }
+
+  /**
+   * update resource stats from messgaes.
+   * 
+   * @param senderId the sender worer id.
+   * @param m the message.
+   */
+  public void updateResourceStats(final int senderId, final ControlMessage m) {
+    for (ControlProto.ResourceStats stats : m.getResourceStatsList()) {
+      runningQueries.get(stats.getQueryId()).addResourceStats(senderId, ResourceStats.fromProtobuf(stats));
+    }
   }
 
   /**
@@ -89,7 +103,7 @@ public class QueryManager {
    */
   private boolean canSubmitQuery() {
     synchronized (queryQueue) {
-      return ((activeQueries.size() + queryQueue.size()) < MyriaConstants.MAX_ACTIVE_QUERIES);
+      return ((runningQueries.size() + queryQueue.size()) < MyriaConstants.MAX_ACTIVE_QUERIES);
     }
   }
 
@@ -106,20 +120,26 @@ public class QueryManager {
     } catch (CatalogException e) {
       throw new DbException("Error finishing query " + queryState.getQueryId(), e);
     } finally {
-      activeQueries.remove(queryState.getQueryId());
+      runningQueries.remove(queryState.getQueryId());
+
+      /* See if we can submit a new query. */
+      if (!runningQueries.isEmpty()) {
+        /* TODO replace with proper scheduler as opposed to single-query-at-a-time. */
+        return;
+      }
+
       /* Now see if the query queue has anything for us. */
-      Query q = null;
+      Map.Entry<Long, Query> qEntry;
       synchronized (queryQueue) {
-        q = queryQueue.peek();
-        if (q != null && activeQueries.isEmpty()) {
-          queryQueue.removeFirst();
-        }
+        qEntry = queryQueue.pollFirstEntry();
       }
-      if (q != null) {
-        LOGGER.info("Now advancing to query {}", q.getQueryId());
-        activeQueries.put(q.getQueryId(), q);
-        advanceQuery(q);
+      if (qEntry == null) {
+        return;
       }
+      Query q = qEntry.getValue();
+      LOGGER.info("Now advancing to query {}", q.getQueryId());
+      runningQueries.put(q.getQueryId(), q);
+      advanceQuery(q);
     }
   }
 
@@ -128,29 +148,23 @@ public class QueryManager {
    * 
    * @param limit the maximum number of results to return. Any value <= 0 is interpreted as all results.
    * @param maxId the largest query ID returned. If null or <= 0, all queries will be returned.
+   * @param minId the smallest query ID returned. If null or <= 0, all queries will be returned. Ignored if maxId is
+   *          present.
+   * @param searchTerm a token to match against the raw queries. If null, all queries will be returned.
    * @throws CatalogException if there is an error in the catalog.
    * @return a list of the status of every query that has been submitted to Myria.
    */
-  public List<QueryStatusEncoding> getQueries(final long limit, final long maxId) throws CatalogException {
+  public List<QueryStatusEncoding> getQueries(@Nullable final Long limit, @Nullable final Long maxId,
+      @Nullable final Long minId, @Nullable final String searchTerm) throws CatalogException {
     List<QueryStatusEncoding> ret = new LinkedList<>();
 
-    /* Begin by adding the status for all the active queries. */
-    TreeSet<Long> activeQueryIds = new TreeSet<>(activeQueries.keySet());
-    final Iterator<Long> iter = activeQueryIds.descendingIterator();
-    while (iter.hasNext()) {
-      long queryId = iter.next();
-      final QueryStatusEncoding status = getQueryStatus(queryId);
-      if (status == null) {
-        LOGGER.warn("Weird: query status for active query {} is null.", queryId);
-        continue;
-      }
-      ret.add(status);
-    }
-
     /* Now add in the status for all the inactive (finished, killed, etc.) queries. */
-    for (QueryStatusEncoding q : catalog.getQueries(limit, maxId)) {
-      if (!activeQueryIds.contains(q.queryId)) {
+    for (QueryStatusEncoding q : catalog.getQueries(limit, maxId, minId, searchTerm)) {
+      if (QueryStatusEncoding.Status.finished(q.status)) {
         ret.add(q);
+      } else {
+        // If the query is not yet finished, refresh its status now.
+        ret.add(getQueryStatus(q.queryId));
       }
     }
 
@@ -166,7 +180,14 @@ public class QueryManager {
    */
   @Nonnull
   public Query getQuery(@Nonnull final Long queryId) {
-    Query query = activeQueries.get(Preconditions.checkNotNull(queryId, "queryId"));
+    Long qId = Preconditions.checkNotNull(queryId, "queryId");
+    Query query;
+    synchronized (queryQueue) {
+      query = runningQueries.get(qId);
+      if (query == null) {
+        query = queryQueue.get(qId);
+      }
+    }
     Preconditions.checkArgument(query != null, "Query #%s is not active", queryId);
     return query;
   }
@@ -179,13 +200,19 @@ public class QueryManager {
    * @return the status of this query.
    */
   public QueryStatusEncoding getQueryStatus(final long queryId) throws CatalogException {
+    Query state = null;
+    try {
+      state = getQuery(queryId);
+    } catch (IllegalArgumentException e) {
+      ; /* Expected, if the query is not running. */
+    }
+
     /* Get the stored data for this query, e.g., the submitted program. */
     QueryStatusEncoding queryStatus = catalog.getQuery(queryId);
     if (queryStatus == null) {
       return null;
     }
 
-    Query state = activeQueries.get(queryId);
     if (state == null) {
       /* Not active, so the information from the Catalog is authoritative. */
       return queryStatus;
@@ -216,14 +243,14 @@ public class QueryManager {
     final Query queryState = new Query(queryId, query, plan, server);
     boolean canStart = false;
     synchronized (queryQueue) {
-      if (queryQueue.isEmpty() && activeQueries.isEmpty()) {
+      if (queryQueue.isEmpty() && runningQueries.isEmpty()) {
         canStart = true;
       } else {
-        queryQueue.add(queryState);
+        queryQueue.put(queryId, queryState);
       }
     }
     if (canStart) {
-      activeQueries.put(queryId, queryState);
+      runningQueries.put(queryId, queryState);
       advanceQuery(queryState);
     }
     return queryState.getFuture();
@@ -380,6 +407,18 @@ public class QueryManager {
   }
 
   /**
+   * @param queryId the query id to fetch
+   * @return resource usage stats in a tuple buffer or null if the query is not running.
+   */
+  public TupleBuffer getResourceUsage(final long queryId) {
+    Query q = runningQueries.get(queryId);
+    if (q == null) {
+      return null;
+    }
+    return q.getResourceUsage();
+  }
+
+  /**
    * @param mqp the master query
    * @return the query dispatch {@link LocalSubQueryFuture}.
    * @throws DbException if any error occurs.
@@ -440,7 +479,7 @@ public class QueryManager {
     if (!canSubmitQuery()) {
       throw new DbException("Cannot submit query");
     }
-    if (query.profilingMode) {
+    if (query.profilingMode.size() > 0) {
       if (!(plan instanceof SubQuery || plan instanceof JsonSubQuery)) {
         throw new DbException("Profiling mode is not supported for plans (" + plan.getClass().getSimpleName()
             + ") that may contain multiple subqueries.");
@@ -490,15 +529,13 @@ public class QueryManager {
    * @param physicalPlan the Myria physical plan for the query.
    * @param workerPlans the physical parallel plan fragments for each worker.
    * @param masterPlan the physical parallel plan fragment for the master.
-   * @param profilingMode is the profiling mode of the query on.
    * @throws DbException if any error in non-catalog data processing
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
    */
   public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final String physicalPlan,
-      final SubQueryPlan masterPlan, final Map<Integer, SubQueryPlan> workerPlans, @Nullable final Boolean profilingMode)
-      throws DbException, CatalogException {
-    return submitQuery(rawQuery, logicalRa, physicalPlan, new SubQuery(masterPlan, workerPlans), profilingMode);
+      final SubQueryPlan masterPlan, final Map<Integer, SubQueryPlan> workerPlans) throws DbException, CatalogException {
+    return submitQuery(rawQuery, logicalRa, physicalPlan, new SubQuery(masterPlan, workerPlans));
   }
 
   /**
@@ -509,18 +546,16 @@ public class QueryManager {
    * @param logicalRa the logical relational algebra of the compiled plan.
    * @param physicalPlan the Myria physical plan for the query.
    * @param plan the query plan.
-   * @param profilingMode is the profiling mode of the query on.
    * @throws DbException if any error in non-catalog data processing
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
    */
   public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final String physicalPlan,
-      final QueryPlan plan, @Nullable final Boolean profilingMode) throws DbException, CatalogException {
+      final QueryPlan plan) throws DbException, CatalogException {
     QueryEncoding query = new QueryEncoding();
     query.rawQuery = rawQuery;
     query.logicalRa = rawQuery;
     query.fragments = ImmutableList.of();
-    query.profilingMode = Objects.firstNonNull(profilingMode, false);
     return submitQuery(query, plan);
   }
 
@@ -528,6 +563,12 @@ public class QueryManager {
    * Kill all queries currently executing.
    */
   protected void killAll() {
+    synchronized (queryQueue) {
+      for (Query q : queryQueue.values()) {
+        q.kill();
+      }
+      queryQueue.clear();
+    }
     for (MasterSubQuery p : executingSubQueries.values()) {
       p.kill();
     }
@@ -546,11 +587,11 @@ public class QueryManager {
         mqp.workerFail(workerId, new LostHeartbeatException());
       }
 
-      if (mqp.getFTMode().equals(FTMODE.abandon)) {
+      if (mqp.getFTMode().equals(FTMode.ABANDON)) {
         mqp.getMissingWorkers().add(workerId);
         mqp.updateProducerChannels(workerId, false);
         mqp.triggerFragmentEosEoiChecks();
-      } else if (mqp.getFTMode().equals(FTMODE.rejoin)) {
+      } else if (mqp.getFTMode().equals(FTMode.REJOIN)) {
         mqp.getMissingWorkers().add(workerId);
         mqp.updateProducerChannels(workerId, false);
       }
@@ -566,7 +607,7 @@ public class QueryManager {
    */
   protected void workerRestarted(final int workerId, final Set<Integer> workersAcked) {
     for (MasterSubQuery mqp : executingSubQueries.values()) {
-      if (mqp.getFTMode().equals(FTMODE.rejoin) && mqp.getMissingWorkers().contains(workerId)
+      if (mqp.getFTMode().equals(FTMode.REJOIN) && mqp.getMissingWorkers().contains(workerId)
           && workersAcked.containsAll(mqp.getWorkerAssigned())) {
         /* so a following ADD_WORKER_ACK won't cause queryMessage to be sent again */
         mqp.getMissingWorkers().remove(workerId);

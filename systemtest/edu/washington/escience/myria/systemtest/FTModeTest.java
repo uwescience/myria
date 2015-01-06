@@ -19,7 +19,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -62,7 +62,8 @@ public class FTModeTest extends SystemTestBase {
   private final int numTbl1Worker1 = 100;
   private final int numTbl1Worker2 = 200;
 
-  public TupleBatchBuffer getAJoinResult(TupleBatchBuffer startWith, TupleBatchBuffer multiWith, Schema schema) {
+  public TupleBatchBuffer getAJoinResult(final TupleBatchBuffer startWith, final TupleBatchBuffer multiWith,
+      final Schema schema) {
 
     final Iterator<List<? extends Column<?>>> iter1 = startWith.getAllAsRawColumn().iterator();
     boolean s[][] = new boolean[MaxID][MaxID];
@@ -295,8 +296,8 @@ public class FTModeTest extends SystemTestBase {
     return result;
   }
 
-  public TupleBatchBuffer getCircularJoinResult(TupleBatchBuffer a, TupleBatchBuffer b, TupleBatchBuffer c,
-      Schema schema) {
+  public TupleBatchBuffer getCircularJoinResult(final TupleBatchBuffer a, final TupleBatchBuffer b,
+      final TupleBatchBuffer c, final Schema schema) {
 
     final Iterator<List<? extends Column<?>>> iter1 = a.getAllAsRawColumn().iterator();
     boolean s1[][] = new boolean[MaxID][MaxID];
@@ -438,8 +439,8 @@ public class FTModeTest extends SystemTestBase {
     HashMap<Integer, SubQueryPlan> workerPlans = new HashMap<Integer, SubQueryPlan>();
     workerPlans.put(workerIDs[0], new SubQueryPlan());
     workerPlans.put(workerIDs[1], new SubQueryPlan());
-    workerPlans.get(workerIDs[0]).setFTMode(FTMODE.valueOf("abandon"));
-    workerPlans.get(workerIDs[1]).setFTMode(FTMODE.valueOf("abandon"));
+    workerPlans.get(workerIDs[0]).setFTMode(FTMode.ABANDON);
+    workerPlans.get(workerIDs[1]).setFTMode(FTMode.ABANDON);
     for (int i = 0; i < workerPlan.get(0).size(); ++i) {
       workerPlans.get(workerIDs[0]).addRootOp(workerPlan.get(0).get(i));
     }
@@ -451,9 +452,9 @@ public class FTModeTest extends SystemTestBase {
     final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
     SubQueryPlan serverPlan = new SubQueryPlan(new SinkRoot(queueStore));
-    serverPlan.setFTMode(FTMODE.valueOf("abandon"));
+    serverPlan.setFTMode(FTMode.ABANDON);
 
-    ListenableFuture<Query> qf = server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans, false);
+    ListenableFuture<Query> qf = server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans);
     Thread.sleep(2000);
     /* kill the one without EOSController */
     LOGGER.info("killing worker " + workerIDs[1]);
@@ -544,8 +545,8 @@ public class FTModeTest extends SystemTestBase {
     HashMap<Integer, SubQueryPlan> workerPlans = new HashMap<Integer, SubQueryPlan>();
     workerPlans.put(workerIDs[0], new SubQueryPlan());
     workerPlans.put(workerIDs[1], new SubQueryPlan());
-    workerPlans.get(workerIDs[0]).setFTMode(FTMODE.valueOf("rejoin"));
-    workerPlans.get(workerIDs[1]).setFTMode(FTMODE.valueOf("rejoin"));
+    workerPlans.get(workerIDs[0]).setFTMode(FTMode.REJOIN);
+    workerPlans.get(workerIDs[1]).setFTMode(FTMode.REJOIN);
     for (int i = 0; i < workerPlan.get(0).size(); ++i) {
       workerPlans.get(workerIDs[0]).addRootOp(workerPlan.get(0).get(i));
     }
@@ -554,8 +555,8 @@ public class FTModeTest extends SystemTestBase {
     }
 
     SubQueryPlan serverPlan = new SubQueryPlan(new SinkRoot(new EOSSource()));
-    serverPlan.setFTMode(FTMODE.valueOf("rejoin"));
-    ListenableFuture<Query> qf = server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans, false);
+    serverPlan.setFTMode(FTMode.REJOIN);
+    ListenableFuture<Query> qf = server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans);
     Thread.sleep(3000);
     /* kill the one without EOSController */
     LOGGER.info("killing worker " + workerIDs[1]);
@@ -579,7 +580,7 @@ public class FTModeTest extends SystemTestBase {
     send2server.setOpName("send2server query 2");
     workerPlans.put(workerIDs[0], new SubQueryPlan(send2server));
     workerPlans.put(workerIDs[1], new SubQueryPlan(send2server));
-    server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans, false).get();
+    server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans).get();
 
     TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
     while (!receivedTupleBatches.isEmpty()) {

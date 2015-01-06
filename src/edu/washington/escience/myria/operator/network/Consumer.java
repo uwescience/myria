@@ -14,7 +14,7 @@ import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.operator.LeafOperator;
 import edu.washington.escience.myria.parallel.ExchangePairID;
@@ -212,7 +212,7 @@ public class Consumer extends LeafOperator {
 
     int numExpecting = sourceWorkers.size();
 
-    if (taskResourceManager.getFragment().getLocalSubQuery().getFTMode().equals(FTMODE.abandon)) {
+    if (taskResourceManager.getFragment().getLocalSubQuery().getFTMode().equals(FTMode.ABANDON)) {
       Set<Integer> expectingWorkers = new HashSet<Integer>();
       expectingWorkers.addAll(sourceWorkers);
       expectingWorkers.removeAll(taskResourceManager.getFragment().getLocalSubQuery().getMissingWorkers());

@@ -30,7 +30,7 @@ import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
@@ -50,20 +50,20 @@ import edu.washington.escience.myria.util.concurrent.ThreadAffinityFixedRoundRob
 /**
  * Workers do the real query execution. A query received by the server will be pre-processed and then dispatched to the
  * workers.
- *
+ * 
  * To execute a query on a worker, 4 steps are proceeded:
- *
+ * 
  * 1) A worker receive an Operator instance as its execution plan. The worker then stores the plan and does some
  * pre-processing, e.g. initializes the data structures which are needed during the execution of the plan.
- *
+ * 
  * 2) Each worker sends back to the server a message (it's id) to notify the server that the query plan has been
  * successfully received. And then each worker waits for the server to send the "start" message.
- *
+ * 
  * 3) Each worker executes its query plan after "start" is received.
- *
+ * 
  * 4) After the query plan finishes, each worker removes the query plan and related data structures, and then waits for
  * next query plan
- *
+ * 
  */
 public final class Worker {
 
@@ -103,11 +103,11 @@ public final class Worker {
                   connectionPool.removeRemote(workerId).await();
                   sendMessageToMaster(IPCUtils.removeWorkerAckTM(workerId));
                   for (WorkerSubQuery wqp : executingSubQueries.values()) {
-                    if (wqp.getFTMode().equals(FTMODE.abandon)) {
+                    if (wqp.getFTMode().equals(FTMode.ABANDON)) {
                       wqp.getMissingWorkers().add(workerId);
                       wqp.updateProducerChannels(workerId, false);
                       wqp.triggerFragmentEosEoiChecks();
-                    } else if (wqp.getFTMode().equals(FTMODE.rejoin)) {
+                    } else if (wqp.getFTMode().equals(FTMode.REJOIN)) {
                       wqp.getMissingWorkers().add(workerId);
                     }
                   }
@@ -187,7 +187,7 @@ public final class Worker {
               q.q.kill();
               break;
             case QUERY_RECOVER:
-              if (q.q.getFTMode().equals(FTMODE.rejoin)) {
+              if (q.q.getFTMode().equals(FTMode.REJOIN)) {
                 q.q.addRecoveryTasks(q.queryMsg.getWorkerId());
               }
               break;
@@ -397,7 +397,7 @@ public final class Worker {
 
   /**
    * Setup system properties.
-   *
+   * 
    * @param cmdlineOptions command line options
    */
   private static void systemSetup(final HashMap<String, Object> cmdlineOptions) {
@@ -511,7 +511,7 @@ public final class Worker {
 
   /**
    * Worker process entry point.
-   *
+   * 
    * @param args command line arguments.
    */
   public static void main(final String[] args) {
@@ -643,7 +643,7 @@ public final class Worker {
 
   /**
    * It does the initialization and preparation for the execution of the subquery.
-   *
+   * 
    * @param subQuery the received query.
    * @throws DbException if any error occurs.
    */
@@ -676,7 +676,7 @@ public final class Worker {
               });
           LOGGER.info("My part of query {} finished", subQuery);
         } else {
-          LOGGER.debug("Query failed because of exception: ", future.getCause());
+          LOGGER.error("Query failed because of exception: ", future.getCause());
 
           TransportMessage tm = null;
           try {
@@ -704,7 +704,7 @@ public final class Worker {
 
   /**
    * Finish the subquery by removing it from the data structures.
-   *
+   * 
    * @param subQueryId the id of the subquery to finish.
    */
   private void finishTask(final SubQueryId subQueryId) {
@@ -722,7 +722,7 @@ public final class Worker {
 
   /**
    * This method should be called whenever the system is going to shutdown.
-   *
+   * 
    */
   void shutdown() {
     LOGGER.info("Shutdown requested. Please wait when cleaning up...");
@@ -760,7 +760,7 @@ public final class Worker {
 
   /**
    * Start the worker service.
-   *
+   * 
    * @throws Exception if any error meets.
    */
   public void start() throws Exception {

@@ -82,6 +82,8 @@ public final class MyriaSystemConfigKeys {
   public static final String MAX_HEAP_SIZE = "max.heap.size";
   /** */
   public static final String DEPLOYMENT_FILE = "deployment.file";
+  /** */
+  public static final String ADMIN_PASSWORD = "admin.password";
 
   /**
    * Add default configurations into a configuraion.
@@ -143,6 +145,9 @@ public final class MyriaSystemConfigKeys {
     }
     if (!config.containsKey(WORKER_STORAGE_DATABASE_SYSTEM) || config.get(WORKER_STORAGE_DATABASE_SYSTEM) == null) {
       config.put(WORKER_STORAGE_DATABASE_SYSTEM, deployment.get("dbms"));
+    }
+    if (!config.containsKey(ADMIN_PASSWORD) || config.get(ADMIN_PASSWORD) == null) {
+      config.put(ADMIN_PASSWORD, deployment.get("admin_password"));
     }
   }
 

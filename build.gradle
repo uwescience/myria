@@ -12,7 +12,7 @@ group = "edu.washington.escience.myria"
 version = "0.1"
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '2.1'
+    gradleVersion = '2.2.1'
 }
 
 /* We use Java 1.7 */
@@ -90,62 +90,67 @@ repositories.localRepository {
 }
 
 /* List constants that we use in multiple places. */
-ext.slf4jVersion = "1.7.7"
-ext.jerseyVersion = "1.18.1"
-ext.swaggerVersion = "2.10"
-ext.swaggerMinorVersion = "1.3.7"
+ext.slf4jVersion = "1.7.9"
+ext.jacksonVersion = "2.4.4"
+ext.jerseyVersion = "2.14"
+ext.swaggerVersion = "2.11"
+ext.swaggerMinorVersion = "1.3.11"
 
 dependencies {
-  compile "org.apache.hadoop:hadoop-core:1.1.2"
-  compile "xerces:xercesImpl:2.9.1"
-  compile "xalan:xalan:2.7.1"
-  compile "com.google.code.findbugs:findbugs:3.0.0"
+  compile ("org.apache.hadoop:hadoop-core:1.2.1") {
+    /* Hadoop depends on Jersey 1 but we don't need it. Exclude it to prevent
+     * Classloader picking the wrong version of Jersey classes. */
+    exclude group: "com.sun.jersey"
+  }
+
+  compile "xerces:xercesImpl:2.11.0"
+  compile "xalan:xalan:2.7.2"
+  compile "com.google.code.findbugs:annotations:3.0.0"
   compile "net.jcip:jcip-annotations:1.0"
   compile "org.ini4j:ini4j:0.5.2"
-  compile "com.almworks.sqlite4java:sqlite4java:0.282"
+  compile "com.almworks.sqlite4java:sqlite4java:1.0.392"
 
-  compile "com.google.guava:guava:17.0"
-  compile "com.google.protobuf:protobuf-java:2.5.0"
+  compile "com.google.guava:guava:18.0"
+  compile "com.google.protobuf:protobuf-java:2.6.1"
 
-  compile "io.netty:netty:3.9.2.Final"
+  compile "io.netty:netty:3.9.6.Final"
   compile "net.sf.trove4j:trove4j:3.0.3"
 
-  compile "joda-time:joda-time:2.3"
+  compile "joda-time:joda-time:2.6"
 
   compile "commons-io:commons-io:2.4"
   compile "org.apache.commons:commons-lang3:3.3.2"
   compile "commons-cli:commons-cli:1.2"
 
-  compile "com.sun.jersey:jersey-core:${jerseyVersion}"
-  compile "com.sun.jersey:jersey-server:${jerseyVersion}"
-  compile "com.sun.jersey:jersey-client:${jerseyVersion}"
-  compile "com.sun.jersey:jersey-grizzly2:${jerseyVersion}"
-  compile "com.sun.jersey.contribs:jersey-multipart:${jerseyVersion}"
+  compile "org.glassfish.jersey.core:jersey-server:${jerseyVersion}"
+  compile "org.glassfish.jersey.core:jersey-client:${jerseyVersion}"
+  compile "org.glassfish.jersey.core:jersey-common:${jerseyVersion}"
+  compile "org.glassfish.jersey.containers:jersey-container-grizzly2-http:${jerseyVersion}"
+  compile "org.glassfish.jersey.media:jersey-media-multipart:${jerseyVersion}"
+  compile "org.glassfish.jersey.media:jersey-media-json-jackson:${jerseyVersion}"
 
-  compile "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:2.4.1"
-  compile "com.fasterxml.jackson.datatype:jackson-datatype-joda:2.4.1"
+  compile "javax.annotation:javax.annotation-api:1.2"
 
-  compile "com.wordnik:swagger-jersey-jaxrs_${swaggerVersion}:${swaggerMinorVersion}"
-  compile "com.sun.jersey:jersey-grizzly2-servlet:${jerseyVersion}"
+  compile "com.fasterxml.jackson.jaxrs:jackson-jaxrs-providers:${jacksonVersion}"
+  compile "com.fasterxml.jackson.datatype:jackson-datatype-joda:${jacksonVersion}"
+  compile "com.fasterxml.jackson.datatype:jackson-datatype-guava:${jacksonVersion}"
+
+  compile "com.wordnik:swagger-jersey2-jaxrs_${swaggerVersion}:${swaggerMinorVersion}"
 
   compile "org.slf4j:slf4j-api:${slf4jVersion}"
   //runtime "org.slf4j:slf4j-simple:${slf4jVersion}"
   runtime "org.slf4j:slf4j-log4j12:${slf4jVersion}"
 
-  // OpenCSV for reading CSV files
-  compile "net.sf.opencsv:opencsv:2.3"
-  
-  // SuperCSV for writing
-  compile "net.sf.supercsv:super-csv:2.2.0"
+  compile "org.apache.commons:commons-csv:1.1"
   
   // Expression compiler
-  compile "org.codehaus.janino:janino:2.7.6"
+  compile "org.codehaus.janino:janino:2.7.7"
 
   runtime "monetdb:monetdb-jdbc:2.11"
   runtime "mysql:mysql-connector-java:5.1.31"
   compile "org.postgresql:postgresql:9.3-1102-jdbc41"
 
-  testCompile "junit:junit:4.11"
+  testCompile "junit:junit:4.12"
   testCompile "com.carrotsearch:junit-benchmarks:0.7.2"
 
   systemtestCompile sourceSets.main.output
@@ -171,7 +176,7 @@ tasks.withType(JavaCompile) {
 
 /* Tell all tasks to add sqlite library to their classpath when running. */
 tasks.withType(Test) {
-  systemProperty "java.library.path", file("lib/sqlite4java-282")
+  systemProperty "java.library.path", file("lib/sqlite4java-392")
   getReports().getHtml().setDestination(file('build/reports/'+name))
 
   // set heap size for the test JVM(s)
@@ -209,7 +214,7 @@ eclipse.classpath {
       provider -> 
       provider.asNode().findAll { it.@path.contains("sqlite") }.each { 
         it.children().each {
-          it.appendNode('attribute', [name: 'org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY', value:'myria/lib/sqlite4java-282'])
+          it.appendNode('attribute', [name: 'org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY', value:'myria/lib/sqlite4java-392'])
         }
       }
     }

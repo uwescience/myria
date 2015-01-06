@@ -3,110 +3,19 @@ package edu.washington.escience.myria.util;
 import java.io.File;
 import java.io.IOException;
 
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.LoggerFactory;
-
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
-import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.accessmethod.SQLiteAccessMethod;
-import edu.washington.escience.myria.accessmethod.SQLiteInfo;
-import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * Util methods for SQLite.
  * 
  * */
 public final class SQLiteUtils {
-  /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(SQLiteUtils.class);
-
-  /**
-   * Generates a SQLite CREATE TABLE statement for a table of the given Schema and name.
-   * 
-   * @param schema the Schema of the table to be created.
-   * @param relationKey the name of the table to be created.
-   * @return a SQLite CREATE TABLE statement for a table of the given Schema and name.
-   */
-  public static String createStatementFromSchema(final Schema schema, final RelationKey relationKey) {
-    final StringBuilder sb = new StringBuilder();
-    sb.append("CREATE TABLE ").append(relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)).append(" (");
-    for (int i = 0; i < schema.numColumns(); ++i) {
-      if (i > 0) {
-        sb.append(", ");
-      }
-      sb.append('[').append(schema.getColumnName(i)).append("] ").append(typeToSQLiteType(schema.getColumnType(i)));
-    }
-    sb.append(");");
-    return sb.toString();
-  }
-
-  /**
-   * Generates a SQLite CREATE TABLE statement for a table of the given Schema and name.
-   * 
-   * @param schema the Schema of the table to be created.
-   * @param relationKey the table to be created.
-   * @return a SQLite CREATE TABLE statement for a table of the given Schema and name.
-   */
-  public static String createIfNotExistsStatementFromSchema(final Schema schema, final RelationKey relationKey) {
-    final StringBuilder sb = new StringBuilder();
-    sb.append("CREATE TABLE IF NOT EXISTS ").append(relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)).append(
-        " (\n");
-    for (int i = 0; i < schema.numColumns(); ++i) {
-      if (i > 0) {
-        sb.append(",\n");
-      }
-      sb.append("    [").append(schema.getColumnName(i)).append("] ").append(typeToSQLiteType(schema.getColumnType(i)));
-    }
-    sb.append(");");
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug("Create if not exists: " + sb.toString());
-    }
-    return sb.toString();
-  }
-
-  /**
-   * insert a TupleBatch into SQLite.
-   * 
-   * @param inputSchema the schema of the input TupleBatch
-   * @param relationKey the relation to insert into
-   * @param sqliteInfo the database connection information
-   * @param data the data.
-   * @throws DbException if there is an error in the database.
-   * */
-  public static void insertIntoSQLite(final Schema inputSchema, final RelationKey relationKey,
-      final SQLiteInfo sqliteInfo, final TupleBatch data) throws DbException {
-    SQLiteAccessMethod.tupleBatchInsert(sqliteInfo, relationKey, inputSchema, data);
-  }
-
-  /**
-   * Generates a SQLite INSERT statement for a table of the given Schema and name.
-   * 
-   * @param schema the Schema of the table to be created.
-   * @param relationKey the key of the table to be created.
-   * @return a SQLite INSERT statement for a table of the given Schema and name.
-   */
-  public static String insertStatementFromSchema(final Schema schema, final RelationKey relationKey) {
-    final StringBuilder sb = new StringBuilder();
-    sb.append("INSERT INTO ").append(relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)).append(" ([");
-    sb.append(StringUtils.join(schema.getColumnNames(), "],["));
-    sb.append("]) VALUES (");
-    for (int i = 0; i < schema.numColumns(); ++i) {
-      if (i > 0) {
-        sb.append(',');
-      }
-      sb.append('?');
-    }
-    sb.append(");");
-    return sb.toString();
-  }
-
   /**
    * Helper utility for creating SQLite CREATE TABLE statements.
    * 
@@ -141,21 +50,6 @@ public final class SQLiteUtils {
    * util classes are not instantiable.
    * */
   private SQLiteUtils() {
-  }
-
-  /**
-   * Creates a SQLite "DROP TABLE IF EXISTS" statement.
-   * 
-   * @param relationKey the table to be dropped.
-   * @return "DROP TABLE IF EXISTS <tt>relationKey.getCanonicalName()</tt>;"
-   */
-  public static String dropTableIfExistsStatement(final RelationKey relationKey) {
-    StringBuilder sb = new StringBuilder();
-    sb.append("DROP TABLE IF EXISTS ").append(relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)).append(';');
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug("Drop if exists: " + sb.toString());
-    }
-    return sb.toString();
   }
 
   /**

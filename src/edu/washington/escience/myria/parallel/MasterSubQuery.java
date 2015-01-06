@@ -17,14 +17,14 @@ import org.jboss.netty.channel.group.DefaultChannelGroupFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.util.DateTimeUtils;
 import edu.washington.escience.myria.util.IPCUtils;
@@ -68,18 +68,18 @@ public class MasterSubQuery extends LocalSubQuery {
             Throwable cause = future.getCause();
             if (!(cause instanceof QueryKilledException)) {
               // Only record non-killed exceptions
-              if (getFTMode().equals(FTMODE.none)) {
+              if (getFTMode().equals(FTMode.NONE)) {
                 failedWorkerLocalSubQueries.put(workerID, cause);
                 // if any worker fails because of some exception, kill the query.
                 kill();
                 /* Record the reason for failure. */
                 if (cause != null) {
-                  message = Objects.firstNonNull(message, "Error in worker#" + workerID + ", " + cause.toString());
+                  message = MoreObjects.firstNonNull(message, "Error in worker#" + workerID + ", " + cause.toString());
                 }
-              } else if (getFTMode().equals(FTMODE.abandon)) {
+              } else if (getFTMode().equals(FTMode.ABANDON)) {
                 LOGGER.debug("(Abandon) ignoring failed subquery future on subquery #{}", getSubQueryId());
                 // do nothing
-              } else if (getFTMode().equals(FTMODE.rejoin)) {
+              } else if (getFTMode().equals(FTMode.REJOIN)) {
                 LOGGER.debug("(Rejoin) ignoring failed subquery future on subquery #{}", getSubQueryId());
                 // do nothing
               }
@@ -204,7 +204,7 @@ public class MasterSubQuery extends LocalSubQuery {
 
   /**
    * Callback when a query plan is received by a worker.
-   *
+   * 
    * @param workerID the workerID
    */
   final void queryReceivedByWorker(final int workerID) {
@@ -220,7 +220,7 @@ public class MasterSubQuery extends LocalSubQuery {
         }
         if (!e.getValue().workerCompleteQuery.isDone() && e.getKey() != MyriaConstants.MASTER_ID) {
           master.getIPCConnectionPool()
-          .sendShortMessage(e.getKey(), IPCUtils.recoverQueryTM(getSubQueryId(), workerID));
+              .sendShortMessage(e.getKey(), IPCUtils.recoverQueryTM(getSubQueryId(), workerID));
         }
       }
     } else {
@@ -281,7 +281,7 @@ public class MasterSubQuery extends LocalSubQuery {
 
   /**
    * Callback when a worker completes its part of the query.
-   *
+   * 
    * @param workerID the workerID
    */
   final void workerComplete(final int workerID) {
@@ -297,7 +297,7 @@ public class MasterSubQuery extends LocalSubQuery {
 
   /**
    * Callback when a worker fails in executing its part of the query.
-   *
+   * 
    * @param workerID the workerID
    * @param cause the cause of the failure
    */
@@ -310,7 +310,7 @@ public class MasterSubQuery extends LocalSubQuery {
     }
 
     LOGGER.info("Received query complete (fail) message from worker: {}, cause: {}", workerID, cause);
-    if (getFTMode().equals(FTMODE.rejoin) && cause.toString().endsWith("LostHeartbeatException")) {
+    if (getFTMode().equals(FTMode.REJOIN) && cause.toString().endsWith("LostHeartbeatException")) {
       /* for rejoin, don't set it to be completed since this worker is expected to be launched again. */
       return;
     }
@@ -323,7 +323,7 @@ public class MasterSubQuery extends LocalSubQuery {
    */
   public MasterSubQuery(final SubQuery subQuery, final Server master) {
     super(Preconditions.checkNotNull(Preconditions.checkNotNull(subQuery, "subQuery").getSubQueryId(), "subQueryId"),
-        subQuery.getMasterPlan().getFTMode(), subQuery.getMasterPlan().isProfilingMode());
+        subQuery.getMasterPlan().getFTMode(), subQuery.getMasterPlan().getProfilingMode());
     Preconditions.checkNotNull(subQuery, "subQuery");
     SubQueryPlan masterPlan = subQuery.getMasterPlan();
     Map<Integer, SubQueryPlan> workerPlans = subQuery.getWorkerPlans();

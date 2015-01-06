@@ -7,12 +7,13 @@ public final class TransportProto {
   private TransportProto() {
   }
 
-  public static void registerAllExtensions(com.google.protobuf.ExtensionRegistry registry) {
+  public static void registerAllExtensions(final com.google.protobuf.ExtensionRegistry registry) {
   }
 
-  public interface TransportMessageOrBuilder extends com.google.protobuf.MessageOrBuilder {
+  public interface TransportMessageOrBuilder extends
+  // @@protoc_insertion_point(interface_extends:TransportMessage)
+      com.google.protobuf.MessageOrBuilder {
 
-    // required .TransportMessage.Type type = 1;
     /**
      * <code>required .TransportMessage.Type type = 1;</code>
      */
@@ -23,7 +24,6 @@ public final class TransportProto {
      */
     edu.washington.escience.myria.proto.TransportProto.TransportMessage.Type getType();
 
-    // optional .DataMessage dataMessage = 2;
     /**
      * <code>optional .DataMessage dataMessage = 2;</code>
      */
@@ -39,7 +39,6 @@ public final class TransportProto {
      */
     edu.washington.escience.myria.proto.DataProto.DataMessageOrBuilder getDataMessageOrBuilder();
 
-    // optional .QueryMessage queryMessage = 3;
     /**
      * <code>optional .QueryMessage queryMessage = 3;</code>
      */
@@ -55,7 +54,6 @@ public final class TransportProto {
      */
     edu.washington.escience.myria.proto.QueryProto.QueryMessageOrBuilder getQueryMessageOrBuilder();
 
-    // optional .ControlMessage controlMessage = 4;
     /**
      * <code>optional .ControlMessage controlMessage = 4;</code>
      */
@@ -75,14 +73,15 @@ public final class TransportProto {
    * Protobuf type {@code TransportMessage}
    */
   public static final class TransportMessage extends com.google.protobuf.GeneratedMessage implements
+  // @@protoc_insertion_point(message_implements:TransportMessage)
       TransportMessageOrBuilder {
     // Use TransportMessage.newBuilder() to construct.
-    private TransportMessage(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private TransportMessage(final com.google.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       unknownFields = builder.getUnknownFields();
     }
 
-    private TransportMessage(boolean noInit) {
+    private TransportMessage(final boolean noInit) {
       unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance();
     }
 
@@ -104,8 +103,8 @@ public final class TransportProto {
       return unknownFields;
     }
 
-    private TransportMessage(com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+    private TransportMessage(final com.google.protobuf.CodedInputStream input,
+        final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       initFields();
       com.google.protobuf.UnknownFieldSet.Builder unknownFields = com.google.protobuf.UnknownFieldSet.newBuilder();
@@ -206,8 +205,8 @@ public final class TransportProto {
     public static com.google.protobuf.Parser<TransportMessage> PARSER =
         new com.google.protobuf.AbstractParser<TransportMessage>() {
           @Override
-          public TransportMessage parsePartialFrom(com.google.protobuf.CodedInputStream input,
-              com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          public TransportMessage parsePartialFrom(final com.google.protobuf.CodedInputStream input,
+              final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
               throws com.google.protobuf.InvalidProtocolBufferException {
             return new TransportMessage(input, extensionRegistry);
           }
@@ -253,7 +252,7 @@ public final class TransportProto {
         return value;
       }
 
-      public static Type valueOf(int value) {
+      public static Type valueOf(final int value) {
         switch (value) {
           case 0:
             return DATA;
@@ -273,7 +272,7 @@ public final class TransportProto {
       private static com.google.protobuf.Internal.EnumLiteMap<Type> internalValueMap =
           new com.google.protobuf.Internal.EnumLiteMap<Type>() {
             @Override
-            public Type findValueByNumber(int number) {
+            public Type findValueByNumber(final int number) {
               return Type.valueOf(number);
             }
           };
@@ -295,7 +294,7 @@ public final class TransportProto {
 
       private static final Type[] VALUES = values();
 
-      public static Type valueOf(com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
+      public static Type valueOf(final com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
         if (desc.getType() != getDescriptor()) {
           throw new java.lang.IllegalArgumentException("EnumValueDescriptor is not for this type.");
         }
@@ -305,7 +304,7 @@ public final class TransportProto {
       private final int index;
       private final int value;
 
-      private Type(int index, int value) {
+      private Type(final int index, final int value) {
         this.index = index;
         this.value = value;
       }
@@ -314,7 +313,6 @@ public final class TransportProto {
     }
 
     private int bitField0_;
-    // required .TransportMessage.Type type = 1;
     public static final int TYPE_FIELD_NUMBER = 1;
     private edu.washington.escience.myria.proto.TransportProto.TransportMessage.Type type_;
 
@@ -334,7 +332,6 @@ public final class TransportProto {
       return type_;
     }
 
-    // optional .DataMessage dataMessage = 2;
     public static final int DATAMESSAGE_FIELD_NUMBER = 2;
     private edu.washington.escience.myria.proto.DataProto.DataMessage dataMessage_;
 
@@ -362,7 +359,6 @@ public final class TransportProto {
       return dataMessage_;
     }
 
-    // optional .QueryMessage queryMessage = 3;
     public static final int QUERYMESSAGE_FIELD_NUMBER = 3;
     private edu.washington.escience.myria.proto.QueryProto.QueryMessage queryMessage_;
 
@@ -390,7 +386,6 @@ public final class TransportProto {
       return queryMessage_;
     }
 
-    // optional .ControlMessage controlMessage = 4;
     public static final int CONTROLMESSAGE_FIELD_NUMBER = 4;
     private edu.washington.escience.myria.proto.ControlProto.ControlMessage controlMessage_;
 
@@ -430,8 +425,11 @@ public final class TransportProto {
     @Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) {
-        return isInitialized == 1;
+      if (isInitialized == 1) {
+        return true;
+      }
+      if (isInitialized == 0) {
+        return false;
       }
 
       if (!hasType()) {
@@ -461,7 +459,7 @@ public final class TransportProto {
     }
 
     @Override
-    public void writeTo(com.google.protobuf.CodedOutputStream output) throws java.io.IOException {
+    public void writeTo(final com.google.protobuf.CodedOutputStream output) throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeEnum(1, type_.getNumber());
@@ -513,57 +511,57 @@ public final class TransportProto {
     }
 
     public static edu.washington.escience.myria.proto.TransportProto.TransportMessage parseFrom(
-        com.google.protobuf.ByteString data) throws com.google.protobuf.InvalidProtocolBufferException {
+        final com.google.protobuf.ByteString data) throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
 
     public static edu.washington.escience.myria.proto.TransportProto.TransportMessage parseFrom(
-        com.google.protobuf.ByteString data, com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        final com.google.protobuf.ByteString data, final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
 
-    public static edu.washington.escience.myria.proto.TransportProto.TransportMessage parseFrom(byte[] data)
+    public static edu.washington.escience.myria.proto.TransportProto.TransportMessage parseFrom(final byte[] data)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
 
-    public static edu.washington.escience.myria.proto.TransportProto.TransportMessage parseFrom(byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+    public static edu.washington.escience.myria.proto.TransportProto.TransportMessage parseFrom(final byte[] data,
+        final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
 
     public static edu.washington.escience.myria.proto.TransportProto.TransportMessage parseFrom(
-        java.io.InputStream input) throws java.io.IOException {
+        final java.io.InputStream input) throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
 
     public static edu.washington.escience.myria.proto.TransportProto.TransportMessage parseFrom(
-        java.io.InputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        final java.io.InputStream input, final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
     public static edu.washington.escience.myria.proto.TransportProto.TransportMessage parseDelimitedFrom(
-        java.io.InputStream input) throws java.io.IOException {
+        final java.io.InputStream input) throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input);
     }
 
     public static edu.washington.escience.myria.proto.TransportProto.TransportMessage parseDelimitedFrom(
-        java.io.InputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        final java.io.InputStream input, final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
 
     public static edu.washington.escience.myria.proto.TransportProto.TransportMessage parseFrom(
-        com.google.protobuf.CodedInputStream input) throws java.io.IOException {
+        final com.google.protobuf.CodedInputStream input) throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
 
     public static edu.washington.escience.myria.proto.TransportProto.TransportMessage parseFrom(
-        com.google.protobuf.CodedInputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
+        final com.google.protobuf.CodedInputStream input,
+        final com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
@@ -576,7 +574,7 @@ public final class TransportProto {
       return newBuilder();
     }
 
-    public static Builder newBuilder(edu.washington.escience.myria.proto.TransportProto.TransportMessage prototype) {
+    public static Builder newBuilder(final edu.washington.escience.myria.proto.TransportProto.TransportMessage prototype) {
       return newBuilder().mergeFrom(prototype);
     }
 
@@ -586,7 +584,7 @@ public final class TransportProto {
     }
 
     @java.lang.Override
-    protected Builder newBuilderForType(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+    protected Builder newBuilderForType(final com.google.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -595,6 +593,7 @@ public final class TransportProto {
      * Protobuf type {@code TransportMessage}
      */
     public static final class Builder extends com.google.protobuf.GeneratedMessage.Builder<Builder> implements
+    // @@protoc_insertion_point(builder_implements:TransportMessage)
         edu.washington.escience.myria.proto.TransportProto.TransportMessageOrBuilder {
       public static final com.google.protobuf.Descriptors.Descriptor getDescriptor() {
         return edu.washington.escience.myria.proto.TransportProto.internal_static_TransportMessage_descriptor;
@@ -612,7 +611,7 @@ public final class TransportProto {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(final com.google.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -719,7 +718,7 @@ public final class TransportProto {
       }
 
       @Override
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(final com.google.protobuf.Message other) {
         if (other instanceof edu.washington.escience.myria.proto.TransportProto.TransportMessage) {
           return mergeFrom((edu.washington.escience.myria.proto.TransportProto.TransportMessage) other);
         } else {
@@ -728,7 +727,7 @@ public final class TransportProto {
         }
       }
 
-      public Builder mergeFrom(edu.washington.escience.myria.proto.TransportProto.TransportMessage other) {
+      public Builder mergeFrom(final edu.washington.escience.myria.proto.TransportProto.TransportMessage other) {
         if (other == edu.washington.escience.myria.proto.TransportProto.TransportMessage.getDefaultInstance()) {
           return this;
         }
@@ -776,8 +775,8 @@ public final class TransportProto {
       }
 
       @Override
-      public Builder mergeFrom(com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
+      public Builder mergeFrom(final com.google.protobuf.CodedInputStream input,
+          final com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
         edu.washington.escience.myria.proto.TransportProto.TransportMessage parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
@@ -795,7 +794,6 @@ public final class TransportProto {
 
       private int bitField0_;
 
-      // required .TransportMessage.Type type = 1;
       private edu.washington.escience.myria.proto.TransportProto.TransportMessage.Type type_ =
           edu.washington.escience.myria.proto.TransportProto.TransportMessage.Type.DATA;
 
@@ -818,7 +816,7 @@ public final class TransportProto {
       /**
        * <code>required .TransportMessage.Type type = 1;</code>
        */
-      public Builder setType(edu.washington.escience.myria.proto.TransportProto.TransportMessage.Type value) {
+      public Builder setType(final edu.washington.escience.myria.proto.TransportProto.TransportMessage.Type value) {
         if (value == null) {
           throw new NullPointerException();
         }
@@ -838,7 +836,6 @@ public final class TransportProto {
         return this;
       }
 
-      // optional .DataMessage dataMessage = 2;
       private edu.washington.escience.myria.proto.DataProto.DataMessage dataMessage_ =
           edu.washington.escience.myria.proto.DataProto.DataMessage.getDefaultInstance();
       private com.google.protobuf.SingleFieldBuilder<edu.washington.escience.myria.proto.DataProto.DataMessage, edu.washington.escience.myria.proto.DataProto.DataMessage.Builder, edu.washington.escience.myria.proto.DataProto.DataMessageOrBuilder> dataMessageBuilder_;
@@ -866,7 +863,7 @@ public final class TransportProto {
       /**
        * <code>optional .DataMessage dataMessage = 2;</code>
        */
-      public Builder setDataMessage(edu.washington.escience.myria.proto.DataProto.DataMessage value) {
+      public Builder setDataMessage(final edu.washington.escience.myria.proto.DataProto.DataMessage value) {
         if (dataMessageBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -883,7 +880,8 @@ public final class TransportProto {
       /**
        * <code>optional .DataMessage dataMessage = 2;</code>
        */
-      public Builder setDataMessage(edu.washington.escience.myria.proto.DataProto.DataMessage.Builder builderForValue) {
+      public Builder setDataMessage(
+          final edu.washington.escience.myria.proto.DataProto.DataMessage.Builder builderForValue) {
         if (dataMessageBuilder_ == null) {
           dataMessage_ = builderForValue.build();
           onChanged();
@@ -897,7 +895,7 @@ public final class TransportProto {
       /**
        * <code>optional .DataMessage dataMessage = 2;</code>
        */
-      public Builder mergeDataMessage(edu.washington.escience.myria.proto.DataProto.DataMessage value) {
+      public Builder mergeDataMessage(final edu.washington.escience.myria.proto.DataProto.DataMessage value) {
         if (dataMessageBuilder_ == null) {
           if (((bitField0_ & 0x00000002) == 0x00000002)
               && dataMessage_ != edu.washington.escience.myria.proto.DataProto.DataMessage.getDefaultInstance()) {
@@ -957,13 +955,12 @@ public final class TransportProto {
         if (dataMessageBuilder_ == null) {
           dataMessageBuilder_ =
               new com.google.protobuf.SingleFieldBuilder<edu.washington.escience.myria.proto.DataProto.DataMessage, edu.washington.escience.myria.proto.DataProto.DataMessage.Builder, edu.washington.escience.myria.proto.DataProto.DataMessageOrBuilder>(
-                  dataMessage_, getParentForChildren(), isClean());
+                  getDataMessage(), getParentForChildren(), isClean());
           dataMessage_ = null;
         }
         return dataMessageBuilder_;
       }
 
-      // optional .QueryMessage queryMessage = 3;
       private edu.washington.escience.myria.proto.QueryProto.QueryMessage queryMessage_ =
           edu.washington.escience.myria.proto.QueryProto.QueryMessage.getDefaultInstance();
       private com.google.protobuf.SingleFieldBuilder<edu.washington.escience.myria.proto.QueryProto.QueryMessage, edu.washington.escience.myria.proto.QueryProto.QueryMessage.Builder, edu.washington.escience.myria.proto.QueryProto.QueryMessageOrBuilder> queryMessageBuilder_;
@@ -991,7 +988,7 @@ public final class TransportProto {
       /**
        * <code>optional .QueryMessage queryMessage = 3;</code>
        */
-      public Builder setQueryMessage(edu.washington.escience.myria.proto.QueryProto.QueryMessage value) {
+      public Builder setQueryMessage(final edu.washington.escience.myria.proto.QueryProto.QueryMessage value) {
         if (queryMessageBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -1008,7 +1005,8 @@ public final class TransportProto {
       /**
        * <code>optional .QueryMessage queryMessage = 3;</code>
        */
-      public Builder setQueryMessage(edu.washington.escience.myria.proto.QueryProto.QueryMessage.Builder builderForValue) {
+      public Builder setQueryMessage(
+          final edu.washington.escience.myria.proto.QueryProto.QueryMessage.Builder builderForValue) {
         if (queryMessageBuilder_ == null) {
           queryMessage_ = builderForValue.build();
           onChanged();
@@ -1022,7 +1020,7 @@ public final class TransportProto {
       /**
        * <code>optional .QueryMessage queryMessage = 3;</code>
        */
-      public Builder mergeQueryMessage(edu.washington.escience.myria.proto.QueryProto.QueryMessage value) {
+      public Builder mergeQueryMessage(final edu.washington.escience.myria.proto.QueryProto.QueryMessage value) {
         if (queryMessageBuilder_ == null) {
           if (((bitField0_ & 0x00000004) == 0x00000004)
               && queryMessage_ != edu.washington.escience.myria.proto.QueryProto.QueryMessage.getDefaultInstance()) {
@@ -1082,13 +1080,12 @@ public final class TransportProto {
         if (queryMessageBuilder_ == null) {
           queryMessageBuilder_ =
               new com.google.protobuf.SingleFieldBuilder<edu.washington.escience.myria.proto.QueryProto.QueryMessage, edu.washington.escience.myria.proto.QueryProto.QueryMessage.Builder, edu.washington.escience.myria.proto.QueryProto.QueryMessageOrBuilder>(
-                  queryMessage_, getParentForChildren(), isClean());
+                  getQueryMessage(), getParentForChildren(), isClean());
           queryMessage_ = null;
         }
         return queryMessageBuilder_;
       }
 
-      // optional .ControlMessage controlMessage = 4;
       private edu.washington.escience.myria.proto.ControlProto.ControlMessage controlMessage_ =
           edu.washington.escience.myria.proto.ControlProto.ControlMessage.getDefaultInstance();
       private com.google.protobuf.SingleFieldBuilder<edu.washington.escience.myria.proto.ControlProto.ControlMessage, edu.washington.escience.myria.proto.ControlProto.ControlMessage.Builder, edu.washington.escience.myria.proto.ControlProto.ControlMessageOrBuilder> controlMessageBuilder_;
@@ -1116,7 +1113,7 @@ public final class TransportProto {
       /**
        * <code>optional .ControlMessage controlMessage = 4;</code>
        */
-      public Builder setControlMessage(edu.washington.escience.myria.proto.ControlProto.ControlMessage value) {
+      public Builder setControlMessage(final edu.washington.escience.myria.proto.ControlProto.ControlMessage value) {
         if (controlMessageBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -1134,7 +1131,7 @@ public final class TransportProto {
        * <code>optional .ControlMessage controlMessage = 4;</code>
        */
       public Builder setControlMessage(
-          edu.washington.escience.myria.proto.ControlProto.ControlMessage.Builder builderForValue) {
+          final edu.washington.escience.myria.proto.ControlProto.ControlMessage.Builder builderForValue) {
         if (controlMessageBuilder_ == null) {
           controlMessage_ = builderForValue.build();
           onChanged();
@@ -1148,7 +1145,7 @@ public final class TransportProto {
       /**
        * <code>optional .ControlMessage controlMessage = 4;</code>
        */
-      public Builder mergeControlMessage(edu.washington.escience.myria.proto.ControlProto.ControlMessage value) {
+      public Builder mergeControlMessage(final edu.washington.escience.myria.proto.ControlProto.ControlMessage value) {
         if (controlMessageBuilder_ == null) {
           if (((bitField0_ & 0x00000008) == 0x00000008)
               && controlMessage_ != edu.washington.escience.myria.proto.ControlProto.ControlMessage
@@ -1209,7 +1206,7 @@ public final class TransportProto {
         if (controlMessageBuilder_ == null) {
           controlMessageBuilder_ =
               new com.google.protobuf.SingleFieldBuilder<edu.washington.escience.myria.proto.ControlProto.ControlMessage, edu.washington.escience.myria.proto.ControlProto.ControlMessage.Builder, edu.washington.escience.myria.proto.ControlProto.ControlMessageOrBuilder>(
-                  controlMessage_, getParentForChildren(), isClean());
+                  getControlMessage(), getParentForChildren(), isClean());
           controlMessage_ = null;
         }
         return controlMessageBuilder_;
@@ -1226,7 +1223,7 @@ public final class TransportProto {
     // @@protoc_insertion_point(class_scope:TransportMessage)
   }
 
-  private static com.google.protobuf.Descriptors.Descriptor internal_static_TransportMessage_descriptor;
+  private static final com.google.protobuf.Descriptors.Descriptor internal_static_TransportMessage_descriptor;
   private static com.google.protobuf.GeneratedMessage.FieldAccessorTable internal_static_TransportMessage_fieldAccessorTable;
 
   public static com.google.protobuf.Descriptors.FileDescriptor getDescriptor() {
@@ -1248,13 +1245,8 @@ public final class TransportProto {
         new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
           @Override
           public com.google.protobuf.ExtensionRegistry assignDescriptors(
-              com.google.protobuf.Descriptors.FileDescriptor root) {
+              final com.google.protobuf.Descriptors.FileDescriptor root) {
             descriptor = root;
-            internal_static_TransportMessage_descriptor = getDescriptor().getMessageTypes().get(0);
-            internal_static_TransportMessage_fieldAccessorTable =
-                new com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-                    internal_static_TransportMessage_descriptor, new java.lang.String[] {
-                        "Type", "DataMessage", "QueryMessage", "ControlMessage", });
             return null;
           }
         };
@@ -1263,6 +1255,13 @@ public final class TransportProto {
             edu.washington.escience.myria.proto.DataProto.getDescriptor(),
             edu.washington.escience.myria.proto.ControlProto.getDescriptor(),
             edu.washington.escience.myria.proto.QueryProto.getDescriptor(), }, assigner);
+    internal_static_TransportMessage_descriptor = getDescriptor().getMessageTypes().get(0);
+    internal_static_TransportMessage_fieldAccessorTable =
+        new com.google.protobuf.GeneratedMessage.FieldAccessorTable(internal_static_TransportMessage_descriptor,
+            new java.lang.String[] { "Type", "DataMessage", "QueryMessage", "ControlMessage", });
+    edu.washington.escience.myria.proto.DataProto.getDescriptor();
+    edu.washington.escience.myria.proto.ControlProto.getDescriptor();
+    edu.washington.escience.myria.proto.QueryProto.getDescriptor();
   }
 
   // @@protoc_insertion_point(outer_class_scope)

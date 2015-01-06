@@ -7,12 +7,13 @@ public final class QueryProto {
   private QueryProto() {
   }
 
-  public static void registerAllExtensions(com.google.protobuf.ExtensionRegistry registry) {
+  public static void registerAllExtensions(final com.google.protobuf.ExtensionRegistry registry) {
   }
 
-  public interface QueryMessageOrBuilder extends com.google.protobuf.MessageOrBuilder {
+  public interface QueryMessageOrBuilder extends
+  // @@protoc_insertion_point(interface_extends:QueryMessage)
+      com.google.protobuf.MessageOrBuilder {
 
-    // required uint64 query_id = 1;
     /**
      * <code>required uint64 query_id = 1;</code>
      */
@@ -23,7 +24,6 @@ public final class QueryProto {
      */
     long getQueryId();
 
-    // required uint64 subquery_id = 2;
     /**
      * <code>required uint64 subquery_id = 2;</code>
      */
@@ -34,7 +34,6 @@ public final class QueryProto {
      */
     long getSubqueryId();
 
-    // required .QueryMessage.Type type = 3;
     /**
      * <code>required .QueryMessage.Type type = 3;</code>
      */
@@ -45,10 +44,9 @@ public final class QueryProto {
      */
     edu.washington.escience.myria.proto.QueryProto.QueryMessage.Type getType();
 
-    // optional .QueryReport query_report = 4;
     /**
      * <code>optional .QueryReport query_report = 4;</code>
-     * 
+     *
      * <pre>
      *Report of the query execution. when type is QUERY_COMPLETE
      * </pre>
@@ -57,7 +55,7 @@ public final class QueryProto {
 
     /**
      * <code>optional .QueryReport query_report = 4;</code>
-     * 
+     *
      * <pre>
      *Report of the query execution. when type is QUERY_COMPLETE
      * </pre>
@@ -66,17 +64,16 @@ public final class QueryProto {
 
     /**
      * <code>optional .QueryReport query_report = 4;</code>
-     * 
+     *
      * <pre>
      *Report of the query execution. when type is QUERY_COMPLETE
      * </pre>
      */
     edu.washington.escience.myria.proto.QueryProto.QueryReportOrBuilder getQueryReportOrBuilder();
 
-    // optional .Query query = 5;
     /**
      * <code>optional .Query query = 5;</code>
-     * 
+     *
      * <pre>
      * query data, when type is QUERY_DISTRIBUTE 
      * </pre>
@@ -85,7 +82,7 @@ public final class QueryProto {
 
     /**
      * <code>optional .Query query = 5;</code>
-     * 
+     *
      * <pre>
      * query data, when type is QUERY_DISTRIBUTE 
      * </pre>
@@ -94,17 +91,16 @@ public final class QueryProto {
 
     /**
      * <code>optional .Query query = 5;</code>
-     * 
+     *
      * <pre>
      * query data, when type is QUERY_DISTRIBUTE 
      * </pre>
      */
     edu.washington.escience.myria.proto.QueryProto.QueryOrBuilder getQueryOrBuilder();
 
-    // optional int32 worker_id = 6;
     /**
      * <code>optional int32 worker_id = 6;</code>
-     * 
+     *
      * <pre>
      * worker id, when type is QUERY_RECOVER
      * </pre>
@@ -113,7 +109,7 @@ public final class QueryProto {
 
     /**
      * <code>optional int32 worker_id = 6;</code>
-     * 
+     *
      * <pre>
      * worker id, when type is QUERY_RECOVER
      * </pre>
@@ -123,14 +119,16 @@ public final class QueryProto {
   /**
    * Protobuf type {@code QueryMessage}
    */
-  public static final class QueryMessage extends com.google.protobuf.GeneratedMessage implements QueryMessageOrBuilder {
+  public static final class QueryMessage extends com.google.protobuf.GeneratedMessage implements
+  // @@protoc_insertion_point(message_implements:QueryMessage)
+      QueryMessageOrBuilder {
     // Use QueryMessage.newBuilder() to construct.
-    private QueryMessage(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private QueryMessage(final com.google.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       unknownFields = builder.getUnknownFields();
     }
 
-    private QueryMessage(boolean noInit) {
+    private QueryMessage(final boolean noInit) {
       unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance();
     }
 
@@ -152,8 +150,8 @@ public final class QueryProto {
       return unknownFields;
     }
 
-    private QueryMessage(com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+    private QueryMessage(final com.google.protobuf.CodedInputStream input,
+        final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       initFields();
       com.google.protobuf.UnknownFieldSet.Builder unknownFields = com.google.protobuf.UnknownFieldSet.newBuilder();
@@ -253,8 +251,8 @@ public final class QueryProto {
     public static com.google.protobuf.Parser<QueryMessage> PARSER =
         new com.google.protobuf.AbstractParser<QueryMessage>() {
           @Override
-          public QueryMessage parsePartialFrom(com.google.protobuf.CodedInputStream input,
-              com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          public QueryMessage parsePartialFrom(final com.google.protobuf.CodedInputStream input,
+              final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
               throws com.google.protobuf.InvalidProtocolBufferException {
             return new QueryMessage(input, extensionRegistry);
           }
@@ -271,7 +269,7 @@ public final class QueryProto {
     public enum Type implements com.google.protobuf.ProtocolMessageEnum {
       /**
        * <code>QUERY_DISTRIBUTE = 0;</code>
-       * 
+       *
        * <pre>
        * distribute a query, master -&gt; worker
        * </pre>
@@ -279,7 +277,7 @@ public final class QueryProto {
       QUERY_DISTRIBUTE(0, 0),
       /**
        * <code>QUERY_START = 1;</code>
-       * 
+       *
        * <pre>
        * start the query, master -&gt; worker
        * </pre>
@@ -287,7 +285,7 @@ public final class QueryProto {
       QUERY_START(1, 1),
       /**
        * <code>QUERY_PAUSE = 7;</code>
-       * 
+       *
        * <pre>
        * master -&gt; worker
        * </pre>
@@ -295,7 +293,7 @@ public final class QueryProto {
       QUERY_PAUSE(2, 7),
       /**
        * <code>QUERY_RESUME = 8;</code>
-       * 
+       *
        * <pre>
        * master -&gt; worker
        * </pre>
@@ -303,7 +301,7 @@ public final class QueryProto {
       QUERY_RESUME(3, 8),
       /**
        * <code>QUERY_KILL = 9;</code>
-       * 
+       *
        * <pre>
        * master -&gt; worker
        * </pre>
@@ -311,7 +309,7 @@ public final class QueryProto {
       QUERY_KILL(4, 9),
       /**
        * <code>QUERY_READY_TO_EXECUTE = 2;</code>
-       * 
+       *
        * <pre>
        * worker -&gt; master
        * </pre>
@@ -319,7 +317,7 @@ public final class QueryProto {
       QUERY_READY_TO_EXECUTE(5, 2),
       /**
        * <code>QUERY_COMPLETE = 6;</code>
-       * 
+       *
        * <pre>
        * worker -&gt; master  
        * </pre>
@@ -327,7 +325,7 @@ public final class QueryProto {
       QUERY_COMPLETE(6, 6),
       /**
        * <code>QUERY_RECOVER = 3;</code>
-       * 
+       *
        * <pre>
        * master -&gt; worker  
        * </pre>
@@ -336,7 +334,7 @@ public final class QueryProto {
 
       /**
        * <code>QUERY_DISTRIBUTE = 0;</code>
-       * 
+       *
        * <pre>
        * distribute a query, master -&gt; worker
        * </pre>
@@ -344,7 +342,7 @@ public final class QueryProto {
       public static final int QUERY_DISTRIBUTE_VALUE = 0;
       /**
        * <code>QUERY_START = 1;</code>
-       * 
+       *
        * <pre>
        * start the query, master -&gt; worker
        * </pre>
@@ -352,7 +350,7 @@ public final class QueryProto {
       public static final int QUERY_START_VALUE = 1;
       /**
        * <code>QUERY_PAUSE = 7;</code>
-       * 
+       *
        * <pre>
        * master -&gt; worker
        * </pre>
@@ -360,7 +358,7 @@ public final class QueryProto {
       public static final int QUERY_PAUSE_VALUE = 7;
       /**
        * <code>QUERY_RESUME = 8;</code>
-       * 
+       *
        * <pre>
        * master -&gt; worker
        * </pre>
@@ -368,7 +366,7 @@ public final class QueryProto {
       public static final int QUERY_RESUME_VALUE = 8;
       /**
        * <code>QUERY_KILL = 9;</code>
-       * 
+       *
        * <pre>
        * master -&gt; worker
        * </pre>
@@ -376,7 +374,7 @@ public final class QueryProto {
       public static final int QUERY_KILL_VALUE = 9;
       /**
        * <code>QUERY_READY_TO_EXECUTE = 2;</code>
-       * 
+       *
        * <pre>
        * worker -&gt; master
        * </pre>
@@ -384,7 +382,7 @@ public final class QueryProto {
       public static final int QUERY_READY_TO_EXECUTE_VALUE = 2;
       /**
        * <code>QUERY_COMPLETE = 6;</code>
-       * 
+       *
        * <pre>
        * worker -&gt; master  
        * </pre>
@@ -392,7 +390,7 @@ public final class QueryProto {
       public static final int QUERY_COMPLETE_VALUE = 6;
       /**
        * <code>QUERY_RECOVER = 3;</code>
-       * 
+       *
        * <pre>
        * master -&gt; worker  
        * </pre>
@@ -404,7 +402,7 @@ public final class QueryProto {
         return value;
       }
 
-      public static Type valueOf(int value) {
+      public static Type valueOf(final int value) {
         switch (value) {
           case 0:
             return QUERY_DISTRIBUTE;
@@ -434,7 +432,7 @@ public final class QueryProto {
       private static com.google.protobuf.Internal.EnumLiteMap<Type> internalValueMap =
           new com.google.protobuf.Internal.EnumLiteMap<Type>() {
             @Override
-            public Type findValueByNumber(int number) {
+            public Type findValueByNumber(final int number) {
               return Type.valueOf(number);
             }
           };
@@ -455,7 +453,7 @@ public final class QueryProto {
 
       private static final Type[] VALUES = values();
 
-      public static Type valueOf(com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
+      public static Type valueOf(final com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
         if (desc.getType() != getDescriptor()) {
           throw new java.lang.IllegalArgumentException("EnumValueDescriptor is not for this type.");
         }
@@ -465,7 +463,7 @@ public final class QueryProto {
       private final int index;
       private final int value;
 
-      private Type(int index, int value) {
+      private Type(final int index, final int value) {
         this.index = index;
         this.value = value;
       }
@@ -474,7 +472,6 @@ public final class QueryProto {
     }
 
     private int bitField0_;
-    // required uint64 query_id = 1;
     public static final int QUERY_ID_FIELD_NUMBER = 1;
     private long queryId_;
 
@@ -494,7 +491,6 @@ public final class QueryProto {
       return queryId_;
     }
 
-    // required uint64 subquery_id = 2;
     public static final int SUBQUERY_ID_FIELD_NUMBER = 2;
     private long subqueryId_;
 
@@ -514,7 +510,6 @@ public final class QueryProto {
       return subqueryId_;
     }
 
-    // required .QueryMessage.Type type = 3;
     public static final int TYPE_FIELD_NUMBER = 3;
     private edu.washington.escience.myria.proto.QueryProto.QueryMessage.Type type_;
 
@@ -534,13 +529,12 @@ public final class QueryProto {
       return type_;
     }
 
-    // optional .QueryReport query_report = 4;
     public static final int QUERY_REPORT_FIELD_NUMBER = 4;
     private edu.washington.escience.myria.proto.QueryProto.QueryReport queryReport_;
 
     /**
      * <code>optional .QueryReport query_report = 4;</code>
-     * 
+     *
      * <pre>
      *Report of the query execution. when type is QUERY_COMPLETE
      * </pre>
@@ -552,7 +546,7 @@ public final class QueryProto {
 
     /**
      * <code>optional .QueryReport query_report = 4;</code>
-     * 
+     *
      * <pre>
      *Report of the query execution. when type is QUERY_COMPLETE
      * </pre>
@@ -564,7 +558,7 @@ public final class QueryProto {
 
     /**
      * <code>optional .QueryReport query_report = 4;</code>
-     * 
+     *
      * <pre>
      *Report of the query execution. when type is QUERY_COMPLETE
      * </pre>
@@ -574,13 +568,12 @@ public final class QueryProto {
       return queryReport_;
     }
 
-    // optional .Query query = 5;
     public static final int QUERY_FIELD_NUMBER = 5;
     private edu.washington.escience.myria.proto.QueryProto.Query query_;
 
     /**
      * <code>optional .Query query = 5;</code>
-     * 
+     *
      * <pre>
      * query data, when type is QUERY_DISTRIBUTE 
      * </pre>
@@ -592,7 +585,7 @@ public final class QueryProto {
 
     /**
      * <code>optional .Query query = 5;</code>
-     * 
+     *
      * <pre>
      * query data, when type is QUERY_DISTRIBUTE 
      * </pre>
@@ -604,7 +597,7 @@ public final class QueryProto {
 
     /**
      * <code>optional .Query query = 5;</code>
-     * 
+     *
      * <pre>
      * query data, when type is QUERY_DISTRIBUTE 
      * </pre>
@@ -614,13 +607,12 @@ public final class QueryProto {
       return query_;
     }
 
-    // optional int32 worker_id = 6;
     public static final int WORKER_ID_FIELD_NUMBER = 6;
     private int workerId_;
 
     /**
      * <code>optional int32 worker_id = 6;</code>
-     * 
+     *
      * <pre>
      * worker id, when type is QUERY_RECOVER
      * </pre>
@@ -632,7 +624,7 @@ public final class QueryProto {
 
     /**
      * <code>optional int32 worker_id = 6;</code>
-     * 
+     *
      * <pre>
      * worker id, when type is QUERY_RECOVER
      * </pre>
@@ -656,8 +648,11 @@ public final class QueryProto {
     @Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) {
-        return isInitialized == 1;
+      if (isInitialized == 1) {
+        return true;
+      }
+      if (isInitialized == 0) {
+        return false;
       }
 
       if (!hasQueryId()) {
@@ -689,7 +684,7 @@ public final class QueryProto {
     }
 
     @Override
-    public void writeTo(com.google.protobuf.CodedOutputStream output) throws java.io.IOException {
+    public void writeTo(final com.google.protobuf.CodedOutputStream output) throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeUInt64(1, queryId_);
@@ -753,56 +748,57 @@ public final class QueryProto {
     }
 
     public static edu.washington.escience.myria.proto.QueryProto.QueryMessage parseFrom(
-        com.google.protobuf.ByteString data) throws com.google.protobuf.InvalidProtocolBufferException {
+        final com.google.protobuf.ByteString data) throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
 
     public static edu.washington.escience.myria.proto.QueryProto.QueryMessage parseFrom(
-        com.google.protobuf.ByteString data, com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        final com.google.protobuf.ByteString data, final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
 
-    public static edu.washington.escience.myria.proto.QueryProto.QueryMessage parseFrom(byte[] data)
+    public static edu.washington.escience.myria.proto.QueryProto.QueryMessage parseFrom(final byte[] data)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
 
-    public static edu.washington.escience.myria.proto.QueryProto.QueryMessage parseFrom(byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+    public static edu.washington.escience.myria.proto.QueryProto.QueryMessage parseFrom(final byte[] data,
+        final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
 
-    public static edu.washington.escience.myria.proto.QueryProto.QueryMessage parseFrom(java.io.InputStream input)
+    public static edu.washington.escience.myria.proto.QueryProto.QueryMessage parseFrom(final java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
 
-    public static edu.washington.escience.myria.proto.QueryProto.QueryMessage parseFrom(java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
+    public static edu.washington.escience.myria.proto.QueryProto.QueryMessage parseFrom(
+        final java.io.InputStream input, final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
     public static edu.washington.escience.myria.proto.QueryProto.QueryMessage parseDelimitedFrom(
-        java.io.InputStream input) throws java.io.IOException {
+        final java.io.InputStream input) throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input);
     }
 
     public static edu.washington.escience.myria.proto.QueryProto.QueryMessage parseDelimitedFrom(
-        java.io.InputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        final java.io.InputStream input, final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
 
     public static edu.washington.escience.myria.proto.QueryProto.QueryMessage parseFrom(
-        com.google.protobuf.CodedInputStream input) throws java.io.IOException {
+        final com.google.protobuf.CodedInputStream input) throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
 
     public static edu.washington.escience.myria.proto.QueryProto.QueryMessage parseFrom(
-        com.google.protobuf.CodedInputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
+        final com.google.protobuf.CodedInputStream input,
+        final com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
@@ -815,7 +811,7 @@ public final class QueryProto {
       return newBuilder();
     }
 
-    public static Builder newBuilder(edu.washington.escience.myria.proto.QueryProto.QueryMessage prototype) {
+    public static Builder newBuilder(final edu.washington.escience.myria.proto.QueryProto.QueryMessage prototype) {
       return newBuilder().mergeFrom(prototype);
     }
 
@@ -825,7 +821,7 @@ public final class QueryProto {
     }
 
     @java.lang.Override
-    protected Builder newBuilderForType(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+    protected Builder newBuilderForType(final com.google.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -834,6 +830,7 @@ public final class QueryProto {
      * Protobuf type {@code QueryMessage}
      */
     public static final class Builder extends com.google.protobuf.GeneratedMessage.Builder<Builder> implements
+    // @@protoc_insertion_point(builder_implements:QueryMessage)
         edu.washington.escience.myria.proto.QueryProto.QueryMessageOrBuilder {
       public static final com.google.protobuf.Descriptors.Descriptor getDescriptor() {
         return edu.washington.escience.myria.proto.QueryProto.internal_static_QueryMessage_descriptor;
@@ -851,7 +848,7 @@ public final class QueryProto {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(final com.google.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -961,7 +958,7 @@ public final class QueryProto {
       }
 
       @Override
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(final com.google.protobuf.Message other) {
         if (other instanceof edu.washington.escience.myria.proto.QueryProto.QueryMessage) {
           return mergeFrom((edu.washington.escience.myria.proto.QueryProto.QueryMessage) other);
         } else {
@@ -970,7 +967,7 @@ public final class QueryProto {
         }
       }
 
-      public Builder mergeFrom(edu.washington.escience.myria.proto.QueryProto.QueryMessage other) {
+      public Builder mergeFrom(final edu.washington.escience.myria.proto.QueryProto.QueryMessage other) {
         if (other == edu.washington.escience.myria.proto.QueryProto.QueryMessage.getDefaultInstance()) {
           return this;
         }
@@ -1026,8 +1023,8 @@ public final class QueryProto {
       }
 
       @Override
-      public Builder mergeFrom(com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
+      public Builder mergeFrom(final com.google.protobuf.CodedInputStream input,
+          final com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
         edu.washington.escience.myria.proto.QueryProto.QueryMessage parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
@@ -1044,7 +1041,6 @@ public final class QueryProto {
 
       private int bitField0_;
 
-      // required uint64 query_id = 1;
       private long queryId_;
 
       /**
@@ -1066,7 +1062,7 @@ public final class QueryProto {
       /**
        * <code>required uint64 query_id = 1;</code>
        */
-      public Builder setQueryId(long value) {
+      public Builder setQueryId(final long value) {
         bitField0_ |= 0x00000001;
         queryId_ = value;
         onChanged();
@@ -1083,7 +1079,6 @@ public final class QueryProto {
         return this;
       }
 
-      // required uint64 subquery_id = 2;
       private long subqueryId_;
 
       /**
@@ -1105,7 +1100,7 @@ public final class QueryProto {
       /**
        * <code>required uint64 subquery_id = 2;</code>
        */
-      public Builder setSubqueryId(long value) {
+      public Builder setSubqueryId(final long value) {
         bitField0_ |= 0x00000002;
         subqueryId_ = value;
         onChanged();
@@ -1122,7 +1117,6 @@ public final class QueryProto {
         return this;
       }
 
-      // required .QueryMessage.Type type = 3;
       private edu.washington.escience.myria.proto.QueryProto.QueryMessage.Type type_ =
           edu.washington.escience.myria.proto.QueryProto.QueryMessage.Type.QUERY_DISTRIBUTE;
 
@@ -1145,7 +1139,7 @@ public final class QueryProto {
       /**
        * <code>required .QueryMessage.Type type = 3;</code>
        */
-      public Builder setType(edu.washington.escience.myria.proto.QueryProto.QueryMessage.Type value) {
+      public Builder setType(final edu.washington.escience.myria.proto.QueryProto.QueryMessage.Type value) {
         if (value == null) {
           throw new NullPointerException();
         }
@@ -1165,14 +1159,13 @@ public final class QueryProto {
         return this;
       }
 
-      // optional .QueryReport query_report = 4;
       private edu.washington.escience.myria.proto.QueryProto.QueryReport queryReport_ =
           edu.washington.escience.myria.proto.QueryProto.QueryReport.getDefaultInstance();
       private com.google.protobuf.SingleFieldBuilder<edu.washington.escience.myria.proto.QueryProto.QueryReport, edu.washington.escience.myria.proto.QueryProto.QueryReport.Builder, edu.washington.escience.myria.proto.QueryProto.QueryReportOrBuilder> queryReportBuilder_;
 
       /**
        * <code>optional .QueryReport query_report = 4;</code>
-       * 
+       *
        * <pre>
        *Report of the query execution. when type is QUERY_COMPLETE
        * </pre>
@@ -1184,7 +1177,7 @@ public final class QueryProto {
 
       /**
        * <code>optional .QueryReport query_report = 4;</code>
-       * 
+       *
        * <pre>
        *Report of the query execution. when type is QUERY_COMPLETE
        * </pre>
@@ -1200,12 +1193,12 @@ public final class QueryProto {
 
       /**
        * <code>optional .QueryReport query_report = 4;</code>
-       * 
+       *
        * <pre>
        *Report of the query execution. when type is QUERY_COMPLETE
        * </pre>
        */
-      public Builder setQueryReport(edu.washington.escience.myria.proto.QueryProto.QueryReport value) {
+      public Builder setQueryReport(final edu.washington.escience.myria.proto.QueryProto.QueryReport value) {
         if (queryReportBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -1221,12 +1214,13 @@ public final class QueryProto {
 
       /**
        * <code>optional .QueryReport query_report = 4;</code>
-       * 
+       *
        * <pre>
        *Report of the query execution. when type is QUERY_COMPLETE
        * </pre>
        */
-      public Builder setQueryReport(edu.washington.escience.myria.proto.QueryProto.QueryReport.Builder builderForValue) {
+      public Builder setQueryReport(
+          final edu.washington.escience.myria.proto.QueryProto.QueryReport.Builder builderForValue) {
         if (queryReportBuilder_ == null) {
           queryReport_ = builderForValue.build();
           onChanged();
@@ -1239,12 +1233,12 @@ public final class QueryProto {
 
       /**
        * <code>optional .QueryReport query_report = 4;</code>
-       * 
+       *
        * <pre>
        *Report of the query execution. when type is QUERY_COMPLETE
        * </pre>
        */
-      public Builder mergeQueryReport(edu.washington.escience.myria.proto.QueryProto.QueryReport value) {
+      public Builder mergeQueryReport(final edu.washington.escience.myria.proto.QueryProto.QueryReport value) {
         if (queryReportBuilder_ == null) {
           if (((bitField0_ & 0x00000008) == 0x00000008)
               && queryReport_ != edu.washington.escience.myria.proto.QueryProto.QueryReport.getDefaultInstance()) {
@@ -1264,7 +1258,7 @@ public final class QueryProto {
 
       /**
        * <code>optional .QueryReport query_report = 4;</code>
-       * 
+       *
        * <pre>
        *Report of the query execution. when type is QUERY_COMPLETE
        * </pre>
@@ -1282,7 +1276,7 @@ public final class QueryProto {
 
       /**
        * <code>optional .QueryReport query_report = 4;</code>
-       * 
+       *
        * <pre>
        *Report of the query execution. when type is QUERY_COMPLETE
        * </pre>
@@ -1295,7 +1289,7 @@ public final class QueryProto {
 
       /**
        * <code>optional .QueryReport query_report = 4;</code>
-       * 
+       *
        * <pre>
        *Report of the query execution. when type is QUERY_COMPLETE
        * </pre>
@@ -1311,7 +1305,7 @@ public final class QueryProto {
 
       /**
        * <code>optional .QueryReport query_report = 4;</code>
-       * 
+       *
        * <pre>
        *Report of the query execution. when type is QUERY_COMPLETE
        * </pre>
@@ -1320,20 +1314,19 @@ public final class QueryProto {
         if (queryReportBuilder_ == null) {
           queryReportBuilder_ =
               new com.google.protobuf.SingleFieldBuilder<edu.washington.escience.myria.proto.QueryProto.QueryReport, edu.washington.escience.myria.proto.QueryProto.QueryReport.Builder, edu.washington.escience.myria.proto.QueryProto.QueryReportOrBuilder>(
-                  queryReport_, getParentForChildren(), isClean());
+                  getQueryReport(), getParentForChildren(), isClean());
           queryReport_ = null;
         }
         return queryReportBuilder_;
       }
 
-      // optional .Query query = 5;
       private edu.washington.escience.myria.proto.QueryProto.Query query_ =
           edu.washington.escience.myria.proto.QueryProto.Query.getDefaultInstance();
       private com.google.protobuf.SingleFieldBuilder<edu.washington.escience.myria.proto.QueryProto.Query, edu.washington.escience.myria.proto.QueryProto.Query.Builder, edu.washington.escience.myria.proto.QueryProto.QueryOrBuilder> queryBuilder_;
 
       /**
        * <code>optional .Query query = 5;</code>
-       * 
+       *
        * <pre>
        * query data, when type is QUERY_DISTRIBUTE 
        * </pre>
@@ -1345,7 +1338,7 @@ public final class QueryProto {
 
       /**
        * <code>optional .Query query = 5;</code>
-       * 
+       *
        * <pre>
        * query data, when type is QUERY_DISTRIBUTE 
        * </pre>
@@ -1361,12 +1354,12 @@ public final class QueryProto {
 
       /**
        * <code>optional .Query query = 5;</code>
-       * 
+       *
        * <pre>
        * query data, when type is QUERY_DISTRIBUTE 
        * </pre>
        */
-      public Builder setQuery(edu.washington.escience.myria.proto.QueryProto.Query value) {
+      public Builder setQuery(final edu.washington.escience.myria.proto.QueryProto.Query value) {
         if (queryBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -1382,12 +1375,12 @@ public final class QueryProto {
 
       /**
        * <code>optional .Query query = 5;</code>
-       * 
+       *
        * <pre>
        * query data, when type is QUERY_DISTRIBUTE 
        * </pre>
        */
-      public Builder setQuery(edu.washington.escience.myria.proto.QueryProto.Query.Builder builderForValue) {
+      public Builder setQuery(final edu.washington.escience.myria.proto.QueryProto.Query.Builder builderForValue) {
         if (queryBuilder_ == null) {
           query_ = builderForValue.build();
           onChanged();
@@ -1400,12 +1393,12 @@ public final class QueryProto {
 
       /**
        * <code>optional .Query query = 5;</code>
-       * 
+       *
        * <pre>
        * query data, when type is QUERY_DISTRIBUTE 
        * </pre>
        */
-      public Builder mergeQuery(edu.washington.escience.myria.proto.QueryProto.Query value) {
+      public Builder mergeQuery(final edu.washington.escience.myria.proto.QueryProto.Query value) {
         if (queryBuilder_ == null) {
           if (((bitField0_ & 0x00000010) == 0x00000010)
               && query_ != edu.washington.escience.myria.proto.QueryProto.Query.getDefaultInstance()) {
@@ -1424,7 +1417,7 @@ public final class QueryProto {
 
       /**
        * <code>optional .Query query = 5;</code>
-       * 
+       *
        * <pre>
        * query data, when type is QUERY_DISTRIBUTE 
        * </pre>
@@ -1442,7 +1435,7 @@ public final class QueryProto {
 
       /**
        * <code>optional .Query query = 5;</code>
-       * 
+       *
        * <pre>
        * query data, when type is QUERY_DISTRIBUTE 
        * </pre>
@@ -1455,7 +1448,7 @@ public final class QueryProto {
 
       /**
        * <code>optional .Query query = 5;</code>
-       * 
+       *
        * <pre>
        * query data, when type is QUERY_DISTRIBUTE 
        * </pre>
@@ -1471,7 +1464,7 @@ public final class QueryProto {
 
       /**
        * <code>optional .Query query = 5;</code>
-       * 
+       *
        * <pre>
        * query data, when type is QUERY_DISTRIBUTE 
        * </pre>
@@ -1480,18 +1473,17 @@ public final class QueryProto {
         if (queryBuilder_ == null) {
           queryBuilder_ =
               new com.google.protobuf.SingleFieldBuilder<edu.washington.escience.myria.proto.QueryProto.Query, edu.washington.escience.myria.proto.QueryProto.Query.Builder, edu.washington.escience.myria.proto.QueryProto.QueryOrBuilder>(
-                  query_, getParentForChildren(), isClean());
+                  getQuery(), getParentForChildren(), isClean());
           query_ = null;
         }
         return queryBuilder_;
       }
 
-      // optional int32 worker_id = 6;
       private int workerId_;
 
       /**
        * <code>optional int32 worker_id = 6;</code>
-       * 
+       *
        * <pre>
        * worker id, when type is QUERY_RECOVER
        * </pre>
@@ -1503,7 +1495,7 @@ public final class QueryProto {
 
       /**
        * <code>optional int32 worker_id = 6;</code>
-       * 
+       *
        * <pre>
        * worker id, when type is QUERY_RECOVER
        * </pre>
@@ -1515,12 +1507,12 @@ public final class QueryProto {
 
       /**
        * <code>optional int32 worker_id = 6;</code>
-       * 
+       *
        * <pre>
        * worker id, when type is QUERY_RECOVER
        * </pre>
        */
-      public Builder setWorkerId(int value) {
+      public Builder setWorkerId(final int value) {
         bitField0_ |= 0x00000020;
         workerId_ = value;
         onChanged();
@@ -1529,7 +1521,7 @@ public final class QueryProto {
 
       /**
        * <code>optional int32 worker_id = 6;</code>
-       * 
+       *
        * <pre>
        * worker id, when type is QUERY_RECOVER
        * </pre>
@@ -1552,12 +1544,13 @@ public final class QueryProto {
     // @@protoc_insertion_point(class_scope:QueryMessage)
   }
 
-  public interface QueryOrBuilder extends com.google.protobuf.MessageOrBuilder {
+  public interface QueryOrBuilder extends
+  // @@protoc_insertion_point(interface_extends:Query)
+      com.google.protobuf.MessageOrBuilder {
 
-    // required bytes query = 1;
     /**
      * <code>required bytes query = 1;</code>
-     * 
+     *
      * <pre>
      * for now, the query is a simple java serialized object.
      * </pre>
@@ -1566,7 +1559,7 @@ public final class QueryProto {
 
     /**
      * <code>required bytes query = 1;</code>
-     * 
+     *
      * <pre>
      * for now, the query is a simple java serialized object.
      * </pre>
@@ -1576,14 +1569,16 @@ public final class QueryProto {
   /**
    * Protobuf type {@code Query}
    */
-  public static final class Query extends com.google.protobuf.GeneratedMessage implements QueryOrBuilder {
+  public static final class Query extends com.google.protobuf.GeneratedMessage implements
+  // @@protoc_insertion_point(message_implements:Query)
+      QueryOrBuilder {
     // Use Query.newBuilder() to construct.
-    private Query(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private Query(final com.google.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       unknownFields = builder.getUnknownFields();
     }
 
-    private Query(boolean noInit) {
+    private Query(final boolean noInit) {
       unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance();
     }
 
@@ -1605,8 +1600,8 @@ public final class QueryProto {
       return unknownFields;
     }
 
-    private Query(com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+    private Query(final com.google.protobuf.CodedInputStream input,
+        final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       initFields();
       com.google.protobuf.UnknownFieldSet.Builder unknownFields = com.google.protobuf.UnknownFieldSet.newBuilder();
@@ -1654,8 +1649,8 @@ public final class QueryProto {
 
     public static com.google.protobuf.Parser<Query> PARSER = new com.google.protobuf.AbstractParser<Query>() {
       @Override
-      public Query parsePartialFrom(com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+      public Query parsePartialFrom(final com.google.protobuf.CodedInputStream input,
+          final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
           throws com.google.protobuf.InvalidProtocolBufferException {
         return new Query(input, extensionRegistry);
       }
@@ -1667,13 +1662,12 @@ public final class QueryProto {
     }
 
     private int bitField0_;
-    // required bytes query = 1;
     public static final int QUERY_FIELD_NUMBER = 1;
     private com.google.protobuf.ByteString query_;
 
     /**
      * <code>required bytes query = 1;</code>
-     * 
+     *
      * <pre>
      * for now, the query is a simple java serialized object.
      * </pre>
@@ -1685,7 +1679,7 @@ public final class QueryProto {
 
     /**
      * <code>required bytes query = 1;</code>
-     * 
+     *
      * <pre>
      * for now, the query is a simple java serialized object.
      * </pre>
@@ -1704,8 +1698,11 @@ public final class QueryProto {
     @Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) {
-        return isInitialized == 1;
+      if (isInitialized == 1) {
+        return true;
+      }
+      if (isInitialized == 0) {
+        return false;
       }
 
       if (!hasQuery()) {
@@ -1717,7 +1714,7 @@ public final class QueryProto {
     }
 
     @Override
-    public void writeTo(com.google.protobuf.CodedOutputStream output) throws java.io.IOException {
+    public void writeTo(final com.google.protobuf.CodedOutputStream output) throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeBytes(1, query_);
@@ -1750,56 +1747,57 @@ public final class QueryProto {
       return super.writeReplace();
     }
 
-    public static edu.washington.escience.myria.proto.QueryProto.Query parseFrom(com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+    public static edu.washington.escience.myria.proto.QueryProto.Query parseFrom(
+        final com.google.protobuf.ByteString data) throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
 
-    public static edu.washington.escience.myria.proto.QueryProto.Query parseFrom(com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+    public static edu.washington.escience.myria.proto.QueryProto.Query parseFrom(
+        final com.google.protobuf.ByteString data, final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
 
-    public static edu.washington.escience.myria.proto.QueryProto.Query parseFrom(byte[] data)
+    public static edu.washington.escience.myria.proto.QueryProto.Query parseFrom(final byte[] data)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
 
-    public static edu.washington.escience.myria.proto.QueryProto.Query parseFrom(byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+    public static edu.washington.escience.myria.proto.QueryProto.Query parseFrom(final byte[] data,
+        final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
 
-    public static edu.washington.escience.myria.proto.QueryProto.Query parseFrom(java.io.InputStream input)
+    public static edu.washington.escience.myria.proto.QueryProto.Query parseFrom(final java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
 
-    public static edu.washington.escience.myria.proto.QueryProto.Query parseFrom(java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
+    public static edu.washington.escience.myria.proto.QueryProto.Query parseFrom(final java.io.InputStream input,
+        final com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
-    public static edu.washington.escience.myria.proto.QueryProto.Query parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
+    public static edu.washington.escience.myria.proto.QueryProto.Query parseDelimitedFrom(
+        final java.io.InputStream input) throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input);
     }
 
-    public static edu.washington.escience.myria.proto.QueryProto.Query parseDelimitedFrom(java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
+    public static edu.washington.escience.myria.proto.QueryProto.Query parseDelimitedFrom(
+        final java.io.InputStream input, final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
 
     public static edu.washington.escience.myria.proto.QueryProto.Query parseFrom(
-        com.google.protobuf.CodedInputStream input) throws java.io.IOException {
+        final com.google.protobuf.CodedInputStream input) throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
 
     public static edu.washington.escience.myria.proto.QueryProto.Query parseFrom(
-        com.google.protobuf.CodedInputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
+        final com.google.protobuf.CodedInputStream input,
+        final com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
@@ -1812,7 +1810,7 @@ public final class QueryProto {
       return newBuilder();
     }
 
-    public static Builder newBuilder(edu.washington.escience.myria.proto.QueryProto.Query prototype) {
+    public static Builder newBuilder(final edu.washington.escience.myria.proto.QueryProto.Query prototype) {
       return newBuilder().mergeFrom(prototype);
     }
 
@@ -1822,7 +1820,7 @@ public final class QueryProto {
     }
 
     @java.lang.Override
-    protected Builder newBuilderForType(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+    protected Builder newBuilderForType(final com.google.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -1831,6 +1829,7 @@ public final class QueryProto {
      * Protobuf type {@code Query}
      */
     public static final class Builder extends com.google.protobuf.GeneratedMessage.Builder<Builder> implements
+    // @@protoc_insertion_point(builder_implements:Query)
         edu.washington.escience.myria.proto.QueryProto.QueryOrBuilder {
       public static final com.google.protobuf.Descriptors.Descriptor getDescriptor() {
         return edu.washington.escience.myria.proto.QueryProto.internal_static_Query_descriptor;
@@ -1848,7 +1847,7 @@ public final class QueryProto {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(final com.google.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -1910,7 +1909,7 @@ public final class QueryProto {
       }
 
       @Override
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(final com.google.protobuf.Message other) {
         if (other instanceof edu.washington.escience.myria.proto.QueryProto.Query) {
           return mergeFrom((edu.washington.escience.myria.proto.QueryProto.Query) other);
         } else {
@@ -1919,7 +1918,7 @@ public final class QueryProto {
         }
       }
 
-      public Builder mergeFrom(edu.washington.escience.myria.proto.QueryProto.Query other) {
+      public Builder mergeFrom(final edu.washington.escience.myria.proto.QueryProto.Query other) {
         if (other == edu.washington.escience.myria.proto.QueryProto.Query.getDefaultInstance()) {
           return this;
         }
@@ -1940,8 +1939,8 @@ public final class QueryProto {
       }
 
       @Override
-      public Builder mergeFrom(com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
+      public Builder mergeFrom(final com.google.protobuf.CodedInputStream input,
+          final com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
         edu.washington.escience.myria.proto.QueryProto.Query parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
@@ -1958,12 +1957,11 @@ public final class QueryProto {
 
       private int bitField0_;
 
-      // required bytes query = 1;
       private com.google.protobuf.ByteString query_ = com.google.protobuf.ByteString.EMPTY;
 
       /**
        * <code>required bytes query = 1;</code>
-       * 
+       *
        * <pre>
        * for now, the query is a simple java serialized object.
        * </pre>
@@ -1975,7 +1973,7 @@ public final class QueryProto {
 
       /**
        * <code>required bytes query = 1;</code>
-       * 
+       *
        * <pre>
        * for now, the query is a simple java serialized object.
        * </pre>
@@ -1987,12 +1985,12 @@ public final class QueryProto {
 
       /**
        * <code>required bytes query = 1;</code>
-       * 
+       *
        * <pre>
        * for now, the query is a simple java serialized object.
        * </pre>
        */
-      public Builder setQuery(com.google.protobuf.ByteString value) {
+      public Builder setQuery(final com.google.protobuf.ByteString value) {
         if (value == null) {
           throw new NullPointerException();
         }
@@ -2004,7 +2002,7 @@ public final class QueryProto {
 
       /**
        * <code>required bytes query = 1;</code>
-       * 
+       *
        * <pre>
        * for now, the query is a simple java serialized object.
        * </pre>
@@ -2027,12 +2025,13 @@ public final class QueryProto {
     // @@protoc_insertion_point(class_scope:Query)
   }
 
-  public interface QueryReportOrBuilder extends com.google.protobuf.MessageOrBuilder {
+  public interface QueryReportOrBuilder extends
+  // @@protoc_insertion_point(interface_extends:QueryReport)
+      com.google.protobuf.MessageOrBuilder {
 
-    // required bool success = 1;
     /**
      * <code>required bool success = 1;</code>
-     * 
+     *
      * <pre>
      * if the query execution succeeds.
      * </pre>
@@ -2041,14 +2040,13 @@ public final class QueryProto {
 
     /**
      * <code>required bool success = 1;</code>
-     * 
+     *
      * <pre>
      * if the query execution succeeds.
      * </pre>
      */
     boolean getSuccess();
 
-    // required .ExecutionStatistics execution_statistics = 2;
     /**
      * <code>required .ExecutionStatistics execution_statistics = 2;</code>
      */
@@ -2064,10 +2062,9 @@ public final class QueryProto {
      */
     edu.washington.escience.myria.proto.QueryProto.ExecutionStatisticsOrBuilder getExecutionStatisticsOrBuilder();
 
-    // optional bytes cause = 3;
     /**
      * <code>optional bytes cause = 3;</code>
-     * 
+     *
      * <pre>
      * the cause of a failed execution. It should be a serialized java exception Object.
      * </pre>
@@ -2076,7 +2073,7 @@ public final class QueryProto {
 
     /**
      * <code>optional bytes cause = 3;</code>
-     * 
+     *
      * <pre>
      * the cause of a failed execution. It should be a serialized java exception Object.
      * </pre>
@@ -2086,14 +2083,16 @@ public final class QueryProto {
   /**
    * Protobuf type {@code QueryReport}
    */
-  public static final class QueryReport extends com.google.protobuf.GeneratedMessage implements QueryReportOrBuilder {
+  public static final class QueryReport extends com.google.protobuf.GeneratedMessage implements
+  // @@protoc_insertion_point(message_implements:QueryReport)
+      QueryReportOrBuilder {
     // Use QueryReport.newBuilder() to construct.
-    private QueryReport(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private QueryReport(final com.google.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       unknownFields = builder.getUnknownFields();
     }
 
-    private QueryReport(boolean noInit) {
+    private QueryReport(final boolean noInit) {
       unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance();
     }
 
@@ -2115,8 +2114,8 @@ public final class QueryProto {
       return unknownFields;
     }
 
-    private QueryReport(com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+    private QueryReport(final com.google.protobuf.CodedInputStream input,
+        final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       initFields();
       com.google.protobuf.UnknownFieldSet.Builder unknownFields = com.google.protobuf.UnknownFieldSet.newBuilder();
@@ -2185,8 +2184,8 @@ public final class QueryProto {
     public static com.google.protobuf.Parser<QueryReport> PARSER =
         new com.google.protobuf.AbstractParser<QueryReport>() {
           @Override
-          public QueryReport parsePartialFrom(com.google.protobuf.CodedInputStream input,
-              com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          public QueryReport parsePartialFrom(final com.google.protobuf.CodedInputStream input,
+              final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
               throws com.google.protobuf.InvalidProtocolBufferException {
             return new QueryReport(input, extensionRegistry);
           }
@@ -2198,13 +2197,12 @@ public final class QueryProto {
     }
 
     private int bitField0_;
-    // required bool success = 1;
     public static final int SUCCESS_FIELD_NUMBER = 1;
     private boolean success_;
 
     /**
      * <code>required bool success = 1;</code>
-     * 
+     *
      * <pre>
      * if the query execution succeeds.
      * </pre>
@@ -2216,7 +2214,7 @@ public final class QueryProto {
 
     /**
      * <code>required bool success = 1;</code>
-     * 
+     *
      * <pre>
      * if the query execution succeeds.
      * </pre>
@@ -2226,7 +2224,6 @@ public final class QueryProto {
       return success_;
     }
 
-    // required .ExecutionStatistics execution_statistics = 2;
     public static final int EXECUTION_STATISTICS_FIELD_NUMBER = 2;
     private edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics executionStatistics_;
 
@@ -2254,13 +2251,12 @@ public final class QueryProto {
       return executionStatistics_;
     }
 
-    // optional bytes cause = 3;
     public static final int CAUSE_FIELD_NUMBER = 3;
     private com.google.protobuf.ByteString cause_;
 
     /**
      * <code>optional bytes cause = 3;</code>
-     * 
+     *
      * <pre>
      * the cause of a failed execution. It should be a serialized java exception Object.
      * </pre>
@@ -2272,7 +2268,7 @@ public final class QueryProto {
 
     /**
      * <code>optional bytes cause = 3;</code>
-     * 
+     *
      * <pre>
      * the cause of a failed execution. It should be a serialized java exception Object.
      * </pre>
@@ -2293,8 +2289,11 @@ public final class QueryProto {
     @Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) {
-        return isInitialized == 1;
+      if (isInitialized == 1) {
+        return true;
+      }
+      if (isInitialized == 0) {
+        return false;
       }
 
       if (!hasSuccess()) {
@@ -2314,7 +2313,7 @@ public final class QueryProto {
     }
 
     @Override
-    public void writeTo(com.google.protobuf.CodedOutputStream output) throws java.io.IOException {
+    public void writeTo(final com.google.protobuf.CodedOutputStream output) throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeBool(1, success_);
@@ -2360,56 +2359,56 @@ public final class QueryProto {
     }
 
     public static edu.washington.escience.myria.proto.QueryProto.QueryReport parseFrom(
-        com.google.protobuf.ByteString data) throws com.google.protobuf.InvalidProtocolBufferException {
+        final com.google.protobuf.ByteString data) throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
 
     public static edu.washington.escience.myria.proto.QueryProto.QueryReport parseFrom(
-        com.google.protobuf.ByteString data, com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        final com.google.protobuf.ByteString data, final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
 
-    public static edu.washington.escience.myria.proto.QueryProto.QueryReport parseFrom(byte[] data)
+    public static edu.washington.escience.myria.proto.QueryProto.QueryReport parseFrom(final byte[] data)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
 
-    public static edu.washington.escience.myria.proto.QueryProto.QueryReport parseFrom(byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+    public static edu.washington.escience.myria.proto.QueryProto.QueryReport parseFrom(final byte[] data,
+        final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
 
-    public static edu.washington.escience.myria.proto.QueryProto.QueryReport parseFrom(java.io.InputStream input)
+    public static edu.washington.escience.myria.proto.QueryProto.QueryReport parseFrom(final java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
 
-    public static edu.washington.escience.myria.proto.QueryProto.QueryReport parseFrom(java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
+    public static edu.washington.escience.myria.proto.QueryProto.QueryReport parseFrom(final java.io.InputStream input,
+        final com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
     public static edu.washington.escience.myria.proto.QueryProto.QueryReport parseDelimitedFrom(
-        java.io.InputStream input) throws java.io.IOException {
+        final java.io.InputStream input) throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input);
     }
 
     public static edu.washington.escience.myria.proto.QueryProto.QueryReport parseDelimitedFrom(
-        java.io.InputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        final java.io.InputStream input, final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
 
     public static edu.washington.escience.myria.proto.QueryProto.QueryReport parseFrom(
-        com.google.protobuf.CodedInputStream input) throws java.io.IOException {
+        final com.google.protobuf.CodedInputStream input) throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
 
     public static edu.washington.escience.myria.proto.QueryProto.QueryReport parseFrom(
-        com.google.protobuf.CodedInputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
+        final com.google.protobuf.CodedInputStream input,
+        final com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
@@ -2422,7 +2421,7 @@ public final class QueryProto {
       return newBuilder();
     }
 
-    public static Builder newBuilder(edu.washington.escience.myria.proto.QueryProto.QueryReport prototype) {
+    public static Builder newBuilder(final edu.washington.escience.myria.proto.QueryProto.QueryReport prototype) {
       return newBuilder().mergeFrom(prototype);
     }
 
@@ -2432,7 +2431,7 @@ public final class QueryProto {
     }
 
     @java.lang.Override
-    protected Builder newBuilderForType(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+    protected Builder newBuilderForType(final com.google.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -2441,6 +2440,7 @@ public final class QueryProto {
      * Protobuf type {@code QueryReport}
      */
     public static final class Builder extends com.google.protobuf.GeneratedMessage.Builder<Builder> implements
+    // @@protoc_insertion_point(builder_implements:QueryReport)
         edu.washington.escience.myria.proto.QueryProto.QueryReportOrBuilder {
       public static final com.google.protobuf.Descriptors.Descriptor getDescriptor() {
         return edu.washington.escience.myria.proto.QueryProto.internal_static_QueryReport_descriptor;
@@ -2458,7 +2458,7 @@ public final class QueryProto {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(final com.google.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -2542,7 +2542,7 @@ public final class QueryProto {
       }
 
       @Override
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(final com.google.protobuf.Message other) {
         if (other instanceof edu.washington.escience.myria.proto.QueryProto.QueryReport) {
           return mergeFrom((edu.washington.escience.myria.proto.QueryProto.QueryReport) other);
         } else {
@@ -2551,7 +2551,7 @@ public final class QueryProto {
         }
       }
 
-      public Builder mergeFrom(edu.washington.escience.myria.proto.QueryProto.QueryReport other) {
+      public Builder mergeFrom(final edu.washington.escience.myria.proto.QueryProto.QueryReport other) {
         if (other == edu.washington.escience.myria.proto.QueryProto.QueryReport.getDefaultInstance()) {
           return this;
         }
@@ -2586,8 +2586,8 @@ public final class QueryProto {
       }
 
       @Override
-      public Builder mergeFrom(com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
+      public Builder mergeFrom(final com.google.protobuf.CodedInputStream input,
+          final com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
         edu.washington.escience.myria.proto.QueryProto.QueryReport parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
@@ -2604,12 +2604,11 @@ public final class QueryProto {
 
       private int bitField0_;
 
-      // required bool success = 1;
       private boolean success_;
 
       /**
        * <code>required bool success = 1;</code>
-       * 
+       *
        * <pre>
        * if the query execution succeeds.
        * </pre>
@@ -2621,7 +2620,7 @@ public final class QueryProto {
 
       /**
        * <code>required bool success = 1;</code>
-       * 
+       *
        * <pre>
        * if the query execution succeeds.
        * </pre>
@@ -2633,12 +2632,12 @@ public final class QueryProto {
 
       /**
        * <code>required bool success = 1;</code>
-       * 
+       *
        * <pre>
        * if the query execution succeeds.
        * </pre>
        */
-      public Builder setSuccess(boolean value) {
+      public Builder setSuccess(final boolean value) {
         bitField0_ |= 0x00000001;
         success_ = value;
         onChanged();
@@ -2647,7 +2646,7 @@ public final class QueryProto {
 
       /**
        * <code>required bool success = 1;</code>
-       * 
+       *
        * <pre>
        * if the query execution succeeds.
        * </pre>
@@ -2659,7 +2658,6 @@ public final class QueryProto {
         return this;
       }
 
-      // required .ExecutionStatistics execution_statistics = 2;
       private edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics executionStatistics_ =
           edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics.getDefaultInstance();
       private com.google.protobuf.SingleFieldBuilder<edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics, edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics.Builder, edu.washington.escience.myria.proto.QueryProto.ExecutionStatisticsOrBuilder> executionStatisticsBuilder_;
@@ -2687,7 +2685,8 @@ public final class QueryProto {
       /**
        * <code>required .ExecutionStatistics execution_statistics = 2;</code>
        */
-      public Builder setExecutionStatistics(edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics value) {
+      public Builder setExecutionStatistics(
+          final edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics value) {
         if (executionStatisticsBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -2705,7 +2704,7 @@ public final class QueryProto {
        * <code>required .ExecutionStatistics execution_statistics = 2;</code>
        */
       public Builder setExecutionStatistics(
-          edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics.Builder builderForValue) {
+          final edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics.Builder builderForValue) {
         if (executionStatisticsBuilder_ == null) {
           executionStatistics_ = builderForValue.build();
           onChanged();
@@ -2719,7 +2718,8 @@ public final class QueryProto {
       /**
        * <code>required .ExecutionStatistics execution_statistics = 2;</code>
        */
-      public Builder mergeExecutionStatistics(edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics value) {
+      public Builder mergeExecutionStatistics(
+          final edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics value) {
         if (executionStatisticsBuilder_ == null) {
           if (((bitField0_ & 0x00000002) == 0x00000002)
               && executionStatistics_ != edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics
@@ -2781,18 +2781,17 @@ public final class QueryProto {
         if (executionStatisticsBuilder_ == null) {
           executionStatisticsBuilder_ =
               new com.google.protobuf.SingleFieldBuilder<edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics, edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics.Builder, edu.washington.escience.myria.proto.QueryProto.ExecutionStatisticsOrBuilder>(
-                  executionStatistics_, getParentForChildren(), isClean());
+                  getExecutionStatistics(), getParentForChildren(), isClean());
           executionStatistics_ = null;
         }
         return executionStatisticsBuilder_;
       }
 
-      // optional bytes cause = 3;
       private com.google.protobuf.ByteString cause_ = com.google.protobuf.ByteString.EMPTY;
 
       /**
        * <code>optional bytes cause = 3;</code>
-       * 
+       *
        * <pre>
        * the cause of a failed execution. It should be a serialized java exception Object.
        * </pre>
@@ -2804,7 +2803,7 @@ public final class QueryProto {
 
       /**
        * <code>optional bytes cause = 3;</code>
-       * 
+       *
        * <pre>
        * the cause of a failed execution. It should be a serialized java exception Object.
        * </pre>
@@ -2816,12 +2815,12 @@ public final class QueryProto {
 
       /**
        * <code>optional bytes cause = 3;</code>
-       * 
+       *
        * <pre>
        * the cause of a failed execution. It should be a serialized java exception Object.
        * </pre>
        */
-      public Builder setCause(com.google.protobuf.ByteString value) {
+      public Builder setCause(final com.google.protobuf.ByteString value) {
         if (value == null) {
           throw new NullPointerException();
         }
@@ -2833,7 +2832,7 @@ public final class QueryProto {
 
       /**
        * <code>optional bytes cause = 3;</code>
-       * 
+       *
        * <pre>
        * the cause of a failed execution. It should be a serialized java exception Object.
        * </pre>
@@ -2856,12 +2855,13 @@ public final class QueryProto {
     // @@protoc_insertion_point(class_scope:QueryReport)
   }
 
-  public interface ExecutionStatisticsOrBuilder extends com.google.protobuf.MessageOrBuilder {
+  public interface ExecutionStatisticsOrBuilder extends
+  // @@protoc_insertion_point(interface_extends:ExecutionStatistics)
+      com.google.protobuf.MessageOrBuilder {
 
-    // required uint64 elapse = 2;
     /**
      * <code>required uint64 elapse = 2;</code>
-     * 
+     *
      * <pre>
      *elapse of query execution.
      * </pre>
@@ -2870,7 +2870,7 @@ public final class QueryProto {
 
     /**
      * <code>required uint64 elapse = 2;</code>
-     * 
+     *
      * <pre>
      *elapse of query execution.
      * </pre>
@@ -2881,14 +2881,15 @@ public final class QueryProto {
    * Protobuf type {@code ExecutionStatistics}
    */
   public static final class ExecutionStatistics extends com.google.protobuf.GeneratedMessage implements
+  // @@protoc_insertion_point(message_implements:ExecutionStatistics)
       ExecutionStatisticsOrBuilder {
     // Use ExecutionStatistics.newBuilder() to construct.
-    private ExecutionStatistics(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private ExecutionStatistics(final com.google.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       unknownFields = builder.getUnknownFields();
     }
 
-    private ExecutionStatistics(boolean noInit) {
+    private ExecutionStatistics(final boolean noInit) {
       unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance();
     }
 
@@ -2910,8 +2911,8 @@ public final class QueryProto {
       return unknownFields;
     }
 
-    private ExecutionStatistics(com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+    private ExecutionStatistics(final com.google.protobuf.CodedInputStream input,
+        final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       initFields();
       com.google.protobuf.UnknownFieldSet.Builder unknownFields = com.google.protobuf.UnknownFieldSet.newBuilder();
@@ -2960,8 +2961,8 @@ public final class QueryProto {
     public static com.google.protobuf.Parser<ExecutionStatistics> PARSER =
         new com.google.protobuf.AbstractParser<ExecutionStatistics>() {
           @Override
-          public ExecutionStatistics parsePartialFrom(com.google.protobuf.CodedInputStream input,
-              com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          public ExecutionStatistics parsePartialFrom(final com.google.protobuf.CodedInputStream input,
+              final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
               throws com.google.protobuf.InvalidProtocolBufferException {
             return new ExecutionStatistics(input, extensionRegistry);
           }
@@ -2973,13 +2974,12 @@ public final class QueryProto {
     }
 
     private int bitField0_;
-    // required uint64 elapse = 2;
     public static final int ELAPSE_FIELD_NUMBER = 2;
     private long elapse_;
 
     /**
      * <code>required uint64 elapse = 2;</code>
-     * 
+     *
      * <pre>
      *elapse of query execution.
      * </pre>
@@ -2991,7 +2991,7 @@ public final class QueryProto {
 
     /**
      * <code>required uint64 elapse = 2;</code>
-     * 
+     *
      * <pre>
      *elapse of query execution.
      * </pre>
@@ -3010,8 +3010,11 @@ public final class QueryProto {
     @Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) {
-        return isInitialized == 1;
+      if (isInitialized == 1) {
+        return true;
+      }
+      if (isInitialized == 0) {
+        return false;
       }
 
       if (!hasElapse()) {
@@ -3023,7 +3026,7 @@ public final class QueryProto {
     }
 
     @Override
-    public void writeTo(com.google.protobuf.CodedOutputStream output) throws java.io.IOException {
+    public void writeTo(final com.google.protobuf.CodedOutputStream output) throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeUInt64(2, elapse_);
@@ -3057,57 +3060,57 @@ public final class QueryProto {
     }
 
     public static edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics parseFrom(
-        com.google.protobuf.ByteString data) throws com.google.protobuf.InvalidProtocolBufferException {
+        final com.google.protobuf.ByteString data) throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
 
     public static edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics parseFrom(
-        com.google.protobuf.ByteString data, com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        final com.google.protobuf.ByteString data, final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
 
-    public static edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics parseFrom(byte[] data)
+    public static edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics parseFrom(final byte[] data)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
 
-    public static edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics parseFrom(byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+    public static edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics parseFrom(final byte[] data,
+        final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
 
-    public static edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics parseFrom(java.io.InputStream input)
-        throws java.io.IOException {
+    public static edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics parseFrom(
+        final java.io.InputStream input) throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
 
     public static edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics parseFrom(
-        java.io.InputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        final java.io.InputStream input, final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
     public static edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics parseDelimitedFrom(
-        java.io.InputStream input) throws java.io.IOException {
+        final java.io.InputStream input) throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input);
     }
 
     public static edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics parseDelimitedFrom(
-        java.io.InputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        final java.io.InputStream input, final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
 
     public static edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics parseFrom(
-        com.google.protobuf.CodedInputStream input) throws java.io.IOException {
+        final com.google.protobuf.CodedInputStream input) throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
 
     public static edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics parseFrom(
-        com.google.protobuf.CodedInputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
+        final com.google.protobuf.CodedInputStream input,
+        final com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
@@ -3120,7 +3123,7 @@ public final class QueryProto {
       return newBuilder();
     }
 
-    public static Builder newBuilder(edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics prototype) {
+    public static Builder newBuilder(final edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics prototype) {
       return newBuilder().mergeFrom(prototype);
     }
 
@@ -3130,7 +3133,7 @@ public final class QueryProto {
     }
 
     @java.lang.Override
-    protected Builder newBuilderForType(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+    protected Builder newBuilderForType(final com.google.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -3139,6 +3142,7 @@ public final class QueryProto {
      * Protobuf type {@code ExecutionStatistics}
      */
     public static final class Builder extends com.google.protobuf.GeneratedMessage.Builder<Builder> implements
+    // @@protoc_insertion_point(builder_implements:ExecutionStatistics)
         edu.washington.escience.myria.proto.QueryProto.ExecutionStatisticsOrBuilder {
       public static final com.google.protobuf.Descriptors.Descriptor getDescriptor() {
         return edu.washington.escience.myria.proto.QueryProto.internal_static_ExecutionStatistics_descriptor;
@@ -3156,7 +3160,7 @@ public final class QueryProto {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(final com.google.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -3218,7 +3222,7 @@ public final class QueryProto {
       }
 
       @Override
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(final com.google.protobuf.Message other) {
         if (other instanceof edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics) {
           return mergeFrom((edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics) other);
         } else {
@@ -3227,7 +3231,7 @@ public final class QueryProto {
         }
       }
 
-      public Builder mergeFrom(edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics other) {
+      public Builder mergeFrom(final edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics other) {
         if (other == edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics.getDefaultInstance()) {
           return this;
         }
@@ -3248,8 +3252,8 @@ public final class QueryProto {
       }
 
       @Override
-      public Builder mergeFrom(com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
+      public Builder mergeFrom(final com.google.protobuf.CodedInputStream input,
+          final com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
         edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
@@ -3266,12 +3270,11 @@ public final class QueryProto {
 
       private int bitField0_;
 
-      // required uint64 elapse = 2;
       private long elapse_;
 
       /**
        * <code>required uint64 elapse = 2;</code>
-       * 
+       *
        * <pre>
        *elapse of query execution.
        * </pre>
@@ -3283,7 +3286,7 @@ public final class QueryProto {
 
       /**
        * <code>required uint64 elapse = 2;</code>
-       * 
+       *
        * <pre>
        *elapse of query execution.
        * </pre>
@@ -3295,12 +3298,12 @@ public final class QueryProto {
 
       /**
        * <code>required uint64 elapse = 2;</code>
-       * 
+       *
        * <pre>
        *elapse of query execution.
        * </pre>
        */
-      public Builder setElapse(long value) {
+      public Builder setElapse(final long value) {
         bitField0_ |= 0x00000001;
         elapse_ = value;
         onChanged();
@@ -3309,7 +3312,7 @@ public final class QueryProto {
 
       /**
        * <code>required uint64 elapse = 2;</code>
-       * 
+       *
        * <pre>
        *elapse of query execution.
        * </pre>
@@ -3332,13 +3335,13 @@ public final class QueryProto {
     // @@protoc_insertion_point(class_scope:ExecutionStatistics)
   }
 
-  private static com.google.protobuf.Descriptors.Descriptor internal_static_QueryMessage_descriptor;
+  private static final com.google.protobuf.Descriptors.Descriptor internal_static_QueryMessage_descriptor;
   private static com.google.protobuf.GeneratedMessage.FieldAccessorTable internal_static_QueryMessage_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor internal_static_Query_descriptor;
+  private static final com.google.protobuf.Descriptors.Descriptor internal_static_Query_descriptor;
   private static com.google.protobuf.GeneratedMessage.FieldAccessorTable internal_static_Query_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor internal_static_QueryReport_descriptor;
+  private static final com.google.protobuf.Descriptors.Descriptor internal_static_QueryReport_descriptor;
   private static com.google.protobuf.GeneratedMessage.FieldAccessorTable internal_static_QueryReport_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor internal_static_ExecutionStatistics_descriptor;
+  private static final com.google.protobuf.Descriptors.Descriptor internal_static_ExecutionStatistics_descriptor;
   private static com.google.protobuf.GeneratedMessage.FieldAccessorTable internal_static_ExecutionStatistics_fieldAccessorTable;
 
   public static com.google.protobuf.Descriptors.FileDescriptor getDescriptor() {
@@ -3367,29 +3370,29 @@ public final class QueryProto {
         new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
           @Override
           public com.google.protobuf.ExtensionRegistry assignDescriptors(
-              com.google.protobuf.Descriptors.FileDescriptor root) {
+              final com.google.protobuf.Descriptors.FileDescriptor root) {
             descriptor = root;
-            internal_static_QueryMessage_descriptor = getDescriptor().getMessageTypes().get(0);
-            internal_static_QueryMessage_fieldAccessorTable =
-                new com.google.protobuf.GeneratedMessage.FieldAccessorTable(internal_static_QueryMessage_descriptor,
-                    new java.lang.String[] { "QueryId", "SubqueryId", "Type", "QueryReport", "Query", "WorkerId", });
-            internal_static_Query_descriptor = getDescriptor().getMessageTypes().get(1);
-            internal_static_Query_fieldAccessorTable =
-                new com.google.protobuf.GeneratedMessage.FieldAccessorTable(internal_static_Query_descriptor,
-                    new java.lang.String[] { "Query", });
-            internal_static_QueryReport_descriptor = getDescriptor().getMessageTypes().get(2);
-            internal_static_QueryReport_fieldAccessorTable =
-                new com.google.protobuf.GeneratedMessage.FieldAccessorTable(internal_static_QueryReport_descriptor,
-                    new java.lang.String[] { "Success", "ExecutionStatistics", "Cause", });
-            internal_static_ExecutionStatistics_descriptor = getDescriptor().getMessageTypes().get(3);
-            internal_static_ExecutionStatistics_fieldAccessorTable =
-                new com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-                    internal_static_ExecutionStatistics_descriptor, new java.lang.String[] { "Elapse", });
             return null;
           }
         };
     com.google.protobuf.Descriptors.FileDescriptor.internalBuildGeneratedFileFrom(descriptorData,
         new com.google.protobuf.Descriptors.FileDescriptor[] {}, assigner);
+    internal_static_QueryMessage_descriptor = getDescriptor().getMessageTypes().get(0);
+    internal_static_QueryMessage_fieldAccessorTable =
+        new com.google.protobuf.GeneratedMessage.FieldAccessorTable(internal_static_QueryMessage_descriptor,
+            new java.lang.String[] { "QueryId", "SubqueryId", "Type", "QueryReport", "Query", "WorkerId", });
+    internal_static_Query_descriptor = getDescriptor().getMessageTypes().get(1);
+    internal_static_Query_fieldAccessorTable =
+        new com.google.protobuf.GeneratedMessage.FieldAccessorTable(internal_static_Query_descriptor,
+            new java.lang.String[] { "Query", });
+    internal_static_QueryReport_descriptor = getDescriptor().getMessageTypes().get(2);
+    internal_static_QueryReport_fieldAccessorTable =
+        new com.google.protobuf.GeneratedMessage.FieldAccessorTable(internal_static_QueryReport_descriptor,
+            new java.lang.String[] { "Success", "ExecutionStatistics", "Cause", });
+    internal_static_ExecutionStatistics_descriptor = getDescriptor().getMessageTypes().get(3);
+    internal_static_ExecutionStatistics_fieldAccessorTable =
+        new com.google.protobuf.GeneratedMessage.FieldAccessorTable(internal_static_ExecutionStatistics_descriptor,
+            new java.lang.String[] { "Elapse", });
   }
 
   // @@protoc_insertion_point(outer_class_scope)

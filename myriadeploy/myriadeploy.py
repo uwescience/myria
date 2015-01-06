@@ -8,7 +8,7 @@ import sys
 
 def read_config_file(filename='deployment.cfg'):
     "reads a Myria deployment configuration file."
-    
+
     # Return value is a dictionary of keys -> values
     ret = dict()
 
@@ -30,6 +30,10 @@ def read_config_file(filename='deployment.cfg'):
     except ConfigParser.NoOptionError:
         ret['username'] = getpass.getuser()
     ret['rest_port'] = config.get('deployment', 'rest_port')
+    try:
+        ret['ssl'] = config.getboolean('deployment', 'ssl')
+    except ConfigParser.NoOptionError:
+        ret['ssl'] = False
 
     # Helper function
     def split_hostportpathdbname_key_append_id(hostport):
@@ -61,6 +65,10 @@ def read_config_file(filename='deployment.cfg'):
         ret['max_heap_size'] = config.get('deployment', 'max_heap_size')
     except ConfigParser.NoOptionError:
         ret['max_heap_size'] = ''
+    try:
+        ret['admin_password'] = config.get('deployment', 'admin_password')
+    except ConfigParser.NoOptionError:
+        ret['admin_password'] = ''
 
     return ret
 

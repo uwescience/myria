@@ -6,12 +6,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.Nonnull;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
-import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.MyriaConstants.FTMode;
+import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.operator.DbReader;
 import edu.washington.escience.myria.operator.DbWriter;
@@ -32,18 +35,16 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
   /** The list of RootOperators. */
   private final List<RootOperator> rootOps;
 
-  /** FT mode, default: none. */
-  private FTMODE ftMode = FTMODE.valueOf("none");
+  /** FT mode, default: NONE. */
+  private FTMode ftMode = FTMode.NONE;
 
   /** The relations that are written, along with their schemas. */
   private final Map<RelationKey, RelationWriteMetadata> writeSet;
   /** The relations that are read. */
   private final Set<RelationKey> readSet;
 
-  /**
-   * profilingMode,default:false.
-   */
-  private boolean profilingMode = false;
+  /** profilingMode. */
+  private Set<ProfilingMode> profilingMode;
 
   /** Constructor. */
   public SubQueryPlan() {
@@ -129,7 +130,7 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
    * 
    * @param ftMode the mode.
    */
-  public void setFTMode(final FTMODE ftMode) {
+  public void setFTMode(final FTMode ftMode) {
     this.ftMode = ftMode;
   }
 
@@ -138,14 +139,15 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
    * 
    * @return the ft mode.
    */
-  public FTMODE getFTMode() {
+  public FTMode getFTMode() {
     return ftMode;
   }
 
   /**
    * @return the profiling mode.
    */
-  public boolean isProfilingMode() {
+  @Nonnull
+  public Set<ProfilingMode> getProfilingMode() {
     return profilingMode;
   }
 
@@ -154,7 +156,7 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
    * 
    * @param profilingMode the profiling mode.
    */
-  public void setProfilingMode(final boolean profilingMode) {
+  public void setProfilingMode(@Nonnull final Set<ProfilingMode> profilingMode) {
     this.profilingMode = profilingMode;
   }
 

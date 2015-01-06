@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -16,6 +17,7 @@ import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.StreamingState;
 import edu.washington.escience.myria.operator.TupleSource;
@@ -25,6 +27,8 @@ import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myria.profiling.ProfilingLogger;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.util.DateTimeUtils;
+import edu.washington.escience.myria.util.IPCUtils;
+import edu.washington.escience.myria.util.concurrent.ErrorLoggingTimerTask;
 
 /**
  * A {@link LocalSubQuery} running at a worker.
@@ -73,6 +77,9 @@ public class WorkerSubQuery extends LocalSubQuery {
    */
   private volatile long startMilliseconds = 0;
 
+  /** Report resource usage at a fixed rate. Only enabled when the profiling mode has resource. */
+  private Timer resourceReportTimer;
+
   /**
    * The future listener for processing the complete events of the execution of all the subquery's fragments.
    */
@@ -105,8 +112,11 @@ public class WorkerSubQuery extends LocalSubQuery {
           LOGGER.info("Query #{} executed for {}", getSubQueryId(), DateTimeUtils
               .nanoElapseToHumanReadable(getExecutionStatistics().getQueryExecutionElapse()));
         }
-        if (isProfilingMode()) {
+        if (getProfilingMode().size() > 0) {
           try {
+            if (resourceReportTimer != null) {
+              resourceReportTimer.cancel();
+            }
             getWorker().getProfilingLogger().flush();
           } catch (DbException e) {
             LOGGER.error("Error flushing profiling logger", e);
@@ -139,7 +149,7 @@ public class WorkerSubQuery extends LocalSubQuery {
    * @param ownerWorker the worker on which this {@link WorkerSubQuery} is going to run
    */
   public WorkerSubQuery(final SubQueryPlan plan, final SubQueryId subQueryId, final Worker ownerWorker) {
-    super(subQueryId, plan.getFTMode(), plan.isProfilingMode());
+    super(subQueryId, plan.getFTMode(), plan.getProfilingMode());
     List<RootOperator> operators = plan.getRootOps();
     fragments = new HashSet<LocalFragment>(operators.size());
     numFinishedFragments = new AtomicInteger(0);
@@ -199,9 +209,44 @@ public class WorkerSubQuery extends LocalSubQuery {
   public final void startExecution() {
     LOGGER.info("Subquery #{} start processing", getSubQueryId());
     getExecutionStatistics().markStart();
+    if (getProfilingMode().contains(ProfilingMode.RESOURCE)) {
+      resourceReportTimer = new Timer();
+      resourceReportTimer.scheduleAtFixedRate(new ResourceUsageReporter(), 0, MyriaConstants.RESOURCE_REPORT_INTERVAL);
+    }
     startMilliseconds = System.currentTimeMillis();
     for (LocalFragment t : fragments) {
       t.start();
+    }
+  }
+
+  /** Send resource usage reports to server periodically. */
+  private class ResourceUsageReporter extends ErrorLoggingTimerTask {
+    @Override
+    public synchronized void runInner() {
+      List<ResourceStats> resourceUsage = new ArrayList<ResourceStats>();
+      collectResourceMeasurements(resourceUsage);
+      worker.sendMessageToMaster(IPCUtils.resourceReport(resourceUsage)).awaitUninterruptibly();
+      for (ResourceStats stats : resourceUsage) {
+        try {
+          worker.getProfilingLogger().recordResource(stats);
+        } catch (DbException e) {
+          LOGGER.error("Error flushing profiling logger", e);
+        }
+      }
+    }
+  }
+
+  /**
+   * collect resource measurements of this subquery.
+   * 
+   * @param resourceUsage the list to add resource stats of resource profiling queries to.
+   */
+  public void collectResourceMeasurements(final List<ResourceStats> resourceUsage) {
+    if (getProfilingMode().contains(ProfilingMode.RESOURCE)) {
+      long timestamp = System.currentTimeMillis();
+      for (LocalFragment fragment : fragments) {
+        fragment.collectResourceMeasurements(resourceUsage, timestamp, fragment.getRootOp(), getSubQueryId());
+      }
     }
   }
 
@@ -223,6 +268,7 @@ public class WorkerSubQuery extends LocalSubQuery {
    * @param workerId the id of the failed worker.
    */
   public void addRecoveryTasks(final int workerId) {
+    int newOpId = getMaxOpId() + 1;
     List<RootOperator> recoveryTasks = new ArrayList<>();
     for (LocalFragment fragment : fragments) {
       if (fragment.getRootOp() instanceof Producer) {
@@ -236,10 +282,14 @@ public class WorkerSubQuery extends LocalSubQuery {
           int j = indices.get(i);
           /* buffers.get(j) might be an empty List<TupleBatch>, so need to set its schema explicitly. */
           TupleSource scan = new TupleSource(buffers.get(j).exportState(), buffers.get(j).getSchema());
+          scan.setOpId(newOpId);
+          newOpId++;
           scan.setOpName("tuplesource for " + fragment.getRootOp().getOpName() + channels[j].getID());
           RecoverProducer rp =
               new RecoverProducer(scan, ExchangePairID.fromExisting(channels[j].getID().getStreamID()), channels[j]
                   .getID().getRemoteID(), (Producer) fragment.getRootOp(), j);
+          rp.setOpId(newOpId);
+          newOpId++;
           rp.setOpName("recProducer_for_" + fragment.getRootOp().getOpName());
           recoveryTasks.add(rp);
           scan.setFragmentId(0 - recoveryTasks.size());
@@ -261,6 +311,7 @@ public class WorkerSubQuery extends LocalSubQuery {
             for (LocalFragment fragment : list) {
               init(fragment);
               /* input might be null but we still need it to run */
+              fragment.start();
               fragment.notifyNewInput();
             }
             break;
@@ -292,5 +343,17 @@ public class WorkerSubQuery extends LocalSubQuery {
   @Override
   public Set<LocalFragment> getFragments() {
     return fragments;
+  }
+
+  /**
+   * 
+   * @return the max op id in this fragment.
+   */
+  private int getMaxOpId() {
+    int ret = Integer.MIN_VALUE;
+    for (LocalFragment t : fragments) {
+      ret = Math.max(ret, t.getMaxOpId(t.getRootOp()));
+    }
+    return ret;
   }
 }

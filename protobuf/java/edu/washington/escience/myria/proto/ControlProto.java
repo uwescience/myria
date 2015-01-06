@@ -7,15 +7,16 @@ public final class ControlProto {
   private ControlProto() {
   }
 
-  public static void registerAllExtensions(com.google.protobuf.ExtensionRegistry registry) {
+  public static void registerAllExtensions(final com.google.protobuf.ExtensionRegistry registry) {
   }
 
-  public interface ControlMessageOrBuilder extends com.google.protobuf.MessageOrBuilder {
+  public interface ControlMessageOrBuilder extends
+  // @@protoc_insertion_point(interface_extends:ControlMessage)
+      com.google.protobuf.MessageOrBuilder {
 
-    // required .ControlMessage.Type type = 1;
     /**
      * <code>required .ControlMessage.Type type = 1;</code>
-     * 
+     *
      * <pre>
      * See enum above
      * </pre>
@@ -24,14 +25,13 @@ public final class ControlProto {
 
     /**
      * <code>required .ControlMessage.Type type = 1;</code>
-     * 
+     *
      * <pre>
      * See enum above
      * </pre>
      */
     edu.washington.escience.myria.proto.ControlProto.ControlMessage.Type getType();
 
-    // optional int32 worker_id = 2;
     /**
      * <code>optional int32 worker_id = 2;</code>
      */
@@ -42,7 +42,6 @@ public final class ControlProto {
      */
     int getWorkerId();
 
-    // optional .SocketInfo remote_address = 3;
     /**
      * <code>optional .SocketInfo remote_address = 3;</code>
      */
@@ -57,19 +56,45 @@ public final class ControlProto {
      * <code>optional .SocketInfo remote_address = 3;</code>
      */
     edu.washington.escience.myria.proto.ControlProto.SocketInfoOrBuilder getRemoteAddressOrBuilder();
+
+    /**
+     * <code>repeated .ResourceStats resource_stats = 4;</code>
+     */
+    java.util.List<edu.washington.escience.myria.proto.ControlProto.ResourceStats> getResourceStatsList();
+
+    /**
+     * <code>repeated .ResourceStats resource_stats = 4;</code>
+     */
+    edu.washington.escience.myria.proto.ControlProto.ResourceStats getResourceStats(int index);
+
+    /**
+     * <code>repeated .ResourceStats resource_stats = 4;</code>
+     */
+    int getResourceStatsCount();
+
+    /**
+     * <code>repeated .ResourceStats resource_stats = 4;</code>
+     */
+    java.util.List<? extends edu.washington.escience.myria.proto.ControlProto.ResourceStatsOrBuilder> getResourceStatsOrBuilderList();
+
+    /**
+     * <code>repeated .ResourceStats resource_stats = 4;</code>
+     */
+    edu.washington.escience.myria.proto.ControlProto.ResourceStatsOrBuilder getResourceStatsOrBuilder(int index);
   }
   /**
    * Protobuf type {@code ControlMessage}
    */
   public static final class ControlMessage extends com.google.protobuf.GeneratedMessage implements
+  // @@protoc_insertion_point(message_implements:ControlMessage)
       ControlMessageOrBuilder {
     // Use ControlMessage.newBuilder() to construct.
-    private ControlMessage(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private ControlMessage(final com.google.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       unknownFields = builder.getUnknownFields();
     }
 
-    private ControlMessage(boolean noInit) {
+    private ControlMessage(final boolean noInit) {
       unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance();
     }
 
@@ -91,10 +116,11 @@ public final class ControlProto {
       return unknownFields;
     }
 
-    private ControlMessage(com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+    private ControlMessage(final com.google.protobuf.CodedInputStream input,
+        final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       initFields();
+      int mutable_bitField0_ = 0;
       com.google.protobuf.UnknownFieldSet.Builder unknownFields = com.google.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
@@ -142,6 +168,16 @@ public final class ControlProto {
               bitField0_ |= 0x00000004;
               break;
             }
+            case 34: {
+              if (!((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
+                resourceStats_ =
+                    new java.util.ArrayList<edu.washington.escience.myria.proto.ControlProto.ResourceStats>();
+                mutable_bitField0_ |= 0x00000008;
+              }
+              resourceStats_.add(input.readMessage(
+                  edu.washington.escience.myria.proto.ControlProto.ResourceStats.PARSER, extensionRegistry));
+              break;
+            }
           }
         }
       } catch (com.google.protobuf.InvalidProtocolBufferException e) {
@@ -149,6 +185,9 @@ public final class ControlProto {
       } catch (java.io.IOException e) {
         throw new com.google.protobuf.InvalidProtocolBufferException(e.getMessage()).setUnfinishedMessage(this);
       } finally {
+        if (((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
+          resourceStats_ = java.util.Collections.unmodifiableList(resourceStats_);
+        }
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
@@ -168,8 +207,8 @@ public final class ControlProto {
     public static com.google.protobuf.Parser<ControlMessage> PARSER =
         new com.google.protobuf.AbstractParser<ControlMessage>() {
           @Override
-          public ControlMessage parsePartialFrom(com.google.protobuf.CodedInputStream input,
-              com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          public ControlMessage parsePartialFrom(final com.google.protobuf.CodedInputStream input,
+              final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
               throws com.google.protobuf.InvalidProtocolBufferException {
             return new ControlMessage(input, extensionRegistry);
           }
@@ -186,7 +225,7 @@ public final class ControlProto {
     public enum Type implements com.google.protobuf.ProtocolMessageEnum {
       /**
        * <code>SHUTDOWN = 1;</code>
-       * 
+       *
        * <pre>
        * master -&gt; workers
        * </pre>
@@ -194,7 +233,7 @@ public final class ControlProto {
       SHUTDOWN(0, 1),
       /**
        * <code>WORKER_HEARTBEAT = 2;</code>
-       * 
+       *
        * <pre>
        * worker -&gt; master
        * </pre>
@@ -202,7 +241,7 @@ public final class ControlProto {
       WORKER_HEARTBEAT(1, 2),
       /**
        * <code>REMOVE_WORKER = 3;</code>
-       * 
+       *
        * <pre>
        * master -&gt; workers
        * </pre>
@@ -210,7 +249,7 @@ public final class ControlProto {
       REMOVE_WORKER(2, 3),
       /**
        * <code>ADD_WORKER = 4;</code>
-       * 
+       *
        * <pre>
        * master -&gt; workers
        * </pre>
@@ -218,7 +257,7 @@ public final class ControlProto {
       ADD_WORKER(3, 4),
       /**
        * <code>REMOVE_WORKER_ACK = 5;</code>
-       * 
+       *
        * <pre>
        * worker -&gt; master
        * </pre>
@@ -226,16 +265,24 @@ public final class ControlProto {
       REMOVE_WORKER_ACK(4, 5),
       /**
        * <code>ADD_WORKER_ACK = 6;</code>
-       * 
+       *
        * <pre>
        * worker -&gt; master
        * </pre>
        */
-      ADD_WORKER_ACK(5, 6), ;
+      ADD_WORKER_ACK(5, 6),
+      /**
+       * <code>RESOURCE_STATS = 7;</code>
+       *
+       * <pre>
+       * worker -&gt; master
+       * </pre>
+       */
+      RESOURCE_STATS(6, 7), ;
 
       /**
        * <code>SHUTDOWN = 1;</code>
-       * 
+       *
        * <pre>
        * master -&gt; workers
        * </pre>
@@ -243,7 +290,7 @@ public final class ControlProto {
       public static final int SHUTDOWN_VALUE = 1;
       /**
        * <code>WORKER_HEARTBEAT = 2;</code>
-       * 
+       *
        * <pre>
        * worker -&gt; master
        * </pre>
@@ -251,7 +298,7 @@ public final class ControlProto {
       public static final int WORKER_HEARTBEAT_VALUE = 2;
       /**
        * <code>REMOVE_WORKER = 3;</code>
-       * 
+       *
        * <pre>
        * master -&gt; workers
        * </pre>
@@ -259,7 +306,7 @@ public final class ControlProto {
       public static final int REMOVE_WORKER_VALUE = 3;
       /**
        * <code>ADD_WORKER = 4;</code>
-       * 
+       *
        * <pre>
        * master -&gt; workers
        * </pre>
@@ -267,7 +314,7 @@ public final class ControlProto {
       public static final int ADD_WORKER_VALUE = 4;
       /**
        * <code>REMOVE_WORKER_ACK = 5;</code>
-       * 
+       *
        * <pre>
        * worker -&gt; master
        * </pre>
@@ -275,19 +322,27 @@ public final class ControlProto {
       public static final int REMOVE_WORKER_ACK_VALUE = 5;
       /**
        * <code>ADD_WORKER_ACK = 6;</code>
-       * 
+       *
        * <pre>
        * worker -&gt; master
        * </pre>
        */
       public static final int ADD_WORKER_ACK_VALUE = 6;
+      /**
+       * <code>RESOURCE_STATS = 7;</code>
+       *
+       * <pre>
+       * worker -&gt; master
+       * </pre>
+       */
+      public static final int RESOURCE_STATS_VALUE = 7;
 
       @Override
       public final int getNumber() {
         return value;
       }
 
-      public static Type valueOf(int value) {
+      public static Type valueOf(final int value) {
         switch (value) {
           case 1:
             return SHUTDOWN;
@@ -301,6 +356,8 @@ public final class ControlProto {
             return REMOVE_WORKER_ACK;
           case 6:
             return ADD_WORKER_ACK;
+          case 7:
+            return RESOURCE_STATS;
           default:
             return null;
         }
@@ -313,7 +370,7 @@ public final class ControlProto {
       private static com.google.protobuf.Internal.EnumLiteMap<Type> internalValueMap =
           new com.google.protobuf.Internal.EnumLiteMap<Type>() {
             @Override
-            public Type findValueByNumber(int number) {
+            public Type findValueByNumber(final int number) {
               return Type.valueOf(number);
             }
           };
@@ -334,7 +391,7 @@ public final class ControlProto {
 
       private static final Type[] VALUES = values();
 
-      public static Type valueOf(com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
+      public static Type valueOf(final com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
         if (desc.getType() != getDescriptor()) {
           throw new java.lang.IllegalArgumentException("EnumValueDescriptor is not for this type.");
         }
@@ -344,7 +401,7 @@ public final class ControlProto {
       private final int index;
       private final int value;
 
-      private Type(int index, int value) {
+      private Type(final int index, final int value) {
         this.index = index;
         this.value = value;
       }
@@ -353,13 +410,12 @@ public final class ControlProto {
     }
 
     private int bitField0_;
-    // required .ControlMessage.Type type = 1;
     public static final int TYPE_FIELD_NUMBER = 1;
     private edu.washington.escience.myria.proto.ControlProto.ControlMessage.Type type_;
 
     /**
      * <code>required .ControlMessage.Type type = 1;</code>
-     * 
+     *
      * <pre>
      * See enum above
      * </pre>
@@ -371,7 +427,7 @@ public final class ControlProto {
 
     /**
      * <code>required .ControlMessage.Type type = 1;</code>
-     * 
+     *
      * <pre>
      * See enum above
      * </pre>
@@ -381,7 +437,6 @@ public final class ControlProto {
       return type_;
     }
 
-    // optional int32 worker_id = 2;
     public static final int WORKER_ID_FIELD_NUMBER = 2;
     private int workerId_;
 
@@ -401,7 +456,6 @@ public final class ControlProto {
       return workerId_;
     }
 
-    // optional .SocketInfo remote_address = 3;
     public static final int REMOTE_ADDRESS_FIELD_NUMBER = 3;
     private edu.washington.escience.myria.proto.ControlProto.SocketInfo remoteAddress_;
 
@@ -429,10 +483,55 @@ public final class ControlProto {
       return remoteAddress_;
     }
 
+    public static final int RESOURCE_STATS_FIELD_NUMBER = 4;
+    private java.util.List<edu.washington.escience.myria.proto.ControlProto.ResourceStats> resourceStats_;
+
+    /**
+     * <code>repeated .ResourceStats resource_stats = 4;</code>
+     */
+    @Override
+    public java.util.List<edu.washington.escience.myria.proto.ControlProto.ResourceStats> getResourceStatsList() {
+      return resourceStats_;
+    }
+
+    /**
+     * <code>repeated .ResourceStats resource_stats = 4;</code>
+     */
+    @Override
+    public java.util.List<? extends edu.washington.escience.myria.proto.ControlProto.ResourceStatsOrBuilder> getResourceStatsOrBuilderList() {
+      return resourceStats_;
+    }
+
+    /**
+     * <code>repeated .ResourceStats resource_stats = 4;</code>
+     */
+    @Override
+    public int getResourceStatsCount() {
+      return resourceStats_.size();
+    }
+
+    /**
+     * <code>repeated .ResourceStats resource_stats = 4;</code>
+     */
+    @Override
+    public edu.washington.escience.myria.proto.ControlProto.ResourceStats getResourceStats(final int index) {
+      return resourceStats_.get(index);
+    }
+
+    /**
+     * <code>repeated .ResourceStats resource_stats = 4;</code>
+     */
+    @Override
+    public edu.washington.escience.myria.proto.ControlProto.ResourceStatsOrBuilder getResourceStatsOrBuilder(
+        final int index) {
+      return resourceStats_.get(index);
+    }
+
     private void initFields() {
       type_ = edu.washington.escience.myria.proto.ControlProto.ControlMessage.Type.SHUTDOWN;
       workerId_ = 0;
       remoteAddress_ = edu.washington.escience.myria.proto.ControlProto.SocketInfo.getDefaultInstance();
+      resourceStats_ = java.util.Collections.emptyList();
     }
 
     private byte memoizedIsInitialized = -1;
@@ -440,8 +539,11 @@ public final class ControlProto {
     @Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) {
-        return isInitialized == 1;
+      if (isInitialized == 1) {
+        return true;
+      }
+      if (isInitialized == 0) {
+        return false;
       }
 
       if (!hasType()) {
@@ -454,12 +556,18 @@ public final class ControlProto {
           return false;
         }
       }
+      for (int i = 0; i < getResourceStatsCount(); i++) {
+        if (!getResourceStats(i).isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
       memoizedIsInitialized = 1;
       return true;
     }
 
     @Override
-    public void writeTo(com.google.protobuf.CodedOutputStream output) throws java.io.IOException {
+    public void writeTo(final com.google.protobuf.CodedOutputStream output) throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeEnum(1, type_.getNumber());
@@ -469,6 +577,9 @@ public final class ControlProto {
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         output.writeMessage(3, remoteAddress_);
+      }
+      for (int i = 0; i < resourceStats_.size(); i++) {
+        output.writeMessage(4, resourceStats_.get(i));
       }
       getUnknownFields().writeTo(output);
     }
@@ -492,6 +603,9 @@ public final class ControlProto {
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream.computeMessageSize(3, remoteAddress_);
       }
+      for (int i = 0; i < resourceStats_.size(); i++) {
+        size += com.google.protobuf.CodedOutputStream.computeMessageSize(4, resourceStats_.get(i));
+      }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
       return size;
@@ -505,56 +619,57 @@ public final class ControlProto {
     }
 
     public static edu.washington.escience.myria.proto.ControlProto.ControlMessage parseFrom(
-        com.google.protobuf.ByteString data) throws com.google.protobuf.InvalidProtocolBufferException {
+        final com.google.protobuf.ByteString data) throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
 
     public static edu.washington.escience.myria.proto.ControlProto.ControlMessage parseFrom(
-        com.google.protobuf.ByteString data, com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        final com.google.protobuf.ByteString data, final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
 
-    public static edu.washington.escience.myria.proto.ControlProto.ControlMessage parseFrom(byte[] data)
+    public static edu.washington.escience.myria.proto.ControlProto.ControlMessage parseFrom(final byte[] data)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
 
-    public static edu.washington.escience.myria.proto.ControlProto.ControlMessage parseFrom(byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+    public static edu.washington.escience.myria.proto.ControlProto.ControlMessage parseFrom(final byte[] data,
+        final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
 
-    public static edu.washington.escience.myria.proto.ControlProto.ControlMessage parseFrom(java.io.InputStream input)
-        throws java.io.IOException {
+    public static edu.washington.escience.myria.proto.ControlProto.ControlMessage parseFrom(
+        final java.io.InputStream input) throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
 
-    public static edu.washington.escience.myria.proto.ControlProto.ControlMessage parseFrom(java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
+    public static edu.washington.escience.myria.proto.ControlProto.ControlMessage parseFrom(
+        final java.io.InputStream input, final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
     public static edu.washington.escience.myria.proto.ControlProto.ControlMessage parseDelimitedFrom(
-        java.io.InputStream input) throws java.io.IOException {
+        final java.io.InputStream input) throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input);
     }
 
     public static edu.washington.escience.myria.proto.ControlProto.ControlMessage parseDelimitedFrom(
-        java.io.InputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        final java.io.InputStream input, final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
 
     public static edu.washington.escience.myria.proto.ControlProto.ControlMessage parseFrom(
-        com.google.protobuf.CodedInputStream input) throws java.io.IOException {
+        final com.google.protobuf.CodedInputStream input) throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
 
     public static edu.washington.escience.myria.proto.ControlProto.ControlMessage parseFrom(
-        com.google.protobuf.CodedInputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
+        final com.google.protobuf.CodedInputStream input,
+        final com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
@@ -567,7 +682,7 @@ public final class ControlProto {
       return newBuilder();
     }
 
-    public static Builder newBuilder(edu.washington.escience.myria.proto.ControlProto.ControlMessage prototype) {
+    public static Builder newBuilder(final edu.washington.escience.myria.proto.ControlProto.ControlMessage prototype) {
       return newBuilder().mergeFrom(prototype);
     }
 
@@ -577,7 +692,7 @@ public final class ControlProto {
     }
 
     @java.lang.Override
-    protected Builder newBuilderForType(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+    protected Builder newBuilderForType(final com.google.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -586,6 +701,7 @@ public final class ControlProto {
      * Protobuf type {@code ControlMessage}
      */
     public static final class Builder extends com.google.protobuf.GeneratedMessage.Builder<Builder> implements
+    // @@protoc_insertion_point(builder_implements:ControlMessage)
         edu.washington.escience.myria.proto.ControlProto.ControlMessageOrBuilder {
       public static final com.google.protobuf.Descriptors.Descriptor getDescriptor() {
         return edu.washington.escience.myria.proto.ControlProto.internal_static_ControlMessage_descriptor;
@@ -603,7 +719,7 @@ public final class ControlProto {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(final com.google.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -611,6 +727,7 @@ public final class ControlProto {
       private void maybeForceBuilderInitialization() {
         if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getRemoteAddressFieldBuilder();
+          getResourceStatsFieldBuilder();
         }
       }
 
@@ -631,6 +748,12 @@ public final class ControlProto {
           remoteAddressBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000004);
+        if (resourceStatsBuilder_ == null) {
+          resourceStats_ = java.util.Collections.emptyList();
+          bitField0_ = (bitField0_ & ~0x00000008);
+        } else {
+          resourceStatsBuilder_.clear();
+        }
         return this;
       }
 
@@ -680,13 +803,22 @@ public final class ControlProto {
         } else {
           result.remoteAddress_ = remoteAddressBuilder_.build();
         }
+        if (resourceStatsBuilder_ == null) {
+          if (((bitField0_ & 0x00000008) == 0x00000008)) {
+            resourceStats_ = java.util.Collections.unmodifiableList(resourceStats_);
+            bitField0_ = (bitField0_ & ~0x00000008);
+          }
+          result.resourceStats_ = resourceStats_;
+        } else {
+          result.resourceStats_ = resourceStatsBuilder_.build();
+        }
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
       }
 
       @Override
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(final com.google.protobuf.Message other) {
         if (other instanceof edu.washington.escience.myria.proto.ControlProto.ControlMessage) {
           return mergeFrom((edu.washington.escience.myria.proto.ControlProto.ControlMessage) other);
         } else {
@@ -695,7 +827,7 @@ public final class ControlProto {
         }
       }
 
-      public Builder mergeFrom(edu.washington.escience.myria.proto.ControlProto.ControlMessage other) {
+      public Builder mergeFrom(final edu.washington.escience.myria.proto.ControlProto.ControlMessage other) {
         if (other == edu.washington.escience.myria.proto.ControlProto.ControlMessage.getDefaultInstance()) {
           return this;
         }
@@ -707,6 +839,31 @@ public final class ControlProto {
         }
         if (other.hasRemoteAddress()) {
           mergeRemoteAddress(other.getRemoteAddress());
+        }
+        if (resourceStatsBuilder_ == null) {
+          if (!other.resourceStats_.isEmpty()) {
+            if (resourceStats_.isEmpty()) {
+              resourceStats_ = other.resourceStats_;
+              bitField0_ = (bitField0_ & ~0x00000008);
+            } else {
+              ensureResourceStatsIsMutable();
+              resourceStats_.addAll(other.resourceStats_);
+            }
+            onChanged();
+          }
+        } else {
+          if (!other.resourceStats_.isEmpty()) {
+            if (resourceStatsBuilder_.isEmpty()) {
+              resourceStatsBuilder_.dispose();
+              resourceStatsBuilder_ = null;
+              resourceStats_ = other.resourceStats_;
+              bitField0_ = (bitField0_ & ~0x00000008);
+              resourceStatsBuilder_ =
+                  com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ? getResourceStatsFieldBuilder() : null;
+            } else {
+              resourceStatsBuilder_.addAllMessages(other.resourceStats_);
+            }
+          }
         }
         mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -724,12 +881,18 @@ public final class ControlProto {
             return false;
           }
         }
+        for (int i = 0; i < getResourceStatsCount(); i++) {
+          if (!getResourceStats(i).isInitialized()) {
+
+            return false;
+          }
+        }
         return true;
       }
 
       @Override
-      public Builder mergeFrom(com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
+      public Builder mergeFrom(final com.google.protobuf.CodedInputStream input,
+          final com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
         edu.washington.escience.myria.proto.ControlProto.ControlMessage parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
@@ -746,13 +909,12 @@ public final class ControlProto {
 
       private int bitField0_;
 
-      // required .ControlMessage.Type type = 1;
       private edu.washington.escience.myria.proto.ControlProto.ControlMessage.Type type_ =
           edu.washington.escience.myria.proto.ControlProto.ControlMessage.Type.SHUTDOWN;
 
       /**
        * <code>required .ControlMessage.Type type = 1;</code>
-       * 
+       *
        * <pre>
        * See enum above
        * </pre>
@@ -764,7 +926,7 @@ public final class ControlProto {
 
       /**
        * <code>required .ControlMessage.Type type = 1;</code>
-       * 
+       *
        * <pre>
        * See enum above
        * </pre>
@@ -776,12 +938,12 @@ public final class ControlProto {
 
       /**
        * <code>required .ControlMessage.Type type = 1;</code>
-       * 
+       *
        * <pre>
        * See enum above
        * </pre>
        */
-      public Builder setType(edu.washington.escience.myria.proto.ControlProto.ControlMessage.Type value) {
+      public Builder setType(final edu.washington.escience.myria.proto.ControlProto.ControlMessage.Type value) {
         if (value == null) {
           throw new NullPointerException();
         }
@@ -793,7 +955,7 @@ public final class ControlProto {
 
       /**
        * <code>required .ControlMessage.Type type = 1;</code>
-       * 
+       *
        * <pre>
        * See enum above
        * </pre>
@@ -805,7 +967,6 @@ public final class ControlProto {
         return this;
       }
 
-      // optional int32 worker_id = 2;
       private int workerId_;
 
       /**
@@ -827,7 +988,7 @@ public final class ControlProto {
       /**
        * <code>optional int32 worker_id = 2;</code>
        */
-      public Builder setWorkerId(int value) {
+      public Builder setWorkerId(final int value) {
         bitField0_ |= 0x00000002;
         workerId_ = value;
         onChanged();
@@ -844,7 +1005,6 @@ public final class ControlProto {
         return this;
       }
 
-      // optional .SocketInfo remote_address = 3;
       private edu.washington.escience.myria.proto.ControlProto.SocketInfo remoteAddress_ =
           edu.washington.escience.myria.proto.ControlProto.SocketInfo.getDefaultInstance();
       private com.google.protobuf.SingleFieldBuilder<edu.washington.escience.myria.proto.ControlProto.SocketInfo, edu.washington.escience.myria.proto.ControlProto.SocketInfo.Builder, edu.washington.escience.myria.proto.ControlProto.SocketInfoOrBuilder> remoteAddressBuilder_;
@@ -872,7 +1032,7 @@ public final class ControlProto {
       /**
        * <code>optional .SocketInfo remote_address = 3;</code>
        */
-      public Builder setRemoteAddress(edu.washington.escience.myria.proto.ControlProto.SocketInfo value) {
+      public Builder setRemoteAddress(final edu.washington.escience.myria.proto.ControlProto.SocketInfo value) {
         if (remoteAddressBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -890,7 +1050,7 @@ public final class ControlProto {
        * <code>optional .SocketInfo remote_address = 3;</code>
        */
       public Builder setRemoteAddress(
-          edu.washington.escience.myria.proto.ControlProto.SocketInfo.Builder builderForValue) {
+          final edu.washington.escience.myria.proto.ControlProto.SocketInfo.Builder builderForValue) {
         if (remoteAddressBuilder_ == null) {
           remoteAddress_ = builderForValue.build();
           onChanged();
@@ -904,7 +1064,7 @@ public final class ControlProto {
       /**
        * <code>optional .SocketInfo remote_address = 3;</code>
        */
-      public Builder mergeRemoteAddress(edu.washington.escience.myria.proto.ControlProto.SocketInfo value) {
+      public Builder mergeRemoteAddress(final edu.washington.escience.myria.proto.ControlProto.SocketInfo value) {
         if (remoteAddressBuilder_ == null) {
           if (((bitField0_ & 0x00000004) == 0x00000004)
               && remoteAddress_ != edu.washington.escience.myria.proto.ControlProto.SocketInfo.getDefaultInstance()) {
@@ -964,10 +1124,267 @@ public final class ControlProto {
         if (remoteAddressBuilder_ == null) {
           remoteAddressBuilder_ =
               new com.google.protobuf.SingleFieldBuilder<edu.washington.escience.myria.proto.ControlProto.SocketInfo, edu.washington.escience.myria.proto.ControlProto.SocketInfo.Builder, edu.washington.escience.myria.proto.ControlProto.SocketInfoOrBuilder>(
-                  remoteAddress_, getParentForChildren(), isClean());
+                  getRemoteAddress(), getParentForChildren(), isClean());
           remoteAddress_ = null;
         }
         return remoteAddressBuilder_;
+      }
+
+      private java.util.List<edu.washington.escience.myria.proto.ControlProto.ResourceStats> resourceStats_ =
+          java.util.Collections.emptyList();
+
+      private void ensureResourceStatsIsMutable() {
+        if (!((bitField0_ & 0x00000008) == 0x00000008)) {
+          resourceStats_ =
+              new java.util.ArrayList<edu.washington.escience.myria.proto.ControlProto.ResourceStats>(resourceStats_);
+          bitField0_ |= 0x00000008;
+        }
+      }
+
+      private com.google.protobuf.RepeatedFieldBuilder<edu.washington.escience.myria.proto.ControlProto.ResourceStats, edu.washington.escience.myria.proto.ControlProto.ResourceStats.Builder, edu.washington.escience.myria.proto.ControlProto.ResourceStatsOrBuilder> resourceStatsBuilder_;
+
+      /**
+       * <code>repeated .ResourceStats resource_stats = 4;</code>
+       */
+      @Override
+      public java.util.List<edu.washington.escience.myria.proto.ControlProto.ResourceStats> getResourceStatsList() {
+        if (resourceStatsBuilder_ == null) {
+          return java.util.Collections.unmodifiableList(resourceStats_);
+        } else {
+          return resourceStatsBuilder_.getMessageList();
+        }
+      }
+
+      /**
+       * <code>repeated .ResourceStats resource_stats = 4;</code>
+       */
+      @Override
+      public int getResourceStatsCount() {
+        if (resourceStatsBuilder_ == null) {
+          return resourceStats_.size();
+        } else {
+          return resourceStatsBuilder_.getCount();
+        }
+      }
+
+      /**
+       * <code>repeated .ResourceStats resource_stats = 4;</code>
+       */
+      @Override
+      public edu.washington.escience.myria.proto.ControlProto.ResourceStats getResourceStats(final int index) {
+        if (resourceStatsBuilder_ == null) {
+          return resourceStats_.get(index);
+        } else {
+          return resourceStatsBuilder_.getMessage(index);
+        }
+      }
+
+      /**
+       * <code>repeated .ResourceStats resource_stats = 4;</code>
+       */
+      public Builder setResourceStats(final int index,
+          final edu.washington.escience.myria.proto.ControlProto.ResourceStats value) {
+        if (resourceStatsBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureResourceStatsIsMutable();
+          resourceStats_.set(index, value);
+          onChanged();
+        } else {
+          resourceStatsBuilder_.setMessage(index, value);
+        }
+        return this;
+      }
+
+      /**
+       * <code>repeated .ResourceStats resource_stats = 4;</code>
+       */
+      public Builder setResourceStats(final int index,
+          final edu.washington.escience.myria.proto.ControlProto.ResourceStats.Builder builderForValue) {
+        if (resourceStatsBuilder_ == null) {
+          ensureResourceStatsIsMutable();
+          resourceStats_.set(index, builderForValue.build());
+          onChanged();
+        } else {
+          resourceStatsBuilder_.setMessage(index, builderForValue.build());
+        }
+        return this;
+      }
+
+      /**
+       * <code>repeated .ResourceStats resource_stats = 4;</code>
+       */
+      public Builder addResourceStats(final edu.washington.escience.myria.proto.ControlProto.ResourceStats value) {
+        if (resourceStatsBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureResourceStatsIsMutable();
+          resourceStats_.add(value);
+          onChanged();
+        } else {
+          resourceStatsBuilder_.addMessage(value);
+        }
+        return this;
+      }
+
+      /**
+       * <code>repeated .ResourceStats resource_stats = 4;</code>
+       */
+      public Builder addResourceStats(final int index,
+          final edu.washington.escience.myria.proto.ControlProto.ResourceStats value) {
+        if (resourceStatsBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureResourceStatsIsMutable();
+          resourceStats_.add(index, value);
+          onChanged();
+        } else {
+          resourceStatsBuilder_.addMessage(index, value);
+        }
+        return this;
+      }
+
+      /**
+       * <code>repeated .ResourceStats resource_stats = 4;</code>
+       */
+      public Builder addResourceStats(
+          final edu.washington.escience.myria.proto.ControlProto.ResourceStats.Builder builderForValue) {
+        if (resourceStatsBuilder_ == null) {
+          ensureResourceStatsIsMutable();
+          resourceStats_.add(builderForValue.build());
+          onChanged();
+        } else {
+          resourceStatsBuilder_.addMessage(builderForValue.build());
+        }
+        return this;
+      }
+
+      /**
+       * <code>repeated .ResourceStats resource_stats = 4;</code>
+       */
+      public Builder addResourceStats(final int index,
+          final edu.washington.escience.myria.proto.ControlProto.ResourceStats.Builder builderForValue) {
+        if (resourceStatsBuilder_ == null) {
+          ensureResourceStatsIsMutable();
+          resourceStats_.add(index, builderForValue.build());
+          onChanged();
+        } else {
+          resourceStatsBuilder_.addMessage(index, builderForValue.build());
+        }
+        return this;
+      }
+
+      /**
+       * <code>repeated .ResourceStats resource_stats = 4;</code>
+       */
+      public Builder addAllResourceStats(
+          final java.lang.Iterable<? extends edu.washington.escience.myria.proto.ControlProto.ResourceStats> values) {
+        if (resourceStatsBuilder_ == null) {
+          ensureResourceStatsIsMutable();
+          com.google.protobuf.AbstractMessageLite.Builder.addAll(values, resourceStats_);
+          onChanged();
+        } else {
+          resourceStatsBuilder_.addAllMessages(values);
+        }
+        return this;
+      }
+
+      /**
+       * <code>repeated .ResourceStats resource_stats = 4;</code>
+       */
+      public Builder clearResourceStats() {
+        if (resourceStatsBuilder_ == null) {
+          resourceStats_ = java.util.Collections.emptyList();
+          bitField0_ = (bitField0_ & ~0x00000008);
+          onChanged();
+        } else {
+          resourceStatsBuilder_.clear();
+        }
+        return this;
+      }
+
+      /**
+       * <code>repeated .ResourceStats resource_stats = 4;</code>
+       */
+      public Builder removeResourceStats(final int index) {
+        if (resourceStatsBuilder_ == null) {
+          ensureResourceStatsIsMutable();
+          resourceStats_.remove(index);
+          onChanged();
+        } else {
+          resourceStatsBuilder_.remove(index);
+        }
+        return this;
+      }
+
+      /**
+       * <code>repeated .ResourceStats resource_stats = 4;</code>
+       */
+      public edu.washington.escience.myria.proto.ControlProto.ResourceStats.Builder getResourceStatsBuilder(
+          final int index) {
+        return getResourceStatsFieldBuilder().getBuilder(index);
+      }
+
+      /**
+       * <code>repeated .ResourceStats resource_stats = 4;</code>
+       */
+      @Override
+      public edu.washington.escience.myria.proto.ControlProto.ResourceStatsOrBuilder getResourceStatsOrBuilder(
+          final int index) {
+        if (resourceStatsBuilder_ == null) {
+          return resourceStats_.get(index);
+        } else {
+          return resourceStatsBuilder_.getMessageOrBuilder(index);
+        }
+      }
+
+      /**
+       * <code>repeated .ResourceStats resource_stats = 4;</code>
+       */
+      @Override
+      public java.util.List<? extends edu.washington.escience.myria.proto.ControlProto.ResourceStatsOrBuilder> getResourceStatsOrBuilderList() {
+        if (resourceStatsBuilder_ != null) {
+          return resourceStatsBuilder_.getMessageOrBuilderList();
+        } else {
+          return java.util.Collections.unmodifiableList(resourceStats_);
+        }
+      }
+
+      /**
+       * <code>repeated .ResourceStats resource_stats = 4;</code>
+       */
+      public edu.washington.escience.myria.proto.ControlProto.ResourceStats.Builder addResourceStatsBuilder() {
+        return getResourceStatsFieldBuilder().addBuilder(
+            edu.washington.escience.myria.proto.ControlProto.ResourceStats.getDefaultInstance());
+      }
+
+      /**
+       * <code>repeated .ResourceStats resource_stats = 4;</code>
+       */
+      public edu.washington.escience.myria.proto.ControlProto.ResourceStats.Builder addResourceStatsBuilder(
+          final int index) {
+        return getResourceStatsFieldBuilder().addBuilder(index,
+            edu.washington.escience.myria.proto.ControlProto.ResourceStats.getDefaultInstance());
+      }
+
+      /**
+       * <code>repeated .ResourceStats resource_stats = 4;</code>
+       */
+      public java.util.List<edu.washington.escience.myria.proto.ControlProto.ResourceStats.Builder> getResourceStatsBuilderList() {
+        return getResourceStatsFieldBuilder().getBuilderList();
+      }
+
+      private com.google.protobuf.RepeatedFieldBuilder<edu.washington.escience.myria.proto.ControlProto.ResourceStats, edu.washington.escience.myria.proto.ControlProto.ResourceStats.Builder, edu.washington.escience.myria.proto.ControlProto.ResourceStatsOrBuilder> getResourceStatsFieldBuilder() {
+        if (resourceStatsBuilder_ == null) {
+          resourceStatsBuilder_ =
+              new com.google.protobuf.RepeatedFieldBuilder<edu.washington.escience.myria.proto.ControlProto.ResourceStats, edu.washington.escience.myria.proto.ControlProto.ResourceStats.Builder, edu.washington.escience.myria.proto.ControlProto.ResourceStatsOrBuilder>(
+                  resourceStats_, ((bitField0_ & 0x00000008) == 0x00000008), getParentForChildren(), isClean());
+          resourceStats_ = null;
+        }
+        return resourceStatsBuilder_;
       }
 
       // @@protoc_insertion_point(builder_scope:ControlMessage)
@@ -981,9 +1398,10 @@ public final class ControlProto {
     // @@protoc_insertion_point(class_scope:ControlMessage)
   }
 
-  public interface SocketInfoOrBuilder extends com.google.protobuf.MessageOrBuilder {
+  public interface SocketInfoOrBuilder extends
+  // @@protoc_insertion_point(interface_extends:SocketInfo)
+      com.google.protobuf.MessageOrBuilder {
 
-    // required string host = 1;
     /**
      * <code>required string host = 1;</code>
      */
@@ -999,7 +1417,6 @@ public final class ControlProto {
      */
     com.google.protobuf.ByteString getHostBytes();
 
-    // required int32 port = 2;
     /**
      * <code>required int32 port = 2;</code>
      */
@@ -1013,14 +1430,16 @@ public final class ControlProto {
   /**
    * Protobuf type {@code SocketInfo}
    */
-  public static final class SocketInfo extends com.google.protobuf.GeneratedMessage implements SocketInfoOrBuilder {
+  public static final class SocketInfo extends com.google.protobuf.GeneratedMessage implements
+  // @@protoc_insertion_point(message_implements:SocketInfo)
+      SocketInfoOrBuilder {
     // Use SocketInfo.newBuilder() to construct.
-    private SocketInfo(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private SocketInfo(final com.google.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       unknownFields = builder.getUnknownFields();
     }
 
-    private SocketInfo(boolean noInit) {
+    private SocketInfo(final boolean noInit) {
       unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance();
     }
 
@@ -1042,8 +1461,8 @@ public final class ControlProto {
       return unknownFields;
     }
 
-    private SocketInfo(com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+    private SocketInfo(final com.google.protobuf.CodedInputStream input,
+        final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       initFields();
       com.google.protobuf.UnknownFieldSet.Builder unknownFields = com.google.protobuf.UnknownFieldSet.newBuilder();
@@ -1062,8 +1481,9 @@ public final class ControlProto {
               break;
             }
             case 10: {
+              com.google.protobuf.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000001;
-              host_ = input.readBytes();
+              host_ = bs;
               break;
             }
             case 16: {
@@ -1096,8 +1516,8 @@ public final class ControlProto {
 
     public static com.google.protobuf.Parser<SocketInfo> PARSER = new com.google.protobuf.AbstractParser<SocketInfo>() {
       @Override
-      public SocketInfo parsePartialFrom(com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+      public SocketInfo parsePartialFrom(final com.google.protobuf.CodedInputStream input,
+          final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
           throws com.google.protobuf.InvalidProtocolBufferException {
         return new SocketInfo(input, extensionRegistry);
       }
@@ -1109,7 +1529,6 @@ public final class ControlProto {
     }
 
     private int bitField0_;
-    // required string host = 1;
     public static final int HOST_FIELD_NUMBER = 1;
     private java.lang.Object host_;
 
@@ -1154,7 +1573,6 @@ public final class ControlProto {
       }
     }
 
-    // required int32 port = 2;
     public static final int PORT_FIELD_NUMBER = 2;
     private int port_;
 
@@ -1184,8 +1602,11 @@ public final class ControlProto {
     @Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) {
-        return isInitialized == 1;
+      if (isInitialized == 1) {
+        return true;
+      }
+      if (isInitialized == 0) {
+        return false;
       }
 
       if (!hasHost()) {
@@ -1201,7 +1622,7 @@ public final class ControlProto {
     }
 
     @Override
-    public void writeTo(com.google.protobuf.CodedOutputStream output) throws java.io.IOException {
+    public void writeTo(final com.google.protobuf.CodedOutputStream output) throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeBytes(1, getHostBytes());
@@ -1241,56 +1662,57 @@ public final class ControlProto {
     }
 
     public static edu.washington.escience.myria.proto.ControlProto.SocketInfo parseFrom(
-        com.google.protobuf.ByteString data) throws com.google.protobuf.InvalidProtocolBufferException {
+        final com.google.protobuf.ByteString data) throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
 
     public static edu.washington.escience.myria.proto.ControlProto.SocketInfo parseFrom(
-        com.google.protobuf.ByteString data, com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        final com.google.protobuf.ByteString data, final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
 
-    public static edu.washington.escience.myria.proto.ControlProto.SocketInfo parseFrom(byte[] data)
+    public static edu.washington.escience.myria.proto.ControlProto.SocketInfo parseFrom(final byte[] data)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
 
-    public static edu.washington.escience.myria.proto.ControlProto.SocketInfo parseFrom(byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+    public static edu.washington.escience.myria.proto.ControlProto.SocketInfo parseFrom(final byte[] data,
+        final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
 
-    public static edu.washington.escience.myria.proto.ControlProto.SocketInfo parseFrom(java.io.InputStream input)
+    public static edu.washington.escience.myria.proto.ControlProto.SocketInfo parseFrom(final java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
 
-    public static edu.washington.escience.myria.proto.ControlProto.SocketInfo parseFrom(java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
+    public static edu.washington.escience.myria.proto.ControlProto.SocketInfo parseFrom(
+        final java.io.InputStream input, final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
     public static edu.washington.escience.myria.proto.ControlProto.SocketInfo parseDelimitedFrom(
-        java.io.InputStream input) throws java.io.IOException {
+        final java.io.InputStream input) throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input);
     }
 
     public static edu.washington.escience.myria.proto.ControlProto.SocketInfo parseDelimitedFrom(
-        java.io.InputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        final java.io.InputStream input, final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
 
     public static edu.washington.escience.myria.proto.ControlProto.SocketInfo parseFrom(
-        com.google.protobuf.CodedInputStream input) throws java.io.IOException {
+        final com.google.protobuf.CodedInputStream input) throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
 
     public static edu.washington.escience.myria.proto.ControlProto.SocketInfo parseFrom(
-        com.google.protobuf.CodedInputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
+        final com.google.protobuf.CodedInputStream input,
+        final com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
@@ -1303,7 +1725,7 @@ public final class ControlProto {
       return newBuilder();
     }
 
-    public static Builder newBuilder(edu.washington.escience.myria.proto.ControlProto.SocketInfo prototype) {
+    public static Builder newBuilder(final edu.washington.escience.myria.proto.ControlProto.SocketInfo prototype) {
       return newBuilder().mergeFrom(prototype);
     }
 
@@ -1313,7 +1735,7 @@ public final class ControlProto {
     }
 
     @java.lang.Override
-    protected Builder newBuilderForType(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+    protected Builder newBuilderForType(final com.google.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -1322,6 +1744,7 @@ public final class ControlProto {
      * Protobuf type {@code SocketInfo}
      */
     public static final class Builder extends com.google.protobuf.GeneratedMessage.Builder<Builder> implements
+    // @@protoc_insertion_point(builder_implements:SocketInfo)
         edu.washington.escience.myria.proto.ControlProto.SocketInfoOrBuilder {
       public static final com.google.protobuf.Descriptors.Descriptor getDescriptor() {
         return edu.washington.escience.myria.proto.ControlProto.internal_static_SocketInfo_descriptor;
@@ -1339,7 +1762,7 @@ public final class ControlProto {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(final com.google.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -1407,7 +1830,7 @@ public final class ControlProto {
       }
 
       @Override
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(final com.google.protobuf.Message other) {
         if (other instanceof edu.washington.escience.myria.proto.ControlProto.SocketInfo) {
           return mergeFrom((edu.washington.escience.myria.proto.ControlProto.SocketInfo) other);
         } else {
@@ -1416,7 +1839,7 @@ public final class ControlProto {
         }
       }
 
-      public Builder mergeFrom(edu.washington.escience.myria.proto.ControlProto.SocketInfo other) {
+      public Builder mergeFrom(final edu.washington.escience.myria.proto.ControlProto.SocketInfo other) {
         if (other == edu.washington.escience.myria.proto.ControlProto.SocketInfo.getDefaultInstance()) {
           return this;
         }
@@ -1446,8 +1869,8 @@ public final class ControlProto {
       }
 
       @Override
-      public Builder mergeFrom(com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
+      public Builder mergeFrom(final com.google.protobuf.CodedInputStream input,
+          final com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
         edu.washington.escience.myria.proto.ControlProto.SocketInfo parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
@@ -1464,7 +1887,6 @@ public final class ControlProto {
 
       private int bitField0_;
 
-      // required string host = 1;
       private java.lang.Object host_ = "";
 
       /**
@@ -1482,8 +1904,11 @@ public final class ControlProto {
       public java.lang.String getHost() {
         java.lang.Object ref = host_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
-          host_ = s;
+          com.google.protobuf.ByteString bs = (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            host_ = s;
+          }
           return s;
         } else {
           return (java.lang.String) ref;
@@ -1508,7 +1933,7 @@ public final class ControlProto {
       /**
        * <code>required string host = 1;</code>
        */
-      public Builder setHost(java.lang.String value) {
+      public Builder setHost(final java.lang.String value) {
         if (value == null) {
           throw new NullPointerException();
         }
@@ -1531,7 +1956,7 @@ public final class ControlProto {
       /**
        * <code>required string host = 1;</code>
        */
-      public Builder setHostBytes(com.google.protobuf.ByteString value) {
+      public Builder setHostBytes(final com.google.protobuf.ByteString value) {
         if (value == null) {
           throw new NullPointerException();
         }
@@ -1541,7 +1966,6 @@ public final class ControlProto {
         return this;
       }
 
-      // required int32 port = 2;
       private int port_;
 
       /**
@@ -1563,7 +1987,7 @@ public final class ControlProto {
       /**
        * <code>required int32 port = 2;</code>
        */
-      public Builder setPort(int value) {
+      public Builder setPort(final int value) {
         bitField0_ |= 0x00000002;
         port_ = value;
         onChanged();
@@ -1591,10 +2015,1014 @@ public final class ControlProto {
     // @@protoc_insertion_point(class_scope:SocketInfo)
   }
 
-  private static com.google.protobuf.Descriptors.Descriptor internal_static_ControlMessage_descriptor;
+  public interface ResourceStatsOrBuilder extends
+  // @@protoc_insertion_point(interface_extends:ResourceStats)
+      com.google.protobuf.MessageOrBuilder {
+
+    /**
+     * <code>required int64 timestamp = 1;</code>
+     */
+    boolean hasTimestamp();
+
+    /**
+     * <code>required int64 timestamp = 1;</code>
+     */
+    long getTimestamp();
+
+    /**
+     * <code>required int32 opId = 2;</code>
+     */
+    boolean hasOpId();
+
+    /**
+     * <code>required int32 opId = 2;</code>
+     */
+    int getOpId();
+
+    /**
+     * <code>required string measurement = 3;</code>
+     */
+    boolean hasMeasurement();
+
+    /**
+     * <code>required string measurement = 3;</code>
+     */
+    java.lang.String getMeasurement();
+
+    /**
+     * <code>required string measurement = 3;</code>
+     */
+    com.google.protobuf.ByteString getMeasurementBytes();
+
+    /**
+     * <code>required int64 value = 4;</code>
+     */
+    boolean hasValue();
+
+    /**
+     * <code>required int64 value = 4;</code>
+     */
+    long getValue();
+
+    /**
+     * <code>required int64 queryId = 5;</code>
+     */
+    boolean hasQueryId();
+
+    /**
+     * <code>required int64 queryId = 5;</code>
+     */
+    long getQueryId();
+
+    /**
+     * <code>required int64 subqueryId = 6;</code>
+     */
+    boolean hasSubqueryId();
+
+    /**
+     * <code>required int64 subqueryId = 6;</code>
+     */
+    long getSubqueryId();
+  }
+  /**
+   * Protobuf type {@code ResourceStats}
+   */
+  public static final class ResourceStats extends com.google.protobuf.GeneratedMessage implements
+  // @@protoc_insertion_point(message_implements:ResourceStats)
+      ResourceStatsOrBuilder {
+    // Use ResourceStats.newBuilder() to construct.
+    private ResourceStats(final com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+      super(builder);
+      unknownFields = builder.getUnknownFields();
+    }
+
+    private ResourceStats(final boolean noInit) {
+      unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance();
+    }
+
+    private static final ResourceStats defaultInstance;
+
+    public static ResourceStats getDefaultInstance() {
+      return defaultInstance;
+    }
+
+    @Override
+    public ResourceStats getDefaultInstanceForType() {
+      return defaultInstance;
+    }
+
+    private final com.google.protobuf.UnknownFieldSet unknownFields;
+
+    @java.lang.Override
+    public final com.google.protobuf.UnknownFieldSet getUnknownFields() {
+      return unknownFields;
+    }
+
+    private ResourceStats(final com.google.protobuf.CodedInputStream input,
+        final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      initFields();
+      com.google.protobuf.UnknownFieldSet.Builder unknownFields = com.google.protobuf.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            default: {
+              if (!parseUnknownField(input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+            case 8: {
+              bitField0_ |= 0x00000001;
+              timestamp_ = input.readInt64();
+              break;
+            }
+            case 16: {
+              bitField0_ |= 0x00000002;
+              opId_ = input.readInt32();
+              break;
+            }
+            case 26: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000004;
+              measurement_ = bs;
+              break;
+            }
+            case 32: {
+              bitField0_ |= 0x00000008;
+              value_ = input.readInt64();
+              break;
+            }
+            case 40: {
+              bitField0_ |= 0x00000010;
+              queryId_ = input.readInt64();
+              break;
+            }
+            case 48: {
+              bitField0_ |= 0x00000020;
+              subqueryId_ = input.readInt64();
+              break;
+            }
+          }
+        }
+      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new com.google.protobuf.InvalidProtocolBufferException(e.getMessage()).setUnfinishedMessage(this);
+      } finally {
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
+
+    public static final com.google.protobuf.Descriptors.Descriptor getDescriptor() {
+      return edu.washington.escience.myria.proto.ControlProto.internal_static_ResourceStats_descriptor;
+    }
+
+    @Override
+    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
+      return edu.washington.escience.myria.proto.ControlProto.internal_static_ResourceStats_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(edu.washington.escience.myria.proto.ControlProto.ResourceStats.class,
+              edu.washington.escience.myria.proto.ControlProto.ResourceStats.Builder.class);
+    }
+
+    public static com.google.protobuf.Parser<ResourceStats> PARSER =
+        new com.google.protobuf.AbstractParser<ResourceStats>() {
+          @Override
+          public ResourceStats parsePartialFrom(final com.google.protobuf.CodedInputStream input,
+              final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+              throws com.google.protobuf.InvalidProtocolBufferException {
+            return new ResourceStats(input, extensionRegistry);
+          }
+        };
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<ResourceStats> getParserForType() {
+      return PARSER;
+    }
+
+    private int bitField0_;
+    public static final int TIMESTAMP_FIELD_NUMBER = 1;
+    private long timestamp_;
+
+    /**
+     * <code>required int64 timestamp = 1;</code>
+     */
+    @Override
+    public boolean hasTimestamp() {
+      return ((bitField0_ & 0x00000001) == 0x00000001);
+    }
+
+    /**
+     * <code>required int64 timestamp = 1;</code>
+     */
+    @Override
+    public long getTimestamp() {
+      return timestamp_;
+    }
+
+    public static final int OPID_FIELD_NUMBER = 2;
+    private int opId_;
+
+    /**
+     * <code>required int32 opId = 2;</code>
+     */
+    @Override
+    public boolean hasOpId() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+
+    /**
+     * <code>required int32 opId = 2;</code>
+     */
+    @Override
+    public int getOpId() {
+      return opId_;
+    }
+
+    public static final int MEASUREMENT_FIELD_NUMBER = 3;
+    private java.lang.Object measurement_;
+
+    /**
+     * <code>required string measurement = 3;</code>
+     */
+    @Override
+    public boolean hasMeasurement() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+
+    /**
+     * <code>required string measurement = 3;</code>
+     */
+    @Override
+    public java.lang.String getMeasurement() {
+      java.lang.Object ref = measurement_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          measurement_ = s;
+        }
+        return s;
+      }
+    }
+
+    /**
+     * <code>required string measurement = 3;</code>
+     */
+    @Override
+    public com.google.protobuf.ByteString getMeasurementBytes() {
+      java.lang.Object ref = measurement_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = com.google.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
+        measurement_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
+    public static final int VALUE_FIELD_NUMBER = 4;
+    private long value_;
+
+    /**
+     * <code>required int64 value = 4;</code>
+     */
+    @Override
+    public boolean hasValue() {
+      return ((bitField0_ & 0x00000008) == 0x00000008);
+    }
+
+    /**
+     * <code>required int64 value = 4;</code>
+     */
+    @Override
+    public long getValue() {
+      return value_;
+    }
+
+    public static final int QUERYID_FIELD_NUMBER = 5;
+    private long queryId_;
+
+    /**
+     * <code>required int64 queryId = 5;</code>
+     */
+    @Override
+    public boolean hasQueryId() {
+      return ((bitField0_ & 0x00000010) == 0x00000010);
+    }
+
+    /**
+     * <code>required int64 queryId = 5;</code>
+     */
+    @Override
+    public long getQueryId() {
+      return queryId_;
+    }
+
+    public static final int SUBQUERYID_FIELD_NUMBER = 6;
+    private long subqueryId_;
+
+    /**
+     * <code>required int64 subqueryId = 6;</code>
+     */
+    @Override
+    public boolean hasSubqueryId() {
+      return ((bitField0_ & 0x00000020) == 0x00000020);
+    }
+
+    /**
+     * <code>required int64 subqueryId = 6;</code>
+     */
+    @Override
+    public long getSubqueryId() {
+      return subqueryId_;
+    }
+
+    private void initFields() {
+      timestamp_ = 0L;
+      opId_ = 0;
+      measurement_ = "";
+      value_ = 0L;
+      queryId_ = 0L;
+      subqueryId_ = 0L;
+    }
+
+    private byte memoizedIsInitialized = -1;
+
+    @Override
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized == 1) {
+        return true;
+      }
+      if (isInitialized == 0) {
+        return false;
+      }
+
+      if (!hasTimestamp()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasOpId()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasMeasurement()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasValue()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasQueryId()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasSubqueryId()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    @Override
+    public void writeTo(final com.google.protobuf.CodedOutputStream output) throws java.io.IOException {
+      getSerializedSize();
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        output.writeInt64(1, timestamp_);
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeInt32(2, opId_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeBytes(3, getMeasurementBytes());
+      }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        output.writeInt64(4, value_);
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        output.writeInt64(5, queryId_);
+      }
+      if (((bitField0_ & 0x00000020) == 0x00000020)) {
+        output.writeInt64(6, subqueryId_);
+      }
+      getUnknownFields().writeTo(output);
+    }
+
+    private int memoizedSerializedSize = -1;
+
+    @Override
+    public int getSerializedSize() {
+      int size = memoizedSerializedSize;
+      if (size != -1) {
+        return size;
+      }
+
+      size = 0;
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        size += com.google.protobuf.CodedOutputStream.computeInt64Size(1, timestamp_);
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        size += com.google.protobuf.CodedOutputStream.computeInt32Size(2, opId_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        size += com.google.protobuf.CodedOutputStream.computeBytesSize(3, getMeasurementBytes());
+      }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        size += com.google.protobuf.CodedOutputStream.computeInt64Size(4, value_);
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        size += com.google.protobuf.CodedOutputStream.computeInt64Size(5, queryId_);
+      }
+      if (((bitField0_ & 0x00000020) == 0x00000020)) {
+        size += com.google.protobuf.CodedOutputStream.computeInt64Size(6, subqueryId_);
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSerializedSize = size;
+      return size;
+    }
+
+    private static final long serialVersionUID = 0L;
+
+    @java.lang.Override
+    protected java.lang.Object writeReplace() throws java.io.ObjectStreamException {
+      return super.writeReplace();
+    }
+
+    public static edu.washington.escience.myria.proto.ControlProto.ResourceStats parseFrom(
+        final com.google.protobuf.ByteString data) throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+
+    public static edu.washington.escience.myria.proto.ControlProto.ResourceStats parseFrom(
+        final com.google.protobuf.ByteString data, final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+
+    public static edu.washington.escience.myria.proto.ControlProto.ResourceStats parseFrom(final byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+
+    public static edu.washington.escience.myria.proto.ControlProto.ResourceStats parseFrom(final byte[] data,
+        final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+
+    public static edu.washington.escience.myria.proto.ControlProto.ResourceStats parseFrom(
+        final java.io.InputStream input) throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+
+    public static edu.washington.escience.myria.proto.ControlProto.ResourceStats parseFrom(
+        final java.io.InputStream input, final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+
+    public static edu.washington.escience.myria.proto.ControlProto.ResourceStats parseDelimitedFrom(
+        final java.io.InputStream input) throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input);
+    }
+
+    public static edu.washington.escience.myria.proto.ControlProto.ResourceStats parseDelimitedFrom(
+        final java.io.InputStream input, final com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+    }
+
+    public static edu.washington.escience.myria.proto.ControlProto.ResourceStats parseFrom(
+        final com.google.protobuf.CodedInputStream input) throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+
+    public static edu.washington.escience.myria.proto.ControlProto.ResourceStats parseFrom(
+        final com.google.protobuf.CodedInputStream input,
+        final com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return Builder.create();
+    }
+
+    @Override
+    public Builder newBuilderForType() {
+      return newBuilder();
+    }
+
+    public static Builder newBuilder(final edu.washington.escience.myria.proto.ControlProto.ResourceStats prototype) {
+      return newBuilder().mergeFrom(prototype);
+    }
+
+    @Override
+    public Builder toBuilder() {
+      return newBuilder(this);
+    }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(final com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+
+    /**
+     * Protobuf type {@code ResourceStats}
+     */
+    public static final class Builder extends com.google.protobuf.GeneratedMessage.Builder<Builder> implements
+    // @@protoc_insertion_point(builder_implements:ResourceStats)
+        edu.washington.escience.myria.proto.ControlProto.ResourceStatsOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor getDescriptor() {
+        return edu.washington.escience.myria.proto.ControlProto.internal_static_ResourceStats_descriptor;
+      }
+
+      @Override
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
+        return edu.washington.escience.myria.proto.ControlProto.internal_static_ResourceStats_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(edu.washington.escience.myria.proto.ControlProto.ResourceStats.class,
+                edu.washington.escience.myria.proto.ControlProto.ResourceStats.Builder.class);
+      }
+
+      // Construct using edu.washington.escience.myria.proto.ControlProto.ResourceStats.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(final com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        }
+      }
+
+      private static Builder create() {
+        return new Builder();
+      }
+
+      @Override
+      public Builder clear() {
+        super.clear();
+        timestamp_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000001);
+        opId_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000002);
+        measurement_ = "";
+        bitField0_ = (bitField0_ & ~0x00000004);
+        value_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000008);
+        queryId_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000010);
+        subqueryId_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000020);
+        return this;
+      }
+
+      @Override
+      public Builder clone() {
+        return create().mergeFrom(buildPartial());
+      }
+
+      @Override
+      public com.google.protobuf.Descriptors.Descriptor getDescriptorForType() {
+        return edu.washington.escience.myria.proto.ControlProto.internal_static_ResourceStats_descriptor;
+      }
+
+      @Override
+      public edu.washington.escience.myria.proto.ControlProto.ResourceStats getDefaultInstanceForType() {
+        return edu.washington.escience.myria.proto.ControlProto.ResourceStats.getDefaultInstance();
+      }
+
+      @Override
+      public edu.washington.escience.myria.proto.ControlProto.ResourceStats build() {
+        edu.washington.escience.myria.proto.ControlProto.ResourceStats result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      @Override
+      public edu.washington.escience.myria.proto.ControlProto.ResourceStats buildPartial() {
+        edu.washington.escience.myria.proto.ControlProto.ResourceStats result =
+            new edu.washington.escience.myria.proto.ControlProto.ResourceStats(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        result.timestamp_ = timestamp_;
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        result.opId_ = opId_;
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        result.measurement_ = measurement_;
+        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+          to_bitField0_ |= 0x00000008;
+        }
+        result.value_ = value_;
+        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+          to_bitField0_ |= 0x00000010;
+        }
+        result.queryId_ = queryId_;
+        if (((from_bitField0_ & 0x00000020) == 0x00000020)) {
+          to_bitField0_ |= 0x00000020;
+        }
+        result.subqueryId_ = subqueryId_;
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+
+      @Override
+      public Builder mergeFrom(final com.google.protobuf.Message other) {
+        if (other instanceof edu.washington.escience.myria.proto.ControlProto.ResourceStats) {
+          return mergeFrom((edu.washington.escience.myria.proto.ControlProto.ResourceStats) other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(final edu.washington.escience.myria.proto.ControlProto.ResourceStats other) {
+        if (other == edu.washington.escience.myria.proto.ControlProto.ResourceStats.getDefaultInstance()) {
+          return this;
+        }
+        if (other.hasTimestamp()) {
+          setTimestamp(other.getTimestamp());
+        }
+        if (other.hasOpId()) {
+          setOpId(other.getOpId());
+        }
+        if (other.hasMeasurement()) {
+          bitField0_ |= 0x00000004;
+          measurement_ = other.measurement_;
+          onChanged();
+        }
+        if (other.hasValue()) {
+          setValue(other.getValue());
+        }
+        if (other.hasQueryId()) {
+          setQueryId(other.getQueryId());
+        }
+        if (other.hasSubqueryId()) {
+          setSubqueryId(other.getSubqueryId());
+        }
+        mergeUnknownFields(other.getUnknownFields());
+        return this;
+      }
+
+      @Override
+      public final boolean isInitialized() {
+        if (!hasTimestamp()) {
+
+          return false;
+        }
+        if (!hasOpId()) {
+
+          return false;
+        }
+        if (!hasMeasurement()) {
+
+          return false;
+        }
+        if (!hasValue()) {
+
+          return false;
+        }
+        if (!hasQueryId()) {
+
+          return false;
+        }
+        if (!hasSubqueryId()) {
+
+          return false;
+        }
+        return true;
+      }
+
+      @Override
+      public Builder mergeFrom(final com.google.protobuf.CodedInputStream input,
+          final com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
+        edu.washington.escience.myria.proto.ControlProto.ResourceStats parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (edu.washington.escience.myria.proto.ControlProto.ResourceStats) e.getUnfinishedMessage();
+          throw e;
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+
+      private int bitField0_;
+
+      private long timestamp_;
+
+      /**
+       * <code>required int64 timestamp = 1;</code>
+       */
+      @Override
+      public boolean hasTimestamp() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+
+      /**
+       * <code>required int64 timestamp = 1;</code>
+       */
+      @Override
+      public long getTimestamp() {
+        return timestamp_;
+      }
+
+      /**
+       * <code>required int64 timestamp = 1;</code>
+       */
+      public Builder setTimestamp(final long value) {
+        bitField0_ |= 0x00000001;
+        timestamp_ = value;
+        onChanged();
+        return this;
+      }
+
+      /**
+       * <code>required int64 timestamp = 1;</code>
+       */
+      public Builder clearTimestamp() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        timestamp_ = 0L;
+        onChanged();
+        return this;
+      }
+
+      private int opId_;
+
+      /**
+       * <code>required int32 opId = 2;</code>
+       */
+      @Override
+      public boolean hasOpId() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+
+      /**
+       * <code>required int32 opId = 2;</code>
+       */
+      @Override
+      public int getOpId() {
+        return opId_;
+      }
+
+      /**
+       * <code>required int32 opId = 2;</code>
+       */
+      public Builder setOpId(final int value) {
+        bitField0_ |= 0x00000002;
+        opId_ = value;
+        onChanged();
+        return this;
+      }
+
+      /**
+       * <code>required int32 opId = 2;</code>
+       */
+      public Builder clearOpId() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        opId_ = 0;
+        onChanged();
+        return this;
+      }
+
+      private java.lang.Object measurement_ = "";
+
+      /**
+       * <code>required string measurement = 3;</code>
+       */
+      @Override
+      public boolean hasMeasurement() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+
+      /**
+       * <code>required string measurement = 3;</code>
+       */
+      @Override
+      public java.lang.String getMeasurement() {
+        java.lang.Object ref = measurement_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs = (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            measurement_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+
+      /**
+       * <code>required string measurement = 3;</code>
+       */
+      @Override
+      public com.google.protobuf.ByteString getMeasurementBytes() {
+        java.lang.Object ref = measurement_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = com.google.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
+          measurement_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+
+      /**
+       * <code>required string measurement = 3;</code>
+       */
+      public Builder setMeasurement(final java.lang.String value) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000004;
+        measurement_ = value;
+        onChanged();
+        return this;
+      }
+
+      /**
+       * <code>required string measurement = 3;</code>
+       */
+      public Builder clearMeasurement() {
+        bitField0_ = (bitField0_ & ~0x00000004);
+        measurement_ = getDefaultInstance().getMeasurement();
+        onChanged();
+        return this;
+      }
+
+      /**
+       * <code>required string measurement = 3;</code>
+       */
+      public Builder setMeasurementBytes(final com.google.protobuf.ByteString value) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000004;
+        measurement_ = value;
+        onChanged();
+        return this;
+      }
+
+      private long value_;
+
+      /**
+       * <code>required int64 value = 4;</code>
+       */
+      @Override
+      public boolean hasValue() {
+        return ((bitField0_ & 0x00000008) == 0x00000008);
+      }
+
+      /**
+       * <code>required int64 value = 4;</code>
+       */
+      @Override
+      public long getValue() {
+        return value_;
+      }
+
+      /**
+       * <code>required int64 value = 4;</code>
+       */
+      public Builder setValue(final long value) {
+        bitField0_ |= 0x00000008;
+        value_ = value;
+        onChanged();
+        return this;
+      }
+
+      /**
+       * <code>required int64 value = 4;</code>
+       */
+      public Builder clearValue() {
+        bitField0_ = (bitField0_ & ~0x00000008);
+        value_ = 0L;
+        onChanged();
+        return this;
+      }
+
+      private long queryId_;
+
+      /**
+       * <code>required int64 queryId = 5;</code>
+       */
+      @Override
+      public boolean hasQueryId() {
+        return ((bitField0_ & 0x00000010) == 0x00000010);
+      }
+
+      /**
+       * <code>required int64 queryId = 5;</code>
+       */
+      @Override
+      public long getQueryId() {
+        return queryId_;
+      }
+
+      /**
+       * <code>required int64 queryId = 5;</code>
+       */
+      public Builder setQueryId(final long value) {
+        bitField0_ |= 0x00000010;
+        queryId_ = value;
+        onChanged();
+        return this;
+      }
+
+      /**
+       * <code>required int64 queryId = 5;</code>
+       */
+      public Builder clearQueryId() {
+        bitField0_ = (bitField0_ & ~0x00000010);
+        queryId_ = 0L;
+        onChanged();
+        return this;
+      }
+
+      private long subqueryId_;
+
+      /**
+       * <code>required int64 subqueryId = 6;</code>
+       */
+      @Override
+      public boolean hasSubqueryId() {
+        return ((bitField0_ & 0x00000020) == 0x00000020);
+      }
+
+      /**
+       * <code>required int64 subqueryId = 6;</code>
+       */
+      @Override
+      public long getSubqueryId() {
+        return subqueryId_;
+      }
+
+      /**
+       * <code>required int64 subqueryId = 6;</code>
+       */
+      public Builder setSubqueryId(final long value) {
+        bitField0_ |= 0x00000020;
+        subqueryId_ = value;
+        onChanged();
+        return this;
+      }
+
+      /**
+       * <code>required int64 subqueryId = 6;</code>
+       */
+      public Builder clearSubqueryId() {
+        bitField0_ = (bitField0_ & ~0x00000020);
+        subqueryId_ = 0L;
+        onChanged();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:ResourceStats)
+    }
+
+    static {
+      defaultInstance = new ResourceStats(true);
+      defaultInstance.initFields();
+    }
+
+    // @@protoc_insertion_point(class_scope:ResourceStats)
+  }
+
+  private static final com.google.protobuf.Descriptors.Descriptor internal_static_ControlMessage_descriptor;
   private static com.google.protobuf.GeneratedMessage.FieldAccessorTable internal_static_ControlMessage_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor internal_static_SocketInfo_descriptor;
+  private static final com.google.protobuf.Descriptors.Descriptor internal_static_SocketInfo_descriptor;
   private static com.google.protobuf.GeneratedMessage.FieldAccessorTable internal_static_SocketInfo_fieldAccessorTable;
+  private static final com.google.protobuf.Descriptors.Descriptor internal_static_ResourceStats_descriptor;
+  private static com.google.protobuf.GeneratedMessage.FieldAccessorTable internal_static_ResourceStats_fieldAccessorTable;
 
   public static com.google.protobuf.Descriptors.FileDescriptor getDescriptor() {
     return descriptor;
@@ -1603,33 +3031,43 @@ public final class ControlProto {
   private static com.google.protobuf.Descriptors.FileDescriptor descriptor;
   static {
     java.lang.String[] descriptorData =
-        { "\n\rcontrol.proto\"\346\001\n\016ControlMessage\022\"\n\004ty"
-            + "pe\030\001 \002(\0162\024.ControlMessage.Type\022\021\n\tworker"
-            + "_id\030\002 \001(\005\022#\n\016remote_address\030\003 \001(\0132\013.Sock"
-            + "etInfo\"x\n\004Type\022\014\n\010SHUTDOWN\020\001\022\024\n\020WORKER_H"
-            + "EARTBEAT\020\002\022\021\n\rREMOVE_WORKER\020\003\022\016\n\nADD_WOR"
-            + "KER\020\004\022\025\n\021REMOVE_WORKER_ACK\020\005\022\022\n\016ADD_WORK"
-            + "ER_ACK\020\006\"(\n\nSocketInfo\022\014\n\004host\030\001 \002(\t\022\014\n\004"
-            + "port\030\002 \002(\005B3\n#edu.washington.escience.my" + "ria.protoB\014ControlProto" };
+        {
+            "\n\rcontrol.proto\"\243\002\n\016ControlMessage\022\"\n\004ty"
+                + "pe\030\001 \002(\0162\024.ControlMessage.Type\022\021\n\tworker"
+                + "_id\030\002 \001(\005\022#\n\016remote_address\030\003 \001(\0132\013.Sock"
+                + "etInfo\022&\n\016resource_stats\030\004 \003(\0132\016.Resourc"
+                + "eStats\"\214\001\n\004Type\022\014\n\010SHUTDOWN\020\001\022\024\n\020WORKER_"
+                + "HEARTBEAT\020\002\022\021\n\rREMOVE_WORKER\020\003\022\016\n\nADD_WO"
+                + "RKER\020\004\022\025\n\021REMOVE_WORKER_ACK\020\005\022\022\n\016ADD_WOR"
+                + "KER_ACK\020\006\022\022\n\016RESOURCE_STATS\020\007\"(\n\nSocketI"
+                + "nfo\022\014\n\004host\030\001 \002(\t\022\014\n\004port\030\002 \002(\005\"y\n\rResou"
+                + "rceStats\022\021\n\ttimestamp\030\001 \002(\003\022\014\n\004opId\030\002 \002(",
+            "\005\022\023\n\013measurement\030\003 \002(\t\022\r\n\005value\030\004 \002(\003\022\017\n"
+                + "\007queryId\030\005 \002(\003\022\022\n\nsubqueryId\030\006 \002(\003B3\n#ed"
+                + "u.washington.escience.myria.protoB\014Contr" + "olProto" };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
           @Override
           public com.google.protobuf.ExtensionRegistry assignDescriptors(
-              com.google.protobuf.Descriptors.FileDescriptor root) {
+              final com.google.protobuf.Descriptors.FileDescriptor root) {
             descriptor = root;
-            internal_static_ControlMessage_descriptor = getDescriptor().getMessageTypes().get(0);
-            internal_static_ControlMessage_fieldAccessorTable =
-                new com.google.protobuf.GeneratedMessage.FieldAccessorTable(internal_static_ControlMessage_descriptor,
-                    new java.lang.String[] { "Type", "WorkerId", "RemoteAddress", });
-            internal_static_SocketInfo_descriptor = getDescriptor().getMessageTypes().get(1);
-            internal_static_SocketInfo_fieldAccessorTable =
-                new com.google.protobuf.GeneratedMessage.FieldAccessorTable(internal_static_SocketInfo_descriptor,
-                    new java.lang.String[] { "Host", "Port", });
             return null;
           }
         };
     com.google.protobuf.Descriptors.FileDescriptor.internalBuildGeneratedFileFrom(descriptorData,
         new com.google.protobuf.Descriptors.FileDescriptor[] {}, assigner);
+    internal_static_ControlMessage_descriptor = getDescriptor().getMessageTypes().get(0);
+    internal_static_ControlMessage_fieldAccessorTable =
+        new com.google.protobuf.GeneratedMessage.FieldAccessorTable(internal_static_ControlMessage_descriptor,
+            new java.lang.String[] { "Type", "WorkerId", "RemoteAddress", "ResourceStats", });
+    internal_static_SocketInfo_descriptor = getDescriptor().getMessageTypes().get(1);
+    internal_static_SocketInfo_fieldAccessorTable =
+        new com.google.protobuf.GeneratedMessage.FieldAccessorTable(internal_static_SocketInfo_descriptor,
+            new java.lang.String[] { "Host", "Port", });
+    internal_static_ResourceStats_descriptor = getDescriptor().getMessageTypes().get(2);
+    internal_static_ResourceStats_fieldAccessorTable =
+        new com.google.protobuf.GeneratedMessage.FieldAccessorTable(internal_static_ResourceStats_descriptor,
+            new java.lang.String[] { "Timestamp", "OpId", "Measurement", "Value", "QueryId", "SubqueryId", });
   }
 
   // @@protoc_insertion_point(outer_class_scope)

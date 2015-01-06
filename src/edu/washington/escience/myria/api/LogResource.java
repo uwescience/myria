@@ -8,6 +8,7 @@ import java.util.Date;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
@@ -76,16 +77,16 @@ public final class LogResource {
 
     PipedOutputStream writerOutput = new PipedOutputStream();
     PipedInputStream input;
+    TupleWriter writer;
     try {
       input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
+      writer = new CsvTupleWriter(writerOutput);
     } catch (IOException e) {
       throw new DbException(e);
     }
 
     PipedStreamingOutput entity = new PipedStreamingOutput(input);
     response.entity(entity);
-
-    TupleWriter writer = new CsvTupleWriter(writerOutput);
 
     server.startLogDataStream(queryId, fragmentId, start, end, minLength, onlyRootOp, writer);
     return response.build();
@@ -120,16 +121,16 @@ public final class LogResource {
 
     PipedOutputStream writerOutput = new PipedOutputStream();
     PipedInputStream input;
+    TupleWriter writer;
     try {
       input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
+      writer = new CsvTupleWriter(writerOutput);
     } catch (IOException e) {
       throw new DbException(e);
     }
 
     PipedStreamingOutput entity = new PipedStreamingOutput(input);
     response.entity(entity);
-
-    TupleWriter writer = new CsvTupleWriter(writerOutput);
 
     server.startContributionsStream(queryId, fragmentId, writer);
 
@@ -164,8 +165,10 @@ public final class LogResource {
 
     PipedOutputStream writerOutput = new PipedOutputStream();
     PipedInputStream input;
+    TupleWriter writer;
     try {
       input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
+      writer = new CsvTupleWriter(writerOutput);
     } catch (IOException e) {
       throw new DbException(e);
     }
@@ -173,9 +176,49 @@ public final class LogResource {
     PipedStreamingOutput entity = new PipedStreamingOutput(input);
     response.entity(entity);
 
-    TupleWriter writer = new CsvTupleWriter(writerOutput);
-
     server.startSentLogDataStream(queryId, fragmentId, writer);
+
+    return response.build();
+  }
+
+  /**
+   * Get aggregated summary of all data sent.
+   * 
+   * @param queryId query id.
+   * @param request the current request.
+   * @return the profiling logs of the query across all workers
+   * @throws DbException if there is an error in the database.
+   */
+  @GET
+  @Path("aggregated_sent")
+  public Response getAggregatedSentLogs(@QueryParam("queryId") final Long queryId, @Context final Request request)
+      throws DbException {
+
+    Preconditions.checkArgument(queryId != null, "Missing required field queryId.");
+
+    EntityTag eTag = new EntityTag(Integer.toString(Joiner.on('-').join("aggregated-sent", queryId).hashCode()));
+    Object obj = checkAndAddCache(request, eTag);
+    if (obj instanceof Response) {
+      return (Response) obj;
+    }
+    ResponseBuilder response = (ResponseBuilder) obj;
+
+    response.type(MediaType.TEXT_PLAIN);
+
+    PipedOutputStream writerOutput = new PipedOutputStream();
+    PipedInputStream input;
+    TupleWriter writer;
+    try {
+      input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
+      writer = new CsvTupleWriter(writerOutput);
+    } catch (IOException e) {
+      throw new DbException(e);
+    }
+
+    PipedStreamingOutput entity = new PipedStreamingOutput(input);
+    response.entity(entity);
+
+    server.startAggregatedSentLogDataStream(queryId, writer);
 
     return response.build();
   }
@@ -206,16 +249,16 @@ public final class LogResource {
 
     PipedOutputStream writerOutput = new PipedOutputStream();
     PipedInputStream input;
+    TupleWriter writer;
     try {
       input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
+      writer = new CsvTupleWriter(writerOutput);
     } catch (IOException e) {
       throw new DbException(e);
     }
 
     PipedStreamingOutput entity = new PipedStreamingOutput(input);
     response.entity(entity);
-
-    TupleWriter writer = new CsvTupleWriter(writerOutput);
 
     server.startRangeDataStream(queryId, fragmentId, writer);
 
@@ -263,8 +306,10 @@ public final class LogResource {
 
     PipedOutputStream writerOutput = new PipedOutputStream();
     PipedInputStream input;
+    TupleWriter writer;
     try {
       input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
+      writer = new CsvTupleWriter(writerOutput);
     } catch (IOException e) {
       throw new DbException(e);
     }
@@ -272,10 +317,38 @@ public final class LogResource {
     PipedStreamingOutput entity = new PipedStreamingOutput(input);
     response.entity(entity);
 
-    TupleWriter writer = new CsvTupleWriter(writerOutput);
-
     server.startHistogramDataStream(queryId, fragmentId, start, end, step, onlyRootOp, writer);
 
+    return response.build();
+  }
+
+  /**
+   * @param queryId the query id.
+   * @param request the current request.
+   * @return the resource usage of the query.
+   * @throws DbException if there is an error in the database.
+   */
+  @GET
+  @Path("/resource-{queryId:\\d+}")
+  public Response getResourceUsage(@PathParam("queryId") final Long queryId, @Context final Request request)
+      throws DbException {
+
+    Preconditions.checkArgument(queryId != null, "Missing required field queryId.");
+
+    ResponseBuilder response = Response.ok().cacheControl(MyriaApiUtils.doNotCache());
+    response.type(MediaType.TEXT_PLAIN);
+
+    PipedOutputStream writerOutput = new PipedOutputStream();
+    PipedInputStream input;
+    try {
+      input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
+    } catch (IOException e) {
+      throw new DbException(e);
+    }
+    PipedStreamingOutput entity = new PipedStreamingOutput(input);
+    response.entity(entity);
+
+    server.getResourceUsage(queryId, writerOutput);
     return response.build();
   }
 

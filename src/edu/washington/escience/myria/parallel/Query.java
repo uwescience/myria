@@ -4,6 +4,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.GuardedBy;
@@ -12,15 +13,17 @@ import org.joda.time.DateTime;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
+import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.MyriaConstants.FTMODE;
+import edu.washington.escience.myria.MyriaConstants.FTMode;
+import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.api.encoding.QueryConstruct;
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
@@ -28,6 +31,7 @@ import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
+import edu.washington.escience.myria.storage.TupleBuffer;
 import edu.washington.escience.myria.util.ErrorUtils;
 
 /**
@@ -64,13 +68,15 @@ public final class Query {
   /** The future for this query. */
   private final QueryFuture future;
   /** True if the query should be run with profiling enabled. */
-  private final boolean profiling;
+  private final Set<ProfilingMode> profiling;
   /** Indicates whether the query should be run with a particular fault tolerance mode. */
-  private final FTMODE ftMode;
+  private final FTMode ftMode;
   /** Global variables that are part of this query. */
   private final ConcurrentHashMap<String, Object> globals;
   /** Temporary relations created during the execution of this query. */
   private final ConcurrentHashMap<RelationKey, RelationWriteMetadata> tempRelations;
+  /** resource usage stats of workers. */
+  private final ConcurrentHashMap<Integer, ConcurrentLinkedDeque<ResourceStats>> resourceUsage;
 
   /**
    * Construct a new {@link Query} object for this query.
@@ -83,8 +89,8 @@ public final class Query {
   public Query(final long queryId, final QueryEncoding query, final QueryPlan plan, final Server server) {
     Preconditions.checkNotNull(query, "query");
     this.server = Preconditions.checkNotNull(server, "server");
-    profiling = Objects.firstNonNull(query.profilingMode, false);
-    ftMode = Objects.firstNonNull(query.ftMode, FTMODE.none);
+    profiling = ImmutableSet.copyOf(query.profilingMode);
+    ftMode = query.ftMode;
     this.queryId = queryId;
     subqueryId = 0;
     synchronized (this) {
@@ -98,6 +104,7 @@ public final class Query {
     future = QueryFuture.create(queryId);
     globals = new ConcurrentHashMap<>();
     tempRelations = new ConcurrentHashMap<>();
+    resourceUsage = new ConcurrentHashMap<Integer, ConcurrentLinkedDeque<ResourceStats>>();
   }
 
   /**
@@ -171,13 +178,20 @@ public final class Query {
       currentSubQuery = subQueryQ.removeFirst();
       currentSubQuery.setSubQueryId(new SubQueryId(queryId, subqueryId));
       addDerivedSubQueries(currentSubQuery);
+
       /*
        * TODO - revisit when we support profiling with sequences.
        * 
        * We only support profiling a single subquery, so disable profiling if subqueryId != 0.
        */
-      QueryConstruct.setQueryExecutionOptions(currentSubQuery.getWorkerPlans(), ftMode, profiling && (subqueryId == 0));
+      Set<ProfilingMode> profilingMode = getProfilingMode();
+      if (subqueryId != 0) {
+        profilingMode = ImmutableSet.of();
+      }
+
+      QueryConstruct.setQueryExecutionOptions(currentSubQuery.getWorkerPlans(), ftMode, profilingMode);
       currentSubQuery.getMasterPlan().setFTMode(ftMode);
+      currentSubQuery.getMasterPlan().setProfilingMode(ImmutableSet.<ProfilingMode> of());
       ++subqueryId;
       if (subqueryId >= MyriaConstants.MAXIMUM_NUM_SUBQUERIES) {
         throw new DbException("Infinite-loop safeguard: quitting after " + MyriaConstants.MAXIMUM_NUM_SUBQUERIES
@@ -309,14 +323,15 @@ public final class Query {
   /**
    * @return the fault tolerance mode for this query.
    */
-  protected FTMODE getFtMode() {
+  protected FTMode getFTMode() {
     return ftMode;
   }
 
   /**
    * @return true if this query should be profiled.
    */
-  protected boolean isProfilingMode() {
+  @Nonnull
+  protected Set<ProfilingMode> getProfilingMode() {
     return profiling;
   }
 
@@ -447,5 +462,35 @@ public final class Query {
     RelationWriteMetadata meta = tempRelations.get(relationKey);
     Preconditions.checkArgument(meta != null, "Query #%s, no temp relation with key %s found", queryId, relationKey);
     return meta;
+  }
+
+  /**
+   * @param senderId from whicht worker the stats were sent from
+   * @param stats the stats
+   */
+  public void addResourceStats(final int senderId, final ResourceStats stats) {
+    resourceUsage.putIfAbsent(senderId, new ConcurrentLinkedDeque<ResourceStats>());
+    resourceUsage.get(senderId).add(stats);
+  }
+
+  /**
+   * @return resource usage stats in a tuple buffer.
+   */
+  public TupleBuffer getResourceUsage() {
+    Schema schema = Schema.appendColumn(MyriaConstants.RESOURCE_PROFILING_SCHEMA, Type.INT_TYPE, "workerId");
+    TupleBuffer tb = new TupleBuffer(schema);
+    for (int workerId : resourceUsage.keySet()) {
+      ConcurrentLinkedDeque<ResourceStats> statsList = resourceUsage.get(workerId);
+      for (ResourceStats stats : statsList) {
+        tb.putLong(0, stats.getTimestamp());
+        tb.putInt(1, stats.getOpId());
+        tb.putString(2, stats.getMeasurement());
+        tb.putLong(3, stats.getValue());
+        tb.putLong(4, stats.getQueryId());
+        tb.putLong(5, stats.getSubqueryId());
+        tb.putInt(6, workerId);
+      }
+    }
+    return tb;
   }
 }

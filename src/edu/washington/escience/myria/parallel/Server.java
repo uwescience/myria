@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.PipedOutputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -41,8 +42,10 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import edu.washington.escience.myria.CsvTupleWriter;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
@@ -50,11 +53,13 @@ import edu.washington.escience.myria.TupleWriter;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
+import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.CatalogMaker;
 import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
 import edu.washington.escience.myria.expression.Expression;
+import edu.washington.escience.myria.expression.MinusExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.expression.WorkerIdExpression;
 import edu.washington.escience.myria.operator.Apply;
@@ -86,6 +91,7 @@ import edu.washington.escience.myria.proto.QueryProto.QueryReport;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.TupleBuffer;
 import edu.washington.escience.myria.tool.MyriaConfigurationReader;
 import edu.washington.escience.myria.util.DeploymentUtils;
 import edu.washington.escience.myria.util.IPCUtils;
@@ -122,11 +128,13 @@ public final class Server {
 
           final TransportMessage m = mw.getPayload();
           final int senderID = mw.getRemoteID();
-
           switch (m.getType()) {
             case CONTROL:
               final ControlMessage controlM = m.getControlMessage();
               switch (controlM.getType()) {
+                case RESOURCE_STATS:
+                  queryManager.updateResourceStats(senderID, controlM);
+                  break;
                 case WORKER_HEARTBEAT:
                   LOGGER.trace("getting heartbeat from worker {}", senderID);
                   updateHeartbeat(senderID);
@@ -807,12 +815,54 @@ public final class Server {
     messageProcessingExecutor.submit(new MessageProcessor());
     LOGGER.info("Server started on {}", masterSocketInfo);
 
-    if (getSchema(MyriaConstants.PROFILING_RELATION) == null
-        && getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
+    if (getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
       final Set<Integer> workerIds = workers.keySet();
-      importDataset(MyriaConstants.PROFILING_RELATION, MyriaConstants.PROFILING_SCHEMA, workerIds);
-      importDataset(MyriaConstants.SENT_RELATION, MyriaConstants.SENT_SCHEMA, workerIds);
+      addRelationToCatalogIfNotExists(MyriaConstants.EVENT_PROFILING_RELATION, MyriaConstants.EVENT_PROFILING_SCHEMA,
+          workerIds);
+      addRelationToCatalogIfNotExists(MyriaConstants.SENT_PROFILING_RELATION, MyriaConstants.SENT_PROFILING_SCHEMA,
+          workerIds);
+      addRelationToCatalogIfNotExists(MyriaConstants.RESOURCE_PROFILING_RELATION,
+          MyriaConstants.RESOURCE_PROFILING_SCHEMA, workerIds);
+
     }
+  }
+
+  /**
+   * Manually add a relation to the catalog if it not already exists.
+   * 
+   * @param relationKey the relation to add
+   * @param schema the schema of the relation to add
+   * @param workers the workers that have the relation
+   * 
+   * @throws DbException if the catalog cannot be accessed
+   */
+  private void addRelationToCatalogIfNotExists(final RelationKey relationKey, final Schema schema,
+      final Set<Integer> workers) throws DbException {
+    try {
+      if (getSchema(relationKey) != null) {
+        return;
+      }
+
+      QueryEncoding query = new QueryEncoding();
+      query.rawQuery = String.format("Add %s to catalog", relationKey);
+      query.logicalRa = query.rawQuery;
+      query.fragments = ImmutableList.of();
+
+      long queryId = catalog.newQuery(query);
+
+      final Query queryState =
+          new Query(queryId, query, new SubQuery(new SubQueryPlan(new SinkRoot(new EOSSource())),
+              new HashMap<Integer, SubQueryPlan>()), this);
+      queryState.markSuccess();
+      catalog.queryFinished(queryState);
+
+      // set a number of tuples so the data can be downloaded
+      catalog.addRelationMetadata(relationKey, schema, 0, queryId);
+      catalog.addStoredRelation(relationKey, workers, "AsRecorded");
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+
   }
 
   /**
@@ -840,7 +890,7 @@ public final class Server {
       workerPlans.put(entry.getKey(), new SubQueryPlan(entry.getValue()));
     }
     return queryManager.submitQuery(catalogInfoPlaceHolder, catalogInfoPlaceHolder, catalogInfoPlaceHolder,
-        new SubQueryPlan(masterRoot), workerPlans, false);
+        new SubQueryPlan(masterRoot), workerPlans);
   }
 
   /**
@@ -865,6 +915,17 @@ public final class Server {
     List<Integer> workerList = new ArrayList<>(aliveWorkers.keySet());
     Collections.shuffle(workerList);
     return ImmutableSet.copyOf(workerList.subList(0, number));
+  }
+
+  /**
+   * @return the set of workers that are currently alive with the time that the last heartbeats were received.
+   */
+  public Map<Integer, Long> getAliveWorkersWithLastHeartbeat() {
+    Map<Integer, Long> ret = new HashMap<Integer, Long>();
+    ret.putAll(aliveWorkers);
+    // add the current master time too
+    ret.put(MyriaConstants.MASTER_ID, System.currentTimeMillis());
+    return ret;
   }
 
   /**
@@ -914,7 +975,7 @@ public final class Server {
     try {
       qf =
           queryManager.submitQuery("ingest " + relationKey.toString(), "ingest " + relationKey.toString(), "ingest "
-              + relationKey.toString(getDBMS()), new SubQueryPlan(scatter), workerPlans, false);
+              + relationKey.toString(getDBMS()), new SubQueryPlan(scatter), workerPlans);
     } catch (CatalogException e) {
       throw new DbException("Error submitting query", e);
     }
@@ -950,7 +1011,7 @@ public final class Server {
       }
       ListenableFuture<Query> qf =
           queryManager.submitQuery("import " + relationKey.toString(), "import " + relationKey.toString(), "import "
-              + relationKey.toString(getDBMS()), new SubQueryPlan(new SinkRoot(new EOSSource())), workerPlans, false);
+              + relationKey.toString(getDBMS()), new SubQueryPlan(new SinkRoot(new EOSSource())), workerPlans);
       Query queryState;
       try {
         queryState = qf.get();
@@ -1098,11 +1159,21 @@ public final class Server {
   }
 
   /**
-   * @return number of queries.
+   * @return the maximum query id that matches the search.
+   * @param searchTerm a token to match against the raw queries. If null, all queries match.
    * @throws CatalogException if an error occurs
    */
-  public int getNumQueries() throws CatalogException {
-    return catalog.getNumQueries();
+  public long getMaxQuery(final String searchTerm) throws CatalogException {
+    return catalog.getMaxQuery(searchTerm);
+  }
+
+  /**
+   * @return the minimum query id that matches the search.
+   * @param searchTerm a token to match against the raw queries. If null, all queries match.
+   * @throws CatalogException if an error occurs
+   */
+  public long getMinQuery(final String searchTerm) throws CatalogException {
+    return catalog.getMinQuery(searchTerm);
   }
 
   /**
@@ -1151,7 +1222,7 @@ public final class Server {
     /* Submit the plan for the download. */
     String planString = "download " + relationKey.toString();
     try {
-      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1202,7 +1273,7 @@ public final class Server {
     /* Submit the plan for the download. */
     String planString = "download test";
     try {
-      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1231,7 +1302,7 @@ public final class Server {
 
     String sentQueryString =
         Joiner.on(' ').join("SELECT \"fragmentId\", \"destWorkerId\", sum(\"numTuples\") as \"numTuples\" FROM",
-            MyriaConstants.SENT_RELATION.toString(getDBMS()) + "WHERE \"queryId\" =", queryId, fragmentWhere,
+            MyriaConstants.SENT_PROFILING_RELATION.toString(getDBMS()), "WHERE \"queryId\" =", queryId, fragmentWhere,
             "GROUP BY \"queryId\", \"fragmentId\", \"destWorkerId\"");
 
     DbQueryScan scan = new DbQueryScan(sentQueryString, schema);
@@ -1276,9 +1347,72 @@ public final class Server {
 
     /* Submit the plan for the download. */
     String planString =
-        Joiner.on("").join("download profiling log data for (query=", queryId, ", fragment=", fragmentId, ")");
+        Joiner.on("").join("download profiling sent data for (query=", queryId, ", fragment=", fragmentId, ")");
     try {
-      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
+
+  /**
+   * @param queryId query id.
+   * @param writer writer to get data.
+   * @return profiling logs for the query.
+   * @throws DbException if there is an error when accessing profiling logs.
+   */
+  public ListenableFuture<Query> startAggregatedSentLogDataStream(final long queryId, final TupleWriter writer)
+      throws DbException {
+    final QueryStatusEncoding queryStatus = checkAndReturnQueryStatus(queryId);
+
+    Set<Integer> actualWorkers = queryStatus.plan.getWorkers();
+
+    final Schema schema =
+        Schema.ofFields("fragmentId", Type.INT_TYPE, "numTuples", Type.LONG_TYPE, "minTime", Type.LONG_TYPE, "maxTime",
+            Type.LONG_TYPE);
+
+    String sentQueryString =
+        Joiner
+            .on(' ')
+            .join(
+                "SELECT \"fragmentId\", sum(\"numTuples\") as \"numTuples\", min(\"nanoTime\") as \"minTime\", max(\"nanoTime\") as \"maxTime\" FROM",
+                MyriaConstants.SENT_PROFILING_RELATION.toString(getDBMS()), "WHERE \"queryId\" =", queryId,
+                "GROUP BY \"queryId\", \"fragmentId\"");
+
+    DbQueryScan scan = new DbQueryScan(sentQueryString, schema);
+    final ExchangePairID operatorId = ExchangePairID.newID();
+
+    CollectProducer producer = new CollectProducer(scan, operatorId, MyriaConstants.MASTER_ID);
+
+    SubQueryPlan workerPlan = new SubQueryPlan(producer);
+    Map<Integer, SubQueryPlan> workerPlans = new HashMap<>(actualWorkers.size());
+    for (Integer worker : actualWorkers) {
+      workerPlans.put(worker, workerPlan);
+    }
+
+    final CollectConsumer consumer =
+        new CollectConsumer(scan.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
+
+    final SingleGroupByAggregate aggregate =
+        new SingleGroupByAggregate(consumer, 0, new SingleColumnAggregatorFactory(1, AggregationOp.SUM),
+            new SingleColumnAggregatorFactory(2, AggregationOp.MIN), new SingleColumnAggregatorFactory(3,
+                AggregationOp.MAX));
+
+    // rename columns
+    ImmutableList.Builder<Expression> renameExpressions = ImmutableList.builder();
+    renameExpressions.add(new Expression("fragmentId", new VariableExpression(0)));
+    renameExpressions.add(new Expression("numTuples", new VariableExpression(1)));
+    renameExpressions.add(new Expression("duration", new MinusExpression(new VariableExpression(3),
+        new VariableExpression(2))));
+    final Apply rename = new Apply(aggregate, renameExpressions.build());
+
+    DataOutput output = new DataOutput(rename, writer);
+    final SubQueryPlan masterPlan = new SubQueryPlan(output);
+
+    /* Submit the plan for the download. */
+    String planString = Joiner.on("").join("download profiling aggregated sent data for (query=", queryId, ")");
+    try {
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1312,7 +1446,7 @@ public final class Server {
     if (onlyRootOperator) {
       opCondition =
           Joiner.on(' ').join("AND \"opId\" = (SELECT \"opId\" FROM",
-              MyriaConstants.PROFILING_RELATION.toString(getDBMS()), "WHERE", fragmentId, "=\"fragmentId\" AND",
+              MyriaConstants.EVENT_PROFILING_RELATION.toString(getDBMS()), "WHERE", fragmentId, "=\"fragmentId\" AND",
               queryId, "=\"queryId\" ORDER BY \"startTime\" ASC LIMIT 1)");;
     }
 
@@ -1323,7 +1457,7 @@ public final class Server {
 
     String queryString =
         Joiner.on(' ').join("SELECT \"opId\", \"startTime\", \"endTime\", \"numTuples\" FROM",
-            MyriaConstants.PROFILING_RELATION.toString(getDBMS()), "WHERE \"fragmentId\" =", fragmentId,
+            MyriaConstants.EVENT_PROFILING_RELATION.toString(getDBMS()), "WHERE \"fragmentId\" =", fragmentId,
             "AND \"queryId\" =", queryId, "AND \"endTime\" >", start, "AND \"startTime\" <", end, opCondition,
             spanCondition, "ORDER BY \"startTime\" ASC");
 
@@ -1358,10 +1492,10 @@ public final class Server {
 
     /* Submit the plan for the download. */
     String planString =
-        Joiner.on('\0').join("download profiling data (query=", queryId, ", fragment=", fragmentId, ", range=[",
+        Joiner.on("").join("download profiling data (query=", queryId, ", fragment=", fragmentId, ", range=[",
             Joiner.on(", ").join(start, end), "]", ")");
     try {
-      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1392,7 +1526,7 @@ public final class Server {
     Preconditions.checkArgument(bins > 0 && bins <= MAX_BINS, "bins must be in the range [1, %s]", MAX_BINS);
 
     final Schema schema = Schema.ofFields("opId", Type.INT_TYPE, "nanoTime", Type.LONG_TYPE);
-    final RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
+    final RelationKey relationKey = MyriaConstants.EVENT_PROFILING_RELATION;
 
     Set<Integer> actualWorkers = queryStatus.plan.getWorkers();
 
@@ -1462,10 +1596,10 @@ public final class Server {
 
     /* Submit the plan for the download. */
     String planString =
-        Joiner.on('\0').join("download profiling histogram (query=", queryId, ", fragment=", fragmentId, ", range=[",
+        Joiner.on("").join("download profiling histogram (query=", queryId, ", fragment=", fragmentId, ", range=[",
             Joiner.on(", ").join(start, end, step), "]", ")");
     try {
-      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1483,7 +1617,7 @@ public final class Server {
     final QueryStatusEncoding queryStatus = checkAndReturnQueryStatus(queryId);
 
     final Schema schema = Schema.ofFields("startTime", Type.LONG_TYPE, "endTime", Type.LONG_TYPE);
-    final RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
+    final RelationKey relationKey = MyriaConstants.EVENT_PROFILING_RELATION;
 
     Set<Integer> actualWorkers = queryStatus.plan.getWorkers();
 
@@ -1515,9 +1649,9 @@ public final class Server {
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
     /* Submit the plan for the download. */
-    String planString = Joiner.on('\0').join("download time range (query=", queryId, ", fragment=", fragmentId, ")");
+    String planString = Joiner.on("").join("download time range (query=", queryId, ", fragment=", fragmentId, ")");
     try {
-      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1536,7 +1670,7 @@ public final class Server {
     final QueryStatusEncoding queryStatus = checkAndReturnQueryStatus(queryId);
 
     final Schema schema = Schema.ofFields("opId", Type.INT_TYPE, "nanoTime", Type.LONG_TYPE);
-    final RelationKey relationKey = MyriaConstants.PROFILING_RELATION;
+    final RelationKey relationKey = MyriaConstants.EVENT_PROFILING_RELATION;
 
     Set<Integer> actualWorkers = queryStatus.plan.getWorkers();
 
@@ -1579,9 +1713,9 @@ public final class Server {
 
     /* Submit the plan for the download. */
     String planString =
-        Joiner.on('\0').join("download operator contributions (query=", queryId, ", fragment=", fragmentId, ")");
+        Joiner.on("").join("download operator contributions (query=", queryId, ", fragment=", fragmentId, ")");
     try {
-      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans, false);
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1606,7 +1740,8 @@ public final class Server {
     Preconditions.checkArgument(queryStatus != null, "query %s not found", queryId);
     Preconditions.checkArgument(queryStatus.status == QueryStatusEncoding.Status.SUCCESS,
         "query %s did not succeed (%s)", queryId, queryStatus.status);
-    Preconditions.checkArgument(queryStatus.profilingMode, "query %s was not run with profiling enabled", queryId);
+    Preconditions.checkArgument(queryStatus.profilingMode.contains(ProfilingMode.QUERY),
+        "query %s was not run with profiling mode QUERY enabled", queryId);
     return queryStatus;
   }
 
@@ -1660,5 +1795,80 @@ public final class Server {
    */
   public Schema getTempSchema(@Nonnull final Long queryId, @Nonnull final String name) {
     return queryManager.getQuery(queryId).getTempSchema(RelationKey.ofTemp(queryId, name));
+  }
+
+  /**
+   * @param queryId the query id to fetch
+   * @param writerOutput the output stream to write results to.
+   * @throws DbException if there is an error in the database.
+   */
+  public void getResourceUsage(final long queryId, final PipedOutputStream writerOutput) throws DbException {
+    Schema schema = Schema.appendColumn(MyriaConstants.RESOURCE_PROFILING_SCHEMA, Type.INT_TYPE, "workerId");
+    try {
+      TupleWriter writer = new CsvTupleWriter(writerOutput);
+      TupleBuffer tb = queryManager.getResourceUsage(queryId);
+      if (tb != null) {
+        writer.writeColumnHeaders(schema.getColumnNames());
+        writer.writeTuples(tb);
+        writer.done();
+        return;
+      }
+      getResourceLog(queryId, writer);
+    } catch (IOException e) {
+      throw new DbException(e);
+    }
+  }
+
+  /**
+   * @param queryId query id.
+   * @param writer writer to get data.
+   * @return resource logs for the query.
+   * @throws DbException if there is an error when accessing profiling logs.
+   */
+  public ListenableFuture<Query> getResourceLog(final long queryId, final TupleWriter writer) throws DbException {
+    final QueryStatusEncoding queryStatus;
+    try {
+      queryStatus = catalog.getQuery(queryId);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+    Preconditions.checkArgument(queryStatus != null, "query %s not found", queryId);
+
+    Set<Integer> actualWorkers = queryStatus.plan.getWorkers();
+
+    final Schema schema = MyriaConstants.RESOURCE_PROFILING_SCHEMA;
+    String resourceQueryString =
+        Joiner.on(' ').join("SELECT * from", MyriaConstants.RESOURCE_PROFILING_RELATION.toString(getDBMS()),
+            "WHERE \"queryId\" =", queryId);
+    DbQueryScan scan = new DbQueryScan(resourceQueryString, schema);
+
+    ImmutableList.Builder<Expression> emitExpressions = ImmutableList.builder();
+    for (int column = 0; column < schema.numColumns(); column++) {
+      VariableExpression copy = new VariableExpression(column);
+      emitExpressions.add(new Expression(schema.getColumnName(column), copy));
+    }
+    emitExpressions.add(new Expression("workerId", new WorkerIdExpression()));
+    Apply addWorkerId = new Apply(scan, emitExpressions.build());
+
+    final ExchangePairID operatorId = ExchangePairID.newID();
+    CollectProducer producer = new CollectProducer(addWorkerId, operatorId, MyriaConstants.MASTER_ID);
+    SubQueryPlan workerPlan = new SubQueryPlan(producer);
+    Map<Integer, SubQueryPlan> workerPlans = new HashMap<>(actualWorkers.size());
+    for (Integer worker : actualWorkers) {
+      workerPlans.put(worker, workerPlan);
+    }
+    final CollectConsumer consumer =
+        new CollectConsumer(addWorkerId.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
+
+    DataOutput output = new DataOutput(consumer, writer);
+    final SubQueryPlan masterPlan = new SubQueryPlan(output);
+
+    /* Submit the plan for the download. */
+    String planString = Joiner.on("").join("download resource log for (query=", queryId, ")");
+    try {
+      return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
   }
 }

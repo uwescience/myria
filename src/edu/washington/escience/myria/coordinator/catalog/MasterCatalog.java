@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.joda.time.DateTime;
@@ -33,6 +34,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
+import edu.washington.escience.myria.MyriaConstants.FTMode;
+import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -86,9 +89,14 @@ public final class MasterCatalog {
     + "    elapsed_nanos INTEGER,\n"
     + "    status TEXT NOT NULL,\n"
     + "    message TEXT,\n"
-    + "    profiling_mode BOOLEAN DEFAULT 0,\n" 
+    + "    profiling_mode TEXT,\n" 
     + "    ft_mode TEXT,\n"
     + "    language TEXT);";
+  /** Create the queries table. */
+  private static final String CREATE_QUERIES_FTS =
+      "CREATE VIRTUAL TABLE queries_fts USING FTS4(\n"
+    + "    query_id INTEGER NOT NULL PRIMARY KEY ASC REFERENCES queries (query_id),\n"
+    + "    raw_query_fts TEXT NOT NULL);";
   /** Create the relations table. */
   private static final String CREATE_RELATIONS =
       "CREATE TABLE relations (\n"
@@ -108,6 +116,10 @@ public final class MasterCatalog {
     + "    col_name TEXT,\n"
     + "    col_type TEXT NOT NULL,\n"
     + "    FOREIGN KEY (user_name,program_name,relation_name) REFERENCES relations ON DELETE CASCADE);";
+  /** Create an index on the relation_schema table. */
+  private static final String CREATE_RELATION_SCHEMA_INDEX =
+      "CREATE INDEX relation_schema_idx ON relation_schema (\n"
+    + "    user_name, program_name, relation_name, col_index);";
   /** Create the stored_relations table. */
   private static final String CREATE_STORED_RELATIONS =
       "CREATE TABLE stored_relations (\n"
@@ -191,16 +203,16 @@ public final class MasterCatalog {
             sqliteConnection.exec(CREATE_WORKERS);
             sqliteConnection.exec(CREATE_ALIVE_WORKERS);
             sqliteConnection.exec(CREATE_QUERIES);
+            sqliteConnection.exec(CREATE_QUERIES_FTS);
             sqliteConnection.exec(CREATE_RELATIONS);
             sqliteConnection.exec(CREATE_RELATION_SCHEMA);
+            sqliteConnection.exec(CREATE_RELATION_SCHEMA_INDEX);
             sqliteConnection.exec(CREATE_STORED_RELATIONS);
             sqliteConnection.exec(CREATE_SHARDS);
             sqliteConnection.exec("END TRANSACTION");
           } catch (final SQLiteException e) {
             sqliteConnection.exec("ROLLBACK TRANSACTION");
-            if (LOGGER.isErrorEnabled()) {
-              LOGGER.error(e.toString());
-            }
+            LOGGER.error("Creating catalog tables", e);
             throw new CatalogException("SQLiteException while creating new Catalog tables", e);
           }
           return null;
@@ -530,9 +542,7 @@ public final class MasterCatalog {
             statement.step();
             statement.dispose();
           } catch (final SQLiteException e) {
-            if (LOGGER.isErrorEnabled()) {
-              LOGGER.error(e.toString());
-            }
+            LOGGER.error("adding a worker", e);
             throw new CatalogException(e);
           }
           return null;
@@ -579,9 +589,7 @@ public final class MasterCatalog {
             sqliteConnection.exec("COMMIT TRANSACTION;");
             statement.dispose();
           } catch (final SQLiteException e) {
-            if (LOGGER.isErrorEnabled()) {
-              LOGGER.error(e.toString());
-            }
+            LOGGER.error("adding a set of workers", e);
             try {
               sqliteConnection.exec("ABORT TRANSACTION;");
             } catch (final SQLiteException e2) {
@@ -636,9 +644,7 @@ public final class MasterCatalog {
             }
             statement.dispose();
           } catch (final SQLiteException e) {
-            if (LOGGER.isErrorEnabled()) {
-              LOGGER.error(e.toString());
-            }
+            LOGGER.error("getting the alive workers", e);
             throw new CatalogException(e);
           }
 
@@ -673,9 +679,7 @@ public final class MasterCatalog {
             statement.dispose();
             return configurations.build();
           } catch (final SQLiteException e) {
-            if (LOGGER.isErrorEnabled()) {
-              LOGGER.error(e.toString());
-            }
+            LOGGER.error("getting the configurations", e);
             throw new CatalogException(e);
           }
         }
@@ -716,9 +720,7 @@ public final class MasterCatalog {
             statement.dispose();
             return ret;
           } catch (final SQLiteException e) {
-            if (LOGGER.isErrorEnabled()) {
-              LOGGER.error(e.toString());
-            }
+            LOGGER.error("getting the configuration value for key {}", key, e);
             throw new CatalogException(e);
           }
         }
@@ -761,9 +763,7 @@ public final class MasterCatalog {
             statement.dispose();
             return null;
           } catch (final SQLiteException e) {
-            if (LOGGER.isErrorEnabled()) {
-              LOGGER.error(e.toString());
-            }
+            LOGGER.error("adding a set of configuration values", e);
             /* Commit transaction. */
             sqliteConnection.exec("ROLLBACK TRANSACTION");
             throw new CatalogException(e);
@@ -803,9 +803,7 @@ public final class MasterCatalog {
             statement.dispose();
             return null;
           } catch (final SQLiteException e) {
-            if (LOGGER.isErrorEnabled()) {
-              LOGGER.error(e.toString());
-            }
+            LOGGER.error("adding a configuration value [{}:{}]", key, value, e);
             throw new CatalogException(e);
           }
         }
@@ -854,9 +852,7 @@ public final class MasterCatalog {
             }
             statement.dispose();
           } catch (final SQLiteException e) {
-            if (LOGGER.isErrorEnabled()) {
-              LOGGER.error(e.toString());
-            }
+            LOGGER.error("getting the master(s)", e);
             throw new CatalogException(e);
           }
 
@@ -891,9 +887,7 @@ public final class MasterCatalog {
             }
             statement.dispose();
           } catch (final SQLiteException e) {
-            if (LOGGER.isErrorEnabled()) {
-              LOGGER.error(e.toString());
-            }
+            LOGGER.error("getting the workers", e);
             throw new CatalogException(e);
           }
 
@@ -1184,16 +1178,21 @@ public final class MasterCatalog {
               statement.bindNull(7);
             }
             statement.bind(8, queryStatus.status.toString());
-            if (queryStatus.profilingMode) {
-              statement.bind(9, 1);
-            } else {
-              statement.bind(9, 0);
-            }
-            statement.bind(10, queryStatus.ftMode);
+            String modes = Joiner.on(',').join(queryStatus.profilingMode);
+            statement.bind(9, modes);
+            statement.bind(10, queryStatus.ftMode.toString());
             statement.bind(11, queryStatus.language);
             statement.stepThrough();
             statement.dispose();
-            return sqliteConnection.getLastInsertId();
+            Long queryId = sqliteConnection.getLastInsertId();
+
+            // Full-text search also
+            statement = sqliteConnection.prepare("INSERT INTO queries_fts (query_id, raw_query_fts) VALUES (?,?);");
+            statement.bind(1, queryId);
+            statement.bind(2, queryStatus.rawQuery);
+            statement.stepThrough();
+            statement.dispose();
+            return queryId;
           } catch (final SQLiteException e) {
             throw new CatalogException(e);
           }
@@ -1263,7 +1262,13 @@ public final class MasterCatalog {
     }
     queryStatus.status = QueryStatusEncoding.Status.valueOf(statement.columnString(6));
     queryStatus.message = statement.columnString(7);
-    queryStatus.profilingMode = statement.columnInt(8) > 0;
+    List<ProfilingMode> modes = new ArrayList<ProfilingMode>();
+    for (String mode : statement.columnString(8).split(",")) {
+      if (!mode.equals("")) {
+        modes.add(ProfilingMode.valueOf(mode));
+      }
+    }
+    queryStatus.profilingMode = ImmutableList.copyOf(modes);
     return queryStatus;
   }
 
@@ -1323,8 +1328,14 @@ public final class MasterCatalog {
     }
     queryStatus.status = QueryStatusEncoding.Status.valueOf(statement.columnString(8));
     queryStatus.message = statement.columnString(9);
-    queryStatus.profilingMode = statement.columnInt(10) > 0;
-    queryStatus.ftMode = statement.columnString(11);
+    List<ProfilingMode> modes = new ArrayList<ProfilingMode>();
+    for (String mode : statement.columnString(10).split(",")) {
+      if (!mode.equals("")) {
+        modes.add(ProfilingMode.valueOf(mode));
+      }
+    }
+    queryStatus.profilingMode = ImmutableList.copyOf(modes);
+    queryStatus.ftMode = FTMode.valueOf(statement.columnString(11));
     if (!statement.columnNull(12)) {
       queryStatus.language = statement.columnString(12);
     }
@@ -1332,17 +1343,107 @@ public final class MasterCatalog {
   }
 
   /**
+   * Helper function to bind arguments to their corresponding positions in a SQLite statement. Object types are used to
+   * determine which version of the {@link SQLiteStatement#bind} function is to be used.
+   * 
+   * @param statement the SQLite statement
+   * @param args a list of the arguments to be bound
+   * @param startPos the starting position at which to bind arguments in the statement
+   * @throws SQLiteException if something goes wrong.
+   */
+  private static void bindArgs(@Nonnull final SQLiteStatement statement, @Nonnull final List<Object> args,
+      final int startPos) throws SQLiteException {
+    Preconditions.checkNotNull(statement, "statement");
+    Preconditions.checkNotNull(args, "args");
+    Preconditions.checkArgument(startPos >= 1, "starting index position must be >= 1 [%s]", startPos);
+
+    int pos = startPos;
+    for (Object arg : args) {
+      if (arg == null) {
+        statement.bindNull(pos);
+      } else if (arg instanceof Double) {
+        statement.bind(pos, (Double) arg);
+      } else if (arg instanceof Float) {
+        statement.bind(pos, (Float) arg);
+      } else if (arg instanceof Integer) {
+        statement.bind(pos, (Integer) arg);
+      } else if (arg instanceof Long) {
+        statement.bind(pos, (Long) arg);
+      } else if (arg instanceof String) {
+        statement.bind(pos, (String) arg);
+      } else {
+        throw new IllegalArgumentException("Unexpected SQLite parameter of type " + arg.getClass() + " at position pos");
+      }
+      pos++;
+    }
+  }
+
+  /**
    * Get the simple status (no logical or physical plan) for all queries in the system.
    * 
    * @param limit the maximum number of results to return. Any value <= 0 is interpreted as all results.
    * @param maxId return only queries with queryId <= maxId. Any value <= 0 is interpreted as no maximum.
+   * @param minId return only queries with queryId >= minId. Any value <= 0 is interpreted as no minimum. Ignored if
+   *          maxId is present.
+   * @param searchTerm a token to match against the raw queries. If null, all queries will be returned.
    * @return a list of the status of all queries.
    * @throws CatalogException if there is an error in the MasterCatalog.
    */
-  public List<QueryStatusEncoding> getQueries(final long limit, final long maxId) throws CatalogException {
+  public List<QueryStatusEncoding> getQueries(@Nullable final Long limit, @Nullable final Long maxId,
+      @Nullable final Long minId, @Nullable final String searchTerm) throws CatalogException {
     if (isClosed) {
       throw new CatalogException("MasterCatalog is closed.");
     }
+
+    Preconditions.checkArgument(searchTerm == null || searchTerm.length() >= 3,
+        "when present, search term must be at least 3 characters long [given: %s]", searchTerm);
+
+    /* The query arguments, if any. */
+    final List<Object> bindArgs = Lists.newLinkedList();
+    List<String> whereClause = Lists.newLinkedList();
+
+    /* Is there a search? */
+    String fromClause = "FROM queries";
+    if (searchTerm != null) {
+      fromClause = "FROM queries JOIN queries_fts USING (query_id)";
+      whereClause.add("raw_query_fts MATCH ?");
+      bindArgs.add(searchTerm);
+    }
+
+    /* Is there a max? */
+    boolean min = false;
+    if (maxId != null && maxId > 0) {
+      whereClause.add("query_id <= ?");
+      bindArgs.add(maxId);
+    } else if (minId != null && minId > 0) {
+      whereClause.add("query_id >= ?");
+      bindArgs.add(minId);
+      min = true;
+    }
+
+    String selectClause =
+        "SELECT query_id,raw_query,submit_time,start_time,finish_time,elapsed_nanos,status,message,profiling_mode";
+    StringBuilder coreQuery = new StringBuilder();
+    Joiner.on(' ').appendTo(coreQuery, selectClause, fromClause);
+    if (whereClause.size() > 0) {
+      coreQuery.append(" WHERE ");
+      Joiner.on(" AND ").appendTo(coreQuery, whereClause);
+    }
+
+    if (limit != null && limit > 0) {
+      if (!min) {
+        coreQuery.append(" ORDER BY query_id DESC LIMIT ?");
+        bindArgs.add(limit);
+      } else {
+        coreQuery.append(" ORDER BY query_id ASC LIMIT ?");
+        bindArgs.add(limit);
+        coreQuery = new StringBuilder("SELECT * FROM (").append(coreQuery).append(") ORDER BY query_id DESC");
+      }
+    } else {
+      coreQuery.append(" ORDER BY query_id DESC");
+    }
+
+    final String query = coreQuery.toString();
 
     try {
       return queue.execute(new SQLiteJob<List<QueryStatusEncoding>>() {
@@ -1350,34 +1451,10 @@ public final class MasterCatalog {
         protected List<QueryStatusEncoding> job(final SQLiteConnection sqliteConnection) throws CatalogException,
             SQLiteException {
           try {
-            /* The base of the query */
-            StringBuilder sb =
-                new StringBuilder(
-                    "SELECT query_id,raw_query,submit_time,start_time,finish_time,elapsed_nanos,status,message,profiling_mode FROM queries");
-            /* The query arguments, if any. */
-            List<Long> bound = Lists.newLinkedList();
-            /* If there is a max query id, add the WHERE clause. */
-            if (maxId > 0) {
-              sb.append(" WHERE query_id <= ?");
-              bound.add(maxId);
-            }
-
-            sb.append(" ORDER BY query_id DESC");
-
-            /* If there is a limit supplied, add the LIMIT clause */
-            if (limit > 0) {
-              sb.append(" LIMIT ?");
-              bound.add(limit);
-            }
-            sb.append(";");
-
             /* Build it and bind any arguments present. */
-            SQLiteStatement statement = sqliteConnection.prepare(sb.toString());
-            int argPos = 1;
-            for (Long arg : bound) {
-              statement.bind(argPos, arg);
-              argPos++;
-            }
+            SQLiteStatement statement = sqliteConnection.prepare(query);
+            bindArgs(statement, bindArgs, 1);
+
             /* Step it. */
             statement.step();
 
@@ -1543,25 +1620,74 @@ public final class MasterCatalog {
   }
 
   /**
-   * @return number of queries in catalog.
+   * @return the maximum query id that matches the search.
+   * @param searchTerm a token to match against the raw queries. If null, all queries match.
    * @throws CatalogException if an error occurs
    */
-  public int getNumQueries() throws CatalogException {
+  public long getMaxQuery(@Nullable final String searchTerm) throws CatalogException {
+    Preconditions.checkArgument(searchTerm == null || searchTerm.length() >= 3,
+        "when present, search term must be at least 3 characters long [given: %s]", searchTerm);
+
     try {
-      return queue.execute(new SQLiteJob<Integer>() {
+      return queue.execute(new SQLiteJob<Long>() {
         @Override
-        protected Integer job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+        protected Long job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
           try {
             /* Getting this out is a simple query, which does not need to be cached. */
-            final SQLiteStatement statement = sqliteConnection.prepare("SELECT count(*) FROM queries;", false);
+            final SQLiteStatement statement;
+            if (searchTerm == null) {
+              statement = sqliteConnection.prepare("SELECT max(query_id) FROM queries_fts;");
+            } else {
+              statement =
+                  sqliteConnection.prepare("SELECT max(query_id) FROM queries_fts WHERE raw_query_fts MATCH ?;");
+              statement.bind(1, searchTerm);
+            }
+
             Preconditions.checkArgument(statement.step(), "Count should return a row");
-            final Integer ret = statement.columnInt(0);
+            final Long ret = statement.columnLong(0);
             statement.dispose();
             return ret;
           } catch (final SQLiteException e) {
-            if (LOGGER.isErrorEnabled()) {
-              LOGGER.error("Getting the number of queries", e);
+            LOGGER.error("Getting the max query", e);
+            throw new CatalogException(e);
+          }
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
+   * @return the minimum query id that matches the search.
+   * @param searchTerm a token to match against the raw queries. If null, all queries match.
+   * @throws CatalogException if an error occurs
+   */
+  public long getMinQuery(@Nullable final String searchTerm) throws CatalogException {
+    Preconditions.checkArgument(searchTerm == null || searchTerm.length() >= 3,
+        "when present, search term must be at least 3 characters long [given: %s]", searchTerm);
+
+    try {
+      return queue.execute(new SQLiteJob<Long>() {
+        @Override
+        protected Long job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+          try {
+            /* Getting this out is a simple query, which does not need to be cached. */
+            final SQLiteStatement statement;
+            if (searchTerm == null) {
+              statement = sqliteConnection.prepare("SELECT min(query_id) FROM queries_fts;");
+            } else {
+              statement =
+                  sqliteConnection.prepare("SELECT min(query_id) FROM queries_fts WHERE raw_query_fts MATCH ?;");
+              statement.bind(1, searchTerm);
             }
+
+            Preconditions.checkArgument(statement.step(), "Count should return a row");
+            final Long ret = statement.columnLong(0);
+            statement.dispose();
+            return ret;
+          } catch (final SQLiteException e) {
+            LOGGER.error("Getting the min query", e);
             throw new CatalogException(e);
           }
         }

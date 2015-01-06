@@ -2,7 +2,7 @@ package edu.washington.escience.myria.operator.network.partition;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.storage.TupleBatch;
@@ -42,7 +42,7 @@ public final class SingleFieldHashPartitionFunction extends PartitionFunction {
     super(numPartitions);
     /* TODO(dhalperi) once Jackson actually implements support for required, remove these checks. */
     this.index = java.util.Objects.requireNonNull(index, "missing property index");
-    this.seedIndex = Objects.firstNonNull(seedIndex, 0) % HashUtils.NUM_OF_HASHFUNCTIONS;
+    this.seedIndex = MoreObjects.firstNonNull(seedIndex, 0) % HashUtils.NUM_OF_HASHFUNCTIONS;
     Preconditions.checkArgument(this.index >= 0, "SingleFieldHash field index cannot take negative value %s",
         this.index);
   }
