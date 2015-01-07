@@ -199,7 +199,7 @@ public class ConnectedComponentTest extends SystemTestBase {
       tbl2Worker2.putLong(1, tbl2ID1Worker2[i]);
       tbl2Worker2.putLong(0, tbl2ID2Worker2[i]);
     }
-    TupleBatchBuffer table2 = new TupleBatchBuffer(table1Schema);
+    TupleBatchBuffer table2 = new TupleBatchBuffer(table2Schema);
     table2.unionAll(tbl2Worker1);
     table2.unionAll(tbl2Worker2);
     createTable(workerIDs[0], RelationKey.of("test", "test", "g"), "node_id long, node_id_another long");
