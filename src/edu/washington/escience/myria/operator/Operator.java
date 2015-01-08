@@ -52,7 +52,7 @@ public abstract class Operator implements Serializable {
   /**
    * The unique operator id.
    */
-  private Integer opId;
+  protected Integer opId;
 
   /**
    * A bit denoting whether the operator is open (initialized).

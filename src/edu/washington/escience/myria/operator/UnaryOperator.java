@@ -47,10 +47,12 @@ public abstract class UnaryOperator extends Operator {
 
   @Override
   public final void setChildren(final Operator[] children) {
-    Preconditions.checkArgument(child == null, "called setChildren(), but children have already been set");
-    Preconditions.checkNotNull(children);
-    Preconditions.checkArgument(children.length == 1, "setChildren() must be called with an array of length 1");
-    Preconditions.checkNotNull(children[0]);
+    Preconditions.checkArgument(child == null,
+        "Operator opid=%s called setChildren(), but children have already been set", opId);
+    Preconditions.checkNotNull(children, "Unary operator opId=%s has null children", opId);
+    Preconditions.checkArgument(children.length == 1,
+        "Operator opId=%s setChildren() must be called with an array of length 1", opId);
+    Preconditions.checkNotNull(children[0], "Unary operator opId=%s has its child to be null", opId);
     child = children[0];
     /* Trigger Schema updating. */
     getSchema();

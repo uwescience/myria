@@ -31,7 +31,7 @@ public class DoWhileEncoding extends SubPlanEncoding {
     Preconditions.checkArgument(body.size() > 0, "DoWhile cannot be empty");
     int i = 0;
     for (SubPlanEncoding p : body) {
-      Preconditions.checkNotNull(p, "body plan %s/%s", i, body.size());
+      Preconditions.checkNotNull(p, "body plan %s/%s is null", i, body.size());
       p.validate();
       ++i;
     }

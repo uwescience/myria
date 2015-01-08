@@ -29,7 +29,7 @@ public class SequenceEncoding extends SubPlanEncoding {
     Preconditions.checkArgument(plans.size() > 0, "Sequence cannot be empty");
     int i = 0;
     for (SubPlanEncoding p : plans) {
-      Preconditions.checkNotNull(p, "plan %s/%s", i, plans.size());
+      Preconditions.checkNotNull(p, "plan %s/%s is null", i, plans.size());
       p.validate();
       ++i;
     }

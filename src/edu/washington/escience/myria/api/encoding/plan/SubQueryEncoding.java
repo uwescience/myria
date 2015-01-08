@@ -31,7 +31,7 @@ public class SubQueryEncoding extends SubPlanEncoding {
   public void validateExtra() {
     int i = 0;
     for (PlanFragmentEncoding f : fragments) {
-      Preconditions.checkNotNull(f, "fragment %s of %s", i, fragments.size());
+      Preconditions.checkNotNull(f, "fragment %s of %s is null", i, fragments.size());
       f.validate();
       ++i;
     }
