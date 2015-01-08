@@ -82,8 +82,7 @@ public final class MyriaExceptionMapper implements ExceptionMapper<Throwable> {
       return ((MyriaApiException) cause).getResponse();
     }
     ResponseBuilder ret = Response.status(status);
-    if (status.equals(Status.INTERNAL_SERVER_ERROR) || status.equals(Status.BAD_REQUEST) || cause.getMessage() == null
-        || cause.getMessage().length() == 0) {
+    if (status.equals(Status.INTERNAL_SERVER_ERROR) || cause.getMessage() == null || cause.getMessage().length() == 0) {
       ret.entity(ErrorUtils.getStackTrace(cause));
     } else {
       ret.entity(cause.getMessage());
