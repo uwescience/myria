@@ -239,7 +239,7 @@ public class QueryConstruct {
     for (IDBControllerEncoding idbController : idbControllers) {
       List<ExchangePairID> ids = producerOutputChannels.get(idbController.opId);
       Preconditions.checkNotNull(ids, "Can't find channel IDs for IDBController opId=%s", idbController.opId);
-      Preconditions.checkArgument(ids.size() == 1, "IDBController opId=%s has multiple output channels",
+      Preconditions.checkArgument(ids.size() == 1, "IDBController opId=%s has zero or multiple output channels",
           idbController.opId);
       idbController.setRealEosControllerOperatorID(ids.get(0));
     }
@@ -253,7 +253,8 @@ public class QueryConstruct {
             if (exchange instanceof AbstractConsumerEncoding) {
               int argOpId = ((AbstractConsumerEncoding<?>) exchange).getArgOperatorId();
               Set<Integer> producerWorkers = producerWorkerMap.get(argOpId);
-              Preconditions.checkNotNull(producerWorkers,
+              /* Use checkArgument instead of checkNotNull to throw an IllegalArgumentException */
+              Preconditions.checkArgument(producerWorkers != null,
                   "Can't find corresponding producer for consumer opId=%s, argOperatorId: %s", operator.opId, argOpId);
               workers.addAll(producerWorkers);
             } else if (exchange instanceof AbstractProducerEncoding) {
