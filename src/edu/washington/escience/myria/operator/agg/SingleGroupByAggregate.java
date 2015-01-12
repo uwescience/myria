@@ -30,11 +30,6 @@ import edu.washington.escience.myria.storage.TupleBatchBuffer;
 public class SingleGroupByAggregate extends UnaryOperator {
 
   /**
-   * The Logger.
-   */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(SingleGroupByAggregate.class);
-
-  /**
    * default serialization ID.
    */
   private static final long serialVersionUID = 1L;
@@ -53,6 +48,8 @@ public class SingleGroupByAggregate extends UnaryOperator {
    * A cache of the group-by column type.
    */
   private Type gColumnType;
+  /** Whether this aggregate is used as a combiner. */
+  private final boolean isCombiner;
 
   /**
    * The buffer storing in-progress group by results. {groupby-column-value -> Aggregator Array} when the group key is
@@ -104,9 +101,23 @@ public class SingleGroupByAggregate extends UnaryOperator {
    * @param factories Factories for the aggregation operators to use.
    */
   public SingleGroupByAggregate(@Nullable final Operator child, final int gfield, final AggregatorFactory... factories) {
+    this(child, gfield, false, factories);
+  }
+
+  /**
+   * Constructor.
+   * 
+   * @param child The Operator that is feeding us tuples.
+   * @param gfield The column over which we are grouping the result.
+   * @param isCombiner <code>true</code> if this aggregate is used as a combiner in a larger plan.
+   * @param factories Factories for the aggregation operators to use.
+   */
+  public SingleGroupByAggregate(@Nullable final Operator child, final int gfield, final boolean isCombiner,
+      final AggregatorFactory... factories) {
     super(child);
     gColumn = Objects.requireNonNull(gfield, "gfield");
     this.factories = Objects.requireNonNull(factories, "factories");
+    this.isCombiner = isCombiner;
   }
 
   @Override
@@ -218,6 +229,30 @@ public class SingleGroupByAggregate extends UnaryOperator {
   }
 
   /**
+   * @return the number of keys in the state.
+   */
+  private int getStateSize() {
+    switch (gColumnType) {
+      case BOOLEAN_TYPE:
+        return 2;
+      case INT_TYPE:
+        return intAggState.size();
+      case LONG_TYPE:
+        return longAggState.size();
+      case FLOAT_TYPE:
+        return floatAggState.size();
+      case DOUBLE_TYPE:
+        return doubleAggState.size();
+      case STRING_TYPE:
+        return stringAggState.size();
+      case DATETIME_TYPE:
+        return datetimeAggState.size();
+      default:
+        throw new UnsupportedOperationException("aggregate of type " + gColumnType);
+    }
+  }
+
+  /**
    * Helper function for appending results to an output tuple buffer. By convention, the single-column aggregation key
    * goes in column 0, and the aggregates are appended starting at column 1.
    * 
@@ -287,34 +322,44 @@ public class SingleGroupByAggregate extends UnaryOperator {
         }
         break;
     }
-
+    initAggStates();
   }
 
   @Override
   protected final TupleBatch fetchNextReady() throws DbException {
-    TupleBatch tb = null;
-    final Operator child = getChild();
-
     if (resultBuffer.numTuples() > 0) {
       return resultBuffer.popAny();
     }
+
+    TupleBatch tb = null;
+    final Operator child = getChild();
 
     if (child.eos()) {
       return null;
     }
 
+    boolean processed = false;
     while ((tb = child.nextReady()) != null) {
-
-      if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug("get a TB from child");
-      }
       processTupleBatch(tb);
+      processed = true;
     }
 
-    if (child.eos()) {
-      generateResult(resultBuffer);
+    boolean makeResults = child.eos();
+
+    /* For combiners, pop results early if there are enough tuples in the aggregate. */
+    if (isCombiner && processed && !makeResults) {
+      int stateSize = getStateSize();
+      if (stateSize > TupleBatch.BATCH_SIZE && (Math.random() > (double) TupleBatch.BATCH_SIZE / stateSize)) {
+        makeResults = true;
+      }
     }
-    return resultBuffer.popAny();
+
+    if (makeResults) {
+      generateResult(resultBuffer);
+      return resultBuffer.popAny();
+    }
+
+    return null;
   }
 
   /**
@@ -331,6 +376,13 @@ public class SingleGroupByAggregate extends UnaryOperator {
     aggregators = AggUtils.allocateAggs(factories, getChild().getSchema());
     resultBuffer = new TupleBatchBuffer(getSchema());
 
+    initAggStates();
+  }
+
+  /**
+   * (Re)-allocate the arrays or dictionaries that hold the aggregation states.
+   */
+  private void initAggStates() {
     switch (gColumnType) {
       case BOOLEAN_TYPE:
         booleanAggState = new Object[2][];
