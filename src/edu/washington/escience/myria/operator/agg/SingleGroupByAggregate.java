@@ -388,22 +388,22 @@ public class SingleGroupByAggregate extends UnaryOperator {
         booleanAggState = new Object[2][];
         break;
       case INT_TYPE:
-        intAggState = new IntObjectHashMap<Object[]>();
+        intAggState = new IntObjectHashMap<>();
         break;
       case LONG_TYPE:
-        longAggState = new LongObjectHashMap<Object[]>();
+        longAggState = new LongObjectHashMap<>();
         break;
       case FLOAT_TYPE:
-        floatAggState = new FloatObjectHashMap<Object[]>();
+        floatAggState = new FloatObjectHashMap<>();
         break;
       case DOUBLE_TYPE:
-        doubleAggState = new DoubleObjectHashMap<Object[]>();
+        doubleAggState = new DoubleObjectHashMap<>();
         break;
       case STRING_TYPE:
-        stringAggState = new HashMap<String, Object[]>();
+        stringAggState = new HashMap<>();
         break;
       case DATETIME_TYPE:
-        datetimeAggState = new HashMap<DateTime, Object[]>();
+        datetimeAggState = new HashMap<>();
         break;
     }
   }
