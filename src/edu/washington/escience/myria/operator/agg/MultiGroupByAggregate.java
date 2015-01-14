@@ -49,6 +49,8 @@ public final class MultiGroupByAggregate extends UnaryOperator {
   private Schema groupSchema;
   /** The schema of the aggregation result. */
   private Schema aggSchema;
+  /** Whether this aggregate is used as a combiner. */
+  private final boolean isCombiner;
 
   /** Factories to make the Aggregators. **/
   private final AggregatorFactory[] factories;
@@ -64,13 +66,27 @@ public final class MultiGroupByAggregate extends UnaryOperator {
    * 
    * @param child The Operator that is feeding us tuples.
    * @param gfields The columns over which we are grouping the result.
-   * @param factories The factories that will produce the {@link Aggregator}s for each group..
+   * @param factories The factories that will produce the {@link Aggregator}s for each group.
    */
   public MultiGroupByAggregate(@Nullable final Operator child, final int[] gfields,
+      final AggregatorFactory... factories) {
+    this(child, gfields, false, factories);
+  }
+
+  /**
+   * Groups the input tuples according to the specified grouping fields, then produces the specified aggregates.
+   * 
+   * @param child The Operator that is feeding us tuples.
+   * @param gfields The columns over which we are grouping the result.
+   * @param isCombiner <code>true</code> if this aggregate is used as a combiner.
+   * @param factories The factories that will produce the {@link Aggregator}s for each group.
+   */
+  public MultiGroupByAggregate(@Nullable final Operator child, final int[] gfields, final boolean isCombiner,
       final AggregatorFactory... factories) {
     super(child);
     this.gfields = Objects.requireNonNull(gfields, "gfields");
     this.factories = Objects.requireNonNull(factories, "factories");
+    this.isCombiner = isCombiner;
     Preconditions.checkArgument(gfields.length > 1, "to use MultiGroupByAggregate, must group over multiple fields");
     Preconditions.checkArgument(factories.length != 0, "to use MultiGroupByAggregate, must specify some aggregates");
     grpRange = new int[gfields.length];
@@ -140,6 +156,11 @@ public final class MultiGroupByAggregate extends UnaryOperator {
       return getResultBatch();
     }
 
+    if (isCombiner && (aggStates.size() * Math.random() > TupleBatch.BATCH_SIZE)) {
+      /* If there are enough tuples saved up, emit some results early. */
+      return getResultBatch();
+    }
+
     return null;
   }
 
@@ -197,13 +218,17 @@ public final class MultiGroupByAggregate extends UnaryOperator {
    * @throws DbException if there is an error.
    */
   private TupleBatch getResultBatch() throws DbException {
-    Preconditions.checkState(getChild().eos(), "cannot extract results from an aggregate until child has reached EOS");
+    // Preconditions.checkState(getChild().eos(),
+    // "cannot extract results from an aggregate until child has reached EOS");
     if (groupKeyList == null) {
       groupKeyList = Lists.newLinkedList(groupKeys.finalResult());
       groupKeys = null;
     }
 
     if (groupKeyList.isEmpty()) {
+      if (!getChild().eos()) {
+        initAggStates();
+      }
       return null;
     }
 
@@ -266,8 +291,14 @@ public final class MultiGroupByAggregate extends UnaryOperator {
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     Preconditions.checkState(getSchema() != null, "unable to determine schema in init");
     aggregators = AggUtils.allocateAggs(factories, getChild().getSchema());
+    initAggStates();
+  }
+
+  /** (Re)-allocates the state of the aggregation state variables. */
+  private void initAggStates() {
     groupKeys = new TupleBuffer(groupSchema);
     aggStates = new ArrayList<>();
     groupKeyMap = new IntObjectHashMap<>();
+    groupKeyList = null;
   }
 };
