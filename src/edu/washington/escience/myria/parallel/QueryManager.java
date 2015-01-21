@@ -480,10 +480,6 @@ public class QueryManager {
       throw new DbException("Cannot submit query");
     }
     if (query.profilingMode.size() > 0) {
-      if (!(plan instanceof SubQuery || plan instanceof JsonSubQuery)) {
-        throw new DbException("Profiling mode is not supported for plans (" + plan.getClass().getSimpleName()
-            + ") that may contain multiple subqueries.");
-      }
       if (!server.getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
         throw new DbException("Profiling mode is only supported when using Postgres as the storage system.");
       }
