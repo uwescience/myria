@@ -43,6 +43,7 @@ public final class LogResource {
    * Get profiling logs of a query.
    * 
    * @param queryId query id.
+   * @param subQueryId subquery id.
    * @param fragmentId the fragment id.
    * @param start the earliest time where we need data
    * @param end the latest time
@@ -55,6 +56,7 @@ public final class LogResource {
   @GET
   @Path("profiling")
   public Response getProfileLogs(@QueryParam("queryId") final Long queryId,
+      @DefaultValue("0") @QueryParam("subQueryId") final long subQueryId,
       @QueryParam("fragmentId") final Long fragmentId, @QueryParam("start") final Long start,
       @QueryParam("end") final Long end, @DefaultValue("0") @QueryParam("minLength") final Long minLength,
       @DefaultValue("false") @QueryParam("onlyRootOp") final boolean onlyRootOp, @Context final Request request)
@@ -66,7 +68,8 @@ public final class LogResource {
     Preconditions.checkArgument(end != null, "Missing required field end.");
     Preconditions.checkArgument(minLength >= 0, "MinLength has to be greater than or equal to 0");
 
-    EntityTag eTag = new EntityTag(Integer.toString(Joiner.on('-').join("profiling", queryId, fragmentId).hashCode()));
+    EntityTag eTag =
+        new EntityTag(Integer.toString(Joiner.on('-').join("profiling", queryId, subQueryId, fragmentId).hashCode()));
     Object obj = checkAndAddCache(request, eTag);
     if (obj instanceof Response) {
       return (Response) obj;
@@ -88,7 +91,7 @@ public final class LogResource {
     PipedStreamingOutput entity = new PipedStreamingOutput(input);
     response.entity(entity);
 
-    server.startLogDataStream(queryId, fragmentId, start, end, minLength, onlyRootOp, writer);
+    server.startLogDataStream(queryId, subQueryId, fragmentId, start, end, minLength, onlyRootOp, writer);
     return response.build();
   }
 
@@ -96,6 +99,7 @@ public final class LogResource {
    * Get contribution of each operator to runtime.
    * 
    * @param queryId query id.
+   * @param subQueryId subquery id.
    * @param fragmentId the fragment id, default is all.
    * @param request the current request.
    * @return the contributions across all workers
@@ -104,13 +108,14 @@ public final class LogResource {
   @GET
   @Path("contribution")
   public Response getContributions(@QueryParam("queryId") final Long queryId,
+      @DefaultValue("0") @QueryParam("subQueryId") final long subQueryId,
       @DefaultValue("-1") @QueryParam("fragmentId") final Long fragmentId, @Context final Request request)
       throws DbException {
 
     Preconditions.checkArgument(queryId != null, "Missing required field queryId.");
 
     EntityTag eTag =
-        new EntityTag(Integer.toString(Joiner.on('-').join("contribution", queryId, fragmentId).hashCode()));
+        new EntityTag(Integer.toString(Joiner.on('-').join("contribution", queryId, subQueryId, fragmentId).hashCode()));
     Object obj = checkAndAddCache(request, eTag);
     if (obj instanceof Response) {
       return (Response) obj;
@@ -132,7 +137,7 @@ public final class LogResource {
     PipedStreamingOutput entity = new PipedStreamingOutput(input);
     response.entity(entity);
 
-    server.startContributionsStream(queryId, fragmentId, writer);
+    server.startContributionsStream(queryId, subQueryId, fragmentId, writer);
 
     return response.build();
   }
@@ -141,6 +146,7 @@ public final class LogResource {
    * Get information about where tuples were sent.
    * 
    * @param queryId query id.
+   * @param subQueryId subquery id.
    * @param fragmentId the fragment id. < 0 means all
    * @param request the current request.
    * @return the profiling logs of the query across all workers
@@ -149,12 +155,14 @@ public final class LogResource {
   @GET
   @Path("sent")
   public Response getSentLogs(@QueryParam("queryId") final Long queryId,
+      @DefaultValue("0") @QueryParam("subQueryId") final long subQueryId,
       @DefaultValue("-1") @QueryParam("fragmentId") final long fragmentId, @Context final Request request)
       throws DbException {
 
     Preconditions.checkArgument(queryId != null, "Missing required field queryId.");
 
-    EntityTag eTag = new EntityTag(Integer.toString(Joiner.on('-').join("sent", queryId, fragmentId).hashCode()));
+    EntityTag eTag =
+        new EntityTag(Integer.toString(Joiner.on('-').join("sent", queryId, subQueryId, fragmentId).hashCode()));
     Object obj = checkAndAddCache(request, eTag);
     if (obj instanceof Response) {
       return (Response) obj;
@@ -176,7 +184,7 @@ public final class LogResource {
     PipedStreamingOutput entity = new PipedStreamingOutput(input);
     response.entity(entity);
 
-    server.startSentLogDataStream(queryId, fragmentId, writer);
+    server.startSentLogDataStream(queryId, subQueryId, fragmentId, writer);
 
     return response.build();
   }
@@ -185,18 +193,21 @@ public final class LogResource {
    * Get aggregated summary of all data sent.
    * 
    * @param queryId query id.
+   * @param subQueryId subquery id.
    * @param request the current request.
    * @return the profiling logs of the query across all workers
    * @throws DbException if there is an error in the database.
    */
   @GET
   @Path("aggregated_sent")
-  public Response getAggregatedSentLogs(@QueryParam("queryId") final Long queryId, @Context final Request request)
+  public Response getAggregatedSentLogs(@QueryParam("queryId") final Long queryId,
+      @DefaultValue("0") @QueryParam("subQueryId") final long subQueryId, @Context final Request request)
       throws DbException {
 
     Preconditions.checkArgument(queryId != null, "Missing required field queryId.");
 
-    EntityTag eTag = new EntityTag(Integer.toString(Joiner.on('-').join("aggregated-sent", queryId).hashCode()));
+    EntityTag eTag =
+        new EntityTag(Integer.toString(Joiner.on('-').join("aggregated-sent", queryId, subQueryId).hashCode()));
     Object obj = checkAndAddCache(request, eTag);
     if (obj instanceof Response) {
       return (Response) obj;
@@ -218,13 +229,14 @@ public final class LogResource {
     PipedStreamingOutput entity = new PipedStreamingOutput(input);
     response.entity(entity);
 
-    server.startAggregatedSentLogDataStream(queryId, writer);
+    server.startAggregatedSentLogDataStream(queryId, subQueryId, writer);
 
     return response.build();
   }
 
   /**
    * @param queryId query id.
+   * @param subQueryId subquery id.
    * @param fragmentId the fragment id.
    * @param request the current request.
    * @return the range for which we have profiling info
@@ -232,13 +244,15 @@ public final class LogResource {
    */
   @GET
   @Path("range")
-  public Response getRange(@QueryParam("queryId") final Long queryId, @QueryParam("fragmentId") final Long fragmentId,
-      @Context final Request request) throws DbException {
+  public Response getRange(@QueryParam("queryId") final Long queryId,
+      @DefaultValue("0") @QueryParam("subQueryId") final long subQueryId,
+      @QueryParam("fragmentId") final Long fragmentId, @Context final Request request) throws DbException {
 
     Preconditions.checkArgument(queryId != null, "Missing required field queryId.");
     Preconditions.checkArgument(fragmentId != null, "Missing required field fragmentId.");
 
-    EntityTag eTag = new EntityTag(Integer.toString(Joiner.on('-').join("range", queryId, fragmentId).hashCode()));
+    EntityTag eTag =
+        new EntityTag(Integer.toString(Joiner.on('-').join("range", subQueryId, queryId, fragmentId).hashCode()));
     Object obj = checkAndAddCache(request, eTag);
     if (obj instanceof Response) {
       return (Response) obj;
@@ -260,7 +274,7 @@ public final class LogResource {
     PipedStreamingOutput entity = new PipedStreamingOutput(input);
     response.entity(entity);
 
-    server.startRangeDataStream(queryId, fragmentId, writer);
+    server.startRangeDataStream(queryId, subQueryId, fragmentId, writer);
 
     return response.build();
   }
@@ -269,6 +283,7 @@ public final class LogResource {
    * Get the number of workers working on a fragment based on profiling logs of a query for the root operators.
    * 
    * @param queryId query id.
+   * @param subQueryId subquery id.
    * @param fragmentId the fragment id.
    * @param start the start of the range
    * @param end the end of the range
@@ -281,6 +296,7 @@ public final class LogResource {
   @GET
   @Path("histogram")
   public Response getHistogram(@QueryParam("queryId") final Long queryId,
+      @DefaultValue("0") @QueryParam("subQueryId") final long subQueryId,
       @QueryParam("fragmentId") final Long fragmentId, @QueryParam("start") final Long start,
       @QueryParam("end") final Long end, @QueryParam("step") final Long step,
       @DefaultValue("true") @QueryParam("onlyRootOp") final boolean onlyRootOp, @Context final Request request)
@@ -293,8 +309,8 @@ public final class LogResource {
     Preconditions.checkArgument(step != null, "Missing required field step.");
 
     EntityTag eTag =
-        new EntityTag(Integer.toString(Joiner.on('-').join("histogram", queryId, fragmentId, start, end, step,
-            onlyRootOp).hashCode()));
+        new EntityTag(Integer.toString(Joiner.on('-').join("histogram", queryId, subQueryId, fragmentId, start, end,
+            step, onlyRootOp).hashCode()));
 
     Object obj = checkAndAddCache(request, eTag);
     if (obj instanceof Response) {
@@ -317,7 +333,7 @@ public final class LogResource {
     PipedStreamingOutput entity = new PipedStreamingOutput(input);
     response.entity(entity);
 
-    server.startHistogramDataStream(queryId, fragmentId, start, end, step, onlyRootOp, writer);
+    server.startHistogramDataStream(queryId, subQueryId, fragmentId, start, end, step, onlyRootOp, writer);
 
     return response.build();
   }

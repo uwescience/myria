@@ -1281,13 +1281,14 @@ public final class Server {
 
   /**
    * @param queryId query id.
+   * @param subQueryId the subquery id.
    * @param fragmentId the fragment id to return data for. All fragments, if < 0.
    * @param writer writer to get data.
    * @return profiling logs for the query.
    * @throws DbException if there is an error when accessing profiling logs.
    */
-  public ListenableFuture<Query> startSentLogDataStream(final long queryId, final long fragmentId,
-      final TupleWriter writer) throws DbException {
+  public ListenableFuture<Query> startSentLogDataStream(final long queryId, final long subQueryId,
+      final long fragmentId, final TupleWriter writer) throws DbException {
     final QueryStatusEncoding queryStatus = checkAndReturnQueryStatus(queryId);
 
     Set<Integer> actualWorkers = queryStatus.plan.getWorkers();
@@ -1302,8 +1303,8 @@ public final class Server {
 
     String sentQueryString =
         Joiner.on(' ').join("SELECT \"fragmentId\", \"destWorkerId\", sum(\"numTuples\") as \"numTuples\" FROM",
-            MyriaConstants.SENT_PROFILING_RELATION.toString(getDBMS()), "WHERE \"queryId\" =", queryId, fragmentWhere,
-            "GROUP BY \"queryId\", \"fragmentId\", \"destWorkerId\"");
+            MyriaConstants.SENT_PROFILING_RELATION.toString(getDBMS()), "WHERE \"queryId\" =", queryId,
+            "AND \"subQueryId\" =", subQueryId, fragmentWhere, "GROUP BY \"fragmentId\", \"destWorkerId\"");
 
     DbQueryScan scan = new DbQueryScan(sentQueryString, schema);
     final ExchangePairID operatorId = ExchangePairID.newID();
@@ -1347,7 +1348,8 @@ public final class Server {
 
     /* Submit the plan for the download. */
     String planString =
-        Joiner.on("").join("download profiling sent data for (query=", queryId, ", fragment=", fragmentId, ")");
+        Joiner.on("").join("download profiling sent data for (query=", queryId, ", subquery=", subQueryId,
+            ", fragment=", fragmentId, ")");
     try {
       return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
     } catch (CatalogException e) {
@@ -1357,12 +1359,13 @@ public final class Server {
 
   /**
    * @param queryId query id.
+   * @param subQueryId the subquery id.
    * @param writer writer to get data.
    * @return profiling logs for the query.
    * @throws DbException if there is an error when accessing profiling logs.
    */
-  public ListenableFuture<Query> startAggregatedSentLogDataStream(final long queryId, final TupleWriter writer)
-      throws DbException {
+  public ListenableFuture<Query> startAggregatedSentLogDataStream(final long queryId, final long subQueryId,
+      final TupleWriter writer) throws DbException {
     final QueryStatusEncoding queryStatus = checkAndReturnQueryStatus(queryId);
 
     Set<Integer> actualWorkers = queryStatus.plan.getWorkers();
@@ -1377,7 +1380,7 @@ public final class Server {
             .join(
                 "SELECT \"fragmentId\", sum(\"numTuples\") as \"numTuples\", min(\"nanoTime\") as \"minTime\", max(\"nanoTime\") as \"maxTime\" FROM",
                 MyriaConstants.SENT_PROFILING_RELATION.toString(getDBMS()), "WHERE \"queryId\" =", queryId,
-                "GROUP BY \"queryId\", \"fragmentId\"");
+                "AND \"subQueryId\" =", subQueryId, "GROUP BY \"fragmentId\"");
 
     DbQueryScan scan = new DbQueryScan(sentQueryString, schema);
     final ExchangePairID operatorId = ExchangePairID.newID();
@@ -1410,7 +1413,9 @@ public final class Server {
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
     /* Submit the plan for the download. */
-    String planString = Joiner.on("").join("download profiling aggregated sent data for (query=", queryId, ")");
+    String planString =
+        Joiner.on("").join("download profiling aggregated sent data for (query=", queryId, ", subquery=", subQueryId,
+            ")");
     try {
       return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
     } catch (CatalogException e) {
@@ -1420,6 +1425,7 @@ public final class Server {
 
   /**
    * @param queryId query id.
+   * @param subQueryId subquery id.
    * @param fragmentId the fragment id to return data for. All fragments, if < 0.
    * @param start the earliest time where we need data
    * @param end the latest time
@@ -1430,8 +1436,9 @@ public final class Server {
    * 
    * @throws DbException if there is an error when accessing profiling logs.
    */
-  public QueryFuture startLogDataStream(final long queryId, final long fragmentId, final long start, final long end,
-      final long minSpanLength, final boolean onlyRootOperator, final TupleWriter writer) throws DbException {
+  public QueryFuture startLogDataStream(final long queryId, final long subQueryId, final long fragmentId,
+      final long start, final long end, final long minSpanLength, final boolean onlyRootOperator,
+      final TupleWriter writer) throws DbException {
     final QueryStatusEncoding queryStatus = checkAndReturnQueryStatus(queryId);
 
     Preconditions.checkArgument(start < end, "range cannot be negative");
@@ -1446,8 +1453,8 @@ public final class Server {
     if (onlyRootOperator) {
       opCondition =
           Joiner.on(' ').join("AND \"opId\" = (SELECT \"opId\" FROM",
-              MyriaConstants.EVENT_PROFILING_RELATION.toString(getDBMS()), "WHERE", fragmentId, "=\"fragmentId\" AND",
-              queryId, "=\"queryId\" ORDER BY \"startTime\" ASC LIMIT 1)");;
+              MyriaConstants.EVENT_PROFILING_RELATION.toString(getDBMS()), "WHERE \"fragmentId\" =", fragmentId,
+              " AND \"queryId\"=", queryId, "AND \"subQueryId\" =", subQueryId, "ORDER BY \"startTime\" ASC LIMIT 1)");;
     }
 
     String spanCondition = "";
@@ -1458,8 +1465,8 @@ public final class Server {
     String queryString =
         Joiner.on(' ').join("SELECT \"opId\", \"startTime\", \"endTime\", \"numTuples\" FROM",
             MyriaConstants.EVENT_PROFILING_RELATION.toString(getDBMS()), "WHERE \"fragmentId\" =", fragmentId,
-            "AND \"queryId\" =", queryId, "AND \"endTime\" >", start, "AND \"startTime\" <", end, opCondition,
-            spanCondition, "ORDER BY \"startTime\" ASC");
+            "AND \"queryId\" =", queryId, "AND \"subQueryId\" =", subQueryId, "AND \"endTime\" >", start,
+            "AND \"startTime\" <", end, opCondition, spanCondition, "ORDER BY \"startTime\" ASC");
 
     DbQueryScan scan = new DbQueryScan(queryString, schema);
 
@@ -1492,8 +1499,8 @@ public final class Server {
 
     /* Submit the plan for the download. */
     String planString =
-        Joiner.on("").join("download profiling data (query=", queryId, ", fragment=", fragmentId, ", range=[",
-            Joiner.on(", ").join(start, end), "]", ")");
+        Joiner.on("").join("download profiling data (query=", queryId, ", subquery=", subQueryId, ", fragment=",
+            fragmentId, ", range=[", Joiner.on(", ").join(start, end), "]", ")");
     try {
       return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
     } catch (CatalogException e) {
@@ -1506,6 +1513,7 @@ public final class Server {
 
   /**
    * @param queryId query id.
+   * @param subQueryId query id.
    * @param fragmentId the fragment id to return data for. All fragments, if < 0.
    * @param start start of the histogram
    * @param end the end of the histogram
@@ -1516,8 +1524,9 @@ public final class Server {
    * 
    * @throws DbException if there is an error when accessing profiling logs.
    */
-  public QueryFuture startHistogramDataStream(final long queryId, final long fragmentId, final long start,
-      final long end, final long step, final boolean onlyRootOp, final TupleWriter writer) throws DbException {
+  public QueryFuture startHistogramDataStream(final long queryId, final long subQueryId, final long fragmentId,
+      final long start, final long end, final long step, final boolean onlyRootOp, final TupleWriter writer)
+      throws DbException {
     final QueryStatusEncoding queryStatus = checkAndReturnQueryStatus(queryId);
 
     Preconditions.checkArgument(start < end, "range cannot be negative");
@@ -1532,6 +1541,7 @@ public final class Server {
 
     Map<String, Object> queryArgs = new HashMap<>();
     queryArgs.put("QUERY", queryId);
+    queryArgs.put("SUBQUERY", subQueryId);
     queryArgs.put("FRAGMENT", fragmentId);
     queryArgs.put("START", start);
     queryArgs.put("END", end);
@@ -1544,7 +1554,7 @@ public final class Server {
     if (onlyRootOp) {
       sub = new StrSubstitutor(queryArgs);
       filterOpnameQueryString =
-          sub.replace("AND p.\"opId\"=(SELECT \"opId\" FROM ${PROF_TABLE} WHERE \"fragmentId\"=${FRAGMENT} AND \"queryId\"=${QUERY} ORDER BY \"startTime\" ASC LIMIT 1)");
+          sub.replace("AND p.\"opId\"=(SELECT \"opId\" FROM ${PROF_TABLE} WHERE \"fragmentId\"=${FRAGMENT} AND \"queryId\"=${QUERY} AND \"subQueryId\"=${SUBQUERY} ORDER BY \"startTime\" ASC LIMIT 1)");
     }
 
     // Reinitialize the substitutor after including the opname filter.
@@ -1559,7 +1569,7 @@ public final class Server {
                 "FROM (",
                 "SELECT p.\"opId\", greatest((p.\"startTime\"-1-${START}::bigint)/${STEP}::bigint, -1) as \"startBin\", least((p.\"endTime\"+1-${START}::bigint)/${STEP}::bigint, ${BINS}) AS \"endBin\"",
                 "FROM ${PROF_TABLE} p",
-                "WHERE p.\"queryId\" = ${QUERY} and p.\"fragmentId\" = ${FRAGMENT}",
+                "WHERE p.\"queryId\" = ${QUERY} and p.\"subQueryId\" = ${SUBQUERY} and p.\"fragmentId\" = ${FRAGMENT}",
                 "${OPNAME_FILTER}",
                 "AND greatest((p.\"startTime\"-${START}::bigint)/${STEP}::bigint, -1) < least((p.\"endTime\"-${START}::bigint)/${STEP}::bigint, ${BINS}) AND p.\"startTime\" < ${END}::bigint AND p.\"endTime\" >= ${START}::bigint",
                 ") times,", "generate_series(0, ${BINS}) AS s(bin)",
@@ -1596,8 +1606,8 @@ public final class Server {
 
     /* Submit the plan for the download. */
     String planString =
-        Joiner.on("").join("download profiling histogram (query=", queryId, ", fragment=", fragmentId, ", range=[",
-            Joiner.on(", ").join(start, end, step), "]", ")");
+        Joiner.on("").join("download profiling histogram (query=", queryId, ", subquery=", subQueryId, ", fragment=",
+            fragmentId, ", range=[", Joiner.on(", ").join(start, end, step), "]", ")");
     try {
       return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
     } catch (CatalogException e) {
@@ -1607,13 +1617,14 @@ public final class Server {
 
   /**
    * @param queryId the query id
+   * @param subQueryId the subquery id.
    * @param fragmentId the fragment id
    * @param writer writer to get data
    * @return profiling logs for the query.
    * @throws DbException if there is an error when accessing profiling logs.
    */
-  public QueryFuture startRangeDataStream(final Long queryId, final Long fragmentId, final TupleWriter writer)
-      throws DbException {
+  public QueryFuture startRangeDataStream(final long queryId, final long subQueryId, final long fragmentId,
+      final TupleWriter writer) throws DbException {
     final QueryStatusEncoding queryStatus = checkAndReturnQueryStatus(queryId);
 
     final Schema schema = Schema.ofFields("startTime", Type.LONG_TYPE, "endTime", Type.LONG_TYPE);
@@ -1623,7 +1634,7 @@ public final class Server {
 
     String opnameQueryString =
         Joiner.on(' ').join("SELECT min(\"startTime\"), max(\"endTime\") FROM", relationKey.toString(getDBMS()),
-            "WHERE \"queryId\"=", queryId, "AND \"fragmentId\"=", fragmentId);
+            "WHERE \"queryId\"=", queryId, "AND \"subQueryId\"=", subQueryId, "AND \"fragmentId\"=", fragmentId);
 
     DbQueryScan scan = new DbQueryScan(opnameQueryString, schema);
     final ExchangePairID operatorId = ExchangePairID.newID();
@@ -1649,7 +1660,9 @@ public final class Server {
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
     /* Submit the plan for the download. */
-    String planString = Joiner.on("").join("download time range (query=", queryId, ", fragment=", fragmentId, ")");
+    String planString =
+        Joiner.on("").join("download time range (query=", queryId, ", subquery=", subQueryId, ", fragment=",
+            fragmentId, ")");
     try {
       return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
     } catch (CatalogException e) {
@@ -1659,14 +1672,15 @@ public final class Server {
 
   /**
    * @param queryId query id.
+   * @param subQueryId subquery id.
    * @param fragmentId the fragment id to return data for. All fragments, if < 0.
    * @param writer writer to get data.
    * @return contributions for operator.
    * 
    * @throws DbException if there is an error when accessing profiling logs.
    */
-  public QueryFuture startContributionsStream(final long queryId, final long fragmentId, final TupleWriter writer)
-      throws DbException {
+  public QueryFuture startContributionsStream(final long queryId, final long subQueryId, final long fragmentId,
+      final TupleWriter writer) throws DbException {
     final QueryStatusEncoding queryStatus = checkAndReturnQueryStatus(queryId);
 
     final Schema schema = Schema.ofFields("opId", Type.INT_TYPE, "nanoTime", Type.LONG_TYPE);
@@ -1681,7 +1695,7 @@ public final class Server {
 
     String opContributionsQueryString =
         Joiner.on(' ').join("SELECT \"opId\", sum(\"endTime\" - \"startTime\") FROM ", relationKey.toString(getDBMS()),
-            "WHERE \"queryId\"=", queryId, fragIdCondition, "GROUP BY \"opId\"");
+            "WHERE \"queryId\"=", queryId, "AND \"subQueryId\"=", subQueryId, fragIdCondition, "GROUP BY \"opId\"");
 
     DbQueryScan scan = new DbQueryScan(opContributionsQueryString, schema);
     final ExchangePairID operatorId = ExchangePairID.newID();
@@ -1713,7 +1727,8 @@ public final class Server {
 
     /* Submit the plan for the download. */
     String planString =
-        Joiner.on("").join("download operator contributions (query=", queryId, ", fragment=", fragmentId, ")");
+        Joiner.on("").join("download operator contributions (query=", queryId, ", subquery=", subQueryId,
+            ", fragment=", fragmentId, ")");
     try {
       return queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
     } catch (CatalogException e) {

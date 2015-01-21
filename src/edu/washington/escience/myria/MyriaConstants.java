@@ -247,9 +247,9 @@ public final class MyriaConstants {
   /**
    * The schema of the {@link #EVENT_PROFILING_RELATION}.
    */
-  public static final Schema EVENT_PROFILING_SCHEMA = Schema.ofFields(Type.LONG_TYPE, Type.INT_TYPE, Type.INT_TYPE,
-      Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, "queryId", "fragmentId", "opId", "startTime", "endTime",
-      "numTuples");
+  public static final Schema EVENT_PROFILING_SCHEMA = Schema.ofFields("queryId", Type.LONG_TYPE, "subQueryId",
+      Type.INT_TYPE, "fragmentId", Type.INT_TYPE, "opId", Type.INT_TYPE, "startTime", Type.LONG_TYPE, "endTime",
+      Type.LONG_TYPE, "numTuples", Type.LONG_TYPE);
 
   /**
    * The relation that stores profiling information about sent tuples.
@@ -259,8 +259,9 @@ public final class MyriaConstants {
   /**
    * The schema of the {@link #SENT_PROFILING_RELATION}.
    */
-  public static final Schema SENT_PROFILING_SCHEMA = Schema.ofFields(Type.LONG_TYPE, Type.INT_TYPE, Type.LONG_TYPE,
-      Type.LONG_TYPE, Type.INT_TYPE, "queryId", "fragmentId", "nanoTime", "numTuples", "destWorkerId");
+  public static final Schema SENT_PROFILING_SCHEMA = Schema.ofFields("queryId", Type.LONG_TYPE, "subQueryId",
+      Type.LONG_TYPE, "fragmentId", Type.INT_TYPE, "nanoTime", Type.LONG_TYPE, "numTuples", Type.LONG_TYPE,
+      "destWorkerId", Type.INT_TYPE);
 
   /**
    * The relation that stores resource profiling information.
@@ -270,9 +271,9 @@ public final class MyriaConstants {
   /**
    * The schema of the {@link #RESOURCE_PROFILING_RELATION}.
    */
-  public static final Schema RESOURCE_PROFILING_SCHEMA = Schema.ofFields(Type.LONG_TYPE, Type.INT_TYPE,
-      Type.STRING_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, "timestamp", "opId", "measurement", "value",
-      "queryId", "subqueryId");
+  public static final Schema RESOURCE_PROFILING_SCHEMA = Schema.ofFields("timestamp", Type.LONG_TYPE, "opId",
+      Type.INT_TYPE, "measurement", Type.STRING_TYPE, "value", Type.LONG_TYPE, "queryId", Type.LONG_TYPE, "subqueryId",
+      Type.LONG_TYPE);
 
   /**
    * For how long cached versions of the profiling data should be valid.
