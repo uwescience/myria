@@ -187,8 +187,8 @@ public class ProfilingLogger {
   public synchronized void recordSent(final Operator operator, final int numTuples, final int destWorkerId)
       throws DbException {
     SubQueryId sq = operator.getSubQueryId();
-    events.putLong(0, sq.getQueryId());
-    events.putInt(1, (int) sq.getSubqueryId());
+    sent.putLong(0, sq.getQueryId());
+    sent.putInt(1, (int) sq.getSubqueryId());
     sent.putInt(2, operator.getFragmentId());
     sent.putLong(3, getTime(operator));
     sent.putLong(4, numTuples);
