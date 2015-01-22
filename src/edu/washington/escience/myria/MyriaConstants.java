@@ -260,7 +260,7 @@ public final class MyriaConstants {
    * The schema of the {@link #SENT_PROFILING_RELATION}.
    */
   public static final Schema SENT_PROFILING_SCHEMA = Schema.ofFields("queryId", Type.LONG_TYPE, "subQueryId",
-      Type.LONG_TYPE, "fragmentId", Type.INT_TYPE, "nanoTime", Type.LONG_TYPE, "numTuples", Type.LONG_TYPE,
+      Type.INT_TYPE, "fragmentId", Type.INT_TYPE, "nanoTime", Type.LONG_TYPE, "numTuples", Type.LONG_TYPE,
       "destWorkerId", Type.INT_TYPE);
 
   /**
