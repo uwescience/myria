@@ -72,7 +72,7 @@ public final class JsonSubQuery extends QueryPlan {
       serverPlan = new SubQueryPlan(new SinkRoot(new EOSSource()));
     }
 
-    subQueryQ.addFirst(new SubQuery(serverPlan, workerPlans));
+    subQueryQ.addFirst(new SubQuery(null, serverPlan, workerPlans, true));
   }
 
   @Override

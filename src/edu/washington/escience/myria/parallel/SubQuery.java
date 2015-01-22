@@ -10,6 +10,7 @@ import javax.annotation.Nullable;
 
 import org.joda.time.DateTime;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableMap;
@@ -39,6 +40,8 @@ public final class SubQuery extends QueryPlan {
   private final ImmutableMap<RelationKey, RelationWriteMetadata> writeRelations;
   /** The execution statistics about this {@link SubQuery}. */
   private final ExecutionStatistics executionStats;
+  /** Whether this subquery can be profiled. */
+  private final boolean profileable;
 
   /**
    * Construct a new {@link SubQuery} object for this {@link SubQuery}, with pending {@link SubQueryId}.
@@ -59,9 +62,23 @@ public final class SubQuery extends QueryPlan {
    */
   public SubQuery(@Nullable final SubQueryId subQueryId, final SubQueryPlan masterPlan,
       final Map<Integer, SubQueryPlan> workerPlans) {
+    this(subQueryId, masterPlan, workerPlans, null);
+  }
+
+  /**
+   * Construct a new {@link SubQuery} object for this {@link SubQuery}.
+   * 
+   * @param subQueryId the id of this {@link SubQuery}
+   * @param masterPlan the master's {@link SubQueryPlan}
+   * @param workerPlans the {@link SubQueryPlan} for each worker
+   * @param profileable whether this subquery can be profiled
+   */
+  public SubQuery(@Nullable final SubQueryId subQueryId, final SubQueryPlan masterPlan,
+      final Map<Integer, SubQueryPlan> workerPlans, @Nullable final Boolean profileable) {
     this.subQueryId = subQueryId;
     this.masterPlan = Objects.requireNonNull(masterPlan, "masterPlan");
     this.workerPlans = Objects.requireNonNull(workerPlans, "workerPlans");
+    this.profileable = MoreObjects.firstNonNull(profileable, Boolean.FALSE);
     executionStats = new ExecutionStatistics();
 
     ImmutableSet.Builder<RelationKey> read = ImmutableSet.<RelationKey> builder().addAll(masterPlan.readSet());
@@ -178,6 +195,15 @@ public final class SubQuery extends QueryPlan {
     Preconditions.checkState(this.subQueryId == null, "subquery id already set to %s, not changing it to %s",
         this.subQueryId, subQueryId);
     this.subQueryId = subQueryId;
+  }
+
+  /**
+   * Returns <code>true</code> if this subquery can be profiled.
+   * 
+   * @return true if this subquery can be profiled.
+   */
+  public boolean isProfileable() {
+    return profileable;
   }
 
   @Override

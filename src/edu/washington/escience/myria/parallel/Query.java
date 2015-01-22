@@ -179,13 +179,8 @@ public final class Query {
       currentSubQuery.setSubQueryId(new SubQueryId(queryId, subqueryId));
       addDerivedSubQueries(currentSubQuery);
 
-      /*
-       * TODO - revisit when we support profiling with sequences.
-       * 
-       * We only support profiling a single subquery, so disable profiling if subqueryId != 0.
-       */
       Set<ProfilingMode> profilingMode = getProfilingMode();
-      if (subqueryId != 0) {
+      if (!currentSubQuery.isProfileable()) {
         profilingMode = ImmutableSet.of();
       }
 
