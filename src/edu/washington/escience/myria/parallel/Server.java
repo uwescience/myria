@@ -1886,4 +1886,19 @@ public final class Server {
       throw new DbException(e);
     }
   }
+
+  /**
+   * Record the fact that this subquery executed this in the catalog.
+   * 
+   * @param subQueryId the id of the subquery.
+   * @param encodedPlan the plan.
+   * @throws DbException if there is an error in the catalog.
+   */
+  public void setQueryPlan(final SubQueryId subQueryId, @Nonnull final String encodedPlan) throws DbException {
+    try {
+      catalog.setQueryPlan(subQueryId, encodedPlan);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
 }
