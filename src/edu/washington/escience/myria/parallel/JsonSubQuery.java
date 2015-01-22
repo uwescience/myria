@@ -6,11 +6,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.PlanFragmentEncoding;
 import edu.washington.escience.myria.api.encoding.QueryConstruct;
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
@@ -23,6 +28,8 @@ import edu.washington.escience.myria.operator.SinkRoot;
  * a child, but rather can only accept a physical JSON subquery as a set of fragments.
  */
 public final class JsonSubQuery extends QueryPlan {
+  /** The logger for this class. */
+  private static final Logger LOGGER = LoggerFactory.getLogger(JsonSubQuery.class);
   /** The json query to be executed. */
   private final List<PlanFragmentEncoding> fragments;
 
@@ -72,7 +79,13 @@ public final class JsonSubQuery extends QueryPlan {
       serverPlan = new SubQueryPlan(new SinkRoot(new EOSSource()));
     }
 
-    subQueryQ.addFirst(new SubQuery(null, serverPlan, workerPlans, true));
+    String planEncoding = null;
+    try {
+      planEncoding = MyriaJsonMapperProvider.getMapper().writeValueAsString(fragments);
+    } catch (JsonProcessingException e) {
+      LOGGER.error("Unable to encode JsonSubQuery fragments", e);
+    }
+    subQueryQ.addFirst(new SubQuery(null, serverPlan, workerPlans, planEncoding));
   }
 
   @Override

@@ -10,7 +10,6 @@ import javax.annotation.Nullable;
 
 import org.joda.time.DateTime;
 
-import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableMap;
@@ -41,7 +40,7 @@ public final class SubQuery extends QueryPlan {
   /** The execution statistics about this {@link SubQuery}. */
   private final ExecutionStatistics executionStats;
   /** Whether this subquery can be profiled. */
-  private final boolean profileable;
+  private final String planEncoding;
 
   /**
    * Construct a new {@link SubQuery} object for this {@link SubQuery}, with pending {@link SubQueryId}.
@@ -71,14 +70,14 @@ public final class SubQuery extends QueryPlan {
    * @param subQueryId the id of this {@link SubQuery}
    * @param masterPlan the master's {@link SubQueryPlan}
    * @param workerPlans the {@link SubQueryPlan} for each worker
-   * @param profileable whether this subquery can be profiled
+   * @param planEncoding the encoding of the query plan, for subsequent recording.
    */
   public SubQuery(@Nullable final SubQueryId subQueryId, final SubQueryPlan masterPlan,
-      final Map<Integer, SubQueryPlan> workerPlans, @Nullable final Boolean profileable) {
+      final Map<Integer, SubQueryPlan> workerPlans, @Nullable final String planEncoding) {
     this.subQueryId = subQueryId;
     this.masterPlan = Objects.requireNonNull(masterPlan, "masterPlan");
     this.workerPlans = Objects.requireNonNull(workerPlans, "workerPlans");
-    this.profileable = MoreObjects.firstNonNull(profileable, Boolean.FALSE);
+    this.planEncoding = planEncoding;
     executionStats = new ExecutionStatistics();
 
     ImmutableSet.Builder<RelationKey> read = ImmutableSet.<RelationKey> builder().addAll(masterPlan.readSet());
@@ -203,7 +202,16 @@ public final class SubQuery extends QueryPlan {
    * @return true if this subquery can be profiled.
    */
   public boolean isProfileable() {
-    return profileable;
+    return planEncoding != null;
+  }
+
+  /**
+   * Returns the encoded JSON query plan.
+   * 
+   * @return the encoded JSON query plan.
+   */
+  public String getEncodedPlan() {
+    return planEncoding;
   }
 
   @Override
