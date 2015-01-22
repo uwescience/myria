@@ -1901,4 +1901,18 @@ public final class Server {
       throw new DbException(e);
     }
   }
+
+  /**
+   * @param subQueryId the query whose plan to look up.
+   * @return the execution plan for this query.
+   * @throws DbException if there is an error getting the query status.
+   */
+  @Nullable
+  public String getQueryPlan(@Nonnull final SubQueryId subQueryId) throws DbException {
+    try {
+      return catalog.getQueryPlan(subQueryId);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
 }
