@@ -92,7 +92,7 @@ public final class MasterCatalog {
     + "    profiling_mode TEXT,\n" 
     + "    ft_mode TEXT,\n"
     + "    language TEXT);";
-  /** Create the queries table. */
+  /** Create the query full-text search table. */
   private static final String CREATE_QUERIES_FTS =
       "CREATE VIRTUAL TABLE queries_fts USING FTS4(\n"
     + "    query_id INTEGER NOT NULL PRIMARY KEY ASC REFERENCES queries (query_id),\n"
