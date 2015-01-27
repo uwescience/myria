@@ -57,13 +57,17 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
   @Override
   public void operationComplete(final OperationFuture future) throws Exception {
     if (!future.isSuccess()) {
-      LOGGER.debug("SubQuery #{} failed, so not updating the catalog metadata for relations {}.", subQueryId,
-          relationsCreated.keySet());
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug("SubQuery #{} failed, so not updating the catalog metadata for relations {}.", subQueryId,
+            relationsCreated.keySet());
+      }
       return;
     }
 
-    LOGGER.debug("SubQuery #{} succeeded, so updating the catalog metadata for relations {}.", subQueryId,
-        relationsCreated.keySet());
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("SubQuery #{} succeeded, so updating the catalog metadata for relations {}.", subQueryId,
+          relationsCreated.keySet());
+    }
     for (RelationWriteMetadata meta : relationsCreated.values()) {
       RelationKey relation = meta.getRelationKey();
       Set<Integer> workers = meta.getWorkers();
