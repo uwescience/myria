@@ -130,12 +130,19 @@ public final class MasterCatalog {
     + "    num_shards INTEGER NOT NULL,\n"
     + "    how_partitioned TEXT NOT NULL,\n"
     + "    FOREIGN KEY (user_name,program_name,relation_name) REFERENCES relations ON DELETE CASCADE);";
+  /** Create an index on the stored_relations table. */
+  private static final String CREATE_STORED_RELATIONS_INDEX =
+      "CREATE INDEX stored_relations_idx ON stored_relations (\n"
+    + "    user_name, program_name, relation_name);";
   /** Create the stored_relations table. */
   private static final String CREATE_SHARDS =
       "CREATE TABLE shards (\n"
     + "    stored_relation_id INTEGER NOT NULL REFERENCES stored_relations ON DELETE CASCADE,\n"
     + "    shard_index INTEGER NOT NULL,\n"
     + "    worker_id INTEGER NOT NULL REFERENCES workers);";
+  /** Create an index on the shards table. */
+  private static final String CREATE_SHARDS_INDEX =
+      "CREATE INDEX shards_idx ON shards (stored_relation_id);";
   /** Create the stored_relations table. */
   private static final String UPDATE_UNKNOWN_STATUS =
       "UPDATE queries "
@@ -208,7 +215,9 @@ public final class MasterCatalog {
             sqliteConnection.exec(CREATE_RELATION_SCHEMA);
             sqliteConnection.exec(CREATE_RELATION_SCHEMA_INDEX);
             sqliteConnection.exec(CREATE_STORED_RELATIONS);
+            sqliteConnection.exec(CREATE_STORED_RELATIONS_INDEX);
             sqliteConnection.exec(CREATE_SHARDS);
+            sqliteConnection.exec(CREATE_SHARDS_INDEX);
             sqliteConnection.exec("END TRANSACTION");
           } catch (final SQLiteException e) {
             sqliteConnection.exec("ROLLBACK TRANSACTION");
