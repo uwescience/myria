@@ -43,6 +43,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import edu.washington.escience.myria.CsvTupleWriter;
@@ -1372,7 +1373,7 @@ public final class Server {
      */
     ObjectMapper mapper = MyriaJsonMapperProvider.getMapper();
     List<Map<String, Object>> fragments;
-    ImmutableSet.Builder<Integer> actualWorkersB = ImmutableSet.builder();
+    Set<Integer> actualWorkers = Sets.newHashSet();
     try {
       fragments = mapper.readValue(plan, new TypeReference<List<Map<String, Object>>>() {
       });
@@ -1385,7 +1386,7 @@ public final class Server {
         try {
           @SuppressWarnings("unchecked")
           Collection<Integer> curWorkers = (Collection<Integer>) fragWorkers;
-          actualWorkersB.addAll(curWorkers);
+          actualWorkers.addAll(curWorkers);
         } catch (ClassCastException e) {
           throw new IllegalStateException("Expected fragWorkers to be a collection of ints, instead found "
               + fragWorkers);
@@ -1394,7 +1395,9 @@ public final class Server {
     } catch (IOException e) {
       throw new IllegalArgumentException("Error deserializing workers from encoded plan " + plan, e);
     }
-    return actualWorkersB.build();
+    /* Remove the MASTER from the set. */
+    actualWorkers.remove(MyriaConstants.MASTER_ID);
+    return actualWorkers;
   }
 
   /**
