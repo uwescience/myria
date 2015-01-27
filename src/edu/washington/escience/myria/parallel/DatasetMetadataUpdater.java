@@ -71,12 +71,11 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
         catalog.deleteRelationIfExists(meta.getRelationKey());
       }
       Schema schema = meta.getSchema();
-      if (catalog.getSchema(relation) == null) {
+      if (meta.isOverwrite() || catalog.getSchema(relation) == null) {
         /* Overwrite or new relation. */
         catalog.addRelationMetadata(relation, schema, -1, subQueryId.getQueryId());
         catalog.addStoredRelation(relation, workers, "unknown");
-        LOGGER.debug("SubQuery #{} - adding {} to store shard of {}", subQueryId.getQueryId(), workers, relation
-            .toString());
+        LOGGER.debug("SubQuery #{} - adding {} to store shard of {}", subQueryId, workers, relation);
       }
     }
   }
