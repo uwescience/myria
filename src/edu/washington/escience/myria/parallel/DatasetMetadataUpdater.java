@@ -40,11 +40,11 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
    * successfully.
    * 
    * @param catalog the MasterCatalog that will be updated.
-   * @param metadata informationa about the relations created by subquery.
+   * @param metadata information about the relations created by subquery.
    * @param subQueryId the subquery that will write these relations to the cluster.
    */
   public DatasetMetadataUpdater(@Nonnull final MasterCatalog catalog,
-      final Map<RelationKey, RelationWriteMetadata> metadata, @Nonnull final SubQueryId subQueryId) {
+      @Nonnull final Map<RelationKey, RelationWriteMetadata> metadata, @Nonnull final SubQueryId subQueryId) {
     this.catalog = Objects.requireNonNull(catalog, "catalog");
     this.subQueryId = Objects.requireNonNull(subQueryId, "subQueryId");
     relationsCreated = Objects.requireNonNull(metadata, "metadata");
