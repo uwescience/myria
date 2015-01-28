@@ -2,7 +2,6 @@ package edu.washington.escience.myria.parallel;
 
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import javax.annotation.Nonnull;
 
@@ -12,7 +11,6 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.RelationKey;
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
 import edu.washington.escience.myria.util.concurrent.OperationFuture;
 import edu.washington.escience.myria.util.concurrent.OperationFutureListener;
@@ -63,24 +61,10 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
       }
       return;
     }
-
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("SubQuery #{} succeeded, so updating the catalog metadata for relations {}.", subQueryId,
           relationsCreated.keySet());
     }
-    for (RelationWriteMetadata meta : relationsCreated.values()) {
-      RelationKey relation = meta.getRelationKey();
-      Set<Integer> workers = meta.getWorkers();
-      if (meta.isOverwrite()) {
-        catalog.deleteRelationIfExists(meta.getRelationKey());
-      }
-      Schema schema = meta.getSchema();
-      if (meta.isOverwrite() || catalog.getSchema(relation) == null) {
-        /* Overwrite or new relation. */
-        catalog.addRelationMetadata(relation, schema, -1, subQueryId.getQueryId());
-        catalog.addStoredRelation(relation, workers, "unknown");
-        LOGGER.debug("SubQuery #{} - adding {} to store shard of {}", subQueryId, workers, relation);
-      }
-    }
+    catalog.updateRelationMetadata(relationsCreated, subQueryId);
   }
 }

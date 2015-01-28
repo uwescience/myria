@@ -68,6 +68,7 @@ import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DuplicateTBGenerator;
 import edu.washington.escience.myria.operator.EOSSource;
+import edu.washington.escience.myria.operator.EmptyRelation;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
@@ -823,7 +824,6 @@ public final class Server {
           workerIds);
       addRelationToCatalogIfNotExists(MyriaConstants.RESOURCE_PROFILING_RELATION,
           MyriaConstants.RESOURCE_PROFILING_SCHEMA, workerIds);
-
     }
   }
 
@@ -856,13 +856,17 @@ public final class Server {
       queryState.markSuccess();
       catalog.queryFinished(queryState);
 
-      // set a number of tuples so the data can be downloaded
-      catalog.addRelationMetadata(relationKey, schema, 0, queryId);
-      catalog.addStoredRelation(relationKey, workers, "AsRecorded");
+      Map<RelationKey, RelationWriteMetadata> relation = new HashMap<>();
+      RelationWriteMetadata meta = new RelationWriteMetadata(relationKey, schema, true, false);
+      for (Integer worker : workers) {
+        meta.addWorker(worker);
+      }
+      relation.put(relationKey, meta);
+
+      catalog.updateRelationMetadata(relation, new SubQueryId(queryId, 0));
     } catch (CatalogException e) {
       throw new DbException(e);
     }
-
   }
 
   /**
@@ -1007,26 +1011,19 @@ public final class Server {
     try {
       Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
       for (Integer workerId : actualWorkers) {
-        workerPlans.put(workerId, new SubQueryPlan(new SinkRoot(new EOSSource())));
+        workerPlans.put(workerId, new SubQueryPlan(new DbInsert(EmptyRelation.of(schema), relationKey, false)));
       }
       ListenableFuture<Query> qf =
           queryManager.submitQuery("import " + relationKey.toString(), "import " + relationKey.toString(), "import "
               + relationKey.toString(getDBMS()), new SubQueryPlan(new SinkRoot(new EOSSource())), workerPlans);
-      Query queryState;
       try {
-        queryState = qf.get();
+        qf.get();
       } catch (ExecutionException e) {
         throw new DbException("Error executing query", e.getCause());
       }
-
-      /* TODO(dhalperi) -- figure out how to populate the numTuples column. */
-      catalog.addRelationMetadata(relationKey, schema, -1, queryState.getQueryId());
-      /* Add the round robin-partitioned shard. */
-      catalog.addStoredRelation(relationKey, actualWorkers, "RoundRobin");
     } catch (CatalogException e) {
       throw new DbException(e);
     }
-
   }
 
   /**
