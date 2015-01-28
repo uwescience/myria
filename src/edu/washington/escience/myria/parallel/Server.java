@@ -818,28 +818,29 @@ public final class Server {
 
     if (getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
       final Set<Integer> workerIds = workers.keySet();
-      addRelationToCatalogIfNotExists(MyriaConstants.EVENT_PROFILING_RELATION, MyriaConstants.EVENT_PROFILING_SCHEMA,
-          workerIds);
-      addRelationToCatalogIfNotExists(MyriaConstants.SENT_PROFILING_RELATION, MyriaConstants.SENT_PROFILING_SCHEMA,
-          workerIds);
-      addRelationToCatalogIfNotExists(MyriaConstants.RESOURCE_PROFILING_RELATION,
-          MyriaConstants.RESOURCE_PROFILING_SCHEMA, workerIds);
+      addRelationToCatalog(MyriaConstants.EVENT_PROFILING_RELATION, MyriaConstants.EVENT_PROFILING_SCHEMA, workerIds,
+          false);
+      addRelationToCatalog(MyriaConstants.SENT_PROFILING_RELATION, MyriaConstants.SENT_PROFILING_SCHEMA, workerIds,
+          false);
+      addRelationToCatalog(MyriaConstants.RESOURCE_PROFILING_RELATION, MyriaConstants.RESOURCE_PROFILING_SCHEMA,
+          workerIds, false);
     }
   }
 
   /**
-   * Manually add a relation to the catalog if it not already exists.
+   * Manually add a relation to the catalog.
    * 
    * @param relationKey the relation to add
    * @param schema the schema of the relation to add
    * @param workers the workers that have the relation
+   * @param force force add the relation; will replace an existing entry.
    * 
    * @throws DbException if the catalog cannot be accessed
    */
-  private void addRelationToCatalogIfNotExists(final RelationKey relationKey, final Schema schema,
-      final Set<Integer> workers) throws DbException {
+  private void addRelationToCatalog(final RelationKey relationKey, final Schema schema, final Set<Integer> workers,
+      final boolean force) throws DbException {
     try {
-      if (getSchema(relationKey) != null) {
+      if (!force && getSchema(relationKey) != null) {
         return;
       }
 
@@ -1007,6 +1008,8 @@ public final class Server {
     if (workersToImportFrom == null) {
       actualWorkers = getWorkers().keySet();
     }
+
+    addRelationToCatalog(relationKey, schema, workersToImportFrom, true);
 
     try {
       Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
