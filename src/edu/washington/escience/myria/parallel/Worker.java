@@ -119,6 +119,24 @@ public final class Worker {
                   connectionPool.putRemote(workerId, SocketInfo.fromProtobuf(cm.getRemoteAddress()));
                   sendMessageToMaster(IPCUtils.addWorkerAckTM(workerId));
                   break;
+                case STOP_WORKER:
+                  if (LOGGER.isInfoEnabled()) {
+                    LOGGER.info("received STOP_WORKER " + workerId);
+                  }
+                  if (activeQueries.isEmpty()) {
+                    connectionPool.removeRemote(workerId).await();
+                    sendMessageToMaster(IPCUtils.stopWorkerAckTM(workerId));
+                    if (LOGGER.isInfoEnabled()) {
+                      LOGGER.info("worker " + workerId + " stopped");
+                    }
+                    status = WorkerStatus.Stopped;
+                  } else {
+                    if (LOGGER.isInfoEnabled()) {
+                      LOGGER.info("worker " + workerId + " stopping, waiting to active queries to finish");
+                    }
+                    status = WorkerStatus.Stopping;
+                  }
+                  break;
                 default:
                   if (LOGGER.isErrorEnabled()) {
                     LOGGER.error("Unexpected control message received at worker: " + cm.getType());
@@ -168,6 +186,11 @@ public final class Worker {
 
     @Override
     public final void run() {
+      /* A stopping worker must not accept any more queries. */
+      if (status == WorkerStatus.Stopping) {
+        return;
+      }
+      
       try {
         QueryCommand q = null;
         while (true) {
@@ -221,8 +244,12 @@ public final class Worker {
   private class HeartbeatReporter extends ErrorLoggingTimerTask {
     @Override
     public synchronized void runInner() {
-      LOGGER.trace("sending heartbeat to server");
-      sendMessageToMaster(IPCUtils.CONTROL_WORKER_HEARTBEAT).awaitUninterruptibly();
+      if (status == WorkerStatus.Running) {
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace("sending heartbeat to server");
+        }
+        sendMessageToMaster(IPCUtils.CONTROL_WORKER_HEARTBEAT).awaitUninterruptibly();
+      }
     }
   }
 
@@ -306,6 +333,36 @@ public final class Worker {
    * connectionPool[0] is always the master.
    */
   private final IPCConnectionPool connectionPool;
+  
+  /**
+   * Possible worker status.
+   * 
+   * @author valmeida
+   * 
+   */
+  public enum WorkerStatus {
+    /**
+     * the worker is stopped.
+     */
+    Stopped,
+    /**
+     * The worker is stopping, it does not accept new queries at this point and no heartbeats are sent to the master.
+     */
+    Stopping,
+    /**
+     * The worker is up and running.
+     */
+    Running,
+    /**
+     * The worker has stopped for some unknown reason. This status should be used for failure handling only.
+     */
+    Zombie
+  }
+  
+  /**
+   * The worker status.
+   */
+  private volatile WorkerStatus status = WorkerStatus.Stopped;
 
   /**
    * A indicator of shutting down the worker.
@@ -639,6 +696,8 @@ public final class Worker {
     }
     LOGGER.info("Worker: Connection info " + jsonConnInfo);
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO, ConnectionInfo.of(databaseSystem, jsonConnInfo));
+
+    status = WorkerStatus.Running;
   }
 
   /**
@@ -697,6 +756,19 @@ public final class Worker {
               }
             }
           });
+        }
+        
+        if (status == WorkerStatus.Stopping && activeQueries.isEmpty()) {
+          try {
+            connectionPool.removeRemote(myID).await();
+            sendMessageToMaster(IPCUtils.stopWorkerAckTM(myID));
+            if (LOGGER.isInfoEnabled()) {
+              LOGGER.info("worker " + myID + " stopped");
+            }
+            status = WorkerStatus.Stopped;
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+          }
         }
       }
     });

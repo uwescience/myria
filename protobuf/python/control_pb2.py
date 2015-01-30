@@ -18,7 +18,7 @@ _sym_db = _symbol_database.Default()
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='control.proto',
   package='',
-  serialized_pb=_b('\n\rcontrol.proto\"\xa3\x02\n\x0e\x43ontrolMessage\x12\"\n\x04type\x18\x01 \x02(\x0e\x32\x14.ControlMessage.Type\x12\x11\n\tworker_id\x18\x02 \x01(\x05\x12#\n\x0eremote_address\x18\x03 \x01(\x0b\x32\x0b.SocketInfo\x12&\n\x0eresource_stats\x18\x04 \x03(\x0b\x32\x0e.ResourceStats\"\x8c\x01\n\x04Type\x12\x0c\n\x08SHUTDOWN\x10\x01\x12\x14\n\x10WORKER_HEARTBEAT\x10\x02\x12\x11\n\rREMOVE_WORKER\x10\x03\x12\x0e\n\nADD_WORKER\x10\x04\x12\x15\n\x11REMOVE_WORKER_ACK\x10\x05\x12\x12\n\x0e\x41\x44\x44_WORKER_ACK\x10\x06\x12\x12\n\x0eRESOURCE_STATS\x10\x07\"(\n\nSocketInfo\x12\x0c\n\x04host\x18\x01 \x02(\t\x12\x0c\n\x04port\x18\x02 \x02(\x05\"y\n\rResourceStats\x12\x11\n\ttimestamp\x18\x01 \x02(\x03\x12\x0c\n\x04opId\x18\x02 \x02(\x05\x12\x13\n\x0bmeasurement\x18\x03 \x02(\t\x12\r\n\x05value\x18\x04 \x02(\x03\x12\x0f\n\x07queryId\x18\x05 \x02(\x03\x12\x12\n\nsubqueryId\x18\x06 \x02(\x03\x42\x33\n#edu.washington.escience.myria.protoB\x0c\x43ontrolProto')
+  serialized_pb=_b('\n\rcontrol.proto\"\xc9\x02\n\x0e\x43ontrolMessage\x12\"\n\x04type\x18\x01 \x02(\x0e\x32\x14.ControlMessage.Type\x12\x11\n\tworker_id\x18\x02 \x01(\x05\x12#\n\x0eremote_address\x18\x03 \x01(\x0b\x32\x0b.SocketInfo\x12&\n\x0eresource_stats\x18\x04 \x03(\x0b\x32\x0e.ResourceStats\"\xb2\x01\n\x04Type\x12\x0c\n\x08SHUTDOWN\x10\x01\x12\x14\n\x10WORKER_HEARTBEAT\x10\x02\x12\x11\n\rREMOVE_WORKER\x10\x03\x12\x0e\n\nADD_WORKER\x10\x04\x12\x15\n\x11REMOVE_WORKER_ACK\x10\x05\x12\x12\n\x0e\x41\x44\x44_WORKER_ACK\x10\x06\x12\x12\n\x0eRESOURCE_STATS\x10\x07\x12\x0f\n\x0bSTOP_WORKER\x10\x08\x12\x13\n\x0fSTOP_WORKER_ACK\x10\t\"(\n\nSocketInfo\x12\x0c\n\x04host\x18\x01 \x02(\t\x12\x0c\n\x04port\x18\x02 \x02(\x05\"y\n\rResourceStats\x12\x11\n\ttimestamp\x18\x01 \x02(\x03\x12\x0c\n\x04opId\x18\x02 \x02(\x05\x12\x13\n\x0bmeasurement\x18\x03 \x02(\t\x12\r\n\x05value\x18\x04 \x02(\x03\x12\x0f\n\x07queryId\x18\x05 \x02(\x03\x12\x12\n\nsubqueryId\x18\x06 \x02(\x03\x42\x33\n#edu.washington.escience.myria.protoB\x0c\x43ontrolProto')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -58,11 +58,19 @@ _CONTROLMESSAGE_TYPE = _descriptor.EnumDescriptor(
       name='RESOURCE_STATS', index=6, number=7,
       options=None,
       type=None),
+    _descriptor.EnumValueDescriptor(
+      name='STOP_WORKER', index=7, number=8,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='STOP_WORKER_ACK', index=8, number=9,
+      options=None,
+      type=None),
   ],
   containing_type=None,
   options=None,
   serialized_start=169,
-  serialized_end=309,
+  serialized_end=347,
 )
 _sym_db.RegisterEnumDescriptor(_CONTROLMESSAGE_TYPE)
 
@@ -115,7 +123,7 @@ _CONTROLMESSAGE = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=18,
-  serialized_end=309,
+  serialized_end=347,
 )
 
 
@@ -151,8 +159,8 @@ _SOCKETINFO = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=311,
-  serialized_end=351,
+  serialized_start=349,
+  serialized_end=389,
 )
 
 
@@ -216,8 +224,8 @@ _RESOURCESTATS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=353,
-  serialized_end=474,
+  serialized_start=391,
+  serialized_end=512,
 )
 
 _CONTROLMESSAGE.fields_by_name['type'].enum_type = _CONTROLMESSAGE_TYPE

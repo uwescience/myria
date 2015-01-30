@@ -13,6 +13,7 @@ import javax.net.ssl.SSLException;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Objects;
 import com.google.common.base.MoreObjects;
 
 import edu.washington.escience.myria.MyriaConstants;
@@ -175,7 +176,7 @@ public final class DeploymentUtils {
     String workerDir = path + "/" + description + "/" + "worker_" + workerId;
     String classpath = "'" + path + "/conf:" + path + "/libs/*'";
     String librarypath = path + "/" + "sqlite4java-392";
-    String heapSize = maxHeapSize;
+    String heapSize = Objects.firstNonNull(maxHeapSize, "");
     if (description == null) {
       /* built in system test */
       path = workingDir;

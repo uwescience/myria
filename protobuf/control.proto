@@ -10,6 +10,8 @@ message ControlMessage {
     REMOVE_WORKER_ACK = 5; // worker -> master
     ADD_WORKER_ACK = 6; // worker -> master
     RESOURCE_STATS = 7; // worker -> master
+    STOP_WORKER = 8; // master -> workers
+    STOP_WORKER_ACK = 9; // worker -> master
   }
 
   required ControlMessage.Type type = 1;		// See enum above
