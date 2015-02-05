@@ -46,6 +46,7 @@ import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.plan.SubPlanEncoding;
 import edu.washington.escience.myria.parallel.Query;
 import edu.washington.escience.myria.parallel.SocketInfo;
+import edu.washington.escience.myria.parallel.SubQueryId;
 
 /**
  * This class is intended to store the configuration information for a Myria installation.
@@ -92,11 +93,19 @@ public final class MasterCatalog {
     + "    profiling_mode TEXT,\n" 
     + "    ft_mode TEXT,\n"
     + "    language TEXT);";
-  /** Create the queries table. */
+  /** Create the query full-text search table. */
   private static final String CREATE_QUERIES_FTS =
       "CREATE VIRTUAL TABLE queries_fts USING FTS4(\n"
     + "    query_id INTEGER NOT NULL PRIMARY KEY ASC REFERENCES queries (query_id),\n"
     + "    raw_query_fts TEXT NOT NULL);";
+  /** Create the query plans table. */
+  private static final String CREATE_QUERY_PLANS =
+      "CREATE TABLE query_plans (\n"
+    + "    query_id INTEGER NOT NULL,\n"
+    + "    subquery_id INTEGER NOT NULL,\n"
+    + "    plan TEXT NOT NULL,\n"
+    + "    PRIMARY KEY (query_id, subquery_id)\n"
+    + ");";
   /** Create the relations table. */
   private static final String CREATE_RELATIONS =
       "CREATE TABLE relations (\n"
@@ -204,6 +213,7 @@ public final class MasterCatalog {
             sqliteConnection.exec(CREATE_ALIVE_WORKERS);
             sqliteConnection.exec(CREATE_QUERIES);
             sqliteConnection.exec(CREATE_QUERIES_FTS);
+            sqliteConnection.exec(CREATE_QUERY_PLANS);
             sqliteConnection.exec(CREATE_RELATIONS);
             sqliteConnection.exec(CREATE_RELATION_SCHEMA);
             sqliteConnection.exec(CREATE_RELATION_SCHEMA_INDEX);
@@ -1816,6 +1826,80 @@ public final class MasterCatalog {
             throw new CatalogException(e);
           }
           return null;
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
+   * Record the fact that this subquery executed this in the catalog.
+   * 
+   * @param subQueryId the id of the subquery.
+   * @param encodedPlan the plan.
+   * @throws CatalogException if there is an error.
+   */
+  public void setQueryPlan(@Nonnull final SubQueryId subQueryId, @Nonnull final String encodedPlan)
+      throws CatalogException {
+    Preconditions.checkNotNull(subQueryId, "subQueryId");
+    Preconditions.checkNotNull(encodedPlan, "encodedPlan");
+    /* Do the work */
+    try {
+      queue.execute(new SQLiteJob<Void>() {
+        @Override
+        protected Void job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+          try {
+            SQLiteStatement statement =
+                sqliteConnection.prepare("INSERT INTO query_plans (query_id, subquery_id, plan) VALUES (?,?,?);");
+            statement.bind(1, subQueryId.getQueryId());
+            statement.bind(2, subQueryId.getSubqueryId());
+            statement.bind(3, encodedPlan);
+            statement.stepThrough();
+            statement.dispose();
+            statement = null;
+          } catch (final SQLiteException e) {
+            throw new CatalogException(e);
+          }
+          return null;
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
+   * Get the saved query plan for the target subquery.
+   * 
+   * @param subQueryId the id of the subquery.
+   * @return the saved query plan for the target subquery.
+   * @throws CatalogException if there is an error.
+   */
+  @Nullable
+  public String getQueryPlan(final SubQueryId subQueryId) throws CatalogException {
+    Preconditions.checkNotNull(subQueryId, "subQueryId");
+    /* Do the work */
+    try {
+      return queue.execute(new SQLiteJob<String>() {
+        @Override
+        protected String job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+          String ret = null;
+          try {
+            SQLiteStatement statement =
+                sqliteConnection.prepare("SELECT plan FROM query_plans WHERE query_id=? AND subquery_id=?;");
+            statement.bind(1, subQueryId.getQueryId());
+            statement.bind(2, subQueryId.getSubqueryId());
+
+            if (statement.step()) {
+              ret = statement.columnString(0);
+            }
+            statement.dispose();
+            statement = null;
+          } catch (final SQLiteException e) {
+            throw new CatalogException(e);
+          }
+          return ret;
         }
       }).get();
     } catch (InterruptedException | ExecutionException e) {

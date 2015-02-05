@@ -19,6 +19,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.parallel.LocalFragment;
 import edu.washington.escience.myria.parallel.LocalFragmentResourceManager;
 import edu.washington.escience.myria.parallel.LocalSubQuery;
+import edu.washington.escience.myria.parallel.SubQueryId;
 import edu.washington.escience.myria.parallel.WorkerSubQuery;
 import edu.washington.escience.myria.profiling.ProfilingLogger;
 import edu.washington.escience.myria.storage.TupleBatch;
@@ -105,11 +106,11 @@ public abstract class Operator implements Serializable {
   }
 
   /**
-   * @return return query id.
+   * @return return subquery id.
    */
-  public long getQueryId() {
+  public SubQueryId getSubQueryId() {
     return ((LocalFragmentResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER))
-        .getFragment().getLocalSubQuery().getSubQueryId().getQueryId();
+        .getFragment().getLocalSubQuery().getSubQueryId();
   }
 
   /**
