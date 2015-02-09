@@ -39,6 +39,8 @@ public final class SubQuery extends QueryPlan {
   private final ImmutableMap<RelationKey, RelationWriteMetadata> writeRelations;
   /** The execution statistics about this {@link SubQuery}. */
   private final ExecutionStatistics executionStats;
+  /** Whether this subquery can be profiled. */
+  private final String planEncoding;
 
   /**
    * Construct a new {@link SubQuery} object for this {@link SubQuery}, with pending {@link SubQueryId}.
@@ -59,9 +61,23 @@ public final class SubQuery extends QueryPlan {
    */
   public SubQuery(@Nullable final SubQueryId subQueryId, final SubQueryPlan masterPlan,
       final Map<Integer, SubQueryPlan> workerPlans) {
+    this(subQueryId, masterPlan, workerPlans, null);
+  }
+
+  /**
+   * Construct a new {@link SubQuery} object for this {@link SubQuery}.
+   * 
+   * @param subQueryId the id of this {@link SubQuery}
+   * @param masterPlan the master's {@link SubQueryPlan}
+   * @param workerPlans the {@link SubQueryPlan} for each worker
+   * @param planEncoding the encoding of the query plan, for subsequent recording.
+   */
+  public SubQuery(@Nullable final SubQueryId subQueryId, final SubQueryPlan masterPlan,
+      final Map<Integer, SubQueryPlan> workerPlans, @Nullable final String planEncoding) {
     this.subQueryId = subQueryId;
     this.masterPlan = Objects.requireNonNull(masterPlan, "masterPlan");
     this.workerPlans = Objects.requireNonNull(workerPlans, "workerPlans");
+    this.planEncoding = planEncoding;
     executionStats = new ExecutionStatistics();
 
     ImmutableSet.Builder<RelationKey> read = ImmutableSet.<RelationKey> builder().addAll(masterPlan.readSet());
@@ -178,6 +194,24 @@ public final class SubQuery extends QueryPlan {
     Preconditions.checkState(this.subQueryId == null, "subquery id already set to %s, not changing it to %s",
         this.subQueryId, subQueryId);
     this.subQueryId = subQueryId;
+  }
+
+  /**
+   * Returns <code>true</code> if this subquery can be profiled.
+   * 
+   * @return true if this subquery can be profiled.
+   */
+  public boolean isProfileable() {
+    return planEncoding != null;
+  }
+
+  /**
+   * Returns the encoded JSON query plan.
+   * 
+   * @return the encoded JSON query plan.
+   */
+  public String getEncodedPlan() {
+    return planEncoding;
   }
 
   @Override

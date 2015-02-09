@@ -24,12 +24,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 
+import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QuerySearchResults;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.parallel.QueryFuture;
 import edu.washington.escience.myria.parallel.Server;
+import edu.washington.escience.myria.parallel.SubQueryId;
 
 /**
  * Class that handles queries.
@@ -148,6 +150,29 @@ public final class QueryResource {
     if (!QueryStatusEncoding.Status.finished(queryStatus.status)) {
       response.cacheControl(MyriaApiUtils.doNotCache());
     }
+    return response.build();
+  }
+
+  /**
+   * Get the cached execution plan for a specific subquery.
+   * 
+   * @param queryId the query id.
+   * @param subQueryId the query id.
+   * @param uriInfo the URL of the current request.
+   * @return the cached execution plan for the specified subquery.
+   * @throws DbException if there is an error in the catalog.
+   */
+  @GET
+  @Path("query-{queryId:\\d+}/subquery-{subQueryId:\\d+}")
+  public Response getQueryPlan(@PathParam("queryId") final long queryId,
+      @PathParam("subQueryId") final long subQueryId, @Context final UriInfo uriInfo) throws DbException {
+    final String queryPlan = server.getQueryPlan(new SubQueryId(queryId, subQueryId));
+    final URI uri = uriInfo.getAbsolutePath();
+    if (queryPlan == null) {
+      return Response.status(Status.NOT_FOUND).contentLocation(uri).entity(
+          "Query " + queryId + "." + subQueryId + " has no saved execution plan.").build();
+    }
+    ResponseBuilder response = Response.ok().location(uri).entity(queryPlan);
     return response.build();
   }
 

@@ -17,6 +17,7 @@ import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.JdbcAccessMethod;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.parallel.ResourceStats;
+import edu.washington.escience.myria.parallel.SubQueryId;
 import edu.washington.escience.myria.parallel.WorkerSubQuery;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
@@ -75,7 +76,9 @@ public class ProfilingLogger {
   protected void createSentIndex() throws DbException {
     final Schema schema = MyriaConstants.SENT_PROFILING_SCHEMA;
 
-    List<IndexRef> index = ImmutableList.of(IndexRef.of(schema, "queryId"), IndexRef.of(schema, "fragmentId"));
+    List<IndexRef> index =
+        ImmutableList.of(IndexRef.of(schema, "queryId"), IndexRef.of(schema, "subQueryId"), IndexRef.of(schema,
+            "fragmentId"));
     try {
       accessMethod.createIndexIfNotExists(MyriaConstants.SENT_PROFILING_RELATION, schema, index);
     } catch (DbException e) {
@@ -105,11 +108,12 @@ public class ProfilingLogger {
     final Schema schema = MyriaConstants.EVENT_PROFILING_SCHEMA;
 
     List<IndexRef> rootOpsIndex =
-        ImmutableList.of(IndexRef.of(schema, "queryId"), IndexRef.of(schema, "fragmentId"), IndexRef.of(schema,
-            "startTime"), IndexRef.of(schema, "endTime"));
+        ImmutableList.of(IndexRef.of(schema, "queryId"), IndexRef.of(schema, "subQueryId"), IndexRef.of(schema,
+            "fragmentId"), IndexRef.of(schema, "startTime"), IndexRef.of(schema, "endTime"));
     List<IndexRef> filterIndex =
-        ImmutableList.of(IndexRef.of(schema, "queryId"), IndexRef.of(schema, "fragmentId"),
-            IndexRef.of(schema, "opId"), IndexRef.of(schema, "startTime"), IndexRef.of(schema, "endTime"));
+        ImmutableList.of(IndexRef.of(schema, "queryId"), IndexRef.of(schema, "subQueryId"), IndexRef.of(schema,
+            "fragmentId"), IndexRef.of(schema, "opId"), IndexRef.of(schema, "startTime"), IndexRef
+            .of(schema, "endTime"));
 
     try {
       accessMethod.createIndexIfNotExists(MyriaConstants.EVENT_PROFILING_RELATION, schema, rootOpsIndex);
@@ -159,13 +163,14 @@ public class ProfilingLogger {
    */
   public synchronized void recordEvent(final Operator operator, final long numTuples, final long startTime)
       throws DbException {
-
-    events.putLong(0, operator.getQueryId());
-    events.putInt(1, operator.getFragmentId());
-    events.putInt(2, operator.getOpId());
-    events.putLong(3, startTime);
-    events.putLong(4, getTime(operator));
-    events.putLong(5, numTuples);
+    SubQueryId sq = operator.getSubQueryId();
+    events.putLong(0, sq.getQueryId());
+    events.putInt(1, (int) sq.getSubqueryId());
+    events.putInt(2, operator.getFragmentId());
+    events.putInt(3, operator.getOpId());
+    events.putLong(4, startTime);
+    events.putLong(5, getTime(operator));
+    events.putLong(6, numTuples);
 
     flush(MyriaConstants.EVENT_PROFILING_RELATION, events.popFilled());
   }
@@ -181,11 +186,13 @@ public class ProfilingLogger {
    */
   public synchronized void recordSent(final Operator operator, final int numTuples, final int destWorkerId)
       throws DbException {
-    sent.putLong(0, operator.getQueryId());
-    sent.putInt(1, operator.getFragmentId());
-    sent.putLong(2, getTime(operator));
-    sent.putLong(3, numTuples);
-    sent.putInt(4, destWorkerId);
+    SubQueryId sq = operator.getSubQueryId();
+    sent.putLong(0, sq.getQueryId());
+    sent.putInt(1, (int) sq.getSubqueryId());
+    sent.putInt(2, operator.getFragmentId());
+    sent.putLong(3, getTime(operator));
+    sent.putLong(4, numTuples);
+    sent.putInt(5, destWorkerId);
 
     flush(MyriaConstants.SENT_PROFILING_RELATION, sent.popFilled());
   }

@@ -71,10 +71,6 @@ Slightly modified version of Sun Checks that better matches the default code for
       <property name="severity" value="ignore"/>
       <metadata name="net.sf.eclipsecs.core.lastEnabledSeverity" value="inherit"/>
     </module>
-    <module name="RedundantThrows">
-      <property name="allowUnchecked" value="true"/>
-      <property name="suppressLoadErrors" value="true"/>
-    </module>
     <module name="SimplifyBooleanExpression"/>
     <module name="SimplifyBooleanReturn"/>
     <module name="FinalClass"/>
