@@ -71,6 +71,7 @@ import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DuplicateTBGenerator;
 import edu.washington.escience.myria.operator.EOSSource;
+import edu.washington.escience.myria.operator.EmptyRelation;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
@@ -820,29 +821,29 @@ public final class Server {
 
     if (getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
       final Set<Integer> workerIds = workers.keySet();
-      addRelationToCatalogIfNotExists(MyriaConstants.EVENT_PROFILING_RELATION, MyriaConstants.EVENT_PROFILING_SCHEMA,
-          workerIds);
-      addRelationToCatalogIfNotExists(MyriaConstants.SENT_PROFILING_RELATION, MyriaConstants.SENT_PROFILING_SCHEMA,
-          workerIds);
-      addRelationToCatalogIfNotExists(MyriaConstants.RESOURCE_PROFILING_RELATION,
-          MyriaConstants.RESOURCE_PROFILING_SCHEMA, workerIds);
-
+      addRelationToCatalog(MyriaConstants.EVENT_PROFILING_RELATION, MyriaConstants.EVENT_PROFILING_SCHEMA, workerIds,
+          false);
+      addRelationToCatalog(MyriaConstants.SENT_PROFILING_RELATION, MyriaConstants.SENT_PROFILING_SCHEMA, workerIds,
+          false);
+      addRelationToCatalog(MyriaConstants.RESOURCE_PROFILING_RELATION, MyriaConstants.RESOURCE_PROFILING_SCHEMA,
+          workerIds, false);
     }
   }
 
   /**
-   * Manually add a relation to the catalog if it not already exists.
+   * Manually add a relation to the catalog.
    * 
    * @param relationKey the relation to add
    * @param schema the schema of the relation to add
    * @param workers the workers that have the relation
+   * @param force force add the relation; will replace an existing entry.
    * 
    * @throws DbException if the catalog cannot be accessed
    */
-  private void addRelationToCatalogIfNotExists(final RelationKey relationKey, final Schema schema,
-      final Set<Integer> workers) throws DbException {
+  private void addRelationToCatalog(final RelationKey relationKey, final Schema schema, final Set<Integer> workers,
+      final boolean force) throws DbException {
     try {
-      if (getSchema(relationKey) != null) {
+      if (!force && getSchema(relationKey) != null) {
         return;
       }
 
@@ -859,13 +860,17 @@ public final class Server {
       queryState.markSuccess();
       catalog.queryFinished(queryState);
 
-      // set a number of tuples so the data can be downloaded
-      catalog.addRelationMetadata(relationKey, schema, 0, queryId);
-      catalog.addStoredRelation(relationKey, workers, "AsRecorded");
+      Map<RelationKey, RelationWriteMetadata> relation = new HashMap<>();
+      RelationWriteMetadata meta = new RelationWriteMetadata(relationKey, schema, true, false);
+      for (Integer worker : workers) {
+        meta.addWorker(worker);
+      }
+      relation.put(relationKey, meta);
+
+      catalog.updateRelationMetadata(relation, new SubQueryId(queryId, 0));
     } catch (CatalogException e) {
       throw new DbException(e);
     }
-
   }
 
   /**
@@ -1007,29 +1012,24 @@ public final class Server {
       actualWorkers = getWorkers().keySet();
     }
 
+    addRelationToCatalog(relationKey, schema, workersToImportFrom, true);
+
     try {
       Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
       for (Integer workerId : actualWorkers) {
-        workerPlans.put(workerId, new SubQueryPlan(new SinkRoot(new EOSSource())));
+        workerPlans.put(workerId, new SubQueryPlan(new DbInsert(EmptyRelation.of(schema), relationKey, false)));
       }
       ListenableFuture<Query> qf =
           queryManager.submitQuery("import " + relationKey.toString(), "import " + relationKey.toString(), "import "
               + relationKey.toString(getDBMS()), new SubQueryPlan(new SinkRoot(new EOSSource())), workerPlans);
-      Query queryState;
       try {
-        queryState = qf.get();
+        qf.get();
       } catch (ExecutionException e) {
         throw new DbException("Error executing query", e.getCause());
       }
-
-      /* TODO(dhalperi) -- figure out how to populate the numTuples column. */
-      catalog.addRelationMetadata(relationKey, schema, -1, queryState.getQueryId());
-      /* Add the round robin-partitioned shard. */
-      catalog.addStoredRelation(relationKey, actualWorkers, "RoundRobin");
     } catch (CatalogException e) {
       throw new DbException(e);
     }
-
   }
 
   /**

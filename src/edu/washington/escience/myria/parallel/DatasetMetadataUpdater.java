@@ -2,7 +2,6 @@ package edu.washington.escience.myria.parallel;
 
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import javax.annotation.Nonnull;
 
@@ -12,7 +11,6 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.RelationKey;
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
 import edu.washington.escience.myria.util.concurrent.OperationFuture;
 import edu.washington.escience.myria.util.concurrent.OperationFutureListener;
@@ -40,11 +38,11 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
    * successfully.
    * 
    * @param catalog the MasterCatalog that will be updated.
-   * @param metadata informationa about the relations created by subquery.
+   * @param metadata information about the relations created by subquery.
    * @param subQueryId the subquery that will write these relations to the cluster.
    */
   public DatasetMetadataUpdater(@Nonnull final MasterCatalog catalog,
-      final Map<RelationKey, RelationWriteMetadata> metadata, @Nonnull final SubQueryId subQueryId) {
+      @Nonnull final Map<RelationKey, RelationWriteMetadata> metadata, @Nonnull final SubQueryId subQueryId) {
     this.catalog = Objects.requireNonNull(catalog, "catalog");
     this.subQueryId = Objects.requireNonNull(subQueryId, "subQueryId");
     relationsCreated = Objects.requireNonNull(metadata, "metadata");
@@ -57,27 +55,16 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
   @Override
   public void operationComplete(final OperationFuture future) throws Exception {
     if (!future.isSuccess()) {
-      LOGGER.debug("SubQuery #{} failed, so not updating the catalog metadata for relations {}.", subQueryId,
-          relationsCreated.keySet());
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug("SubQuery #{} failed, so not updating the catalog metadata for relations {}.", subQueryId,
+            relationsCreated.keySet());
+      }
       return;
     }
-
-    LOGGER.debug("SubQuery #{} succeeded, so updating the catalog metadata for relations {}.", subQueryId,
-        relationsCreated.keySet());
-    for (RelationWriteMetadata meta : relationsCreated.values()) {
-      RelationKey relation = meta.getRelationKey();
-      Set<Integer> workers = meta.getWorkers();
-      if (meta.isOverwrite()) {
-        catalog.deleteRelationIfExists(meta.getRelationKey());
-      }
-      Schema schema = meta.getSchema();
-      if (catalog.getSchema(relation) == null) {
-        /* Overwrite or new relation. */
-        catalog.addRelationMetadata(relation, schema, -1, subQueryId.getQueryId());
-        catalog.addStoredRelation(relation, workers, "unknown");
-        LOGGER.debug("SubQuery #{} - adding {} to store shard of {}", subQueryId.getQueryId(), workers, relation
-            .toString());
-      }
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("SubQuery #{} succeeded, so updating the catalog metadata for relations {}.", subQueryId,
+          relationsCreated.keySet());
     }
+    catalog.updateRelationMetadata(relationsCreated, subQueryId);
   }
 }
