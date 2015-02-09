@@ -1160,7 +1160,10 @@ public class LeapFrogJoin extends NAryOperator {
    * @return number of tuples in all the hash tables.
    */
   public long getNumTuplesInHashTables() {
-    long sum = 0;
+    if (tables == null) {
+      return 0L;
+    }
+    long sum = 0L;
     for (MutableTupleBuffer table : tables) {
       if (table != null) {
         sum += table.numTuples();
