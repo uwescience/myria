@@ -1,7 +1,5 @@
 package edu.washington.escience.myria.api.encoding;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -15,9 +13,15 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.SetMultimap;
+import com.google.common.collect.Sets;
 
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMode;
@@ -71,7 +75,7 @@ public class QueryConstruct {
     /* Next, we need to know which pipes (operators) are produced and consumed on which workers. */
     setupWorkerNetworkOperators(fragments);
 
-    HashMap<Integer, PlanFragmentEncoding> op2OwnerFragmentMapping = new HashMap<Integer, PlanFragmentEncoding>();
+    HashMap<Integer, PlanFragmentEncoding> op2OwnerFragmentMapping = Maps.newHashMap();
     int idx = 0;
     for (PlanFragmentEncoding fragment : fragments) {
       fragment.setFragmentIndex(idx++);
@@ -80,10 +84,9 @@ public class QueryConstruct {
       }
     }
 
-    Map<Integer, SubQueryPlan> plan = new HashMap<Integer, SubQueryPlan>();
-    HashMap<PlanFragmentEncoding, RootOperator> instantiatedFragments =
-        new HashMap<PlanFragmentEncoding, RootOperator>();
-    HashMap<Integer, Operator> allOperators = new HashMap<Integer, Operator>();
+    Map<Integer, SubQueryPlan> plan = Maps.newHashMap();
+    HashMap<PlanFragmentEncoding, RootOperator> instantiatedFragments = Maps.newHashMap();
+    HashMap<Integer, Operator> allOperators = Maps.newHashMap();
     for (PlanFragmentEncoding fragment : fragments) {
       RootOperator op =
           instantiateFragment(fragment, args, instantiatedFragments, op2OwnerFragmentMapping, allOperators);
@@ -130,7 +133,7 @@ public class QueryConstruct {
       }
 
       /* The workers are *not* set in the plan. Let's find out what they are. */
-      fragment.workers = new ArrayList<Integer>();
+      fragment.workers = Lists.newArrayList();
       /* Set this flag if we encounter an operator that implies this fragment must run on at most one worker. */
       OperatorEncoding<?> singletonOp = null;
 
@@ -195,44 +198,29 @@ public class QueryConstruct {
    * Loop through all the operators in a plan fragment and connect them up.
    */
   private static void setupWorkerNetworkOperators(final List<PlanFragmentEncoding> fragments) {
-    Map<Integer, Set<Integer>> producerWorkerMap = new HashMap<Integer, Set<Integer>>();
-    Map<ExchangePairID, Set<Integer>> consumerWorkerMap = new HashMap<ExchangePairID, Set<Integer>>();
-    Map<Integer, List<ExchangePairID>> producerOutputChannels = new HashMap<Integer, List<ExchangePairID>>();
-    List<IDBControllerEncoding> idbControllers = new ArrayList<IDBControllerEncoding>();
+    SetMultimap<Integer, Integer> producerWorkerMap = HashMultimap.create();
+    SetMultimap<ExchangePairID, Integer> consumerWorkerMap = HashMultimap.create();
+    ListMultimap<Integer, ExchangePairID> producerOutputChannels = ArrayListMultimap.create();
+    List<IDBControllerEncoding> idbControllers = Lists.newArrayList();
+
     /* Pass 1: map strings to real operator IDs, also collect producers and consumers. */
     for (PlanFragmentEncoding fragment : fragments) {
       for (OperatorEncoding<?> operator : fragment.operators) {
         if (operator instanceof AbstractConsumerEncoding) {
           AbstractConsumerEncoding<?> consumer = (AbstractConsumerEncoding<?>) operator;
           Integer sourceProducerID = consumer.getArgOperatorId();
-          List<ExchangePairID> sourceProducerOutputChannels = producerOutputChannels.get(sourceProducerID);
-          if (sourceProducerOutputChannels == null) {
-            // The producer is not yet met
-            sourceProducerOutputChannels = new ArrayList<ExchangePairID>();
-            producerOutputChannels.put(sourceProducerID, sourceProducerOutputChannels);
-          }
           ExchangePairID channelID = ExchangePairID.newID();
-          consumer.setRealOperatorIds(Arrays.asList(new ExchangePairID[] { channelID }));
-          sourceProducerOutputChannels.add(channelID);
-          consumerWorkerMap.put(channelID, ImmutableSet.<Integer> builder().addAll(fragment.workers).build());
+          consumer.setRealOperatorIds(ImmutableList.of(channelID));
+          producerOutputChannels.put(sourceProducerID, channelID);
+          consumerWorkerMap.putAll(channelID, fragment.workers);
         } else if (operator instanceof AbstractProducerEncoding) {
           AbstractProducerEncoding<?> producer = (AbstractProducerEncoding<?>) operator;
-          List<ExchangePairID> sourceProducerOutputChannels = producerOutputChannels.get(producer.opId);
-          if (sourceProducerOutputChannels == null) {
-            sourceProducerOutputChannels = new ArrayList<ExchangePairID>();
-            producerOutputChannels.put(producer.opId, sourceProducerOutputChannels);
-          }
-          producer.setRealOperatorIds(sourceProducerOutputChannels);
-          producerWorkerMap.put(producer.opId, ImmutableSet.<Integer> builder().addAll(fragment.workers).build());
+          producer.setRealOperatorIds(producerOutputChannels.get(producer.opId));
+          producerWorkerMap.putAll(producer.opId, fragment.workers);
         } else if (operator instanceof IDBControllerEncoding) {
           IDBControllerEncoding idbController = (IDBControllerEncoding) operator;
           idbControllers.add(idbController);
-          List<ExchangePairID> sourceProducerOutputChannels = producerOutputChannels.get(idbController.opId);
-          if (sourceProducerOutputChannels == null) {
-            sourceProducerOutputChannels = new ArrayList<ExchangePairID>();
-            producerOutputChannels.put(idbController.opId, sourceProducerOutputChannels);
-          }
-          producerWorkerMap.put(idbController.opId, new HashSet<Integer>(fragment.workers));
+          producerWorkerMap.putAll(idbController.opId, fragment.workers);
         }
       }
     }
@@ -304,10 +292,9 @@ public class QueryConstruct {
 
     RootOperator fragmentRoot = null;
     CollectConsumer oldRoot = null;
-    Map<Integer, Operator> myOperators = new HashMap<Integer, Operator>();
-    HashMap<Integer, AbstractConsumerEncoding<?>> nonIterativeConsumers =
-        new HashMap<Integer, AbstractConsumerEncoding<?>>();
-    HashSet<IDBControllerEncoding> idbs = new HashSet<IDBControllerEncoding>();
+    Map<Integer, Operator> myOperators = Maps.newHashMap();
+    HashMap<Integer, AbstractConsumerEncoding<?>> nonIterativeConsumers = Maps.newHashMap();
+    HashSet<IDBControllerEncoding> idbs = Sets.newHashSet();
     /* Instantiate all the operators. */
     for (OperatorEncoding<?> encoding : planFragment.operators) {
       if (encoding instanceof IDBControllerEncoding) {
@@ -341,7 +328,7 @@ public class QueryConstruct {
       nonIterativeConsumers.remove(idb.argEosControllerInput);
     }
 
-    Set<PlanFragmentEncoding> dependantFragments = new HashSet<PlanFragmentEncoding>();
+    Set<PlanFragmentEncoding> dependantFragments = Sets.newHashSet();
     for (AbstractConsumerEncoding<?> c : nonIterativeConsumers.values()) {
       dependantFragments.add(opOwnerFragment.get(c.argOperatorId));
     }
