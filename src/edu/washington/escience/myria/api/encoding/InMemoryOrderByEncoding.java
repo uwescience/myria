@@ -14,13 +14,12 @@ public class InMemoryOrderByEncoding extends UnaryOperatorEncoding<InMemoryOrder
   public boolean[] argAscending;
 
   @Override
-  public InMemoryOrderBy construct(ConstructArgs args) throws MyriaApiException {
+  public InMemoryOrderBy construct(final ConstructArgs args) throws MyriaApiException {
     return new InMemoryOrderBy(null, argSortColumns, argAscending);
   }
 
   @Override
   protected void validateExtra() {
-
     if (argSortColumns.length != argAscending.length) {
       throw new MyriaApiException(Status.BAD_REQUEST, "sort columns number should be equal to ascending orders number!");
     }

@@ -50,7 +50,6 @@ import edu.washington.escience.myria.parallel.RelationWriteMetadata;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.parallel.SubQuery;
 import edu.washington.escience.myria.parallel.SubQueryPlan;
-import edu.washington.escience.myria.util.MyriaUtils;
 
 public class QueryConstruct {
   /** The logger for this class. */
@@ -199,7 +198,7 @@ public class QueryConstruct {
     Map<Integer, Set<Integer>> producerWorkerMap = new HashMap<Integer, Set<Integer>>();
     Map<ExchangePairID, Set<Integer>> consumerWorkerMap = new HashMap<ExchangePairID, Set<Integer>>();
     Map<Integer, List<ExchangePairID>> producerOutputChannels = new HashMap<Integer, List<ExchangePairID>>();
-    List<IDBControllerEncoding> idbInputs = new ArrayList<IDBControllerEncoding>();
+    List<IDBControllerEncoding> idbControllers = new ArrayList<IDBControllerEncoding>();
     /* Pass 1: map strings to real operator IDs, also collect producers and consumers. */
     for (PlanFragmentEncoding fragment : fragments) {
       for (OperatorEncoding<?> operator : fragment.operators) {
@@ -216,7 +215,6 @@ public class QueryConstruct {
           consumer.setRealOperatorIds(Arrays.asList(new ExchangePairID[] { channelID }));
           sourceProducerOutputChannels.add(channelID);
           consumerWorkerMap.put(channelID, ImmutableSet.<Integer> builder().addAll(fragment.workers).build());
-
         } else if (operator instanceof AbstractProducerEncoding) {
           AbstractProducerEncoding<?> producer = (AbstractProducerEncoding<?>) operator;
           List<ExchangePairID> sourceProducerOutputChannels = producerOutputChannels.get(producer.opId);
@@ -227,19 +225,23 @@ public class QueryConstruct {
           producer.setRealOperatorIds(sourceProducerOutputChannels);
           producerWorkerMap.put(producer.opId, ImmutableSet.<Integer> builder().addAll(fragment.workers).build());
         } else if (operator instanceof IDBControllerEncoding) {
-          IDBControllerEncoding idbInput = (IDBControllerEncoding) operator;
-          idbInputs.add(idbInput);
-          List<ExchangePairID> sourceProducerOutputChannels = producerOutputChannels.get(idbInput.opId);
+          IDBControllerEncoding idbController = (IDBControllerEncoding) operator;
+          idbControllers.add(idbController);
+          List<ExchangePairID> sourceProducerOutputChannels = producerOutputChannels.get(idbController.opId);
           if (sourceProducerOutputChannels == null) {
             sourceProducerOutputChannels = new ArrayList<ExchangePairID>();
-            producerOutputChannels.put(idbInput.opId, sourceProducerOutputChannels);
+            producerOutputChannels.put(idbController.opId, sourceProducerOutputChannels);
           }
-          producerWorkerMap.put(idbInput.opId, new HashSet<Integer>(fragment.workers));
+          producerWorkerMap.put(idbController.opId, new HashSet<Integer>(fragment.workers));
         }
       }
     }
-    for (IDBControllerEncoding idbInput : idbInputs) {
-      idbInput.setRealControllerOperatorID(producerOutputChannels.get(idbInput.opId).get(0));
+    for (IDBControllerEncoding idbController : idbControllers) {
+      List<ExchangePairID> ids = producerOutputChannels.get(idbController.opId);
+      Preconditions.checkNotNull(ids, "Can't find channel IDs for IDBController opId=%s", idbController.opId);
+      Preconditions.checkArgument(ids.size() == 1, "IDBController opId=%s has zero or multiple output channels",
+          idbController.opId);
+      idbController.setRealEosControllerOperatorID(ids.get(0));
     }
     /* Pass 2: Populate the right fields in producers and consumers. */
     for (PlanFragmentEncoding fragment : fragments) {
@@ -249,16 +251,17 @@ public class QueryConstruct {
           ImmutableSet.Builder<Integer> workers = ImmutableSet.builder();
           for (ExchangePairID id : exchange.getRealOperatorIds()) {
             if (exchange instanceof AbstractConsumerEncoding) {
-              try {
-                workers.addAll(producerWorkerMap.get(((AbstractConsumerEncoding<?>) exchange).getArgOperatorId()));
-              } catch (NullPointerException ee) {
-                LOGGER.error("Consumer: {}", ((AbstractConsumerEncoding<?>) exchange).opId);
-                LOGGER.error("Producer: {}", ((AbstractConsumerEncoding<?>) exchange).argOperatorId);
-                LOGGER.error("producerWorkerMap: {}", producerWorkerMap);
-                throw ee;
-              }
+              int argOpId = ((AbstractConsumerEncoding<?>) exchange).getArgOperatorId();
+              Set<Integer> producerWorkers = producerWorkerMap.get(argOpId);
+              /* Use checkArgument instead of checkNotNull to throw an IllegalArgumentException */
+              Preconditions.checkArgument(producerWorkers != null,
+                  "Can't find corresponding producer for consumer opId=%s, argOperatorId: %s", operator.opId, argOpId);
+              workers.addAll(producerWorkers);
             } else if (exchange instanceof AbstractProducerEncoding) {
-              workers.addAll(consumerWorkerMap.get(id));
+              Set<Integer> consumerWorkers = consumerWorkerMap.get(id);
+              Preconditions.checkNotNull(consumerWorkers, "Can't find corresponding consumer for producer opId=%s",
+                  operator.opId);
+              workers.addAll(consumerWorkers);
             } else {
               throw new IllegalStateException("ExchangeEncoding " + operator.getClass().getSimpleName()
                   + " is not a Producer or Consumer encoding");
@@ -267,8 +270,15 @@ public class QueryConstruct {
           exchange.setRealWorkerIds(workers.build());
         } else if (operator instanceof IDBControllerEncoding) {
           IDBControllerEncoding idbController = (IDBControllerEncoding) operator;
-          idbController.realControllerWorkerId =
-              MyriaUtils.getSingleElement(consumerWorkerMap.get(idbController.getRealControllerOperatorID()));
+          ExchangePairID id = idbController.getRealEosControllerOperatorID();
+          Preconditions.checkNotNull(id, "Can't get real EOSController operator ID for IDBController opId=%s",
+              operator.opId);
+          Set<Integer> consumerWorkers = consumerWorkerMap.get(id);
+          Preconditions.checkNotNull(consumerWorkers, "Can't find corresponding consumers for IDBController opId=%s",
+              operator.opId);
+          Preconditions.checkArgument(consumerWorkers.size() == 1,
+              "The consumer corresponds to IDBController opId=%s lives on more than one worker", operator.opId);
+          idbController.realEosControllerWorkerId = consumerWorkers.iterator().next();
         }
       }
     }

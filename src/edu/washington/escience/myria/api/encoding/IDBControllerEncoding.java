@@ -26,29 +26,29 @@ public class IDBControllerEncoding extends OperatorEncoding<IDBController> {
 
   public Boolean sync;
 
-  private ExchangePairID realControllerOperatorId;
-  public Integer realControllerWorkerId;
+  private ExchangePairID realEosControllerOperatorId;
+  public Integer realEosControllerWorkerId;
 
   @Required
   public StreamingStateEncoding<?> argState;
 
   @Override
-  public IDBController construct(ConstructArgs args) {
-    return new IDBController(argSelfIdbId, realControllerOperatorId, realControllerWorkerId, null, null, null, argState
-        .construct(), MoreObjects.firstNonNull(sync, Boolean.FALSE));
+  public IDBController construct(final ConstructArgs args) {
+    return new IDBController(argSelfIdbId, realEosControllerOperatorId, realEosControllerWorkerId, null, null, null,
+        argState.construct(), MoreObjects.firstNonNull(sync, Boolean.FALSE));
   }
 
   @Override
-  public void connect(Operator current, Map<Integer, Operator> operators) {
+  public void connect(final Operator current, final Map<Integer, Operator> operators) {
     current.setChildren(new Operator[] {
         operators.get(argInitialInput), operators.get(argIterationInput), operators.get(argEosControllerInput) });
   }
 
-  protected void setRealControllerOperatorID(final ExchangePairID realControllerOperatorId) {
-    this.realControllerOperatorId = realControllerOperatorId;
+  protected void setRealEosControllerOperatorID(final ExchangePairID realEosControllerOperatorId) {
+    this.realEosControllerOperatorId = realEosControllerOperatorId;
   }
 
-  protected ExchangePairID getRealControllerOperatorID() {
-    return realControllerOperatorId;
+  protected ExchangePairID getRealEosControllerOperatorID() {
+    return realEosControllerOperatorId;
   }
 }
