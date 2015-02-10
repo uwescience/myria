@@ -226,7 +226,6 @@ public class QueryConstruct {
     }
     for (IDBControllerEncoding idbController : idbControllers) {
       List<ExchangePairID> ids = producerOutputChannels.get(idbController.opId);
-      Preconditions.checkNotNull(ids, "Can't find channel IDs for IDBController opId=%s", idbController.opId);
       Preconditions.checkArgument(ids.size() == 1, "IDBController opId=%s has zero or multiple output channels",
           idbController.opId);
       idbController.setRealEosControllerOperatorID(ids.get(0));
@@ -241,14 +240,13 @@ public class QueryConstruct {
             if (exchange instanceof AbstractConsumerEncoding) {
               int argOpId = ((AbstractConsumerEncoding<?>) exchange).getArgOperatorId();
               Set<Integer> producerWorkers = producerWorkerMap.get(argOpId);
-              /* Use checkArgument instead of checkNotNull to throw an IllegalArgumentException */
-              Preconditions.checkArgument(producerWorkers != null,
+              Preconditions.checkArgument(producerWorkers.size() > 0,
                   "Can't find corresponding producer for consumer opId=%s, argOperatorId: %s", operator.opId, argOpId);
               workers.addAll(producerWorkers);
             } else if (exchange instanceof AbstractProducerEncoding) {
               Set<Integer> consumerWorkers = consumerWorkerMap.get(id);
-              Preconditions.checkNotNull(consumerWorkers, "Can't find corresponding consumer for producer opId=%s",
-                  operator.opId);
+              Preconditions.checkArgument(consumerWorkers.size() > 0,
+                  "Can't find corresponding consumer for producer opId=%s", operator.opId);
               workers.addAll(consumerWorkers);
             } else {
               throw new IllegalStateException("ExchangeEncoding " + operator.getClass().getSimpleName()
@@ -262,10 +260,9 @@ public class QueryConstruct {
           Preconditions.checkNotNull(id, "Can't get real EOSController operator ID for IDBController opId=%s",
               operator.opId);
           Set<Integer> consumerWorkers = consumerWorkerMap.get(id);
-          Preconditions.checkNotNull(consumerWorkers, "Can't find corresponding consumers for IDBController opId=%s",
-              operator.opId);
           Preconditions.checkArgument(consumerWorkers.size() == 1,
-              "The consumer corresponds to IDBController opId=%s lives on more than one worker", operator.opId);
+              "The consumer corresponds to IDBController opId=%s should live on exactly one worker: %s", operator.opId,
+              consumerWorkers);
           idbController.realEosControllerWorkerId = consumerWorkers.iterator().next();
         }
       }
