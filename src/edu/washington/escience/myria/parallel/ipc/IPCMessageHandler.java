@@ -35,7 +35,7 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
 
   /**
    * Help the session management for ipc connection pool at IPC server.
-   *
+   * 
    * @param connectionPool the IPC connection pool, this session manager serves to.
    * */
   public IPCMessageHandler(final IPCConnectionPool connectionPool) {
@@ -54,6 +54,13 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
 
   @Override
   public void channelDisconnected(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
+    ChannelContext cc = ChannelContext.getChannelContext(e.getChannel());
+    RegisteredChannelContext rcc = cc.getRegisteredChannelContext();
+    if (rcc != null) {
+      StreamIOChannelPair pair = rcc.getIOPair();
+      pair.deMapInputChannel();
+      pair.deMapOutputChannel();
+    }
     ownerConnectionPool.channelDisconnected(ctx.getChannel());
   }
 
@@ -108,10 +115,10 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
       final long streamID = ((IPCMessage.Meta.BOS) metaMessage).getStreamID();
       if (existingIChannel != null) {
         LOGGER
-        .error(String
-            .format(
-                "Duplicate BOS received from a stream channel %4$s. Existing Stream: (RemoteID:%1$s, StreamID:%2$d), new BOS: (RemoteID:%1$s, StreamID:%3$d). Dropped.",
-                remoteID, existingIChannel.getID().getStreamID(), streamID, ChannelContext.channelToString(ch)));
+            .error(String
+                .format(
+                    "Duplicate BOS received from a stream channel %4$s. Existing Stream: (RemoteID:%1$s, StreamID:%2$d), new BOS: (RemoteID:%1$s, StreamID:%3$d). Dropped.",
+                    remoteID, existingIChannel.getID().getStreamID(), streamID, ChannelContext.channelToString(ch)));
       } else {
         StreamIOChannelID ecID = new StreamIOChannelID(streamID, remoteID);
         StreamInputBuffer<Object> ib = ownerConnectionPool.getInputBuffer(ecID);
@@ -197,7 +204,7 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
           .wrap(remoteID, ic.getID().getStreamID(), message))) {
         if (LOGGER.isErrorEnabled()) {
           LOGGER
-          .error("Input buffer out of memory. With the flow control input buffers, it should not happen normally.");
+              .error("Input buffer out of memory. With the flow control input buffers, it should not happen normally.");
         }
       }
     }
@@ -275,7 +282,7 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
     } else {
       if (LOGGER.isDebugEnabled()) {
         LOGGER
-        .debug("Channel context is null. The IPCConnectionPool must have been shutdown. Close the channel directly.");
+            .debug("Channel context is null. The IPCConnectionPool must have been shutdown. Close the channel directly.");
       }
       ch.close();
     }

@@ -502,6 +502,8 @@ public final class LocalFragment {
       AtomicUtils.unsetBitByValue(executionCondition, STATE_INTERRUPTED);
       Thread.interrupted();
 
+    } else {
+      AtomicUtils.unsetBitByValue(executionCondition, STATE_EXECUTION_REQUESTED);
     }
 
     if ((executionCondition.get() & STATE_FAIL) == STATE_FAIL) {

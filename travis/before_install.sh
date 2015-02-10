@@ -1,7 +1,6 @@
 #!/bin/sh
 
-# Set up the databases
-mysql -e 'create database myria_test;'
+# Set up the database
 psql -c 'create database myria_test;' -U postgres
 
 # Set up SSH so that we can SSH to localhost

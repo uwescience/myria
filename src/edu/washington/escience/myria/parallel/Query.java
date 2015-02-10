@@ -176,17 +176,17 @@ public final class Query {
     }
     if (!subQueryQ.isEmpty()) {
       currentSubQuery = subQueryQ.removeFirst();
-      currentSubQuery.setSubQueryId(new SubQueryId(queryId, subqueryId));
+      SubQueryId sqId = new SubQueryId(queryId, subqueryId);
+      currentSubQuery.setSubQueryId(sqId);
       addDerivedSubQueries(currentSubQuery);
 
-      /*
-       * TODO - revisit when we support profiling with sequences.
-       * 
-       * We only support profiling a single subquery, so disable profiling if subqueryId != 0.
-       */
       Set<ProfilingMode> profilingMode = getProfilingMode();
-      if (subqueryId != 0) {
-        profilingMode = ImmutableSet.of();
+      if (!profilingMode.isEmpty()) {
+        if (!currentSubQuery.isProfileable()) {
+          profilingMode = ImmutableSet.of();
+        } else {
+          server.setQueryPlan(sqId, currentSubQuery.getEncodedPlan());
+        }
       }
 
       QueryConstruct.setQueryExecutionOptions(currentSubQuery.getWorkerPlans(), ftMode, profilingMode);

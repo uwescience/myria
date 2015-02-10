@@ -34,9 +34,6 @@ public class JdbcAccessMethodTest {
   /** The logger for this class. */
   protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(JdbcAccessMethod.class);
 
-  private static final String MYSQL_DRIVER_CLASS = "com.mysql.jdbc.Driver";
-  private static final int MYSQL_PORT = 3306;
-  private static final String MYSQL_DATABASE_NAME = "myria_test";
   private static final String POSTGRES_DRIVER_CLASS = "org.postgresql.Driver";
   private static final int POSTGRES_PORT = 5432;
   private static final String POSTGRES_DATABASE_NAME = "myria_test";
@@ -44,13 +41,8 @@ public class JdbcAccessMethodTest {
   private JdbcInfo getJdbcInfo(final String dbms) {
     Verify.verify(TestUtils.inTravis(), "This test should only run in Travis");
     /* Return localhost using Travis' default credentials. */
-    if (dbms.equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
-      return JdbcInfo.of(POSTGRES_DRIVER_CLASS, MyriaConstants.STORAGE_SYSTEM_POSTGRESQL, "localhost", POSTGRES_PORT,
-          POSTGRES_DATABASE_NAME, "postgres", "");
-    } else {
-      return JdbcInfo.of(MYSQL_DRIVER_CLASS, MyriaConstants.STORAGE_SYSTEM_MYSQL, "localhost", MYSQL_PORT,
-          MYSQL_DATABASE_NAME, "travis", "");
-    }
+    return JdbcInfo.of(POSTGRES_DRIVER_CLASS, MyriaConstants.STORAGE_SYSTEM_POSTGRESQL, "localhost", POSTGRES_PORT,
+        POSTGRES_DATABASE_NAME, "postgres", "");
   }
 
   private void testInsertTuplesAndCountThem(final String dbms) throws DbException {
@@ -109,12 +101,6 @@ public class JdbcAccessMethodTest {
 
     /* Test it. */
     assertEquals(expectedNumResults, count);
-  }
-
-  @Test
-  public void testInsertTuplesAndCountThemMySQL() throws DbException {
-    TestUtils.requireTravis();
-    testInsertTuplesAndCountThem(MyriaConstants.STORAGE_SYSTEM_MYSQL);
   }
 
   @Test
