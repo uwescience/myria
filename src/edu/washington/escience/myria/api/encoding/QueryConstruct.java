@@ -63,13 +63,17 @@ public class QueryConstruct {
    */
   public static Map<Integer, SubQueryPlan> instantiate(final List<PlanFragmentEncoding> fragments,
       final ConstructArgs args) throws CatalogException {
-    /** Assign workers to all fragments. */
-    assignWorkersToFragments(fragments, args);
 
-    Map<Integer, PlanFragmentEncoding> op2OwnerFragmentMapping = Maps.newHashMap();
+    // Assign fragment index before everything else
     int idx = 0;
     for (PlanFragmentEncoding fragment : fragments) {
       fragment.setFragmentIndex(idx++);
+    }
+
+    assignWorkersToFragments(fragments, args);
+
+    Map<Integer, PlanFragmentEncoding> op2OwnerFragmentMapping = Maps.newHashMap();
+    for (PlanFragmentEncoding fragment : fragments) {
       for (OperatorEncoding<?> op : fragment.operators) {
         op2OwnerFragmentMapping.put(op.opId, fragment);
       }
