@@ -188,7 +188,7 @@ public class QueryConstruct {
     // producers must be unique
     Map<Integer, PlanFragmentEncoding> producerMap = Maps.newHashMap();
     // consumers can be repeated, as long as the producer is a LocalMultiwayProducer
-    Multimap<Integer, PlanFragmentEncoding> consumerMap = HashMultimap.create();
+    Multimap<Integer, PlanFragmentEncoding> consumerMap = ArrayListMultimap.create();
     final Set<Integer> soleConsumer = Sets.newHashSet();
 
     for (PlanFragmentEncoding fragment : fragments) {
