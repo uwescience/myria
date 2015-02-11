@@ -8,8 +8,6 @@ import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.ws.rs.core.Response.Status;
 
-import org.slf4j.LoggerFactory;
-
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
@@ -54,9 +52,6 @@ import edu.washington.escience.myria.parallel.SubQuery;
 import edu.washington.escience.myria.parallel.SubQueryPlan;
 
 public class QueryConstruct {
-  /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(QueryEncoding.class);
-
   /**
    * Instantiate the server's desired physical plan from a list of JSON encodings of fragments. This list must contain a
    * self-consistent, complete query. All fragments will be executed in parallel.
