@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.systemtest;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -31,6 +32,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.DatasetEncoding;
+import edu.washington.escience.myria.api.encoding.EmptyRelationEncoding;
 import edu.washington.escience.myria.api.encoding.LocalMultiwayConsumerEncoding;
 import edu.washington.escience.myria.api.encoding.LocalMultiwayProducerEncoding;
 import edu.washington.escience.myria.api.encoding.PlanFragmentEncoding;
@@ -160,8 +162,15 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     File ingestJson = new File("./jsonQueries/globalJoin_jwang/ingest_smallTable.json");
 
     HttpURLConnection conn = JsonAPIUtils.submitQuery("localhost", masterDaemonPort, queryJson);
-    assertEquals(HttpURLConnection.HTTP_BAD_REQUEST, conn.getResponseCode());
+    assertEquals(HttpURLConnection.HTTP_ACCEPTED, conn.getResponseCode());
+    long queryId = getQueryStatus(conn).queryId;
     conn.disconnect();
+    while (!server.getQueryManager().queryCompleted(queryId)) {
+      Thread.sleep(5);
+    }
+    QueryStatusEncoding status = server.getQueryManager().getQueryStatus(queryId);
+    assertEquals(QueryStatusEncoding.Status.ERROR, status.status);
+    assertThat(status.message).contains("Unable to find workers");
 
     conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestJson);
     if (null != conn.getErrorStream()) {
@@ -179,12 +188,12 @@ public class JsonQuerySubmitTest extends SystemTestBase {
       throw new IllegalStateException(getContents(conn));
     }
     assertEquals(HttpURLConnection.HTTP_ACCEPTED, conn.getResponseCode());
-    long queryId = getQueryStatus(conn).queryId;
+    queryId = getQueryStatus(conn).queryId;
     conn.disconnect();
     while (!server.getQueryManager().queryCompleted(queryId)) {
-      Thread.sleep(100);
+      Thread.sleep(5);
     }
-    QueryStatusEncoding status = server.getQueryManager().getQueryStatus(queryId);
+    status = server.getQueryManager().getQueryStatus(queryId);
     assertEquals(QueryStatusEncoding.Status.SUCCESS, status.status);
     assertTrue(status.language.equals("datalog"));
     assertEquals(status.ftMode, FTMode.NONE);
@@ -431,4 +440,59 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     QueryStatusEncoding status = server.getQueryManager().getQueryStatus(queryId);
     assertEquals(status.message, Status.SUCCESS, status.status);
   }
+
+  @Test
+  public void fragmentNoRootTest() throws Exception {
+    EmptyRelationEncoding empty = new EmptyRelationEncoding();
+    empty.opId = 0;
+    empty.schema = Schema.ofFields("x", Type.LONG_TYPE);
+    PlanFragmentEncoding frag = PlanFragmentEncoding.of(empty);
+
+    QueryEncoding query = new QueryEncoding();
+    query.plan = new SubQueryEncoding(ImmutableList.of(frag));
+    query.logicalRa = "Fragment no root test";
+    query.rawQuery = query.logicalRa;
+
+    HttpURLConnection conn = submitQuery(query);
+    assertEquals(HttpStatus.SC_ACCEPTED, conn.getResponseCode());
+    long queryId = getQueryStatus(conn).queryId;
+    conn.disconnect();
+    while (!server.getQueryManager().queryCompleted(queryId)) {
+      Thread.sleep(1);
+    }
+    QueryStatusEncoding status = server.getQueryManager().getQueryStatus(queryId);
+    assertEquals(Status.ERROR, status.status);
+    assertThat(status.message).contains("No RootOperator detected");
+  }
+
+  @Test
+  public void fragmentTwoRootsTest() throws Exception {
+    EmptyRelationEncoding empty = new EmptyRelationEncoding();
+    SinkRootEncoding sink1 = new SinkRootEncoding();
+    SinkRootEncoding sink2 = new SinkRootEncoding();
+    empty.opId = 0;
+    empty.schema = Schema.ofFields("x", Type.LONG_TYPE);
+    sink1.opId = 1;
+    sink1.argChild = empty.opId;
+    sink2.opId = 2;
+    sink2.argChild = empty.opId;
+    PlanFragmentEncoding frag = PlanFragmentEncoding.of(empty, sink1, sink2);
+
+    QueryEncoding query = new QueryEncoding();
+    query.plan = new SubQueryEncoding(ImmutableList.of(frag));
+    query.logicalRa = "Fragment no root test";
+    query.rawQuery = query.logicalRa;
+
+    HttpURLConnection conn = submitQuery(query);
+    assertEquals(HttpStatus.SC_ACCEPTED, conn.getResponseCode());
+    long queryId = getQueryStatus(conn).queryId;
+    conn.disconnect();
+    while (!server.getQueryManager().queryCompleted(queryId)) {
+      Thread.sleep(1);
+    }
+    QueryStatusEncoding status = server.getQueryManager().getQueryStatus(queryId);
+    assertEquals(Status.ERROR, status.status);
+    assertThat(status.message).contains("Multiple RootOperator detected");
+  }
+
 }

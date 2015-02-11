@@ -29,42 +29,6 @@ public class JsonBadPlanTests {
   static Logger LOGGER = LoggerFactory.getLogger(JsonBadPlanTests.class);
 
   @Test
-  public void fragmentNoRootTest() throws Exception {
-    EmptyRelationEncoding empty = new EmptyRelationEncoding();
-    empty.opId = 0;
-    empty.schema = Schema.ofFields("x", Type.LONG_TYPE);
-    PlanFragmentEncoding frag = PlanFragmentEncoding.of(empty);
-
-    try {
-      QueryConstruct.sanityCheckEdges(ImmutableList.of(frag));
-      fail();
-    } catch (IllegalArgumentException e) {
-      assertThat(e.getMessage()).contains("No RootOperator detected");
-    }
-  }
-
-  @Test
-  public void fragmentTwoRootsTest() throws Exception {
-    EmptyRelationEncoding empty = new EmptyRelationEncoding();
-    SinkRootEncoding sink1 = new SinkRootEncoding();
-    SinkRootEncoding sink2 = new SinkRootEncoding();
-    empty.opId = 0;
-    empty.schema = Schema.ofFields("x", Type.LONG_TYPE);
-    sink1.opId = 1;
-    sink1.argChild = empty.opId;
-    sink2.opId = 2;
-    sink2.argChild = empty.opId;
-    PlanFragmentEncoding frag = PlanFragmentEncoding.of(empty, sink1, sink2);
-
-    try {
-      QueryConstruct.sanityCheckEdges(ImmutableList.of(frag));
-      fail();
-    } catch (IllegalArgumentException e) {
-      assertThat(e.getMessage()).contains("Multiple RootOperator detected");
-    }
-  }
-
-  @Test
   public void fragmentMissingConsumerTest() throws Exception {
     EmptyRelationEncoding empty = new EmptyRelationEncoding();
     AbstractProducerEncoding<?> prod = new CollectProducerEncoding();
