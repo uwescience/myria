@@ -16,11 +16,13 @@ import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
+import org.apache.commons.httpclient.HttpStatus;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.MyriaConstants.FTMode;
@@ -29,7 +31,14 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.DatasetEncoding;
+import edu.washington.escience.myria.api.encoding.LocalMultiwayConsumerEncoding;
+import edu.washington.escience.myria.api.encoding.LocalMultiwayProducerEncoding;
+import edu.washington.escience.myria.api.encoding.PlanFragmentEncoding;
+import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
+import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
+import edu.washington.escience.myria.api.encoding.SingletonEncoding;
+import edu.washington.escience.myria.api.encoding.SinkRootEncoding;
 import edu.washington.escience.myria.api.encoding.plan.SubQueryEncoding;
 import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.io.EmptySource;
@@ -41,6 +50,16 @@ import edu.washington.escience.myria.util.TestUtils;
 public class JsonQuerySubmitTest extends SystemTestBase {
 
   static Logger LOGGER = LoggerFactory.getLogger(JsonQuerySubmitTest.class);
+
+  private HttpURLConnection submitQuery(final QueryEncoding query) throws IOException {
+    ObjectWriter writer = MyriaJsonMapperProvider.getWriter();
+    String queryString = writer.writeValueAsString(query);
+    HttpURLConnection conn = JsonAPIUtils.submitQuery("localhost", masterDaemonPort, queryString);
+    if (null != conn.getErrorStream()) {
+      throw new IllegalStateException(getContents(conn));
+    }
+    return conn;
+  }
 
   /**
    * Construct an empty ingest request.
@@ -269,4 +288,42 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     QueryStatusEncoding qs = server.getQueryManager().getQueries(1L, null, null, null).get(0);
     assertTrue(qs.status == QueryStatusEncoding.Status.ERROR);
   }
+
+  @Test
+  public void multiwayBetweenSingletonTest693() throws Exception {
+    int opId = 0;
+
+    // Source
+    SingletonEncoding singleton = new SingletonEncoding();
+    singleton.opId = opId++;
+    LocalMultiwayProducerEncoding prod1 = new LocalMultiwayProducerEncoding();
+    prod1.argChild = singleton.opId;
+    prod1.opId = opId++;
+    // Sink after split
+    LocalMultiwayConsumerEncoding cons1 = new LocalMultiwayConsumerEncoding();
+    cons1.argOperatorId = prod1.opId;
+    cons1.opId = opId++;
+    SinkRootEncoding sink = new SinkRootEncoding();
+    sink.argChild = cons1.opId;
+    sink.opId = opId++;
+
+    PlanFragmentEncoding frag1 = PlanFragmentEncoding.of(singleton, prod1);
+    PlanFragmentEncoding frag2 = PlanFragmentEncoding.of(cons1, sink);
+
+    QueryEncoding query = new QueryEncoding();
+    query.plan = new SubQueryEncoding(ImmutableList.of(frag1, frag2));
+    query.logicalRa = "Valid query with single split test";
+    query.rawQuery = query.logicalRa;
+
+    HttpURLConnection conn = submitQuery(query);
+    assertEquals(HttpStatus.SC_ACCEPTED, conn.getResponseCode());
+    long queryId = getQueryStatus(conn).queryId;
+    conn.disconnect();
+    while (!server.getQueryManager().queryCompleted(queryId)) {
+      Thread.sleep(1);
+    }
+    QueryStatusEncoding status = server.getQueryManager().getQueryStatus(queryId);
+    assertEquals(status.message, Status.SUCCESS, status.status);
+  }
+
 }
