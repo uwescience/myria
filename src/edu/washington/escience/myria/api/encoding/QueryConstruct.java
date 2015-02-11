@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.api.encoding;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -15,12 +16,12 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.SetMultimap;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
 import edu.washington.escience.myria.MyriaConstants;
@@ -70,10 +71,8 @@ public class QueryConstruct {
    */
   public static Map<Integer, SubQueryPlan> instantiate(final List<PlanFragmentEncoding> fragments,
       final ConstructArgs args) throws CatalogException {
-    /* First, we need to know which workers run on each plan. */
-    setupWorkersForFragments(fragments, args);
-    /* Next, we need to know which pipes (operators) are produced and consumed on which workers. */
-    setupWorkerNetworkOperators(fragments);
+    /** Assign workers to all fragments. */
+    assignWorkersToFragments(fragments, args);
 
     HashMap<Integer, PlanFragmentEncoding> op2OwnerFragmentMapping = Maps.newHashMap();
     int idx = 0;
@@ -118,29 +117,47 @@ public class QueryConstruct {
   }
 
   /**
-   * Figures out which workers are needed for every fragment.
+   * Helper function for setting the workers of a fragment. If the workers are not yet set, always succeeds. If the
+   * workers are set, ensures that the new value exactly matches the old value.
    * 
-   * @throws CatalogException if there is an error in the Catalog.
+   * @param fragment the fragment
+   * @param workers the workers this fragment should be assigned to
+   * @throws IllegalArgumentException if the fragment already has workers, and the new set does not match
    */
-  private static void setupWorkersForFragments(final List<PlanFragmentEncoding> fragments, final ConstructArgs args)
+  private static void setOrVerifyFragmentWorkers(@Nonnull final PlanFragmentEncoding fragment,
+      @Nonnull final Collection<Integer> workers, @Nonnull final String currentTask) {
+    Preconditions.checkNotNull(fragment, "fragment");
+    Preconditions.checkNotNull(workers, "workers");
+    Preconditions.checkNotNull(currentTask, "currentTask");
+    if (fragment.workers == null) {
+      fragment.workers = ImmutableList.copyOf(workers);
+    } else {
+      Preconditions.checkArgument(HashMultiset.create(fragment.workers).equals(HashMultiset.create(workers)),
+          "During %s, cannot change workers for fragment %s from %s to %s", currentTask, fragment.fragmentIndex,
+          fragment.workers, workers);
+      /* Pass -- the workers already match */
+    }
+  }
+
+  /**
+   * Use the Catalog to set the workers for fragments that have scans, and verify that the workers are consistent with
+   * existing constraints.
+   * 
+   * @see #assignWorkersToFragments(List, ConstructArgs)
+   * 
+   * @param fragments the fragments of the plan
+   * @param args other arguments necessary for query construction
+   * @throws CatalogException if there is an error getting information from the Catalog
+   */
+  private static void setAndVerifyScans(final List<PlanFragmentEncoding> fragments, final ConstructArgs args)
       throws CatalogException {
     Server server = args.getServer();
+
     for (PlanFragmentEncoding fragment : fragments) {
-      if (fragment.overrideWorkers != null && fragment.overrideWorkers.size() > 0) {
-        /* The workers are set in the plan. */
-        fragment.workers = fragment.overrideWorkers;
-        continue;
-      }
-
-      /* The workers are *not* set in the plan. Let's find out what they are. */
-      fragment.workers = Lists.newArrayList();
-      /* Set this flag if we encounter an operator that implies this fragment must run on at most one worker. */
-      OperatorEncoding<?> singletonOp = null;
-
-      /* If the plan has scans, it has to run on all of those workers. */
       for (OperatorEncoding<?> operator : fragment.operators) {
         Set<Integer> scanWorkers;
         String scanRelation;
+
         if (operator instanceof TableScanEncoding) {
           TableScanEncoding scan = ((TableScanEncoding) operator);
           scanRelation = scan.relationKey.toString();
@@ -151,123 +168,277 @@ public class QueryConstruct {
           scanWorkers =
               server.getQueryManager().getWorkersForTempRelation(args.getQueryId(),
                   RelationKey.ofTemp(args.getQueryId(), scan.table));
-        } else if (operator instanceof CollectConsumerEncoding || operator instanceof SingletonEncoding) {
-          singletonOp = operator;
-          continue;
         } else {
           continue;
         }
-        if (scanWorkers == null) {
-          throw new MyriaApiException(Status.BAD_REQUEST, "Unable to find workers that store " + scanRelation);
-        }
-        if (fragment.workers.size() == 0) {
-          fragment.workers.addAll(scanWorkers);
-        } else {
-          /*
-           * If the fragment already has workers, it scans multiple relations. They better use the exact same set of
-           * workers.
-           */
-          if (fragment.workers.size() != scanWorkers.size() || !fragment.workers.containsAll(scanWorkers)) {
-            throw new MyriaApiException(Status.BAD_REQUEST,
-                "All tables scanned within a fragment must use the exact same set of workers. Caught scanning "
-                    + scanRelation);
-          }
-        }
+        Preconditions.checkArgument(scanWorkers != null, "Unable to find workers that store %s", scanRelation);
+        setOrVerifyFragmentWorkers(fragment, scanWorkers, "Setting workers for " + scanRelation);
       }
-      if (fragment.workers.size() > 0) {
-        if (singletonOp != null && fragment.workers.size() != 1) {
-          throw new MyriaApiException(Status.BAD_REQUEST, "A fragment with " + singletonOp
-              + " requires exactly one worker, but " + fragment.workers.size() + " workers specified.");
-        }
-        continue;
-      }
-
-      /* No workers pre-specified / no scans found. Is there a singleton op? */
-      if (singletonOp != null) {
-        /* Just pick the first alive worker. */
-        fragment.workers.add(server.getAliveWorkers().iterator().next());
-        continue;
-      }
-
-      /* If not, just add all the alive workers in the cluster. */
-      fragment.workers.addAll(server.getAliveWorkers());
     }
   }
 
   /**
-   * Loop through all the operators in a plan fragment and connect them up.
+   * Verify that a plan meets the basic sanity checks. E.g., every producer should have a consumer. Only producers that
+   * support multiple consumers (LocalMultiwayProducer, EOSController) can have multiple consumers.
+   * 
+   * @see #assignWorkersToFragments(List, ConstructArgs)
+   * 
+   * @param fragments the fragments of the plan
    */
-  private static void setupWorkerNetworkOperators(final List<PlanFragmentEncoding> fragments) {
-    SetMultimap<Integer, Integer> producerWorkerMap = HashMultimap.create();
-    SetMultimap<ExchangePairID, Integer> consumerWorkerMap = HashMultimap.create();
-    ListMultimap<Integer, ExchangePairID> producerOutputChannels = ArrayListMultimap.create();
-    List<IDBControllerEncoding> idbControllers = Lists.newArrayList();
+  private static void sanityCheckEdges(final List<PlanFragmentEncoding> fragments) {
+    /* These maps connect each channel id to the fragment that produces or consumes it. */
+    // producers must be unique
+    Map<Integer, PlanFragmentEncoding> producerMap = Maps.newHashMap();
+    // consumers can be repeated, as long as the producer is a LocalMultiwayProducer
+    Multimap<Integer, PlanFragmentEncoding> consumerMap = HashMultimap.create();
+    final Set<Integer> soleConsumer = Sets.newHashSet();
 
-    /* Pass 1: map strings to real operator IDs, also collect producers and consumers. */
     for (PlanFragmentEncoding fragment : fragments) {
       for (OperatorEncoding<?> operator : fragment.operators) {
+        /* Build the producer/consumer map. */
         if (operator instanceof AbstractConsumerEncoding) {
           AbstractConsumerEncoding<?> consumer = (AbstractConsumerEncoding<?>) operator;
-          Integer sourceProducerID = consumer.getArgOperatorId();
-          ExchangePairID channelID = ExchangePairID.newID();
-          consumer.setRealOperatorIds(ImmutableList.of(channelID));
-          producerOutputChannels.put(sourceProducerID, channelID);
-          consumerWorkerMap.putAll(channelID, fragment.workers);
+          consumerMap.put(consumer.argOperatorId, fragment);
         } else if (operator instanceof AbstractProducerEncoding) {
           AbstractProducerEncoding<?> producer = (AbstractProducerEncoding<?>) operator;
-          producer.setRealOperatorIds(producerOutputChannels.get(producer.opId));
-          producerWorkerMap.putAll(producer.opId, fragment.workers);
-        } else if (operator instanceof IDBControllerEncoding) {
-          IDBControllerEncoding idbController = (IDBControllerEncoding) operator;
-          idbControllers.add(idbController);
-          producerWorkerMap.putAll(idbController.opId, fragment.workers);
-        }
-      }
-    }
-    for (IDBControllerEncoding idbController : idbControllers) {
-      List<ExchangePairID> ids = producerOutputChannels.get(idbController.opId);
-      Preconditions.checkArgument(ids.size() == 1, "IDBController opId=%s has zero or multiple output channels",
-          idbController.opId);
-      idbController.setRealEosControllerOperatorID(ids.get(0));
-    }
-    /* Pass 2: Populate the right fields in producers and consumers. */
-    for (PlanFragmentEncoding fragment : fragments) {
-      for (OperatorEncoding<?> operator : fragment.operators) {
-        if (operator instanceof ExchangeEncoding) {
-          ExchangeEncoding exchange = (ExchangeEncoding) operator;
-          ImmutableSet.Builder<Integer> workers = ImmutableSet.builder();
-          for (ExchangePairID id : exchange.getRealOperatorIds()) {
-            if (exchange instanceof AbstractConsumerEncoding) {
-              int argOpId = ((AbstractConsumerEncoding<?>) exchange).getArgOperatorId();
-              Set<Integer> producerWorkers = producerWorkerMap.get(argOpId);
-              Preconditions.checkArgument(producerWorkers.size() > 0,
-                  "Can't find corresponding producer for consumer opId=%s, argOperatorId: %s", operator.opId, argOpId);
-              workers.addAll(producerWorkers);
-            } else if (exchange instanceof AbstractProducerEncoding) {
-              Set<Integer> consumerWorkers = consumerWorkerMap.get(id);
-              Preconditions.checkArgument(consumerWorkers.size() > 0,
-                  "Can't find corresponding consumer for producer opId=%s", operator.opId);
-              workers.addAll(consumerWorkers);
-            } else {
-              throw new IllegalStateException("ExchangeEncoding " + operator.getClass().getSimpleName()
-                  + " is not a Producer or Consumer encoding");
-            }
+          Integer opId = producer.opId;
+          PlanFragmentEncoding oldFragment = producerMap.put(opId, fragment);
+          if (oldFragment != null) {
+            Preconditions.checkArgument(false,
+                "Two different operators cannot produce the same opId %s. Fragments: %s %s", opId,
+                fragment.fragmentIndex, oldFragment.fragmentIndex);
           }
-          exchange.setRealWorkerIds(workers.build());
+          if (!(operator instanceof LocalMultiwayProducerEncoding || operator instanceof EOSControllerEncoding)) {
+            soleConsumer.add(opId);
+          }
         } else if (operator instanceof IDBControllerEncoding) {
           IDBControllerEncoding idbController = (IDBControllerEncoding) operator;
-          ExchangePairID id = idbController.getRealEosControllerOperatorID();
-          Preconditions.checkNotNull(id, "Can't get real EOSController operator ID for IDBController opId=%s",
-              operator.opId);
-          Set<Integer> consumerWorkers = consumerWorkerMap.get(id);
-          Preconditions.checkArgument(consumerWorkers.size() == 1,
-              "The consumer corresponds to IDBController opId=%s should live on exactly one worker: %s", operator.opId,
-              consumerWorkers);
-          idbController.realEosControllerWorkerId = consumerWorkers.iterator().next();
+          Integer opId = idbController.opId;
+          PlanFragmentEncoding oldFragment = producerMap.put(opId, fragment);
+          if (oldFragment != null) {
+            Preconditions.checkArgument(false,
+                "Two different operators cannot produce the same opId %s. Fragments: %s %s", opId,
+                fragment.fragmentIndex, oldFragment.fragmentIndex);
+          }
+          soleConsumer.add(opId);
         }
       }
     }
 
+    /* Sanity check 1: Producer must have corresponding consumers, and vice versa. */
+    Set<Integer> consumedNotProduced = Sets.difference(consumerMap.keySet(), producerMap.keySet());
+    Preconditions.checkArgument(consumedNotProduced.isEmpty(), "Missing producer(s) for consumer(s): ",
+        consumedNotProduced);
+    Set<Integer> producedNotConsumed = Sets.difference(producerMap.keySet(), consumerMap.keySet());
+    Preconditions.checkArgument(producedNotConsumed.isEmpty(), "Missing consumer(s) for producer(s): ",
+        producedNotConsumed);
+
+    /* Sanity check 2: Operators that only admit a single consumer should have exactly one consumer. */
+    for (Integer opId : soleConsumer) {
+      Collection<PlanFragmentEncoding> consumers = consumerMap.get(opId);
+      Preconditions.checkArgument(consumers.size() == 1, "Producer %s only supports a single consumer, not %s", opId,
+          consumers.size());
+    }
+  }
+
+  /**
+   * Verify that a plan meets the edge constraints. E.g., fragments connected by MultiwayProducer/Consumer links
+   * 
+   * @see #assignWorkersToFragments(List, ConstructArgs)
+   * 
+   * @param fragments the fragments of the plan
+   */
+  private static void verifyAndPropagateEdgeConstraints(final List<PlanFragmentEncoding> fragments) {
+    // producers must be unique
+    Map<Integer, PlanFragmentEncoding> producerMap = Maps.newHashMap();
+    // consumers can be repeated, as long as the producer is a LocalMultiwayProducer
+    Multimap<Integer, PlanFragmentEncoding> consumerMap = HashMultimap.create();
+
+    /* Find the edges (identified by their opId) with equality constraints. */
+    for (PlanFragmentEncoding fragment : fragments) {
+      for (OperatorEncoding<?> operator : fragment.operators) {
+        if (operator instanceof LocalMultiwayConsumerEncoding) {
+          LocalMultiwayConsumerEncoding consumer = (LocalMultiwayConsumerEncoding) operator;
+          consumerMap.put(consumer.argOperatorId, fragment);
+        } else if (operator instanceof LocalMultiwayProducerEncoding) {
+          LocalMultiwayProducerEncoding producer = (LocalMultiwayProducerEncoding) operator;
+          producerMap.put(producer.opId, fragment);
+        }
+      }
+    }
+
+    /* Verify and/or propagate these constraints. */
+    Set<Integer> consumedNotProduced = Sets.difference(consumerMap.keySet(), producerMap.keySet());
+    Preconditions.checkArgument(consumedNotProduced.isEmpty(), "Missing LocalMultiwayProducer(s) for consumer(s): ",
+        consumedNotProduced);
+    Set<Integer> producedNotConsumed = Sets.difference(producerMap.keySet(), consumerMap.keySet());
+    Preconditions.checkArgument(producedNotConsumed.isEmpty(), "Missing LocalMultiwayConsumer(s) for producer(s): ",
+        producedNotConsumed);
+
+    /* For each operator, verify that all producers and consumers have the same set of workers. */
+    for (Integer opId : producerMap.keySet()) {
+      List<PlanFragmentEncoding> allFrags = Lists.newLinkedList(consumerMap.get(opId));
+      allFrags.add(producerMap.get(opId));
+
+      // Find the set of workers assigned to any of them
+      List<Integer> workers = null;
+      for (PlanFragmentEncoding frag : allFrags) {
+        if (frag.workers != null) {
+          workers = frag.workers;
+          break;
+        }
+      }
+
+      // None -- skip this opId for now
+      if (workers == null) {
+        continue;
+      }
+
+      // Verify that all fragments match the workers we found (and propagate if null)
+      for (PlanFragmentEncoding frag : allFrags) {
+        setOrVerifyFragmentWorkers(frag, workers, "propagating edge constraints");
+      }
+    }
+  }
+
+  /**
+   * Use the Catalog to set the workers for fragments that have scans, and verify that the workers are consistent with
+   * existing constraints.
+   * 
+   * @see #assignWorkersToFragments(List, ConstructArgs)
+   * 
+   * @param fragments the fragments of the plan
+   * @param args other arguments necessary for query construction
+   * @throws CatalogException if there is an error getting information from the Catalog
+   */
+  private static void setAndVerifySingletonConstraints(final List<PlanFragmentEncoding> fragments,
+      final ConstructArgs args) {
+    List<Integer> singletonWorkers = ImmutableList.of(args.getServer().getAliveWorkers().iterator().next());
+
+    for (PlanFragmentEncoding fragment : fragments) {
+      for (OperatorEncoding<?> operator : fragment.operators) {
+        if (operator instanceof CollectConsumerEncoding || operator instanceof SingletonEncoding) {
+          if (fragment.workers == null) {
+            fragment.workers = singletonWorkers;
+          } else {
+            Preconditions.checkArgument(fragment.workers.size() == 1,
+                "Fragment %s has a singleton operator %s, but workers %s", fragment.fragmentIndex, operator.opId,
+                fragment.workers);
+          }
+          /* We only need to verify singleton-ness once per fragment. */
+          break;
+        }
+      }
+    }
+  }
+
+  /**
+   * Actually allocate the real operator IDs and real worker IDs for the producers and consumers.
+   * 
+   * @see #assignWorkersToFragments(List, ConstructArgs)
+   * 
+   * @param fragments the fragments of the plan
+   */
+  private static void fillInRealOperatorAndWorkerIDs(final List<PlanFragmentEncoding> fragments) {
+    // IdentityHashMap<AbstractConsumerEncoding<?>, ExchangePairID> consumerExchangeMap = Maps.newIdentityHashMap();
+    Multimap<Integer, ExchangePairID> consumerMap = ArrayListMultimap.create();
+    Map<Integer, List<Integer>> producerWorkerMap = Maps.newHashMap();
+    Map<Integer, List<Integer>> consumerWorkerMap = Maps.newHashMap();
+
+    /*
+     * First pass: create a new ExchangePairID for each Consumer, and set it. Also track the workers for each producer
+     * and consumer.
+     */
+    for (PlanFragmentEncoding fragment : fragments) {
+      for (OperatorEncoding<?> operator : fragment.operators) {
+        if (operator instanceof AbstractConsumerEncoding<?>) {
+          AbstractConsumerEncoding<?> consumer = (AbstractConsumerEncoding<?>) operator;
+          ExchangePairID exchangeId = ExchangePairID.newID();
+          consumerMap.put(consumer.argOperatorId, exchangeId);
+          // consumerMap.put(consumer.argOperatorId, consumer);
+          consumerWorkerMap.put(consumer.argOperatorId, fragment.workers);
+          consumer.setRealOperatorIds(ImmutableList.of(exchangeId));
+        } else if (operator instanceof AbstractProducerEncoding<?>) {
+          AbstractProducerEncoding<?> producer = (AbstractProducerEncoding<?>) operator;
+          producerWorkerMap.put(producer.opId, fragment.workers);
+        } else if (operator instanceof IDBControllerEncoding) {
+          IDBControllerEncoding idbController = (IDBControllerEncoding) operator;
+          producerWorkerMap.put(idbController.opId, fragment.workers);
+        }
+      }
+    }
+
+    /* Second pass: set the ExchangePairIDs for each producer, also the workers for these and the consumers. */
+    for (PlanFragmentEncoding fragment : fragments) {
+      for (OperatorEncoding<?> operator : fragment.operators) {
+        if (operator instanceof AbstractConsumerEncoding<?>) {
+          AbstractConsumerEncoding<?> consumer = (AbstractConsumerEncoding<?>) operator;
+          consumer.setRealWorkerIds(ImmutableSet.copyOf(producerWorkerMap.get(consumer.argOperatorId)));
+        } else if (operator instanceof AbstractProducerEncoding<?>) {
+          AbstractProducerEncoding<?> producer = (AbstractProducerEncoding<?>) operator;
+          producer.setRealWorkerIds(ImmutableSet.copyOf(consumerWorkerMap.get(producer.opId)));
+          producer.setRealOperatorIds(ImmutableList.copyOf(consumerMap.get(producer.opId)));
+        } else if (operator instanceof IDBControllerEncoding) {
+          IDBControllerEncoding idbController = (IDBControllerEncoding) operator;
+          idbController.realEosControllerWorkerId = consumerWorkerMap.get(idbController.opId).get(0);
+          idbController.setRealEosControllerOperatorID(consumerMap.get(idbController.opId).iterator().next());
+        }
+      }
+    }
+  }
+
+  /**
+   * Given an abstract execution plan, assign the workers to the fragments.
+   * 
+   * This assignment follows the following five rules, in precedence order:
+   * <ol>
+   * <li>Obey user-overrides of fragment workers.</li>
+   * <li>Fragments that scan tables must use the workers that contain the data.</li>
+   * <li>Edge constraints between fragments. E.g., a {@link LocalMultiwayProducerEncoding} must use the same set of
+   * workers as its consumer.</li>
+   * <li>Singleton constraints: Fragments with a {@link CollectConsumerEncoding} or a {@link SingletonEncoding} must run
+   * on a single worker. If none is still set, choose an arbitrary worker.</li>
+   * <li>Unspecified: Any fragments that still have unspecified worker sets will use all workers in the cluster.</li>
+   * </ol>
+   * 
+   * @param fragments
+   * @param args
+   * @throws CatalogException if there is an error getting information about existing relations from the catalog
+   */
+  private static void assignWorkersToFragments(final List<PlanFragmentEncoding> fragments, final ConstructArgs args)
+      throws CatalogException {
+    /* 0. Sanity check the edges between fragments. */
+    sanityCheckEdges(fragments);
+
+    /* 1. Honor user overrides. Note this is unchecked, but we may find constraint violations later. */
+    for (PlanFragmentEncoding fragment : fragments) {
+      if (fragment.overrideWorkers != null && fragment.overrideWorkers.size() > 0) {
+        /* The workers are set in the plan. */
+        fragment.workers = fragment.overrideWorkers;
+      }
+    }
+
+    /* 2. Use scans to set workers, and verify constraints. */
+    setAndVerifyScans(fragments, args);
+
+    /* 3. Edge constraints. */
+    verifyAndPropagateEdgeConstraints(fragments);
+
+    /* 4. Singleton constraints, then redo edge constraints. */
+    setAndVerifySingletonConstraints(fragments, args);
+    verifyAndPropagateEdgeConstraints(fragments);
+
+    /* Last-1. For all remaining fragments, fill them in with all workers. */
+    Server server = args.getServer();
+    ImmutableList<Integer> allWorkers = ImmutableList.copyOf(server.getAliveWorkers());
+    for (PlanFragmentEncoding fragment : fragments) {
+      if (fragment.workers == null) {
+        fragment.workers = allWorkers;
+      }
+    }
+
+    /* Last. Fill in the #realOperatorIDs and the #realWorkerIDs fields for the producers and consumers. */
+    fillInRealOperatorAndWorkerIDs(fragments);
   }
 
   /**
