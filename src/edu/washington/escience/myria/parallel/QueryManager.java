@@ -23,8 +23,6 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.RelationKey;
-import edu.washington.escience.myria.api.encoding.QueryConstruct;
-import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
@@ -483,10 +481,6 @@ public class QueryManager {
       if (!server.getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
         throw new DbException("Profiling mode is only supported when using Postgres as the storage system.");
       }
-    }
-    if (plan instanceof JsonSubQuery) {
-      /* Hack to instantiate a single-fragment query for the visualization. */
-      QueryConstruct.instantiate(((JsonSubQuery) plan).getFragments(), new ConstructArgs(server, -1));
     }
     final long queryID = catalog.newQuery(query);
     return submitQuery(queryID, query, plan);
