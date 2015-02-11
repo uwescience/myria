@@ -38,7 +38,6 @@ import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.IDBController;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
-import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.UpdateCatalog;
 import edu.washington.escience.myria.operator.agg.MultiGroupByAggregate;
 import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
@@ -352,7 +351,6 @@ public class QueryConstruct {
           AbstractConsumerEncoding<?> consumer = (AbstractConsumerEncoding<?>) operator;
           ExchangePairID exchangeId = ExchangePairID.newID();
           consumerMap.put(consumer.argOperatorId, exchangeId);
-          // consumerMap.put(consumer.argOperatorId, consumer);
           consumerWorkerMap.put(consumer.argOperatorId, fragment.workers);
           consumer.setRealOperatorIds(ImmutableList.of(exchangeId));
         } else if (operator instanceof AbstractProducerEncoding<?>) {
@@ -456,7 +454,6 @@ public class QueryConstruct {
     }
 
     RootOperator fragmentRoot = null;
-    CollectConsumer oldRoot = null;
     Map<Integer, Operator> myOperators = Maps.newHashMap();
     Map<Integer, AbstractConsumerEncoding<?>> nonIterativeConsumers = Maps.newHashMap();
     Set<IDBControllerEncoding> idbs = Sets.newHashSet();
@@ -481,9 +478,6 @@ public class QueryConstruct {
               + " detected in the fragment: " + fragmentRoot.getOpName() + ", and " + encoding.opId);
         }
         fragmentRoot = (RootOperator) op;
-      }
-      if (op instanceof CollectConsumer) {
-        oldRoot = (CollectConsumer) op;
       }
     }
     allOperators.putAll(myOperators);
@@ -525,12 +519,6 @@ public class QueryConstruct {
       Consumer eosControllerInput = (Consumer) idbOp.getChildren()[IDBController.CHILDREN_IDX_EOS_CONTROLLER_INPUT];
       iterativeInput.setSchema(initialInput.getSchema());
       eosControllerInput.setSchema(EOSController.EOS_REPORT_SCHEMA);
-    }
-    /* Return the root. */
-    if (fragmentRoot == null && oldRoot != null) {
-      /* Old query plan, add a SinkRoot to the top. */
-      LOGGER.info("Adding a SinkRoot to the top of an old query plan.");
-      fragmentRoot = new SinkRoot(oldRoot);
     }
 
     if (fragmentRoot == null) {
