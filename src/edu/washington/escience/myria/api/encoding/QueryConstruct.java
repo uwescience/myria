@@ -118,20 +118,22 @@ public class QueryConstruct {
    * 
    * @param fragment the fragment
    * @param workers the workers this fragment should be assigned to
+   * @return <code>true</code> if the workers were newly assigned
    * @throws IllegalArgumentException if the fragment already has workers, and the new set does not match
    */
-  private static void setOrVerifyFragmentWorkers(@Nonnull final PlanFragmentEncoding fragment,
+  private static boolean setOrVerifyFragmentWorkers(@Nonnull final PlanFragmentEncoding fragment,
       @Nonnull final Collection<Integer> workers, @Nonnull final String currentTask) {
     Preconditions.checkNotNull(fragment, "fragment");
     Preconditions.checkNotNull(workers, "workers");
     Preconditions.checkNotNull(currentTask, "currentTask");
     if (fragment.workers == null) {
       fragment.workers = ImmutableList.copyOf(workers);
+      return true;
     } else {
       Preconditions.checkArgument(HashMultiset.create(fragment.workers).equals(HashMultiset.create(workers)),
           "During %s, cannot change workers for fragment %s from %s to %s", currentTask, fragment.fragmentIndex,
           fragment.workers, workers);
-      /* Pass -- the workers already match */
+      return false;
     }
   }
 
@@ -271,30 +273,34 @@ public class QueryConstruct {
     Preconditions.checkArgument(producedNotConsumed.isEmpty(), "Missing LocalMultiwayConsumer(s) for producer(s): %s",
         producedNotConsumed);
 
-    /* For each operator, verify that all producers and consumers have the same set of workers. */
-    for (Integer opId : producerMap.keySet()) {
-      List<PlanFragmentEncoding> allFrags = Lists.newLinkedList(consumerMap.get(opId));
-      allFrags.add(producerMap.get(opId));
+    boolean anyUpdates;
+    do {
+      anyUpdates = false;
+      /* For each operator, verify that all producers and consumers have the same set of workers. */
+      for (Integer opId : producerMap.keySet()) {
+        List<PlanFragmentEncoding> allFrags = Lists.newLinkedList(consumerMap.get(opId));
+        allFrags.add(producerMap.get(opId));
 
-      // Find the set of workers assigned to any of them
-      List<Integer> workers = null;
-      for (PlanFragmentEncoding frag : allFrags) {
-        if (frag.workers != null) {
-          workers = frag.workers;
-          break;
+        // Find the set of workers assigned to any of them
+        List<Integer> workers = null;
+        for (PlanFragmentEncoding frag : allFrags) {
+          if (frag.workers != null) {
+            workers = frag.workers;
+            break;
+          }
+        }
+
+        // None -- skip this opId for now
+        if (workers == null) {
+          continue;
+        }
+
+        // Verify that all fragments match the workers we found (and propagate if null)
+        for (PlanFragmentEncoding frag : allFrags) {
+          anyUpdates |= setOrVerifyFragmentWorkers(frag, workers, "propagating edge constraints");
         }
       }
-
-      // None -- skip this opId for now
-      if (workers == null) {
-        continue;
-      }
-
-      // Verify that all fragments match the workers we found (and propagate if null)
-      for (PlanFragmentEncoding frag : allFrags) {
-        setOrVerifyFragmentWorkers(frag, workers, "propagating edge constraints");
-      }
-    }
+    } while (anyUpdates);
   }
 
   /**
