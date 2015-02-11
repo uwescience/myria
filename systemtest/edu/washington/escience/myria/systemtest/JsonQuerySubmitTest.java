@@ -160,7 +160,7 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     File ingestJson = new File("./jsonQueries/globalJoin_jwang/ingest_smallTable.json");
 
     HttpURLConnection conn = JsonAPIUtils.submitQuery("localhost", masterDaemonPort, queryJson);
-    assertEquals(conn.getResponseCode(), HttpURLConnection.HTTP_BAD_REQUEST);
+    assertEquals(HttpURLConnection.HTTP_BAD_REQUEST, conn.getResponseCode());
     conn.disconnect();
 
     conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestJson);
