@@ -1,0 +1,13 @@
+uda maxSum(x, y) {
+    [0.0 as cur_row, -1.0 as max_row, 0.0 as sum_];
+    [cur_row + 1,
+     case when x+y > sum_ then cur_row else max_row end,
+     case when x+y > sum_ then x+y else sum_ end];
+    [max_row, sum_];
+};
+
+t = scan(PostEStep);
+ans = [from t emit pid, maxSum(EStepVal + 3.0, r1)];
+store(ans, maxSumTest);
+
+

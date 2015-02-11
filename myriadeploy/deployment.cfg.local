@@ -1,6 +1,6 @@
 # Deployment configuration
 [deployment]
-path = /tmp/myria
+path = /Users/maas/devlocal/myria/datapath
 name = twoNodeLocalParallel
 dbms = sqlite
 # Uncomment if need to set a specific username; does not work for localhost

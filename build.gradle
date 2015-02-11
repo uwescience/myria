@@ -141,6 +141,9 @@ dependencies {
   // Expression compiler
   compile "org.codehaus.janino:janino:2.7.6"
 
+  // Java blas library
+  compile "org.jblas:jblas:1.2.3"
+
   runtime "monetdb:monetdb-jdbc:2.11"
   runtime "mysql:mysql-connector-java:5.1.31"
   compile "org.postgresql:postgresql:9.3-1102-jdbc41"

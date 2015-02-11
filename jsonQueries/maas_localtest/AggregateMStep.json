@@ -1,0 +1,76 @@
+
+
+{
+  "logicalRa": "Store(public:adhoc:GroupedComponents)[Apply(pid=$0,_COLUMN1_=$1)[GroupBy($0; SUM($1))[Apply(pid=$0,EStepVal=$13)[Scan(public:adhoc:GroupedPointsAndComponents)]]]]",
+  "language": "myrial",
+  "rawQuery": "GroupedComponents = SELECT pid, sum(EStepVal) FROM Scan(GroupedPointsAndComponents) AS GroupedPointsAndComponents;\n\nstore(GroupedComponents, public:adhoc:GroupedComponents);",
+  "plan": {
+    "fragments": [
+      {
+        "operators": [
+          {
+            "opName": "MyriaShuffleConsumer",
+            "opType": "ShuffleConsumer",
+            "opId": 0,
+            "argOperatorId": 1
+          },
+          {
+            "opType": "MStepAggregate",
+            "argChild": 0,
+            "aggregators": [
+              {
+                "column": 12,
+                "aggOps": [
+                  "SUM"
+                ],
+                "type": "SingleColumn"
+              }
+            ],
+            "argGroupField": 5,
+            "opId": 2,
+            "opName": "MyriaGroupBy($0; SUM($12))"
+          },
+          {
+            "opType": "DbInsert",
+            "argChild": 2,
+            "opName": "MyriaStore(public:adhoc:GroupedComponents)",
+            "argOverwriteTable": true,
+            "opId": 3,
+            "relationKey": {
+              "userName": "public",
+              "relationName": "GroupedComponents",
+              "programName": "adhoc"
+            }
+          }
+        ]
+      },
+      {
+        "operators": [
+          {
+            "relationKey": {
+              "userName": "public",
+              "relationName": "GroupedPointsAndComponents",
+              "programName": "adhoc"
+            },
+            "opType": "TableScan",
+            "opName": "MyriaScan(public:adhoc:GroupedPointsAndComponents)",
+            "opId": 4
+          },
+          {
+            "opName": "MyriaShuffleProducer(h($0))",
+            "opType": "ShuffleProducer",
+            "opId": 1,
+            "argChild": 4,
+            "argPf": {
+              "index": 5,
+              "type": "SingleFieldHash"
+            }
+          }
+        ]
+      }
+    ],
+    "type": "SubQuery"
+  }
+}
+
+

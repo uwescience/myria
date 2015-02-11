@@ -1,0 +1,55 @@
+
+
+{
+  "logicalRa": "Store(public:adhoc:JustX)[ApplyEStep(x=$0)[Scan(maas:global_join:smallTable)]]",
+  "language": "myrial",
+  "rawQuery": "T1 = scan(maas:global_join:smallTable);\nT2 = [from T1 emit $0 as x];\nstore(T2, JustX);",
+  "plan": {
+    "fragments": [
+      {
+        "operators": [
+          {
+            "relationKey": {
+              "userName": "maas",
+              "relationName": "smallTable",
+              "programName": "global_join"
+            },
+            "opType": "TableScan",
+            "opName": "MyriaScan(maas:global_join:smallTable)",
+            "opId": 0
+          },
+          {
+            "emitExpressions": [
+              {
+                "outputName": "x",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 0
+                }
+              }
+            ],
+            "opName": "MyriaApplyEStep(x=$0)",
+            "opType": "ApplyEStep",
+            "opId": 1,
+            "argChild": 0
+          },
+          {
+            "opType": "DbInsert",
+            "argChild": 1,
+            "opName": "MyriaStore(public:adhoc:JustX)",
+            "argOverwriteTable": true,
+            "opId": 2,
+            "relationKey": {
+              "userName": "public",
+              "relationName": "JustX",
+              "programName": "adhoc"
+            }
+          }
+        ]
+      }
+    ],
+    "type": "SubQuery"
+  }
+}
+
+

@@ -1,21 +1,21 @@
 
 
 {
-  "logicalRa": "Store(public:adhoc:JustX)[Apply(x=$0)[Scan(jwang:global_join:smallTable)]]",
+  "logicalRa": "Store(public:adhoc:JustX)[Apply(x=$0)[Scan(maas:global_join:smallTable)]]",
   "language": "myrial",
-  "rawQuery": "T1 = scan(jwang:global_join:smallTable);\nT2 = [from T1 emit $0 as x];\nstore(T2, JustX);",
+  "rawQuery": "T1 = scan(maas:global_join:smallTable);\nT2 = [from T1 emit $0 as x];\nstore(T2, JustX);",
   "plan": {
     "fragments": [
       {
         "operators": [
           {
             "relationKey": {
-              "userName": "jwang",
+              "userName": "maas",
               "relationName": "smallTable",
               "programName": "global_join"
             },
             "opType": "TableScan",
-            "opName": "MyriaScan(jwang:global_join:smallTable)",
+            "opName": "MyriaScan(maas:global_join:smallTable)",
             "opId": 0
           },
           {

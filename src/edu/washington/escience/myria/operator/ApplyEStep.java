@@ -5,6 +5,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import org.jblas.Decompose;
+import org.jblas.DoubleMatrix;
+import org.jblas.Solve;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -23,7 +27,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 /**
  * Generic apply operator.
  */
-public class Apply extends UnaryOperator {
+public class ApplyEStep extends UnaryOperator {
 	/***/
 	private static final long serialVersionUID = 1L;
 
@@ -31,7 +35,7 @@ public class Apply extends UnaryOperator {
 	 * Create logger for info logging below.
 	 */
 	private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory
-			.getLogger(Apply.class);
+			.getLogger(ApplyEStep.class);
 
 	/**
 	 * List of expressions that will be used to create the output.
@@ -64,21 +68,51 @@ public class Apply extends UnaryOperator {
 	 * @param emitExpressions
 	 *            expression that created the output
 	 */
-	public Apply(final Operator child, final List<Expression> emitExpressions) {
+	public ApplyEStep(final Operator child,
+			final List<Expression> emitExpressions) {
 		super(child);
 		if (emitExpressions != null) {
 			setEmitExpressions(emitExpressions);
 		}
 
-		// LOGGER.info("Hello world, this is from original Apply.");
-		// DoubleMatrix a = new DoubleMatrix(new double[][] { { 1.0, 2.0, 3.0 },
-		// { 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } });
-		// DoubleMatrix x = new DoubleMatrix(new double[][] { { 1.0 }, { 2.0 },
-		// { 3.0 } });
-		// DoubleMatrix y;
-		//
-		// y = a.mmul(x);
-		// LOGGER.info(y.toString());
+		LOGGER.info("From ApplyEStep - Expectations step for EM.");
+		DoubleMatrix sigma = new DoubleMatrix(new double[][] { { 2.0, 1.0 },
+				{ 1.0, 2.0 } });
+		DoubleMatrix identitiyMatrix = new DoubleMatrix(new double[][] {
+				{ 1.0, 0.0 }, { 0.0, 1.0 } });
+
+		DoubleMatrix x = new DoubleMatrix(new double[][] { { 0. }, { 0. } });
+		DoubleMatrix mu = new DoubleMatrix(new double[][] { { 1. }, { 2. } });
+		// The amplitude of the k'th Gaussian, pi_k
+		double amp = 1;
+
+		// Input points x, Gaussian means mu, Gaussian covariance V
+		DoubleMatrix sigmaInv = Solve.solveSymmetric(sigma, identitiyMatrix);
+		DoubleMatrix xSubMu = x.sub(mu);
+
+		// Compute Log of Gaussian kernal, -1/2 * (x - mu).T * V * (x - mu)
+		double kernal = xSubMu.transpose().mmul(sigmaInv.mmul(xSubMu))
+				.mmul(-.5).get(0);
+
+		// Compute Gaussian determinant using LU decomposition:
+		Decompose.LUDecomposition<DoubleMatrix> lu = Decompose.lu(sigma);
+		// The determinant is the product of rows of U in the LU decomposition
+		double det = 1;
+		for (int i = 0; i < lu.u.rows; i++) {
+			det *= lu.u.get(i, i);
+		}
+
+		// Compute the log of the Gaussian constant: ln[ 1 / sqrt( (2*PI)^d *
+		// det_Sigma ) ]
+		double logConst = Math.log((1. / Math.sqrt(Math.pow(2 * Math.PI, 2)
+				* det)));
+
+		// Now we have the components of the log(p(x | theta))
+		double logP = logConst + kernal;
+
+		// Final output: ln pi_k + ln p(x_i | theta_k(t-1))
+		double output = Math.log(amp) + logP;
+		LOGGER.info("EM output = " + output);
 
 		// System.out.println("Hello world, this is Ryan.");
 		// throw new RuntimeException("HELLO");
@@ -96,6 +130,7 @@ public class Apply extends UnaryOperator {
 	protected TupleBatch fetchNextReady() throws DbException,
 			InvocationTargetException {
 		Operator child = getChild();
+		LOGGER.info("FNR called once");
 
 		if (child.eoi() || child.eos()) {
 			return null;
@@ -105,6 +140,18 @@ public class Apply extends UnaryOperator {
 		if (tb == null) {
 			return null;
 		}
+
+		// // Check to see if we've read input
+		// if (tb != null) {
+		// for (int row = 0; row < tb.numTuples(); ++row) {
+		// List<? extends Column<?>> inputColumns = tb.getDataColumns();
+		// for (int column = 0; column < tb.numColumns(); ++column) {
+		// LOGGER.info("Type of column is: "
+		// + inputColumns.get(column).getType());
+		// }
+		// }
+		// }
+		// // The rest does the normal apply step
 
 		List<Column<?>> output = Lists.newLinkedList();
 		for (GenericEvaluator evaluator : emitEvaluators) {
@@ -170,5 +217,11 @@ public class Apply extends UnaryOperator {
 			namesBuilder.add(expr.getOutputName());
 		}
 		return new Schema(typesBuilder.build(), namesBuilder.build());
+		// Manually return a new schema
+		// List<Type> types = new ArrayList<Type>();
+		// types.add(Type.LONG_TYPE);
+		// List<String> names = new ArrayList<String>();
+		// names.add("ones");
+		// return new Schema(typesBuilder.build(), namesBuilder.build());
 	}
 }

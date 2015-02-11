@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import org.jblas.DoubleMatrix;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -23,7 +25,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 /**
  * Generic apply operator.
  */
-public class Apply extends UnaryOperator {
+public class ApplyOnes extends UnaryOperator {
 	/***/
 	private static final long serialVersionUID = 1L;
 
@@ -31,7 +33,7 @@ public class Apply extends UnaryOperator {
 	 * Create logger for info logging below.
 	 */
 	private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory
-			.getLogger(Apply.class);
+			.getLogger(ApplyOnes.class);
 
 	/**
 	 * List of expressions that will be used to create the output.
@@ -64,21 +66,22 @@ public class Apply extends UnaryOperator {
 	 * @param emitExpressions
 	 *            expression that created the output
 	 */
-	public Apply(final Operator child, final List<Expression> emitExpressions) {
+	public ApplyOnes(final Operator child,
+			final List<Expression> emitExpressions) {
 		super(child);
 		if (emitExpressions != null) {
 			setEmitExpressions(emitExpressions);
 		}
 
-		// LOGGER.info("Hello world, this is from original Apply.");
-		// DoubleMatrix a = new DoubleMatrix(new double[][] { { 1.0, 2.0, 3.0 },
-		// { 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } });
-		// DoubleMatrix x = new DoubleMatrix(new double[][] { { 1.0 }, { 2.0 },
-		// { 3.0 } });
-		// DoubleMatrix y;
-		//
-		// y = a.mmul(x);
-		// LOGGER.info(y.toString());
+		LOGGER.info("Hello world, this is from original Apply.");
+		DoubleMatrix a = new DoubleMatrix(new double[][] { { 1.0, 2.0, 3.0 },
+				{ 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } });
+		DoubleMatrix x = new DoubleMatrix(new double[][] { { 1.0 }, { 2.0 },
+				{ 3.0 } });
+		DoubleMatrix y;
+
+		y = a.mmul(x);
+		LOGGER.info(y.toString());
 
 		// System.out.println("Hello world, this is Ryan.");
 		// throw new RuntimeException("HELLO");
@@ -169,6 +172,11 @@ public class Apply extends UnaryOperator {
 							inputSchema)));
 			namesBuilder.add(expr.getOutputName());
 		}
+		// return new Schema(typesBuilder.build(), namesBuilder.build());
+		List<Type> types = new ArrayList<Type>();
+		types.add(Type.INT_TYPE);
+		List<String> names = new ArrayList<String>();
+		names.add("ones");
 		return new Schema(typesBuilder.build(), namesBuilder.build());
 	}
 }

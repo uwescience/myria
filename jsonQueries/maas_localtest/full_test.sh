@@ -1,0 +1,9 @@
+./upload_data.sh
+./convert_componentsonly.sh
+./convert_points.sh
+./convert_pointsonly.sh
+./join_points.sh
+./EStepTest.sh
+./RespAggTest.sh
+./mstep_join_points.sh
+./MStepTest.sh

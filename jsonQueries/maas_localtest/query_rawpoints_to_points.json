@@ -1,0 +1,137 @@
+
+
+{
+  "logicalRa": "Store(public:adhoc:points)[Apply(pid=$0,x_1=$1,x_2=$2,r1=$3,r2=$4,gid=$5,pi=$6,mu_1=$7,mu_2=$8,sigma_11=$9,sigma_12=$10,sigma_21=$11,sigma_22=$12)[Scan(public:adhoc:rawpoints)]]",
+  "language": "myrial",
+  "rawQuery": "rawpoints = scan(public:adhoc:rawpoints);\nnamedpoints = [from rawpoints emit $0 as pid, $1 as x_1, $2 as x_2, $3 as r1, $4 as r2, $5 as gid, $6 as pi, $7 as mu_1, $8 as mu_2, $9 as sigma_11, $10 as sigma_12, $11 as sigma_21, $12 as sigma_22];\nstore(namedpoints, points);",
+  "plan": {
+    "fragments": [
+      {
+        "operators": [
+          {
+            "relationKey": {
+              "userName": "public",
+              "relationName": "rawpoints",
+              "programName": "adhoc"
+            },
+            "opType": "TableScan",
+            "opName": "MyriaScan(public:adhoc:rawpoints)",
+            "opId": 0
+          },
+          {
+            "emitExpressions": [
+              {
+                "outputName": "pid",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 0
+                }
+              },
+              {
+                "outputName": "x_1",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 1
+                }
+              },
+              {
+                "outputName": "x_2",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 2
+                }
+              },
+              {
+                "outputName": "r1",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 3
+                }
+              },
+              {
+                "outputName": "r2",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 4
+                }
+              },
+              {
+                "outputName": "gid",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 5
+                }
+              },
+              {
+                "outputName": "pi",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 6
+                }
+              },
+              {
+                "outputName": "mu_1",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 7
+                }
+              },
+              {
+                "outputName": "mu_2",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 8
+                }
+              },
+              {
+                "outputName": "sigma_11",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 9
+                }
+              },
+              {
+                "outputName": "sigma_12",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 10
+                }
+              },
+              {
+                "outputName": "sigma_21",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 11
+                }
+              },
+              {
+                "outputName": "sigma_22",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 12
+                }
+              }
+            ],
+            "opName": "MyriaApply(pid=$0,x_1=$1,x_2=$2,r1=$3,r2=$4,gid=$5,pi=$6,mu_1=$7,mu_2=$8,sigma_11=$9,sigma_12=$10,sigma_21=$11,sigma_22=$12)",
+            "opType": "Apply",
+            "opId": 1,
+            "argChild": 0
+          },
+          {
+            "opType": "DbInsert",
+            "argChild": 1,
+            "opName": "MyriaStore(public:adhoc:points)",
+            "argOverwriteTable": true,
+            "opId": 2,
+            "relationKey": {
+              "userName": "public",
+              "relationName": "points",
+              "programName": "adhoc"
+            }
+          }
+        ]
+      }
+    ],
+    "type": "SubQuery"
+  }
+}

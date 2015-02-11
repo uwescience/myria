@@ -1,0 +1,3 @@
+# Contains data for a point and gaussian assigned to it, all doubles
+# gid, mu_1, mu_2, sigma_11, sigma_12, sigma_21, sigma_22
+# $0 as gid, $1 as pi, $2 as mu_1, $3 as mu_2, $4 as sigma_11, $5 as sigma_12, $6 as sigma_21, $7 as sigma_22
