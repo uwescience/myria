@@ -1,49 +1,32 @@
-package edu.washington.escience.myria.systemtest;
+package edu.washington.escience.myria.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
-
-import java.io.IOException;
-import java.net.HttpURLConnection;
 
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.AbstractConsumerEncoding;
 import edu.washington.escience.myria.api.encoding.AbstractProducerEncoding;
 import edu.washington.escience.myria.api.encoding.CollectConsumerEncoding;
 import edu.washington.escience.myria.api.encoding.CollectProducerEncoding;
 import edu.washington.escience.myria.api.encoding.EmptyRelationEncoding;
 import edu.washington.escience.myria.api.encoding.PlanFragmentEncoding;
-import edu.washington.escience.myria.api.encoding.QueryEncoding;
+import edu.washington.escience.myria.api.encoding.QueryConstruct;
 import edu.washington.escience.myria.api.encoding.SinkRootEncoding;
 import edu.washington.escience.myria.api.encoding.UnionAllEncoding;
-import edu.washington.escience.myria.api.encoding.plan.SubQueryEncoding;
-import edu.washington.escience.myria.util.JsonAPIUtils;
 
 /**
  * Test of illegal plans submitted via the API.
  */
-public class JsonBadPlanTests extends SystemTestBase {
+public class JsonBadPlanTests {
 
   static Logger LOGGER = LoggerFactory.getLogger(JsonBadPlanTests.class);
-
-  private HttpURLConnection submitQuery(final QueryEncoding query) throws IOException {
-    ObjectWriter writer = MyriaJsonMapperProvider.getWriter();
-    String queryString = writer.writeValueAsString(query);
-    HttpURLConnection conn = JsonAPIUtils.submitQuery("localhost", masterDaemonPort, queryString);
-    if (null != conn.getErrorStream()) {
-      throw new IllegalStateException(getContents(conn));
-    }
-    return conn;
-  }
 
   @Test
   public void fragmentNoRootTest() throws Exception {
@@ -52,15 +35,10 @@ public class JsonBadPlanTests extends SystemTestBase {
     empty.schema = Schema.ofFields("x", Type.LONG_TYPE);
     PlanFragmentEncoding frag = PlanFragmentEncoding.of(empty);
 
-    QueryEncoding query = new QueryEncoding();
-    query.plan = new SubQueryEncoding(ImmutableList.of(frag));
-    query.logicalRa = "Fragment no root test";
-    query.rawQuery = query.logicalRa;
-
     try {
-      submitQuery(query);
+      QueryConstruct.sanityCheckEdges(ImmutableList.of(frag));
       fail();
-    } catch (IllegalStateException e) {
+    } catch (IllegalArgumentException e) {
       assertThat(e.getMessage()).contains("No RootOperator detected");
     }
   }
@@ -78,15 +56,10 @@ public class JsonBadPlanTests extends SystemTestBase {
     sink2.argChild = empty.opId;
     PlanFragmentEncoding frag = PlanFragmentEncoding.of(empty, sink1, sink2);
 
-    QueryEncoding query = new QueryEncoding();
-    query.plan = new SubQueryEncoding(ImmutableList.of(frag));
-    query.logicalRa = "Fragment two roots test";
-    query.rawQuery = query.logicalRa;
-
     try {
-      submitQuery(query);
+      QueryConstruct.sanityCheckEdges(ImmutableList.of(frag));
       fail();
-    } catch (IllegalStateException e) {
+    } catch (IllegalArgumentException e) {
       assertThat(e.getMessage()).contains("Multiple RootOperator detected");
     }
   }
@@ -101,15 +74,10 @@ public class JsonBadPlanTests extends SystemTestBase {
     prod.argChild = empty.opId;
     PlanFragmentEncoding frag = PlanFragmentEncoding.of(empty, prod);
 
-    QueryEncoding query = new QueryEncoding();
-    query.plan = new SubQueryEncoding(ImmutableList.of(frag));
-    query.logicalRa = "Fragment missing consumer test";
-    query.rawQuery = query.logicalRa;
-
     try {
-      submitQuery(query);
+      QueryConstruct.sanityCheckEdges(ImmutableList.of(frag));
       fail();
-    } catch (IllegalStateException e) {
+    } catch (IllegalArgumentException e) {
       assertThat(e.getMessage()).contains("Missing consumer(s) for producer(s): [1]");
     }
   }
@@ -124,15 +92,10 @@ public class JsonBadPlanTests extends SystemTestBase {
     sink.argChild = cons.opId;
     PlanFragmentEncoding frag = PlanFragmentEncoding.of(cons, sink);
 
-    QueryEncoding query = new QueryEncoding();
-    query.plan = new SubQueryEncoding(ImmutableList.of(frag));
-    query.logicalRa = "Fragment missing producer test";
-    query.rawQuery = query.logicalRa;
-
     try {
-      submitQuery(query);
+      QueryConstruct.sanityCheckEdges(ImmutableList.of(frag));
       fail();
-    } catch (IllegalStateException e) {
+    } catch (IllegalArgumentException e) {
       assertThat(e.getMessage()).contains("Missing producer(s) for consumer(s): [2]");
     }
   }
@@ -161,15 +124,10 @@ public class JsonBadPlanTests extends SystemTestBase {
     sink.argChild = ua.opId;
     PlanFragmentEncoding consFrag = PlanFragmentEncoding.of(cons1, cons2, ua, sink);
 
-    QueryEncoding query = new QueryEncoding();
-    query.plan = new SubQueryEncoding(ImmutableList.of(prodFrag, consFrag));
-    query.logicalRa = "Fragment extra consumer test";
-    query.rawQuery = query.logicalRa;
-
     try {
-      submitQuery(query);
+      QueryConstruct.sanityCheckEdges(ImmutableList.of(prodFrag, consFrag));
       fail();
-    } catch (IllegalStateException e) {
+    } catch (IllegalArgumentException e) {
       assertThat(e.getMessage()).contains("Producer 1 only supports a single consumer, not 2");
     }
   }
@@ -206,15 +164,10 @@ public class JsonBadPlanTests extends SystemTestBase {
     sink.argChild = ua.opId;
     PlanFragmentEncoding consFrag = PlanFragmentEncoding.of(cons1, cons2, ua, sink);
 
-    QueryEncoding query = new QueryEncoding();
-    query.plan = new SubQueryEncoding(ImmutableList.of(prodFrag, prodFrag2, consFrag));
-    query.logicalRa = "Fragment duplicate producer test";
-    query.rawQuery = query.logicalRa;
-
     try {
-      submitQuery(query);
+      QueryConstruct.sanityCheckEdges(ImmutableList.of(prodFrag, prodFrag2, consFrag));
       fail();
-    } catch (IllegalStateException e) {
+    } catch (IllegalArgumentException e) {
       assertThat(e.getMessage()).contains("Two different operators cannot produce the same opId 1.");
     }
   }

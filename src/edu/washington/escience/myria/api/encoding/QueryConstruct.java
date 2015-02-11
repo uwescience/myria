@@ -183,7 +183,7 @@ public class QueryConstruct {
    * 
    * @param fragments the fragments of the plan
    */
-  private static void sanityCheckEdges(final List<PlanFragmentEncoding> fragments) {
+  public static void sanityCheckEdges(final List<PlanFragmentEncoding> fragments) {
     /* These maps connect each channel id to the fragment that produces or consumes it. */
     // producers must be unique
     Map<Integer, PlanFragmentEncoding> producerMap = Maps.newHashMap();
