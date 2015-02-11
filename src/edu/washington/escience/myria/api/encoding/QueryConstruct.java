@@ -225,10 +225,10 @@ public class QueryConstruct {
 
     /* Sanity check 1: Producer must have corresponding consumers, and vice versa. */
     Set<Integer> consumedNotProduced = Sets.difference(consumerMap.keySet(), producerMap.keySet());
-    Preconditions.checkArgument(consumedNotProduced.isEmpty(), "Missing producer(s) for consumer(s): ",
+    Preconditions.checkArgument(consumedNotProduced.isEmpty(), "Missing producer(s) for consumer(s): %s",
         consumedNotProduced);
     Set<Integer> producedNotConsumed = Sets.difference(producerMap.keySet(), consumerMap.keySet());
-    Preconditions.checkArgument(producedNotConsumed.isEmpty(), "Missing consumer(s) for producer(s): ",
+    Preconditions.checkArgument(producedNotConsumed.isEmpty(), "Missing consumer(s) for producer(s): %s",
         producedNotConsumed);
 
     /* Sanity check 2: Operators that only admit a single consumer should have exactly one consumer. */
@@ -267,10 +267,10 @@ public class QueryConstruct {
 
     /* Verify and/or propagate these constraints. */
     Set<Integer> consumedNotProduced = Sets.difference(consumerMap.keySet(), producerMap.keySet());
-    Preconditions.checkArgument(consumedNotProduced.isEmpty(), "Missing LocalMultiwayProducer(s) for consumer(s): ",
+    Preconditions.checkArgument(consumedNotProduced.isEmpty(), "Missing LocalMultiwayProducer(s) for consumer(s): %s",
         consumedNotProduced);
     Set<Integer> producedNotConsumed = Sets.difference(producerMap.keySet(), consumerMap.keySet());
-    Preconditions.checkArgument(producedNotConsumed.isEmpty(), "Missing LocalMultiwayConsumer(s) for producer(s): ",
+    Preconditions.checkArgument(producedNotConsumed.isEmpty(), "Missing LocalMultiwayConsumer(s) for producer(s): %s",
         producedNotConsumed);
 
     /* For each operator, verify that all producers and consumers have the same set of workers. */
