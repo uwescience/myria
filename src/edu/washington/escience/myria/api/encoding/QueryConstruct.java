@@ -1,8 +1,6 @@
 package edu.washington.escience.myria.api.encoding;
 
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -74,7 +72,7 @@ public class QueryConstruct {
     /** Assign workers to all fragments. */
     assignWorkersToFragments(fragments, args);
 
-    HashMap<Integer, PlanFragmentEncoding> op2OwnerFragmentMapping = Maps.newHashMap();
+    Map<Integer, PlanFragmentEncoding> op2OwnerFragmentMapping = Maps.newHashMap();
     int idx = 0;
     for (PlanFragmentEncoding fragment : fragments) {
       fragment.setFragmentIndex(idx++);
@@ -84,8 +82,8 @@ public class QueryConstruct {
     }
 
     Map<Integer, SubQueryPlan> plan = Maps.newHashMap();
-    HashMap<PlanFragmentEncoding, RootOperator> instantiatedFragments = Maps.newHashMap();
-    HashMap<Integer, Operator> allOperators = Maps.newHashMap();
+    Map<PlanFragmentEncoding, RootOperator> instantiatedFragments = Maps.newHashMap();
+    Map<Integer, Operator> allOperators = Maps.newHashMap();
     for (PlanFragmentEncoding fragment : fragments) {
       RootOperator op =
           instantiateFragment(fragment, args, instantiatedFragments, op2OwnerFragmentMapping, allOperators);
@@ -340,7 +338,6 @@ public class QueryConstruct {
    * @param fragments the fragments of the plan
    */
   private static void fillInRealOperatorAndWorkerIDs(final List<PlanFragmentEncoding> fragments) {
-    // IdentityHashMap<AbstractConsumerEncoding<?>, ExchangePairID> consumerExchangeMap = Maps.newIdentityHashMap();
     Multimap<Integer, ExchangePairID> consumerMap = ArrayListMultimap.create();
     Map<Integer, List<Integer>> producerWorkerMap = Maps.newHashMap();
     Map<Integer, List<Integer>> consumerWorkerMap = Maps.newHashMap();
@@ -451,7 +448,7 @@ public class QueryConstruct {
    * @return the actual plan fragment.
    */
   private static RootOperator instantiateFragment(final PlanFragmentEncoding planFragment, final ConstructArgs args,
-      final HashMap<PlanFragmentEncoding, RootOperator> instantiatedFragments,
+      final Map<PlanFragmentEncoding, RootOperator> instantiatedFragments,
       final Map<Integer, PlanFragmentEncoding> opOwnerFragment, final Map<Integer, Operator> allOperators) {
     RootOperator instantiatedFragment = instantiatedFragments.get(planFragment);
     if (instantiatedFragment != null) {
@@ -461,8 +458,8 @@ public class QueryConstruct {
     RootOperator fragmentRoot = null;
     CollectConsumer oldRoot = null;
     Map<Integer, Operator> myOperators = Maps.newHashMap();
-    HashMap<Integer, AbstractConsumerEncoding<?>> nonIterativeConsumers = Maps.newHashMap();
-    HashSet<IDBControllerEncoding> idbs = Sets.newHashSet();
+    Map<Integer, AbstractConsumerEncoding<?>> nonIterativeConsumers = Maps.newHashMap();
+    Set<IDBControllerEncoding> idbs = Sets.newHashSet();
     /* Instantiate all the operators. */
     for (OperatorEncoding<?> encoding : planFragment.operators) {
       if (encoding instanceof IDBControllerEncoding) {
