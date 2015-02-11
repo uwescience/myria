@@ -326,4 +326,109 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     assertEquals(status.message, Status.SUCCESS, status.status);
   }
 
+  @Test
+  public void severalMultiwayBetweenSingletonTest() throws Exception {
+    int opId = 0;
+
+    // Source
+    SingletonEncoding singleton = new SingletonEncoding();
+    singleton.opId = opId++;
+    LocalMultiwayProducerEncoding prod1 = new LocalMultiwayProducerEncoding();
+    prod1.argChild = singleton.opId;
+    prod1.opId = opId++;
+    // Intermediate split
+    LocalMultiwayConsumerEncoding cons1 = new LocalMultiwayConsumerEncoding();
+    cons1.argOperatorId = prod1.opId;
+    cons1.opId = opId++;
+    LocalMultiwayProducerEncoding prod2 = new LocalMultiwayProducerEncoding();
+    prod2.argChild = cons1.opId;
+    prod2.opId = opId++;
+    // Sink after second split
+    LocalMultiwayConsumerEncoding cons2 = new LocalMultiwayConsumerEncoding();
+    cons2.argOperatorId = prod2.opId;
+    cons2.opId = opId++;
+    SinkRootEncoding sink = new SinkRootEncoding();
+    sink.argChild = cons2.opId;
+    sink.opId = opId++;
+
+    PlanFragmentEncoding frag1 = PlanFragmentEncoding.of(singleton, prod1);
+    PlanFragmentEncoding frag2 = PlanFragmentEncoding.of(cons1, prod2);
+    PlanFragmentEncoding frag3 = PlanFragmentEncoding.of(cons2, sink);
+
+    QueryEncoding query = new QueryEncoding();
+    query.plan = new SubQueryEncoding(ImmutableList.of(frag1, frag2, frag3));
+    query.logicalRa = "Valid query with multiple splits test";
+    query.rawQuery = query.logicalRa;
+
+    HttpURLConnection conn = submitQuery(query);
+    assertEquals(HttpStatus.SC_ACCEPTED, conn.getResponseCode());
+    long queryId = getQueryStatus(conn).queryId;
+    conn.disconnect();
+    while (!server.getQueryManager().queryCompleted(queryId)) {
+      Thread.sleep(1);
+    }
+    QueryStatusEncoding status = server.getQueryManager().getQueryStatus(queryId);
+    assertEquals(status.message, Status.SUCCESS, status.status);
+  }
+
+  @Test
+  public void severalMultiwayBetweenSingletonTestNewOpIds() throws Exception {
+    int opId = 10;
+
+    // Source
+    SingletonEncoding singleton = new SingletonEncoding();
+    singleton.opId = opId++;
+    LocalMultiwayProducerEncoding prod1 = new LocalMultiwayProducerEncoding();
+    prod1.argChild = singleton.opId;
+    prod1.opId = opId++;
+    // Intermediate split
+    LocalMultiwayConsumerEncoding cons1 = new LocalMultiwayConsumerEncoding();
+    cons1.argOperatorId = prod1.opId;
+    cons1.opId = opId++;
+    LocalMultiwayProducerEncoding prod2 = new LocalMultiwayProducerEncoding();
+    prod2.argChild = cons1.opId;
+    prod2.opId = opId++;
+    // Sink after second split
+    LocalMultiwayConsumerEncoding cons2 = new LocalMultiwayConsumerEncoding();
+    cons2.argOperatorId = prod2.opId;
+    cons2.opId = opId++;
+    LocalMultiwayProducerEncoding prod3 = new LocalMultiwayProducerEncoding();
+    prod3.argChild = cons2.opId;
+    prod3.opId = opId++;
+    // Sink after second split
+    LocalMultiwayConsumerEncoding cons3 = new LocalMultiwayConsumerEncoding();
+    cons3.argOperatorId = prod3.opId;
+    cons3.opId = opId++;
+    LocalMultiwayProducerEncoding prod4 = new LocalMultiwayProducerEncoding();
+    prod4.argChild = cons3.opId;
+    prod4.opId = opId++;
+    // Sink after second split
+    LocalMultiwayConsumerEncoding cons4 = new LocalMultiwayConsumerEncoding();
+    cons4.argOperatorId = prod4.opId;
+    cons4.opId = opId++;
+    SinkRootEncoding sink = new SinkRootEncoding();
+    sink.argChild = cons4.opId;
+    sink.opId = opId++;
+
+    PlanFragmentEncoding frag1 = PlanFragmentEncoding.of(singleton, prod1);
+    PlanFragmentEncoding frag2 = PlanFragmentEncoding.of(cons1, prod2);
+    PlanFragmentEncoding frag3 = PlanFragmentEncoding.of(cons2, prod3);
+    PlanFragmentEncoding frag4 = PlanFragmentEncoding.of(cons3, prod4);
+    PlanFragmentEncoding frag5 = PlanFragmentEncoding.of(cons4, sink);
+
+    QueryEncoding query = new QueryEncoding();
+    query.plan = new SubQueryEncoding(ImmutableList.of(frag1, frag2, frag3, frag4, frag5));
+    query.logicalRa = "Valid query with multiple splits test";
+    query.rawQuery = query.logicalRa;
+
+    HttpURLConnection conn = submitQuery(query);
+    assertEquals(HttpStatus.SC_ACCEPTED, conn.getResponseCode());
+    long queryId = getQueryStatus(conn).queryId;
+    conn.disconnect();
+    while (!server.getQueryManager().queryCompleted(queryId)) {
+      Thread.sleep(1);
+    }
+    QueryStatusEncoding status = server.getQueryManager().getQueryStatus(queryId);
+    assertEquals(status.message, Status.SUCCESS, status.status);
+  }
 }
