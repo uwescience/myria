@@ -15,6 +15,7 @@ import java.util.Objects;
 
 import org.apache.commons.lang3.StringUtils;
 import org.postgresql.PGConnection;
+import org.postgresql.PGStatement;
 import org.postgresql.copy.CopyIn;
 import org.postgresql.copy.CopyManager;
 import org.postgresql.copy.PGCopyOutputStream;
@@ -209,14 +210,15 @@ public final class JdbcAccessMethod extends AccessMethod {
       throws DbException {
     Objects.requireNonNull(jdbcConnection, "jdbcConnection");
     try {
-      Statement statement;
+      PreparedStatement statement;
       if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
         /*
          * Special handling for PostgreSQL comes from here:
          * http://jdbc.postgresql.org/documentation/head/query.html#query-with-cursor
          */
         jdbcConnection.setAutoCommit(false);
-        statement = jdbcConnection.createStatement();
+        statement = jdbcConnection.prepareStatement(queryString);
+        ((PGStatement) statement).setPrepareThreshold(-1);
         statement.setFetchSize(TupleBatch.BATCH_SIZE);
       } else if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_MYSQL)) {
         /*
@@ -224,14 +226,15 @@ public final class JdbcAccessMethod extends AccessMethod {
          * http://dev.mysql.com/doc/refman/5.0/en/connector-j-reference-implementation-notes.html
          */
         statement =
-            jdbcConnection.createStatement(java.sql.ResultSet.TYPE_FORWARD_ONLY, java.sql.ResultSet.CONCUR_READ_ONLY);
+            jdbcConnection.prepareStatement(queryString, java.sql.ResultSet.TYPE_FORWARD_ONLY,
+                java.sql.ResultSet.CONCUR_READ_ONLY);
         statement.setFetchSize(Integer.MIN_VALUE);
       } else {
         /* Unknown tricks for this DBMS. Hope it works! */
-        statement = jdbcConnection.createStatement();
+        statement = jdbcConnection.prepareStatement(queryString);
         statement.setFetchSize(TupleBatch.BATCH_SIZE);
       }
-      final ResultSet resultSet = statement.executeQuery(queryString);
+      final ResultSet resultSet = statement.executeQuery();
       return new JdbcTupleBatchIterator(resultSet, schema);
     } catch (final SQLException e) {
       throw ErrorUtils.mergeSQLException(e);
