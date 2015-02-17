@@ -143,7 +143,7 @@ public final class EStep extends UnaryOperator {
 		// Compute Log of Gaussian kernal, -1/2 * (x - mu).T * V * (x - mu)
 		double kernal = x_mu.transpose().mmul(SigmaInv.mmul(x_mu)).mmul(-.5)
 				.get(0);
-		System.out.println("combined kernal = " + kernal);
+		// System.out.println("combined kernal = " + kernal);
 
 		// Compute Gaussian determinant using LU decomposition:
 		Decompose.LUDecomposition<DoubleMatrix> LU = Decompose.lu(Sigma);
@@ -152,21 +152,25 @@ public final class EStep extends UnaryOperator {
 		for (int i = 0; i < LU.u.rows; i++) {
 			det *= LU.u.get(i, i);
 		}
-		System.out.println("Determinant = " + det);
+		// System.out.println("Determinant = " + det);
+		// TODO, sometimes det is the negative of what it should be. This is
+		// likely
+		// due to our factorization.
+		det = Math.abs(det);
 
 		// Compute the log of the Gaussian constant: ln[ 1 / sqrt( (2*PI)^d *
 		// det_Sigma ) ]
 		double logConst = Math.log((1. / Math.sqrt(Math.pow(2 * Math.PI, 2)
 				* det)));
-		System.out.println("Log Const = " + logConst);
+		// System.out.println("Log Const = " + logConst);
 
 		// Now we have the components of the log(p(x | theta))
 		double log_p = logConst + kernal;
-		System.out.println("log_p = " + log_p);
+		// System.out.println("log_p = " + log_p);
 
 		// Final output: ln pi_k + ln p(x_i | theta_k(t-1))
 		double output = Math.log(amp) + log_p;
-		System.out.println("output = " + output);
+		// System.out.println("output = " + output);
 
 		// OUTPUT: pid, x, gid, pi, mu, cov, dimension, rik_rhs
 		rik_loglhs = output;
