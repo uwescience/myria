@@ -18,5 +18,12 @@ rest_port = 8753
 0 = vega.cs.washington.edu:8091
 
 [workers]
+# line syntax:
+# workerID = host:port:workingDir:databaseName
+#
+# if workingDir is empty, use the path in [deployment].
+# if databaseName is empty, use the database_name in [deployment].
 1 = regulus.cs.washington.edu:9091
 2 = capella.cs.washington.edu:9091
+3 = regulus.cs.washington.edu:9092:/disk2/myria:myria2
+4 = capella.cs.washington.edu:9092:/disk2/myria:myria2
