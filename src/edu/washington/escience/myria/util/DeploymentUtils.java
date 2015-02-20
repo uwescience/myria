@@ -272,6 +272,7 @@ public final class DeploymentUtils {
       throw new RuntimeException(e);
     }
 
+    boolean first = true;
     long start = System.currentTimeMillis();
     while (true) {
       try {
@@ -292,7 +293,10 @@ public final class DeploymentUtils {
           break;
         }
         // expected for the first few trials
-        LOGGER.warn("expected exception occurred", e);
+        if (first) {
+          System.out.println("Waiting for the master to be up...");
+          first = false;
+        }
       }
       try {
         Thread.sleep(TimeUnit.SECONDS.toMillis(MyriaConstants.MASTER_START_UP_TIMEOUT_IN_SECOND) / 50);
