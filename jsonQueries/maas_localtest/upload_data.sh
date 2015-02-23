@@ -1,3 +1,5 @@
-myria_upload --hostname localhost --port 8753 --no-ssl --overwrite --relation rawpoints rawpoints.csv
-myria_upload --hostname localhost --port 8753 --no-ssl --overwrite --relation rawpointsonly rawpointsonly.csv
-myria_upload --hostname localhost --port 8753 --no-ssl --overwrite --relation rawcomponentsonly rawcomponentsonly.csv
+#!/bin/bash
+./upload_file.sh rawpointsonly
+./upload_file.sh rawcomponentsonly
+./convert_componentsonly.sh
+./convert_pointsonly.sh
