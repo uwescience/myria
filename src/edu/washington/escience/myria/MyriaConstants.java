@@ -185,7 +185,7 @@ public final class MyriaConstants {
   /**
    * PostgreSQL port.
    */
-  public static final int STORAGE_POSTGRESQL_PORT = 5401;
+  public static final int STORAGE_POSTGRESQL_PORT = 5432;
 
   /**
    * Default value for {@link MyriaSystemConfigKeys#TCP_CONNECTION_TIMEOUT_MILLIS}.
