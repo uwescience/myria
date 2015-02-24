@@ -33,12 +33,12 @@
           {
             "opType": "DbInsert",
             "argChild": 2,
-            "opName": "MyriaStore(public:adhoc:GroupedPoints)",
+            "opName": "MyriaStore(public:adhoc:PointsOnly)",
             "argOverwriteTable": true,
             "opId": 3,
             "relationKey": {
               "userName": "public",
-              "relationName": "GroupedPoints",
+              "relationName": "PointsOnly",
               "programName": "adhoc"
             }
           }

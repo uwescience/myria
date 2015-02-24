@@ -33,12 +33,12 @@
           {
             "opType": "DbInsert",
             "argChild": 2,
-            "opName": "MyriaStore(public:adhoc:GroupedComponents)",
+            "opName": "MyriaStore(public:adhoc:ComponentsOnly)",
             "argOverwriteTable": true,
             "opId": 3,
             "relationKey": {
               "userName": "public",
-              "relationName": "GroupedComponents",
+              "relationName": "ComponentsOnly",
               "programName": "adhoc"
             }
           }
@@ -49,11 +49,11 @@
           {
             "relationKey": {
               "userName": "public",
-              "relationName": "GroupedPointsAndComponents",
+              "relationName": "PointsAndComponents",
               "programName": "adhoc"
             },
             "opType": "TableScan",
-            "opName": "MyriaScan(public:adhoc:GroupedPointsAndComponents)",
+            "opName": "MyriaScan(public:adhoc:PointsAndComponents)",
             "opId": 4
           },
           {

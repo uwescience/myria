@@ -17,11 +17,11 @@
           {
             "relationKey": {
               "userName": "public",
-              "relationName": "GroupedPoints",
+              "relationName": "PointsOnly",
               "programName": "adhoc"
             },
             "opType": "TableScan",
-            "opName": "MyriaScan(public:adhoc:GroupedPoints)",
+            "opName": "MyriaScan(public:adhoc:PointsOnly)",
             "opId": 2
           },
           {
@@ -68,12 +68,12 @@
           {
             "opType": "DbInsert",
             "argChild": 3,
-            "opName": "MyriaStore(public:adhoc:GroupedPointsAndComponents)",
+            "opName": "MyriaStore(public:adhoc:PointsAndComponents)",
             "argOverwriteTable": true,
             "opId": 4,
             "relationKey": {
               "userName": "public",
-              "relationName": "GroupedPointsAndComponents",
+              "relationName": "PointsAndComponents",
               "programName": "adhoc"
             }
           }
