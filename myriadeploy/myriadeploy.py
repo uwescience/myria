@@ -35,6 +35,12 @@ def read_config_file(filename='deployment.cfg'):
     except ConfigParser.NoOptionError:
         ret['ssl'] = False
 
+    # Check for custom database port
+    try:
+        ret['database_port'] = config.get('deployment', 'database_port')
+    except ConfigParser.NoOptionError:
+        pass
+
     # Helper function
     def split_hostportpathdbname_key_append_id(hostport):
         "Splits id = host,port,path,db_name into a tuple (host, port, path, db_name, id)."

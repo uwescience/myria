@@ -220,8 +220,16 @@ public final class CatalogMaker {
       final String host = wc.getWorkers().get(Integer.parseInt(workerId)).getHost();
       final String databaseName = config.get("databaseNames").get(workerId);
       final String databasePassword = config.get("deployment").get("database_password");
+      Integer databasePort;
+      try {
+          databasePort = Integer.parseInt(config.get("deployment").get("database_port"));
+      } catch (NumberFormatException e) {
+          // No custom database port set, ConnectionInfo.toJson will use default
+          databasePort = null;
+      }
+        
       final String jsonConnInfo =
-          ConnectionInfo.toJson(dbms, host, description, workerWorkingDir, workerId, databaseName, databasePassword);
+          ConnectionInfo.toJson(dbms, host, description, workerWorkingDir, workerId, databaseName, databasePassword, databasePort);
       configurationValues.put(MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_CONN_INFO, jsonConnInfo);
 
       /* Set them all in the worker catalog. */
