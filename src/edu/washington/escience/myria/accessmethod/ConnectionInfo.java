@@ -8,6 +8,8 @@ import java.util.Objects;
 
 import org.apache.commons.io.FilenameUtils;
 
+import com.google.common.base.MoreObjects;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -103,13 +105,8 @@ public abstract class ConnectionInfo {
         // Now it is hardcoded to use a specific connection info, which allows only one
         // myria instance per machine in the cluster
         host = hostName;
-            
-        if (databasePort == null) {
-            port = MyriaConstants.STORAGE_MONETDB_PORT;
-        } else {
-            port = databasePort;
-        }
-            
+        port = MoreObjects.firstNonNull(databasePort, MyriaConstants.STORAGE_MONETDB_PORT);
+  
         user = MyriaConstants.STORAGE_JDBC_USERNAME;
         jdbcDriverName = "nl.cwi.monetdb.jdbc.MonetDriver";
         jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, databasePassword);
@@ -121,12 +118,7 @@ public abstract class ConnectionInfo {
         // Now it is hardcoded to use a specific connection info, which allows only one
         // myria instance per machine in the cluster
         host = hostName;
-            
-        if (databasePort == null) {
-            port = MyriaConstants.STORAGE_POSTGRESQL_PORT;
-        } else {
-            port = databasePort;
-        }
+        port = MoreObjects.firstNonNull(databasePort, MyriaConstants.STORAGE_POSTGRESQL_PORT);
             
         user = MyriaConstants.STORAGE_JDBC_USERNAME;
         jdbcDriverName = "org.postgresql.Driver";
@@ -139,13 +131,8 @@ public abstract class ConnectionInfo {
         // Now it is hardcoded to use a specific connection info, which allows only one
         // myria instance per machine in the cluster
         host = hostName;
+        port = MoreObjects.firstNonNull(databasePort, MyriaConstants.STORAGE_MYSQL_PORT);
 
-        if (databasePort == null) {
-            port = MyriaConstants.STORAGE_MYSQL_PORT;
-        } else {
-            port = databasePort;
-        }
-            
         user = MyriaConstants.STORAGE_JDBC_USERNAME;
         jdbcDriverName = "com.mysql.jdbc.Driver";
         jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, databasePassword);
