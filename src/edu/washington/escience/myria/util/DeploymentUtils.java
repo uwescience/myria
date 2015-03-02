@@ -274,6 +274,7 @@ public final class DeploymentUtils {
 
     boolean first = true;
     long start = System.currentTimeMillis();
+    IOException notAliveException = null;
     while (true) {
       try {
         HttpURLConnection request = (HttpURLConnection) masterAliveUrl.openConnection();
@@ -297,6 +298,7 @@ public final class DeploymentUtils {
           System.out.println("Waiting for the master to be up...");
           first = false;
         }
+        notAliveException = e;
       }
       try {
         Thread.sleep(TimeUnit.SECONDS.toMillis(MyriaConstants.MASTER_START_UP_TIMEOUT_IN_SECOND) / 50);
@@ -306,7 +308,11 @@ public final class DeploymentUtils {
       }
       int elapse = (int) TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - start);
       if (elapse > MyriaConstants.MASTER_START_UP_TIMEOUT_IN_SECOND) {
-        throw new RuntimeException("After " + elapse + "s master " + hostname + ":" + restPort + " is not alive");
+        String message = "After " + elapse + "s master " + hostname + ":" + restPort + " is not alive.";
+        if (notAliveException != null) {
+          message += " Exception: " + notAliveException.getMessage();
+        }
+        throw new RuntimeException(message);
       }
     }
   }
