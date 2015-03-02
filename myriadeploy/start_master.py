@@ -10,7 +10,7 @@ import logging
 def start_master(config_file):
     args = ["./using_deployment_utils.sh", config_file, "-start_master"]
     if subprocess.call(args):
-        logging.error("Error starting master")
+        sys.exit(1)
 
 
 def main(argv):
