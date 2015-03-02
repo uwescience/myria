@@ -1,0 +1,252 @@
+
+
+{
+  "logicalRa": "Store(public:adhoc:TestPointDifference)[Apply(gid=$0,pi_diff=($1 - $8),mu_1_diff=($2 - $9),mu_2_diff=($3 - $10),cov_11_diff=($4 - $11),cov_12_diff=($5 - $12),cov_21_diff=($6 - $13),cov_22_diff=($7 - $14))[ProjectingJoin(($0 = $8); $0,$1,$2,$3,$4,$5,$6,$7,$9,$10,$11,$12,$13,$14,$15)[Scan(public:adhoc:ComponentsOnly),Scan(public:adhoc:ExpectedComponents)]]]",
+  "language": "sql",
+  "rawQuery": "Test = scan(public:adhoc:ComponentsOnly);\nExpected = scan(public:adhoc:ExpectedComponents);\n\nDifference = SELECT Test.$0, \n\t\t\t\t\tTest.$1 - Expected.$1 as pi_diff,\n\t\t\t\t\tTest.$2 - Expected.$2 as mu_1_diff,\n\t\t\t\t\tTest.$3 - Expected.$3 as mu_2_diff,\n\t\t\t\t\tTest.$4 - Expected.$4 as cov_11_diff,\n\t\t\t\t\tTest.$5 - Expected.$5 as cov_12_diff,\n\t\t\t\t\tTest.$6 - Expected.$6 as cov_21_diff,\n\t\t\t\t\tTest.$7 - Expected.$7 as cov_22_diff\n\t\t\tFROM Test, Expected \n\t\t\tWHERE Test.$0 = Expected.$0;\n\nstore(Difference, public:adhoc:TestPointDifference);\n\n",
+  "plan": {
+    "fragments": [
+      {
+        "operators": [
+          {
+            "opName": "MyriaShuffleConsumer",
+            "opType": "ShuffleConsumer",
+            "opId": 0,
+            "argOperatorId": 1
+          },
+          {
+            "opName": "MyriaShuffleConsumer",
+            "opType": "ShuffleConsumer",
+            "opId": 2,
+            "argOperatorId": 3
+          },
+          {
+            "argColumnNames": [
+              "gid",
+              "pi",
+              "mu11",
+              "mu12",
+              "cov11",
+              "cov12",
+              "cov21",
+              "cov22",
+              "pi1",
+              "mu_1",
+              "mu_2",
+              "sigma_11",
+              "sigma_12",
+              "sigma_21",
+              "sigma_22"
+            ],
+            "argChild2": "0",
+            "argChild1": "2",
+            "opType": "SymmetricHashJoin",
+            "opId": 4,
+            "opName": "MyriaSymmetricHashJoin(($0 = $8); $0,$1,$2,$3,$4,$5,$6,$7,$9,$10,$11,$12,$13,$14,$15)",
+            "argSelect2": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7
+            ],
+            "argColumns1": [
+              0
+            ],
+            "argColumns2": [
+              0
+            ],
+            "argSelect1": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7
+            ]
+          },
+          {
+            "emitExpressions": [
+              {
+                "outputName": "gid",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 0
+                }
+              },
+              {
+                "outputName": "pi_diff",
+                "rootExpressionOperator": {
+                  "right": {
+                    "type": "VARIABLE",
+                    "columnIdx": 8
+                  },
+                  "type": "MINUS",
+                  "left": {
+                    "type": "VARIABLE",
+                    "columnIdx": 1
+                  }
+                }
+              },
+              {
+                "outputName": "mu_1_diff",
+                "rootExpressionOperator": {
+                  "right": {
+                    "type": "VARIABLE",
+                    "columnIdx": 9
+                  },
+                  "type": "MINUS",
+                  "left": {
+                    "type": "VARIABLE",
+                    "columnIdx": 2
+                  }
+                }
+              },
+              {
+                "outputName": "mu_2_diff",
+                "rootExpressionOperator": {
+                  "right": {
+                    "type": "VARIABLE",
+                    "columnIdx": 10
+                  },
+                  "type": "MINUS",
+                  "left": {
+                    "type": "VARIABLE",
+                    "columnIdx": 3
+                  }
+                }
+              },
+              {
+                "outputName": "cov_11_diff",
+                "rootExpressionOperator": {
+                  "right": {
+                    "type": "VARIABLE",
+                    "columnIdx": 11
+                  },
+                  "type": "MINUS",
+                  "left": {
+                    "type": "VARIABLE",
+                    "columnIdx": 4
+                  }
+                }
+              },
+              {
+                "outputName": "cov_12_diff",
+                "rootExpressionOperator": {
+                  "right": {
+                    "type": "VARIABLE",
+                    "columnIdx": 12
+                  },
+                  "type": "MINUS",
+                  "left": {
+                    "type": "VARIABLE",
+                    "columnIdx": 5
+                  }
+                }
+              },
+              {
+                "outputName": "cov_21_diff",
+                "rootExpressionOperator": {
+                  "right": {
+                    "type": "VARIABLE",
+                    "columnIdx": 13
+                  },
+                  "type": "MINUS",
+                  "left": {
+                    "type": "VARIABLE",
+                    "columnIdx": 6
+                  }
+                }
+              },
+              {
+                "outputName": "cov_22_diff",
+                "rootExpressionOperator": {
+                  "right": {
+                    "type": "VARIABLE",
+                    "columnIdx": 14
+                  },
+                  "type": "MINUS",
+                  "left": {
+                    "type": "VARIABLE",
+                    "columnIdx": 7
+                  }
+                }
+              }
+            ],
+            "opName": "MyriaApply(gid=$0,pi_diff=($1 - $8),mu_1_diff=($2 - $9),mu_2_diff=($3 - $10),cov_11_diff=($4 - $11),cov_12_diff=($5 - $12),cov_21_diff=($6 - $13),cov_22_diff=($7 - $14))",
+            "opType": "Apply",
+            "opId": 5,
+            "argChild": 4
+          },
+          {
+            "opType": "DbInsert",
+            "argChild": 5,
+            "opName": "MyriaStore(public:adhoc:TestComponentPointDifference)",
+            "argOverwriteTable": true,
+            "opId": 6,
+            "relationKey": {
+              "userName": "public",
+              "relationName": "TestComponentDifference",
+              "programName": "adhoc"
+            }
+          }
+        ]
+      },
+      {
+        "operators": [
+          {
+            "relationKey": {
+              "userName": "public",
+              "relationName": "ComponentsOnly",
+              "programName": "adhoc"
+            },
+            "opType": "TableScan",
+            "opName": "MyriaScan(public:adhoc:ComponentsOnly)",
+            "opId": 7
+          },
+          {
+            "opName": "MyriaShuffleProducer(h($0))",
+            "opType": "ShuffleProducer",
+            "opId": 3,
+            "argChild": 7,
+            "argPf": {
+              "index": 0,
+              "type": "SingleFieldHash"
+            }
+          }
+        ]
+      },
+      {
+        "operators": [
+          {
+            "relationKey": {
+              "userName": "public",
+              "relationName": "ExpectedComponents",
+              "programName": "adhoc"
+            },
+            "opType": "TableScan",
+            "opName": "MyriaScan(public:adhoc:ExpectedComponents)",
+            "opId": 8
+          },
+          {
+            "opName": "MyriaShuffleProducer(h($0))",
+            "opType": "ShuffleProducer",
+            "opId": 1,
+            "argChild": 8,
+            "argPf": {
+              "index": 0,
+              "type": "SingleFieldHash"
+            }
+          }
+        ]
+      }
+    ],
+    "type": "SubQuery"
+  }
+}
+
+

@@ -1,0 +1,83 @@
+
+
+{
+  "logicalRa": "Store(public:adhoc:PointsOnly)[Apply(pid=$0,x_1=$1,x_2=$2,r_1=$3,r_2=$4)[Scan(public:adhoc:rawpointsonly)]]",
+  "language": "myrial",
+  "rawQuery": "rawPointsOnly = scan(public:adhoc:rawpointsonly);\nnamedPointsOnly = [from rawPointsOnly emit $0 as pid, $1 as x_1, $2 as x_2, $3 as r_1, $4 as r_2];\n\nstore(namedPointsOnly, PointsOnly);\n",
+  "plan": {
+    "fragments": [
+      {
+        "operators": [
+          {
+            "relationKey": {
+              "userName": "public",
+              "relationName": "raw_expected_points",
+              "programName": "adhoc"
+            },
+            "opType": "TableScan",
+            "opName": "MyriaScan(public:adhoc:raw_expected_points)",
+            "opId": 0
+          },
+          {
+            "emitExpressions": [
+              {
+                "outputName": "pid",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 0
+                }
+              },
+              {
+                "outputName": "x_1",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 1
+                }
+              },
+              {
+                "outputName": "x_2",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 2
+                }
+              },
+              {
+                "outputName": "r_1",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 3
+                }
+              },
+              {
+                "outputName": "r_2",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 4
+                }
+              }
+            ],
+            "opName": "MyriaApply(pid=$0,x_1=$1,x_2=$2,r_1=$3,r_2=$4)",
+            "opType": "Apply",
+            "opId": 1,
+            "argChild": 0
+          },
+          {
+            "opType": "DbInsert",
+            "argChild": 1,
+            "opName": "MyriaStore(public:adhoc:ExpectedPoints)",
+            "argOverwriteTable": true,
+            "opId": 2,
+            "relationKey": {
+              "userName": "public",
+              "relationName": "ExpectedPoints",
+              "programName": "adhoc"
+            }
+          }
+        ]
+      }
+    ],
+    "type": "SubQuery"
+  }
+}
+
+

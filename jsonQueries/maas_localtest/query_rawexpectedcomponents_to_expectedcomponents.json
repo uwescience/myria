@@ -1,0 +1,104 @@
+
+
+{
+  "logicalRa": "Store(public:adhoc:ComponentsOnly)[Apply(gid=$0,pi=$1,mu_1=$2,mu_2=$3,sigma_11=$4,sigma_12=$5,sigma_21=$6,sigma_22=$7)[Scan(public:adhoc:rawcomponentsonly)]]",
+  "language": "myrial",
+  "rawQuery": "rawComponentsOnly = scan(public:adhoc:rawcomponentsonly);\nnamedComponentsOnly = [from rawComponentsOnly emit $0 as gid, $1 as pi, $2 as mu_1, $3 as mu_2, $4 as sigma_11, $5 as sigma_12, $6 as sigma_21, $7 as sigma_22];\n\nstore(namedComponentsOnly, ComponentsOnly);\n",
+  "plan": {
+    "fragments": [
+      {
+        "operators": [
+          {
+            "relationKey": {
+              "userName": "public",
+              "relationName": "raw_expected_components",
+              "programName": "adhoc"
+            },
+            "opType": "TableScan",
+            "opName": "MyriaScan(public:adhoc:raw_expected_components)",
+            "opId": 0
+          },
+          {
+            "emitExpressions": [
+              {
+                "outputName": "gid",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 0
+                }
+              },
+              {
+                "outputName": "pi",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 1
+                }
+              },
+              {
+                "outputName": "mu_1",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 2
+                }
+              },
+              {
+                "outputName": "mu_2",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 3
+                }
+              },
+              {
+                "outputName": "sigma_11",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 4
+                }
+              },
+              {
+                "outputName": "sigma_12",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 5
+                }
+              },
+              {
+                "outputName": "sigma_21",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 6
+                }
+              },
+              {
+                "outputName": "sigma_22",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 7
+                }
+              }
+            ],
+            "opName": "MyriaApply(gid=$0,pi=$1,mu_1=$2,mu_2=$3,sigma_11=$4,sigma_12=$5,sigma_21=$6,sigma_22=$7)",
+            "opType": "Apply",
+            "opId": 1,
+            "argChild": 0
+          },
+          {
+            "opType": "DbInsert",
+            "argChild": 1,
+            "opName": "MyriaStore(public:adhoc:ExpectedComponents)",
+            "argOverwriteTable": true,
+            "opId": 2,
+            "relationKey": {
+              "userName": "public",
+              "relationName": "ExpectedComponents",
+              "programName": "adhoc"
+            }
+          }
+        ]
+      }
+    ],
+    "type": "SubQuery"
+  }
+}
+
+
