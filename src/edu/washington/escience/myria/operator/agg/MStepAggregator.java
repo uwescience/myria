@@ -1,6 +1,5 @@
 package edu.washington.escience.myria.operator.agg;
 
-import java.util.ArrayList;
 import java.util.Objects;
 
 import org.jblas.DoubleMatrix;
@@ -30,13 +29,7 @@ public class MStepAggregator implements Aggregator {
 	/** The actual aggregator doing the work. */
 	// private final PrimitiveAggregator agg;
 
-	/** A list of values to combine. **/
-	private final ArrayList<Double> vals;
-
 	private double[] x;
-
-	private final double[] partialResponsibilities;
-	// private int valIndex;
 
 	private final int numComponents = 2;
 
@@ -75,8 +68,7 @@ public class MStepAggregator implements Aggregator {
 		// Objects.requireNonNull(aggOps, "aggOps");
 		// agg = AggUtils.allocate(inputSchema.getColumnType(column),
 		// inputSchema.getColumnName(column), aggOps);
-		vals = new ArrayList<Double>();
-		partialResponsibilities = new double[numComponents];
+
 		x = null;
 		// valIndex = 0;
 
@@ -106,7 +98,8 @@ public class MStepAggregator implements Aggregator {
 
 		// The gaussian id also serves as the index to the responsibility array
 		long gid = from.getLong(gidColumn, row);
-		partialResponsibilities[(int) gid] = from.getDouble(column, row);
+
+		// partialResponsibilities[(int) gid] = from.getDouble(column, row);
 		if (x == null) {
 			x = new double[numDimensions];
 			for (int i = 0; i < numDimensions; i++) {
@@ -114,17 +107,20 @@ public class MStepAggregator implements Aggregator {
 			}
 		}
 
-		vals.add(from.getDouble(column, row) * from.getDouble(column - 1, row)); // should
-																					// be
-
-		nPoints += 1;
+		// vals.add(from.getDouble(column, row) * from.getDouble(column - 1,
+		// row)); // should
+		// be
 
 		double r_ik = from.getDouble((int) gid + 1 + numComponents, row);
 
 		double x11 = from.getDouble(1, row);
 		double x21 = from.getDouble(2, row);
-		//
-		DoubleMatrix x = new DoubleMatrix(new double[][] { { x11 }, { x21 } });
+
+		double[][] xArray = new double[][] { { x11 }, { x21 } };
+
+		nPoints += 1;
+
+		DoubleMatrix x = new DoubleMatrix(xArray);
 		//
 		// // Do updates
 		r_k_partial += r_ik;
@@ -139,12 +135,6 @@ public class MStepAggregator implements Aggregator {
 		// Preconditions.checkState(agg != null,
 		// "agg should not be null. Did you call getResultSchema yet?");
 		// agg.getResult(dest, destColumn);
-		double sum = 0;
-		for (double d : vals) {
-			sum += d;
-		}
-
-		double logNormalization = logsumexp(partialResponsibilities);
 
 		// // Loop through and output the x vector
 		// for (int i = 0; i < x.length; i++) {
@@ -216,25 +206,44 @@ public class MStepAggregator implements Aggregator {
 		return new Schema(types, names);
 	}
 
-	/** Calculates the log-sum-exp of the double matrix of elements. **/
-	private static double logsumexp(double[] elements) {
-		// the max term
-		double maxElement = Double.NEGATIVE_INFINITY;
+	private class PartialState {
+		private final String matrixLibrary = "jama";
 
-		// Find the max among elements
-		for (double e : elements) {
-			if (e > maxElement) {
-				maxElement = e;
-			}
+		private final double r_k_partial;
+
+		private final DoubleMatrix mu_k_partial;
+
+		private final DoubleMatrix sigma_k_partial;
+
+		DoubleMatrix x;
+
+		private int nPoints;
+
+		private PartialState() {
+			r_k_partial = 0.0;
+
+			mu_k_partial = DoubleMatrix.zeros(numDimensions, 1);
+
+			sigma_k_partial = DoubleMatrix.zeros(numDimensions, numDimensions);
+
+			x = null;
+
 		}
 
-		// Get the adjusted sum
-		double sumTerms = 0;
-		for (double e : elements) {
-			sumTerms += Math.exp(e - maxElement);
+		private void addPoint(double[] x, double r_ik) {
+
 		}
 
-		return maxElement + Math.log(sumTerms);
+		private double[][] getFinalSigma() {
+			return new double[4][4];
+		}
 
+		private double[] getFinalMu() {
+			return new double[4];
+		}
+
+		private double getFinalAmplitude() {
+			return 0.0;
+		}
 	}
 }

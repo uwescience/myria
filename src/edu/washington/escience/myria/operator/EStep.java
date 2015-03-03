@@ -6,6 +6,8 @@ import org.jblas.Decompose;
 import org.jblas.DoubleMatrix;
 import org.jblas.Solve;
 
+import Jama.Matrix;
+
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
@@ -35,6 +37,11 @@ public final class EStep extends UnaryOperator {
 	 * Which columns to sort the tuples by.
 	 */
 	private final String columnName = "EStepVal";
+
+	/**
+	 * Which matrix library to use. "jblas" or "jama"
+	 */
+	private final String matrixLibrary = "jama";
 
 	/**
 	 * Constructor accepts a predicate to apply and a child operator to read
@@ -135,21 +142,19 @@ public final class EStep extends UnaryOperator {
 		double[][] muArray = new double[][] { { mu11 }, { mu21 } };
 
 		// Compute Log of Gaussian kernal, -1/2 * (x - mu).T * V * (x - mu)
-		double kernal = getKernalJblas(xArray, muArray, sigmaArray);
-
-		DoubleMatrix Sigma = new DoubleMatrix(sigmaArray);
-		// Compute Gaussian determinant using LU decomposition:
-		Decompose.LUDecomposition<DoubleMatrix> LU = Decompose.lu(Sigma);
-		// The determinant is the product of rows of U in the LU decomposition
-		double det = 1;
-		for (int i = 0; i < LU.u.rows; i++) {
-			det *= LU.u.get(i, i);
+		double kernal;
+		double det;
+		if (matrixLibrary.equals("jblas")) {
+			// Using jblas library
+			kernal = getKernalJblas(xArray, muArray, sigmaArray);
+			det = getDeterminantJblas(sigmaArray);
+		} else if (matrixLibrary.equals("jama")) {
+			// Using jama libary
+			kernal = getKernalJama(xArray, muArray, sigmaArray);
+			det = getDeterminantJama(sigmaArray);
+		} else {
+			throw new RuntimeException("Incorrect matrix libary specified.");
 		}
-		// System.out.println("Determinant = " + det);
-		// TODO, sometimes det is the negative of what it should be. This is
-		// likely
-		// due to our factorization.
-		det = Math.abs(det);
 
 		// Compute the log of the Gaussian constant: ln[ 1 / sqrt( (2*PI)^d *
 		// det_Sigma ) ]
@@ -186,4 +191,40 @@ public final class EStep extends UnaryOperator {
 		// Compute Log of Gaussian kernal, -1/2 * (x - mu).T * V * (x - mu)
 		return x_mu.transpose().mmul(SigmaInv.mmul(x_mu)).mmul(-.5).get(0);
 	}
+
+	private double getKernalJama(double[][] xArray, double[][] muArray,
+			double[][] sigmaArray) {
+		Matrix jama_x = new Matrix(xArray);
+		Matrix jama_mu = new Matrix(muArray);
+		Matrix jama_Sigma = new Matrix(sigmaArray);
+
+		Matrix jama_SigmaInv = jama_Sigma.inverse();
+		Matrix jama_x_mu = jama_x.minus(jama_mu);
+
+		return jama_x_mu.transpose().times(jama_SigmaInv.times(jama_x_mu))
+				.times(-.5).get(0, 0);
+	}
+
+	// Computes determinant of Sigma
+	private double getDeterminantJblas(double[][] sigmaArray) {
+		DoubleMatrix Sigma = new DoubleMatrix(sigmaArray);
+		// Compute Gaussian determinant using LU decomposition:
+		Decompose.LUDecomposition<DoubleMatrix> LU = Decompose.lu(Sigma);
+		// The determinant is the product of rows of U in the LU decomposition
+		double det = 1;
+		for (int i = 0; i < LU.u.rows; i++) {
+			det *= LU.u.get(i, i);
+		}
+		// System.out.println("Determinant = " + det);
+		// TODO, sometimes det is the negative of what it should be. This is
+		// likely
+		// due to our factorization.
+		return Math.abs(det);
+	}
+
+	private double getDeterminantJama(double[][] sigmaArray) {
+		Matrix Sigma = new Matrix(sigmaArray);
+		return Sigma.det();
+	}
+
 }
