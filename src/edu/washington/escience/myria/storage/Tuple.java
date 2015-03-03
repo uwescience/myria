@@ -10,12 +10,13 @@ import com.google.common.collect.Lists;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.builder.WritableColumn;
 import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * A single row relation.
  */
-public class Tuple implements Cloneable, ReadableTable, Serializable {
+public class Tuple implements Cloneable, AppendableTable, ReadableTable, Serializable {
   /***/
   private static final long serialVersionUID = 1L;
 
@@ -148,5 +149,50 @@ public class Tuple implements Cloneable, ReadableTable, Serializable {
       t.set(i, getObject(i, 0));
     }
     return t;
+  }
+
+  @Override
+  public void putBoolean(final int column, final boolean value) {
+    set(column, value);
+  }
+
+  @Override
+  public void putDateTime(final int column, final DateTime value) {
+    set(column, value);
+  }
+
+  @Override
+  public void putDouble(final int column, final double value) {
+    set(column, value);
+  }
+
+  @Override
+  public void putFloat(final int column, final float value) {
+    set(column, value);
+  }
+
+  @Override
+  public void putInt(final int column, final int value) {
+    set(column, value);
+  }
+
+  @Override
+  public void putLong(final int column, final long value) {
+    set(column, value);
+  }
+
+  @Override
+  public void putString(final int column, final String value) {
+    set(column, value);
+  }
+
+  @Override
+  public void putObject(final int column, final Object value) {
+    set(column, value);
+  }
+
+  @Override
+  public WritableColumn asWritableColumn(final int column) {
+    return data.get(column);
   }
 }
