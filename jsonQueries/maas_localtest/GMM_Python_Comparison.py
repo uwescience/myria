@@ -35,6 +35,8 @@ def run_gmm_test(n_steps):
     b = np.random.randn(100,2) + -4
     data = np.row_stack((a,b)) 
 
+    #data = np.loadtxt('astro_sample.csv',delimiter=',')
+
     f_log = open('gmm_test_log.txt','w')
 
     # Run GMM and save output after desired # iterations to file.
@@ -51,6 +53,7 @@ def run_gmm_test(n_steps):
 
 
     for j in n_iterations:
+        # GMM code goes here
         gmm = GMM(n_components=2, n_iter=j, n_init=1, random_state=0, covariance_type='full', min_covar=1.e-14)
         gmm.fit(data)
         responsibilities = gmm.predict_proba(data)
@@ -59,6 +62,7 @@ def run_gmm_test(n_steps):
         means = gmm.means_
         cov = gmm.covars_
         
+
         if j == 0:        
             ##### Test input, the points and responsibilities
             combined_points = np.concatenate((data,resp), axis=1)            
