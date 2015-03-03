@@ -120,31 +120,24 @@ public final class EStep extends UnaryOperator {
 
 		// Eventually we'll need the dimension parameter to somehow auto-roll
 		// The matrices
-		int dimension = 2;
+		// int dimension = 2;
 
 		// OUTPUT to be applied:
 		double rik_loglhs;
 
-		DoubleMatrix Sigma = new DoubleMatrix(new double[][] {
-				{ cov11, cov12 }, { cov21, cov22 } });
-		DoubleMatrix I = new DoubleMatrix(new double[][] { { 1.0, 0.0 },
-				{ 0.0, 1.0 } });
-
-		DoubleMatrix x = new DoubleMatrix(new double[][] { { x11 }, { x21 } });
-		DoubleMatrix mu = new DoubleMatrix(
-				new double[][] { { mu11 }, { mu21 } });
 		// The amplitude of the k'th Gaussian, pi_k
 		double amp = pi;
 
-		// Input points x, Gaussian means mu, Gaussian covariance V
-		DoubleMatrix SigmaInv = Solve.solveSymmetric(Sigma, I);
-		DoubleMatrix x_mu = x.sub(mu);
+		// Roll up data into array of doubles
+		double[][] sigmaArray = new double[][] { { cov11, cov12 },
+				{ cov21, cov22 } };
+		double[][] xArray = new double[][] { { x11 }, { x21 } };
+		double[][] muArray = new double[][] { { mu11 }, { mu21 } };
 
 		// Compute Log of Gaussian kernal, -1/2 * (x - mu).T * V * (x - mu)
-		double kernal = x_mu.transpose().mmul(SigmaInv.mmul(x_mu)).mmul(-.5)
-				.get(0);
-		// System.out.println("combined kernal = " + kernal);
+		double kernal = getKernalJblas(xArray, muArray, sigmaArray);
 
+		DoubleMatrix Sigma = new DoubleMatrix(sigmaArray);
 		// Compute Gaussian determinant using LU decomposition:
 		Decompose.LUDecomposition<DoubleMatrix> LU = Decompose.lu(Sigma);
 		// The determinant is the product of rows of U in the LU decomposition
@@ -162,19 +155,35 @@ public final class EStep extends UnaryOperator {
 		// det_Sigma ) ]
 		double logConst = Math.log((1. / Math.sqrt(Math.pow(2 * Math.PI, 2)
 				* det)));
-		// System.out.println("Log Const = " + logConst);
 
 		// Now we have the components of the log(p(x | theta))
 		double log_p = logConst + kernal;
-		// System.out.println("log_p = " + log_p);
 
 		// Final output: ln pi_k + ln p(x_i | theta_k(t-1))
-		double output = Math.log(amp) + log_p;
-		// System.out.println("output = " + output);
+		rik_loglhs = Math.log(amp) + log_p;
 
 		// OUTPUT: pid, x, gid, pi, mu, cov, dimension, rik_rhs
-		rik_loglhs = output;
-
 		return rik_loglhs;
+	}
+
+	// Computes Log of Gaussian kernal, -1/2 * (x - mu).T * V * (x - mu)
+	private double getKernalJblas(double[][] xArray, double[][] muArray,
+			double[][] sigmaArray) {
+		// Input points x, Gaussian means mu, Gaussian covariance V
+		DoubleMatrix x = new DoubleMatrix(xArray);
+		DoubleMatrix mu = new DoubleMatrix(muArray);
+
+		// Get the inverse of the covariance matrix
+		DoubleMatrix Sigma = new DoubleMatrix(sigmaArray);
+		DoubleMatrix I = DoubleMatrix.eye(Sigma.columns);
+		// DoubleMatrix I = new DoubleMatrix(new double[][] { { 1.0, 0.0 },
+		// { 0.0, 1.0 } });
+		DoubleMatrix SigmaInv = Solve.solveSymmetric(Sigma, I);
+
+		// Get the difference between x and mu
+		DoubleMatrix x_mu = x.sub(mu);
+
+		// Compute Log of Gaussian kernal, -1/2 * (x - mu).T * V * (x - mu)
+		return x_mu.transpose().mmul(SigmaInv.mmul(x_mu)).mmul(-.5).get(0);
 	}
 }
