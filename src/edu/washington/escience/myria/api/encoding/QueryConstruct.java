@@ -70,6 +70,9 @@ public class QueryConstruct {
       fragment.setFragmentIndex(idx++);
     }
 
+    /* Sanity check the edges between fragments. */
+    sanityCheckEdges(fragments);
+
     assignWorkersToFragments(fragments, args);
 
     Map<Integer, PlanFragmentEncoding> op2OwnerFragmentMapping = Maps.newHashMap();
@@ -170,6 +173,10 @@ public class QueryConstruct {
           continue;
         }
         Preconditions.checkArgument(scanWorkers != null, "Unable to find workers that store %s", scanRelation);
+        /*
+         * Note: the current assumption is that all the partitions need to be scanned. This will not be true if we have
+         * data replication, or allow to scan only a subset of the partitions. Revise if needed.
+         */
         setOrVerifyFragmentWorkers(fragment, scanWorkers, "Setting workers for " + scanRelation);
       }
     }
@@ -197,9 +204,8 @@ public class QueryConstruct {
         if (operator instanceof AbstractConsumerEncoding) {
           AbstractConsumerEncoding<?> consumer = (AbstractConsumerEncoding<?>) operator;
           consumerMap.put(consumer.argOperatorId, fragment);
-        } else if (operator instanceof AbstractProducerEncoding) {
-          AbstractProducerEncoding<?> producer = (AbstractProducerEncoding<?>) operator;
-          Integer opId = producer.opId;
+        } else if (operator instanceof AbstractProducerEncoding || operator instanceof IDBControllerEncoding) {
+          Integer opId = operator.opId;
           PlanFragmentEncoding oldFragment = producerMap.put(opId, fragment);
           if (oldFragment != null) {
             Preconditions.checkArgument(false,
@@ -209,16 +215,6 @@ public class QueryConstruct {
           if (!(operator instanceof LocalMultiwayProducerEncoding || operator instanceof EOSControllerEncoding)) {
             soleConsumer.add(opId);
           }
-        } else if (operator instanceof IDBControllerEncoding) {
-          IDBControllerEncoding idbController = (IDBControllerEncoding) operator;
-          Integer opId = idbController.opId;
-          PlanFragmentEncoding oldFragment = producerMap.put(opId, fragment);
-          if (oldFragment != null) {
-            Preconditions.checkArgument(false,
-                "Two different operators cannot produce the same opId %s. Fragments: %s %s", opId,
-                fragment.fragmentIndex, oldFragment.fragmentIndex);
-          }
-          soleConsumer.add(opId);
         }
       }
     }
@@ -240,13 +236,14 @@ public class QueryConstruct {
   }
 
   /**
-   * Verify that a plan meets the edge constraints. E.g., fragments connected by MultiwayProducer/Consumer links
+   * Verify and propagate worker assignments of LocalMultiwayProducer/Consumer. Fragments containing
+   * LocalMultiwayProducers/Consumers with the same operator ID need to be assigned to the same set of workers.
    * 
    * @see #assignWorkersToFragments(List, ConstructArgs)
    * 
    * @param fragments the fragments of the plan
    */
-  private static void verifyAndPropagateEdgeConstraints(final List<PlanFragmentEncoding> fragments) {
+  private static void verifyAndPropagateLocalEdgeConstraints(final List<PlanFragmentEncoding> fragments) {
     // producers must be unique
     Map<Integer, PlanFragmentEncoding> producerMap = Maps.newHashMap();
     // consumers can be repeated, as long as the producer is a LocalMultiwayProducer
@@ -264,14 +261,6 @@ public class QueryConstruct {
         }
       }
     }
-
-    /* Verify and/or propagate these constraints. */
-    Set<Integer> consumedNotProduced = Sets.difference(consumerMap.keySet(), producerMap.keySet());
-    Preconditions.checkArgument(consumedNotProduced.isEmpty(), "Missing LocalMultiwayProducer(s) for consumer(s): %s",
-        consumedNotProduced);
-    Set<Integer> producedNotConsumed = Sets.difference(producerMap.keySet(), consumerMap.keySet());
-    Preconditions.checkArgument(producedNotConsumed.isEmpty(), "Missing LocalMultiwayConsumer(s) for producer(s): %s",
-        producedNotConsumed);
 
     boolean anyUpdates;
     do {
@@ -319,7 +308,8 @@ public class QueryConstruct {
 
     for (PlanFragmentEncoding fragment : fragments) {
       for (OperatorEncoding<?> operator : fragment.operators) {
-        if (operator instanceof CollectConsumerEncoding || operator instanceof SingletonEncoding) {
+        if (operator instanceof CollectConsumerEncoding || operator instanceof SingletonEncoding
+            || operator instanceof EOSControllerEncoding) {
           if (fragment.workers == null) {
             fragment.workers = singletonWorkers;
           } else {
@@ -358,12 +348,8 @@ public class QueryConstruct {
           consumerMap.put(consumer.argOperatorId, exchangeId);
           consumerWorkerMap.put(consumer.argOperatorId, fragment.workers);
           consumer.setRealOperatorIds(ImmutableList.of(exchangeId));
-        } else if (operator instanceof AbstractProducerEncoding<?>) {
-          AbstractProducerEncoding<?> producer = (AbstractProducerEncoding<?>) operator;
-          producerWorkerMap.put(producer.opId, fragment.workers);
-        } else if (operator instanceof IDBControllerEncoding) {
-          IDBControllerEncoding idbController = (IDBControllerEncoding) operator;
-          producerWorkerMap.put(idbController.opId, fragment.workers);
+        } else if (operator instanceof AbstractProducerEncoding<?> || operator instanceof IDBControllerEncoding) {
+          producerWorkerMap.put(operator.opId, fragment.workers);
         }
       }
     }
@@ -407,8 +393,6 @@ public class QueryConstruct {
    */
   private static void assignWorkersToFragments(final List<PlanFragmentEncoding> fragments, final ConstructArgs args)
       throws CatalogException {
-    /* 0. Sanity check the edges between fragments. */
-    sanityCheckEdges(fragments);
 
     /* 1. Honor user overrides. Note this is unchecked, but we may find constraint violations later. */
     for (PlanFragmentEncoding fragment : fragments) {
@@ -421,12 +405,14 @@ public class QueryConstruct {
     /* 2. Use scans to set workers, and verify constraints. */
     setAndVerifyScans(fragments, args);
 
-    /* 3. Edge constraints. */
-    verifyAndPropagateEdgeConstraints(fragments);
+    /* 3. Verify and propagate worker assignments using LocalMultiwayProducer/Consumer constraints. */
+    verifyAndPropagateLocalEdgeConstraints(fragments);
 
-    /* 4. Singleton constraints, then redo edge constraints. */
+    /* 4. Use singletons to set worker, and verify constraints. */
     setAndVerifySingletonConstraints(fragments, args);
-    verifyAndPropagateEdgeConstraints(fragments);
+
+    /* 5. Again, verify and propagate worker assignments using LocalMultiwayProducer/Consumer constraints. */
+    verifyAndPropagateLocalEdgeConstraints(fragments);
 
     /* Last-1. For all remaining fragments, fill them in with all workers. */
     Server server = args.getServer();
@@ -436,8 +422,10 @@ public class QueryConstruct {
         fragment.workers = allWorkers;
       }
     }
+    // We don't need to verify and propagate LocalMultiwayProducer/Consumer constraints again since all the new ones
+    // have all workers.
 
-    /* Last. Fill in the #realOperatorIDs and the #realWorkerIDs fields for the producers and consumers. */
+    /* Fill in the #realOperatorIDs and the #realWorkerIDs fields for the producers and consumers. */
     fillInRealOperatorAndWorkerIDs(fragments);
   }
 
@@ -519,11 +507,15 @@ public class QueryConstruct {
 
     for (IDBControllerEncoding idb : idbs) {
       IDBController idbOp = (IDBController) myOperators.get(idb.opId);
-      Operator initialInput = idbOp.getChildren()[IDBController.CHILDREN_IDX_INITIAL_IDB_INPUT];
-      Consumer iterativeInput = (Consumer) idbOp.getChildren()[IDBController.CHILDREN_IDX_ITERATION_INPUT];
       Consumer eosControllerInput = (Consumer) idbOp.getChildren()[IDBController.CHILDREN_IDX_EOS_CONTROLLER_INPUT];
-      iterativeInput.setSchema(initialInput.getSchema());
       eosControllerInput.setSchema(EOSController.EOS_REPORT_SCHEMA);
+      Operator iterativeInput = idbOp.getChildren()[IDBController.CHILDREN_IDX_ITERATION_INPUT];
+      if (iterativeInput instanceof Consumer) {
+        Operator initialInput = idbOp.getChildren()[IDBController.CHILDREN_IDX_INITIAL_IDB_INPUT];
+        ((Consumer) iterativeInput).setSchema(initialInput.getSchema());
+        // Note: better to check if the producer of this iterativeInput also has the same schema, but can't find a good
+        // place to add the check given the current framework.
+      }
     }
 
     if (fragmentRoot == null) {
