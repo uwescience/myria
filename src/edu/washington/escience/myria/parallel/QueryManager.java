@@ -25,6 +25,7 @@ import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
+import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
 import edu.washington.escience.myria.proto.ControlProto;
@@ -79,9 +80,10 @@ public class QueryManager {
   /**
    * @return if a query is running.
    * @param queryId queryID.
+   * @throws CatalogException if there is an exception checking the query status
    */
-  public boolean queryCompleted(final long queryId) {
-    return !runningQueries.containsKey(queryId);
+  public boolean queryCompleted(final long queryId) throws CatalogException {
+    return Status.finished(getQueryStatus(queryId).status);
   }
 
   /**
