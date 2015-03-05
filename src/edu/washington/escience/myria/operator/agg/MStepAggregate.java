@@ -59,6 +59,16 @@ public class MStepAggregate extends UnaryOperator {
 	private Type gColumnType;
 
 	/**
+	 * The number of component Gaussians in the model
+	 */
+	private final int numComponents = 2;
+
+	/**
+	 * 
+	 */
+	private final int numDimensions = 2;
+
+	/**
 	 * A cache of the input schema.
 	 */
 	private Schema inputSchema;
@@ -172,7 +182,7 @@ public class MStepAggregate extends UnaryOperator {
 			groupAgg = groupAggsLong.get(groupByLong);
 			if (groupAgg == null) {
 				groupAgg = new Aggregator[1];
-				groupAgg[0] = new MStepAggregator(inputSchema, 12, null);
+				groupAgg[0] = new MStepAggregator(inputSchema, 55, null);
 				// AggUtils.allocateAggs(factories, inputSchema);
 				groupAggsLong.put(groupByLong, groupAgg);
 				// groupAggsLong[0] = new EStepAggregator(inputSchema, 13,
@@ -311,20 +321,23 @@ public class MStepAggregate extends UnaryOperator {
 		// }
 		final ImmutableList.Builder<Type> aggtypes = ImmutableList.builder();
 		final ImmutableList.Builder<String> aggnames = ImmutableList.builder();
+
 		aggtypes.add(Type.DOUBLE_TYPE);
 		aggnames.add("pi");
-		aggtypes.add(Type.DOUBLE_TYPE);
-		aggnames.add("mu11");
-		aggtypes.add(Type.DOUBLE_TYPE);
-		aggnames.add("mu12");
-		aggtypes.add(Type.DOUBLE_TYPE);
-		aggnames.add("cov11");
-		aggtypes.add(Type.DOUBLE_TYPE);
-		aggnames.add("cov12");
-		aggtypes.add(Type.DOUBLE_TYPE);
-		aggnames.add("cov21");
-		aggtypes.add(Type.DOUBLE_TYPE);
-		aggnames.add("cov22");
+
+		for (int i = 0; i < numDimensions; i++) {
+			aggtypes.add(Type.DOUBLE_TYPE);
+			aggnames.add("mu" + (1 + i) + "1");
+		}
+
+		for (int i = 0; i < numDimensions; i++) {
+			for (int j = 0; j < numDimensions; j++) {
+				aggtypes.add(Type.DOUBLE_TYPE);
+				aggnames.add("cov" + String.valueOf(i + 1)
+						+ String.valueOf(j + 1));
+			}
+		}
+
 		outputSchema = Schema.merge(outputSchema,
 				new Schema(aggtypes, aggnames));
 		return outputSchema;

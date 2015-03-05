@@ -4,6 +4,8 @@ import java.util.Objects;
 
 import org.jblas.DoubleMatrix;
 
+import Jama.Matrix;
+
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.Schema;
@@ -20,34 +22,42 @@ public class MStepAggregator implements Aggregator {
 	/** Required for Java serialization. */
 	private static final long serialVersionUID = 1L;
 
-	/**
-	 * Which column of the input to aggregate over. This is the partial
-	 * responsibility column.
-	 */
+	// /**
+	// * Which column of the input to aggregate over. This is the partial
+	// * responsibility column.
+	// */
+	// A field passed in by the aggregate
 	private final int column;
+
+	/**
+	 * Which matrix library to use. "jblas" or "jama"
+	 */
+	private final String matrixLibrary = "jama";
 
 	/** The actual aggregator doing the work. */
 	// private final PrimitiveAggregator agg;
 
-	private double[] x;
-
 	private final int numComponents = 2;
 
+	/**
+	 * 
+	 */
 	private final int numDimensions = 2;
 
 	/**
-	 * Variable number of points determined by points in each group.
+	 * The column index of the gid (Gaussian component id) in the joined
+	 * point/component table. Since gid is the 0th element of the Components
+	 * relation, in the PointsAndComponents relation it will be after the points
+	 * columns.
+	 **/
+	private final int gidColumn = 1 + numDimensions + numComponents;
+
+	/**
+	 * Data structure holding the partial state of the Gaussian parameters to be
+	 * recomputed. The incrementally added points are merged into running sums,
+	 * so the state uses little memory. See the inner class for details.
 	 */
-	private int nPoints;
-
-	/** The column index of the gid (Gaussian component id) in the input table **/
-	private final int gidColumn = 5;
-
-	private double r_k_partial;
-
-	private DoubleMatrix mu_k_partial;
-
-	private DoubleMatrix sigma_k_partial;
+	private final PartialState partialState;
 
 	/**
 	 * A wrapper for the {@link PrimitiveAggregator} implementations like
@@ -69,16 +79,7 @@ public class MStepAggregator implements Aggregator {
 		// agg = AggUtils.allocate(inputSchema.getColumnType(column),
 		// inputSchema.getColumnName(column), aggOps);
 
-		x = null;
-		// valIndex = 0;
-
-		nPoints = 0;
-
-		r_k_partial = 0.0;
-
-		mu_k_partial = DoubleMatrix.zeros(numDimensions, 1);
-
-		sigma_k_partial = DoubleMatrix.zeros(numDimensions, numDimensions);
+		partialState = new PartialState(matrixLibrary);
 
 	}
 
@@ -87,7 +88,6 @@ public class MStepAggregator implements Aggregator {
 		// Preconditions.checkState(agg != null,
 		// "agg should not be null. Did you call getResultSchema yet?");
 		// agg.add(from, column);
-		// vals[valIndex] = from.getDouble(column, row)
 	}
 
 	@Override
@@ -99,34 +99,22 @@ public class MStepAggregator implements Aggregator {
 		// The gaussian id also serves as the index to the responsibility array
 		long gid = from.getLong(gidColumn, row);
 
-		// partialResponsibilities[(int) gid] = from.getDouble(column, row);
-		if (x == null) {
-			x = new double[numDimensions];
-			for (int i = 0; i < numDimensions; i++) {
-				x[i] = from.getDouble(1 + i, row);
-			}
+		double r_ik = from.getDouble(1 + numComponents + (int) gid, row);
+
+		// double x11 = from.getDouble(1, row);
+		// double x21 = from.getDouble(2, row);
+
+		// double[][] xArray = new double[][] { { x11 }, { x21 } };
+
+		// Store x in xArray as a column vector, i.e. matrix with one column.
+		double[][] xArray = new double[numDimensions][1];
+		for (int i = 0; i < numDimensions; i++) {
+			// get the x data from the Points relation. It starts just after pid
+			xArray[i][0] = from.getDouble(1 + i, row);
 		}
 
-		// vals.add(from.getDouble(column, row) * from.getDouble(column - 1,
-		// row)); // should
-		// be
-
-		double r_ik = from.getDouble((int) gid + 1 + numComponents, row);
-
-		double x11 = from.getDouble(1, row);
-		double x21 = from.getDouble(2, row);
-
-		double[][] xArray = new double[][] { { x11 }, { x21 } };
-
-		nPoints += 1;
-
-		DoubleMatrix x = new DoubleMatrix(xArray);
-		//
-		// // Do updates
-		r_k_partial += r_ik;
-		mu_k_partial = mu_k_partial.add(x.mul(r_ik));
-		//
-		sigma_k_partial = sigma_k_partial.add(x.mmul(x.transpose()).mul(r_ik));
+		// Add the current point to the partial state
+		partialState.addPoint(xArray, r_ik);
 
 	}
 
@@ -151,32 +139,61 @@ public class MStepAggregator implements Aggregator {
 		// dest.putDouble(destColumn + 1, sum * 10);
 
 		// r_k_partial is now r_k
-		double r_k = r_k_partial;
+		// double r_k = r_k_partial;
+		//
+		// double pi = r_k / nPoints;
+		//
+		// DoubleMatrix mu = mu_k_partial.dup();
+		// mu = mu.div(r_k);
+		//
+		// DoubleMatrix sigma = sigma_k_partial.dup();
+		// sigma = sigma.div(r_k);
+		// sigma = sigma.sub(mu.mmul(mu.transpose()));
 
-		double pi = r_k / nPoints;
+		partialState.computeFinalParameters();
 
-		DoubleMatrix mu = mu_k_partial.dup();
-		mu = mu.div(r_k);
-
-		DoubleMatrix sigma = sigma_k_partial.dup();
-		sigma = sigma.div(r_k);
-		sigma = sigma.sub(mu.mmul(mu.transpose()));
+		double partpi = partialState.getFinalAmplitude();
+		double[][] muArray = partialState.getFinalMu();
+		double[][] sigmaArray = partialState.getFinalSigma();
 
 		// double pi = inputColumns.get(6).getDouble(row);
-		double mu11 = mu.get(0, 0);
-		double mu21 = mu.get(1, 0);
-		double cov11 = sigma.get(0, 0);
-		double cov12 = sigma.get(0, 1);
-		double cov21 = sigma.get(1, 0);
-		double cov22 = sigma.get(1, 1);
+		// double mu11 = mu.get(0, 0);
+		// double mu21 = mu.get(1, 0);
+		// double cov11 = sigma.get(0, 0);
+		// double cov12 = sigma.get(0, 1);
+		// double cov21 = sigma.get(1, 0);
+		// double cov22 = sigma.get(1, 1);
 
-		dest.putDouble(destColumn + 0, pi);
-		dest.putDouble(destColumn + 1, mu11);
-		dest.putDouble(destColumn + 2, mu21);
-		dest.putDouble(destColumn + 3, cov11);
-		dest.putDouble(destColumn + 4, cov12);
-		dest.putDouble(destColumn + 5, cov21);
-		dest.putDouble(destColumn + 6, cov22);
+		// double mu11 = muArray[0][0];
+		// double mu21 = muArray[1][0];
+		// double cov11 = sigmaArray[0][0];
+		// double cov12 = sigmaArray[0][1];
+		// double cov21 = sigmaArray[1][0];
+		// double cov22 = sigmaArray[1][1];
+
+		int indexCounter = 0;
+
+		dest.putDouble(destColumn + indexCounter, partpi);
+		indexCounter++;
+
+		for (int i = 0; i < numDimensions; i++) {
+			dest.putDouble(destColumn + indexCounter, muArray[i][0]);
+			indexCounter++;
+		}
+		// dest.putDouble(destColumn + 1, mu11);
+		// dest.putDouble(destColumn + 2, mu21);
+
+		for (int i = 0; i < numDimensions; i++) {
+			for (int j = 0; j < numDimensions; j++) {
+				dest.putDouble(destColumn + indexCounter, sigmaArray[i][j]);
+				indexCounter++;
+			}
+		}
+
+		// dest.putDouble(destColumn + 3, cov11);
+		// dest.putDouble(destColumn + 4, cov12);
+		// dest.putDouble(destColumn + 5, cov21);
+		// dest.putDouble(destColumn + 6, cov22);
 
 	}
 
@@ -188,62 +205,187 @@ public class MStepAggregator implements Aggregator {
 		// return agg.getResultSchema();
 		final ImmutableList.Builder<Type> types = ImmutableList.builder();
 		final ImmutableList.Builder<String> names = ImmutableList.builder();
-		types.add(Type.DOUBLE_TYPE);
-		names.add("irrelevant");
-		types.add(Type.DOUBLE_TYPE);
-		names.add("irrelevant2");
-		types.add(Type.DOUBLE_TYPE);
-		names.add("irrelevant3");
-		types.add(Type.DOUBLE_TYPE);
-		names.add("irrelevant4");
-		types.add(Type.DOUBLE_TYPE);
-		names.add("irrelevant5");
-		types.add(Type.DOUBLE_TYPE);
-		names.add("irrelevant6");
-		types.add(Type.DOUBLE_TYPE);
-		names.add("irrelevant7");
+
+		// The number of field to add to the schema, not including the group by
+		// field.
+		// 1 for the amplitude, nDim for the mean, ndim^2 for the cov matrix
+		int numFields = 1 + numDimensions + numDimensions * numDimensions;
+		for (int i = 0; i < numFields; i++) {
+			types.add(Type.DOUBLE_TYPE);
+			names.add("irrelevant" + i); // Schema names don't matter here
+		}
 
 		return new Schema(types, names);
 	}
 
 	private class PartialState {
-		private final String matrixLibrary = "jama";
+		/**
+		 * 
+		 */
+		private final String matrixLibrary;
 
-		private final double r_k_partial;
+		/**
+		 * 
+		 */
+		private double r_k_partial;
 
-		private final DoubleMatrix mu_k_partial;
+		/**
+		 * 
+		 */
+		private DoubleMatrix mu_k_partial;
 
-		private final DoubleMatrix sigma_k_partial;
+		/**
+		 * 
+		 */
+		private DoubleMatrix sigma_k_partial;
 
-		DoubleMatrix x;
+		/**
+		 * 
+		 */
+		private Matrix jama_mu_k_partial;
 
+		/**
+		 * 
+		 */
+		private Matrix jama_sigma_k_partial;
+
+		/**
+		 * 
+		 */
 		private int nPoints;
 
-		private PartialState() {
+		/**
+		 * 
+		 */
+		private boolean isCompleted;
+
+		/**
+		 * 
+		 */
+		private double r_k;
+
+		/**
+		 * 
+		 */
+		private double piFinal;
+
+		/**
+		 * 
+		 */
+		private double[][] muFinalArray;
+
+		/**
+		 * 
+		 */
+		private double[][] sigmaFinalArray;
+
+		/**
+		 * 
+		 */
+		private PartialState(String matrixLibrary) {
+			this.matrixLibrary = matrixLibrary;
+
+			// Initialize running parameters
 			r_k_partial = 0.0;
 
+			// jblas
 			mu_k_partial = DoubleMatrix.zeros(numDimensions, 1);
-
 			sigma_k_partial = DoubleMatrix.zeros(numDimensions, numDimensions);
 
-			x = null;
+			// jama
+			double[][] zeroVec = new double[numDimensions][1];
+			double[][] zeroMatrix = new double[numDimensions][numDimensions];
+			jama_mu_k_partial = new Matrix(zeroVec);
+			jama_sigma_k_partial = new Matrix(zeroMatrix);
+
+			isCompleted = false;
+		}
+
+		private void addPoint(double[][] xArray, double r_ik) {
+			nPoints += 1;
+
+			//
+			// // Do updates
+			r_k_partial += r_ik;
+
+			if (matrixLibrary.equals("jblas")) {
+				DoubleMatrix x = new DoubleMatrix(xArray);
+				mu_k_partial = mu_k_partial.add(x.mul(r_ik));
+				sigma_k_partial = sigma_k_partial.add(x.mmul(x.transpose())
+						.mul(r_ik));
+			} else if (matrixLibrary.equals("jama")) {
+				Matrix x = new Matrix(xArray);
+				jama_mu_k_partial = jama_mu_k_partial.plus(x.times(r_ik));
+				jama_sigma_k_partial = jama_sigma_k_partial.plus(x.times(
+						x.transpose()).times(r_ik));
+			} else {
+				throw new RuntimeException("Incorrect matrix libary specified.");
+			}
 
 		}
 
-		private void addPoint(double[] x, double r_ik) {
-
-		}
-
-		private double[][] getFinalSigma() {
-			return new double[4][4];
-		}
-
-		private double[] getFinalMu() {
-			return new double[4];
-		}
-
+		/**
+		 * 
+		 * @return double amplitude
+		 */
 		private double getFinalAmplitude() {
-			return 0.0;
+			return r_k / nPoints;
+		}
+
+		/**
+		 * 
+		 * @return double array of the vector representation
+		 */
+		private double[][] getFinalMu() {
+			return muFinalArray;
+		}
+
+		/**
+		 * 
+		 * @return double array of the matrix representation
+		 */
+		private double[][] getFinalSigma() {
+			return sigmaFinalArray;
+		}
+
+		private void computeFinalParameters() {
+			if (isCompleted) {
+				throw new RuntimeException(
+						"Called computeFinalParameters when already computed.");
+			}
+
+			// Finalize r_k
+			r_k = r_k_partial;
+
+			if (matrixLibrary.equals("jblas")) {
+				// Finalize mu
+				DoubleMatrix mu = mu_k_partial.dup();
+				mu = mu.div(r_k);
+
+				// Finalize sigma
+				DoubleMatrix sigma = sigma_k_partial.dup();
+				sigma = sigma.div(r_k);
+				sigma = sigma.sub(mu.mmul(mu.transpose()));
+
+				muFinalArray = mu.toArray2();
+				sigmaFinalArray = sigma.toArray2();
+			} else if (matrixLibrary.equals("jama")) {
+				// Finalize mu
+				Matrix mu = jama_mu_k_partial.copy();
+				mu = mu.times(1. / r_k);
+
+				// Finialize sigma
+				Matrix sigma = jama_sigma_k_partial.copy();
+				sigma = sigma.times(1. / r_k);
+				sigma = sigma.minus(mu.times(mu.transpose()));
+
+				muFinalArray = mu.getArrayCopy();
+				sigmaFinalArray = sigma.getArrayCopy();
+			} else {
+				throw new RuntimeException("Incorrect matrix libary specified.");
+			}
+
+			isCompleted = true;
 		}
 	}
 }

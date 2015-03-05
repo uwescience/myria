@@ -30,8 +30,8 @@ public final class EStep extends UnaryOperator {
 	/**
 	 * Create logger for info logging below.
 	 */
-	private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory
-			.getLogger(ApplyEStep.class);
+	// private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory
+	// .getLogger(ApplyEStep.class);
 
 	/**
 	 * Which columns to sort the tuples by.
@@ -42,6 +42,16 @@ public final class EStep extends UnaryOperator {
 	 * Which matrix library to use. "jblas" or "jama"
 	 */
 	private final String matrixLibrary = "jama";
+
+	/**
+	 * The number of component Gaussians in the model
+	 */
+	private final int numComponents = 2;
+
+	/**
+	 * 
+	 */
+	private final int numDimensions = 2;
 
 	/**
 	 * Constructor accepts a predicate to apply and a child operator to read
@@ -72,22 +82,67 @@ public final class EStep extends UnaryOperator {
 			// LOGGER.info("Column value is: "
 			// + inputColumns.get(column).getLong(row));
 			// }
-			long pid = inputColumns.get(0).getLong(row);
-			double x11 = inputColumns.get(1).getDouble(row);
-			double x21 = inputColumns.get(2).getDouble(row);
-			double r1 = inputColumns.get(3).getDouble(row);
-			double r2 = inputColumns.get(4).getDouble(row);
-			long gid = inputColumns.get(5).getLong(row);
-			double pi = inputColumns.get(6).getDouble(row);
-			double mu11 = inputColumns.get(7).getDouble(row);
-			double mu21 = inputColumns.get(8).getDouble(row);
-			double cov11 = inputColumns.get(9).getDouble(row);
-			double cov12 = inputColumns.get(10).getDouble(row);
-			double cov21 = inputColumns.get(11).getDouble(row);
-			double cov22 = inputColumns.get(12).getDouble(row);
-			double output = getPartialResponsibility(pid, x11, x21, r1, r2,
-					gid, pi, mu11, mu21, cov11, cov12, cov21, cov22);
-			LOGGER.info("Column value is: " + output);
+
+			// Read the data into data structures for computation
+			int indexCounter = 0;
+
+			// pid is the first
+			long pid = inputColumns.get(indexCounter).getLong(row);
+			indexCounter++;
+
+			double[][] xArray = new double[numDimensions][1];
+			for (int i = 0; i < numDimensions; i++) {
+				xArray[i][0] = inputColumns.get(indexCounter).getDouble(row);
+				indexCounter++;
+			}
+
+			// double x11 = inputColumns.get(1).getDouble(row);
+			// double x21 = inputColumns.get(2).getDouble(row);
+
+			// We don't need to read the number of components
+			for (int i = 0; i < numComponents; i++) {
+				indexCounter++;
+			}
+			// double r1 = inputColumns.get(3).getDouble(row);
+			// double r2 = inputColumns.get(4).getDouble(row);
+
+			long gid = inputColumns.get(indexCounter).getLong(row);
+			indexCounter++;
+
+			double pi = inputColumns.get(indexCounter).getDouble(row);
+			indexCounter++;
+
+			double[][] muArray = new double[numDimensions][1];
+			for (int i = 0; i < numDimensions; i++) {
+				muArray[i][0] = inputColumns.get(indexCounter).getDouble(row);
+				indexCounter++;
+			}
+
+			// Read in sigma in row-major order
+			double[][] sigmaArray = new double[numDimensions][numDimensions];
+			for (int i = 0; i < numDimensions; i++) {
+				for (int j = 0; j < numDimensions; j++) {
+					sigmaArray[i][j] = inputColumns.get(indexCounter)
+							.getDouble(row);
+					indexCounter++;
+				}
+			}
+
+			// double mu11 = inputColumns.get(7).getDouble(row);
+			// double mu21 = inputColumns.get(8).getDouble(row);
+			// double cov11 = inputColumns.get(9).getDouble(row);
+			// double cov12 = inputColumns.get(10).getDouble(row);
+			// double cov21 = inputColumns.get(11).getDouble(row);
+			// double cov22 = inputColumns.get(12).getDouble(row);
+
+			// double[][] xArray = new double[][] { { x11 }, { x21 } };
+			// double[][] muArray = new double[][] { { mu11 }, { mu21 } };
+			// double[][] sigmaArray = new double[][] { { cov11, cov12 },
+			// { cov21, cov22 } };
+
+			double output = getPartialResponsibility(xArray, pi, muArray,
+					sigmaArray);
+			// LOGGER.info("Column value is: " + output);
 			builder.appendDouble(output);
 		}
 
@@ -99,7 +154,7 @@ public final class EStep extends UnaryOperator {
 	@Override
 	protected void init(final ImmutableMap<String, Object> execEnvVars)
 			throws DbException {
-		LOGGER.info("From FilterEStep - Reached init.");
+		// LOGGER.info("From FilterEStep - Reached init.");
 	}
 
 	@Override
@@ -116,9 +171,8 @@ public final class EStep extends UnaryOperator {
 
 	}
 
-	private double getPartialResponsibility(long pid, double x11, double x21,
-			double r1, double r2, long gid, double pi, double mu11,
-			double mu21, double cov11, double cov12, double cov21, double cov22) {
+	private double getPartialResponsibility(double[][] xArray, double pi,
+			double[][] muArray, double[][] sigmaArray) {
 		// Roll up the input: a 2D point and its pid,
 		// a 2D Gaussian mean and cov. matrix, gid.
 		// A copy of the computation in SimpleGMMEStepWithRollup.java
@@ -136,10 +190,10 @@ public final class EStep extends UnaryOperator {
 		double amp = pi;
 
 		// Roll up data into array of doubles
-		double[][] sigmaArray = new double[][] { { cov11, cov12 },
-				{ cov21, cov22 } };
-		double[][] xArray = new double[][] { { x11 }, { x21 } };
-		double[][] muArray = new double[][] { { mu11 }, { mu21 } };
+		// double[][] xArray = new double[][] { { x11 }, { x21 } };
+		// double[][] sigmaArray = new double[][] { { cov11, cov12 },
+		// { cov21, cov22 } };
+		// double[][] muArray = new double[][] { { mu11 }, { mu21 } };
 
 		// Compute Log of Gaussian kernal, -1/2 * (x - mu).T * V * (x - mu)
 		double kernal;

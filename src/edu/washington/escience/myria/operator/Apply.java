@@ -70,18 +70,6 @@ public class Apply extends UnaryOperator {
 			setEmitExpressions(emitExpressions);
 		}
 
-		// LOGGER.info("Hello world, this is from original Apply.");
-		// DoubleMatrix a = new DoubleMatrix(new double[][] { { 1.0, 2.0, 3.0 },
-		// { 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } });
-		// DoubleMatrix x = new DoubleMatrix(new double[][] { { 1.0 }, { 2.0 },
-		// { 3.0 } });
-		// DoubleMatrix y;
-		//
-		// y = a.mmul(x);
-		// LOGGER.info(y.toString());
-
-		// System.out.println("Hello world, this is Ryan.");
-		// throw new RuntimeException("HELLO");
 	}
 
 	/**
