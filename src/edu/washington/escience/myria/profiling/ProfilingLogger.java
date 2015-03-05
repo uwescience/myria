@@ -167,7 +167,7 @@ public class ProfilingLogger {
     events.putLong(0, sq.getQueryId());
     events.putInt(1, (int) sq.getSubqueryId());
     events.putInt(2, operator.getFragmentId());
-    events.putInt(3, operator.getOpId());
+    events.putInt(3, Preconditions.checkNotNull(operator.getOpId(), "opId"));
     events.putLong(4, startTime);
     events.putLong(5, getTime(operator));
     events.putLong(6, numTuples);

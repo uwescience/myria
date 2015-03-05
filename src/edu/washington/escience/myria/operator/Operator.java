@@ -7,6 +7,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -53,7 +54,7 @@ public abstract class Operator implements Serializable {
   /**
    * The unique operator id.
    */
-  protected Integer opId;
+  private Integer opId;
 
   /**
    * A bit denoting whether the operator is open (initialized).
@@ -555,8 +556,7 @@ public abstract class Operator implements Serializable {
    * 
    * @return the op id
    */
-  public int getOpId() {
-    Objects.requireNonNull(opId);
+  public @Nullable Integer getOpId() {
     return opId;
   }
 }

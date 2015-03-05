@@ -47,6 +47,7 @@ public abstract class UnaryOperator extends Operator {
 
   @Override
   public final void setChildren(final Operator[] children) {
+    Integer opId = getOpId();
     Preconditions.checkArgument(child == null,
         "Operator opid=%s called setChildren(), but children have already been set", opId);
     Preconditions.checkNotNull(children, "Unary operator opId=%s has null children", opId);
