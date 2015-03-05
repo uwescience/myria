@@ -48,6 +48,7 @@ public abstract class BinaryOperator extends Operator {
 
   @Override
   public final void setChildren(final Operator[] children) {
+    Integer opId = getOpId();
     Preconditions.checkArgument(left == null && right == null,
         "Operator opId=%s called setChildren(), but children have already been set", opId);
     Preconditions.checkNotNull(children, "Operator opId=%s has null children", opId);

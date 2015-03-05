@@ -14,6 +14,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.MyriaConstants;
@@ -787,6 +788,7 @@ public final class LocalFragment {
     if (threadId == -1) {
       return;
     }
+    int opId = Preconditions.checkNotNull(op.getOpId(), "opId");
     if (op == getRootOp()) {
       long cntCpu = 0;
       synchronized (this) {
@@ -795,23 +797,23 @@ public final class LocalFragment {
           cntCpu += ManagementFactory.getThreadMXBean().getThreadCpuTime(threadId) - cpuBefore;
         }
       }
-      addResourceReport(stats, timestamp, op.getOpId(), "cpuTotal", cntCpu, subQueryId);
+      addResourceReport(stats, timestamp, opId, "cpuTotal", cntCpu, subQueryId);
     }
 
     if (op instanceof Producer) {
-      addResourceReport(stats, timestamp, op.getOpId(), "numTuplesWritten", ((Producer) op)
-          .getNumTuplesWrittenToChannels(), subQueryId);
-      addResourceReport(stats, timestamp, op.getOpId(), "numTuplesInBuffers", ((Producer) op).getNumTuplesInBuffers(),
+      addResourceReport(stats, timestamp, opId, "numTuplesWritten", ((Producer) op).getNumTuplesWrittenToChannels(),
+          subQueryId);
+      addResourceReport(stats, timestamp, opId, "numTuplesInBuffers", ((Producer) op).getNumTuplesInBuffers(),
           subQueryId);
     } else if (op instanceof IDBController) {
-      addResourceReport(stats, timestamp, op.getOpId(), "numTuplesInState", ((IDBController) op).getStreamingState()
+      addResourceReport(stats, timestamp, opId, "numTuplesInState", ((IDBController) op).getStreamingState()
           .numTuples(), subQueryId);
     } else if (op instanceof SymmetricHashJoin) {
-      addResourceReport(stats, timestamp, op.getOpId(), "hashTableSize", ((SymmetricHashJoin) op)
-          .getNumTuplesInHashTables(), subQueryId);
+      addResourceReport(stats, timestamp, opId, "hashTableSize", ((SymmetricHashJoin) op).getNumTuplesInHashTables(),
+          subQueryId);
     } else if (op instanceof LeapFrogJoin) {
-      addResourceReport(stats, timestamp, op.getOpId(), "hashTableSize",
-          ((LeapFrogJoin) op).getNumTuplesInHashTables(), subQueryId);
+      addResourceReport(stats, timestamp, opId, "hashTableSize", ((LeapFrogJoin) op).getNumTuplesInHashTables(),
+          subQueryId);
     }
     for (Operator child : op.getChildren()) {
       collectResourceMeasurements(stats, timestamp, child, subQueryId);
@@ -823,7 +825,7 @@ public final class LocalFragment {
    * @return the max op id in this subtree.
    */
   public int getMaxOpId(final Operator op) {
-    int ret = op.getOpId();
+    int ret = Preconditions.checkNotNull(op.getOpId(), "opId");
     for (Operator child : op.getChildren()) {
       ret = Math.max(ret, getMaxOpId(child));
     }
