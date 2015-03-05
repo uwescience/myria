@@ -6,6 +6,11 @@
                     "argOperatorId": 45,
                     "opId": 0,
                     "opType": "CollectConsumer"
+                },
+                {
+                    "argChild": 0,
+                    "opId": 46,
+                    "opType": "SinkRoot"
                 }
             ],
             "overrideWorkers": [
