@@ -556,7 +556,8 @@ public abstract class Operator implements Serializable {
    * 
    * @return the op id
    */
-  public @Nullable Integer getOpId() {
+  @Nullable
+  public Integer getOpId() {
     return opId;
   }
 }
