@@ -78,7 +78,7 @@ public class ProfilingLogger {
 
     List<IndexRef> index =
         ImmutableList.of(IndexRef.of(schema, "queryId"), IndexRef.of(schema, "subQueryId"), IndexRef.of(schema,
-            "fragmentId"));
+            "fragmentId"), IndexRef.of(schema, "destWorkerId"));
     try {
       accessMethod.createIndexIfNotExists(MyriaConstants.SENT_PROFILING_RELATION, schema, index);
     } catch (DbException e) {
