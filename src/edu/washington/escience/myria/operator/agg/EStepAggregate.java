@@ -66,12 +66,21 @@ public class EStepAggregate extends UnaryOperator {
 	/**
 	 * The number of component Gaussians in the model
 	 */
-	private final int numComponents = 2;
+	private final int numComponents;
 
 	/**
-	 * 
+	 * Number of dimensions
 	 */
-	private final int numDimensions = 2;
+	private final int numDimensions;
+
+	/**
+	 * The column index containing the partial aggregate, as computed by EStep.
+	 * This is the last column in the PostEStep relation, which is the length of
+	 * the joined Point and Components, plus one column at the end for the
+	 * partial responsibility. So this column index is the total number of
+	 * columns in the joined relation.
+	 **/
+	private final int partialRespColumn;
 
 	/**
 	 * The buffer storing in-progress group by results. {groupby-column-value ->
@@ -127,10 +136,17 @@ public class EStepAggregate extends UnaryOperator {
 	 *            Factories for the aggregation operators to use.
 	 */
 	public EStepAggregate(@Nullable final Operator child, final int gfield,
-			final AggregatorFactory[] factories) {
+			final AggregatorFactory[] factories, int numDimensions,
+			int numComponents) {
 		super(child);
+		// gColumn is passed in through the json query as the field
+		// argGroupField
 		gColumn = Objects.requireNonNull(gfield, "gfield");
+		this.numDimensions = numDimensions;
+		this.numComponents = numComponents;
 		this.factories = Objects.requireNonNull(factories, "factories");
+		partialRespColumn = 1 + numDimensions + numComponents + 1 + 1
+				+ numDimensions + numDimensions * numDimensions;
 	}
 
 	/**
@@ -145,9 +161,12 @@ public class EStepAggregate extends UnaryOperator {
 	 *            Factory for the aggregation operator to use.
 	 */
 	public EStepAggregate(final Operator child, final int gfield,
-			final AggregatorFactory factory) {
+			final AggregatorFactory factory, int numDimensions,
+			int numComponents) {
+		// 0 is a temporary input for the number of dimensions, added for
+		// the operator encoding above.
 		this(child, gfield, new AggregatorFactory[] { Objects.requireNonNull(
-				factory, "factory") });
+				factory, "factory") }, numDimensions, numComponents);
 	}
 
 	@Override
@@ -182,7 +201,8 @@ public class EStepAggregate extends UnaryOperator {
 			groupAgg = groupAggsLong.get(groupByLong);
 			if (groupAgg == null) {
 				groupAgg = new Aggregator[1];
-				groupAgg[0] = new EStepAggregator(inputSchema, 13, null);
+				groupAgg[0] = new EStepAggregator(inputSchema,
+						partialRespColumn, null, numDimensions, numComponents);
 				// AggUtils.allocateAggs(factories, inputSchema);
 				groupAggsLong.put(groupByLong, groupAgg);
 				// groupAggsLong[0] = new EStepAggregator(inputSchema, 13,

@@ -146,8 +146,8 @@ public final class EStep extends UnaryOperator {
 			builder.appendDouble(output);
 		}
 
-		for (int i = 0; i < tb.numTuples(); ++i) {
-		}
+		// for (int i = 0; i < tb.numTuples(); ++i) {
+		// }
 		return tb.appendColumn(columnName, builder.build());
 	}
 

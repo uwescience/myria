@@ -34,15 +34,18 @@ public class MStepAggregator implements Aggregator {
 	 */
 	private final String matrixLibrary = "jama";
 
-	/** The actual aggregator doing the work. */
+	// /** The actual aggregator doing the work. */
 	// private final PrimitiveAggregator agg;
 
-	private final int numComponents = 2;
+	/**
+	 * The number of components
+	 */
+	private final int numComponents;
 
 	/**
 	 * 
 	 */
-	private final int numDimensions = 2;
+	private final int numDimensions;
 
 	/**
 	 * The column index of the gid (Gaussian component id) in the joined
@@ -50,7 +53,7 @@ public class MStepAggregator implements Aggregator {
 	 * relation, in the PointsAndComponents relation it will be after the points
 	 * columns.
 	 **/
-	private final int gidColumn = 1 + numDimensions + numComponents;
+	private final int gidColumn;
 
 	/**
 	 * Data structure holding the partial state of the Gaussian parameters to be
@@ -72,12 +75,16 @@ public class MStepAggregator implements Aggregator {
 	 *            {@link PrimitiveAggregator}.
 	 */
 	public MStepAggregator(final Schema inputSchema, final int column,
-			final AggregationOp[] aggOps) {
+			final AggregationOp[] aggOps, int numDimensions, int numComponents) {
 		Objects.requireNonNull(inputSchema, "inputSchema");
 		this.column = column;
 		// Objects.requireNonNull(aggOps, "aggOps");
 		// agg = AggUtils.allocate(inputSchema.getColumnType(column),
 		// inputSchema.getColumnName(column), aggOps);
+
+		this.numDimensions = numDimensions;
+		this.numComponents = numComponents;
+		gidColumn = 1 + numDimensions + numComponents;
 
 		partialState = new PartialState(matrixLibrary);
 
@@ -99,7 +106,9 @@ public class MStepAggregator implements Aggregator {
 		// The gaussian id also serves as the index to the responsibility array
 		long gid = from.getLong(gidColumn, row);
 
-		double r_ik = from.getDouble(1 + numComponents + (int) gid, row);
+		// Responsiblity indices start after the x vector and id, so 1 +
+		// numDimensions
+		double r_ik = from.getDouble(1 + numDimensions + (int) gid, row);
 
 		// double x11 = from.getDouble(1, row);
 		// double x21 = from.getDouble(2, row);

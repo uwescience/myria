@@ -22,7 +22,7 @@ public class EStepAggregator implements Aggregator {
 	 * Which column of the input to aggregate over. This is the partial
 	 * responsibility column.
 	 */
-	private final int column;
+	private final int respColumn;
 
 	/** The actual aggregator doing the work. */
 	// private final PrimitiveAggregator agg;
@@ -32,12 +32,12 @@ public class EStepAggregator implements Aggregator {
 	private final double[] partialResponsibilities;
 	// private int valIndex;
 
-	private final int numComponents = 2;
+	private final int numComponents;
 
-	private final int numDimensions = 2;
+	private final int numDimensions;
 
 	/** The column index of the gid (Gaussian component id) in the input table **/
-	private final int gidColumn = 1 + numDimensions + numComponents;
+	private final int gidColumn;
 
 	/**
 	 * A wrapper for the {@link PrimitiveAggregator} implementations like
@@ -52,14 +52,18 @@ public class EStepAggregator implements Aggregator {
 	 *            {@link PrimitiveAggregator}.
 	 */
 	public EStepAggregator(final Schema inputSchema, final int column,
-			final AggregationOp[] aggOps) {
+			final AggregationOp[] aggOps, int numDimensions, int numComponents) {
 		Objects.requireNonNull(inputSchema, "inputSchema");
-		this.column = column;
+		respColumn = column;
 		// Objects.requireNonNull(aggOps, "aggOps");
 		// agg = AggUtils.allocate(inputSchema.getColumnType(column),
 		// inputSchema.getColumnName(column), aggOps);
 		partialResponsibilities = new double[numComponents];
 		x = null;
+
+		this.numDimensions = numDimensions;
+		this.numComponents = numComponents;
+		gidColumn = 1 + numDimensions + numComponents;
 		// valIndex = 0;
 	}
 
@@ -79,7 +83,7 @@ public class EStepAggregator implements Aggregator {
 
 		// The gaussian id also serves as the index to the responsibility array
 		long gid = from.getLong(gidColumn, row);
-		partialResponsibilities[(int) gid] = from.getDouble(column, row);
+		partialResponsibilities[(int) gid] = from.getDouble(respColumn, row);
 		if (x == null) {
 			x = new double[numDimensions];
 			for (int i = 0; i < numDimensions; i++) {

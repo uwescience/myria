@@ -182,7 +182,8 @@ public class MStepAggregate extends UnaryOperator {
 			groupAgg = groupAggsLong.get(groupByLong);
 			if (groupAgg == null) {
 				groupAgg = new Aggregator[1];
-				groupAgg[0] = new MStepAggregator(inputSchema, 55, null);
+				groupAgg[0] = new MStepAggregator(inputSchema, 55, null,
+						numDimensions, numComponents);
 				// AggUtils.allocateAggs(factories, inputSchema);
 				groupAggsLong.put(groupByLong, groupAgg);
 				// groupAggsLong[0] = new EStepAggregator(inputSchema, 13,

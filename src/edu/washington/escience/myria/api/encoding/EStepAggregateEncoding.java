@@ -12,8 +12,15 @@ public class EStepAggregateEncoding extends
 	@Required
 	public int argGroupField;
 
+	@Required
+	public int argNumDimensions;
+
+	@Required
+	public int argNumComponents;
+
 	@Override
 	public EStepAggregate construct(ConstructArgs args) {
-		return new EStepAggregate(null, argGroupField, aggregators);
+		return new EStepAggregate(null, argGroupField, aggregators,
+				argNumDimensions, argNumComponents);
 	}
 }
