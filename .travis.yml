@@ -15,4 +15,4 @@ sudo: false
 
 cache:
   directories:
-  - $HOME/.gradle
+  - $HOME/.gradle/caches
