@@ -64,6 +64,16 @@ public class EStepAggregate extends UnaryOperator {
 	private Schema inputSchema;
 
 	/**
+	 * The number of component Gaussians in the model
+	 */
+	private final int numComponents = 2;
+
+	/**
+	 * 
+	 */
+	private final int numDimensions = 2;
+
+	/**
 	 * The buffer storing in-progress group by results. {groupby-column-value ->
 	 * Aggregator Array} when the group key is String
 	 */
@@ -311,14 +321,17 @@ public class EStepAggregate extends UnaryOperator {
 		// }
 		final ImmutableList.Builder<Type> aggtypes = ImmutableList.builder();
 		final ImmutableList.Builder<String> aggnames = ImmutableList.builder();
-		aggtypes.add(Type.DOUBLE_TYPE);
-		aggnames.add("x_1");
-		aggtypes.add(Type.DOUBLE_TYPE);
-		aggnames.add("x_2");
-		aggtypes.add(Type.DOUBLE_TYPE);
-		aggnames.add("r1");
-		aggtypes.add(Type.DOUBLE_TYPE);
-		aggnames.add("r2");
+
+		for (int i = 0; i < numDimensions; i++) {
+			aggtypes.add(Type.DOUBLE_TYPE);
+			aggnames.add("x" + "_" + (1 + i));
+		}
+
+		for (int i = 0; i < numComponents; i++) {
+			aggtypes.add(Type.DOUBLE_TYPE);
+			aggnames.add("r" + (1 + i));
+		}
+
 		outputSchema = Schema.merge(outputSchema,
 				new Schema(aggtypes, aggnames));
 		return outputSchema;

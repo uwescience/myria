@@ -1,6 +1,5 @@
 package edu.washington.escience.myria.operator.agg;
 
-import java.util.ArrayList;
 import java.util.Objects;
 
 import com.google.common.collect.ImmutableList;
@@ -28,9 +27,6 @@ public class EStepAggregator implements Aggregator {
 	/** The actual aggregator doing the work. */
 	// private final PrimitiveAggregator agg;
 
-	/** A list of values to combine. **/
-	private final ArrayList<Double> vals;
-
 	private double[] x;
 
 	private final double[] partialResponsibilities;
@@ -41,7 +37,7 @@ public class EStepAggregator implements Aggregator {
 	private final int numDimensions = 2;
 
 	/** The column index of the gid (Gaussian component id) in the input table **/
-	private final int gidColumn = 5;
+	private final int gidColumn = 1 + numDimensions + numComponents;
 
 	/**
 	 * A wrapper for the {@link PrimitiveAggregator} implementations like
@@ -62,7 +58,6 @@ public class EStepAggregator implements Aggregator {
 		// Objects.requireNonNull(aggOps, "aggOps");
 		// agg = AggUtils.allocate(inputSchema.getColumnType(column),
 		// inputSchema.getColumnName(column), aggOps);
-		vals = new ArrayList<Double>();
 		partialResponsibilities = new double[numComponents];
 		x = null;
 		// valIndex = 0;
@@ -92,10 +87,6 @@ public class EStepAggregator implements Aggregator {
 			}
 		}
 
-		vals.add(from.getDouble(column, row) * from.getDouble(column - 1, row)); // should
-																					// be
-																					// x2
-		// valIndex++;
 	}
 
 	@Override
@@ -103,10 +94,6 @@ public class EStepAggregator implements Aggregator {
 		// Preconditions.checkState(agg != null,
 		// "agg should not be null. Did you call getResultSchema yet?");
 		// agg.getResult(dest, destColumn);
-		double sum = 0;
-		for (double d : vals) {
-			sum += d;
-		}
 
 		double logNormalization = logsumexp(partialResponsibilities);
 
@@ -134,14 +121,11 @@ public class EStepAggregator implements Aggregator {
 		// return agg.getResultSchema();
 		final ImmutableList.Builder<Type> types = ImmutableList.builder();
 		final ImmutableList.Builder<String> names = ImmutableList.builder();
-		types.add(Type.DOUBLE_TYPE);
-		names.add("irrelevant");
-		types.add(Type.DOUBLE_TYPE);
-		names.add("irrelevant2");
-		types.add(Type.DOUBLE_TYPE);
-		names.add("irrelevant3");
-		types.add(Type.DOUBLE_TYPE);
-		names.add("irrelevant4");
+		int numFields = numDimensions + numComponents;
+		for (int i = 0; i < numFields; i++) {
+			types.add(Type.DOUBLE_TYPE);
+			names.add("irrelevant" + i); // Schema names don't matter here
+		}
 		return new Schema(types, names);
 	}
 
