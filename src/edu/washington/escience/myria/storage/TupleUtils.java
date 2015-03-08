@@ -369,7 +369,7 @@ public final class TupleUtils {
       return false;
     }
     for (int i = 0; i < compareColumns.length; ++i) {
-      switch (table1.getSchema().getColumnType(i)) {
+      switch (table1.getSchema().getColumnType(compareColumns[i])) {
         case BOOLEAN_TYPE:
           if (table1.getBoolean(compareColumns[i], row1) != table2.getBoolean(i, index)) {
             return false;
