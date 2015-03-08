@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.parallel;
 
 import java.lang.management.ManagementFactory;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashMap;
@@ -17,6 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 
+import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 import edu.washington.escience.myria.operator.IDBController;
@@ -30,6 +32,7 @@ import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.StreamIOChannelID;
 import edu.washington.escience.myria.profiling.ProfilingLogger;
 import edu.washington.escience.myria.util.AtomicUtils;
+import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.concurrent.ReentrantSpinLock;
 
 /**
@@ -616,6 +619,23 @@ public final class LocalFragment {
    * @param failed if the {@link LocalFragment} execution has already failed.
    */
   private void cleanup(final boolean failed) {
+    if (getLocalSubQuery() instanceof WorkerSubQuery
+        && getLocalSubQuery().getProfilingMode().contains(ProfilingMode.RESOURCE)) {
+      // Before everything is cleaned up, get the latest resource stats.
+      WorkerSubQuery subQuery = (WorkerSubQuery) getLocalSubQuery();
+      List<ResourceStats> resourceUsage = new ArrayList<ResourceStats>();
+      collectResourceMeasurements(resourceUsage, System.currentTimeMillis(), getRootOp(), subQuery.getSubQueryId());
+      Worker worker = subQuery.getWorker();
+      worker.sendMessageToMaster(IPCUtils.resourceReport(resourceUsage)).awaitUninterruptibly();
+      try {
+        for (ResourceStats stats : resourceUsage) {
+          worker.getProfilingLogger().recordResource(stats);
+        }
+        worker.getProfilingLogger().flush();
+      } catch (DbException e) {
+        LOGGER.error("Error flushing resource profiling logger", e);
+      }
+    }
     if (AtomicUtils.unsetBitIfSetByValue(executionCondition, STATE_INITIALIZED)) {
       // Only cleanup if initialized.
       try {
