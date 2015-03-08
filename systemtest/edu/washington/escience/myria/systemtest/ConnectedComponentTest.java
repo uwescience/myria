@@ -113,7 +113,8 @@ public class ConnectedComponentTest extends SystemTestBase {
     final GenericShuffleConsumer sc3 = new GenericShuffleConsumer(table1Schema, joinArrayId3, workerIDs);
     final Consumer eosReceiver = new Consumer(Schema.EMPTY_SCHEMA, eosReceiverOpId, new int[] { workerIDs[0] });
     final IDBController idbController =
-        new IDBController(0, eoiReceiverOpId, workerIDs[0], sc1, sc3, eosReceiver, new KeepMinValue(new int[] { 0 }, 1));
+        new IDBController(0, eoiReceiverOpId, workerIDs[0], sc1, sc3, eosReceiver, new KeepMinValue(new int[] { 0 },
+            new int[] { 1 }));
 
     final DbQueryScan scan2 = new DbQueryScan(RelationKey.of("test", "test", "g"), table2Schema);
     final GenericShuffleProducer sp2 = new GenericShuffleProducer(scan2, joinArrayId2, workerIDs, pf1);
@@ -133,7 +134,7 @@ public class ConnectedComponentTest extends SystemTestBase {
     if (prioritized) {
       sp3.setBackupBufferAsPrioritizedMin(new int[] { 0 }, 1);
     } else {
-      sp3.setBackupBufferAsMin(new int[] { 0 }, 1);
+      sp3.setBackupBufferAsMin(new int[] { 0 }, new int[] { 1 });
     }
 
     List<RootOperator> ret = new ArrayList<RootOperator>();

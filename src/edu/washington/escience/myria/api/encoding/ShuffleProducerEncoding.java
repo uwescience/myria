@@ -17,7 +17,7 @@ public class ShuffleProducerEncoding extends AbstractProducerEncoding<GenericShu
   public StreamingStateEncoding<?> argBufferStateType;
 
   @Override
-  public GenericShuffleProducer construct(ConstructArgs args) {
+  public GenericShuffleProducer construct(final ConstructArgs args) {
     Set<Integer> workerIds = getRealWorkerIds();
     argPf.setNumPartitions(workerIds.size());
     GenericShuffleProducer producer =
@@ -26,7 +26,7 @@ public class ShuffleProducerEncoding extends AbstractProducerEncoding<GenericShu
     if (argBufferStateType != null) {
       if (argBufferStateType instanceof KeepMinValueStateEncoding) {
         producer.setBackupBufferAsMin(((KeepMinValueStateEncoding) argBufferStateType).keyColIndices,
-            ((KeepMinValueStateEncoding) argBufferStateType).valueColIndex);
+            ((KeepMinValueStateEncoding) argBufferStateType).valueColIndices);
       } else if (argBufferStateType instanceof KeepAndSortOnMinValueStateEncoding) {
         producer.setBackupBufferAsPrioritizedMin(
             ((KeepAndSortOnMinValueStateEncoding) argBufferStateType).keyColIndices,
