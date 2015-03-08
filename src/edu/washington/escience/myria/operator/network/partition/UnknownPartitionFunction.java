@@ -9,32 +9,23 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
- * A partition function that simply sends one tuple to each output in turn.
- * 
- * 
+ * A partition function indicating that a dataset is partitioned by an unknown function.
  */
-public final class RoundRobinPartitionFunction extends PartitionFunction {
+public final class UnknownPartitionFunction extends PartitionFunction {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
-  /** The next partition to use. */
-  private int partition = 0;
 
   /**
    * @param numPartitions the number of partitions.
    */
   @JsonCreator
-  public RoundRobinPartitionFunction(@Nullable @JsonProperty("numPartitions") final Integer numPartitions) {
+  public UnknownPartitionFunction(@Nullable @JsonProperty("numPartitions") final Integer numPartitions) {
     super(numPartitions);
   }
 
   @Override
   public int[] partition(@Nonnull final TupleBatch tb) {
-    final int[] result = new int[tb.numTuples()];
-    for (int i = 0; i < result.length; i++) {
-      result[i] = partition;
-      partition = (partition + 1) % numPartition();
-    }
-    return result;
+    throw new UnsupportedOperationException("Do not use UnknownPartitionFunction to partition a tuple batch");
   }
 }

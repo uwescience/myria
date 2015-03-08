@@ -44,6 +44,8 @@ import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.plan.SubPlanEncoding;
+import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
+import edu.washington.escience.myria.operator.network.partition.UnknownPartitionFunction;
 import edu.washington.escience.myria.parallel.Query;
 import edu.washington.escience.myria.parallel.RelationWriteMetadata;
 import edu.washington.escience.myria.parallel.SocketInfo;
@@ -392,7 +394,7 @@ public final class MasterCatalog {
 
   /**
    * Private helper to add the metadata for a relation into the Catalog.
-   *
+   * 
    * @param sqliteConnection the connection to the SQLite database.
    * @param relation the relation to create.
    * @param schema the schema of the relation.
@@ -449,7 +451,7 @@ public final class MasterCatalog {
    * @throws CatalogException if there is an error in the database.
    */
   private void addStoredRelation(final SQLiteConnection sqliteConnection, final RelationKey relation,
-      final Set<Integer> workers, final String howPartitioned) throws CatalogException {
+      final Set<Integer> workers, final PartitionFunction howPartitioned) throws CatalogException {
     try {
       /* First, populate the stored_relation table. */
       SQLiteStatement statement =
@@ -459,7 +461,11 @@ public final class MasterCatalog {
       statement.bind(2, relation.getProgramName());
       statement.bind(3, relation.getRelationName());
       statement.bind(4, workers.size());
-      statement.bind(5, howPartitioned);
+      try {
+        statement.bind(5, MyriaJsonMapperProvider.getMapper().writeValueAsString(howPartitioned));
+      } catch (JsonProcessingException e) {
+        throw new CatalogException(e);
+      }
       statement.stepThrough();
       statement.dispose();
       statement = null;
@@ -1560,6 +1566,48 @@ public final class MasterCatalog {
   }
 
   /**
+   * Update the partition function of an ingested dataset.
+   * 
+   * @param key the relation key.
+   * @param pf the partition function.
+   * @throws CatalogException if there is an error in the catalog.
+   */
+  public void updatePartitionFunction(final RelationKey key, final PartitionFunction pf) throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+
+    try {
+      queue.execute(new SQLiteJob<DatasetStatus>() {
+        @Override
+        protected DatasetStatus job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+          try {
+            SQLiteStatement statement =
+                sqliteConnection
+                    .prepare("UPDATE stored_relations set how_partitioned=? WHERE user_name=? AND program_name=? AND relation_name=?");
+            try {
+              statement.bind(1, MyriaJsonMapperProvider.getMapper().writeValueAsString(pf));
+            } catch (JsonProcessingException e) {
+              throw new CatalogException(e);
+            }
+            statement.bind(2, key.getUserName());
+            statement.bind(3, key.getProgramName());
+            statement.bind(4, key.getRelationName());
+            statement.stepThrough();
+            statement.dispose();
+            statement = null;
+          } catch (final SQLiteException e) {
+            throw new CatalogException(e);
+          }
+          return null;
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
    * Get the metadata about a relation.
    * 
    * @param relationKey specified which relation to get the metadata about.
@@ -1783,7 +1831,7 @@ public final class MasterCatalog {
               if (meta.isOverwrite() || getSchema(sqliteConnection, relation) == null) {
                 /* Overwrite or new relation. */
                 addRelationMetadata(sqliteConnection, relation, schema, -1, subQueryId.getQueryId());
-                addStoredRelation(sqliteConnection, relation, workers, "unknown");
+                addStoredRelation(sqliteConnection, relation, workers, new UnknownPartitionFunction(null));
                 LOGGER.debug("SubQuery #{} - adding {} to store shard of {}", subQueryId, workers, relation);
               }
             }

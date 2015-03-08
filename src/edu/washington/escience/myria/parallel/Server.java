@@ -84,7 +84,7 @@ import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
 import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
 import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
-import edu.washington.escience.myria.operator.network.partition.RoundRobinPartitionFunction;
+import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.IPCMessage;
 import edu.washington.escience.myria.parallel.ipc.InJVMLoopbackChannelSink;
@@ -955,7 +955,8 @@ public final class Server {
    * @throws DbException if there is an error
    */
   public DatasetStatus ingestDataset(final RelationKey relationKey, final Set<Integer> workersToIngest,
-      final List<List<IndexRef>> indexes, final Operator source) throws InterruptedException, DbException {
+      final List<List<IndexRef>> indexes, final Operator source, final PartitionFunction pf)
+      throws InterruptedException, DbException {
     /* Figure out the workers we will use. If workersToIngest is null, use all active workers. */
     Set<Integer> actualWorkers = workersToIngest;
     if (workersToIngest == null) {
@@ -966,9 +967,8 @@ public final class Server {
 
     /* The master plan: send the tuples out. */
     ExchangePairID scatterId = ExchangePairID.newID();
-    GenericShuffleProducer scatter =
-        new GenericShuffleProducer(source, scatterId, workersArray,
-            new RoundRobinPartitionFunction(workersArray.length));
+    pf.setNumPartitions(workersArray.length);
+    GenericShuffleProducer scatter = new GenericShuffleProducer(source, scatterId, workersArray, pf);
 
     /* The workers' plan */
     GenericShuffleConsumer gather =
@@ -993,6 +993,8 @@ public final class Server {
       throw new DbException("Error executing query", e.getCause());
     }
 
+    // updating the partition function only after it's successfully ingested.
+    updateHowPartitioned(relationKey, pf);
     return getDatasetStatus(relationKey);
   }
 
@@ -1039,6 +1041,19 @@ public final class Server {
    */
   public Schema getSchema(final RelationKey relationKey) throws CatalogException {
     return catalog.getSchema(relationKey);
+  }
+
+  /**
+   * @param key the relation key.
+   * @param pf the partition function.
+   * @throws DbException if there is an catalog exception.
+   */
+  public void updateHowPartitioned(final RelationKey key, final PartitionFunction pf) throws DbException {
+    try {
+      catalog.updateHowPartitioned(key, pf);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
   }
 
   /**

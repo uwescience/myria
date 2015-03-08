@@ -7,6 +7,8 @@ import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.io.DataSource;
+import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
+import edu.washington.escience.myria.operator.network.partition.RoundRobinPartitionFunction;
 
 public class DatasetEncoding extends MyriaApiEncoding {
   @Required
@@ -23,4 +25,5 @@ public class DatasetEncoding extends MyriaApiEncoding {
   public Boolean importFromDatabase;
   public List<List<IndexRef>> indexes;
   public Boolean overwrite;
+  public PartitionFunction howPartitioned = new RoundRobinPartitionFunction(null);
 }
