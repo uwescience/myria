@@ -1,0 +1,48 @@
+
+
+{
+  "logicalRa": "Store(public:adhoc:PostEStep)[Apply(y=$0)[Select(($0 > 10))[Scan(public:adhoc:PointsAndComponents)]]]",
+  "language": "myrial",
+  "rawQuery": "T1 = scan(public:adhoc:PointsAndComponents);\nT2 = select $0 as y from T1 where $0 > 10;\nstore(T2, PostEStep);",
+  "plan": {
+    "fragments": [
+      {
+        "operators": [
+          {
+            "relationKey": {
+              "userName": "public",
+              "relationName": "PointsAndComponents",
+              "programName": "adhoc"
+            },
+            "opType": "TableScan",
+            "opName": "MyriaScan(public:adhoc:PointsAndComponents)",
+            "opId": 0
+          },
+          {
+            "opId": 1,
+            "opType": "EStep",
+            "opName": "AppendLongColumn",
+            "argChild": 0,
+            "argNumDimensions": %d,
+            "argNumComponents": %d            
+          },
+          {
+            "opType": "DbInsert",
+            "argChild": 1,
+            "opName": "MyriaStore(public:adhoc:PostEStep)",
+            "argOverwriteTable": true,
+            "opId": 2,
+            "relationKey": {
+              "userName": "public",
+              "relationName": "PostEStep",
+              "programName": "adhoc"
+            }
+          }
+        ]
+      }
+    ],
+    "type": "SubQuery"
+  }
+}
+
+
