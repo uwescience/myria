@@ -2,11 +2,14 @@ package edu.washington.escience.myria.operator;
 
 import java.util.BitSet;
 import java.util.List;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.primitives.Ints;
 import com.gs.collections.api.block.procedure.primitive.IntProcedure;
 import com.gs.collections.impl.list.mutable.primitive.IntArrayList;
 import com.gs.collections.impl.map.mutable.primitive.IntObjectHashMap;
@@ -45,17 +48,20 @@ public final class KeepAndSortOnMinValue extends StreamingState {
 
   /** column indices of the key. */
   private final int[] keyColIndices;
+  /** column indices of the key as a set. */
+  private final Set<Integer> keyColIndicesSet;
   /** column indices of the value. */
-  private final int valueColIndex;
+  private final int[] valueColIndices;
 
   /**
    * 
    * @param keyColIndices column indices of the key
-   * @param valueColIndex column index of the value
+   * @param valueColIndices column indices of the value
    */
-  public KeepAndSortOnMinValue(final int[] keyColIndices, final int valueColIndex) {
+  public KeepAndSortOnMinValue(final int[] keyColIndices, final int[] valueColIndices) {
     this.keyColIndices = keyColIndices;
-    this.valueColIndex = valueColIndex;
+    keyColIndicesSet = ImmutableSet.copyOf(Ints.asList(keyColIndices));
+    this.valueColIndices = valueColIndices;
   }
 
   @Override
@@ -68,24 +74,63 @@ public final class KeepAndSortOnMinValue extends StreamingState {
    * Check if a tuple in uniqueTuples equals to the comparing tuple (cntTuple).
    * 
    * @param index the index in uniqueTuples
-   * @param column the source column
+   * @param columns the source columns
    * @param row the index of the source row
    * @return true if equals.
    * */
-  private boolean shouldReplace(final int index, final Column<?> column, final int row) {
-    Type t = column.getType();
-    switch (t) {
-      case INT_TYPE:
-        return column.getInt(row) < uniqueTuples.getInt(valueColIndex, index);
-      case FLOAT_TYPE:
-        return column.getFloat(row) < uniqueTuples.getFloat(valueColIndex, index);
-      case DOUBLE_TYPE:
-        return column.getDouble(row) < uniqueTuples.getDouble(valueColIndex, index);
-      case LONG_TYPE:
-        return column.getLong(row) < uniqueTuples.getLong(valueColIndex, index);
-      default:
-        throw new IllegalStateException("type " + t + " is not supported in KeepMinValue.replace()");
+  private boolean shouldReplace(final int index, final List<? extends Column<?>> columns, final int row) {
+    for (int valueColIndice : valueColIndices) {
+      Column<?> column = columns.get(valueColIndice);
+      switch (column.getType()) {
+        case INT_TYPE: {
+          int t1 = column.getInt(row);
+          int t2 = uniqueTuples.getInt(valueColIndice, index);
+          if (t1 < t2) {
+            return true;
+          }
+          if (t1 > t2) {
+            return false;
+          }
+          break;
+        }
+        case LONG_TYPE: {
+          long t1 = column.getLong(row);
+          long t2 = uniqueTuples.getLong(valueColIndice, index);
+          if (t1 < t2) {
+            return true;
+          }
+          if (t1 > t2) {
+            return false;
+          }
+          break;
+        }
+        case FLOAT_TYPE: {
+          float t1 = column.getFloat(row);
+          float t2 = uniqueTuples.getFloat(valueColIndice, index);
+          if (t1 < t2) {
+            return true;
+          }
+          if (t1 > t2) {
+            return false;
+          }
+          break;
+        }
+        case DOUBLE_TYPE: {
+          double t1 = column.getDouble(row);
+          double t2 = uniqueTuples.getDouble(valueColIndice, index);
+          if (t1 < t2) {
+            return true;
+          }
+          if (t1 > t2) {
+            return false;
+          }
+          break;
+        }
+        default:
+          throw new IllegalStateException("type " + column.getType() + " is not supported in KeepMinValue.replace()");
+      }
     }
+    return false;
   }
 
   /**
@@ -136,7 +181,7 @@ public final class KeepAndSortOnMinValue extends StreamingState {
 
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) {
-    uniqueTupleIndices = new IntObjectHashMap<>();
+    uniqueTupleIndices = new IntObjectHashMap<IntArrayList>();
     uniqueTuples = new MutableTupleBuffer(getSchema());
     doReplace = new ReplaceProcedure();
   }
@@ -153,7 +198,7 @@ public final class KeepAndSortOnMinValue extends StreamingState {
   @Override
   public List<TupleBatch> exportState() {
     MutableTupleBuffer tmp = uniqueTuples.clone();
-    sortOn(tmp, valueColIndex);
+    sortOn(tmp, valueColIndices);
     return tmp.getAll();
   }
 
@@ -186,9 +231,14 @@ public final class KeepAndSortOnMinValue extends StreamingState {
     public void value(final int index) {
       if (TupleUtils.tupleEquals(inputTB, keyColIndices, row, uniqueTuples, keyColIndices, index)) {
         unique = false;
-        Column<?> valueColumn = inputTB.getDataColumns().get(valueColIndex);
-        if (shouldReplace(index, valueColumn, row)) {
-          uniqueTuples.replace(valueColIndex, index, valueColumn, row);
+        if (shouldReplace(index, inputTB.getDataColumns(), row)) {
+          for (int i = 0; i < uniqueTuples.numColumns(); ++i) {
+            if (!keyColIndicesSet.contains(i)) {
+              // replace the whole tuple except key columns.
+              uniqueTuples.replace(i, index, inputTB.getDataColumns().get(i), row);
+            }
+          }
+          replaced = true;
         }
       }
     }
@@ -200,7 +250,7 @@ public final class KeepAndSortOnMinValue extends StreamingState {
    * @param tuples tuples
    * @param col column index
    */
-  private void sortOn(final MutableTupleBuffer tuples, final int col) {
+  private void sortOn(final MutableTupleBuffer tuples, final int[] col) {
     quicksort(tuples, col, 0, tuples.numTuples() - 1);
   }
 
@@ -212,7 +262,7 @@ public final class KeepAndSortOnMinValue extends StreamingState {
    * @param low lower bound
    * @param high upper bound
    */
-  private void quicksort(final MutableTupleBuffer tuples, final int col, final int low, final int high) {
+  private void quicksort(final MutableTupleBuffer tuples, final int[] col, final int low, final int high) {
     int i = low, j = high;
     int pivot = low + (high - low) / 2;
 
@@ -250,25 +300,64 @@ public final class KeepAndSortOnMinValue extends StreamingState {
    * compare a value in a column with pivot.
    * 
    * @param tuples tuples
-   * @param column the column index
+   * @param columns the column indices
    * @param row row index to compare with
    * @param pivot the index of the pivot value
    * @return if the value is smaller than (-1), equal to (0) or bigger than (1) pivot
    */
-  public int compare(final MutableTupleBuffer tuples, final int column, final int row, final int pivot) {
-    Type t = getSchema().getColumnType(column);
-    switch (t) {
-      case LONG_TYPE:
-        return Type.compareRaw(tuples.getLong(column, row), tuples.getLong(column, pivot));
-      case INT_TYPE:
-        return Type.compareRaw(tuples.getInt(column, row), tuples.getInt(column, pivot));
-      case DOUBLE_TYPE:
-        return Type.compareRaw(tuples.getDouble(column, row), tuples.getDouble(column, pivot));
-      case FLOAT_TYPE:
-        return Type.compareRaw(tuples.getFloat(column, row), tuples.getFloat(column, pivot));
-      default:
-        throw new RuntimeException("compare() doesn't support type " + t);
+  public int compare(final MutableTupleBuffer tuples, final int[] columns, final int row, final int pivot) {
+    for (int column : columns) {
+      Type t = getSchema().getColumnType(column);
+      switch (t) {
+        case LONG_TYPE: {
+          long t1 = tuples.getLong(column, row);
+          long t2 = tuples.getLong(column, pivot);
+          if (t1 < t2) {
+            return -1;
+          }
+          if (t1 > t2) {
+            return 1;
+          }
+          break;
+        }
+        case INT_TYPE: {
+          int t1 = tuples.getInt(column, row);
+          int t2 = tuples.getInt(column, pivot);
+          if (t1 < t2) {
+            return -1;
+          }
+          if (t1 > t2) {
+            return 1;
+          }
+          break;
+        }
+        case FLOAT_TYPE: {
+          float t1 = tuples.getFloat(column, row);
+          float t2 = tuples.getFloat(column, pivot);
+          if (t1 < t2) {
+            return -1;
+          }
+          if (t1 > t2) {
+            return 1;
+          }
+          break;
+        }
+        case DOUBLE_TYPE: {
+          double t1 = tuples.getDouble(column, row);
+          double t2 = tuples.getDouble(column, pivot);
+          if (t1 < t2) {
+            return -1;
+          }
+          if (t1 > t2) {
+            return 1;
+          }
+          break;
+        }
+        default:
+          throw new IllegalStateException("type " + t + " is not supported");
+      }
     }
+    return 0;
   }
 
   @Override
@@ -278,6 +367,6 @@ public final class KeepAndSortOnMinValue extends StreamingState {
 
   @Override
   public StreamingState newInstanceFromMyself() {
-    return new KeepAndSortOnMinValue(keyColIndices, valueColIndex);
+    return new KeepAndSortOnMinValue(keyColIndices, valueColIndices);
   }
 }

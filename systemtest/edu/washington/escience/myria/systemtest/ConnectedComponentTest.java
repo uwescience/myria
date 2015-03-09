@@ -132,7 +132,7 @@ public class ConnectedComponentTest extends SystemTestBase {
     final CollectProducer cp = new CollectProducer(agg, serverOpId, MASTER_ID);
     final GenericShuffleProducer sp3 = new GenericShuffleProducer(join, joinArrayId3, workerIDs, pf0);
     if (prioritized) {
-      sp3.setBackupBufferAsPrioritizedMin(new int[] { 0 }, 1);
+      sp3.setBackupBufferAsPrioritizedMin(new int[] { 0 }, new int[] { 1 });
     } else {
       sp3.setBackupBufferAsMin(new int[] { 0 }, new int[] { 1 });
     }

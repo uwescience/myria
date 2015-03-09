@@ -259,13 +259,13 @@ public abstract class Producer extends RootOperator {
   /**
    * set backup buffers as KeepAndSortOnMinValue.
    * 
-   * @param keyColIndices the same as the one in KeepMinValue
-   * @param valueCol the same as the one in KeepMinValue
+   * @param keyColIndices the same as the one in KeepAndSortOnMinValue
+   * @param valueColindices the same as the one in KeepAndSortOnMinValue
    */
-  public void setBackupBufferAsPrioritizedMin(final int[] keyColIndices, final int valueCol) {
+  public void setBackupBufferAsPrioritizedMin(final int[] keyColIndices, final int[] valueColIndices) {
     triedToSendTuples = new ArrayList<StreamingState>();
     for (int i = 0; i < outputIDs.length; i++) {
-      triedToSendTuples.add(i, new KeepAndSortOnMinValue(keyColIndices, valueCol));
+      triedToSendTuples.add(i, new KeepAndSortOnMinValue(keyColIndices, valueColIndices));
       triedToSendTuples.get(i).setAttachedOperator(this);
     }
   }
