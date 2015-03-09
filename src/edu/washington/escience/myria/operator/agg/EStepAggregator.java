@@ -32,9 +32,9 @@ public class EStepAggregator implements Aggregator {
 	private final double[] partialResponsibilities;
 	// private int valIndex;
 
-	private final int numComponents;
-
 	private final int numDimensions;
+
+	private final int numComponents;
 
 	/** The column index of the gid (Gaussian component id) in the input table **/
 	private final int gidColumn;

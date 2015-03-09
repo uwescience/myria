@@ -46,12 +46,12 @@ public final class EStep extends UnaryOperator {
 	/**
 	 * The number of component Gaussians in the model
 	 */
-	private final int numComponents = 2;
+	private final int numComponents;
 
 	/**
 	 * 
 	 */
-	private final int numDimensions = 2;
+	private final int numDimensions;
 
 	/**
 	 * Constructor accepts a predicate to apply and a child operator to read
@@ -60,8 +60,11 @@ public final class EStep extends UnaryOperator {
 	 * @param child
 	 *            The child operator
 	 */
-	public EStep(final Operator child) {
+	public EStep(final Operator child, int numDimensions, int numComponents) {
 		super(child);
+		this.numDimensions = numDimensions;
+		this.numComponents = numComponents;
+
 	}
 
 	@Override

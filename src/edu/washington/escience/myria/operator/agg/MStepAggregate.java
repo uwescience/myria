@@ -61,12 +61,12 @@ public class MStepAggregate extends UnaryOperator {
 	/**
 	 * The number of component Gaussians in the model
 	 */
-	private final int numComponents = 2;
+	private final int numComponents;
 
 	/**
 	 * 
 	 */
-	private final int numDimensions = 2;
+	private final int numDimensions;
 
 	/**
 	 * A cache of the input schema.
@@ -127,9 +127,13 @@ public class MStepAggregate extends UnaryOperator {
 	 *            Factories for the aggregation operators to use.
 	 */
 	public MStepAggregate(@Nullable final Operator child, final int gfield,
-			final AggregatorFactory[] factories) {
+			final AggregatorFactory[] factories, int numDimensions,
+			int numComponents) {
 		super(child);
 		gColumn = Objects.requireNonNull(gfield, "gfield");
+		this.numDimensions = numDimensions;
+		this.numComponents = numComponents;
+
 		this.factories = Objects.requireNonNull(factories, "factories");
 	}
 
@@ -145,9 +149,10 @@ public class MStepAggregate extends UnaryOperator {
 	 *            Factory for the aggregation operator to use.
 	 */
 	public MStepAggregate(final Operator child, final int gfield,
-			final AggregatorFactory factory) {
+			final AggregatorFactory factory, int numDimensions,
+			int numComponents) {
 		this(child, gfield, new AggregatorFactory[] { Objects.requireNonNull(
-				factory, "factory") });
+				factory, "factory") }, numDimensions, numComponents);
 	}
 
 	@Override

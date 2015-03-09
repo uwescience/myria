@@ -27,8 +27,8 @@
               }
             ],
             "argGroupField": 0,
-            "argNumDimensions": 2,
-            "argNumComponents": 2,
+            "argNumDimensions": 4,
+            "argNumComponents": 3,
             "opId": 2,
             "opName": "MyriaGroupBy($0; SUM($13))"
           },

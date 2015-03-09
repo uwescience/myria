@@ -12,8 +12,15 @@ public class MStepAggregateEncoding extends
 	@Required
 	public int argGroupField;
 
+	@Required
+	public int argNumDimensions;
+
+	@Required
+	public int argNumComponents;
+
 	@Override
 	public MStepAggregate construct(ConstructArgs args) {
-		return new MStepAggregate(null, argGroupField, aggregators);
+		return new MStepAggregate(null, argGroupField, aggregators,
+				argNumDimensions, argNumComponents);
 	}
 }

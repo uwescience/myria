@@ -22,7 +22,9 @@
             "opId": 1,
             "opType": "EStep",
             "opName": "AppendLongColumn",
-            "argChild": 0
+            "argChild": 0,
+            "argNumDimensions": 4,
+            "argNumComponents": 7            
           },
           {
             "opType": "DbInsert",

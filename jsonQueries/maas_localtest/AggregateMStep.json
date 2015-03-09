@@ -26,7 +26,9 @@
                 "type": "SingleColumn"
               }
             ],
-            "argGroupField": 5,
+            "argGroupField": 8,
+            "argNumDimensions": 4,
+            "argNumComponents": 3,            
             "opId": 2,
             "opName": "MyriaGroupBy($0; SUM($12))"
           },
@@ -62,7 +64,7 @@
             "opId": 1,
             "argChild": 4,
             "argPf": {
-              "index": 5,
+              "index": 8,
               "type": "SingleFieldHash"
             }
           }
