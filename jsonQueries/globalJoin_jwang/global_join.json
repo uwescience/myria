@@ -3,19 +3,7 @@
         {
             "operators": [
                 {
-                    "argOperatorId": "CP1",
-                    "opId": "CC1",
-                    "opType": "CollectConsumer"
-                }
-            ],
-            "overrideWorkers": [
-                "0"
-            ]
-        },
-        {
-            "operators": [
-                {
-                    "opId": "SCAN1",
+                    "opId": 6,
                     "opType": "TableScan",
                     "relationKey": {
                         "programName": "global_join",
@@ -24,12 +12,12 @@
                     }
                 },
                 {
-                    "argChild": "SCAN1",
+                    "argChild": 6,
                     "argPf": {
-                        "index": "1",
+                        "index": 0,
                         "type": "SingleFieldHash"
                     },
-                    "opId": "SP1",
+                    "opId": 0,
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -37,7 +25,7 @@
         {
             "operators": [
                 {
-                    "opId": "SCAN2",
+                    "opId": 1,
                     "opType": "TableScan",
                     "relationKey": {
                         "programName": "global_join",
@@ -46,12 +34,12 @@
                     }
                 },
                 {
-                    "argChild": "SCAN2",
+                    "argChild": 1,
                     "argPf": {
-                        "index": "0",
+                        "index": 1,
                         "type": "SingleFieldHash"
                     },
-                    "opId": "SP2",
+                    "opId": 6,
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -59,41 +47,48 @@
         {
             "operators": [
                 {
-                    "argOperatorId": "SP1",
-                    "opId": "SC1",
+                    "argOperatorId": 0,
+                    "opId": 2,
                     "opType": "ShuffleConsumer"
                 },
                 {
-                    "argOperatorId": "SP2",
-                    "opId": "SC2",
+                    "argOperatorId": 6,
+                    "opId": 3,
                     "opType": "ShuffleConsumer"
                 },
                 {
-                    "argChild1": "SC1",
-                    "argChild2": "SC2",
+                    "argChild1": 3,
+                    "argChild2": 2,
                     "argColumns1": [
-                        "1"
+                        1
                     ],
                     "argColumns2": [
-                        "0"
+                        0
                     ],
                     "argSelect1": [
-                        "0"
+                        0
                     ],
                     "argSelect2": [
-                        "1"
+                        1
                     ],
-                    "opId": "JOIN",
+                    "opId": 4,
                     "opType": "SymmetricHashJoin"
                 },
                 {
-                    "argChild": "JOIN",
-                    "opId": "CP1",
-                    "opType": "CollectProducer"
+                    "argChild": 4,
+                    "argOverwriteTable": true,
+                    "opId": 5,
+                    "opType": "DbInsert",
+                    "relationKey": {
+                        "programName": "global_join",
+                        "relationName": "smallTable_join_smallTable",
+                        "userName": "jwang"
+                    }
                 }
             ]
         }
     ],
-    "logicalRa": "INSERT(JOIN(SCAN1,SCAN2))",
-    "rawQuery": "smallTableJoin(x,z) :- smallTable(x,y),smallTable(y,z)."
+    "logicalRa": "Insert(smallTable_join_smallTable)[Join(1=0; [0,3])[Shuffle(1)[Scan], Shuffle(1)[Scan]]]",
+    "rawQuery": "smallTable_join_smallTable(x,z) :- smallTable(x,y), smallTable(y,z)",
+    "language": "datalog"
 }

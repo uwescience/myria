@@ -5,9 +5,9 @@
 			"operators": 
 			[
 			{
-			  "opId" : "cc",
+			  "opId" : 1,
 			  "opType" : "CollectConsumer",
-			  "argOperatorId" : "cpc"
+			  "argOperatorId" : 9
 			}
 			],
 			"overrideWorkers": 
@@ -19,19 +19,19 @@
 			"operators": 
 			[
 			{
-				"opId" : "eoiReceiverA",
+				"opId" : 2,
 				"opType" : "Consumer",
-				"argOperatorId" : "idbinput"
+				"argOperatorId" : 14
 			},
 			{
-				"opId" : "merge",
+				"opId" : 3,
 				"opType" : "UnionAll",
-				"argChildren" : ["eoiReceiverA"]
+				"argChildren" : [2]
 			},
 			{
-				"opId" : "eosController",
+				"opId" : 4,
 				"opType" : "EOSController",
-				"argChild" : "merge"
+				"argChild" : 3
 			}
 			],
 			"overrideWorkers": 
@@ -43,7 +43,7 @@
 			"operators": 
 			[
 			{
-				"opId" : "scanC",
+				"opId" : 20,
 				"opType" : "TableScan",
 				"relationKey" : {
 					"userName" : "jwang",
@@ -52,9 +52,9 @@
 				}
 			},
 			{
-				"opId" : "spC",
+				"opId" : 18,
 				"opType" : "ShuffleProducer",
-				"argChild" : "scanC",
+				"argChild" : 20,
 				"argPf" : {
 					"type" : "SingleFieldHash",
 					"index" : 0
@@ -66,7 +66,7 @@
 			"operators": 
 			[
 			{
-				"opId" : "scanG",
+				"opId" : 19,
 				"opType" : "TableScan",
 				"relationKey" : {
 					"userName" : "jwang",
@@ -75,9 +75,9 @@
 				}
 			},
 			{
-				"opId" : "spG",
+				"opId" : 17,
 				"opType" : "ShuffleProducer",
-				"argChild" : "scanG",
+				"argChild" : 19,
 				"argPf" : {
 					"type" : "SingleFieldHash",
 					"index" : 1
@@ -89,37 +89,37 @@
 			"operators": 
 			[
 			{
-				"opId" : "scC",
+				"opId" : 5,
 				"opType" : "ShuffleConsumer",
-				"argOperatorId" : "spC",
+				"argOperatorId" : 18
 			},
 			{
-				"opId" : "scJoin",
+				"opId" : 16,
 				"opType" : "ShuffleConsumer",
-				"argOperatorId" : "spJoin",
+				"argOperatorId" : 10
 			},
 			{
-				"opId" : "eosReceiver",
+				"opId" : 15,
 				"opType" : "Consumer",
-				"argOperatorId" : "eosController",
+				"argOperatorId" : 4
 			},
 			{
-				"opId" : "idbinput",
+				"opId" : 14,
 				"opType" : "IDBController",
 				"argSelfIdbId" : "0",
-				"argInitialInput" : "scC",
-				"argIterationInput" : "scJoin",
+				"argInitialInput" : 5,
+				"argIterationInput" : 16,
 				"argState" : {
 					"type" : "KeepMinValue",
 					"keyColIndices" : ["0"],
-					"valueColIndex" : "1"
+					"valueColIndex" : 1
 				},
-				"argEosControllerInput" : "eosReceiver"
+				"argEosControllerInput" : 15
 			},
 			{
-				"opId" : "mp",
+				"opId" : 6,
 				"opType" : "LocalMultiwayProducer",
-				"argChild" : "idbinput"
+				"argChild" : 14
 			}
 			]
 		},
@@ -127,20 +127,20 @@
 			"operators": 
 			[
 			{
-				"opId" : "sc1g",
+				"opId" : 12,
 				"opType" : "ShuffleConsumer",
-				"argOperatorId" : "spG",
+				"argOperatorId" : 17
 			},
 			{
-				"opId" : "send2join",
+				"opId" : 13,
 				"opType" : "LocalMultiwayConsumer",
-				"argOperatorId" : "mp",
+				"argOperatorId" : 6
 			},
 			{
-				"opId" : "join",
+				"opId" : 11,
 				"opType" : "SymmetricHashJoin",
-				"argChild1" : "sc1g",
-				"argChild2" : "send2join",
+				"argChild1" : 12,
+				"argChild2" : 13,
 				"argColumns1" : ["1"],
 				"argColumns2" : ["0"],
 				"argSelect1" : ["0"],
@@ -149,9 +149,9 @@
 				"argSetSemanticsRight" : true
 			},
 			{
-				"opId" : "spJoin",
+				"opId" : 10,
 				"opType" : "ShuffleProducer",
-				"argChild" : "join",
+				"argChild" : 11,
 				"argPf" : {
 					"type" : "SingleFieldHash",
 					"index" : 0
@@ -163,22 +163,26 @@
 			"operators": 
 			[
 			{
-				"opId" : "send2server",
+				"opId" : 7,
 				"opType" : "LocalMultiwayConsumer",
-				"argOperatorId" : "mp",
+				"argOperatorId" : 6
 			},
 			{
-				"opId" : "agg",
+				"opId" : 8,
 				"opType" : "SingleGroupByAggregate",
-				"argChild" : "send2server",
-				"argAggFields" : ["1"],
+				"argChild" : 7,
 				"argGroupField" : "0",
-				"argAggOperators" : [["AGG_OP_MIN"]]
+                "aggregators": [
+                {
+	                    "type": "SingleColumn",
+                        "column": 1,
+                        "aggOps" : ["MIN"]
+                }]
 			},
 			{
-				"opId" : "cpc",
+				"opId" : 9,
 				"opType" : "CollectProducer",
-				"argChild" : "agg"
+				"argChild" : 8
 			}
 			]
 		}

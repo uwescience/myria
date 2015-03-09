@@ -3,7 +3,7 @@
         {
             "operators":[
                 {
-                    "opId":"Scan(R)",
+                    "opId":1,
                     "opType":"TableScan",
                     "relationKey":{
                         "programName":"adhoc",
@@ -12,7 +12,7 @@
                     }
                 },
                 {
-                    "argChild":"Scan(R)",
+                    "argChild":1,
                     "hashedColumns": [0],
                     "cellPartition":[
                         [
@@ -29,7 +29,7 @@
                         2,
                         2
                     ],
-                    "opId":"HyperShuffle(R)",
+                    "opId":3,
                     "opType":"HyperShuffleProducer"
                 }
             ]
@@ -37,7 +37,7 @@
         {
             "operators":[
                 {
-                    "opId":"Scan(S)",
+                    "opId":2,
                     "opType":"TableScan",
                     "relationKey":{
                         "programName":"adhoc",
@@ -46,7 +46,7 @@
                     }
                 },
                 {
-                    "argChild":"Scan(S)",
+                    "argChild":2,
                     "hashedColumns": [1],
                     "mappedHCDimensions":[1],
                     "cellPartition":[
@@ -63,7 +63,7 @@
                         2,
                         2
                     ],
-                    "opId":"HyperShuffle(S)",
+                    "opId":8,
                     "opType":"HyperShuffleProducer"
                 }
             ]
@@ -71,18 +71,18 @@
         {
             "operators":[
                 {
-                    "argOperatorId":"HyperShuffle(R)",
-                    "opId":"GatherR",
+                    "argOperatorId":3,
+                    "opId":4,
                     "opType":"HyperShuffleConsumer"
                 },
                 {
-                    "argOperatorId":"HyperShuffle(S)",
-                    "opId":"GatherS",
+                    "argOperatorId":8,
+                    "opId":5,
                     "opType":"HyperShuffleConsumer"
                 },
                 {
-                    "argChild1":"GatherR",
-                    "argChild2":"GatherS",
+                    "argChild1":4,
+                    "argChild2":5,
                     "argColumns1":[
                         1
                     ],
@@ -95,12 +95,12 @@
                     "argSelect2":[
                         1
                     ],
-                    "opId":"Join",
+                    "opId":6,
                     "opType":"SymmetricHashJoin"
                 },
                 {
-                    "argChild":"Join",
-                    "opId":"SendResult",
+                    "argChild":6,
+                    "opId":11,
                     "opType":"CollectProducer"
                 }
             ]
@@ -108,14 +108,14 @@
         {
             "operators":[
                 {
-                    "argOperatorId":"SendResult",
-                    "opId":"CollectResult",
+                    "argOperatorId":11,
+                    "opId":7,
                     "opType":"CollectConsumer"
                 },
                 {
-                    "argChild":"CollectResult",
+                    "argChild":7,
                     "argOverwriteTable":true,
-                    "opId":"Insert",
+                    "opId":9,
                     "opType":"DbInsert",
                     "relationKey":{
                         "programName":"multiway_join",
