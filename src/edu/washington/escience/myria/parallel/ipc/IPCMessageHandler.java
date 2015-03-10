@@ -16,7 +16,10 @@ import org.jboss.netty.channel.local.LocalChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.parallel.ipc.ChannelContext.RegisteredChannelContext;
+import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
+import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.concurrent.ThreadStackDump;
 
 /**
@@ -223,26 +226,29 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
         final ChannelContext cc = ChannelContext.getChannelContext(ch);
         final int remoteID = cc.getRegisteredChannelContext().getRemoteID();
 
-        StreamInputChannel<?> ic = cc.getRegisteredChannelContext().getIOPair().getInputChannel();
-        if (ic != null) {
-          // it's a stream message
-          StreamInputBuffer<?> sib = ic.getInputBuffer();
-          msg = ownerConnectionPool.getPayloadSerializer().deSerialize(cb, sib.getProcessor(), sib.getAttachment());
-          if (msg == null) {
-            LOGGER.error("Unknown stream message from {} to {}, through {}, msg: {}", remoteID, sib.getProcessor(),
-                ChannelContext.channelToString(ctx.getChannel()), cb);
-            return;
-          }
-        } else {
-          // short message
-          msg =
-              ownerConnectionPool.getPayloadSerializer().deSerialize(cb, null,
-                  ownerConnectionPool.getShortMessageProcessor().getAttachment());
-          if (msg == null) {
-            LOGGER.error("Unknown short message from {}, through {}, msg: {}", remoteID, ChannelContext
-                .channelToString(ctx.getChannel()), cb);
-            return;
-          }
+        TransportMessage tm = (TransportMessage) ownerConnectionPool.getPayloadSerializer().deSerialize(cb, null, null);
+        switch (tm.getType()) {
+          case DATA:
+            StreamInputChannel<?> ic = cc.getRegisteredChannelContext().getIOPair().getInputChannel();
+            if (ic != null) {
+              StreamInputBuffer<?> sib = ic.getInputBuffer();
+              msg = IPCUtils.tmToTupleBatch(tm.getDataMessage(), (Schema) sib.getAttachment());
+            } else {
+              // got a message from a physical channel which is not bound to a logical input channel, ignore
+              // the binding may have been cleaned up due to failure
+              if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Unknown data message from {} }, through {}, msg: {}", remoteID, ChannelContext
+                    .channelToString(ctx.getChannel()), tm.getDataMessage());
+              }
+              return;
+            }
+            break;
+          case QUERY:
+          case CONTROL:
+            msg = tm;
+            break;
+          default:
+            throw new IllegalArgumentException("Unknown message type: " + tm.getType().name());
         }
       }
     }
@@ -300,6 +306,12 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
     final ChannelContext cs = (ChannelContext) ch.getAttachment();
     StreamIOChannelPair ecp = cs.getRegisteredChannelContext().getIOPair();
     StreamInputChannel<Object> cc = ecp.getInputChannel();
+    if (cc == null) {
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug("Processing steam message with no input channel: {}", message);
+      }
+      return true;
+    }
     StreamInputBuffer<Object> msgDestIB = cc.getInputBuffer();
 
     if (msgDestIB == null) {
