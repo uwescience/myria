@@ -32,6 +32,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.DatasetEncoding;
+import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.EmptyRelationEncoding;
 import edu.washington.escience.myria.api.encoding.LocalMultiwayConsumerEncoding;
 import edu.washington.escience.myria.api.encoding.LocalMultiwayProducerEncoding;
@@ -45,6 +46,9 @@ import edu.washington.escience.myria.api.encoding.plan.SubQueryEncoding;
 import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.io.EmptySource;
 import edu.washington.escience.myria.io.FileSource;
+import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
+import edu.washington.escience.myria.operator.network.partition.RoundRobinPartitionFunction;
+import edu.washington.escience.myria.operator.network.partition.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.util.JsonAPIUtils;
 import edu.washington.escience.myria.util.TestUtils;
@@ -73,17 +77,20 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     /* Construct the JSON for an Empty Ingest request. */
     RelationKey key = RelationKey.of("public", "adhoc", "smallTable");
     Schema schema = Schema.of(ImmutableList.of(Type.STRING_TYPE, Type.LONG_TYPE), ImmutableList.of("foo", "bar"));
-    return ingest(key, schema, new EmptySource(), null);
+    return ingest(key, schema, new EmptySource(), null, null);
   }
 
   public static String ingest(final RelationKey key, final Schema schema, final DataSource source,
-      @Nullable final Character delimiter) throws JsonProcessingException {
+      @Nullable final Character delimiter, @Nullable final PartitionFunction pf) throws JsonProcessingException {
     DatasetEncoding ingest = new DatasetEncoding();
     ingest.relationKey = key;
     ingest.schema = schema;
     ingest.source = source;
     if (delimiter != null) {
       ingest.delimiter = delimiter;
+    }
+    if (pf != null) {
+      ingest.howPartitioned = pf;
     }
     return MyriaJsonMapperProvider.getWriter().writeValueAsString(ingest);
   }
@@ -140,18 +147,37 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     Schema schema = Schema.of(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE), ImmutableList.of("x", "y"));
     Character delimiter = ' ';
     HttpURLConnection conn =
-        JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingest(key, schema, source, delimiter));
+        JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingest(key, schema, source, delimiter, null));
     if (null != conn.getErrorStream()) {
       throw new IllegalStateException(getContents(conn));
     }
-    assertEquals(conn.getResponseCode(), HttpURLConnection.HTTP_CREATED);
-    assertEquals(getDatasetStatus(conn).getNumTuples(), 7);
+    assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
+    DatasetStatus status = getDatasetStatus(conn);
+    assertEquals(7, status.getNumTuples());
+    /* not specified, should be RoundRobin. */
+    assertTrue(status.getHowPartitioned() instanceof RoundRobinPartitionFunction);
+    assertEquals(2, status.getHowPartitioned().numPartition());
     conn.disconnect();
     /* bad ingestion. */
     delimiter = ',';
     RelationKey newkey = RelationKey.of("public", "adhoc", "testbadIngest");
-    conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingest(newkey, schema, source, delimiter));
+    conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingest(newkey, schema, source, delimiter, null));
     assertEquals(conn.getResponseCode(), HttpURLConnection.HTTP_INTERNAL_ERROR);
+    conn.disconnect();
+
+    /* hash-partitioned ingest. */
+    delimiter = ' ';
+    RelationKey keyP = RelationKey.of("public", "adhoc", "testIngestHashPartitioned");
+    conn =
+        JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingest(keyP, schema, source, delimiter,
+            new SingleFieldHashPartitionFunction(null, 1)));
+    assertEquals(conn.getResponseCode(), HttpURLConnection.HTTP_CREATED);
+    status = getDatasetStatus(conn);
+    PartitionFunction pf = status.getHowPartitioned();
+    /* specified, should be SingleField with index = 1. */
+    assertEquals(2, pf.numPartition());
+    assertTrue(pf instanceof SingleFieldHashPartitionFunction);
+    assertEquals(1, ((SingleFieldHashPartitionFunction) pf).getIndex());
     conn.disconnect();
   }
 

@@ -10,6 +10,8 @@ import java.net.URL;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
+import edu.washington.escience.myria.RelationKey;
+
 /**
  * Util methods for handling of Json API stuff.
  * */
@@ -179,4 +181,24 @@ public final class JsonAPIUtils {
     conn.getResponseCode();
     return conn;
   }
+
+  /**
+   * @param masterHostname master hostname
+   * @param apiPort rest api port
+   * @return a HTTPURLConnection instance of retrieving responses.
+   * @throws IOException if IO errors
+   * */
+  public HttpURLConnection getDatasetStatus(final String masterHostname, final int apiPort, final RelationKey key)
+      throws IOException {
+    URL url =
+        new URL(String.format("http://%s:%d/dataset/user-%s/program-%s/relation-%s", masterHostname, apiPort, key
+            .getUserName(), key.getProgramName(), key.getRelationName()));
+    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+    conn.setDoOutput(true);
+    conn.setRequestMethod("GET");
+    conn.connect();
+    conn.getResponseCode();
+    return conn;
+  }
+
 }

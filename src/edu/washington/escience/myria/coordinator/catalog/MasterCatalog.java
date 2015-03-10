@@ -1079,8 +1079,16 @@ public final class MasterCatalog {
         long numTuples = statement.columnLong(3);
         long queryId = statement.columnLong(4);
         String created = statement.columnString(5);
+        PartitionFunction howPartitioned;
+        try {
+          howPartitioned =
+              MyriaJsonMapperProvider.getMapper().readValue(statement.columnString(6), PartitionFunction.class);
+        } catch (final IOException e) {
+          LOGGER.debug("Error deserializing howPartitioned for dataset #{}", relationKey.toString(), e);
+          howPartitioned = new UnknownPartitionFunction(null);
+        }
         result.add(new DatasetStatus(relationKey, getDatasetSchema(connection, relationKey), numTuples, queryId,
-            created));
+            created, howPartitioned));
       }
       statement.dispose();
       return result.build();
@@ -1572,7 +1580,7 @@ public final class MasterCatalog {
    * @param pf the partition function.
    * @throws CatalogException if there is an error in the catalog.
    */
-  public void updatePartitionFunction(final RelationKey key, final PartitionFunction pf) throws CatalogException {
+  public void updateHowPartitioned(final RelationKey key, final PartitionFunction pf) throws CatalogException {
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
     }
@@ -1627,7 +1635,7 @@ public final class MasterCatalog {
           try {
             SQLiteStatement statement =
                 sqliteConnection
-                    .prepare("SELECT num_tuples, query_id, finish_time FROM relations JOIN queries USING (query_id) WHERE user_name=? AND program_name=? AND relation_name=?");
+                    .prepare("SELECT num_tuples, query_id, finish_time, how_partitioned FROM relations JOIN queries USING (query_id) JOIN stored_relations USING (user_name,program_name,relation_name) WHERE user_name=? AND program_name=? AND relation_name=?");
             statement.bind(1, relationKey.getUserName());
             statement.bind(2, relationKey.getProgramName());
             statement.bind(3, relationKey.getRelationName());
@@ -1638,8 +1646,16 @@ public final class MasterCatalog {
             long numTuples = statement.columnLong(0);
             long queryId = statement.columnLong(1);
             String created = statement.columnString(2);
+            PartitionFunction howPartitioned;
+            try {
+              howPartitioned =
+                  MyriaJsonMapperProvider.getMapper().readValue(statement.columnString(3), PartitionFunction.class);
+            } catch (final IOException e) {
+              LOGGER.debug("Error deserializing howPartitioned for dataset #{}", relationKey.toString(), e);
+              howPartitioned = new UnknownPartitionFunction(null);
+            }
             statement.dispose();
-            return new DatasetStatus(relationKey, schema, numTuples, queryId, created);
+            return new DatasetStatus(relationKey, schema, numTuples, queryId, created, howPartitioned);
           } catch (final SQLiteException e) {
             throw new CatalogException(e);
           }
