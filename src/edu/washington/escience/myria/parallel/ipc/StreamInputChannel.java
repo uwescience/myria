@@ -10,9 +10,9 @@ import org.jboss.netty.channel.SucceededChannelFuture;
 import edu.washington.escience.myria.operator.network.Consumer;
 
 /**
- *
+ * 
  * An {@link StreamInputChannel} represents a partition of a {@link Consumer} input .
- *
+ * 
  * @param <PAYLOAD> the type of payload that this input channel will receive.
  * */
 public class StreamInputChannel<PAYLOAD> extends StreamIOChannel {
@@ -35,7 +35,7 @@ public class StreamInputChannel<PAYLOAD> extends StreamIOChannel {
    */
   public final void release() {
     Channel channel = detachIOChannel();
-    if (channel != null) {
+    if (channel != null && channel.isConnected()) {
       ChannelContext.resumeRead(channel);
     }
   }
@@ -63,7 +63,7 @@ public class StreamInputChannel<PAYLOAD> extends StreamIOChannel {
 
   /**
    * pause the read from this logical input channel, no matter the state of the underlying physical input channel.
-   *
+   * 
    * @return future of this operation.
    */
   public ChannelFuture pauseRead() {
@@ -80,7 +80,7 @@ public class StreamInputChannel<PAYLOAD> extends StreamIOChannel {
 
   /**
    * Resume the read of all IO channels that are inputs of this input buffer.
-   *
+   * 
    * @return ChannelGroupFuture denotes the future of the resume read action.
    * */
   public ChannelFuture resumeRead() {
