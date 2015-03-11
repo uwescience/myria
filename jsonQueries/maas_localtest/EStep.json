@@ -24,7 +24,7 @@
             "opName": "AppendLongColumn",
             "argChild": 0,
             "argNumDimensions": 4,
-            "argNumComponents": 7            
+            "argNumComponents": 3            
           },
           {
             "opType": "DbInsert",

@@ -1,5 +1,8 @@
 package edu.washington.escience.myria.io;
 
+import java.net.URL;
+import java.net.URLConnection;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -51,8 +54,13 @@ public class UriSource implements DataSource, Serializable {
 
   @Override
   public InputStream getInputStream() throws IOException {
-    // Use Hadoop's URI parsing machinery to extract an input stream for the underlying URI
+    URL url = new URL(uri);
+    URLConnection connection = url.openConnection();
+    return connection.getInputStream();
+    /*
+    // Use Hadoop's URI parsing machinery to extract an input stream for the underlying URI                                                                   
     Configuration conf = new Configuration();
+
     FileSystem fs = FileSystem.get(URI.create(uri), conf);
     Path rootPath = new Path(uri);
     FileStatus[] statii = fs.globStatus(rootPath);
@@ -68,7 +76,7 @@ public class UriSource implements DataSource, Serializable {
       LOGGER.debug("Incorporating input file: " + path);
       streams.add(fs.open(path));
     }
-
     return new SequenceInputStream(java.util.Collections.enumeration(streams));
+    */
   }
 }

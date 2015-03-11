@@ -71,8 +71,6 @@ def run_gmm_test(n_steps):
             write_data(f_log, combined_points)
             f_log.write('\n')        
             
-            with open('rawpointsonly.csv','w') as f:
-                write_data(f, combined_points)
             with open('PointsOnly.csv','w') as f:
                 write_data(f, combined_points)
                 
@@ -89,8 +87,6 @@ def run_gmm_test(n_steps):
             f_log.write('\n')        
 
             # Write test file
-            with open('rawcomponentsonly.csv','w') as f:
-                write_data(f, combined_components)
             with open('ComponentsOnly.csv','w') as f:
                 write_data(f, combined_components)
 
@@ -105,8 +101,6 @@ def run_gmm_test(n_steps):
             f_log.write('\n')   
             
             # Write test file
-            with open('raw_expected_points.csv','w') as f:
-                write_data(f, combined_points)
             with open('ExpectedPoints.csv','w') as f:
                 write_data(f, combined_points)
 
@@ -124,8 +118,6 @@ def run_gmm_test(n_steps):
             f_log.write('\n') 
             
             # Write test file
-            with open('raw_expected_components.csv','w') as f:
-                write_data(f, combined_components)
             with open('ExpectedComponents.csv','w') as f:
                 write_data(f, combined_components)
 
