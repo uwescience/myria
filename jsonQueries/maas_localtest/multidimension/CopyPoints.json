@@ -1,0 +1,40 @@
+
+
+{
+  "logicalRa": "Store(public:adhoc:PointsOnly)[Scan(public:adhoc:PaddedPoints)]",
+  "language": "sql",
+  "rawQuery": "Test = scan(public:adhoc:PaddedPoints);\nstore(Test, public:adhoc:PointsOnly);\n",
+  "plan": {
+    "fragments": [
+      {
+        "operators": [
+          {
+            "relationKey": {
+              "userName": "public",
+              "relationName": "PaddedPoints",
+              "programName": "adhoc"
+            },
+            "opType": "TableScan",
+            "opName": "MyriaScan(public:adhoc:PaddedPoints)",
+            "opId": 0
+          },
+          {
+            "opType": "DbInsert",
+            "argChild": 0,
+            "opName": "MyriaStore(public:adhoc:PointsOnly)",
+            "argOverwriteTable": true,
+            "opId": 1,
+            "relationKey": {
+              "userName": "public",
+              "relationName": "PointsOnly",
+              "programName": "adhoc"
+            }
+          }
+        ]
+      }
+    ],
+    "type": "SubQuery"
+  }
+}
+
+

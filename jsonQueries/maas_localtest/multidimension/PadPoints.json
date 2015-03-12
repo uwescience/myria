@@ -1,0 +1,139 @@
+
+
+{
+  "logicalRa": "Store(public:adhoc:PaddedPoints)[Apply(col=col,col2=col2,col3=col3,col4=col4,col5=col5,_COLUMN5_=0.0,_COLUMN6_=0.0,_COLUMN7_=0.0,_COLUMN8_=0.0,_COLUMN9_=0.0,_COLUMN10_=0.0,_COLUMN11_=0.0)[Scan(public:adhoc:ocean_seq)]]",
+  "language": "sql",
+  "rawQuery": "Test = scan(public:adhoc:ocean_seq);\npadded = select *, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 FROM Test;\nstore(padded, public:adhoc:PaddedPoints);\n",
+  "plan": {
+    "fragments": [
+      {
+        "operators": [
+          {
+            "relationKey": {
+              "userName": "public",
+              "relationName": "ocean_seq",
+              "programName": "adhoc"
+            },
+            "opType": "TableScan",
+            "opName": "MyriaScan(public:adhoc:ocean_seq)",
+            "opId": 0
+          },
+          {
+            "emitExpressions": [
+              {
+                "outputName": "col",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 0
+                }
+              },
+              {
+                "outputName": "col2",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 1
+                }
+              },
+              {
+                "outputName": "col3",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 2
+                }
+              },
+              {
+                "outputName": "col4",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 3
+                }
+              },
+              {
+                "outputName": "col5",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 4
+                }
+              },
+              {
+                "outputName": "_COLUMN5_",
+                "rootExpressionOperator": {
+                  "valueType": "DOUBLE_TYPE",
+                  "type": "CONSTANT",
+                  "value": "0.0"
+                }
+              },
+              {
+                "outputName": "_COLUMN6_",
+                "rootExpressionOperator": {
+                  "valueType": "DOUBLE_TYPE",
+                  "type": "CONSTANT",
+                  "value": "0.0"
+                }
+              },
+              {
+                "outputName": "_COLUMN7_",
+                "rootExpressionOperator": {
+                  "valueType": "DOUBLE_TYPE",
+                  "type": "CONSTANT",
+                  "value": "0.0"
+                }
+              },
+              {
+                "outputName": "_COLUMN8_",
+                "rootExpressionOperator": {
+                  "valueType": "DOUBLE_TYPE",
+                  "type": "CONSTANT",
+                  "value": "0.0"
+                }
+              },
+              {
+                "outputName": "_COLUMN9_",
+                "rootExpressionOperator": {
+                  "valueType": "DOUBLE_TYPE",
+                  "type": "CONSTANT",
+                  "value": "0.0"
+                }
+              },
+              {
+                "outputName": "_COLUMN10_",
+                "rootExpressionOperator": {
+                  "valueType": "DOUBLE_TYPE",
+                  "type": "CONSTANT",
+                  "value": "0.0"
+                }
+              },
+              {
+                "outputName": "_COLUMN11_",
+                "rootExpressionOperator": {
+                  "valueType": "DOUBLE_TYPE",
+                  "type": "CONSTANT",
+                  "value": "0.0"
+                }
+              }
+            ],
+            "opName": "MyriaApply(col=col,col2=col2,col3=col3,col4=col4,col5=col5,_COLUMN5_=0.0,_COLUMN6_=0.0,_COLUMN7_=0.0,_COLUMN8_=0.0,_COLUMN9_=0.0,_COLUMN10_=0.0,_COLUMN11_=0.0)",
+            "opType": "Apply",
+            "opId": 1,
+            "argChild": 0
+          },
+          {
+            "opType": "DbInsert",
+            "argChild": 1,
+            "opName": "MyriaStore(public:adhoc:PaddedPoints)",
+            "argOverwriteTable": true,
+            "opId": 2,
+            "relationKey": {
+              "userName": "public",
+              "relationName": "PaddedPoints",
+              "programName": "adhoc"
+            }
+          }
+        ]
+      }
+    ],
+    "type": "SubQuery"
+  }
+}
+
+
