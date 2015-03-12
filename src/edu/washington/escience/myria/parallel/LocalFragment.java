@@ -464,6 +464,7 @@ public final class LocalFragment {
                 if (root.eoi()) {
                   root.setEOI(false);
                   hasData = true;
+                  breakByOutputUnavailable = !isOutputAvailable();
                 }
               }
               if (Thread.interrupted()) {

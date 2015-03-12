@@ -12,7 +12,6 @@ import com.google.common.base.Preconditions;
 import com.google.protobuf.CodedInputStream;
 
 import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.parallel.ipc.PayloadSerializer;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myria.storage.TupleBatch;
@@ -78,22 +77,7 @@ public class TransportMessageSerializer implements PayloadSerializer {
   @Override
   public final Object deSerialize(final ChannelBuffer buffer, final Object processor, final Object att)
       throws IOException {
-
     TransportMessage tm = deSerializeTransportMessage(buffer);
-
-    switch (tm.getType()) {
-      case DATA:
-        if (att == null) {
-          return null;
-        }
-        return IPCUtils.tmToTupleBatch(tm.getDataMessage(), (Schema) att);
-      case QUERY:
-        return tm;
-      case CONTROL:
-        return tm;
-      default:
-        throw new IllegalArgumentException("Unknown message type: " + tm.getType().name());
-    }
+    return tm;
   }
-
 }
