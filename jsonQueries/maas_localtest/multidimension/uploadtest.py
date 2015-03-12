@@ -10,9 +10,9 @@ if __name__ == '__main__':
     'relationName': 'testMyriaUpload'}
 
     connection = MyriaConnection(hostname='localhost', port=8753, ssl=False)
-    relation = MyriaRelation('public:adhoc:testMyriaUpload', connection=connection, schema=schema)
+    relation = MyriaRelation('public:adhoc:ocean_seq', connection=connection, schema=schema)
 
-    work = [(1, 'http://s3-us-west-2.amazonaws.com/myria-sdss/oceanography/smallsample_ocean_seq.csv')]
+    work = [(1, 'http://s3-us-west-2.amazonaws.com/myria-sdss/oceanography/ocean_seq.csv')]
 
     query = MyriaQuery.parallel_import(relation, work)
     query.wait_for_completion(timeout=3600)

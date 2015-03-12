@@ -83,16 +83,16 @@ connection = myria.MyriaConnection(hostname=hostname, port=port)
 D = 4
 K = 7
 n_iter = 2
-subprocess.call("python ./GMM_Python_Comparison.py %s" % n_iter, shell=True)
-
-
-# In[48]:
-
-# Upload the test data
-subprocess.call(upload_string("PointsOnly"), shell=True)
-subprocess.call(upload_string("ComponentsOnly"), shell=True)
-subprocess.call(upload_string("ExpectedComponents"), shell=True)
-subprocess.call(upload_string("ExpectedPoints"), shell=True)
+#subprocess.call("python ./GMM_Python_Comparison.py %s" % n_iter, shell=True)
+#
+#
+## In[48]:
+#
+## Upload the test data
+#subprocess.call(upload_string("PointsOnly"), shell=True)
+#subprocess.call(upload_string("ComponentsOnly"), shell=True)
+#subprocess.call(upload_string("ExpectedComponents"), shell=True)
+#subprocess.call(upload_string("ExpectedPoints"), shell=True)
 
 
 # In[60]:
@@ -101,28 +101,28 @@ start_time = time.time()
 for i in range(n_iter):
     # Join tables
     query = create_json_query(
-        "/Users/maas/devlocal/myria/jsonQueries/maas_localtest/multidimension/Join4D7K.json")
+        "./Join4D7K.json")
     query_id = submit_query(query)
     monitor_status(query_id)
     # EStep Apply
     query = create_json_query(
-        "/Users/maas/devlocal/myria/jsonQueries/maas_localtest/multidimension/EStepTemplate.json", args=(D,K))
+        "./EStepTemplate.json", args=(D,K))
     query_id = submit_query(query)
     monitor_status(query_id)
 
     # EStepAggregate
     query = create_json_query(
-        "/Users/maas/devlocal/myria/jsonQueries/maas_localtest/multidimension/EStepAggTemplate.json", args=(D,K))
+        "./EStepAggTemplate.json", args=(D,K))
     query_id = submit_query(query)
     monitor_status(query_id)
     # Join tables
     query = create_json_query(
-        "/Users/maas/devlocal/myria/jsonQueries/maas_localtest/multidimension/Join4D7K.json")
+        "./Join4D7K.json")
     query_id = submit_query(query)
     monitor_status(query_id)
     # MStepAggregate
     query = create_json_query(
-        "/Users/maas/devlocal/myria/jsonQueries/maas_localtest/multidimension/MStepTemplate.json", args=(1+D+K,D,K,1+D+K))
+        "./MStepTemplate.json", args=(1+D+K,D,K,1+D+K))
     query_id = submit_query(query)
     monitor_status(query_id)
 end_time = time.time()
@@ -132,10 +132,10 @@ print "Total time taken: " + str(end_time - start_time) + " seconds."
 # In[50]:
 
 # Compare results
-query = create_json_query(
-    "/Users/maas/devlocal/myria/jsonQueries/maas_localtest/CompareComponents4D7K.json")
-query_id = submit_query(query)
-monitor_status(query_id)
+# query = create_json_query(
+#     "/Users/maas/devlocal/myria/jsonQueries/maas_localtest/CompareComponents4D7K.json")
+# query_id = submit_query(query)
+# monitor_status(query_id)
 
 
 # In[ ]:
