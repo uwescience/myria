@@ -53,6 +53,7 @@ public class Split extends UnaryOperator {
   /**
    * 
    * @param child child operator that data is fetched from
+   * @param columnName name of string column to split using regex
    * @param regex regular expression to split string input column on
    */
   public Split(final Operator child, final String columnName, final String regex) {
