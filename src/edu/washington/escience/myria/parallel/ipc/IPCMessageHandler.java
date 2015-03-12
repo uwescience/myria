@@ -236,10 +236,8 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
             } else {
               // got a message from a physical channel which is not bound to a logical input channel, ignore
               // the binding may have been cleaned up due to failure
-              if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Unknown data message from {} }, through {}, msg: {}", remoteID, ChannelContext
-                    .channelToString(ctx.getChannel()), tm.getDataMessage());
-              }
+              LOGGER.warn("Unknown data message from {} }, through {}, msg: {}", remoteID, ChannelContext
+                  .channelToString(ctx.getChannel()), tm.getDataMessage());
               return;
             }
             break;
@@ -307,9 +305,7 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
     StreamIOChannelPair ecp = cs.getRegisteredChannelContext().getIOPair();
     StreamInputChannel<Object> cc = ecp.getInputChannel();
     if (cc == null) {
-      if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug("Processing steam message with no input channel: {}", message);
-      }
+      LOGGER.debug("Processing steam message with no input channel: {}", message);
       return true;
     }
     StreamInputBuffer<Object> msgDestIB = cc.getInputBuffer();
