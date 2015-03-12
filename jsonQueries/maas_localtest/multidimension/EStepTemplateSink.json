@@ -27,16 +27,11 @@
             "argNumComponents": %d            
           },
           {
-            "opType": "DbInsert",
-            "argChild": 1,
-            "opName": "MyriaStore(public:adhoc:PostEStep)",
-            "argOverwriteTable": true,
+            "opType": "SinkRoot",
             "opId": 2,
-            "relationKey": {
-              "userName": "public",
-              "relationName": "PostEStep",
-              "programName": "adhoc"
-            }
+            "opName": "MyriaSink",
+            "argChild": 1,
+            "argLimit": null
           }
         ]
       }
