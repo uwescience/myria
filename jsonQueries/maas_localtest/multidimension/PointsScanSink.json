@@ -3,7 +3,7 @@
 {
   "logicalRa": "Store(public:adhoc:PointsOnly2)[Scan(public:adhoc:PointsOnly)]",
   "language": "sql",
-  "rawQuery": "Test = scan(public:adhoc:PointsOnly);\nstore(Test, public:adhoc:PointsOnly2);\n",
+  "rawQuery": "Test = scan(public:adhoc:PointsOnly);\nSink, drop tuples on floor\n",
   "plan": {
     "fragments": [
       {

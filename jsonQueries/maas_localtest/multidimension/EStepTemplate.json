@@ -3,7 +3,7 @@
 {
   "logicalRa": "Store(public:adhoc:PostEStep)[Apply(y=$0)[Select(($0 > 10))[Scan(public:adhoc:PointsAndComponents)]]]",
   "language": "myrial",
-  "rawQuery": "T1 = scan(public:adhoc:PointsAndComponents);\nT2 = select $0 as y from T1 where $0 > 10;\nstore(T2, PostEStep);",
+  "rawQuery": "\tE Step part 1\nPointsAndComponents = scan(public:adhoc:PointsAndComponents);\nApply EStep Calucation of partial responsibility to last column.\nstore(T2, PostEStep);",
   "plan": {
     "fragments": [
       {

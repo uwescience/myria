@@ -3,7 +3,7 @@
 {
   "logicalRa": "Store(public:adhoc:GroupedComponents)[Apply(pid=$0,_COLUMN1_=$1)[GroupBy($0; SUM($1))[Apply(pid=$0,EStepVal=$13)[Scan(public:adhoc:GroupedPointsAndComponents)]]]]",
   "language": "myrial",
-  "rawQuery": "GroupedComponents = SELECT pid, sum(EStepVal) FROM Scan(GroupedPointsAndComponents) AS GroupedPointsAndComponents;\n\nstore(GroupedComponents, public:adhoc:GroupedComponents);",
+  "rawQuery": "\t M Step\nPointsAndComponents = PointsAndComponents\nDo M step, recalculate Gaussian components based on new responsiblities.\nstore(NewComponents), public:adhoc:ComponentsOnly);",
   "plan": {
     "fragments": [
       {

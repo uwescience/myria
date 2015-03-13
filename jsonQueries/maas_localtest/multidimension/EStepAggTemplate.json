@@ -3,7 +3,7 @@
 {
   "logicalRa": "Store(public:adhoc:GroupedPoints)[Apply(pid=$0,_COLUMN1_=$1)[GroupBy($0; SUM($1))[Apply(pid=$0,EStepVal=$13)[Scan(public:adhoc:PostEStep)]]]]",
   "language": "myrial",
-  "rawQuery": "GroupedPoints = SELECT pid, sum(EStepVal) FROM Scan(PostEStep) AS PostEStep;\n\nstore(GroupedPoints, public:adhoc:GroupedPoints);",
+  "rawQuery": "\tE Step part 2\nPointsAndComponentsEStep = Scan(PostEStep)\nAggregate over points, calculate responsiblities\nstore(RecaculatedPoints, public:adhoc:PointsOnly);",
   "plan": {
     "fragments": [
       {
