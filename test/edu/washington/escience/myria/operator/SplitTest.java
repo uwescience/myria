@@ -25,6 +25,7 @@ public class SplitTest {
             { false, 2L, 0.2, "" },
             { false, 2L, 0.2, "qux" },
             { false, 2L, 0.2, "" },
+            { false, 2L, 0.2, "" },
         };
     final Schema schema =
         new Schema(ImmutableList.of(Type.BOOLEAN_TYPE, Type.STRING_TYPE, Type.LONG_TYPE, Type.DOUBLE_TYPE),
@@ -63,7 +64,7 @@ public class SplitTest {
         }
       }
     }
-    assertEquals(expectedResults.length, rowIdx + 1);
+    assertEquals(expectedResults.length, rowIdx);
     splitOp.close();
   }
 

@@ -77,7 +77,9 @@ public class Split extends UnaryOperator {
       for (int rowIdx = 0; rowIdx < tb.numTuples(); ++rowIdx) {
         try {
           String colValue = tb.asColumn(splitColIdx).getString(rowIdx);
-          String[] splits = pattern.split(colValue);
+          // We must specify a negative value for the limit parameter to avoid discarding trailing empty strings:
+          // http://docs.oracle.com/javase/7/docs/api/java/lang/String.html#split(java.lang.String,%20int)
+          String[] splits = pattern.split(colValue, -1);
           for (String segment : splits) {
             splitColBuilder.appendString(segment);
             // For each split segment, duplicate the values of all other columns in this row.
