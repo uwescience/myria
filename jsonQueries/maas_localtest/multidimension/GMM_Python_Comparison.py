@@ -24,20 +24,21 @@ def write_data(f, data_array):
             else:
                 f.write(", ")
 
-def run_gmm_test(n_steps):
+def run_gmm_test(n_steps, num_dimensions, n_components, logging=False):
 
     # Create mock dataset.
     #x = np.array([1., 1.5, 3.0, 3.5, 4.0])
     #y = np.array([1., 0.8, 3.5, 3.2, 4.2])
     #data = np.column_stack((x,y))
 
-    a = np.random.randn(10000,4) + 7
-    b = np.random.randn(10000,4) + -4
+    a = np.random.randn(10000,num_dimensions) + 7
+    b = np.random.randn(10000,num_dimensions) + -4
     data = np.row_stack((a,b)) 
 
     #data = np.loadtxt('astro_sample.csv',delimiter=',')
 
-    f_log = open('gmm_test_log.txt','w')
+    if logging:
+        f_log = open('gmm_test_log.txt','w')
 
     # Run GMM and save output after desired # iterations to file.
     # Automatically initialized st each component has zero mean and 
@@ -54,7 +55,7 @@ def run_gmm_test(n_steps):
 
     for j in n_iterations:
         # GMM code goes here
-        gmm = GMM(n_components=7, n_iter=j, n_init=1, random_state=0, covariance_type='full', min_covar=1.e-14)
+        gmm = GMM(n_components=n_components, n_iter=j, n_init=1, random_state=0, covariance_type='full', min_covar=1.e-14)
         gmm.fit(data)
         responsibilities = gmm.predict_proba(data)
         resp = responsibilities
@@ -67,9 +68,10 @@ def run_gmm_test(n_steps):
             ##### Test input, the points and responsibilities
             combined_points = np.concatenate((data,resp), axis=1)            
 
-            f_log.write('Initial points and responsibilities\n')        
-            write_data(f_log, combined_points)
-            f_log.write('\n')        
+            if logging:
+                f_log.write('Initial points and responsibilities\n')        
+                write_data(f_log, combined_points)
+                f_log.write('\n')        
             
             with open('PointsOnly.csv','w') as f:
                 write_data(f, combined_points)
@@ -81,10 +83,11 @@ def run_gmm_test(n_steps):
             combined_components = np.concatenate(
                             (weights.reshape(K,1), means, cov.reshape(K, D*D)), axis=1)
             
-            # Write log entry
-            f_log.write('Test Gaussian parameters\n')
-            write_data(f_log, combined_components)
-            f_log.write('\n')        
+            if logging:
+                # Write log entry
+                f_log.write('Test Gaussian parameters\n')
+                write_data(f_log, combined_components)
+                f_log.write('\n')        
 
             # Write test file
             with open('ComponentsOnly.csv','w') as f:
@@ -95,10 +98,11 @@ def run_gmm_test(n_steps):
             #### Expected output, the responsibilities after one step
             combined_points = np.concatenate((data,resp), axis=1)            
             
-            # Write log entry
-            f_log.write('\nExpected point responsibilities\n')
-            write_data(f_log, combined_points)  
-            f_log.write('\n')   
+            if logging:
+                # Write log entry
+                f_log.write('\nExpected point responsibilities\n')
+                write_data(f_log, combined_points)  
+                f_log.write('\n')   
             
             # Write test file
             with open('ExpectedPoints.csv','w') as f:
@@ -113,22 +117,39 @@ def run_gmm_test(n_steps):
                     (weights.reshape(K,1), means, cov.reshape(K, D*D)), axis=1)
 
             # Write log entry
-            f_log.write('\nExpected Gaussian parameters\n')
-            write_data(f_log, combined_components)
-            f_log.write('\n') 
+            if logging:
+                f_log.write('\nExpected Gaussian parameters\n')
+                write_data(f_log, combined_components)
+                f_log.write('\n') 
             
             # Write test file
             with open('ExpectedComponents.csv','w') as f:
                 write_data(f, combined_components)
 
-    f_log.close()
+    if logging:
+        f_log.close()
 
 
 if __name__ == "__main__":
+    num_iterations = 1    
+    num_dimensions = 4
+    num_components = 7
     if len(sys.argv) == 1:
         print "No number of iterations passed in, using 1 EM step."
-        num_iterations = 1
+    elif len(sys.argv) == 2:
+        num_iterations = int(sys.argv[1])        
+        print "One argument passed; using number of interations %d" % (num_iterations)
+    elif len(sys.argv) == 4:
+        num_iterations = int(sys.argv[1]) 
+        num_dimensions = int(sys.argv[2])  
+        num_components = int(sys.argv[3])        
+        print ("Three arguments passed; using %d iterations, %d dimensions, and %d components." %
+                (num_iterations, num_dimensions, num_components))
     else:
-        num_iterations = int(sys.argv[1])
-    
-    run_gmm_test(num_iterations)
+        print "Bad input. Input is the following:"
+        print "\tArg 1: num_iterations"
+        print "\tArg 2: num_dimensions"
+        print "\tArg 3: num_components"
+        print ("If no arguments, defaults to 1 iteration. If no dimensions and components, " + 
+                "defaults to 4 dimensions and 7 components. Always uses 20,000 test points")
+    run_gmm_test(num_iterations, num_dimensions, num_components)
