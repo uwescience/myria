@@ -1,0 +1,35 @@
+
+
+{
+  "logicalRa": "Store(public:adhoc:PointsAndComponents2)[Scan(public:adhoc:PointsAndComponents)]",
+  "language": "sql",
+  "rawQuery": "Test = scan(public:adhoc:PointsAndComponents);\nstore(Test, public:adhoc:PointsAndComponents2);\n",
+  "plan": {
+    "fragments": [
+      {
+        "operators": [
+          {
+            "relationKey": {
+              "userName": "public",
+              "relationName": "PointsAndComponents",
+              "programName": "adhoc"
+            },
+            "opType": "TableScan",
+            "opName": "MyriaScan(public:adhoc:PointsAndComponents)",
+            "opId": 0
+          },
+          {
+            "opType": "SinkRoot",
+            "opId": 1,
+            "opName": "MyriaSink",
+            "argChild": 0,
+            "argLimit": null
+          }
+        ]
+      }
+    ],
+    "type": "SubQuery"
+  }
+}
+
+
