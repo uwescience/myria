@@ -1,0 +1,504 @@
+
+
+{
+  "logicalRa": "Store(public:adhoc:TestComponentDifference)[Apply(column01=$0,_COLUMN1_=($1 - $22),_COLUMN2_=($2 - $23),_COLUMN3_=($3 - $24),_COLUMN4_=($4 - $25),_COLUMN5_=($5 - $26),_COLUMN6_=($6 - $27),_COLUMN7_=($7 - $28),_COLUMN8_=($8 - $29),_COLUMN9_=($9 - $30),_COLUMN10_=($10 - $31),_COLUMN11_=($11 - $32),_COLUMN12_=($12 - $33),_COLUMN13_=($13 - $34),_COLUMN14_=($14 - $35),_COLUMN15_=($15 - $36),_COLUMN16_=($16 - $37),_COLUMN17_=($17 - $38),_COLUMN18_=($18 - $39),_COLUMN19_=($19 - $40),_COLUMN20_=($20 - $41),_COLUMN21_=($21 - $42))[ProjectingJoin(($0 = $22); $0,$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43)[Scan(public:adhoc:ComponentsOnly),Scan(public:adhoc:ExpectedComponents)]]]",
+  "language": "sql",
+  "rawQuery": "Test = scan(public:adhoc:ComponentsOnly);\nExpected = scan(public:adhoc:ExpectedComponents);\n\nDifference = SELECT Test.$0, \n                    Test.$1 - Expected.$1,\n                    Test.$2 - Expected.$2,\n                    Test.$3 - Expected.$3,\n                    Test.$4 - Expected.$4,\n                    Test.$5 - Expected.$5,\n                    Test.$6 - Expected.$6,\n                    Test.$7 - Expected.$7,\n                    Test.$8 - Expected.$8 ,\n                    Test.$9 - Expected.$9,\n                    Test.$10 - Expected.$10 ,\n                    Test.$11 - Expected.$11,\n                    Test.$12 - Expected.$12 ,\n                    Test.$13 - Expected.$13 ,\n                    Test.$14 - Expected.$14 ,\n                    Test.$15 - Expected.$15 ,\n                    Test.$16 - Expected.$16 ,\n                    Test.$17 - Expected.$17 ,\n                    Test.$18 - Expected.$18 ,\n                    Test.$19 - Expected.$19 ,\n                    Test.$20 - Expected.$20 ,\n                    Test.$21 - Expected.$21 \n            FROM Test, Expected \n            WHERE Test.$0 = Expected.$0;\n\nstore(Difference, public:adhoc:TestComponentDifference);\n",
+  "plan": {
+    "fragments": [
+      {
+        "operators": [
+          {
+            "opName": "MyriaShuffleConsumer",
+            "opType": "ShuffleConsumer",
+            "opId": 0,
+            "argOperatorId": 1
+          },
+          {
+            "opName": "MyriaShuffleConsumer",
+            "opType": "ShuffleConsumer",
+            "opId": 2,
+            "argOperatorId": 3
+          },
+          {
+            "argColumnNames": [
+              "column01",
+              "pi",
+              "mu11",
+              "mu21",
+              "mu31",
+              "mu41",
+              "cov11",
+              "cov12",
+              "cov13",
+              "cov14",
+              "cov21",
+              "cov22",
+              "cov23",
+              "cov24",
+              "cov31",
+              "cov32",
+              "cov33",
+              "cov34",
+              "cov41",
+              "cov42",
+              "cov43",
+              "cov44",
+              "column1",
+              "column2",
+              "column3",
+              "column4",
+              "column5",
+              "column6",
+              "column7",
+              "column8",
+              "column9",
+              "column10",
+              "column11",
+              "column12",
+              "column13",
+              "column14",
+              "column15",
+              "column16",
+              "column17",
+              "column18",
+              "column19",
+              "column20",
+              "column21"
+            ],
+            "argChild2": "0",
+            "argChild1": "2",
+            "opType": "SymmetricHashJoin",
+            "opId": 4,
+            "opName": "MyriaSymmetricHashJoin(($0 = $22); $0,$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43)",
+            "argSelect2": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20,
+              21
+            ],
+            "argColumns1": [
+              0
+            ],
+            "argColumns2": [
+              0
+            ],
+            "argSelect1": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20,
+              21
+            ]
+          },
+          {
+            "emitExpressions": [
+              {
+                "outputName": "column01",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 0
+                }
+              },
+              {
+                "outputName": "_COLUMN1_",
+                "rootExpressionOperator": {
+                  "right": {
+                    "type": "VARIABLE",
+                    "columnIdx": 22
+                  },
+                  "type": "MINUS",
+                  "left": {
+                    "type": "VARIABLE",
+                    "columnIdx": 1
+                  }
+                }
+              },
+              {
+                "outputName": "_COLUMN2_",
+                "rootExpressionOperator": {
+                  "right": {
+                    "type": "VARIABLE",
+                    "columnIdx": 23
+                  },
+                  "type": "MINUS",
+                  "left": {
+                    "type": "VARIABLE",
+                    "columnIdx": 2
+                  }
+                }
+              },
+              {
+                "outputName": "_COLUMN3_",
+                "rootExpressionOperator": {
+                  "right": {
+                    "type": "VARIABLE",
+                    "columnIdx": 24
+                  },
+                  "type": "MINUS",
+                  "left": {
+                    "type": "VARIABLE",
+                    "columnIdx": 3
+                  }
+                }
+              },
+              {
+                "outputName": "_COLUMN4_",
+                "rootExpressionOperator": {
+                  "right": {
+                    "type": "VARIABLE",
+                    "columnIdx": 25
+                  },
+                  "type": "MINUS",
+                  "left": {
+                    "type": "VARIABLE",
+                    "columnIdx": 4
+                  }
+                }
+              },
+              {
+                "outputName": "_COLUMN5_",
+                "rootExpressionOperator": {
+                  "right": {
+                    "type": "VARIABLE",
+                    "columnIdx": 26
+                  },
+                  "type": "MINUS",
+                  "left": {
+                    "type": "VARIABLE",
+                    "columnIdx": 5
+                  }
+                }
+              },
+              {
+                "outputName": "_COLUMN6_",
+                "rootExpressionOperator": {
+                  "right": {
+                    "type": "VARIABLE",
+                    "columnIdx": 27
+                  },
+                  "type": "MINUS",
+                  "left": {
+                    "type": "VARIABLE",
+                    "columnIdx": 6
+                  }
+                }
+              },
+              {
+                "outputName": "_COLUMN7_",
+                "rootExpressionOperator": {
+                  "right": {
+                    "type": "VARIABLE",
+                    "columnIdx": 28
+                  },
+                  "type": "MINUS",
+                  "left": {
+                    "type": "VARIABLE",
+                    "columnIdx": 7
+                  }
+                }
+              },
+              {
+                "outputName": "_COLUMN8_",
+                "rootExpressionOperator": {
+                  "right": {
+                    "type": "VARIABLE",
+                    "columnIdx": 29
+                  },
+                  "type": "MINUS",
+                  "left": {
+                    "type": "VARIABLE",
+                    "columnIdx": 8
+                  }
+                }
+              },
+              {
+                "outputName": "_COLUMN9_",
+                "rootExpressionOperator": {
+                  "right": {
+                    "type": "VARIABLE",
+                    "columnIdx": 30
+                  },
+                  "type": "MINUS",
+                  "left": {
+                    "type": "VARIABLE",
+                    "columnIdx": 9
+                  }
+                }
+              },
+              {
+                "outputName": "_COLUMN10_",
+                "rootExpressionOperator": {
+                  "right": {
+                    "type": "VARIABLE",
+                    "columnIdx": 31
+                  },
+                  "type": "MINUS",
+                  "left": {
+                    "type": "VARIABLE",
+                    "columnIdx": 10
+                  }
+                }
+              },
+              {
+                "outputName": "_COLUMN11_",
+                "rootExpressionOperator": {
+                  "right": {
+                    "type": "VARIABLE",
+                    "columnIdx": 32
+                  },
+                  "type": "MINUS",
+                  "left": {
+                    "type": "VARIABLE",
+                    "columnIdx": 11
+                  }
+                }
+              },
+              {
+                "outputName": "_COLUMN12_",
+                "rootExpressionOperator": {
+                  "right": {
+                    "type": "VARIABLE",
+                    "columnIdx": 33
+                  },
+                  "type": "MINUS",
+                  "left": {
+                    "type": "VARIABLE",
+                    "columnIdx": 12
+                  }
+                }
+              },
+              {
+                "outputName": "_COLUMN13_",
+                "rootExpressionOperator": {
+                  "right": {
+                    "type": "VARIABLE",
+                    "columnIdx": 34
+                  },
+                  "type": "MINUS",
+                  "left": {
+                    "type": "VARIABLE",
+                    "columnIdx": 13
+                  }
+                }
+              },
+              {
+                "outputName": "_COLUMN14_",
+                "rootExpressionOperator": {
+                  "right": {
+                    "type": "VARIABLE",
+                    "columnIdx": 35
+                  },
+                  "type": "MINUS",
+                  "left": {
+                    "type": "VARIABLE",
+                    "columnIdx": 14
+                  }
+                }
+              },
+              {
+                "outputName": "_COLUMN15_",
+                "rootExpressionOperator": {
+                  "right": {
+                    "type": "VARIABLE",
+                    "columnIdx": 36
+                  },
+                  "type": "MINUS",
+                  "left": {
+                    "type": "VARIABLE",
+                    "columnIdx": 15
+                  }
+                }
+              },
+              {
+                "outputName": "_COLUMN16_",
+                "rootExpressionOperator": {
+                  "right": {
+                    "type": "VARIABLE",
+                    "columnIdx": 37
+                  },
+                  "type": "MINUS",
+                  "left": {
+                    "type": "VARIABLE",
+                    "columnIdx": 16
+                  }
+                }
+              },
+              {
+                "outputName": "_COLUMN17_",
+                "rootExpressionOperator": {
+                  "right": {
+                    "type": "VARIABLE",
+                    "columnIdx": 38
+                  },
+                  "type": "MINUS",
+                  "left": {
+                    "type": "VARIABLE",
+                    "columnIdx": 17
+                  }
+                }
+              },
+              {
+                "outputName": "_COLUMN18_",
+                "rootExpressionOperator": {
+                  "right": {
+                    "type": "VARIABLE",
+                    "columnIdx": 39
+                  },
+                  "type": "MINUS",
+                  "left": {
+                    "type": "VARIABLE",
+                    "columnIdx": 18
+                  }
+                }
+              },
+              {
+                "outputName": "_COLUMN19_",
+                "rootExpressionOperator": {
+                  "right": {
+                    "type": "VARIABLE",
+                    "columnIdx": 40
+                  },
+                  "type": "MINUS",
+                  "left": {
+                    "type": "VARIABLE",
+                    "columnIdx": 19
+                  }
+                }
+              },
+              {
+                "outputName": "_COLUMN20_",
+                "rootExpressionOperator": {
+                  "right": {
+                    "type": "VARIABLE",
+                    "columnIdx": 41
+                  },
+                  "type": "MINUS",
+                  "left": {
+                    "type": "VARIABLE",
+                    "columnIdx": 20
+                  }
+                }
+              },
+              {
+                "outputName": "_COLUMN21_",
+                "rootExpressionOperator": {
+                  "right": {
+                    "type": "VARIABLE",
+                    "columnIdx": 42
+                  },
+                  "type": "MINUS",
+                  "left": {
+                    "type": "VARIABLE",
+                    "columnIdx": 21
+                  }
+                }
+              }
+            ],
+            "opName": "MyriaApply(column01=$0,_COLUMN1_=($1 - $22),_COLUMN2_=($2 - $23),_COLUMN3_=($3 - $24),_COLUMN4_=($4 - $25),_COLUMN5_=($5 - $26),_COLUMN6_=($6 - $27),_COLUMN7_=($7 - $28),_COLUMN8_=($8 - $29),_COLUMN9_=($9 - $30),_COLUMN10_=($10 - $31),_COLUMN11_=($11 - $32),_COLUMN12_=($12 - $33),_COLUMN13_=($13 - $34),_COLUMN14_=($14 - $35),_COLUMN15_=($15 - $36),_COLUMN16_=($16 - $37),_COLUMN17_=($17 - $38),_COLUMN18_=($18 - $39),_COLUMN19_=($19 - $40),_COLUMN20_=($20 - $41),_COLUMN21_=($21 - $42))",
+            "opType": "Apply",
+            "opId": 5,
+            "argChild": 4
+          },
+          {
+            "opType": "DbInsert",
+            "argChild": 5,
+            "opName": "MyriaStore(public:adhoc:TestComponentDifference)",
+            "argOverwriteTable": true,
+            "opId": 6,
+            "relationKey": {
+              "userName": "public",
+              "relationName": "TestComponentDifference",
+              "programName": "adhoc"
+            }
+          }
+        ]
+      },
+      {
+        "operators": [
+          {
+            "relationKey": {
+              "userName": "public",
+              "relationName": "ComponentsOnly",
+              "programName": "adhoc"
+            },
+            "opType": "TableScan",
+            "opName": "MyriaScan(public:adhoc:ComponentsOnly)",
+            "opId": 7
+          },
+          {
+            "opName": "MyriaShuffleProducer(h($0))",
+            "opType": "ShuffleProducer",
+            "opId": 3,
+            "argChild": 7,
+            "argPf": {
+              "index": 0,
+              "type": "SingleFieldHash"
+            }
+          }
+        ]
+      },
+      {
+        "operators": [
+          {
+            "relationKey": {
+              "userName": "public",
+              "relationName": "ExpectedComponents",
+              "programName": "adhoc"
+            },
+            "opType": "TableScan",
+            "opName": "MyriaScan(public:adhoc:ExpectedComponents)",
+            "opId": 8
+          },
+          {
+            "opName": "MyriaShuffleProducer(h($0))",
+            "opType": "ShuffleProducer",
+            "opId": 1,
+            "argChild": 8,
+            "argPf": {
+              "index": 0,
+              "type": "SingleFieldHash"
+            }
+          }
+        ]
+      }
+    ],
+    "type": "SubQuery"
+  }
+}
+
+
