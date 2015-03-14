@@ -17,7 +17,7 @@ def upload_manually():
     #    data=myfile.read()
 
     #connection.upload_file(relation_key, schema, data, overwrite=True)
-def upload_string(relation, path='/Users/maas/devlocal/myria/jsonQueries/maas_localtest/multidimension/'):
+def upload_string(relation, path='.'):
     return "myria_upload --hostname localhost --port 8753 --no-ssl --overwrite --relation %s %s/%s.csv" % (relation, path, relation)
 
 

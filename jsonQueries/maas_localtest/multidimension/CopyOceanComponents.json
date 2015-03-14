@@ -1,0 +1,40 @@
+
+
+{
+  "logicalRa": "Store(public:adhoc:ComponentsOnly)[Scan(public:adhoc:SeaflowComponents)]",
+  "language": "sql",
+  "rawQuery": "Test = scan(public:adhoc:SeaflowComponents);\nstore(Test, public:adhoc:ComponentsOnly);",
+  "plan": {
+    "fragments": [
+      {
+        "operators": [
+          {
+            "relationKey": {
+              "userName": "public",
+              "relationName": "SeaflowComponents",
+              "programName": "adhoc"
+            },
+            "opType": "TableScan",
+            "opName": "MyriaScan(public:adhoc:SeaflowComponents)",
+            "opId": 0
+          },
+          {
+            "opType": "DbInsert",
+            "argChild": 0,
+            "opName": "MyriaStore(public:adhoc:ComponentsOnly)",
+            "argOverwriteTable": true,
+            "opId": 1,
+            "relationKey": {
+              "userName": "public",
+              "relationName": "ComponentsOnly",
+              "programName": "adhoc"
+            }
+          }
+        ]
+      }
+    ],
+    "type": "SubQuery"
+  }
+}
+
+
