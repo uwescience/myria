@@ -28,15 +28,13 @@ import edu.washington.escience.myria.storage.TupleBatch;
  */
 public class GenericEvaluator extends Evaluator {
 
-  /**
-   * logger for this class.
-   * */
+  /** logger for this class. */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(GenericEvaluator.class);
 
   /**
    * Expression evaluator.
    */
-  private EvalInterface evaluator;
+  private ExpressionEvalInterface evaluator;
 
   /**
    * Default constructor.
@@ -58,7 +56,7 @@ public class GenericEvaluator extends Evaluator {
     Preconditions.checkArgument(needsCompiling() || (getStateSchema() != null),
         "This expression does not need to be compiled.");
 
-    String javaExpression = getJavaExpression();
+    String javaExpression = getJavaExpressionWithAppend();
     IExpressionEvaluator se;
     try {
       se = CompilerFactoryFactory.getDefaultCompilerFactory().newExpressionEvaluator();
@@ -72,7 +70,7 @@ public class GenericEvaluator extends Evaluator {
 
     try {
       evaluator =
-          (EvalInterface) se.createFastEvaluator(javaExpression, EvalInterface.class, new String[] {
+          (ExpressionEvalInterface) se.createFastEvaluator(javaExpression, ExpressionEvalInterface.class, new String[] {
               Expression.TB, Expression.ROW, Expression.RESULT, Expression.STATE });
     } catch (CompileException e) {
       LOGGER.error("Error when compiling expression {}: {}", javaExpression, e);
@@ -81,7 +79,7 @@ public class GenericEvaluator extends Evaluator {
   }
 
   /**
-   * Evaluates the {@link #getJavaExpression()} using the {@link #evaluator}. Prefer to use
+   * Evaluates the {@link #getJavaExpressionWithAppend()} using the {@link #evaluator}. Prefer to use
    * {@link #evaluateColumn(TupleBatch)} as it can copy data without evaluating the expression.
    *
    * @param tb a tuple batch
@@ -97,7 +95,7 @@ public class GenericEvaluator extends Evaluator {
     try {
       evaluator.evaluate(tb, rowIdx, result, state);
     } catch (Exception e) {
-      LOGGER.error(getJavaExpression(), e);
+      LOGGER.error(getJavaExpressionWithAppend(), e);
       throw e;
     }
   }
@@ -106,7 +104,7 @@ public class GenericEvaluator extends Evaluator {
    * @return the Java form of this expression.
    */
   @Override
-  public String getJavaExpression() {
+  public String getJavaExpressionWithAppend() {
     return getExpression().getJavaExpressionWithAppend(getParameters());
   }
 

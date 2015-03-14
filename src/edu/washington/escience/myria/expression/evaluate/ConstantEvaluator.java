@@ -82,7 +82,7 @@ public final class ConstantEvaluator extends GenericEvaluator {
   }
 
   /**
-   * Evaluates the {@link #getJavaExpression()} using the {@link #evaluator}.
+   * Evaluates the {@link #getJavaExpressionWithAppend()} using the {@link #evaluator}.
    *
    * @return the result from the evaluation
    */

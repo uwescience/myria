@@ -6,18 +6,23 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
+import org.codehaus.commons.compiler.CompileException;
+import org.codehaus.commons.compiler.CompilerFactoryFactory;
+import org.codehaus.commons.compiler.IScriptEvaluator;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.Expression;
-import edu.washington.escience.myria.expression.evaluate.ConstantEvaluator;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
+import edu.washington.escience.myria.expression.evaluate.ScriptEvalInterface;
 import edu.washington.escience.myria.storage.Tuple;
 
 /**
@@ -26,6 +31,8 @@ import edu.washington.escience.myria.storage.Tuple;
 public class UserDefinedAggregatorFactory implements AggregatorFactory {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
+  /** logger for this class. */
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(UserDefinedAggregatorFactory.class);
 
   /** Expressions that initialize the state variables. */
   @JsonProperty
@@ -44,7 +51,7 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
   /**
    * Evaluators that update the {@link #state}. One evaluator for each expression in {@link #updaters}.
    */
-  private transient ArrayList<GenericEvaluator> updateEvaluators;
+  private transient ScriptEvalInterface updateEvaluator;
   /**
    * One evaluator for each expression in {@link #emitters}.
    */
@@ -73,7 +80,7 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
     this.updaters = Objects.requireNonNull(updaters, "updaters");
     this.emitters = Objects.requireNonNull(emitters, "emitters");
     state = null;
-    updateEvaluators = null;
+    updateEvaluator = null;
     emitEvaluators = null;
     resultSchema = null;
   }
@@ -97,21 +104,11 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
       /* Initialize the state. */
       Schema stateSchema = generateStateSchema(inputSchema);
       state = new Tuple(stateSchema);
-      for (int columnIdx = 0; columnIdx < stateSchema.numColumns(); columnIdx++) {
-        Expression expr = initializers.get(columnIdx);
-        ConstantEvaluator evaluator = new ConstantEvaluator(expr, new ExpressionOperatorParameter());
-        evaluator.compile();
-        state.set(columnIdx, evaluator.eval());
-      }
+      ScriptEvalInterface stateEvaluator = getEvalScript(initializers, new ExpressionOperatorParameter(inputSchema));
+      stateEvaluator.evaluate(null, 0, state, null);
 
       /* Set up the updaters. */
-      updateEvaluators = new ArrayList<>(updaters.size());
-      for (Expression expr : updaters) {
-        GenericEvaluator evaluator =
-            new GenericEvaluator(expr, new ExpressionOperatorParameter(inputSchema, stateSchema));
-        evaluator.compile();
-        updateEvaluators.add(evaluator);
-      }
+      updateEvaluator = getEvalScript(updaters, new ExpressionOperatorParameter(inputSchema, stateSchema));
 
       /* Set up the emitters. */
       emitEvaluators = new ArrayList<>();
@@ -132,7 +129,56 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
       }
       resultSchema = new Schema(types, names);
     }
-    return new UserDefinedAggregator(state.clone(), updateEvaluators, emitEvaluators, resultSchema);
+    return new UserDefinedAggregator(state.clone(), updateEvaluator, emitEvaluators, resultSchema);
+  }
+
+  /**
+   * Produce a {@link ScriptEvalInterface} from {@link Expression}s and {@link ExpressionOperatorParameter}s. This
+   * function produces the code for a Java script that executes all expressions in turn and appends the calculated
+   * values to the result. The values to be output are calculated completely before they are stored to the output, thus
+   * it is safe to pass the same object as input and output, e.g., in the case of updating state in an Aggregate.
+   * 
+   * @param expressions one expression for each output column.
+   * @param param the inputs that expressions may use, including the {@link Schema} of the expression inputs and
+   *          worker-local variables.
+   * @return a compiled object that will run all the expressions and store them into the output.
+   * @throws DbException if there is an error compiling the expressions.
+   */
+  private ScriptEvalInterface getEvalScript(@Nonnull final List<Expression> expressions,
+      @Nonnull final ExpressionOperatorParameter param) throws DbException {
+    StringBuilder compute = new StringBuilder();
+    StringBuilder output = new StringBuilder();
+    for (int varCount = 0; varCount < expressions.size(); ++varCount) {
+      Expression expr = expressions.get(varCount);
+      Type type = expr.getOutputType(param);
+
+      // type valI = expression;
+      compute.append(type.toJavaType().getName()).append(" val").append(varCount).append(" = ").append(
+          expr.getJavaExpression(param)).append(";\n");
+
+      // result.putType(I, valI);
+      output.append(Expression.RESULT).append(".put").append(type.toJavaObjectType().getSimpleName()).append("(")
+          .append(varCount).append(", val").append(varCount).append(");\n");
+    }
+    String script = compute.append(output).toString();
+    LOGGER.debug("Compiling UDA {}", script);
+
+    IScriptEvaluator se;
+    try {
+      se = CompilerFactoryFactory.getDefaultCompilerFactory().newScriptEvaluator();
+    } catch (Exception e) {
+      LOGGER.error("Could not create scriptevaluator", e);
+      throw new DbException("Could not create scriptevaluator", e);
+    }
+    se.setDefaultImports(MyriaConstants.DEFAULT_JANINO_IMPORTS);
+
+    try {
+      return (ScriptEvalInterface) se.createFastEvaluator(script, ScriptEvalInterface.class, new String[] {
+          Expression.TB, Expression.ROW, Expression.RESULT, Expression.STATE });
+    } catch (CompileException e) {
+      LOGGER.error("Error when compiling expression {}: {}", script, e);
+      throw new DbException("Error when compiling expression: " + script, e);
+    }
   }
 
   /**
