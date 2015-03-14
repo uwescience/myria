@@ -100,7 +100,7 @@ def PCScanSink():
     # PointsAndComponents Scan Sink
     query_myria("PointsAndComponentsScanSink.json")
 
-def EStep():
+def EStepMaterilize():
     # Join tables
     query_myria("Join4D7K.json")
 
@@ -110,12 +110,18 @@ def EStep():
     # EStepAggregate
     query_myria("EStepAggTemplate.json", args=(D,K))
 
-def MStep():
+def MStepMaterialize():
     # Join tables
     query_myria("Join4D7K.json")
 
     # MStepAggregate
     query_myria("MStepTemplate.json", args=(1+D+K,D,K,1+D+K))
+
+def EStep():
+    query_myria("JoinEStep.json")
+
+def MStep():
+    query_myria("JoinMStepNoBroadcast.json")
     
 def pad_points():
     query_myria("PadPoints.json")
