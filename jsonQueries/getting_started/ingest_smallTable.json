@@ -13,5 +13,5 @@
     "filename" : "/path/to/your/myria/jsonQueries/getting_started/smallTable"
   },
   "overwrite" : true,
-  "delimiter": " "
+  "delimiter": ","
 }
