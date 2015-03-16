@@ -18,6 +18,7 @@ def upload_parallel(filename, workers=2):
     for i in range(1, workers + 1):
         work.append((i, 'http://s3-us-west-2.amazonaws.com/myria-sdss/astronomy/partioned/%s/%s/%s' % (name_root, workers,filename + '-part-' + str(i).zfill(5))))
 
+    print work
 
     #'https://s3-us-west-2.amazonaws.com/myria-sdss/astronomy/partioned/%/p2/%s' % (name_root, filename + '-part-' + str(1).zfill(5))
 
