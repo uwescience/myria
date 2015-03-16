@@ -101,7 +101,8 @@ def create_astro_components():
     upload_components()
 
 def CopyToPoints(relation_name):
-    query_myria("CopyRelationToPoints.json", args=(relation_name,relation_name,relation_name))
+    query_myria("CopyRelationToPoints.json", args=(
+            relation_name,relation_name,relation_name.split(":")[2],relation_name))
 
 def EStepSink():
     # EStep Sink

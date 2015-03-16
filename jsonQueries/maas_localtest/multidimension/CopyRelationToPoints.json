@@ -11,7 +11,7 @@
           {
             "relationKey": {
               "userName": "public",
-              "relationName": "wise_colors_15_20_subsetsmall256",
+              "relationName": "%s",
               "programName": "adhoc"
             },
             "opType": "TableScan",
