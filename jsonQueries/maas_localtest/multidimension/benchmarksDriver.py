@@ -134,13 +134,13 @@ def MStepMaterialize():
     query_myria("MStepTemplate.json", args=(1+D+K,D,K,1+D+K))
 
 def EStep():
-    query_myria("JoinEStep.json")
+    return query_myria("JoinEStep.json")
 
 def MStep():
-    query_myria("JoinMStepNoBroadcast.json")
+    return query_myria("JoinMStepNoBroadcast.json")
 
 def EMStep():
-    query_myria("JoinBothSteps.json")
+    return query_myria("JoinBothSteps.json")
     
 def pad_points():
     query_myria("PadPoints.json")
