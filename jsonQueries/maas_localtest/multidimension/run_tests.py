@@ -34,4 +34,4 @@ def run_em_test(filename, workers):
 if __name__ == "__main__":
     alltimes = []
     for filename in files:
-        alltimes.append(run_em_test(filename), int(sys.argv[1]))
+        alltimes.append(run_em_test(filename, int(sys.argv[1])))
