@@ -122,6 +122,9 @@ def EStep():
 
 def MStep():
     query_myria("JoinMStepNoBroadcast.json")
+
+def EMStep():
+    query_myria("JoinBothSteps.json")
     
 def pad_points():
     query_myria("PadPoints.json")
