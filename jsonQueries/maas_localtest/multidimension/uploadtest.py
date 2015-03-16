@@ -1,7 +1,12 @@
 from myria import MyriaRelation, MyriaQuery, MyriaConnection, MyriaSchema
 
 def upload_parallel(filename, workers=2):
+    print "Uploading" + filename
     filename = "wise-colors-15-20-subsetsmall256.csv"
+
+    types = ['LONG_TYPE', 'DOUBLE_TYPE', 'DOUBLE_TYPE', 'DOUBLE_TYPE', 'DOUBLE_TYPE']
+    headers = ['col', 'col2', 'col3', 'col4', 'col5']
+    schema =  MyriaSchema({'columnTypes': types, 'columnNames': headers})
 
     connection = MyriaConnection(hostname='localhost', port=8753, ssl=False)
 
