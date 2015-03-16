@@ -53,20 +53,22 @@ def monitor_status(query_id):
         status = (connection.get_query_status(query_id))['status']
         #print("\t" + status);
         if status=='SUCCESS':
-            print("\t" + status);
-            break;
+            print("\t" + status)
+            break
         elif status=='KILLED':
-            break;
+            break
         time.sleep(1)
     totalElapsedTime = int((connection.get_query_status(query_id))['elapsedNanos'])
-    timeSeconds = totalElapsedTime/1000000000.0;
-    print('\tRuntime: ' + str(timeSeconds) + ' seconds');
+    timeSeconds = totalElapsedTime/1000000000.0
+    print('\tRuntime: ' + str(timeSeconds) + ' seconds')
+    return timeSeconds
 
 
 def query_myria(query_string, args=None):
     query = create_json_query("./" + query_string, args)
     query_id = submit_query(query)
-    monitor_status(query_id)
+    time = monitor_status(query_id)
+    return time
 
 # In[46]:
 
@@ -96,7 +98,14 @@ def create_test_data():
 
 def create_astro_components():
     subprocess.call("python ./GMM_small_astro.py", shell=True)
-    upload_components();
+    upload_components()
+
+def CopyToPoints(relation_name):
+    query_myria("CopyRelationToPoints.json", args=(relation_name,relation_name,relation_name))
+
+def EStepSink():
+    # EStep Sink
+    query_myria("EStepTemplateSink.json", args=(D,K))
 
 def EStepSink():
     # EStep Sink

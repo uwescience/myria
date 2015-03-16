@@ -26,6 +26,7 @@ def upload_parallel(filename, workers=2):
     #        ]
     query = MyriaQuery.parallel_import(relation, work)
     query.wait_for_completion(timeout=3600)
+    return relation_name
     
 
 
