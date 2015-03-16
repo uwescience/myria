@@ -1,5 +1,9 @@
 package edu.washington.escience.myria.operator;
 
+import static org.junit.Assert.assertEquals;
+import org.junit.Test;
+import com.google.common.collect.ImmutableList;
+
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -53,8 +57,8 @@ public class SplitTest {
           assertEquals(((Boolean) expectedResults[rowIdx][0]).booleanValue(), result.getBoolean(0, batchIdx));
           assertEquals((expectedResults[rowIdx][1]).toString(), result.getString(1, batchIdx));
           assertEquals(((Long) expectedResults[rowIdx][2]).longValue(), result.getLong(2, batchIdx));
-          assertEquals(Double.doubleToLongBits(((Double) expectedResults[rowIdx][3]).doubleValue()), Double
-              .doubleToLongBits(result.getDouble(3, batchIdx)));
+          assertEquals(Double.doubleToLongBits(((Double) expectedResults[rowIdx][3]).doubleValue()),
+              Double.doubleToLongBits(result.getDouble(3, batchIdx)));
 
         }
       }
