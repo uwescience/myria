@@ -8,15 +8,18 @@ def upload_parallel(filename, workers=2):
     name_root = filename.split(".")[0]
     relation_name = 'public:adhoc:%s' % (name_root)
 
-
-    #relation = MyriaRelation('public:adhoc:ocean_seq', connection=connection, schema=schema)
-    #work = [(1, 'http://s3-us-west-2.amazonaws.com/myria-sdss/oceanography/ocean_seq.csv'),
-    #        (2, 'http://s3-us-west-2.amazonaws.com/myria-sdss/oceanography/ocean_seq.csv')
-    #        ]
     relation = MyriaRelation(relation_name, connection=connection, schema=schema)
-    work = [(1, 'https://s3-us-west-2.amazonaws.com/myria-sdss/astronomy/partioned/wise-colors-15-20-subsetsmall256/p2/wise-colors-15-20-subsetsmall256.csv-part-00001'),
-            (2, 'https://s3-us-west-2.amazonaws.com/myria-sdss/astronomy/partioned/wise-colors-15-20-subsetsmall256/p2/wise-colors-15-20-subsetsmall256.csv-part-00002')
-            ]
+
+    work = []
+    for i in range(1, workers + 1):
+        work.append((i, 'http://s3-us-west-2.amazonaws.com/myria-sdss/astronomy/partioned/%/p2/%s' % (name_root, filename + '-part-' + str(i).zfill(5))))
+
+
+    #'https://s3-us-west-2.amazonaws.com/myria-sdss/astronomy/partioned/%/p2/%s' % (name_root, filename + '-part-' + str(1).zfill(5))
+
+    #work = [(1, 'https://s3-us-west-2.amazonaws.com/myria-sdss/astronomy/partioned/wise-colors-15-20-subsetsmall256/p2/wise-colors-15-20-subsetsmall256.csv-part-00001'),
+    #        (2, 'https://s3-us-west-2.amazonaws.com/myria-sdss/astronomy/partioned/wise-colors-15-20-subsetsmall256/p2/wise-colors-15-20-subsetsmall256.csv-part-00002')
+    #        ]
     query = MyriaQuery.parallel_import(relation, work)
     query.wait_for_completion(timeout=3600)
     

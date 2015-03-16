@@ -85,7 +85,6 @@ n_iter = 1
 def upload_components():
     subprocess.call(upload_string("ComponentsOnly"), shell=True)
 
-
 def create_test_data():
     subprocess.call("python ./GMM_Python_Comparison.py %s" % n_iter, shell=True)
 
@@ -94,6 +93,10 @@ def create_test_data():
     subprocess.call(upload_string("ComponentsOnly"), shell=True)
     subprocess.call(upload_string("ExpectedComponents"), shell=True)
     subprocess.call(upload_string("ExpectedPoints"), shell=True)
+
+def create_astro_components():
+    subprocess.call("python ./GMM_small_astro.py", shell=True)
+    upload_components();
 
 def EStepSink():
     # EStep Sink
