@@ -10,7 +10,7 @@ def upload_parallel(filename, workers=2):
     connection = MyriaConnection(hostname='localhost', port=8753, ssl=False)
 
     name_root = filename.split(".")[0]
-    relation_name = 'public:adhoc:%s' % (name_root)
+    relation_name = 'public:adhoc:%s' % (name_root.replace("-","_"))
 
     relation = MyriaRelation(relation_name, connection=connection, schema=schema)
 
