@@ -82,6 +82,9 @@ D = 4
 K = 7
 n_iter = 1
 
+def upload_components():
+    subprocess.call(upload_string("ComponentsOnly"), shell=True)
+
 
 def create_test_data():
     subprocess.call("python ./GMM_Python_Comparison.py %s" % n_iter, shell=True)
