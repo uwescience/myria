@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
@@ -15,19 +16,23 @@ import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.ColumnFactory;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.storage.TupleUtils;
 
 /**
- * Generic apply operator.
+ * Operator which splits a string-valued column on a Java regular expression and duplicates the input row with each
+ * segment of the split result.
+ * 
+ * E.g., (1, 2, "foo:bar:baz") -> (1, 2, "foo"), (1, 2, "bar"), (1, 2, "baz")
  */
 public class Split extends UnaryOperator {
   /***/
   private static final long serialVersionUID = 1L;
 
   /**
-   * Name of column to split on regex. Must have String type.
+   * Index of (string-valued) column to split on regex.
    */
-  private final String columnName;
+  private final int splitColumnIndex;
 
   /**
    * Compiled regex to split input tuples.
@@ -40,15 +45,9 @@ public class Split extends UnaryOperator {
   private Schema outputSchema;
 
   /**
-   * Index of column to split in input schema (and anonymous result column in output schema).
+   * Buffer to hold finished and in-progress TupleBatches.
    */
-  private int splitColIdx;
-
-  /**
-   * Array of column indices in output schema corresponding to column indices of input schema. The column to be split
-   * has its index mapped to the sentinel value -1.
-   */
-  private int[] inputColIndexToOutputColIndex;
+  private TupleBatchBuffer outputBuffer;
 
   /**
    * 
@@ -56,52 +55,48 @@ public class Split extends UnaryOperator {
    * @param columnName name of string column to split using regex
    * @param regex regular expression to split string input column on
    */
-  public Split(final Operator child, final String columnName, final String regex) {
+  public Split(final Operator child, final int splitColumnIndex, final String regex) {
     super(child);
-    this.columnName = columnName;
+    this.splitColumnIndex = splitColumnIndex;
     pattern = Pattern.compile(regex);
+  }
+
+  private TupleBatch getChildBatch() throws DbException {
+    TupleBatch childTuples;
+    try {
+      childTuples = getChild().fetchNextReady();
+    } catch (Exception e) {
+      // only wrap checked exceptions that do not extend DbException
+      Throwables.propagateIfPossible(e, DbException.class);
+      throw new DbException(e);
+    }
+    return childTuples;
   }
 
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
-    final Operator child = getChild();
-    for (TupleBatch tb = child.nextReady(); tb != null; tb = child.nextReady()) {
-      List<ColumnBuilder<?>> colBuilders = new ArrayList<>(tb.numColumns());
-      for (int i = 0; i < tb.numColumns(); ++i) {
-        if (i != splitColIdx) {
-          colBuilders.add(ColumnFactory.allocateColumn(tb.asColumn(i).getType()));
-        }
-      }
-      final ColumnBuilder<?> splitColBuilder = ColumnFactory.allocateColumn(Type.STRING_TYPE);
-      colBuilders.add(splitColBuilder);
-      for (int rowIdx = 0; rowIdx < tb.numTuples(); ++rowIdx) {
-        try {
-          String colValue = tb.asColumn(splitColIdx).getString(rowIdx);
-          // We must specify a negative value for the limit parameter to avoid discarding trailing empty strings:
-          // http://docs.oracle.com/javase/7/docs/api/java/lang/String.html#split(java.lang.String,%20int)
-          String[] splits = pattern.split(colValue, -1);
-          for (String segment : splits) {
-            splitColBuilder.appendString(segment);
-            // For each split segment, duplicate the values of all other columns in this row.
-            for (int inputColIdx = 0; inputColIdx < inputColIndexToOutputColIndex.length; ++inputColIdx) {
-              int outputColIdx = inputColIndexToOutputColIndex[inputColIdx];
-              if (outputColIdx != -1) {
-                TupleUtils.copyValue(tb.asColumn(inputColIdx), rowIdx, colBuilders.get(outputColIdx));
-              }
+    // If there's a batch already finished, return it, otherwise keep reading
+    // batches from the child until we have a full batch or the child returns null.
+    TupleBatch inputTuples;
+    while (!outputBuffer.hasFilledTB() && (inputTuples = getChildBatch()) != null) {
+      for (int rowIdx = 0; rowIdx < inputTuples.numTuples(); ++rowIdx) {
+        String colValue = inputTuples.getString(splitColumnIndex, rowIdx);
+        // We must specify a negative value for the limit parameter to avoid discarding trailing empty strings:
+        // http://docs.oracle.com/javase/7/docs/api/java/lang/String.html#split(java.lang.String,%20int)
+        String[] splits = pattern.split(colValue, -1);
+        for (String segment : splits) {
+          outputBuffer.putString(splitColumnIndex, segment);
+          // For each split segment, duplicate the values of all other columns in this row.
+          for (int colIdx = 0; colIdx < inputTuples.numColumns(); ++colIdx) {
+            if (colIdx != splitColumnIndex) {
+              TupleUtils.copyValue(inputTuples.asColumn(colIdx), rowIdx, outputBuffer, colIdx);
             }
           }
-        } catch (Exception e) {
-          throw new DbException(e);
         }
       }
-      // TODO: this should be factored out into a common utility method
-      List<Column<?>> columns = new ArrayList<>();
-      for (ColumnBuilder<?> colBuilder : colBuilders) {
-        columns.add(colBuilder.build());
-      }
-      return new TupleBatch(outputSchema, columns);
     }
-    return null;
+    // If we produced a full batch, return it, otherwise finish the current batch and return it.
+    return outputBuffer.popAny();
   }
 
   @Override
@@ -110,37 +105,20 @@ public class Split extends UnaryOperator {
     Preconditions.checkNotNull(child, "Child operator cannot be null");
     final Schema inputSchema = child.getSchema();
     Preconditions.checkNotNull(inputSchema, "Child schema cannot be null");
-    splitColIdx = inputSchema.columnNameToIndex(columnName);
-    final Type colType = inputSchema.getColumnType(splitColIdx);
-    Preconditions.checkState(colType == Type.STRING_TYPE, "Column to split \"" + columnName
-        + "\" must have type STRING_TYPE but has type " + colType);
+    final Type colType = inputSchema.getColumnType(splitColumnIndex);
+    Preconditions.checkState(colType == Type.STRING_TYPE,
+        "Column to split at index %d (%s) must have type STRING_TYPE", splitColumnIndex, colType);
 
-    // The only difference between input and output schema is that the input column being split is removed
-    // from the output schema and the (anonymous) output column containing split results appears at the
-    // final ordinal position.
-    inputColIndexToOutputColIndex = new int[inputSchema.numColumns()];
-    int[] colsToKeep = new int[inputSchema.numColumns() - 1];
-    for (int colIdx = 0; colIdx < inputSchema.numColumns(); ++colIdx) {
-      if (colIdx == splitColIdx) {
-        // Omit split column index from list of columns of output schema.
-        // -1 is a sentinel value indicating that the split column results appear in the last column of the output
-        // schema.
-        inputColIndexToOutputColIndex[colIdx] = -1;
-      } else if (colIdx > splitColIdx) {
-        // Offset output column index to compensate for deleted split column index.
-        inputColIndexToOutputColIndex[colIdx] = colIdx - 1;
-        colsToKeep[colIdx - 1] = colIdx;
-      } else {
-        inputColIndexToOutputColIndex[colIdx] = colIdx;
-        colsToKeep[colIdx] = colIdx;
-      }
-    }
-    final Schema subSchema = inputSchema.getSubSchema(colsToKeep);
-    outputSchema = Schema.appendColumn(subSchema, Type.STRING_TYPE, "_splits");
+    outputBuffer = new TupleBatchBuffer(generateSchema());
   }
 
   @Override
   public Schema generateSchema() {
-    return outputSchema;
+    final Schema inputSchema = getChild().getSchema();
+    final List<String> outputColumnNames = new ArrayList<>(inputSchema.getColumnNames());
+    final String splitColumnName = outputColumnNames.get(splitColumnIndex);
+    final String splitResultsColumnName = splitColumnName + "_splits";
+    outputColumnNames.set(splitColumnIndex, splitResultsColumnName);
+    return Schema.of(inputSchema.getColumnTypes(), outputColumnNames);
   }
 }

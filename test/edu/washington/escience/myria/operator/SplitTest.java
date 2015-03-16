@@ -1,11 +1,5 @@
 package edu.washington.escience.myria.operator;
 
-import static org.junit.Assert.assertEquals;
-
-import org.junit.Test;
-
-import com.google.common.collect.ImmutableList;
-
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -18,15 +12,15 @@ public class SplitTest {
   @Test
   public void testGeneratedSplits() throws DbException {
     final Object[][] expectedResults =
-        {
-            { true, 1L, 0.1, "foo" },
-            { true, 1L, 0.1, "bar" },
-            { true, 1L, 0.1, "baz" },
-            { false, 2L, 0.2, "" },
-            { false, 2L, 0.2, "qux" },
-            { false, 2L, 0.2, "" },
-            { false, 2L, 0.2, "" },
-        };
+    {
+        { true, "foo", 1L, 0.1 },
+        { true, "bar", 1L, 0.1 },
+        { true, "baz", 1L, 0.1, },
+        { false, "", 2L, 0.2 },
+        { false, "qux", 2L, 0.2 },
+        { false, "", 2L, 0.2 },
+        { false, "", 2L, 0.2 },
+    };
     final Schema schema =
         new Schema(ImmutableList.of(Type.BOOLEAN_TYPE, Type.STRING_TYPE, Type.LONG_TYPE, Type.DOUBLE_TYPE),
             ImmutableList.of("bool", "string", "long", "double"));
@@ -41,7 +35,7 @@ public class SplitTest {
     input.putString(1, ":qux::");
     input.putLong(2, 2L);
     input.putDouble(3, 0.2);
-    Split splitOp = new Split(new TupleSource(input), "string", ":");
+    Split splitOp = new Split(new TupleSource(input), 1, ":");
 
     splitOp.open(TestEnvVars.get());
     TupleBatch result;
@@ -51,16 +45,17 @@ public class SplitTest {
       if (result != null) {
         assertEquals(schema.numColumns(), result.getSchema().numColumns());
         assertEquals(Type.BOOLEAN_TYPE, result.getSchema().getColumnType(0));
-        assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(1));
-        assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(2));
-        assertEquals(Type.STRING_TYPE, result.getSchema().getColumnType(3));
+        assertEquals(Type.STRING_TYPE, result.getSchema().getColumnType(1));
+        assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(2));
+        assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(3));
 
         for (int batchIdx = 0; batchIdx < result.numTuples(); ++batchIdx, ++rowIdx) {
           assertEquals(((Boolean) expectedResults[rowIdx][0]).booleanValue(), result.getBoolean(0, batchIdx));
-          assertEquals(((Long) expectedResults[rowIdx][1]).longValue(), result.getLong(1, batchIdx));
-          assertEquals(Double.doubleToLongBits(((Double) expectedResults[rowIdx][2]).doubleValue()),
-              Double.doubleToLongBits(result.getDouble(2, batchIdx)));
-          assertEquals((expectedResults[rowIdx][3]).toString(), result.getString(3, batchIdx));
+          assertEquals((expectedResults[rowIdx][1]).toString(), result.getString(1, batchIdx));
+          assertEquals(((Long) expectedResults[rowIdx][2]).longValue(), result.getLong(2, batchIdx));
+          assertEquals(Double.doubleToLongBits(((Double) expectedResults[rowIdx][3]).doubleValue()), Double
+              .doubleToLongBits(result.getDouble(3, batchIdx)));
+
         }
       }
     }
@@ -74,7 +69,7 @@ public class SplitTest {
     final Schema schema = new Schema(ImmutableList.of(Type.STRING_TYPE), ImmutableList.of("string"));
     final TupleBatchBuffer input = new TupleBatchBuffer(schema);
     input.putString(0, "foo:bar:baz");
-    Split splitOp = new Split(new TupleSource(input), "string", ":");
+    Split splitOp = new Split(new TupleSource(input), 0, ":");
 
     splitOp.open(TestEnvVars.get());
     TupleBatch result;
@@ -99,7 +94,7 @@ public class SplitTest {
     final Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("long"));
     final TupleBatchBuffer input = new TupleBatchBuffer(schema);
     input.putLong(0, 1L);
-    Split splitOp = new Split(new TupleSource(input), "long", ":");
+    Split splitOp = new Split(new TupleSource(input), 0, ":");
     splitOp.open(TestEnvVars.get());
     splitOp.close();
   }
@@ -109,7 +104,7 @@ public class SplitTest {
     final Schema schema = new Schema(ImmutableList.of(Type.STRING_TYPE), ImmutableList.of("string"));
     final TupleBatchBuffer input = new TupleBatchBuffer(schema);
     input.putString(0, "foo");
-    Split splitOp = new Split(new TupleSource(input), "string", "?:(");
+    Split splitOp = new Split(new TupleSource(input), 0, "?:(");
     splitOp.open(TestEnvVars.get());
     splitOp.close();
   }
