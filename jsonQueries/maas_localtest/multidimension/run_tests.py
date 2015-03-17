@@ -20,6 +20,7 @@ files = [
 
 def run_em_test(filename, workers):
     times = []
+    name = filename.split(".")[0].replace("-","_")
     try:
         name = ut.upload_parallel(filename, workers=workers)
     except:
