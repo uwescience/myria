@@ -20,14 +20,18 @@ files = [
 
 def run_em_test(filename, workers):
     times = []
-    name = ut.upload_parallel(filename, workers=workers)
+    try:
+        name = ut.upload_parallel(filename, workers=workers)
     bd.CopyToPoints(name)
     bd.pad_points()
     bd.copy_points()
     bd.upload_components()
-    times.append(bd.EMStep())
-    times.append(bd.EMStep())
-    times.append(bd.EMStep())
+    try:
+        times.append(bd.EMStep())
+    try:
+        times.append(bd.EMStep())
+    try:
+        times.append(bd.EMStep())
     np.savetxt(filename+"times_w" + str(workers) +".csv", np.array(times),delimiter=',' )
     return times
 
