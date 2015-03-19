@@ -1,0 +1,113 @@
+
+
+{
+  "logicalRa": "Store(public:adhoc:RightJoin)[Apply(column0=column0,column1=column1,column2=column2,column0=column0,column1=column1)[CrossProduct[Scan(public:adhoc:Points),Scan(public:adhoc:Components)]]]",
+  "language": "myrial",
+  "rawQuery": "EStepJoin -> public:adhoc:PostEJoin\nRightJoin = [from scan(Points) as p, scan(Components) as c emit *];\nstore(RightJoin, public:adhoc:RightJoin);",
+  "plan": {
+    "fragments": [
+      {
+        "operators": [
+          {
+            "opName": "MyriaBroadcastConsumer",
+            "opType": "BroadcastConsumer",
+            "opId": 0,
+            "argOperatorId": 1
+          },
+          {
+            "relationKey": {
+              "userName": "public",
+              "relationName": "Points",
+              "programName": "adhoc"
+            },
+            "opType": "TableScan",
+            "opName": "MyriaScan(public:adhoc:Points)",
+            "opId": 2
+          },
+          {
+            "argChild2": 0,
+            "argChild1": 2,
+            "opType": "JoinEStep",
+            "opId": 3,
+            "opName": "MyriaCrossProduct",
+            "argSelect2": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20,
+              21
+            ],
+            "argColumns1": [],
+            "argColumns2": [],
+            "argSelect1": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11
+            ]
+          },
+          {
+            "opType": "DbInsert",
+            "argChild": 3,
+            "opName": "MyriaStore(public:adhoc:PostEJoin)",
+            "argOverwriteTable": true,
+            "opId": 4,
+            "relationKey": {
+              "userName": "public",
+              "relationName": "PostEJoin",
+              "programName": "adhoc"
+            }
+          }
+        ]
+      },
+      {
+        "operators": [
+          {
+            "relationKey": {
+              "userName": "public",
+              "relationName": "Components",
+              "programName": "adhoc"
+            },
+            "opType": "TableScan",
+            "opName": "MyriaScan(public:adhoc:Components)",
+            "opId": 5
+          },
+          {
+            "opName": "MyriaBroadcastProducer",
+            "opType": "BroadcastProducer",
+            "opId": 1,
+            "argChild": 5
+          }
+        ]
+      }
+    ],
+    "type": "SubQuery"
+  }
+}
+
+

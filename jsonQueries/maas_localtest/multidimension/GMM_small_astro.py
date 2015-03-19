@@ -93,7 +93,7 @@ def run_gmm_test(n_steps, num_dimensions, n_components, logging=False):
                 f_log.write('\n')        
 
             # Write test file
-            with open('ComponentsOnly.csv','w') as f:
+            with open('AstroComponents.csv','w') as f:
                 write_data(f, combined_components)
 
 
@@ -126,7 +126,7 @@ def run_gmm_test(n_steps, num_dimensions, n_components, logging=False):
                 f_log.write('\n') 
             
             # Write test file
-            with open('ExpectedComponents.csv','w') as f:
+            with open('AstroExpectedComponents.csv','w') as f:
                 write_data(f, combined_components)
 
     if logging:
