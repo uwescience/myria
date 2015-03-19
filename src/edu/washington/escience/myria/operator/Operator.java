@@ -67,7 +67,7 @@ public abstract class Operator implements Serializable {
   private Schema schema;
 
   /**
-   * EOS. Initially set it as true;
+   * End of stream. Initially set it as true;
    */
   private volatile boolean eos = true;
 
