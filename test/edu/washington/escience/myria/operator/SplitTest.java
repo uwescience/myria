@@ -6,9 +6,6 @@ import java.util.regex.PatternSyntaxException;
 
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.primitives.Longs;
-
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -21,12 +18,15 @@ public class SplitTest {
   @Test
   public void testGeneratedSplits() throws DbException {
     final Object[][] expectedResults =
-        { {true, "foo", 1L, 0.1}, {true, "bar", 1L, 0.1}, {true, "baz", 1L, 0.1,},
-            {false, "", 2L, 0.2}, {false, "qux", 2L, 0.2}, {false, "", 2L, 0.2},
-            {false, "", 2L, 0.2}};
+        { {true, "foo:bar:baz", 1L, 0.1, "foo"}, {true, "foo:bar:baz", 1L, 0.1, "bar"},
+            {true, "foo:bar:baz", 1L, 0.1, "baz"}, {false, ":qux::", 2L, 0.2, ""},
+            {false, ":qux::", 2L, 0.2, "qux"}, {false, ":qux::", 2L, 0.2, ""},
+            {false, ":qux::", 2L, 0.2, ""}};
     final Schema schema =
-        new Schema(ImmutableList.of(Type.BOOLEAN_TYPE, Type.STRING_TYPE, Type.LONG_TYPE,
-            Type.DOUBLE_TYPE), ImmutableList.of("bool", "string", "long", "double"));
+        Schema.ofFields("bool", Type.BOOLEAN_TYPE, "string", Type.STRING_TYPE, "long",
+            Type.LONG_TYPE, "double", Type.DOUBLE_TYPE);
+    final Schema expectedResultSchema =
+        Schema.appendColumn(schema, Type.STRING_TYPE, "string_splits");
     final TupleBatchBuffer input = new TupleBatchBuffer(schema);
     // First row to explode
     input.putBoolean(0, true);
@@ -41,16 +41,11 @@ public class SplitTest {
     Split splitOp = new Split(new TupleSource(input), 1, ":");
 
     splitOp.open(TestEnvVars.get());
-    TupleBatch result;
     int rowIdx = 0;
     while (!splitOp.eos()) {
-      result = splitOp.nextReady();
+      TupleBatch result = splitOp.nextReady();
       if (result != null) {
-        assertEquals(schema.numColumns(), result.getSchema().numColumns());
-        assertEquals(Type.BOOLEAN_TYPE, result.getSchema().getColumnType(0));
-        assertEquals(Type.STRING_TYPE, result.getSchema().getColumnType(1));
-        assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(2));
-        assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(3));
+        assertEquals(expectedResultSchema, result.getSchema());
 
         for (int batchIdx = 0; batchIdx < result.numTuples(); ++batchIdx, ++rowIdx) {
           assertEquals(((Boolean) expectedResults[rowIdx][0]).booleanValue(),
@@ -60,7 +55,7 @@ public class SplitTest {
           assertEquals(
               Double.doubleToLongBits(((Double) expectedResults[rowIdx][3]).doubleValue()),
               Double.doubleToLongBits(result.getDouble(3, batchIdx)));
-
+          assertEquals((expectedResults[rowIdx][4]).toString(), result.getString(4, batchIdx));
         }
       }
     }
@@ -70,24 +65,25 @@ public class SplitTest {
 
   @Test
   public void testGeneratedSplitsSingleColumn() throws DbException {
-    final String[] expectedResults = {"foo", "bar", "baz"};
-    final Schema schema =
-        new Schema(ImmutableList.of(Type.STRING_TYPE), ImmutableList.of("string"));
+    final String[][] expectedResults =
+        { {"foo:bar:baz", "foo"}, {"foo:bar:baz", "bar"}, {"foo:bar:baz", "baz"}};
+    final Schema schema = Schema.ofFields("string", Type.STRING_TYPE);
+    final Schema expectedResultSchema =
+        Schema.appendColumn(schema, Type.STRING_TYPE, "string_splits");
     final TupleBatchBuffer input = new TupleBatchBuffer(schema);
     input.putString(0, "foo:bar:baz");
     Split splitOp = new Split(new TupleSource(input), 0, ":");
 
     splitOp.open(TestEnvVars.get());
-    TupleBatch result;
     int rowIdx = 0;
     while (!splitOp.eos()) {
-      result = splitOp.nextReady();
+      TupleBatch result = splitOp.nextReady();
       if (result != null) {
-        assertEquals(schema.numColumns(), result.getSchema().numColumns());
-        assertEquals(Type.STRING_TYPE, result.getSchema().getColumnType(0));
+        assertEquals(expectedResultSchema, result.getSchema());
 
         for (int batchIdx = 0; batchIdx < result.numTuples(); ++batchIdx, ++rowIdx) {
-          assertEquals(expectedResults[rowIdx], result.getString(0, batchIdx));
+          assertEquals(expectedResults[rowIdx][0], result.getString(0, batchIdx));
+          assertEquals(expectedResults[rowIdx][1], result.getString(1, batchIdx));
         }
       }
     }
@@ -96,47 +92,38 @@ public class SplitTest {
   }
 
   /**
-   * Test output spanning multiple batches. All integers from 0 to 2 * TupleBatch.BATCH_SIZE + 1 are
-   * concatenated as comma-separated strings in rows of 10 each. Result should contain each integer
-   * from the input in its own row.
+   * Test output spanning multiple batches. All integers from 0 to 2 * TupleBatch.BATCH_SIZE are
+   * concatenated as a single comma-separated string. Result should contain each integer from the
+   * input in its own row.
    * 
    * @throws DbException
    */
   @Test
   public void testAllBatchesReturned() throws DbException {
-
-    final Schema schema =
-        new Schema(ImmutableList.of(Type.STRING_TYPE), ImmutableList.of("joined_ints"));
+    final Schema schema = Schema.ofFields("joined_ints", Type.STRING_TYPE);
+    final Schema expectedResultSchema =
+        Schema.appendColumn(schema, Type.STRING_TYPE, "joined_ints_splits");
     final TupleBatchBuffer input = new TupleBatchBuffer(schema);
     final long expectedResults = 2 * TupleBatch.BATCH_SIZE + 1;
-    final int intsInRow = 10;
-    for (long i = 0; i < (expectedResults / intsInRow) + 1; ++i) {
-      final int remainder = (int) (expectedResults % intsInRow);
-      final int intsToConcatSize;
-      if ((expectedResults - (i * intsInRow)) == remainder) {
-        intsToConcatSize = remainder;
-      } else {
-        intsToConcatSize = intsInRow;
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < expectedResults; ++i) {
+      sb.append(i);
+      if (i < expectedResults - 1) {
+        sb.append(",");
       }
-      final long[] intsToConcat = new long[intsToConcatSize];
-      for (int j = 0; j < intsToConcatSize; ++j) {
-        intsToConcat[j] = (i * intsInRow) + j;
-      }
-      input.putString(0, Longs.join(",", intsToConcat));
     }
+    input.putString(0, sb.toString());
 
     Split splitOp = new Split(new TupleSource(input), 0, ",");
     splitOp.open(TestEnvVars.get());
-    TupleBatch result;
     long rowIdx = 0;
     while (!splitOp.eos()) {
-      result = splitOp.nextReady();
+      TupleBatch result = splitOp.nextReady();
       if (result != null) {
-        assertEquals(schema.numColumns(), result.getSchema().numColumns());
-        assertEquals(Type.STRING_TYPE, result.getSchema().getColumnType(0));
+        assertEquals(expectedResultSchema, result.getSchema());
 
         for (int batchIdx = 0; batchIdx < result.numTuples(); ++batchIdx, ++rowIdx) {
-          assertEquals(rowIdx, Long.parseLong(result.getString(0, batchIdx)));
+          assertEquals(rowIdx, Integer.parseInt(result.getString(1, batchIdx)));
         }
       }
     }
@@ -146,22 +133,19 @@ public class SplitTest {
 
   @Test(expected = IllegalStateException.class)
   public void testSplitColumnInvalidType() throws DbException {
-    final Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("long"));
+    final Schema schema = Schema.ofFields("long", Type.LONG_TYPE);
     final TupleBatchBuffer input = new TupleBatchBuffer(schema);
     input.putLong(0, 1L);
     Split splitOp = new Split(new TupleSource(input), 0, ":");
     splitOp.open(TestEnvVars.get());
-    splitOp.close();
   }
 
   @Test(expected = PatternSyntaxException.class)
   public void testInvalidRegex() throws DbException {
-    final Schema schema =
-        new Schema(ImmutableList.of(Type.STRING_TYPE), ImmutableList.of("string"));
+    final Schema schema = Schema.ofFields("string", Type.STRING_TYPE);
     final TupleBatchBuffer input = new TupleBatchBuffer(schema);
     input.putString(0, "foo");
     Split splitOp = new Split(new TupleSource(input), 0, "?:(");
     splitOp.open(TestEnvVars.get());
-    splitOp.close();
   }
 }
