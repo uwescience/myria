@@ -383,12 +383,18 @@ public final class JdbcAccessMethod extends AccessMethod {
       case BOOLEAN_TYPE:
         return "BOOLEAN";
       case DOUBLE_TYPE:
-      case FLOAT_TYPE:
         switch (dbms) {
           case MyriaConstants.STORAGE_SYSTEM_POSTGRESQL:
             return "DOUBLE PRECISION";
           default:
             return "DOUBLE";
+        }
+      case FLOAT_TYPE:
+        switch (dbms) {
+          case MyriaConstants.STORAGE_SYSTEM_POSTGRESQL:
+            return "REAL";
+          default:
+            return "FLOAT";
         }
       case INT_TYPE:
         return "INTEGER";
