@@ -143,7 +143,7 @@ def MStep():
 def EMStepCrossJoin():
     return query_myria("JoinBothSteps.json")
 
-def EMStepCrossJoin():
+def EMStep():
     return query_myria("joinaggregate/NewENewM.json")
     
 def pad_points():
