@@ -46,13 +46,22 @@ public final class Split extends UnaryOperator {
    * @param splitColumnIndex index of string column to split using {@link #regex}
    * @param regex regular expression to split value of column at {@link #splitColumnIndex}
    */
-  public Split(@Nonnull final Operator child, final int splitColumnIndex,
-      @Nonnull final String regex) {
+  public Split(final Operator child, final int splitColumnIndex, @Nonnull final String regex) {
     super(child);
-    Preconditions.checkNotNull(child);
     this.splitColumnIndex = splitColumnIndex;
     Preconditions.checkNotNull(regex);
     pattern = Pattern.compile(regex);
+  }
+
+  /**
+   * Instantiate a Split operator with null child. (Must be set later by setChild() or
+   * setChildren().)
+   * 
+   * @param splitColumnIndex index of string column to split using {@link #regex}
+   * @param regex regular expression to split value of column at {@link #splitColumnIndex}
+   */
+  public Split(final int splitColumnIndex, @Nonnull final String regex) {
+    this(null, splitColumnIndex, regex);
   }
 
   @Override
@@ -90,6 +99,7 @@ public final class Split extends UnaryOperator {
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     final Operator child = getChild();
+    Preconditions.checkNotNull(child);
     final Schema inputSchema = child.getSchema();
     Preconditions.checkNotNull(inputSchema);
     final Type colType = inputSchema.getColumnType(splitColumnIndex);
