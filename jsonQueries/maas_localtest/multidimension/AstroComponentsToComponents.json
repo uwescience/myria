@@ -1,0 +1,40 @@
+
+
+{
+  "logicalRa": "Store(public:adhoc:ComponentsOnly)[Scan(public:adhoc:AstroComponents)]",
+  "language": "sql",
+  "rawQuery": "AstroComponents = scan(public:adhoc:AstroComponents);\nstore(AstroComponents, public:adhoc:ComponentsOnly);",
+  "plan": {
+    "fragments": [
+      {
+        "operators": [
+          {
+            "relationKey": {
+              "userName": "public",
+              "relationName": "AstroComponents",
+              "programName": "adhoc"
+            },
+            "opType": "TableScan",
+            "opName": "MyriaScan(public:adhoc:AstroComponents)",
+            "opId": 0
+          },
+          {
+            "opType": "DbInsert",
+            "argChild": 0,
+            "opName": "MyriaStore(public:adhoc:ComponentsOnly)",
+            "argOverwriteTable": true,
+            "opId": 1,
+            "relationKey": {
+              "userName": "public",
+              "relationName": "ComponentsOnly",
+              "programName": "adhoc"
+            }
+          }
+        ]
+      }
+    ],
+    "type": "SubQuery"
+  }
+}
+
+

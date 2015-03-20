@@ -152,6 +152,9 @@ def pad_points():
 def copy_points():
     query_myria("CopyPoints.json")
 
+def astro_components_to_components():
+    query_myria("AstroComponentsToComponents.json")
+
 def compare_results():
     #Compare results
     query_myria("CompareComponents4D7K.json")
