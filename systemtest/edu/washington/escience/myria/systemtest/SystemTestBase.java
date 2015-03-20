@@ -25,6 +25,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.annotation.Nullable;
+
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.ArrayUtils;
@@ -40,7 +42,9 @@ import org.junit.runner.Description;
 import org.slf4j.LoggerFactory;
 
 import com.almworks.sqlite4java.SQLiteException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.collect.ImmutableList;
 import com.google.protobuf.ByteString;
 
@@ -54,18 +58,22 @@ import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.SQLiteAccessMethod;
 import edu.washington.escience.myria.accessmethod.SQLiteInfo;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
+import edu.washington.escience.myria.api.encoding.DatasetEncoding;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
+import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.CatalogMaker;
 import edu.washington.escience.myria.coordinator.catalog.WorkerCatalog;
 import edu.washington.escience.myria.daemon.MasterDaemon;
+import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.parallel.Worker;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.FSUtils;
+import edu.washington.escience.myria.util.JsonAPIUtils;
 import edu.washington.escience.myria.util.SQLiteUtils;
 import edu.washington.escience.myria.util.TestUtils;
 import edu.washington.escience.myria.util.Tuple;
@@ -92,8 +100,8 @@ public class SystemTestBase {
   /** The logger for this class. */
   protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(SystemTestBase.class);
 
-  public static final Schema JOIN_INPUT_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE),
-      ImmutableList.of("id", "name"));
+  public static final Schema JOIN_INPUT_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE,
+      Type.STRING_TYPE), ImmutableList.of("id", "name"));
   public static final RelationKey JOIN_TEST_TABLE_1 = RelationKey.of("test", "test", "testtable1");
   public static final RelationKey JOIN_TEST_TABLE_2 = RelationKey.of("test", "test", "testtable2");
 
@@ -125,21 +133,23 @@ public class SystemTestBase {
   /** How much memory the system tests might use. */
   public static final String MEMORY = "512M";
 
-  public static void createTable(final int workerID, final RelationKey relationKey, final String sqlSchemaString)
-      throws IOException, CatalogException {
+  public static void createTable(final int workerID, final RelationKey relationKey,
+      final String sqlSchemaString) throws IOException, CatalogException {
     try {
-      SQLiteUtils.createTable(getAbsoluteDBFile(workerID).getAbsolutePath(), relationKey, sqlSchemaString, true, true);
+      SQLiteUtils.createTable(getAbsoluteDBFile(workerID).getAbsolutePath(), relationKey,
+          sqlSchemaString, true, true);
     } catch (SQLiteException e) {
       throw new CatalogException(e);
     }
   }
 
-  public static File getAbsoluteDBFile(final int workerID) throws CatalogException, FileNotFoundException {
+  public static File getAbsoluteDBFile(final int workerID) throws CatalogException,
+      FileNotFoundException {
     final String workerDir = getWorkerFolder(workerID);
     final WorkerCatalog wc = WorkerCatalog.open(FilenameUtils.concat(workerDir, "worker.catalog"));
     final SQLiteInfo sqliteInfo =
-        (SQLiteInfo) ConnectionInfo.of(MyriaConstants.STORAGE_SYSTEM_SQLITE, wc
-            .getConfigurationValue(MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_CONN_INFO));
+        (SQLiteInfo) ConnectionInfo.of(MyriaConstants.STORAGE_SYSTEM_SQLITE,
+            wc.getConfigurationValue(MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_CONN_INFO));
     final File ret = new File(sqliteInfo.getDatabaseFilename());
     wc.close();
     return ret;
@@ -180,8 +190,7 @@ public class SystemTestBase {
   /**
    * Override this if you want to run some code after each system test.
    */
-  public void after() throws Exception {
-  }
+  public void after() throws Exception {}
 
   @After
   public void globalCleanup() throws Exception {
@@ -234,11 +243,11 @@ public class SystemTestBase {
   }
 
   public Map<String, String> getMasterConfigurations() {
-    return Collections.<String, String> emptyMap();
+    return Collections.<String, String>emptyMap();
   }
 
   public Map<String, String> getWorkerConfigurations() {
-    return Collections.<String, String> emptyMap();
+    return Collections.<String, String>emptyMap();
   }
 
   public Map<Integer, SocketInfo> getMasters() {
@@ -250,23 +259,25 @@ public class SystemTestBase {
   public Map<Integer, SocketInfo> getWorkers() {
     HashMap<Integer, SocketInfo> m = new HashMap<Integer, SocketInfo>();
     Random r = new Random();
-    m.put(MyriaConstants.MASTER_ID + r.nextInt(100) + 1, new SocketInfo(DEFAULT_WORKER_STARTING_PORT));
-    m.put(MyriaConstants.MASTER_ID + r.nextInt(100) + 101, new SocketInfo(DEFAULT_WORKER_STARTING_PORT + 1));
+    m.put(MyriaConstants.MASTER_ID + r.nextInt(100) + 1, new SocketInfo(
+        DEFAULT_WORKER_STARTING_PORT));
+    m.put(MyriaConstants.MASTER_ID + r.nextInt(100) + 101, new SocketInfo(
+        DEFAULT_WORKER_STARTING_PORT + 1));
     return m;
   }
 
   /**
    * Override this if you want to run some code before each system test.
    */
-  public void before() throws Exception {
-  }
+  public void before() throws Exception {}
 
   @Before
   public void globalInit() throws Exception {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
-    final Path tempFilePath = Files.createTempDirectory(MyriaConstants.SYSTEM_NAME + "_systemtests");
+    final Path tempFilePath =
+        Files.createTempDirectory(MyriaConstants.SYSTEM_NAME + "_systemtests");
     workerTestBaseFolder = tempFilePath.toFile().getAbsolutePath();
     Map<String, String> masterConfigs = getMasterConfigurations();
     Map<String, String> workerConfigs = getWorkerConfigurations();
@@ -274,7 +285,8 @@ public class SystemTestBase {
     Map<Integer, SocketInfo> masters = getMasters();
     Map<Integer, SocketInfo> workers = getWorkers();
 
-    CatalogMaker.makeNNodesLocalParallelCatalog(workerTestBaseFolder, masters, workers, masterConfigs, workerConfigs);
+    CatalogMaker.makeNNodesLocalParallelCatalog(workerTestBaseFolder, masters, workers,
+        masterConfigs, workerConfigs);
 
     for (Entry<Integer, SocketInfo> master : masters.entrySet()) {
       masterPort = master.getValue().getPort();
@@ -299,7 +311,8 @@ public class SystemTestBase {
       throw new RuntimeException("Unable to start master, port " + masterPort + " is taken");
     }
     if (!AvailablePortFinder.available(masterDaemonPort)) {
-      throw new RuntimeException("Unable to start master api server, port " + masterDaemonPort + " is taken");
+      throw new RuntimeException("Unable to start master api server, port " + masterDaemonPort
+          + " is taken");
     }
     for (final int port : workerPorts) {
       if (!AvailablePortFinder.available(port)) {
@@ -316,8 +329,10 @@ public class SystemTestBase {
       targetWorkers.add(j);
     }
 
-    long milliTimeout = TimeUnit.SECONDS.toMillis(WORKER_BOOTUP_TIMEOUT_IN_SECOND_PER_WORKER * workers.size());
-    for (long start = System.currentTimeMillis(); !server.getAliveWorkers().containsAll(targetWorkers)
+    long milliTimeout =
+        TimeUnit.SECONDS.toMillis(WORKER_BOOTUP_TIMEOUT_IN_SECOND_PER_WORKER * workers.size());
+    for (long start = System.currentTimeMillis(); !server.getAliveWorkers().containsAll(
+        targetWorkers)
         && System.currentTimeMillis() - start < milliTimeout;) {
       Thread.sleep(500);
     }
@@ -334,11 +349,12 @@ public class SystemTestBase {
 
   public static void insert(final int workerID, final RelationKey relationKey, final Schema schema,
       final TupleBatch data) throws CatalogException, FileNotFoundException, DbException {
-    SQLiteAccessMethod
-        .tupleBatchInsert(SQLiteInfo.of(getAbsoluteDBFile(workerID).getAbsolutePath()), relationKey, data);
+    SQLiteAccessMethod.tupleBatchInsert(
+        SQLiteInfo.of(getAbsoluteDBFile(workerID).getAbsolutePath()), relationKey, data);
   }
 
-  protected HashMap<Tuple, Integer> simpleRandomJoinTestBase() throws CatalogException, IOException, DbException {
+  protected HashMap<Tuple, Integer> simpleRandomJoinTestBase() throws CatalogException,
+      IOException, DbException {
     /* worker 1 partition of table1 */
     createTable(workerIDs[0], JOIN_TEST_TABLE_1, "id long, name varchar(20)");
     /* worker 1 partition of table2 */
@@ -418,7 +434,8 @@ public class SystemTestBase {
 
   }
 
-  protected HashMap<Tuple, Integer> simpleFixedJoinTestBase() throws CatalogException, IOException, DbException {
+  protected HashMap<Tuple, Integer> simpleFixedJoinTestBase() throws CatalogException, IOException,
+      DbException {
     // worker 1 partition of table1
     createTable(workerIDs[0], JOIN_TEST_TABLE_1, "id long, name varchar(20)");
     // worker 1 partition of table2
@@ -428,16 +445,16 @@ public class SystemTestBase {
     // worker 2 partition of table2
     createTable(workerIDs[1], JOIN_TEST_TABLE_2, "id long, name varchar(20)");
 
-    final String[] tbl1NamesWorker1 = new String[] { "tb1_111", "tb1_222", "tb1_333" };
-    final String[] tbl1NamesWorker2 = new String[] { "tb1_444", "tb1_555", "tb1_666" };
-    final long[] tbl1IDsWorker1 = new long[] { 111, 222, 333 };
-    final long[] tbl1IDsWorker2 = new long[] { 444, 555, 666 };
+    final String[] tbl1NamesWorker1 = new String[] {"tb1_111", "tb1_222", "tb1_333"};
+    final String[] tbl1NamesWorker2 = new String[] {"tb1_444", "tb1_555", "tb1_666"};
+    final long[] tbl1IDsWorker1 = new long[] {111, 222, 333};
+    final long[] tbl1IDsWorker2 = new long[] {444, 555, 666};
 
-    final String[] tbl2NamesWorker1 = new String[] { "tb2_444", "tb2_555", "tb2_666" };
-    final String[] tbl2NamesWorker2 = new String[] { "tb2_111", "tb2_222", "tb2_333" };
+    final String[] tbl2NamesWorker1 = new String[] {"tb2_444", "tb2_555", "tb2_666"};
+    final String[] tbl2NamesWorker2 = new String[] {"tb2_111", "tb2_222", "tb2_333"};
 
-    final long[] tbl2IDsWorker1 = new long[] { 444, 555, 666 };
-    final long[] tbl2IDsWorker2 = new long[] { 111, 222, 333 };
+    final long[] tbl2IDsWorker1 = new long[] {444, 555, 666};
+    final long[] tbl2IDsWorker2 = new long[] {111, 222, 333};
 
     final TupleBatchBuffer tbl1Worker1 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
     final TupleBatchBuffer tbl1Worker2 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
@@ -514,7 +531,8 @@ public class SystemTestBase {
   void startWorkers() throws IOException {
     int workerCount = 0;
 
-    LOGGER.info("Workers for test [" + name.getMethodName() + "] are " + ArrayUtils.toString(workerIDs));
+    LOGGER.info("Workers for test [" + name.getMethodName() + "] are "
+        + ArrayUtils.toString(workerIDs));
     for (int i = 0; i < workerIDs.length; i++) {
       final int workerID = workerIDs[i];
       final String workingDir = getWorkerFolder(workerID);
@@ -557,11 +575,14 @@ public class SystemTestBase {
         // 4. Now, you are able to debug the worker processes. All the Java
         // debugging methods are supported such
         // as breakpoints.
-            .add("-Xrunjdwp:transport=dt_socket,address=" + (workerPorts[i] + 1000) + ",server=y,suspend=n");
+            .add(
+                "-Xrunjdwp:transport=dt_socket,address=" + (workerPorts[i] + 1000)
+                    + ",server=y,suspend=n");
       }
 
       /* Finally, set up the class to be run (Worker) and its command-line options. */
-      args.add(Worker.class.getCanonicalName(), "--workingDir", workingDir, "--testMethod", name.getMethodName());
+      args.add(Worker.class.getCanonicalName(), "--workingDir", workingDir, "--testMethod",
+          name.getMethodName());
 
       final ProcessBuilder pb = new ProcessBuilder(args.build());
 
@@ -589,7 +610,8 @@ public class SystemTestBase {
 
         void writeProcessOutput(final Process process) throws Exception {
 
-          final InputStreamReader tempReader = new InputStreamReader(new BufferedInputStream(process.getInputStream()));
+          final InputStreamReader tempReader =
+              new InputStreamReader(new BufferedInputStream(process.getInputStream()));
           final BufferedReader reader = new BufferedReader(tempReader);
           try {
             while (true) {
@@ -598,8 +620,8 @@ public class SystemTestBase {
                 break;
               }
 
-              LOGGER.info("[" + name.getMethodName() + "]" + "#" + workerIDs[myWorkerIdx] + "@localhost:"
-                  + workerPorts[myWorkerIdx] + "$ " + line);
+              LOGGER.info("[" + name.getMethodName() + "]" + "#" + workerIDs[myWorkerIdx]
+                  + "@localhost:" + workerPorts[myWorkerIdx] + "$ " + line);
             }
           } catch (final IOException e) {
             // remote has shutdown. Not an exception.
@@ -627,5 +649,27 @@ public class SystemTestBase {
   public static DatasetStatus getDatasetStatus(final HttpURLConnection conn) throws IOException {
     ObjectReader reader = MyriaJsonMapperProvider.getReader().withType(DatasetStatus.class);
     return reader.readValue(conn.getInputStream());
+  }
+
+  protected HttpURLConnection submitQuery(final QueryEncoding query) throws IOException {
+    ObjectWriter writer = MyriaJsonMapperProvider.getWriter();
+    String queryString = writer.writeValueAsString(query);
+    HttpURLConnection conn = JsonAPIUtils.submitQuery("localhost", masterDaemonPort, queryString);
+    if (null != conn.getErrorStream()) {
+      throw new IllegalStateException(getContents(conn));
+    }
+    return conn;
+  }
+
+  protected static String ingest(final RelationKey key, final Schema schema,
+      final DataSource source, @Nullable final Character delimiter) throws JsonProcessingException {
+    DatasetEncoding ingest = new DatasetEncoding();
+    ingest.relationKey = key;
+    ingest.schema = schema;
+    ingest.source = source;
+    if (delimiter != null) {
+      ingest.delimiter = delimiter;
+    }
+    return MyriaJsonMapperProvider.getWriter().writeValueAsString(ingest);
   }
 }

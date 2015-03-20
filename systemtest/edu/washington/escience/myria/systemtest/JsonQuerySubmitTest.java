@@ -15,23 +15,18 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import javax.annotation.Nullable;
-
 import org.apache.commons.httpclient.HttpStatus;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
-import edu.washington.escience.myria.api.encoding.DatasetEncoding;
 import edu.washington.escience.myria.api.encoding.EmptyRelationEncoding;
 import edu.washington.escience.myria.api.encoding.LocalMultiwayConsumerEncoding;
 import edu.washington.escience.myria.api.encoding.LocalMultiwayProducerEncoding;
@@ -53,16 +48,6 @@ public class JsonQuerySubmitTest extends SystemTestBase {
 
   static Logger LOGGER = LoggerFactory.getLogger(JsonQuerySubmitTest.class);
 
-  private HttpURLConnection submitQuery(final QueryEncoding query) throws IOException {
-    ObjectWriter writer = MyriaJsonMapperProvider.getWriter();
-    String queryString = writer.writeValueAsString(query);
-    HttpURLConnection conn = JsonAPIUtils.submitQuery("localhost", masterDaemonPort, queryString);
-    if (null != conn.getErrorStream()) {
-      throw new IllegalStateException(getContents(conn));
-    }
-    return conn;
-  }
-
   /**
    * Construct an empty ingest request.
    * 
@@ -72,20 +57,10 @@ public class JsonQuerySubmitTest extends SystemTestBase {
   public static String emptyIngest() throws JsonProcessingException {
     /* Construct the JSON for an Empty Ingest request. */
     RelationKey key = RelationKey.of("public", "adhoc", "smallTable");
-    Schema schema = Schema.of(ImmutableList.of(Type.STRING_TYPE, Type.LONG_TYPE), ImmutableList.of("foo", "bar"));
+    Schema schema =
+        Schema.of(ImmutableList.of(Type.STRING_TYPE, Type.LONG_TYPE),
+            ImmutableList.of("foo", "bar"));
     return ingest(key, schema, new EmptySource(), null);
-  }
-
-  public static String ingest(final RelationKey key, final Schema schema, final DataSource source,
-      @Nullable final Character delimiter) throws JsonProcessingException {
-    DatasetEncoding ingest = new DatasetEncoding();
-    ingest.relationKey = key;
-    ingest.schema = schema;
-    ingest.source = source;
-    if (delimiter != null) {
-      ingest.delimiter = delimiter;
-    }
-    return MyriaJsonMapperProvider.getWriter().writeValueAsString(ingest);
   }
 
   @Override
@@ -117,17 +92,22 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     conn.disconnect();
 
     String dataset = "Hello world,3242\n" + "goodbye world,321\n" + "pizza pizza,104";
-    JsonAPIUtils.replace("localhost", masterDaemonPort, "public", "adhoc", "smallTable", dataset, "csv");
+    JsonAPIUtils.replace("localhost", masterDaemonPort, "public", "adhoc", "smallTable", dataset,
+        "csv");
 
     String fetchedDataset =
-        JsonAPIUtils.download("localhost", masterDaemonPort, "public", "adhoc", "smallTable", "csv");
+        JsonAPIUtils
+            .download("localhost", masterDaemonPort, "public", "adhoc", "smallTable", "csv");
     assertTrue(fetchedDataset.contains("pizza pizza"));
 
     // Replace the dataset with all new contents
     dataset = "mexico\t42\n" + "sri lanka\t12342\n" + "belize\t802304";
-    JsonAPIUtils.replace("localhost", masterDaemonPort, "public", "adhoc", "smallTable", dataset, "tsv");
+    JsonAPIUtils.replace("localhost", masterDaemonPort, "public", "adhoc", "smallTable", dataset,
+        "tsv");
 
-    fetchedDataset = JsonAPIUtils.download("localhost", masterDaemonPort, "public", "adhoc", "smallTable", "csv");
+    fetchedDataset =
+        JsonAPIUtils
+            .download("localhost", masterDaemonPort, "public", "adhoc", "smallTable", "csv");
     assertFalse(fetchedDataset.contains("pizza pizza"));
     assertTrue(fetchedDataset.contains("sri lanka"));
   }
@@ -135,12 +115,15 @@ public class JsonQuerySubmitTest extends SystemTestBase {
   @Test
   public void ingestTest() throws Exception {
     /* good ingestion. */
-    DataSource source = new FileSource(Paths.get("testdata", "filescan", "simple_two_col_int.txt").toString());
+    DataSource source =
+        new FileSource(Paths.get("testdata", "filescan", "simple_two_col_int.txt").toString());
     RelationKey key = RelationKey.of("public", "adhoc", "testIngest");
-    Schema schema = Schema.of(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE), ImmutableList.of("x", "y"));
+    Schema schema =
+        Schema.of(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE), ImmutableList.of("x", "y"));
     Character delimiter = ' ';
     HttpURLConnection conn =
-        JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingest(key, schema, source, delimiter));
+        JsonAPIUtils.ingestData("localhost", masterDaemonPort,
+            ingest(key, schema, source, delimiter));
     if (null != conn.getErrorStream()) {
       throw new IllegalStateException(getContents(conn));
     }
@@ -150,7 +133,9 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     /* bad ingestion. */
     delimiter = ',';
     RelationKey newkey = RelationKey.of("public", "adhoc", "testbadIngest");
-    conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingest(newkey, schema, source, delimiter));
+    conn =
+        JsonAPIUtils.ingestData("localhost", masterDaemonPort,
+            ingest(newkey, schema, source, delimiter));
     assertEquals(conn.getResponseCode(), HttpURLConnection.HTTP_INTERNAL_ERROR);
     conn.disconnect();
   }
@@ -179,7 +164,9 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
     conn.disconnect();
 
-    String data = JsonAPIUtils.download("localhost", masterDaemonPort, "jwang", "global_join", "smallTable", "json");
+    String data =
+        JsonAPIUtils.download("localhost", masterDaemonPort, "jwang", "global_join", "smallTable",
+            "json");
     String subStr = "{\"follower\":46,\"followee\":17}";
     assertTrue(data.contains(subStr));
 
@@ -238,8 +225,8 @@ public class JsonQuerySubmitTest extends SystemTestBase {
       throw new IllegalStateException(getContents(conn));
     }
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
-    assertEquals(QueryStatusEncoding.Status.SUCCESS, server.getQueryManager().getQueryStatus(
-        getDatasetStatus(conn).getQueryId()).status);
+    assertEquals(QueryStatusEncoding.Status.SUCCESS,
+        server.getQueryManager().getQueryStatus(getDatasetStatus(conn).getQueryId()).status);
     conn.disconnect();
 
     File queryJson = new File("./jsonQueries/multiIDB_jwang/joinChain.json");
@@ -253,7 +240,8 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     while (!server.getQueryManager().queryCompleted(queryId)) {
       Thread.sleep(100);
     }
-    assertEquals(QueryStatusEncoding.Status.SUCCESS, server.getQueryManager().getQueryStatus(queryId).status);
+    assertEquals(QueryStatusEncoding.Status.SUCCESS,
+        server.getQueryManager().getQueryStatus(queryId).status);
   }
 
   @Test
@@ -264,8 +252,8 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     final int BYTES_TO_READ = 1024; // read 1 kb
 
     URL url =
-        new URL(String.format("http://%s:%d/dataset/download_test?num_tb=%d&format=%s", "localhost", masterDaemonPort,
-            NUM_DUPLICATES, "json"));
+        new URL(String.format("http://%s:%d/dataset/download_test?num_tb=%d&format=%s",
+            "localhost", masterDaemonPort, NUM_DUPLICATES, "json"));
     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
     conn.setDoOutput(true);
     conn.setRequestMethod("GET");
@@ -289,8 +277,10 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     }
     long nanoElapse = System.nanoTime() - start;
     System.out.println("Download size: " + (numBytesRead * 1.0 / 1024 / 1024 / 1024) + " GB");
-    System.out.println("Speed is: " + (numBytesRead * 1.0 / 1024 / 1024 / TimeUnit.NANOSECONDS.toSeconds(nanoElapse))
-        + " MB/s");
+    System.out
+        .println("Speed is: "
+            + (numBytesRead * 1.0 / 1024 / 1024 / TimeUnit.NANOSECONDS.toSeconds(nanoElapse))
+            + " MB/s");
     while (server.getQueryManager().getQueries(1L, null, null, null).get(0).finishTime == null) {
       Thread.sleep(100);
     }
