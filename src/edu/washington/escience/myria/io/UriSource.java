@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.SequenceInputStream;
 import java.io.Serializable;
 import java.net.URI;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -21,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /**
  * A data source that pulls data from a specified URI. The URI may be: a path on the local file system; an HDFS link; a
  * web link; an AWS link; and perhaps more.
- * 
+ *
  * If the URI points to a directory, all files in that directory will be concatenated into a single {@link InputStream}.
  */
 public class UriSource implements DataSource, Serializable {
@@ -38,10 +39,10 @@ public class UriSource implements DataSource, Serializable {
   /**
    * Construct a source of data from the specified URI. The URI may be: a path on the local file system; an HDFS link; a
    * web link; an AWS link; and perhaps more.
-   * 
+   *
    * If the URI points to a directory in HDFS, all files in that directory will be concatenated into a single
    * {@link InputStream}.
-   * 
+   *
    * @param uri the Uniform Resource Indicator (URI) of the data source.
    */
   @JsonCreator
@@ -51,14 +52,24 @@ public class UriSource implements DataSource, Serializable {
 
   @Override
   public InputStream getInputStream() throws IOException {
-    // Use Hadoop's URI parsing machinery to extract an input stream for the underlying URI
+    URI parsedUri = URI.create(uri);
+
+    return parsedUri.getScheme() == "http" || parsedUri.getScheme() == "https"
+      ? parsedUri.toURL().openConnection().getInputStream()
+      : getHadoopFileSystemInputStream(parsedUri);
+  }
+
+  /**
+   * Get an input stream using the configured Hadoop file system for the given URI scheme
+   */
+  private static InputStream getHadoopFileSystemInputStream(final URI uri) throws IOException {
     Configuration conf = new Configuration();
-    FileSystem fs = FileSystem.get(URI.create(uri), conf);
+    FileSystem fs = FileSystem.get(uri, conf);
     Path rootPath = new Path(uri);
     FileStatus[] statii = fs.globStatus(rootPath);
 
     if (statii == null || statii.length == 0) {
-      throw new FileNotFoundException(uri);
+      throw new FileNotFoundException(uri.toString());
     }
 
     List<InputStream> streams = new ArrayList<InputStream>();
