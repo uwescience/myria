@@ -54,7 +54,7 @@ public class UriSource implements DataSource, Serializable {
   public InputStream getInputStream() throws IOException {
     URI parsedUri = URI.create(uri);
 
-    return parsedUri.getScheme().equals("http") || parsedUri.getScheme().equals("https")
+    return (parsedUri.getScheme().equals("http") || parsedUri.getScheme().equals("https"))
       ? parsedUri.toURL().openConnection().getInputStream()
       : getHadoopFileSystemInputStream(parsedUri);
   }
