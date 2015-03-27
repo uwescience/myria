@@ -2,12 +2,16 @@
 
 """Generates per-worker scripts to alter all Postgres table columns of FLOAT_TYPE from DOUBLE PRECISION to REAL. Should be run on master node."""
 
+import sys
 from collections import defaultdict
 import sqlalchemy
 import sqlalchemy.orm
 
+catalog_file = sys.argv[1] if len(sys.argv) > 1 else "master.catalog"
+
 # The sqlalchemy connection to the actual database
-db = sqlalchemy.create_engine("sqlite:///master.catalog2015-03-20-11:14")
+db_url = "sqlite:///%s" % catalog_file
+db = sqlalchemy.create_engine(db_url)
 
 meta = sqlalchemy.MetaData(bind=db)
 meta.reflect()
