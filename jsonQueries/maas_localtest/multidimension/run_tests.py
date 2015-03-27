@@ -29,15 +29,20 @@ def run_em_test(filename, workers):
     bd.pad_points()
     bd.copy_points()
     bd.upload_components()
+    # Copy over components and try iteration
     bd.astro_components_to_components()
     try:
         times.append(bd.EMStep())
     except:
         None 
+    # Copy over components and try iteration        
+    bd.astro_components_to_components()    
     try:
         times.append(bd.EMStep())
     except:
-        None 
+        None
+    # Copy over components and try iteration        
+    bd.astro_components_to_components()        
     try:
         times.append(bd.EMStep())
     except:
