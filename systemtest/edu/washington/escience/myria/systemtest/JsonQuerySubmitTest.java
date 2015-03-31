@@ -15,23 +15,18 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import javax.annotation.Nullable;
-
 import org.apache.commons.httpclient.HttpStatus;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
-import edu.washington.escience.myria.api.encoding.DatasetEncoding;
 import edu.washington.escience.myria.api.encoding.EmptyRelationEncoding;
 import edu.washington.escience.myria.api.encoding.LocalMultiwayConsumerEncoding;
 import edu.washington.escience.myria.api.encoding.LocalMultiwayProducerEncoding;
@@ -53,16 +48,6 @@ public class JsonQuerySubmitTest extends SystemTestBase {
 
   static Logger LOGGER = LoggerFactory.getLogger(JsonQuerySubmitTest.class);
 
-  private HttpURLConnection submitQuery(final QueryEncoding query) throws IOException {
-    ObjectWriter writer = MyriaJsonMapperProvider.getWriter();
-    String queryString = writer.writeValueAsString(query);
-    HttpURLConnection conn = JsonAPIUtils.submitQuery("localhost", masterDaemonPort, queryString);
-    if (null != conn.getErrorStream()) {
-      throw new IllegalStateException(getContents(conn));
-    }
-    return conn;
-  }
-
   /**
    * Construct an empty ingest request.
    * 
@@ -74,18 +59,6 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     RelationKey key = RelationKey.of("public", "adhoc", "smallTable");
     Schema schema = Schema.of(ImmutableList.of(Type.STRING_TYPE, Type.LONG_TYPE), ImmutableList.of("foo", "bar"));
     return ingest(key, schema, new EmptySource(), null);
-  }
-
-  public static String ingest(final RelationKey key, final Schema schema, final DataSource source,
-      @Nullable final Character delimiter) throws JsonProcessingException {
-    DatasetEncoding ingest = new DatasetEncoding();
-    ingest.relationKey = key;
-    ingest.schema = schema;
-    ingest.source = source;
-    if (delimiter != null) {
-      ingest.delimiter = delimiter;
-    }
-    return MyriaJsonMapperProvider.getWriter().writeValueAsString(ingest);
   }
 
   @Override
