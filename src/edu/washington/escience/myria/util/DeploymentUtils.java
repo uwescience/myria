@@ -195,12 +195,12 @@ public final class DeploymentUtils {
     builder.append(" -Djava.util.logging.config.file=logging.properties");
     builder.append(" -Dlog4j.configuration=log4j.properties");
     builder.append(" -Djava.library.path=" + librarypath);
-    if (debug) {
+    //if (debug) {
       // required to run in debug mode
       builder.append(" -Dorg.jboss.netty.debug");
       builder.append(" -Xdebug");
       builder.append(" -Xrunjdwp:transport=dt_socket,address=" + (port + 1000) + ",server=y,suspend=n");
-    }
+    //}
     builder.append(" " + heapSize);
     builder.append(" edu.washington.escience.myria.parallel.Worker");
     builder.append(" --workingDir " + workerDir);
@@ -233,6 +233,8 @@ public final class DeploymentUtils {
     builder.append(" cd " + workingDir + ";");
     builder.append(" nohup java -cp 'conf:libs/*'");
     builder.append(" -Djava.util.logging.config.file=logging.properties");
+    //in ec2, open debug port through security group
+    builder.append(" -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=65007");
     builder.append(" -Dlog4j.configuration=log4j.properties");
     builder.append(" -Djava.library.path=sqlite4java-392");
     builder.append(" " + maxHeapSize);
