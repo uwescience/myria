@@ -1252,6 +1252,7 @@ public final class MasterCatalog {
       }
     }
     queryStatus.profilingMode = ImmutableList.copyOf(modes);
+    queryStatus.language = statement.columnString(9);
     return queryStatus;
   }
 
@@ -1405,7 +1406,7 @@ public final class MasterCatalog {
     }
 
     String selectClause =
-        "SELECT query_id,raw_query,submit_time,start_time,finish_time,elapsed_nanos,status,message,profiling_mode";
+        "SELECT query_id,raw_query,submit_time,start_time,finish_time,elapsed_nanos,status,message,profiling_mode,language";
     StringBuilder coreQuery = new StringBuilder();
     Joiner.on(' ').appendTo(coreQuery, selectClause, fromClause);
     if (whereClause.size() > 0) {

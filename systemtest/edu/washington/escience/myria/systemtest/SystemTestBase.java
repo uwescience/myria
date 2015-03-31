@@ -25,6 +25,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.annotation.Nullable;
+
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.ArrayUtils;
@@ -40,7 +42,9 @@ import org.junit.runner.Description;
 import org.slf4j.LoggerFactory;
 
 import com.almworks.sqlite4java.SQLiteException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.collect.ImmutableList;
 import com.google.protobuf.ByteString;
 
@@ -54,18 +58,22 @@ import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.SQLiteAccessMethod;
 import edu.washington.escience.myria.accessmethod.SQLiteInfo;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
+import edu.washington.escience.myria.api.encoding.DatasetEncoding;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
+import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.CatalogMaker;
 import edu.washington.escience.myria.coordinator.catalog.WorkerCatalog;
 import edu.washington.escience.myria.daemon.MasterDaemon;
+import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.parallel.Worker;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.FSUtils;
+import edu.washington.escience.myria.util.JsonAPIUtils;
 import edu.washington.escience.myria.util.SQLiteUtils;
 import edu.washington.escience.myria.util.TestUtils;
 import edu.washington.escience.myria.util.Tuple;
@@ -627,5 +635,27 @@ public class SystemTestBase {
   public static DatasetStatus getDatasetStatus(final HttpURLConnection conn) throws IOException {
     ObjectReader reader = MyriaJsonMapperProvider.getReader().withType(DatasetStatus.class);
     return reader.readValue(conn.getInputStream());
+  }
+
+  protected HttpURLConnection submitQuery(final QueryEncoding query) throws IOException {
+    ObjectWriter writer = MyriaJsonMapperProvider.getWriter();
+    String queryString = writer.writeValueAsString(query);
+    HttpURLConnection conn = JsonAPIUtils.submitQuery("localhost", masterDaemonPort, queryString);
+    if (null != conn.getErrorStream()) {
+      throw new IllegalStateException(getContents(conn));
+    }
+    return conn;
+  }
+
+  protected static String ingest(final RelationKey key, final Schema schema, final DataSource source,
+      @Nullable final Character delimiter) throws JsonProcessingException {
+    DatasetEncoding ingest = new DatasetEncoding();
+    ingest.relationKey = key;
+    ingest.schema = schema;
+    ingest.source = source;
+    if (delimiter != null) {
+      ingest.delimiter = delimiter;
+    }
+    return MyriaJsonMapperProvider.getWriter().writeValueAsString(ingest);
   }
 }
