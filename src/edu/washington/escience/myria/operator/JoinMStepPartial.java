@@ -480,7 +480,6 @@ public final class JoinMStepPartial extends BinaryOperator {
 		}
 
 		if (isEOIReady()) {
-
 			/*
 			 * New JoinMStep logic: Left child has reached EOS, so we now can
 			 * output partial responsibilities. ans.putLong(0, 0); nexttb =
