@@ -479,42 +479,44 @@ public final class JoinMStepPartial extends BinaryOperator {
 			 */
 		}
 
-		/*
-		 * New JoinMStep logic: Left child has reached EOS, so we now can output
-		 * partial responsibilities. ans.putLong(0, 0); nexttb = ans.popAny();
-		 */
-		if (!hasOutputAll) {
-			// Add some tuples to the output
-			for (int k = 0; k < numComponents; k++) {
-				// add the gaussian id
-				ans.putLong(0, k);
-				double[] partialState = states[k].getPartialStateDump();
-				for (int i = 0; i < partialState.length; i++) {
-					ans.putDouble(i + 1, partialState[i]);
-				}
-
-				// for testing:
-				// PartialState newState = new PartialState(matrixLibrary);
-				// newState.addPartialStateDump(states[k].getPartialStateDump());
-				// double[] partialState = newState.getPartialStateDump();
-				//
-				// for (int i = 0; i < partialState.length; i++) {
-				// ans.putDouble(i + 1, partialState[i]);
-				// }
-
-			}
-			hasOutputAll = true;
-			LOGGER.info("NUMBER OF TUPLES PROCESSESED WHEN COMPUTING OUTPUT = "
-					+ tuples_added);
-			LOGGER.info("childrenEOI[0]  left.eos()  childrenEOI[1]  right.eos()");
-			LOGGER.info(String.valueOf(childrenEOI[0]) + "  "
-					+ String.valueOf(left.eos()) + "  "
-					+ String.valueOf(childrenEOI[1]) + "  "
-					+ String.valueOf(right.eos()));
-		}
-
 		if (isEOIReady()) {
 			nexttb = ans.popAny();
+
+			/*
+			 * New JoinMStep logic: Left child has reached EOS, so we now can
+			 * output partial responsibilities. ans.putLong(0, 0); nexttb =
+			 * ans.popAny();
+			 */
+			if (!hasOutputAll) {
+				// Add some tuples to the output
+				for (int k = 0; k < numComponents; k++) {
+					// add the gaussian id
+					ans.putLong(0, k);
+					double[] partialState = states[k].getPartialStateDump();
+					for (int i = 0; i < partialState.length; i++) {
+						ans.putDouble(i + 1, partialState[i]);
+					}
+
+					// for testing:
+					// PartialState newState = new PartialState(matrixLibrary);
+					// newState.addPartialStateDump(states[k].getPartialStateDump());
+					// double[] partialState = newState.getPartialStateDump();
+					//
+					// for (int i = 0; i < partialState.length; i++) {
+					// ans.putDouble(i + 1, partialState[i]);
+					// }
+
+				}
+				hasOutputAll = true;
+				LOGGER.info("NUMBER OF TUPLES PROCESSESED WHEN COMPUTING OUTPUT = "
+						+ tuples_added);
+				LOGGER.info("childrenEOI[0]  left.eos()  childrenEOI[1]  right.eos()");
+				LOGGER.info(String.valueOf(childrenEOI[0]) + "  "
+						+ String.valueOf(left.eos()) + "  "
+						+ String.valueOf(childrenEOI[1]) + "  "
+						+ String.valueOf(right.eos()));
+			}
+
 		}
 
 		return nexttb;
