@@ -506,6 +506,11 @@ public final class JoinMStepPartial extends BinaryOperator {
 			hasOutputAll = true;
 			LOGGER.info("NUMBER OF TUPLES PROCESSESED WHEN COMPUTING OUTPUT = "
 					+ tuples_added);
+			LOGGER.info("childrenEOI[0]  left.eos()  childrenEOI[1]  right.eos()");
+			LOGGER.info(String.valueOf(childrenEOI[0]) + "  "
+					+ String.valueOf(left.eos()) + "  "
+					+ String.valueOf(childrenEOI[1]) + "  "
+					+ String.valueOf(right.eos()));
 		}
 
 		if (isEOIReady()) {
