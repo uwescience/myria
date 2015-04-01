@@ -480,7 +480,6 @@ public final class JoinMStepPartial extends BinaryOperator {
 		}
 
 		if (isEOIReady()) {
-			nexttb = ans.popAny();
 
 			/*
 			 * New JoinMStep logic: Left child has reached EOS, so we now can
@@ -517,6 +516,7 @@ public final class JoinMStepPartial extends BinaryOperator {
 						+ String.valueOf(right.eos()));
 			}
 
+			nexttb = ans.popAny();
 		}
 
 		return nexttb;
