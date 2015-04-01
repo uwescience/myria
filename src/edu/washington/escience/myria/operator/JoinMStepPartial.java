@@ -42,6 +42,14 @@ public final class JoinMStepPartial extends BinaryOperator {
 	private static final long serialVersionUID = 1L;
 
 	/**
+	 * Create logger for info logging below.
+	 */
+	private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory
+			.getLogger(ApplyEStep.class);
+
+	private int tuples_added;
+
+	/**
 	 * The names of the output columns.
 	 */
 	private final ImmutableList<String> outputColumns;
@@ -251,6 +259,7 @@ public final class JoinMStepPartial extends BinaryOperator {
 		for (int i = 0; i < numComponents; i++) {
 			states[i] = new PartialState(matrixLibrary);
 		}
+		tuples_added = 0;
 	}
 
 	/**
@@ -495,6 +504,8 @@ public final class JoinMStepPartial extends BinaryOperator {
 
 			}
 			hasOutputAll = true;
+			LOGGER.info("NUMBER OF TUPLES PROCESSESED WHEN COMPUTING OUTPUT = "
+					+ tuples_added);
 		}
 
 		if (isEOIReady()) {
@@ -571,6 +582,9 @@ public final class JoinMStepPartial extends BinaryOperator {
 			// doJoin.row = row;
 			// tuplesWithHashCode.forEach(doJoin);
 			// }
+
+			// Log that a point was added
+			tuples_added += 1;
 		}
 	}
 
