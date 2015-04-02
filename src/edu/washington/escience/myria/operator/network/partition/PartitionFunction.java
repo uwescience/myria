@@ -22,6 +22,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 @JsonSubTypes({
     @Type(value = RoundRobinPartitionFunction.class, name = "RoundRobin"),
     @Type(value = SingleFieldHashPartitionFunction.class, name = "SingleFieldHash"),
+    @Type(value = RawValuePartitionFunction.class, name = "RawValue"),
     @Type(value = MultiFieldHashPartitionFunction.class, name = "MultiFieldHash"),
     @Type(value = WholeTupleHashPartitionFunction.class, name = "WholeTupleHash") })
 public abstract class PartitionFunction implements Serializable {
