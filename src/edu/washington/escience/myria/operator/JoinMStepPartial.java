@@ -47,7 +47,8 @@ public final class JoinMStepPartial extends BinaryOperator {
 	private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory
 			.getLogger(ApplyEStep.class);
 
-	private int tuples_added;
+	// Only used for debugging
+	// private int tuples_added;
 
 	/**
 	 * The names of the output columns.
@@ -259,7 +260,7 @@ public final class JoinMStepPartial extends BinaryOperator {
 		for (int i = 0; i < numComponents; i++) {
 			states[i] = new PartialState(matrixLibrary);
 		}
-		tuples_added = 0;
+		// tuples_added = 0;
 	}
 
 	/**
@@ -506,13 +507,13 @@ public final class JoinMStepPartial extends BinaryOperator {
 
 				}
 				hasOutputAll = true;
-				LOGGER.info("NUMBER OF TUPLES PROCESSESED WHEN COMPUTING OUTPUT = "
-						+ tuples_added);
-				LOGGER.info("childrenEOI[0]  left.eos()  childrenEOI[1]  right.eos()");
-				LOGGER.info(String.valueOf(childrenEOI[0]) + "  "
-						+ String.valueOf(left.eos()) + "  "
-						+ String.valueOf(childrenEOI[1]) + "  "
-						+ String.valueOf(right.eos()));
+				// LOGGER.info("NUMBER OF TUPLES PROCESSESED WHEN COMPUTING OUTPUT = "
+				// + tuples_added);
+				// LOGGER.info("childrenEOI[0]  left.eos()  childrenEOI[1]  right.eos()");
+				// LOGGER.info(String.valueOf(childrenEOI[0]) + "  "
+				// + String.valueOf(left.eos()) + "  "
+				// + String.valueOf(childrenEOI[1]) + "  "
+				// + String.valueOf(right.eos()));
 			}
 
 			nexttb = ans.popAny();
@@ -536,6 +537,9 @@ public final class JoinMStepPartial extends BinaryOperator {
 	/**
 	 * Process the tuples from left child.
 	 * 
+	 * The left child is the points relation, so for each point we will add it
+	 * to the partial state of each Gaussian component.
+	 * 
 	 * @param tb
 	 *            TupleBatch to be processed.
 	 */
@@ -545,26 +549,23 @@ public final class JoinMStepPartial extends BinaryOperator {
 		doJoin.joinAgainstCmpColumns = rightCompareIndx;
 		doJoin.inputTB = tb;
 
-		// ans.absorb(tb);
 		List<? extends Column<?>> inputColumns = tb.getDataColumns();
 
 		for (int row = 0; row < tb.numTuples(); ++row) {
-
+			// indexCounter keeps track of the column index being scanned in
+			// from the current tuple.
 			int indexCounter = 0;
 
 			long pid = inputColumns.get(indexCounter).getLong(row);
-			// ans.putLong(indexCounter, pid);
 			indexCounter++;
 
 			double[][] xArray = new double[numDimensions][1];
 			for (int i = 0; i < numDimensions; i++) {
+				// x is a column vector, represented in a 2D matrix
 				xArray[i][0] = inputColumns.get(indexCounter).getDouble(row);
-				// ans.putDouble(indexCounter, xArray[i][0]);
 				indexCounter++;
 			}
 
-			// Now the points relation has all the correct responsibilities in
-			// place
 			double[] responsibilities = new double[numComponents];
 			for (int i = 0; i < numComponents; i++) {
 				responsibilities[i] = inputColumns.get(indexCounter).getDouble(
@@ -572,25 +573,14 @@ public final class JoinMStepPartial extends BinaryOperator {
 				indexCounter++;
 			}
 
-			// Process the partial responsiblities
+			// For each component, add the current point to that component
+			// with the correct responsibility.
 			for (int i = 0; i < numComponents; i++) {
 				states[i].addPoint(xArray, responsibilities[i]);
-
-				// ans.putDouble(indexCounter,
-				// Math.exp(partialResponsibilities[i] - logNormalization));
 			}
 
-			// final int cntHashCode = HashUtils.hashSubRow(tb,
-			// doJoin.inputCmpColumns, row);
-			// TIntList tuplesWithHashCode = rightHashTableIndices
-			// .get(cntHashCode);
-			// if (tuplesWithHashCode != null) {
-			// doJoin.row = row;
-			// tuplesWithHashCode.forEach(doJoin);
-			// }
-
 			// Log that a point was added
-			tuples_added += 1;
+			// tuples_added += 1;
 		}
 	}
 
@@ -601,45 +591,9 @@ public final class JoinMStepPartial extends BinaryOperator {
 	 *            TupleBatch to be processed.
 	 */
 	protected void processRightChildTB(final TupleBatch tb) {
-		// List<? extends Column<?>> inputColumns = tb.getDataColumns();
-		//
-		// for (int row = 0; row < tb.numTuples(); ++row) {
-		//
-		// // Read the data into data structures for computation
-		// int indexCounter = 0;
-		//
-		// long gid = inputColumns.get(indexCounter).getLong(row);
-		// // ans.putLong(indexCounter, gid);
-		// indexCounter++;
-		//
-		// double pi = inputColumns.get(indexCounter).getDouble(row);
-		// // ans.putDouble(indexCounter, pi);
-		// indexCounter++;
-		//
-		// double[][] muArray = new double[numDimensions][1];
-		// for (int i = 0; i < numDimensions; i++) {
-		// muArray[i][0] = inputColumns.get(indexCounter).getDouble(row);
-		// // ans.putDouble(indexCounter, muArray[i][0]);
-		// indexCounter++;
-		// }
-		//
-		// // Read in sigma in row-major order
-		// double[][] sigmaArray = new double[numDimensions][numDimensions];
-		// for (int i = 0; i < numDimensions; i++) {
-		// for (int j = 0; j < numDimensions; j++) {
-		// sigmaArray[i][j] = inputColumns.get(indexCounter)
-		// .getDouble(row);
-		// // ans.putDouble(indexCounter, sigmaArray[i][j]);
-		// indexCounter++;
-		// }
-		// }
-		//
-		// pis.put((int) gid, pi);
-		// mus.put((int) gid, muArray);
-		// sigmas.put((int) gid, sigmaArray);
-		//
-		// }
-
+		// For the MStep, we don't need the parameters of the Gaussians, so this
+		// is really a pure aggregate operator rather than a join. This will be
+		// reworked later.
 	}
 
 	/**
@@ -677,67 +631,73 @@ public final class JoinMStepPartial extends BinaryOperator {
 		private static final long serialVersionUID = 1L;
 
 		/**
-		 * 
+		 * The Matrix library we'll use for matrix operators
 		 */
 		private final String matrixLibrary;
 
 		/**
-		 * 
+		 * The partial sum of responsibilities for the points encountered so
+		 * far.
 		 */
 		private double r_k_partial;
 
 		/**
-		 * 
+		 * The partial sum of means over the points encountered so far. This is
+		 * stored in the jblas DoubleMatrix class.
 		 */
 		private DoubleMatrix mu_k_partial;
 
 		/**
-		 * 
+		 * The partial sum of covariances over the points encountered so far.
+		 * This is stored in the jblas DoubleMatrix class.
 		 */
 		private DoubleMatrix sigma_k_partial;
 
 		/**
-		 * 
+		 * The partial sum of means over the points encountered so far. This is
+		 * stored in the JAMA Matrix class.
 		 */
 		private Matrix jama_mu_k_partial;
 
 		/**
-		 * 
+		 * The partial sum of covariances over the points encountered so far.
+		 * This is stored in the JAMA Matrix class.
 		 */
 		private Matrix jama_sigma_k_partial;
 
 		/**
-		 * 
+		 * The number of points encountered so far.
 		 */
 		private int nPoints;
 
 		/**
-		 * 
+		 * A boolean flag indicating whether the final parameters have been
+		 * computed or not.
 		 */
 		private boolean isCompleted;
 
 		/**
-		 * 
+		 * The final sum of responsibilities for this Gaussian component.
 		 */
 		private double r_k;
 
 		/**
-		 * 
+		 * The final amplitude of this Gaussian component.
 		 */
 		private double piFinal;
 
 		/**
-		 * 
+		 * The final mean vector of this Gaussian components.
 		 */
 		private double[][] muFinalArray;
 
 		/**
-		 * 
+		 * The final covariance matrix of this Gaussian component.
 		 */
 		private double[][] sigmaFinalArray;
 
 		/**
-		 * 
+		 * Constructs a partial state
 		 */
 		private PartialState(String matrixLibrary) {
 			this.matrixLibrary = matrixLibrary;
