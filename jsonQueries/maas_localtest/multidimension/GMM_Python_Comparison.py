@@ -55,7 +55,7 @@ def run_gmm_test(n_steps, num_dimensions, n_components, logging=False):
 
     for j in n_iterations:
         # GMM code goes here
-        gmm = GMM(n_components=n_components, n_iter=j, n_init=1, tol=1e9, random_state=0, covariance_type='full', min_covar=1.e-14)
+        gmm = GMM(n_components=n_components, n_iter=j, n_init=1, tol=1e-9, random_state=0, covariance_type='full', min_covar=1.e-14)
         gmm.fit(data)
         responsibilities = gmm.predict_proba(data)
         resp = responsibilities
