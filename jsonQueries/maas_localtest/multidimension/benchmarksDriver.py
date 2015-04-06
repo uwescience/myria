@@ -86,7 +86,7 @@ n_iter = 1
 
 def run_comparison(n):
     create_test_data(n)
-    for i in range(n)
+    for i in range(n):
         EMStep()
     compare_results()
 
