@@ -88,8 +88,8 @@ def upload_components():
     subprocess.call(upload_string("AstroComponents"), shell=True)
     subprocess.call(upload_string("AstroExpectedComponents"), shell=True)
 
-def create_test_data():
-    subprocess.call("python ./GMM_Python_Comparison.py %s" % n_iter, shell=True)
+def create_test_data(n_iterations=1):
+    subprocess.call("python ./GMM_Python_Comparison.py %s" % n_iterations, shell=True)
 
     # Upload the test data
     subprocess.call(upload_string("PointsOnly"), shell=True)
