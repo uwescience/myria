@@ -20,16 +20,15 @@ public final class RawValuePartitionFunction extends PartitionFunction {
   private final int index;
 
   /**
-   * @param numPartitions number of partitions.
    * @param index the index of the partition field.
    */
   @JsonCreator
   public RawValuePartitionFunction(
-      @JsonProperty("numPartitions") final Integer numPartitions,
       @JsonProperty(value = "index", required = true) final Integer index) {
-    super(numPartitions);
+    super(null);
     this.index = java.util.Objects.requireNonNull(index, "missing property index");
-    Preconditions.checkArgument(this.index >= 0, "RawValue field index cannot take negative value %s", this.index);
+    Preconditions.checkArgument(this.index >= 0,
+        "RawValue field index cannot take negative value %s", this.index);
   }
 
   /**
@@ -49,11 +48,8 @@ public final class RawValuePartitionFunction extends PartitionFunction {
         "RawValue index column must be of type INT");
     final int[] result = new int[tb.numTuples()];
     for (int i = 0; i < result.length; i++) {
-      int p = tb.getInt(index, i) % numPartition();
-      if (p < 0) {
-        p = p + numPartition();
-      }
-      result[i] = p;
+      // Offset by -1 because WorkerIDs are 1-indexed.
+      result[i] = tb.getInt(index, i) - 1;
     }
     return result;
   }
