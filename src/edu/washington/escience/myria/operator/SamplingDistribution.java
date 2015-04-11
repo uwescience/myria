@@ -37,7 +37,7 @@ public class SamplingDistribution extends UnaryOperator {
   }
 
   @Override
-  protected TupleBatch fetchNextReady() throws DbException {r
+  protected TupleBatch fetchNextReady() throws DbException {
     if (getChild().eos()) {
       return null;
     }
