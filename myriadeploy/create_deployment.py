@@ -28,6 +28,7 @@ def _get_header(path, name='myria', rest_port=8753, database_type='postgresql',
               'name = {name}\n'
               'path = {path}\n'
               'dbms = {dbms}\n'
+              'database_name = {name}\n'
               'database_port = {database_port}\n'
               'rest_port = {rest_port}\n'.format(
                   name=name, path=path, dbms=database_type,
