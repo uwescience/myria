@@ -36,7 +36,7 @@ def _get_header(path, name='myria', rest_port=8753, database_type='postgresql',
     if database_username:
         header += 'username = %s\n' % database_username
     if database_password:
-        header += 'password = %s\n' % database_password
+        header += 'database_password = %s\n' % database_password
     if heap:
         header += 'max_heap_size = -Xmx%s\n' % heap
     if debug:
