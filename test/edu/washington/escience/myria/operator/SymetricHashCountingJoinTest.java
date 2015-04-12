@@ -31,7 +31,7 @@ public class SymetricHashCountingJoinTest {
       }
     }
     join.close();
-    assertEquals(5L, count);
+    assertEquals(7L, count);
   }
 
   @Test(expected = IllegalStateException.class)

@@ -82,6 +82,10 @@ public final class JoinTestUtils {
     tbb.putLong(1, -11L);
     tbb.putBoolean(2, false);
 
+    tbb.putString(0, "value3");
+    tbb.putLong(1, -11L);
+    tbb.putBoolean(2, false);
+
     ret.add(tbb.popAny());
 
     return ret;
