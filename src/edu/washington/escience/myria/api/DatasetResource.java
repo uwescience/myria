@@ -54,6 +54,7 @@ import edu.washington.escience.myria.operator.BinaryFileScan;
 import edu.washington.escience.myria.operator.FileScan;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.TipsyFileScan;
+import edu.washington.escience.myria.operator.network.partition.HowPartitioned;
 import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
 import edu.washington.escience.myria.operator.network.partition.RoundRobinPartitionFunction;
 import edu.washington.escience.myria.parallel.Server;
@@ -328,8 +329,12 @@ public final class DatasetResource {
     Operator source = new FileScan(new InputStreamSource(is), schema, delimiter);
 
     ResponseBuilder builder = Response.ok();
-    return doIngest(relationKey, source, null, null, true, builder, server.getDatasetStatus(relationKey)
-        .getHowPartitioned());
+    HowPartitioned howPartitioned = server.getDatasetStatus(relationKey).getHowPartitioned();
+    PartitionFunction pf = howPartitioned.getPf();
+    if (pf == null) {
+      pf = new RoundRobinPartitionFunction(null);
+    }
+    return doIngest(relationKey, source, howPartitioned.getWorkersAsSet(), null, true, builder, pf);
   }
 
   /**
@@ -346,7 +351,7 @@ public final class DatasetResource {
     ResponseBuilder builder = Response.created(datasetUri);
     return doIngest(dataset.relationKey, new FileScan(dataset.source, dataset.schema, dataset.delimiter, dataset.quote,
         dataset.escape, dataset.numberOfSkippedLines), dataset.workers, dataset.indexes, dataset.overwrite, builder,
-        dataset.howPartitioned);
+        dataset.partitionFunction);
   }
 
   /**
@@ -363,7 +368,7 @@ public final class DatasetResource {
    * @param overwrite optional: indicates that an existing relation should be overwritten. If <code>false</code>, then a
    *          409 Conflict response will be thrown if <code>relationKey</code> already exists in the catalog.
    * @param data optional: the source of bytes to be loaded.
-   * @param howPartitioned optional: how the data will be partitioned, using RoundRobin by default.
+   * @param partitionFunction optional: how the data will be partitioned, using RoundRobin by default.
    * @return the created dataset resource.
    * @throws DbException if there is an error in the database.
    */
@@ -373,7 +378,7 @@ public final class DatasetResource {
       @FormDataParam("schema") final Schema schema, @FormDataParam("delimiter") final Character delimiter,
       @FormDataParam("binary") final Boolean binary, @FormDataParam("isLittleEndian") final Boolean isLittleEndian,
       @FormDataParam("overwrite") final Boolean overwrite, @FormDataParam("data") final InputStream data,
-      @FormDataParam("howPartitioned") final PartitionFunction howPartitioned) throws DbException {
+      @FormDataParam("partitionFunction") final PartitionFunction partitionFunction) throws DbException {
 
     Preconditions.checkArgument(relationKey != null, "Missing required field relationKey.");
     Preconditions.checkArgument(schema != null, "Missing required field schama.");
@@ -390,7 +395,7 @@ public final class DatasetResource {
     URI datasetUri = getCanonicalResourcePath(uriInfo, relationKey);
     ResponseBuilder builder = Response.created(datasetUri);
 
-    return doIngest(relationKey, scan, null, null, overwrite, builder, MoreObjects.firstNonNull(howPartitioned,
+    return doIngest(relationKey, scan, null, null, overwrite, builder, MoreObjects.firstNonNull(partitionFunction,
         new RoundRobinPartitionFunction(null)));
   }
 
@@ -403,6 +408,7 @@ public final class DatasetResource {
    * @param indexes any user-requested indexes to be created
    * @param overwrite whether an existing relation should be overwritten
    * @param builder the template response
+   * @param pf the partition function.
    * @return the created dataset resource
    * @throws DbException on any error
    */
@@ -502,7 +508,7 @@ public final class DatasetResource {
     ResponseBuilder builder = Response.created(getCanonicalResourcePath(uriInfo, dataset.relationKey));
     Operator tipsyScan = new TipsyFileScan(dataset.tipsyFilename, dataset.iorderFilename, dataset.grpFilename);
     return doIngest(dataset.relationKey, tipsyScan, dataset.workers, dataset.indexes, false, builder,
-        dataset.howPartitioned);
+        dataset.partitionFunction);
   }
 
   /**

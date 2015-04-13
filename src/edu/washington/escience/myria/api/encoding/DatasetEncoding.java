@@ -25,5 +25,5 @@ public class DatasetEncoding extends MyriaApiEncoding {
   public Boolean importFromDatabase;
   public List<List<IndexRef>> indexes;
   public Boolean overwrite;
-  public PartitionFunction howPartitioned = new RoundRobinPartitionFunction(null);
+  public PartitionFunction partitionFunction = new RoundRobinPartitionFunction(null);
 }

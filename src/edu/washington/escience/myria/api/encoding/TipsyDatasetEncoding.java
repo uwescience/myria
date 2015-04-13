@@ -23,7 +23,7 @@ public class TipsyDatasetEncoding extends MyriaApiEncoding {
   public String iorderFilename;
   public Set<Integer> workers;
   public List<List<IndexRef>> indexes;
-  public PartitionFunction howPartitioned = new RoundRobinPartitionFunction(null);
+  public PartitionFunction partitionFunction = new RoundRobinPartitionFunction(null);
 
   @Override
   public void validateExtra() {

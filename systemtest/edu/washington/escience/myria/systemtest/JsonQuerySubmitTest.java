@@ -90,7 +90,7 @@ public class JsonQuerySubmitTest extends SystemTestBase {
       ingest.delimiter = delimiter;
     }
     if (pf != null) {
-      ingest.howPartitioned = pf;
+      ingest.partitionFunction = pf;
     }
     return MyriaJsonMapperProvider.getWriter().writeValueAsString(ingest);
   }
@@ -154,9 +154,11 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
     DatasetStatus status = getDatasetStatus(conn);
     assertEquals(7, status.getNumTuples());
+    assertEquals(2, status.getHowPartitioned().getWorkersAsSet().size());
+    PartitionFunction pf = status.getHowPartitioned().getPf();
     /* not specified, should be RoundRobin. */
-    assertTrue(status.getHowPartitioned() instanceof RoundRobinPartitionFunction);
-    assertEquals(2, status.getHowPartitioned().numPartition());
+    assertTrue(pf instanceof RoundRobinPartitionFunction);
+    assertEquals(2, pf.numPartition());
     conn.disconnect();
     /* bad ingestion. */
     delimiter = ',';
@@ -173,7 +175,7 @@ public class JsonQuerySubmitTest extends SystemTestBase {
             new SingleFieldHashPartitionFunction(null, 1)));
     assertEquals(conn.getResponseCode(), HttpURLConnection.HTTP_CREATED);
     status = getDatasetStatus(conn);
-    PartitionFunction pf = status.getHowPartitioned();
+    pf = status.getHowPartitioned().getPf();
     /* specified, should be SingleField with index = 1. */
     assertEquals(2, pf.numPartition());
     assertTrue(pf instanceof SingleFieldHashPartitionFunction);

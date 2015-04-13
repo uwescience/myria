@@ -23,7 +23,6 @@ import edu.washington.escience.myria.storage.TupleBatch;
     @Type(value = RoundRobinPartitionFunction.class, name = "RoundRobin"),
     @Type(value = SingleFieldHashPartitionFunction.class, name = "SingleFieldHash"),
     @Type(value = MultiFieldHashPartitionFunction.class, name = "MultiFieldHash"),
-    @Type(value = UnknownPartitionFunction.class, name = "Unknown"),
     @Type(value = WholeTupleHashPartitionFunction.class, name = "WholeTupleHash") })
 public abstract class PartitionFunction implements Serializable {
 

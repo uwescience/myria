@@ -84,6 +84,7 @@ import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
 import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
 import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
+import edu.washington.escience.myria.operator.network.partition.HowPartitioned;
 import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.IPCMessage;
@@ -994,7 +995,7 @@ public final class Server {
     }
 
     // updating the partition function only after it's successfully ingested.
-    updateHowPartitioned(relationKey, pf);
+    updateHowPartitioned(relationKey, new HowPartitioned(pf, workersArray));
     return getDatasetStatus(relationKey);
   }
 
@@ -1045,12 +1046,12 @@ public final class Server {
 
   /**
    * @param key the relation key.
-   * @param pf the partition function.
+   * @param howPartitioned how the dataset was partitioned.
    * @throws DbException if there is an catalog exception.
    */
-  public void updateHowPartitioned(final RelationKey key, final PartitionFunction pf) throws DbException {
+  public void updateHowPartitioned(final RelationKey key, final HowPartitioned howPartitioned) throws DbException {
     try {
-      catalog.updateHowPartitioned(key, pf);
+      catalog.updateHowPartitioned(key, howPartitioned);
     } catch (CatalogException e) {
       throw new DbException(e);
     }

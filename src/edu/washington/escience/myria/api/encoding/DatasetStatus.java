@@ -7,7 +7,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
+import edu.washington.escience.myria.operator.network.partition.HowPartitioned;
 
 /**
  * Metadata about a dataset that has been loaded into the system.
@@ -28,7 +28,7 @@ public class DatasetStatus {
   public DatasetStatus(@JsonProperty("relationKey") final RelationKey relationKey,
       @JsonProperty("schema") final Schema schema, @JsonProperty("numTuples") final long numTuples,
       @JsonProperty("queryId") final long queryId, @JsonProperty("created") final String created,
-      @JsonProperty("howPartitioned") final PartitionFunction howPartitioned) {
+      @JsonProperty("howPartitioned") final HowPartitioned howPartitioned) {
     this.relationKey = relationKey;
     this.schema = schema;
     this.numTuples = numTuples;
@@ -54,7 +54,7 @@ public class DatasetStatus {
   private final String created;
   /** How this dataset was partitioned. */
   @JsonProperty
-  private final PartitionFunction howPartitioned;
+  private final HowPartitioned howPartitioned;
   /** The URI of this resource. */
   @JsonProperty
   public URI uri;
@@ -95,9 +95,9 @@ public class DatasetStatus {
   }
 
   /**
-   * @return the howPartitioned.
+   * @return how the dataset was partitioned.
    */
-  public PartitionFunction getHowPartitioned() {
+  public HowPartitioned getHowPartitioned() {
     return howPartitioned;
   }
 
