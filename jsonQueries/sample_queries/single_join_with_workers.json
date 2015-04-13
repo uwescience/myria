@@ -3,7 +3,7 @@
         {
             "operators": [
                 {
-                    "opId": "Scan0",
+                    "opId": 0,
                     "opType": "TableScan",
                     "relationKey": {
                         "programName": "global_join",
@@ -12,12 +12,12 @@
                     }
                 },
                 {
-                    "argChild": "Scan0",
+                    "argChild": 0,
                     "argPf": {
                         "index": 0,
                         "type": "SingleFieldHash"
                     },
-                    "opId": "Scatter0",
+                    "opId": 1,
                     "opType": "ShuffleProducer"
                 }
             ],
@@ -29,7 +29,7 @@
         {
             "operators": [
                 {
-                    "opId": "Scan1",
+                    "opId": 2,
                     "opType": "TableScan",
                     "relationKey": {
                         "programName": "global_join",
@@ -38,12 +38,12 @@
                     }
                 },
                 {
-                    "argChild": "Scan1",
+                    "argChild": 2,
                     "argPf": {
                         "index": 1,
                         "type": "SingleFieldHash"
                     },
-                    "opId": "Scatter1",
+                    "opId": 3,
                     "opType": "ShuffleProducer"
                 }
             ],
@@ -55,18 +55,18 @@
         {
             "operators": [
                 {
-                    "argOperatorId": "Scatter0",
-                    "opId": "Gather0",
+                    "argOperatorId": 1,
+                    "opId": 4,
                     "opType": "ShuffleConsumer"
                 },
                 {
-                    "argOperatorId": "Scatter1",
-                    "opId": "Gather1",
+                    "argOperatorId": 3,
+                    "opId": 5,
                     "opType": "ShuffleConsumer"
                 },
                 {
-                    "argChild1": "Gather1",
-                    "argChild2": "Gather0",
+                    "argChild1": 5,
+                    "argChild2": 4,
                     "argColumns1": [
                         1
                     ],
@@ -79,13 +79,13 @@
                     "argSelect2": [
                         1
                     ],
-                    "opId": "Join",
+                    "opId": 6,
                     "opType": "SymmetricHashJoin"
                 },
                 {
-                    "argChild": "Join",
+                    "argChild": 6,
                     "argOverwriteTable": true,
-                    "opId": "Insert",
+                    "opId": 7,
                     "opType": "DbInsert",
                     "relationKey": {
                         "programName": "global_join",

@@ -89,9 +89,9 @@ public abstract class Evaluator {
   }
 
   /**
-   * @return the Java form of this expression.
+   * @return the Java form of this expression, including appending to the result.
    */
-  public String getJavaExpression() {
+  public String getJavaExpressionWithAppend() {
     return getExpression().getJavaExpression(parameters);
   }
 

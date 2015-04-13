@@ -3,7 +3,7 @@
         {
             "operators": [
                 {
-                    "opId": "Scan",
+                    "opId": 2,
                     "opType": "TableScan",
                     "relationKey": {
                         "programName": "adhoc",
@@ -12,8 +12,8 @@
                     }
                 },
                 {
-                    "argChild": "Scan",
-                    "expressions": [
+                    "argChild": 2,
+                    "emitExpressions": [
                         {
                             "outputName": "EvalResult",
                             "rootExpressionOperator": {
@@ -33,13 +33,13 @@
                             }
                         }
                     ],
-                    "opId": "Apply",
+                    "opId": 1,
                     "opType": "Apply"
                 },
                 {
-                    "argChild": "Apply",
+                    "argChild": 1,
                     "argOverwriteTable": true,
-                    "opId": "Insert",
+                    "opId": 3,
                     "opType": "DbInsert",
                     "relationKey": {
                         "programName": "adhoc",

@@ -9,7 +9,7 @@
                         "relationName": "TwitterK",
                         "userName": "public"
                     },
-                    "opId": "V1",
+                    "opId": 1,
                     "opType": "TableScan"
                 },
                 {
@@ -44,7 +44,7 @@
                             "outputName": "sum"
                         }
                     ],
-                    "argChild": "V1",
+                    "argChild": 1,
                     "initializerExpressions": [
                         {
                             "rootExpressionOperator": {
@@ -79,18 +79,18 @@
                             "outputName": "avg"
                         }
                     ],
-                    "opId": "V0",
+                    "opId": 2,
                     "opType": "StatefulApply"
                 },
                 {
                     "argOverwriteTable": true,
-                    "argChild": "V0",
+                    "argChild": 2,
                     "relationKey": {
                         "programName": "adhoc",
                         "relationName": "RunningMean",
                         "userName": "public"
                     },
-                    "opId": "Store",
+                    "opId": 3,
                     "opType": "DbInsert"
                 }
             ]

@@ -3,16 +3,7 @@
         {
             "operators": [
                 {
-                    "connectionInfo": {
-                        "database": "mrbenchmarks",
-                        "dbms": "vertica",
-                        "driverClass": "com.vertica.jdbc.Driver",
-                        "host": "localhost",
-                        "password": "mrbenchmarks",
-                        "port": "15433",
-                        "username": "dbadmin"
-                    },
-                    "opId": "ScanR",
+                    "opId": 1,
                     "opType": "TableScan",
                     "relationKey": {
                         "programName": "broadcastjoin",
@@ -21,8 +12,8 @@
                     }
                 },
                 {
-                    "argChild": "ScanR",
-                    "opId": "broadcast",
+                    "argChild": 1,
+                    "opId": 6,
                     "opType": "BroadcastProducer"
                 }
             ]
@@ -30,16 +21,7 @@
         {
             "operators": [
                 {
-                    "connectionInfo": {
-                        "database": "mrbenchmarks",
-                        "dbms": "vertica",
-                        "driverClass": "com.vertica.jdbc.Driver",
-                        "host": "localhost",
-                        "password": "mrbenchmarks",
-                        "port": "15433",
-                        "username": "dbadmin"
-                    },
-                    "opId": "ScanU",
+                    "opId": 2,
                     "opType": "TableScan",
                     "relationKey": {
                         "programName": "broadcastjoin",
@@ -48,13 +30,13 @@
                     }
                 },
                 {
-                    "argOperatorId": "broadcast",
-                    "opId": "receive",
+                    "argOperatorId": 6,
+                    "opId": 3,
                     "opType": "BroadcastConsumer"
                 },
                 {
-                    "argChild1": "receive",
-                    "argChild2": "ScanU",
+                    "argChild1": 3,
+                    "argChild2": 2,
                     "argColumns1": [
                         1
                     ],
@@ -67,14 +49,13 @@
                     "argSelect2": [
                         1
                     ],
-                    "opId": "Join",
+                    "opId": 4,
                     "opType": "SymmetricHashJoin"
                 },
                 {
-                    "argChild": "Join",
+                    "argChild": 4,
                     "argOverwriteTable": true,
-                    "connectionInfo": "localhost",
-                    "opId": "Insert",
+                    "opId": 5,
                     "opType": "DbInsert",
                     "relationKey": {
                         "programName": "broadcastjoin",

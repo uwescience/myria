@@ -67,12 +67,12 @@ public abstract class Operator implements Serializable {
   private Schema schema;
 
   /**
-   * EOS. Initially set it as true;
+   * End of stream (EOS). Initialized to true.
    */
   private volatile boolean eos = true;
 
   /**
-   * End of iteration.
+   * End of iteration (EOI).
    */
   private boolean eoi = false;
 
@@ -234,11 +234,11 @@ public abstract class Operator implements Serializable {
   }
 
   /**
-   * Check if EOS is meet.
+   * Check if EOS is set.
    * 
    * This method is non-blocking.
    * 
-   * @return if the Operator is EOS
+   * @return if the Operator is at EOS (End of Stream)
    * 
    */
   public final boolean eos() {
@@ -246,7 +246,7 @@ public abstract class Operator implements Serializable {
   }
 
   /**
-   * @return if the operator received an EOI.
+   * @return if the operator received an EOI (End of Iteration)
    */
   public final boolean eoi() {
     return eoi;
@@ -334,7 +334,8 @@ public abstract class Operator implements Serializable {
     try {
       do {
         result = fetchNextReady();
-        // XXX while or not while? For a single thread operator, while sounds more efficient generally
+        // XXX while or not while? For a single thread operator, while sounds more efficient
+        // generally
       } while (result != null && result.numTuples() <= 0);
     } catch (RuntimeException | DbException e) {
       throw e;

@@ -2,26 +2,12 @@
 	"fragments": 
 	[
 		{
-			"operators":
-			[
-			{
-			  "opId" : 0,
-			  "opType" : "CollectConsumer",
-			  "argOperatorId" : 16
-			}
-			],
-			"overrideWorkers":
-			[
-				0
-			]
-		},
-		{
-			"operators":
+			"operators": 
 			[
 			{
 				"opId" : 1,
 				"opType" : "Consumer",
-				"argOperatorId" : 8
+				"argOperatorId" : 9
 			},
 			{
 				"opId" : 2,
@@ -34,25 +20,25 @@
 				"argChild" : 2
 			}
 			],
-			"overrideWorkers":
+			"workers": 
 			[
 				1
 			]
 		},
 		{
-			"operators":
+			"operators": 
 			[
 			{
 				"opId" : 4,
 				"opType" : "TableScan",
 				"relationKey" : {
 					"userName" : "jwang",
-					"programName" : "reachability",
-					"relationName" : "a0"
+					"programName" : "transitive_closure",
+					"relationName" : "g"
 				}
 			},
 			{
-				"opId" : 19,
+				"opId" : 5,
 				"opType" : "ShuffleProducer",
 				"argChild" : 4,
 				"argPf" : {
@@ -63,92 +49,94 @@
 			]
 		},
 		{
-			"operators":
+			"operators": 
 			[
 			{
 				"opId" : 17,
 				"opType" : "TableScan",
 				"relationKey" : {
 					"userName" : "jwang",
-					"programName" : "reachability",
+					"programName" : "transitive_closure",
 					"relationName" : "g"
 				}
 			},
 			{
-				"opId" : 18,
+				"opId" : 16,
 				"opType" : "ShuffleProducer",
 				"argChild" : 17,
 				"argPf" : {
 					"type" : "SingleFieldHash",
-					"index" : 0
+					"index" : 1
 				}
 			}
 			]
 		},
 		{
-			"operators":
+			"operators": 
 			[
-			{
-				"opId" : 5,
-				"opType" : "ShuffleConsumer",
-				"argOperatorId" : 19
-			},
 			{
 				"opId" : 6,
 				"opType" : "ShuffleConsumer",
-				"argOperatorId" : 12
+				"argOperatorId" : 5
 			},
 			{
 				"opId" : 7,
+				"opType" : "ShuffleConsumer",
+				"argOperatorId" : 8
+			},
+			{
+				"opId" : 18,
 				"opType" : "Consumer",
 				"argOperatorId" : 3
 			},
 			{
-				"opId" : 8,
+				"opId" : 9,
 				"opType" : "IDBController",
-				"argSelfIdbId" : "0",
-				"argInitialInput" : 5,
-				"argIterationInput" : 6,
-				"argState" :
-				{
+				"argSelfIdbId" : 0,
+				"argInitialInput" : 6,
+				"argIterationInput" : 7,
+				"argState" : {
 					"type" : "DupElim"
 				},
-				"argEosControllerInput" : 7
+				"argEosControllerInput" : 18
 			},
 			{
-				"opId" : 13,
+				"opId" : 10,
 				"opType" : "LocalMultiwayProducer",
-				"argChild" : 8
+				"argChild" : 9
 			}
 			]
 		},
 		{
-			"operators":
+			"operators": 
 			[
 			{
-				"opId" : 9,
-				"opType" : "LocalMultiwayConsumer",
-				"argOperatorId" : 13
+				"opId" : 15,
+				"opType" : "ShuffleConsumer",
+				"argOperatorId" : 16
 			},
 			{
 				"opId" : 11,
-				"opType" : "ShuffleConsumer",
-				"argOperatorId" : 18
-			},
-			{
-				"opId" : 10,
-				"opType" : "SymmetricHashJoin",
-				"argChild1" : 9,
-				"argChild2" : 11,
-				"argColumns1" : ["0"],
-				"argColumns2" : ["0"],
-				"argSelect1" : [],
-				"argSelect2" : ["1"]
+				"opType" : "LocalMultiwayConsumer",
+				"argOperatorId" : 10
 			},
 			{
 				"opId" : 12,
+				"opType" : "SymmetricHashJoin",
+				"argChild1" : 15,
+				"argChild2" : 11,
+				"argColumns1" : ["1"],
+				"argColumns2" : ["0"],
+				"argSelect1" : ["0"],
+				"argSelect2" : ["1"]
+			},
+			{
+				"opId" : 8,
 				"opType" : "ShuffleProducer",
-				"argChild" : 10,
+				"argBufferStateType" : {
+					"type" : "DupElim"
+				},
+				"argChild" : 12,
 				"argPf" : {
 					"type" : "SingleFieldHash",
 					"index" : 0
@@ -157,30 +145,22 @@
 			]
 		},
 		{
-			"operators":
+			"operators": 
 			[
 			{
 				"opId" : 14,
 				"opType" : "LocalMultiwayConsumer",
-				"argOperatorId" : 13
+				"argOperatorId" : 10
 			},
 			{
-				"opId" : 15,
-				"opType" : "Aggregate",
-				"argChild" : 14,
-                "aggregators": [
-                {
-	                "type": "CountAll"
-                }]
-			},
-			{
-				"opId" : 16,
-				"opType" : "CollectProducer",
-				"argChild" : 15
+				"opId" : 13,
+				"opType" : "SinkRoot",
+				"argChild" : 14
 			}
 			]
 		}
 	],
 	"logicalRa": "",
-	"rawQuery": ""
+	"rawQuery": "",
+	"ftMode": "REJOIN"
 }

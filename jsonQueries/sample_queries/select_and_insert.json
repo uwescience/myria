@@ -3,7 +3,7 @@
         {
             "operators": [
                 {
-                    "opId": "Scan",
+                    "opId": 0,
                     "opType": "TableScan",
                     "relationKey": {
                         "programName": "global_join",
@@ -12,8 +12,8 @@
                     }
                 },
                 {
-                    "argChild": "Scan",
-                    "opId": "Insert",
+                    "argChild": 0,
+                    "opId": 1,
                     "opType": "DbInsert",
                     "relationKey": {
                         "programName": "global_join",

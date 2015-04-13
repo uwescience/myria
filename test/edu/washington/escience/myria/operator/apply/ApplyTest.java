@@ -268,7 +268,7 @@ public class ApplyTest {
 
       GenericEvaluator eval = new ConstantEvaluator(expr, new ExpressionOperatorParameter(tbb.getSchema(), 42));
       assertTrue(!eval.needsCompiling());
-      assertEquals(eval.getJavaExpression(), "result.appendInt(42)");
+      assertEquals(eval.getJavaExpressionWithAppend(), "result.appendInt(42)");
       Expressions.add(expr);
     }
 
