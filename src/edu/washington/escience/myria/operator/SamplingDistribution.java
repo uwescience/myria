@@ -82,8 +82,6 @@ public class SamplingDistribution extends UnaryOperator {
         }
         tupleCounts.add(partitionSize);
         totalTupleCount += partitionSize;
-        System.out.println("workerID: " + workerID + ", partitionSize: "
-            + partitionSize);
       }
     }
     Preconditions.checkState(sampleSize <= totalTupleCount,
