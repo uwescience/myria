@@ -34,6 +34,8 @@ public class SamplingDistribution extends UnaryOperator {
     super(child);
     this.sampleSize = sampleSize;
     this.isWithoutReplacement = isWithoutReplacement;
+    Preconditions.checkState(sampleSize >= 0,
+        "Sample size cannot be negative: %s", sampleSize);
   }
 
   @Override
@@ -80,6 +82,8 @@ public class SamplingDistribution extends UnaryOperator {
         } else {
           throw new DbException("PartitionSize must be of type INT or LONG");
         }
+        Preconditions.checkState(partitionSize >= 0,
+            "Worker cannot have a negative PartitionSize: %s", sampleSize);
         tupleCounts.add(partitionSize);
         totalTupleCount += partitionSize;
       }
