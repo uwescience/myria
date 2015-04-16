@@ -11,8 +11,12 @@ public class SamplingDistributionEncoding extends UnaryOperatorEncoding<Sampling
   @Required
   public boolean isWithoutReplacement;
 
+  /** Used to make results deterministic. Null if no specified value. */
+  public Long randomSeed;
+
   @Override
   public SamplingDistribution construct(final ConstructArgs args) {
-    return new SamplingDistribution(sampleSize, isWithoutReplacement, null);
+    return new SamplingDistribution(sampleSize, isWithoutReplacement, null,
+        randomSeed);
   }
 }
