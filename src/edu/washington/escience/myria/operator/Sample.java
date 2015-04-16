@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.operator;
 
+import java.util.Random;
+
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.DbException;
@@ -17,6 +19,11 @@ public abstract class Sample extends BinaryOperator {
   /** Total number of tuples to expect from the right operator. */
   protected int populationSize;
 
+  protected Random rand;
+
+  /** Value to seed the random generator with. Null if no specified seed value. */
+  protected Long randomSeed;
+
   /**
    * Instantiate a Sample operator using sampling info from the left operator
    * and actual samples from the right operator.
@@ -25,9 +32,14 @@ public abstract class Sample extends BinaryOperator {
    *          inputs a (WorkerID, PartitionSize, SampleSize) tuple.
    * @param right
    *          tuples that will be sampled from.
+   * @param randomSeed
+   *          value to seed the random generator with. null if no specified seed
+   *          value
    */
-  public Sample(final Operator left, final Operator right) {
+  public Sample(final Operator left, final Operator right, Long randomSeed) {
     super(left, right);
+    this.rand = new Random();
+    this.randomSeed = randomSeed;
   }
 
   protected void extractSamplingInfo(TupleBatch tb) throws Exception {
@@ -66,6 +78,14 @@ public abstract class Sample extends BinaryOperator {
       throw new DbException("sampleSize column must be of type INT or LONG");
     }
     Preconditions.checkState(sampleSize >= 0, "sampleSize cannot be negative");
+  }
+
+  protected Random getRandom() {
+    Random rand = new Random();
+    if (randomSeed != null) {
+      rand.setSeed(randomSeed);
+    }
+    return rand;
   }
 
   @Override

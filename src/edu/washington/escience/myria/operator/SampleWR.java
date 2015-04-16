@@ -28,7 +28,11 @@ public class SampleWR extends Sample {
   private int curSampIdx = 0;
 
   public SampleWR(final Operator left, final Operator right) {
-    super(left, right);
+    super(left, right, null);
+  }
+
+  public SampleWR(final Operator left, final Operator right, Long randomSeed) {
+    super(left, right, randomSeed);
   }
 
   @Override
@@ -89,7 +93,7 @@ public class SampleWR extends Sample {
    * @return a sorted array of indices.
    */
   private int[] generateTargetSampleIndices(int populationSize, int sampleSize) {
-    Random rand = new Random();
+    Random rand = getRandom();
     int[] indices = new int[sampleSize];
     for (int i = 0; i < sampleSize; i++) {
       indices[i] = rand.nextInt(populationSize);
