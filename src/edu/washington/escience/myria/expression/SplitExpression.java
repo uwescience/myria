@@ -4,8 +4,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 
 /**
- * Return the length of a string.
- * 
+ * Returns a sequence of substrings of a given string, split on a regular expression.
  */
 public class SplitExpression extends BinaryExpression {
   /***/
@@ -20,7 +19,7 @@ public class SplitExpression extends BinaryExpression {
   }
 
   /**
-   * Splits a string .
+   * Takes the string to be split and the regex to split it on.
    * 
    * @param left the left operand (index of string column).
    * @param right the right operand (regular expression string).
@@ -38,7 +37,7 @@ public class SplitExpression extends BinaryExpression {
   @Override
   public String getJavaString(final ExpressionOperatorParameter parameters) {
     return new StringBuilder("java.util.regex.Pattern.compile(").append(getRight().getJavaString(parameters)).append(
-        ")").append(".split(").append(getLeft().getJavaString(parameters)).append(")").toString();
+        ")").append(".split(").append(getLeft().getJavaString(parameters)).append(", -1)").toString();
   }
 
   @Override

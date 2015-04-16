@@ -20,7 +20,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestEnvVars;
 
-public class SplitApplyTest {
+public class ApplySplitTest {
 
   private final String SEPARATOR = ",";
   // FIXME: this test fails with more than TupleBatch.BATCH_SIZE results from split()

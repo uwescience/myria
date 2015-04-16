@@ -126,11 +126,12 @@ public class Expression implements Serializable {
         .append(".append").append(getOutputType(parameters).getName()).append("(arr[i]); }").toString();
   }
 
-  // Janino cannot handle the foreach syntax, so we have to use explicit iterable syntax
+  // Janino cannot handle the foreach syntax, so we have to use explicit iterable syntax (without generics)
   private String getJavaIterableExpressionWithAppend(final ExpressionOperatorParameter parameters) {
-    return new StringBuilder().append("for (" + getOutputType(parameters).toJavaType().getSimpleName() + " element : ")
-        .append(getJavaExpression(parameters)).append(") { ").append(RESULT).append(".append").append(
-            getOutputType(parameters).getName()).append("(element);").append(" }").toString();
+    return new StringBuilder().append("for (java.util.Iterator it = ").append(getJavaExpression(parameters)).append(
+        ".iterator(); it.hasNext();) { ").append(RESULT).append(".append").append(getOutputType(parameters).getName())
+        .append("((").append(getOutputType(parameters).toJavaObjectType().getSimpleName()).append(")(it.next())); }")
+        .toString();
   }
 
   /**
