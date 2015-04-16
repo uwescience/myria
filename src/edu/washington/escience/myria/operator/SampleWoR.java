@@ -20,7 +20,11 @@ public class SampleWoR extends Sample {
   private int tuplesProcessed = 0;
 
   public SampleWoR(final Operator left, final Operator right) {
-    super(left, right);
+    super(left, right, null);
+  }
+
+  public SampleWoR(final Operator left, final Operator right, Long randomSeed) {
+    super(left, right, randomSeed);
   }
 
   @Override
@@ -42,7 +46,7 @@ public class SampleWoR extends Sample {
     }
 
     // SampleWoR from the right operator.
-    Random rand = new Random();
+    Random rand = getRandom();
     Operator right = getRight();
     for (TupleBatch tb = right.nextReady(); tb != null; tb = right.nextReady()) {
       BitSet toKeep = new BitSet(tb.numTuples());

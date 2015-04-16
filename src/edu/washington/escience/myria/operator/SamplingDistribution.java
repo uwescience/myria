@@ -29,11 +29,20 @@ public class SamplingDistribution extends UnaryOperator {
   /** True if the sampling is WithoutReplacement. WithReplacement otherwise. */
   private final boolean isWithoutReplacement;
 
+  /** Value to seed the random generator with. Null if no specified seed value. */
+  protected Long randomSeed;
+
   public SamplingDistribution(final int sampleSize,
       final boolean isWithoutReplacement, final Operator child) {
+    this(sampleSize, isWithoutReplacement, child, null);
+  }
+
+  public SamplingDistribution(final int sampleSize,
+      final boolean isWithoutReplacement, final Operator child, Long randomSeed) {
     super(child);
     this.sampleSize = sampleSize;
     this.isWithoutReplacement = isWithoutReplacement;
+    this.randomSeed = randomSeed;
     Preconditions.checkState(sampleSize >= 0,
         "Sample size cannot be negative: %s", sampleSize);
   }
@@ -114,10 +123,10 @@ public class SamplingDistribution extends UnaryOperator {
     return new TupleBatch(SCHEMA, columns.build());
   }
 
-  private static int[] withReplacementDistribution(List<Integer> tupleCounts,
+  private int[] withReplacementDistribution(List<Integer> tupleCounts,
       int sampleSize) {
     int[] distribution = new int[tupleCounts.size()];
-    Random rand = new Random();
+    Random rand = getRandom();
     int totalTupleCount = 0;
     for (int val : tupleCounts)
       totalTupleCount += val;
@@ -137,10 +146,10 @@ public class SamplingDistribution extends UnaryOperator {
     return distribution;
   }
 
-  private static int[] withoutReplacementDistribution(
-      List<Integer> tupleCounts, int sampleSize) {
+  private int[] withoutReplacementDistribution(List<Integer> tupleCounts,
+      int sampleSize) {
     int[] distribution = new int[tupleCounts.size()];
-    Random rand = new Random();
+    Random rand = getRandom();
     int totalTupleCount = 0;
     for (int val : tupleCounts)
       totalTupleCount += val;
@@ -161,6 +170,16 @@ public class SamplingDistribution extends UnaryOperator {
       }
     }
     return distribution;
+  }
+
+  private Random getRandom() {
+    Random rand;
+    if (randomSeed != null) {
+      rand = new Random(randomSeed);
+    } else {
+      rand = new Random();
+    }
+    return rand;
   }
 
   @Override
