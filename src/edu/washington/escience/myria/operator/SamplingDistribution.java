@@ -54,12 +54,8 @@ public class SamplingDistribution extends UnaryOperator {
     }
 
     // Distribution of the tuples across the workers.
-    // Value at index i == # of tuples on mapped worker.
-    List<Integer> tupleCounts = new ArrayList<Integer>();
-
-    // Maps indices in tupleCounts to the actual WorkerID association.
-    // Value at index i == actual workerID of tupleCount.
-    List<Integer> workerMapping = new ArrayList<Integer>();
+    // Value at index i == # of tuples on worker i.
+    ArrayList<Integer> tupleCounts = new ArrayList<Integer>();
 
     // Total number of tuples across all workers.
     int totalTupleCount = 0;
@@ -81,7 +77,11 @@ public class SamplingDistribution extends UnaryOperator {
         } else {
           throw new DbException("WorkerID must be of type INT or LONG");
         }
-        workerMapping.add(workerID);
+        Preconditions.checkState(workerID > 0, "WorkerID must be > 0");
+        // Ensure the future tupleCounts.set(workerID, -) call will work.
+        for (int j = tupleCounts.size(); j < workerID; j++) {
+          tupleCounts.add(0);
+        }
 
         int partitionSize;
         if (col1Type == Type.INT_TYPE) {
@@ -93,7 +93,7 @@ public class SamplingDistribution extends UnaryOperator {
         }
         Preconditions.checkState(partitionSize >= 0,
             "Worker cannot have a negative PartitionSize: %s", sampleSize);
-        tupleCounts.add(partitionSize);
+        tupleCounts.set(workerID - 1, partitionSize);
         totalTupleCount += partitionSize;
       }
     }
@@ -113,8 +113,8 @@ public class SamplingDistribution extends UnaryOperator {
     IntColumnBuilder wIdCol = new IntColumnBuilder();
     IntColumnBuilder tupCountCol = new IntColumnBuilder();
     IntColumnBuilder sampCountCol = new IntColumnBuilder();
-    for (int i = 0; i < workerMapping.size(); i++) {
-      wIdCol.appendInt(workerMapping.get(i));
+    for (int i = 0; i < tupleCounts.size(); i++) {
+      wIdCol.appendInt(i + 1);
       tupCountCol.appendInt(tupleCounts.get(i));
       sampCountCol.appendInt(sampleCounts[i]);
     }
