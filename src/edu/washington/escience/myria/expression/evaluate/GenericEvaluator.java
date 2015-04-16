@@ -4,7 +4,7 @@ import java.lang.reflect.InvocationTargetException;
 
 import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.commons.compiler.CompilerFactoryFactory;
-import org.codehaus.commons.compiler.IExpressionEvaluator;
+import org.codehaus.commons.compiler.IScriptEvaluator;
 
 import com.google.common.base.Preconditions;
 
@@ -60,15 +60,15 @@ public class GenericEvaluator extends Evaluator {
         "This expression does not need to be compiled.");
 
     String javaExpression = getJavaExpressionWithAppend();
-    IExpressionEvaluator se;
+    IScriptEvaluator se;
     try {
-      se = CompilerFactoryFactory.getDefaultCompilerFactory().newExpressionEvaluator();
+      se = CompilerFactoryFactory.getDefaultCompilerFactory().newScriptEvaluator();
     } catch (Exception e) {
       LOGGER.error("Could not create expression evaluator", e);
       throw new DbException("Could not create expression evaluator", e);
     }
 
-    se.setExpressionType(Void.TYPE);
+    // se.setExpressionType(Void.TYPE);
     se.setDefaultImports(MyriaConstants.DEFAULT_JANINO_IMPORTS);
 
     try {

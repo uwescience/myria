@@ -109,13 +109,28 @@ public class Expression implements Serializable {
    * @return the Java form of this expression that also writes the results to a {@link ColumnBuilder}.
    */
   public String getJavaExpressionWithAppend(final ExpressionOperatorParameter parameters) {
-    return new StringBuilder(RESULT)
-        .append(".append")
-        .append(getOutputType(parameters).getName())
-        .append("(")
-        .append(getJavaExpression(parameters))
-        .append(")")
-        .toString();
+    if (rootExpressionOperator.hasArrayOutputType()) {
+      return getJavaArrayExpressionWithAppend(parameters);
+    } else if (rootExpressionOperator.hasIterableOutputType()) {
+      return getJavaIterableExpressionWithAppend(parameters);
+    } else {
+      return new StringBuilder(RESULT).append(".append").append(getOutputType(parameters).getName()).append("(")
+          .append(getJavaExpression(parameters)).append(");").toString();
+    }
+  }
+
+  // Janino cannot handle the foreach syntax, so we have to use explicit array syntax
+  private String getJavaArrayExpressionWithAppend(final ExpressionOperatorParameter parameters) {
+    return new StringBuilder().append(getOutputType(parameters).toJavaType().getSimpleName()).append("[] arr = ")
+        .append(getJavaExpression(parameters)).append("; for (int i = 0; i < arr.length; ++i) { ").append(RESULT)
+        .append(".append").append(getOutputType(parameters).getName()).append("(arr[i]); }").toString();
+  }
+
+  // Janino cannot handle the foreach syntax, so we have to use explicit iterable syntax
+  private String getJavaIterableExpressionWithAppend(final ExpressionOperatorParameter parameters) {
+    return new StringBuilder().append("for (" + getOutputType(parameters).toJavaType().getSimpleName() + " element : ")
+        .append(getJavaExpression(parameters)).append(") { ").append(RESULT).append(".append").append(
+            getOutputType(parameters).getName()).append("(element);").append(" }").toString();
   }
 
   /**
