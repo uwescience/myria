@@ -64,13 +64,16 @@ public class SampleWR extends Sample {
     }
     Operator right = getRight();
     for (TupleBatch tb = right.nextReady(); tb != null; tb = right.nextReady()) {
+      if (curSampIdx >= samples.length) { // done sampling
+        break;
+      }
       if (samples[curSampIdx] > tupleNum + tb.numTuples()) {
         // nextIndex is not in this batch. Continue with next batch.
         tupleNum += tb.numTuples();
         continue;
       }
       while (curSampIdx < samples.length
-          && samples[curSampIdx] <= tupleNum + tb.numTuples()) {
+          && samples[curSampIdx] < tupleNum + tb.numTuples()) {
         ans.put(tb, samples[curSampIdx] - tupleNum);
         curSampIdx++;
       }
