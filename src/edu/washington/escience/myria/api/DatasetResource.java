@@ -338,6 +338,32 @@ public final class DatasetResource {
   }
 
   /**
+   * @param userName the user who owns the target relation.
+   * @param programName the program to which the target relation belongs.
+   * @param relationName the name of the target relation.
+   * @return metadata
+   * @throws DbException if there is an error in the database.
+   */
+  @POST
+  @ApiOperation(value = "get information about a dataset", response = DatasetStatus.class)
+  @ApiResponses(value = { @ApiResponse(code = HttpStatus.SC_NOT_FOUND, message = "Dataset not found", response = String.class) })
+  @Path("/user-{userName}/program-{programName}/relation-{relationName}/delete")
+  public Response deleteDataset(@PathParam("userName") final String userName,
+      @PathParam("programName") final String programName, @PathParam("relationName") final String relationName)
+      throws DbException {
+    DatasetStatus status = server.getDatasetStatus(RelationKey.of(userName, programName, relationName));
+    if (status == null) {
+      /* Not found, throw a 404 (Not Found) */
+      throw new MyriaApiException(Status.NOT_FOUND, "That dataset was not found");
+    }
+    RelationKey relationKey = status.getRelationKey();
+    status = server.deleteDataset(relationKey);
+
+    /* It worked */
+    return Response.ok().build();
+  }
+
+  /**
    * @param dataset the dataset to be ingested.
    * @return the created dataset resource.
    * @throws DbException if there is an error in the database.
