@@ -1033,6 +1033,26 @@ public final class Server {
   }
 
   /**
+   * @param relationKey the relationalKey of the dataset to import
+   * @param schema the schema of the dataset to import
+   * @param workersToImportFrom the set of workers
+   * @return the status
+   * @throws DbException if there is an error
+   * @throws InterruptedException interrupted
+   */
+  public DatasetStatus deleteDataset(final RelationKey relationKey) {
+    /*
+     * try { // TODO: delete from catalog // catalog.deleteRelationIfExists(catalog, relationKey);
+     * 
+     * // TODO: delete from postgres, but how can I get access to the accessmethod connection or another way around //
+     * that?
+     * 
+     * } catch (CatalogException e) { e.printStackTrace(); }
+     */
+    return null;
+  }
+
+  /**
    * @param relationKey the key of the desired relation.
    * @return the schema of the specified relation, or null if not found.
    * @throws CatalogException if there is an error getting the Schema out of the catalog.
