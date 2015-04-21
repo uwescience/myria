@@ -21,17 +21,20 @@ public class Expression implements Serializable {
   /**
    * Name of the column that the result will be written to.
    */
-  @JsonProperty private final String outputName;
+  @JsonProperty
+  private final String outputName;
 
   /**
    * The java expression to be evaluated.
    */
-  @JsonProperty private String javaExpression;
+  @JsonProperty
+  private String javaExpression;
 
   /**
    * Expression encoding reference is needed to get the output type.
    */
-  @JsonProperty private final ExpressionOperator rootExpressionOperator;
+  @JsonProperty
+  private final ExpressionOperator rootExpressionOperator;
 
   /**
    * Variable name of result.
@@ -176,5 +179,15 @@ public class Expression implements Serializable {
     return !hasOperator(VariableExpression.class)
         && !hasOperator(StateExpression.class)
         && !hasOperator(RandomExpression.class);
+  }
+
+  /**
+   * An expression is iterable when it has a type of Iterable<T extends Type>. This is a requirement for being used in
+   * the FlatteningApply operator.
+   * 
+   * @return if this expression evaluates to an Iterable<T>
+   */
+  public boolean isIterable() {
+    return rootExpressionOperator.hasIterableOutputType();
   }
 }

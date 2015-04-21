@@ -83,13 +83,6 @@ public abstract class ExpressionOperator implements Serializable {
   public abstract String getJavaString(final ExpressionOperatorParameter parameters);
 
   /**
-   * @return if this expression returns an instance of Array
-   */
-  public boolean hasArrayOutputType() {
-    return false;
-  }
-
-  /**
    * @return if this expression returns an instance of Iterable
    */
   public boolean hasIterableOutputType() {

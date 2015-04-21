@@ -10,6 +10,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.ConstantExpression;
+import edu.washington.escience.myria.expression.CounterExpression;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.SplitExpression;
@@ -20,43 +21,56 @@ import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestEnvVars;
 
-public class ApplySplitTest {
+public class FlatteningApplyTest {
 
   private final String SEPARATOR = ",";
-  private final long EXPECTED_RESULTS = 2 * TupleBatch.BATCH_SIZE + 1;
+  private final long SPLIT_MAX = 10;
+  private final long COUNTER_MAX = 2 * TupleBatch.BATCH_SIZE + 1;
+  private final long EXPECTED_RESULTS = SPLIT_MAX * COUNTER_MAX;
 
   @Test
   public void testApply() throws DbException {
-    final Schema schema = Schema.ofFields("joined_ints", Type.STRING_TYPE);
-    final Schema expectedResultSchema = Schema.ofFields("joined_ints_splits", Type.STRING_TYPE);
+    final Schema schema = Schema.ofFields("long_count", Type.LONG_TYPE, "joined_ints", Type.STRING_TYPE);
+    final Schema expectedResultSchema =
+        Schema.ofFields("long_count", Type.LONG_TYPE, "joined_ints", Type.STRING_TYPE, "long_values", Type.LONG_TYPE,
+            "joined_ints_splits", Type.STRING_TYPE);
     final TupleBatchBuffer input = new TupleBatchBuffer(schema);
 
     StringBuilder sb = new StringBuilder();
-    for (int i = 0; i < EXPECTED_RESULTS; ++i) {
+    for (int i = 0; i < SPLIT_MAX; ++i) {
       sb.append(i);
-      if (i < EXPECTED_RESULTS - 1) {
+      if (i < SPLIT_MAX - 1) {
         sb.append(SEPARATOR);
       }
     }
-    input.putString(0, sb.toString());
+    final String joinedInts = sb.toString();
 
+    input.putLong(0, COUNTER_MAX);
+    input.putString(1, joinedInts);
     ImmutableList.Builder<Expression> Expressions = ImmutableList.builder();
-    ExpressionOperator colIdx = new VariableExpression(0);
-    ExpressionOperator regex = new ConstantExpression(SEPARATOR);
-    ExpressionOperator split = new SplitExpression(colIdx, regex);
-    Expression expr = new Expression("joined_ints_splits", split);
-    Expressions.add(expr);
 
-    FlatteningApply apply = new FlatteningApply(new TupleSource(input), Expressions.build(), null);
+    ExpressionOperator countColIdx = new VariableExpression(0);
+    ExpressionOperator counter = new CounterExpression(countColIdx);
+    Expressions.add(new Expression("long_values", counter));
+
+    ExpressionOperator splitColIdx = new VariableExpression(1);
+    ExpressionOperator regex = new ConstantExpression(SEPARATOR);
+    ExpressionOperator split = new SplitExpression(splitColIdx, regex);
+    Expressions.add(new Expression("joined_ints_splits", split));
+
+    FlatteningApply apply = new FlatteningApply(new TupleSource(input), Expressions.build(), new int[] { 0, 1 });
     apply.open(TestEnvVars.get());
-    long rowIdx = 0;
+    int rowIdx = 0;
     while (!apply.eos()) {
       TupleBatch result = apply.nextReady();
       if (result != null) {
         assertEquals(expectedResultSchema, result.getSchema());
 
         for (int batchIdx = 0; batchIdx < result.numTuples(); ++batchIdx, ++rowIdx) {
-          assertEquals(rowIdx, Integer.parseInt(result.getString(0, batchIdx)));
+          assertEquals(result.getLong(0, batchIdx), COUNTER_MAX);
+          assertEquals(result.getString(1, batchIdx), joinedInts);
+          assertEquals((rowIdx / SPLIT_MAX), result.getLong(2, batchIdx));
+          assertEquals((rowIdx % SPLIT_MAX), Integer.parseInt(result.getString(3, batchIdx)));
         }
       }
     }

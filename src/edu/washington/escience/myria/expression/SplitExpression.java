@@ -36,12 +36,13 @@ public class SplitExpression extends BinaryExpression {
 
   @Override
   public String getJavaString(final ExpressionOperatorParameter parameters) {
-    return new StringBuilder("java.util.regex.Pattern.compile(").append(getRight().getJavaString(parameters)).append(
-        ")").append(".split(").append(getLeft().getJavaString(parameters)).append(", -1)").toString();
+    return new StringBuilder("java.util.Arrays.asList(java.util.regex.Pattern.compile(").append(
+        getRight().getJavaString(parameters)).append(")").append(".split(").append(getLeft().getJavaString(parameters))
+        .append(", -1))").toString();
   }
 
   @Override
-  public boolean hasArrayOutputType() {
+  public boolean hasIterableOutputType() {
     return true;
   }
 }
