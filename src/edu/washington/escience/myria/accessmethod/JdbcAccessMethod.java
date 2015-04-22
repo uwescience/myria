@@ -424,12 +424,9 @@ public final class JdbcAccessMethod extends AccessMethod {
     }
   }
 
-  /**
-   * @param relationDelete the relation to drop
-   */
+  @Override
   public void dropTables(final RelationKey relationDelete) throws DbException {
     Objects.requireNonNull(relationDelete);
-    final String relationName = quote(relationDelete);
     switch (jdbcInfo.getDbms()) {
       case MyriaConstants.STORAGE_SYSTEM_MYSQL:
       case MyriaConstants.STORAGE_SYSTEM_POSTGRESQL:

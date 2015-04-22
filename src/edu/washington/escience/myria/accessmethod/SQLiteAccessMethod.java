@@ -455,6 +455,11 @@ public final class SQLiteAccessMethod extends AccessMethod {
       throws DbException {
     throw new UnsupportedOperationException("create index if not exists is not supported in sqlite yet, implement me");
   }
+
+  @Override
+  public void dropTables(final RelationKey relationDelete) throws DbException {
+    execute("DROP TABLE IF EXISTS " + relationDelete.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
+  }
 }
 
 /**
