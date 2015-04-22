@@ -57,6 +57,7 @@ import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParam
   @Type(name = "OR", value = OrExpression.class),
   @Type(name = "PLUS", value = PlusExpression.class),
   @Type(name = "POW", value = PowExpression.class),
+  @Type(name = "SPLIT", value = SplitExpression.class),
   @Type(name = "TIMES", value = TimesExpression.class),
   /* Nary */
   @Type(name = "CONDITION", value = ConditionalExpression.class),

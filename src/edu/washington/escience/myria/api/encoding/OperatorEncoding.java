@@ -43,6 +43,7 @@ import edu.washington.escience.myria.operator.Operator;
   @Type(name = "EOSController", value = EOSControllerEncoding.class),
   @Type(name = "FileScan", value = FileScanEncoding.class),
   @Type(name = "Filter", value = FilterEncoding.class),
+  @Type(name = "FlatteningApply", value = FlatteningApplyEncoding.class),
   @Type(name = "HyperShuffleProducer", value = HyperShuffleProducerEncoding.class),
   @Type(name = "HyperShuffleConsumer", value = HyperShuffleConsumerEncoding.class),
   @Type(name = "IDBController", value = IDBControllerEncoding.class),
