@@ -67,8 +67,8 @@ public class FlatteningApplyTest {
         assertEquals(expectedResultSchema, result.getSchema());
 
         for (int batchIdx = 0; batchIdx < result.numTuples(); ++batchIdx, ++rowIdx) {
-          assertEquals(result.getLong(0, batchIdx), COUNTER_MAX);
-          assertEquals(result.getString(1, batchIdx), joinedInts);
+          assertEquals(COUNTER_MAX, result.getLong(0, batchIdx));
+          assertEquals(joinedInts, result.getString(1, batchIdx));
           assertEquals((rowIdx / SPLIT_MAX), result.getLong(2, batchIdx));
           assertEquals((rowIdx % SPLIT_MAX), Integer.parseInt(result.getString(3, batchIdx)));
         }
