@@ -344,9 +344,7 @@ public final class DatasetResource {
    * @return metadata
    * @throws DbException if there is an error in the database.
    */
-  @POST
-  @ApiOperation(value = "get information about a dataset", response = DatasetStatus.class)
-  @ApiResponses(value = { @ApiResponse(code = HttpStatus.SC_NOT_FOUND, message = "Dataset not found", response = String.class) })
+  @GET
   @Path("/user-{userName}/program-{programName}/relation-{relationName}/delete")
   public Response deleteDataset(@PathParam("userName") final String userName,
       @PathParam("programName") final String programName, @PathParam("relationName") final String relationName)
@@ -357,7 +355,12 @@ public final class DatasetResource {
       throw new MyriaApiException(Status.NOT_FOUND, "That dataset was not found");
     }
     RelationKey relationKey = status.getRelationKey();
-    status = server.deleteDataset(relationKey);
+    // delete
+    try {
+      status = server.deleteDataset(relationKey);
+    } catch (Exception e) {
+      throw new DbException();
+    }
 
     /* It worked */
     return Response.ok().build();

@@ -1818,6 +1818,40 @@ public final class MasterCatalog {
   }
 
   /**
+   * Connects to SQLite to delete
+   * 
+   * @throws CatalogException if there is an error in the catalog.
+   */
+  public void deleteRelationFromCatalog(final RelationKey relationkey) throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+    /* Do the work */
+    try {
+      queue.execute(new SQLiteJob<Void>() {
+        @Override
+        protected Void job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+          sqliteConnection.exec("BEGIN TRANSACTION;");
+          try {
+            deleteRelationIfExists(sqliteConnection, relationkey);
+            sqliteConnection.exec("COMMIT TRANSACTION;");
+          } catch (SQLiteException e) {
+            try {
+              sqliteConnection.exec("ROLLBACK TRANSACTION;");
+            } catch (SQLiteException e2) {
+              assert true; /* Do nothing */
+            }
+            throw e;
+          }
+          return null;
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
    * Add the metadata for one or more relations to the catalog.
    * 
    * @param relationsCreated which relations were created.
