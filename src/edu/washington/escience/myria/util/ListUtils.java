@@ -1,6 +1,8 @@
 package edu.washington.escience.myria.util;
 
 /*
+ * adapted from https://gist.github.com/jmkristian/1911614
+ * 
  * Copyright 2012 LinkedIn Corp.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
@@ -221,7 +223,7 @@ public final class ListUtils {
 
       @Override
       public String toString() {
-        return "ListUtils.cartesianProduct(" + Arrays.toString(_axes) + ").iterator()";
+        return "CollectionUtils.cartesianProduct(" + Arrays.toString(_axes) + ").iterator()";
       }
     }
   }
