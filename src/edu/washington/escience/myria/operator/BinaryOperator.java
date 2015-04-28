@@ -58,8 +58,6 @@ public abstract class BinaryOperator extends Operator {
     Preconditions.checkNotNull(children[1], "Operator opId=%s has its second child to be null", opId);
     left = children[0];
     right = children[1];
-    /* Generate the Schema now as a way of sanity-checking the constructor arguments. */
-    getSchema();
   }
 
 }
