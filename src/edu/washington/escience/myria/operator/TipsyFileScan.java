@@ -142,7 +142,7 @@ public class TipsyFileScan extends LeafOperator {
       ndark = dataInputForBin.readInt();
       nstar = dataInputForBin.readInt();
       dataInputForBin.readInt();
-      long proposed = H_SIZE + ngas * G_SIZE + ndark * D_SIZE + nstar * S_SIZE;
+      long proposed = (long) H_SIZE + ngas * G_SIZE + ndark * D_SIZE + nstar * S_SIZE;
       if (ntot != ngas + ndark + nstar) {
         throw new DbException("header info incorrect");
       }
