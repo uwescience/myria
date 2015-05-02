@@ -1,0 +1,85 @@
+{
+    "profilingMode": [], 
+    "logicalRa": "query", 
+    "language": "MyriaL", 
+    "rawQuery": "query", 
+    "plan": {
+        "fragments": [
+            {
+                "operators": [
+                    {
+                        "opName": "V0", 
+                        "opType": "SinkRoot", 
+                        "opId": 0, 
+                        "argChild": 200
+                    },
+                    {
+                        "opType": "SymmetricHashJoin", 
+                        "argColumns1": [0], 
+                        "argColumns2": [0], 
+                        "argColumnNames": [
+                            "col1"
+                        ], 
+                        "argChild2": 18, 
+                        "argChild1": 17, 
+                        "opId": 200, 
+                        "argSelect2": [
+                        ], 
+                        "opName": "MyriaSymmetricHashJoin", 
+                        "argSelect1": [
+                            0
+                        ]
+                    }, 
+                    {
+                        "relationKey": {
+                            "userName": "jwang", 
+                            "relationName": "smallTable", 
+                            "programName": "global_join"
+                        }, 
+                        "opType": "TableScan", 
+                        "opName": "MyriaScan", 
+                        "opId": 17
+                    },
+                    {
+                        "opType": "SymmetricHashJoin", 
+                        "argColumns1": [0], 
+                        "argColumns2": [0], 
+                        "argColumnNames": [
+                            "col1"
+                        ], 
+                        "argChild2": 20, 
+                        "argChild1": 19, 
+                        "opId": 18, 
+                        "argSelect2": [
+                        ], 
+                        "opName": "MyriaSymmetricHashJoin", 
+                        "argSelect1": [
+                            0
+                        ]
+                    }, 
+                    {
+                        "relationKey": {
+                            "userName": "jwang", 
+                            "relationName": "smallTable", 
+                            "programName": "global_join"
+                        }, 
+                        "opType": "TableScan", 
+                        "opName": "MyriaScan", 
+                        "opId": 19
+                    }, 
+                    {
+                        "relationKey": {
+                            "userName": "jwang", 
+                            "relationName": "smallTable", 
+                            "programName": "global_join"
+                        }, 
+                        "opType": "TableScan", 
+                        "opName": "MyriaScan", 
+                        "opId": 20
+                    }
+                ]
+            }
+        ], 
+        "type": "SubQuery"
+    }
+}
