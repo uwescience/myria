@@ -64,11 +64,11 @@ public class TipsyFileScan extends LeafOperator {
   /** The group number file name. */
   private final String grpFileName;
   /** The number of gas particle record. */
-  private int ngas;
+  private long ngas;
   /** The number of star particle record. */
-  private int nstar;
+  private long nstar;
   /** The number of dark particle record. */
-  private int ndark;
+  private long ndark;
   /** Which line of the file the scanner is currently on. */
   private int lineNumber;
 
@@ -142,7 +142,7 @@ public class TipsyFileScan extends LeafOperator {
       ndark = dataInputForBin.readInt();
       nstar = dataInputForBin.readInt();
       dataInputForBin.readInt();
-      long proposed = (long) H_SIZE + ngas * G_SIZE + ndark * D_SIZE + nstar * S_SIZE;
+      long proposed = H_SIZE + ngas * G_SIZE + ndark * D_SIZE + nstar * S_SIZE;
       if (ntot != ngas + ndark + nstar) {
         throw new DbException("header info incorrect");
       }
