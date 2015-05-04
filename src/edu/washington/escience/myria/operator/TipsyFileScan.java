@@ -64,11 +64,11 @@ public class TipsyFileScan extends LeafOperator {
   /** The group number file name. */
   private final String grpFileName;
   /** The number of gas particle record. */
-  private int ngas;
+  private long ngas;
   /** The number of star particle record. */
-  private int nstar;
+  private long nstar;
   /** The number of dark particle record. */
-  private int ndark;
+  private long ndark;
   /** Which line of the file the scanner is currently on. */
   private int lineNumber;
 
