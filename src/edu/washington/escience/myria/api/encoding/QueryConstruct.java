@@ -317,7 +317,9 @@ public class QueryConstruct {
     for (PlanFragmentEncoding fragment : fragments) {
       for (OperatorEncoding<?> operator : fragment.operators) {
         if (operator instanceof CollectConsumerEncoding || operator instanceof SingletonEncoding
-            || operator instanceof EOSControllerEncoding) {
+            || operator instanceof EOSControllerEncoding || operator instanceof BinaryFileScanEncoding
+            || operator instanceof FileScanEncoding || operator instanceof NChiladaFileScanEncoding
+            || operator instanceof SeaFlowFileScanEncoding || operator instanceof TipsyFileScanEncoding) {
           if (fragment.workers == null) {
             fragment.workers = singletonWorkers;
           } else {
