@@ -23,8 +23,8 @@ public class SamplingDistributionTest {
 
   final Schema inputSchema = Schema.ofFields("WorkerID", Type.INT_TYPE,
       "PartitionSize", Type.INT_TYPE);
-  final Schema expectedResultSchema = Schema.appendColumn(inputSchema,
-      Type.INT_TYPE, "SampleSize");
+  final Schema expectedResultSchema = Schema.ofFields("WorkerID", Type.INT_TYPE,
+          "StreamSize", Type.INT_TYPE, "SampleSize", Type.INT_TYPE);
 
   TupleBatchBuffer input;
   SamplingDistribution sampOp;

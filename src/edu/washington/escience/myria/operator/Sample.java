@@ -17,7 +17,7 @@ public abstract class Sample extends BinaryOperator {
   protected int sampleSize;
 
   /** Total number of tuples to expect from the right operator. */
-  protected int populationSize;
+  protected int streamSize;
 
   protected Random rand;
 
@@ -29,7 +29,7 @@ public abstract class Sample extends BinaryOperator {
    * and actual samples from the right operator.
    *
    * @param left
-   *          inputs a (WorkerID, PartitionSize, SampleSize) tuple.
+   *          inputs a (WorkerID, StreamSize, SampleSize) tuple.
    * @param right
    *          tuples that will be sampled from.
    * @param randomSeed
@@ -60,14 +60,14 @@ public abstract class Sample extends BinaryOperator {
 
     Type col1Type = tb.getSchema().getColumnType(1);
     if (col1Type == Type.INT_TYPE) {
-      populationSize = tb.getInt(1, 0);
+      streamSize = tb.getInt(1, 0);
     } else if (col1Type == Type.LONG_TYPE) {
-      populationSize = (int) tb.getLong(1, 0);
+      streamSize = (int) tb.getLong(1, 0);
     } else {
-      throw new DbException("populationSize column must be of type INT or LONG");
+      throw new DbException("streamSize column must be of type INT or LONG");
     }
-    Preconditions.checkState(populationSize >= 0,
-        "populationSize cannot be negative");
+    Preconditions.checkState(streamSize >= 0,
+        "streamSize cannot be negative");
 
     Type col2Type = tb.getSchema().getColumnType(2);
     if (col2Type == Type.INT_TYPE) {

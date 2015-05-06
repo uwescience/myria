@@ -37,9 +37,9 @@ public class SampleWoR extends Sample {
       extractSamplingInfo(tb);
 
       // Cannot sampleWoR more tuples than there are.
-      Preconditions.checkState(sampleSize <= populationSize,
+      Preconditions.checkState(sampleSize <= streamSize,
           "Cannot SampleWoR %s tuples from a population of size %s",
-          sampleSize, populationSize);
+          sampleSize, streamSize);
 
       getLeft().close();
       computedSamplingInfo = true;
@@ -52,7 +52,7 @@ public class SampleWoR extends Sample {
       BitSet toKeep = new BitSet(tb.numTuples());
       for (int i = 0; i < tb.numTuples(); i++) {
         int k = sampleSize - samplesAcquired;
-        int n = populationSize - tuplesProcessed;
+        int n = streamSize - tuplesProcessed;
         // Each tuple has a k/n probability of getting sampled.
         if (k > rand.nextInt(n)) {
           toKeep.set(i);
