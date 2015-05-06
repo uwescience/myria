@@ -168,8 +168,10 @@
 				"opId" : 15,
 				"opType" : "Aggregate",
 				"argChild" : 14,
-				"argAggFields" : ["0"],
-				"argAggOperators" : [["AGG_OP_COUNT"]]
+                "aggregators": [
+                {
+	                "type": "CountAll"
+                }]
 			},
 			{
 				"opId" : 16,

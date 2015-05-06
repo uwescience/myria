@@ -20,8 +20,8 @@ public class ModuloExpression extends BinaryExpression {
   }
 
   /**
-   * Add the two operands together.
-   * 
+   * Divide the two operands and take the remainder.
+   *
    * @param left the left operand.
    * @param right the right operand.
    */

@@ -48,16 +48,16 @@ public abstract class BinaryOperator extends Operator {
 
   @Override
   public final void setChildren(final Operator[] children) {
+    Integer opId = getOpId();
     Preconditions.checkArgument(left == null && right == null,
-        "called setChildren(), but children have already been set");
-    Preconditions.checkNotNull(children);
-    Preconditions.checkArgument(children.length == 2, "setChildren() must be called with an array of length 2");
-    Preconditions.checkNotNull(children[0]);
-    Preconditions.checkNotNull(children[1]);
+        "Operator opId=%s called setChildren(), but children have already been set", opId);
+    Preconditions.checkNotNull(children, "Operator opId=%s has null children", opId);
+    Preconditions.checkArgument(children.length == 2,
+        "Operator opId=%s setChildren() must be called with an array of length 2", opId);
+    Preconditions.checkNotNull(children[0], "Operator opId=%s has its first child to be null", opId);
+    Preconditions.checkNotNull(children[1], "Operator opId=%s has its second child to be null", opId);
     left = children[0];
     right = children[1];
-    /* Generate the Schema now as a way of sanity-checking the constructor arguments. */
-    getSchema();
   }
 
 }

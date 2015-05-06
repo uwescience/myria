@@ -97,10 +97,13 @@ public class MasterSubQuery extends LocalSubQuery {
                 // query gets killed.
                 queryExecutionFuture.setFailure(new QueryKilledException());
               } else {
-                DbException composedException = new DbException("Query #" + getSubQueryId() + " failed");
+                DbException composedException = null;
                 for (Entry<Integer, Throwable> workerIDCause : failedWorkerLocalSubQueries.entrySet()) {
                   int failedWorkerID = workerIDCause.getKey();
                   Throwable cause = workerIDCause.getValue();
+                  if (composedException == null) {
+                    composedException = new DbException("Query #" + getSubQueryId() + " failed: " + cause.getMessage());
+                  }
                   if (!(cause instanceof QueryKilledException)) {
                     // Only record non-killed exceptions
                     DbException workerException =

@@ -260,7 +260,7 @@ public class CatalogTest {
    * @throws CatalogException if there is an error creating the Catalog.
    */
   @Test
-  public void testCatalogProfilingModeList() throws CatalogException {
+  public void testCatalogExtraFieldsList() throws CatalogException {
     /* Turn off SQLite logging, it's annoying. */
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.OFF);
 
@@ -271,27 +271,44 @@ public class CatalogTest {
     /* Q1 */
     query.rawQuery = "query 1";
     query.logicalRa = "";
+    query.language = "myrial";
     catalog.newQuery(query);
 
     qs = catalog.getQuery(1L);
     assertEquals(qs.rawQuery, query.rawQuery);
     assertEquals(qs.logicalRa, query.logicalRa);
     assertEquals(qs.profilingMode, ImmutableList.<ProfilingMode> of());
+    assertEquals(qs.language, query.language);
+    /* Also test the getQueries() method of getting query info. */
+    qs = catalog.getQueries(1L, 1L, null, null).get(0);
+    assertEquals(qs.rawQuery, query.rawQuery);
+    assertEquals(null, qs.logicalRa);
+    assertEquals(qs.profilingMode, ImmutableList.<ProfilingMode> of());
+    assertEquals(qs.language, query.language);
 
     /* Q2 */
     query.rawQuery = "query 2";
     query.logicalRa = "";
     query.profilingMode = ImmutableList.of(ProfilingMode.QUERY);
+    query.language = "datalog";
     catalog.newQuery(query);
 
     qs = catalog.getQuery(2L);
     assertEquals(qs.rawQuery, query.rawQuery);
     assertEquals(qs.logicalRa, query.logicalRa);
     assertEquals(ImmutableSet.copyOf(qs.profilingMode), ImmutableSet.copyOf(query.profilingMode));
+    assertEquals(qs.language, query.language);
+    /* Also test the getQueries() method of getting query info. */
+    qs = catalog.getQueries(1L, 2L, null, null).get(0);
+    assertEquals(qs.rawQuery, query.rawQuery);
+    assertEquals(null, qs.logicalRa);
+    assertEquals(ImmutableSet.copyOf(qs.profilingMode), ImmutableSet.copyOf(query.profilingMode));
+    assertEquals(qs.language, query.language);
 
     /* Q3 */
     query.rawQuery = "query 3";
     query.logicalRa = "";
+    query.language = null;
     query.profilingMode = ImmutableList.of(ProfilingMode.QUERY, ProfilingMode.RESOURCE);
     catalog.newQuery(query);
 
@@ -299,16 +316,31 @@ public class CatalogTest {
     assertEquals(qs.rawQuery, query.rawQuery);
     assertEquals(qs.logicalRa, query.logicalRa);
     assertEquals(ImmutableSet.copyOf(qs.profilingMode), ImmutableSet.copyOf(query.profilingMode));
+    assertEquals(qs.language, query.language);
+    /* Also test the getQueries() method of getting query info. */
+    qs = catalog.getQueries(1L, 3L, null, null).get(0);
+    assertEquals(qs.rawQuery, query.rawQuery);
+    assertEquals(null, qs.logicalRa);
+    assertEquals(ImmutableSet.copyOf(qs.profilingMode), ImmutableSet.copyOf(query.profilingMode));
+    assertEquals(qs.language, query.language);
 
     /* Q4 */
     query.rawQuery = "query 4";
     query.logicalRa = "";
     query.profilingMode = ImmutableList.of(ProfilingMode.RESOURCE, ProfilingMode.QUERY);
+    query.language = "sql";
     catalog.newQuery(query);
 
     qs = catalog.getQuery(4L);
     assertEquals(qs.rawQuery, query.rawQuery);
     assertEquals(qs.logicalRa, query.logicalRa);
     assertEquals(ImmutableSet.copyOf(qs.profilingMode), ImmutableSet.copyOf(query.profilingMode));
+    assertEquals(qs.language, query.language);
+    /* Also test the getQueries() method of getting query info. */
+    qs = catalog.getQueries(1L, 4L, null, null).get(0);
+    assertEquals(qs.rawQuery, query.rawQuery);
+    assertEquals(null, qs.logicalRa);
+    assertEquals(ImmutableSet.copyOf(qs.profilingMode), ImmutableSet.copyOf(query.profilingMode));
+    assertEquals(qs.language, query.language);
   }
 }

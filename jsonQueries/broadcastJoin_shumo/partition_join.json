@@ -3,16 +3,7 @@
         {
             "operators": [
                 {
-                    "connectionInfo": {
-                        "database": "mrbenchmarks",
-                        "dbms": "vertica",
-                        "driverClass": "com.vertica.jdbc.Driver",
-                        "host": "localhost",
-                        "password": "mrbenchmarks",
-                        "port": "15433",
-                        "username": "dbadmin"
-                    },
-                    "opId": "Scan(R)",
+                    "opId": 1,
                     "opType": "TableScan",
                     "relationKey": {
                         "programName": "broadcastjoin",
@@ -21,12 +12,12 @@
                     }
                 },
                 {
-                    "argChild": "Scan(R)",
+                    "argChild": 1,
                     "argPf": {
                         "index": 1,
                         "type": "SingleFieldHash"
                     },
-                    "opId": "Shuffle(R)",
+                    "opId": 3,
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -34,16 +25,7 @@
         {
             "operators": [
                 {
-                    "connectionInfo": {
-                        "database": "mrbenchmarks",
-                        "dbms": "vertica",
-                        "driverClass": "com.vertica.jdbc.Driver",
-                        "host": "localhost",
-                        "password": "mrbenchmarks",
-                        "port": "15433",
-                        "username": "dbadmin"
-                    },
-                    "opId": "Scan(S)",
+                    "opId": 2,
                     "opType": "TableScan",
                     "relationKey": {
                         "programName": "broadcastjoin",
@@ -52,12 +34,12 @@
                     }
                 },
                 {
-                    "argChild": "Scan(S)",
+                    "argChild": 2,
                     "argPf": {
                         "index": 1,
                         "type": "SingleFieldHash"
                     },
-                    "opId": "Shuffle(S)",
+                    "opId": 4,
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -65,18 +47,18 @@
         {
             "operators": [
                 {
-                    "argOperatorId": "Shuffle(R)",
-                    "opId": "Gather(R)",
+                    "argOperatorId": 3,
+                    "opId": 5,
                     "opType": "ShuffleConsumer"
                 },
                 {
-                    "argOperatorId": "Shuffle(S)",
-                    "opId": "Gather(S)",
+                    "argOperatorId": 4,
+                    "opId": 6,
                     "opType": "ShuffleConsumer"
                 },
                 {
-                    "argChild1": "Gather(R)",
-                    "argChild2": "Gather(S)",
+                    "argChild1": 5,
+                    "argChild2": 6,
                     "argColumns1": [
                         1
                     ],
@@ -89,22 +71,13 @@
                     "argSelect2": [
                         1
                     ],
-                    "opId": "Join",
+                    "opId": 7,
                     "opType": "SymmetricHashJoin"
                 },
                 {
-                    "argChild": "Join",
+                    "argChild": 7,
                     "argOverwriteTable": true,
-                    "connectionInfo": {
-                        "database": "mrbenchmarks",
-                        "dbms": "vertica",
-                        "driverClass": "com.vertica.jdbc.Driver",
-                        "host": "localhost",
-                        "password": "mrbenchmarks",
-                        "port": "15433",
-                        "username": "dbadmin"
-                    },
-                    "opId": "InsertResult",
+                    "opId": 8,
                     "opType": "DbInsert",
                     "relationKey": {
                         "programName": "broadcastjoin",

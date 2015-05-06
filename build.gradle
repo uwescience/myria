@@ -12,7 +12,7 @@ group = "edu.washington.escience.myria"
 version = "0.1"
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '2.2.1'
+    gradleVersion = '2.3'
 }
 
 /* We use Java 1.7 */
@@ -151,6 +151,7 @@ dependencies {
   compile "org.postgresql:postgresql:9.3-1102-jdbc41"
 
   testCompile "junit:junit:4.12"
+  testCompile "org.assertj:assertj-core:1.7.1"
   testCompile "com.carrotsearch:junit-benchmarks:0.7.2"
 
   systemtestCompile sourceSets.main.output

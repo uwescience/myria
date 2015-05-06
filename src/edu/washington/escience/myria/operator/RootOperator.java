@@ -146,7 +146,7 @@ public abstract class RootOperator extends Operator {
     if (children.length != 1) {
       throw new IllegalArgumentException("a root operator must have exactly one child");
     }
-    Preconditions.checkNotNull(children[0]);
+    Preconditions.checkNotNull(children[0], "RootOperator opId=%s has a null child", getOpId());
     child = children[0];
   }
 

@@ -46,7 +46,7 @@ public class BooleanEvaluator extends Evaluator {
       se.setDefaultImports(MyriaConstants.DEFAULT_JANINO_IMPORTS);
 
       evaluator =
-          (BooleanEvalInterface) se.createFastEvaluator(getJavaExpression(), BooleanEvalInterface.class, new String[] {
+          (BooleanEvalInterface) se.createFastEvaluator(getJavaExpressionWithAppend(), BooleanEvalInterface.class, new String[] {
               Expression.TB, Expression.ROW });
     } catch (Exception e) {
       throw new DbException("Error when compiling expression " + this, e);
@@ -54,7 +54,7 @@ public class BooleanEvaluator extends Evaluator {
   }
 
   /**
-   * Evaluates the {@link #getJavaExpression()} using the {@link #evaluator}.
+   * Evaluates the {@link #getJavaExpressionWithAppend()} using the {@link #evaluator}.
    *
    * @param tb a tuple batch
    * @param rowId the row that should be used for input data

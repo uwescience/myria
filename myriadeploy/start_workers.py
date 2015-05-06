@@ -10,7 +10,7 @@ import logging
 def start_workers(config_file):
     args = ["./using_deployment_utils.sh", config_file, "-start_workers"]
     if subprocess.call(args):
-        logging.error("Error starting workers")
+        sys.exit(1)
 
 
 def main(argv):

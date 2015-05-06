@@ -23,10 +23,9 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.RelationKey;
-import edu.washington.escience.myria.api.encoding.QueryConstruct;
-import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
+import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
 import edu.washington.escience.myria.proto.ControlProto;
@@ -81,9 +80,10 @@ public class QueryManager {
   /**
    * @return if a query is running.
    * @param queryId queryID.
+   * @throws CatalogException if there is an exception checking the query status
    */
-  public boolean queryCompleted(final long queryId) {
-    return !runningQueries.containsKey(queryId);
+  public boolean queryCompleted(final long queryId) throws CatalogException {
+    return Status.finished(getQueryStatus(queryId).status);
   }
 
   /**
@@ -479,18 +479,10 @@ public class QueryManager {
     if (!canSubmitQuery()) {
       throw new DbException("Cannot submit query");
     }
-    if (query.profilingMode.size() > 0) {
-      if (!(plan instanceof SubQuery || plan instanceof JsonSubQuery)) {
-        throw new DbException("Profiling mode is not supported for plans (" + plan.getClass().getSimpleName()
-            + ") that may contain multiple subqueries.");
-      }
+    if (!query.profilingMode.isEmpty()) {
       if (!server.getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
         throw new DbException("Profiling mode is only supported when using Postgres as the storage system.");
       }
-    }
-    if (plan instanceof JsonSubQuery) {
-      /* Hack to instantiate a single-fragment query for the visualization. */
-      QueryConstruct.instantiate(((JsonSubQuery) plan).getFragments(), new ConstructArgs(server, -1));
     }
     final long queryID = catalog.newQuery(query);
     return submitQuery(queryID, query, plan);

@@ -5,7 +5,7 @@ echo "starting master"
 ./start_master.py $1
 RET=$?
 if [ $RET -ne 0 ]; then
-	echo "failed code $RET"
+	echo "Error starting master"
 	exit $RET
 fi
 
@@ -14,6 +14,6 @@ echo "starting workers"
 ./start_workers.py $1
 RET=$?
 if [ $RET -ne 0 ]; then
-	echo "failed code $RET"
+	echo "Error starting workers"
 	exit $RET
 fi

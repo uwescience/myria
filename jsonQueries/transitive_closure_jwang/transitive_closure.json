@@ -1,0 +1,166 @@
+{
+	"fragments": 
+	[
+		{
+			"operators": 
+			[
+			{
+				"opId" : 1,
+				"opType" : "Consumer",
+				"argOperatorId" : 9
+			},
+			{
+				"opId" : 2,
+				"opType" : "UnionAll",
+				"argChildren" : [1]
+			},
+			{
+				"opId" : 3,
+				"opType" : "EOSController",
+				"argChild" : 2
+			}
+			],
+			"workers": 
+			[
+				1
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"opId" : 4,
+				"opType" : "TableScan",
+				"relationKey" : {
+					"userName" : "jwang",
+					"programName" : "transitive_closure",
+					"relationName" : "g"
+				}
+			},
+			{
+				"opId" : 5,
+				"opType" : "ShuffleProducer",
+				"argChild" : 4,
+				"argPf" : {
+					"type" : "SingleFieldHash",
+					"index" : 0
+				}
+			}
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"opId" : 17,
+				"opType" : "TableScan",
+				"relationKey" : {
+					"userName" : "jwang",
+					"programName" : "transitive_closure",
+					"relationName" : "g"
+				}
+			},
+			{
+				"opId" : 16,
+				"opType" : "ShuffleProducer",
+				"argChild" : 17,
+				"argPf" : {
+					"type" : "SingleFieldHash",
+					"index" : 1
+				}
+			}
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"opId" : 6,
+				"opType" : "ShuffleConsumer",
+				"argOperatorId" : 5
+			},
+			{
+				"opId" : 7,
+				"opType" : "ShuffleConsumer",
+				"argOperatorId" : 8
+			},
+			{
+				"opId" : 18,
+				"opType" : "Consumer",
+				"argOperatorId" : 3
+			},
+			{
+				"opId" : 9,
+				"opType" : "IDBController",
+				"argSelfIdbId" : 0,
+				"argInitialInput" : 6,
+				"argIterationInput" : 7,
+				"argState" : {
+					"type" : "DupElim"
+				},
+				"argEosControllerInput" : 18
+			},
+			{
+				"opId" : 10,
+				"opType" : "LocalMultiwayProducer",
+				"argChild" : 9
+			}
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"opId" : 15,
+				"opType" : "ShuffleConsumer",
+				"argOperatorId" : 16
+			},
+			{
+				"opId" : 11,
+				"opType" : "LocalMultiwayConsumer",
+				"argOperatorId" : 10
+			},
+			{
+				"opId" : 12,
+				"opType" : "SymmetricHashJoin",
+				"argChild1" : 15,
+				"argChild2" : 11,
+				"argColumns1" : ["1"],
+				"argColumns2" : ["0"],
+				"argSelect1" : ["0"],
+				"argSelect2" : ["1"]
+			},
+			{
+				"opId" : 8,
+				"opType" : "ShuffleProducer",
+				"argBufferStateType" : {
+					"type" : "DupElim"
+				},
+				"argChild" : 12,
+				"argPf" : {
+					"type" : "SingleFieldHash",
+					"index" : 0
+				}
+			}
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"opId" : 14,
+				"opType" : "LocalMultiwayConsumer",
+				"argOperatorId" : 10
+			},
+			{
+				"opId" : 13,
+				"opType" : "SinkRoot",
+				"argChild" : 14
+			}
+			]
+		}
+	],
+	"logicalRa": "",
+	"rawQuery": "",
+	"ftMode": "REJOIN"
+}

@@ -1,7 +1,4 @@
 language: java
-branches:
-  only:
-  - master
 jdk:
 - openjdk7
 - oraclejdk7
@@ -18,4 +15,4 @@ sudo: false
 
 cache:
   directories:
-  - $HOME/.gradle
+  - $HOME/.gradle/caches

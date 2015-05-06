@@ -4,7 +4,7 @@
 echo "compile"
 gradle -p .. jar
 
-# stop every worker 
+# stop every worker
 echo "stop"
 ./stop_all_by_force.py $1
 RET=$?
@@ -15,7 +15,7 @@ fi
 
 # update jar
 echo "update"
-./update_myria_jar_only.py $1
+./update_myria_binaries.py $1
 RET=$?
 if [ $RET -ne 0 ]; then
 	echo "failed code $RET"

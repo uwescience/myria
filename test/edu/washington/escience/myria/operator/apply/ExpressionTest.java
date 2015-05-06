@@ -14,6 +14,7 @@ import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.IntDivideExpression;
 import edu.washington.escience.myria.expression.MinusExpression;
+import edu.washington.escience.myria.expression.ModuloExpression;
 import edu.washington.escience.myria.expression.PlusExpression;
 import edu.washington.escience.myria.expression.TimesExpression;
 import edu.washington.escience.myria.expression.evaluate.ConstantEvaluator;
@@ -27,7 +28,7 @@ public class ExpressionTest {
    * @return the constant value
    * @throws DbException if there is an error evaluating the expression
    */
-  private Object evaluateConstantExpression(ExpressionOperator op) throws DbException {
+  private Object evaluateConstantExpression(final ExpressionOperator op) throws DbException {
     Expression expr = new Expression("op", op);
     ConstantEvaluator eval = new ConstantEvaluator(expr, new ExpressionOperatorParameter(Schema.EMPTY_SCHEMA));
     return eval.eval();
@@ -41,7 +42,7 @@ public class ExpressionTest {
    * @return the constant value
    * @throws Throwable the root cause of a failed Janino compilation.
    */
-  private Object evaluateConstantAndUnrollException(ExpressionOperator op) throws Throwable {
+  private Object evaluateConstantAndUnrollException(final ExpressionOperator op) throws Throwable {
     try {
       return evaluateConstantExpression(op);
     } catch (DbException e) {
@@ -271,6 +272,70 @@ public class ExpressionTest {
     ConstantExpression val1 = new ConstantExpression(Math.pow(2, 62)); /* (Long.MAX_VALUE + 1) >> 1 */
     ConstantExpression val2 = new ConstantExpression(0.5);
     ExpressionOperator expr = new IntDivideExpression(val1, val2);
+    evaluateConstantAndUnrollException(expr);
+  }
+
+  @Test
+  public void testModuloWithLongs() throws Throwable {
+    ConstantExpression val1 = new ConstantExpression(5L);
+    ConstantExpression val2 = new ConstantExpression(6L);
+    ExpressionOperator expr = new ModuloExpression(val1, val2);
+    Object ans = evaluateConstantAndUnrollException(expr);
+    assertEquals(Long.class, ans.getClass());
+    assertEquals(5L, ans);
+    expr = new ModuloExpression(val2, val1);
+    ans = evaluateConstantAndUnrollException(expr);
+    assertEquals(Long.class, ans.getClass());
+    assertEquals(1L, ans);
+
+    ConstantExpression val3 = new ConstantExpression(-5L);
+    expr = new ModuloExpression(val3, val1);
+    ans = evaluateConstantAndUnrollException(expr);
+    assertEquals(Long.class, ans.getClass());
+    assertEquals(0L, ans);
+    expr = new ModuloExpression(val1, val3);
+    ans = evaluateConstantAndUnrollException(expr);
+    assertEquals(Long.class, ans.getClass());
+    assertEquals(0L, ans);
+  }
+
+  @Test
+  public void testModuloWithInts() throws Throwable {
+    ConstantExpression val1 = new ConstantExpression(5);
+    ConstantExpression val2 = new ConstantExpression(6);
+    ExpressionOperator expr = new ModuloExpression(val1, val2);
+    Object ans = evaluateConstantAndUnrollException(expr);
+    assertEquals(Integer.class, ans.getClass());
+    assertEquals(5, ans);
+    expr = new ModuloExpression(val2, val1);
+    ans = evaluateConstantAndUnrollException(expr);
+    assertEquals(Integer.class, ans.getClass());
+    assertEquals(1, ans);
+
+    ConstantExpression val3 = new ConstantExpression(-5);
+    expr = new ModuloExpression(val3, val1);
+    ans = evaluateConstantAndUnrollException(expr);
+    assertEquals(Integer.class, ans.getClass());
+    assertEquals(0, ans);
+    expr = new ModuloExpression(val1, val3);
+    ans = evaluateConstantAndUnrollException(expr);
+    assertEquals(Integer.class, ans.getClass());
+    assertEquals(0, ans);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testModuloWithFloats() throws Throwable {
+    ConstantExpression val1 = new ConstantExpression(5.0F);
+    ConstantExpression val2 = new ConstantExpression(6.0F);
+    ExpressionOperator expr = new ModuloExpression(val1, val2);
+    evaluateConstantAndUnrollException(expr);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testModuloWithDoubles() throws Throwable {
+    ConstantExpression val1 = new ConstantExpression(5.0);
+    ConstantExpression val2 = new ConstantExpression(6.0);
+    ExpressionOperator expr = new ModuloExpression(val1, val2);
     evaluateConstantAndUnrollException(expr);
   }
 

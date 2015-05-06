@@ -170,7 +170,10 @@ public final class SymmetricHashJoin extends BinaryOperator {
   private transient ReplaceProcedure doReplace;
 
   /** Whether the last child polled was the left child. */
-  private boolean pollLeft;
+  private boolean pollLeft = false;
+
+  /** Join pull order, default: ALTER. */
+  private JoinPullOrder order = JoinPullOrder.ALTER;
 
   /** if the hash table of the left child should use set semantics. */
   private boolean setSemanticsLeft = false;
@@ -290,7 +293,6 @@ public final class SymmetricHashJoin extends BinaryOperator {
     rightCompareIndx = MyriaArrayUtils.warnIfNotSet(compareIndx2);
     leftAnswerColumns = MyriaArrayUtils.warnIfNotSet(answerColumns1);
     rightAnswerColumns = MyriaArrayUtils.warnIfNotSet(answerColumns2);
-    pollLeft = false;
   }
 
   /**
@@ -505,8 +507,11 @@ public final class SymmetricHashJoin extends BinaryOperator {
       return fetchNextReadySynchronousEOI();
     }
 
-    final Operator left = getLeft();
-    final Operator right = getRight();
+    if (order.equals(JoinPullOrder.LEFT)) {
+      pollLeft = true;
+    } else if (order.equals(JoinPullOrder.RIGHT)) {
+      pollLeft = false;
+    }
 
     /* If any full tuple batches are ready, output them. */
     TupleBatch nexttb = ans.popFilled();
@@ -526,9 +531,10 @@ public final class SymmetricHashJoin extends BinaryOperator {
       return nexttb;
     }
 
+    final Operator left = getLeft();
+    final Operator right = getRight();
     int noDataStreak = 0;
     while (noDataStreak < 2 && (!left.eos() || !right.eos())) {
-      pollLeft = !pollLeft;
 
       Operator current;
       if (pollLeft) {
@@ -537,33 +543,34 @@ public final class SymmetricHashJoin extends BinaryOperator {
         current = right;
       }
 
-      if (current.eos()) {
-        noDataStreak++;
-        continue;
-      }
-
       /* process tuple from child */
       TupleBatch tb = current.nextReady();
       if (tb != null) {
-        noDataStreak = 0;
         processChildTB(tb, pollLeft);
+        noDataStreak = 0;
+        /* ALTER: switch to the other child */
+        if (order.equals(JoinPullOrder.ALTER)) {
+          pollLeft = !pollLeft;
+        }
         nexttb = ans.popAnyUsingTimeout();
         if (nexttb != null) {
           return nexttb;
         }
-      } else {
-        noDataStreak++;
+      } else if (current.eoi()) {
         /* if current operator is eoi, consume it, check whether it will cause EOI of this operator */
-        if (current.eoi()) {
-          consumeChildEOI(pollLeft);
-          /*
-           * If this operator is ready to emit EOI ( reminder that it might need to clear buffer), break to EOI handle
-           * part
-           */
-          if (isEOIReady()) {
-            break;
-          }
+        consumeChildEOI(pollLeft);
+        noDataStreak = 0;
+        if (order.equals(JoinPullOrder.ALTER)) {
+          pollLeft = !pollLeft;
         }
+        /* If this operator is ready to emit EOI (reminder that it needs to clear buffer), break to EOI handle part */
+        if (isEOIReady()) {
+          break;
+        }
+      } else {
+        /* current.eos() or no data, switch to the other child */
+        pollLeft = !pollLeft;
+        noDataStreak++;
       }
     }
 
@@ -721,5 +728,24 @@ public final class SymmetricHashJoin extends BinaryOperator {
       sum += hashTable2.numTuples();
     }
     return sum;
+  }
+
+  /** Join pull order options. */
+  public enum JoinPullOrder {
+    /** Alternatively. */
+    ALTER,
+    /** Pull from the left child whenever there is data available. */
+    LEFT,
+    /** Pull from the right child whenever there is data available. */
+    RIGHT
+  }
+
+  /**
+   * Set the pull order.
+   * 
+   * @param order the pull order.
+   */
+  public void setPullOrder(final JoinPullOrder order) {
+    this.order = order;
   }
 }

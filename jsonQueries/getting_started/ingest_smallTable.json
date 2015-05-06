@@ -1,0 +1,17 @@
+{
+  "relationKey" : {
+    "userName" : "jwang",
+    "programName" : "global_join",
+    "relationName" : "smallTable"
+  },
+  "schema" : {
+    "columnTypes" : ["LONG_TYPE", "LONG_TYPE"],
+    "columnNames" : ["col1", "col2"]
+  },
+  "source" : {
+    "dataType" : "File",
+    "filename" : "/path/to/your/myria/jsonQueries/getting_started/smallTable"
+  },
+  "overwrite" : true,
+  "delimiter": ","
+}

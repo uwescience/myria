@@ -191,8 +191,6 @@ public class TupleBatch implements ReadableTable, Serializable {
 
   @Override
   public final long getLong(final int column, final int row) {
-    Preconditions.checkArgument(columns.get(column).size() >= numTuples, "numTuples %s columnsize %s", numTuples,
-        columns.get(column).size());
     return columns.get(column).getLong(row);
   }
 

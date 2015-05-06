@@ -7,6 +7,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -19,6 +20,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.parallel.LocalFragment;
 import edu.washington.escience.myria.parallel.LocalFragmentResourceManager;
 import edu.washington.escience.myria.parallel.LocalSubQuery;
+import edu.washington.escience.myria.parallel.SubQueryId;
 import edu.washington.escience.myria.parallel.WorkerSubQuery;
 import edu.washington.escience.myria.profiling.ProfilingLogger;
 import edu.washington.escience.myria.storage.TupleBatch;
@@ -65,12 +67,12 @@ public abstract class Operator implements Serializable {
   private Schema schema;
 
   /**
-   * EOS. Initially set it as true;
+   * End of stream (EOS). Initialized to true.
    */
   private volatile boolean eos = true;
 
   /**
-   * End of iteration.
+   * End of iteration (EOI).
    */
   private boolean eoi = false;
 
@@ -105,11 +107,11 @@ public abstract class Operator implements Serializable {
   }
 
   /**
-   * @return return query id.
+   * @return return subquery id.
    */
-  public long getQueryId() {
+  public SubQueryId getSubQueryId() {
     return ((LocalFragmentResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER))
-        .getFragment().getLocalSubQuery().getSubQueryId().getQueryId();
+        .getFragment().getLocalSubQuery().getSubQueryId();
   }
 
   /**
@@ -232,11 +234,11 @@ public abstract class Operator implements Serializable {
   }
 
   /**
-   * Check if EOS is meet.
+   * Check if EOS is set.
    * 
    * This method is non-blocking.
    * 
-   * @return if the Operator is EOS
+   * @return if the Operator is at EOS (End of Stream)
    * 
    */
   public final boolean eos() {
@@ -244,7 +246,7 @@ public abstract class Operator implements Serializable {
   }
 
   /**
-   * @return if the operator received an EOI.
+   * @return if the operator received an EOI (End of Iteration)
    */
   public final boolean eoi() {
     return eoi;
@@ -332,7 +334,8 @@ public abstract class Operator implements Serializable {
     try {
       do {
         result = fetchNextReady();
-        // XXX while or not while? For a single thread operator, while sounds more efficient generally
+        // XXX while or not while? For a single thread operator, while sounds more efficient
+        // generally
       } while (result != null && result.numTuples() <= 0);
     } catch (RuntimeException | DbException e) {
       throw e;
@@ -554,8 +557,8 @@ public abstract class Operator implements Serializable {
    * 
    * @return the op id
    */
-  public int getOpId() {
-    Objects.requireNonNull(opId);
+  @Nullable
+  public Integer getOpId() {
     return opId;
   }
 }
