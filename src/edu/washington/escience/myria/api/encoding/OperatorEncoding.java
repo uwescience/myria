@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import edu.washington.escience.myria.api.MyriaApiException;
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.Operator;
+import edu.washington.escience.myria.operator.SampledDbInsertTemp;
 
 /**
  * A JSON-able wrapper for the expected wire message for an operator. To add a new operator, two things need to be done.
@@ -47,6 +48,7 @@ import edu.washington.escience.myria.operator.Operator;
     @Type(name = "NChiladaFileScan", value = NChiladaFileScanEncoding.class),
     @Type(name = "RightHashCountingJoin", value = RightHashCountingJoinEncoding.class),
     @Type(name = "RightHashJoin", value = RightHashJoinEncoding.class),
+    @Type(name = "SampledDbInsertTemp", value = TempSampledInsertEncoding.class),
     @Type(name = "SampleWR", value = SampleWREncoding.class),
     @Type(name = "SampleWoR", value = SampleWoREncoding.class),
     @Type(name = "SamplingDistribution", value = SamplingDistributionEncoding.class),

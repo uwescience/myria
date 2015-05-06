@@ -21,7 +21,7 @@ public class SamplingDistribution extends UnaryOperator {
   /** The output schema. */
   private static final Schema SCHEMA = Schema.of(
       ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE, Type.INT_TYPE),
-      ImmutableList.of("WorkerID", "PartitionSize", "SampleSize"));
+      ImmutableList.of("WorkerID", "StreamSize", "SampleSize"));
 
   /** Total number of tuples to sample. */
   private final int sampleSize;
@@ -57,6 +57,11 @@ public class SamplingDistribution extends UnaryOperator {
     // Value at index i == # of tuples on worker i.
     ArrayList<Integer> tupleCounts = new ArrayList<Integer>();
 
+    // Distribution of the actual stream size across the workers.
+    // May be different from tupleCounts if worker i pre-sampled the data.
+    // Value at index i == # of tuples in stream on worker i.
+    ArrayList<Integer> streamCounts = new ArrayList<Integer>();
+
     // Total number of tuples across all workers.
     int totalTupleCount = 0;
 
@@ -68,6 +73,12 @@ public class SamplingDistribution extends UnaryOperator {
       }
       Type col0Type = tb.getSchema().getColumnType(0);
       Type col1Type = tb.getSchema().getColumnType(1);
+      boolean hasStreamSize = false;
+      Type col2Type = null;
+      if (tb.getSchema().numColumns() > 2) {
+        hasStreamSize = true;
+        col2Type = tb.getSchema().getColumnType(2);
+      }
       for (int i = 0; i < tb.numTuples(); i++) {
         int workerID;
         if (col0Type == Type.INT_TYPE) {
@@ -78,9 +89,10 @@ public class SamplingDistribution extends UnaryOperator {
           throw new DbException("WorkerID must be of type INT or LONG");
         }
         Preconditions.checkState(workerID > 0, "WorkerID must be > 0");
-        // Ensure the future tupleCounts.set(workerID, -) call will work.
+        // Ensure the future .set(workerID, -) calls will work.
         for (int j = tupleCounts.size(); j < workerID; j++) {
           tupleCounts.add(0);
+          streamCounts.add(0);
         }
 
         int partitionSize;
@@ -92,9 +104,23 @@ public class SamplingDistribution extends UnaryOperator {
           throw new DbException("PartitionSize must be of type INT or LONG");
         }
         Preconditions.checkState(partitionSize >= 0,
-            "Worker cannot have a negative PartitionSize: %s", sampleSize);
+            "Worker cannot have a negative PartitionSize: %s", partitionSize);
         tupleCounts.set(workerID - 1, partitionSize);
         totalTupleCount += partitionSize;
+
+        int streamSize = partitionSize;
+        if (hasStreamSize) {
+          if (col2Type == Type.INT_TYPE) {
+            streamSize = tb.getInt(2, i);
+          } else if (col2Type == Type.LONG_TYPE) {
+            streamSize = (int) tb.getLong(2, i);
+          } else {
+            throw new DbException("StreamSize must be of type INT or LONG");
+          }
+          Preconditions.checkState(partitionSize >= 0,
+                  "Worker cannot have a negative StreamSize: %s", streamSize);
+        }
+        streamCounts.set(workerID - 1, streamSize);
       }
     }
     Preconditions.checkState(sampleSize <= totalTupleCount,
@@ -111,15 +137,15 @@ public class SamplingDistribution extends UnaryOperator {
 
     // Build and return a TupleBatch with the distribution.
     IntColumnBuilder wIdCol = new IntColumnBuilder();
-    IntColumnBuilder tupCountCol = new IntColumnBuilder();
+    IntColumnBuilder streamSizeCol = new IntColumnBuilder();
     IntColumnBuilder sampCountCol = new IntColumnBuilder();
-    for (int i = 0; i < tupleCounts.size(); i++) {
+    for (int i = 0; i < streamCounts.size(); i++) {
       wIdCol.appendInt(i + 1);
-      tupCountCol.appendInt(tupleCounts.get(i));
+      streamSizeCol.appendInt(streamCounts.get(i));
       sampCountCol.appendInt(sampleCounts[i]);
     }
     ImmutableList.Builder<Column<?>> columns = ImmutableList.builder();
-    columns.add(wIdCol.build(), tupCountCol.build(), sampCountCol.build());
+    columns.add(wIdCol.build(), streamSizeCol.build(), sampCountCol.build());
     return new TupleBatch(SCHEMA, columns.build());
   }
 

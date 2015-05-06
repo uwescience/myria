@@ -45,7 +45,7 @@ public class SampleWR extends Sample {
       extractSamplingInfo(tb);
 
       // Generate target indices to accept as samples.
-      samples = generateTargetSampleIndices(populationSize, sampleSize);
+      samples = generateTargetSampleIndices(streamSize, sampleSize);
 
       getLeft().close();
       computedSamplingInfo = true;
