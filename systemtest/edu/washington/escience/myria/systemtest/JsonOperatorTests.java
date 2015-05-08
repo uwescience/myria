@@ -123,7 +123,7 @@ public class JsonOperatorTests extends SystemTestBase {
         JsonAPIUtils.download("localhost", masterDaemonPort, outputRelation.getUserName(), outputRelation
             .getProgramName(), outputRelation.getRelationName(), "json");
     String expectedData =
-        "[{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"a\"},{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"b\"},{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"c\"},{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"d\"},{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"e\"},{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"f\"},{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"a\"},{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"b\"},{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"c\"},{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"d\"},{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"e\"},{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"f\"}]";
+        "[{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"a\"},{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"b\"},{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"c\"},{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"d\"},{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"e\"},{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"f\"}]";
     assertEquals(data, expectedData);
   }
 }
