@@ -61,6 +61,7 @@ def _get_workers(hostnames, ports=None, base_port=8001):
                  for hostname, group in groupby(hostnames)
                  for offset in xrange(len(list(group)))]
 
+    # TODO: add support for specifying different directories and database names for workers
     for index, (hostname, port) in enumerate(zip(hostnames, ports)):
         workers += '{} = {}:{}\n'.format(index + 1, hostname, port)
 
