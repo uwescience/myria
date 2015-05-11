@@ -1,13 +1,14 @@
 package edu.washington.escience.myria.expression.evaluate;
 
-import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.builder.WritableColumn;
+import edu.washington.escience.myria.storage.AppendableTable;
 import edu.washington.escience.myria.storage.ReadableTable;
 
 /**
- * Interface for evaluating a single {@link edu.washington.escience.myria.expression.Expression} and returning an
- * Iterable of results.
+ * Interface for evaluating a single {@link edu.washington.escience.myria.expression.Expression} and appending the
+ * results to a column, along with a count of results.
  */
-public interface FlatteningExpressionEvalInterface<T extends Type> {
+public interface FlatteningExpressionEvalInterface {
   /**
    * The interface evaluating a single {@link edu.washington.escience.myria.expression.Expression} and appending it to a
    * column. We only need a reference to the tuple batch and a row id, plus the optional state of e.g. an
@@ -16,8 +17,11 @@ public interface FlatteningExpressionEvalInterface<T extends Type> {
    * using the rowId provided in {@link edu.washington.escience.myria.expression.VariableExpression}.
    *
    * @param tb a tuple batch
-   * @param rowId the row in the tb that should be used.
-   * @param state optional state that is passed during evaluation
+   * @param rowId the row in the tb that should be used
+   * @param count a column storing the number of results returned from this row
+   * @param result a table storing evaluation results
+   * @param colIdx the column in {@link result} to write results to
    */
-  Iterable<T> evaluate(final ReadableTable tb, final int rowId, final ReadableTable state);
+  void evaluate(final ReadableTable tb, final int rowId, final WritableColumn count, final AppendableTable result,
+      final int colIdx);
 }

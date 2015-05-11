@@ -84,9 +84,17 @@ public abstract class ExpressionOperator implements Serializable {
   public abstract String getJavaString(final ExpressionOperatorParameter parameters);
 
   /**
-   * @return if this expression returns an instance of Iterable
+   * @param parameters parameters that are needed to create the java expression
+   * @return Java code to efficiently append results to an output column
    */
-  public boolean hasIterableOutputType() {
+  public String getJavaExpressionWithAppend(final ExpressionOperatorParameter parameters) {
+    return null;
+  }
+
+  /**
+   * @return if this expression returns a primitive array
+   */
+  public boolean hasArrayOutputType() {
     return false;
   }
 

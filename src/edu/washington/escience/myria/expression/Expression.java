@@ -41,6 +41,10 @@ public class Expression implements Serializable {
    */
   public static final String RESULT = "result";
   /**
+   * Variable name of result count.
+   */
+  public static final String COUNT = "count";
+  /**
    * Variable name of input tuple batch.
    */
   public static final String TB = "tb";
@@ -48,6 +52,10 @@ public class Expression implements Serializable {
    * Variable name of row index.
    */
   public static final String ROW = "row";
+  /**
+   * Variable name of row index.
+   */
+  public static final String COL = "col";
   /**
    * Variable name of state.
    */
@@ -112,29 +120,22 @@ public class Expression implements Serializable {
    * @return the Java form of this expression that also writes the results to a {@link ColumnBuilder}.
    */
   public String getJavaExpressionWithAppend(final ExpressionOperatorParameter parameters) {
-    if (rootExpressionOperator.hasArrayOutputType()) {
-      return getJavaArrayExpressionWithAppend(parameters);
-    } else if (rootExpressionOperator.hasIterableOutputType()) {
-      return getJavaIterableExpressionWithAppend(parameters);
-    } else {
-      return new StringBuilder(RESULT).append(".append").append(getOutputType(parameters).getName()).append("(")
-          .append(getJavaExpression(parameters)).append(");").toString();
+    String appendExpression = rootExpressionOperator.getJavaExpressionWithAppend(parameters);
+    if (appendExpression == null) {
+      if (isMultivalued()) {
+        String primitiveTypeName = getOutputType(parameters).toJavaType().getName();
+        appendExpression =
+            new StringBuilder(primitiveTypeName).append("[] results = ").append(getJavaExpression(parameters)).append(
+                ";\n").append(COUNT).append(".appendInt(results.length);\n").append(
+                "for (int i = 0; i < results.length; ++i) {\n").append(RESULT).append(".put").append(
+                getOutputType(parameters).getName()).append("(").append(COL).append(", results[i]);\n}").toString();
+      } else {
+        appendExpression =
+            new StringBuilder(RESULT).append(".append").append(getOutputType(parameters).getName()).append("(").append(
+                getJavaExpression(parameters)).append(")").toString();
+      }
     }
-  }
-
-  // Janino cannot handle the foreach syntax, so we have to use explicit array syntax
-  private String getJavaArrayExpressionWithAppend(final ExpressionOperatorParameter parameters) {
-    return new StringBuilder().append(getOutputType(parameters).toJavaType().getSimpleName()).append("[] arr = ")
-        .append(getJavaExpression(parameters)).append("; for (int i = 0; i < arr.length; ++i) { ").append(RESULT)
-        .append(".append").append(getOutputType(parameters).getName()).append("(arr[i]); }").toString();
-  }
-
-  // Janino cannot handle the foreach syntax, so we have to use explicit iterable syntax (without generics)
-  private String getJavaIterableExpressionWithAppend(final ExpressionOperatorParameter parameters) {
-    return new StringBuilder().append("for (java.util.Iterator it = ").append(getJavaExpression(parameters)).append(
-        ".iterator(); it.hasNext();) { ").append(RESULT).append(".append").append(getOutputType(parameters).getName())
-        .append("((").append(getOutputType(parameters).toJavaObjectType().getSimpleName()).append(")(it.next())); }")
-        .toString();
+    return appendExpression;
   }
 
   /**
@@ -187,7 +188,7 @@ public class Expression implements Serializable {
    * 
    * @return if this expression evaluates to an Iterable<T>
    */
-  public boolean isIterable() {
-    return rootExpressionOperator.hasIterableOutputType();
+  public boolean isMultivalued() {
+    return rootExpressionOperator.hasArrayOutputType();
   }
 }

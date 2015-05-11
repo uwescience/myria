@@ -24,15 +24,15 @@ import edu.washington.escience.myria.util.TestEnvVars;
 public class FlatteningApplyTest {
 
   private final String SEPARATOR = ",";
-  private final long SPLIT_MAX = 10;
-  private final long COUNTER_MAX = 2 * TupleBatch.BATCH_SIZE + 1;
-  private final long EXPECTED_RESULTS = SPLIT_MAX * COUNTER_MAX;
+  private final int SPLIT_MAX = 10;
+  private final int COUNTER_MAX = 2 * TupleBatch.BATCH_SIZE + 1;
+  private final int EXPECTED_RESULTS = SPLIT_MAX * COUNTER_MAX;
 
   @Test
   public void testApply() throws DbException {
-    final Schema schema = Schema.ofFields("long_count", Type.LONG_TYPE, "joined_ints", Type.STRING_TYPE);
+        Schema.ofFields("int_count", Type.INT_TYPE, "ignore_1", Type.FLOAT_TYPE, "joined_ints", Type.STRING_TYPE,
     final Schema expectedResultSchema =
-        Schema.ofFields("long_count", Type.LONG_TYPE, "joined_ints", Type.STRING_TYPE, "long_values", Type.LONG_TYPE,
+        Schema.ofFields("int_count", Type.INT_TYPE, "joined_ints", Type.STRING_TYPE, "int_values", Type.INT_TYPE,
             "joined_ints_splits", Type.STRING_TYPE);
     final TupleBatchBuffer input = new TupleBatchBuffer(schema);
 
@@ -45,13 +45,13 @@ public class FlatteningApplyTest {
     }
     final String joinedInts = sb.toString();
 
-    input.putLong(0, COUNTER_MAX);
+    input.putInt(0, COUNTER_MAX);
     input.putString(1, joinedInts);
     ImmutableList.Builder<Expression> Expressions = ImmutableList.builder();
 
     ExpressionOperator countColIdx = new VariableExpression(0);
     ExpressionOperator counter = new CounterExpression(countColIdx);
-    Expressions.add(new Expression("long_values", counter));
+    Expressions.add(new Expression("int_values", counter));
 
     ExpressionOperator splitColIdx = new VariableExpression(1);
     ExpressionOperator regex = new ConstantExpression(SEPARATOR);
@@ -67,9 +67,9 @@ public class FlatteningApplyTest {
         assertEquals(expectedResultSchema, result.getSchema());
 
         for (int batchIdx = 0; batchIdx < result.numTuples(); ++batchIdx, ++rowIdx) {
-          assertEquals(COUNTER_MAX, result.getLong(0, batchIdx));
+          assertEquals(COUNTER_MAX, result.getInt(0, batchIdx));
           assertEquals(joinedInts, result.getString(1, batchIdx));
-          assertEquals((rowIdx / SPLIT_MAX), result.getLong(2, batchIdx));
+          assertEquals((rowIdx / SPLIT_MAX), result.getInt(2, batchIdx));
           assertEquals((rowIdx % SPLIT_MAX), Integer.parseInt(result.getString(3, batchIdx)));
         }
       }
