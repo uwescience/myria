@@ -16,19 +16,18 @@ import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.ColumnFactory;
 import edu.washington.escience.myria.column.builder.WritableColumn;
 import edu.washington.escience.myria.expression.Expression;
-import edu.washington.escience.myria.operator.Apply;
-import edu.washington.escience.myria.operator.StatefulApply;
+import edu.washington.escience.myria.operator.FlatteningApply;
 import edu.washington.escience.myria.storage.AppendableTable;
 import edu.washington.escience.myria.storage.ReadableTable;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
- * An Expression evaluator for generic expressions. Used in {@link Apply} and {@link StatefulApply}.
+ * An Expression evaluator for generic expressions. Used in {@link FlatteningApply}.
  */
 public class FlatteningGenericEvaluator extends Evaluator {
 
   /** logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(GenericEvaluator.class);
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(FlatteningGenericEvaluator.class);
 
   /**
    * Expression evaluator.
@@ -79,7 +78,7 @@ public class FlatteningGenericEvaluator extends Evaluator {
 
   /**
    * Evaluates the {@link #getJavaExpressionWithAppend()} using the {@link #evaluator}. Prefer to use
-   * {@link #evaluateColumn(TupleBatch)} as it can copy data without evaluating the expression.
+   * {@link #evaluateColumn(TupleBatch)} since it can evaluate an entire TupleBatch at a time for better locality.
    *
    * @param tb a tuple batch
    * @param rowIdx index of the row that should be used for input data
@@ -108,8 +107,8 @@ public class FlatteningGenericEvaluator extends Evaluator {
   }
 
   /**
-   * Evaluate an expression over an entire TupleBatch and return the column of results. This method cannot take state
-   * into consideration.
+   * Evaluate an expression over an entire TupleBatch, appending results to {@link #result} and returning a column of
+   * result counts.
    *
    * @param tb the tuples to be input to this expression
    * @param result a (single-column) table containing evaluation results

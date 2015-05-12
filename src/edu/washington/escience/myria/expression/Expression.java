@@ -183,10 +183,10 @@ public class Expression implements Serializable {
   }
 
   /**
-   * An expression is iterable when it has a type of Iterable<T extends Type>. This is a requirement for being used in
+   * An expression is "multivalued" when it has a primitive array return type. This is a requirement for being used in
    * the FlatteningApply operator.
    * 
-   * @return if this expression evaluates to an Iterable<T>
+   * @return if the root expression has a primitive array return type
    */
   public boolean isMultivalued() {
     return rootExpressionOperator.hasArrayOutputType();
