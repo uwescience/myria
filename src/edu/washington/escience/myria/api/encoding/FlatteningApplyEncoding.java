@@ -1,7 +1,6 @@
 package edu.washington.escience.myria.api.encoding;
 
 import java.util.List;
-import java.util.Set;
 
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.expression.Expression;
@@ -11,7 +10,7 @@ public class FlatteningApplyEncoding extends UnaryOperatorEncoding<FlatteningApp
 
   @Required
   public List<Expression> emitExpressions;
-  public Set<Integer> columnsToKeep;
+  public List<Integer> columnsToKeep;
 
   @Override
   public FlatteningApply construct(final ConstructArgs args) {

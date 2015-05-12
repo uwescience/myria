@@ -11,8 +11,8 @@ import javax.annotation.Nonnull;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
@@ -25,7 +25,6 @@ import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.storage.TupleBuffer;
 import edu.washington.escience.myria.storage.TupleUtils;
-import edu.washington.escience.myria.util.ListUtils;
 
 /**
  * Generic apply operator for vector-valued expressions.
@@ -62,7 +61,7 @@ public class FlatteningApply extends UnaryOperator {
    * in each expression evaluation). Must be an empty set if no columns are to be retained.
    */
   @Nonnull
-  private int[] columnsToKeep = {};
+  private ImmutableList<Integer> columnsToKeep = ImmutableList.of();
 
   /**
    * @return the {@link #emitExpressions}
@@ -89,15 +88,21 @@ public class FlatteningApply extends UnaryOperator {
    * @param emitExpressions expression that created the output
    * @param columnsToKeep indexes of columns to keep from input relation
    */
-  public FlatteningApply(@Nonnull final Operator child, @Nonnull final List<Expression> emitExpressions,
-      final int[] columnsToKeep) {
+  public FlatteningApply(final Operator child, @Nonnull final List<Expression> emitExpressions,
+      final List<Integer> columnsToKeep) {
     super(child);
-    Preconditions.checkNotNull(child);
     Preconditions.checkNotNull(emitExpressions);
     setEmitExpressions(emitExpressions);
-    if (columnsToKeep != null) {
-      this.columnsToKeep = columnsToKeep;
-    }
+    setColumnsToKeep(columnsToKeep);
+  }
+
+  /**
+   * 
+   * @param child child operator that data is fetched from
+   * @param emitExpressions expression that created the output
+   */
+  public FlatteningApply(final Operator child, @Nonnull final List<Expression> emitExpressions) {
+    this(child, emitExpressions, null);
   }
 
   /**
@@ -110,9 +115,12 @@ public class FlatteningApply extends UnaryOperator {
   /**
    * @param columnsToKeep indexes of columns to keep from input relation
    */
-  private void setColumnsToKeep(final Set<Integer> columnsToKeep) {
+  private void setColumnsToKeep(final List<Integer> columnsToKeep) {
     if (columnsToKeep != null) {
-      this.columnsToKeep = ImmutableSet.copyOf(columnsToKeep);
+      boolean sorted = Ordering.natural().isStrictlyOrdered(columnsToKeep);
+      Preconditions.checkArgument(sorted, "List of retained columns {} must be sorted and contain no duplicates.",
+          columnsToKeep);
+      this.columnsToKeep = ImmutableList.copyOf(columnsToKeep);
     }
   }
 

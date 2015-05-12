@@ -58,7 +58,7 @@ public class FlatteningApplyTest {
     ExpressionOperator split = new SplitExpression(splitColIdx, regex);
     Expressions.add(new Expression("joined_ints_splits", split));
 
-    FlatteningApply apply = new FlatteningApply(new TupleSource(input), Expressions.build(), new int[] { 0, 1 });
+    FlatteningApply apply = new FlatteningApply(new TupleSource(input), Expressions.build(), ImmutableList.of(0, 2));
     apply.open(TestEnvVars.get());
     int rowIdx = 0;
     while (!apply.eos()) {
