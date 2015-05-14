@@ -31,7 +31,7 @@ public class DbDelete extends RootOperator {
    * @param connectionInfo the parameters of the database connection.
    */
   public DbDelete(final Operator child, final RelationKey relationKey, final ConnectionInfo connectionInfo) {
-    super(child); // but, it's not consuming tuples....
+    super(child);
     this.connectionInfo = connectionInfo;
     this.relationKey = relationKey;
   }
@@ -45,8 +45,8 @@ public class DbDelete extends RootOperator {
     /* open the database connection */
     accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
 
-    /* Create the table */
-    accessMethod.dropTables(relationKey);
+    /* Drop the table */
+    accessMethod.dropTableIfExistsCascade(relationKey);
   }
 
   @Override

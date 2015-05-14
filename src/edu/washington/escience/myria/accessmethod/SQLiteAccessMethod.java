@@ -457,7 +457,7 @@ public final class SQLiteAccessMethod extends AccessMethod {
   }
 
   @Override
-  public void dropTables(final RelationKey relationDelete) throws DbException {
+  public void dropTableIfExistsCascade(final RelationKey relationDelete) throws DbException {
     execute("DROP TABLE IF EXISTS " + relationDelete.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
   }
 }
