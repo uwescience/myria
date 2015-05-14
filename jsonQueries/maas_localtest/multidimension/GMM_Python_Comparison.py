@@ -31,8 +31,8 @@ def run_gmm_test(n_steps, num_dimensions, n_components, logging=False):
     #y = np.array([1., 0.8, 3.5, 3.2, 4.2])
     #data = np.column_stack((x,y))
 
-    a = np.random.randn(10000,num_dimensions) + 7
-    b = np.random.randn(10000,num_dimensions) + -4
+    a = np.random.randn(2,num_dimensions) + 7
+    b = np.random.randn(2,num_dimensions) + -4
     data = np.row_stack((a,b)) 
 
     #data = np.loadtxt('astro_sample.csv',delimiter=',')
@@ -55,7 +55,7 @@ def run_gmm_test(n_steps, num_dimensions, n_components, logging=False):
 
     for j in n_iterations:
         # GMM code goes here
-        gmm = GMM(n_components=n_components, n_iter=j, n_init=1, tol=1e-9, random_state=0, covariance_type='full', min_covar=1.e-14)
+        gmm = GMM(n_components=n_components, n_iter=j, n_init=1, random_state=0, covariance_type='full', min_covar=1.e-14)
         gmm.fit(data)
         responsibilities = gmm.predict_proba(data)
         resp = responsibilities

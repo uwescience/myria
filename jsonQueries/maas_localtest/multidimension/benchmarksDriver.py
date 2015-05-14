@@ -146,6 +146,9 @@ def EStep():
 def MStep():
     return query_myria("JoinMStepNoBroadcast.json")
 
+def MStepNewType():
+    return query_myria("JoinMStepNoBroadcastNewType.json")
+
 def EMStepCrossJoin():
     return query_myria("JoinBothSteps.json")
 
