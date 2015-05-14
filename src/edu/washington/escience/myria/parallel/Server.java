@@ -1044,7 +1044,7 @@ public final class Server {
    */
   public DatasetStatus deleteDataset(final RelationKey relationKey) throws DbException, InterruptedException {
 
-    /* delete from postgres, by calling the DbDelete operator */
+    /* delete from postgres at each worker by calling the DbDelete operator */
     try {
       Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
       for (Integer workerId : getWorkersForRelation(relationKey, null)) {
@@ -1052,8 +1052,9 @@ public final class Server {
             relationKey, null)));
       }
       ListenableFuture<Query> qf =
-          queryManager.submitQuery("delete " + relationKey.toString(), "delete " + relationKey.toString(), "from db "
-              + relationKey.toString(getDBMS()), new SubQueryPlan(new SinkRoot(new EOSSource())), workerPlans);
+          queryManager.submitQuery("delete " + relationKey.toString(), "delete " + relationKey.toString(),
+              "deleting from " + relationKey.toString(getDBMS()), new SubQueryPlan(new SinkRoot(new EOSSource())),
+              workerPlans);
       try {
         qf.get();
       } catch (ExecutionException e) {

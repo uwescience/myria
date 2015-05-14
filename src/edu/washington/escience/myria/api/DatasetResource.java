@@ -10,6 +10,7 @@ import java.util.Set;
 
 import javax.annotation.Nonnull;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -344,26 +345,24 @@ public final class DatasetResource {
    * @return metadata
    * @throws DbException if there is an error in the database.
    */
-  @GET
-  @Path("/user-{userName}/program-{programName}/relation-{relationName}/delete")
+  @DELETE
+  @Path("/user-{userName}/program-{programName}/relation-{relationName}/")
   public Response deleteDataset(@PathParam("userName") final String userName,
       @PathParam("programName") final String programName, @PathParam("relationName") final String relationName)
       throws DbException {
     DatasetStatus status = server.getDatasetStatus(RelationKey.of(userName, programName, relationName));
     if (status == null) {
-      /* Not found, throw a 404 (Not Found) */
+      /* Dataset not found, throw a 404 (Not Found) */
       throw new MyriaApiException(Status.NOT_FOUND, "That dataset was not found");
     }
     RelationKey relationKey = status.getRelationKey();
-    // delete
+    // delete command
     try {
       status = server.deleteDataset(relationKey);
     } catch (Exception e) {
       throw new DbException();
     }
-
-    /* It worked */
-    return Response.ok().build();
+    return Response.noContent().build();
   }
 
   /**
