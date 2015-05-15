@@ -158,6 +158,10 @@ def pad_points():
 def copy_points():
     query_myria("CopyPoints.json")
 
+# Pad the PointsOnly relation with a 4x4 covariance matrix
+def add_point_covariance():
+    query_myria("xd/addPointCovariance.json")
+
 def astro_components_to_components():
     query_myria("AstroComponentsToComponents.json")
 
