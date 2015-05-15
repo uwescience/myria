@@ -468,4 +468,29 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     assertThat(status.message).contains("Multiple RootOperator detected");
   }
 
+  @Test
+  public void jsonTestNoNullChild() throws Exception {
+    File ingestJson = new File("./jsonQueries/globalJoin_jwang/ingest_smallTable.json");
+    File queryJson = new File("./jsonQueries/nullChild_jortiz/ThreeWayLocalJoin.json");
+
+    /* ingest small table data */
+    HttpURLConnection conn = JsonAPIUtils.submitQuery("localhost", masterDaemonPort, queryJson);
+    conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestJson);
+    if (null != conn.getErrorStream()) {
+      throw new IllegalStateException(getContents(conn));
+    }
+    assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
+
+    /* run the query */
+    conn = JsonAPIUtils.submitQuery("localhost", masterDaemonPort, queryJson);
+    assertEquals(HttpURLConnection.HTTP_ACCEPTED, conn.getResponseCode());
+    long queryId = getQueryStatus(conn).queryId;
+    conn.disconnect();
+    while (!server.getQueryManager().queryCompleted(queryId)) {
+      Thread.sleep(5);
+    }
+    QueryStatusEncoding status = server.getQueryManager().getQueryStatus(queryId);
+    assertEquals(Status.SUCCESS, status.status);
+  }
+
 }
