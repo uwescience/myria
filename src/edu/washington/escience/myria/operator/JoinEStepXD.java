@@ -305,11 +305,18 @@ public final class JoinEStepXD extends BinaryOperator {
 							i, leftIndex, leftType, rightIndex, rightType);
 		}
 
-		for (int i : leftAnswerColumns) {
-			types.add(leftSchema.getColumnType(i));
-			names.add(leftSchema.getColumnName(i));
+		types.add(Type.LONG_TYPE);
+		names.add("pid");
+
+		for (int i = 0; i < numDimensions; i++) {
+			types.add(Type.DOUBLE_TYPE);
+			names.add("x" + "_" + (1 + i));
 		}
 
+		for (int i = 0; i < numComponents; i++) {
+			types.add(Type.DOUBLE_TYPE);
+			names.add("r" + (1 + i));
+		}
 		// for (int i : rightAnswerColumns) {
 		// types.add(rightSchema.getColumnType(i));
 		// names.add(rightSchema.getColumnName(i));
@@ -496,6 +503,17 @@ public final class JoinEStepXD extends BinaryOperator {
 				xArray[i][0] = inputColumns.get(indexCounter).getDouble(row);
 				ans.putDouble(indexCounter, xArray[i][0]);
 				indexCounter++;
+			}
+
+			int sigmaCounter = indexCounter;
+			// Read in sigma in row-major order
+			double[][] sigmaArray = new double[numDimensions][numDimensions];
+			for (int i = 0; i < numDimensions; i++) {
+				for (int j = 0; j < numDimensions; j++) {
+					sigmaArray[i][j] = inputColumns.get(sigmaCounter)
+							.getDouble(row);
+					sigmaCounter++;
+				}
 			}
 
 			double[] partialResponsibilities = new double[numComponents];

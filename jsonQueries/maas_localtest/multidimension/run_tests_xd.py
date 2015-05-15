@@ -8,14 +8,7 @@ files = [
     "wise-colors-15-20-subsetsmall128.csv",
     "wise-colors-15-20-subsetsmall64.csv", 
     "wise-colors-15-20-subsetsmall32.csv", 
-    "wise-colors-15-20-subsetsmall16.csv",
-    "wise-colors-15-20-subsetsmall8.csv", 
-    "wise-colors-15-20-subsetsmall4.csv", 
-    "wise-colors-15-20-subsetsmall2.csv",
-    "wise-colors-15-20-subset1.csv",
-    "wise-colors-15-20-subset2.csv",
-    "wise-colors-15-20-subset4.csv",
-    "wise-colors-15-20-subset8.csv", 
+    "wise-colors-15-20-subsetsmall16.csv"
     ]
 
 def run_em_test(filename, workers):
@@ -33,19 +26,19 @@ def run_em_test(filename, workers):
     # Copy over components and try iteration
     bd.astro_components_to_components()
     try:
-        times.append(bd.EMStep())
+        times.append(bd.EMStepXD())
     except:
         None 
     # Copy over components and try iteration        
     bd.astro_components_to_components()    
     try:
-        times.append(bd.EMStep())
+        times.append(bd.EMStepXD())
     except:
         None
     # Copy over components and try iteration        
     bd.astro_components_to_components()        
     try:
-        times.append(bd.EMStep())
+        times.append(bd.EMStepXD())
     except:
         None 
     np.savetxt(filename+"times_w" + str(workers) +".csv", np.array(times),delimiter=',' )

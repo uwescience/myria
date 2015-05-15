@@ -49,7 +49,7 @@ import edu.washington.escience.myria.operator.Operator;
 		@Type(name = "IDBController", value = IDBControllerEncoding.class),
 		@Type(name = "InMemoryOrderBy", value = InMemoryOrderByEncoding.class),
 		@Type(name = "JoinEStep", value = JoinEStepEncoding.class),
-		@Type(name = "JoinEStepXD", value = JoinEStepEncoding.class),
+		@Type(name = "JoinEStepXD", value = JoinEStepXDEncoding.class),
 		@Type(name = "JoinMStepAggregate", value = JoinMStepAggregateEncoding.class),
 		@Type(name = "JoinMStepPartial", value = JoinMStepPartialEncoding.class),
 		@Type(name = "LeapFrogJoin", value = LeapFrogJoinEncoding.class),
