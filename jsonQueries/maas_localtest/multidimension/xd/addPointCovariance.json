@@ -1,0 +1,260 @@
+
+
+{
+  "logicalRa": "Store(public:adhoc:PointsOnly)[Apply(column0=column0,column1=column1,column2=column2,column3=column3,column4=column4,column5=column5,column6=column6,column7=column7,column8=column8,column9=column9,column10=column10,column11=column11,_COLUMN12_=1.0,_COLUMN13_=0.0,_COLUMN14_=0.0,_COLUMN15_=0.0,_COLUMN16_=0.0,_COLUMN17_=1.0,_COLUMN18_=0.0,_COLUMN19_=0.0,_COLUMN20_=0.0,_COLUMN21_=0.0,_COLUMN22_=1.0,_COLUMN23_=0.0,_COLUMN24_=0.0,_COLUMN25_=0.0,_COLUMN26_=0.0,_COLUMN27_=1.0)[Scan(public:adhoc:PointsOnly)]]",
+  "language": "sql",
+  "rawQuery": "Points = scan(public:adhoc:PointsOnly);\nXDPoints = select *, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 from Points;\nstore(XDPoints, public:adhoc:PointsOnly);",
+  "plan": {
+    "fragments": [
+      {
+        "operators": [
+          {
+            "relationKey": {
+              "userName": "public",
+              "relationName": "PointsOnly",
+              "programName": "adhoc"
+            },
+            "opType": "TableScan",
+            "opName": "MyriaScan(public:adhoc:PointsOnly)",
+            "opId": 0
+          },
+          {
+            "emitExpressions": [
+              {
+                "outputName": "column0",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 0
+                }
+              },
+              {
+                "outputName": "column1",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 1
+                }
+              },
+              {
+                "outputName": "column2",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 2
+                }
+              },
+              {
+                "outputName": "column3",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 3
+                }
+              },
+              {
+                "outputName": "column4",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 4
+                }
+              },
+              {
+                "outputName": "column5",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 5
+                }
+              },
+              {
+                "outputName": "column6",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 6
+                }
+              },
+              {
+                "outputName": "column7",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 7
+                }
+              },
+              {
+                "outputName": "column8",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 8
+                }
+              },
+              {
+                "outputName": "column9",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 9
+                }
+              },
+              {
+                "outputName": "column10",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 10
+                }
+              },
+              {
+                "outputName": "column11",
+                "rootExpressionOperator": {
+                  "type": "VARIABLE",
+                  "columnIdx": 11
+                }
+              },
+              {
+                "outputName": "_COLUMN12_",
+                "rootExpressionOperator": {
+                  "valueType": "DOUBLE_TYPE",
+                  "type": "CONSTANT",
+                  "value": "1.0"
+                }
+              },
+              {
+                "outputName": "_COLUMN13_",
+                "rootExpressionOperator": {
+                  "valueType": "DOUBLE_TYPE",
+                  "type": "CONSTANT",
+                  "value": "0.0"
+                }
+              },
+              {
+                "outputName": "_COLUMN14_",
+                "rootExpressionOperator": {
+                  "valueType": "DOUBLE_TYPE",
+                  "type": "CONSTANT",
+                  "value": "0.0"
+                }
+              },
+              {
+                "outputName": "_COLUMN15_",
+                "rootExpressionOperator": {
+                  "valueType": "DOUBLE_TYPE",
+                  "type": "CONSTANT",
+                  "value": "0.0"
+                }
+              },
+              {
+                "outputName": "_COLUMN16_",
+                "rootExpressionOperator": {
+                  "valueType": "DOUBLE_TYPE",
+                  "type": "CONSTANT",
+                  "value": "0.0"
+                }
+              },
+              {
+                "outputName": "_COLUMN17_",
+                "rootExpressionOperator": {
+                  "valueType": "DOUBLE_TYPE",
+                  "type": "CONSTANT",
+                  "value": "1.0"
+                }
+              },
+              {
+                "outputName": "_COLUMN18_",
+                "rootExpressionOperator": {
+                  "valueType": "DOUBLE_TYPE",
+                  "type": "CONSTANT",
+                  "value": "0.0"
+                }
+              },
+              {
+                "outputName": "_COLUMN19_",
+                "rootExpressionOperator": {
+                  "valueType": "DOUBLE_TYPE",
+                  "type": "CONSTANT",
+                  "value": "0.0"
+                }
+              },
+              {
+                "outputName": "_COLUMN20_",
+                "rootExpressionOperator": {
+                  "valueType": "DOUBLE_TYPE",
+                  "type": "CONSTANT",
+                  "value": "0.0"
+                }
+              },
+              {
+                "outputName": "_COLUMN21_",
+                "rootExpressionOperator": {
+                  "valueType": "DOUBLE_TYPE",
+                  "type": "CONSTANT",
+                  "value": "0.0"
+                }
+              },
+              {
+                "outputName": "_COLUMN22_",
+                "rootExpressionOperator": {
+                  "valueType": "DOUBLE_TYPE",
+                  "type": "CONSTANT",
+                  "value": "1.0"
+                }
+              },
+              {
+                "outputName": "_COLUMN23_",
+                "rootExpressionOperator": {
+                  "valueType": "DOUBLE_TYPE",
+                  "type": "CONSTANT",
+                  "value": "0.0"
+                }
+              },
+              {
+                "outputName": "_COLUMN24_",
+                "rootExpressionOperator": {
+                  "valueType": "DOUBLE_TYPE",
+                  "type": "CONSTANT",
+                  "value": "0.0"
+                }
+              },
+              {
+                "outputName": "_COLUMN25_",
+                "rootExpressionOperator": {
+                  "valueType": "DOUBLE_TYPE",
+                  "type": "CONSTANT",
+                  "value": "0.0"
+                }
+              },
+              {
+                "outputName": "_COLUMN26_",
+                "rootExpressionOperator": {
+                  "valueType": "DOUBLE_TYPE",
+                  "type": "CONSTANT",
+                  "value": "0.0"
+                }
+              },
+              {
+                "outputName": "_COLUMN27_",
+                "rootExpressionOperator": {
+                  "valueType": "DOUBLE_TYPE",
+                  "type": "CONSTANT",
+                  "value": "1.0"
+                }
+              }
+            ],
+            "opName": "MyriaApply(column0=column0,column1=column1,column2=column2,column3=column3,column4=column4,column5=column5,column6=column6,column7=column7,column8=column8,column9=column9,column10=column10,column11=column11,_COLUMN12_=1.0,_COLUMN13_=0.0,_COLUMN14_=0.0,_COLUMN15_=0.0,_COLUMN16_=0.0,_COLUMN17_=1.0,_COLUMN18_=0.0,_COLUMN19_=0.0,_COLUMN20_=0.0,_COLUMN21_=0.0,_COLUMN22_=1.0,_COLUMN23_=0.0,_COLUMN24_=0.0,_COLUMN25_=0.0,_COLUMN26_=0.0,_COLUMN27_=1.0)",
+            "opType": "Apply",
+            "opId": 1,
+            "argChild": 0
+          },
+          {
+            "opType": "DbInsert",
+            "argChild": 1,
+            "opName": "MyriaStore(public:adhoc:PointsOnly)",
+            "argOverwriteTable": true,
+            "opId": 2,
+            "relationKey": {
+              "userName": "public",
+              "relationName": "PointsOnly",
+              "programName": "adhoc"
+            }
+          }
+        ]
+      }
+    ],
+    "type": "SubQuery"
+  }
+}
+
+
