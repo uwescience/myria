@@ -531,6 +531,11 @@ public final class JoinEStepXD extends BinaryOperator {
 				indexCounter++;
 			}
 
+			// Temporary value for B
+			for (int i = 0; i < numComponents; i++) {
+				double bval = getbVec(xArray, sigmaArray, pis.get(i),
+						mus.get(i), sigmas.get(i));
+			}
 			// final int cntHashCode = HashUtils.hashSubRow(tb,
 			// doJoin.inputCmpColumns, row);
 			// TIntList tuplesWithHashCode = rightHashTableIndices
@@ -761,6 +766,27 @@ public final class JoinEStepXD extends BinaryOperator {
 
 		return maxElement + Math.log(sumTerms);
 
+	}
+
+	private double getbVec(double[][] xArray, double[][] pointSigmaArray,
+			double pi, double[][] muArray, double[][] sigmaArray) {
+		// Not yet jblas compliant
+
+		Matrix jama_x = new Matrix(xArray);
+		Matrix jama_xSigma = new Matrix(sigmaArray);
+
+		Matrix jama_mu = new Matrix(muArray);
+		Matrix jama_Sigma = new Matrix(sigmaArray);
+
+		Matrix w_m = jama_x.minus(jama_mu);
+		Matrix T = jama_xSigma.plus(jama_Sigma);
+
+		Matrix Tinv = T.inverse();
+
+		Matrix b = jama_mu.plus(jama_Sigma.times(Tinv).times(w_m));
+		Matrix B = jama_Sigma.minus(jama_Sigma.times(Tinv).times(jama_Sigma));
+
+		return B.get(0, 0);
 	}
 
 }
