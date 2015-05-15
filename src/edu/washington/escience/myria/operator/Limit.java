@@ -12,9 +12,9 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
- * A poor implementation of a Limit operator, which emits the first N tuples then drops the rest on the floor.
+ * A poor implementation of a Limit operator, which emits the first N tuples then closes the child operator from further
+ * feeding tuples.
  * 
- * We would prefer one that stops the incoming stream, but this is not currently supported.
  */
 public final class Limit extends UnaryOperator {
 
@@ -27,6 +27,9 @@ public final class Limit extends UnaryOperator {
   /** The number of tuples left to emit. */
   private long toEmit;
 
+  /** If number of emitted tuples reached limit. */
+  private boolean done;
+
   /**
    * A limit operator keeps the first <code>limit</code> tuples produced by its child.
    * 
@@ -38,23 +41,30 @@ public final class Limit extends UnaryOperator {
     this.limit = Objects.requireNonNull(limit, "limit");
     Preconditions.checkArgument(limit >= 0L, "limit must be non-negative");
     toEmit = this.limit;
+    done = false;
   }
 
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
     Operator child = getChild();
-    for (TupleBatch tb = child.nextReady(); tb != null; tb = child.nextReady()) {
-      if (tb.numTuples() <= toEmit) {
-        toEmit -= tb.numTuples();
-        return tb;
-      } else if (toEmit > 0) {
-        tb = tb.prefix(Ints.checkedCast(toEmit));
-        toEmit = 0;
-        return tb;
+    if (done) {
+      return null;
+    } else {
+      TupleBatch tb = child.nextReady();
+      TupleBatch result = null;
+      if (tb != null) {
+        if (tb.numTuples() <= toEmit) {
+          toEmit -= tb.numTuples();
+          result = tb;
+        } else if (toEmit > 0) {
+          result = tb.prefix(Ints.checkedCast(toEmit));
+          toEmit = 0;
+          child.close();
+          done = true;
+        }
       }
-      /* Else, drop on the floor. */
+      return result;
     }
-    return null;
   }
 
   @Override
