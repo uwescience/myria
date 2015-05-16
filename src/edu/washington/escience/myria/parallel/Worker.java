@@ -622,8 +622,16 @@ public final class Worker {
             IPCConfigurations.createWorkerIPCClientBootstrap(this), new TransportMessageSerializer(),
             new WorkerShortMessageProcessor(this), inputBufferCapacity, inputBufferRecoverTrigger);
 
+
     final String databaseSystem =
         config.getRequired("deployment", MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_SYSTEM);
+    workerCacheController = new CacheController(this);
+
+    for (Entry<String, String> cE : catalog.getAllConfigurations().entrySet()) {
+      execEnvVars.put(cE.getKey(), cE.getValue());
+    }
+    final String databaseSystem = catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_SYSTEM);
+    
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM, databaseSystem);
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_NODE_ID, getID());
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE, queryExecutionMode);

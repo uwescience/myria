@@ -14,7 +14,6 @@ import edu.washington.escience.myria.storage.TupleBatchBuffer;
 /**
  * Controls the worker cache, invoked by cache operators.
  */
-// this might need to act as a leaf operator
 public final class CacheController {
 
   /**
@@ -45,7 +44,7 @@ public final class CacheController {
   /**
    * @JORTIZ These three variables are temp for now
    */
-  public static final Integer LIMIT_TUPLES = 50;
+  public static final Integer LIMIT_TUPLES = 10000;
   private Integer tupleCount;
   private Integer keysUsed;
 
@@ -60,6 +59,7 @@ public final class CacheController {
     this.ownerWorker = ownerWorker;
     keysUsed = 0;
     tupleCount = 0;
+    LOGGER.info("INTIALIZED CACHE CONTROLLER FOR " + ownerWorker.getID());
   }
 
   /**
@@ -68,6 +68,8 @@ public final class CacheController {
   public void addTupleBatch(final TupleBatch tb) {
     tupleCount += TupleBatch.BATCH_SIZE;
     cache.put(keysUsed++, tb);
+
+    // LOGGER.info("WORKER " + ownerWorker.getID() + " Stored for key " + (keysUsed - 1));
   }
 
   /**
@@ -82,5 +84,12 @@ public final class CacheController {
    */
   public Integer getCurrentNumberOfTuples() {
     return tupleCount;
+  }
+
+  /**
+   * @return the number of tuples currently in the cache
+   */
+  public HashMap<Integer, TupleBatch> getCache() {
+    return cache;
   }
 }

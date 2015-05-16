@@ -27,6 +27,7 @@ import edu.washington.escience.myria.operator.SampledDbInsertTemp;
     @Type(name = "BroadcastConsumer", value = BroadcastConsumerEncoding.class),
     @Type(name = "BroadcastProducer", value = BroadcastProducerEncoding.class),
     @Type(name = "CatalogScan", value = CatalogScanEncoding.class),
+    @Type(name = "CacheRoot", value = CacheRootEncoding.class),
     @Type(name = "CollectConsumer", value = CollectConsumerEncoding.class),
     @Type(name = "CollectProducer", value = CollectProducerEncoding.class),
     @Type(name = "Consumer", value = ConsumerEncoding.class), @Type(name = "Counter", value = CounterEncoding.class),
