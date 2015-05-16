@@ -67,8 +67,8 @@ import edu.washington.escience.myria.util.concurrent.ThreadAffinityFixedRoundRob
  */
 public final class Worker {
 
-  /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Worker.class);
+  /** The logger for this class.--- TEMP. MAKE PUBLIC */
+  public static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Worker.class);
 
   /**
    * Control message processor.
