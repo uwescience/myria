@@ -364,6 +364,11 @@ public final class Worker {
   private static volatile ThreadGroup mainThreadGroup;
 
   /**
+   * The cache controller
+   */
+  private final CacheController workerCacheController;
+
+  /**
    * The profiling logger for this worker.
    */
   @GuardedBy("this")
@@ -587,6 +592,13 @@ public final class Worker {
   }
 
   /**
+   * @return the worker cache controller.
+   */
+  public CacheController getCacheController() {
+    return workerCacheController;
+  }
+
+  /**
    * @param workingDirectory my working directory.
    * @param mode my execution mode.
    * @throws CatalogException if there's any catalog operation errors.
@@ -624,6 +636,8 @@ public final class Worker {
     executingSubQueries = new ConcurrentHashMap<>();
 
     execEnvVars = new ConcurrentHashMap<String, Object>();
+
+    workerCacheController = new CacheController(this);
 
     for (Entry<String, String> cE : catalog.getAllConfigurations().entrySet()) {
       execEnvVars.put(cE.getKey(), cE.getValue());
@@ -805,6 +819,7 @@ public final class Worker {
         Executors.newCachedThreadPool(new RenamingThreadFactory("Control/Query message processor"));
     messageProcessingExecutor.submit(new QueryMessageProcessor());
     messageProcessingExecutor.submit(new ControlMessageProcessor());
+
     // Periodically detect if the server (i.e., coordinator)
     // is still running. IF the server goes down, the
     // worker will stop itself

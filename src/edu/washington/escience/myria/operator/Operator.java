@@ -21,6 +21,7 @@ import edu.washington.escience.myria.parallel.LocalFragment;
 import edu.washington.escience.myria.parallel.LocalFragmentResourceManager;
 import edu.washington.escience.myria.parallel.LocalSubQuery;
 import edu.washington.escience.myria.parallel.SubQueryId;
+import edu.washington.escience.myria.parallel.Worker;
 import edu.washington.escience.myria.parallel.WorkerSubQuery;
 import edu.washington.escience.myria.profiling.ProfilingLogger;
 import edu.washington.escience.myria.storage.TupleBatch;
@@ -80,6 +81,18 @@ public abstract class Operator implements Serializable {
    * Environmental variables during execution.
    */
   private ImmutableMap<String, Object> execEnvVars;
+
+  /**
+   * @JORTIZ: This is super hacky, but I needed the operator to know which worker it belongs to.
+   */
+  private Worker worker;
+
+  /**
+   * @return worker the worker that is running this operator, will this have issues with the subqueries?
+   */
+  public Worker getWorker() {
+    return worker;
+  }
 
   /**
    * @return return environmental variables
@@ -407,6 +420,11 @@ public abstract class Operator implements Serializable {
       throw new DbException(e);
     }
     open = true;
+
+    /** @JORTIZ: When would this not be true?? */
+    if (getLocalSubQuery() instanceof WorkerSubQuery) {
+      worker = ((WorkerSubQuery) getLocalSubQuery()).getWorker();
+    }
 
     if (getProfilingMode().size() > 0) {
       if (getLocalSubQuery() instanceof WorkerSubQuery) {
