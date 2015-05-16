@@ -355,6 +355,11 @@ public final class Worker {
   private static volatile ThreadGroup mainThreadGroup;
 
   /**
+   * The cache controller
+   */
+  private final CacheController workerCacheController;
+
+  /**
    * The profiling logger for this worker.
    */
   @GuardedBy("this")
@@ -578,6 +583,13 @@ public final class Worker {
   }
 
   /**
+   * @return the worker cache controller.
+   */
+  public CacheController getCacheController() {
+    return workerCacheController;
+  }
+
+  /**
    * @param workingDirectory my working directory.
    * @param mode my execution mode.
    * @throws ConfigFileException if there's any config file parsing error.
@@ -785,6 +797,7 @@ public final class Worker {
         Executors.newCachedThreadPool(new RenamingThreadFactory("Control/Query message processor"));
     messageProcessingExecutor.submit(new QueryMessageProcessor());
     messageProcessingExecutor.submit(new ControlMessageProcessor());
+
     // Periodically detect if the server (i.e., coordinator)
     // is still running. IF the server goes down, the
     // worker will stop itself

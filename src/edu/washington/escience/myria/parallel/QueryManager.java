@@ -242,17 +242,17 @@ public class QueryManager {
       throws DbException, CatalogException {
     final Query queryState = new Query(queryId, query, plan, server);
     boolean canStart = false;
-  //  synchronized (queryQueue) {
-  //    if (queryQueue.isEmpty() && runningQueries.isEmpty()) {
-  //      canStart = true;
-  //    } else {
-  //      queryQueue.put(queryId, queryState);
-  //    }
-  //  }
-  //  if (canStart) {
+    synchronized (queryQueue) {
+      if (queryQueue.isEmpty() && runningQueries.isEmpty()) {
+        canStart = true;
+      } else {
+        queryQueue.put(queryId, queryState);
+      }
+    }
+    if (canStart) {
       runningQueries.put(queryId, queryState);
       advanceQuery(queryState);
-  //  }
+    }
     return queryState.getFuture();
   }
 

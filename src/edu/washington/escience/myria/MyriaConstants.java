@@ -253,6 +253,16 @@ public final class MyriaConstants {
   public static final int MAXIMUM_NUM_SUBQUERIES = 1000;
 
   /**
+   * The maximum space that will be used for cached tuples per worker.
+   */
+  public static final int CACHE_SIZE_LIMIT = 1 * GB;
+
+  /**
+   * The maximum space that will be used for created bloom filters per worker.
+   */
+  public static final int BLOOMFILTER_SIZE_LIMIT = 1 * MB;
+
+  /**
    * Default imports for janino. Modules imported here can be used in expressions.
    */
   public static final String[] DEFAULT_JANINO_IMPORTS =
