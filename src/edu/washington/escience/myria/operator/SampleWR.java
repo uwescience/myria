@@ -43,11 +43,11 @@ public class SampleWR extends Sample {
       if (tb == null)
         return null;
       extractSamplingInfo(tb);
+      getLeft().close();
 
       // Generate target indices to accept as samples.
       samples = generateTargetSampleIndices(streamSize, sampleSize);
 
-      getLeft().close();
       computedSamplingInfo = true;
     }
 
