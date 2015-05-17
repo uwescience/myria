@@ -9,7 +9,7 @@ import edu.washington.escience.myria.operator.SampledDbInsertTemp;
  * Encoding for SampledDbInsertTemp oeprator.
  * 
  */
-public class TempSampledInsertEncoding extends UnaryOperatorEncoding<SampledDbInsertTemp> {
+public class SampledDbInsertTempEncoding extends UnaryOperatorEncoding<SampledDbInsertTemp> {
 
   @Required
   public Integer sampleSize;

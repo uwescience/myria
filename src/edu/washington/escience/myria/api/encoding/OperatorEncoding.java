@@ -48,7 +48,7 @@ import edu.washington.escience.myria.operator.SampledDbInsertTemp;
     @Type(name = "NChiladaFileScan", value = NChiladaFileScanEncoding.class),
     @Type(name = "RightHashCountingJoin", value = RightHashCountingJoinEncoding.class),
     @Type(name = "RightHashJoin", value = RightHashJoinEncoding.class),
-    @Type(name = "SampledDbInsertTemp", value = TempSampledInsertEncoding.class),
+    @Type(name = "SampledDbInsertTemp", value = SampledDbInsertTempEncoding.class),
     @Type(name = "Sample", value = SampleEncoding.class),
     @Type(name = "SamplingDistribution", value = SamplingDistributionEncoding.class),
     @Type(name = "SeaFlowScan", value = SeaFlowFileScanEncoding.class),
