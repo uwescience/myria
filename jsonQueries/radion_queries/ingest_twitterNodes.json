@@ -1,0 +1,16 @@
+{
+  "relationKey" : {
+    "userName" : "public",
+    "programName" : "adhoc",
+    "relationName" : "TwitterNodes"
+  },
+  "schema" : {
+    "columnTypes" : ["LONG_TYPE"],
+    "columnNames" : ["NodeID"]
+  },
+  "source" : {
+    "dataType" : "File",
+    "filename" : "/Users/radion/myria-stack/myria/testdata/twitter/twitter-nodes.csv"
+  },
+  "delimiter": ","
+}

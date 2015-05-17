@@ -24,18 +24,17 @@
                             },
                             {
                               "argChild": 0,
-                              "opType":"SampledDbInsertTemp",
+                              "opType":"SampleStream",
                               "opId":1,
-                              "opName":"MyriaSampledDbInsertTemp",
-                              "sampleSize":500000,
-                              "sampleTable":"TempSampleWoR",
-                              "countTable":"TempCountSampleWoR"
+                              "opName":"MyriaSampleStream",
+                              "sampleSize":500000
                             },
                             {
-                              "argChild": 1,
-                              "opType":"SinkRoot",
-                              "opId":2,
-                              "opName":"MyriaSinkRoot"
+                                "opType":"TempInsert",
+                                "table":"TempSampleWR",
+                                "argOverwriteTable": true,
+                                "argChild":1,
+                                "opId":2
                             }
                         ]
                     }
@@ -50,12 +49,39 @@
                         [
                             {
                                 "opType":"TempTableScan",
-                                "table":"TempCountSampleWoR",
-                                "opName":"MyriaScanTemp(TempCountSampleWoR)",
-                                "opId":4
+                                "opName":"TempTableScan(TwitterK)",
+                                "table":"TempSampleWR",
+                                "opId":3
                             },
                             {
-                                "argChild":4,
+                                "opType":"Apply",
+                                "argChild":3,
+                                "opId":4,
+                                "opName":"MyriaApply(WorkerID=WORKERID)",
+                                "emitExpressions":
+                                [
+                                    {
+                                        "rootExpressionOperator":
+                                        {
+                                            "type":"WORKERID"
+                                        },
+                                        "outputName":"WorkerID"
+                                    }
+                                ]
+                            },
+                            {
+                                "opName":"MyriaGroupBy($0; COUNTALL)",
+                                "argGroupField":0,
+                                "opType":"SingleGroupByAggregate",
+                                "aggregators":[
+                                    {
+                                        "type":"CountAll"
+                                    }],
+                                    "argChild":4,
+                                    "opId":5
+                            },
+                            {
+                                "argChild":5,
                                 "opId":6,
                                 "opType": "CollectProducer"
                             }
@@ -75,7 +101,8 @@
                                 "argChild": 7,
                                 "opId": 8,
                                 "sampleSize": 11316811,
-                                "isWithoutReplacement": true
+                                "isWithoutReplacement": true,
+                                "randomSeed":42
                             },
                             {
                                   "argChild":8,
@@ -100,16 +127,17 @@
                             },
                             {
                                 "opType":"TempTableScan",
-                                "table":"TempSampleWoR",
-                                "opName":"MyriaScanTemp(TempSampleWoR)",
+                                "table":"TempSampleWR",
+                                "opName":"MyriaScanTemp(TempSampleWR)",
                                 "opId":11
                             },
                             {
                               "argChild1": 10,
                               "argChild2": 11,
-                              "opType":"SampleWoR",
+                              "opType":"SampleWR",
                               "opId":12,
-                              "opName":"MyriaSampleWoR"
+                              "opName":"MyriaSampleWR",
+                              "randomSeed":42
                             },
                             {
                                 "opType": "DbInsert",
@@ -118,7 +146,7 @@
                                 "relationKey":
                                 {
                                     "programName": "adhoc",
-                                    "relationName": "SampledWoR",
+                                    "relationName": "SampledWR",
                                     "userName": "public"
                                 },
                                 "opId": 13
@@ -129,5 +157,5 @@
             }
         ]
     },
-    "rawQuery": "SampleWoR"
+    "rawQuery": "SampleWR"
 }

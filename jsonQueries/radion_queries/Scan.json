@@ -1,0 +1,34 @@
+{
+    "logicalRa": "Nothing",
+    "fragments":
+    [
+        {
+            "operators":
+            [
+                {
+                    "opType":"TableScan",
+                    "opName":"MyriaScan(public:adhoc:TwitterK)",
+                    "opId":0,
+                    "relationKey":{
+                        "userName":"public",
+                        "programName":"adhoc",
+                        "relationName":"TwitterNodes"
+                    }
+                },
+                {
+                    "argOverwriteTable": true,
+                    "argChild": 0,
+                    "relationKey":
+                        {
+                            "programName": "adhoc",
+                            "relationName": "Scan",
+                            "userName": "public"
+                        },
+                    "opId": 1,
+                    "opType": "DbInsert"
+                }
+            ]
+        }
+    ],
+    "rawQuery": "Scan"
+}
