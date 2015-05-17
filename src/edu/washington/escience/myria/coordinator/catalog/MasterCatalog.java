@@ -1753,11 +1753,12 @@ public final class MasterCatalog {
   }
 
   /**
-   * Connects to SQLite to delete
+   * Connects to SQLite to delete relation from the catalog if it exists.
    * 
+   * @param relationKey the relation to be deleted from the catalog.
    * @throws CatalogException if there is an error in the catalog.
    */
-  public void deleteRelationFromCatalog(final RelationKey relationkey) throws CatalogException {
+  public void deleteRelationFromCatalog(final RelationKey relationKey) throws CatalogException {
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
     }
@@ -1768,7 +1769,7 @@ public final class MasterCatalog {
         protected Void job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
           sqliteConnection.exec("BEGIN TRANSACTION;");
           try {
-            deleteRelationIfExists(sqliteConnection, relationkey);
+            deleteRelationIfExists(sqliteConnection, relationKey);
             sqliteConnection.exec("COMMIT TRANSACTION;");
           } catch (SQLiteException e) {
             try {
@@ -1782,7 +1783,7 @@ public final class MasterCatalog {
         }
       }).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw new CatalogException(e);
+      Thread.currentThread().interrupt();
     }
   }
 

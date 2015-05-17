@@ -401,6 +401,11 @@ public final class SQLiteAccessMethod extends AccessMethod {
   }
 
   @Override
+  public void dropTableIfExistsCascade(final RelationKey relationKey) throws DbException {
+    execute("DROP TABLE IF EXISTS " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
+  }
+
+  @Override
   public void createIndexes(final RelationKey relationKey, final Schema schema, final List<List<IndexRef>> indexes)
       throws DbException {
 
@@ -454,11 +459,6 @@ public final class SQLiteAccessMethod extends AccessMethod {
   public void createIndexIfNotExists(final RelationKey relationKey, final Schema schema, final List<IndexRef> index)
       throws DbException {
     throw new UnsupportedOperationException("create index if not exists is not supported in sqlite yet, implement me");
-  }
-
-  @Override
-  public void dropTableIfExistsCascade(final RelationKey relationDelete) throws DbException {
-    execute("DROP TABLE IF EXISTS " + relationDelete.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
   }
 }
 

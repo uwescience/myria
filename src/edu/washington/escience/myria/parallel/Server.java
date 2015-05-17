@@ -1034,14 +1034,14 @@ public final class Server {
   }
 
   /**
-   * @param relationKey the relationalKey of the dataset to import
+   * @param relationKey the relationKey of the dataset to delete
    * @return the status
    * @throws DbException if there is an error
    * @throws InterruptedException interrupted
    */
   public DatasetStatus deleteDataset(final RelationKey relationKey) throws DbException, InterruptedException {
 
-    /* delete from postgres at each worker by calling the DbDelete operator */
+    /* Delete from postgres at each worker by calling the DbDelete operator */
     try {
       Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
       for (Integer workerId : getWorkersForRelation(relationKey, null)) {
@@ -1061,7 +1061,7 @@ public final class Server {
       throw new DbException(e);
     }
 
-    /* deleting from the catalog */
+    /* Deleting from the catalog */
     try {
       catalog.deleteRelationFromCatalog(relationKey);
     } catch (CatalogException e) {
