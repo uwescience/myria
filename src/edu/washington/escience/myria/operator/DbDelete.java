@@ -14,7 +14,6 @@ import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * 
- * TODO: it's not really an "operator", is it?
  */
 public class DbDelete extends RootOperator {
 
@@ -38,11 +37,11 @@ public class DbDelete extends RootOperator {
 
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    /* retrieve connection information from the environment variables, if not already set */
+    /* Retrieve connection information from the environment variables, if not already set */
     if (connectionInfo == null && execEnvVars != null) {
       connectionInfo = (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
     }
-    /* open the database connection */
+    /* Open the database connection */
     accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
 
     /* Drop the table */

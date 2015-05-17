@@ -154,10 +154,10 @@ public abstract class AccessMethod {
   public abstract void dropTableIfExists(RelationKey relationKey) throws DbException;
 
   /**
-   * @param relationDelete the relation to drop
+   * @param relationKey the relation to drop
    * @throws DbException if there is an error dropping the table.
    */
-  public abstract void dropTableIfExistsCascade(RelationKey relationDelete) throws DbException;
+  public abstract void dropTableIfExistsCascade(RelationKey relationKey) throws DbException;
 
   /**
    * Creates the specified indexes on the provided temporary table, but uses the real table name for their names.
