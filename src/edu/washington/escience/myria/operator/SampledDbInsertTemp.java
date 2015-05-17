@@ -39,8 +39,10 @@ public class SampledDbInsertTemp extends UnaryOperator implements DbWriter {
   /** The name of the table the tuples should be inserted into. */
   private final RelationKey countRelationKey;
 
-  /** Number of tuples to sample. */
-  private final int sampleSize;
+  /** Total number of tuples seen from the child. */
+  private int tupleCount = 0;
+  /** Number of tuples to sample from the stream. */
+  private final int streamSampleSize;
   /** Reservoir that holds sampleSize number of tuples. */
   private MutableTupleBuffer reservoir = null;
   /** Sampled tuples ready to be returned. */
@@ -50,8 +52,6 @@ public class SampledDbInsertTemp extends UnaryOperator implements DbWriter {
   /** True if all samples have been gathered from the child. */
   private boolean doneSamplingFromChild;
 
-  private int tupleCount = 0;
-
   /** The output schema. */
   private static final Schema COUNT_SCHEMA = Schema.of(
       ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE, Type.INT_TYPE),
@@ -60,7 +60,7 @@ public class SampledDbInsertTemp extends UnaryOperator implements DbWriter {
   /**
    * @param child
    *          the source of tuples to be inserted.
-   * @param sampleSize
+   * @param streamSampleSize
    *          number of tuples to store from the stream
    * @param sampleRelationKey
    *          the key of the table that the tuples should be inserted into.
@@ -69,14 +69,14 @@ public class SampledDbInsertTemp extends UnaryOperator implements DbWriter {
    * @param connectionInfo
    *          the parameters of the database connection.
    */
-  public SampledDbInsertTemp(final Operator child, final int sampleSize,
+  public SampledDbInsertTemp(final Operator child, final int streamSampleSize,
       final RelationKey sampleRelationKey, final RelationKey countRelationKey,
       final ConnectionInfo connectionInfo) {
     super(child);
     // Sampling setup.
-    Preconditions.checkArgument(sampleSize >= 0L,
+    Preconditions.checkArgument(streamSampleSize >= 0L,
         "sampleSize must be non-negative");
-    this.sampleSize = sampleSize;
+    this.streamSampleSize = streamSampleSize;
     doneSamplingFromChild = false;
 
     // Relation setup.
@@ -105,7 +105,7 @@ public class SampledDbInsertTemp extends UnaryOperator implements DbWriter {
       IntColumnBuilder streamSizeCol = new IntColumnBuilder();
       wIdCol.appendInt(getNodeID());
       tupCountCol.appendInt(tupleCount);
-      streamSizeCol.appendInt(sampleSize);
+      streamSizeCol.appendInt(reservoir.numTuples());
       ImmutableList.Builder<Column<?>> columns = ImmutableList.builder();
       columns.add(wIdCol.build(), tupCountCol.build(), streamSizeCol.build());
       TupleBatch tb = new TupleBatch(COUNT_SCHEMA, columns.build());
@@ -126,12 +126,9 @@ public class SampledDbInsertTemp extends UnaryOperator implements DbWriter {
         .nextReady()) {
       final List<? extends Column<?>> columns = tb.getDataColumns();
       for (int i = 0; i < tb.numTuples(); i++) {
-        if (reservoir.numTuples() < sampleSize) {
+        if (reservoir.numTuples() < streamSampleSize) {
           // Reservoir size < k. Add this tuple.
           for (int j = 0; j < tb.numColumns(); j++) {
-             System.out.println("Initial insert in reservoir. tupleNum=" +
-             tupleCount + ", numTuples()="
-             + reservoir.numTuples());
             reservoir.put(j, columns.get(j), i);
           }
         } else {
@@ -139,9 +136,6 @@ public class SampledDbInsertTemp extends UnaryOperator implements DbWriter {
           int replaceIdx = rand.nextInt(tupleCount);
           if (replaceIdx < reservoir.numTuples()) {
             for (int j = 0; j < tb.numColumns(); j++) {
-               System.out.println("Replacement insert in reservoir. tupleNum="
-               + tupleCount + ", numTuples()="
-               + reservoir.numTuples());
               reservoir.replace(j, replaceIdx, columns.get(j), i);
             }
           }
@@ -149,11 +143,6 @@ public class SampledDbInsertTemp extends UnaryOperator implements DbWriter {
         tupleCount++;
       }
     }
-    if (reservoir.numTuples() < sampleSize) {
-      System.err.println("Not enough tuples to sample " + sampleSize
-          + " tuples. Only found " + reservoir.numTuples() + " tuples.");
-    }
-     System.out.println("Done sampling.");
     doneSamplingFromChild = true;
   }
 
@@ -172,7 +161,7 @@ public class SampledDbInsertTemp extends UnaryOperator implements DbWriter {
 
     if (connectionInfo == null) {
       throw new DbException(
-          "Unable to instantiate DbInsertTemp: connection information unknown");
+          "Unable to instantiate SampledDbInsertTemp: connection information unknown");
     }
 
     if (connectionInfo instanceof SQLiteInfo) {

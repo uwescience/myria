@@ -74,8 +74,9 @@
                                 "opType": "SamplingDistribution",
                                 "argChild": 7,
                                 "opId": 8,
-                                "sampleSize": 11316811,
-                                "isWithoutReplacement": true
+                                "sampleSize": 2000000,
+                                "isWithoutReplacement": true,
+                                "randomSeed":42
                             },
                             {
                                   "argChild":8,
@@ -107,9 +108,11 @@
                             {
                               "argChild1": 10,
                               "argChild2": 11,
-                              "opType":"SampleWoR",
+                              "opType":"Sample",
                               "opId":12,
-                              "opName":"MyriaSampleWoR"
+                              "opName":"MyriaSampleWoR",
+                              "isWithoutReplacement": true,
+                              "randomSeed":42
                             },
                             {
                                 "opType": "DbInsert",
