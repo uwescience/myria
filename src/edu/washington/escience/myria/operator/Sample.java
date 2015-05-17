@@ -1,28 +1,49 @@
 package edu.washington.escience.myria.operator;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Random;
+import java.util.Set;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
-public abstract class Sample extends BinaryOperator {
+public class Sample extends BinaryOperator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   /** Number of tuples to sample from the right operator. */
-  protected int sampleSize;
+  private int sampleSize;
 
   /** Total number of tuples to expect from the right operator. */
-  protected int streamSize;
+  private int streamSize;
 
-  protected Random rand;
+  /** Random generator used for index selection. */
+  private Random rand;
 
-  /** Value to seed the random generator with. Null if no specified seed value. */
-  protected Long randomSeed;
+  /** True if the sampling is WithoutReplacement. WithReplacement otherwise. */
+  private final boolean isWithoutReplacement;
+
+  /** True if operator has extracted sampling info. */
+  private boolean computedSamplingInfo = false;
+
+  /** Buffer for tuples that will be returned. */
+  private TupleBatchBuffer ans;
+
+  /** Current TupleID being processed. */
+  private int tupleNum = 0;
+
+  /** List of of indices that will be taken as samples. */
+  private int[] samples;
+
+  /** Current index of the samples array. */
+  private int curSampIdx = 0;
 
   /**
    * Instantiate a Sample operator using sampling info from the left operator
@@ -36,13 +57,78 @@ public abstract class Sample extends BinaryOperator {
    *          value to seed the random generator with. null if no specified seed
    *          value
    */
-  public Sample(final Operator left, final Operator right, Long randomSeed) {
+  public Sample(final Operator left, final Operator right,
+      boolean isWithoutReplacement, Long randomSeed) {
     super(left, right);
+    this.isWithoutReplacement = isWithoutReplacement;
     this.rand = new Random();
-    this.randomSeed = randomSeed;
+    if (randomSeed != null) {
+      this.rand.setSeed(randomSeed);
+    }
   }
 
-  protected void extractSamplingInfo(TupleBatch tb) throws Exception {
+  @Override
+  protected TupleBatch fetchNextReady() throws Exception {
+    // Extract sampling info from left operator.
+    if (!computedSamplingInfo) {
+      TupleBatch tb = getLeft().nextReady();
+      if (tb == null)
+        return null;
+      extractSamplingInfo(tb);
+      getLeft().close();
+
+      // Cannot sampleWoR more tuples than there are.
+      if (isWithoutReplacement) {
+        Preconditions.checkState(sampleSize <= streamSize,
+            "Cannot SampleWoR %s tuples from a population of size %s",
+            sampleSize, streamSize);
+      }
+
+      // Generate target indices to accept as samples.
+      if (isWithoutReplacement) {
+        samples = generateIndicesWoR(streamSize, sampleSize);
+      } else {
+        samples = generateIndicesWR(streamSize, sampleSize);
+      }
+
+      computedSamplingInfo = true;
+    }
+
+    // Return a ready tuple batch if possible.
+    TupleBatch nexttb = ans.popAny();
+    if (nexttb != null) {
+      return nexttb;
+    }
+    // Check if there's nothing left to sample.
+    if (curSampIdx >= samples.length) {
+      getRight().close();
+      setEOS();
+      return null;
+    }
+    Operator right = getRight();
+    for (TupleBatch tb = right.nextReady(); tb != null; tb = right.nextReady()) {
+      if (curSampIdx >= samples.length) { // done sampling
+        break;
+      }
+      if (samples[curSampIdx] > tupleNum + tb.numTuples()) {
+        // nextIndex is not in this batch. Continue with next batch.
+        tupleNum += tb.numTuples();
+        continue;
+      }
+      while (curSampIdx < samples.length
+          && samples[curSampIdx] < tupleNum + tb.numTuples()) {
+        ans.put(tb, samples[curSampIdx] - tupleNum);
+        curSampIdx++;
+      }
+      tupleNum += tb.numTuples();
+      if (ans.hasFilledTB()) {
+        return ans.popFilled();
+      }
+    }
+    return ans.popAny();
+  }
+
+  private void extractSamplingInfo(TupleBatch tb) throws Exception {
     Preconditions.checkArgument(tb != null);
 
     int workerID;
@@ -66,8 +152,7 @@ public abstract class Sample extends BinaryOperator {
     } else {
       throw new DbException("streamSize column must be of type INT or LONG");
     }
-    Preconditions.checkState(streamSize >= 0,
-        "streamSize cannot be negative");
+    Preconditions.checkState(streamSize >= 0, "streamSize cannot be negative");
 
     Type col2Type = tb.getSchema().getColumnType(2);
     if (col2Type == Type.INT_TYPE) {
@@ -80,12 +165,52 @@ public abstract class Sample extends BinaryOperator {
     Preconditions.checkState(sampleSize >= 0, "sampleSize cannot be negative");
   }
 
-  protected Random getRandom() {
-    Random rand = new Random();
-    if (randomSeed != null) {
-      rand.setSeed(randomSeed);
+  /**
+   * Generates a sorted sequence of random indices that will be chosen to sample
+   * from.
+   *
+   * @param populationSize
+   *          size of the population that will be sampled from.
+   * @param sampleSize
+   *          number of samples to draw from the population.
+   * @return a sorted array of indices.
+   */
+  private int[] generateIndicesWR(int populationSize, int sampleSize) {
+    int[] indices = new int[sampleSize];
+    for (int i = 0; i < sampleSize; i++) {
+      indices[i] = rand.nextInt(populationSize);
     }
-    return rand;
+    Arrays.sort(indices);
+    return indices;
+  }
+
+  /**
+   * Generates a set of unique random numbers to be taken as samples.
+   *
+   * @param populationSize
+   *          size of the population that will be sampled from.
+   * @param sampleSize
+   *          number of samples to draw from the population.
+   * @return a sorted array of indices.
+   */
+  private int[] generateIndicesWoR(int populationSize, int sampleSize) {
+    Set<Integer> indices = new HashSet<Integer>(sampleSize);
+    for (int i = populationSize - sampleSize; i < populationSize; i++) {
+      int idx = rand.nextInt(i + 1);
+      if (indices.contains(idx)) {
+        indices.add(i);
+      } else {
+        indices.add(idx);
+      }
+    }
+    int[] indicesArr = new int[indices.size()];
+    int i = 0;
+    for (Integer val : indices) {
+      indicesArr[i] = val;
+      i++;
+    }
+    Arrays.sort(indicesArr);
+    return indicesArr;
   }
 
   @Override
@@ -95,6 +220,16 @@ public abstract class Sample extends BinaryOperator {
       return null;
     }
     return right.getSchema();
+  }
+
+  @Override
+  protected void init(final ImmutableMap<String, Object> execEnvVars) {
+    ans = new TupleBatchBuffer(getSchema());
+  }
+
+  @Override
+  public void cleanup() {
+    ans = null;
   }
 
 }

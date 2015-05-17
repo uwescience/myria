@@ -73,7 +73,7 @@
                                 "argChild": 6,
                                 "opId": 7,
                                 "sampleSize": 6790089,
-                                "isWithoutReplacement": true,
+                                "isWithoutReplacement": false,
                                 "randomSeed":42
                             },
                             {
@@ -112,8 +112,8 @@
                               "argChild2": 10,
                               "opType":"Sample",
                               "opId":11,
-                              "opName":"MyriaSampleWoR",
-                              "isWithoutReplacement": true,
+                              "opName":"MyriaSampleWR",
+                              "isWithoutReplacement": false,
                               "randomSeed":42
                             },
                             {
@@ -123,7 +123,7 @@
                                 "relationKey":
                                 {
                                     "programName": "adhoc",
-                                    "relationName": "SampledScanWoR",
+                                    "relationName": "SampledScanWR",
                                     "userName": "public"
                                 },
                                 "opId": 12
@@ -134,5 +134,5 @@
             }
         ]
     },
-    "rawQuery": "SampleScanWoR"
+    "rawQuery": "SampleScanWR"
 }
