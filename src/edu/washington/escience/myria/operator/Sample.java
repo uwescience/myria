@@ -18,11 +18,11 @@ public class Sample extends BinaryOperator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  /** Number of tuples to sample from the right operator. */
-  private int sampleSize;
-
   /** Total number of tuples to expect from the right operator. */
   private int streamSize;
+
+  /** Number of tuples to sample from the right operator. */
+  private int sampleSize;
 
   /** Random generator used for index selection. */
   private Random rand;
@@ -36,10 +36,10 @@ public class Sample extends BinaryOperator {
   /** Buffer for tuples that will be returned. */
   private TupleBatchBuffer ans;
 
-  /** Current TupleID being processed. */
+  /** Global count of the tuples seen so far. */
   private int tupleNum = 0;
 
-  /** List of of indices that will be taken as samples. */
+  /** Sorted array of tuple indices that will be taken as samples. */
   private int[] samples;
 
   /** Current index of the samples array. */
@@ -47,15 +47,16 @@ public class Sample extends BinaryOperator {
 
   /**
    * Instantiate a Sample operator using sampling info from the left operator
-   * and actual samples from the right operator.
+   * and the stream from the right operator.
    *
    * @param left
    *          inputs a (WorkerID, StreamSize, SampleSize) tuple.
    * @param right
    *          tuples that will be sampled from.
+   * @param isWithoutReplacement
+   *          true if the sampling will be done Without Replacement.
    * @param randomSeed
    *          value to seed the random generator with. null if no specified seed
-   *          value
    */
   public Sample(final Operator left, final Operator right,
       boolean isWithoutReplacement, Long randomSeed) {
@@ -128,6 +129,7 @@ public class Sample extends BinaryOperator {
     return ans.popAny();
   }
 
+  /** Helper function to extract sampling information from a TupleBatch. */
   private void extractSamplingInfo(TupleBatch tb) throws Exception {
     Preconditions.checkArgument(tb != null);
 
@@ -166,8 +168,7 @@ public class Sample extends BinaryOperator {
   }
 
   /**
-   * Generates a sorted sequence of random indices that will be chosen to sample
-   * from.
+   * Generates a sorted array of random numbers to be taken as samples.
    *
    * @param populationSize
    *          size of the population that will be sampled from.
@@ -185,7 +186,7 @@ public class Sample extends BinaryOperator {
   }
 
   /**
-   * Generates a set of unique random numbers to be taken as samples.
+   * Generates a sorted array of unique random numbers to be taken as samples.
    *
    * @param populationSize
    *          size of the population that will be sampled from.

@@ -29,22 +29,33 @@ public class SamplingDistribution extends UnaryOperator {
   /** True if the sampling is WithoutReplacement. WithReplacement otherwise. */
   private final boolean isWithoutReplacement;
 
-  /** Value to seed the random generator with. Null if no specified seed value. */
-  protected Long randomSeed;
+  /** Random generator used for creating the distribution. */
+  private Random rand;
 
-  public SamplingDistribution(final int sampleSize,
-      final boolean isWithoutReplacement, final Operator child) {
-    this(sampleSize, isWithoutReplacement, child, null);
-  }
-
+  /**
+   * Instantiate a SamplingDistribution operator.
+   * 
+   * @param sampleSize
+   *          total samples to create a distribution for.
+   * @param isWithoutReplacement
+   *          true if the distribution uses WithoutReplacement sampling.
+   * @param child
+   *          extracts (WorkerID, PartitionSize, StreamSize) information from
+   *          this child.
+   * @param randomSeed
+   *          value to seed the random generator with. null if no specified seed
+   */
   public SamplingDistribution(final int sampleSize,
       final boolean isWithoutReplacement, final Operator child, Long randomSeed) {
     super(child);
     this.sampleSize = sampleSize;
-    this.isWithoutReplacement = isWithoutReplacement;
-    this.randomSeed = randomSeed;
     Preconditions.checkState(sampleSize >= 0,
         "Sample size cannot be negative: %s", sampleSize);
+    this.isWithoutReplacement = isWithoutReplacement;
+    this.rand = new Random();
+    if (randomSeed != null) {
+      this.rand.setSeed(randomSeed);
+    }
   }
 
   @Override
@@ -118,7 +129,7 @@ public class SamplingDistribution extends UnaryOperator {
             throw new DbException("StreamSize must be of type INT or LONG");
           }
           Preconditions.checkState(partitionSize >= 0,
-                  "Worker cannot have a negative StreamSize: %s", streamSize);
+              "Worker cannot have a negative StreamSize: %s", streamSize);
         }
         streamCounts.set(workerID - 1, streamSize);
       }
@@ -149,10 +160,18 @@ public class SamplingDistribution extends UnaryOperator {
     return new TupleBatch(SCHEMA, columns.build());
   }
 
+  /**
+   * Creates a WithReplacement distribution across the workers.
+   * 
+   * @param tupleCounts
+   *          list of how many tuples each worker has.
+   * @param sampleSize
+   *          total number of samples to distribute across the workers.
+   * @return array representing the distribution across the workers.
+   */
   private int[] withReplacementDistribution(List<Integer> tupleCounts,
       int sampleSize) {
     int[] distribution = new int[tupleCounts.size()];
-    Random rand = getRandom();
     int totalTupleCount = 0;
     for (int val : tupleCounts)
       totalTupleCount += val;
@@ -172,10 +191,18 @@ public class SamplingDistribution extends UnaryOperator {
     return distribution;
   }
 
+  /**
+   * Creates a WithoutReplacement distribution across the workers.
+   *
+   * @param tupleCounts
+   *          list of how many tuples each worker has.
+   * @param sampleSize
+   *          total number of samples to distribute across the workers.
+   * @return array representing the distribution across the workers.
+   */
   private int[] withoutReplacementDistribution(List<Integer> tupleCounts,
       int sampleSize) {
     int[] distribution = new int[tupleCounts.size()];
-    Random rand = getRandom();
     int totalTupleCount = 0;
     for (int val : tupleCounts)
       totalTupleCount += val;
@@ -196,16 +223,6 @@ public class SamplingDistribution extends UnaryOperator {
       }
     }
     return distribution;
-  }
-
-  private Random getRandom() {
-    Random rand;
-    if (randomSeed != null) {
-      rand = new Random(randomSeed);
-    } else {
-      rand = new Random();
-    }
-    return rand;
   }
 
   @Override

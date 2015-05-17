@@ -16,7 +16,7 @@ import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestEnvVars;
 
 /**
- * Tests the SampleWR operator by verifying the results of various scenarios.
+ * Tests SampleWR by verifying the results of various scenarios.
  */
 public class SampleWRTest {
 
@@ -32,7 +32,7 @@ public class SampleWRTest {
 
   TupleBatchBuffer leftInput;
   TupleBatchBuffer rightInput;
-  SampleWR sampOp;
+  Sample sampOp;
 
   @Before
   public void setup() {
@@ -122,8 +122,8 @@ public class SampleWRTest {
       int[] expected) throws DbException {
     leftInput.putInt(1, partitionSize);
     leftInput.putInt(2, sampleSize);
-    sampOp = new SampleWR(new TupleSource(leftInput), new TupleSource(
-        rightInput), RANDOM_SEED);
+    sampOp = new Sample(new TupleSource(leftInput), new TupleSource(
+        rightInput), false, RANDOM_SEED);
     sampOp.open(TestEnvVars.get());
 
     int rowIdx = 0;
@@ -144,8 +144,8 @@ public class SampleWRTest {
       throws DbException {
     leftInput.putInt(1, partitionSize);
     leftInput.putInt(2, sampleSize);
-    sampOp = new SampleWR(new TupleSource(leftInput), new TupleSource(
-        rightInput), RANDOM_SEED);
+    sampOp = new Sample(new TupleSource(leftInput), new TupleSource(
+        rightInput), false, RANDOM_SEED);
     sampOp.open(TestEnvVars.get());
     while (!sampOp.eos()) {
       sampOp.nextReady();
