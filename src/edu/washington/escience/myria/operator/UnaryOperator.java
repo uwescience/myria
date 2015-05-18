@@ -55,9 +55,6 @@ public abstract class UnaryOperator extends Operator {
         "Operator opId=%s setChildren() must be called with an array of length 1", opId);
     Preconditions.checkNotNull(children[0], "Unary operator opId=%s has its child to be null", opId);
     child = children[0];
-
-    /* Generate the Schema now as a way of sanity-checking the constructor arguments. */
-    getSchema();
   }
 
 }
