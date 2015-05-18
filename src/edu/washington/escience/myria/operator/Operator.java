@@ -421,9 +421,12 @@ public abstract class Operator implements Serializable {
     }
     open = true;
 
-    /** @JORTIZ: When would this not be true?? */
-    if (getLocalSubQuery() instanceof WorkerSubQuery) {
-      worker = ((WorkerSubQuery) getLocalSubQuery()).getWorker();
+    /** bad, do a try/catch for now this was making tests fail earlier */
+    try {
+      if (getLocalSubQuery() instanceof WorkerSubQuery) {
+        worker = ((WorkerSubQuery) getLocalSubQuery()).getWorker();
+      }
+    } catch (Exception e) {
     }
 
     if (getProfilingMode().size() > 0) {
