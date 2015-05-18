@@ -1,0 +1,27 @@
+{
+    "fragments": [
+        {
+            "operators": [
+                 {
+                    "opName": "V0",
+                    "opType": "DbInsert",
+                    "argOverwriteTable": true,
+                    "relationKey": {
+                        "userName": "public",
+                        "relationName": "fromCache",
+                        "programName": "adhoc"
+                    },
+                    "argChild": 0,
+                    "opId": 1
+                },
+                {
+                        "opName": "V0", 
+                        "opType": "CacheLeaf", 
+                        "opId": 0
+                }
+            ]
+        }
+    ],
+    "logicalRa": "cache example",
+    "rawQuery": "cache example"
+}

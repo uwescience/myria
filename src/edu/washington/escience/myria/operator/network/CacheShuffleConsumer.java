@@ -21,27 +21,16 @@ public class CacheShuffleConsumer extends GenericShuffleConsumer {
    * */
   public CacheShuffleConsumer(final Schema schema, final ExchangePairID operatorID, final int[] is) {
     super(schema, operatorID, is);
-    // TODO Auto-generated constructor stub
   }
-
-  // NOTE EITHER we push the batch to the cacheController of the worker or we open the cacheRoot operator, making
-  // sure that the cacheRoot sees this as a child
 
   @Override
   protected final TupleBatch fetchNextReady() throws DbException {
     try {
+      /* adding the tuple batch to the worker cache */
+      CacheController workerCacheController = getWorker().getCacheController();
+      workerCacheController.addTupleBatch(getTuplesNormal(!nonBlockingExecution));
 
-      CacheController localCacheController = getWorker().getCacheController();
-
-      getWorker().LOGGER.info("Worker " + getWorker().getID() + " adding to cache");
-      getWorker().LOGGER.info("First CacheController Status " + localCacheController.getCurrentNumberOfTuples());
-      // @JORTIZ: this tuple batch is different because it needs to be added to the cacheController
-      localCacheController.addTupleBatch(getTuplesNormal(!nonBlockingExecution));
-
-      getWorker().LOGGER.info("Second CacheController Status " + localCacheController.getCurrentNumberOfTuples());
-      getWorker().LOGGER.info("Final Size " + localCacheController.getCache().values());
-
-      // finally, return tuples as usual
+      /* returning the tuples as usual */
       return getTuplesNormal(!nonBlockingExecution);
     } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();

@@ -4,12 +4,15 @@
 package edu.washington.escience.myria.parallel;
 
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Random;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.storage.TupleBatch;
-import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 /**
  * Controls the worker cache, invoked by cache operators.
@@ -22,31 +25,29 @@ public final class CacheController {
   private static final Logger LOGGER = LoggerFactory.getLogger(WorkerShortMessageProcessor.class);
 
   /**
-   * The worker cache.
+   * The worker cache (ideally, a partition with a tuple batch).
    * */
   private final HashMap<Integer, TupleBatch> cache;
 
   /**
-   * The incoming tuples --- create buffer too?
-   * */
-  // private final HashMap<Integer, TupleBatch> incomingTuples;
-
-  /**
-   * Buffer to hold finished and in-progress TupleBatches to place in cache.
-   */
-  private TupleBatchBuffer outputBuffer;
-
-  /**
-   * * The worker who owns this cache.
+   * The worker cache.
    * */
   private final Worker ownerWorker;
 
   /**
-   * @JORTIZ These three variables are temp for now
-   */
+   * Limitation on the number of tuples that can fit in the Cache.
+   * */
   public static final Integer LIMIT_TUPLES = 10000;
-  private Integer tupleCount;
-  private Integer keysUsed;
+
+  /**
+   * Iterator through the HashMap to read by batches.
+   * */
+  public Iterator it;
+
+  /**
+   * Schema of the batch added to the cache.
+   */
+  private Schema schema;
 
   /**
    * Constructor for the cache controller.
@@ -54,46 +55,55 @@ public final class CacheController {
    * @param ownerWorker the owner worker
    */
   public CacheController(final Worker ownerWorker) {
-    cache = new HashMap<Integer, TupleBatch>();
-    // incomingTuples = new HashMap<Integer, TupleBatch>();
     this.ownerWorker = ownerWorker;
-    keysUsed = 0;
-    tupleCount = 0;
-    LOGGER.info("INTIALIZED CACHE CONTROLLER FOR " + ownerWorker.getID());
+    cache = new HashMap<Integer, TupleBatch>();
+    it = cache.entrySet().iterator();
+
+    LOGGER.info("Created Cache Controller For " + ownerWorker.getID());
   }
 
   /**
    * adds tuples to the cache.
+   * 
+   * @param tb the tuple batch to add
    */
   public void addTupleBatch(final TupleBatch tb) {
-    tupleCount += TupleBatch.BATCH_SIZE;
-    cache.put(keysUsed++, tb);
-    // LOGGER.info("WORKER " + ownerWorker.getID() + " Stored for key " + (keysUsed - 1));
+    cache.put(new Random().nextInt(LIMIT_TUPLES), tb);
+    // schema now known, so record it (temporary for now, probably not needed)
+    schema = tb.getSchema();
   }
 
   /**
-   * Reads from the cache.
+   * Reads from the cache by iterating through the HashMap.
+   * 
+   * @return the next TupleBatch
    */
-  public void readTupleBatch() {
-    // TODO: implement
+  public TupleBatch readTupleBatch() {
+    if (it.hasNext()) {
+      Map.Entry entry = (Map.Entry) it.next();
+      return (TupleBatch) entry.getValue();
+    }
+    return null;
   }
 
   /**
-   * @return tupleCount the number of tuples currently in the cache
+   * Reset the iterator after it has read through all the tuple batches.
    */
-  public Integer getCurrentNumberOfTuples() {
-    return tupleCount;
+  public void cacheIteratorReset() {
+    it = cache.entrySet().iterator();
   }
 
   /**
-   * @return tupleCount the number of tuples currently in the cache
+   * Checking if there is anything in the cache to read.
+   * 
+   * @return a boolean to determine if there is anything to read
    */
-  public Integer getKeys() {
-    return keysUsed;
+  public boolean cacheIteratorHasNext() {
+    return it.hasNext();
   }
 
   /**
-   * @return the number of tuples currently in the cache
+   * @return the cache
    */
   public HashMap<Integer, TupleBatch> getCache() {
     return cache;
