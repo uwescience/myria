@@ -1,0 +1,46 @@
+{
+    "fragments": [
+        { 
+            "operators": [
+                {
+                        "relationKey": {
+                            "userName": "jwang", 
+                            "relationName": "smallTable", 
+                            "programName": "global_join"
+                        }, 
+                        "opType": "TableScan", 
+                        "opName": "MyriaScan", 
+                        "opId": 1
+                },
+                {
+                    "argChild": 1,
+                    "argPf": {
+                        "index":0,
+                        "type": "SingleFieldHash"
+                    },
+                    "opName": "Scatter",
+                    "opId": 2,
+                    "opType": "CacheShuffleProducer"
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "argOperatorId": 2,
+                    "opName": "Gather",
+                    "opId": 3,
+                    "opType": "CacheShuffleConsumer"
+                },
+                {
+                     "opName": "V0", 
+                     "opType": "SinkRoot", 
+                     "opId": 4, 
+                     "argChild": 3
+                }
+            ]
+        }
+    ],
+    "logicalRa": "cache ShuffleConsumer",
+    "rawQuery": "cache ShuffleConsumer"
+}

@@ -75,7 +75,8 @@ public class Consumer extends LeafOperator {
   /**
    * if current query execution is in non-blocking mode.
    * */
-  private transient boolean nonBlockingExecution;
+  // @JORTIZ: also changed this to be public
+  public transient boolean nonBlockingExecution;
 
   /**
    * The worker this operator is located at.
@@ -289,8 +290,9 @@ public class Consumer extends LeafOperator {
     return !inputBuffer.isEmpty();
   }
 
+  // @JORTIZ: removed the final operator to modify at the CacheShuffleConsumer level
   @Override
-  protected final TupleBatch fetchNextReady() throws DbException {
+  protected TupleBatch fetchNextReady() throws DbException {
     try {
       return getTuplesNormal(!nonBlockingExecution);
     } catch (final InterruptedException e) {

@@ -68,7 +68,6 @@ public final class CacheController {
   public void addTupleBatch(final TupleBatch tb) {
     tupleCount += TupleBatch.BATCH_SIZE;
     cache.put(keysUsed++, tb);
-
     // LOGGER.info("WORKER " + ownerWorker.getID() + " Stored for key " + (keysUsed - 1));
   }
 
@@ -84,6 +83,13 @@ public final class CacheController {
    */
   public Integer getCurrentNumberOfTuples() {
     return tupleCount;
+  }
+
+  /**
+   * @return tupleCount the number of tuples currently in the cache
+   */
+  public Integer getKeys() {
+    return keysUsed;
   }
 
   /**
