@@ -1,0 +1,17 @@
+{
+  "relationKey" : {
+    "userName" : "jwang",
+    "programName" : "global_join",
+    "relationName" : "smallTable"
+  },
+  "schema" : {
+    "columnTypes" : ["LONG_TYPE", "LONG_TYPE"],
+    "columnNames" : ["col1", "col2"]
+  },
+  "source" : {
+    "dataType" : "File",
+    "filename" : "/Users/jortiz16/Documents/cacheMyria/myria/jsonQueries/jortiz_cache_examples/smallTable"
+  },
+  "overwrite" : true,
+  "delimiter": ","
+}

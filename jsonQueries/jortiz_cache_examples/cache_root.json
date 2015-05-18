@@ -1,0 +1,26 @@
+{
+    "fragments": [
+        {
+            "operators": [
+                {
+                        "opName": "V0", 
+                        "opType": "CacheRoot", 
+                        "opId": 0, 
+                        "argChild": 20
+                },
+                {
+                        "relationKey": {
+                            "userName": "jwang", 
+                            "relationName": "smallTable", 
+                            "programName": "global_join"
+                        }, 
+                        "opType": "TableScan", 
+                        "opName": "MyriaScan", 
+                        "opId": 20
+                }
+            ]
+        }
+    ],
+    "logicalRa": "cache example",
+    "rawQuery": "cache example"
+}
