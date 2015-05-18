@@ -13,7 +13,7 @@ import edu.washington.escience.myria.parallel.ExchangePairID;
 public class CacheShuffleProducer extends GenericShuffleProducer {
 
   /**
-   * Shuffle to the same operator ID on multiple workers. (The old "ShuffleProducer")
+   * Constructor for the CacheShuffleProducer, just extends from the GenericShuffleProducer.
    * 
    * @param child the child who provides data for this producer to distribute.
    * @param operatorID destination operators the data goes
@@ -23,7 +23,6 @@ public class CacheShuffleProducer extends GenericShuffleProducer {
   public CacheShuffleProducer(final Operator child, final ExchangePairID operatorID, final int[] workerIDs,
       final PartitionFunction pf) {
     super(child, operatorID, workerIDs, pf);
-    // TODO Auto-generated constructor stub
   }
 
 }
