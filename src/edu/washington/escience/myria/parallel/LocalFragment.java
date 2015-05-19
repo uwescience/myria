@@ -619,22 +619,9 @@ public final class LocalFragment {
    * @param failed if the {@link LocalFragment} execution has already failed.
    */
   private void cleanup(final boolean failed) {
-    if (getLocalSubQuery() instanceof WorkerSubQuery
-        && getLocalSubQuery().getProfilingMode().contains(ProfilingMode.RESOURCE)) {
+    if (getLocalSubQuery().getProfilingMode().contains(ProfilingMode.RESOURCE)) {
       // Before everything is cleaned up, get the latest resource stats.
-      WorkerSubQuery subQuery = (WorkerSubQuery) getLocalSubQuery();
-      List<ResourceStats> resourceUsage = new ArrayList<ResourceStats>();
-      collectResourceMeasurements(resourceUsage, System.currentTimeMillis(), getRootOp(), subQuery.getSubQueryId());
-      Worker worker = subQuery.getWorker();
-      worker.sendMessageToMaster(IPCUtils.resourceReport(resourceUsage)).awaitUninterruptibly();
-      try {
-        for (ResourceStats stats : resourceUsage) {
-          worker.getProfilingLogger().recordResource(stats);
-        }
-        worker.getProfilingLogger().flush();
-      } catch (DbException e) {
-        LOGGER.error("Error flushing resource profiling logger", e);
-      }
+      collectResourceMeasurements();
     }
     if (AtomicUtils.unsetBitIfSetByValue(executionCondition, STATE_INITIALIZED)) {
       // Only cleanup if initialized.
@@ -785,13 +772,14 @@ public final class LocalFragment {
    * 
    * @param stats the stats to be added into
    * @param timestamp the timestamp of the collecting event
-   * @param opId the operator ID
+   * @param op the operator
    * @param measurement which measurement
    * @param value the value
    * @param subQueryId the sunquery ID
    */
-  public void addResourceReport(final List<ResourceStats> stats, final long timestamp, final int opId,
+  public void addResourceReport(final List<ResourceStats> stats, final long timestamp, final Operator op,
       final String measurement, final long value, final SubQueryId subQueryId) {
+    int opId = Preconditions.checkNotNull(op.getOpId(), "opId is null");
     stats.add(new ResourceStats(timestamp, opId, measurement, value, subQueryId.getQueryId(), subQueryId
         .getSubqueryId()));
   }
@@ -803,40 +791,64 @@ public final class LocalFragment {
    * @param timestamp the starting timestamp of this event in milliseconds
    * @param subQueryId the subQuery Id
    */
-  public void collectResourceMeasurements(final List<ResourceStats> stats, final long timestamp, final Operator op,
-      final SubQueryId subQueryId) {
-    if (threadId == -1) {
-      return;
-    }
-    int opId = Preconditions.checkNotNull(op.getOpId(), "opId");
-    if (op == getRootOp()) {
-      long cntCpu = 0;
-      synchronized (this) {
-        cntCpu = cpuTotal;
-        if (cpuBefore > 0) {
-          cntCpu += ManagementFactory.getThreadMXBean().getThreadCpuTime(threadId) - cpuBefore;
-        }
-      }
-      addResourceReport(stats, timestamp, opId, "cpuTotal", cntCpu, subQueryId);
-    }
-
+  public void collectOperatorResourceMeasurements(final List<ResourceStats> stats, final long timestamp,
+      final Operator op, final SubQueryId subQueryId) {
     if (op instanceof Producer) {
-      addResourceReport(stats, timestamp, opId, "numTuplesWritten", ((Producer) op).getNumTuplesWrittenToChannels(),
+      addResourceReport(stats, timestamp, op, "numTuplesWritten", ((Producer) op).getNumTuplesWrittenToChannels(),
           subQueryId);
-      addResourceReport(stats, timestamp, opId, "numTuplesInBuffers", ((Producer) op).getNumTuplesInBuffers(),
-          subQueryId);
+      addResourceReport(stats, timestamp, op, "numTuplesInBuffers", ((Producer) op).getNumTuplesInBuffers(), subQueryId);
     } else if (op instanceof IDBController) {
-      addResourceReport(stats, timestamp, opId, "numTuplesInState", ((IDBController) op).getStreamingState()
-          .numTuples(), subQueryId);
+      addResourceReport(stats, timestamp, op, "numTuplesInState", ((IDBController) op).getStreamingState().numTuples(),
+          subQueryId);
     } else if (op instanceof SymmetricHashJoin) {
-      addResourceReport(stats, timestamp, opId, "hashTableSize", ((SymmetricHashJoin) op).getNumTuplesInHashTables(),
+      addResourceReport(stats, timestamp, op, "hashTableSize", ((SymmetricHashJoin) op).getNumTuplesInHashTables(),
           subQueryId);
     } else if (op instanceof LeapFrogJoin) {
-      addResourceReport(stats, timestamp, opId, "hashTableSize", ((LeapFrogJoin) op).getNumTuplesInHashTables(),
+      addResourceReport(stats, timestamp, op, "hashTableSize", ((LeapFrogJoin) op).getNumTuplesInHashTables(),
           subQueryId);
     }
     for (Operator child : op.getChildren()) {
-      collectResourceMeasurements(stats, timestamp, child, subQueryId);
+      collectOperatorResourceMeasurements(stats, timestamp, child, subQueryId);
+    }
+  }
+
+  /**
+   * 
+   */
+  public void collectResourceMeasurements() {
+    if (!(getLocalSubQuery() instanceof WorkerSubQuery)) {
+      /* MasterSubQuery does not support profiling so far, revisit if it changes */
+      return;
+    }
+    if (threadId == -1) {
+      /* has not been executed */
+      return;
+    }
+    WorkerSubQuery subQuery = (WorkerSubQuery) getLocalSubQuery();
+
+    RootOperator root = getRootOp();
+    long cntCpu = 0;
+    synchronized (this) {
+      cntCpu = cpuTotal;
+      if (cpuBefore > 0) {
+        cntCpu += ManagementFactory.getThreadMXBean().getThreadCpuTime(threadId) - cpuBefore;
+      }
+    }
+    List<ResourceStats> resourceUsage = new ArrayList<ResourceStats>();
+    long timestamp = System.currentTimeMillis();
+    SubQueryId subQueryId = subQuery.getSubQueryId();
+    addResourceReport(resourceUsage, timestamp, root, "cpuTotal", cntCpu, subQueryId);
+
+    collectOperatorResourceMeasurements(resourceUsage, timestamp, root, subQueryId);
+
+    Worker worker = subQuery.getWorker();
+    worker.sendMessageToMaster(IPCUtils.resourceReport(resourceUsage)).awaitUninterruptibly();
+    try {
+      for (ResourceStats stats : resourceUsage) {
+        worker.getProfilingLogger().recordResource(stats);
+      }
+    } catch (DbException e) {
+      LOGGER.error("Error inserting resource stats into profiling logger", e);
     }
   }
 

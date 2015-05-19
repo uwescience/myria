@@ -27,7 +27,6 @@ import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myria.profiling.ProfilingLogger;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.util.DateTimeUtils;
-import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.concurrent.ErrorLoggingTimerTask;
 
 /**
@@ -223,29 +222,8 @@ public class WorkerSubQuery extends LocalSubQuery {
   private class ResourceUsageReporter extends ErrorLoggingTimerTask {
     @Override
     public synchronized void runInner() {
-      List<ResourceStats> resourceUsage = new ArrayList<ResourceStats>();
-      collectResourceMeasurements(resourceUsage);
-      worker.sendMessageToMaster(IPCUtils.resourceReport(resourceUsage)).awaitUninterruptibly();
-      for (ResourceStats stats : resourceUsage) {
-        try {
-          worker.getProfilingLogger().recordResource(stats);
-        } catch (DbException e) {
-          LOGGER.error("Error flushing profiling logger", e);
-        }
-      }
-    }
-  }
-
-  /**
-   * collect resource measurements of this subquery.
-   * 
-   * @param resourceUsage the list to add resource stats of resource profiling queries to.
-   */
-  public void collectResourceMeasurements(final List<ResourceStats> resourceUsage) {
-    if (getProfilingMode().contains(ProfilingMode.RESOURCE)) {
-      long timestamp = System.currentTimeMillis();
       for (LocalFragment fragment : fragments) {
-        fragment.collectResourceMeasurements(resourceUsage, timestamp, fragment.getRootOp(), getSubQueryId());
+        fragment.collectResourceMeasurements();
       }
     }
   }
