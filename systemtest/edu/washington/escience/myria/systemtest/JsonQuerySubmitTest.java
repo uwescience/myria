@@ -124,7 +124,7 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
     DatasetStatus status = getDatasetStatus(conn);
     assertEquals(7, status.getNumTuples());
-    assertEquals(2, status.getHowPartitioned().getWorkersAsSet().size());
+    assertEquals(2, status.getHowPartitioned().getWorkers().size());
     PartitionFunction pf = status.getHowPartitioned().getPf();
     /* not specified, should be RoundRobin. */
     assertTrue(pf instanceof RoundRobinPartitionFunction);

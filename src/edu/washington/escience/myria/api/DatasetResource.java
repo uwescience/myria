@@ -334,7 +334,7 @@ public final class DatasetResource {
     if (pf == null) {
       pf = new RoundRobinPartitionFunction(null);
     }
-    return doIngest(relationKey, source, howPartitioned.getWorkersAsSet(), null, true, builder, pf);
+    return doIngest(relationKey, source, howPartitioned.getWorkers(), null, true, builder, pf);
   }
 
   /**

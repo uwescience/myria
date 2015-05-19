@@ -21,7 +21,7 @@ public class HowPartitioned {
   private PartitionFunction pf = null;
   /** The sequence of workers that the dataset is partitioned on. Null means unknown. */
   @JsonProperty
-  private int[] workers = null;
+  private ImmutableSet<Integer> workers = ImmutableSet.of();
 
   /**
    * @param pf the partition function.
@@ -29,7 +29,9 @@ public class HowPartitioned {
    */
   public HowPartitioned(@Nullable final PartitionFunction pf, @Nullable final int[] workers) {
     this.pf = pf;
-    this.workers = workers;
+    if (workers != null) {
+      this.workers = ImmutableSet.copyOf(Ints.asList(workers));
+    }
   }
 
   /**
@@ -50,11 +52,8 @@ public class HowPartitioned {
     return pf;
   }
 
-  /** @return the workers as a set. */
-  public Set<Integer> getWorkersAsSet() {
-    if (workers == null) {
-      return null;
-    }
-    return ImmutableSet.copyOf(Ints.asList(workers));
+  /** @return the workers. */
+  public Set<Integer> getWorkers() {
+    return workers;
   }
 }
