@@ -568,7 +568,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
           break;
         }
       } else {
-        if (pollLeft && order.equals(JoinPullOrder.LEFT_EOS) || !pollLeft && order.equals(JoinPullOrder.RIGHT_EOS)) {
+        if ((pollLeft && order.equals(JoinPullOrder.LEFT_EOS)) || (!pollLeft && order.equals(JoinPullOrder.RIGHT_EOS))) {
           if (!current.eos()) {
             break;
           }

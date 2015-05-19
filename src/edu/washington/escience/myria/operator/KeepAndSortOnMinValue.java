@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.operator;
 
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 import java.util.Set;
@@ -59,9 +60,9 @@ public final class KeepAndSortOnMinValue extends StreamingState {
    * @param valueColIndices column indices of the value
    */
   public KeepAndSortOnMinValue(final int[] keyColIndices, final int[] valueColIndices) {
-    this.keyColIndices = keyColIndices;
+    this.keyColIndices = Arrays.copyOf(keyColIndices, keyColIndices.length);
     keyColIndicesSet = ImmutableSet.copyOf(Ints.asList(keyColIndices));
-    this.valueColIndices = valueColIndices;
+    this.valueColIndices = Arrays.copyOf(valueColIndices, valueColIndices.length);
   }
 
   @Override
