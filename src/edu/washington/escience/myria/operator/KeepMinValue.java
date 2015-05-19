@@ -22,7 +22,7 @@ import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.HashUtils;
 
 /**
- * Keeps min vaule. It adds newly meet unique tuples into a buffer so that the source TupleBatches are not referenced.
+ * Keeps min value. It adds newly meet unique tuples into a buffer so that the source TupleBatches are not referenced.
  * This implementation reduces memory consumption.
  * */
 public final class KeepMinValue extends StreamingState {
@@ -70,20 +70,20 @@ public final class KeepMinValue extends StreamingState {
   }
 
   /**
-   * Check if a tuple in uniqueTuples equals to the comparing tuple (cntTuple).
+   * Check if a tuple in uniqueTuples should be replaced by a given tuple
    * 
-   * @param index the index in uniqueTuples
-   * @param columns the source columns
-   * @param row the index of the source row
-   * @return true if equals.
+   * @param index the row index of the tuple in uniqueTuples
+   * @param columns the columns of the given tuple
+   * @param row the row index of the given tuple
+   * @return true if should be replaced by
    * */
   private boolean shouldReplace(final int index, final List<? extends Column<?>> columns, final int row) {
-    for (int valueColIndice : valueColIndices) {
-      Column<?> column = columns.get(valueColIndice);
+    for (int valueColIndex : valueColIndices) {
+      Column<?> column = columns.get(valueColIndex);
       switch (column.getType()) {
         case INT_TYPE: {
           int t1 = column.getInt(row);
-          int t2 = uniqueTuples.getInt(valueColIndice, index);
+          int t2 = uniqueTuples.getInt(valueColIndex, index);
           if (t1 < t2) {
             return true;
           }
@@ -94,7 +94,7 @@ public final class KeepMinValue extends StreamingState {
         }
         case LONG_TYPE: {
           long t1 = column.getLong(row);
-          long t2 = uniqueTuples.getLong(valueColIndice, index);
+          long t2 = uniqueTuples.getLong(valueColIndex, index);
           if (t1 < t2) {
             return true;
           }
@@ -105,7 +105,7 @@ public final class KeepMinValue extends StreamingState {
         }
         case FLOAT_TYPE: {
           float t1 = column.getFloat(row);
-          float t2 = uniqueTuples.getFloat(valueColIndice, index);
+          float t2 = uniqueTuples.getFloat(valueColIndex, index);
           if (t1 < t2) {
             return true;
           }
@@ -116,7 +116,7 @@ public final class KeepMinValue extends StreamingState {
         }
         case DOUBLE_TYPE: {
           double t1 = column.getDouble(row);
-          double t2 = uniqueTuples.getDouble(valueColIndice, index);
+          double t2 = uniqueTuples.getDouble(valueColIndex, index);
           if (t1 < t2) {
             return true;
           }
@@ -157,7 +157,7 @@ public final class KeepMinValue extends StreamingState {
         uniqueTupleIndices.put(cntHashCode, tupleIndexList);
       } else {
         doReplace.replaced = false;
-        doReplace.row = i;
+        doReplace.sourceRow = i;
         tupleIndexList.forEach(doReplace);
         if (!doReplace.unique && !doReplace.replaced) {
           toRemove.set(i);
@@ -213,7 +213,7 @@ public final class KeepMinValue extends StreamingState {
     private static final long serialVersionUID = 1L;
 
     /** row index of the tuple. */
-    private int row;
+    private int sourceRow;
 
     /** input TupleBatch. */
     private TupleBatch inputTB;
@@ -225,14 +225,14 @@ public final class KeepMinValue extends StreamingState {
     private boolean unique;
 
     @Override
-    public void value(final int index) {
-      if (TupleUtils.tupleEquals(inputTB, keyColIndices, row, uniqueTuples, keyColIndices, index)) {
+    public void value(final int destRow) {
+      if (TupleUtils.tupleEquals(inputTB, keyColIndices, sourceRow, uniqueTuples, keyColIndices, destRow)) {
         unique = false;
-        if (shouldReplace(index, inputTB.getDataColumns(), row)) {
+        if (shouldReplace(destRow, inputTB.getDataColumns(), sourceRow)) {
           for (int i = 0; i < uniqueTuples.numColumns(); ++i) {
             if (!keyColIndicesSet.contains(i)) {
               // replace the whole tuple except key columns.
-              uniqueTuples.replace(i, index, inputTB.getDataColumns().get(i), row);
+              uniqueTuples.replace(i, destRow, inputTB.getDataColumns().get(i), sourceRow);
             }
           }
           replaced = true;
