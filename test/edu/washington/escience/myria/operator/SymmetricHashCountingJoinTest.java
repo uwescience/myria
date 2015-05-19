@@ -10,7 +10,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.util.JoinTestUtils;
 import edu.washington.escience.myria.util.TestEnvVars;
 
-public class SymetricHashCountingJoinTest {
+public class SymmetricHashCountingJoinTest {
 
   @Test
   public void testSymmetricHashCountingJoin() throws DbException {
