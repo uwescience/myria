@@ -21,7 +21,7 @@ public class HowPartitioned {
   private PartitionFunction pf = null;
   /** The sequence of workers that the dataset is partitioned on. Null means unknown. */
   @JsonProperty
-  private ImmutableSet<Integer> workers = ImmutableSet.of();
+  private ImmutableSet<Integer> workers = null;
 
   /**
    * @param pf the partition function.
