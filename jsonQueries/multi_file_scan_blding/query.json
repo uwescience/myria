@@ -1,0 +1,255 @@
+{
+    "fragments": [
+        {
+            "operators": [
+                {
+                    "opId": 9,
+                    "opType": "FileScan",
+                    "schema": {
+                        "columnNames": [
+                            "SC1",
+                            "SC2"
+                        ],
+                        "columnTypes": [
+                            "LONG_TYPE",
+                            "LONG_TYPE"
+                        ]
+                    },
+                    "source": "s_0"
+                },
+                {
+                    "argChildren": [
+                        9
+                    ],
+                    "opId": 7,
+                    "opType": "UnionAll"
+                },
+                {
+                    "argChild": 7,
+                    "argPf": {
+                        "index": 0,
+                        "type": "SingleFieldHash"
+                    },
+                    "opId": 8,
+                    "opType": "ShuffleProducer"
+                }
+            ],
+            "overrideWorkers": 0
+        },
+        {
+            "operators": [
+                {
+                    "opId": 12,
+                    "opType": "FileScan",
+                    "schema": {
+                        "columnNames": [
+                            "RC1",
+                            "RC2"
+                        ],
+                        "columnTypes": [
+                            "LONG_TYPE",
+                            "LONG_TYPE"
+                        ]
+                    },
+                    "source": "r_0"
+                },
+                {
+                    "argChildren": [
+                        12
+                    ],
+                    "opId": 10,
+                    "opType": "UnionAll"
+                },
+                {
+                    "argChild": 10,
+                    "argPf": {
+                        "index": 0,
+                        "type": "SingleFieldHash"
+                    },
+                    "opId": 11,
+                    "opType": "ShuffleProducer"
+                }
+            ],
+            "overrideWorkers": 0
+        },
+        {
+            "operators": [
+                {
+                    "opId": 15,
+                    "opType": "FileScan",
+                    "schema": {
+                        "columnNames": [
+                            "SC1",
+                            "SC2"
+                        ],
+                        "columnTypes": [
+                            "LONG_TYPE",
+                            "LONG_TYPE"
+                        ]
+                    },
+                    "source": "s_1"
+                },
+                {
+                    "argChildren": [
+                        15
+                    ],
+                    "opId": 13,
+                    "opType": "UnionAll"
+                },
+                {
+                    "argChild": 13,
+                    "argPf": {
+                        "index": 0,
+                        "type": "SingleFieldHash"
+                    },
+                    "opId": 14,
+                    "opType": "ShuffleProducer"
+                }
+            ],
+            "overrideWorkers": 1
+        },
+        {
+            "operators": [
+                {
+                    "opId": 18,
+                    "opType": "FileScan",
+                    "schema": {
+                        "columnNames": [
+                            "RC1",
+                            "RC2"
+                        ],
+                        "columnTypes": [
+                            "LONG_TYPE",
+                            "LONG_TYPE"
+                        ]
+                    },
+                    "source": "r_1"
+                },
+                {
+                    "argChildren": [
+                        18
+                    ],
+                    "opId": 16,
+                    "opType": "UnionAll"
+                },
+                {
+                    "argChild": 16,
+                    "argPf": {
+                        "index": 0,
+                        "type": "SingleFieldHash"
+                    },
+                    "opId": 17,
+                    "opType": "ShuffleProducer"
+                }
+            ],
+            "overrideWorkers": 1
+        },
+        {
+            "operators": [
+                {
+                    "argOperatorId": 6,
+                    "opId": 20,
+                    "opType": "ShuffleConsumer"
+                },
+                {
+                    "argOperatorId": 12,
+                    "opId": 21,
+                    "opType": "ShuffleConsumer"
+                },
+                {
+                    "argChildren": [
+                        20,
+                        21
+                    ],
+                    "opId": 19,
+                    "opType": "UnionAll"
+                },
+                {
+                    "argChild": 19,
+                    "argPf": {
+                        "index": 0,
+                        "type": "SingleFieldHash"
+                    },
+                    "opId": 1,
+                    "opType": "ShuffleProducer"
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "argOperatorId": 9,
+                    "opId": 23,
+                    "opType": "ShuffleConsumer"
+                },
+                {
+                    "argOperatorId": 15,
+                    "opId": 24,
+                    "opType": "ShuffleConsumer"
+                },
+                {
+                    "argChildren": [
+                        23,
+                        24
+                    ],
+                    "opId": 22,
+                    "opType": "UnionAll"
+                },
+                {
+                    "argChild": 22,
+                    "argPf": {
+                        "index": 0,
+                        "type": "SingleFieldHash"
+                    },
+                    "opId": 2,
+                    "opType": "ShuffleProducer"
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "argOperatorId": 1,
+                    "opId": 3,
+                    "opType": "ShuffleConsumer"
+                },
+                {
+                    "argOperatorId": 2,
+                    "opId": 4,
+                    "opType": "ShuffleConsumer"
+                },
+                {
+                    "argChild1": 3,
+                    "argChild2": 4,
+                    "argColumns1": [
+                        0
+                    ],
+                    "argColumns2": [
+                        0
+                    ],
+                    "argSelect1": [
+                        0,
+                        1
+                    ],
+                    "argSelect2": [
+                        0,
+                        1
+                    ],
+                    "opId": 5,
+                    "opType": "SymmetricHashJoin"
+                },
+                {
+                    "argChild": 5,
+                    "argOverwriteTable": true,
+                    "opId": 6,
+                    "opType": "DbInsert",
+                    "relationKey": {
+                        "programName": "sym_join",
+                        "relationName": "sym_join_out",
+                        "userName": "blding"
+                    }
+                }
+            ]
+        }
+    ]
+}

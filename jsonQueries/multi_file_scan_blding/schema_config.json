@@ -1,0 +1,24 @@
+{
+    "schemas": {
+        "R": {
+            "columnNames": [
+                "RC1",
+                "RC2"
+            ],
+            "columnTypes": [
+                "LONG_TYPE",
+                "LONG_TYPE"
+            ]
+        },
+        "S": {
+            "columnNames": [
+                "SC1",
+                "SC2"
+            ],
+            "columnTypes": [
+                "LONG_TYPE",
+                "LONG_TYPE"
+            ]
+        }
+    }
+}
