@@ -12,8 +12,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
- * Duplicate elimination. It adds newly meet unique tuples into a buffer so that the source TupleBatches are not
- * referenced. This implementation reduces memory consumption.
+ * Used by a Producer to append outgoing messages for FTMode.REJOIN. The producer is the only modifier.
  * */
 public final class SimpleAppender extends StreamingState {
 
@@ -47,11 +46,13 @@ public final class SimpleAppender extends StreamingState {
 
   @Override
   public TupleBatch update(final TupleBatch tb) {
-    if (!tb.isEOI()) {
-      tuples.add(tb);
-    }
+    tuples.add(tb);
+    numTuples += tb.numTuples();
     return tb;
   }
+
+  /** number of tuples. Used in resource profiling. */
+  private volatile int numTuples = 0;
 
   @Override
   public List<TupleBatch> exportState() {
@@ -60,14 +61,7 @@ public final class SimpleAppender extends StreamingState {
 
   @Override
   public int numTuples() {
-    if (tuples == null) {
-      return 0;
-    }
-    int sum = 0;
-    for (TupleBatch tb : tuples) {
-      sum += tb.numTuples();
-    }
-    return sum;
+    return numTuples;
   }
 
   @Override

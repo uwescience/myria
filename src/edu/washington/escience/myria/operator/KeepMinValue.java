@@ -1,18 +1,21 @@
 package edu.washington.escience.myria.operator;
 
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.primitives.Ints;
 import com.gs.collections.api.block.procedure.primitive.IntProcedure;
 import com.gs.collections.impl.list.mutable.primitive.IntArrayList;
 import com.gs.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.storage.MutableTupleBuffer;
 import edu.washington.escience.myria.storage.TupleBatch;
@@ -20,7 +23,7 @@ import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.HashUtils;
 
 /**
- * Keeps min vaule. It adds newly meet unique tuples into a buffer so that the source TupleBatches are not referenced.
+ * Keeps min value. It adds newly meet unique tuples into a buffer so that the source TupleBatches are not referenced.
  * This implementation reduces memory consumption.
  * */
 public final class KeepMinValue extends StreamingState {
@@ -45,17 +48,20 @@ public final class KeepMinValue extends StreamingState {
 
   /** column indices of the key. */
   private final int[] keyColIndices;
+  /** column indices of the key as a set. */
+  private final Set<Integer> keyColIndicesSet;
   /** column indices of the value. */
-  private final int valueColIndex;
+  private final int[] valueColIndices;
 
   /**
    * 
    * @param keyColIndices column indices of the key
-   * @param valueColIndex column index of the value
+   * @param valueColIndices column indices of the value
    */
-  public KeepMinValue(final int[] keyColIndices, final int valueColIndex) {
-    this.keyColIndices = keyColIndices;
-    this.valueColIndex = valueColIndex;
+  public KeepMinValue(final int[] keyColIndices, final int[] valueColIndices) {
+    this.keyColIndices = Arrays.copyOf(keyColIndices, keyColIndices.length);
+    keyColIndicesSet = ImmutableSet.copyOf(Ints.asList(keyColIndices));
+    this.valueColIndices = Arrays.copyOf(valueColIndices, valueColIndices.length);
   }
 
   @Override
@@ -65,27 +71,66 @@ public final class KeepMinValue extends StreamingState {
   }
 
   /**
-   * Check if a tuple in uniqueTuples equals to the comparing tuple (cntTuple).
+   * Check if a tuple in uniqueTuples should be replaced by a given tuple
    * 
-   * @param index the index in uniqueTuples
-   * @param column the source column
-   * @param row the index of the source row
-   * @return true if equals.
+   * @param index the row index of the tuple in uniqueTuples
+   * @param columns the columns of the given tuple
+   * @param row the row index of the given tuple
+   * @return true if should be replaced by
    * */
-  private boolean shouldReplace(final int index, final Column<?> column, final int row) {
-    Type t = column.getType();
-    switch (t) {
-      case INT_TYPE:
-        return column.getInt(row) < uniqueTuples.getInt(valueColIndex, index);
-      case FLOAT_TYPE:
-        return column.getFloat(row) < uniqueTuples.getFloat(valueColIndex, index);
-      case DOUBLE_TYPE:
-        return column.getDouble(row) < uniqueTuples.getDouble(valueColIndex, index);
-      case LONG_TYPE:
-        return column.getLong(row) < uniqueTuples.getLong(valueColIndex, index);
-      default:
-        throw new IllegalStateException("type " + t + " is not supported in KeepMinValue.replace()");
+  private boolean shouldReplace(final int index, final List<? extends Column<?>> columns, final int row) {
+    for (int valueColIndex : valueColIndices) {
+      Column<?> column = columns.get(valueColIndex);
+      switch (column.getType()) {
+        case INT_TYPE: {
+          int t1 = column.getInt(row);
+          int t2 = uniqueTuples.getInt(valueColIndex, index);
+          if (t1 < t2) {
+            return true;
+          }
+          if (t1 > t2) {
+            return false;
+          }
+          break;
+        }
+        case LONG_TYPE: {
+          long t1 = column.getLong(row);
+          long t2 = uniqueTuples.getLong(valueColIndex, index);
+          if (t1 < t2) {
+            return true;
+          }
+          if (t1 > t2) {
+            return false;
+          }
+          break;
+        }
+        case FLOAT_TYPE: {
+          float t1 = column.getFloat(row);
+          float t2 = uniqueTuples.getFloat(valueColIndex, index);
+          if (t1 < t2) {
+            return true;
+          }
+          if (t1 > t2) {
+            return false;
+          }
+          break;
+        }
+        case DOUBLE_TYPE: {
+          double t1 = column.getDouble(row);
+          double t2 = uniqueTuples.getDouble(valueColIndex, index);
+          if (t1 < t2) {
+            return true;
+          }
+          if (t1 > t2) {
+            return false;
+          }
+          break;
+        }
+        default:
+          throw new IllegalStateException("type " + column.getType() + " is not supported in KeepMinValue.replace()");
+      }
     }
+    return false;
   }
 
   /**
@@ -113,7 +158,7 @@ public final class KeepMinValue extends StreamingState {
         uniqueTupleIndices.put(cntHashCode, tupleIndexList);
       } else {
         doReplace.replaced = false;
-        doReplace.row = i;
+        doReplace.sourceRow = i;
         tupleIndexList.forEach(doReplace);
         if (!doReplace.unique && !doReplace.replaced) {
           toRemove.set(i);
@@ -169,7 +214,7 @@ public final class KeepMinValue extends StreamingState {
     private static final long serialVersionUID = 1L;
 
     /** row index of the tuple. */
-    private int row;
+    private int sourceRow;
 
     /** input TupleBatch. */
     private TupleBatch inputTB;
@@ -181,12 +226,16 @@ public final class KeepMinValue extends StreamingState {
     private boolean unique;
 
     @Override
-    public void value(final int index) {
-      if (TupleUtils.tupleEquals(inputTB, keyColIndices, row, uniqueTuples, keyColIndices, index)) {
+    public void value(final int destRow) {
+      if (TupleUtils.tupleEquals(inputTB, keyColIndices, sourceRow, uniqueTuples, keyColIndices, destRow)) {
         unique = false;
-        Column<?> valueColumn = inputTB.getDataColumns().get(valueColIndex);
-        if (shouldReplace(index, valueColumn, row)) {
-          uniqueTuples.replace(valueColIndex, index, valueColumn, row);
+        if (shouldReplace(destRow, inputTB.getDataColumns(), sourceRow)) {
+          for (int i = 0; i < uniqueTuples.numColumns(); ++i) {
+            if (!keyColIndicesSet.contains(i)) {
+              // replace the whole tuple except key columns.
+              uniqueTuples.replace(i, destRow, inputTB.getDataColumns().get(i), sourceRow);
+            }
+          }
           replaced = true;
         }
       }
@@ -203,6 +252,6 @@ public final class KeepMinValue extends StreamingState {
 
   @Override
   public StreamingState newInstanceFromMyself() {
-    return new KeepMinValue(keyColIndices, valueColIndex);
+    return new KeepMinValue(keyColIndices, valueColIndices);
   }
 }

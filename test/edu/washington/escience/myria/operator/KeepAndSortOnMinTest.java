@@ -42,7 +42,8 @@ public class KeepAndSortOnMinTest {
     }
 
     TupleSource scan = new TupleSource(input);
-    StreamingStateWrapper keepmin = new StreamingStateWrapper(scan, new KeepAndSortOnMinValue(new int[] { 0 }, 1));
+    StreamingStateWrapper keepmin =
+        new StreamingStateWrapper(scan, new KeepAndSortOnMinValue(new int[] { 0 }, new int[] { 1 }));
     keepmin.open(null);
     while (!keepmin.eos()) {
       keepmin.nextReady();

@@ -507,9 +507,9 @@ public final class SymmetricHashJoin extends BinaryOperator {
       return fetchNextReadySynchronousEOI();
     }
 
-    if (order.equals(JoinPullOrder.LEFT)) {
+    if (order.equals(JoinPullOrder.LEFT) || order.equals(JoinPullOrder.LEFT_EOS)) {
       pollLeft = true;
-    } else if (order.equals(JoinPullOrder.RIGHT)) {
+    } else if (order.equals(JoinPullOrder.RIGHT) || order.equals(JoinPullOrder.RIGHT_EOS)) {
       pollLeft = false;
     }
 
@@ -568,6 +568,11 @@ public final class SymmetricHashJoin extends BinaryOperator {
           break;
         }
       } else {
+        if ((pollLeft && order.equals(JoinPullOrder.LEFT_EOS)) || (!pollLeft && order.equals(JoinPullOrder.RIGHT_EOS))) {
+          if (!current.eos()) {
+            break;
+          }
+        }
         /* current.eos() or no data, switch to the other child */
         pollLeft = !pollLeft;
         noDataStreak++;
@@ -737,7 +742,11 @@ public final class SymmetricHashJoin extends BinaryOperator {
     /** Pull from the left child whenever there is data available. */
     LEFT,
     /** Pull from the right child whenever there is data available. */
-    RIGHT
+    RIGHT,
+    /** Pull from the left child until it reaches EOS. */
+    LEFT_EOS,
+    /** Pull from the right child until it reaches EOS. */
+    RIGHT_EOS
   }
 
   /**
