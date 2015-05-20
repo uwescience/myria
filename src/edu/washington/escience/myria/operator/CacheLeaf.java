@@ -19,28 +19,42 @@ public class CacheLeaf extends LeafOperator {
   private final Schema schema;
 
   /**
+   * The worker cache
+   */
+  private CacheController workerCache;
+
+  /**
+   * Flag to help determine when first fetch happens
+   */
+  private boolean first;
+
+  /**
    * The constructor for the cache leaf operator.
    * */
   public CacheLeaf() {
     // problem, the leaf requires a schema before it is opened/initialized
     // can't check the cacheController at each worker since this operator does not yet know which worker it will be
-    // running in
+    // running on
     // work-around: create schema manually for now
-
     final Schema schema =
         new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("col1", "col2"));
     this.schema = schema;
-
+    first = true;
   }
 
   @Override
   protected TupleBatch fetchNextReady() throws Exception {
-    CacheController workerCacheController = getWorker().getCacheController();
+    // first fetch -- couldn't push this up in the constructor, no getWorker()
+    if (first) {
+      /* reset the cache iterator and set the flag to stop reading */
+      workerCache = getWorker().getCacheController();
+      getWorker().LOGGER.info("reset iterator from cacheLeaf -- first fetch");
+      workerCache.cacheIteratorReset();
+      first = false;
+    }
 
-    /* will check if there is anything in the cache before returning a batch */
-    getWorker().LOGGER.info("from leaf: " + workerCacheController.cacheIteratorHasNext());
-    if (workerCacheController.cacheIteratorHasNext()) {
-      return workerCacheController.readTupleBatch();
+    if (workerCache.cacheIteratorHasNext()) {
+      return workerCache.readTupleBatch();
     }
     return null;
   }

@@ -68,9 +68,12 @@ public final class CacheController {
    * @param tb the tuple batch to add
    */
   public void addTupleBatch(final TupleBatch tb) {
-    cache.put(new Random().nextInt(LIMIT_TUPLES), tb);
-    // schema now known, so record it (temporary for now, probably not needed)
-    schema = tb.getSchema();
+    if (tb != null) {
+      ownerWorker.LOGGER.info("Inserting batch");
+      cache.put(new Random().nextInt(LIMIT_TUPLES), tb);
+      // schema now known, so record it (temporary for now, probably not needed)
+      schema = tb.getSchema();
+    }
   }
 
   /**
@@ -80,6 +83,7 @@ public final class CacheController {
    */
   public TupleBatch readTupleBatch() {
     if (it.hasNext()) {
+      ownerWorker.LOGGER.info("Fetching batch");
       Map.Entry entry = (Map.Entry) it.next();
       return (TupleBatch) entry.getValue();
     }
@@ -90,7 +94,10 @@ public final class CacheController {
    * Reset the iterator after it has read through all the tuple batches.
    */
   public void cacheIteratorReset() {
-    it = cache.entrySet().iterator();
+    ownerWorker.LOGGER.info("RESET Iterator");
+    Iterator newIterator = cache.entrySet().iterator();
+    ownerWorker.LOGGER.info("entries -- " + cache.size());
+    it = newIterator;
   }
 
   /**

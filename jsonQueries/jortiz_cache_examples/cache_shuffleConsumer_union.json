@@ -1,0 +1,63 @@
+{
+    "fragments": [
+        { 
+            "operators": [
+                {
+                        "relationKey": {
+                            "userName": "jwang", 
+                            "relationName": "smallTable", 
+                            "programName": "global_join"
+                        }, 
+                        "opType": "TableScan", 
+                        "opName": "MyriaScan", 
+                        "opId": 1
+                },
+                {
+                    "argChild": 1,
+                    "argPf": {
+                        "index":0,
+                        "type": "SingleFieldHash"
+                    },
+                    "opName": "Scatter",
+                    "opId": 2,
+                    "opType": "CacheShuffleProducer"
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "argOperatorId": 2,
+                    "opName": "Gather",
+                    "opId": 3,
+                    "opType": "CacheShuffleConsumer"
+                },
+                {
+                     "opName": "V0", 
+                     "opType": "CacheLeaf", 
+                     "opId": 4 
+                },
+                {
+                     "opName": "V0", 
+                     "opType": "UnionAll", 
+                     "opId": 5, 
+                     "argChildren": [3,4]
+                },
+                {
+                    "opName": "V0",
+                    "opType": "DbInsert",
+                    "argOverwriteTable": true,
+                    "relationKey": {
+                        "userName": "public",
+                        "relationName": "union_cache0",
+                        "programName": "adhoc"
+                    },
+                    "argChild": 5,
+                    "opId": 6
+                }
+            ]
+        }
+    ],
+    "logicalRa": "cache ShuffleConsumer union",
+    "rawQuery": "cache ShuffleConsumer union"
+}
