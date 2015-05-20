@@ -37,5 +37,4 @@ public final class RoundRobinPartitionFunction extends PartitionFunction {
     }
     return result;
   }
-
 }

@@ -8,6 +8,8 @@ import javax.ws.rs.core.Response.Status;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.api.MyriaApiException;
+import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
+import edu.washington.escience.myria.operator.network.partition.RoundRobinPartitionFunction;
 import edu.washington.escience.myria.util.FSUtils;
 
 public class TipsyDatasetEncoding extends MyriaApiEncoding {
@@ -21,6 +23,7 @@ public class TipsyDatasetEncoding extends MyriaApiEncoding {
   public String iorderFilename;
   public Set<Integer> workers;
   public List<List<IndexRef>> indexes;
+  public PartitionFunction partitionFunction = new RoundRobinPartitionFunction(null);
 
   @Override
   public void validateExtra() {
