@@ -38,6 +38,15 @@ public class CacheRoot extends RootOperator {
     workerCacheController = null;
   }
 
+  /**
+   * @param child the single child of this operator.
+   * @param initChild boolean to determine whether children are also initiated
+   */
+  public CacheRoot(final Operator child, final boolean initChild) {
+    super(child);
+    workerCacheController = null;
+  }
+
   @Override
   protected final void consumeTuples(final TupleBatch tuples) throws DbException {
     workerCacheController = getWorker().getCacheController();
@@ -46,8 +55,6 @@ public class CacheRoot extends RootOperator {
 
   @Override
   protected void childEOS() throws DbException {
-    getWorker().LOGGER.info("At EOS");
-    workerCacheController.cacheIteratorReset();
   }
 
   @Override
