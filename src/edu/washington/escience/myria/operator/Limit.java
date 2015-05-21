@@ -27,9 +27,6 @@ public final class Limit extends UnaryOperator {
   /** The number of tuples left to emit. */
   private long toEmit;
 
-  /** If number of emitted tuples reached limit. */
-  private boolean done;
-
   /**
    * A limit operator keeps the first <code>limit</code> tuples produced by its child.
    * 
@@ -41,30 +38,28 @@ public final class Limit extends UnaryOperator {
     this.limit = Objects.requireNonNull(limit, "limit");
     Preconditions.checkArgument(limit >= 0L, "limit must be non-negative");
     toEmit = this.limit;
-    done = false;
   }
 
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
     Operator child = getChild();
-    if (done) {
-      return null;
-    } else {
-      TupleBatch tb = child.nextReady();
-      TupleBatch result = null;
-      if (tb != null) {
-        if (tb.numTuples() <= toEmit) {
-          toEmit -= tb.numTuples();
-          result = tb;
-        } else if (toEmit > 0) {
-          result = tb.prefix(Ints.checkedCast(toEmit));
-          toEmit = 0;
-          child.close();
-          done = true;
-        }
+    TupleBatch tb = child.nextReady();
+    TupleBatch result = null;
+    if (tb != null) {
+      if (tb.numTuples() <= toEmit) {
+        toEmit -= tb.numTuples();
+        result = tb;
+      } else if (toEmit > 0) {
+        result = tb.prefix(Ints.checkedCast(toEmit));
+        toEmit = 0;
       }
-      return result;
+      if (toEmit == 0) {
+        /* Close child and self. No more stream is needed. */
+        child.close();
+        close();
+      }
     }
+    return result;
   }
 
   @Override

@@ -6,8 +6,6 @@ import static org.junit.Assert.assertNotNull;
 import org.joda.time.DateTime;
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
-
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -34,9 +32,9 @@ public class StreamingAggTest {
    */
   private TupleBatchBuffer fillInputTbb(final int numTuples) {
     final Schema schema =
-        new Schema(ImmutableList.of(Type.INT_TYPE, Type.DOUBLE_TYPE, Type.FLOAT_TYPE, Type.LONG_TYPE,
-            Type.DATETIME_TYPE, Type.STRING_TYPE, Type.BOOLEAN_TYPE, Type.LONG_TYPE), ImmutableList.of("Int", "Double",
-            "Float", "Long", "Datetime", "String", "Boolean", "value"));
+        Schema.ofFields(Type.INT_TYPE, "Int", Type.DOUBLE_TYPE, "Double", Type.FLOAT_TYPE, "Float", Type.LONG_TYPE,
+            "Long", Type.DATETIME_TYPE, "Datetime", Type.STRING_TYPE, "String", Type.BOOLEAN_TYPE, "Boolean",
+            Type.LONG_TYPE, "value");
 
     final TupleBatchBuffer source = new TupleBatchBuffer(schema);
     for (int i = 0; i < numTuples; i++) {
@@ -680,9 +678,7 @@ public class StreamingAggTest {
   @Test
   public void testMultiGroupSingleColumnCount() throws DbException {
     final int numTuples = 50;
-    final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("g0", "g1",
-            "value"));
+    final Schema schema = Schema.ofFields(Type.LONG_TYPE, "g0", Type.LONG_TYPE, "g1", Type.LONG_TYPE, "value");
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     // g0 same for all tuples, g1 split to 5 groups, g2 gets i
     for (long i = 0; i < numTuples; i++) {
@@ -707,9 +703,7 @@ public class StreamingAggTest {
   @Test
   public void testMultiGroupSingleColumnMin() throws DbException {
     final int numTuples = 50;
-    final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("g0", "g1",
-            "value"));
+    final Schema schema = Schema.ofFields(Type.LONG_TYPE, "g0", Type.LONG_TYPE, "g1", Type.LONG_TYPE, "value");
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     // g0 same for all tuples, g1 split to 5 groups, g2 gets i
     for (long i = 0; i < numTuples; i++) {
@@ -736,9 +730,7 @@ public class StreamingAggTest {
   @Test
   public void testMultiGroupSingleColumnMax() throws DbException {
     final int numTuples = 50;
-    final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("g0", "g1",
-            "value"));
+    final Schema schema = Schema.ofFields(Type.LONG_TYPE, "g0", Type.LONG_TYPE, "g1", Type.LONG_TYPE, "value");
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     // g0 same for all tuples, g1 split to 5 groups, g2 gets i
     for (long i = 0; i < numTuples; i++) {
@@ -765,9 +757,7 @@ public class StreamingAggTest {
   @Test
   public void testMultiGroupSingleColumnSum() throws DbException {
     final int numTuples = 50;
-    final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("g0", "g1",
-            "value"));
+    final Schema schema = Schema.ofFields(Type.LONG_TYPE, "g0", Type.LONG_TYPE, "g1", Type.LONG_TYPE, "value");
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     // g0 same for all tuples, g1 split to 5 groups, g2 gets 10
     for (long i = 0; i < numTuples; i++) {
@@ -792,9 +782,7 @@ public class StreamingAggTest {
   @Test
   public void testMultiGroupSingleColumnAvg() throws DbException {
     final int numTuples = 50;
-    final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("g0", "g1",
-            "value"));
+    final Schema schema = Schema.ofFields(Type.LONG_TYPE, "g0", Type.LONG_TYPE, "g1", Type.LONG_TYPE, "value");
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     // g0 same for all tuples, g1 split to 5 groups, g2 gets 10
     for (long i = 0; i < numTuples; i++) {
@@ -819,9 +807,7 @@ public class StreamingAggTest {
   @Test
   public void testMultiGroupSingleColumnStdev() throws DbException {
     final int numTuples = 50;
-    final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("g0", "g1",
-            "value"));
+    final Schema schema = Schema.ofFields(Type.LONG_TYPE, "g0", Type.LONG_TYPE, "g1", Type.LONG_TYPE, "value");
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     // g0 same for all tuples, g1 split to 5 groups, g2 gets 10
     for (long i = 0; i < numTuples; i++) {
@@ -846,8 +832,7 @@ public class StreamingAggTest {
   @Test
   public void testSingleGroupKeyMultiColumnAllAgg() throws DbException {
     final int numTuples = 50;
-    final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("gkey", "value"));
+    final Schema schema = Schema.ofFields(Type.LONG_TYPE, "gkey", Type.LONG_TYPE, "value");
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     // gkey split to 5 groups, value gets 10
     for (long i = 0; i < numTuples; i++) {
@@ -886,9 +871,7 @@ public class StreamingAggTest {
   @Test
   public void testMultiGroupMultiColumn() throws DbException {
     final int numTuples = 50;
-    final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList
-            .of("g0", "g1", "val"));
+    final Schema schema = Schema.ofFields(Type.LONG_TYPE, "g0", Type.LONG_TYPE, "g1", Type.LONG_TYPE, "value");
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     // {0, 2, i} on first half tuples, {0, 4, i} on the second half
     int sumFirst = 0;
@@ -958,8 +941,7 @@ public class StreamingAggTest {
   @Test
   public void testSingleGroupAllAggLargeInput() throws DbException {
     final int numTuples = 2 * TupleBatch.BATCH_SIZE;
-    final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("gkey", "value"));
+    final Schema schema = Schema.ofFields(Type.LONG_TYPE, "gkey", Type.LONG_TYPE, "value");
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     // {0, i}
@@ -1009,9 +991,7 @@ public class StreamingAggTest {
   @Test
   public void testMultiGroupAllAggLargeInput() throws DbException {
     final int numTuples = 3 * TupleBatch.BATCH_SIZE;
-    final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList
-            .of("g0", "g1", "val"));
+    final Schema schema = Schema.ofFields(Type.LONG_TYPE, "g0", Type.LONG_TYPE, "g1", Type.LONG_TYPE, "value");
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     // split into 4 groups, each group may spread across different batches
     // {0, 0, i} in first group, {0, 1, i} in second, {0, 2, i} in third, {0, 3, i} in fourth
