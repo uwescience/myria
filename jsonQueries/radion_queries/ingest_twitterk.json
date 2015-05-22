@@ -1,0 +1,16 @@
+{
+  "relationKey" : {
+    "userName" : "public",
+    "programName" : "adhoc",
+    "relationName" : "TwitterK"
+  },
+  "schema" : {
+    "columnTypes" : ["LONG_TYPE", "LONG_TYPE"],
+    "columnNames" : ["follower", "followee"]
+  },
+  "source" : {
+    "dataType" : "File",
+    "filename" : "/Users/radion/myria/testdata/twitter/TwitterK.csv"
+  },
+  "delimiter": ","
+}
