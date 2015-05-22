@@ -242,7 +242,7 @@ public enum Type implements Serializable {
 	/**
 	 * float type.
 	 * */
-	MATRIX_TYPE() {
+	MYRIAMATRIX_TYPE() {
 		@Override
 		public boolean filter(final SimplePredicate.Op op,
 				final Column<?> floatColumn, final int tupleIndex,
