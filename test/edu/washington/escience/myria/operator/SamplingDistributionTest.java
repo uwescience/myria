@@ -24,7 +24,7 @@ public class SamplingDistributionTest {
   final Schema inputSchema = Schema.ofFields("WorkerID", Type.INT_TYPE,
       "PartitionSize", Type.INT_TYPE);
   final Schema expectedResultSchema = Schema.ofFields("WorkerID", Type.INT_TYPE,
-          "StreamSize", Type.INT_TYPE, "SampleSize", Type.INT_TYPE);
+          "StreamSize", Type.INT_TYPE, "SampleSize", Type.INT_TYPE, "IsWithReplacement", Type.BOOLEAN_TYPE);
 
   TupleBatchBuffer input;
   SamplingDistribution sampOp;
@@ -47,131 +47,131 @@ public class SamplingDistributionTest {
   @Test
   public void testSampleWRSizeZero() throws DbException {
     int sampleSize = 0;
-    boolean isWithoutReplacement = false;
+    boolean isWithReplacement = false;
     final int[][] expectedResults = { { 1, 300, 0 }, { 2, 200, 0 },
         { 3, 400, 0 }, { 4, 100, 0 } };
-    verifyExpectedResults(sampleSize, isWithoutReplacement, expectedResults);
+    verifyExpectedResults(sampleSize, isWithReplacement, expectedResults);
   }
 
   @Test
   public void testSampleWoRSizeZero() throws DbException {
     int sampleSize = 0;
-    boolean isWithoutReplacement = true;
+    boolean isWithReplacement = true;
     final int[][] expectedResults = { { 1, 300, 0 }, { 2, 200, 0 },
         { 3, 400, 0 }, { 4, 100, 0 } };
-    verifyExpectedResults(sampleSize, isWithoutReplacement, expectedResults);
+    verifyExpectedResults(sampleSize, isWithReplacement, expectedResults);
   }
 
   /** Sample size 1. */
   @Test
   public void testSampleWRSizeOne() throws DbException {
     int sampleSize = 1;
-    boolean isWithoutReplacement = false;
-    verifyPossibleDistribution(sampleSize, isWithoutReplacement);
+    boolean isWithReplacement = false;
+    verifyPossibleDistribution(sampleSize, isWithReplacement);
   }
 
   @Test
   public void testSampleWoRSizeOne() throws DbException {
     int sampleSize = 1;
-    boolean isWithoutReplacement = true;
-    verifyPossibleDistribution(sampleSize, isWithoutReplacement);
+    boolean isWithReplacement = true;
+    verifyPossibleDistribution(sampleSize, isWithReplacement);
   }
 
   /** Sample size 50. */
   @Test
   public void testSampleWRSizeFifty() throws DbException {
     int sampleSize = 50;
-    boolean isWithoutReplacement = false;
-    verifyPossibleDistribution(sampleSize, isWithoutReplacement);
+    boolean isWithReplacement = false;
+    verifyPossibleDistribution(sampleSize, isWithReplacement);
   }
 
   @Test
   public void testSampleWoRSizeFifty() throws DbException {
     int sampleSize = 50;
-    boolean isWithoutReplacement = true;
-    verifyPossibleDistribution(sampleSize, isWithoutReplacement);
+    boolean isWithReplacement = true;
+    verifyPossibleDistribution(sampleSize, isWithReplacement);
   }
 
   /** Sample all but one tuple. */
   @Test
   public void testSampleWoRSizeAllButOne() throws DbException {
     int sampleSize = 999;
-    boolean isWithoutReplacement = true;
-    verifyPossibleDistribution(sampleSize, isWithoutReplacement);
+    boolean isWithReplacement = true;
+    verifyPossibleDistribution(sampleSize, isWithReplacement);
   }
 
   @Test
   public void testSampleWRSizeAllButOne() throws DbException {
     int sampleSize = 999;
-    boolean isWithoutReplacement = false;
-    verifyPossibleDistribution(sampleSize, isWithoutReplacement);
+    boolean isWithReplacement = false;
+    verifyPossibleDistribution(sampleSize, isWithReplacement);
   }
 
   /** SamplingWoR the entire population == return all. */
   @Test
   public void testSampleWoRSizeMax() throws DbException {
     int sampleSize = 1000;
-    boolean isWithoutReplacement = true;
+    boolean isWithReplacement = true;
     final int[][] expectedResults = { { 1, 300, 300 }, { 2, 200, 200 },
         { 3, 400, 400 }, { 4, 100, 100 } };
-    verifyExpectedResults(sampleSize, isWithoutReplacement, expectedResults);
+    verifyExpectedResults(sampleSize, isWithReplacement, expectedResults);
   }
 
   /** SamplingWR the entire population. */
   @Test
   public void testSampleWRSizeMax() throws DbException {
     int sampleSize = 1000;
-    boolean isWithoutReplacement = false;
-    verifyPossibleDistribution(sampleSize, isWithoutReplacement);
+    boolean isWithReplacement = false;
+    verifyPossibleDistribution(sampleSize, isWithReplacement);
   }
 
   /** Cannot sample more than total size. */
   @Test(expected = IllegalStateException.class)
   public void testSampleWoRSizeTooMany() throws DbException {
     int sampleSize = 1001;
-    boolean isWithoutReplacement = true;
-    drainOperator(sampleSize, isWithoutReplacement);
+    boolean isWithReplacement = true;
+    drainOperator(sampleSize, isWithReplacement);
   }
 
   @Test(expected = IllegalStateException.class)
   public void testSampleWRSizeTooMany() throws DbException {
     int sampleSize = 1001;
-    boolean isWithoutReplacement = false;
-    drainOperator(sampleSize, isWithoutReplacement);
+    boolean isWithReplacement = false;
+    drainOperator(sampleSize, isWithReplacement);
   }
 
   /** Cannot sample a negative number of samples. */
   @Test(expected = IllegalStateException.class)
   public void testSampleWoRSizeNegative() throws DbException {
     int sampleSize = -1;
-    boolean isWithoutReplacement = true;
-    drainOperator(sampleSize, isWithoutReplacement);
+    boolean isWithReplacement = true;
+    drainOperator(sampleSize, isWithReplacement);
   }
 
   @Test(expected = IllegalStateException.class)
   public void testSampleWRSizeNegative() throws DbException {
     int sampleSize = -1;
-    boolean isWithoutReplacement = false;
-    drainOperator(sampleSize, isWithoutReplacement);
+    boolean isWithReplacement = false;
+    drainOperator(sampleSize, isWithReplacement);
   }
 
   /** Worker cannot report a negative partition size. */
   @Test(expected = IllegalStateException.class)
   public void testSampleWoRWorkerNegative() throws DbException {
     int sampleSize = 50;
-    boolean isWithoutReplacement = true;
+    boolean isWithReplacement = true;
     input.putInt(0, 5);
     input.putInt(1, -1);
-    drainOperator(sampleSize, isWithoutReplacement);
+    drainOperator(sampleSize, isWithReplacement);
   }
 
   @Test(expected = IllegalStateException.class)
   public void testSampleWRWorkerNegative() throws DbException {
     int sampleSize = 50;
-    boolean isWithoutReplacement = false;
+    boolean isWithReplacement = false;
     input.putInt(0, 5);
     input.putInt(1, -1);
-    drainOperator(sampleSize, isWithoutReplacement);
+    drainOperator(sampleSize, isWithReplacement);
   }
 
   @After
@@ -183,9 +183,8 @@ public class SamplingDistributionTest {
 
   /** Compare output results compared to some known expectedResults. */
   private void verifyExpectedResults(int sampleSize,
-      boolean isWithoutReplacement, int[][] expectedResults) throws DbException {
-    sampOp = new SamplingDistribution(sampleSize, isWithoutReplacement,
-        new TupleSource(input), RANDOM_SEED);
+      boolean isWithReplacement, int[][] expectedResults) throws DbException {
+    sampOp = new SamplingDistribution(new TupleSource(input), sampleSize, isWithReplacement, RANDOM_SEED);
     sampOp.open(TestEnvVars.get());
 
     int rowIdx = 0;
@@ -208,9 +207,8 @@ public class SamplingDistributionTest {
    * test if it is statistically random.
    */
   private void verifyPossibleDistribution(int sampleSize,
-      boolean isWithoutReplacement) throws DbException {
-    sampOp = new SamplingDistribution(sampleSize, isWithoutReplacement,
-        new TupleSource(input), RANDOM_SEED);
+      boolean isWithReplacement) throws DbException {
+    sampOp = new SamplingDistribution(new TupleSource(input), sampleSize, isWithReplacement, RANDOM_SEED);
     sampOp.open(TestEnvVars.get());
 
     int rowIdx = 0;
@@ -221,7 +219,7 @@ public class SamplingDistributionTest {
         assertEquals(expectedResultSchema, result.getSchema());
         for (int i = 0; i < result.numTuples(); ++i, ++rowIdx) {
           assert (result.getInt(2, i) >= 0 && result.getInt(2, i) <= sampleSize);
-          if (isWithoutReplacement) {
+          if (isWithReplacement) {
             // SampleWoR cannot sample more than worker's population size.
             assert (result.getInt(2, i) <= result.getInt(1, i));
           }
@@ -234,10 +232,9 @@ public class SamplingDistributionTest {
   }
 
   /** Run through all results without doing anything. */
-  private void drainOperator(int sampleSize, boolean isWithoutReplacement)
+  private void drainOperator(int sampleSize, boolean isWithReplacement)
       throws DbException {
-    sampOp = new SamplingDistribution(sampleSize, isWithoutReplacement,
-        new TupleSource(input), RANDOM_SEED);
+    sampOp = new SamplingDistribution(new TupleSource(input), sampleSize, isWithReplacement, RANDOM_SEED);
     sampOp.open(TestEnvVars.get());
     while (!sampOp.eos()) {
       sampOp.nextReady();

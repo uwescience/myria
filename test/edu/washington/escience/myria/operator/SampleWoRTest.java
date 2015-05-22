@@ -2,8 +2,6 @@ package edu.washington.escience.myria.operator;
 
 import static org.junit.Assert.assertEquals;
 
-import java.util.Arrays;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -24,7 +22,8 @@ public class SampleWoRTest {
   final int[] INPUT_VALS = { 0, 1, 2, 3, 4, 5 };
 
   final Schema LEFT_SCHEMA = Schema.ofFields("WorkerID", Type.INT_TYPE,
-      "PartitionSize", Type.INT_TYPE, "SampleSize", Type.INT_TYPE);
+      "PartitionSize", Type.INT_TYPE, "SampleSize", Type.INT_TYPE,
+      "IsWithReplacement", Type.BOOLEAN_TYPE);
   final Schema RIGHT_SCHEMA = Schema.ofFields(Type.INT_TYPE, "SomeValue");
   final Schema OUTPUT_SCHEMA = RIGHT_SCHEMA;
 
@@ -112,8 +111,8 @@ public class SampleWoRTest {
   private void verifyExpectedResults(int partitionSize, int sampleSize) throws DbException {
     leftInput.putInt(1, partitionSize);
     leftInput.putInt(2, sampleSize);
-    sampOp = new Sample(new TupleSource(leftInput), new TupleSource(
-        rightInput), true, RANDOM_SEED);
+    leftInput.putBoolean(3, false);
+    sampOp = new Sample(new TupleSource(leftInput), new TupleSource(rightInput), RANDOM_SEED);
     sampOp.open(TestEnvVars.get());
 
     int rowIdx = 0;
@@ -132,8 +131,8 @@ public class SampleWoRTest {
       throws DbException {
     leftInput.putInt(1, partitionSize);
     leftInput.putInt(2, sampleSize);
-    sampOp = new Sample(new TupleSource(leftInput), new TupleSource(
-        rightInput), true, RANDOM_SEED);
+    leftInput.putBoolean(3, false);
+    sampOp = new Sample(new TupleSource(leftInput), new TupleSource(rightInput), RANDOM_SEED);
     sampOp.open(TestEnvVars.get());
     while (!sampOp.eos()) {
       sampOp.nextReady();

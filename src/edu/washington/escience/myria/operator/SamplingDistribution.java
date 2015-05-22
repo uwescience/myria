@@ -11,6 +11,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.column.builder.BooleanColumnBuilder;
 import edu.washington.escience.myria.column.builder.IntColumnBuilder;
 import edu.washington.escience.myria.storage.TupleBatch;
 
@@ -20,14 +21,14 @@ public class SamplingDistribution extends UnaryOperator {
 
   /** The output schema. */
   private static final Schema SCHEMA = Schema.of(
-      ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE, Type.INT_TYPE),
-      ImmutableList.of("WorkerID", "StreamSize", "SampleSize"));
+      ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE, Type.INT_TYPE, Type.BOOLEAN_TYPE),
+      ImmutableList.of("WorkerID", "StreamSize", "SampleSize", "IsWithReplacement"));
 
   /** Total number of tuples to sample. */
   private final int sampleSize;
 
-  /** True if the sampling is WithoutReplacement. WithReplacement otherwise. */
-  private final boolean isWithoutReplacement;
+  /** True if the sampling is WithReplacement. WithoutReplacement otherwise. */
+  private final boolean isWithReplacement;
 
   /** Random generator used for creating the distribution. */
   private Random rand;
@@ -37,21 +38,21 @@ public class SamplingDistribution extends UnaryOperator {
    * 
    * @param sampleSize
    *          total samples to create a distribution for.
-   * @param isWithoutReplacement
-   *          true if the distribution uses WithoutReplacement sampling.
+   * @param isWithReplacement
+   *          true if the distribution uses WithReplacement sampling.
    * @param child
    *          extracts (WorkerID, PartitionSize, StreamSize) information from
    *          this child.
    * @param randomSeed
    *          value to seed the random generator with. null if no specified seed
    */
-  public SamplingDistribution(final int sampleSize,
-      final boolean isWithoutReplacement, final Operator child, Long randomSeed) {
+  public SamplingDistribution(Operator child, int sampleSize,
+      boolean isWithReplacement, Long randomSeed) {
     super(child);
     this.sampleSize = sampleSize;
     Preconditions.checkState(sampleSize >= 0,
         "Sample size cannot be negative: %s", sampleSize);
-    this.isWithoutReplacement = isWithoutReplacement;
+    this.isWithReplacement = isWithReplacement;
     this.rand = new Random();
     if (randomSeed != null) {
       this.rand.setSeed(randomSeed);
@@ -140,23 +141,25 @@ public class SamplingDistribution extends UnaryOperator {
 
     // Generate a random distribution across the workers.
     int[] sampleCounts;
-    if (isWithoutReplacement) {
-      sampleCounts = withoutReplacementDistribution(tupleCounts, sampleSize);
-    } else {
+    if (isWithReplacement) {
       sampleCounts = withReplacementDistribution(tupleCounts, sampleSize);
+    } else {
+      sampleCounts = withoutReplacementDistribution(tupleCounts, sampleSize);
     }
 
     // Build and return a TupleBatch with the distribution.
     IntColumnBuilder wIdCol = new IntColumnBuilder();
     IntColumnBuilder streamSizeCol = new IntColumnBuilder();
     IntColumnBuilder sampCountCol = new IntColumnBuilder();
+    BooleanColumnBuilder wrCol = new BooleanColumnBuilder();
     for (int i = 0; i < streamCounts.size(); i++) {
       wIdCol.appendInt(i + 1);
       streamSizeCol.appendInt(streamCounts.get(i));
       sampCountCol.appendInt(sampleCounts[i]);
+      wrCol.appendBoolean(isWithReplacement);
     }
     ImmutableList.Builder<Column<?>> columns = ImmutableList.builder();
-    columns.add(wIdCol.build(), streamSizeCol.build(), sampCountCol.build());
+    columns.add(wIdCol.build(), streamSizeCol.build(), sampCountCol.build(), wrCol.build());
     return new TupleBatch(SCHEMA, columns.build());
   }
 

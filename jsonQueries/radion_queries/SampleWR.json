@@ -27,7 +27,7 @@
                               "opType":"SampledDbInsertTemp",
                               "opId":1,
                               "opName":"MyriaSampledDbInsertTemp",
-                              "sampleSize":500000,
+                              "sampleSize":200,
                               "sampleTable":"TempSampleWoR",
                               "countTable":"TempCountSampleWoR"
                             },
@@ -74,9 +74,8 @@
                                 "opType": "SamplingDistribution",
                                 "argChild": 7,
                                 "opId": 8,
-                                "sampleSize": 2000000,
-                                "isWithoutReplacement": false,
-                                "randomSeed":42
+                                "sampleSize": 200,
+                                "isWithReplacement": true
                             },
                             {
                                   "argChild":8,
@@ -110,9 +109,7 @@
                               "argChild2": 11,
                               "opType":"Sample",
                               "opId":12,
-                              "opName":"MyriaSampleWR",
-                              "isWithoutReplacement": false,
-                              "randomSeed":42
+                              "opName":"MyriaSampleWR"
                             },
                             {
                                 "opType": "DbInsert",

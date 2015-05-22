@@ -27,8 +27,8 @@ public class Sample extends BinaryOperator {
   /** Random generator used for index selection. */
   private Random rand;
 
-  /** True if the sampling is WithoutReplacement. WithReplacement otherwise. */
-  private final boolean isWithoutReplacement;
+  /** True if the sampling is WithReplacement. WithoutReplacement otherwise. */
+  private boolean isWithReplacement;
 
   /** True if operator has extracted sampling info. */
   private boolean computedSamplingInfo = false;
@@ -50,18 +50,14 @@ public class Sample extends BinaryOperator {
    * and the stream from the right operator.
    *
    * @param left
-   *          inputs a (WorkerID, StreamSize, SampleSize) tuple.
+   *          inputs a (WorkerID, StreamSize, SampleSize, IsWithReplacement) tuple.
    * @param right
    *          tuples that will be sampled from.
-   * @param isWithoutReplacement
-   *          true if the sampling will be done Without Replacement.
    * @param randomSeed
    *          value to seed the random generator with. null if no specified seed
    */
-  public Sample(final Operator left, final Operator right,
-      boolean isWithoutReplacement, Long randomSeed) {
+  public Sample(final Operator left, final Operator right, Long randomSeed) {
     super(left, right);
-    this.isWithoutReplacement = isWithoutReplacement;
     this.rand = new Random();
     if (randomSeed != null) {
       this.rand.setSeed(randomSeed);
@@ -79,17 +75,17 @@ public class Sample extends BinaryOperator {
       getLeft().close();
 
       // Cannot sampleWoR more tuples than there are.
-      if (isWithoutReplacement) {
+      if (!isWithReplacement) {
         Preconditions.checkState(sampleSize <= streamSize,
             "Cannot SampleWoR %s tuples from a population of size %s",
             sampleSize, streamSize);
       }
 
       // Generate target indices to accept as samples.
-      if (isWithoutReplacement) {
-        samples = generateIndicesWoR(streamSize, sampleSize);
-      } else {
+      if (isWithReplacement) {
         samples = generateIndicesWR(streamSize, sampleSize);
+      } else {
+        samples = generateIndicesWoR(streamSize, sampleSize);
       }
 
       computedSamplingInfo = true;
@@ -140,11 +136,11 @@ public class Sample extends BinaryOperator {
     } else if (col0Type == Type.LONG_TYPE) {
       workerID = (int) tb.getLong(0, 0);
     } else {
-      throw new DbException("workerID column must be of type INT or LONG");
+      throw new DbException("WorkerID column must be of type INT or LONG");
     }
     Preconditions.checkState(workerID == getNodeID(),
-        "Invalid WorkerID in samplingInfo. Expected %s, but received %s",
-        getNodeID(), workerID);
+            "Invalid WorkerID for this worker. Expected %s, but received %s",
+            getNodeID(), workerID);
 
     Type col1Type = tb.getSchema().getColumnType(1);
     if (col1Type == Type.INT_TYPE) {
@@ -152,7 +148,7 @@ public class Sample extends BinaryOperator {
     } else if (col1Type == Type.LONG_TYPE) {
       streamSize = (int) tb.getLong(1, 0);
     } else {
-      throw new DbException("streamSize column must be of type INT or LONG");
+      throw new DbException("StreamSize column must be of type INT or LONG");
     }
     Preconditions.checkState(streamSize >= 0, "streamSize cannot be negative");
 
@@ -162,9 +158,16 @@ public class Sample extends BinaryOperator {
     } else if (col2Type == Type.LONG_TYPE) {
       sampleSize = (int) tb.getLong(2, 0);
     } else {
-      throw new DbException("sampleSize column must be of type INT or LONG");
+      throw new DbException("SampleSize column must be of type INT or LONG");
     }
     Preconditions.checkState(sampleSize >= 0, "sampleSize cannot be negative");
+
+    Type col3Type = tb.getSchema().getColumnType(3);
+    if (col3Type == Type.BOOLEAN_TYPE) {
+      isWithReplacement= tb.getBoolean(3, 0);
+    } else {
+      throw new DbException("IsWithReplacement column must be of type BOOLEAN");
+    }
   }
 
   /**
