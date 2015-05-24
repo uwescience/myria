@@ -23,7 +23,7 @@ public class SampleWoRTest {
 
   final Schema LEFT_SCHEMA = Schema.ofFields("WorkerID", Type.INT_TYPE,
       "PartitionSize", Type.INT_TYPE, "SampleSize", Type.INT_TYPE,
-      "IsWithReplacement", Type.BOOLEAN_TYPE);
+      "SampleType", Type.STRING_TYPE);
   final Schema RIGHT_SCHEMA = Schema.ofFields(Type.INT_TYPE, "SomeValue");
   final Schema OUTPUT_SCHEMA = RIGHT_SCHEMA;
 
@@ -111,7 +111,7 @@ public class SampleWoRTest {
   private void verifyExpectedResults(int partitionSize, int sampleSize) throws DbException {
     leftInput.putInt(1, partitionSize);
     leftInput.putInt(2, sampleSize);
-    leftInput.putBoolean(3, false);
+    leftInput.putString(3, "WoR");
     sampOp = new Sample(new TupleSource(leftInput), new TupleSource(rightInput), RANDOM_SEED);
     sampOp.open(TestEnvVars.get());
 
@@ -131,7 +131,7 @@ public class SampleWoRTest {
       throws DbException {
     leftInput.putInt(1, partitionSize);
     leftInput.putInt(2, sampleSize);
-    leftInput.putBoolean(3, false);
+    leftInput.putString(3, "WoR");
     sampOp = new Sample(new TupleSource(leftInput), new TupleSource(rightInput), RANDOM_SEED);
     sampOp.open(TestEnvVars.get());
     while (!sampOp.eos()) {

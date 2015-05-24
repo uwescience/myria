@@ -23,8 +23,9 @@ public class SamplingDistributionTest {
 
   final Schema inputSchema = Schema.ofFields("WorkerID", Type.INT_TYPE,
       "PartitionSize", Type.INT_TYPE);
-  final Schema expectedResultSchema = Schema.ofFields("WorkerID", Type.INT_TYPE,
-          "StreamSize", Type.INT_TYPE, "SampleSize", Type.INT_TYPE, "IsWithReplacement", Type.BOOLEAN_TYPE);
+  final Schema expectedResultSchema = Schema.ofFields("WorkerID",
+      Type.INT_TYPE, "StreamSize", Type.INT_TYPE, "SampleSize", Type.INT_TYPE,
+      "SampleType", Type.STRING_TYPE);
 
   TupleBatchBuffer input;
   SamplingDistribution sampOp;
@@ -47,131 +48,209 @@ public class SamplingDistributionTest {
   @Test
   public void testSampleWRSizeZero() throws DbException {
     int sampleSize = 0;
-    boolean isWithReplacement = true;
+    String sampleType = "WR";
     final int[][] expectedResults = { { 1, 300, 0 }, { 2, 200, 0 },
         { 3, 400, 0 }, { 4, 100, 0 } };
-    verifyExpectedResults(sampleSize, isWithReplacement, expectedResults);
+    verifyExpectedResults(sampleSize, sampleType, expectedResults);
   }
 
   @Test
   public void testSampleWoRSizeZero() throws DbException {
     int sampleSize = 0;
-    boolean isWithReplacement = false;
+    String sampleType = "WoR";
     final int[][] expectedResults = { { 1, 300, 0 }, { 2, 200, 0 },
         { 3, 400, 0 }, { 4, 100, 0 } };
-    verifyExpectedResults(sampleSize, isWithReplacement, expectedResults);
+    verifyExpectedResults(sampleSize, sampleType, expectedResults);
+  }
+
+  /** Sample size 0%. */
+  @Test
+  public void testSampleWRPctZero() throws DbException {
+    float samplePct = 0;
+    String sampleType = "WR";
+    final int[][] expectedResults = { { 1, 300, 0 }, { 2, 200, 0 },
+        { 3, 400, 0 }, { 4, 100, 0 } };
+    verifyExpectedResults(samplePct, sampleType, expectedResults);
+  }
+
+  @Test
+  public void testSampleWoRPctZero() throws DbException {
+    float samplePct = 0;
+    String sampleType = "WoR";
+    final int[][] expectedResults = { { 1, 300, 0 }, { 2, 200, 0 },
+            { 3, 400, 0 }, { 4, 100, 0 } };
+    verifyExpectedResults(samplePct, sampleType, expectedResults);
   }
 
   /** Sample size 1. */
   @Test
   public void testSampleWRSizeOne() throws DbException {
     int sampleSize = 1;
-    boolean isWithReplacement = true;
-    verifyPossibleDistribution(sampleSize, isWithReplacement);
+    String sampleType = "WR";
+    verifyPossibleDistribution(sampleSize, sampleType);
   }
 
   @Test
   public void testSampleWoRSizeOne() throws DbException {
     int sampleSize = 1;
-    boolean isWithReplacement = false;
-    verifyPossibleDistribution(sampleSize, isWithReplacement);
+    String sampleType = "WoR";
+    verifyPossibleDistribution(sampleSize, sampleType);
   }
 
   /** Sample size 50. */
   @Test
   public void testSampleWRSizeFifty() throws DbException {
     int sampleSize = 50;
-    boolean isWithReplacement = true;
-    verifyPossibleDistribution(sampleSize, isWithReplacement);
+    String sampleType = "WR";
+    verifyPossibleDistribution(sampleSize, sampleType);
   }
 
   @Test
   public void testSampleWoRSizeFifty() throws DbException {
     int sampleSize = 50;
-    boolean isWithReplacement = false;
-    verifyPossibleDistribution(sampleSize, isWithReplacement);
+    String sampleType = "WoR";
+    verifyPossibleDistribution(sampleSize, sampleType);
+  }
+
+  /** Sample size 50%. */
+  @Test
+  public void testSampleWRPctFifty() throws DbException {
+    float samplePct = 50;
+    String sampleType = "WR";
+    verifyPossibleDistribution(samplePct, sampleType);
+  }
+
+  @Test
+  public void testSampleWoRPctFifty() throws DbException {
+    float samplePct = 50;
+    String sampleType = "WoR";
+    verifyPossibleDistribution(samplePct, sampleType);
   }
 
   /** Sample all but one tuple. */
   @Test
   public void testSampleWoRSizeAllButOne() throws DbException {
     int sampleSize = 999;
-    boolean isWithReplacement = false;
-    verifyPossibleDistribution(sampleSize, isWithReplacement);
+    String sampleType = "WoR";
+    verifyPossibleDistribution(sampleSize, sampleType);
   }
 
   @Test
   public void testSampleWRSizeAllButOne() throws DbException {
     int sampleSize = 999;
-    boolean isWithReplacement = true;
-    verifyPossibleDistribution(sampleSize, isWithReplacement);
+    String sampleType = "WR";
+    verifyPossibleDistribution(sampleSize, sampleType);
   }
 
   /** SamplingWoR the entire population == return all. */
   @Test
   public void testSampleWoRSizeMax() throws DbException {
     int sampleSize = 1000;
-    boolean isWithReplacement = false;
+    String sampleType = "WoR";
     final int[][] expectedResults = { { 1, 300, 300 }, { 2, 200, 200 },
         { 3, 400, 400 }, { 4, 100, 100 } };
-    verifyExpectedResults(sampleSize, isWithReplacement, expectedResults);
+    verifyExpectedResults(sampleSize, sampleType, expectedResults);
+  }
+
+  @Test
+  public void testSampleWoRPctMax() throws DbException {
+    float samplePct = 100;
+    String sampleType = "WoR";
+    final int[][] expectedResults = { { 1, 300, 300 }, { 2, 200, 200 },
+            { 3, 400, 400 }, { 4, 100, 100 } };
+    verifyExpectedResults(samplePct, sampleType, expectedResults);
   }
 
   /** SamplingWR the entire population. */
   @Test
   public void testSampleWRSizeMax() throws DbException {
     int sampleSize = 1000;
-    boolean isWithReplacement = true;
-    verifyPossibleDistribution(sampleSize, isWithReplacement);
+    String sampleType = "WR";
+    verifyPossibleDistribution(sampleSize, sampleType);
+  }
+
+  @Test
+  public void testSampleWRPctMax() throws DbException {
+    float samplePct = 100;
+    String sampleType = "WR";
+    verifyPossibleDistribution(samplePct, sampleType);
   }
 
   /** Cannot sample more than total size. */
   @Test(expected = IllegalStateException.class)
   public void testSampleWoRSizeTooMany() throws DbException {
     int sampleSize = 1001;
-    boolean isWithReplacement = false;
-    drainOperator(sampleSize, isWithReplacement);
+    String sampleType = "WoR";
+    drainOperator(sampleSize, sampleType);
+  }
+
+  @Test(expected = IllegalStateException.class)
+  public void testSampleWoRPctTooMany() throws DbException {
+    float samplePct = 100.1f;
+    String sampleType = "WoR";
+    drainOperator(samplePct, sampleType);
   }
 
   @Test(expected = IllegalStateException.class)
   public void testSampleWRSizeTooMany() throws DbException {
     int sampleSize = 1001;
-    boolean isWithReplacement = true;
-    drainOperator(sampleSize, isWithReplacement);
+    String sampleType = "WR";
+    drainOperator(sampleSize, sampleType);
+  }
+
+  @Test(expected = IllegalStateException.class)
+  public void testSampleWRPctTooMany() throws DbException {
+    float samplePct = 100.1f;
+    String sampleType = "WR";
+    drainOperator(samplePct, sampleType);
   }
 
   /** Cannot sample a negative number of samples. */
   @Test(expected = IllegalStateException.class)
   public void testSampleWoRSizeNegative() throws DbException {
     int sampleSize = -1;
-    boolean isWithReplacement = false;
-    drainOperator(sampleSize, isWithReplacement);
+    String sampleType = "WoR";
+    drainOperator(sampleSize, sampleType);
+  }
+
+  @Test(expected = IllegalStateException.class)
+  public void testSampleWoRPctNegative() throws DbException {
+    float samplePct = -0.01f;
+    String sampleType = "WoR";
+    drainOperator(samplePct, sampleType);
   }
 
   @Test(expected = IllegalStateException.class)
   public void testSampleWRSizeNegative() throws DbException {
     int sampleSize = -1;
-    boolean isWithReplacement = false;
-    drainOperator(sampleSize, isWithReplacement);
+    String sampleType = "WoR";
+    drainOperator(sampleSize, sampleType);
+  }
+
+  @Test(expected = IllegalStateException.class)
+  public void testSampleWRPctNegative() throws DbException {
+    float samplePct = -0.01f;
+    String sampleType = "WoR";
+    drainOperator(samplePct, sampleType);
   }
 
   /** Worker cannot report a negative partition size. */
   @Test(expected = IllegalStateException.class)
   public void testSampleWoRWorkerNegative() throws DbException {
     int sampleSize = 50;
-    boolean isWithReplacement = false;
+    String sampleType = "WoR";
     input.putInt(0, 5);
     input.putInt(1, -1);
-    drainOperator(sampleSize, isWithReplacement);
+    drainOperator(sampleSize, sampleType);
   }
 
   @Test(expected = IllegalStateException.class)
   public void testSampleWRWorkerNegative() throws DbException {
     int sampleSize = 50;
-    boolean isWithReplacement = true;
+    String sampleType = "WR";
     input.putInt(0, 5);
     input.putInt(1, -1);
-    drainOperator(sampleSize, isWithReplacement);
+    drainOperator(sampleSize, sampleType);
   }
 
   @After
@@ -182,11 +261,8 @@ public class SamplingDistributionTest {
   }
 
   /** Compare output results compared to some known expectedResults. */
-  private void verifyExpectedResults(int sampleSize,
-      boolean isWithReplacement, int[][] expectedResults) throws DbException {
-    sampOp = new SamplingDistribution(new TupleSource(input), sampleSize, isWithReplacement, RANDOM_SEED);
-    sampOp.open(TestEnvVars.get());
-
+  private void verifyExpectedResults(SamplingDistribution sampOp,
+      int[][] expectedResults) throws DbException {
     int rowIdx = 0;
     while (!sampOp.eos()) {
       TupleBatch result = sampOp.nextReady();
@@ -201,16 +277,27 @@ public class SamplingDistributionTest {
     }
     assertEquals(expectedResults.length, rowIdx);
   }
+  private void verifyExpectedResults(int sampleSize, String sampleType,
+      int[][] expectedResults) throws DbException {
+    sampOp = new SamplingDistribution(new TupleSource(input), sampleSize,
+        sampleType, RANDOM_SEED);
+    sampOp.open(TestEnvVars.get());
+    verifyExpectedResults(sampOp, expectedResults);
+  }
+  private void verifyExpectedResults(float samplePct, String sampleType,
+                                     int[][] expectedResults) throws DbException {
+    sampOp = new SamplingDistribution(new TupleSource(input), samplePct,
+            sampleType, RANDOM_SEED);
+    sampOp.open(TestEnvVars.get());
+    verifyExpectedResults(sampOp, expectedResults);
+  }
 
   /**
    * Tests the actual distribution against what could be possible. Note: doesn't
    * test if it is statistically random.
    */
-  private void verifyPossibleDistribution(int sampleSize,
-      boolean isWithReplacement) throws DbException {
-    sampOp = new SamplingDistribution(new TupleSource(input), sampleSize, isWithReplacement, RANDOM_SEED);
-    sampOp.open(TestEnvVars.get());
-
+  private void verifyPossibleDistribution(SamplingDistribution sampOp)
+      throws DbException {
     int rowIdx = 0;
     int computedSampleSize = 0;
     while (!sampOp.eos()) {
@@ -218,8 +305,8 @@ public class SamplingDistributionTest {
       if (result != null) {
         assertEquals(expectedResultSchema, result.getSchema());
         for (int i = 0; i < result.numTuples(); ++i, ++rowIdx) {
-          assert (result.getInt(2, i) >= 0 && result.getInt(2, i) <= sampleSize);
-          if (!isWithReplacement) {
+          assert (result.getInt(2, i) >= 0 && result.getInt(2, i) <= sampOp.getSampleSize());
+          if (sampOp.getSampleType().equals("WoR")) {
             // SampleWoR cannot sample more than worker's population size.
             assert (result.getInt(2, i) <= result.getInt(1, i));
           }
@@ -228,13 +315,39 @@ public class SamplingDistributionTest {
       }
     }
     assertEquals(input.numTuples(), rowIdx);
-    assertEquals(sampleSize, computedSampleSize);
+    assertEquals(sampOp.getSampleSize(), computedSampleSize);
+  }
+  private void verifyPossibleDistribution(int sampleSize,
+                                          String sampleType) throws DbException {
+    sampOp = new SamplingDistribution(new TupleSource(input), sampleSize,
+            sampleType, RANDOM_SEED);
+    sampOp.open(TestEnvVars.get());
+    verifyPossibleDistribution(sampOp);
+  }
+
+  private void verifyPossibleDistribution(float samplePct,
+                                          String sampleType) throws DbException {
+    sampOp = new SamplingDistribution(new TupleSource(input), samplePct,
+            sampleType, RANDOM_SEED);
+    sampOp.open(TestEnvVars.get());
+    verifyPossibleDistribution(sampOp);
   }
 
   /** Run through all results without doing anything. */
-  private void drainOperator(int sampleSize, boolean isWithReplacement)
+  private void drainOperator(int sampleSize, String sampleType)
       throws DbException {
-    sampOp = new SamplingDistribution(new TupleSource(input), sampleSize, isWithReplacement, RANDOM_SEED);
+    sampOp = new SamplingDistribution(new TupleSource(input), sampleSize,
+        sampleType, RANDOM_SEED);
+    sampOp.open(TestEnvVars.get());
+    while (!sampOp.eos()) {
+      sampOp.nextReady();
+    }
+  }
+
+  private void drainOperator(float samplePct, String sampleType)
+      throws DbException {
+    sampOp = new SamplingDistribution(new TupleSource(input), samplePct,
+        sampleType, RANDOM_SEED);
     sampOp.open(TestEnvVars.get());
     while (!sampOp.eos()) {
       sampOp.nextReady();

@@ -27,8 +27,8 @@ public class Sample extends BinaryOperator {
   /** Random generator used for index selection. */
   private Random rand;
 
-  /** True if the sampling is WithReplacement. WithoutReplacement otherwise. */
-  private boolean isWithReplacement;
+  /** The type of sampling to perform. Currently supports 'WR' and 'WoR'. */
+  private String sampleType;
 
   /** True if operator has extracted sampling info. */
   private boolean computedSamplingInfo = false;
@@ -50,7 +50,7 @@ public class Sample extends BinaryOperator {
    * and the stream from the right operator.
    *
    * @param left
-   *          inputs a (WorkerID, StreamSize, SampleSize, IsWithReplacement) tuple.
+   *          inputs a (WorkerID, StreamSize, SampleSize, SampleType) tuple.
    * @param right
    *          tuples that will be sampled from.
    * @param randomSeed
@@ -75,17 +75,19 @@ public class Sample extends BinaryOperator {
       getLeft().close();
 
       // Cannot sampleWoR more tuples than there are.
-      if (!isWithReplacement) {
+      if (sampleType.equals("WoR")) {
         Preconditions.checkState(sampleSize <= streamSize,
             "Cannot SampleWoR %s tuples from a population of size %s",
             sampleSize, streamSize);
       }
 
       // Generate target indices to accept as samples.
-      if (isWithReplacement) {
+      if (sampleType.equals("WR")) {
         samples = generateIndicesWR(streamSize, sampleSize);
-      } else {
+      } else if (sampleType.equals("WoR")) {
         samples = generateIndicesWoR(streamSize, sampleSize);
+      } else {
+        throw new DbException("Invalid sampleType: " + sampleType);
       }
 
       computedSamplingInfo = true;
@@ -163,10 +165,10 @@ public class Sample extends BinaryOperator {
     Preconditions.checkState(sampleSize >= 0, "sampleSize cannot be negative");
 
     Type col3Type = tb.getSchema().getColumnType(3);
-    if (col3Type == Type.BOOLEAN_TYPE) {
-      isWithReplacement= tb.getBoolean(3, 0);
+    if (col3Type == Type.STRING_TYPE) {
+      sampleType = tb.getString(3, 0);
     } else {
-      throw new DbException("IsWithReplacement column must be of type BOOLEAN");
+      throw new DbException("SampleType column must be of type STRING");
     }
   }
 

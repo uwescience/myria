@@ -11,8 +11,8 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.column.builder.BooleanColumnBuilder;
 import edu.washington.escience.myria.column.builder.IntColumnBuilder;
+import edu.washington.escience.myria.column.builder.StringColumnBuilder;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 public class SamplingDistribution extends UnaryOperator {
@@ -21,25 +21,40 @@ public class SamplingDistribution extends UnaryOperator {
 
   /** The output schema. */
   private static final Schema SCHEMA = Schema.of(
-      ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE, Type.INT_TYPE, Type.BOOLEAN_TYPE),
-      ImmutableList.of("WorkerID", "StreamSize", "SampleSize", "IsWithReplacement"));
+      ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE, Type.INT_TYPE, Type.STRING_TYPE),
+      ImmutableList.of("WorkerID", "StreamSize", "SampleSize", "SampleType"));
 
   /** Total number of tuples to sample. */
-  private final int sampleSize;
+  private int sampleSize;
 
-  /** True if the sampling is WithReplacement. WithoutReplacement otherwise. */
-  private final boolean isWithReplacement;
+  /** True if using a percentage instead of a specific tuple count. */
+  private boolean isPercentageSample = false;
+
+  /** Percentage of total tuples to sample. */
+  private float samplePercentage;
+
+  /** The type of sampling to perform. Currently supports 'WR' and 'WoR'. */
+  private final String sampleType;
 
   /** Random generator used for creating the distribution. */
   private Random rand;
 
+  private SamplingDistribution(Operator child, String sampleType, Long randomSeed) {
+    super(child);
+    this.sampleType = sampleType;
+    this.rand = new Random();
+    if (randomSeed != null) {
+      this.rand.setSeed(randomSeed);
+    }
+  }
+
   /**
-   * Instantiate a SamplingDistribution operator.
+   * Instantiate a SamplingDistribution operator using a specific sample size.
    * 
    * @param sampleSize
    *          total samples to create a distribution for.
-   * @param isWithReplacement
-   *          true if the distribution uses WithReplacement sampling.
+   * @param sampleType
+   *          the type of sampling distribution to create
    * @param child
    *          extracts (WorkerID, PartitionSize, StreamSize) information from
    *          this child.
@@ -47,16 +62,33 @@ public class SamplingDistribution extends UnaryOperator {
    *          value to seed the random generator with. null if no specified seed
    */
   public SamplingDistribution(Operator child, int sampleSize,
-      boolean isWithReplacement, Long randomSeed) {
-    super(child);
+      String sampleType, Long randomSeed) {
+    this(child, sampleType, randomSeed);
     this.sampleSize = sampleSize;
-    Preconditions.checkState(sampleSize >= 0,
-        "Sample size cannot be negative: %s", sampleSize);
-    this.isWithReplacement = isWithReplacement;
-    this.rand = new Random();
-    if (randomSeed != null) {
-      this.rand.setSeed(randomSeed);
-    }
+    Preconditions.checkState(this.sampleSize >= 0,
+        "Sample Size must be >= 0: %s", this.sampleSize);
+  }
+
+  /**
+   * Instantiate a SamplingDistribution operator using a percentage of total tuples.
+   *
+   * @param samplePercentage
+   *          percentage of total samples to create a distribution for.
+   * @param sampleType
+   *          the type of sampling distribution to create
+   * @param child
+   *          extracts (WorkerID, PartitionSize, StreamSize) information from
+   *          this child.
+   * @param randomSeed
+   *          value to seed the random generator with. null if no specified seed
+   */
+  public SamplingDistribution(Operator child, float samplePercentage,
+                              String sampleType, Long randomSeed) {
+    this(child, sampleType, randomSeed);
+    this.isPercentageSample = true;
+    this.samplePercentage = samplePercentage;
+    Preconditions.checkState(samplePercentage >= 0 && samplePercentage <= 100,
+            "Sample Percentage must be >= 0 && <= 100: %s", samplePercentage);
   }
 
   @Override
@@ -130,36 +162,42 @@ public class SamplingDistribution extends UnaryOperator {
             throw new DbException("StreamSize must be of type INT or LONG");
           }
           Preconditions.checkState(partitionSize >= 0,
-              "Worker cannot have a negative StreamSize: %s", streamSize);
+                  "Worker cannot have a negative StreamSize: %d", streamSize);
         }
         streamCounts.set(workerID - 1, streamSize);
       }
     }
-    Preconditions.checkState(sampleSize <= totalTupleCount,
+    // Convert samplePct to sampleSize if using a percentage sample.
+    if (isPercentageSample) {
+      sampleSize =  Math.round(totalTupleCount * (samplePercentage / 100));
+    }
+    Preconditions.checkState(sampleSize >= 0 && sampleSize <= totalTupleCount,
         "Cannot extract %s samples from a population of size %s", sampleSize,
         totalTupleCount);
 
     // Generate a random distribution across the workers.
     int[] sampleCounts;
-    if (isWithReplacement) {
+    if (sampleType.equals("WR")) {
       sampleCounts = withReplacementDistribution(tupleCounts, sampleSize);
-    } else {
+    } else if (sampleType.equals("WoR")){
       sampleCounts = withoutReplacementDistribution(tupleCounts, sampleSize);
+    } else {
+      throw new DbException("Invalid sampleType: " + sampleType);
     }
 
     // Build and return a TupleBatch with the distribution.
     IntColumnBuilder wIdCol = new IntColumnBuilder();
     IntColumnBuilder streamSizeCol = new IntColumnBuilder();
     IntColumnBuilder sampCountCol = new IntColumnBuilder();
-    BooleanColumnBuilder wrCol = new BooleanColumnBuilder();
+    StringColumnBuilder sampTypeCol = new StringColumnBuilder();
     for (int i = 0; i < streamCounts.size(); i++) {
       wIdCol.appendInt(i + 1);
       streamSizeCol.appendInt(streamCounts.get(i));
       sampCountCol.appendInt(sampleCounts[i]);
-      wrCol.appendBoolean(isWithReplacement);
+      sampTypeCol.appendString(sampleType);
     }
     ImmutableList.Builder<Column<?>> columns = ImmutableList.builder();
-    columns.add(wIdCol.build(), streamSizeCol.build(), sampCountCol.build(), wrCol.build());
+    columns.add(wIdCol.build(), streamSizeCol.build(), sampCountCol.build(), sampTypeCol.build());
     return new TupleBatch(SCHEMA, columns.build());
   }
 
@@ -226,6 +264,32 @@ public class SamplingDistribution extends UnaryOperator {
       }
     }
     return distribution;
+  }
+
+  /**
+   * Returns the sample size of this operator. If operator was created using a
+   * samplePercentage, this value will be 0 until after fetchNextReady.
+   */
+  public int getSampleSize() {
+    return sampleSize;
+  }
+
+  /** Returns whether this operator is using a percentage sample. */
+  public boolean isPercentageSample() {
+    return isPercentageSample;
+  }
+
+  /**
+   * Returns the percentage of total tuples that this operator will distribute.
+   * Will be 0 if the operator was created using a specific sampleSize.
+   */
+  public float getSamplePercentage() {
+    return samplePercentage;
+  }
+
+  /** Returns the type of sampling distribution that this operator will create. */
+  public String getSampleType() {
+    return sampleType;
   }
 
   @Override

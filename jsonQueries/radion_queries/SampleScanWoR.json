@@ -68,8 +68,8 @@
                         "opType": "SamplingDistribution",
                         "argChild": 6,
                         "opId": 7,
-                        "sampleSize": 200,
-                        "isWithReplacement": false
+                        "samplePercentage": 10,
+                        "sampleType": "WoR"
                     },
                     {
                           "argChild":7,
