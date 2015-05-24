@@ -75,7 +75,7 @@
                           "argChild":7,
                           "argPf":{
                              "index":0,
-                             "type":"RawValue"
+                             "type":"IdentityHash"
                           },
                           "opType":"ShuffleProducer",
                           "opId":8,

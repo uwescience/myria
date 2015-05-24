@@ -82,7 +82,7 @@
                                   "opId":9,
                                   "argPf":{
                                      "index":0,
-                                     "type":"RawValue"
+                                     "type":"IdentityHash"
                                   },
                                   "opType":"ShuffleProducer",
                                   "opName":"MyriaShuffleProducer($0)"
