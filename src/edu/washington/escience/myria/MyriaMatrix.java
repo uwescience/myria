@@ -8,7 +8,7 @@ import Jama.Matrix;
 /**
  * 
  */
-public class MyriaMatrix extends Matrix implements Comparable {
+public class MyriaMatrix extends Matrix implements Comparable<MyriaMatrix> {
 
 	/** */
 	private static final long serialVersionUID = 1L;
@@ -33,6 +33,24 @@ public class MyriaMatrix extends Matrix implements Comparable {
 	}
 
 	/**
+	 * @param respMatrix
+	 */
+	public MyriaMatrix(Matrix respMatrix) {
+		super(respMatrix.getArrayCopy());
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Comparable#compareTo(java.lang.Object)
+	 */
+	@Override
+	public int compareTo(MyriaMatrix o) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	/**
 	 * Dummy compare operator, since there's no good basis on which to compare
 	 * arbitrary matrices.
 	 * 
@@ -40,9 +58,5 @@ public class MyriaMatrix extends Matrix implements Comparable {
 	 * 
 	 * @return less than 1 if this is less than o
 	 */
-	@Override
-	public int compareTo(Object o) {
-		return 0;
-	}
 
 }

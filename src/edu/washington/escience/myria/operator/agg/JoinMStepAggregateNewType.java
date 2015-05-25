@@ -187,8 +187,8 @@ public class JoinMStepAggregateNewType extends UnaryOperator {
 			groupAgg = groupAggsLong.get(groupByLong);
 			if (groupAgg == null) {
 				groupAgg = new Aggregator[1];
-				groupAgg[0] = new JoinMStepAggregator(inputSchema, 55, null,
-						numDimensions, numComponents);
+				groupAgg[0] = new JoinMStepAggregatorNewType(inputSchema, 55,
+						null, numDimensions, numComponents);
 				// AggUtils.allocateAggs(factories, inputSchema);
 				groupAggsLong.put(groupByLong, groupAgg);
 				// groupAggsLong[0] = new EStepAggregator(inputSchema, 13,
@@ -331,7 +331,7 @@ public class JoinMStepAggregateNewType extends UnaryOperator {
 		aggtypes.add(Type.DOUBLE_TYPE);
 		aggnames.add("pi");
 
-		aggtypes.add(Type.MATRIX_TYPE);
+		aggtypes.add(Type.MYRIAMATRIX_TYPE);
 		aggnames.add("pi");
 
 		for (int i = 0; i < numDimensions; i++) {

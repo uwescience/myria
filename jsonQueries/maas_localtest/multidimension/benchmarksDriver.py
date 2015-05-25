@@ -164,6 +164,9 @@ def copy_points():
 def astro_components_to_components():
     query_myria("AstroComponentsToComponents.json")
 
+def EMStepNewType():
+    return query_myria("newtype/EMNewType.json")
+
 def compare_results():
     #Compare results
     query_myria("CompareComponents4D7K.json")
