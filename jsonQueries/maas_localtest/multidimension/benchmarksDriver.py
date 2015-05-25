@@ -146,6 +146,9 @@ def EStep():
 def MStep():
     return query_myria("JoinMStepNoBroadcast.json")
 
+def MStepNewType():
+    return query_myria("JoinMStepNoBroadcastNewType.json")
+
 def EMStepCrossJoin():
     return query_myria("JoinBothSteps.json")
 
@@ -167,6 +170,9 @@ def add_point_covariance():
 
 def astro_components_to_components():
     query_myria("AstroComponentsToComponents.json")
+
+def EMStepNewType():
+    return query_myria("newtype/EMNewType.json")
 
 def compare_results():
     #Compare results
