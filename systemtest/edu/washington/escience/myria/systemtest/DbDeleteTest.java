@@ -50,7 +50,7 @@ public class DbDeleteTest extends SystemTestBase {
   Schema relationSchema;
 
   /**
-   * Test if the relation has been deleted from the Catalog.
+   * Tests if the relation has been deleted from the Catalog successfully.
    * 
    * @throws Exception
    */
@@ -69,7 +69,8 @@ public class DbDeleteTest extends SystemTestBase {
   }
 
   /**
-   * Test if the relation has been deleted from the underlying database.
+   * Tests if the relation has been deleted successfully from the underlying databases on all the workers even if a
+   * worker does not contain the dataset to begin with.
    * 
    * @throws Exception
    */

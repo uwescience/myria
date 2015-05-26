@@ -49,6 +49,17 @@ public class DbDelete extends RootOperator {
   }
 
   @Override
+  public void cleanup() {
+    try {
+      if (accessMethod != null) {
+        accessMethod.close();
+      }
+    } catch (DbException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
   protected void consumeTuples(final TupleBatch tuples) throws DbException {
   }
 

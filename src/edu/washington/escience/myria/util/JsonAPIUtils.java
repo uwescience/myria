@@ -200,6 +200,7 @@ public final class JsonAPIUtils {
     conn.setRequestProperty("Content-Type", type);
     conn.connect();
     conn.getResponseCode();
+    conn.disconnect();
     return conn;
   }
 }
