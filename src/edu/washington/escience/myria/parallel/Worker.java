@@ -35,6 +35,7 @@ import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.WorkerCatalog;
+import edu.washington.escience.myria.operator.CacheInsert;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.InJVMLoopbackChannelSink;
 import edu.washington.escience.myria.profiling.ProfilingLogger;
@@ -366,7 +367,7 @@ public final class Worker {
   /**
    * The cache controller
    */
-  private final CacheController workerCacheController;
+  private final Cache workerCache;
 
   /**
    * The profiling logger for this worker.
@@ -594,8 +595,8 @@ public final class Worker {
   /**
    * @return the worker cache controller.
    */
-  public CacheController getCacheController() {
-    return workerCacheController;
+  public Cache getCache() {
+    return workerCache;
   }
 
   /**
@@ -637,7 +638,7 @@ public final class Worker {
 
     execEnvVars = new ConcurrentHashMap<String, Object>();
 
-    workerCacheController = new CacheController(this);
+    workerCache = new Cache(this);
 
     for (Entry<String, String> cE : catalog.getAllConfigurations().entrySet()) {
       execEnvVars.put(cE.getKey(), cE.getValue());
@@ -667,6 +668,20 @@ public final class Worker {
 
     activeQueries.put(subQueryId.getQueryId(), subQueryId);
     executingSubQueries.put(subQueryId, subQuery);
+
+    /* Setting sequences for the caching */
+    LOGGER.info("Setting the reader");
+    getCache().readyToRead();
+    LOGGER.info("Worker Reader now at " + getCache().getCurrentSequence());
+
+    for (LocalFragment f : subQuery.getFragments()) {
+      if (f.getRootOp() instanceof CacheInsert) {
+        getCache().setNextSequence();
+        LOGGER.info("There is an Insert, increase sequence to " + getCache().getCurrentSequence());
+      }
+    }
+    /* end caching setup */
+
     subQuery.getExecutionFuture().addListener(new LocalSubQueryFutureListener() {
 
       @Override
