@@ -19,6 +19,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.io.FileSource;
 import edu.washington.escience.myria.operator.TupleSource;
+import edu.washington.escience.myria.operator.network.partition.RoundRobinPartitionFunction;
 import edu.washington.escience.myria.util.JsonAPIUtils;
 
 /**
@@ -98,6 +99,7 @@ public class DbDeleteTest extends SystemTestBase {
     DataSource relationSource = new FileSource(Paths.get("testdata", "filescan", "simple_two_col_int.txt").toString());
     relationKey = RelationKey.of("public", "adhoc", "testIngest");
     relationSchema = Schema.of(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE), ImmutableList.of("x", "y"));
-    JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingest(relationKey, relationSchema, relationSource, ' '));
+    JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingest(relationKey, relationSchema, relationSource, ' ',
+        new RoundRobinPartitionFunction(workerIDs.length)));
   }
 }
