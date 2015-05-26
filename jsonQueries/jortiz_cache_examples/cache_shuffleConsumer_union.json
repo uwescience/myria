@@ -34,7 +34,7 @@
                 },
                 {
                      "opName": "V0", 
-                     "opType": "CacheLeaf", 
+                     "opType": "CacheScan", 
                      "opId": 4 
                 },
                 {

@@ -29,6 +29,8 @@ import edu.washington.escience.myria.operator.SampledDbInsertTemp;
     @Type(name = "CatalogScan", value = CatalogScanEncoding.class),
     @Type(name = "CacheLeaf", value = CacheLeafEncoding.class),
     @Type(name = "CacheRoot", value = CacheRootEncoding.class),
+    @Type(name = "CacheScan", value = CacheScanEncoding.class),
+    @Type(name = "CacheInsert", value = CacheInsertEncoding.class),
     @Type(name = "CacheShuffleConsumer", value = CacheShuffleConsumerEncoding.class),
     @Type(name = "CacheShuffleProducer", value = CacheShuffleProducerEncoding.class),
     @Type(name = "CollectConsumer", value = CollectConsumerEncoding.class),

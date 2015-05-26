@@ -7,14 +7,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.parallel.CacheController;
+import edu.washington.escience.myria.parallel.Cache;
 import edu.washington.escience.myria.parallel.WorkerShortMessageProcessor;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * Consuming tuples from the child and sending them to the CacheController.
  */
-public class CacheRoot extends RootOperator {
+public class CacheInsert extends RootOperator {
 
   /**
    * The logger for this class.
@@ -28,29 +28,20 @@ public class CacheRoot extends RootOperator {
   /**
    * The cache assigned to the worker.
    */
-  private CacheController workerCacheController;
+  private Cache workerCache;
 
   /**
    * @param child the single child of this operator.
    */
-  public CacheRoot(final Operator child) {
+  public CacheInsert(final Operator child) {
     super(child);
-    workerCacheController = null;
-  }
-
-  /**
-   * @param child the single child of this operator.
-   * @param initChild boolean to determine whether children are also initiated
-   */
-  public CacheRoot(final Operator child, final boolean initChild) {
-    super(child);
-    workerCacheController = null;
+    workerCache = null;
   }
 
   @Override
   protected final void consumeTuples(final TupleBatch tuples) throws DbException {
-    workerCacheController = getWorker().getCacheController();
-    workerCacheController.addTupleBatch(tuples);
+    workerCache = getWorker().getCache();
+    workerCache.addTupleBatch(tuples);
   }
 
   @Override

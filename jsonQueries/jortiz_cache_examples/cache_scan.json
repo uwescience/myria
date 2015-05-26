@@ -16,7 +16,11 @@
                 },
                 {
                         "opName": "V0", 
-                        "opType": "CacheLeaf", 
+                        "opType": "CacheScan", 
+                        "schema" : {
+                                "columnTypes" : ["LONG_TYPE", "LONG_TYPE"],
+                                "columnNames" : ["col1", "col2"]
+                        },
                         "opId": 0
                 }
             ]
