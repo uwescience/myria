@@ -1,0 +1,44 @@
+{  
+   "profilingMode":[  
+
+   ],
+   "rawQuery":"pitch = scan(Jeremy:MSD:PitchTransposed);\n\nstore(pitch, public:adhoc:whatever);",
+   "logicalRa":"Store(public:adhoc:whatever)[Scan(Jeremy:MSD:PitchTransposed)]",
+   "language":"myrial",
+   "plan":{  
+      "fragments":[  
+         {  
+            "operators":[  
+               {  
+                  "opName":"MyriaScan(Jeremy:MSD:PitchTransposed)",
+                  "relationKey":{  
+                     "programName":"MSD",
+                     "userName":"Jeremy",
+                     "relationName":"PitchTransposed"
+                  },
+                  "opId":0,
+                  "opType":"TableScan"
+               },
+               {  "opId":1,
+                  "opName":"PitchKeyword",
+                  "opType":"PitchKeyword",
+                  "argChild":0
+               },
+               {  
+                  "opId":2,
+                  "opType":"DbInsert",
+                  "argChild":1,
+                  "relationKey":{  
+                     "programName":"adhoc",
+                     "userName":"public",
+                     "relationName":"whatever"
+                  },
+                  "argOverwriteTable":true,
+                  "opName":"MyriaStore(public:adhoc:whatever)"
+               }
+            ]
+         }
+      ],
+      "type":"SubQuery"
+   }
+}
