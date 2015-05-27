@@ -64,7 +64,7 @@ public final class Cache {
   }
 
   /**
-   * Adds tuples to the cache. We create a new sequence here (should cycle later).
+   * Adds tuples to the cache using the new sequence (should cycle later).
    * 
    * @param tb the tuple batch to add
    */
@@ -76,7 +76,7 @@ public final class Cache {
   }
 
   /**
-   * Reads from the cache by iterating through the HashMap.
+   * Reads from the cache by iterating through the MultiMap.
    * 
    * @return the next TupleBatch
    */
@@ -103,15 +103,14 @@ public final class Cache {
   }
 
   /**
-   * Sets the sequence number to read from. This is done before each query runs.. If the query contains a cacheInsert in
-   * a fragment, make sure to call this.
+   * Sets the sequence number to write to.
    * */
   public void setNextSequence() {
     latest_sequence++;
   }
 
   /**
-   * Gets the current sequence
+   * Gets the current latest sequence
    * */
   public Integer getCurrentSequence() {
     return latest_sequence;
@@ -127,7 +126,6 @@ public final class Cache {
       if (currentKey <= latest_sequence) {
         Collection<TupleBatch> tbCollection = cache.get(currentKey);
         for (TupleBatch tb : tbCollection) {
-          // ownerWorker.LOGGER.info("TB " + (tb.toString()));
           keys_to_read.add(tb);
         }
       }

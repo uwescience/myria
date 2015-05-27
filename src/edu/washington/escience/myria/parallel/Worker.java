@@ -28,10 +28,16 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 
+import com.google.common.base.Charsets;
+import com.google.common.hash.BloomFilter;
+import com.google.common.hash.Funnel;
+import com.google.common.hash.PrimitiveSink;
+
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
+import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.WorkerCatalog;
@@ -42,6 +48,7 @@ import edu.washington.escience.myria.profiling.ProfilingLogger;
 import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myria.proto.QueryProto.QueryMessage;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
+import edu.washington.escience.myria.storage.Tuple;
 import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.JVMUtils;
 import edu.washington.escience.myria.util.concurrent.ErrorLoggingTimerTask;
@@ -370,6 +377,12 @@ public final class Worker {
   private final Cache workerCache;
 
   /**
+   * Local summary of the worker cache This assumes, we're using one BF for the entire summary, meaning we should be
+   * creating different BF for different schemas???
+   */
+  private final BloomFilter localBF;
+
+  /**
    * The profiling logger for this worker.
    */
   @GuardedBy("this")
@@ -600,6 +613,13 @@ public final class Worker {
   }
 
   /**
+   * @return the worker's local bloomfilter
+   */
+  public BloomFilter<Tuple> getLocalBloomFilter() {
+    return localBF;
+  }
+
+  /**
    * @param workingDirectory my working directory.
    * @param mode my execution mode.
    * @throws CatalogException if there's any catalog operation errors.
@@ -637,8 +657,39 @@ public final class Worker {
     executingSubQueries = new ConcurrentHashMap<>();
 
     execEnvVars = new ConcurrentHashMap<String, Object>();
-
     workerCache = new Cache(this);
+
+    /*
+     * This should really be declared as a myria constant elsewhere
+     */
+    int expectedNumberOfElements = 10000;
+
+    /*
+     * A funnel for tuples (how to decompose an object into primitive fields) Totally temporary for now, this can be
+     * done elsewhere for the BF
+     */
+    Funnel<Tuple> tupleFunnel = new Funnel<Tuple>() {
+      @Override
+      public void funnel(final Tuple tuple, final PrimitiveSink into) {
+        for (int i = 0; i < tuple.numColumns(); i++) {
+          if (tuple.getSchema().getColumnType(i) == Type.LONG_TYPE) {
+            into.putLong(tuple.getLong(i, 0));
+          } else if (tuple.getSchema().getColumnType(i) == Type.FLOAT_TYPE) {
+            into.putFloat(tuple.getFloat(i, 0));
+          } else if (tuple.getSchema().getColumnType(i) == Type.DOUBLE_TYPE) {
+            into.putDouble(tuple.getDouble(i, 0));
+          } else if (tuple.getSchema().getColumnType(i) == Type.STRING_TYPE) {
+            into.putString(tuple.getString(i, 0), Charsets.UTF_8);
+          } else if (tuple.getSchema().getColumnType(i) == Type.DATETIME_TYPE) {
+            into.putString(tuple.getDateTime(i, 0).toString(), Charsets.UTF_8);
+          } else if (tuple.getSchema().getColumnType(i) == Type.BOOLEAN_TYPE) {
+            into.putBoolean(tuple.getBoolean(i, 0));
+          }
+        }
+      }
+    };
+
+    localBF = BloomFilter.create(tupleFunnel, expectedNumberOfElements);
 
     for (Entry<String, String> cE : catalog.getAllConfigurations().entrySet()) {
       execEnvVars.put(cE.getKey(), cE.getValue());
