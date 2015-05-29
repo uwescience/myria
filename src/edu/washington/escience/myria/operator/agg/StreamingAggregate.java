@@ -2,6 +2,7 @@ package edu.washington.escience.myria.operator.agg;
 
 import java.util.Objects;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.google.common.base.Preconditions;
@@ -64,13 +65,14 @@ public class StreamingAggregate extends UnaryOperator {
    * @param gfields The columns over which we are grouping the result.
    * @param factories The factories that will produce the {@link Aggregator}s for each group.
    */
-  public StreamingAggregate(@Nullable final Operator child, final int[] gfields, final AggregatorFactory... factories) {
+  public StreamingAggregate(@Nullable final Operator child, @Nonnull final int[] gfields,
+      @Nonnull final AggregatorFactory... factories) {
     super(child);
     gFields = Objects.requireNonNull(gfields, "gfields");
     gTypes = new Type[gfields.length];
     this.factories = Objects.requireNonNull(factories, "factories");
     Preconditions.checkArgument(gfields.length > 0, " must have at least one group by field");
-    Preconditions.checkArgument(factories.length != 0, "to use StreamingAggregate, must specify some aggregates");
+    Preconditions.checkArgument(factories.length > 0, "to use StreamingAggregate, must specify some aggregates");
     gRange = new int[gfields.length];
     for (int i = 0; i < gfields.length; ++i) {
       gRange[i] = i;
@@ -95,9 +97,7 @@ public class StreamingAggregate extends UnaryOperator {
     while (tb != null) {
       for (int row = 0; row < tb.numTuples(); ++row) {
         if (curGroupKey == null) {
-          /*
-           * first time accessing this tb, no aggregation performed previously
-           */
+          /* First time accessing this tb, no aggregation performed previously. */
           // store current group key as a tuple
           curGroupKey = new Tuple(groupSchema);
           for (int gKey = 0; gKey < gFields.length; ++gKey) {
@@ -127,9 +127,7 @@ public class StreamingAggregate extends UnaryOperator {
             }
           }
         } else if (!TupleUtils.tupleEquals(tb, gFields, row, curGroupKey, gRange, 0)) {
-          /*
-           * different grouping key than current one, flush current agg result to result buffer
-           */
+          /* Different grouping key than current one, flush current agg result to result buffer. */
           addToResult();
           // store current group key as a tuple
           for (int gKey = 0; gKey < gFields.length; ++gKey) {

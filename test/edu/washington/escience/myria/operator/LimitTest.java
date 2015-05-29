@@ -4,9 +4,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-import java.util.LinkedList;
+import java.util.List;
 
 import org.junit.Test;
+
+import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.storage.TupleBatch;
@@ -24,12 +26,13 @@ public class LimitTest {
     TupleSource source = new TupleSource(TestUtils.range(total));
     Limit limiter = new Limit(limit, source);
     limiter.open(TestEnvVars.get());
-    long count = 0;
     TupleBatch tb = limiter.nextReady();
-    count += tb.numTuples();
-    assertEquals(limit, count);
+    assertEquals(limit, tb.numTuples());
+    // reached limit, limiter gets eos and next call to nextReady() returns null
+    tb = limiter.nextReady();
+    assertNull(tb);
     assertTrue(limiter.eos());
-    /* Limit closes itself as soon as it returned # tuples == limit. */
+    limiter.close();
   }
 
   @Test
@@ -43,7 +46,7 @@ public class LimitTest {
     TupleBatch tb = limiter.nextReady();
     assertNull(tb);
     assertTrue(limiter.eos());
-    /* Limit closes itself as soon as it returned # tuples == limit. */
+    limiter.close();
   }
 
   @Test
@@ -52,16 +55,17 @@ public class LimitTest {
     final long limit = total;
     TupleBatchBuffer tbb1 = TestUtils.range((int) limit);
     TupleBatchBuffer tbb2 = TestUtils.range((int) limit);
-    LinkedList<TupleBatch> sourceList = new LinkedList<TupleBatch>();
-    sourceList.add(tbb1.popAny());
-    sourceList.add(tbb2.popAny());
+    List<TupleBatch> sourceList = ImmutableList.of(tbb1.popAny(), tbb2.popAny());
     TupleSource source = new TupleSource(sourceList);
     Limit limiter = new Limit(limit, source);
     limiter.open(TestEnvVars.get());
     TupleBatch tb = limiter.nextReady();
     assertEquals(limit, tb.numTuples());
+    // reached limit, limiter gets eos and next call to nextReady() returns null
+    tb = limiter.nextReady();
+    assertNull(tb);
     assertTrue(limiter.eos());
-    /* Limit closes itself as soon as it returned # tuples == limit. */
+    limiter.close();
   }
 
   @Test
@@ -84,6 +88,6 @@ public class LimitTest {
     }
     assertEquals(limit, count);
     assertEquals(2, numIteration);
-    /* Limit closes itself as soon as it returned # tuples == limit. */
+    limiter.close();
   }
 }

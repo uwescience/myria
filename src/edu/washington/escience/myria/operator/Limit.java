@@ -43,23 +43,25 @@ public final class Limit extends UnaryOperator {
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
     Operator child = getChild();
-    TupleBatch tb = child.nextReady();
-    TupleBatch result = null;
-    if (tb != null) {
-      if (tb.numTuples() <= toEmit) {
-        toEmit -= tb.numTuples();
-        result = tb;
-      } else if (toEmit > 0) {
-        result = tb.prefix(Ints.checkedCast(toEmit));
-        toEmit = 0;
+    if (child.isOpen()) {
+      TupleBatch tb = child.nextReady();
+      TupleBatch result = null;
+      if (tb != null) {
+        if (tb.numTuples() <= toEmit) {
+          toEmit -= tb.numTuples();
+          result = tb;
+        } else if (toEmit > 0) {
+          result = tb.prefix(Ints.checkedCast(toEmit));
+          toEmit = 0;
+        }
+        if (toEmit == 0) {
+          /* Close child. No more stream is needed. */
+          child.close();
+        }
       }
-      if (toEmit == 0) {
-        /* Close child and self. No more stream is needed. */
-        child.close();
-        close();
-      }
+      return result;
     }
-    return result;
+    return null;
   }
 
   @Override
