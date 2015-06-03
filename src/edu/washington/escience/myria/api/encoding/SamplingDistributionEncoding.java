@@ -5,6 +5,7 @@ import javax.ws.rs.core.Response;
 import edu.washington.escience.myria.api.MyriaApiException;
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.SamplingDistribution;
+import edu.washington.escience.myria.util.SamplingType;
 
 public class SamplingDistributionEncoding extends UnaryOperatorEncoding<SamplingDistribution> {
 
@@ -15,7 +16,7 @@ public class SamplingDistributionEncoding extends UnaryOperatorEncoding<Sampling
   public Float samplePercentage;
 
   @Required
-  public String sampleType;
+  public SamplingType sampleType;
 
   /** Used to make results deterministic. Null if no specified value. */
   public Long randomSeed;

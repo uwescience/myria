@@ -7,12 +7,14 @@ import java.util.Set;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.primitives.Ints;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.util.SamplingType;
 
 public class Sample extends BinaryOperator {
   /** Required for Java serialization. */
@@ -27,8 +29,11 @@ public class Sample extends BinaryOperator {
   /** Random generator used for index selection. */
   private Random rand;
 
-  /** The type of sampling to perform. Currently supports 'WR' and 'WoR'. */
-  private String sampleType;
+  /** Seed for the random generator. */
+  private Long randomSeed;
+
+  /** The type of sampling to perform. */
+  private SamplingType sampleType;
 
   /** True if operator has extracted sampling info. */
   private boolean computedSamplingInfo = false;
@@ -37,10 +42,10 @@ public class Sample extends BinaryOperator {
   private TupleBatchBuffer ans;
 
   /** Global count of the tuples seen so far. */
-  private int tupleNum = 0;
+  private int tuplesSeen = 0;
 
   /** Sorted array of tuple indices that will be taken as samples. */
-  private int[] samples;
+  private int[] sampleIndices;
 
   /** Current index of the samples array. */
   private int curSampIdx = 0;
@@ -58,10 +63,7 @@ public class Sample extends BinaryOperator {
    */
   public Sample(final Operator left, final Operator right, Long randomSeed) {
     super(left, right);
-    this.rand = new Random();
-    if (randomSeed != null) {
-      this.rand.setSeed(randomSeed);
-    }
+    this.randomSeed = randomSeed;
   }
 
   @Override
@@ -75,17 +77,17 @@ public class Sample extends BinaryOperator {
       getLeft().close();
 
       // Cannot sampleWoR more tuples than there are.
-      if (sampleType.equals("WoR")) {
+      if (sampleType == SamplingType.WoR) {
         Preconditions.checkState(sampleSize <= streamSize,
             "Cannot SampleWoR %s tuples from a population of size %s",
             sampleSize, streamSize);
       }
 
       // Generate target indices to accept as samples.
-      if (sampleType.equals("WR")) {
-        samples = generateIndicesWR(streamSize, sampleSize);
-      } else if (sampleType.equals("WoR")) {
-        samples = generateIndicesWoR(streamSize, sampleSize);
+      if (sampleType == SamplingType.WR) {
+        sampleIndices = generateIndicesWR(streamSize, sampleSize);
+      } else if (sampleType == SamplingType.WoR) {
+        sampleIndices = generateIndicesWoR(streamSize, sampleSize);
       } else {
         throw new DbException("Invalid sampleType: " + sampleType);
       }
@@ -99,27 +101,26 @@ public class Sample extends BinaryOperator {
       return nexttb;
     }
     // Check if there's nothing left to sample.
-    if (curSampIdx >= samples.length) {
+    if (curSampIdx >= sampleIndices.length) {
       getRight().close();
-      setEOS();
       return null;
     }
     Operator right = getRight();
     for (TupleBatch tb = right.nextReady(); tb != null; tb = right.nextReady()) {
-      if (curSampIdx >= samples.length) { // done sampling
+      if (curSampIdx >= sampleIndices.length) { // done sampling
         break;
       }
-      if (samples[curSampIdx] > tupleNum + tb.numTuples()) {
+      if (sampleIndices[curSampIdx] >= tuplesSeen + tb.numTuples()) {
         // nextIndex is not in this batch. Continue with next batch.
-        tupleNum += tb.numTuples();
+        tuplesSeen += tb.numTuples();
         continue;
       }
-      while (curSampIdx < samples.length
-          && samples[curSampIdx] < tupleNum + tb.numTuples()) {
-        ans.put(tb, samples[curSampIdx] - tupleNum);
+      while (curSampIdx < sampleIndices.length
+          && sampleIndices[curSampIdx] < tuplesSeen + tb.numTuples()) {
+        ans.put(tb, sampleIndices[curSampIdx] - tuplesSeen);
         curSampIdx++;
       }
-      tupleNum += tb.numTuples();
+      tuplesSeen += tb.numTuples();
       if (ans.hasFilledTB()) {
         return ans.popFilled();
       }
@@ -141,8 +142,8 @@ public class Sample extends BinaryOperator {
       throw new DbException("WorkerID column must be of type INT or LONG");
     }
     Preconditions.checkState(workerID == getNodeID(),
-            "Invalid WorkerID for this worker. Expected %s, but received %s",
-            getNodeID(), workerID);
+        "Invalid WorkerID for this worker. Expected %s, but received %s",
+        getNodeID(), workerID);
 
     Type col1Type = tb.getSchema().getColumnType(1);
     if (col1Type == Type.INT_TYPE) {
@@ -166,7 +167,12 @@ public class Sample extends BinaryOperator {
 
     Type col3Type = tb.getSchema().getColumnType(3);
     if (col3Type == Type.STRING_TYPE) {
-      sampleType = tb.getString(3, 0);
+      String col3Val = tb.getString(3, 0);
+      try {
+        sampleType = SamplingType.valueOf(col3Val);
+      } catch (IllegalArgumentException e) {
+        throw new DbException("Invalid SampleType: " + col3Val);
+      }
     } else {
       throw new DbException("SampleType column must be of type STRING");
     }
@@ -192,6 +198,8 @@ public class Sample extends BinaryOperator {
 
   /**
    * Generates a sorted array of unique random numbers to be taken as samples.
+   * The implementation uses Floyd's algorithm. For an explanation:
+   * www.nowherenearithaca.com/2013/05/robert-floyds-tiny-and-beautiful.html
    *
    * @param populationSize
    *          size of the population that will be sampled from.
@@ -209,12 +217,7 @@ public class Sample extends BinaryOperator {
         indices.add(idx);
       }
     }
-    int[] indicesArr = new int[indices.size()];
-    int i = 0;
-    for (Integer val : indices) {
-      indicesArr[i] = val;
-      i++;
-    }
+    int[] indicesArr = Ints.toArray(indices);
     Arrays.sort(indicesArr);
     return indicesArr;
   }
@@ -231,6 +234,10 @@ public class Sample extends BinaryOperator {
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) {
     ans = new TupleBatchBuffer(getSchema());
+    rand = new Random();
+    if (randomSeed != null) {
+      rand.setSeed(randomSeed);
+    }
   }
 
   @Override

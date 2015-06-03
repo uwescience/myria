@@ -2,6 +2,7 @@ package edu.washington.escience.myria.operator;
 
 import static org.junit.Assert.assertEquals;
 
+import edu.washington.escience.myria.util.SamplingType;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -48,7 +49,7 @@ public class SamplingDistributionTest {
   @Test
   public void testSampleWRSizeZero() throws DbException {
     int sampleSize = 0;
-    String sampleType = "WR";
+    SamplingType sampleType = SamplingType.WR;
     final int[][] expectedResults = { { 1, 300, 0 }, { 2, 200, 0 },
         { 3, 400, 0 }, { 4, 100, 0 } };
     verifyExpectedResults(sampleSize, sampleType, expectedResults);
@@ -57,7 +58,7 @@ public class SamplingDistributionTest {
   @Test
   public void testSampleWoRSizeZero() throws DbException {
     int sampleSize = 0;
-    String sampleType = "WoR";
+    SamplingType sampleType = SamplingType.WoR;
     final int[][] expectedResults = { { 1, 300, 0 }, { 2, 200, 0 },
         { 3, 400, 0 }, { 4, 100, 0 } };
     verifyExpectedResults(sampleSize, sampleType, expectedResults);
@@ -67,7 +68,7 @@ public class SamplingDistributionTest {
   @Test
   public void testSampleWRPctZero() throws DbException {
     float samplePct = 0;
-    String sampleType = "WR";
+    SamplingType sampleType = SamplingType.WR;
     final int[][] expectedResults = { { 1, 300, 0 }, { 2, 200, 0 },
         { 3, 400, 0 }, { 4, 100, 0 } };
     verifyExpectedResults(samplePct, sampleType, expectedResults);
@@ -76,7 +77,7 @@ public class SamplingDistributionTest {
   @Test
   public void testSampleWoRPctZero() throws DbException {
     float samplePct = 0;
-    String sampleType = "WoR";
+    SamplingType sampleType = SamplingType.WoR;
     final int[][] expectedResults = { { 1, 300, 0 }, { 2, 200, 0 },
             { 3, 400, 0 }, { 4, 100, 0 } };
     verifyExpectedResults(samplePct, sampleType, expectedResults);
@@ -86,14 +87,14 @@ public class SamplingDistributionTest {
   @Test
   public void testSampleWRSizeOne() throws DbException {
     int sampleSize = 1;
-    String sampleType = "WR";
+    SamplingType sampleType = SamplingType.WR;
     verifyPossibleDistribution(sampleSize, sampleType);
   }
 
   @Test
   public void testSampleWoRSizeOne() throws DbException {
     int sampleSize = 1;
-    String sampleType = "WoR";
+    SamplingType sampleType = SamplingType.WoR;
     verifyPossibleDistribution(sampleSize, sampleType);
   }
 
@@ -101,14 +102,14 @@ public class SamplingDistributionTest {
   @Test
   public void testSampleWRSizeFifty() throws DbException {
     int sampleSize = 50;
-    String sampleType = "WR";
+    SamplingType sampleType = SamplingType.WR;
     verifyPossibleDistribution(sampleSize, sampleType);
   }
 
   @Test
   public void testSampleWoRSizeFifty() throws DbException {
     int sampleSize = 50;
-    String sampleType = "WoR";
+    SamplingType sampleType = SamplingType.WoR;
     verifyPossibleDistribution(sampleSize, sampleType);
   }
 
@@ -116,14 +117,14 @@ public class SamplingDistributionTest {
   @Test
   public void testSampleWRPctFifty() throws DbException {
     float samplePct = 50;
-    String sampleType = "WR";
+    SamplingType sampleType = SamplingType.WR;
     verifyPossibleDistribution(samplePct, sampleType);
   }
 
   @Test
   public void testSampleWoRPctFifty() throws DbException {
     float samplePct = 50;
-    String sampleType = "WoR";
+    SamplingType sampleType = SamplingType.WoR;
     verifyPossibleDistribution(samplePct, sampleType);
   }
 
@@ -131,14 +132,14 @@ public class SamplingDistributionTest {
   @Test
   public void testSampleWoRSizeAllButOne() throws DbException {
     int sampleSize = 999;
-    String sampleType = "WoR";
+    SamplingType sampleType = SamplingType.WoR;
     verifyPossibleDistribution(sampleSize, sampleType);
   }
 
   @Test
   public void testSampleWRSizeAllButOne() throws DbException {
     int sampleSize = 999;
-    String sampleType = "WR";
+    SamplingType sampleType = SamplingType.WR;
     verifyPossibleDistribution(sampleSize, sampleType);
   }
 
@@ -146,7 +147,7 @@ public class SamplingDistributionTest {
   @Test
   public void testSampleWoRSizeMax() throws DbException {
     int sampleSize = 1000;
-    String sampleType = "WoR";
+    SamplingType sampleType = SamplingType.WoR;
     final int[][] expectedResults = { { 1, 300, 300 }, { 2, 200, 200 },
         { 3, 400, 400 }, { 4, 100, 100 } };
     verifyExpectedResults(sampleSize, sampleType, expectedResults);
@@ -155,7 +156,7 @@ public class SamplingDistributionTest {
   @Test
   public void testSampleWoRPctMax() throws DbException {
     float samplePct = 100;
-    String sampleType = "WoR";
+    SamplingType sampleType = SamplingType.WoR;
     final int[][] expectedResults = { { 1, 300, 300 }, { 2, 200, 200 },
             { 3, 400, 400 }, { 4, 100, 100 } };
     verifyExpectedResults(samplePct, sampleType, expectedResults);
@@ -165,14 +166,14 @@ public class SamplingDistributionTest {
   @Test
   public void testSampleWRSizeMax() throws DbException {
     int sampleSize = 1000;
-    String sampleType = "WR";
+    SamplingType sampleType = SamplingType.WR;
     verifyPossibleDistribution(sampleSize, sampleType);
   }
 
   @Test
   public void testSampleWRPctMax() throws DbException {
     float samplePct = 100;
-    String sampleType = "WR";
+    SamplingType sampleType = SamplingType.WR;
     verifyPossibleDistribution(samplePct, sampleType);
   }
 
@@ -180,28 +181,28 @@ public class SamplingDistributionTest {
   @Test(expected = IllegalStateException.class)
   public void testSampleWoRSizeTooMany() throws DbException {
     int sampleSize = 1001;
-    String sampleType = "WoR";
+    SamplingType sampleType = SamplingType.WoR;
     drainOperator(sampleSize, sampleType);
   }
 
   @Test(expected = IllegalStateException.class)
   public void testSampleWoRPctTooMany() throws DbException {
     float samplePct = 100.1f;
-    String sampleType = "WoR";
+    SamplingType sampleType = SamplingType.WoR;
     drainOperator(samplePct, sampleType);
   }
 
   @Test(expected = IllegalStateException.class)
   public void testSampleWRSizeTooMany() throws DbException {
     int sampleSize = 1001;
-    String sampleType = "WR";
+    SamplingType sampleType = SamplingType.WR;
     drainOperator(sampleSize, sampleType);
   }
 
   @Test(expected = IllegalStateException.class)
   public void testSampleWRPctTooMany() throws DbException {
     float samplePct = 100.1f;
-    String sampleType = "WR";
+    SamplingType sampleType = SamplingType.WR;
     drainOperator(samplePct, sampleType);
   }
 
@@ -209,28 +210,28 @@ public class SamplingDistributionTest {
   @Test(expected = IllegalStateException.class)
   public void testSampleWoRSizeNegative() throws DbException {
     int sampleSize = -1;
-    String sampleType = "WoR";
+    SamplingType sampleType = SamplingType.WoR;
     drainOperator(sampleSize, sampleType);
   }
 
   @Test(expected = IllegalStateException.class)
   public void testSampleWoRPctNegative() throws DbException {
     float samplePct = -0.01f;
-    String sampleType = "WoR";
+    SamplingType sampleType = SamplingType.WoR;
     drainOperator(samplePct, sampleType);
   }
 
   @Test(expected = IllegalStateException.class)
   public void testSampleWRSizeNegative() throws DbException {
     int sampleSize = -1;
-    String sampleType = "WoR";
+    SamplingType sampleType = SamplingType.WoR;
     drainOperator(sampleSize, sampleType);
   }
 
   @Test(expected = IllegalStateException.class)
   public void testSampleWRPctNegative() throws DbException {
     float samplePct = -0.01f;
-    String sampleType = "WoR";
+    SamplingType sampleType = SamplingType.WoR;
     drainOperator(samplePct, sampleType);
   }
 
@@ -238,7 +239,7 @@ public class SamplingDistributionTest {
   @Test(expected = IllegalStateException.class)
   public void testSampleWoRWorkerNegative() throws DbException {
     int sampleSize = 50;
-    String sampleType = "WoR";
+    SamplingType sampleType = SamplingType.WoR;
     input.putInt(0, 5);
     input.putInt(1, -1);
     drainOperator(sampleSize, sampleType);
@@ -247,7 +248,7 @@ public class SamplingDistributionTest {
   @Test(expected = IllegalStateException.class)
   public void testSampleWRWorkerNegative() throws DbException {
     int sampleSize = 50;
-    String sampleType = "WR";
+    SamplingType sampleType = SamplingType.WR;
     input.putInt(0, 5);
     input.putInt(1, -1);
     drainOperator(sampleSize, sampleType);
@@ -277,14 +278,14 @@ public class SamplingDistributionTest {
     }
     assertEquals(expectedResults.length, rowIdx);
   }
-  private void verifyExpectedResults(int sampleSize, String sampleType,
+  private void verifyExpectedResults(int sampleSize, SamplingType sampleType,
       int[][] expectedResults) throws DbException {
     sampOp = new SamplingDistribution(new TupleSource(input), sampleSize,
         sampleType, RANDOM_SEED);
     sampOp.open(TestEnvVars.get());
     verifyExpectedResults(sampOp, expectedResults);
   }
-  private void verifyExpectedResults(float samplePct, String sampleType,
+  private void verifyExpectedResults(float samplePct, SamplingType sampleType,
                                      int[][] expectedResults) throws DbException {
     sampOp = new SamplingDistribution(new TupleSource(input), samplePct,
             sampleType, RANDOM_SEED);
@@ -306,7 +307,7 @@ public class SamplingDistributionTest {
         assertEquals(expectedResultSchema, result.getSchema());
         for (int i = 0; i < result.numTuples(); ++i, ++rowIdx) {
           assert (result.getInt(2, i) >= 0 && result.getInt(2, i) <= sampOp.getSampleSize());
-          if (sampOp.getSampleType().equals("WoR")) {
+          if (sampOp.getSampleType().equals(SamplingType.WoR)) {
             // SampleWoR cannot sample more than worker's population size.
             assert (result.getInt(2, i) <= result.getInt(1, i));
           }
@@ -318,7 +319,7 @@ public class SamplingDistributionTest {
     assertEquals(sampOp.getSampleSize(), computedSampleSize);
   }
   private void verifyPossibleDistribution(int sampleSize,
-                                          String sampleType) throws DbException {
+                                          SamplingType sampleType) throws DbException {
     sampOp = new SamplingDistribution(new TupleSource(input), sampleSize,
             sampleType, RANDOM_SEED);
     sampOp.open(TestEnvVars.get());
@@ -326,7 +327,7 @@ public class SamplingDistributionTest {
   }
 
   private void verifyPossibleDistribution(float samplePct,
-                                          String sampleType) throws DbException {
+                                          SamplingType sampleType) throws DbException {
     sampOp = new SamplingDistribution(new TupleSource(input), samplePct,
             sampleType, RANDOM_SEED);
     sampOp.open(TestEnvVars.get());
@@ -334,7 +335,7 @@ public class SamplingDistributionTest {
   }
 
   /** Run through all results without doing anything. */
-  private void drainOperator(int sampleSize, String sampleType)
+  private void drainOperator(int sampleSize, SamplingType sampleType)
       throws DbException {
     sampOp = new SamplingDistribution(new TupleSource(input), sampleSize,
         sampleType, RANDOM_SEED);
@@ -344,7 +345,7 @@ public class SamplingDistributionTest {
     }
   }
 
-  private void drainOperator(float samplePct, String sampleType)
+  private void drainOperator(float samplePct, SamplingType sampleType)
       throws DbException {
     sampOp = new SamplingDistribution(new TupleSource(input), samplePct,
         sampleType, RANDOM_SEED);
