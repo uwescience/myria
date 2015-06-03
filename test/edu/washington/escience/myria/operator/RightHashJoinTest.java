@@ -28,7 +28,7 @@ public class RightHashJoinTest {
       count += tb.numTuples();
     }
     join.close();
-    assertEquals(5L, count);
+    assertEquals(7L, count);
   }
 
   @Test(expected = IllegalStateException.class)

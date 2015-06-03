@@ -67,6 +67,7 @@ import edu.washington.escience.myria.coordinator.catalog.CatalogMaker;
 import edu.washington.escience.myria.coordinator.catalog.WorkerCatalog;
 import edu.washington.escience.myria.daemon.MasterDaemon;
 import edu.washington.escience.myria.io.DataSource;
+import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.parallel.Worker;
@@ -648,13 +649,16 @@ public class SystemTestBase {
   }
 
   protected static String ingest(final RelationKey key, final Schema schema, final DataSource source,
-      @Nullable final Character delimiter) throws JsonProcessingException {
+      @Nullable final Character delimiter, @Nullable final PartitionFunction pf) throws JsonProcessingException {
     DatasetEncoding ingest = new DatasetEncoding();
     ingest.relationKey = key;
     ingest.schema = schema;
     ingest.source = source;
     if (delimiter != null) {
       ingest.delimiter = delimiter;
+    }
+    if (pf != null) {
+      ingest.partitionFunction = pf;
     }
     return MyriaJsonMapperProvider.getWriter().writeValueAsString(ingest);
   }

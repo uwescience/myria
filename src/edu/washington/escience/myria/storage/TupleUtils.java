@@ -237,14 +237,14 @@ public final class TupleUtils {
   }
 
   /**
-   * Check if a tuple in uniqueTuples equals to the comparing tuple (cntTuple).
+   * Check if two tuples are equal on given columns.
    * 
-   * @param table1 the table holding the comparing tuple
-   * @param compareColumns1 the comparing list of columns of cntTuple
-   * @param row1 row number of the tuple to compare
-   * @param table2 the table holding the tuple to compare against
-   * @param compareColumns2 the comparing list of columns of hashTable
-   * @param row2 the index in the hashTable
+   * @param table1 the table holding the first tuple
+   * @param compareColumns1 the comparing list of columns of the first tuple
+   * @param row1 row index of the first tuple
+   * @param table2 the table holding the second tuple
+   * @param compareColumns2 the comparing list of columns of the second tuple
+   * @param row2 row index of the second tuple
    * 
    * @return true if equals.
    */
@@ -296,12 +296,12 @@ public final class TupleUtils {
   }
 
   /**
-   * Compare tb against a hash table on all columns.
+   * Compare a tuple against another tuple on all columns.
    * 
    * @param table1 the table holding the comparing tuple
-   * @param row1 number of the tuple to compare
+   * @param row1 row index of the tuple in table1 to compare
    * @param table2 the table holding the tuple to compare against
-   * @param row2 the index in the hashTable
+   * @param row2 row index of the tuple in table2 to compare against
    * @return true if equals
    */
   public static boolean tupleEquals(final ReadableTable table1, final int row1, final ReadableTable table2,
@@ -352,14 +352,13 @@ public final class TupleUtils {
   }
 
   /**
-   * Compare {@value table1} use {@value compareColumns} against {@value table2} only containing columns which need to
-   * be compared.
+   * Compare a tuple on given columns with all columns of another tuple.
    * 
    * @param table1 the table holding comparing tuple
-   * @param compareColumns the columns of the tuple which will compare
-   * @param row1 number of the tuple to compare
-   * @param table2 the table holding the tuple to compare against
-   * @param index the index in the hashTable
+   * @param compareColumns the columns of the comparing tuple in table1
+   * @param row1 row index of the comparing tuple in table1
+   * @param table2 the table holding the tuple to compare with
+   * @param index row index of the tuple to compare with in table2
    * 
    * @return true if equals
    */
@@ -369,7 +368,7 @@ public final class TupleUtils {
       return false;
     }
     for (int i = 0; i < compareColumns.length; ++i) {
-      switch (table1.getSchema().getColumnType(i)) {
+      switch (table1.getSchema().getColumnType(compareColumns[i])) {
         case BOOLEAN_TYPE:
           if (table1.getBoolean(compareColumns[i], row1) != table2.getBoolean(i, index)) {
             return false;

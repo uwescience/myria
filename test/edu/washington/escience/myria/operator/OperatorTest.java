@@ -32,7 +32,7 @@ public class OperatorTest {
   public class EntryComparator implements Comparator<Entry<Long, String>> {
 
     @Override
-    public int compare(Entry<Long, String> o1, Entry<Long, String> o2) {
+    public int compare(final Entry<Long, String> o1, final Entry<Long, String> o2) {
       int res = o1.getKey().compareTo(o2.getKey());
       if (res != 0) {
         return res;
@@ -48,7 +48,7 @@ public class OperatorTest {
    * @param sorted Generate sorted tuples, sorted by id
    * @return
    */
-  public TupleBatchBuffer generateRandomTuples(final int numTuples, final int sampleSize, boolean sorted) {
+  public TupleBatchBuffer generateRandomTuples(final int numTuples, final int sampleSize, final boolean sorted) {
     final ArrayList<Entry<Long, String>> entries = new ArrayList<Entry<Long, String>>();
 
     final long[] ids = TestUtils.randomLong(0, sampleSize, numTuples);
@@ -276,7 +276,8 @@ public class OperatorTest {
     }
 
     TupleSource scan = new TupleSource(input);
-    StreamingStateWrapper keepmin = new StreamingStateWrapper(scan, new KeepAndSortOnMinValue(new int[] { 0 }, 1));
+    StreamingStateWrapper keepmin =
+        new StreamingStateWrapper(scan, new KeepAndSortOnMinValue(new int[] { 0 }, new int[] { 1 }));
     keepmin.open(null);
     while (!keepmin.eos()) {
       keepmin.nextReady();

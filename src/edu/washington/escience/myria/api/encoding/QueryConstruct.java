@@ -52,6 +52,9 @@ import edu.washington.escience.myria.parallel.SubQuery;
 import edu.washington.escience.myria.parallel.SubQueryPlan;
 
 public class QueryConstruct {
+
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(QueryConstruct.class);
+
   /**
    * Instantiate the server's desired physical plan from a list of JSON encodings of fragments. This list must contain a
    * self-consistent, complete query. All fragments will be executed in parallel.
@@ -317,8 +320,14 @@ public class QueryConstruct {
     for (PlanFragmentEncoding fragment : fragments) {
       for (OperatorEncoding<?> operator : fragment.operators) {
         if (operator instanceof CollectConsumerEncoding || operator instanceof SingletonEncoding
-            || operator instanceof EOSControllerEncoding) {
+            || operator instanceof EOSControllerEncoding || operator instanceof BinaryFileScanEncoding
+            || operator instanceof FileScanEncoding || operator instanceof NChiladaFileScanEncoding
+            || operator instanceof SeaFlowFileScanEncoding || operator instanceof TipsyFileScanEncoding) {
           if (fragment.workers == null) {
+            String encodingTypeName = operator.getClass().getSimpleName();
+            String operatorTypeName = encodingTypeName.substring(0, encodingTypeName.indexOf("Encoding"));
+            LOGGER.warn("{} operator can only be instantiated on a single worker, assigning to random worker",
+                operatorTypeName);
             fragment.workers = singletonWorkers;
           } else {
             Preconditions.checkArgument(fragment.workers.size() == 1,

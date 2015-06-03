@@ -101,8 +101,11 @@ public class TupleBatch implements ReadableTable, Serializable {
     this.columns = ImmutableList.copyOf(Objects.requireNonNull(columns, "columns"));
     Preconditions.checkArgument(columns.size() == schema.numColumns(),
         "Number of columns in data must equal the number of fields in schema");
-    for (Column<?> column : columns) {
-      Preconditions.checkArgument(numTuples == column.size(), "Column %s != %s tuples", column.size(), numTuples);
+    for (int i = 0; i < columns.size(); i++) {
+      Column<?> column = columns.get(i);
+      Preconditions.checkArgument(numTuples == column.size(),
+              "Incorrect size for column %s. Expected %s tuples, but found %s tuples.",
+              i, numTuples, column.size());
     }
     this.numTuples = numTuples;
     this.isEOI = isEOI;
