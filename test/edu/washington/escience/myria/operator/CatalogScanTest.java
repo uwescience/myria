@@ -8,6 +8,7 @@ import static org.junit.Assert.assertEquals;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -46,6 +47,14 @@ public class CatalogScanTest {
     query.rawQuery = "query 1 is about baseball";
     query.logicalRa = "";
     catalog.newQuery(query);
+  }
+
+  /**
+   * Destroy catalog.
+   */
+  @After
+  public void Cleanup() {
+    catalog.close();
   }
 
   @Test
