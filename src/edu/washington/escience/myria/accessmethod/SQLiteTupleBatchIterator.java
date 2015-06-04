@@ -37,19 +37,6 @@ public class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
   /**
    * Wraps a SQLiteStatement result set in an Iterator<TupleBatch>.
    * 
-   * @param statement the SQLiteStatement containing the results.
-   * @param schema the Schema describing the format of the TupleBatch containing these results.
-   * @param connection the connection to the SQLite database.
-   */
-  SQLiteTupleBatchIterator(final SQLiteStatement statement, final Schema schema, final SQLiteConnection connection) {
-    this.statement = statement;
-    this.connection = connection;
-    this.schema = schema;
-  }
-
-  /**
-   * Wraps a SQLiteStatement result set in an Iterator<TupleBatch>.
-   * 
    * @param statement the SQLiteStatement containing the results. If it has not yet stepped, this constructor will step
    *          it. Then the Schema of the generated TupleBatchs will be extracted from the statement.
    * @param connection the connection to the SQLite database.
