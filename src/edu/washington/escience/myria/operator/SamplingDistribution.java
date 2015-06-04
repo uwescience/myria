@@ -205,7 +205,7 @@ public class SamplingDistribution extends UnaryOperator {
     ImmutableList.Builder<Column<?>> columns = ImmutableList.builder();
     columns.add(wIdCol.build(), streamSizeCol.build(), sampCountCol.build(),
         sampTypeCol.build());
-    close();
+    setEOS();
     return new TupleBatch(SCHEMA, columns.build());
   }
 
