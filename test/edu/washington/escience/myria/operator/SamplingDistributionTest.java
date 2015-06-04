@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.operator;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import edu.washington.escience.myria.util.SamplingType;
 import org.junit.After;
@@ -306,10 +307,10 @@ public class SamplingDistributionTest {
       if (result != null) {
         assertEquals(expectedResultSchema, result.getSchema());
         for (int i = 0; i < result.numTuples(); ++i, ++rowIdx) {
-          assert (result.getInt(2, i) >= 0 && result.getInt(2, i) <= sampOp.getSampleSize());
-          if (sampOp.getSampleType().equals(SamplingType.WoR)) {
+          assertTrue(result.getInt(2, i) >= 0 && result.getInt(2, i) <= sampOp.getSampleSize());
+          if (sampOp.getSampleType() == SamplingType.WoR) {
             // SampleWoR cannot sample more than worker's population size.
-            assert (result.getInt(2, i) <= result.getInt(1, i));
+            assertTrue(result.getInt(2, i) <= result.getInt(1, i));
           }
           computedSampleSize += result.getInt(2, i);
         }

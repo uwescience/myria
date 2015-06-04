@@ -6,6 +6,7 @@ import java.util.Random;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
@@ -40,19 +41,35 @@ public class SamplingDistribution extends UnaryOperator {
   /** Random generator used for creating the distribution. */
   private Random rand;
 
+  /** Seed for the random generator. */
+  private Long randomSeed;
+
+  /**
+   * Distribution of the tuples across the workers. Value at index i == # of
+   * tuples on worker i.
+   */
+  ArrayList<Integer> tupleCounts;
+
+  /**
+   * Distribution of the actual stream size across the workers. May be different
+   * from tupleCounts if workers pre-sampled the data. Value at index i == # of
+   * tuples in stream on worker i.
+   */
+  ArrayList<Integer> streamCounts;
+
+  /** Total number of tuples across all workers. */
+  int totalTupleCount = 0;
+
   private SamplingDistribution(Operator child, SamplingType sampleType,
       Long randomSeed) {
     super(child);
     this.sampleType = sampleType;
-    this.rand = new Random();
-    if (randomSeed != null) {
-      this.rand.setSeed(randomSeed);
-    }
+    this.randomSeed = randomSeed;
   }
 
   /**
    * Instantiate a SamplingDistribution operator using a specific sample size.
-   * 
+   *
    * @param sampleSize
    *          total samples to create a distribution for.
    * @param sampleType
@@ -96,27 +113,14 @@ public class SamplingDistribution extends UnaryOperator {
 
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
-    if (getChild().eos()) {
-      return null;
-    }
-
-    // Distribution of the tuples across the workers.
-    // Value at index i == # of tuples on worker i.
-    ArrayList<Integer> tupleCounts = new ArrayList<Integer>();
-
-    // Distribution of the actual stream size across the workers.
-    // May be different from tupleCounts if worker i pre-sampled the data.
-    // Value at index i == # of tuples in stream on worker i.
-    ArrayList<Integer> streamCounts = new ArrayList<Integer>();
-
-    // Total number of tuples across all workers.
-    int totalTupleCount = 0;
-
     // Drain out all the workerID and partitionSize info.
     while (!getChild().eos()) {
       TupleBatch tb = getChild().nextReady();
       if (tb == null) {
-        continue;
+        if (getChild().eos()) {
+          break;
+        }
+        return null;
       }
       Type col0Type = tb.getSchema().getColumnType(0);
       Type col1Type = tb.getSchema().getColumnType(1);
@@ -154,7 +158,6 @@ public class SamplingDistribution extends UnaryOperator {
             "Worker cannot have a negative PartitionSize: %s", partitionSize);
         tupleCounts.set(workerID - 1, partitionSize);
         totalTupleCount += partitionSize;
-
         int streamSize = partitionSize;
         if (hasStreamSize) {
           if (col2Type == Type.INT_TYPE) {
@@ -202,6 +205,8 @@ public class SamplingDistribution extends UnaryOperator {
     ImmutableList.Builder<Column<?>> columns = ImmutableList.builder();
     columns.add(wIdCol.build(), streamSizeCol.build(), sampCountCol.build(),
         sampTypeCol.build());
+    getChild().close();
+    close();
     return new TupleBatch(SCHEMA, columns.build());
   }
 
@@ -218,8 +223,9 @@ public class SamplingDistribution extends UnaryOperator {
       int sampleSize) {
     int[] distribution = new int[tupleCounts.size()];
     int totalTupleCount = 0;
-    for (int val : tupleCounts)
+    for (int val : tupleCounts) {
       totalTupleCount += val;
+    }
 
     for (int i = 0; i < sampleSize; i++) {
       int sampleTupleIdx = rand.nextInt(totalTupleCount);
@@ -249,9 +255,10 @@ public class SamplingDistribution extends UnaryOperator {
       int sampleSize) {
     int[] distribution = new int[tupleCounts.size()];
     int totalTupleCount = 0;
-    for (int val : tupleCounts)
+    for (int val : tupleCounts) {
       totalTupleCount += val;
-    List<Integer> logicalTupleCounts = new ArrayList<Integer>(tupleCounts);
+    }
+    List<Integer> logicalTupleCounts = new ArrayList<>(tupleCounts);
 
     for (int i = 0; i < sampleSize; i++) {
       int sampleTupleIdx = rand.nextInt(totalTupleCount - i);
@@ -299,6 +306,16 @@ public class SamplingDistribution extends UnaryOperator {
   @Override
   public Schema generateSchema() {
     return SCHEMA;
+  }
+
+  @Override
+  protected void init(final ImmutableMap<String, Object> execEnvVars) {
+    rand = new Random();
+    if (randomSeed != null) {
+      rand.setSeed(randomSeed);
+    }
+    tupleCounts = new ArrayList<>();
+    streamCounts = new ArrayList<>();
   }
 
 }

@@ -71,8 +71,9 @@ public class Sample extends BinaryOperator {
     // Extract sampling info from left operator.
     if (!computedSamplingInfo) {
       TupleBatch tb = getLeft().nextReady();
-      if (tb == null)
+      if (tb == null) {
         return null;
+      }
       extractSamplingInfo(tb);
       getLeft().close();
 
