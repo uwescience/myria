@@ -34,7 +34,7 @@ public class CatalogQueryScan extends LeafOperator {
   /**
    * The master catalog.
    */
-  private final MasterCatalog catalog;
+  private final transient MasterCatalog catalog;
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
