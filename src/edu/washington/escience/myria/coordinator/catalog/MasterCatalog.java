@@ -18,8 +18,6 @@ import java.util.logging.Level;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import jersey.repackaged.com.google.common.collect.ImmutableSet;
-
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1998,12 +1996,17 @@ public final class MasterCatalog {
   public Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String queryString, final Schema outputSchema)
       throws CatalogException {
     try {
-      return queue.execute(new SQLiteJob<SQLiteTupleBatchIterator>() {
+      return queue.execute(new SQLiteJob<Iterator<TupleBatch>>() {
         @Override
-        protected SQLiteTupleBatchIterator job(final SQLiteConnection sqliteConnection) throws CatalogException,
+        protected Iterator<TupleBatch> job(final SQLiteConnection sqliteConnection) throws CatalogException,
             SQLiteException {
           SQLiteStatement statement = sqliteConnection.prepare(queryString);
-          return new SQLiteTupleBatchIterator(statement, sqliteConnection, outputSchema);
+          List<TupleBatch> tuples = Lists.newLinkedList();
+          Iterator<TupleBatch> iter = new SQLiteTupleBatchIterator(statement, sqliteConnection, outputSchema);
+          while (iter.hasNext()) {
+            tuples.add(iter.next());
+          }
+          return tuples.iterator();
         }
       }).get();
     } catch (InterruptedException | ExecutionException e) {
