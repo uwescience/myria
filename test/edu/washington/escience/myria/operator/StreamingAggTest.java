@@ -1,7 +1,10 @@
 package edu.washington.escience.myria.operator;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import org.joda.time.DateTime;
 import org.junit.Test;
@@ -1088,6 +1091,50 @@ public class StreamingAggTest {
     assertEquals(expectedSecondStdev, result.getDouble(7, 1), 0.0001);
     assertEquals(expectedThirdStdev, result.getDouble(7, 2), 0.0001);
     assertEquals(expectedFourthStdev, result.getDouble(7, 3), 0.0001);
+    agg.close();
+  }
+
+  @Test
+  public void testMultiBatchResult() throws DbException {
+    final int numTuples = 3 * TupleBatch.BATCH_SIZE + 3;
+    final Schema schema = Schema.ofFields(Type.LONG_TYPE, "gkey", Type.LONG_TYPE, "value");
+    final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
+    // gkey: 0, 1, 2, ..., numTuples-1; value: 1, 1, 1, ...
+    for (long i = 0; i < numTuples; i++) {
+      tbb.putLong(0, i);
+      tbb.putLong(1, 1L);
+    }
+    // group by col0, count
+    StreamingAggregate agg =
+        new StreamingAggregate(new TupleSource(tbb), new int[] { 0 }, new SingleColumnAggregatorFactory(1,
+            AggregationOp.COUNT));
+    agg.open(null);
+    TupleBatch result = agg.nextReady();
+    assertNotNull(result);
+    assertEquals(TupleBatch.BATCH_SIZE, result.numTuples());
+    assertEquals(2, result.getSchema().numColumns());
+    // aggregator should return filled tuple batch, even if it hasn't finished processing all input
+    assertFalse(agg.getChild().eos());
+    // get second tuple batch
+    result = agg.nextReady();
+    assertEquals(TupleBatch.BATCH_SIZE, result.numTuples());
+    assertEquals(2, result.getSchema().numColumns());
+    assertFalse(agg.getChild().eos());
+    // get third tuple batch
+    result = agg.nextReady();
+    assertEquals(TupleBatch.BATCH_SIZE, result.numTuples());
+    assertEquals(2, result.getSchema().numColumns());
+    assertFalse(agg.getChild().eos());
+    // get last, non-filled tuple batch
+    result = agg.nextReady();
+    assertEquals(3, result.numTuples());
+    assertEquals(2, result.getSchema().numColumns());
+    // child reaches eos()
+    assertTrue(agg.getChild().eos());
+    // exhaust aggregator
+    result = agg.nextReady();
+    assertNull(result);
+    assertTrue(agg.eos());
     agg.close();
   }
 }

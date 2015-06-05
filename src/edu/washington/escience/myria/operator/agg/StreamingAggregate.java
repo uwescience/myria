@@ -6,17 +6,15 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.UnaryOperator;
 import edu.washington.escience.myria.storage.Tuple;
 import edu.washington.escience.myria.storage.TupleBatch;
-import edu.washington.escience.myria.storage.TupleBuffer;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.storage.TupleUtils;
 
 /**
@@ -33,17 +31,22 @@ public class StreamingAggregate extends UnaryOperator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  /** The schema of the aggregation result. */
-  private Schema aggSchema;
+  /** The schema of the result. */
+  private Schema resultSchema;
   /** The schema of the columns indicated by the group keys. */
   private Schema groupSchema;
+
   /** Holds the current grouping key. */
   private Tuple curGroupKey;
+  /** Child of this aggregator. **/
+  private final Operator child = getChild();
+  /** Currently processing input tuple batch. **/
+  private TupleBatch tb;
+  /** Current row in the input tuple batch. **/
+  private int row;
 
   /** Group fields. **/
   private final int[] gFields;
-  /** Group field types. **/
-  private final Type[] gTypes;
   /** An array [0, 1, .., gFields.length-1] used for comparing tuples. */
   private final int[] gRange;
   /** Factories to make the Aggregators. **/
@@ -54,9 +57,7 @@ public class StreamingAggregate extends UnaryOperator {
   private Object[] aggregatorStates;
 
   /** Buffer for holding intermediate results. */
-  private transient TupleBuffer resultBuffer;
-  /** Buffer for holding finished results as tuple batches. */
-  private transient ImmutableList<TupleBatch> finalBuffer;
+  private transient TupleBatchBuffer resultBuffer;
 
   /**
    * Groups the input tuples according to the specified grouping fields, then produces the specified aggregates.
@@ -69,12 +70,11 @@ public class StreamingAggregate extends UnaryOperator {
       @Nonnull final AggregatorFactory... factories) {
     super(child);
     gFields = Objects.requireNonNull(gfields, "gfields");
-    gTypes = new Type[gfields.length];
     this.factories = Objects.requireNonNull(factories, "factories");
     Preconditions.checkArgument(gfields.length > 0, " must have at least one group by field");
     Preconditions.checkArgument(factories.length > 0, "to use StreamingAggregate, must specify some aggregates");
     gRange = new int[gfields.length];
-    for (int i = 0; i < gfields.length; ++i) {
+    for (int i = 0; i < gRange.length; ++i) {
       gRange[i] = i;
     }
   }
@@ -88,81 +88,42 @@ public class StreamingAggregate extends UnaryOperator {
    */
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
-    final Operator child = getChild();
     if (child.eos()) {
-      return getResultBatch();
+      return resultBuffer.popAny();
     }
-
-    TupleBatch tb = child.nextReady();
+    if (tb == null) {
+      tb = child.nextReady();
+      row = 0;
+    }
     while (tb != null) {
-      for (int row = 0; row < tb.numTuples(); ++row) {
+      while (row < tb.numTuples()) {
         if (curGroupKey == null) {
           /* First time accessing this tb, no aggregation performed previously. */
           // store current group key as a tuple
           curGroupKey = new Tuple(groupSchema);
           for (int gKey = 0; gKey < gFields.length; ++gKey) {
-            gTypes[gKey] = tb.getSchema().getColumnType(gFields[gKey]);
-            switch (gTypes[gKey]) {
-              case BOOLEAN_TYPE:
-                curGroupKey.set(gKey, tb.getBoolean(gFields[gKey], row));
-                break;
-              case STRING_TYPE:
-                curGroupKey.set(gKey, tb.getString(gFields[gKey], row));
-                break;
-              case DATETIME_TYPE:
-                curGroupKey.set(gKey, tb.getDateTime(gFields[gKey], row));
-                break;
-              case INT_TYPE:
-                curGroupKey.set(gKey, tb.getInt(gFields[gKey], row));
-                break;
-              case LONG_TYPE:
-                curGroupKey.set(gKey, tb.getLong(gFields[gKey], row));
-                break;
-              case FLOAT_TYPE:
-                curGroupKey.set(gKey, tb.getFloat(gFields[gKey], row));
-                break;
-              case DOUBLE_TYPE:
-                curGroupKey.set(gKey, tb.getDouble(gFields[gKey], row));
-                break;
-            }
+            TupleUtils.copyValue(tb, gFields[gKey], row, curGroupKey, gKey);
           }
         } else if (!TupleUtils.tupleEquals(tb, gFields, row, curGroupKey, gRange, 0)) {
           /* Different grouping key than current one, flush current agg result to result buffer. */
           addToResult();
           // store current group key as a tuple
           for (int gKey = 0; gKey < gFields.length; ++gKey) {
-            switch (gTypes[gKey]) {
-              case BOOLEAN_TYPE:
-                curGroupKey.set(gKey, tb.getBoolean(gFields[gKey], row));
-                break;
-              case STRING_TYPE:
-                curGroupKey.set(gKey, tb.getString(gFields[gKey], row));
-                break;
-              case DATETIME_TYPE:
-                curGroupKey.set(gKey, tb.getDateTime(gFields[gKey], row));
-                break;
-              case INT_TYPE:
-                curGroupKey.set(gKey, tb.getInt(gFields[gKey], row));
-                break;
-              case LONG_TYPE:
-                curGroupKey.set(gKey, tb.getLong(gFields[gKey], row));
-                break;
-              case FLOAT_TYPE:
-                curGroupKey.set(gKey, tb.getFloat(gFields[gKey], row));
-                break;
-              case DOUBLE_TYPE:
-                curGroupKey.set(gKey, tb.getDouble(gFields[gKey], row));
-                break;
-            }
+            TupleUtils.copyValue(tb, gFields[gKey], row, curGroupKey, gKey);
           }
-          reinitializeAggStates();
+          aggregatorStates = AggUtils.allocateAggStates(aggregators);
+          if (resultBuffer.hasFilledTB()) {
+            return resultBuffer.popFilled();
+          }
         }
         // update aggregator states with current tuple
         for (int agg = 0; agg < aggregators.length; ++agg) {
           aggregators[agg].addRow(tb, row, aggregatorStates[agg]);
         }
+        row++;
       }
       tb = child.nextReady();
+      row = 0;
     }
 
     /*
@@ -171,19 +132,9 @@ public class StreamingAggregate extends UnaryOperator {
      */
     if (child.eos()) {
       addToResult();
-      return getResultBatch();
+      return resultBuffer.popAny();
     }
     return null;
-  }
-
-  /**
-   * Re-initialize aggregator states for new group key.
-   *
-   * @throws DbException if any error
-   */
-  private void reinitializeAggStates() throws DbException {
-    aggregatorStates = null;
-    aggregatorStates = AggUtils.allocateAggStates(aggregators);
   }
 
   /**
@@ -199,26 +150,6 @@ public class StreamingAggregate extends UnaryOperator {
     for (int agg = 0; agg < aggregators.length; ++agg) {
       aggregators[agg].getResult(resultBuffer, fromIndex, aggregatorStates[agg]);
       fromIndex += aggregators[agg].getResultSchema().numColumns();
-    }
-  }
-
-  /**
-   * @return A batch's worth of result tuples from this aggregate.
-   * @throws DbException if there is an error.
-   */
-  private TupleBatch getResultBatch() throws DbException {
-    Preconditions.checkState(getChild().eos(), "cannot extract results from an aggregate until child has reached EOS");
-    if (finalBuffer == null) {
-      finalBuffer = resultBuffer.finalResult();
-      if (resultBuffer.numTuples() == 0) {
-        throw new DbException("0 tuples in result buffer");
-      }
-      resultBuffer = null;
-    }
-    if (finalBuffer.isEmpty()) {
-      return null;
-    } else {
-      return finalBuffer.get(0);
     }
   }
 
@@ -239,22 +170,16 @@ public class StreamingAggregate extends UnaryOperator {
     }
 
     groupSchema = inputSchema.getSubSchema(gFields);
-
-    /* Build the output schema from the group schema and the aggregates. */
-    final ImmutableList.Builder<Type> aggTypes = ImmutableList.<Type> builder();
-    final ImmutableList.Builder<String> aggNames = ImmutableList.<String> builder();
-
+    resultSchema = groupSchema;
     try {
       for (Aggregator agg : AggUtils.allocateAggs(factories, inputSchema)) {
         Schema curAggSchema = agg.getResultSchema();
-        aggTypes.addAll(curAggSchema.getColumnTypes());
-        aggNames.addAll(curAggSchema.getColumnNames());
+        resultSchema = Schema.merge(resultSchema, curAggSchema);
       }
     } catch (DbException e) {
       throw new RuntimeException("unable to allocate aggregators to determine output schema", e);
     }
-    aggSchema = new Schema(aggTypes, aggNames);
-    return Schema.merge(groupSchema, aggSchema);
+    return resultSchema;
   }
 
   @Override
@@ -262,7 +187,7 @@ public class StreamingAggregate extends UnaryOperator {
     Preconditions.checkState(getSchema() != null, "unable to determine schema in init");
     aggregators = AggUtils.allocateAggs(factories, getChild().getSchema());
     aggregatorStates = AggUtils.allocateAggStates(aggregators);
-    resultBuffer = new TupleBuffer(getSchema());
+    resultBuffer = new TupleBatchBuffer(getSchema());
   }
 
   @Override
@@ -270,6 +195,5 @@ public class StreamingAggregate extends UnaryOperator {
     aggregatorStates = null;
     curGroupKey = null;
     resultBuffer = null;
-    finalBuffer = null;
   }
 }
