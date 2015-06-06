@@ -123,7 +123,7 @@ public class SampleWRTest {
       int[] expected) throws DbException {
     leftInput.putInt(1, partitionSize);
     leftInput.putInt(2, sampleSize);
-    leftInput.putString(3, "WR");
+    leftInput.putString(3, "WithReplacement");
     sampOp = new Sample(new TupleSource(leftInput), new TupleSource(rightInput), RANDOM_SEED);
     sampOp.open(TestEnvVars.get());
 
@@ -145,7 +145,7 @@ public class SampleWRTest {
       throws DbException {
     leftInput.putInt(1, partitionSize);
     leftInput.putInt(2, sampleSize);
-    leftInput.putString(3, "WR");
+    leftInput.putString(3, "WithReplacement");
     sampOp = new Sample(new TupleSource(leftInput), new TupleSource(rightInput), RANDOM_SEED);
     sampOp.open(TestEnvVars.get());
     while (!sampOp.eos()) {

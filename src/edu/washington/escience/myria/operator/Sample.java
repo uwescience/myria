@@ -16,6 +16,10 @@ import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.SamplingType;
 
+/**
+ * Takes in some sampling parameters from the left child and uses that to sample
+ * tuples from the right child.
+ */
 public class Sample extends BinaryOperator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -28,9 +32,6 @@ public class Sample extends BinaryOperator {
 
   /** Random generator used for index selection. */
   private Random rand;
-
-  /** Seed for the random generator. */
-  private Long randomSeed;
 
   /** The type of sampling to perform. */
   private SamplingType sampleType;
@@ -63,7 +64,10 @@ public class Sample extends BinaryOperator {
    */
   public Sample(final Operator left, final Operator right, Long randomSeed) {
     super(left, right);
-    this.randomSeed = randomSeed;
+    rand = new Random();
+    if (randomSeed != null) {
+      rand.setSeed(randomSeed);
+    }
   }
 
   @Override
@@ -78,16 +82,16 @@ public class Sample extends BinaryOperator {
       getLeft().close();
 
       // Cannot sampleWoR more tuples than there are.
-      if (sampleType == SamplingType.WoR) {
+      if (sampleType == SamplingType.WithoutReplacement) {
         Preconditions.checkState(sampleSize <= streamSize,
             "Cannot SampleWoR %s tuples from a population of size %s",
             sampleSize, streamSize);
       }
 
       // Generate target indices to accept as samples.
-      if (sampleType == SamplingType.WR) {
+      if (sampleType == SamplingType.WithReplacement) {
         sampleIndices = generateIndicesWR(streamSize, sampleSize);
-      } else if (sampleType == SamplingType.WoR) {
+      } else if (sampleType == SamplingType.WithoutReplacement) {
         sampleIndices = generateIndicesWoR(streamSize, sampleSize);
       } else {
         throw new DbException("Invalid sampleType: " + sampleType);
@@ -209,7 +213,7 @@ public class Sample extends BinaryOperator {
    * @return a sorted array of indices.
    */
   private int[] generateIndicesWoR(int populationSize, int sampleSize) {
-    Set<Integer> indices = new HashSet<Integer>(sampleSize);
+    Set<Integer> indices = new HashSet<>(sampleSize);
     for (int i = populationSize - sampleSize; i < populationSize; i++) {
       int idx = rand.nextInt(i + 1);
       if (indices.contains(idx)) {
@@ -235,10 +239,6 @@ public class Sample extends BinaryOperator {
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) {
     ans = new TupleBatchBuffer(getSchema());
-    rand = new Random();
-    if (randomSeed != null) {
-      rand.setSeed(randomSeed);
-    }
   }
 
   @Override

@@ -1,12 +1,11 @@
 package edu.washington.escience.myria.operator;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.TreeMap;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
@@ -17,17 +16,21 @@ import edu.washington.escience.myria.column.builder.StringColumnBuilder;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.util.SamplingType;
 
+/**
+ * Given the sizes of each worker, computes a distribution of how much each
+ * worker should sample.
+ */
 public class SamplingDistribution extends UnaryOperator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   /** The output schema. */
-  private static final Schema SCHEMA = Schema.of(ImmutableList.of(
-      Type.INT_TYPE, Type.INT_TYPE, Type.INT_TYPE, Type.STRING_TYPE),
-      ImmutableList.of("WorkerID", "StreamSize", "SampleSize", "SampleType"));
+  private static final Schema SCHEMA = Schema.ofFields("WorkerID",
+      Type.INT_TYPE, "StreamSize", Type.INT_TYPE, "SampleSize", Type.INT_TYPE,
+      "SampleType", Type.STRING_TYPE);
 
   /** Total number of tuples to sample. */
-  private int sampleSize;
+  private int sampleSize = 0;
 
   /** True if using a percentage instead of a specific tuple count. */
   private boolean isPercentageSample = false;
@@ -41,21 +44,8 @@ public class SamplingDistribution extends UnaryOperator {
   /** Random generator used for creating the distribution. */
   private Random rand;
 
-  /** Seed for the random generator. */
-  private Long randomSeed;
-
-  /**
-   * Distribution of the tuples across the workers. Value at index i == # of
-   * tuples on worker i.
-   */
-  ArrayList<Integer> tupleCounts;
-
-  /**
-   * Distribution of the actual stream size across the workers. May be different
-   * from tupleCounts if workers pre-sampled the data. Value at index i == # of
-   * tuples in stream on worker i.
-   */
-  ArrayList<Integer> streamCounts;
+  /** Maps (worker_i) --> (sampling info for worker_i) */
+  TreeMap<Integer, WorkerInfo> workerInfo = new TreeMap<>();
 
   /** Total number of tuples across all workers. */
   int totalTupleCount = 0;
@@ -64,7 +54,10 @@ public class SamplingDistribution extends UnaryOperator {
       Long randomSeed) {
     super(child);
     this.sampleType = sampleType;
-    this.randomSeed = randomSeed;
+    rand = new Random();
+    if (randomSeed != null) {
+      rand.setSeed(randomSeed);
+    }
   }
 
   /**
@@ -83,9 +76,9 @@ public class SamplingDistribution extends UnaryOperator {
   public SamplingDistribution(Operator child, int sampleSize,
       SamplingType sampleType, Long randomSeed) {
     this(child, sampleType, randomSeed);
+    Preconditions.checkArgument(sampleSize >= 0,
+        "Sample Size must be >= 0: %s", sampleSize);
     this.sampleSize = sampleSize;
-    Preconditions.checkState(this.sampleSize >= 0,
-        "Sample Size must be >= 0: %s", this.sampleSize);
   }
 
   /**
@@ -107,13 +100,14 @@ public class SamplingDistribution extends UnaryOperator {
     this(child, sampleType, randomSeed);
     this.isPercentageSample = true;
     this.samplePercentage = samplePercentage;
-    Preconditions.checkState(samplePercentage >= 0 && samplePercentage <= 100,
+    Preconditions.checkArgument(samplePercentage >= 0
+        && samplePercentage <= 100,
         "Sample Percentage must be >= 0 && <= 100: %s", samplePercentage);
   }
 
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
-    // Drain out all the workerID and partitionSize info.
+    // Drain out all the worker info.
     while (!getChild().eos()) {
       TupleBatch tb = getChild().nextReady();
       if (tb == null) {
@@ -122,57 +116,9 @@ public class SamplingDistribution extends UnaryOperator {
         }
         return null;
       }
-      Type col0Type = tb.getSchema().getColumnType(0);
-      Type col1Type = tb.getSchema().getColumnType(1);
-      boolean hasStreamSize = false;
-      Type col2Type = null;
-      if (tb.getSchema().numColumns() > 2) {
-        hasStreamSize = true;
-        col2Type = tb.getSchema().getColumnType(2);
-      }
-      for (int i = 0; i < tb.numTuples(); i++) {
-        int workerID;
-        if (col0Type == Type.INT_TYPE) {
-          workerID = tb.getInt(0, i);
-        } else if (col0Type == Type.LONG_TYPE) {
-          workerID = (int) tb.getLong(0, i);
-        } else {
-          throw new DbException("WorkerID must be of type INT or LONG");
-        }
-        Preconditions.checkState(workerID > 0, "WorkerID must be > 0");
-        // Ensure the future .set(workerID, -) calls will work.
-        for (int j = tupleCounts.size(); j < workerID; j++) {
-          tupleCounts.add(0);
-          streamCounts.add(0);
-        }
-
-        int partitionSize;
-        if (col1Type == Type.INT_TYPE) {
-          partitionSize = tb.getInt(1, i);
-        } else if (col1Type == Type.LONG_TYPE) {
-          partitionSize = (int) tb.getLong(1, i);
-        } else {
-          throw new DbException("PartitionSize must be of type INT or LONG");
-        }
-        Preconditions.checkState(partitionSize >= 0,
-            "Worker cannot have a negative PartitionSize: %s", partitionSize);
-        tupleCounts.set(workerID - 1, partitionSize);
-        totalTupleCount += partitionSize;
-        int streamSize = partitionSize;
-        if (hasStreamSize) {
-          if (col2Type == Type.INT_TYPE) {
-            streamSize = tb.getInt(2, i);
-          } else if (col2Type == Type.LONG_TYPE) {
-            streamSize = (int) tb.getLong(2, i);
-          } else {
-            throw new DbException("StreamSize must be of type INT or LONG");
-          }
-          Preconditions.checkState(partitionSize >= 0,
-              "Worker cannot have a negative StreamSize: %d", streamSize);
-        }
-        streamCounts.set(workerID - 1, streamSize);
-      }
+      extractWorkerInfo(tb);
     }
+
     // Convert samplePct to sampleSize if using a percentage sample.
     if (isPercentageSample) {
       sampleSize = Math.round(totalTupleCount * (samplePercentage / 100));
@@ -181,99 +127,151 @@ public class SamplingDistribution extends UnaryOperator {
         "Cannot extract %s samples from a population of size %s", sampleSize,
         totalTupleCount);
 
-    // Generate a random distribution across the workers.
-    int[] sampleCounts;
-    if (sampleType == SamplingType.WR) {
-      sampleCounts = withReplacementDistribution(tupleCounts, sampleSize);
-    } else if (sampleType == SamplingType.WoR) {
-      sampleCounts = withoutReplacementDistribution(tupleCounts, sampleSize);
+    // Generate a sampling distribution across the workers.
+    if (sampleType == SamplingType.WithReplacement) {
+      withReplacementDistribution(workerInfo, totalTupleCount, sampleSize);
+    } else if (sampleType == SamplingType.WithoutReplacement) {
+      withoutReplacementDistribution(workerInfo, totalTupleCount, sampleSize);
     } else {
       throw new DbException("Invalid sampleType: " + sampleType);
     }
 
     // Build and return a TupleBatch with the distribution.
-    IntColumnBuilder wIdCol = new IntColumnBuilder();
-    IntColumnBuilder streamSizeCol = new IntColumnBuilder();
-    IntColumnBuilder sampCountCol = new IntColumnBuilder();
-    StringColumnBuilder sampTypeCol = new StringColumnBuilder();
-    for (int i = 0; i < streamCounts.size(); i++) {
-      wIdCol.appendInt(i + 1);
-      streamSizeCol.appendInt(streamCounts.get(i));
-      sampCountCol.appendInt(sampleCounts[i]);
-      sampTypeCol.appendString(sampleType.name());
+    // Assumes that the sampling information can fit into one tuple batch.
+    IntColumnBuilder wIDs = new IntColumnBuilder();
+    IntColumnBuilder actualSizes = new IntColumnBuilder();
+    IntColumnBuilder sampSizes = new IntColumnBuilder();
+    StringColumnBuilder sampTypes = new StringColumnBuilder();
+    for (Map.Entry<Integer, WorkerInfo> iWorker : workerInfo.entrySet()) {
+      wIDs.appendInt(iWorker.getKey());
+      actualSizes.appendInt(iWorker.getValue().actualTupleCount);
+      sampSizes.appendInt(iWorker.getValue().sampleSize);
+      sampTypes.appendString(sampleType.name());
     }
     ImmutableList.Builder<Column<?>> columns = ImmutableList.builder();
-    columns.add(wIdCol.build(), streamSizeCol.build(), sampCountCol.build(),
-        sampTypeCol.build());
+    columns.add(wIDs.build(), actualSizes.build(), sampSizes.build(),
+        sampTypes.build());
     setEOS();
     return new TupleBatch(SCHEMA, columns.build());
   }
 
-  /**
-   * Creates a WithReplacement distribution across the workers.
-   * 
-   * @param tupleCounts
-   *          list of how many tuples each worker has.
-   * @param sampleSize
-   *          total number of samples to distribute across the workers.
-   * @return array representing the distribution across the workers.
-   */
-  private int[] withReplacementDistribution(List<Integer> tupleCounts,
-      int sampleSize) {
-    int[] distribution = new int[tupleCounts.size()];
-    int totalTupleCount = 0;
-    for (int val : tupleCounts) {
-      totalTupleCount += val;
+  /** Helper function to extract worker information from a tuple batch. */
+  private void extractWorkerInfo(TupleBatch tb) throws DbException {
+    Type col0Type = tb.getSchema().getColumnType(0);
+    Type col1Type = tb.getSchema().getColumnType(1);
+    boolean hasActualTupleCount = false;
+    Type col2Type = null;
+    if (tb.getSchema().numColumns() > 2) {
+      hasActualTupleCount = true;
+      col2Type = tb.getSchema().getColumnType(2);
     }
 
-    for (int i = 0; i < sampleSize; i++) {
-      int sampleTupleIdx = rand.nextInt(totalTupleCount);
-      // Assign this tuple to the workerID that holds this sampleTupleIdx.
-      int tupleOffset = 0;
-      for (int j = 0; j < tupleCounts.size(); j++) {
-        if (sampleTupleIdx < tupleCounts.get(j) + tupleOffset) {
-          distribution[j] += 1;
-          break;
-        }
-        tupleOffset += tupleCounts.get(j);
+    for (int i = 0; i < tb.numTuples(); i++) {
+      int workerID;
+      if (col0Type == Type.INT_TYPE) {
+        workerID = tb.getInt(0, i);
+      } else if (col0Type == Type.LONG_TYPE) {
+        workerID = (int) tb.getLong(0, i);
+      } else {
+        throw new DbException("WorkerID must be of type INT or LONG");
       }
+      Preconditions.checkState(workerID > 0, "WorkerID must be > 0");
+      Preconditions.checkState(!workerInfo.containsKey(workerID),
+          "Duplicate WorkerIDs");
+
+      int tupleCount;
+      if (col1Type == Type.INT_TYPE) {
+        tupleCount = tb.getInt(1, i);
+      } else if (col1Type == Type.LONG_TYPE) {
+        tupleCount = (int) tb.getLong(1, i);
+      } else {
+        throw new DbException("TupleCount must be of type INT or LONG");
+      }
+      Preconditions.checkState(tupleCount >= 0,
+          "Worker cannot have a negative TupleCount: %s", tupleCount);
+
+      int actualTupleCount = tupleCount;
+      if (hasActualTupleCount) {
+        if (col2Type == Type.INT_TYPE) {
+          actualTupleCount = tb.getInt(2, i);
+        } else if (col2Type == Type.LONG_TYPE) {
+          actualTupleCount = (int) tb.getLong(2, i);
+        } else {
+          throw new DbException("ActualTupleCount must be of type INT or LONG");
+        }
+        Preconditions.checkState(tupleCount >= 0,
+            "Worker cannot have a negative ActualTupleCount: %d",
+            actualTupleCount);
+      }
+
+      WorkerInfo wInfo = new WorkerInfo(tupleCount, actualTupleCount);
+      workerInfo.put(workerID, wInfo);
+      totalTupleCount += tupleCount;
     }
-    return distribution;
   }
 
   /**
    * Creates a WithoutReplacement distribution across the workers.
    *
-   * @param tupleCounts
-   *          list of how many tuples each worker has.
+   * @param workerInfo
+   *          reference to the workerInfo to modify.
+   * @param totalTupleCount
+   *          total # of tuples across all workers.
    * @param sampleSize
-   *          total number of samples to distribute across the workers.
-   * @return array representing the distribution across the workers.
+   *          total # of samples to distribute across the workers.
    */
-  private int[] withoutReplacementDistribution(List<Integer> tupleCounts,
+  private void withReplacementDistribution(
+      TreeMap<Integer, WorkerInfo> workerInfo, int totalTupleCount,
       int sampleSize) {
-    int[] distribution = new int[tupleCounts.size()];
-    int totalTupleCount = 0;
-    for (int val : tupleCounts) {
-      totalTupleCount += val;
+    for (int i = 0; i < sampleSize; i++) {
+      int sampleTupleIdx = rand.nextInt(totalTupleCount);
+      // Assign this tuple to the workerID that holds this sampleTupleIdx.
+      int tupleOffset = 0;
+      for (Map.Entry<Integer, WorkerInfo> iWorker : workerInfo.entrySet()) {
+        WorkerInfo wInfo = iWorker.getValue();
+        if (sampleTupleIdx < wInfo.tupleCount + tupleOffset) {
+          wInfo.sampleSize += 1;
+          break;
+        }
+        tupleOffset += wInfo.tupleCount;
+      }
     }
-    List<Integer> logicalTupleCounts = new ArrayList<>(tupleCounts);
+  }
+
+  /**
+   * Creates a WithoutReplacement distribution across the workers.
+   *
+   * @param workerInfo
+   *          reference to the workerInfo to modify.
+   * @param totalTupleCount
+   *          total # of tuples across all workers.
+   * @param sampleSize
+   *          total # of samples to distribute across the workers.
+   */
+  private void withoutReplacementDistribution(
+      TreeMap<Integer, WorkerInfo> workerInfo, int totalTupleCount,
+      int sampleSize) {
+    Map<Integer, Integer> logicalTupleCounts = new TreeMap<>();
+    for (Map.Entry<Integer, WorkerInfo> wInfo : workerInfo.entrySet()) {
+      logicalTupleCounts.put(wInfo.getKey(), wInfo.getValue().tupleCount);
+    }
 
     for (int i = 0; i < sampleSize; i++) {
       int sampleTupleIdx = rand.nextInt(totalTupleCount - i);
       // Assign this tuple to the workerID that holds this sampleTupleIdx.
       int tupleOffset = 0;
-      for (int j = 0; j < logicalTupleCounts.size(); j++) {
-        if (sampleTupleIdx < logicalTupleCounts.get(j) + tupleOffset) {
-          distribution[j] += 1;
+      for (Map.Entry<Integer, WorkerInfo> iWorker : workerInfo.entrySet()) {
+        int wID = iWorker.getKey();
+        WorkerInfo wInfo = iWorker.getValue();
+        if (sampleTupleIdx < logicalTupleCounts.get(wID) + tupleOffset) {
+          wInfo.sampleSize += 1;
           // Cannot sample the same tuple, so pretend it doesn't exist anymore.
-          logicalTupleCounts.set(j, logicalTupleCounts.get(j) - 1);
+          logicalTupleCounts.put(wID, logicalTupleCounts.get(wID) - 1);
           break;
         }
-        tupleOffset += logicalTupleCounts.get(j);
+        tupleOffset += logicalTupleCounts.get(wID);
       }
     }
-    return distribution;
   }
 
   /**
@@ -282,11 +280,6 @@ public class SamplingDistribution extends UnaryOperator {
    */
   public int getSampleSize() {
     return sampleSize;
-  }
-
-  /** Returns whether this operator is using a percentage sample. */
-  public boolean isPercentageSample() {
-    return isPercentageSample;
   }
 
   /**
@@ -308,13 +301,28 @@ public class SamplingDistribution extends UnaryOperator {
   }
 
   @Override
-  protected void init(final ImmutableMap<String, Object> execEnvVars) {
-    rand = new Random();
-    if (randomSeed != null) {
-      rand.setSeed(randomSeed);
+  public void cleanup() {
+    workerInfo = null;
+  }
+
+  /** Encapsulates sampling information about a worker. */
+  private class WorkerInfo {
+    /** # of tuples that this worker owns. */
+    int tupleCount;
+
+    /**
+     * Actual # of tuples that the worker has stored. May be different than
+     * tupleCount if the worker pre-sampled the data.
+     **/
+    int actualTupleCount;
+
+    /** # of tuples that the distribution assigned to this worker. */
+    int sampleSize = 0;
+
+    WorkerInfo(int tupleCount, int actualTupleCount) {
+      this.tupleCount = tupleCount;
+      this.actualTupleCount = actualTupleCount;
     }
-    tupleCounts = new ArrayList<>();
-    streamCounts = new ArrayList<>();
   }
 
 }

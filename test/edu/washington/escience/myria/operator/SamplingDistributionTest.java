@@ -50,7 +50,7 @@ public class SamplingDistributionTest {
   @Test
   public void testSampleWRSizeZero() throws DbException {
     int sampleSize = 0;
-    SamplingType sampleType = SamplingType.WR;
+    SamplingType sampleType = SamplingType.WithReplacement;
     final int[][] expectedResults = { { 1, 300, 0 }, { 2, 200, 0 },
         { 3, 400, 0 }, { 4, 100, 0 } };
     verifyExpectedResults(sampleSize, sampleType, expectedResults);
@@ -59,7 +59,7 @@ public class SamplingDistributionTest {
   @Test
   public void testSampleWoRSizeZero() throws DbException {
     int sampleSize = 0;
-    SamplingType sampleType = SamplingType.WoR;
+    SamplingType sampleType = SamplingType.WithoutReplacement;
     final int[][] expectedResults = { { 1, 300, 0 }, { 2, 200, 0 },
         { 3, 400, 0 }, { 4, 100, 0 } };
     verifyExpectedResults(sampleSize, sampleType, expectedResults);
@@ -69,7 +69,7 @@ public class SamplingDistributionTest {
   @Test
   public void testSampleWRPctZero() throws DbException {
     float samplePct = 0;
-    SamplingType sampleType = SamplingType.WR;
+    SamplingType sampleType = SamplingType.WithReplacement;
     final int[][] expectedResults = { { 1, 300, 0 }, { 2, 200, 0 },
         { 3, 400, 0 }, { 4, 100, 0 } };
     verifyExpectedResults(samplePct, sampleType, expectedResults);
@@ -78,7 +78,7 @@ public class SamplingDistributionTest {
   @Test
   public void testSampleWoRPctZero() throws DbException {
     float samplePct = 0;
-    SamplingType sampleType = SamplingType.WoR;
+    SamplingType sampleType = SamplingType.WithoutReplacement;
     final int[][] expectedResults = { { 1, 300, 0 }, { 2, 200, 0 },
             { 3, 400, 0 }, { 4, 100, 0 } };
     verifyExpectedResults(samplePct, sampleType, expectedResults);
@@ -88,14 +88,14 @@ public class SamplingDistributionTest {
   @Test
   public void testSampleWRSizeOne() throws DbException {
     int sampleSize = 1;
-    SamplingType sampleType = SamplingType.WR;
+    SamplingType sampleType = SamplingType.WithReplacement;
     verifyPossibleDistribution(sampleSize, sampleType);
   }
 
   @Test
   public void testSampleWoRSizeOne() throws DbException {
     int sampleSize = 1;
-    SamplingType sampleType = SamplingType.WoR;
+    SamplingType sampleType = SamplingType.WithoutReplacement;
     verifyPossibleDistribution(sampleSize, sampleType);
   }
 
@@ -103,14 +103,14 @@ public class SamplingDistributionTest {
   @Test
   public void testSampleWRSizeFifty() throws DbException {
     int sampleSize = 50;
-    SamplingType sampleType = SamplingType.WR;
+    SamplingType sampleType = SamplingType.WithReplacement;
     verifyPossibleDistribution(sampleSize, sampleType);
   }
 
   @Test
   public void testSampleWoRSizeFifty() throws DbException {
     int sampleSize = 50;
-    SamplingType sampleType = SamplingType.WoR;
+    SamplingType sampleType = SamplingType.WithoutReplacement;
     verifyPossibleDistribution(sampleSize, sampleType);
   }
 
@@ -118,14 +118,14 @@ public class SamplingDistributionTest {
   @Test
   public void testSampleWRPctFifty() throws DbException {
     float samplePct = 50;
-    SamplingType sampleType = SamplingType.WR;
+    SamplingType sampleType = SamplingType.WithReplacement;
     verifyPossibleDistribution(samplePct, sampleType);
   }
 
   @Test
   public void testSampleWoRPctFifty() throws DbException {
     float samplePct = 50;
-    SamplingType sampleType = SamplingType.WoR;
+    SamplingType sampleType = SamplingType.WithoutReplacement;
     verifyPossibleDistribution(samplePct, sampleType);
   }
 
@@ -133,14 +133,14 @@ public class SamplingDistributionTest {
   @Test
   public void testSampleWoRSizeAllButOne() throws DbException {
     int sampleSize = 999;
-    SamplingType sampleType = SamplingType.WoR;
+    SamplingType sampleType = SamplingType.WithoutReplacement;
     verifyPossibleDistribution(sampleSize, sampleType);
   }
 
   @Test
   public void testSampleWRSizeAllButOne() throws DbException {
     int sampleSize = 999;
-    SamplingType sampleType = SamplingType.WR;
+    SamplingType sampleType = SamplingType.WithReplacement;
     verifyPossibleDistribution(sampleSize, sampleType);
   }
 
@@ -148,7 +148,7 @@ public class SamplingDistributionTest {
   @Test
   public void testSampleWoRSizeMax() throws DbException {
     int sampleSize = 1000;
-    SamplingType sampleType = SamplingType.WoR;
+    SamplingType sampleType = SamplingType.WithoutReplacement;
     final int[][] expectedResults = { { 1, 300, 300 }, { 2, 200, 200 },
         { 3, 400, 400 }, { 4, 100, 100 } };
     verifyExpectedResults(sampleSize, sampleType, expectedResults);
@@ -157,7 +157,7 @@ public class SamplingDistributionTest {
   @Test
   public void testSampleWoRPctMax() throws DbException {
     float samplePct = 100;
-    SamplingType sampleType = SamplingType.WoR;
+    SamplingType sampleType = SamplingType.WithoutReplacement;
     final int[][] expectedResults = { { 1, 300, 300 }, { 2, 200, 200 },
             { 3, 400, 400 }, { 4, 100, 100 } };
     verifyExpectedResults(samplePct, sampleType, expectedResults);
@@ -167,14 +167,14 @@ public class SamplingDistributionTest {
   @Test
   public void testSampleWRSizeMax() throws DbException {
     int sampleSize = 1000;
-    SamplingType sampleType = SamplingType.WR;
+    SamplingType sampleType = SamplingType.WithReplacement;
     verifyPossibleDistribution(sampleSize, sampleType);
   }
 
   @Test
   public void testSampleWRPctMax() throws DbException {
     float samplePct = 100;
-    SamplingType sampleType = SamplingType.WR;
+    SamplingType sampleType = SamplingType.WithReplacement;
     verifyPossibleDistribution(samplePct, sampleType);
   }
 
@@ -182,57 +182,57 @@ public class SamplingDistributionTest {
   @Test(expected = IllegalStateException.class)
   public void testSampleWoRSizeTooMany() throws DbException {
     int sampleSize = 1001;
-    SamplingType sampleType = SamplingType.WoR;
+    SamplingType sampleType = SamplingType.WithoutReplacement;
     drainOperator(sampleSize, sampleType);
   }
 
-  @Test(expected = IllegalStateException.class)
+  @Test(expected = IllegalArgumentException.class)
   public void testSampleWoRPctTooMany() throws DbException {
     float samplePct = 100.1f;
-    SamplingType sampleType = SamplingType.WoR;
+    SamplingType sampleType = SamplingType.WithoutReplacement;
     drainOperator(samplePct, sampleType);
   }
 
   @Test(expected = IllegalStateException.class)
   public void testSampleWRSizeTooMany() throws DbException {
     int sampleSize = 1001;
-    SamplingType sampleType = SamplingType.WR;
+    SamplingType sampleType = SamplingType.WithReplacement;
     drainOperator(sampleSize, sampleType);
   }
 
-  @Test(expected = IllegalStateException.class)
+  @Test(expected = IllegalArgumentException.class)
   public void testSampleWRPctTooMany() throws DbException {
     float samplePct = 100.1f;
-    SamplingType sampleType = SamplingType.WR;
+    SamplingType sampleType = SamplingType.WithReplacement;
     drainOperator(samplePct, sampleType);
   }
 
   /** Cannot sample a negative number of samples. */
-  @Test(expected = IllegalStateException.class)
+  @Test(expected = IllegalArgumentException.class)
   public void testSampleWoRSizeNegative() throws DbException {
     int sampleSize = -1;
-    SamplingType sampleType = SamplingType.WoR;
+    SamplingType sampleType = SamplingType.WithoutReplacement;
     drainOperator(sampleSize, sampleType);
   }
 
-  @Test(expected = IllegalStateException.class)
+  @Test(expected = IllegalArgumentException.class)
   public void testSampleWoRPctNegative() throws DbException {
     float samplePct = -0.01f;
-    SamplingType sampleType = SamplingType.WoR;
+    SamplingType sampleType = SamplingType.WithoutReplacement;
     drainOperator(samplePct, sampleType);
   }
 
-  @Test(expected = IllegalStateException.class)
+  @Test(expected = IllegalArgumentException.class)
   public void testSampleWRSizeNegative() throws DbException {
     int sampleSize = -1;
-    SamplingType sampleType = SamplingType.WoR;
+    SamplingType sampleType = SamplingType.WithoutReplacement;
     drainOperator(sampleSize, sampleType);
   }
 
-  @Test(expected = IllegalStateException.class)
+  @Test(expected = IllegalArgumentException.class)
   public void testSampleWRPctNegative() throws DbException {
     float samplePct = -0.01f;
-    SamplingType sampleType = SamplingType.WoR;
+    SamplingType sampleType = SamplingType.WithoutReplacement;
     drainOperator(samplePct, sampleType);
   }
 
@@ -240,7 +240,7 @@ public class SamplingDistributionTest {
   @Test(expected = IllegalStateException.class)
   public void testSampleWoRWorkerNegative() throws DbException {
     int sampleSize = 50;
-    SamplingType sampleType = SamplingType.WoR;
+    SamplingType sampleType = SamplingType.WithoutReplacement;
     input.putInt(0, 5);
     input.putInt(1, -1);
     drainOperator(sampleSize, sampleType);
@@ -249,7 +249,7 @@ public class SamplingDistributionTest {
   @Test(expected = IllegalStateException.class)
   public void testSampleWRWorkerNegative() throws DbException {
     int sampleSize = 50;
-    SamplingType sampleType = SamplingType.WR;
+    SamplingType sampleType = SamplingType.WithReplacement;
     input.putInt(0, 5);
     input.putInt(1, -1);
     drainOperator(sampleSize, sampleType);
@@ -308,7 +308,7 @@ public class SamplingDistributionTest {
         assertEquals(expectedResultSchema, result.getSchema());
         for (int i = 0; i < result.numTuples(); ++i, ++rowIdx) {
           assertTrue(result.getInt(2, i) >= 0 && result.getInt(2, i) <= sampOp.getSampleSize());
-          if (sampOp.getSampleType() == SamplingType.WoR) {
+          if (sampOp.getSampleType() == SamplingType.WithoutReplacement) {
             // SampleWoR cannot sample more than worker's population size.
             assertTrue(result.getInt(2, i) <= result.getInt(1, i));
           }

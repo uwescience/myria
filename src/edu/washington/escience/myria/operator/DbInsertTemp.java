@@ -33,7 +33,7 @@ public class DbInsertTemp extends AbstractDbInsert {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** The connection to the database database. */
-  private AccessMethod accessMethod;
+  protected AccessMethod accessMethod;
   /** The information for the database connection. */
   private ConnectionInfo connectionInfo;
   /** The name of the table the tuples should be inserted into. */

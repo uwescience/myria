@@ -17,6 +17,10 @@ public class SampledDbInsertTempEncoding extends UnaryOperatorEncoding<SampledDb
   public String sampleTable;
   @Required
   public String countTable;
+
+  /** Used to make results deterministic. Null if no specified value. */
+  public Long randomSeed;
+
   /**
    * The ConnectionInfo struct determines what database the data will be written
    * to. If null, the worker's default database will be used.
@@ -27,6 +31,6 @@ public class SampledDbInsertTempEncoding extends UnaryOperatorEncoding<SampledDb
   public SampledDbInsertTemp construct(ConstructArgs args) {
     return new SampledDbInsertTemp(null, sampleSize, RelationKey.ofTemp(
         args.getQueryId(), sampleTable), RelationKey.ofTemp(args.getQueryId(),
-        countTable), connectionInfo);
+        countTable), connectionInfo, randomSeed);
   }
 }
