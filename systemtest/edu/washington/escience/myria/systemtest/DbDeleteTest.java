@@ -70,6 +70,25 @@ public class DbDeleteTest extends SystemTestBase {
   }
 
   /**
+   * Tests if the relation has been deleted successfully from the underlying databases on all the workers.
+   *
+   * @throws Exception
+   */
+  @Test
+  public void testDeleteRelation() throws Exception {
+    ingestTestDataset();
+
+    assertTrue(existsTable(workerIDs[0], relationKey));
+    assertTrue(existsTable(workerIDs[1], relationKey));
+
+    JsonAPIUtils.deleteDataset("localhost", masterDaemonPort, relationKey.getUserName(), relationKey.getProgramName(),
+        relationKey.getRelationName());
+
+    assertFalse(existsTable(workerIDs[0], relationKey));
+    assertFalse(existsTable(workerIDs[1], relationKey));
+  }
+
+  /**
    * Tests if the relation has been deleted successfully from the underlying databases on all the workers even if a
    * worker does not contain the dataset to begin with.
    * 

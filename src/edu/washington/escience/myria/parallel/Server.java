@@ -1044,6 +1044,13 @@ public final class Server {
    */
   public DatasetStatus deleteDataset(final RelationKey relationKey) throws DbException, InterruptedException {
 
+    /* Tombstone the relation */
+    try {
+      catalog.tombstoneRelationOnCatalog(relationKey);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+
     /* Delete from postgres at each worker by calling the DbDelete operator */
     try {
       Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
