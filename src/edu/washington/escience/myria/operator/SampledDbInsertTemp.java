@@ -68,7 +68,7 @@ public class SampledDbInsertTemp extends DbInsertTemp implements DbWriter {
   public SampledDbInsertTemp(final Operator child, final int sampleSize,
       final RelationKey sampleRelationKey, final RelationKey countRelationKey,
       final ConnectionInfo connectionInfo, Long randomSeed) {
-    super(child, sampleRelationKey, connectionInfo, true, null);
+    super(child, sampleRelationKey, connectionInfo, false, null);
     Preconditions.checkArgument(sampleSize >= 0,
         "sampleSize must be non-negative");
     this.sampleSize = sampleSize;
@@ -130,8 +130,11 @@ public class SampledDbInsertTemp extends DbInsertTemp implements DbWriter {
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars)
       throws DbException {
-    // Will set up the database connection and create the reservoir table.
-    super.init(execEnvVars);
+    setupConnection(execEnvVars);
+
+    // Set up the reservoir table.
+    accessMethod.dropTableIfExists(getRelationKey());
+    accessMethod.createTableIfNotExists(getRelationKey(), getSchema());
 
     // Set up the tuple count table.
     accessMethod.dropTableIfExists(countRelationKey);
