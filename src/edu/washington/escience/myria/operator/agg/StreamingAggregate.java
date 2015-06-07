@@ -89,7 +89,7 @@ public class StreamingAggregate extends UnaryOperator {
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
     if (child.eos()) {
-      return resultBuffer.popAny();
+      return null;
     }
     if (tb == null) {
       tb = child.nextReady();
@@ -170,7 +170,7 @@ public class StreamingAggregate extends UnaryOperator {
     }
 
     groupSchema = inputSchema.getSubSchema(gFields);
-    resultSchema = groupSchema;
+    resultSchema = Schema.of(groupSchema.getColumnTypes(), groupSchema.getColumnNames());
     try {
       for (Aggregator agg : AggUtils.allocateAggs(factories, inputSchema)) {
         Schema curAggSchema = agg.getResultSchema();
