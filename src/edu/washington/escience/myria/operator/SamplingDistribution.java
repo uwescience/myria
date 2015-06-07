@@ -1,8 +1,6 @@
 package edu.washington.escience.myria.operator;
 
-import java.util.Map;
-import java.util.Random;
-import java.util.TreeMap;
+import java.util.*;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -11,8 +9,8 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.column.builder.IntColumnBuilder;
-import edu.washington.escience.myria.column.builder.StringColumnBuilder;
+import edu.washington.escience.myria.column.builder.ColumnBuilder;
+import edu.washington.escience.myria.column.builder.ColumnFactory;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.util.SamplingType;
 
@@ -45,7 +43,7 @@ public class SamplingDistribution extends UnaryOperator {
   private Random rand;
 
   /** Maps (worker_i) --> (sampling info for worker_i) */
-  TreeMap<Integer, WorkerInfo> workerInfo = new TreeMap<>();
+  SortedMap<Integer, WorkerInfo> workerInfo = new TreeMap<>();
 
   /** Total number of tuples across all workers. */
   int totalTupleCount = 0;
@@ -118,6 +116,7 @@ public class SamplingDistribution extends UnaryOperator {
       }
       extractWorkerInfo(tb);
     }
+    getChild().close();
 
     // Convert samplePct to sampleSize if using a percentage sample.
     if (isPercentageSample) {
@@ -138,19 +137,17 @@ public class SamplingDistribution extends UnaryOperator {
 
     // Build and return a TupleBatch with the distribution.
     // Assumes that the sampling information can fit into one tuple batch.
-    IntColumnBuilder wIDs = new IntColumnBuilder();
-    IntColumnBuilder actualSizes = new IntColumnBuilder();
-    IntColumnBuilder sampSizes = new IntColumnBuilder();
-    StringColumnBuilder sampTypes = new StringColumnBuilder();
+    List<ColumnBuilder<?>> colBuilders = ColumnFactory.allocateColumns(SCHEMA);
     for (Map.Entry<Integer, WorkerInfo> iWorker : workerInfo.entrySet()) {
-      wIDs.appendInt(iWorker.getKey());
-      actualSizes.appendInt(iWorker.getValue().actualTupleCount);
-      sampSizes.appendInt(iWorker.getValue().sampleSize);
-      sampTypes.appendString(sampleType.name());
+      colBuilders.get(0).appendInt(iWorker.getKey());
+      colBuilders.get(1).appendInt(iWorker.getValue().actualTupleCount);
+      colBuilders.get(2).appendInt(iWorker.getValue().sampleSize);
+      colBuilders.get(3).appendString(sampleType.name());
     }
     ImmutableList.Builder<Column<?>> columns = ImmutableList.builder();
-    columns.add(wIDs.build(), actualSizes.build(), sampSizes.build(),
-        sampTypes.build());
+    for (ColumnBuilder<?> cb : colBuilders) {
+      columns.add(cb.build());
+    }
     setEOS();
     return new TupleBatch(SCHEMA, columns.build());
   }
@@ -211,7 +208,7 @@ public class SamplingDistribution extends UnaryOperator {
   }
 
   /**
-   * Creates a WithoutReplacement distribution across the workers.
+   * Creates a WithReplacement distribution across the workers.
    *
    * @param workerInfo
    *          reference to the workerInfo to modify.
@@ -221,7 +218,7 @@ public class SamplingDistribution extends UnaryOperator {
    *          total # of samples to distribute across the workers.
    */
   private void withReplacementDistribution(
-      TreeMap<Integer, WorkerInfo> workerInfo, int totalTupleCount,
+      SortedMap<Integer, WorkerInfo> workerInfo, int totalTupleCount,
       int sampleSize) {
     for (int i = 0; i < sampleSize; i++) {
       int sampleTupleIdx = rand.nextInt(totalTupleCount);
@@ -249,9 +246,9 @@ public class SamplingDistribution extends UnaryOperator {
    *          total # of samples to distribute across the workers.
    */
   private void withoutReplacementDistribution(
-      TreeMap<Integer, WorkerInfo> workerInfo, int totalTupleCount,
+      SortedMap<Integer, WorkerInfo> workerInfo, int totalTupleCount,
       int sampleSize) {
-    Map<Integer, Integer> logicalTupleCounts = new TreeMap<>();
+    SortedMap<Integer, Integer> logicalTupleCounts = new TreeMap<>();
     for (Map.Entry<Integer, WorkerInfo> wInfo : workerInfo.entrySet()) {
       logicalTupleCounts.put(wInfo.getKey(), wInfo.getValue().tupleCount);
     }
