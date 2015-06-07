@@ -25,7 +25,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 /**
  * Samples the stream into a temp relation.
  */
-public class SampledDbInsertTemp extends DbInsertTemp implements DbWriter {
+public class SampledDbInsertTemp extends DbInsertTemp {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;

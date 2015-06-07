@@ -1,6 +1,10 @@
 package edu.washington.escience.myria.operator;
 
-import java.util.*;
+import java.util.List;
+import java.util.Random;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.Map;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
