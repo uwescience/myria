@@ -373,8 +373,7 @@ public final class MasterCatalog {
 
           try {
             final SQLiteStatement statement =
-                sqliteConnection.prepare(
-                    "SELECT user_name,program_name,relation_name FROM relations WHERE tombstone=0;", false);
+                sqliteConnection.prepare("SELECT user_name,program_name,relation_name FROM relations;", false);
             while (statement.step()) {
               relations.add(RelationKey.of(statement.columnString(0), statement.columnString(1), statement
                   .columnString(2)));
@@ -1969,7 +1968,7 @@ public final class MasterCatalog {
           try {
             SQLiteStatement statement =
                 sqliteConnection
-                    .prepare("UPDATE relations SET num_tuples=? WHERE user_name=? AND program_name=? AND relation_name=?;");
+                    .prepare("UPDATE relations SET num_tuples=? WHERE user_name=? AND program_name=? AND relation_name=? and tombstone=0;");
             statement.bind(1, count);
             statement.bind(2, relation.getUserName());
             statement.bind(3, relation.getProgramName());

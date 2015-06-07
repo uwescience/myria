@@ -351,7 +351,6 @@ public final class DatasetResource {
       @PathParam("programName") final String programName, @PathParam("relationName") final String relationName)
       throws DbException {
     DatasetStatus status = server.getDatasetStatus(RelationKey.of(userName, programName, relationName));
-    LOGGER.info(status.toString());
     if (status == null) {
       /* Dataset not found, throw a 404 (Not Found) */
       throw new MyriaApiException(Status.NOT_FOUND, "That dataset was not found");
