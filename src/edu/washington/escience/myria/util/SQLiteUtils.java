@@ -179,9 +179,8 @@ public final class SQLiteUtils {
       /* Connect to the database */
       sqliteConnection = new SQLiteConnection(f);
       sqliteConnection.open(true);
-      statement =
-          sqliteConnection.prepare("SELECT * FROM sqlite_master WHERE type='table' AND name="
-              + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
+      statement = sqliteConnection.prepare("SELECT * FROM sqlite_master WHERE type='table' AND name=?");
+      statement.bind(1, relationKey.toString());
       if (statement.step()) {
         return true;
       }

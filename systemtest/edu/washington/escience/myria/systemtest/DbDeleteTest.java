@@ -7,15 +7,14 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.nio.file.Paths;
-import java.util.Set;
+import java.util.List;
 
 import org.junit.Test;
-
-import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.io.FileSource;
 import edu.washington.escience.myria.operator.TupleSource;
@@ -59,14 +58,17 @@ public class DbDeleteTest extends SystemTestBase {
   public void testDeleteRelationInCatalog() throws Exception {
     ingestTestDataset();
 
-    Set<Integer> workers = server.getWorkersForRelation(relationKey, null);
-    assertTrue(workers.size() == workerIDs.length);
-
     JsonAPIUtils.deleteDataset("localhost", masterDaemonPort, relationKey.getUserName(), relationKey.getProgramName(),
         relationKey.getRelationName());
 
-    workers = server.getWorkersForRelation(relationKey, null);
-    assertTrue(workers == null);
+    boolean foundInCatalog = false;
+    List<DatasetStatus> listDatasets = server.getDatasets();
+    for (DatasetStatus d : listDatasets) {
+      if (d.getRelationKey() == relationKey) {
+        foundInCatalog = true;
+      }
+    }
+    assertTrue(!foundInCatalog);
   }
 
   /**
@@ -117,7 +119,7 @@ public class DbDeleteTest extends SystemTestBase {
   public void ingestTestDataset() throws Exception {
     DataSource relationSource = new FileSource(Paths.get("testdata", "filescan", "simple_two_col_int.txt").toString());
     relationKey = RelationKey.of("public", "adhoc", "testIngest");
-    relationSchema = Schema.of(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE), ImmutableList.of("x", "y"));
+    relationSchema = Schema.ofFields(Type.INT_TYPE, Type.INT_TYPE, "x", "y");
     JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingest(relationKey, relationSchema, relationSource, ' ',
         new RoundRobinPartitionFunction(workerIDs.length)));
   }

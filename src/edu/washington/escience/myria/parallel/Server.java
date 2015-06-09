@@ -1044,9 +1044,9 @@ public final class Server {
    */
   public DatasetStatus deleteDataset(final RelationKey relationKey) throws DbException, InterruptedException {
 
-    /* Tombstone the relation */
+    /* Mark the relation as is_deleted */
     try {
-      catalog.tombstoneRelationOnCatalog(relationKey);
+      catalog.markRelationOnCatalog(relationKey);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
