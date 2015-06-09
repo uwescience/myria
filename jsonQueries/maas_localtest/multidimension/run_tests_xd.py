@@ -8,7 +8,10 @@ files = [
     "wise-colors-15-20-subsetsmall128.csv",
     "wise-colors-15-20-subsetsmall64.csv", 
     "wise-colors-15-20-subsetsmall32.csv", 
-    "wise-colors-15-20-subsetsmall16.csv"
+    "wise-colors-15-20-subsetsmall16.csv",
+    "wise-colors-15-20-subsetsmall8.csv", 
+    "wise-colors-15-20-subsetsmall4.csv", 
+    "wise-colors-15-20-subsetsmall2.csv"
     ]
 
 def run_em_test(filename, workers):
