@@ -602,7 +602,8 @@ public final class MStepPartialXD extends BinaryOperator {
 			// For each component, add the current point to that component
 			// with the correct responsibility.
 			for (int i = 0; i < numComponents; i++) {
-				states[i].addPoint(xArray, responsibilities[i]);
+				states[i].addPointXD(bs.get(i).getArrayCopy(),
+						responsibilities[i], Bs.get(i).getArrayCopy());
 			}
 		}
 	}
@@ -758,6 +759,35 @@ public final class MStepPartialXD extends BinaryOperator {
 				jama_mu_k_partial = jama_mu_k_partial.plus(x.times(r_ik));
 				jama_sigma_k_partial = jama_sigma_k_partial.plus(x.times(
 						x.transpose()).times(r_ik));
+			} else {
+				throw new RuntimeException("Incorrect matrix libary specified.");
+			}
+
+		}
+
+		private void addPointXD(double[][] bArray, double r_ik,
+				double[][] BArray) {
+			nPoints += 1;
+
+			//
+			// // Do updates
+			r_k_partial += r_ik;
+
+			if (matrixLibrary.equals("jblas")) {
+				// Not implemented for jblas
+				DoubleMatrix x = new DoubleMatrix(bArray);
+				mu_k_partial = mu_k_partial.add(x.mul(r_ik));
+				sigma_k_partial = sigma_k_partial.add(x.mmul(x.transpose())
+						.mul(r_ik));
+			} else if (matrixLibrary.equals("jama")) {
+				Matrix b = new Matrix(bArray);
+				Matrix B = new Matrix(BArray);
+				jama_mu_k_partial = jama_mu_k_partial.plus(b.times(r_ik));
+				// difference
+				Matrix b_cross = b.times(b.transpose());
+				Matrix b_diff = b_cross.minus(B);
+				jama_sigma_k_partial = jama_sigma_k_partial.plus(b_diff
+						.times(r_ik));
 			} else {
 				throw new RuntimeException("Incorrect matrix libary specified.");
 			}

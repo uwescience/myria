@@ -616,7 +616,7 @@ public final class EStepXD extends BinaryOperator {
 			// Put the B matrices in the output
 			for (int i = 0; i < numComponents; i++) {
 				ans.putMyriaMatrix(outputIndexCounter,
-						new MyriaMatrix(bs.get(i)));
+						new MyriaMatrix(Bs.get(i)));
 				outputIndexCounter++;
 			}
 
