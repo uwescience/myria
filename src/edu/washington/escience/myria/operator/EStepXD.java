@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.operator;
 
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.MyriaMatrix;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
@@ -16,6 +17,7 @@ import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.procedure.TIntProcedure;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -33,14 +35,14 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 /**
- * Does only the calculations of XD Estep, doesn't pass the full data.
+ * Implements the EStep in an Extreme Deconvolution.
  * 
  * This is an implementation of unbalanced hash join. This operator only builds
  * hash tables for its right child, thus will begin to output tuples after right
  * child EOS.
  * 
  */
-public final class JoinEStepXD extends BinaryOperator {
+public final class EStepXD extends BinaryOperator {
 	/** Required for Java serialization. */
 	private static final long serialVersionUID = 1L;
 
@@ -150,7 +152,7 @@ public final class JoinEStepXD extends BinaryOperator {
 	 * @throw IllegalArgumentException if there are duplicated column names from
 	 *        the children.
 	 */
-	public JoinEStepXD(final Operator left, final Operator right,
+	public EStepXD(final Operator left, final Operator right,
 			final int[] compareIndx1, final int[] compareIndx2) {
 		this(null, left, right, compareIndx1, compareIndx2);
 	}
@@ -178,7 +180,7 @@ public final class JoinEStepXD extends BinaryOperator {
 	 *        <tt>outputSchema</tt>, or if <tt>outputSchema</tt> does not have
 	 *        the correct number of columns and column types.
 	 */
-	public JoinEStepXD(final Operator left, final Operator right,
+	public EStepXD(final Operator left, final Operator right,
 			final int[] compareIndx1, final int[] compareIndx2,
 			final int[] answerColumns1, final int[] answerColumns2) {
 		this(null, left, right, compareIndx1, compareIndx2, answerColumns1,
@@ -215,7 +217,7 @@ public final class JoinEStepXD extends BinaryOperator {
 	 *        <tt>outputColumns</tt>, or if <tt>outputColumns</tt> does not have
 	 *        the correct number of columns and column types.
 	 */
-	public JoinEStepXD(final List<String> outputColumns, final Operator left,
+	public EStepXD(final List<String> outputColumns, final Operator left,
 			final Operator right, final int[] compareIndx1,
 			final int[] compareIndx2, final int[] answerColumns1,
 			final int[] answerColumns2) {
@@ -264,7 +266,7 @@ public final class JoinEStepXD extends BinaryOperator {
 	 *        <tt>outputSchema</tt>, or if <tt>outputSchema</tt> does not have
 	 *        the correct number of columns and column types.
 	 */
-	public JoinEStepXD(final List<String> outputColumns, final Operator left,
+	public EStepXD(final List<String> outputColumns, final Operator left,
 			final Operator right, final int[] compareIndx1,
 			final int[] compareIndx2) {
 		this(outputColumns, left, right, compareIndx1, compareIndx2, range(left
@@ -307,22 +309,37 @@ public final class JoinEStepXD extends BinaryOperator {
 							i, leftIndex, leftType, rightIndex, rightType);
 		}
 
+		// Now using my own type
+		// for (int i : leftAnswerColumns) {
+		// types.add(leftSchema.getColumnType(i));
+		// names.add(leftSchema.getColumnName(i));
+		// }
+
+		// New Matrix type in schema
 		types.add(Type.LONG_TYPE);
 		names.add("pid");
 
-		for (int i = 0; i < numDimensions; i++) {
-			types.add(Type.DOUBLE_TYPE);
-			names.add("x" + "_" + (1 + i));
+		// New Matrix type in schema
+		types.add(Type.MYRIAMATRIX_TYPE);
+		names.add("x");
+
+		// New Matrix type in schema
+		types.add(Type.MYRIAMATRIX_TYPE);
+		names.add("responsibilities");
+
+		// The conditional means b
+		for (int i = 0; i < numComponents; i++) {
+			// New Matrix type in schema
+			types.add(Type.MYRIAMATRIX_TYPE);
+			names.add("b" + (i + 1));
 		}
 
+		// The conditional sigmas B
 		for (int i = 0; i < numComponents; i++) {
-			types.add(Type.DOUBLE_TYPE);
-			names.add("r" + (1 + i));
+			// New Matrix type in schema
+			types.add(Type.MYRIAMATRIX_TYPE);
+			names.add("B" + (i + 1));
 		}
-		// for (int i : rightAnswerColumns) {
-		// types.add(rightSchema.getColumnType(i));
-		// names.add(rightSchema.getColumnName(i));
-		// }
 
 		if (outputColumns != null) {
 			return new Schema(types.build(), outputColumns);
@@ -494,50 +511,63 @@ public final class JoinEStepXD extends BinaryOperator {
 
 		for (int row = 0; row < tb.numTuples(); ++row) {
 
-			int indexCounter = 0;
+			int inputIndexCounter = 0;
+			int outputIndexCounter = 0;
 
-			long pid = inputColumns.get(indexCounter).getLong(row);
-			ans.putLong(indexCounter, pid);
-			indexCounter++;
+			long pid = inputColumns.get(inputIndexCounter).getLong(row);
+			inputIndexCounter++;
 
+			ans.putLong(outputIndexCounter, pid);
+			outputIndexCounter++;
+
+			// Read the x array
 			double[][] xArray = new double[numDimensions][1];
 			for (int i = 0; i < numDimensions; i++) {
-				xArray[i][0] = inputColumns.get(indexCounter).getDouble(row);
-				ans.putDouble(indexCounter, xArray[i][0]);
-				indexCounter++;
+				xArray[i][0] = inputColumns.get(inputIndexCounter).getDouble(
+						row);
+				inputIndexCounter++;
 			}
 
-			int sigmaCounter = indexCounter;
-			// Read in sigma in row-major order
+			// Read the array of X error values, stored in row-major order
 			double[][] sigmaArray = new double[numDimensions][numDimensions];
 			for (int i = 0; i < numDimensions; i++) {
 				for (int j = 0; j < numDimensions; j++) {
-					sigmaArray[i][j] = inputColumns.get(sigmaCounter)
+					sigmaArray[i][j] = inputColumns.get(inputIndexCounter)
 							.getDouble(row);
-					sigmaCounter++;
+					inputIndexCounter++;
 				}
 			}
 
-			double[] partialResponsibilities = new double[numComponents];
+			Matrix x = new Matrix(xArray);
+			Matrix xSigma = new Matrix(sigmaArray);
 
+			// Output x matrix
+			ans.putMyriaMatrix(outputIndexCounter, new MyriaMatrix(xArray));
+			outputIndexCounter++;
+
+			// Responsibilities q
+			// TODO use T instead of sigmas.get(i)
+			// Calculate the partial responsibilities
+			double[] partialResponsibilities = new double[numComponents];
 			for (int i = 0; i < numComponents; i++) {
+				// Modification for XD, get partial responsibilities with T
+				// instead of V
+				// //Matrix sigma_j = new Matrix(sigmas.get(i));
+				// //Matrix T = xSigma.plus(sigma_j);
+				// Plug T into the gaussian evaluator T.getarray()
 				partialResponsibilities[i] = getPartialResponsibility(xArray,
 						pis.get(i), mus.get(i), sigmas.get(i));
 			}
 
 			double logNormalization = logsumexp(partialResponsibilities);
 
-			for (int i = 0; i < numComponents; i++) {
-				ans.putDouble(indexCounter,
-						Math.exp(partialResponsibilities[i] - logNormalization));
-				indexCounter++;
-			}
+			// for (int i = 0; i < numComponents; i++) {
+			// ans.putDouble(inputIndexCounter,
+			// Math.exp(partialResponsibilities[i] - logNormalization));
+			// inputIndexCounter++;
+			// }
 
-			// Temporary value for B
-			for (int i = 0; i < numComponents; i++) {
-				double bval = getbVec(xArray, sigmaArray, pis.get(i),
-						mus.get(i), sigmas.get(i));
-			}
+			// ans.putDouble
 			// final int cntHashCode = HashUtils.hashSubRow(tb,
 			// doJoin.inputCmpColumns, row);
 			// TIntList tuplesWithHashCode = rightHashTableIndices
@@ -546,6 +576,50 @@ public final class JoinEStepXD extends BinaryOperator {
 			// doJoin.row = row;
 			// tuplesWithHashCode.forEach(doJoin);
 			// }
+			double[][] respArray = new double[numComponents][1];
+			for (int i = 0; i < numComponents; i++) {
+				respArray[i][0] = Math.exp(partialResponsibilities[i]
+						- logNormalization);
+			}
+			Matrix respMatrix = new Matrix(respArray);
+			ans.putMyriaMatrix(outputIndexCounter, new MyriaMatrix(respMatrix));
+			outputIndexCounter++;
+
+			// Get the conditional distributions
+			List<Matrix> bs = new ArrayList<Matrix>();
+			List<Matrix> Bs = new ArrayList<Matrix>();
+
+			// Vectors b
+			for (int i = 0; i < numComponents; i++) {
+				Matrix mu_j = new Matrix(mus.get(i));
+				Matrix sigma_j = new Matrix(sigmas.get(i));
+
+				Matrix w_m = x.minus(mu_j);
+				Matrix T = xSigma.plus(sigma_j);
+
+				Matrix Tinv = T.inverse();
+
+				Matrix b = mu_j.plus(sigma_j.times(Tinv).times(w_m));
+				Matrix B = sigma_j.minus(sigma_j.times(Tinv).times(sigma_j));
+
+				bs.add(b);
+				Bs.add(B);
+			}
+
+			// Put the b vectors in the output
+			for (int i = 0; i < numComponents; i++) {
+				ans.putMyriaMatrix(outputIndexCounter,
+						new MyriaMatrix(bs.get(i)));
+				outputIndexCounter++;
+			}
+
+			// Put the B matrices in the output
+			for (int i = 0; i < numComponents; i++) {
+				ans.putMyriaMatrix(outputIndexCounter,
+						new MyriaMatrix(bs.get(i)));
+				outputIndexCounter++;
+			}
+
 		}
 	}
 
@@ -768,27 +842,6 @@ public final class JoinEStepXD extends BinaryOperator {
 
 		return maxElement + Math.log(sumTerms);
 
-	}
-
-	private double getbVec(double[][] xArray, double[][] pointSigmaArray,
-			double pi, double[][] muArray, double[][] sigmaArray) {
-		// Not yet jblas compliant
-
-		Matrix jama_x = new Matrix(xArray);
-		Matrix jama_xSigma = new Matrix(sigmaArray);
-
-		Matrix jama_mu = new Matrix(muArray);
-		Matrix jama_Sigma = new Matrix(sigmaArray);
-
-		Matrix w_m = jama_x.minus(jama_mu);
-		Matrix T = jama_xSigma.plus(jama_Sigma);
-
-		Matrix Tinv = T.inverse();
-
-		Matrix b = jama_mu.plus(jama_Sigma.times(Tinv).times(w_m));
-		Matrix B = jama_Sigma.minus(jama_Sigma.times(Tinv).times(jama_Sigma));
-
-		return B.get(0, 0);
 	}
 
 }

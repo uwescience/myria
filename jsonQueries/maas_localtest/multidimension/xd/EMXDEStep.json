@@ -47,7 +47,7 @@
           {
             "argChild2": 0,
             "argChild1": 2,
-            "opType": "EStepXD",
+            "opType": "JoinEStepXD",
             "opId": 3,
             "opName": "MyriaCrossProduct",
             "argSelect2": [
@@ -88,7 +88,23 @@
               8,
               9,
               10,
-              11
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20,
+              21,
+              22,
+              23,
+              24,
+              25,
+              26,
+              27
             ]
           },
           {
@@ -100,7 +116,7 @@
           {
             "argChild2": 220,
             "argChild1": 3,
-            "opType": "MStepPartialXD",
+            "opType": "JoinMStepPartial",
             "opId": 223,
             "opName": "MyriaCrossProduct",
             "argSelect2": [
@@ -141,12 +157,7 @@
               8,
               9,
               10,
-              11,
-              12,
-              13,
-              14,
-              15,
-              16
+              11
             ]
           },
           {

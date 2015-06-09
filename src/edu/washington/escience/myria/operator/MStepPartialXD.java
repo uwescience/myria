@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.operator;
 
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.MyriaMatrix;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
@@ -16,14 +17,14 @@ import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.procedure.TIntProcedure;
 
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.jblas.Decompose;
 import org.jblas.DoubleMatrix;
-import org.jblas.Solve;
 
 import Jama.Matrix;
 
@@ -33,16 +34,23 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 /**
- * Does only the calculations of XD Estep, doesn't pass the full data.
- * 
  * This is an implementation of unbalanced hash join. This operator only builds
  * hash tables for its right child, thus will begin to output tuples after right
  * child EOS.
  * 
  */
-public final class JoinEStepXD extends BinaryOperator {
+public final class MStepPartialXD extends BinaryOperator {
 	/** Required for Java serialization. */
 	private static final long serialVersionUID = 1L;
+
+	/**
+	 * Create logger for info logging below.
+	 */
+	private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory
+			.getLogger(ApplyEStep.class);
+
+	// Only used for debugging
+	// private int tuples_added;
 
 	/**
 	 * The names of the output columns.
@@ -83,6 +91,14 @@ public final class JoinEStepXD extends BinaryOperator {
 	Map<Integer, Double> pis;
 	Map<Integer, double[][]> mus;
 	Map<Integer, double[][]> sigmas;
+
+	private boolean hasOutputAll;
+
+	/**
+	 * Contains partial state of all components for these points
+	 * 
+	 */
+	private final PartialState[] states;
 
 	/**
 	 * Which matrix library to use. "jblas" or "jama"
@@ -150,7 +166,7 @@ public final class JoinEStepXD extends BinaryOperator {
 	 * @throw IllegalArgumentException if there are duplicated column names from
 	 *        the children.
 	 */
-	public JoinEStepXD(final Operator left, final Operator right,
+	public MStepPartialXD(final Operator left, final Operator right,
 			final int[] compareIndx1, final int[] compareIndx2) {
 		this(null, left, right, compareIndx1, compareIndx2);
 	}
@@ -178,7 +194,7 @@ public final class JoinEStepXD extends BinaryOperator {
 	 *        <tt>outputSchema</tt>, or if <tt>outputSchema</tt> does not have
 	 *        the correct number of columns and column types.
 	 */
-	public JoinEStepXD(final Operator left, final Operator right,
+	public MStepPartialXD(final Operator left, final Operator right,
 			final int[] compareIndx1, final int[] compareIndx2,
 			final int[] answerColumns1, final int[] answerColumns2) {
 		this(null, left, right, compareIndx1, compareIndx2, answerColumns1,
@@ -215,10 +231,10 @@ public final class JoinEStepXD extends BinaryOperator {
 	 *        <tt>outputColumns</tt>, or if <tt>outputColumns</tt> does not have
 	 *        the correct number of columns and column types.
 	 */
-	public JoinEStepXD(final List<String> outputColumns, final Operator left,
-			final Operator right, final int[] compareIndx1,
-			final int[] compareIndx2, final int[] answerColumns1,
-			final int[] answerColumns2) {
+	public MStepPartialXD(final List<String> outputColumns,
+			final Operator left, final Operator right,
+			final int[] compareIndx1, final int[] compareIndx2,
+			final int[] answerColumns1, final int[] answerColumns2) {
 		super(left, right);
 		Preconditions.checkArgument(compareIndx1.length == compareIndx2.length);
 		if (outputColumns != null) {
@@ -241,6 +257,12 @@ public final class JoinEStepXD extends BinaryOperator {
 		pis = new HashMap<Integer, Double>();
 		mus = new HashMap<Integer, double[][]>();
 		sigmas = new HashMap<Integer, double[][]>();
+		hasOutputAll = false;
+		states = new PartialState[numComponents];
+		for (int i = 0; i < numComponents; i++) {
+			states[i] = new PartialState(matrixLibrary);
+		}
+		// tuples_added = 0;
 	}
 
 	/**
@@ -264,9 +286,9 @@ public final class JoinEStepXD extends BinaryOperator {
 	 *        <tt>outputSchema</tt>, or if <tt>outputSchema</tt> does not have
 	 *        the correct number of columns and column types.
 	 */
-	public JoinEStepXD(final List<String> outputColumns, final Operator left,
-			final Operator right, final int[] compareIndx1,
-			final int[] compareIndx2) {
+	public MStepPartialXD(final List<String> outputColumns,
+			final Operator left, final Operator right,
+			final int[] compareIndx1, final int[] compareIndx2) {
 		this(outputColumns, left, right, compareIndx1, compareIndx2, range(left
 				.getSchema().numColumns()), range(right.getSchema()
 				.numColumns()));
@@ -307,22 +329,24 @@ public final class JoinEStepXD extends BinaryOperator {
 							i, leftIndex, leftType, rightIndex, rightType);
 		}
 
-		types.add(Type.LONG_TYPE);
-		names.add("pid");
+		// for (int i : leftAnswerColumns) {
+		// types.add(leftSchema.getColumnType(i));
+		// names.add(leftSchema.getColumnName(i));
+		// }
 
-		for (int i = 0; i < numDimensions; i++) {
-			types.add(Type.DOUBLE_TYPE);
-			names.add("x" + "_" + (1 + i));
-		}
-
-		for (int i = 0; i < numComponents; i++) {
-			types.add(Type.DOUBLE_TYPE);
-			names.add("r" + (1 + i));
-		}
 		// for (int i : rightAnswerColumns) {
 		// types.add(rightSchema.getColumnType(i));
 		// names.add(rightSchema.getColumnName(i));
 		// }
+
+		types.add(Type.LONG_TYPE);
+		names.add("gid");
+
+		for (int i = 0; i < 1 + 1 + numDimensions + numDimensions
+				* numDimensions; i++) {
+			types.add(Type.DOUBLE_TYPE);
+			names.add("col" + i);
+		}
 
 		if (outputColumns != null) {
 			return new Schema(types.build(), outputColumns);
@@ -459,6 +483,41 @@ public final class JoinEStepXD extends BinaryOperator {
 		}
 
 		if (isEOIReady()) {
+			/*
+			 * New JoinMStep logic: Left child has reached EOS, so we now can
+			 * output partial responsibilities. ans.putLong(0, 0); nexttb =
+			 * ans.popAny();
+			 */
+			if (!hasOutputAll) {
+				// Add some tuples to the output
+				for (int k = 0; k < numComponents; k++) {
+					// add the gaussian id
+					ans.putLong(0, k);
+					double[] partialState = states[k].getPartialStateDump();
+					for (int i = 0; i < partialState.length; i++) {
+						ans.putDouble(i + 1, partialState[i]);
+					}
+
+					// for testing:
+					// PartialState newState = new PartialState(matrixLibrary);
+					// newState.addPartialStateDump(states[k].getPartialStateDump());
+					// double[] partialState = newState.getPartialStateDump();
+					//
+					// for (int i = 0; i < partialState.length; i++) {
+					// ans.putDouble(i + 1, partialState[i]);
+					// }
+
+				}
+				hasOutputAll = true;
+				// LOGGER.info("NUMBER OF TUPLES PROCESSESED WHEN COMPUTING OUTPUT = "
+				// + tuples_added);
+				// LOGGER.info("childrenEOI[0]  left.eos()  childrenEOI[1]  right.eos()");
+				// LOGGER.info(String.valueOf(childrenEOI[0]) + "  "
+				// + String.valueOf(left.eos()) + "  "
+				// + String.valueOf(childrenEOI[1]) + "  "
+				// + String.valueOf(right.eos()));
+			}
+
 			nexttb = ans.popAny();
 		}
 
@@ -480,6 +539,9 @@ public final class JoinEStepXD extends BinaryOperator {
 	/**
 	 * Process the tuples from left child.
 	 * 
+	 * The left child is the points relation, so for each point we will add it
+	 * to the partial state of each Gaussian component.
+	 * 
 	 * @param tb
 	 *            TupleBatch to be processed.
 	 */
@@ -489,63 +551,59 @@ public final class JoinEStepXD extends BinaryOperator {
 		doJoin.joinAgainstCmpColumns = rightCompareIndx;
 		doJoin.inputTB = tb;
 
-		// ans.absorb(tb);
 		List<? extends Column<?>> inputColumns = tb.getDataColumns();
 
 		for (int row = 0; row < tb.numTuples(); ++row) {
-
+			// indexCounter keeps track of the column index being scanned in
+			// from the current tuple.
 			int indexCounter = 0;
 
 			long pid = inputColumns.get(indexCounter).getLong(row);
-			ans.putLong(indexCounter, pid);
 			indexCounter++;
 
 			double[][] xArray = new double[numDimensions][1];
-			for (int i = 0; i < numDimensions; i++) {
-				xArray[i][0] = inputColumns.get(indexCounter).getDouble(row);
-				ans.putDouble(indexCounter, xArray[i][0]);
+			MyriaMatrix xMatrix = inputColumns.get(indexCounter)
+					.getMyriaMatrix(row);
+			indexCounter++;
+
+			xArray = xMatrix.getArray();
+
+			double[] responsibilities = new double[numComponents];
+			MyriaMatrix respMatrix = inputColumns.get(indexCounter)
+					.getMyriaMatrix(row);
+			indexCounter++;
+			double[][] respArray = respMatrix.getArray();
+
+			for (int i = 0; i < numComponents; i++) {
+				// responsibilities[i] =
+				// inputColumns.get(indexCounter).getDouble(
+				// row);
+				responsibilities[i] = respArray[i][0];
+			}
+
+			List<MyriaMatrix> bs = new ArrayList<MyriaMatrix>();
+			// Get the Matrices for b
+			for (int i = 0; i < numComponents; i++) {
+				MyriaMatrix b_j = inputColumns.get(indexCounter)
+						.getMyriaMatrix(row);
+				bs.add(b_j);
 				indexCounter++;
 			}
 
-			int sigmaCounter = indexCounter;
-			// Read in sigma in row-major order
-			double[][] sigmaArray = new double[numDimensions][numDimensions];
-			for (int i = 0; i < numDimensions; i++) {
-				for (int j = 0; j < numDimensions; j++) {
-					sigmaArray[i][j] = inputColumns.get(sigmaCounter)
-							.getDouble(row);
-					sigmaCounter++;
-				}
-			}
-
-			double[] partialResponsibilities = new double[numComponents];
-
+			List<MyriaMatrix> Bs = new ArrayList<MyriaMatrix>();
+			// Get the Matrices for B
 			for (int i = 0; i < numComponents; i++) {
-				partialResponsibilities[i] = getPartialResponsibility(xArray,
-						pis.get(i), mus.get(i), sigmas.get(i));
-			}
-
-			double logNormalization = logsumexp(partialResponsibilities);
-
-			for (int i = 0; i < numComponents; i++) {
-				ans.putDouble(indexCounter,
-						Math.exp(partialResponsibilities[i] - logNormalization));
+				MyriaMatrix bSigma_j = inputColumns.get(indexCounter)
+						.getMyriaMatrix(row);
+				Bs.add(bSigma_j);
 				indexCounter++;
 			}
 
-			// Temporary value for B
+			// For each component, add the current point to that component
+			// with the correct responsibility.
 			for (int i = 0; i < numComponents; i++) {
-				double bval = getbVec(xArray, sigmaArray, pis.get(i),
-						mus.get(i), sigmas.get(i));
+				states[i].addPoint(xArray, responsibilities[i]);
 			}
-			// final int cntHashCode = HashUtils.hashSubRow(tb,
-			// doJoin.inputCmpColumns, row);
-			// TIntList tuplesWithHashCode = rightHashTableIndices
-			// .get(cntHashCode);
-			// if (tuplesWithHashCode != null) {
-			// doJoin.row = row;
-			// tuplesWithHashCode.forEach(doJoin);
-			// }
 		}
 	}
 
@@ -556,57 +614,9 @@ public final class JoinEStepXD extends BinaryOperator {
 	 *            TupleBatch to be processed.
 	 */
 	protected void processRightChildTB(final TupleBatch tb) {
-
-		// Map<Integer, Double> pis = new HashMap<Integer, Double>();
-		// Map<Integer, double[][]> mus = new HashMap<Integer, double[][]>();
-		// Map<Integer, double[][]> sigmas = new HashMap<Integer, double[][]>();
-
-		List<? extends Column<?>> inputColumns = tb.getDataColumns();
-
-		for (int row = 0; row < tb.numTuples(); ++row) {
-			// for (int column = 0; column < tb.numColumns(); ++column) {
-			// LOGGER.info("Column value is: "
-			// + inputColumns.get(column).getLong(row));
-			// }
-
-			// Read the data into data structures for computation
-			int indexCounter = 0;
-
-			long gid = inputColumns.get(indexCounter).getLong(row);
-			indexCounter++;
-
-			double pi = inputColumns.get(indexCounter).getDouble(row);
-			indexCounter++;
-
-			double[][] muArray = new double[numDimensions][1];
-			for (int i = 0; i < numDimensions; i++) {
-				muArray[i][0] = inputColumns.get(indexCounter).getDouble(row);
-				indexCounter++;
-			}
-
-			// Read in sigma in row-major order
-			double[][] sigmaArray = new double[numDimensions][numDimensions];
-			for (int i = 0; i < numDimensions; i++) {
-				for (int j = 0; j < numDimensions; j++) {
-					sigmaArray[i][j] = inputColumns.get(indexCounter)
-							.getDouble(row);
-					indexCounter++;
-				}
-			}
-
-			pis.put((int) gid, pi);
-			mus.put((int) gid, muArray);
-			sigmas.put((int) gid, sigmaArray);
-
-			// final int cntHashCode = HashUtils.hashSubRow(tb,
-			// rightCompareIndx,
-			// row);
-			// // only build hash table on two sides if none of the children is
-			// EOS
-			// addToHashTable(tb, row, rightHashTable, rightHashTableIndices,
-			// cntHashCode);
-		}
-
+		// For the MStep, we don't need the parameters of the Gaussians, so this
+		// is really a pure aggregate operator rather than a join. This will be
+		// reworked later.
 	}
 
 	/**
@@ -638,157 +648,256 @@ public final class JoinEStepXD extends BinaryOperator {
 		}
 	}
 
-	private double getPartialResponsibility(double[][] xArray, double pi,
-			double[][] muArray, double[][] sigmaArray) {
-		// Roll up the input: a 2D point and its pid,
-		// a 2D Gaussian mean and cov. matrix, gid.
-		// A copy of the computation in SimpleGMMEStepWithRollup.java
+	private class PartialState implements Serializable {
 
-		// INPUT: pid, x, gid, pi, mu, cov, dimension
+		/** Required for Java serialization. */
+		private static final long serialVersionUID = 1L;
 
-		// Eventually we'll need the dimension parameter to somehow auto-roll
-		// The matrices
-		// int dimension = 2;
+		/**
+		 * The Matrix library we'll use for matrix operators
+		 */
+		private final String matrixLibrary;
 
-		// OUTPUT to be applied:
-		double rik_loglhs;
+		/**
+		 * The partial sum of responsibilities for the points encountered so
+		 * far.
+		 */
+		private double r_k_partial;
 
-		// The amplitude of the k'th Gaussian, pi_k
-		double amp = pi;
+		/**
+		 * The partial sum of means over the points encountered so far. This is
+		 * stored in the jblas DoubleMatrix class.
+		 */
+		private DoubleMatrix mu_k_partial;
 
-		// Roll up data into array of doubles
-		// double[][] xArray = new double[][] { { x11 }, { x21 } };
-		// double[][] sigmaArray = new double[][] { { cov11, cov12 },
-		// { cov21, cov22 } };
-		// double[][] muArray = new double[][] { { mu11 }, { mu21 } };
+		/**
+		 * The partial sum of covariances over the points encountered so far.
+		 * This is stored in the jblas DoubleMatrix class.
+		 */
+		private DoubleMatrix sigma_k_partial;
 
-		// Compute Log of Gaussian kernal, -1/2 * (x - mu).T * V * (x - mu)
-		double kernal;
-		double det;
-		if (matrixLibrary.equals("jblas")) {
-			// Using jblas library
-			kernal = getKernalJblas(xArray, muArray, sigmaArray);
-			det = getDeterminantJblas(sigmaArray);
-		} else if (matrixLibrary.equals("jama")) {
-			// Using jama libary
-			kernal = getKernalJama(xArray, muArray, sigmaArray);
-			det = getDeterminantJama(sigmaArray);
-		} else {
-			throw new RuntimeException("Incorrect matrix libary specified.");
+		/**
+		 * The partial sum of means over the points encountered so far. This is
+		 * stored in the JAMA Matrix class.
+		 */
+		private Matrix jama_mu_k_partial;
+
+		/**
+		 * The partial sum of covariances over the points encountered so far.
+		 * This is stored in the JAMA Matrix class.
+		 */
+		private Matrix jama_sigma_k_partial;
+
+		/**
+		 * The number of points encountered so far.
+		 */
+		private int nPoints;
+
+		/**
+		 * A boolean flag indicating whether the final parameters have been
+		 * computed or not.
+		 */
+		private boolean isCompleted;
+
+		/**
+		 * The final sum of responsibilities for this Gaussian component.
+		 */
+		private double r_k;
+
+		/**
+		 * The final amplitude of this Gaussian component.
+		 */
+		private double piFinal;
+
+		/**
+		 * The final mean vector of this Gaussian components.
+		 */
+		private double[][] muFinalArray;
+
+		/**
+		 * The final covariance matrix of this Gaussian component.
+		 */
+		private double[][] sigmaFinalArray;
+
+		/**
+		 * Constructs a partial state
+		 */
+		private PartialState(String matrixLibrary) {
+			this.matrixLibrary = matrixLibrary;
+
+			// Initialize running parameters
+			r_k_partial = 0.0;
+
+			// jblas
+			mu_k_partial = DoubleMatrix.zeros(numDimensions, 1);
+			sigma_k_partial = DoubleMatrix.zeros(numDimensions, numDimensions);
+
+			// jama
+			double[][] zeroVec = new double[numDimensions][1];
+			double[][] zeroMatrix = new double[numDimensions][numDimensions];
+			jama_mu_k_partial = new Matrix(zeroVec);
+			jama_sigma_k_partial = new Matrix(zeroMatrix);
+
+			isCompleted = false;
 		}
 
-		// Compute the log of the Gaussian constant: ln[ 1 / sqrt( (2*PI)^d *
-		// det_Sigma ) ]
-		double logConst = Math.log((1. / Math.sqrt(Math.pow(2 * Math.PI, 2)
-				* det)));
+		private void addPoint(double[][] xArray, double r_ik) {
+			nPoints += 1;
 
-		// Now we have the components of the log(p(x | theta))
-		double log_p = logConst + kernal;
+			//
+			// // Do updates
+			r_k_partial += r_ik;
 
-		// Final output: ln pi_k + ln p(x_i | theta_k(t-1))
-		rik_loglhs = Math.log(amp) + log_p;
-
-		// OUTPUT: pid, x, gid, pi, mu, cov, dimension, rik_rhs
-		return rik_loglhs;
-	}
-
-	// Computes Log of Gaussian kernal, -1/2 * (x - mu).T * V * (x - mu)
-	private double getKernalJblas(double[][] xArray, double[][] muArray,
-			double[][] sigmaArray) {
-		// Input points x, Gaussian means mu, Gaussian covariance V
-		DoubleMatrix x = new DoubleMatrix(xArray);
-		DoubleMatrix mu = new DoubleMatrix(muArray);
-
-		// Get the inverse of the covariance matrix
-		DoubleMatrix Sigma = new DoubleMatrix(sigmaArray);
-		DoubleMatrix I = DoubleMatrix.eye(Sigma.columns);
-		// DoubleMatrix I = new DoubleMatrix(new double[][] { { 1.0, 0.0 },
-		// { 0.0, 1.0 } });
-		DoubleMatrix SigmaInv = Solve.solveSymmetric(Sigma, I);
-
-		// Get the difference between x and mu
-		DoubleMatrix x_mu = x.sub(mu);
-
-		// Compute Log of Gaussian kernal, -1/2 * (x - mu).T * V * (x - mu)
-		return x_mu.transpose().mmul(SigmaInv.mmul(x_mu)).mmul(-.5).get(0);
-	}
-
-	private double getKernalJama(double[][] xArray, double[][] muArray,
-			double[][] sigmaArray) {
-		Matrix jama_x = new Matrix(xArray);
-		Matrix jama_mu = new Matrix(muArray);
-		Matrix jama_Sigma = new Matrix(sigmaArray);
-
-		Matrix jama_SigmaInv = jama_Sigma.inverse();
-		Matrix jama_x_mu = jama_x.minus(jama_mu);
-
-		return jama_x_mu.transpose().times(jama_SigmaInv.times(jama_x_mu))
-				.times(-.5).get(0, 0);
-	}
-
-	// Computes determinant of Sigma
-	private double getDeterminantJblas(double[][] sigmaArray) {
-		DoubleMatrix Sigma = new DoubleMatrix(sigmaArray);
-		// Compute Gaussian determinant using LU decomposition:
-		Decompose.LUDecomposition<DoubleMatrix> LU = Decompose.lu(Sigma);
-		// The determinant is the product of rows of U in the LU decomposition
-		double det = 1;
-		for (int i = 0; i < LU.u.rows; i++) {
-			det *= LU.u.get(i, i);
-		}
-		// System.out.println("Determinant = " + det);
-		// TODO, sometimes det is the negative of what it should be. This is
-		// likely
-		// due to our factorization.
-		return Math.abs(det);
-	}
-
-	private double getDeterminantJama(double[][] sigmaArray) {
-		Matrix Sigma = new Matrix(sigmaArray);
-		return Sigma.det();
-	}
-
-	/** Calculates the log-sum-exp of the double matrix of elements. **/
-	private static double logsumexp(double[] elements) {
-		// the max term
-		double maxElement = Double.NEGATIVE_INFINITY;
-
-		// Find the max among elements
-		for (double e : elements) {
-			if (e > maxElement) {
-				maxElement = e;
+			if (matrixLibrary.equals("jblas")) {
+				DoubleMatrix x = new DoubleMatrix(xArray);
+				mu_k_partial = mu_k_partial.add(x.mul(r_ik));
+				sigma_k_partial = sigma_k_partial.add(x.mmul(x.transpose())
+						.mul(r_ik));
+			} else if (matrixLibrary.equals("jama")) {
+				Matrix x = new Matrix(xArray);
+				jama_mu_k_partial = jama_mu_k_partial.plus(x.times(r_ik));
+				jama_sigma_k_partial = jama_sigma_k_partial.plus(x.times(
+						x.transpose()).times(r_ik));
+			} else {
+				throw new RuntimeException("Incorrect matrix libary specified.");
 			}
+
 		}
 
-		// Get the adjusted sum
-		double sumTerms = 0;
-		for (double e : elements) {
-			sumTerms += Math.exp(e - maxElement);
+		// ONLY FOR JAMA
+		private double[] getPartialStateDump() {
+			double[] partialState = new double[1 + 1 + numDimensions
+					+ numDimensions * numDimensions];
+
+			double partNPoints = nPoints;
+			double partRK = r_k_partial;
+			double[][] muPart = jama_mu_k_partial.getArrayCopy();
+			double[][] sigmaPart = jama_sigma_k_partial.getArrayCopy();
+
+			// Fill the partial state array
+			int indexCounter = 0;
+
+			partialState[indexCounter] = partNPoints;
+			indexCounter++;
+
+			partialState[indexCounter] = partRK;
+			indexCounter++;
+
+			for (int i = 0; i < numDimensions; i++) {
+				partialState[indexCounter] = muPart[i][0];
+				indexCounter++;
+			}
+
+			for (int i = 0; i < numDimensions; i++) {
+				for (int j = 0; j < numDimensions; j++) {
+					partialState[indexCounter] = sigmaPart[i][j];
+					indexCounter++;
+				}
+			}
+
+			return partialState;
 		}
 
-		return maxElement + Math.log(sumTerms);
+		// ONLY FOR JAMA
+		private void addPartialStateDump(double[] partialStateDump) {
 
-	}
+			// Build the data structures we need
+			double partNPoints;
+			double partRK;
+			double[][] muPart = new double[numDimensions][1];
+			double[][] sigmaPart = new double[numDimensions][numDimensions];
 
-	private double getbVec(double[][] xArray, double[][] pointSigmaArray,
-			double pi, double[][] muArray, double[][] sigmaArray) {
-		// Not yet jblas compliant
+			// Convert from dump to parameters
+			int indexCounter = 0;
+			partNPoints = partialStateDump[indexCounter];
+			indexCounter++;
+			partRK = partialStateDump[indexCounter];
+			indexCounter++;
+			for (int i = 0; i < numDimensions; i++) {
+				muPart[i][0] = partialStateDump[indexCounter];
+				indexCounter++;
+			}
+			for (int i = 0; i < numDimensions; i++) {
+				for (int j = 0; j < numDimensions; j++) {
+					sigmaPart[i][j] = partialStateDump[indexCounter];
+					indexCounter++;
+				}
+			}
 
-		Matrix jama_x = new Matrix(xArray);
-		Matrix jama_xSigma = new Matrix(sigmaArray);
+			// Create matrices and add them to the current state
+			Matrix jama_mu_k_from_dump = new Matrix(muPart);
+			Matrix jama_sigma_k_from_dump = new Matrix(sigmaPart);
 
-		Matrix jama_mu = new Matrix(muArray);
-		Matrix jama_Sigma = new Matrix(sigmaArray);
+			nPoints += partNPoints;
+			r_k_partial += partRK;
+			jama_mu_k_partial = jama_mu_k_partial.plus(jama_mu_k_from_dump);
+			jama_sigma_k_partial = jama_sigma_k_partial
+					.plus(jama_sigma_k_from_dump);
+		}
 
-		Matrix w_m = jama_x.minus(jama_mu);
-		Matrix T = jama_xSigma.plus(jama_Sigma);
+		/**
+		 * 
+		 * @return double amplitude
+		 */
+		private double getFinalAmplitude() {
+			return r_k / nPoints;
+		}
 
-		Matrix Tinv = T.inverse();
+		/**
+		 * 
+		 * @return double array of the vector representation
+		 */
+		private double[][] getFinalMu() {
+			return muFinalArray;
+		}
 
-		Matrix b = jama_mu.plus(jama_Sigma.times(Tinv).times(w_m));
-		Matrix B = jama_Sigma.minus(jama_Sigma.times(Tinv).times(jama_Sigma));
+		/**
+		 * 
+		 * @return double array of the matrix representation
+		 */
+		private double[][] getFinalSigma() {
+			return sigmaFinalArray;
+		}
 
-		return B.get(0, 0);
+		private void computeFinalParameters() {
+			if (isCompleted) {
+				throw new RuntimeException(
+						"Called computeFinalParameters when already computed.");
+			}
+
+			// Finalize r_k
+			r_k = r_k_partial;
+
+			if (matrixLibrary.equals("jblas")) {
+				// Finalize mu
+				DoubleMatrix mu = mu_k_partial.dup();
+				mu = mu.div(r_k);
+
+				// Finalize sigma
+				DoubleMatrix sigma = sigma_k_partial.dup();
+				sigma = sigma.div(r_k);
+				sigma = sigma.sub(mu.mmul(mu.transpose()));
+
+				muFinalArray = mu.toArray2();
+				sigmaFinalArray = sigma.toArray2();
+			} else if (matrixLibrary.equals("jama")) {
+				// Finalize mu
+				Matrix mu = jama_mu_k_partial.copy();
+				mu = mu.times(1. / r_k);
+
+				// Finialize sigma
+				Matrix sigma = jama_sigma_k_partial.copy();
+				sigma = sigma.times(1. / r_k);
+				sigma = sigma.minus(mu.times(mu.transpose()));
+
+				muFinalArray = mu.getArrayCopy();
+				sigmaFinalArray = sigma.getArrayCopy();
+			} else {
+				throw new RuntimeException("Incorrect matrix libary specified.");
+			}
+
+			isCompleted = true;
+		}
 	}
 
 }
