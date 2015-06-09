@@ -233,8 +233,6 @@ public final class DeploymentUtils {
     builder.append(" cd " + workingDir + ";");
     builder.append(" nohup java -cp 'conf:libs/*'");
     builder.append(" -Djava.util.logging.config.file=logging.properties");
-    /* for debugging only */
-    builder.append(" -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=65007");
     builder.append(" -Dlog4j.configuration=log4j.properties");
     builder.append(" -Djava.library.path=sqlite4java-392");
     builder.append(" " + maxHeapSize);
