@@ -68,13 +68,8 @@ public class DbQueryScan extends LeafOperator implements DbReader {
    * @param outputSchema see the corresponding field.
    * */
   public DbQueryScan(final String baseSQL, final Schema outputSchema) {
-    Objects.requireNonNull(baseSQL);
-    Objects.requireNonNull(outputSchema);
-
-    this.baseSQL = baseSQL;
-    this.outputSchema = outputSchema;
-    connectionInfo = null;
-    tuples = null;
+    this.baseSQL = Objects.requireNonNull(baseSQL);
+    this.outputSchema = Objects.requireNonNull(outputSchema);
     sortedColumns = null;
     ascending = null;
   }
@@ -88,8 +83,7 @@ public class DbQueryScan extends LeafOperator implements DbReader {
    * */
   public DbQueryScan(final ConnectionInfo connectionInfo, final String baseSQL, final Schema outputSchema) {
     this(baseSQL, outputSchema);
-    Objects.requireNonNull(connectionInfo);
-    this.connectionInfo = connectionInfo;
+    this.connectionInfo = Objects.requireNonNull(connectionInfo);
   }
 
   /**
@@ -99,14 +93,8 @@ public class DbQueryScan extends LeafOperator implements DbReader {
    * @param outputSchema the Schema of the returned tuples.
    */
   public DbQueryScan(final RelationKey relationKey, final Schema outputSchema) {
-    Objects.requireNonNull(relationKey);
-    Objects.requireNonNull(outputSchema);
-
-    this.relationKey = relationKey;
-    this.outputSchema = outputSchema;
-    baseSQL = null;
-    connectionInfo = null;
-    tuples = null;
+    this.relationKey = Objects.requireNonNull(relationKey);
+    this.outputSchema = Objects.requireNonNull(outputSchema);
     sortedColumns = null;
     ascending = null;
   }
@@ -121,8 +109,7 @@ public class DbQueryScan extends LeafOperator implements DbReader {
    */
   public DbQueryScan(final ConnectionInfo connectionInfo, final RelationKey relationKey, final Schema outputSchema) {
     this(relationKey, outputSchema);
-    Objects.requireNonNull(connectionInfo);
-    this.connectionInfo = connectionInfo;
+    this.connectionInfo = Objects.requireNonNull(connectionInfo);
   }
 
   /**
@@ -135,16 +122,10 @@ public class DbQueryScan extends LeafOperator implements DbReader {
    */
   public DbQueryScan(final RelationKey relationKey, final Schema outputSchema, final int[] sortedColumns,
       final boolean[] ascending) {
-    Objects.requireNonNull(relationKey);
-    Objects.requireNonNull(outputSchema);
-
-    this.relationKey = relationKey;
-    this.outputSchema = outputSchema;
+    this.relationKey = Objects.requireNonNull(relationKey);
+    this.outputSchema = Objects.requireNonNull(outputSchema);
     this.sortedColumns = sortedColumns;
     this.ascending = ascending;
-    baseSQL = null;
-    connectionInfo = null;
-    tuples = null;
   }
 
   /**

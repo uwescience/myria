@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -16,8 +17,6 @@ import java.util.logging.Level;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-
-import jersey.repackaged.com.google.common.collect.ImmutableSet;
 
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -34,6 +33,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 
 import edu.washington.escience.myria.MyriaConstants.FTMode;
@@ -41,6 +41,7 @@ import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.accessmethod.SQLiteTupleBatchIterator;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
@@ -51,6 +52,7 @@ import edu.washington.escience.myria.parallel.Query;
 import edu.washington.escience.myria.parallel.RelationWriteMetadata;
 import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.parallel.SubQueryId;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * This class is intended to store the configuration information for a Myria installation.
@@ -1977,6 +1979,32 @@ public final class MasterCatalog {
             throw new CatalogException(e);
           }
           return ret;
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
+   * Run q query on the catalog.
+   * 
+   * @param queryString a SQL query on the catalog
+   * @param outputSchema the schema of the query result
+   * @return a tuple iterator over the result
+   * @throws CatalogException if there is an error.
+   */
+  public Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String queryString, final Schema outputSchema)
+      throws CatalogException {
+    try {
+      return queue.execute(new SQLiteJob<Iterator<TupleBatch>>() {
+        @Override
+        protected Iterator<TupleBatch> job(final SQLiteConnection sqliteConnection) throws CatalogException,
+            SQLiteException {
+          SQLiteStatement statement = sqliteConnection.prepare(queryString);
+          List<TupleBatch> tuples = Lists.newLinkedList();
+          Iterators.addAll(tuples, new SQLiteTupleBatchIterator(statement, sqliteConnection, outputSchema));
+          return tuples.iterator();
         }
       }).get();
     } catch (InterruptedException | ExecutionException e) {

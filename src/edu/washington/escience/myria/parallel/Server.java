@@ -1959,4 +1959,11 @@ public final class Server {
       throw new DbException(e);
     }
   }
+
+  /**
+   * @return the master catalog.
+   */
+  public MasterCatalog getCatalog() {
+    return catalog;
+  }
 }
