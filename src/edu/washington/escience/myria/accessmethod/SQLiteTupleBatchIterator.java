@@ -6,6 +6,7 @@ package edu.washington.escience.myria.accessmethod;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,19 +34,6 @@ public class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
   private final SQLiteConnection connection;
   /** The Schema of the TupleBatches returned by this Iterator. */
   private final Schema schema;
-
-  /**
-   * Wraps a SQLiteStatement result set in an Iterator<TupleBatch>.
-   * 
-   * @param statement the SQLiteStatement containing the results.
-   * @param schema the Schema describing the format of the TupleBatch containing these results.
-   * @param connection the connection to the SQLite database.
-   */
-  SQLiteTupleBatchIterator(final SQLiteStatement statement, final Schema schema, final SQLiteConnection connection) {
-    this.statement = statement;
-    this.connection = connection;
-    this.schema = schema;
-  }
 
   /**
    * Wraps a SQLiteStatement result set in an Iterator<TupleBatch>.
@@ -81,6 +69,10 @@ public class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
 
   @Override
   public TupleBatch next() {
+    if (!hasNext()) {
+      throw new NoSuchElementException();
+    }
+
     /* Allocate TupleBatch parameters */
     final int numFields = schema.numColumns();
     final List<ColumnBuilder<?>> columnBuilders = ColumnFactory.allocateColumns(schema);

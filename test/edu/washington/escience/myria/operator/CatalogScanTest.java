@@ -12,8 +12,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
-
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -59,7 +57,7 @@ public class CatalogScanTest {
 
   @Test
   public final void testQueryQueries() throws DbException, CatalogException {
-    Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "raw"));
+    Schema schema = Schema.ofFields(Type.LONG_TYPE, "id", Type.STRING_TYPE, "raw");
     CatalogQueryScan scan = new CatalogQueryScan("select query_id, raw_query from queries", schema, catalog);
     scan.open(null);
 

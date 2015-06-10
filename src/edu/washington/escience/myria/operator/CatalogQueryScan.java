@@ -3,8 +3,6 @@ package edu.washington.escience.myria.operator;
 import java.util.Iterator;
 import java.util.Objects;
 
-import com.google.common.collect.ImmutableMap;
-
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
@@ -12,8 +10,8 @@ import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
- * Push a select query down into a JDBC based database and scan over the query result.
- * */
+ * Operator to get the result of a query on the catalog. The catalog is a SQLite database.
+ */
 public class CatalogQueryScan extends LeafOperator {
 
   /**
@@ -50,14 +48,9 @@ public class CatalogQueryScan extends LeafOperator {
    * @param catalog see the corresponding field.
    * */
   public CatalogQueryScan(final String sql, final Schema outputSchema, final MasterCatalog catalog) {
-    Objects.requireNonNull(sql);
-    Objects.requireNonNull(outputSchema);
-    Objects.requireNonNull(catalog);
-
-    this.sql = sql;
-    this.outputSchema = outputSchema;
-    this.catalog = catalog;
-    tuples = null;
+    this.sql = Objects.requireNonNull(sql);;
+    this.outputSchema = Objects.requireNonNull(outputSchema);
+    this.catalog = Objects.requireNonNull(catalog);
   }
 
   @Override
@@ -86,9 +79,5 @@ public class CatalogQueryScan extends LeafOperator {
   @Override
   public final Schema generateSchema() {
     return outputSchema;
-  }
-
-  @Override
-  protected final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
   }
 }

@@ -33,6 +33,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 
 import edu.washington.escience.myria.MyriaConstants.FTMode;
@@ -2002,10 +2003,7 @@ public final class MasterCatalog {
             SQLiteException {
           SQLiteStatement statement = sqliteConnection.prepare(queryString);
           List<TupleBatch> tuples = Lists.newLinkedList();
-          Iterator<TupleBatch> iter = new SQLiteTupleBatchIterator(statement, sqliteConnection, outputSchema);
-          while (iter.hasNext()) {
-            tuples.add(iter.next());
-          }
+          Iterators.addAll(tuples, new SQLiteTupleBatchIterator(statement, sqliteConnection, outputSchema));
           return tuples.iterator();
         }
       }).get();

@@ -228,7 +228,7 @@ public final class SQLiteAccessMethod extends AccessMethod {
       throw new DbException(e);
     }
 
-    return new SQLiteTupleBatchIterator(statement, schema, sqliteConnection);
+    return new SQLiteTupleBatchIterator(statement, sqliteConnection, schema);
   }
 
   @Override
