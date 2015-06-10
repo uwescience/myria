@@ -1842,7 +1842,7 @@ public final class MasterCatalog {
             try {
               sqliteConnection.exec("ROLLBACK TRANSACTION;");
             } catch (SQLiteException e2) {
-              LOGGER.warn("SQLiteException encountered when rolling back a delete transaction");
+              LOGGER.error("exception was thrown during transaction rollback ", e2);
               assert true; /* Do nothing */
             }
             throw e;
@@ -1861,14 +1861,14 @@ public final class MasterCatalog {
    * @param relation the relation to be labeled
    * @throws CatalogException if there is an error
    */
-  public void markRelationOnCatalog(@Nonnull final RelationKey relation) throws CatalogException {
+  public void markRelationDeleted(@Nonnull final RelationKey relation) throws CatalogException {
     Objects.requireNonNull(relation, "relation");
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
     }
 
-    if (is_deletedStatus(relation)) {
-      throw new CatalogException("Relation has already been deleted");
+    if (isDeletedRelation(relation)) {
+      LOGGER.warn("Relation has already been deleted");
     }
 
     /* Do the work */
@@ -1963,8 +1963,8 @@ public final class MasterCatalog {
       throw new CatalogException("Catalog is closed.");
     }
 
-    if (is_deletedStatus(relation)) {
-      throw new CatalogException("Relation has already been deleted");
+    if (isDeletedRelation(relation)) {
+      LOGGER.warn("Relation has already been deleted");
     }
 
     /* Do the work */
@@ -2075,7 +2075,7 @@ public final class MasterCatalog {
    * @return a boolean whether the relation is in a is_deleted status.
    * @throws CatalogException if there is an error.
    */
-  public Boolean is_deletedStatus(final RelationKey relationKey) throws CatalogException {
+  public Boolean isDeletedRelation(final RelationKey relationKey) throws CatalogException {
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
     }

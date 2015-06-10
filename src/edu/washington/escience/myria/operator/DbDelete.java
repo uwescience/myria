@@ -45,7 +45,7 @@ public class DbDelete extends RootOperator {
     accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
 
     /* Drop the table */
-    accessMethod.dropTableIfExistsCascade(relationKey);
+    accessMethod.dropTableIfExists(relationKey);
   }
 
   @Override

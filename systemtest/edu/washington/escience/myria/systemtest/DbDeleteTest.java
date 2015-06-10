@@ -7,14 +7,12 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.nio.file.Paths;
-import java.util.List;
 
 import org.junit.Test;
 
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.io.FileSource;
 import edu.washington.escience.myria.operator.TupleSource;
@@ -61,14 +59,7 @@ public class DbDeleteTest extends SystemTestBase {
     JsonAPIUtils.deleteDataset("localhost", masterDaemonPort, relationKey.getUserName(), relationKey.getProgramName(),
         relationKey.getRelationName());
 
-    boolean foundInCatalog = false;
-    List<DatasetStatus> listDatasets = server.getDatasets();
-    for (DatasetStatus d : listDatasets) {
-      if (d.getRelationKey() == relationKey) {
-        foundInCatalog = true;
-      }
-    }
-    assertTrue(!foundInCatalog);
+    assertTrue(server.getDatasetStatus(relationKey) == null);
   }
 
   /**
@@ -119,7 +110,7 @@ public class DbDeleteTest extends SystemTestBase {
   public void ingestTestDataset() throws Exception {
     DataSource relationSource = new FileSource(Paths.get("testdata", "filescan", "simple_two_col_int.txt").toString());
     relationKey = RelationKey.of("public", "adhoc", "testIngest");
-    relationSchema = Schema.ofFields(Type.INT_TYPE, Type.INT_TYPE, "x", "y");
+    relationSchema = Schema.ofFields("x", Type.INT_TYPE, "y", Type.INT_TYPE);
     JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingest(relationKey, relationSchema, relationSource, ' ',
         new RoundRobinPartitionFunction(workerIDs.length)));
   }

@@ -81,13 +81,13 @@ public final class SQLiteUtils {
       sqliteConnection.open(true);
 
       statement = sqliteConnection.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?");
-      statement.bind(1, relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
+      statement.bind(1, relationKey.toString());
       if (statement.step()) {
         // existing
         statement.dispose();
         if (replaceExisting) {
-          statement = sqliteConnection.prepare("Drop table ? ");
-          statement.bind(1, relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
+          statement =
+              sqliteConnection.prepare("drop table " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
           statement.step();
           statement.dispose();
         } else if (swipeData) {

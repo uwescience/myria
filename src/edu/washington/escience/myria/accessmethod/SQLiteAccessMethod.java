@@ -402,8 +402,7 @@ public final class SQLiteAccessMethod extends AccessMethod {
 
   @Override
   public void dropTableIfExistsCascade(final RelationKey relationKey) throws DbException {
-    LOGGER.warn("SQLite does not support DROP TABLE IF EXISTS...CASCADE");
-    execute("DROP TABLE IF EXISTS " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
+    throw new UnsupportedOperationException("SQLite does not support DROP IF EXISTS...CASCADE operations");
   }
 
   @Override

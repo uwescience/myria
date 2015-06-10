@@ -1046,7 +1046,7 @@ public final class Server {
 
     /* Mark the relation as is_deleted */
     try {
-      catalog.markRelationOnCatalog(relationKey);
+      catalog.markRelationDeleted(relationKey);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
