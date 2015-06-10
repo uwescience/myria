@@ -1,0 +1,133 @@
+{
+    "logicalRa": "Nothing",
+    "plan":
+    {
+        "type":"Sequence",
+        "plans":
+        [
+            {
+                "type":"SubQuery",
+                "fragments":
+                [
+                    {
+                        "operators":
+                        [
+                            {
+                                "opType":"TableScan",
+                                "opName":"MyriaScan(public:adhoc:TwitterNodes)",
+                                "opId":0,
+                                "relationKey":{
+                                    "userName":"public",
+                                    "programName":"adhoc",
+                                    "relationName":"TwitterNodes"
+                                }
+                            },
+                            {
+                              "argChild": 0,
+                              "opType":"SampledDbInsertTemp",
+                              "opId":1,
+                              "opName":"MyriaSampledDbInsertTemp",
+                              "sampleSize":200,
+                              "sampleTable":"TempSampleWoR",
+                              "countTable":"TempCountSampleWoR"
+                            },
+                            {
+                              "argChild": 1,
+                              "opType":"SinkRoot",
+                              "opId":2,
+                              "opName":"MyriaSinkRoot"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "type":"SubQuery",
+                "fragments":
+                [
+                    {
+                        "operators":
+                        [
+                            {
+                                "opType":"TempTableScan",
+                                "table":"TempCountSampleWoR",
+                                "opName":"MyriaScanTemp(TempCountSampleWoR)",
+                                "opId":4
+                            },
+                            {
+                                "argChild":4,
+                                "opId":6,
+                                "opType": "CollectProducer"
+                            }
+                        ]
+                    },
+                    {
+                        "operators":
+                        [
+                            {
+                                "argOperatorId":6,
+                                "opId":7,
+                                "opType": "CollectConsumer"
+                            },
+                            {
+                                "opName": "MyriaSamplingDistribution",
+                                "opType": "SamplingDistribution",
+                                "argChild": 7,
+                                "opId": 8,
+                                "sampleSize": 200,
+                                "isWithReplacement": false
+                            },
+                            {
+                                  "argChild":8,
+                                  "opId":9,
+                                  "argPf":{
+                                     "index":0,
+                                     "type":"IdentityHash"
+                                  },
+                                  "opType":"ShuffleProducer",
+                                  "opName":"MyriaShuffleProducer($0)"
+                            }
+                        ]
+                    },
+                    {
+                        "operators":
+                        [
+                            {
+                              "opName":"MyriaShuffleConsumer",
+                              "opType":"ShuffleConsumer",
+                              "argOperatorId":9,
+                              "opId":10
+                            },
+                            {
+                                "opType":"TempTableScan",
+                                "table":"TempSampleWoR",
+                                "opName":"MyriaScanTemp(TempSampleWoR)",
+                                "opId":11
+                            },
+                            {
+                              "argChild1": 10,
+                              "argChild2": 11,
+                              "opType":"Sample",
+                              "opId":12,
+                              "opName":"MyriaSampleWoR"
+                            },
+                            {
+                                "opType": "DbInsert",
+                                "argOverwriteTable": true,
+                                "argChild": 12,
+                                "relationKey":
+                                {
+                                    "programName": "adhoc",
+                                    "relationName": "SampledWoR",
+                                    "userName": "public"
+                                },
+                                "opId": 13
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "rawQuery": "SampleWoR"
+}

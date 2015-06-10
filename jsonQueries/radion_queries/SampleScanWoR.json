@@ -1,0 +1,130 @@
+{
+    "logicalRa": "Nothing",
+    "plan":
+    {
+        "type":"SubQuery",
+        "fragments":
+        [
+            {
+                "operators":
+                [
+                    {
+                        "opType":"DbQueryScan",
+                        "opName":"MyriaQueryScan(public:adhoc:TwitterNodes)",
+                        "opId":3,
+                        "schema":{
+                        "columnNames":
+                        [
+                            "cnt"
+                        ],
+                        "columnTypes":
+                        [
+                            "LONG_TYPE"
+                        ]
+                        },
+                        "sql":"SELECT count(*) AS cnt FROM \"public:adhoc:TwitterNodes\""
+                    },
+                    {
+                        "opType":"Apply",
+                        "argChild":3,
+                        "opId":4,
+                        "opName":"MyriaApply(WorkerID=WORKERID)",
+                        "emitExpressions":
+                        [
+                            {
+                                "outputName":"WorkerID",
+                                "rootExpressionOperator":
+                                {
+                                    "type":"WORKERID"
+                                }
+                            },
+                            {
+                                "outputName":"WorkerCount",
+                                "rootExpressionOperator":
+                                {
+                                    "type":"VARIABLE",
+                                    "columnIdx":0
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "argChild":4,
+                        "opId":5,
+                        "opType": "CollectProducer"
+                    }
+                ]
+            },
+            {
+                "operators":
+                [
+                    {
+                        "argOperatorId":5,
+                        "opId":6,
+                        "opType": "CollectConsumer"
+                    },
+                    {
+                        "opName": "MyriaSamplingDistribution",
+                        "opType": "SamplingDistribution",
+                        "argChild": 6,
+                        "opId": 7,
+                        "samplePercentage": 10,
+                        "sampleType": "WoR"
+                    },
+                    {
+                          "argChild":7,
+                          "argPf":{
+                             "index":0,
+                             "type":"IdentityHash"
+                          },
+                          "opType":"ShuffleProducer",
+                          "opId":8,
+                          "opName":"MyriaShuffleProducer($0)"
+                    }
+                ]
+            },
+            {
+                "operators":
+                [
+                    {
+                      "opName":"MyriaShuffleConsumer",
+                      "opType":"ShuffleConsumer",
+                      "argOperatorId":8,
+                      "opId":9
+                    },
+                    {
+                        "opType":"TableScan",
+                        "opName":"MyriaScan(public:adhoc:TwitterNodes)",
+                        "opId":10,
+                        "relationKey":{
+                            "userName":"public",
+                            "programName":"adhoc",
+                            "relationName":"TwitterNodes"
+                        }
+                    },
+                    {
+                      "argChild1": 9,
+                      "argChild2": 10,
+                      "opType":"Sample",
+                      "opId":11,
+                      "opName":"MyriaSampleWoR"
+                    },
+                    {
+                        "opType": "DbInsert",
+                        "opName": "MyriaStore",
+                        "argOverwriteTable": true,
+                        "argChild": 11,
+                        "relationKey":
+                        {
+                            "programName": "adhoc",
+                            "relationName": "SampledScanWoR",
+                            "userName": "public"
+                        },
+                        "opId": 12
+                    }
+                ]
+            }
+        ]
+    },
+    "rawQuery": "SampleScanWoR"
+}
