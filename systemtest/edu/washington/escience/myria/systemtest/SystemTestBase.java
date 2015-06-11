@@ -143,6 +143,24 @@ public class SystemTestBase {
     }
   }
 
+  public static void deleteTable(final int workerID, final RelationKey relationKey) throws IOException,
+      CatalogException {
+    try {
+      SQLiteUtils.deleteTable(getAbsoluteDBFile(workerID).getAbsolutePath(), relationKey);
+    } catch (SQLiteException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  public static boolean existsTable(final int workerID, final RelationKey relationKey) throws IOException,
+      CatalogException {
+    try {
+      return SQLiteUtils.existsTable(getAbsoluteDBFile(workerID).getAbsolutePath(), relationKey);
+    } catch (SQLiteException e) {
+      throw new CatalogException(e);
+    }
+  }
+
   public static File getAbsoluteDBFile(final int workerID) throws CatalogException, FileNotFoundException {
     final String workerDir = getWorkerFolder(workerID);
     final WorkerCatalog wc = WorkerCatalog.open(FilenameUtils.concat(workerDir, "worker.catalog"));

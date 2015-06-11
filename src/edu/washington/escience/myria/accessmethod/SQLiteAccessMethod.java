@@ -397,6 +397,12 @@ public final class SQLiteAccessMethod extends AccessMethod {
   }
 
   @Override
+  public void dropTableIfExistsCascade(final RelationKey relationKey) throws DbException {
+    LOGGER.warn("SQLite does not implement DROP TABLE...CASCADE, attempting DROP TABLE instead");
+    execute("DROP TABLE IF EXISTS " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
+  }
+
+  @Override
   public void createIndexes(final RelationKey relationKey, final Schema schema, final List<List<IndexRef>> indexes)
       throws DbException {
 

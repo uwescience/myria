@@ -179,4 +179,28 @@ public final class JsonAPIUtils {
     conn.getResponseCode();
     return conn;
   }
+
+  /**
+   * @param masterHostname master hostname
+   * @param apiPort rest api port
+   * @param user user parameter of the dataset
+   * @param program program parameter of the dataset
+   * @param relation relation parameter of the dataset
+   * @return a HTTPURLConnection instance of retrieving responses.
+   * @throws IOException if IO errors
+   * */
+  public static HttpURLConnection deleteDataset(final String masterHostname, final int apiPort, final String user,
+      final String program, final String relation) throws IOException {
+    String type = "application/json";
+    URL u =
+        new URL(String.format("http://%s:%d/dataset/user-%s/program-%s/relation-%s/", masterHostname, apiPort, user,
+            program, relation));
+    HttpURLConnection conn = (HttpURLConnection) u.openConnection();
+    conn.setRequestMethod("DELETE");
+    conn.setRequestProperty("Content-Type", type);
+    conn.connect();
+    conn.getResponseCode();
+    conn.disconnect();
+    return conn;
+  }
 }

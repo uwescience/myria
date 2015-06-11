@@ -81,13 +81,13 @@ public final class SQLiteUtils {
       sqliteConnection.open(true);
 
       statement = sqliteConnection.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?");
-      statement.bind(1, relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
+      statement.bind(1, relationKey.toString());
       if (statement.step()) {
         // existing
         statement.dispose();
         if (replaceExisting) {
-          statement = sqliteConnection.prepare("Drop table ? ");
-          statement.bind(1, relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
+          statement =
+              sqliteConnection.prepare("drop table " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
           statement.step();
           statement.dispose();
         } else if (swipeData) {
@@ -118,5 +118,81 @@ public final class SQLiteUtils {
         sqliteConnection.dispose();
       }
     }
+  }
+
+  /**
+   * Deletes a relation in SQLite.
+   * 
+   * @throws SQLiteException if SQLite error occur
+   * @param dbFileAbsolutePath the SQLite file absolute path
+   * @param relationKey the relation key to delete
+   * */
+  public static void deleteTable(final String dbFileAbsolutePath, final RelationKey relationKey) throws IOException,
+      SQLiteException {
+    SQLiteConnection sqliteConnection = null;
+    SQLiteStatement statement = null;
+    try {
+      final File f = new File(dbFileAbsolutePath);
+
+      if (!f.getParentFile().exists()) {
+        f.getParentFile().mkdirs();
+      }
+
+      /* Connect to the database */
+      sqliteConnection = new SQLiteConnection(f);
+      sqliteConnection.open(true);
+
+      statement =
+          sqliteConnection
+              .prepare("drop table if exists " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
+      statement.step();
+
+    } finally {
+      if (statement != null) {
+        statement.dispose();
+      }
+      if (sqliteConnection != null) {
+        sqliteConnection.dispose();
+      }
+    }
+  }
+
+  /**
+   * Checks if a relation exists in the SQLite database
+   * 
+   * @throws SQLiteException if SQLite error occur
+   * @param dbFileAbsolutePath the SQLite file absolute path
+   * @param relationKey the relation key to check
+   * */
+  public static boolean existsTable(final String dbFileAbsolutePath, final RelationKey relationKey) throws IOException,
+      SQLiteException {
+    boolean exists = false;
+    SQLiteConnection sqliteConnection = null;
+    SQLiteStatement statement = null;
+    try {
+      final File f = new File(dbFileAbsolutePath);
+
+      if (!f.getParentFile().exists()) {
+        f.getParentFile().mkdirs();
+      }
+
+      /* Connect to the database */
+      sqliteConnection = new SQLiteConnection(f);
+      sqliteConnection.open(true);
+      statement = sqliteConnection.prepare("SELECT * FROM sqlite_master WHERE type='table' AND name=?");
+      statement.bind(1, relationKey.toString());
+      if (statement.step()) {
+        return true;
+      }
+
+    } finally {
+      if (statement != null) {
+        statement.dispose();
+      }
+      if (sqliteConnection != null) {
+        sqliteConnection.dispose();
+      }
+    }
+    return exists;
   }
 }
