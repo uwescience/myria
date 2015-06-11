@@ -9,3 +9,7 @@ build
 *catalog-journal
 englink-log4j.log
 /bin
+
+### Intellij ###
+*.iml
+.idea/

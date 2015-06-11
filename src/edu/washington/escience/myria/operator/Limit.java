@@ -12,9 +12,9 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
- * A poor implementation of a Limit operator, which emits the first N tuples then drops the rest on the floor.
+ * A poor implementation of a Limit operator, which emits the first N tuples then closes the child operator from further
+ * feeding tuples.
  * 
- * We would prefer one that stops the incoming stream, but this is not currently supported.
  */
 public final class Limit extends UnaryOperator {
 
@@ -43,16 +43,23 @@ public final class Limit extends UnaryOperator {
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
     Operator child = getChild();
-    for (TupleBatch tb = child.nextReady(); tb != null; tb = child.nextReady()) {
-      if (tb.numTuples() <= toEmit) {
-        toEmit -= tb.numTuples();
-        return tb;
-      } else if (toEmit > 0) {
-        tb = tb.prefix(Ints.checkedCast(toEmit));
-        toEmit = 0;
-        return tb;
+    if (child.isOpen()) {
+      TupleBatch tb = child.nextReady();
+      TupleBatch result = null;
+      if (tb != null) {
+        if (tb.numTuples() <= toEmit) {
+          toEmit -= tb.numTuples();
+          result = tb;
+        } else if (toEmit > 0) {
+          result = tb.prefix(Ints.checkedCast(toEmit));
+          toEmit = 0;
+        }
+        if (toEmit == 0) {
+          /* Close child. No more stream is needed. */
+          child.close();
+        }
       }
-      /* Else, drop on the floor. */
+      return result;
     }
     return null;
   }
