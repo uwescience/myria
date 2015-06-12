@@ -44,6 +44,9 @@ public class DataSynopsisSchema implements Serializable {
 		case "StaticExactBloomFilter":
 			synopsis = DataSynopsis.STATIC_EXACT_BLOOM_FILTER;
 			break;
+		case "StaticEquiWidthHistogram":
+			synopsis = DataSynopsis.STATIC_EQUI_WIDTH_HISTOGRAM;
+			break;
 		default:
 			synopsis = DataSynopsis.NONE;
 		}

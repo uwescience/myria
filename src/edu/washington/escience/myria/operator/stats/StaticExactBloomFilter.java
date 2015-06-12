@@ -22,9 +22,12 @@ public class StaticExactBloomFilter extends DataSynopsis {
 	private final int bucketSize;
 	private final BitSet bits;
 
+	/** default number of bits **/
+	private final static int BIT_NUM = 1000000000;
+
 	public StaticExactBloomFilter() {
 		// the default size of the bloom filter is 1M
-		this(Integer.MIN_VALUE, Integer.MAX_VALUE, 1000000000);
+		this(Integer.MIN_VALUE, Integer.MAX_VALUE, BIT_NUM);
 	}
 
 	public StaticExactBloomFilter(final int lower, final int upper,
