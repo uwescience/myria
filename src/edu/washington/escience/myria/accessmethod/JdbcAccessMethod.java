@@ -425,6 +425,22 @@ public final class JdbcAccessMethod extends AccessMethod {
   }
 
   @Override
+  public void dropTableIfExistsCascade(final RelationKey relationKey) throws DbException {
+    switch (jdbcInfo.getDbms()) {
+      case MyriaConstants.STORAGE_SYSTEM_MYSQL:
+        LOGGER.warn("MySQL does not implement DROP TABLE...CASCADE, attempting DROP TABLE instead");
+        execute("DROP TABLE IF EXISTS " + quote(relationKey));
+        break;
+      case MyriaConstants.STORAGE_SYSTEM_POSTGRESQL:
+        execute("DROP TABLE IF EXISTS " + quote(relationKey) + " CASCADE");
+        break;
+      default:
+        throw new UnsupportedOperationException("Don't know whether " + jdbcInfo.getDbms()
+            + " can DROP IF EXISTS...CASCADE a table");
+    }
+  }
+
+  @Override
   public void dropTableIfExists(final RelationKey relationKey) throws DbException {
     switch (jdbcInfo.getDbms()) {
       case MyriaConstants.STORAGE_SYSTEM_POSTGRESQL:

@@ -68,6 +68,7 @@ import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.expression.WorkerIdExpression;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.DataOutput;
+import edu.washington.escience.myria.operator.DbDelete;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DuplicateTBGenerator;
@@ -1014,6 +1015,52 @@ public final class Server {
   }
 
   /**
+   * @param relationKey the relationKey of the dataset to delete
+   * @return the status
+   * @throws DbException if there is an error
+   * @throws InterruptedException interrupted
+   */
+  public DatasetStatus deleteDataset(final RelationKey relationKey) throws DbException, InterruptedException {
+
+    /* Mark the relation as is_deleted */
+    try {
+      catalog.markRelationDeleted(relationKey);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+
+    /* Delete from postgres at each worker by calling the DbDelete operator */
+    try {
+      Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
+      for (Integer workerId : getWorkersForRelation(relationKey, null)) {
+        workerPlans.put(workerId, new SubQueryPlan(new DbDelete(EmptyRelation.of(catalog.getSchema(relationKey)),
+            relationKey, null)));
+      }
+      ListenableFuture<Query> qf =
+          queryManager.submitQuery("delete " + relationKey.toString(), "delete " + relationKey.toString(),
+              "deleting from " + relationKey.toString(getDBMS()), new SubQueryPlan(new SinkRoot(new EOSSource())),
+              workerPlans);
+      try {
+        qf.get();
+      } catch (ExecutionException e) {
+        throw new DbException("Error executing query", e.getCause());
+      }
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+
+    /* Deleting from the catalog */
+    try {
+      catalog.deleteRelationFromCatalog(relationKey);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+
+    return getDatasetStatus(relationKey);
+
+  }
+
+  /**
    * @param relationKey the key of the desired relation.
    * @return the schema of the specified relation, or null if not found.
    * @throws CatalogException if there is an error getting the Schema out of the catalog.
@@ -1940,4 +1987,12 @@ public final class Server {
   public MyriaConfiguration getConfig() {
     return CONFIG;
   }
+
+  /**
+   * @return the master catalog.
+   */
+  public MasterCatalog getCatalog() {
+    return catalog;
+  }
+
 }

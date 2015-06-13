@@ -10,6 +10,7 @@ import java.util.Set;
 
 import javax.annotation.Nonnull;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -335,6 +336,33 @@ public final class DatasetResource {
       pf = new RoundRobinPartitionFunction(null);
     }
     return doIngest(relationKey, source, howPartitioned.getWorkers(), null, true, builder, pf);
+  }
+
+  /**
+   * @param userName the user who owns the target relation.
+   * @param programName the program to which the target relation belongs.
+   * @param relationName the name of the target relation.
+   * @return metadata
+   * @throws DbException if there is an error in the database.
+   */
+  @DELETE
+  @Path("/user-{userName}/program-{programName}/relation-{relationName}/")
+  public Response deleteDataset(@PathParam("userName") final String userName,
+      @PathParam("programName") final String programName, @PathParam("relationName") final String relationName)
+      throws DbException {
+    DatasetStatus status = server.getDatasetStatus(RelationKey.of(userName, programName, relationName));
+    if (status == null) {
+      /* Dataset not found, throw a 404 (Not Found) */
+      throw new MyriaApiException(Status.NOT_FOUND, "That dataset was not found");
+    }
+    RelationKey relationKey = status.getRelationKey();
+    // delete command
+    try {
+      status = server.deleteDataset(relationKey);
+    } catch (Exception e) {
+      throw new DbException();
+    }
+    return Response.noContent().build();
   }
 
   /**

@@ -33,7 +33,7 @@ public class DbInsertTemp extends AbstractDbInsert {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** The connection to the database database. */
-  private AccessMethod accessMethod;
+  protected AccessMethod accessMethod;
   /** The information for the database connection. */
   private ConnectionInfo connectionInfo;
   /** The name of the table the tuples should be inserted into. */
@@ -109,32 +109,9 @@ public class DbInsertTemp extends AbstractDbInsert {
   }
 
   @Override
-  protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-
-    /* retrieve connection information from the environment variables, if not already set */
-    if (connectionInfo == null && execEnvVars != null) {
-      connectionInfo = (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
-    }
-
-    if (connectionInfo == null) {
-      throw new DbException("Unable to instantiate DbInsertTemp: connection information unknown");
-    }
-
-    if (connectionInfo instanceof SQLiteInfo) {
-      /* Set WAL in the beginning. */
-      final File dbFile = new File(((SQLiteInfo) connectionInfo).getDatabaseFilename());
-      SQLiteConnection conn = new SQLiteConnection(dbFile);
-      try {
-        conn.open(true);
-        conn.exec("PRAGMA journal_mode=WAL;");
-      } catch (SQLiteException e) {
-        e.printStackTrace();
-      }
-      conn.dispose();
-    }
-
-    /* open the database connection */
-    accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
+  protected void init(final ImmutableMap<String, Object> execEnvVars)
+      throws DbException {
+    setupConnection(execEnvVars);
 
     if (overwriteTable) {
       stagingRelationKey =
@@ -174,6 +151,35 @@ public class DbInsertTemp extends AbstractDbInsert {
   @Override
   public Map<RelationKey, RelationWriteMetadata> writeSet() {
     return ImmutableMap.of(relationKey, new RelationWriteMetadata(relationKey, getSchema(), overwriteTable, true));
+  }
+
+  /** Updates connection information with the environment variables. */
+  protected void setupConnection(final ImmutableMap<String, Object> execEnvVars)
+      throws DbException {
+    // Extract connection info from environment
+    if (connectionInfo == null && execEnvVars != null) {
+      connectionInfo = (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
+    }
+
+    if (connectionInfo == null) {
+      throw new DbException("Unknown connection information.");
+    }
+
+    if (connectionInfo instanceof SQLiteInfo) {
+      /* Set WAL in the beginning. */
+      final File dbFile = new File(((SQLiteInfo) connectionInfo).getDatabaseFilename());
+      SQLiteConnection conn = new SQLiteConnection(dbFile);
+      try {
+        conn.open(true);
+        conn.exec("PRAGMA journal_mode=WAL;");
+      } catch (SQLiteException e) {
+        e.printStackTrace();
+      }
+      conn.dispose();
+    }
+
+    // Open the database connection.
+    accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
   }
 
 }

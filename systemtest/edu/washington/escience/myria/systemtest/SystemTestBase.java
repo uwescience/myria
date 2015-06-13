@@ -156,6 +156,24 @@ public class SystemTestBase {
     return new File(fileName);
   }
 
+  public static void deleteTable(final int workerID, final RelationKey relationKey) throws IOException,
+      CatalogException {
+    try {
+      SQLiteUtils.deleteTable(getAbsoluteDBFile(workerID).getAbsolutePath(), relationKey);
+    } catch (SQLiteException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  public static boolean existsTable(final int workerID, final RelationKey relationKey) throws IOException,
+      CatalogException {
+    try {
+      return SQLiteUtils.existsTable(getAbsoluteDBFile(workerID).getAbsolutePath(), relationKey);
+    } catch (SQLiteException e) {
+      throw new CatalogException(e);
+    }
+  }
+
   protected static String getContents(final HttpURLConnection conn) {
     /* If there was any content returned, get it. */
     String content = null;

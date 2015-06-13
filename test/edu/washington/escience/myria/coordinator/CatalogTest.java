@@ -19,8 +19,6 @@ import com.google.common.collect.ImmutableSet;
 import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
-import edu.washington.escience.myria.coordinator.CatalogException;
-import edu.washington.escience.myria.coordinator.MasterCatalog;
 
 public class CatalogTest {
   /** The logger for this class. */
@@ -173,6 +171,8 @@ public class CatalogTest {
     assertEquals(2, queries.size());
     assertEquals(Long.valueOf(3L), queries.get(0).queryId);
     assertEquals(Long.valueOf(2L), queries.get(1).queryId);
+
+    catalog.close();
   }
 
   /**
@@ -263,5 +263,7 @@ public class CatalogTest {
     assertEquals(null, qs.logicalRa);
     assertEquals(ImmutableSet.copyOf(qs.profilingMode), ImmutableSet.copyOf(query.profilingMode));
     assertEquals(qs.language, query.language);
+
+    catalog.close();
   }
 }
