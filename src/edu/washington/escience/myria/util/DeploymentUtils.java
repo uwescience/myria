@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.MoreObjects;
 
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.coordinator.ConfigFileException;
 import edu.washington.escience.myria.coordinator.ConfigFileGenerator;
@@ -85,9 +86,10 @@ public final class DeploymentUtils {
    * @throws ConfigFileException if error occurred parsing config file.
    */
   public static void startMaster(final MyriaConfiguration config) throws ConfigFileException {
-    int restPort = Integer.parseInt(config.getRequired("deployment", "rest_port"));
-    String maxHeapSize = config.getOptional("deployment", "max_heap_size");
-    String sslStr = MoreObjects.firstNonNull(config.getOptional("deployment", "ssl"), "false").toLowerCase();
+    int restPort = Integer.parseInt(config.getRequired("deployment", MyriaSystemConfigKeys.REST_PORT));
+    String maxHeapSize = config.getOptional("runtime", MyriaSystemConfigKeys.MAX_HEAP_SIZE);
+    String sslStr =
+        MoreObjects.firstNonNull(config.getOptional("deployment", MyriaSystemConfigKeys.SSL), "false").toLowerCase();
     boolean ssl = false;
     if (sslStr.equals("true") || sslStr.equals("on") || sslStr.equals("1")) {
       ssl = true;
@@ -104,9 +106,10 @@ public final class DeploymentUtils {
    * @throws ConfigFileException if error occurred parsing config file.
    */
   public static void startAWorker(final MyriaConfiguration config, final String workerId) throws ConfigFileException {
-    String maxHeapSize = config.getOptional("deployment", "max_heap_size");
+    String maxHeapSize = config.getOptional("runtime", MyriaSystemConfigKeys.MAX_HEAP_SIZE);
     boolean debug =
-        MoreObjects.firstNonNull(config.getOptional("deployment", "ssl"), "false").toLowerCase().equals("true");
+        MoreObjects.firstNonNull(config.getOptional("deployment", MyriaSystemConfigKeys.DEBUG), "false").toLowerCase()
+            .equals("true");
     String hostname = config.getHostnameWithUsername(workerId);
     String workingDir = config.getWorkingDirectory(workerId);
     int port = Integer.parseInt(config.getPort(workerId));

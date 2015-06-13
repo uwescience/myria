@@ -15,13 +15,13 @@ def make_deployment(config_file, fresh):
 
 def main(argv):
     # Usage
-    if len(argv) < 2 or len(argv) > 3 or (len(argv) == 3 and argv[2] != "-fresh"):
-        print >> sys.stderr, "Usage: %s <deployment.cfg> <optional: -fresh>" % (argv[0])
+    if len(argv) < 2 or len(argv) > 3 or (len(argv) == 3 and argv[2] != "-fresh_catalog"):
+        print >> sys.stderr, "Usage: %s <deployment.cfg> <optional: -fresh_catalog>" % (argv[0])
         print >> sys.stderr, \
             "       deployment.cfg: \
             a configuration file modeled after deployment.cfg.sample"
         print >> sys.stderr, \
-            "       -fresh: \
+            "       -fresh_catalog: \
             if deploy with an empty master catalog"
         sys.exit(1)
 

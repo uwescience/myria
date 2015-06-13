@@ -82,6 +82,12 @@ public final class MyriaSystemConfigKeys {
   public static final String DEPLOYMENT_CONF_FILE = "deployment.cfg";
   /** */
   public static final String ADMIN_PASSWORD = "admin_password";
+  /** */
+  public static final String REST_PORT = "rest_port";
+  /** */
+  public static final String SSL = "ssl";
+  /** */
+  public static final String DEBUG = "DEBUG";
 
   /**
    * Add default configurations into a configuration.
