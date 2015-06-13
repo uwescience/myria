@@ -17,5 +17,5 @@ rest_port = 8753
 
 [runtime]
 # Uncomment to set the maximum heap size of the worker processes
-max_heap_size = -Xmx2g
+#max_heap_size = -Xmx2g
 

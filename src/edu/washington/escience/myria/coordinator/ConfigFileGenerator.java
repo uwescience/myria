@@ -18,7 +18,7 @@ import edu.washington.escience.myria.tool.MyriaConfiguration;
 public final class ConfigFileGenerator {
 
   /**
-   * @param args args[0]: config file. args[1]: optional, location to store config files. Use "." if not specified.
+   * @param args args[0]: config file. args[1]: optional, location to store config files.
    * @throws ConfigFileException if there is an error creating the config files.
    */
   public static void main(final String[] args) throws ConfigFileException {
@@ -41,7 +41,7 @@ public final class ConfigFileGenerator {
   }
 
   /**
-   * Creates a WorkerCatalog.
+   * Creates a worker config file.
    * 
    * @param config the parsed configuration.
    * @param workerId the worker whose catalog is being creating.

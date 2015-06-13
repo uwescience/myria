@@ -15,7 +15,7 @@ def get_std_logs_from_worker(hostname, dirname, username,
                              worker_id, description):
     mkdir_if_not_exists(description)
     if hostname == 'localhost':
-        uri = "%s/worker_%s_stdout" % (dirname, worker_id)
+        uri = "%s/worker_%s/worker_%s_stdout" % (dirname, worker_id, worker_id)
     else:
         uri = "%s@%s:%s/worker_%s/worker_%s_stdout" % (
             username, hostname, dirname, worker_id, worker_id)
@@ -27,7 +27,7 @@ def get_error_logs_from_worker(hostname, dirname, username,
                                worker_id, description):
     mkdir_if_not_exists(description)
     if hostname == 'localhost':
-        uri = "%s/worker_%s_stderr" % (dirname, worker_id)
+        uri = "%s/worker_%s/worker_%s_stderr" % (dirname, worker_id, worker_id)
     else:
         uri = "%s@%s:%s/worker_%s/worker_%s_stderr" % (
             username, hostname, dirname, worker_id, worker_id)
@@ -68,7 +68,7 @@ def getlog(config_file, from_worker_id=None):
     # get logs from master
     if from_worker_id is None or from_worker_id == 0:
         (hostname, _, path) = myriadeploy.get_host_port_path(master, default_path)
-        if get_logs_from_master(hostname, "%s/%"
+        if get_logs_from_master(hostname, "%s/%s"
            % (path, description), username, description):
             raise Exception("Error on getting logs from master %s"
                             % (hostname,))
