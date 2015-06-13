@@ -125,8 +125,8 @@ public class SystemTestBase {
 
   public static Process SERVER_PROCESS;
 
-  public volatile int[] workerIDs;
-  public volatile int[] workerPorts;
+  public static volatile int[] workerIDs;
+  public static volatile int[] workerPorts;
   public volatile Process[] workerProcess;
   public volatile Thread[] workerStdoutReader;
 
@@ -302,8 +302,8 @@ public class SystemTestBase {
     config.setValue("deployment", MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_SYSTEM,
         MyriaConstants.STORAGE_SYSTEM_SQLITE);
     config.setValue("master", MyriaConstants.MASTER_ID + "", "localhost:8001");
-    config.setValue("workers", (MyriaConstants.MASTER_ID + 1) + "", "localhost:9001");
-    config.setValue("workers", (MyriaConstants.MASTER_ID + 2) + "", "localhost:9002");
+    config.setValue("workers", workerIDs[0] + "", "localhost:" + workerPorts[0]);
+    config.setValue("workers", workerIDs[1] + "", "localhost:" + workerPorts[1]);
     Files.createDirectories(Paths.get(workingDir));
     File configFile = Paths.get(workingDir, MyriaConstants.DEPLOYMENT_CONF_FILE).toFile();
     config.write(configFile);
