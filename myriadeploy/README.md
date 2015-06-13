@@ -71,7 +71,7 @@ B. The `launch_cluster.sh` script really just runs the following 2 scripts in or
 
 C. You can also launch the cluster using Eclipse.
 
-   Edit the run configuration for `RunMyriaForProfiling` and set the working directory in *Arguments* to the Myria working directory (for example `/tmp/myria/twoNodeLocalParallel-files` if you are using `deployment.cfg.local`). When you hit run, the cluster is started.
+   Edit the run configuration for `RunMyriaForProfiling` and set the working directory in *Arguments* to the Myria working directory (for example `/tmp/myria/twoNodeLocalParallel` if you are using `deployment.cfg.local`). When you hit run, the cluster is started.
 
 #### 1. Check the cluster status.
 

@@ -38,6 +38,7 @@ import edu.washington.escience.myria.operator.network.partition.SingleFieldHashP
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.systemtest.SystemTestBase;
+import edu.washington.escience.myria.util.DeploymentUtils;
 
 // 15s on Jingjing's desktop
 // about 44s on DanH's laptop
@@ -58,7 +59,8 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
       final Path src = FileSystems.getDefault().getPath(srcPath[i]);
       final Path dst =
           FileSystems.getDefault().getPath(
-              FilenameUtils.concat(getWorkerFolder(workerIDs[i]), "worker_" + workerIDs[i] + "_data.db"));
+              FilenameUtils.concat(DeploymentUtils.getPathToWorkerDir(workingDir, workerIDs[i]), "worker_"
+                  + workerIDs[i] + "_data.db"));
       try {
         Files.copy(src, dst);
       } catch (final Exception e) {

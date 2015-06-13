@@ -3,16 +3,15 @@ package edu.washington.escience.myria.systemtest;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.ProcessBuilder.Redirect;
 import java.lang.management.ManagementFactory;
 import java.net.HttpURLConnection;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -54,7 +53,6 @@ import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.SQLiteAccessMethod;
 import edu.washington.escience.myria.accessmethod.SQLiteInfo;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
@@ -62,9 +60,9 @@ import edu.washington.escience.myria.api.encoding.DatasetEncoding;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
-import edu.washington.escience.myria.coordinator.catalog.CatalogException;
-import edu.washington.escience.myria.coordinator.catalog.CatalogMaker;
-import edu.washington.escience.myria.coordinator.catalog.WorkerCatalog;
+import edu.washington.escience.myria.coordinator.CatalogException;
+import edu.washington.escience.myria.coordinator.ConfigFileGenerator;
+import edu.washington.escience.myria.coordinator.MasterCatalog;
 import edu.washington.escience.myria.daemon.MasterDaemon;
 import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
@@ -73,6 +71,8 @@ import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.parallel.Worker;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.tool.MyriaConfiguration;
+import edu.washington.escience.myria.util.DeploymentUtils;
 import edu.washington.escience.myria.util.FSUtils;
 import edu.washington.escience.myria.util.JsonAPIUtils;
 import edu.washington.escience.myria.util.SQLiteUtils;
@@ -120,6 +120,9 @@ public class SystemTestBase {
 
   public static final int DEFAULT_WORKER_STARTING_PORT = 9001;
 
+  /** the "description" used in systemtests deployment. */
+  private static final String DESCRIPTION = "systemtest";
+
   public static Process SERVER_PROCESS;
 
   public volatile int[] workerIDs;
@@ -127,7 +130,10 @@ public class SystemTestBase {
   public volatile Process[] workerProcess;
   public volatile Thread[] workerStdoutReader;
 
-  public volatile static String workerTestBaseFolder;
+  /** the base folder of the test. */
+  public volatile static String testBaseFolder;
+  /** the working directory, i.e. testBaseFolder/DESCRIPTION. */
+  public volatile static String workingDir;
 
   /** Whether to run the worker and master daemons in debug mode. */
   public static final boolean DEBUG = false;
@@ -143,15 +149,11 @@ public class SystemTestBase {
     }
   }
 
-  public static File getAbsoluteDBFile(final int workerID) throws CatalogException, FileNotFoundException {
-    final String workerDir = getWorkerFolder(workerID);
-    final WorkerCatalog wc = WorkerCatalog.open(FilenameUtils.concat(workerDir, "worker.catalog"));
-    final SQLiteInfo sqliteInfo =
-        (SQLiteInfo) ConnectionInfo.of(MyriaConstants.STORAGE_SYSTEM_SQLITE, wc
-            .getConfigurationValue(MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_CONN_INFO));
-    final File ret = new File(sqliteInfo.getDatabaseFilename());
-    wc.close();
-    return ret;
+  public static File getAbsoluteDBFile(final int workerId) {
+    String fileName =
+        FilenameUtils.concat(DeploymentUtils.getPathToWorkerDir(workingDir, workerId), "worker_" + workerId
+            + "_data.db");
+    return new File(fileName);
   }
 
   protected static String getContents(final HttpURLConnection conn) {
@@ -210,7 +212,7 @@ public class SystemTestBase {
       }
     }
 
-    FSUtils.blockingDeleteDirectory(workerTestBaseFolder);
+    FSUtils.blockingDeleteDirectory(testBaseFolder);
 
     boolean finishClean = false;
     while (!finishClean) {
@@ -270,21 +272,38 @@ public class SystemTestBase {
   public void before() throws Exception {
   }
 
+  /**
+   * 
+   * @return the path to the config file
+   * @throws IOException IOException
+   */
+  private static String generateTestConfFile(final String directoryName) throws IOException {
+    MyriaConfiguration config = MyriaConfiguration.newConfiguration();
+    config.setValue("deployment", MyriaSystemConfigKeys.DEPLOYMENT_PATH, testBaseFolder);
+    config.setValue("deployment", MyriaSystemConfigKeys.DESCRIPTION, DESCRIPTION);
+    config.setValue("deployment", MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_SYSTEM,
+        MyriaConstants.STORAGE_SYSTEM_SQLITE);
+    config.setValue("master", MyriaConstants.MASTER_ID + "", "localhost:8001");
+    config.setValue("workers", (MyriaConstants.MASTER_ID + 1) + "", "localhost:9001");
+    config.setValue("workers", (MyriaConstants.MASTER_ID + 2) + "", "localhost:9002");
+    Files.createDirectories(Paths.get(workingDir));
+    File configFile = Paths.get(workingDir, MyriaConstants.DEPLOYMENT_CONF_FILE).toFile();
+    config.write(configFile);
+    return configFile.getAbsolutePath();
+  }
+
   @Before
   public void globalInit() throws Exception {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
     final Path tempFilePath = Files.createTempDirectory(MyriaConstants.SYSTEM_NAME + "_systemtests");
-    workerTestBaseFolder = tempFilePath.toFile().getAbsolutePath();
-    Map<String, String> masterConfigs = getMasterConfigurations();
-    Map<String, String> workerConfigs = getWorkerConfigurations();
-
+    testBaseFolder = tempFilePath.toFile().getAbsolutePath();
+    workingDir = FilenameUtils.concat(testBaseFolder, DESCRIPTION);
+    createPathToMasterDir();
     Map<Integer, SocketInfo> masters = getMasters();
     Map<Integer, SocketInfo> workers = getWorkers();
-
-    CatalogMaker.makeNNodesLocalParallelCatalog(workerTestBaseFolder, masters, workers, masterConfigs, workerConfigs);
-
+    MasterCatalog.create(DeploymentUtils.getPathToMasterDir(workingDir));
     for (Entry<Integer, SocketInfo> master : masters.entrySet()) {
       masterPort = master.getValue().getPort();
     }
@@ -293,16 +312,16 @@ public class SystemTestBase {
     workerIDs = new int[workerPorts.length];
     workerProcess = new Process[workerPorts.length];
     workerStdoutReader = new Thread[workerPorts.length];
-
     int i = 0;
     for (Entry<Integer, SocketInfo> worker : workers.entrySet()) {
       workerPorts[i] = worker.getValue().getPort();
       workerIDs[i] = worker.getKey();
       /** Make the worker folder. */
-      Path workerPath = FileSystems.getDefault().getPath(getWorkerFolder(workerIDs[i]));
-      Files.createDirectories(workerPath);
+      createPathToWorkerDir(workerIDs[i]);
       i++;
     }
+    final String configFile = generateTestConfFile(testBaseFolder);
+    ConfigFileGenerator.makeWorkerConfigFiles(configFile, workingDir);
 
     if (!AvailablePortFinder.available(masterPort)) {
       throw new RuntimeException("Unable to start master, port " + masterPort + " is taken");
@@ -342,7 +361,7 @@ public class SystemTestBase {
   }
 
   public static void insert(final int workerID, final RelationKey relationKey, final Schema schema,
-      final TupleBatch data) throws CatalogException, FileNotFoundException, DbException {
+      final TupleBatch data) throws DbException, IOException {
     SQLiteAccessMethod
         .tupleBatchInsert(SQLiteInfo.of(getAbsoluteDBFile(workerID).getAbsolutePath()), relationKey, data);
   }
@@ -503,18 +522,25 @@ public class SystemTestBase {
 
   protected volatile static MasterDaemon masterDaemon;
 
-  void startMaster() throws Exception {
-    masterDaemon = new MasterDaemon(workerTestBaseFolder, masterDaemonPort);
-    server = masterDaemon.getClusterMaster();
-    server.start();
+  /**
+   * @throws IOException if error occurred creating directories.
+   */
+  public static void createPathToMasterDir() throws IOException {
+    Files.createDirectories(Paths.get(DeploymentUtils.getPathToMasterDir(workingDir)));
   }
 
   /**
-   * @param workerId the id of the worker
-   * @return the folder containing that worker's files.
+   * @param workerId worker ID.
+   * @throws IOException if error occurred creating directories.
    */
-  public static String getWorkerFolder(final int workerId) {
-    return FilenameUtils.concat(workerTestBaseFolder, "worker_" + workerId);
+  public static void createPathToWorkerDir(final int workerId) throws IOException {
+    Files.createDirectories(Paths.get(DeploymentUtils.getPathToWorkerDir(workingDir, workerId)));
+  }
+
+  void startMaster() throws Exception {
+    masterDaemon = new MasterDaemon(workingDir, masterDaemonPort);
+    server = masterDaemon.getClusterMaster();
+    server.start();
   }
 
   /**
@@ -526,7 +552,6 @@ public class SystemTestBase {
     LOGGER.info("Workers for test [" + name.getMethodName() + "] are " + ArrayUtils.toString(workerIDs));
     for (int i = 0; i < workerIDs.length; i++) {
       final int workerID = workerIDs[i];
-      final String workingDir = getWorkerFolder(workerID);
 
       String cp = System.getProperty("java.class.path");
       String lp = System.getProperty("java.library.path");
@@ -570,11 +595,12 @@ public class SystemTestBase {
       }
 
       /* Finally, set up the class to be run (Worker) and its command-line options. */
-      args.add(Worker.class.getCanonicalName(), "--workingDir", workingDir, "--testMethod", name.getMethodName());
+      final String workerDir = DeploymentUtils.getPathToWorkerDir(workingDir, workerID);
+      args.add(Worker.class.getCanonicalName(), "--workingDir", workerDir, "--testMethod", name.getMethodName());
 
       final ProcessBuilder pb = new ProcessBuilder(args.build());
 
-      pb.directory(new File(workingDir));
+      pb.directory(new File(workerDir));
       pb.redirectErrorStream(true);
       pb.redirectOutput(Redirect.PIPE);
 

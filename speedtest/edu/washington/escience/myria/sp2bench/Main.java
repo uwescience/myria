@@ -7,24 +7,24 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.ProcessBuilder.Redirect;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FilenameUtils;
 
-import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
+import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.parallel.QueryFuture;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.tool.MyriaConfiguration;
 import edu.washington.escience.myria.util.DateTimeUtils;
 
 public class Main {
 
-  final static String catalogFileName = FilenameUtils.concat("/tmp/slxu_experiment", "master.catalog");
+  final static String masterHome = "/tmp/slxu_experiment";
 
-  public static void startWorkers(String startingBashScript) {
+  public static void startWorkers(final String startingBashScript) {
     final ProcessBuilder pb = new ProcessBuilder("bash", startingBashScript);
 
     pb.directory(new File("."));
@@ -71,11 +71,9 @@ public class Main {
    * @throws IllegalAccessException
    * @throws InstantiationException
    */
-  public static void main(String[] args) throws Exception {
+  public static void main(final String[] args) throws Exception {
     String queryClassname = args[0];
     String startWorkersScript = args[1];
-
-    QueryPlanGenerator qpg = (QueryPlanGenerator) (Class.forName(queryClassname).newInstance());
 
     System.out.println("Begin start master");
     Server server = startMaster();
@@ -85,16 +83,15 @@ public class Main {
     startWorkers(startWorkersScript);
     System.out.println("End start workers");
 
-    MasterCatalog catalog = MasterCatalog.open(catalogFileName);
-    Set<Integer> workerSet = catalog.getWorkers().keySet();
-    catalog.close();
-
-    int[] allWorkers = new int[workerSet.size()];
+    MyriaConfiguration config =
+        MyriaConfiguration.loadWithDefaultValues(FilenameUtils.concat(masterHome, MyriaConstants.DEPLOYMENT_CONF_FILE));
+    int[] allWorkers = new int[config.getWorkerIds().size()];
     int idx = 0;
-    for (int wID : workerSet) {
-      allWorkers[idx++] = wID;
+    for (String id : config.getWorkerIds()) {
+      allWorkers[idx++] = Integer.parseInt(id);
     }
 
+    QueryPlanGenerator qpg = (QueryPlanGenerator) (Class.forName(queryClassname).newInstance());
     final Map<Integer, RootOperator[]> workerPlans = qpg.getWorkerPlan(allWorkers);
     final LinkedBlockingQueue<TupleBatch> resultStore = new LinkedBlockingQueue<TupleBatch>();
     final RootOperator masterPlan = qpg.getMasterPlan(allWorkers, resultStore);
@@ -119,7 +116,7 @@ public class Main {
   }
 
   static Server startMaster() throws Exception {
-    Server server = new Server(catalogFileName);
+    Server server = new Server(masterHome);
     server.start();
     return server;
   }

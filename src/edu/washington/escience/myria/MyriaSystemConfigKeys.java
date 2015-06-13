@@ -1,12 +1,11 @@
 package edu.washington.escience.myria;
 
-import java.util.Map;
-
 import org.jboss.netty.channel.socket.nio.NioSocketChannelConfig;
 
 import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.parallel.ipc.FlowControlBagInputBuffer;
 import edu.washington.escience.myria.parallel.ipc.StreamInputBuffer;
+import edu.washington.escience.myria.tool.MyriaConfiguration;
 
 /**
  * Myria system configuration keys.
@@ -57,98 +56,70 @@ public final class MyriaSystemConfigKeys {
    * */
   public static final String TCP_CONNECTION_TIMEOUT_MILLIS = "tcp.connection.timeout.milliseconds";
 
-  /**
-   * .
-   * */
-  public static final String WORKER_STORAGE_DATABASE_SYSTEM = "worker.storage.database.type";
-
-  /**
-   * .
-   * */
-  public static final String WORKER_STORAGE_DATABASE_CONN_INFO = "worker.storage.database.conn.info";
-
-  /**
-   * .
-   * */
-  public static final String WORKER_IDENTIFIER = "worker.identifier";
+  /** */
+  public static final String WORKER_STORAGE_DATABASE_SYSTEM = "dbms";
 
   /** */
-  public static final String WORKING_DIRECTORY = "working.directory";
+  public static final String WORKER_STORAGE_DATABASE_NAME = "database_name";
+
   /** */
-  public static final String DESCRIPTION = "description";
+  public static final String WORKER_STORAGE_DATABASE_PASSWORD = "database_password";
+
+  /** */
+  public static final String WORKER_STORAGE_DATABASE_PORT = "database_port";
+
+  /** */
+  public static final String WORKER_IDENTIFIER = "worker_id";
+  /** */
+  public static final String DEPLOYMENT_PATH = "path";
+  /** */
+  public static final String DESCRIPTION = "name";
   /** */
   public static final String USERNAME = "username";
   /** */
-  public static final String MAX_HEAP_SIZE = "max.heap.size";
+  public static final String MAX_HEAP_SIZE = "max_heap_size";
   /** */
-  public static final String DEPLOYMENT_FILE = "deployment.file";
+  public static final String DEPLOYMENT_CONF_FILE = "deployment.cfg";
   /** */
-  public static final String ADMIN_PASSWORD = "admin.password";
+  public static final String ADMIN_PASSWORD = "admin_password";
 
   /**
-   * Add default configurations into a configuraion.
+   * Add default configurations into a configuration.
    * 
    * @param config the configuration.
    * */
-  public static void addDefaultConfigKeys(final Map<String, String> config) {
-    if (!config.containsKey(FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES)
-        || config.get(FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES) == null) {
-      config.put(FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES,
+  public static void addDefaultConfigValues(final MyriaConfiguration config) {
+    if (config.getOptional("deployment", WORKER_STORAGE_DATABASE_SYSTEM) == null) {
+      config.setValue("deployment", WORKER_STORAGE_DATABASE_SYSTEM,
+          MyriaConstants.WORKER_STORAGE_DATABASE_SYSTEM_DEFAULT_VALUE);
+    }
+    if (config.getOptional("runtime", FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES) == null) {
+      config.setValue("runtime", FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES,
           MyriaConstants.FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES_DEFAULT_VALUE + "");
     }
-    if (!config.containsKey(FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES)
-        || config.get(FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES) == null) {
-      config.put(FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES,
+    if (config.getOptional("runtime", FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES) == null) {
+      config.setValue("runtime", FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES,
           MyriaConstants.FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES_DEFAULT_VALUE + "");
     }
-    if (!config.containsKey(OPERATOR_INPUT_BUFFER_CAPACITY) || config.get(OPERATOR_INPUT_BUFFER_CAPACITY) == null) {
-      config.put(OPERATOR_INPUT_BUFFER_CAPACITY, MyriaConstants.OPERATOR_INPUT_BUFFER_CAPACITY_DEFAULT_VALUE + "");
+    if (config.getOptional("runtime", OPERATOR_INPUT_BUFFER_CAPACITY) == null) {
+      config.setValue("runtime", OPERATOR_INPUT_BUFFER_CAPACITY,
+          MyriaConstants.OPERATOR_INPUT_BUFFER_CAPACITY_DEFAULT_VALUE + "");
     }
-    if (!config.containsKey(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER)
-        || config.get(OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER) == null) {
-      config.put(OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER,
+    if (config.getOptional("runtime", OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER) == null) {
+      config.setValue("runtime", OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER,
           MyriaConstants.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER_DEFAULT_VALUE + "");
     }
-    if (!config.containsKey(TCP_CONNECTION_TIMEOUT_MILLIS) || config.get(TCP_CONNECTION_TIMEOUT_MILLIS) == null) {
-      config.put(TCP_CONNECTION_TIMEOUT_MILLIS, MyriaConstants.TCP_CONNECTION_TIMEOUT_MILLIS_DEFAULT_VALUE + "");
+    if (config.getOptional("runtime", TCP_CONNECTION_TIMEOUT_MILLIS) == null) {
+      config.setValue("runtime", TCP_CONNECTION_TIMEOUT_MILLIS,
+          MyriaConstants.TCP_CONNECTION_TIMEOUT_MILLIS_DEFAULT_VALUE + "");
     }
-    if (!config.containsKey(TCP_RECEIVE_BUFFER_SIZE_BYTES) || config.get(TCP_RECEIVE_BUFFER_SIZE_BYTES) == null) {
-      config.put(TCP_RECEIVE_BUFFER_SIZE_BYTES, MyriaConstants.TCP_RECEIVE_BUFFER_SIZE_BYTES_DEFAULT_VALUE + "");
+    if (config.getOptional("runtime", TCP_RECEIVE_BUFFER_SIZE_BYTES) == null) {
+      config.setValue("runtime", TCP_RECEIVE_BUFFER_SIZE_BYTES,
+          MyriaConstants.TCP_RECEIVE_BUFFER_SIZE_BYTES_DEFAULT_VALUE + "");
     }
-    if (!config.containsKey(TCP_SEND_BUFFER_SIZE_BYTES) || config.get(TCP_SEND_BUFFER_SIZE_BYTES) == null) {
-      config.put(TCP_SEND_BUFFER_SIZE_BYTES, MyriaConstants.TCP_SEND_BUFFER_SIZE_BYTES_DEFAULT_VALUE + "");
-    }
-    if (!config.containsKey(WORKER_STORAGE_DATABASE_SYSTEM) || config.get(WORKER_STORAGE_DATABASE_SYSTEM) == null) {
-      config.put(WORKER_STORAGE_DATABASE_SYSTEM, MyriaConstants.WORKER_STORAGE_DATABASE_SYSTEM_DEFAULT_VALUE + "");
-    }
-  }
-
-  /**
-   * Add configurations from the parsed result of the deployment section of a config file.
-   * 
-   * @param config the configuration to be added to.
-   * @param deployment the parsed result of the deployment section.
-   * */
-  public static void addDeploymentKeysFromConfigFile(final Map<String, String> config,
-      final Map<String, String> deployment) {
-    if (!config.containsKey(WORKING_DIRECTORY) || config.get(WORKING_DIRECTORY) == null) {
-      config.put(WORKING_DIRECTORY, deployment.get("path"));
-    }
-    if (!config.containsKey(DESCRIPTION) || config.get(DESCRIPTION) == null) {
-      config.put(DESCRIPTION, deployment.get("name"));
-    }
-    if (!config.containsKey(USERNAME) || config.get(USERNAME) == null) {
-      config.put(USERNAME, deployment.get("username"));
-    }
-    if (!config.containsKey(MAX_HEAP_SIZE) || config.get(MAX_HEAP_SIZE) == null) {
-      config.put(MAX_HEAP_SIZE, deployment.get("max_heap_size"));
-    }
-    if (!config.containsKey(WORKER_STORAGE_DATABASE_SYSTEM) || config.get(WORKER_STORAGE_DATABASE_SYSTEM) == null) {
-      config.put(WORKER_STORAGE_DATABASE_SYSTEM, deployment.get("dbms"));
-    }
-    if (!config.containsKey(ADMIN_PASSWORD) || config.get(ADMIN_PASSWORD) == null) {
-      config.put(ADMIN_PASSWORD, deployment.get("admin_password"));
+    if (config.getOptional("runtime", TCP_SEND_BUFFER_SIZE_BYTES) == null) {
+      config.setValue("runtime", TCP_SEND_BUFFER_SIZE_BYTES, MyriaConstants.TCP_SEND_BUFFER_SIZE_BYTES_DEFAULT_VALUE
+          + "");
     }
   }
-
 }

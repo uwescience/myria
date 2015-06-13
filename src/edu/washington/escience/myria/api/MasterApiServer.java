@@ -43,8 +43,9 @@ public final class MasterApiServer {
     ResourceConfig masterApplication = new MasterApplication(server, daemon);
 
     /* If the keystore path and password are both set, use SSL. */
-    String keystorePath = server.getConfiguration(MyriaApiConstants.MYRIA_API_SSL_KEYSTORE);
-    String keystorePassword = server.getConfiguration(MyriaApiConstants.MYRIA_API_SSL_KEYSTORE_PASSWORD);
+    String keystorePath = server.getConfig().getOptional("deployment", MyriaApiConstants.MYRIA_API_SSL_KEYSTORE);
+    String keystorePassword =
+        server.getConfig().getOptional("deployment", MyriaApiConstants.MYRIA_API_SSL_KEYSTORE_PASSWORD);
     if (keystorePath != null && keystorePassword != null) {
       LOGGER.info("Enabling SSL");
       baseUri = UriBuilder.fromUri(baseUri).scheme("https").build();

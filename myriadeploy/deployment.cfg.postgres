@@ -1,20 +1,18 @@
 # Deployment configuration
 [deployment]
-path = /disk1/myria
 name = testMyriadeploy
+path = /disk1/myria
 dbms = postgresql
 database_name = myria1
 database_password = <password>
+rest_port = 8753
 
 # Uncomment if need to set a custom db port, otherwise default will be used
 #database_port = 5401
 # Uncomment if need to set a specific username; does not work for localhost
 #username = dhalperi
-# Uncomment to set the maximum heap size of the Java processes
-#max_heap_size=-Xmx2g
 # Uncomment if want to launch workers in debug mode
 #debug_mode = true
-rest_port = 8753
 
 # Compute nodes configuration
 [master]
@@ -30,3 +28,8 @@ rest_port = 8753
 2 = capella.cs.washington.edu:9091
 3 = regulus.cs.washington.edu:9092:/disk2/myria:myria2
 4 = capella.cs.washington.edu:9092:/disk2/myria:myria2
+
+[runtime]
+# Uncomment to set the maximum heap size of the worker processes
+#max_heap_size = -Xmx2g
+

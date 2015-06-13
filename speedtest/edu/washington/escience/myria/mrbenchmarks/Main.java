@@ -10,26 +10,25 @@ import java.lang.ProcessBuilder.Redirect;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.commons.io.FilenameUtils;
 
-import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
+import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.parallel.Query;
 import edu.washington.escience.myria.parallel.Server;
-import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.tool.MyriaConfiguration;
 import edu.washington.escience.myria.util.DateTimeUtils;
 
 public class Main {
 
   static String masterHome = ".";
 
-  public static void startWorkers(String startingBashScript) {
+  public static void startWorkers(final String startingBashScript) {
     final ProcessBuilder pb = new ProcessBuilder("bash", startingBashScript);
 
     pb.directory(new File("."));
@@ -76,21 +75,13 @@ public class Main {
    * @throws IllegalAccessException
    * @throws InstantiationException
    */
-  public static void main(String[] args) throws Exception {
+  public static void main(final String[] args) throws Exception {
     String queryClassname = args[0];
     String startWorkersScript = args[1];
     masterHome = args[2];
     String queryWorkerNameListFile = args[3];
 
-    BufferedReader br =
-        new BufferedReader(new InputStreamReader(new FileInputStream(new File(queryWorkerNameListFile))));
-
-    MasterCatalog catalog = MasterCatalog.open(FilenameUtils.concat(masterHome, "master.catalog"));
-    Map<Integer, SocketInfo> allWorkerInfos = catalog.getWorkers();
-    catalog.close();
-
     QueryPlanGenerator qpg = (QueryPlanGenerator) (Class.forName(queryClassname).newInstance());
-
     System.out.println("Query is: " + qpg);
 
     System.out.println("Begin start master");
@@ -103,10 +94,14 @@ public class Main {
 
     Set<Integer> computingWorkers = new HashSet<Integer>();
     HashMap<String, Integer> workerName2ID = new HashMap<String, Integer>();
-    for (Entry<Integer, SocketInfo> e : allWorkerInfos.entrySet()) {
-      workerName2ID.put(e.getValue().getHost(), e.getKey());
+    MyriaConfiguration config =
+        MyriaConfiguration.loadWithDefaultValues(FilenameUtils.concat(masterHome, MyriaConstants.DEPLOYMENT_CONF_FILE));
+    for (String id : config.getWorkerIds()) {
+      workerName2ID.put(config.getHostname(id), Integer.parseInt(id));
     }
 
+    BufferedReader br =
+        new BufferedReader(new InputStreamReader(new FileInputStream(new File(queryWorkerNameListFile))));
     String line = null;
     while ((line = br.readLine()) != null) {
       computingWorkers.add(workerName2ID.get(line));
@@ -140,7 +135,7 @@ public class Main {
   }
 
   static Server startMaster() throws Exception {
-    Server server = new Server(FilenameUtils.concat(masterHome, "master.catalog"));
+    Server server = new Server(masterHome);
     server.start();
     return server;
   }

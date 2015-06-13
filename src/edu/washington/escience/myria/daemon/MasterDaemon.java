@@ -6,8 +6,9 @@ import java.util.logging.Logger;
 
 import org.apache.commons.io.FilenameUtils;
 
+import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.api.MasterApiServer;
-import edu.washington.escience.myria.coordinator.catalog.CatalogException;
+import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.parallel.Server;
 
 /**
@@ -27,9 +28,9 @@ public final class MasterDaemon {
    */
   public static void main(final String[] args) throws Exception {
     processArguments(args);
-    String catalogDirPath = args[0];
+    String configFile = args[0];
     int apiPort = Integer.parseInt(args[1]);
-    final MasterDaemon md = new MasterDaemon(catalogDirPath, apiPort);
+    final MasterDaemon md = new MasterDaemon(configFile, apiPort);
     md.start();
   }
 
@@ -41,12 +42,12 @@ public final class MasterDaemon {
   /**
    * Instantiates a MasterDaemon object. Includes the API server and the Myria server.
    * 
-   * @param catalogDirPath the dir where the Catalog file resides.
+   * @param configFilePath the dir where the config file resides.
    * @param apiPort api server port.
    * @throws Exception if there are issues loading the Catalog or instantiating the servers.
    */
-  public MasterDaemon(final String catalogDirPath, final int apiPort) throws Exception {
-    server = new Server(FilenameUtils.concat(catalogDirPath, "master.catalog"));
+  public MasterDaemon(final String configFilePath, final int apiPort) throws Exception {
+    server = new Server(FilenameUtils.concat(configFilePath, MyriaConstants.DEPLOYMENT_CONF_FILE));
     try {
       apiServer = new MasterApiServer(server, this, apiPort);
     } catch (Exception e) {

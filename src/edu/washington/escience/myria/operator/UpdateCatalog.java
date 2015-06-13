@@ -6,7 +6,7 @@ import javax.annotation.Nonnull;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.RelationKey;
-import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
+import edu.washington.escience.myria.coordinator.MasterCatalog;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.storage.TupleBatch;
 

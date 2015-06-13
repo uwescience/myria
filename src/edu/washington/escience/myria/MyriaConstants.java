@@ -182,6 +182,12 @@ public final class MyriaConstants {
    */
   public static final String STORAGE_SYSTEM_POSTGRESQL = "postgresql";
 
+  /** Worker config file name. */
+  public static final String WORKER_CONFIG_FILE = "worker.cfg";
+
+  /** Deployment config file name. */
+  public static final String DEPLOYMENT_CONF_FILE = "deployment.cfg";
+
   /**
    * PostgreSQL port.
    */
