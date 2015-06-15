@@ -2073,7 +2073,6 @@ public final class MasterCatalog {
   }
 
   /**
-<<<<<<< HEAD
    * Checking whether the relation has an is_deleted status
    *
    * @param relationKey the relation to check is_deleted status.
