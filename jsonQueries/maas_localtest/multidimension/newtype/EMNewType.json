@@ -176,7 +176,7 @@
             "argOperatorId": 224 
           },
           {
-            "opType": "JoinMStepAggregate",
+            "opType": "JoinMStepAggregateNewType",
             "argChild": 2212,
             "aggregators": [
               {

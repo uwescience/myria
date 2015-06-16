@@ -39,6 +39,10 @@ public class MyriaMatrix extends Matrix implements Comparable<MyriaMatrix> {
 		super(respMatrix.getArrayCopy());
 	}
 
+	public MyriaMatrix(int m, int n, double s) {
+		super(m, n, s);
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * 

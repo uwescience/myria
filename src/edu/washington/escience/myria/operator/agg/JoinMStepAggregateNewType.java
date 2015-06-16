@@ -331,8 +331,8 @@ public class JoinMStepAggregateNewType extends UnaryOperator {
 		aggtypes.add(Type.DOUBLE_TYPE);
 		aggnames.add("pi");
 
-		aggtypes.add(Type.MYRIAMATRIX_TYPE);
-		aggnames.add("pi");
+		// aggtypes.add(Type.MYRIAMATRIX_TYPE);
+		// aggnames.add("pi");
 
 		for (int i = 0; i < numDimensions; i++) {
 			aggtypes.add(Type.DOUBLE_TYPE);

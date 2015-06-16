@@ -53,6 +53,7 @@ import edu.washington.escience.myria.operator.Operator;
 		@Type(name = "JoinEStepXD", value = JoinEStepXDEncoding.class),
 		@Type(name = "JoinEStepNewType", value = JoinEStepNewTypeEncoding.class),
 		@Type(name = "JoinMStepAggregate", value = JoinMStepAggregateEncoding.class),
+		@Type(name = "JoinMStepAggregateNewType", value = JoinMStepAggregateNewTypeEncoding.class),
 		@Type(name = "JoinMStepPartial", value = JoinMStepPartialEncoding.class),
 		@Type(name = "JoinMStepPartialNewType", value = JoinMStepPartialNewTypeEncoding.class),
 		@Type(name = "LeapFrogJoin", value = LeapFrogJoinEncoding.class),

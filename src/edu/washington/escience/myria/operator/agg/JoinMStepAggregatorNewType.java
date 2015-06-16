@@ -1,14 +1,11 @@
 package edu.washington.escience.myria.operator.agg;
 
-import java.io.Serializable;
 import java.util.Objects;
-
-import org.jblas.DoubleMatrix;
-
-import Jama.Matrix;
 
 import com.google.common.collect.ImmutableList;
 
+import edu.washington.escience.myria.MyriaMatrix;
+import edu.washington.escience.myria.PartialState;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
@@ -117,16 +114,15 @@ public class JoinMStepAggregatorNewType implements Aggregator {
 
 		// double[][] xArray = new double[][] { { x11 }, { x21 } };
 
-		double[] partialStateThisRow = new double[1 + 1 + numDimensions
-				+ numDimensions * numDimensions];
+		MyriaMatrix[] partialStateThisRow = new MyriaMatrix[1 + 1 + 1 + 1];
 
 		// Get the partial state dump
 		for (int i = 0; i < partialStateThisRow.length; i++) {
-			partialStateThisRow[i] = from.getDouble(1 + i, row);
+			partialStateThisRow[i] = from.getMyriaMatrix(1 + i, row);
 		}
 
 		// Add the current point to the partial state
-		partialState.addPartialStateDump(partialStateThisRow);
+		partialState.addPartialStateDumpNewType(partialStateThisRow);
 
 	}
 
@@ -231,249 +227,4 @@ public class JoinMStepAggregatorNewType implements Aggregator {
 		return new Schema(types, names);
 	}
 
-	private class PartialState implements Serializable {
-
-		/** Required for Java serialization. */
-		private static final long serialVersionUID = 1L;
-
-		/**
-		 * 
-		 */
-		private final String matrixLibrary;
-
-		/**
-		 * 
-		 */
-		private double r_k_partial;
-
-		/**
-		 * 
-		 */
-		private DoubleMatrix mu_k_partial;
-
-		/**
-		 * 
-		 */
-		private DoubleMatrix sigma_k_partial;
-
-		/**
-		 * 
-		 */
-		private Matrix jama_mu_k_partial;
-
-		/**
-		 * 
-		 */
-		private Matrix jama_sigma_k_partial;
-
-		/**
-		 * 
-		 */
-		private int nPoints;
-
-		/**
-		 * 
-		 */
-		private boolean isCompleted;
-
-		/**
-		 * 
-		 */
-		private double r_k;
-
-		/**
-		 * 
-		 */
-		private double piFinal;
-
-		/**
-		 * 
-		 */
-		private double[][] muFinalArray;
-
-		/**
-		 * 
-		 */
-		private double[][] sigmaFinalArray;
-
-		/**
-		 * 
-		 */
-		private PartialState(String matrixLibrary) {
-			this.matrixLibrary = matrixLibrary;
-
-			// Initialize running parameters
-			r_k_partial = 0.0;
-
-			// jblas
-			mu_k_partial = DoubleMatrix.zeros(numDimensions, 1);
-			sigma_k_partial = DoubleMatrix.zeros(numDimensions, numDimensions);
-
-			// jama
-			double[][] zeroVec = new double[numDimensions][1];
-			double[][] zeroMatrix = new double[numDimensions][numDimensions];
-			jama_mu_k_partial = new Matrix(zeroVec);
-			jama_sigma_k_partial = new Matrix(zeroMatrix);
-
-			isCompleted = false;
-		}
-
-		private void addPoint(double[][] xArray, double r_ik) {
-			nPoints += 1;
-
-			//
-			// // Do updates
-			r_k_partial += r_ik;
-
-			if (matrixLibrary.equals("jblas")) {
-				DoubleMatrix x = new DoubleMatrix(xArray);
-				mu_k_partial = mu_k_partial.add(x.mul(r_ik));
-				sigma_k_partial = sigma_k_partial.add(x.mmul(x.transpose())
-						.mul(r_ik));
-			} else if (matrixLibrary.equals("jama")) {
-				Matrix x = new Matrix(xArray);
-				jama_mu_k_partial = jama_mu_k_partial.plus(x.times(r_ik));
-				jama_sigma_k_partial = jama_sigma_k_partial.plus(x.times(
-						x.transpose()).times(r_ik));
-			} else {
-				throw new RuntimeException("Incorrect matrix libary specified.");
-			}
-
-		}
-
-		// ONLY FOR JAMA
-		private double[] getPartialStateDump() {
-			double[] partialState = new double[1 + 1 + numDimensions
-					+ numDimensions * numDimensions];
-
-			double partNPoints = nPoints;
-			double partRK = r_k_partial;
-			double[][] muPart = jama_mu_k_partial.getArrayCopy();
-			double[][] sigmaPart = jama_sigma_k_partial.getArrayCopy();
-
-			// Fill the partial state array
-			int indexCounter = 0;
-
-			partialState[indexCounter] = partNPoints;
-			indexCounter++;
-
-			partialState[indexCounter] = partRK;
-			indexCounter++;
-
-			for (int i = 0; i < numDimensions; i++) {
-				partialState[indexCounter] = muPart[i][0];
-				indexCounter++;
-			}
-
-			for (int i = 0; i < numDimensions; i++) {
-				for (int j = 0; j < numDimensions; j++) {
-					partialState[indexCounter] = sigmaPart[i][j];
-					indexCounter++;
-				}
-			}
-
-			return partialState;
-		}
-
-		// ONLY FOR JAMA
-		private void addPartialStateDump(double[] partialStateDump) {
-
-			// Build the data structures we need
-			double partNPoints;
-			double partRK;
-			double[][] muPart = new double[numDimensions][1];
-			double[][] sigmaPart = new double[numDimensions][numDimensions];
-
-			// Convert from dump to parameters
-			int indexCounter = 0;
-			partNPoints = partialStateDump[indexCounter];
-			indexCounter++;
-			partRK = partialStateDump[indexCounter];
-			indexCounter++;
-			for (int i = 0; i < numDimensions; i++) {
-				muPart[i][0] = partialStateDump[indexCounter];
-				indexCounter++;
-			}
-			for (int i = 0; i < numDimensions; i++) {
-				for (int j = 0; j < numDimensions; j++) {
-					sigmaPart[i][j] = partialStateDump[indexCounter];
-					indexCounter++;
-				}
-			}
-
-			// Create matrices and add them to the current state
-			Matrix jama_mu_k_from_dump = new Matrix(muPart);
-			Matrix jama_sigma_k_from_dump = new Matrix(sigmaPart);
-
-			nPoints += partNPoints;
-			r_k_partial += partRK;
-			jama_mu_k_partial = jama_mu_k_partial.plus(jama_mu_k_from_dump);
-			jama_sigma_k_partial = jama_sigma_k_partial
-					.plus(jama_sigma_k_from_dump);
-		}
-
-		/**
-		 * 
-		 * @return double amplitude
-		 */
-		private double getFinalAmplitude() {
-			return r_k / nPoints;
-		}
-
-		/**
-		 * 
-		 * @return double array of the vector representation
-		 */
-		private double[][] getFinalMu() {
-			return muFinalArray;
-		}
-
-		/**
-		 * 
-		 * @return double array of the matrix representation
-		 */
-		private double[][] getFinalSigma() {
-			return sigmaFinalArray;
-		}
-
-		private void computeFinalParameters() {
-			if (isCompleted) {
-				throw new RuntimeException(
-						"Called computeFinalParameters when already computed.");
-			}
-
-			// Finalize r_k
-			r_k = r_k_partial;
-
-			if (matrixLibrary.equals("jblas")) {
-				// Finalize mu
-				DoubleMatrix mu = mu_k_partial.dup();
-				mu = mu.div(r_k);
-
-				// Finalize sigma
-				DoubleMatrix sigma = sigma_k_partial.dup();
-				sigma = sigma.div(r_k);
-				sigma = sigma.sub(mu.mmul(mu.transpose()));
-
-				muFinalArray = mu.toArray2();
-				sigmaFinalArray = sigma.toArray2();
-			} else if (matrixLibrary.equals("jama")) {
-				// Finalize mu
-				Matrix mu = jama_mu_k_partial.copy();
-				mu = mu.times(1. / r_k);
-
-				// Finialize sigma
-				Matrix sigma = jama_sigma_k_partial.copy();
-				sigma = sigma.times(1. / r_k);
-				sigma = sigma.minus(mu.times(mu.transpose()));
-
-				muFinalArray = mu.getArrayCopy();
-				sigmaFinalArray = sigma.getArrayCopy();
-			} else {
-				throw new RuntimeException("Incorrect matrix libary specified.");
-			}
-
-			isCompleted = true;
-		}
-	}
 }
