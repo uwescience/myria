@@ -160,6 +160,9 @@ def EMStepXD():
     
 def EMStepXDEStep():
     return query_myria("xd/EMXDEStep.json")
+
+def EMDouble():
+    return query_myria("joinaggregate/DoubleEM.json")
     
 def pad_points():
     query_myria("PadPoints.json")
