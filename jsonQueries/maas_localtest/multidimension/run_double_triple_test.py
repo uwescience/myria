@@ -32,10 +32,6 @@ def run_em_test(filename, workers):
         None 
 
     # Double EM step
-    bd.CopyToPoints(name)
-    bd.pad_points()
-    bd.copy_points()
-    bd.upload_components()
     # Copy over components and try iteration
     bd.astro_components_to_components()
     read_start = time.time()
@@ -46,10 +42,6 @@ def run_em_test(filename, workers):
         None 
 
     # Triple EM step
-    bd.CopyToPoints(name)
-    bd.pad_points()
-    bd.copy_points()
-    bd.upload_components()
     # Copy over components and try iteration
     bd.astro_components_to_components()
     read_start = time.time()
