@@ -50,6 +50,20 @@ def run_em_test(filename, workers):
     np.savetxt(filename+"times_w" + str(workers) +".csv", np.array(times),delimiter=',' )
     return times
 
+def setup(filename, workers):
+    times = []
+    name = filename.split(".")[0].replace("-","_")
+    try:
+        name = ut.upload_parallel(filename, workers=workers)
+    except:
+        None
+    bd.CopyToPoints(name)
+    bd.pad_points()
+    bd.copy_points()
+    bd.upload_components()
+    # Copy over components and try iteration
+    bd.astro_components_to_components()
+
 if __name__ == "__main__":
     alltimes = []
     for filename in files:
