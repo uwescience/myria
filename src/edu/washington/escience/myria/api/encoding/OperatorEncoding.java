@@ -55,6 +55,7 @@ import edu.washington.escience.myria.operator.Operator;
 		@Type(name = "JoinMStepAggregate", value = JoinMStepAggregateEncoding.class),
 		@Type(name = "JoinMStepAggregateNewType", value = JoinMStepAggregateNewTypeEncoding.class),
 		@Type(name = "JoinMStepPartial", value = JoinMStepPartialEncoding.class),
+		@Type(name = "JoinMStepPartialLeft", value = JoinMStepPartialLeftEncoding.class),
 		@Type(name = "JoinMStepPartialNewType", value = JoinMStepPartialNewTypeEncoding.class),
 		@Type(name = "LeapFrogJoin", value = LeapFrogJoinEncoding.class),
 		@Type(name = "LocalMultiwayConsumer", value = LocalMultiwayConsumerEncoding.class),

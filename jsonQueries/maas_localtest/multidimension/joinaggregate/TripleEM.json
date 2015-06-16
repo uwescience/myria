@@ -387,11 +387,195 @@
             "opName": "MyriaGroupBy($0; SUM($12))"
           },
           {
+            "opName": "MyriaBroadcastProducer",
+            "opType": "BroadcastProducer",
+            "opId": 666666666,
+            "argChild": 7772213
+          }
+        ]
+      },
+      {
+        "operators": [
+          {
+            "opName": "MyriaBroadcastConsumer",
+            "opType": "BroadcastConsumer",
+            "opId": 6667770,
+            "argOperatorId": 666666666
+          },
+          {
+            "relationKey": {
+              "userName": "public",
+              "relationName": "PointsOnly",
+              "programName": "adhoc"
+            },
+            "opType": "TableScan",
+            "opName": "MyriaScan(public:adhoc:PointsOnly)",
+            "opId": 6667772
+          },
+          {
+            "argChild2": 6667770,
+            "argChild1": 6667772,
+            "opType": "JoinEStep",
+            "opId": 6667773,
+            "opName": "MyriaCrossProduct",
+            "argSelect2": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20,
+              21
+            ],
+            "argColumns1": [],
+            "argColumns2": [],
+            "argSelect1": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11
+            ]
+          },
+          {
+            "opName": "MyriaBroadcastConsumer",
+            "opType": "BroadcastConsumer",
+            "opId": 666777220,
+            "argOperatorId": 666777221
+          },
+          {
+            "argChild2": 666777220,
+            "argChild1": 6667773,
+            "opType": "JoinMStepPartialLeft",
+            "opId": 666777223,
+            "opName": "MyriaCrossProduct",
+            "argSelect2": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20,
+              21
+            ],
+            "argColumns1": [],
+            "argColumns2": [],
+            "argSelect1": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11
+            ]
+          },
+          {
+            "opName": "MyriaShuffleProducer(h($0))",
+            "opType": "ShuffleProducer",
+            "opId": 666777224,
+            "argChild": 666777223,
+            "argPf": {
+              "index": 0,
+              "type": "SingleFieldHash"
+            }
+          }
+        ]
+      },
+      {
+        "operators": [
+          {
+            "relationKey": {
+              "userName": "public",
+              "relationName": "ComponentsOnly",
+              "programName": "adhoc"
+            },
+            "opType": "TableScan",
+            "opName": "MyriaScan(public:adhoc:ComponentsOnly)",
+            "opId": 666777225
+          },
+          {
+            "opName": "MyriaBroadcastProducer",
+            "opType": "BroadcastProducer",
+            "opId": 666777221,
+            "argChild": 666777225
+          }
+        ]
+      },
+      {
+        "operators": [
+          {
+            "opName": "MyriaShuffleConsumer",
+            "opType": "ShuffleConsumer",
+            "opId": 6667772212,
+            "argOperatorId": 666777224 
+          },
+          {
+            "opType": "JoinMStepAggregate",
+            "argChild": 6667772212,
+            "aggregators": [
+              {
+                "column": 12,
+                "aggOps": [
+                  "SUM"
+                ],
+                "type": "SingleColumn"
+              }
+            ],
+            "argGroupField": 0,
+            "argNumDimensions": 4,
+            "argNumComponents": 7,            
+            "opId": 6667772213,
+            "opName": "MyriaGroupBy($0; SUM($12))"
+          },
+          {
             "opType": "DbInsert",
-            "argChild": 7772213,
+            "argChild": 6667772213,
             "opName": "MyriaStore(public:adhoc:ComponentsOnly)",
             "argOverwriteTable": true,
-            "opId": 7772214,
+            "opId": 6667772214,
             "relationKey": {
               "userName": "public",
               "relationName": "ComponentsOnly",
