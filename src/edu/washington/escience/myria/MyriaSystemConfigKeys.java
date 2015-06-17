@@ -92,42 +92,80 @@ public final class MyriaSystemConfigKeys {
   public static final String DEBUG = "DEBUG";
 
   /**
+   * Default value for {@link MyriaSystemConfigKeys#FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES}.
+   */
+  public static final int FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES_DEFAULT_VALUE = 5 * MyriaConstants.MB;
+
+  /**
+   * Default value for {@link MyriaSystemConfigKeys#FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES}.
+   */
+  public static final int FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES_DEFAULT_VALUE = 512 * MyriaConstants.KB;
+
+  /**
+   * Default value for {@link MyriaSystemConfigKeys#OPERATOR_INPUT_BUFFER_CAPACITY}.
+   */
+  public static final int OPERATOR_INPUT_BUFFER_CAPACITY_DEFAULT_VALUE = 100;
+
+  /**
+   * Default value for {@link MyriaSystemConfigKeys#OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER}.
+   */
+  public static final int OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER_DEFAULT_VALUE = 80;
+
+  /**
+   * Default value for {@link MyriaSystemConfigKeys#TCP_CONNECTION_TIMEOUT_MILLIS}.
+   */
+  public static final int TCP_CONNECTION_TIMEOUT_MILLIS_DEFAULT_VALUE = 3000;
+
+  /**
+   * Default value for {@link MyriaSystemConfigKeys#TCP_RECEIVE_BUFFER_SIZE_BYTES}.
+   */
+  public static final int TCP_RECEIVE_BUFFER_SIZE_BYTES_DEFAULT_VALUE = 2 * MyriaConstants.MB;
+
+  /**
+   * Default value for {@link MyriaSystemConfigKeys#TCP_SEND_BUFFER_SIZE_BYTES}.
+   */
+  public static final int TCP_SEND_BUFFER_SIZE_BYTES_DEFAULT_VALUE = 5 * MyriaConstants.MB;
+
+  /**
+   * Default value for {@link MyriaSystemConfigKeys#WORKER_STORAGE_DATABASE_SYSTEM}.
+   */
+  public static final String WORKER_STORAGE_DATABASE_SYSTEM_DEFAULT_VALUE = MyriaConstants.STORAGE_SYSTEM_SQLITE;
+
+  /**
+   * 
+   * @param config the configuration.
+   * @param section the section.
+   * @param key the key.
+   * @param defaultValue if the key is not in the config file, set its value to be the provided default value.
+   */
+  private static void setDefaultValueIfMissing(final MyriaConfiguration config, final String section, final String key,
+      final String defaultValue) {
+    if (config.getOptional(section, key) == null) {
+      config.setValue(section, key, defaultValue);
+    }
+  }
+
+  /**
    * Add default configurations into a configuration.
    * 
    * @param config the configuration.
    * */
   public static void addDefaultConfigValues(final MyriaConfiguration config) {
-    if (config.getOptional("deployment", WORKER_STORAGE_DATABASE_SYSTEM) == null) {
-      config.setValue("deployment", WORKER_STORAGE_DATABASE_SYSTEM,
-          MyriaConstants.WORKER_STORAGE_DATABASE_SYSTEM_DEFAULT_VALUE);
-    }
-    if (config.getOptional("runtime", FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES) == null) {
-      config.setValue("runtime", FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES,
-          MyriaConstants.FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES_DEFAULT_VALUE + "");
-    }
-    if (config.getOptional("runtime", FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES) == null) {
-      config.setValue("runtime", FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES,
-          MyriaConstants.FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES_DEFAULT_VALUE + "");
-    }
-    if (config.getOptional("runtime", OPERATOR_INPUT_BUFFER_CAPACITY) == null) {
-      config.setValue("runtime", OPERATOR_INPUT_BUFFER_CAPACITY,
-          MyriaConstants.OPERATOR_INPUT_BUFFER_CAPACITY_DEFAULT_VALUE + "");
-    }
-    if (config.getOptional("runtime", OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER) == null) {
-      config.setValue("runtime", OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER,
-          MyriaConstants.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER_DEFAULT_VALUE + "");
-    }
-    if (config.getOptional("runtime", TCP_CONNECTION_TIMEOUT_MILLIS) == null) {
-      config.setValue("runtime", TCP_CONNECTION_TIMEOUT_MILLIS,
-          MyriaConstants.TCP_CONNECTION_TIMEOUT_MILLIS_DEFAULT_VALUE + "");
-    }
-    if (config.getOptional("runtime", TCP_RECEIVE_BUFFER_SIZE_BYTES) == null) {
-      config.setValue("runtime", TCP_RECEIVE_BUFFER_SIZE_BYTES,
-          MyriaConstants.TCP_RECEIVE_BUFFER_SIZE_BYTES_DEFAULT_VALUE + "");
-    }
-    if (config.getOptional("runtime", TCP_SEND_BUFFER_SIZE_BYTES) == null) {
-      config.setValue("runtime", TCP_SEND_BUFFER_SIZE_BYTES, MyriaConstants.TCP_SEND_BUFFER_SIZE_BYTES_DEFAULT_VALUE
-          + "");
-    }
+    setDefaultValueIfMissing(config, "deployment", WORKER_STORAGE_DATABASE_SYSTEM,
+        WORKER_STORAGE_DATABASE_SYSTEM_DEFAULT_VALUE);
+    setDefaultValueIfMissing(config, "runtime", FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES,
+        FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES_DEFAULT_VALUE + "");
+    setDefaultValueIfMissing(config, "runtime", FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES,
+        FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES_DEFAULT_VALUE + "");
+    setDefaultValueIfMissing(config, "runtime", OPERATOR_INPUT_BUFFER_CAPACITY,
+        OPERATOR_INPUT_BUFFER_CAPACITY_DEFAULT_VALUE + "");
+    setDefaultValueIfMissing(config, "runtime", OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER,
+        OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER_DEFAULT_VALUE + "");
+    setDefaultValueIfMissing(config, "runtime", TCP_CONNECTION_TIMEOUT_MILLIS,
+        TCP_CONNECTION_TIMEOUT_MILLIS_DEFAULT_VALUE + "");
+    setDefaultValueIfMissing(config, "runtime", TCP_RECEIVE_BUFFER_SIZE_BYTES,
+        TCP_RECEIVE_BUFFER_SIZE_BYTES_DEFAULT_VALUE + "");
+    setDefaultValueIfMissing(config, "runtime", TCP_SEND_BUFFER_SIZE_BYTES, TCP_SEND_BUFFER_SIZE_BYTES_DEFAULT_VALUE
+        + "");
   }
 }
