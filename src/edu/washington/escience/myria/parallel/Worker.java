@@ -38,7 +38,7 @@ import edu.washington.escience.myria.profiling.ProfilingLogger;
 import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myria.proto.QueryProto.QueryMessage;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
-import edu.washington.escience.myria.tool.MyriaConfiguration;
+import edu.washington.escience.myria.tools.MyriaConfiguration;
 import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.JVMUtils;
 import edu.washington.escience.myria.util.concurrent.ErrorLoggingTimerTask;
@@ -487,7 +487,7 @@ public final class Worker {
           w.start();
 
           if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("Worker started at:" + w.config.getHostPort(w.myID + ""));
+            LOGGER.info("Worker started at:" + w.config.getHostPort(w.myID));
           }
         } catch (Throwable e) {
           if (LOGGER.isErrorEnabled()) {
@@ -596,9 +596,9 @@ public final class Worker {
     myID = Integer.parseInt(config.getRequired("runtime", MyriaSystemConfigKeys.WORKER_IDENTIFIER));
 
     final Map<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
-    computingUnits.put(MyriaConstants.MASTER_ID, SocketInfo.valueOf(config.getHostPort(MyriaConstants.MASTER_ID + "")));
-    for (String id : config.getWorkerIds()) {
-      computingUnits.put(Integer.parseInt(id), SocketInfo.valueOf(config.getHostPort(id)));
+    computingUnits.put(MyriaConstants.MASTER_ID, SocketInfo.valueOf(config.getHostPort(MyriaConstants.MASTER_ID)));
+    for (int id : config.getWorkerIds()) {
+      computingUnits.put(id, SocketInfo.valueOf(config.getHostPort(id)));
     }
 
     int inputBufferCapacity =

@@ -13,44 +13,45 @@ def mkdir_if_not_exists(description):
 
 def get_std_logs_from_worker(hostname, dirname, username,
                              worker_id, description):
-    mkdir_if_not_exists(description)
+    mkdir_if_not_exists("%s/workers/%s" % (description, worker_id,))
     if hostname == 'localhost':
-        uri = "%s/worker_%s/worker_%s_stdout" % (dirname, worker_id, worker_id)
+        uri = "%s/workers/%s/stdout" % (dirname, worker_id)
     else:
-        uri = "%s@%s:%s/worker_%s/worker_%s_stdout" % (
-            username, hostname, dirname, worker_id, worker_id)
-    args = ["scp", uri, "%s/worker_%s_stdout" % (description, worker_id,)]
+        uri = "%s@%s:%s/workers/%s/stdout" % (
+            username, hostname, dirname, worker_id)
+    args = ["scp", uri, "%s/workers/%s/stdout" % (description, worker_id,)]
     return subprocess.call(args)
 
 
 def get_error_logs_from_worker(hostname, dirname, username,
                                worker_id, description):
-    mkdir_if_not_exists(description)
+    mkdir_if_not_exists("%s/workers/%s" % (description, worker_id,))
     if hostname == 'localhost':
-        uri = "%s/worker_%s/worker_%s_stderr" % (dirname, worker_id, worker_id)
+        uri = "%s/workers/%s/stderr" % (dirname, worker_id)
     else:
-        uri = "%s@%s:%s/worker_%s/worker_%s_stderr" % (
-            username, hostname, dirname, worker_id, worker_id)
-    args = ["scp", uri, "%s/worker_%s_stderr" % (description, worker_id,)]
+        uri = "%s@%s:%s/workers/%s/stderr" % (
+            username, hostname, dirname, worker_id)
+    args = ["scp", uri, "%s/workers/%s/stderr" % (description, worker_id,)]
     return subprocess.call(args)
 
 
 def get_logs_from_master(hostname, dirname, username, description):
-    mkdir_if_not_exists(description)
+    mkdir_if_not_exists("%s/master" % (description,))
     if hostname == 'localhost':
-        uri = "%s/master/master_stdout" % (dirname)
+        uri = "%s/master/stdout" % (dirname)
     else:
-        uri = "%s@%s:%s/master/master_stdout" % (username, hostname, dirname)
-    args = ["scp", uri, "%s/master_stdout" % (description)]
+        uri = "%s@%s:%s/master/stdout" % (username, hostname, dirname)
+    args = ["scp", uri, "%s/master/stdout" % (description)]
     return subprocess.call(args)
 
 
 def get_error_logs_from_master(hostname, dirname, username, description):
+    mkdir_if_not_exists("%s/master" % (description,))
     if hostname == 'localhost':
-        uri = "%s/master/master_stderr" % (dirname)
+        uri = "%s/master/stderr" % (dirname)
     else:
-        uri = "%s@%s:%s/master/master_stderr" % (username, hostname, dirname)
-    args = ["scp", uri, "%s/master_stderr" % (description)]
+        uri = "%s@%s:%s/master/stderr" % (username, hostname, dirname)
+    args = ["scp", uri, "%s/master/stderr" % (description)]
     return subprocess.call(args)
 
 

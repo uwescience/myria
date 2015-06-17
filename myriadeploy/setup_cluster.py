@@ -2,30 +2,25 @@
 
 import subprocess
 import sys
-import logging
+import argparse
 
-def make_deployment(config_file, fresh):
+def make_deployment(input_args):
     "Copy the distribution (jar and libs and conf) to compute nodes."
-    args = ["./using_deployment_utils.sh", config_file, "-deploy"]
-    if fresh:
-        args.append("-fresh_catalog")
+    args = ["./using_deployment_utils.sh", input_args.config_file, "--deploy"]
+    if input_args.clean_catalog:
+        args.append("--clean_catalog")
     if subprocess.call(args):
         logging.error("Error copying distribution")
 
 
 def main(argv):
-    # Usage
-    if len(argv) < 2 or len(argv) > 3 or (len(argv) == 3 and argv[2] != "-fresh_catalog"):
-        print >> sys.stderr, "Usage: %s <deployment.cfg> <optional: -fresh_catalog>" % (argv[0])
-        print >> sys.stderr, \
-            "       deployment.cfg: \
-            a configuration file modeled after deployment.cfg.sample"
-        print >> sys.stderr, \
-            "       -fresh_catalog: \
-            if deploy with an empty master catalog"
-        sys.exit(1)
+    parser = argparse.ArgumentParser(description='Setup a Myria cluster')
+    parser.add_argument('config_file',
+        help='The deployment config file')
+    parser.add_argument('--clean_catalog', action='store_true',
+        help='If deploying with a new master catalog')
 
-    make_deployment(argv[1], len(argv) == 3)
+    make_deployment(parser.parse_args())
 
 if __name__ == "__main__":
     main(sys.argv)

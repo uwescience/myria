@@ -6,11 +6,11 @@ import static org.junit.Assert.assertTrue;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import org.apache.commons.io.FilenameUtils;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -57,10 +57,7 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     /* Load specific test data. */
     for (int i = 0; i < srcPath.length; ++i) {
       final Path src = FileSystems.getDefault().getPath(srcPath[i]);
-      final Path dst =
-          FileSystems.getDefault().getPath(
-              FilenameUtils.concat(DeploymentUtils.getPathToWorkerDir(workingDir, workerIDs[i]), "worker_"
-                  + workerIDs[i] + "_data.db"));
+      final Path dst = Paths.get(DeploymentUtils.getPathToWorkerDir(workingDir, workerIDs[i]), "data.db");
       try {
         Files.copy(src, dst);
       } catch (final Exception e) {

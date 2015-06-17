@@ -71,7 +71,7 @@ import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.parallel.Worker;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
-import edu.washington.escience.myria.tool.MyriaConfiguration;
+import edu.washington.escience.myria.tools.MyriaConfiguration;
 import edu.washington.escience.myria.util.DeploymentUtils;
 import edu.washington.escience.myria.util.FSUtils;
 import edu.washington.escience.myria.util.JsonAPIUtils;
@@ -150,9 +150,7 @@ public class SystemTestBase {
   }
 
   public static File getAbsoluteDBFile(final int workerId) {
-    String fileName =
-        FilenameUtils.concat(DeploymentUtils.getPathToWorkerDir(workingDir, workerId), "worker_" + workerId
-            + "_data.db");
+    String fileName = FilenameUtils.concat(DeploymentUtils.getPathToWorkerDir(workingDir, workerId), "data.db");
     return new File(fileName);
   }
 
@@ -581,7 +579,7 @@ public class SystemTestBase {
           .add("-Djava.library.path=" + lp).add("-classpath").add(cp) // paths
           .add("-Xmx" + MEMORY) // memory limit to MEMORY
           .add("-XX:+HeapDumpOnOutOfMemoryError") //
-          .add("-XX:HeapDumpPath=/tmp/worker_" + workerID + ".bin");
+          .add("-XX:HeapDumpPath=/tmp/workers/" + workerID + ".bin");
 
       /* If this test was run with a Java agent, then add it. */
       List<String> inputArgs = ManagementFactory.getRuntimeMXBean().getInputArguments();

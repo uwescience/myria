@@ -1,7 +1,6 @@
 package edu.washington.escience.myria.daemon;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,7 +27,7 @@ import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.coordinator.ConfigFileGenerator;
 import edu.washington.escience.myria.coordinator.MasterCatalog;
-import edu.washington.escience.myria.tool.MyriaConfiguration;
+import edu.washington.escience.myria.tools.MyriaConfiguration;
 import edu.washington.escience.myria.util.DeploymentUtils;
 import edu.washington.escience.myria.util.FSUtils;
 import edu.washington.escience.myria.util.ThreadUtils;
@@ -147,7 +146,7 @@ public class MasterDaemonTest {
     Response response = invocation.get();
     assertEquals(Status.OK.getStatusCode(), response.getStatus());
     String respond = response.readEntity(String.class);
-    assertTrue(respond.equals(Paths.get(workingDir, MyriaConstants.DEPLOYMENT_CONF_FILE).toString()));
+    assertEquals(Paths.get(workingDir, MyriaConstants.DEPLOYMENT_CONF_FILE).toString(), respond);
     client.close();
     md.stop();
   }

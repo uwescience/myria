@@ -8,7 +8,7 @@ import logging
 
 
 def start_master(config_file):
-    args = ["./using_deployment_utils.sh", config_file, "-start_master"]
+    args = ["./using_deployment_utils.sh", config_file, "--start_master"]
     if subprocess.call(args):
         sys.exit(1)
 

@@ -184,12 +184,12 @@ public class Tuple implements Cloneable, AppendableTable, ReadableTable, Seriali
   }
 
   @Override
-  public void putString(final int column, final String value) {
+  public void putString(final int column, final @Nonnull String value) {
     set(column, value);
   }
 
   @Override
-  public void putObject(final int column, final Object value) {
+  public void putObject(final int column, final @Nonnull Object value) {
     set(column, value);
   }
 

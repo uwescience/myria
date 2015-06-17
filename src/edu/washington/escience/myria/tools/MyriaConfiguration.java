@@ -1,4 +1,4 @@
-package edu.washington.escience.myria.tool;
+package edu.washington.escience.myria.tools;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,17 +31,13 @@ public final class MyriaConfiguration extends ConfigParser {
    * @throws ConfigFileException if error occurred when parsing the config file
    * */
   public static MyriaConfiguration loadWithDefaultValues(final String filename) throws ConfigFileException {
-    File f = new File(filename);
-    if (!f.exists()) {
-      throw new RuntimeException("config file " + filename + " doesn't exist!");
-    }
     MyriaConfiguration config = new MyriaConfiguration();
     try {
-      config.read(f);
-      MyriaSystemConfigKeys.addDefaultConfigValues(config);
+      config.read(new File(filename));
     } catch (IOException e) {
       throw new ConfigFileException(e);
     }
+    MyriaSystemConfigKeys.addDefaultConfigValues(config);
     return config;
   }
 
@@ -59,10 +55,10 @@ public final class MyriaConfiguration extends ConfigParser {
    * @return working directory
    * @throws ConfigFileException if error occurred when getting the value
    */
-  public String getPath(final String nodeId) throws ConfigFileException {
-    if (!nodeId.equals(MyriaConstants.MASTER_ID + "")) {
+  public String getPath(final int nodeId) throws ConfigFileException {
+    if (nodeId != MyriaConstants.MASTER_ID) {
       // worker, check if its path is specified
-      String[] tmp = getRequired("workers", nodeId).split(":");
+      String[] tmp = getRequired("workers", nodeId + "").split(":");
       if (tmp.length > 2) {
         return tmp[2];
       }
@@ -76,7 +72,7 @@ public final class MyriaConfiguration extends ConfigParser {
    * @return working directory
    * @throws ConfigFileException if error occurred when getting the value
    */
-  public String getWorkingDirectory(final String nodeId) throws ConfigFileException {
+  public String getWorkingDirectory(final int nodeId) throws ConfigFileException {
     return FilenameUtils.concat(getPath(nodeId), getRequired("deployment", MyriaSystemConfigKeys.DESCRIPTION));
   }
 
@@ -86,8 +82,8 @@ public final class MyriaConfiguration extends ConfigParser {
    * @return the database name
    * @throws ConfigFileException if error occurred when getting the value
    */
-  public String getWorkerDatabaseName(final String workerId) throws ConfigFileException {
-    String[] tmp = getRequired("workers", workerId).split(":");
+  public String getWorkerDatabaseName(final int workerId) throws ConfigFileException {
+    String[] tmp = getRequired("workers", workerId + "").split(":");
     if (tmp.length > 3) {
       // use the value specified for this worker
       return tmp[3];
@@ -102,11 +98,11 @@ public final class MyriaConfiguration extends ConfigParser {
    * @return the hostname
    * @throws ConfigFileException if error occurred when getting the value
    */
-  public String getHostname(final String nodeId) throws ConfigFileException {
-    if (nodeId.equals(MyriaConstants.MASTER_ID + "")) {
-      return getRequired("master", nodeId).split(":")[0];
+  public String getHostname(final int nodeId) throws ConfigFileException {
+    if (nodeId == MyriaConstants.MASTER_ID) {
+      return getRequired("master", nodeId + "").split(":")[0];
     } else {
-      return getRequired("workers", nodeId).split(":")[0];
+      return getRequired("workers", nodeId + "").split(":")[0];
     }
   }
 
@@ -116,7 +112,7 @@ public final class MyriaConfiguration extends ConfigParser {
    * @return "username@hostname", if username is specified.
    * @throws ConfigFileException if error occurred when getting the value
    */
-  public String getHostnameWithUsername(final String nodeId) throws ConfigFileException {
+  public String getHostnameWithUsername(final int nodeId) throws ConfigFileException {
     String hostname = getHostname(nodeId);
     String username = getOptional("deployment", "username");
     if (username != null) {
@@ -131,7 +127,7 @@ public final class MyriaConfiguration extends ConfigParser {
    * @return a string in the format of hostname:port
    * @throws ConfigFileException if error occurred when getting the value
    */
-  public String getHostPort(final String nodeId) throws ConfigFileException {
+  public String getHostPort(final int nodeId) throws ConfigFileException {
     return getHostname(nodeId) + ":" + getPort(nodeId);
   }
 
@@ -141,11 +137,11 @@ public final class MyriaConfiguration extends ConfigParser {
    * @return the port number
    * @throws ConfigFileException if error occurred when getting the value
    */
-  public String getPort(final String nodeId) throws ConfigFileException {
-    if (nodeId.equals(MyriaConstants.MASTER_ID + "")) {
-      return getRequired("master", nodeId).split(":")[1];
+  public int getPort(final int nodeId) throws ConfigFileException {
+    if (nodeId == MyriaConstants.MASTER_ID) {
+      return Integer.parseInt(getRequired("master", nodeId + "").split(":")[1]);
     } else {
-      return getRequired("workers", nodeId).split(":")[1];
+      return Integer.parseInt(getRequired("workers", nodeId + "").split(":")[1]);
     }
   }
 
@@ -154,11 +150,11 @@ public final class MyriaConfiguration extends ConfigParser {
    * @return a list of worker IDs
    * @throws ConfigFileException if error occurred when getting the value
    */
-  public List<String> getWorkerIds() throws ConfigFileException {
-    List<String> ret = new ArrayList<String>();
+  public List<Integer> getWorkerIds() throws ConfigFileException {
+    List<Integer> ret = new ArrayList<Integer>();
     try {
       for (Map.Entry<String, String> node : items("workers")) {
-        ret.add(node.getKey());
+        ret.add(Integer.parseInt(node.getKey()));
       }
     } catch (InterpolationMissingOptionException | NoSectionException e) {
       throw new ConfigFileException(e);
@@ -223,7 +219,7 @@ public final class MyriaConfiguration extends ConfigParser {
    * @throws ConfigFileException if error occurred parsing the config file
    */
   public String getMasterCatalogFile() throws ConfigFileException {
-    String path = getWorkingDirectory(MyriaConstants.MASTER_ID + "");
+    String path = getWorkingDirectory(MyriaConstants.MASTER_ID);
     path = FilenameUtils.concat(path, "master");
     path = FilenameUtils.concat(path, "master.catalog");
     return path;
@@ -235,9 +231,9 @@ public final class MyriaConfiguration extends ConfigParser {
    * @throws ConfigFileException if error occurred parsing the config file
    */
   public String getSelfJsonConnInfo() throws ConfigFileException {
-    String id = getRequired("runtime", MyriaSystemConfigKeys.WORKER_IDENTIFIER);
+    int id = Integer.parseInt(getRequired("runtime", MyriaSystemConfigKeys.WORKER_IDENTIFIER));
     return ConnectionInfo.toJson(getRequired("deployment", MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_SYSTEM),
-        getHostname(id), getWorkingDirectory(id), id, getWorkerDatabaseName(id), getOptional("deployment",
+        getHostname(id), getWorkingDirectory(id), id + "", getWorkerDatabaseName(id), getOptional("deployment",
             MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_PASSWORD), getOptional("deployment",
             MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_PORT));
   }

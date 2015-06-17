@@ -1,4 +1,4 @@
-package edu.washington.escience.myria.tool;
+package edu.washington.escience.myria.tools;
 
 import java.io.File;
 import java.io.IOException;

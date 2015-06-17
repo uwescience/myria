@@ -88,8 +88,7 @@ public abstract class ConnectionInfo {
     switch (dbms) {
       case MyriaConstants.STORAGE_SYSTEM_SQLITE:
         Objects.requireNonNull(workerId);
-        SQLiteInfo sqliteInfo =
-            SQLiteInfo.of(Paths.get(dirName, "worker_" + workerId, "worker_" + workerId + "_data.db").toString());
+        SQLiteInfo sqliteInfo = SQLiteInfo.of(Paths.get(dirName, "workers", workerId, "data.db").toString());
         result = sqliteInfo.toJson();
         break;
       case MyriaConstants.STORAGE_SYSTEM_MONETDB:

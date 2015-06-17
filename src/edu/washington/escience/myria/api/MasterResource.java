@@ -75,7 +75,7 @@ public final class MasterResource {
   @ADMIN
   public Response getDeploymentCfg(@Context final Server server) {
     try {
-      String workingDir = server.getConfig().getWorkingDirectory(MyriaConstants.MASTER_ID + "");
+      String workingDir = server.getConfig().getWorkingDirectory(MyriaConstants.MASTER_ID);
       String deploymentFile = FilenameUtils.concat(workingDir, MyriaConstants.DEPLOYMENT_CONF_FILE);
       return Response.ok(deploymentFile).build();
     } catch (ConfigFileException e) {

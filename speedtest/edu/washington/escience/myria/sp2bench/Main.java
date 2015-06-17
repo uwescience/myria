@@ -17,12 +17,12 @@ import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.parallel.QueryFuture;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.storage.TupleBatch;
-import edu.washington.escience.myria.tool.MyriaConfiguration;
+import edu.washington.escience.myria.tools.MyriaConfiguration;
 import edu.washington.escience.myria.util.DateTimeUtils;
 
 public class Main {
 
-  final static String masterHome = "/tmp/slxu_experiment";
+  final static String workingDir = "/tmp/sp2benchmark";
 
   public static void startWorkers(final String startingBashScript) {
     final ProcessBuilder pb = new ProcessBuilder("bash", startingBashScript);
@@ -84,11 +84,11 @@ public class Main {
     System.out.println("End start workers");
 
     MyriaConfiguration config =
-        MyriaConfiguration.loadWithDefaultValues(FilenameUtils.concat(masterHome, MyriaConstants.DEPLOYMENT_CONF_FILE));
+        MyriaConfiguration.loadWithDefaultValues(FilenameUtils.concat(workingDir, MyriaConstants.DEPLOYMENT_CONF_FILE));
     int[] allWorkers = new int[config.getWorkerIds().size()];
     int idx = 0;
-    for (String id : config.getWorkerIds()) {
-      allWorkers[idx++] = Integer.parseInt(id);
+    for (int id : config.getWorkerIds()) {
+      allWorkers[idx++] = id;
     }
 
     QueryPlanGenerator qpg = (QueryPlanGenerator) (Class.forName(queryClassname).newInstance());
@@ -116,7 +116,7 @@ public class Main {
   }
 
   static Server startMaster() throws Exception {
-    Server server = new Server(masterHome);
+    Server server = new Server(FilenameUtils.concat(workingDir, MyriaConstants.DEPLOYMENT_CONF_FILE));
     server.start();
     return server;
   }

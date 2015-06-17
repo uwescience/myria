@@ -99,7 +99,7 @@ import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.storage.TupleBuffer;
-import edu.washington.escience.myria.tool.MyriaConfiguration;
+import edu.washington.escience.myria.tools.MyriaConfiguration;
 import edu.washington.escience.myria.util.DeploymentUtils;
 import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.MyriaUtils;
@@ -420,15 +420,15 @@ public final class Server {
   public Server(final String configFile) throws FileNotFoundException, CatalogException, ConfigFileException {
     CONFIG = MyriaConfiguration.loadWithDefaultValues(configFile);
 
-    masterSocketInfo = SocketInfo.valueOf(CONFIG.getHostPort(MyriaConstants.MASTER_ID + ""));
+    masterSocketInfo = SocketInfo.valueOf(CONFIG.getHostPort(MyriaConstants.MASTER_ID));
 
     execEnvVars = new ConcurrentHashMap<>();
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_NODE_ID, MyriaConstants.MASTER_ID);
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE, getExecutionMode());
 
     workers = new ConcurrentHashMap<>();
-    for (String id : CONFIG.getWorkerIds()) {
-      workers.put(Integer.parseInt(id), SocketInfo.valueOf(CONFIG.getHostPort(id)));
+    for (int id : CONFIG.getWorkerIds()) {
+      workers.put(id, SocketInfo.valueOf(CONFIG.getHostPort(id)));
     }
     final Map<Integer, SocketInfo> computingUnits = new HashMap<>(workers);
     computingUnits.put(MyriaConstants.MASTER_ID, masterSocketInfo);
@@ -655,9 +655,9 @@ public final class Server {
     public void run() {
       try {
         final File temp = DeploymentUtils.createTempDeployment(MyriaConstants.DEPLOYMENT_CONF_FILE);
-        DeploymentUtils.deployWorker(temp.getAbsolutePath(), CONFIG, workerId + "");
+        DeploymentUtils.deployWorker(temp.getAbsolutePath(), CONFIG, workerId);
         LOGGER.info("starting new worker at {}:{}", address, port);
-        DeploymentUtils.startAWorker(CONFIG, workerId + "");
+        DeploymentUtils.startWorker(CONFIG, workerId);
       } catch (ConfigFileException e) {
         throw new RuntimeException(e);
       } catch (IOException e) {

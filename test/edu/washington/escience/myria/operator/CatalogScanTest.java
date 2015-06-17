@@ -28,7 +28,7 @@ public class CatalogScanTest {
   /**
    * The catalog
    */
-  private edu.washington.escience.myria.coordinator.MasterCatalog catalog;
+  private MasterCatalog catalog;
 
   /**
    * @throws java.lang.Exception
