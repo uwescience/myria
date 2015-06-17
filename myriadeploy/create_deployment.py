@@ -56,7 +56,7 @@ def _get_runtime(heap=None):
     """ Generates the runtime section of a Myria deployment file """
     runtime = '[runtime]\n'
     if heap:
-        runtime += 'max_heap_size = -Xmx%s\n' % heap
+        runtime += 'max_heap_size_gb = %s\n' % heap
     else:
         runtime += '# No runtime options specified\n'
     return runtime + '\n'
