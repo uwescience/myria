@@ -87,12 +87,8 @@ public class Main {
 
     MyriaConfiguration config =
         MyriaConfiguration.loadWithDefaultValues(FilenameUtils.concat(workingDir, MyriaConstants.DEPLOYMENT_CONF_FILE));
-    int[] allWorkers = new int[config.getWorkerIds().size()];
-    int idx = 0;
-    for (int id : Ints.toArray(config.getWorkerIds())) {
-      allWorkers[idx++] = id;
-    }
 
+    int[] allWorkers = Ints.toArray(config.getWorkerIds());
     QueryPlanGenerator qpg = (QueryPlanGenerator) (Class.forName(queryClassname).newInstance());
     final Map<Integer, RootOperator[]> workerPlans = qpg.getWorkerPlan(allWorkers);
     final LinkedBlockingQueue<TupleBatch> resultStore = new LinkedBlockingQueue<TupleBatch>();
