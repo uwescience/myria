@@ -12,6 +12,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FilenameUtils;
 
+import com.google.common.primitives.Ints;
+
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.parallel.QueryFuture;
@@ -87,7 +89,7 @@ public class Main {
         MyriaConfiguration.loadWithDefaultValues(FilenameUtils.concat(workingDir, MyriaConstants.DEPLOYMENT_CONF_FILE));
     int[] allWorkers = new int[config.getWorkerIds().size()];
     int idx = 0;
-    for (int id : config.getWorkerIds()) {
+    for (int id : Ints.toArray(config.getWorkerIds())) {
       allWorkers[idx++] = id;
     }
 

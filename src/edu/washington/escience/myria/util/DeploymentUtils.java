@@ -37,7 +37,7 @@ public final class DeploymentUtils {
 
   /** usage. */
   public static final String USAGE =
-      "java DeploymentUtils <config_file> <--deploy <optional: --clean_catalog> | --start_master | --start_workers>";
+      "java DeploymentUtils <config_file> <--deploy <optional: --clean-catalog> | --start-master | --start-workers>";
   /** The logger. */
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(DeploymentUtils.class);
 
@@ -62,7 +62,7 @@ public final class DeploymentUtils {
       File tempDeploy = createTempDeployment(configFileName);
 
       MasterCatalog.create(FilenameUtils.concat(tempDeploy.getAbsolutePath(), "master"));
-      boolean cleanCatalog = args.length > 2 && args[2].equals("--clean_catalog");
+      boolean cleanCatalog = args.length > 2 && args[2].equals("--clean-catalog");
       deployMaster(tempDeploy.getAbsolutePath(), config, cleanCatalog);
 
       for (int workerId : config.getWorkerIds()) {
@@ -70,9 +70,9 @@ public final class DeploymentUtils {
       }
 
       FileUtils.deleteDirectory(tempDeploy);
-    } else if (action.equals("--start_master")) {
+    } else if (action.equals("--start-master")) {
       startMaster(config);
-    } else if (action.equals("--start_workers")) {
+    } else if (action.equals("--start-workers")) {
       for (int workerId : config.getWorkerIds()) {
         startWorker(config, workerId);
       }
@@ -183,8 +183,8 @@ public final class DeploymentUtils {
    * 
    * @param address e.g. beijing.cs.washington.edu
    * @param workingDir the working directory, path/name in deployment.cfg
-   * @param maxHeapSize the same meaning as max_heap_size_gb in deployment.cfg
-   * @param minHeapSize the same meaning as min_heap_size_gb in deployment.cfg
+   * @param maxHeapSize the same meaning as max_heap_size.gb in deployment.cfg
+   * @param minHeapSize the same meaning as min_heap_size.gb in deployment.cfg
    * @param workerId the worker id.
    * @param port the worker port number, need it to infer the port number used in debug mode.
    * @param debug if launch the worker in debug mode.
@@ -234,8 +234,8 @@ public final class DeploymentUtils {
    * 
    * @param address e.g. beijing.cs.washington.edu
    * @param workingDir the working directory, path/name in deployment.cfg
-   * @param maxHeapSize the same meaning as max_heap_size_gb in deployment.cfg
-   * @param minHeapSize the same meaning as min_heap_size_gb in deployment.cfg
+   * @param maxHeapSize the same meaning as max_heap_size.gb in deployment.cfg
+   * @param minHeapSize the same meaning as min_heap_size.gb in deployment.cfg
    * @param restPort the port number for restlet.
    * @param ssl whether the master uses SSL for the rest server.
    */

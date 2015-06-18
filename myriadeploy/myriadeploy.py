@@ -68,14 +68,14 @@ def read_config_file(filename='deployment.cfg'):
     ret['nodes'] = [ret['master']] + ret['workers']
     # .. max_heap_size is the Java maximum heap size
     try:
-        ret['max_heap_size_gb'] = config.get('runtime', 'max_heap_size_gb')
+        ret['max_heap_size.gb'] = config.get('runtime', 'max_heap_size.gb')
     except ConfigParser.NoOptionError:
-        ret['max_heap_size_gb'] = ''
+        ret['max_heap_size.gb'] = ''
     # .. min_heap_size is the Java minimum heap size
     try:
-        ret['min_heap_size_gb'] = config.get('runtime', 'min_heap_size_gb')
+        ret['min_heap_size.gb'] = config.get('runtime', 'min_heap_size.gb')
     except ConfigParser.NoOptionError:
-        ret['min_heap_size_gb'] = ''
+        ret['min_heap_size.gb'] = ''
     try:
         ret['admin_password'] = config.get('deployment', 'admin_password')
     except ConfigParser.NoOptionError:

@@ -74,7 +74,7 @@ public abstract class ConnectionInfo {
    * @return the JSON string representation of the connection information.
    */
   public static String toJson(@Nonnull final String dbms, final String hostName, final String dirName,
-      final String workerId, final String databaseName, final String databasePassword, final String databasePort) {
+      final int workerId, final String databaseName, final String databasePassword, final String databasePort) {
     String result = "";
     String host;
     String user;
@@ -88,7 +88,7 @@ public abstract class ConnectionInfo {
     switch (dbms) {
       case MyriaConstants.STORAGE_SYSTEM_SQLITE:
         Objects.requireNonNull(workerId);
-        SQLiteInfo sqliteInfo = SQLiteInfo.of(Paths.get(dirName, "workers", workerId, "data.db").toString());
+        SQLiteInfo sqliteInfo = SQLiteInfo.of(Paths.get(dirName, "workers", workerId + "", "data.db").toString());
         result = sqliteInfo.toJson();
         break;
       case MyriaConstants.STORAGE_SYSTEM_MONETDB:

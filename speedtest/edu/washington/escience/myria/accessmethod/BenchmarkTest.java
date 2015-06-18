@@ -123,26 +123,26 @@ public class BenchmarkTest {
       String workingDir = Paths.get(tempFilePath, BENCHMARKTEST_NAME).toString();
       /* The SQLite connection */
       String jsonConnInfo =
-          ConnectionInfo.toJson(MyriaConstants.STORAGE_SYSTEM_SQLITE, BENCHMARKTEST_HOSTNAME, workingDir, "0", null,
+          ConnectionInfo.toJson(MyriaConstants.STORAGE_SYSTEM_SQLITE, BENCHMARKTEST_HOSTNAME, workingDir, 0, null,
               null, null);
       connections.add(ConnectionInfo.of("sqlite", jsonConnInfo));
 
       /* The MySQL connection */
       jsonConnInfo =
-          ConnectionInfo.toJson(MyriaConstants.STORAGE_SYSTEM_MYSQL, BENCHMARKTEST_HOSTNAME, workingDir, "0", "myria1",
+          ConnectionInfo.toJson(MyriaConstants.STORAGE_SYSTEM_MYSQL, BENCHMARKTEST_HOSTNAME, workingDir, 0, "myria1",
               jdbcPassword, null);
       // Uncomment the next line to add tests for MySQL. However, be sure that the MySQL service is up and running.
       // connections.add(ConnectionInfo.of(MyriaConstants.STORAGE_SYSTEM_MYSQL, jsonConnInfo));
 
       /* The PostgreSQL connection */
       jsonConnInfo =
-          ConnectionInfo.toJson(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL, BENCHMARKTEST_HOSTNAME, workingDir, "0",
+          ConnectionInfo.toJson(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL, BENCHMARKTEST_HOSTNAME, workingDir, 0,
               "myria1", jdbcPassword, null);
       connections.add(ConnectionInfo.of(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL, jsonConnInfo));
 
       /* The MonetDB connection */
       jsonConnInfo =
-          ConnectionInfo.toJson(MyriaConstants.STORAGE_SYSTEM_MONETDB, BENCHMARKTEST_HOSTNAME, workingDir, "0", null,
+          ConnectionInfo.toJson(MyriaConstants.STORAGE_SYSTEM_MONETDB, BENCHMARKTEST_HOSTNAME, workingDir, 0, null,
               null, null);
       // Uncomment the next line to add tests for MonetDB. However, be sure that the MonetDB service is up and running.
       // connections.add(ConnectionInfo.of(MyriaConstants.STORAGE_SYSTEM_MONETDB, jsonConnInfo));

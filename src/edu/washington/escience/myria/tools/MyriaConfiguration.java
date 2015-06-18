@@ -233,7 +233,7 @@ public final class MyriaConfiguration extends ConfigParser {
   public String getSelfJsonConnInfo() throws ConfigFileException {
     int id = Integer.parseInt(getRequired("runtime", MyriaSystemConfigKeys.WORKER_IDENTIFIER));
     return ConnectionInfo.toJson(getRequired("deployment", MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_SYSTEM),
-        getHostname(id), getWorkingDirectory(id), id + "", getWorkerDatabaseName(id), getOptional("deployment",
+        getHostname(id), getWorkingDirectory(id), id, getWorkerDatabaseName(id), getOptional("deployment",
             MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_PASSWORD), getOptional("deployment",
             MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_PORT));
   }
