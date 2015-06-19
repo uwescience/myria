@@ -138,8 +138,7 @@ def main(argv):
                            '(default is [--name])')
 
     parser.add_argument(
-        '--heap', type=str, help='Java VM heap size (e.g., "-Xmx2g") '
-                                 'and/or other parameters')
+        '--heap', type=float, help='Java VM heap size in GB (e.g., "-Xmx2g")')
     parser.add_argument(
         '--debug', default=False, action='store_true',
         help='Enable debugging support')
