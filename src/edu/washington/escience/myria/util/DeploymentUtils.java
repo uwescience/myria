@@ -20,6 +20,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
 
 import edu.washington.escience.myria.MyriaConstants;
@@ -88,8 +89,6 @@ public final class DeploymentUtils {
    */
   public static void startMaster(final MyriaConfiguration config) throws ConfigFileException {
     int restPort = Integer.parseInt(config.getRequired("deployment", MyriaSystemConfigKeys.REST_PORT));
-    String maxHeapSize = config.getOptional("runtime", MyriaSystemConfigKeys.MAX_HEAP_SIZE_GB);
-    String minHeapSize = config.getOptional("runtime", MyriaSystemConfigKeys.MIN_HEAP_SIZE_GB);
     String sslStr =
         MoreObjects.firstNonNull(config.getOptional("deployment", MyriaSystemConfigKeys.SSL), "false").toLowerCase();
     boolean ssl = false;
@@ -98,7 +97,20 @@ public final class DeploymentUtils {
     }
     String hostname = config.getHostnameWithUsername(MyriaConstants.MASTER_ID);
     String workingDir = config.getWorkingDirectory(MyriaConstants.MASTER_ID);
-    startMaster(hostname, workingDir, maxHeapSize, minHeapSize, restPort, ssl);
+    List<String> jvmOptions = new ArrayList<String>();
+    jvmOptions.addAll(config.getJvmOptions());
+    String maxHeapSize = config.getOptional("runtime", MyriaSystemConfigKeys.JVM_HEAP_SIZE_MAX_GB);
+    if (maxHeapSize != null) {
+      jvmOptions.add("-Xmx" + maxHeapSize + "G");
+    }
+    String minHeapSize = config.getOptional("runtime", MyriaSystemConfigKeys.JVM_HEAP_SIZE_MIN_GB);
+    if (minHeapSize != null) {
+      jvmOptions.add("-Xms" + minHeapSize + "G");
+    }
+    jvmOptions.add("-Djava.util.logging.config.file=logging.properties");
+    jvmOptions.add("-Dlog4j.configuration=log4j.properties");
+    jvmOptions.add("-Djava.library.path=" + workingDir + "/" + "sqlite4java-392");
+    startMaster(hostname, workingDir, restPort, ssl, jvmOptions);
   }
 
   /**
@@ -108,15 +120,32 @@ public final class DeploymentUtils {
    * @throws ConfigFileException if error occurred parsing config file.
    */
   public static void startWorker(final MyriaConfiguration config, final int workerId) throws ConfigFileException {
-    String maxHeapSize = config.getOptional("runtime", MyriaSystemConfigKeys.MAX_HEAP_SIZE_GB);
-    String minHeapSize = config.getOptional("runtime", MyriaSystemConfigKeys.MIN_HEAP_SIZE_GB);
-    boolean debug =
-        MoreObjects.firstNonNull(config.getOptional("deployment", MyriaSystemConfigKeys.DEBUG), "false").toLowerCase()
-            .equals("true");
     String hostname = config.getHostnameWithUsername(workerId);
     String workingDir = config.getWorkingDirectory(workerId);
     int port = config.getPort(workerId);
-    startWorker(hostname, workingDir, maxHeapSize, minHeapSize, workerId, port, debug);
+    boolean debug =
+        MoreObjects.firstNonNull(config.getOptional("deployment", MyriaSystemConfigKeys.DEBUG), "false").toLowerCase()
+            .equals("true");
+    List<String> jvmOptions = new ArrayList<String>();
+    jvmOptions.addAll(config.getJvmOptions());
+    if (debug) {
+      // required to run in debug mode
+      jvmOptions.add("-Dorg.jboss.netty.debug");
+      jvmOptions.add("-Xdebug");
+      jvmOptions.add("-Xrunjdwp:transport=dt_socket,address=" + (port + 1000) + ",server=y,suspend=n");
+    }
+    String maxHeapSize = config.getOptional("runtime", MyriaSystemConfigKeys.JVM_HEAP_SIZE_MAX_GB);
+    if (maxHeapSize != null) {
+      jvmOptions.add("-Xmx" + maxHeapSize + "G");
+    }
+    String minHeapSize = config.getOptional("runtime", MyriaSystemConfigKeys.JVM_HEAP_SIZE_MIN_GB);
+    if (minHeapSize != null) {
+      jvmOptions.add("-Xms" + minHeapSize + "G");
+    }
+    jvmOptions.add("-Djava.util.logging.config.file=logging.properties");
+    jvmOptions.add("-Dlog4j.configuration=log4j.properties");
+    jvmOptions.add("-Djava.library.path=" + workingDir + "/" + "sqlite4java-392");
+    startWorker(hostname, workingDir, workerId, port, jvmOptions);
   }
 
   /**
@@ -183,49 +212,28 @@ public final class DeploymentUtils {
    * 
    * @param address e.g. beijing.cs.washington.edu
    * @param workingDir the working directory, path/name in deployment.cfg
-   * @param maxHeapSize the same meaning as max_heap_size.gb in deployment.cfg
-   * @param minHeapSize the same meaning as min_heap_size.gb in deployment.cfg
    * @param workerId the worker id.
    * @param port the worker port number, need it to infer the port number used in debug mode.
-   * @param debug if launch the worker in debug mode.
+   * @param jvmOptions a list of JVM options.
    */
-  private static void startWorker(final String address, final String workingDir, final String maxHeapSize,
-      final String minHeapSize, final int workerId, final int port, final boolean debug) {
-    StringBuilder builder = new StringBuilder();
+  private static void startWorker(final String address, final String workingDir, final int workerId, final int port,
+      final List<String> jvmOptions) {
+    System.out.println(workerId + " = " + address);
     String workerDir = String.format("%s/workers/%d", workingDir, workerId);
     String classpath = String.format("'%s/conf:%s/libs/*'", workingDir, workingDir);
-    String librarypath = workingDir + "/" + "sqlite4java-392";
-    String[] command = new String[3];
-    command[0] = "ssh";
-    command[1] = address;
-
-    builder.append("mkdir -p " + workerDir + ";");
-    builder.append(" cd " + workerDir + ";");
-    builder.append(" nohup java -ea");
-    builder.append(" -cp " + classpath);
-    builder.append(" -Djava.util.logging.config.file=logging.properties");
-    builder.append(" -Dlog4j.configuration=log4j.properties");
-    builder.append(" -Djava.library.path=" + librarypath);
-    if (debug) {
-      // required to run in debug mode
-      builder.append(" -Dorg.jboss.netty.debug");
-      builder.append(" -Xdebug");
-      builder.append(" -Xrunjdwp:transport=dt_socket,address=" + (port + 1000) + ",server=y,suspend=n");
-    }
-    if (minHeapSize != null) {
-      builder.append(" -Xms" + minHeapSize + "G");
-    }
-    if (maxHeapSize != null) {
-      builder.append(" -Xmx" + maxHeapSize + "G");
-    }
-    builder.append(" edu.washington.escience.myria.parallel.Worker");
-    builder.append(" --workingDir " + workerDir);
-    builder.append(" 0</dev/null");
-    builder.append(" 1>" + workerDir + "/stdout");
-    builder.append(" 2>" + workerDir + "/stderr");
-    builder.append(" &");
-    command[2] = builder.toString();
-    System.out.println(workerId + " = " + address);
+    List<String> args = new ArrayList<String>();
+    args.add("mkdir -p " + workerDir + ";");
+    args.add("cd " + workerDir + ";");
+    args.add("nohup java -ea");
+    args.add("-cp " + classpath);
+    args.addAll(jvmOptions);
+    args.add("edu.washington.escience.myria.parallel.Worker");
+    args.add("--workingDir " + workerDir);
+    args.add("0</dev/null");
+    args.add("1>" + workerDir + "/stdout");
+    args.add("2>" + workerDir + "/stderr");
+    args.add("&");
+    String[] command = new String[] { "ssh", address, Joiner.on(" ").join(args) };
     startAProcess(command, false);
   }
 
@@ -234,37 +242,29 @@ public final class DeploymentUtils {
    * 
    * @param address e.g. beijing.cs.washington.edu
    * @param workingDir the working directory, path/name in deployment.cfg
-   * @param maxHeapSize the same meaning as max_heap_size.gb in deployment.cfg
-   * @param minHeapSize the same meaning as min_heap_size.gb in deployment.cfg
    * @param restPort the port number for restlet.
    * @param ssl whether the master uses SSL for the rest server.
+   * @param jvmOptions a list of JVM options.
    */
-  private static void startMaster(final String address, final String workingDir, final String maxHeapSize,
-      final String minHeapSize, final int restPort, final boolean ssl) {
+  private static void startMaster(final String address, final String workingDir, final int restPort, final boolean ssl,
+      final List<String> jvmOptions) {
+    System.out.println(MyriaConstants.MASTER_ID + " = " + address);
     String masterDir = workingDir + "/" + "master";
-    StringBuilder builder = new StringBuilder();
-    String[] command = new String[3];
-    command[0] = "ssh";
-    command[1] = address;
-    builder.append(" cd " + workingDir + ";");
-    builder.append(" nohup java -cp 'conf:libs/*'");
-    builder.append(" -Djava.util.logging.config.file=logging.properties");
-    builder.append(" -Dlog4j.configuration=log4j.properties");
-    builder.append(" -Djava.library.path=sqlite4java-392");
-    if (minHeapSize != null) {
-      builder.append(" -Xms" + minHeapSize + "G");
-    }
-    if (maxHeapSize != null) {
-      builder.append(" -Xmx" + maxHeapSize + "G");
-    }
-    builder.append(" edu.washington.escience.myria.daemon.MasterDaemon");
-    builder.append(" " + workingDir + " " + restPort);
-    builder.append(" 0</dev/null");
-    builder.append(" 1>" + masterDir + "/stdout");
-    builder.append(" 2>" + masterDir + "/stderr");
-    builder.append(" &");
-    command[2] = builder.toString();
-    System.out.println(address);
+    String classpath = String.format("'%s/conf:%s/libs/*'", workingDir, workingDir);
+    List<String> args = new ArrayList<String>();
+    args.add("mkdir -p " + masterDir + ";");
+    args.add("cd " + masterDir + ";");
+    args.add("nohup java -ea");
+    args.add("-cp " + classpath);
+    args.addAll(jvmOptions);
+    args.add("edu.washington.escience.myria.daemon.MasterDaemon");
+    args.add(workingDir);
+    args.add(restPort + "");
+    args.add("0</dev/null");
+    args.add("1>" + masterDir + "/stdout");
+    args.add("2>" + masterDir + "/stderr");
+    args.add("&");
+    String[] command = new String[] { "ssh", address, Joiner.on(" ").join(args) };
     startAProcess(command, false);
     String hostname = address;
     if (hostname.indexOf('@') != -1) {

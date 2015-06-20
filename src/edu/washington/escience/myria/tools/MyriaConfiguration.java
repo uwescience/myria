@@ -3,6 +3,7 @@ package edu.washington.escience.myria.tools;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -253,5 +254,17 @@ public final class MyriaConfiguration extends ConfigParser {
     } catch (InterpolationMissingOptionException | NoSectionException e) {
       throw new ConfigFileException(e);
     }
+  }
+
+  /**
+   * 
+   * @return JVM options
+   */
+  public List<String> getJvmOptions() {
+    String options = getOptional("runtime", MyriaSystemConfigKeys.JVM_OPTIONS);
+    if (options != null) {
+      return Arrays.asList(options.split(" "));
+    }
+    return Arrays.asList();
   }
 }

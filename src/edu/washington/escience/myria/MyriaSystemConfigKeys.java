@@ -77,9 +77,9 @@ public final class MyriaSystemConfigKeys {
   /** */
   public static final String USERNAME = "username";
   /** */
-  public static final String MAX_HEAP_SIZE_GB = "max_heap_size.gb";
+  public static final String JVM_HEAP_SIZE_MAX_GB = "jvm.heap.size.max.gb";
   /** */
-  public static final String MIN_HEAP_SIZE_GB = "min_heap_size.gb";
+  public static final String JVM_HEAP_SIZE_MIN_GB = "jvm.heap.size.min.gb";
   /** */
   public static final String DEPLOYMENT_CONF_FILE = "deployment.cfg";
   /** */
@@ -90,6 +90,8 @@ public final class MyriaSystemConfigKeys {
   public static final String SSL = "ssl";
   /** */
   public static final String DEBUG = "DEBUG";
+  /** */
+  public static final String JVM_OPTIONS = "jvm.options";
 
   /**
    * Default value for {@link MyriaSystemConfigKeys#FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES}.
