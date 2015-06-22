@@ -97,8 +97,7 @@ public final class DeploymentUtils {
     }
     String hostname = config.getHostnameWithUsername(MyriaConstants.MASTER_ID);
     String workingDir = config.getWorkingDirectory(MyriaConstants.MASTER_ID);
-    List<String> jvmOptions = new ArrayList<String>();
-    jvmOptions.addAll(config.getJvmOptions());
+    List<String> jvmOptions = new ArrayList<>(config.getJvmOptions());
     String maxHeapSize = config.getOptional("runtime", MyriaSystemConfigKeys.JVM_HEAP_SIZE_MAX_GB);
     if (maxHeapSize != null) {
       jvmOptions.add("-Xmx" + maxHeapSize + "G");
@@ -126,8 +125,7 @@ public final class DeploymentUtils {
     boolean debug =
         MoreObjects.firstNonNull(config.getOptional("deployment", MyriaSystemConfigKeys.DEBUG), "false").toLowerCase()
             .equals("true");
-    List<String> jvmOptions = new ArrayList<String>();
-    jvmOptions.addAll(config.getJvmOptions());
+    List<String> jvmOptions = new ArrayList<>(config.getJvmOptions());
     if (debug) {
       // required to run in debug mode
       jvmOptions.add("-Dorg.jboss.netty.debug");
@@ -221,7 +219,7 @@ public final class DeploymentUtils {
     System.out.println(workerId + " = " + address);
     String workerDir = String.format("%s/workers/%d", workingDir, workerId);
     String classpath = String.format("'%s/conf:%s/libs/*'", workingDir, workingDir);
-    List<String> args = new ArrayList<String>();
+    List<String> args = new ArrayList<>();
     args.add("mkdir -p " + workerDir + ";");
     args.add("cd " + workerDir + ";");
     args.add("nohup java -ea");
@@ -251,7 +249,7 @@ public final class DeploymentUtils {
     System.out.println(MyriaConstants.MASTER_ID + " = " + address);
     String masterDir = workingDir + "/" + "master";
     String classpath = String.format("'%s/conf:%s/libs/*'", workingDir, workingDir);
-    List<String> args = new ArrayList<String>();
+    List<String> args = new ArrayList<>();
     args.add("mkdir -p " + masterDir + ";");
     args.add("cd " + masterDir + ";");
     args.add("nohup java -ea");
