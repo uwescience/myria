@@ -102,9 +102,11 @@ public class QueryManager {
    * @return whether this master can handle more queries or not.
    */
   private boolean canSubmitQuery() {
-    synchronized (queryQueue) {
-      return ((runningQueries.size() + queryQueue.size()) < MyriaConstants.MAX_ACTIVE_QUERIES);
-    }
+    /*
+     * synchronized (queryQueue) { return ((runningQueries.size() + queryQueue.size()) <
+     * MyriaConstants.MAX_ACTIVE_QUERIES); }
+     */
+    return true;
   }
 
   /**
@@ -123,10 +125,10 @@ public class QueryManager {
       runningQueries.remove(queryState.getQueryId());
 
       /* See if we can submit a new query. */
-      if (!runningQueries.isEmpty()) {
-        /* TODO replace with proper scheduler as opposed to single-query-at-a-time. */
-        return;
-      }
+      // if (!runningQueries.isEmpty()) {
+      /* TODO replace with proper scheduler as opposed to single-query-at-a-time. */
+      // return;
+      // }
 
       /* Now see if the query queue has anything for us. */
       Map.Entry<Long, Query> qEntry;
@@ -241,18 +243,10 @@ public class QueryManager {
   private QueryFuture submitQuery(final long queryId, final QueryEncoding query, final QueryPlan plan)
       throws DbException, CatalogException {
     final Query queryState = new Query(queryId, query, plan, server);
-    boolean canStart = false;
-    synchronized (queryQueue) {
-      if (queryQueue.isEmpty() && runningQueries.isEmpty()) {
-        canStart = true;
-      } else {
-        queryQueue.put(queryId, queryState);
-      }
-    }
-    if (canStart) {
-      runningQueries.put(queryId, queryState);
-      advanceQuery(queryState);
-    }
+
+    runningQueries.put(queryId, queryState);
+    advanceQuery(queryState);
+
     return queryState.getFuture();
   }
 
