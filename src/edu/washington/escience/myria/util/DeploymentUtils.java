@@ -177,7 +177,7 @@ public final class DeploymentUtils {
     ConfigFileGenerator.makeOneWorkerConfigFile(config, workerId, localDeployPath);
     String workingDir = config.getWorkingDirectory(workerId);
     String hostname = config.getHostnameWithUsername(workerId);
-    System.out.println("Start syncing distribution files to worker#" + workerId + " @ " + hostname);
+    System.err.println("Start syncing distribution files to worker#" + workerId + " @ " + hostname);
     mkdir(hostname, workingDir);
     List<String> includes = Arrays.asList("workers/" + workerId);
     List<String> excludes = Arrays.asList("workers/*", "master");
@@ -195,7 +195,7 @@ public final class DeploymentUtils {
       final boolean cleanCatalog) throws ConfigFileException {
     String workingDir = config.getWorkingDirectory(MyriaConstants.MASTER_ID);
     String hostname = config.getHostnameWithUsername(MyriaConstants.MASTER_ID);
-    System.out.println("Start syncing distribution files to master @ " + hostname);
+    System.err.println("Start syncing distribution files to master @ " + hostname);
     mkdir(hostname, workingDir);
     List<String> includes = Arrays.asList("master");
     List<String> excludes = Arrays.asList("workers");
@@ -216,7 +216,7 @@ public final class DeploymentUtils {
    */
   private static void startWorker(final String address, final String workingDir, final int workerId, final int port,
       final List<String> jvmOptions) {
-    System.out.println(workerId + " = " + address);
+    System.err.println(workerId + " = " + address);
     String workerDir = String.format("%s/workers/%d", workingDir, workerId);
     String classpath = String.format("'%s/conf:%s/libs/*'", workingDir, workingDir);
     List<String> args = new ArrayList<>();
@@ -246,7 +246,7 @@ public final class DeploymentUtils {
    */
   private static void startMaster(final String address, final String workingDir, final int restPort, final boolean ssl,
       final List<String> jvmOptions) {
-    System.out.println(MyriaConstants.MASTER_ID + " = " + address);
+    System.err.println(MyriaConstants.MASTER_ID + " = " + address);
     String masterDir = workingDir + "/" + "master";
     String classpath = String.format("'%s/conf:%s/libs/*'", workingDir, workingDir);
     List<String> args = new ArrayList<>();
@@ -314,7 +314,7 @@ public final class DeploymentUtils {
         }
         // expected for the first few trials
         if (first) {
-          System.out.println("Waiting for the master to be up...");
+          System.err.println("Waiting for the master to be up...");
           first = false;
         }
         notAliveException = e;
