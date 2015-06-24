@@ -66,16 +66,16 @@ def read_config_file(filename='deployment.cfg'):
     ret['workers'] = [split_hostportpathdbname_key_append_id(w) for w in config.items('workers')]
     # .. nodes is master and workers
     ret['nodes'] = [ret['master']] + ret['workers']
-    # .. max_heap_size is the Java maximum heap size
+    # .. jvm.heap.size.max.gb is the Java maximum heap size
     try:
-        ret['max_heap_size.gb'] = config.get('runtime', 'max_heap_size.gb')
+        ret['jvm.heap.size.max.gb'] = config.get('runtime', 'jvm.heap.size.max.gb')
     except ConfigParser.NoOptionError:
-        ret['max_heap_size.gb'] = ''
-    # .. min_heap_size is the Java minimum heap size
+        ret['jvm.heap.size.max.gb'] = ''
+    # .. jvm.heap.size.min.gb is the Java minimum heap size
     try:
-        ret['min_heap_size.gb'] = config.get('runtime', 'min_heap_size.gb')
+        ret['jvm.heap.size.min.gb'] = config.get('runtime', 'jvm.heap.size.min.gb')
     except ConfigParser.NoOptionError:
-        ret['min_heap_size.gb'] = ''
+        ret['jvm.heap.size.min.gb'] = ''
     try:
         ret['admin_password'] = config.get('deployment', 'admin_password')
     except ConfigParser.NoOptionError:

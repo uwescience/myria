@@ -56,7 +56,7 @@ def _get_runtime(heap=None):
     """ Generates the runtime section of a Myria deployment file """
     runtime = '[runtime]\n'
     if heap:
-        runtime += 'max_heap_size.gb = %s\n' % heap
+        runtime += 'jvm.heap.size.max.gb = %s\n' % heap
     else:
         runtime += '# No runtime options specified\n'
     return runtime + '\n'
@@ -138,7 +138,7 @@ def main(argv):
                            '(default is [--name])')
 
     parser.add_argument(
-        '--heap', type=float, help='Java VM heap size in GB (e.g., "-Xmx2g")')
+        '--max-heap-size-gb', type=float, help='Java VM maximum heap size in GB (e.g., "2")')
     parser.add_argument(
         '--debug', default=False, action='store_true',
         help='Enable debugging support')
