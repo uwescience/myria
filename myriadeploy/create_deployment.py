@@ -138,7 +138,7 @@ def main(argv):
                            '(default is [--name])')
 
     parser.add_argument(
-        '--max-heap-size-gb', type=float, help='Java VM maximum heap size in GB (e.g., "2")')
+        '--jvm-max-heap-size-gb', type=float, dest='heap', help='Java VM maximum heap size in GB (e.g., "2")')
     parser.add_argument(
         '--debug', default=False, action='store_true',
         help='Enable debugging support')
