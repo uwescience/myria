@@ -180,7 +180,9 @@ public final class DeploymentUtils {
     System.err.println("Start syncing distribution files to worker#" + workerId + " @ " + hostname);
     mkdir(hostname, workingDir);
     List<String> includes = Arrays.asList("workers/" + workerId);
-    List<String> excludes = Arrays.asList("workers/*", "master");
+    List<String> excludes =
+        Arrays.asList("workers/*", "master", "workers/" + workerId + "/data.db",
+            "workers/" + workerId + "/data.db-wal", "workers/" + workerId + "/data.db-shm");
     rsyncFileToRemote(localDeployPath + "/", hostname, workingDir, includes, excludes);
   }
 
@@ -200,7 +202,8 @@ public final class DeploymentUtils {
     List<String> includes = Arrays.asList("master");
     List<String> excludes = Arrays.asList("workers");
     if (!cleanCatalog) {
-      excludes = Arrays.asList("workers", "master/master.catalog");
+      excludes =
+          Arrays.asList("workers", "master/master.catalog", "master/master.catalog-wal", "master/master.catalog-shm");
     }
     rsyncFileToRemote(localDeployPath + "/", hostname, workingDir, includes, excludes);
   }
