@@ -127,7 +127,7 @@ public final class MasterApplication extends ResourceConfig {
 
     @Override
     public void filter(final ContainerRequestContext request) {
-      String adminPassword = server.getConfiguration(MyriaSystemConfigKeys.ADMIN_PASSWORD);
+      String adminPassword = server.getConfig().getOptional("deployment", MyriaSystemConfigKeys.ADMIN_PASSWORD);
       if (adminPassword == null) {
         /* No admin password is required, pass. */
         return;

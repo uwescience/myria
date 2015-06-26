@@ -2,15 +2,13 @@
 [deployment]
 path = /disk1/myria
 name = testMyriadeploy
+rest_port = 8753
 # Uncomment if need to set a specific username; does not work for localhost
 #username = dhalperi
-# Uncomment to set the maximum heap size of the Java processes
-#max_heap_size=-Xmx2g
 # Uncomment if want to launch workers in debug mode
 #debug_mode = true
 # Uncomment if want to set admin password
 #admin_password = apple
-rest_port = 8753
 
 # Compute nodes configuration
 [master]
@@ -31,3 +29,11 @@ rest_port = 8753
 6 = altair.cs.washington.edu:9002:/disk2/myria        # use default db_name
 7 = altair.cs.washington.edu:9003:/disk3/myria        # use default db_name
 8 = altair.cs.washington.edu:9004:/disk4/myria        # use default db_name
+
+[runtime]
+# Uncomment to set the minimum heap size of the worker processes
+#jvm.heap.size.min.gb = 1
+# Uncomment to set the maximum heap size of the worker processes
+#jvm.heap.size.max.gb = 2
+# Uncomment to set other JVM options, separate them with space
+#jvm.options = -XX:+UseParallelGC

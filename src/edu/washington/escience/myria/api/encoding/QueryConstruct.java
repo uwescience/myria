@@ -27,7 +27,7 @@ import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.api.MyriaApiException;
-import edu.washington.escience.myria.coordinator.catalog.CatalogException;
+import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.expression.ConstantExpression;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.VariableExpression;

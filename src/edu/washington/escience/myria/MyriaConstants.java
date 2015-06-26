@@ -77,16 +77,6 @@ public final class MyriaConstants {
    */
   public static final String EXEC_ENV_VAR_PROFILING_MODE = "profiling_mode";
 
-  /**
-   * Default value for {@link MyriaSystemConfigKeys#FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES}.
-   */
-  public static final int FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES_DEFAULT_VALUE = 5 * MB;
-
-  /**
-   * Default value for {@link MyriaSystemConfigKeys#FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES}.
-   */
-  public static final int FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES_DEFAULT_VALUE = 512 * KB;
-
   /** Time interval between two heartbeats. */
   public static final int HEARTBEAT_INTERVAL = 1000;
 
@@ -100,16 +90,6 @@ public final class MyriaConstants {
    * Timeout for master process startup.
    */
   public static final int MASTER_START_UP_TIMEOUT_IN_SECOND = 20;
-
-  /**
-   * Default value for {@link MyriaSystemConfigKeys#OPERATOR_INPUT_BUFFER_CAPACITY}.
-   */
-  public static final int OPERATOR_INPUT_BUFFER_CAPACITY_DEFAULT_VALUE = 100;
-
-  /**
-   * Default value for {@link MyriaSystemConfigKeys#OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER}.
-   */
-  public static final int OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER_DEFAULT_VALUE = 80;
 
   /** timeout of returning a tuple batch even not filled. */
   public static final long PUSHING_TB_TIMEOUT = 1000000000;
@@ -182,25 +162,16 @@ public final class MyriaConstants {
    */
   public static final String STORAGE_SYSTEM_POSTGRESQL = "postgresql";
 
+  /** Worker config file name. */
+  public static final String WORKER_CONFIG_FILE = "worker.cfg";
+
+  /** Deployment config file name. */
+  public static final String DEPLOYMENT_CONF_FILE = "deployment.cfg";
+
   /**
    * PostgreSQL port.
    */
   public static final int STORAGE_POSTGRESQL_PORT = 5432;
-
-  /**
-   * Default value for {@link MyriaSystemConfigKeys#TCP_CONNECTION_TIMEOUT_MILLIS}.
-   */
-  public static final int TCP_CONNECTION_TIMEOUT_MILLIS_DEFAULT_VALUE = 3000;
-
-  /**
-   * Default value for {@link MyriaSystemConfigKeys#TCP_RECEIVE_BUFFER_SIZE_BYTES}.
-   */
-  public static final int TCP_RECEIVE_BUFFER_SIZE_BYTES_DEFAULT_VALUE = 2 * MB;
-
-  /**
-   * Default value for {@link MyriaSystemConfigKeys#TCP_SEND_BUFFER_SIZE_BYTES}.
-   */
-  public static final int TCP_SEND_BUFFER_SIZE_BYTES_DEFAULT_VALUE = 5 * MB;
 
   /**
    * If a thread in a thread pool is idle, how long it should wait before terminates itself. Currently, 5 minutes.
@@ -222,11 +193,6 @@ public final class MyriaConstants {
    * The time interval in milliseconds for check if the worker should be shutdown.
    */
   public static final int WORKER_SHUTDOWN_CHECKER_INTERVAL = 1000;
-
-  /**
-   * Default value for {@link MyriaSystemConfigKeys#WORKER_STORAGE_DATABASE_SYSTEM}.
-   */
-  public static final String WORKER_STORAGE_DATABASE_SYSTEM_DEFAULT_VALUE = STORAGE_SYSTEM_SQLITE;
 
   /**
    * The number of bytes that can back up in a {@link java.io.PipedInputStream} before we stop writing tuples and wait

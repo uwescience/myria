@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.RelationKey;
-import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
+import edu.washington.escience.myria.coordinator.MasterCatalog;
 import edu.washington.escience.myria.util.concurrent.OperationFuture;
 import edu.washington.escience.myria.util.concurrent.OperationFutureListener;
 

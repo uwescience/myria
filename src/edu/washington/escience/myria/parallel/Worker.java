@@ -1,13 +1,11 @@
 package edu.washington.escience.myria.parallel;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileLock;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -33,14 +31,14 @@ import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
-import edu.washington.escience.myria.coordinator.catalog.CatalogException;
-import edu.washington.escience.myria.coordinator.catalog.WorkerCatalog;
+import edu.washington.escience.myria.coordinator.ConfigFileException;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.InJVMLoopbackChannelSink;
 import edu.washington.escience.myria.profiling.ProfilingLogger;
 import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myria.proto.QueryProto.QueryMessage;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
+import edu.washington.escience.myria.tools.MyriaConfiguration;
 import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.JVMUtils;
 import edu.washington.escience.myria.util.concurrent.ErrorLoggingTimerTask;
@@ -327,15 +325,8 @@ public final class Worker {
    */
   private final LinkedBlockingQueue<QueryCommand> queryQueue;
 
-  /**
-   * My catalog.
-   */
-  private final WorkerCatalog catalog;
-
-  /**
-   * master IPC address.
-   */
-  private final SocketInfo masterSocketInfo;
+  /** Worker configuration. */
+  private final MyriaConfiguration config;
 
   /**
    * Query execution mode. May remove
@@ -496,7 +487,7 @@ public final class Worker {
           w.start();
 
           if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("Worker started at:" + w.catalog.getWorkers().get(w.myID));
+            LOGGER.info("Worker started at:" + w.config.getHostPort(w.myID));
           }
         } catch (Throwable e) {
           if (LOGGER.isErrorEnabled()) {
@@ -589,54 +580,43 @@ public final class Worker {
   /**
    * @param workingDirectory my working directory.
    * @param mode my execution mode.
-   * @throws CatalogException if there's any catalog operation errors.
-   * @throws FileNotFoundException if catalog files are not found.
+   * @throws ConfigFileException if there's any config file parsing error.
    */
-  public Worker(final String workingDirectory, final QueryExecutionMode mode) throws CatalogException,
-      FileNotFoundException {
+  public Worker(final String workingDirectory, final QueryExecutionMode mode) throws ConfigFileException {
     queryExecutionMode = mode;
-    catalog = WorkerCatalog.open(FilenameUtils.concat(workingDirectory, "worker.catalog"));
-
     this.workingDirectory = workingDirectory;
-    myID = Integer.parseInt(catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_IDENTIFIER));
-
     controlMessageQueue = new LinkedBlockingQueue<ControlMessage>();
     queryQueue = new LinkedBlockingQueue<QueryCommand>();
+    activeQueries = new ConcurrentHashMap<>();
+    executingSubQueries = new ConcurrentHashMap<>();
+    execEnvVars = new ConcurrentHashMap<String, Object>();
 
-    masterSocketInfo = catalog.getMasters().get(0);
+    config = MyriaConfiguration.loadWithDefaultValues(FilenameUtils.concat(workingDirectory, "worker.cfg"));
 
-    final Map<Integer, SocketInfo> workers = catalog.getWorkers();
+    myID = Integer.parseInt(config.getRequired("runtime", MyriaSystemConfigKeys.WORKER_IDENTIFIER));
+
     final Map<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
-    computingUnits.putAll(workers);
-    computingUnits.put(MyriaConstants.MASTER_ID, masterSocketInfo);
+    computingUnits.put(MyriaConstants.MASTER_ID, SocketInfo.valueOf(config.getHostPort(MyriaConstants.MASTER_ID)));
+    for (int id : config.getWorkerIds()) {
+      computingUnits.put(id, SocketInfo.valueOf(config.getHostPort(id)));
+    }
 
     int inputBufferCapacity =
-        Integer.valueOf(catalog.getConfigurationValue(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY));
-
+        Integer.valueOf(config.getRequired("runtime", MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY));
     int inputBufferRecoverTrigger =
-        Integer.valueOf(catalog.getConfigurationValue(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER));
-
+        Integer.valueOf(config.getRequired("runtime", MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER));
     connectionPool =
         new IPCConnectionPool(myID, computingUnits, IPCConfigurations.createWorkerIPCServerBootstrap(this),
             IPCConfigurations.createWorkerIPCClientBootstrap(this), new TransportMessageSerializer(),
             new WorkerShortMessageProcessor(this), inputBufferCapacity, inputBufferRecoverTrigger);
-    activeQueries = new ConcurrentHashMap<>();
-    executingSubQueries = new ConcurrentHashMap<>();
 
-    execEnvVars = new ConcurrentHashMap<String, Object>();
-
-    for (Entry<String, String> cE : catalog.getAllConfigurations().entrySet()) {
-      execEnvVars.put(cE.getKey(), cE.getValue());
-    }
-    final String databaseSystem = catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_SYSTEM);
+    final String databaseSystem =
+        config.getRequired("deployment", MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_SYSTEM);
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM, databaseSystem);
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_NODE_ID, getID());
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE, queryExecutionMode);
     LOGGER.info("Worker: Database system " + databaseSystem);
-    String jsonConnInfo = catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_CONN_INFO);
-    if (jsonConnInfo == null) {
-      throw new CatalogException("Missing database connection information");
-    }
+    String jsonConnInfo = config.getSelfJsonConnInfo();
     LOGGER.info("Worker: Connection info " + jsonConnInfo);
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO, ConnectionInfo.of(databaseSystem, jsonConnInfo));
   }
@@ -817,17 +797,11 @@ public final class Worker {
 
   /**
    * @param configKey config key.
-   * @return a worker configuration.
+   * @return a worker runtime configuration value.
+   * @throws ConfigFileException if error occurred.
    */
-  public String getConfiguration(final String configKey) {
-    try {
-      return catalog.getConfigurationValue(configKey);
-    } catch (CatalogException e) {
-      if (LOGGER.isWarnEnabled()) {
-        LOGGER.warn("Configuration retrieval error", e);
-      }
-      return null;
-    }
+  public String getRuntimeConfiguration(final String configKey) throws ConfigFileException {
+    return config.getRequired("runtime", configKey);
   }
 
   /**

@@ -1,10 +1,11 @@
-package edu.washington.escience.myria.coordinator.catalog;
+package edu.washington.escience.myria.coordinator;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -18,6 +19,7 @@ import java.util.logging.Level;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.apache.commons.io.FilenameUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +34,6 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 
@@ -50,7 +51,6 @@ import edu.washington.escience.myria.api.encoding.plan.SubPlanEncoding;
 import edu.washington.escience.myria.operator.network.partition.HowPartitioned;
 import edu.washington.escience.myria.parallel.Query;
 import edu.washington.escience.myria.parallel.RelationWriteMetadata;
-import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.parallel.SubQueryId;
 import edu.washington.escience.myria.storage.TupleBatch;
 
@@ -64,26 +64,6 @@ public final class MasterCatalog {
   private static final Logger LOGGER = LoggerFactory.getLogger(MasterCatalog.class);
 
   /** CREATE TABLE statements @formatter:off */
-  /** Create the configurations table. */
-  private static final String CREATE_CONFIGURATION =
-      "CREATE TABLE configuration (\n"
-    + "    key TEXT UNIQUE NOT NULL,\n"
-    + "    value TEXT NOT NULL);";
-  /** Create the masters table. */
-  private static final String CREATE_MASTERS =
-      "CREATE TABLE masters (\n"
-    + "    master_id INTEGER PRIMARY KEY ASC,\n"
-    + "    host_port TEXT NOT NULL);";
-  /** Create the workers table. */
-  private static final String CREATE_WORKERS =
-      "CREATE TABLE workers (\n"
-    + "    worker_id INTEGER PRIMARY KEY ASC,\n"
-    + "    host_port TEXT NOT NULL);";
-  /** Create the alive_workers table. */
-  private static final String CREATE_ALIVE_WORKERS =
-      "CREATE TABLE alive_workers (\n"
-    + "    worker_id INTEGER PRIMARY KEY ASC REFERENCES workers);";
-  /** Create the queries table. */
   private static final String CREATE_QUERIES =
       "CREATE TABLE queries (\n"
     + "    query_id INTEGER NOT NULL PRIMARY KEY ASC,\n"
@@ -155,7 +135,7 @@ public final class MasterCatalog {
       "CREATE TABLE shards (\n"
     + "    stored_relation_id INTEGER NOT NULL REFERENCES stored_relations ON DELETE CASCADE,\n"
     + "    shard_index INTEGER NOT NULL,\n"
-    + "    worker_id INTEGER NOT NULL REFERENCES workers);";
+    + "    worker_id INTEGER NOT NULL);";
   /** Create an index on the shards table. */
   private static final String CREATE_SHARDS_INDEX =
       "CREATE INDEX shards_idx ON shards (stored_relation_id);";
@@ -169,35 +149,17 @@ public final class MasterCatalog {
   /**
    * @param filename the path to the SQLite database storing the catalog.
    * @return a fresh Catalog fitting the specified description.
-   * @throws IOException if the specified file already exists.
    * @throws CatalogException if there is an error opening the database.
    * 
    *           TODO add some sanity checks to the filename?
    */
-  public static MasterCatalog create(final String filename) throws IOException, CatalogException {
-    Objects.requireNonNull(filename);
-    return MasterCatalog.create(filename, false);
-  }
-
-  /**
-   * @param filename the path to the SQLite database storing the catalog.
-   * @param overwrite specifies whether to overwrite an existing Catalog.
-   * @return a fresh Catalog fitting the specified description.
-   * @throws IOException if overwrite is true and the specified file already exists.
-   * @throws CatalogException if there is an error opening the database.
-   * 
-   *           TODO add some sanity checks to the filename?
-   */
-  public static MasterCatalog create(final String filename, final boolean overwrite) throws IOException,
-      CatalogException {
-    Objects.requireNonNull(filename);
-
-    /* if overwrite is false, error if the file exists. */
-    final File catalogFile = new File(filename);
-    if (!overwrite && catalogFile.exists()) {
-      throw new IOException(filename + " already exists");
+  public static void create(@Nonnull final String path) throws CatalogException {
+    try {
+      Files.createDirectories(FileSystems.getDefault().getPath(path));
+    } catch (IOException e) {
+      throw new CatalogException(e);
     }
-    return MasterCatalog.createFromFile(catalogFile);
+    MasterCatalog.createFromFile(new File(FilenameUtils.concat(path, "master.catalog"))).close();
   }
 
   /**
@@ -221,10 +183,6 @@ public final class MasterCatalog {
           try {
             sqliteConnection.exec("PRAGMA journal_mode = WAL;");
             sqliteConnection.exec("BEGIN TRANSACTION");
-            sqliteConnection.exec(CREATE_CONFIGURATION);
-            sqliteConnection.exec(CREATE_MASTERS);
-            sqliteConnection.exec(CREATE_WORKERS);
-            sqliteConnection.exec(CREATE_ALIVE_WORKERS);
             sqliteConnection.exec(CREATE_QUERIES);
             sqliteConnection.exec(CREATE_QUERIES_FTS);
             sqliteConnection.exec(CREATE_QUERY_PLANS);
@@ -321,43 +279,6 @@ public final class MasterCatalog {
     } catch (InterruptedException | ExecutionException e) {
       throw new CatalogException(e);
     }
-  }
-
-  /**
-   * Adds a master using the specified host and port to the Catalog.
-   * 
-   * @param hostPortString specifies the path to the master in the format "host:port"
-   * @return this Catalog
-   * @throws CatalogException if the hostPortString is invalid or there is a database exception.
-   */
-  public MasterCatalog addMaster(final String hostPortString) throws CatalogException {
-    Objects.requireNonNull(hostPortString);
-    if (isClosed) {
-      throw new CatalogException("Catalog is closed.");
-    }
-
-    @SuppressWarnings("unused")
-    /* Just used to verify that hostPortString is legal */
-    final SocketInfo sockInfo = SocketInfo.valueOf(hostPortString);
-
-    /* Do the work */
-    try {
-      queue.execute(new SQLiteJob<Object>() {
-        @Override
-        protected Object job(final SQLiteConnection sqliteConnection) throws SQLiteException {
-          final SQLiteStatement statement =
-              sqliteConnection.prepare("INSERT INTO masters(host_port) VALUES(?);", false);
-          statement.bind(1, hostPortString);
-          statement.step();
-          statement.dispose();
-          return null;
-        }
-      }).get();
-    } catch (InterruptedException | ExecutionException e) {
-      throw new CatalogException(e);
-    }
-
-    return this;
   }
 
   /**
@@ -496,98 +417,6 @@ public final class MasterCatalog {
   }
 
   /**
-   * Adds a worker using the specified host and port to the Catalog.
-   * 
-   * @param hostPortString specifies the path to the worker in the format "host:port"
-   * @param workerId the worker id to be added
-   * @return this Catalog
-   * @throws CatalogException if the hostPortString is invalid or there is a database exception.
-   */
-  public MasterCatalog addWorker(final int workerId, final String hostPortString) throws CatalogException {
-    Objects.requireNonNull(hostPortString);
-    if (isClosed) {
-      throw new CatalogException("Catalog is closed.");
-    }
-    try {
-      queue.execute(new SQLiteJob<Object>() {
-        @Override
-        protected Object job(final SQLiteConnection sqliteConnection) throws SQLiteException, CatalogException {
-          try {
-            @SuppressWarnings("unused")
-            /* Just used to verify that hostPortString is legal */
-            final SocketInfo sockInfo = SocketInfo.valueOf(hostPortString);
-            final SQLiteStatement statement =
-                sqliteConnection.prepare("INSERT INTO workers(worker_id, host_port) VALUES(?,?);", false);
-            statement.bind(1, workerId);
-            statement.bind(2, hostPortString);
-            statement.step();
-            statement.dispose();
-          } catch (final SQLiteException e) {
-            LOGGER.error("adding a worker", e);
-            throw new CatalogException(e);
-          }
-          return null;
-        }
-      }).get();
-    } catch (InterruptedException | ExecutionException e) {
-      throw new CatalogException(e);
-    }
-    return this;
-  }
-
-  /**
-   * Add workers.
-   * 
-   * @param workers workerId -> "host:port"
-   * @return this Catalog
-   * @throws CatalogException if the hostPortString is invalid or there is a database exception.
-   */
-  public MasterCatalog addWorkers(final Map<String, String> workers) throws CatalogException {
-    Objects.requireNonNull(workers);
-    if (isClosed) {
-      throw new CatalogException("Catalog is closed.");
-    }
-    try {
-      queue.execute(new SQLiteJob<Object>() {
-        @Override
-        protected Object job(final SQLiteConnection sqliteConnection) throws SQLiteException, CatalogException {
-          try {
-            final SQLiteStatement statement =
-                sqliteConnection.prepare("INSERT INTO workers(worker_id, host_port) VALUES(?,?);", false);
-            /* To begin: start a transaction. */
-            sqliteConnection.exec("BEGIN TRANSACTION;");
-
-            for (final Map.Entry<String, String> e : workers.entrySet()) {
-              @SuppressWarnings("unused")
-              /* Just used to verify that hostPortString is legal */
-              final SocketInfo sockInfo = SocketInfo.valueOf(e.getValue());
-              statement.bind(1, Integer.valueOf(e.getKey()));
-              statement.bind(2, e.getValue());
-              statement.step();
-              statement.reset(false);
-            }
-            /* To complete: commit the transaction. */
-            sqliteConnection.exec("COMMIT TRANSACTION;");
-            statement.dispose();
-          } catch (final SQLiteException e) {
-            LOGGER.error("adding a set of workers", e);
-            try {
-              sqliteConnection.exec("ABORT TRANSACTION;");
-            } catch (final SQLiteException e2) {
-              assert true; /* Do nothing. */
-            }
-            throw new CatalogException(e);
-          }
-          return null;
-        }
-      }).get();
-    } catch (InterruptedException | ExecutionException e) {
-      throw new CatalogException(e);
-    }
-    return this;
-  }
-
-  /**
    * Close the connection to the database that stores the Catalog. Idempotent. Calling any methods (other than close())
    * on this Catalog will throw a CatalogException.
    */
@@ -601,283 +430,6 @@ public final class MasterCatalog {
       description = null;
     }
     isClosed = true;
-  }
-
-  /**
-   * @return the set of workers that are alive.
-   * @throws CatalogException if there is an error in the database.
-   */
-  public Set<Integer> getAliveWorkers() throws CatalogException {
-    if (isClosed) {
-      throw new CatalogException("Catalog is closed.");
-    }
-
-    try {
-      return queue.execute(new SQLiteJob<Set<Integer>>() {
-        @Override
-        protected Set<Integer> job(final SQLiteConnection sqliteConnection) throws SQLiteException, CatalogException {
-          final Set<Integer> workers = new HashSet<Integer>();
-
-          try {
-            final SQLiteStatement statement = sqliteConnection.prepare("SELECT worker_id FROM alive_workers;", false);
-            while (statement.step()) {
-              workers.add(statement.columnInt(0));
-            }
-            statement.dispose();
-          } catch (final SQLiteException e) {
-            LOGGER.error("getting the alive workers", e);
-            throw new CatalogException(e);
-          }
-
-          return workers;
-        }
-      }).get();
-    } catch (InterruptedException | ExecutionException e) {
-      throw new CatalogException(e);
-    }
-  }
-
-  /**
-   * @return All the configuration values.
-   * @throws CatalogException if error occurs in catalog parsing.
-   */
-  public ImmutableMap<String, String> getAllConfigurations() throws CatalogException {
-    if (isClosed) {
-      throw new CatalogException("Catalog is closed.");
-    }
-    try {
-      return queue.execute(new SQLiteJob<ImmutableMap<String, String>>() {
-        @Override
-        protected ImmutableMap<String, String> job(final SQLiteConnection sqliteConnection) throws CatalogException,
-            SQLiteException {
-          ImmutableMap.Builder<String, String> configurations = ImmutableMap.builder();
-          try {
-
-            final SQLiteStatement statement = sqliteConnection.prepare("SELECT * FROM configuration;", false);
-            while (statement.step()) {
-              configurations.put(statement.columnString(0), statement.columnString(1));
-            }
-            statement.dispose();
-            return configurations.build();
-          } catch (final SQLiteException e) {
-            LOGGER.error("getting the configurations", e);
-            throw new CatalogException(e);
-          }
-        }
-      }).get();
-    } catch (InterruptedException | ExecutionException e) {
-      throw new CatalogException(e);
-    }
-
-  }
-
-  /**
-   * Extract the value of a particular configuration parameter from the database. Returns null if the parameter is not
-   * configured.
-   * 
-   * @param key the name of the configuration parameter.
-   * @return the value of the configuration parameter, or null if that configuration is not supported.
-   * @throws CatalogException if there is an error in the backing database.
-   */
-  public String getConfigurationValue(final String key) throws CatalogException {
-    Objects.requireNonNull(key);
-    if (isClosed) {
-      throw new CatalogException("Catalog is closed.");
-    }
-    /* Do the work */
-    try {
-      return queue.execute(new SQLiteJob<String>() {
-        @Override
-        protected String job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
-          try {
-            /* Getting this out is a simple query, which does not need to be cached. */
-            final SQLiteStatement statement =
-                sqliteConnection.prepare("SELECT value FROM configuration WHERE key=? LIMIT 1;", false).bind(1, key);
-            if (!statement.step()) {
-              /* If step() returns false, there's no data. Return null. */
-              return null;
-            }
-            final String ret = statement.columnString(0);
-            statement.dispose();
-            return ret;
-          } catch (final SQLiteException e) {
-            LOGGER.error("getting the configuration value for key {}", key, e);
-            throw new CatalogException(e);
-          }
-        }
-      }).get();
-    } catch (InterruptedException | ExecutionException e) {
-      throw new CatalogException(e);
-    }
-  }
-
-  /**
-   * Set all the configuration values in the provided map in a single transaction.
-   * 
-   * @param entries the value of the configuration parameter.
-   * @throws CatalogException if there is an error in the backing database.
-   */
-  public void setAllConfigurationValues(final Map<String, String> entries) throws CatalogException {
-    Objects.requireNonNull(entries);
-    if (isClosed) {
-      throw new CatalogException("Catalog is closed.");
-    }
-    try {
-      queue.execute(new SQLiteJob<Object>() {
-        @Override
-        protected Object job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
-          try {
-            /* Start transaction. */
-            sqliteConnection.exec("BEGIN TRANSACTION");
-            final SQLiteStatement statement = sqliteConnection.prepare("INSERT INTO configuration VALUES(?,?);", false);
-            for (Map.Entry<String, String> entry : entries.entrySet()) {
-              if (entry.getValue() == null) {
-                continue;
-              }
-              statement.bind(1, entry.getKey());
-              statement.bind(2, entry.getValue());
-              statement.step();
-              statement.reset(false);
-            }
-            /* Commit transaction. */
-            sqliteConnection.exec("COMMIT TRANSACTION");
-            statement.dispose();
-            return null;
-          } catch (final SQLiteException e) {
-            LOGGER.error("adding a set of configuration values", e);
-            /* Commit transaction. */
-            sqliteConnection.exec("ROLLBACK TRANSACTION");
-            throw new CatalogException(e);
-          }
-        }
-      }).get();
-    } catch (InterruptedException | ExecutionException e) {
-      throw new CatalogException(e);
-    }
-  }
-
-  /**
-   * Extract the value of a particular configuration parameter from the database. Returns null if the parameter is not
-   * configured.
-   * 
-   * @param key the name of the configuration parameter.
-   * @param value the value of the configuration parameter.
-   * @throws CatalogException if there is an error in the backing database.
-   */
-  public void setConfigurationValue(final String key, final String value) throws CatalogException {
-    Objects.requireNonNull(key);
-    if (isClosed) {
-      throw new CatalogException("Catalog is closed.");
-    }
-    try {
-      queue.execute(new SQLiteJob<String>() {
-        @Override
-        protected String job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
-          try {
-            /* Getting this out is a simple query, which does not need to be cached. */
-            final SQLiteStatement statement =
-                sqliteConnection.prepare("INSERT INTO configuration VALUES(?,?);", false).bind(1, key).bind(2, value);
-            if (!statement.step()) {
-              /* If step() returns false, there's no data. Return null. */
-              return null;
-            }
-            statement.dispose();
-            return null;
-          } catch (final SQLiteException e) {
-            LOGGER.error("adding a configuration value [{}:{}]", key, value, e);
-            throw new CatalogException(e);
-          }
-        }
-      }).get();
-    } catch (InterruptedException | ExecutionException e) {
-      throw new CatalogException(e);
-    }
-  }
-
-  /**
-   * @return the description of this Catalog.
-   * @throws CatalogException if there is an error extracting the description from the database.
-   */
-  public String getDescription() throws CatalogException {
-    if (isClosed) {
-      throw new CatalogException("Catalog is closed.");
-    }
-    /* If we have the answer cached, use it. */
-    if (description != null) {
-      return description;
-    }
-
-    description = getConfigurationValue("description");
-    return description;
-  }
-
-  /**
-   * @return the set of masters stored in this Catalog.
-   * @throws CatalogException if there is an error in the database.
-   */
-  public List<SocketInfo> getMasters() throws CatalogException {
-    if (isClosed) {
-      throw new CatalogException("Catalog is closed.");
-    }
-
-    try {
-      return queue.execute(new SQLiteJob<List<SocketInfo>>() {
-        @Override
-        protected List<SocketInfo> job(final SQLiteConnection sqliteConnection) throws SQLiteException,
-            CatalogException {
-          final ArrayList<SocketInfo> masters = new ArrayList<SocketInfo>();
-          try {
-            final SQLiteStatement statement = sqliteConnection.prepare("SELECT * FROM masters;", false);
-            while (statement.step()) {
-              masters.add(SocketInfo.valueOf(statement.columnString(1)));
-            }
-            statement.dispose();
-          } catch (final SQLiteException e) {
-            LOGGER.error("getting the master(s)", e);
-            throw new CatalogException(e);
-          }
-
-          return masters;
-        }
-      }).get();
-    } catch (InterruptedException | ExecutionException e) {
-      throw new CatalogException(e);
-    }
-  }
-
-  /**
-   * @return the set of workers stored in this Catalog.
-   * @throws CatalogException if there is an error in the database.
-   */
-  public Map<Integer, SocketInfo> getWorkers() throws CatalogException {
-    if (isClosed) {
-      throw new CatalogException("Catalog is closed.");
-    }
-
-    try {
-      return queue.execute(new SQLiteJob<Map<Integer, SocketInfo>>() {
-        @Override
-        protected Map<Integer, SocketInfo> job(final SQLiteConnection sqliteConnection) throws SQLiteException,
-            CatalogException {
-          final Map<Integer, SocketInfo> workers = new HashMap<Integer, SocketInfo>();
-
-          try {
-            final SQLiteStatement statement = sqliteConnection.prepare("SELECT * FROM workers;", false);
-            while (statement.step()) {
-              workers.put(statement.columnInt(0), SocketInfo.valueOf(statement.columnString(1)));
-            }
-            statement.dispose();
-          } catch (final SQLiteException e) {
-            LOGGER.error("getting the workers", e);
-            throw new CatalogException(e);
-          }
-
-          return workers;
-        }
-      }).get();
-    } catch (InterruptedException | ExecutionException e) {
-      throw new CatalogException(e);
-    }
   }
 
   /**
@@ -2074,7 +1626,7 @@ public final class MasterCatalog {
 
   /**
    * Checking whether the relation has an is_deleted status
-   *
+   * 
    * @param relationKey the relation to check is_deleted status.
    * @return a boolean whether the relation is in a is_deleted status.
    * @throws CatalogException if there is an error.
@@ -2106,13 +1658,13 @@ public final class MasterCatalog {
           }
           return (ret == 0) ? false : true;
         }
-      }).get();        
+      }).get();
     } catch (InterruptedException | ExecutionException e) {
       throw new CatalogException(e);
     }
   }
 
-  /**        
+  /**
    * Run a query on the catalog.
    * 
    * @param queryString a SQL query on the catalog

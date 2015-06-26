@@ -1,16 +1,17 @@
 package edu.washington.escience.myria.api;
 
-import java.io.File;
-
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
-import edu.washington.escience.myria.MyriaSystemConfigKeys;
+import org.apache.commons.io.FilenameUtils;
+
+import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.api.MasterApplication.ADMIN;
 import edu.washington.escience.myria.api.encoding.VersionEncoding;
+import edu.washington.escience.myria.coordinator.ConfigFileException;
 import edu.washington.escience.myria.daemon.MasterDaemon;
 import edu.washington.escience.myria.parallel.Server;
 
@@ -73,12 +74,12 @@ public final class MasterResource {
   @Path("/deployment_cfg")
   @ADMIN
   public Response getDeploymentCfg(@Context final Server server) {
-    String workingDir = server.getConfiguration(MyriaSystemConfigKeys.WORKING_DIRECTORY);
-    String description = server.getConfiguration(MyriaSystemConfigKeys.DESCRIPTION);
-    String fileName = server.getConfiguration(MyriaSystemConfigKeys.DEPLOYMENT_FILE);
-    String deploymentFile =
-        workingDir + File.separatorChar + description + "-files" + File.separatorChar + description
-            + File.separatorChar + fileName;
-    return Response.ok(deploymentFile).build();
+    try {
+      String workingDir = server.getConfig().getWorkingDirectory(MyriaConstants.MASTER_ID);
+      String deploymentFile = FilenameUtils.concat(workingDir, MyriaConstants.DEPLOYMENT_CONF_FILE);
+      return Response.ok(deploymentFile).build();
+    } catch (ConfigFileException e) {
+      return Response.ok(e.getMessage()).build();
+    }
   }
 }

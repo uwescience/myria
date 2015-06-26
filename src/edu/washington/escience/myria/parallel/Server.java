@@ -1,11 +1,11 @@
 package edu.washington.escience.myria.parallel;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.PipedOutputStream;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -28,6 +28,7 @@ import java.util.logging.Logger;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.text.StrSubstitutor;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelPipelineFactory;
@@ -58,9 +59,9 @@ import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
-import edu.washington.escience.myria.coordinator.catalog.CatalogException;
-import edu.washington.escience.myria.coordinator.catalog.CatalogMaker;
-import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
+import edu.washington.escience.myria.coordinator.CatalogException;
+import edu.washington.escience.myria.coordinator.ConfigFileException;
+import edu.washington.escience.myria.coordinator.MasterCatalog;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.MinusExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
@@ -98,7 +99,7 @@ import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.storage.TupleBuffer;
-import edu.washington.escience.myria.tool.MyriaConfigurationReader;
+import edu.washington.escience.myria.tools.MyriaConfiguration;
 import edu.washington.escience.myria.util.DeploymentUtils;
 import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.MyriaUtils;
@@ -313,9 +314,8 @@ public final class Server {
         System.exit(-1);
       }
 
-      final String catalogName = args[0];
-
-      final Server server = new Server(catalogName);
+      final String configFile = FilenameUtils.concat(args[0], MyriaConstants.DEPLOYMENT_CONF_FILE);
+      final Server server = new Server(configFile);
 
       if (LOGGER.isInfoEnabled()) {
         LOGGER.info("Workers are: ");
@@ -412,36 +412,26 @@ public final class Server {
   /**
    * Construct a server object, with configuration stored in the specified catalog file.
    * 
-   * @param catalogFileName the name of the file containing the catalog.
+   * @param configFile the name of the config file.
    * @throws FileNotFoundException the specified file not found.
    * @throws CatalogException if there is an error reading from the Catalog.
+   * @throws ConfigFileException if there is an error reading the config file.
    */
-  public Server(final String catalogFileName) throws FileNotFoundException, CatalogException {
-    catalog = MasterCatalog.open(catalogFileName);
+  public Server(final String configFile) throws FileNotFoundException, CatalogException, ConfigFileException {
+    CONFIG = MyriaConfiguration.loadWithDefaultValues(configFile);
 
-    /* Get the master socket info */
-    List<SocketInfo> masters = catalog.getMasters();
-    if (masters.size() != 1) {
-      throw new RuntimeException("Unexpected number of masters: expected 1, got " + masters.size());
-    }
-    masterSocketInfo = masters.get(MyriaConstants.MASTER_ID);
-
-    workers = new ConcurrentHashMap<>(catalog.getWorkers());
-    final ImmutableMap<String, String> allConfigurations = catalog.getAllConfigurations();
-
-    int inputBufferCapacity =
-        Integer.valueOf(catalog.getConfigurationValue(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY));
-
-    int inputBufferRecoverTrigger =
-        Integer.valueOf(catalog.getConfigurationValue(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER));
+    masterSocketInfo = SocketInfo.valueOf(CONFIG.getHostPort(MyriaConstants.MASTER_ID));
 
     execEnvVars = new ConcurrentHashMap<>();
-    for (Entry<String, String> cE : allConfigurations.entrySet()) {
-      execEnvVars.put(cE.getKey(), cE.getValue());
-    }
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_NODE_ID, MyriaConstants.MASTER_ID);
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE, getExecutionMode());
 
+    workers = new ConcurrentHashMap<>();
+    for (int id : CONFIG.getWorkerIds()) {
+      workers.put(id, SocketInfo.valueOf(CONFIG.getHostPort(id)));
+    }
+    final Map<Integer, SocketInfo> computingUnits = new HashMap<>(workers);
+    computingUnits.put(MyriaConstants.MASTER_ID, masterSocketInfo);
     aliveWorkers = new ConcurrentHashMap<>();
     scheduledWorkers = new ConcurrentHashMap<>();
     scheduledWorkersTime = new ConcurrentHashMap<>();
@@ -449,13 +439,15 @@ public final class Server {
     removeWorkerAckReceived = new ConcurrentHashMap<>();
     addWorkerAckReceived = new ConcurrentHashMap<>();
 
+    catalog = MasterCatalog.open(CONFIG.getMasterCatalogFile());
     queryManager = new QueryManager(catalog, this);
 
     messageQueue = new LinkedBlockingQueue<>();
 
-    final Map<Integer, SocketInfo> computingUnits = new HashMap<>(workers);
-    computingUnits.put(MyriaConstants.MASTER_ID, masterSocketInfo);
-
+    int inputBufferCapacity =
+        Integer.valueOf(CONFIG.getRequired("runtime", MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY));
+    int inputBufferRecoverTrigger =
+        Integer.valueOf(CONFIG.getRequired("runtime", MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER));
     connectionPool =
         new IPCConnectionPool(MyriaConstants.MASTER_ID, computingUnits, IPCConfigurations
             .createMasterIPCServerBootstrap(this), IPCConfigurations.createMasterIPCClientBootstrap(this),
@@ -465,7 +457,8 @@ public final class Server {
     scheduledTaskExecutor =
         Executors.newSingleThreadScheduledExecutor(new RenamingThreadFactory("Master global timer"));
 
-    final String databaseSystem = catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_SYSTEM);
+    final String databaseSystem =
+        CONFIG.getRequired("deployment", MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_SYSTEM);
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM, databaseSystem);
   }
 
@@ -632,7 +625,7 @@ public final class Server {
   }
 
   /** The reader. */
-  private static final MyriaConfigurationReader READER = new MyriaConfigurationReader();
+  private static MyriaConfiguration CONFIG;
 
   /**
    * The class to launch a new worker during recovery.
@@ -661,26 +654,11 @@ public final class Server {
     @Override
     public void run() {
       try {
-        final String temp = Files.createTempDirectory(null).toAbsolutePath().toString();
-        Map<String, String> tmpMap = Collections.emptyMap();
-        String configFileName = catalog.getConfigurationValue(MyriaSystemConfigKeys.DEPLOYMENT_FILE);
-        Map<String, Map<String, String>> config = READER.load(configFileName);
-        CatalogMaker.makeOneWorkerCatalog(workerId + "", temp, config, tmpMap, true);
-
-        final String workingDir = config.get("paths").get(workerId + "");
-        final String description = catalog.getConfigurationValue(MyriaSystemConfigKeys.DESCRIPTION);
-        String remotePath = workingDir;
-        if (description != null) {
-          remotePath += "/" + description + "-files" + "/" + description;
-        }
-        DeploymentUtils.mkdir(address, remotePath);
-        String localPath = temp + "/" + "worker_" + workerId;
-        DeploymentUtils.rsyncFileToRemote(localPath, address, remotePath);
-        final String maxHeapSize = config.get("deployment").get("max_heap_size");
+        final File temp = DeploymentUtils.createTempDeployment(MyriaConstants.DEPLOYMENT_CONF_FILE);
+        DeploymentUtils.deployWorker(temp.getAbsolutePath(), CONFIG, workerId);
         LOGGER.info("starting new worker at {}:{}", address, port);
-        boolean debug = config.get("deployment").get("debug_mode").equals("true");
-        DeploymentUtils.startWorker(address, workingDir, description, maxHeapSize, workerId + "", port, debug);
-      } catch (CatalogException e) {
+        DeploymentUtils.startWorker(CONFIG, workerId);
+      } catch (ConfigFileException e) {
         throw new RuntimeException(e);
       } catch (IOException e) {
         throw new RuntimeException(e);
@@ -1126,15 +1104,11 @@ public final class Server {
 
   /**
    * @param configKey config key.
-   * @return master configuration.
+   * @return the value.
+   * @throws ConfigFileException if error occurred paring the config file
    */
-  public String getConfiguration(final String configKey) {
-    try {
-      return catalog.getConfigurationValue(configKey);
-    } catch (CatalogException e) {
-      LOGGER.warn("Configuration retrieval error", e);
-      return null;
-    }
+  public String getRuntimeConfiguration(final String configKey) throws ConfigFileException {
+    return CONFIG.getRequired("runtime", configKey);
   }
 
   /**
@@ -2008,9 +1982,17 @@ public final class Server {
   }
 
   /**
+   * @return config
+   */
+  public MyriaConfiguration getConfig() {
+    return CONFIG;
+  }
+
+  /**
    * @return the master catalog.
    */
   public MasterCatalog getCatalog() {
     return catalog;
   }
+
 }

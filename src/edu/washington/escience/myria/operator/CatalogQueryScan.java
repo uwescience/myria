@@ -5,8 +5,8 @@ import java.util.Objects;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.coordinator.catalog.CatalogException;
-import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
+import edu.washington.escience.myria.coordinator.CatalogException;
+import edu.washington.escience.myria.coordinator.MasterCatalog;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**

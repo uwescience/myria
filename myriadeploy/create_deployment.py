@@ -16,14 +16,15 @@ def get_deployment(path, coordinator_hostname, worker_hostnames, name='myria',
                    worker_databases=None):
     """ Generates a Myria deployment file with the given configuration """
     return (_get_header(path, name, rest_port, database_type, database_port,
-                        heap, debug, database_username, database_password) +
+                        debug, database_username, database_password) +
             _get_coordinator(coordinator_hostname, coordinator_port) +
+            _get_runtime(heap) +
             _get_workers(worker_hostnames, worker_ports, worker_base_port,
                          worker_directories, worker_databases))
 
 
 def _get_header(path, name='myria', rest_port=8753, database_type='postgresql',
-                database_port=5432, heap=None, debug=False,
+                database_port=5432, debug=False,
                 database_username=None, database_password=None):
     """ Generates the header section of a Myria deployment file """
     header = ('[deployment]\n'
@@ -39,8 +40,6 @@ def _get_header(path, name='myria', rest_port=8753, database_type='postgresql',
         header += 'username = %s\n' % database_username
     if database_password:
         header += 'database_password = %s\n' % database_password
-    if heap:
-        header += 'max_heap_size = -Xmx%s\n' % heap
     if debug:
         header += 'debug_mode = True\n'
 
@@ -51,6 +50,16 @@ def _get_coordinator(hostname, port=9001):
     """ Generates the coordinator section of a Myria deployment file """
     return '[master]\n' \
            '0 = {}:{}\n\n'.format(hostname, port)
+
+
+def _get_runtime(heap=None):
+    """ Generates the runtime section of a Myria deployment file """
+    runtime = '[runtime]\n'
+    if heap:
+        runtime += 'jvm.heap.size.max.gb = %s\n' % heap
+    else:
+        runtime += '# No runtime options specified\n'
+    return runtime + '\n'
 
 
 def _get_workers(hostnames, ports=None, base_port=8001,
@@ -129,8 +138,7 @@ def main(argv):
                            '(default is [--name])')
 
     parser.add_argument(
-        '--heap', type=str, help='Java VM heap size (e.g., "-Xmx2g") '
-                                 'and/or other parameters')
+        '--jvm-max-heap-size-gb', type=float, dest='heap', help='Java VM maximum heap size in GB (e.g., "2")')
     parser.add_argument(
         '--debug', default=False, action='store_true',
         help='Enable debugging support')

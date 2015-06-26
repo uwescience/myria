@@ -4,14 +4,14 @@
 package edu.washington.escience.myria.accessmethod;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.Objects;
 
-import org.apache.commons.io.FilenameUtils;
-
-import com.google.common.base.MoreObjects;
+import javax.annotation.Nonnull;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.MoreObjects;
 
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
@@ -66,7 +66,6 @@ public abstract class ConnectionInfo {
    * 
    * @param dbms the database system.
    * @param hostName the host name.
-   * @param description the description of the myria system.
    * @param dirName the working directory.
    * @param workerId the worker identification.
    * @param databaseName the database name for JDBC databases; ignored for non-JDBC
@@ -74,30 +73,22 @@ public abstract class ConnectionInfo {
    * @param databasePort the port the database is using; pass null to use default port
    * @return the JSON string representation of the connection information.
    */
-  public static String toJson(final String dbms, final String hostName, final String description, final String dirName,
-      final String workerId, final String databaseName, final String databasePassword, final Integer databasePort) {
-    Objects.requireNonNull(dbms);
+  public static String toJson(@Nonnull final String dbms, final String hostName, final String dirName,
+      final int workerId, final String databaseName, final String databasePassword, final String databasePort) {
     String result = "";
     String host;
-    int port;
     String user;
     String jdbcDriverName;
     JdbcInfo jdbcInfo;
+    Integer port = null;
+    if (databasePort != null) {
+      port = Integer.parseInt(databasePort);
+    }
 
     switch (dbms) {
       case MyriaConstants.STORAGE_SYSTEM_SQLITE:
         Objects.requireNonNull(workerId);
-        String fileName = "";
-        if (description != null) {
-          /* created from deployment.cfg, use relative path */
-          fileName = FilenameUtils.concat(Objects.requireNonNull(description), "worker_" + workerId);
-          fileName = FilenameUtils.concat(fileName, "worker_" + workerId + "_data.db");
-        } else {
-          /* created from SystemTestBase, use absolute path */
-          fileName = FilenameUtils.concat(Objects.requireNonNull(dirName), "worker_" + workerId);
-          fileName = FilenameUtils.concat(fileName, "worker_" + workerId + "_data.db");
-        }
-        SQLiteInfo sqliteInfo = SQLiteInfo.of(fileName);
+        SQLiteInfo sqliteInfo = SQLiteInfo.of(Paths.get(dirName, "workers", workerId + "", "data.db").toString());
         result = sqliteInfo.toJson();
         break;
       case MyriaConstants.STORAGE_SYSTEM_MONETDB:
@@ -105,8 +96,8 @@ public abstract class ConnectionInfo {
         // Now it is hardcoded to use a specific connection info, which allows only one
         // myria instance per machine in the cluster
         host = hostName;
-        port = MoreObjects.firstNonNull(databasePort, MyriaConstants.STORAGE_MONETDB_PORT);
-  
+        port = MoreObjects.firstNonNull(port, MyriaConstants.STORAGE_MONETDB_PORT);
+
         user = MyriaConstants.STORAGE_JDBC_USERNAME;
         jdbcDriverName = "nl.cwi.monetdb.jdbc.MonetDriver";
         jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, databasePassword);
@@ -118,8 +109,8 @@ public abstract class ConnectionInfo {
         // Now it is hardcoded to use a specific connection info, which allows only one
         // myria instance per machine in the cluster
         host = hostName;
-        port = MoreObjects.firstNonNull(databasePort, MyriaConstants.STORAGE_POSTGRESQL_PORT);
-            
+        port = MoreObjects.firstNonNull(port, MyriaConstants.STORAGE_POSTGRESQL_PORT);
+
         user = MyriaConstants.STORAGE_JDBC_USERNAME;
         jdbcDriverName = "org.postgresql.Driver";
         jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, databasePassword);
@@ -131,7 +122,7 @@ public abstract class ConnectionInfo {
         // Now it is hardcoded to use a specific connection info, which allows only one
         // myria instance per machine in the cluster
         host = hostName;
-        port = MoreObjects.firstNonNull(databasePort, MyriaConstants.STORAGE_MYSQL_PORT);
+        port = MoreObjects.firstNonNull(port, MyriaConstants.STORAGE_MYSQL_PORT);
 
         user = MyriaConstants.STORAGE_JDBC_USERNAME;
         jdbcDriverName = "com.mysql.jdbc.Driver";
@@ -146,4 +137,5 @@ public abstract class ConnectionInfo {
    * @return the DBMS, e.g., MyriaConstants.STORAGE_SYSTEM_MYSQL or MyriaConstants.STORAGE_SYSTEM_MONETDB.
    */
   public abstract String getDbms();
+
 }

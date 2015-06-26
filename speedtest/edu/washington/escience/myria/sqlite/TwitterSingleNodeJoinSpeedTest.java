@@ -21,7 +21,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.SQLiteInfo;
-import edu.washington.escience.myria.coordinator.catalog.CatalogException;
+import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.Applys;
 import edu.washington.escience.myria.operator.DbInsert;

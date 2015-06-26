@@ -3,11 +3,9 @@
 path = /tmp/myria
 name = twoNodeLocalParallel
 dbms = sqlite
+rest_port = 8753
 # Uncomment if need to set a specific username; does not work for localhost
 #username = dhalperi
-# Uncomment to set the maximum heap size of the Java processes
-#max_heap_size=-Xmx2g
-rest_port = 8753
 
 # Compute nodes configuration
 [master]
@@ -16,3 +14,12 @@ rest_port = 8753
 [workers]
 1 = localhost:9001
 2 = localhost:9002
+
+[runtime]
+# Uncomment to set the minimum heap size of the worker processes
+#jvm.heap.size.min.gb = 1
+# Uncomment to set the maximum heap size of the worker processes
+#jvm.heap.size.max.gb = 2
+# Uncomment to set other JVM options, separate them with space
+#jvm.options = -XX:+UseParallelGC
+

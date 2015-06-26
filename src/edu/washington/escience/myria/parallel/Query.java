@@ -29,8 +29,8 @@ import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
-import edu.washington.escience.myria.coordinator.catalog.CatalogException;
-import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
+import edu.washington.escience.myria.coordinator.CatalogException;
+import edu.washington.escience.myria.coordinator.MasterCatalog;
 import edu.washington.escience.myria.storage.TupleBuffer;
 import edu.washington.escience.myria.util.ErrorUtils;
 

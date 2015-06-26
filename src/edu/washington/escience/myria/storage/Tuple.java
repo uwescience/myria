@@ -3,6 +3,8 @@ package edu.washington.escience.myria.storage;
 import java.io.Serializable;
 import java.util.List;
 
+import javax.annotation.Nonnull;
+
 import org.joda.time.DateTime;
 
 import com.google.common.base.Preconditions;
@@ -157,7 +159,7 @@ public class Tuple implements Cloneable, AppendableTable, ReadableTable, Seriali
   }
 
   @Override
-  public void putDateTime(final int column, final DateTime value) {
+  public void putDateTime(final int column, @Nonnull final DateTime value) {
     set(column, value);
   }
 
@@ -182,12 +184,12 @@ public class Tuple implements Cloneable, AppendableTable, ReadableTable, Seriali
   }
 
   @Override
-  public void putString(final int column, final String value) {
+  public void putString(final int column, final @Nonnull String value) {
     set(column, value);
   }
 
   @Override
-  public void putObject(final int column, final Object value) {
+  public void putObject(final int column, final @Nonnull Object value) {
     set(column, value);
   }
 

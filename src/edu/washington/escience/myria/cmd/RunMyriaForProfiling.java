@@ -24,7 +24,7 @@ public final class RunMyriaForProfiling {
   public static void main(final String[] args) throws Exception {
     MasterDaemon daemon = new MasterDaemon("twoNodeLocalParallel", MyriaConstants.DEFAULT_MYRIA_API_PORT);
     daemon.start();
-    Worker worker = new Worker("twoNodeLocalParallel/worker_1", QueryExecutionMode.NON_BLOCKING);
+    Worker worker = new Worker("twoNodeLocalParallel/workers/1", QueryExecutionMode.NON_BLOCKING);
     worker.start();
   }
 }
