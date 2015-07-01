@@ -3,6 +3,7 @@
 import subprocess
 import sys
 import argparse
+import logging
 
 def make_deployment(input_args):
     "Copy the distribution (jar and libs and conf) to compute nodes."
