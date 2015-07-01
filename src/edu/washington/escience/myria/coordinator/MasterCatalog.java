@@ -334,7 +334,7 @@ public final class MasterCatalog {
       /* First, insert the relation name. */
       SQLiteStatement statement =
           sqliteConnection
-              .prepare("INSERT INTO relations (user_name,program_name,relation_name,num_tuples,is_deleted,query_id) VALUES (?,?,?,?,?,?);");
+              .prepare("INSERT OR REPLACE INTO relations (user_name,program_name,relation_name,num_tuples,is_deleted,query_id) VALUES (?,?,?,?,?,?);");
       statement.bind(1, relation.getUserName());
       statement.bind(2, relation.getProgramName());
       statement.bind(3, relation.getRelationName());
@@ -348,7 +348,7 @@ public final class MasterCatalog {
       /* Second, populate the Schema table. */
       statement =
           sqliteConnection
-              .prepare("INSERT INTO relation_schema(user_name,program_name,relation_name,col_index,col_name,col_type) "
+              .prepare("INSERT OR REPLACE INTO relation_schema(user_name,program_name,relation_name,col_index,col_name,col_type) "
                   + "VALUES (?,?,?,?,?,?);");
       statement.bind(1, relation.getUserName());
       statement.bind(2, relation.getProgramName());
@@ -1478,9 +1478,6 @@ public final class MasterCatalog {
             for (RelationWriteMetadata meta : relationsCreated.values()) {
               RelationKey relation = meta.getRelationKey();
               Set<Integer> workers = meta.getWorkers();
-              if (meta.isOverwrite()) {
-                deleteRelationIfExists(sqliteConnection, meta.getRelationKey());
-              }
               Schema schema = meta.getSchema();
               if (meta.isOverwrite() || getSchema(sqliteConnection, relation) == null) {
                 /* Overwrite or new relation. */
