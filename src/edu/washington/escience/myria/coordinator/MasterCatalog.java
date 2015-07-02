@@ -1358,11 +1358,12 @@ public final class MasterCatalog {
    * @throws CatalogException if there is an error
    */
   private void deleteRelationIfExists(@Nonnull final SQLiteConnection sqliteConnection,
-      @Nonnull final RelationKey relation) throws CatalogException {
+      @Nonnull final RelationKey relation, final boolean isOverwrite) throws CatalogException {
     try {
-      SQLiteStatement statement =
-          sqliteConnection
-              .prepare("DELETE FROM relations WHERE user_name=? AND program_name=? AND relation_name=? AND is_deleted=1;");
+      String sql =
+          String.format("DELETE FROM relations WHERE user_name=? AND program_name=? AND relation_name=? AND %s;",
+              (isOverwrite ? "1=1" : "is_deleted=1"));
+      SQLiteStatement statement = sqliteConnection.prepare(sql);
       statement.bind(1, relation.getUserName());
       statement.bind(2, relation.getProgramName());
       statement.bind(3, relation.getRelationName());
@@ -1392,7 +1393,7 @@ public final class MasterCatalog {
         protected Void job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
           sqliteConnection.exec("BEGIN TRANSACTION;");
           try {
-            deleteRelationIfExists(sqliteConnection, relationKey);
+            deleteRelationIfExists(sqliteConnection, relationKey, false);
             sqliteConnection.exec("COMMIT TRANSACTION;");
           } catch (SQLiteException e) {
             try {
@@ -1479,7 +1480,7 @@ public final class MasterCatalog {
               RelationKey relation = meta.getRelationKey();
               Set<Integer> workers = meta.getWorkers();
               if (meta.isOverwrite()) {
-                deleteRelationIfExists(sqliteConnection, meta.getRelationKey());
+                deleteRelationIfExists(sqliteConnection, meta.getRelationKey(), true);
               }
               Schema schema = meta.getSchema();
               if (meta.isOverwrite() || getSchema(sqliteConnection, relation) == null) {
