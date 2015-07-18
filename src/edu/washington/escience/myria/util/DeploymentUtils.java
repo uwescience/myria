@@ -147,7 +147,10 @@ public final class DeploymentUtils {
         }
         String workingDir = config.get("paths").get(workerId);
         int port = getPort(workers.get(workerId));
-        String maxHeapSize = heapMapper.get(workerId);
+        String maxHeapSize = "";
+        if (heapMapper != null) {
+          maxHeapSize = heapMapper.get(workerId);
+        }
         startWorker(hostname, workingDir, description, maxHeapSize, workerId, port, debug);
       }
     } else {
@@ -208,7 +211,6 @@ public final class DeploymentUtils {
     builder.append(" &");
     command[2] = builder.toString();
     System.out.println(workerId + " = " + address);
-    System.out.println("");
     startAProcess(command, false);
   }
 
