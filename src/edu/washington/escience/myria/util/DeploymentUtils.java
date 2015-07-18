@@ -120,7 +120,7 @@ public final class DeploymentUtils {
       String workingDir = config.get("deployment").get("path");
       String remotePath = workingDir + "/" + description + "-files";
       int restPort = Integer.parseInt(config.get("deployment").get("rest_port"));
-      String maxHeapSize = MoreObjects.firstNonNull(config.get("deployment").get("max_heap_size"), "");
+      String maxHeapSize = MoreObjects.firstNonNull(config.get("deployment").get("master_heap_size"), "");
       String sslStr = MoreObjects.firstNonNull(config.get("deployment").get("ssl"), "false").toLowerCase();
       boolean ssl = false;
       if (sslStr.equals("true") || sslStr.equals("on") || sslStr.equals("1")) {
@@ -137,10 +137,7 @@ public final class DeploymentUtils {
         startMaster(hostname, workingDir, description, maxHeapSize, restPort, ssl);
       }
     } else if (action.equals("-start_workers")) {
-      String maxHeapSize = config.get("deployment").get("max_heap_size");
-      if (maxHeapSize == null) {
-        maxHeapSize = "";
-      }
+      Map<String, String> heapMapper = config.get("maxheapsizes");
       Map<String, String> workers = config.get("workers");
       boolean debug = config.get("deployment").get("debug_mode").equals("true");
       for (String workerId : workers.keySet()) {
@@ -150,6 +147,7 @@ public final class DeploymentUtils {
         }
         String workingDir = config.get("paths").get(workerId);
         int port = getPort(workers.get(workerId));
+        String maxHeapSize = heapMapper.get(workerId);
         startWorker(hostname, workingDir, description, maxHeapSize, workerId, port, debug);
       }
     } else {
@@ -210,6 +208,7 @@ public final class DeploymentUtils {
     builder.append(" &");
     command[2] = builder.toString();
     System.out.println(workerId + " = " + address);
+    System.out.println("");
     startAProcess(command, false);
   }
 
@@ -233,6 +232,7 @@ public final class DeploymentUtils {
     builder.append(" cd " + workingDir + ";");
     builder.append(" nohup java -cp 'conf:libs/*'");
     builder.append(" -Djava.util.logging.config.file=logging.properties");
+    builder.append(" -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=65007");
     builder.append(" -Dlog4j.configuration=log4j.properties");
     builder.append(" -Djava.library.path=sqlite4java-392");
     builder.append(" " + maxHeapSize);
