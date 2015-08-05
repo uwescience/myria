@@ -114,7 +114,7 @@ public final class MyriaConstants {
 	public static final int OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER_DEFAULT_VALUE = 80;
 
 	/** timeout of returning a tuple batch even not filled. */
-	public static final long PUSHING_TB_TIMEOUT = 500000000;
+	public static final long PUSHING_TB_TIMEOUT = 250000000;
 	// public static final long PUSHING_TB_TIMEOUT = 1000000000;
 
 	/**
