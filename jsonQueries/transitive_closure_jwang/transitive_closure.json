@@ -167,6 +167,7 @@
 		}
 	],
 	"logicalRa": "",
-	"rawQuery": "",
+	"rawQuery": "TC(x, y) :- TC(x, v), Edges(v, y);",
+	"language": "datalog",
 	"ftMode": "REJOIN"
 }

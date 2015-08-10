@@ -180,5 +180,6 @@
 		}
 	],
 	"logicalRa": "",
-	"rawQuery": ""
+	"rawQuery": "CC(x, x) :- Edge(x, y); CC(y, MIN(v)) :- CC(x, v), Edge(x, y); CC(y, MIN(v)) :- CC(y, v);",
+	"language": "datalog"
 }
