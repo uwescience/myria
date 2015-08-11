@@ -39,7 +39,7 @@
                         "index": 1,
                         "type": "SingleFieldHash"
                     },
-                    "opId": 6,
+                    "opId": 7,
                     "opType": "ShuffleProducer"
                 }
             ]
@@ -52,7 +52,7 @@
                     "opType": "ShuffleConsumer"
                 },
                 {
-                    "argOperatorId": 6,
+                    "argOperatorId": 7,
                     "opId": 3,
                     "opType": "ShuffleConsumer"
                 },

@@ -153,14 +153,21 @@
 				"argOperatorId" : 10
 			},
 			{
-				"opId" : 13,
-				"opType" : "SinkRoot",
-				"argChild" : 14
+				"argChild": 14,
+				"argOverwriteTable": true,
+				"opId": 25,
+				"opType": "DbInsert",
+				"relationKey": {
+					"programName": "transitive_closure",
+					"relationName": "result",
+					"userName": "jwang"
+				}
 			}
 			]
 		}
 	],
 	"logicalRa": "",
-	"rawQuery": "",
+	"rawQuery": "TC(x, y) :- Edges(x, y); TC(x, y) :- TC(x, v), Edges(v, y);",
+	"language": "datalog",
 	"ftMode": "REJOIN"
 }

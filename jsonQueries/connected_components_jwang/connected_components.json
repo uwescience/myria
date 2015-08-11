@@ -5,20 +5,6 @@
 			"operators": 
 			[
 			{
-			  "opId" : 1,
-			  "opType" : "CollectConsumer",
-			  "argOperatorId" : 9
-			}
-			],
-			"overrideWorkers": 
-			[
-				0
-			]
-		},
-		{
-			"operators": 
-			[
-			{
 				"opId" : 2,
 				"opType" : "Consumer",
 				"argOperatorId" : 14
@@ -111,8 +97,8 @@
 				"argIterationInput" : 16,
 				"argState" : {
 					"type" : "KeepMinValue",
-					"keyColIndices" : ["0"],
-					"valueColIndex" : 1
+					"keyColIndices" : [0],
+					"valueColIndices" : [1]
 				},
 				"argEosControllerInput" : 15
 			},
@@ -180,13 +166,20 @@
                 }]
 			},
 			{
+				"argChild": 8,
+				"argOverwriteTable": true,
 				"opId" : 9,
-				"opType" : "CollectProducer",
-				"argChild" : 8
+				"opType": "DbInsert",
+				"relationKey": {
+					"programName": "connected_components",
+					"relationName": "result",
+					"userName": "jwang"
+				}
 			}
 			]
 		}
 	],
 	"logicalRa": "",
-	"rawQuery": ""
+	"rawQuery": "CC(x, x) :- Edge(x, y); CC(y, MIN(v)) :- CC(x, v), Edge(x, y); CC(y, MIN(v)) :- CC(y, v);",
+	"language": "datalog"
 }
