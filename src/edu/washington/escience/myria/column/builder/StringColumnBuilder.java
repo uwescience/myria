@@ -1,18 +1,20 @@
 package edu.washington.escience.myria.column.builder;
 
 import java.nio.BufferOverflowException;
+import java.nio.ByteBuffer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.Objects;
 
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
+import com.google.common.primitives.Ints;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.StringArrayColumn;
 import edu.washington.escience.myria.column.StringColumn;
+import edu.washington.escience.myria.column.StringPackedColumn;
 import edu.washington.escience.myria.column.mutable.StringMutableColumn;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.StringColumnMessage;
@@ -66,14 +68,10 @@ public final class StringColumnBuilder extends ColumnBuilder<String> {
         "Trying to construct StringColumn from non-STRING ColumnMessage %s", message.getType());
     Preconditions.checkArgument(message.hasStringColumn(), "ColumnMessage has type STRING but no StringColumn");
     final StringColumnMessage stringColumn = message.getStringColumn();
-    List<Integer> startIndices = stringColumn.getStartIndicesList();
-    List<Integer> endIndices = stringColumn.getEndIndicesList();
-    String[] newData = new String[numTuples];
-    String allStrings = stringColumn.getData().toStringUtf8();
-    for (int i = 0; i < numTuples; i++) {
-      newData[i] = allStrings.substring(startIndices.get(i), endIndices.get(i));
-    }
-    return new StringColumnBuilder(newData, numTuples).build();
+    int numBytes = stringColumn.getData().size();
+    ByteBuffer data = stringColumn.getData().asReadOnlyByteBuffer();
+    int[] offsets = Ints.toArray(stringColumn.getStartIndicesList());
+    return new StringPackedColumn(data, numBytes, offsets);
   }
 
   @Override
