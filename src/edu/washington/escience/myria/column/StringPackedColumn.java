@@ -23,8 +23,9 @@ public final class StringPackedColumn extends StringColumn {
   /**
    * Constructs a new column.
    * 
-   * @param data the data
-   * @param offsets offsets of strings within data column
+   * @param data buffer containing concatenated UTF-8 bytes of all strings
+   * @param numBytes number of bytes in the buffer
+   * @param offsets starting byte offsets of strings within data buffer
    * */
   public StringPackedColumn(final ByteBuffer data, final int numBytes, final int[] offsets) {
     this.data = data;
