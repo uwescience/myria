@@ -269,7 +269,6 @@ public final class MasterCatalog {
         @Override
         protected Object job(final SQLiteConnection sqliteConnection) throws SQLiteException {
           sqliteConnection.exec("PRAGMA foreign_keys = ON;");
-          sqliteConnection.exec("PRAGMA locking_mode = EXCLUSIVE;");
           sqliteConnection.exec("BEGIN EXCLUSIVE;");
           sqliteConnection.exec("COMMIT;");
           sqliteConnection.exec(UPDATE_UNKNOWN_STATUS);
