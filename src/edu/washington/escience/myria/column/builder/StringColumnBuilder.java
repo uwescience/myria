@@ -1,7 +1,6 @@
 package edu.washington.escience.myria.column.builder;
 
 import java.nio.BufferOverflowException;
-import java.nio.ByteBuffer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Objects;
@@ -68,9 +67,8 @@ public final class StringColumnBuilder extends ColumnBuilder<String> {
         "Trying to construct StringColumn from non-STRING ColumnMessage %s", message.getType());
     Preconditions.checkArgument(message.hasStringColumn(), "ColumnMessage has type STRING but no StringColumn");
     final StringColumnMessage stringColumn = message.getStringColumn();
-    ByteBuffer data = stringColumn.getData().asReadOnlyByteBuffer();
     int[] offsets = Ints.toArray(stringColumn.getStartIndicesList());
-    return new StringPackedColumn(data, offsets);
+    return new StringPackedColumn(stringColumn.getData(), offsets);
   }
 
   @Override
