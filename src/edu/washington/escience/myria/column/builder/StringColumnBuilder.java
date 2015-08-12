@@ -68,10 +68,9 @@ public final class StringColumnBuilder extends ColumnBuilder<String> {
         "Trying to construct StringColumn from non-STRING ColumnMessage %s", message.getType());
     Preconditions.checkArgument(message.hasStringColumn(), "ColumnMessage has type STRING but no StringColumn");
     final StringColumnMessage stringColumn = message.getStringColumn();
-    int numBytes = stringColumn.getData().size();
     ByteBuffer data = stringColumn.getData().asReadOnlyByteBuffer();
     int[] offsets = Ints.toArray(stringColumn.getStartIndicesList());
-    return new StringPackedColumn(data, numBytes, offsets);
+    return new StringPackedColumn(data, offsets);
   }
 
   @Override

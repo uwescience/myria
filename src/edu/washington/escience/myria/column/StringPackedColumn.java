@@ -15,8 +15,6 @@ public final class StringPackedColumn extends StringColumn {
   private static final long serialVersionUID = 1L;
   /** A read-only buffer containing the packed UTF-8 character data. */
   private final ByteBuffer data;
-  /** Contains the number of bytes in data. */
-  private final int numBytes;
   /** Contains the offset of each string in order. */
   private final int[] offsets;
 
@@ -27,9 +25,8 @@ public final class StringPackedColumn extends StringColumn {
    * @param numBytes number of bytes in the buffer
    * @param offsets starting byte offsets of strings within data buffer
    * */
-  public StringPackedColumn(final ByteBuffer data, final int numBytes, final int[] offsets) {
+  public StringPackedColumn(final ByteBuffer data, final int[] offsets) {
     this.data = data;
-    this.numBytes = numBytes;
     this.offsets = offsets;
   }
 
@@ -44,7 +41,7 @@ public final class StringPackedColumn extends StringColumn {
     Preconditions.checkElementIndex(row, size());
     int len;
     if (row == offsets.length - 1) {
-      len = numBytes - offsets[row];
+      len = data.limit() - offsets[row];
     } else {
       len = offsets[row + 1] - offsets[row];
     }
