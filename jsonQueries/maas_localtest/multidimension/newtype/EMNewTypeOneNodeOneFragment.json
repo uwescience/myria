@@ -1,0 +1,163 @@
+
+
+{
+  "logicalRa": "Store(public:adhoc:PointsAndComponents)[Apply(column0=column0,x_1=x_1,x_2=x_2,x_3=x_3,x_4=x_4,r1=r1,r2=r2,r3=r3,r4=r4,r5=r5,r6=r6,r7=r7,column0=column0,column1=column1,column2=column2,column3=column3,column4=column4,column5=column5,column6=column6,column7=column7,column8=column8,column9=column9,column10=column10,column11=column11,column12=column12,column13=column13,column14=column14,column15=column15,column16=column16,column17=column17,column18=column18,column19=column19,column20=column20,column21=column21)[CrossProduct[Scan(public:adhoc:PointsOnly),Scan(public:adhoc:ComponentsOnly)]]]",
+  "language": "sql",
+  "rawQuery": "Points = scan(public:adhoc:PointsOnly);\nComponents = scan(public:adhoc:ComponentsOnly);\npointsandcomponents = select * from Points, Components;\nstore(pointsandcomponents, public:adhoc:PointsAndComponents);\n",
+  "plan": {
+    "fragments": [
+      {
+        "operators": [
+          {
+            "relationKey": {
+              "userName": "public",
+              "relationName": "ComponentsOnly",
+              "programName": "adhoc"
+            },
+            "opType": "TableScan",
+            "opName": "MyriaScan(public:adhoc:ComponentsOnly)",
+            "opId": 0
+          },
+          {
+            "relationKey": {
+              "userName": "public",
+              "relationName": "PointsOnly",
+              "programName": "adhoc"
+            },
+            "opType": "TableScan",
+            "opName": "MyriaScan(public:adhoc:PointsOnly)",
+            "opId": 2
+          },
+          {
+            "argChild2": 0,
+            "argChild1": 2,
+            "opType": "JoinEStepNewType",
+            "opId": 3,
+            "opName": "MyriaCrossProduct",
+            "argSelect2": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20,
+              21
+            ],
+            "argColumns1": [],
+            "argColumns2": [],
+            "argSelect1": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11
+            ]
+          },
+          {
+            "relationKey": {
+              "userName": "public",
+              "relationName": "ComponentsOnly",
+              "programName": "adhoc"
+            },
+            "opType": "TableScan",
+            "opName": "MyriaScan(public:adhoc:ComponentsOnly)",
+            "opId": 220
+          },
+          {
+            "argChild2": 220,
+            "argChild1": 3,
+            "opType": "JoinMStepPartialNewType",
+            "opId": 224,
+            "opName": "MyriaCrossProduct",
+            "argSelect2": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20,
+              21
+            ],
+            "argColumns1": [],
+            "argColumns2": [],
+            "argSelect1": [
+              0,
+              1,
+              2
+            ]
+          },
+          {
+            "opType": "JoinMStepAggregateNewType",
+            "argChild": 224,
+            "aggregators": [
+              {
+                "column": 12,
+                "aggOps": [
+                  "SUM"
+                ],
+                "type": "SingleColumn"
+              }
+            ],
+            "argGroupField": 0,
+            "argNumDimensions": 4,
+            "argNumComponents": 7,            
+            "opId": 2213,
+            "opName": "MyriaGroupBy($0; SUM($12))"
+          },
+          {
+            "opType": "DbInsert",
+            "argChild": 2213,
+            "opName": "MyriaStore(public:adhoc:ComponentsOnly)",
+            "argOverwriteTable": true,
+            "opId": 2214,
+            "relationKey": {
+              "userName": "public",
+              "relationName": "ComponentsOnly",
+              "programName": "adhoc"
+            }
+          }
+        ]
+      }
+    ],
+    "type": "SubQuery"
+  }
+}
+
+

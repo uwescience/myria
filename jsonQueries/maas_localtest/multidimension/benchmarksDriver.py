@@ -186,6 +186,9 @@ def EMStepNewType():
 def EMNewTypeNoShuffle():
     return query_myria("newtype/EMNewTypeNoShuffle.json")
 
+def EMNewTypeOneNodeOneFragment():
+    return query_myria("newtype/EMNewTypeOneNodeOneFragment.json")
+
 def compare_results():
     #Compare results
     query_myria("CompareComponents4D7K.json")

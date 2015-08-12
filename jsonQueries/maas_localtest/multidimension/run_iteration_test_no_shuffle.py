@@ -25,7 +25,8 @@ def run_em_test(filename, workers):
     for iteration in range(2):
         print "Running iteration " + str(iteration)
         try:
-            bd.EMNewTypeNoShuffle()
+            bd.EMNewTypeOneNodeOneFragment()            
+            #bd.EMNewTypeNoShuffle()
             times.append(time.time()-read_start)
         except:
             None 
