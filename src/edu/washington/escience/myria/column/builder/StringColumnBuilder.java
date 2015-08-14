@@ -5,6 +5,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Objects;
 
+import javax.annotation.Nonnull;
+
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
@@ -119,7 +121,7 @@ public final class StringColumnBuilder extends ColumnBuilder<String> {
   }
 
   @Override
-  public void replaceString(final String value, final int row) throws IndexOutOfBoundsException {
+  public void replaceString(final @Nonnull String value, final int row) throws IndexOutOfBoundsException {
     Preconditions.checkState(!built, "No further changes are allowed after the builder has built the column.");
     Preconditions.checkElementIndex(row, numStrings);
     Objects.requireNonNull(value, "value");
@@ -145,11 +147,14 @@ public final class StringColumnBuilder extends ColumnBuilder<String> {
   }
 
   @Override
+  @Deprecated
+  @Nonnull
   public String getObject(final int row) {
     return getString(row);
   }
 
   @Override
+  @Nonnull
   public String getString(final int row) {
     Preconditions.checkElementIndex(row, numStrings);
     return data[row];

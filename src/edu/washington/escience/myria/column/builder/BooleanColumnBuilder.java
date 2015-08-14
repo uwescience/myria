@@ -5,6 +5,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.BitSet;
 
+import javax.annotation.Nonnull;
+
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
@@ -155,6 +157,7 @@ public final class BooleanColumnBuilder extends ColumnBuilder<Boolean> {
 
   @Override
   @Deprecated
+  @Nonnull
   public Boolean getObject(final int row) {
     Preconditions.checkArgument(row >= 0 && row < numBits);
     return data.get(row);

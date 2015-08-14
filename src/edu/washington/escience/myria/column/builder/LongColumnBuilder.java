@@ -6,6 +6,8 @@ import java.nio.LongBuffer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import javax.annotation.Nonnull;
+
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
@@ -140,6 +142,7 @@ public final class LongColumnBuilder extends ColumnBuilder<Long> {
 
   @Override
   @Deprecated
+  @Nonnull
   public Long getObject(final int row) {
     return data.get(row);
   }

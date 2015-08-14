@@ -39,6 +39,7 @@ public abstract class ColumnBuilder<T extends Comparable<?>> implements Readable
   }
 
   @Override
+  @Nonnull
   public DateTime getDateTime(final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }
@@ -64,6 +65,7 @@ public abstract class ColumnBuilder<T extends Comparable<?>> implements Readable
   }
 
   @Override
+  @Nonnull
   public String getString(final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }

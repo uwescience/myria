@@ -6,6 +6,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Objects;
 
+import javax.annotation.Nonnull;
+
 import org.joda.time.DateTime;
 
 import com.almworks.sqlite4java.SQLiteException;
@@ -125,7 +127,7 @@ public final class DateTimeColumnBuilder extends ColumnBuilder<DateTime> {
   }
 
   @Override
-  public void replaceDateTime(final DateTime value, final int row) throws IndexOutOfBoundsException {
+  public void replaceDateTime(final @Nonnull DateTime value, final int row) throws IndexOutOfBoundsException {
     Preconditions.checkState(!built, "No further changes are allowed after the builder has built the column.");
     Preconditions.checkElementIndex(row, numDates);
     Preconditions.checkNotNull(value);
@@ -151,12 +153,15 @@ public final class DateTimeColumnBuilder extends ColumnBuilder<DateTime> {
   }
 
   @Override
+  @Nonnull
   public DateTime getDateTime(final int row) {
     Preconditions.checkElementIndex(row, numDates);
     return data[row];
   }
 
   @Override
+  @Deprecated
+  @Nonnull
   public DateTime getObject(final int row) {
     return getDateTime(row);
   }

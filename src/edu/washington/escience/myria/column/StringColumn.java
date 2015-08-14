@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.column;
 
+import javax.annotation.Nonnull;
+
 import edu.washington.escience.myria.Type;
 
 /**
@@ -11,6 +13,7 @@ public abstract class StringColumn extends Column<String> {
   private static final long serialVersionUID = 1L;
 
   @Override
+  @Nonnull
   public final String getObject(final int row) {
     return getString(row);
   }
