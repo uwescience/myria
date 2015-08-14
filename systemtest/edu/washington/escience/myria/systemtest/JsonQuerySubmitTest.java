@@ -175,6 +175,11 @@ public class JsonQuerySubmitTest extends SystemTestBase {
       throw new IllegalStateException(getContents(conn));
     }
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
+    DatasetStatus datasetStatus = getDatasetStatus(conn);
+    PartitionFunction pf = datasetStatus.getHowPartitioned().getPf();
+    assertEquals(2, pf.numPartition());
+    assertTrue(pf instanceof SingleFieldHashPartitionFunction);
+    assertEquals(0, ((SingleFieldHashPartitionFunction) pf).getIndex());
     conn.disconnect();
 
     String data = JsonAPIUtils.download("localhost", masterDaemonPort, "jwang", "global_join", "smallTable", "json");
