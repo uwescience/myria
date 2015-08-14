@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.api.encoding;
 
+import javax.annotation.Nonnull;
+
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.io.DataSource;
@@ -16,7 +18,7 @@ public class FileScanEncoding extends LeafOperatorEncoding<FileScan> {
   public Integer skip;
 
   @Override
-  public FileScan construct(ConstructArgs args) {
+  public FileScan construct(@Nonnull ConstructArgs args) {
     return new FileScan(source, schema, delimiter, quote, escape, skip);
   }
 }

@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.api.encoding;
 
+import javax.annotation.Nonnull;
+
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.network.LocalMultiwayConsumer;
 import edu.washington.escience.myria.util.MyriaUtils;
@@ -11,7 +13,7 @@ import edu.washington.escience.myria.util.MyriaUtils;
 public class LocalMultiwayConsumerEncoding extends AbstractConsumerEncoding<LocalMultiwayConsumer> {
 
   @Override
-  public LocalMultiwayConsumer construct(ConstructArgs args) {
+  public LocalMultiwayConsumer construct(@Nonnull ConstructArgs args) {
     return new LocalMultiwayConsumer(null, MyriaUtils.getSingleElement(getRealOperatorIds()));
   }
 }

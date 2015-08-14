@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.api.encoding;
 
+import javax.annotation.Nonnull;
+
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.agg.AggregatorFactory;
 import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
@@ -12,7 +14,7 @@ public class SingleGroupByAggregateEncoding extends UnaryOperatorEncoding<Single
   public int argGroupField;
 
   @Override
-  public SingleGroupByAggregate construct(ConstructArgs args) {
+  public SingleGroupByAggregate construct(@Nonnull ConstructArgs args) {
     return new SingleGroupByAggregate(null, argGroupField, aggregators);
   }
 }

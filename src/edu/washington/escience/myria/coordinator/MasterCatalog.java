@@ -147,8 +147,7 @@ public final class MasterCatalog {
  /** CREATE TABLE statements @formatter:on */
 
   /**
-   * @param filename the path to the SQLite database storing the catalog.
-   * @return a fresh Catalog fitting the specified description.
+   * @param path the path to the SQLite database storing the catalog.
    * @throws CatalogException if there is an error opening the database.
    * 
    *           TODO add some sanity checks to the filename?
@@ -1354,6 +1353,7 @@ public final class MasterCatalog {
    * 
    * @param sqliteConnection the connection to the SQLite database
    * @param relation the relation to be deleted.
+   * @param isOverwrite if the relation has been requested to be deleted
    * @throws CatalogException if there is an error
    */
   private void deleteRelationIfExists(@Nonnull final SQLiteConnection sqliteConnection,
@@ -1656,7 +1656,7 @@ public final class MasterCatalog {
           } catch (final SQLiteException e) {
             throw new CatalogException(e);
           }
-          return (ret == 0) ? false : true;
+          return ret != 0;
         }
       }).get();
     } catch (InterruptedException | ExecutionException e) {

@@ -127,8 +127,7 @@ public final class SQLiteUtils {
    * @param dbFileAbsolutePath the SQLite file absolute path
    * @param relationKey the relation key to delete
    * */
-  public static void deleteTable(final String dbFileAbsolutePath, final RelationKey relationKey) throws IOException,
-      SQLiteException {
+  public static void deleteTable(final String dbFileAbsolutePath, final RelationKey relationKey) throws SQLiteException {
     SQLiteConnection sqliteConnection = null;
     SQLiteStatement statement = null;
     try {
@@ -163,9 +162,10 @@ public final class SQLiteUtils {
    * @throws SQLiteException if SQLite error occur
    * @param dbFileAbsolutePath the SQLite file absolute path
    * @param relationKey the relation key to check
+   * @return if it exists
    * */
-  public static boolean existsTable(final String dbFileAbsolutePath, final RelationKey relationKey) throws IOException,
-      SQLiteException {
+  public static boolean existsTable(final String dbFileAbsolutePath, final RelationKey relationKey)
+      throws SQLiteException {
     boolean exists = false;
     SQLiteConnection sqliteConnection = null;
     SQLiteStatement statement = null;

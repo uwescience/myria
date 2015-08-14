@@ -2,6 +2,8 @@ package edu.washington.escience.myria.api.encoding;
 
 import java.util.List;
 
+import javax.annotation.Nonnull;
+
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.operator.Apply;
@@ -17,7 +19,7 @@ public class StatefulApplyEncoding extends UnaryOperatorEncoding<Apply> {
   public List<Expression> updaterExpressions;
 
   @Override
-  public Apply construct(ConstructArgs args) {
+  public Apply construct(@Nonnull ConstructArgs args) {
     return new StatefulApply(null, emitExpressions, initializerExpressions, updaterExpressions);
   }
 

@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.column;
 
+import javax.annotation.Nonnull;
+
 import org.joda.time.DateTime;
 
 import com.google.common.base.Preconditions;
@@ -30,6 +32,7 @@ public final class DateTimeColumn extends Column<DateTime> {
   }
 
   @Override
+  @Nonnull
   public DateTime getObject(final int row) {
     return getDateTime(row);
   }
@@ -41,6 +44,7 @@ public final class DateTimeColumn extends Column<DateTime> {
    * @return the element at the specified row in this column.
    */
   @Override
+  @Nonnull
   public DateTime getDateTime(final int row) {
     Preconditions.checkElementIndex(row, position);
     return data[row];

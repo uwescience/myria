@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.column;
 
+import javax.annotation.Nonnull;
+
 import com.google.common.base.Preconditions;
 
 /**
@@ -33,6 +35,7 @@ public final class StringArrayColumn extends StringColumn {
    * @return the element at the specified row in this column.
    */
   @Override
+  @Nonnull
   public String getString(final int row) {
     return data[Preconditions.checkElementIndex(row, numStrings)];
   }

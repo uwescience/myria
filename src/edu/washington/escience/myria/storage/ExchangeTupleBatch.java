@@ -9,7 +9,7 @@ import edu.washington.escience.myria.column.Column;
  * The extended TupleBatch which holds extra meta information for a batch of tuples received from other workers.
  * 
  */
-public class ExchangeTupleBatch extends TupleBatch {
+public final class ExchangeTupleBatch extends TupleBatch {
   /**
    * 
    */
@@ -58,7 +58,7 @@ public class ExchangeTupleBatch extends TupleBatch {
    * @param sourceWorkerID which worker the TB from
    * @return a wrapped ETB
    */
-  public static final ExchangeTupleBatch wrap(final TupleBatch data, final int sourceWorkerID) {
+  public static ExchangeTupleBatch wrap(final TupleBatch data, final int sourceWorkerID) {
     if (data instanceof ExchangeTupleBatch) {
       return (ExchangeTupleBatch) data;
     } else {
@@ -70,21 +70,21 @@ public class ExchangeTupleBatch extends TupleBatch {
   /**
    * @return my LSN.
    * */
-  public final long getLSN() {
+  public long getLSN() {
     return lsn;
   }
 
   /**
    * @return the sequence number of the first tuple in this TB.
    * */
-  public final long getStartingSeqNum() {
+  public long getStartingSeqNum() {
     return startingSeqNum;
   }
 
   /**
    * @return get source worker.
    * */
-  public final int getSourceWorkerID() {
+  public int getSourceWorkerID() {
     return sourceWorkerID;
   }
 

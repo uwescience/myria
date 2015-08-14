@@ -2,6 +2,8 @@ package edu.washington.escience.myria.column.mutable;
 
 import java.util.BitSet;
 
+import javax.annotation.Nonnull;
+
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.Type;
@@ -31,6 +33,7 @@ public class BooleanMutableColumn extends MutableColumn<Boolean> {
 
   @Deprecated
   @Override
+  @Nonnull
   public Boolean getObject(final int row) {
     return Boolean.valueOf(getBoolean(row));
   }

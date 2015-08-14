@@ -2,6 +2,8 @@ package edu.washington.escience.myria.api.encoding;
 
 import java.util.List;
 
+import javax.annotation.Nonnull;
+
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.RightHashJoin;
 
@@ -22,7 +24,7 @@ public class RightHashJoinEncoding extends BinaryOperatorEncoding<RightHashJoin>
   public int[] argSelect2;
 
   @Override
-  public RightHashJoin construct(ConstructArgs args) {
+  public RightHashJoin construct(@Nonnull ConstructArgs args) {
     return new RightHashJoin(argColumnNames, null, null, argColumns1, argColumns2, argSelect1, argSelect2);
   }
 }

@@ -2,6 +2,8 @@ package edu.washington.escience.myria.operator.network.partition;
 
 import java.util.Arrays;
 
+import javax.annotation.Nonnull;
+
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.storage.TupleBatch;
@@ -43,7 +45,7 @@ public final class MFMDHashPartitionFunction extends PartitionFunction {
   }
 
   @Override
-  public int[] partition(final TupleBatch tb) {
+  public int[] partition(@Nonnull final TupleBatch tb) {
     int[] result = new int[tb.numTuples()];
     Arrays.fill(result, 0);
     for (int i = 0; i < partitionFunctions.length; i++) {

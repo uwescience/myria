@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.operator.agg;
 
+import javax.annotation.Nonnull;
+
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 
@@ -17,6 +19,7 @@ public final class CountAllAggregatorFactory implements AggregatorFactory {
   }
 
   @Override
+  @Nonnull
   public Aggregator get(final Schema inputSchema) throws DbException {
     return new CountAllAggregator();
   }

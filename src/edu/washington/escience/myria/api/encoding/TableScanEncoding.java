@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.api.encoding;
 
+import javax.annotation.Nonnull;
 import javax.ws.rs.core.Response.Status;
 
 import com.google.common.base.Preconditions;
@@ -19,7 +20,7 @@ public class TableScanEncoding extends LeafOperatorEncoding<DbQueryScan> {
   public Integer storedRelationId;
 
   @Override
-  public DbQueryScan construct(ConstructArgs args) {
+  public DbQueryScan construct(@Nonnull ConstructArgs args) {
     Schema schema;
     Server server = args.getServer();
     try {

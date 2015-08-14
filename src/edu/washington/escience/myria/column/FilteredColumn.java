@@ -2,6 +2,8 @@ package edu.washington.escience.myria.column;
 
 import java.util.BitSet;
 
+import javax.annotation.Nonnull;
+
 import org.joda.time.DateTime;
 
 import edu.washington.escience.myria.Type;
@@ -68,6 +70,7 @@ class FilteredColumn<T extends Comparable<?>> extends Column<T> {
   }
 
   @Override
+  @Nonnull
   public DateTime getDateTime(final int row) {
     return inner.getDateTime(convertRow(row));
   }
@@ -93,11 +96,13 @@ class FilteredColumn<T extends Comparable<?>> extends Column<T> {
   }
 
   @Override
+  @Nonnull
   public String getString(final int row) {
     return inner.getString(convertRow(row));
   }
 
   @Override
+  @Nonnull
   public T getObject(final int row) {
     return inner.getObject(convertRow(row));
   }

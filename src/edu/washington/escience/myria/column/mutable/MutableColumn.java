@@ -29,6 +29,7 @@ public abstract class MutableColumn<T extends Comparable<?>> implements Cloneabl
   }
 
   @Override
+  @Nonnull
   public DateTime getDateTime(final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }
@@ -55,9 +56,11 @@ public abstract class MutableColumn<T extends Comparable<?>> implements Cloneabl
 
   @Deprecated
   @Override
+  @Nonnull
   public abstract T getObject(int row);
 
   @Override
+  @Nonnull
   public String getString(final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }

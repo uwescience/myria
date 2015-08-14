@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.column;
 
+import javax.annotation.Nonnull;
+
 import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
 
@@ -20,7 +22,6 @@ public final class StringPackedColumn extends StringColumn {
    * Constructs a new column.
    * 
    * @param data buffer containing concatenated UTF-8 bytes of all strings
-   * @param numBytes number of bytes in the buffer
    * @param offsets starting byte offsets of strings within data buffer
    * */
   public StringPackedColumn(final ByteString data, final int[] offsets) {
@@ -35,6 +36,7 @@ public final class StringPackedColumn extends StringColumn {
    * @return the element at the specified row in this column.
    */
   @Override
+  @Nonnull
   public String getString(final int row) {
     Preconditions.checkElementIndex(row, size());
     int len;

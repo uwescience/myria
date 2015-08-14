@@ -127,7 +127,7 @@ public final class DateTimeColumnBuilder extends ColumnBuilder<DateTime> {
   }
 
   @Override
-  public void replaceDateTime(final @Nonnull DateTime value, final int row) throws IndexOutOfBoundsException {
+  public void replaceDateTime(@Nonnull final DateTime value, final int row) throws IndexOutOfBoundsException {
     Preconditions.checkState(!built, "No further changes are allowed after the builder has built the column.");
     Preconditions.checkElementIndex(row, numDates);
     Preconditions.checkNotNull(value);

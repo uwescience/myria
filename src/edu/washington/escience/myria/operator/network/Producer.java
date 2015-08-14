@@ -260,7 +260,7 @@ public abstract class Producer extends RootOperator {
    * set backup buffers as KeepAndSortOnMinValue.
    * 
    * @param keyColIndices the same as the one in KeepAndSortOnMinValue
-   * @param valueColindices the same as the one in KeepAndSortOnMinValue
+   * @param valueColIndices the same as the one in KeepAndSortOnMinValue
    */
   public void setBackupBufferAsPrioritizedMin(final int[] keyColIndices, final int[] valueColIndices) {
     triedToSendTuples = new ArrayList<StreamingState>();

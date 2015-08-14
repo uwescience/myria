@@ -5,6 +5,8 @@ import java.util.BitSet;
 import java.util.List;
 import java.util.Objects;
 
+import javax.annotation.Nonnull;
+
 import org.joda.time.DateTime;
 
 import com.google.common.base.Preconditions;
@@ -92,6 +94,7 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
 
   @Override
   @Deprecated
+  @Nonnull
   public final Object getObject(final int colIndex, final int rowIndex) throws IndexOutOfBoundsException {
     int tupleBatchIndex = rowIndex / TupleBatch.BATCH_SIZE;
     int tupleIndex = rowIndex % TupleBatch.BATCH_SIZE;
@@ -176,6 +179,7 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
   }
 
   @Override
+  @Nonnull
   public final String getString(final int column, final int row) {
     int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
     int tupleIndex = row % TupleBatch.BATCH_SIZE;
@@ -190,6 +194,7 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
   }
 
   @Override
+  @Nonnull
   public final DateTime getDateTime(final int column, final int row) {
     int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
     int tupleIndex = row % TupleBatch.BATCH_SIZE;
@@ -241,7 +246,7 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
   }
 
   @Override
-  public final void putDateTime(final int column, final DateTime value) {
+  public final void putDateTime(final int column, @Nonnull final DateTime value) {
     checkPutIndex(column);
     currentBuildingColumns[column].appendDateTime(value);
     columnPut(column);
@@ -277,14 +282,14 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
 
   @Override
   @Deprecated
-  public final void putObject(final int column, final Object value) {
+  public final void putObject(final int column, @Nonnull final Object value) {
     checkPutIndex(column);
     currentBuildingColumns[column].appendObject(MyriaUtils.ensureObjectIsValidType(value));
     columnPut(column);
   }
 
   @Override
-  public final void putString(final int column, final String value) {
+  public final void putString(final int column, @Nonnull final String value) {
     checkPutIndex(column);
     currentBuildingColumns[column].appendString(value);
     columnPut(column);
@@ -510,11 +515,13 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
   }
 
   @Override
+  @Nonnull
   public ReadableColumn asColumn(final int column) {
     return new ReadableSubColumn(this, Preconditions.checkElementIndex(column, numColumns));
   }
 
   @Override
+  @Nonnull
   public WritableColumn asWritableColumn(final int column) {
     return new WritableSubColumn(this, column);
   }

@@ -2,6 +2,8 @@ package edu.washington.escience.myria.api.encoding;
 
 import java.util.Set;
 
+import javax.annotation.Nonnull;
+
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
 import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
@@ -17,7 +19,7 @@ public class ShuffleProducerEncoding extends AbstractProducerEncoding<GenericShu
   public StreamingStateEncoding<?> argBufferStateType;
 
   @Override
-  public GenericShuffleProducer construct(final ConstructArgs args) {
+  public GenericShuffleProducer construct(@Nonnull final ConstructArgs args) {
     Set<Integer> workerIds = getRealWorkerIds();
     argPf.setNumPartitions(workerIds.size());
     GenericShuffleProducer producer =

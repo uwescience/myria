@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.column;
 
+import javax.annotation.Nonnull;
+
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.Type;
@@ -32,6 +34,7 @@ public final class DoubleColumn extends Column<Double> {
   }
 
   @Override
+  @Nonnull
   public Double getObject(final int row) {
     return Double.valueOf(getDouble(row));
   }

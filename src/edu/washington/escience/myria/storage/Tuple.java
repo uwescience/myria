@@ -95,18 +95,21 @@ public class Tuple implements Cloneable, AppendableTable, ReadableTable, Seriali
   }
 
   @Override
+  @Nonnull
   public String getString(final int column, final int row) {
     Preconditions.checkArgument(getSchema().getColumnType(column) == Type.STRING_TYPE);
     return (String) getValue(column, row);
   }
 
   @Override
+  @Nonnull
   public DateTime getDateTime(final int column, final int row) {
     Preconditions.checkArgument(getSchema().getColumnType(column) == Type.DATETIME_TYPE);
     return (DateTime) getValue(column, row);
   }
 
   @Override
+  @Nonnull
   public Object getObject(final int column, final int row) {
     return getValue(column, row);
   }
@@ -140,6 +143,7 @@ public class Tuple implements Cloneable, AppendableTable, ReadableTable, Seriali
   }
 
   @Override
+  @Nonnull
   public ReadableColumn asColumn(final int column) {
     return new ReadableSubColumn(this, Preconditions.checkElementIndex(column, schema.numColumns()));
   }
@@ -184,16 +188,17 @@ public class Tuple implements Cloneable, AppendableTable, ReadableTable, Seriali
   }
 
   @Override
-  public void putString(final int column, final @Nonnull String value) {
+  public void putString(final int column, @Nonnull final String value) {
     set(column, value);
   }
 
   @Override
-  public void putObject(final int column, final @Nonnull Object value) {
+  public void putObject(final int column, @Nonnull final Object value) {
     set(column, value);
   }
 
   @Override
+  @Nonnull
   public WritableColumn asWritableColumn(final int column) {
     return data.get(column);
   }

@@ -5,6 +5,8 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.BitSet;
 
+import javax.annotation.Nonnull;
+
 import org.joda.time.DateTime;
 
 import com.google.protobuf.ByteString;
@@ -39,6 +41,7 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
   }
 
   @Override
+  @Nonnull
   public DateTime getDateTime(final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }
@@ -64,9 +67,11 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
   }
 
   @Override
+  @Nonnull
   public abstract T getObject(int row);
 
   @Override
+  @Nonnull
   public String getString(final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }

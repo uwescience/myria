@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.api.encoding;
 
+import javax.annotation.Nonnull;
 import javax.ws.rs.core.Response.Status;
 
 import edu.washington.escience.myria.api.MyriaApiException;
@@ -14,7 +15,7 @@ public class InMemoryOrderByEncoding extends UnaryOperatorEncoding<InMemoryOrder
   public boolean[] argAscending;
 
   @Override
-  public InMemoryOrderBy construct(final ConstructArgs args) throws MyriaApiException {
+  public InMemoryOrderBy construct(@Nonnull final ConstructArgs args) throws MyriaApiException {
     return new InMemoryOrderBy(null, argSortColumns, argAscending);
   }
 

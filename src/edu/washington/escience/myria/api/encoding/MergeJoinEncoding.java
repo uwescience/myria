@@ -2,6 +2,8 @@ package edu.washington.escience.myria.api.encoding;
 
 import java.util.List;
 
+import javax.annotation.Nonnull;
+
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.MergeJoin;
 
@@ -19,7 +21,7 @@ public class MergeJoinEncoding extends BinaryOperatorEncoding<MergeJoin> {
   public boolean[] acending;
 
   @Override
-  public MergeJoin construct(ConstructArgs args) {
+  public MergeJoin construct(@Nonnull ConstructArgs args) {
     return new MergeJoin(argColumnNames, null, null, argColumns1, argColumns2, argSelect1, argSelect2, acending);
   }
 

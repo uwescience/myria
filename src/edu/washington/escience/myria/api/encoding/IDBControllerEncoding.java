@@ -2,6 +2,8 @@ package edu.washington.escience.myria.api.encoding;
 
 import java.util.Map;
 
+import javax.annotation.Nonnull;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.MoreObjects;
 
@@ -33,7 +35,7 @@ public class IDBControllerEncoding extends OperatorEncoding<IDBController> {
   public StreamingStateEncoding<?> argState;
 
   @Override
-  public IDBController construct(final ConstructArgs args) {
+  public IDBController construct(@Nonnull final ConstructArgs args) {
     return new IDBController(argSelfIdbId, realEosControllerOperatorId, realEosControllerWorkerId, null, null, null,
         argState.construct(), MoreObjects.firstNonNull(sync, Boolean.FALSE));
   }

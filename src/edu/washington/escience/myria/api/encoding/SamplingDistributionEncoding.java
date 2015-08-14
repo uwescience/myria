@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.api.encoding;
 
+import javax.annotation.Nonnull;
 import javax.ws.rs.core.Response;
 
 import edu.washington.escience.myria.api.MyriaApiException;
@@ -22,12 +23,11 @@ public class SamplingDistributionEncoding extends UnaryOperatorEncoding<Sampling
   public Long randomSeed;
 
   @Override
-  public SamplingDistribution construct(final ConstructArgs args) {
+  public SamplingDistribution construct(@Nonnull final ConstructArgs args) {
     if (sampleSize != null && samplePercentage == null) {
       return new SamplingDistribution(null, sampleSize, sampleType, randomSeed);
     } else if (sampleSize == null && samplePercentage != null) {
-      return new SamplingDistribution(null, samplePercentage, sampleType,
-          randomSeed);
+      return new SamplingDistribution(null, samplePercentage, sampleType, randomSeed);
     } else {
       throw new MyriaApiException(Response.Status.BAD_REQUEST,
           "Must specify exactly one of sampleSize or samplePercentage");

@@ -19,6 +19,7 @@ public abstract class StringColumn extends Column<String> {
   }
 
   @Override
+  @Nonnull
   public abstract String getString(final int row);
 
   @Override

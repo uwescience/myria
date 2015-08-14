@@ -121,7 +121,7 @@ public final class StringColumnBuilder extends ColumnBuilder<String> {
   }
 
   @Override
-  public void replaceString(final @Nonnull String value, final int row) throws IndexOutOfBoundsException {
+  public void replaceString(@Nonnull final String value, final int row) throws IndexOutOfBoundsException {
     Preconditions.checkState(!built, "No further changes are allowed after the builder has built the column.");
     Preconditions.checkElementIndex(row, numStrings);
     Objects.requireNonNull(value, "value");
