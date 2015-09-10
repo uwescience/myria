@@ -148,7 +148,7 @@ dependencies {
   // Expression compiler
   compile "org.codehaus.janino:janino:2.7.7"
 
-  compile "org.postgresql:postgresql:9.3-1102-jdbc41"
+  compile "org.postgresql:postgresql:9.4-1202-jdbc41"
 
   testCompile "junit:junit:4.12"
   testCompile "org.assertj:assertj-core:1.7.1"
