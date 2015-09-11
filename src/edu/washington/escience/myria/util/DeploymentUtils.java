@@ -109,6 +109,8 @@ public final class DeploymentUtils {
     jvmOptions.add("-Djava.util.logging.config.file=logging.properties");
     jvmOptions.add("-Dlog4j.configuration=log4j.properties");
     jvmOptions.add("-Djava.library.path=" + workingDir + "/" + "sqlite4java-392");
+    jvmOptions.add("-javaagent:" + workingDir + "/libs/jmxetric-1.0.8.jar=config=" + workingDir
+        + "/conf/jmxetric.xml,process=MyriaMaster");
     startMaster(hostname, workingDir, restPort, ssl, jvmOptions);
   }
 
@@ -143,6 +145,8 @@ public final class DeploymentUtils {
     jvmOptions.add("-Djava.util.logging.config.file=logging.properties");
     jvmOptions.add("-Dlog4j.configuration=log4j.properties");
     jvmOptions.add("-Djava.library.path=" + workingDir + "/" + "sqlite4java-392");
+    jvmOptions.add("-javaagent:" + workingDir + "/libs/jmxetric-1.0.8.jar=config=" + workingDir
+        + "/conf/jmxetric.xml,process=MyriaWorker_" + workerId);
     startWorker(hostname, workingDir, workerId, port, jvmOptions);
   }
 
