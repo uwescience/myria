@@ -52,10 +52,10 @@
             <attribute name="DaemonThreadCount" type="int16" />
         </mbean>
         <mbean name="java.lang:type=OperatingSystem" pname="OS" >
-            <attribute name="ProcessCpuTime" type="int32" slope="positive"/>
+            <attribute name="ProcessCpuTime" type="int32" units="nanoseconds" slope="positive"/>
             <!-- File descriptors can only be monitored on UNIX/Linux JVMs, not Windows -->
-            <attribute name="OpenFileDescriptorCount" type="int32" units="bytes"/>
-            <attribute name="MaxFileDescriptorCount" type="int32" units="bytes"/>
+            <attribute name="OpenFileDescriptorCount" type="int32"/>
+            <attribute name="MaxFileDescriptorCount" type="int32"/>
         </mbean>
         <mbean name="java.lang:type=GarbageCollector,name=PS MarkSweep" pname="GC" >
             <attribute name="CollectionCount" type="int32" />
