@@ -60,10 +60,16 @@
         <mbean name="java.lang:type=GarbageCollector,name=PS MarkSweep" pname="GC" >
             <attribute name="CollectionCount" type="int32" />
             <attribute name="CollectionTime" type="int32" units="milliseconds"/>
+            <attribute name="LastGcInfo" >
+                <composite name="duration" pname="GC_duration" type="int32" units="milliseconds"/>
+            </attribute>
         </mbean>
         <mbean name="java.lang:type=GarbageCollector,name=PS Scavenge" pname="GC" >
             <attribute name="CollectionCount" type="int32" />
             <attribute name="CollectionTime" type="int32" units="milliseconds"/>
+            <attribute name="LastGcInfo" >
+                <composite name="duration" pname="GC_duration" type="int32" units="milliseconds"/>
+            </attribute>
         </mbean>
     </sample>
     <ganglia hostname="dbserver20.cs.washington.edu" port="8649" mode="multicast" wireformat31x="true" />
