@@ -92,6 +92,10 @@ public final class MyriaSystemConfigKeys {
   public static final String DEBUG = "DEBUG";
   /** */
   public static final String JVM_OPTIONS = "jvm.options";
+  /** */
+  public static final String GANGLIA_MASTER_HOST = "ganglia.master.host";
+  /** */
+  public static final String GANGLIA_MASTER_PORT = "ganglia.master.port";
 
   /**
    * Default value for {@link MyriaSystemConfigKeys#FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES}.
@@ -134,6 +138,11 @@ public final class MyriaSystemConfigKeys {
   public static final String WORKER_STORAGE_DATABASE_SYSTEM_DEFAULT_VALUE = MyriaConstants.STORAGE_SYSTEM_SQLITE;
 
   /**
+   * Default value for {@link MyriaSystemConfigKeys#GANGLIA_MASTER_PORT}.
+   */
+  public static final int GANGLIA_MASTER_PORT_DEFAULT_VALUE = 8649;
+
+  /**
    * 
    * @param config the configuration.
    * @param section the section.
@@ -155,6 +164,7 @@ public final class MyriaSystemConfigKeys {
   public static void addDefaultConfigValues(final MyriaConfiguration config) {
     setDefaultValueIfMissing(config, "deployment", WORKER_STORAGE_DATABASE_SYSTEM,
         WORKER_STORAGE_DATABASE_SYSTEM_DEFAULT_VALUE);
+    setDefaultValueIfMissing(config, "deployment", GANGLIA_MASTER_PORT, GANGLIA_MASTER_PORT_DEFAULT_VALUE + "");
     setDefaultValueIfMissing(config, "runtime", FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES,
         FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES_DEFAULT_VALUE + "");
     setDefaultValueIfMissing(config, "runtime", FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES,

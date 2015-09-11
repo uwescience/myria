@@ -72,5 +72,5 @@
             </attribute>
         </mbean>
     </sample>
-    <ganglia hostname="dbserver20.cs.washington.edu" port="8649" mode="multicast" wireformat31x="true" />
+    <ganglia hostname="localhost" port="8649" mode="multicast" wireformat31x="true" />
 </jmxetric-config>
