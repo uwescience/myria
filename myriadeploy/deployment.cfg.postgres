@@ -13,9 +13,9 @@ rest_port = 8753
 #username = dhalperi
 # Uncomment if want to launch workers in debug mode
 #debug_mode = true
-# Server running master Ganglia daemon
-ganglia.master.host = dbserver20.cs.washington.edu
-ganglia.master.port = 8649
+# Uncomment if there is a server running master Ganglia daemon
+#ganglia.master.host = dbserver20.cs.washington.edu
+#ganglia.master.port = 8649
 
 # Compute nodes configuration
 [master]

@@ -9,9 +9,9 @@ rest_port = 8753
 #debug_mode = true
 # Uncomment if want to set admin password
 #admin_password = apple
-# Server running master Ganglia daemon
-ganglia.master.host = dbserver20.cs.washington.edu
-ganglia.master.port = 8649
+# Uncomment if there is a server running master Ganglia daemon
+#ganglia.master.host = dbserver20.cs.washington.edu
+#ganglia.master.port = 8649
 
 # Compute nodes configuration
 [master]
