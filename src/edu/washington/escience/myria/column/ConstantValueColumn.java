@@ -3,6 +3,8 @@ package edu.washington.escience.myria.column;
 import java.util.BitSet;
 import java.util.Objects;
 
+import javax.annotation.Nonnull;
+
 import org.joda.time.DateTime;
 
 import edu.washington.escience.myria.Type;
@@ -85,6 +87,7 @@ public class ConstantValueColumn extends Column<Comparable<?>> {
   }
 
   @Override
+  @Nonnull
   public DateTime getDateTime(final int row) {
     if (type == Type.DATETIME_TYPE) {
       return dateTimeValue;
@@ -125,6 +128,7 @@ public class ConstantValueColumn extends Column<Comparable<?>> {
   }
 
   @Override
+  @Nonnull
   public String getString(final int row) {
     if (type == Type.STRING_TYPE) {
       return stringValue;
@@ -133,6 +137,7 @@ public class ConstantValueColumn extends Column<Comparable<?>> {
   }
 
   @Override
+  @Nonnull
   public Comparable<?> getObject(final int row) {
     return value;
   }

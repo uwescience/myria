@@ -6,6 +6,8 @@ import java.util.BitSet;
 import java.util.List;
 import java.util.Objects;
 
+import javax.annotation.Nonnull;
+
 import net.jcip.annotations.ThreadSafe;
 
 import org.joda.time.DateTime;
@@ -104,8 +106,7 @@ public class TupleBatch implements ReadableTable, Serializable {
     for (int i = 0; i < columns.size(); i++) {
       Column<?> column = columns.get(i);
       Preconditions.checkArgument(numTuples == column.size(),
-              "Incorrect size for column %s. Expected %s tuples, but found %s tuples.",
-              i, numTuples, column.size());
+          "Incorrect size for column %s. Expected %s tuples, but found %s tuples.", i, numTuples, column.size());
     }
     this.numTuples = numTuples;
     this.isEOI = isEOI;
@@ -199,6 +200,7 @@ public class TupleBatch implements ReadableTable, Serializable {
 
   @Override
   @Deprecated
+  @Nonnull
   public final Object getObject(final int column, final int row) {
     return columns.get(column).getObject(row);
   }
@@ -209,11 +211,13 @@ public class TupleBatch implements ReadableTable, Serializable {
   }
 
   @Override
+  @Nonnull
   public final String getString(final int column, final int row) {
     return columns.get(column).getString(row);
   }
 
   @Override
+  @Nonnull
   public final DateTime getDateTime(final int column, final int row) {
     return columns.get(column).getDateTime(row);
   }
@@ -356,6 +360,7 @@ public class TupleBatch implements ReadableTable, Serializable {
   }
 
   @Override
+  @Nonnull
   public ReadableColumn asColumn(final int column) {
     return columns.get(column);
   }

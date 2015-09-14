@@ -2,6 +2,8 @@ package edu.washington.escience.myria.api.encoding;
 
 import java.util.List;
 
+import javax.annotation.Nonnull;
+
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.SymmetricHashJoin.JoinPullOrder;
@@ -22,7 +24,7 @@ public class SymmetricHashJoinEncoding extends BinaryOperatorEncoding<SymmetricH
   public JoinPullOrder argOrder = JoinPullOrder.ALTER;
 
   @Override
-  public SymmetricHashJoin construct(final ConstructArgs args) {
+  public SymmetricHashJoin construct(@Nonnull final ConstructArgs args) {
     SymmetricHashJoin join =
         new SymmetricHashJoin(argColumnNames, null, null, argColumns1, argColumns2, argSelect1, argSelect2,
             argSetSemanticsLeft, argSetSemanticsRight);

@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.api.encoding;
 
+import javax.annotation.Nonnull;
+
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
@@ -28,7 +30,7 @@ public class SampledDbInsertTempEncoding extends UnaryOperatorEncoding<SampledDb
   public ConnectionInfo connectionInfo;
 
   @Override
-  public SampledDbInsertTemp construct(ConstructArgs args) {
+  public SampledDbInsertTemp construct(@Nonnull ConstructArgs args) {
     return new SampledDbInsertTemp(null, sampleSize, RelationKey.ofTemp(
         args.getQueryId(), sampleTable), RelationKey.ofTemp(args.getQueryId(),
         countTable), connectionInfo, randomSeed);

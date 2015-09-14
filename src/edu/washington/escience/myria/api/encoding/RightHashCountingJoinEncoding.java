@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.api.encoding;
 
+import javax.annotation.Nonnull;
+
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.RightHashCountingJoin;
 
@@ -15,7 +17,7 @@ public class RightHashCountingJoinEncoding extends BinaryOperatorEncoding<RightH
   public int[] argColumns2;
 
   @Override
-  public RightHashCountingJoin construct(ConstructArgs args) {
+  public RightHashCountingJoin construct(@Nonnull ConstructArgs args) {
     return new RightHashCountingJoin(null, null, argColumns1, argColumns2);
   }
 }

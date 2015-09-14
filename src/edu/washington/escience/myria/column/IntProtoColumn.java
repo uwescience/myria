@@ -2,6 +2,8 @@ package edu.washington.escience.myria.column;
 
 import java.nio.IntBuffer;
 
+import javax.annotation.Nonnull;
+
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
@@ -41,6 +43,7 @@ public final class IntProtoColumn extends IntColumn {
   }
 
   @Override
+  @Nonnull
   public Integer getObject(final int row) {
     return Integer.valueOf(intBuffer.get(row));
   }

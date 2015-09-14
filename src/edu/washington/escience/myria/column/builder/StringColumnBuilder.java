@@ -3,16 +3,19 @@ package edu.washington.escience.myria.column.builder;
 import java.nio.BufferOverflowException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.Objects;
+
+import javax.annotation.Nonnull;
 
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
+import com.google.common.primitives.Ints;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.StringArrayColumn;
 import edu.washington.escience.myria.column.StringColumn;
+import edu.washington.escience.myria.column.StringPackedColumn;
 import edu.washington.escience.myria.column.mutable.StringMutableColumn;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.StringColumnMessage;
@@ -66,14 +69,8 @@ public final class StringColumnBuilder extends ColumnBuilder<String> {
         "Trying to construct StringColumn from non-STRING ColumnMessage %s", message.getType());
     Preconditions.checkArgument(message.hasStringColumn(), "ColumnMessage has type STRING but no StringColumn");
     final StringColumnMessage stringColumn = message.getStringColumn();
-    List<Integer> startIndices = stringColumn.getStartIndicesList();
-    List<Integer> endIndices = stringColumn.getEndIndicesList();
-    String[] newData = new String[numTuples];
-    String allStrings = stringColumn.getData().toStringUtf8();
-    for (int i = 0; i < numTuples; i++) {
-      newData[i] = allStrings.substring(startIndices.get(i), endIndices.get(i));
-    }
-    return new StringColumnBuilder(newData, numTuples).build();
+    int[] offsets = Ints.toArray(stringColumn.getStartIndicesList());
+    return new StringPackedColumn(stringColumn.getData(), offsets);
   }
 
   @Override
@@ -124,7 +121,7 @@ public final class StringColumnBuilder extends ColumnBuilder<String> {
   }
 
   @Override
-  public void replaceString(final String value, final int row) throws IndexOutOfBoundsException {
+  public void replaceString(@Nonnull final String value, final int row) throws IndexOutOfBoundsException {
     Preconditions.checkState(!built, "No further changes are allowed after the builder has built the column.");
     Preconditions.checkElementIndex(row, numStrings);
     Objects.requireNonNull(value, "value");
@@ -150,11 +147,14 @@ public final class StringColumnBuilder extends ColumnBuilder<String> {
   }
 
   @Override
+  @Deprecated
+  @Nonnull
   public String getObject(final int row) {
     return getString(row);
   }
 
   @Override
+  @Nonnull
   public String getString(final int row) {
     Preconditions.checkElementIndex(row, numStrings);
     return data[row];

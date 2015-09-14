@@ -6,6 +6,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
+import javax.annotation.Nonnull;
+
 import org.joda.time.DateTime;
 
 import com.google.common.base.Preconditions;
@@ -388,7 +390,7 @@ public class TupleBatchBuffer implements AppendableTable {
   }
 
   @Override
-  public final void putDateTime(final int column, final DateTime value) {
+  public final void putDateTime(final int column, @Nonnull final DateTime value) {
     checkPutIndex(column);
     currentBuildingColumns.get(column).appendDateTime(value);
     columnPut(column);
@@ -424,14 +426,14 @@ public class TupleBatchBuffer implements AppendableTable {
 
   @Override
   @Deprecated
-  public void putObject(final int column, final Object value) {
+  public void putObject(final int column, @Nonnull final Object value) {
     checkPutIndex(column);
     currentBuildingColumns.get(column).appendObject(MyriaUtils.ensureObjectIsValidType(value));
     columnPut(column);
   }
 
   @Override
-  public final void putString(final int column, final String value) {
+  public final void putString(final int column, @Nonnull final String value) {
     checkPutIndex(column);
     currentBuildingColumns.get(column).appendString(value);
     columnPut(column);
@@ -460,6 +462,7 @@ public class TupleBatchBuffer implements AppendableTable {
   }
 
   @Override
+  @Nonnull
   public WritableColumn asWritableColumn(final int column) {
     return new WritableSubColumn(this, column);
   }

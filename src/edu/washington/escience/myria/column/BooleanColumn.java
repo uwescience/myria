@@ -2,6 +2,8 @@ package edu.washington.escience.myria.column;
 
 import java.util.BitSet;
 
+import javax.annotation.Nonnull;
+
 import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
 
@@ -33,6 +35,7 @@ public final class BooleanColumn extends Column<Boolean> {
   }
 
   @Override
+  @Nonnull
   public Boolean getObject(final int row) {
     return Boolean.valueOf(getBoolean(row));
   }

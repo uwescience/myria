@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.column.mutable;
 
+import javax.annotation.Nonnull;
+
 import org.joda.time.DateTime;
 
 import com.google.common.base.Preconditions;
@@ -32,11 +34,13 @@ public final class DateTimeMutableColumn extends MutableColumn<DateTime> {
 
   @Override
   @Deprecated
+  @Nonnull
   public DateTime getObject(final int row) {
     return getDateTime(row);
   }
 
   @Override
+  @Nonnull
   public DateTime getDateTime(final int row) {
     Preconditions.checkElementIndex(row, position);
     return data[row];
@@ -67,7 +71,7 @@ public final class DateTimeMutableColumn extends MutableColumn<DateTime> {
   }
 
   @Override
-  public void replaceDateTime(final DateTime value, final int row) {
+  public void replaceDateTime(@Nonnull final DateTime value, final int row) {
     Preconditions.checkElementIndex(row, size());
     data[row] = value;
   }

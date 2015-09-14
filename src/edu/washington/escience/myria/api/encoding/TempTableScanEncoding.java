@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.api.encoding;
 
+import javax.annotation.Nonnull;
+
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.RelationKey;
@@ -14,7 +16,7 @@ public class TempTableScanEncoding extends LeafOperatorEncoding<DbQueryScan> {
   public String table;
 
   @Override
-  public DbQueryScan construct(ConstructArgs args) {
+  public DbQueryScan construct(@Nonnull ConstructArgs args) {
     Schema schema;
     Server server = args.getServer();
     schema = server.getTempSchema(args.getQueryId(), table);

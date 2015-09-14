@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.api.encoding;
 
+import javax.annotation.Nonnull;
+
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.io.DataSource;
@@ -13,7 +15,7 @@ public class BinaryFileScanEncoding extends LeafOperatorEncoding<BinaryFileScan>
   public Boolean isLittleEndian;
 
   @Override
-  public BinaryFileScan construct(ConstructArgs args) {
+  public BinaryFileScan construct(@Nonnull final ConstructArgs args) {
     if (isLittleEndian == null) {
       return new BinaryFileScan(schema, source);
     } else {

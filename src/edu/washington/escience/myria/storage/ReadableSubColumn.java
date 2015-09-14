@@ -2,6 +2,8 @@ package edu.washington.escience.myria.storage;
 
 import java.util.Objects;
 
+import javax.annotation.Nonnull;
+
 import org.joda.time.DateTime;
 
 import com.google.common.base.Preconditions;
@@ -44,6 +46,7 @@ public final class ReadableSubColumn implements ReadableColumn {
   }
 
   @Override
+  @Nonnull
   public DateTime getDateTime(final int row) {
     return inner.getDateTime(column, row);
   }
@@ -70,11 +73,13 @@ public final class ReadableSubColumn implements ReadableColumn {
 
   @Override
   @Deprecated
+  @Nonnull
   public Object getObject(final int row) {
     return inner.getObject(column, row);
   }
 
   @Override
+  @Nonnull
   public String getString(final int row) {
     return inner.getString(column, row);
   }

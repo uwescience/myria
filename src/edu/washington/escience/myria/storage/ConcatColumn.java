@@ -3,6 +3,8 @@ package edu.washington.escience.myria.storage;
 import java.util.Map;
 import java.util.TreeMap;
 
+import javax.annotation.Nonnull;
+
 import org.joda.time.DateTime;
 
 import com.google.common.base.Preconditions;
@@ -89,6 +91,7 @@ public class ConcatColumn<T extends Comparable<?>> extends Column<T> {
   }
 
   @Override
+  @Nonnull
   public DateTime getDateTime(final int row) {
     Map.Entry<Integer, Column<?>> entry = getColumnEntry(row);
     return entry.getValue().getDateTime(row - entry.getKey());
@@ -121,12 +124,14 @@ public class ConcatColumn<T extends Comparable<?>> extends Column<T> {
   @SuppressWarnings("unchecked")
   @Deprecated
   @Override
+  @Nonnull
   public T getObject(final int row) {
     Map.Entry<Integer, Column<?>> entry = getColumnEntry(row);
     return (T) entry.getValue().getObject(row - entry.getKey());
   }
 
   @Override
+  @Nonnull
   public String getString(final int row) {
     Map.Entry<Integer, Column<?>> entry = getColumnEntry(row);
     return entry.getValue().getString(row - entry.getKey());

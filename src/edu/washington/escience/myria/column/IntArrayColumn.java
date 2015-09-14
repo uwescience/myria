@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.column;
 
+import javax.annotation.Nonnull;
+
 import com.google.common.base.Preconditions;
 
 /**
@@ -29,6 +31,7 @@ public final class IntArrayColumn extends IntColumn {
   }
 
   @Override
+  @Nonnull
   public Integer getObject(final int row) {
     return Integer.valueOf(getInt(row));
   }

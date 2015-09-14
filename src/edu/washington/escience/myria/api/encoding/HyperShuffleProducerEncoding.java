@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.api.encoding;
 
+import javax.annotation.Nonnull;
 import javax.ws.rs.core.Response.Status;
 
 import com.google.common.base.Preconditions;
@@ -27,7 +28,7 @@ public class HyperShuffleProducerEncoding extends AbstractProducerEncoding<Gener
   public int[][] cellPartition;
 
   @Override
-  public GenericShuffleProducer construct(ConstructArgs args) throws MyriaApiException {
+  public GenericShuffleProducer construct(@Nonnull ConstructArgs args) throws MyriaApiException {
 
     /*
      * Validate whether number of workers matches cube dimensions.

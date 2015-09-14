@@ -14,7 +14,7 @@ public final class IPCConfigurations {
   /**
    * @return a pre-configured IPC client connection bootstrap.
    * @param theMaster the master
-   * @throws ConfigFileException
+   * @throws ConfigFileException if failed getting config
    */
   public static ClientBootstrap createMasterIPCClientBootstrap(final Server theMaster) throws ConfigFileException {
 
@@ -41,7 +41,7 @@ public final class IPCConfigurations {
   /**
    * @return a pre-configured IPC client connection bootstrap.
    * @param worker the owner worker
-   * @throws ConfigFileException
+   * @throws ConfigFileException if failed getting config
    */
   public static ClientBootstrap createWorkerIPCClientBootstrap(final Worker worker) throws ConfigFileException {
 
@@ -69,7 +69,7 @@ public final class IPCConfigurations {
    * @return a pre-configured IPC server bootstrap for Master.
    * @param theMaster the master
    * @throws ConfigFileException
-   * @throws NumberFormatException
+   * @throws NumberFormatException if failed getting config
    */
   public static ServerBootstrap createMasterIPCServerBootstrap(final Server theMaster) throws ConfigFileException {
 
@@ -98,7 +98,7 @@ public final class IPCConfigurations {
    * @return A pre-configured IPC server bootstrap for Workers.
    * @param worker the owner worker
    * @throws ConfigFileException
-   * @throws NumberFormatException
+   * @throws NumberFormatException if failed getting config
    */
   public static ServerBootstrap createWorkerIPCServerBootstrap(final Worker worker) throws ConfigFileException {
     final ServerBootstrap bootstrap = new ServerBootstrap();

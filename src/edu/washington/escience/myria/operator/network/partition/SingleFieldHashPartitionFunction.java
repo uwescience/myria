@@ -69,7 +69,7 @@ public final class SingleFieldHashPartitionFunction extends PartitionFunction {
    * @return partitions.
    * */
   @Override
-  public int[] partition(final @Nonnull TupleBatch tb) {
+  public int[] partition(@Nonnull final TupleBatch tb) {
     final int[] result = new int[tb.numTuples()];
     for (int i = 0; i < result.length; i++) {
       int p = HashUtils.hashValue(tb, index, i, seedIndex) % numPartition();

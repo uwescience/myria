@@ -41,6 +41,7 @@ public class PrefixColumn<T extends Comparable<?>> extends Column<T> {
   }
 
   @Override
+  @Nonnull
   public DateTime getDateTime(final int row) {
     return inner.getDateTime(Preconditions.checkElementIndex(row, numRows));
   }
@@ -66,11 +67,13 @@ public class PrefixColumn<T extends Comparable<?>> extends Column<T> {
   }
 
   @Override
+  @Nonnull
   public String getString(final int row) {
     return inner.getString(Preconditions.checkElementIndex(row, numRows));
   }
 
   @Override
+  @Nonnull
   public T getObject(final int row) {
     return inner.getObject(Preconditions.checkElementIndex(row, numRows));
   }

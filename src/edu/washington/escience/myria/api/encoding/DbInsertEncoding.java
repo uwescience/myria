@@ -2,6 +2,8 @@ package edu.washington.escience.myria.api.encoding;
 
 import java.util.List;
 
+import javax.annotation.Nonnull;
+
 import com.google.common.base.MoreObjects;
 
 import edu.washington.escience.myria.RelationKey;
@@ -29,7 +31,7 @@ public class DbInsertEncoding extends UnaryOperatorEncoding<DbInsert> {
   public ConnectionInfo connectionInfo;
 
   @Override
-  public DbInsert construct(ConstructArgs args) {
+  public DbInsert construct(@Nonnull ConstructArgs args) {
     /* default overwrite to {@code false}, so we append. */
     argOverwriteTable = MoreObjects.firstNonNull(argOverwriteTable, Boolean.FALSE);
     return new DbInsert(null, relationKey, connectionInfo, argOverwriteTable, indexes);

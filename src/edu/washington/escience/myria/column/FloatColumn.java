@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.column;
 
+import javax.annotation.Nonnull;
+
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.Type;
@@ -30,6 +32,7 @@ public final class FloatColumn extends Column<Float> {
   }
 
   @Override
+  @Nonnull
   public Float getObject(final int row) {
     return Float.valueOf(getFloat(row));
   }

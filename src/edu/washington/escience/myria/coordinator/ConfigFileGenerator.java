@@ -15,6 +15,10 @@ import edu.washington.escience.myria.tools.MyriaConfiguration;
  */
 public final class ConfigFileGenerator {
 
+  /** Constructor. */
+  private ConfigFileGenerator() {
+  }
+
   /**
    * 
    * @param configFileName config file name.
@@ -35,6 +39,7 @@ public final class ConfigFileGenerator {
    * @param config the parsed configuration.
    * @param workerId the worker whose catalog is being creating.
    * @param path the place to save the worker config file.
+   * @return the worker config file
    * @throws ConfigFileException error when creating the config file.
    */
   public static File makeOneWorkerConfigFile(final MyriaConfiguration config, final int workerId, final String path)

@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.column.mutable;
 
+import javax.annotation.Nonnull;
+
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.Type;
@@ -31,11 +33,13 @@ public final class StringMutableColumn extends MutableColumn<String> {
 
   @Deprecated
   @Override
+  @Nonnull
   public String getObject(final int row) {
     return getString(row);
   }
 
   @Override
+  @Nonnull
   public String getString(final int row) {
     Preconditions.checkElementIndex(row, numStrings);
     return data[row];
@@ -66,7 +70,7 @@ public final class StringMutableColumn extends MutableColumn<String> {
   }
 
   @Override
-  public void replaceString(final String value, final int row) {
+  public void replaceString(@Nonnull final String value, final int row) {
     Preconditions.checkElementIndex(row, size());
     data[row] = value;
   }

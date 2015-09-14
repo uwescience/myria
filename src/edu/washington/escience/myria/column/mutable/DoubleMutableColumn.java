@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.column.mutable;
 
+import javax.annotation.Nonnull;
+
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.Type;
@@ -33,6 +35,7 @@ public final class DoubleMutableColumn extends MutableColumn<Double> {
 
   @Deprecated
   @Override
+  @Nonnull
   public Double getObject(final int row) {
     return Double.valueOf(getDouble(row));
   }
