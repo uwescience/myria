@@ -95,6 +95,7 @@ ext.jacksonVersion = "2.4.4"
 ext.jerseyVersion = "2.14"
 ext.swaggerVersion = "2.11"
 ext.swaggerMinorVersion = "1.3.11"
+ext.jmxetricsVersion = "1.0.8"
 
 dependencies {
   compile ("org.apache.hadoop:hadoop-core:1.2.1") {
@@ -143,12 +144,14 @@ dependencies {
   //runtime "org.slf4j:slf4j-simple:${slf4jVersion}"
   runtime "org.slf4j:slf4j-log4j12:${slf4jVersion}"
 
+  runtime "info.ganglia.jmxetric:jmxetric:${jmxetricsVersion}"
+
   compile "org.apache.commons:commons-csv:1.1"
   
   // Expression compiler
   compile "org.codehaus.janino:janino:2.7.7"
 
-  compile "org.postgresql:postgresql:9.3-1102-jdbc41"
+  compile "org.postgresql:postgresql:9.4-1202-jdbc41"
 
   testCompile "junit:junit:4.12"
   testCompile "org.assertj:assertj-core:1.7.1"
@@ -246,10 +249,15 @@ tasks.withType(Test) {
  * sure it this happens whenever jar is run.
  */
 task copyToLib(type: Copy) {
-    into "$buildDir/libs"
+    into "${buildDir}/libs"
     from configurations.runtime
 }
-tasks.jar.dependsOn copyToLib
+/* Hack to make code that specifies this jar in JVM options version-agnostic */
+task symlinkMetricsJar << {
+    ant.symlink(link: "${buildDir}/libs/jmxetric.jar", resource: "jmxetric-${jmxetricsVersion}.jar")
+}
+tasks.symlinkMetricsJar.dependsOn copyToLib
+tasks.jar.dependsOn symlinkMetricsJar
 
 /* Make sure test runs before any other type of tests */
 systemtest.dependsOn test

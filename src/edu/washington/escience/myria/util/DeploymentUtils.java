@@ -109,6 +109,15 @@ public final class DeploymentUtils {
     jvmOptions.add("-Djava.util.logging.config.file=logging.properties");
     jvmOptions.add("-Dlog4j.configuration=log4j.properties");
     jvmOptions.add("-Djava.library.path=" + workingDir + "/" + "sqlite4java-392");
+    String gangliaMasterHost = config.getOptional("deployment", MyriaSystemConfigKeys.GANGLIA_MASTER_HOST);
+    if (gangliaMasterHost != null) {
+      int gangliaMasterPort =
+          Integer.parseInt(config.getRequired("deployment", MyriaSystemConfigKeys.GANGLIA_MASTER_PORT));
+      String metricsJarPath = workingDir + "/libs/jmxetric.jar";
+      // if the metrics jar file isn't found, the JVM agent will fail to start
+      jvmOptions.add("-javaagent:" + metricsJarPath + "=host=" + gangliaMasterHost + ",port=" + gangliaMasterPort
+          + ",config=" + workingDir + "/conf/jmxetric.xml,process=MyriaMaster");
+    }
     startMaster(hostname, workingDir, restPort, ssl, jvmOptions);
   }
 
@@ -143,6 +152,15 @@ public final class DeploymentUtils {
     jvmOptions.add("-Djava.util.logging.config.file=logging.properties");
     jvmOptions.add("-Dlog4j.configuration=log4j.properties");
     jvmOptions.add("-Djava.library.path=" + workingDir + "/" + "sqlite4java-392");
+    String gangliaMasterHost = config.getOptional("deployment", MyriaSystemConfigKeys.GANGLIA_MASTER_HOST);
+    if (gangliaMasterHost != null) {
+      int gangliaMasterPort =
+          Integer.parseInt(config.getRequired("deployment", MyriaSystemConfigKeys.GANGLIA_MASTER_PORT));
+      String metricsJarPath = workingDir + "/libs/jmxetric.jar";
+      // if the metrics jar file isn't found, the JVM agent will fail to start
+      jvmOptions.add("-javaagent:" + metricsJarPath + "=host=" + gangliaMasterHost + ",port=" + gangliaMasterPort
+          + ",config=" + workingDir + "/conf/jmxetric.xml,process=MyriaWorker_" + workerId);
+    }
     startWorker(hostname, workingDir, workerId, port, jvmOptions);
   }
 
