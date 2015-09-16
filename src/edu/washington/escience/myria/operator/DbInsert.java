@@ -22,6 +22,7 @@ import edu.washington.escience.myria.accessmethod.AccessMethod;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.SQLiteInfo;
+import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
 import edu.washington.escience.myria.parallel.RelationWriteMetadata;
 import edu.washington.escience.myria.storage.TupleBatch;
 
@@ -45,6 +46,8 @@ public class DbInsert extends AbstractDbInsert {
   private RelationKey tempRelationKey;
   /** The indexes to be created on the table. Each entry is a list of columns. */
   private final List<List<IndexRef>> indexes;
+  /** The PartitionFunction used to partition the table across workers. */
+  private final PartitionFunction partitionFunction;
 
   /**
    * Constructs an insertion operator to store the tuples from the specified child into the specified database. If the
@@ -115,11 +118,29 @@ public class DbInsert extends AbstractDbInsert {
    */
   public DbInsert(final Operator child, final RelationKey relationKey, final ConnectionInfo connectionInfo,
       final boolean overwriteTable, final List<List<IndexRef>> indexes) {
+    this(child, relationKey, connectionInfo, overwriteTable, indexes, null);
+  }
+
+  /**
+   * Constructs an insertion operator to store the tuples from the specified child into the specified database. If the
+   * table does not exist, it will be created. If <code>overwriteTable</code> is <code>true</code>, any existing data
+   * will be dropped.
+   * 
+   * @param child the source of tuples to be inserted.
+   * @param relationKey the key of the table the tuples should be inserted into.
+   * @param connectionInfo the parameters of the database connection.
+   * @param overwriteTable whether to overwrite a table that already exists.
+   * @param indexes the indexes to be created on the table. Each entry is a list of columns.
+   * @param partitionFunction the PartitionFunction used to partition the table across workers.
+   */
+  public DbInsert(final Operator child, final RelationKey relationKey, final ConnectionInfo connectionInfo,
+      final boolean overwriteTable, final List<List<IndexRef>> indexes, final PartitionFunction partitionFunction) {
     super(child);
     Objects.requireNonNull(relationKey, "relationKey");
     this.connectionInfo = connectionInfo;
     this.relationKey = relationKey;
     this.overwriteTable = overwriteTable;
+    this.partitionFunction = partitionFunction;
     /* Sanity check arguments -- cannot create an index in append mode. */
     Preconditions.checkArgument(overwriteTable || indexes == null || indexes.size() == 0,
         "Cannot create indexes when appending to a relation.");
@@ -231,7 +252,8 @@ public class DbInsert extends AbstractDbInsert {
 
   @Override
   public Map<RelationKey, RelationWriteMetadata> writeSet() {
-    return ImmutableMap.of(relationKey, new RelationWriteMetadata(relationKey, getSchema(), overwriteTable, false));
+    return ImmutableMap.of(relationKey, new RelationWriteMetadata(relationKey, getSchema(), overwriteTable, false,
+        partitionFunction));
   }
 
 }

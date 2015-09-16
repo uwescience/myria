@@ -36,6 +36,7 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
+import com.google.common.primitives.Ints;
 
 import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
@@ -1485,7 +1486,8 @@ public final class MasterCatalog {
               if (meta.isOverwrite() || getSchema(sqliteConnection, relation) == null) {
                 /* Overwrite or new relation. */
                 addRelationMetadata(sqliteConnection, relation, schema, -1, subQueryId.getQueryId());
-                addStoredRelation(sqliteConnection, relation, workers, new HowPartitioned(null, null));
+                addStoredRelation(sqliteConnection, relation, workers, new HowPartitioned(meta.getPartitionFunction(),
+                    Ints.toArray(workers)));
                 LOGGER.debug("SubQuery #{} - adding {} to store shard of {}", subQueryId, workers, relation);
               }
             }

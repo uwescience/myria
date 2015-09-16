@@ -9,6 +9,7 @@ import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.DbInsertTemp;
+import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
 
 /**
  * A JSON-able wrapper for the expected wire message for a new dataset.
@@ -22,6 +23,9 @@ public class TempInsertEncoding extends UnaryOperatorEncoding<DbInsertTemp> {
   public Boolean argOverwriteTable;
   /** Indexes created. */
   public List<List<IndexRef>> indexes;
+  /** The PartitionFunction used to partition this relation. */
+  public PartitionFunction partitionFunction;
+
   /**
    * The ConnectionInfo struct determines what database the data will be written to. If null, the worker's default
    * database will be used.
@@ -29,10 +33,10 @@ public class TempInsertEncoding extends UnaryOperatorEncoding<DbInsertTemp> {
   public ConnectionInfo connectionInfo;
 
   @Override
-  public DbInsertTemp construct(ConstructArgs args) {
+  public DbInsertTemp construct(final ConstructArgs args) {
     /* default overwrite to {@code false}, so we append. */
     argOverwriteTable = MoreObjects.firstNonNull(argOverwriteTable, Boolean.FALSE);
     return new DbInsertTemp(null, RelationKey.ofTemp(args.getQueryId(), table), connectionInfo, argOverwriteTable,
-        indexes);
+        indexes, partitionFunction);
   }
 }

@@ -6,11 +6,13 @@ import java.util.Objects;
 import java.util.Set;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
 
 /**
  * Holds metadata about a relation that is created by a subquery.
@@ -28,6 +30,8 @@ public class RelationWriteMetadata implements Serializable {
   private final boolean overwrite;
   /** Whether the relation being written is a temporary or a permanent relation. */
   private final boolean temporary;
+  /** The PartitionFunction used to partition the relation across workers. */
+  private final PartitionFunction partitionFunction;
 
   /**
    * Constructs a new relation metadata object.
@@ -41,10 +45,27 @@ public class RelationWriteMetadata implements Serializable {
    */
   public RelationWriteMetadata(@Nonnull final RelationKey relationKey, @Nonnull final Schema schema,
       final boolean overwrite, final boolean temporary) {
+    this(relationKey, schema, overwrite, temporary, null);
+  }
+
+  /**
+   * Constructs a new relation metadata object.
+   * 
+   * @param relationKey the relation to be written
+   * @param schema the schema of the write.
+   * @param overwrite if {@code true}, then the relation will be overwritten / created. if false, the relation will be
+   *          created or appended. If appending, the schema must match the catalog schema.
+   * @param temporary if {@code true}, then the relation will be not be added to the Catalog, and its tuple count will
+   *          not be maintained.
+   * @param partitionFunction the PartitionFunction used to partition the relation across workers.
+   */
+  public RelationWriteMetadata(@Nonnull final RelationKey relationKey, @Nonnull final Schema schema,
+      final boolean overwrite, final boolean temporary, @Nullable final PartitionFunction partitionFunction) {
     this.relationKey = Objects.requireNonNull(relationKey, "relationKey");
     this.schema = Objects.requireNonNull(schema, "schema");
     this.overwrite = overwrite;
     this.temporary = temporary;
+    this.partitionFunction = partitionFunction;
     workers = new HashSet<>();
   }
 
@@ -103,6 +124,15 @@ public class RelationWriteMetadata implements Serializable {
    */
   public Set<Integer> getWorkers() {
     return ImmutableSet.copyOf(workers);
+  }
+
+  /**
+   * Get the PartitionFunction used to partition this relation.
+   * 
+   * @return the PartitionFunction used to partition this relation
+   */
+  public PartitionFunction getPartitionFunction() {
+    return partitionFunction;
   }
 
   @Override

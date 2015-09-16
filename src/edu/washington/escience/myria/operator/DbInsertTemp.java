@@ -22,6 +22,7 @@ import edu.washington.escience.myria.accessmethod.AccessMethod;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.SQLiteInfo;
+import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
 import edu.washington.escience.myria.parallel.RelationWriteMetadata;
 import edu.washington.escience.myria.storage.TupleBatch;
 
@@ -44,6 +45,8 @@ public class DbInsertTemp extends AbstractDbInsert {
   private final boolean overwriteTable;
   /** The indexes to be created on the table. Each entry is a list of columns. */
   private final List<List<IndexRef>> indexes;
+  /** The PartitionFunction used to partition the table across workers. */
+  private final PartitionFunction partitionFunction;
 
   /**
    * Constructs a temporary insertion operator to store the tuples from the specified child into the specified relation.
@@ -58,11 +61,29 @@ public class DbInsertTemp extends AbstractDbInsert {
    */
   public DbInsertTemp(final Operator child, final RelationKey relationKey, final ConnectionInfo connectionInfo,
       final boolean overwriteTable, final List<List<IndexRef>> indexes) {
+    this(child, relationKey, connectionInfo, overwriteTable, indexes, null);
+  }
+
+  /**
+   * Constructs a temporary insertion operator to store the tuples from the specified child into the specified relation.
+   * If the table does not exist, it will be created. If <code>overwriteTable</code> is <code>true</code>, any existing
+   * data will be dropped.
+   * 
+   * @param child the source of tuples to be inserted.
+   * @param relationKey the key of the table the tuples should be inserted into.
+   * @param connectionInfo the parameters of the database connection.
+   * @param overwriteTable whether to overwrite a table that already exists.
+   * @param indexes the indexes to be created on the table. Each entry is a list of columns.
+   * @param partitionFunction the PartitionFunction used to partition the table across workers.
+   */
+  public DbInsertTemp(final Operator child, final RelationKey relationKey, final ConnectionInfo connectionInfo,
+      final boolean overwriteTable, final List<List<IndexRef>> indexes, final PartitionFunction partitionFunction) {
     super(child);
     Objects.requireNonNull(relationKey, "relationKey");
     this.connectionInfo = connectionInfo;
     this.relationKey = relationKey;
     this.overwriteTable = overwriteTable;
+    this.partitionFunction = partitionFunction;
     /* Sanity check arguments -- cannot create an index in append mode. */
     Preconditions.checkArgument(overwriteTable || indexes == null || indexes.size() == 0,
         "Cannot create indexes when appending to a relation.");
@@ -109,8 +130,7 @@ public class DbInsertTemp extends AbstractDbInsert {
   }
 
   @Override
-  protected void init(final ImmutableMap<String, Object> execEnvVars)
-      throws DbException {
+  protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     setupConnection(execEnvVars);
 
     if (overwriteTable) {
@@ -150,12 +170,12 @@ public class DbInsertTemp extends AbstractDbInsert {
 
   @Override
   public Map<RelationKey, RelationWriteMetadata> writeSet() {
-    return ImmutableMap.of(relationKey, new RelationWriteMetadata(relationKey, getSchema(), overwriteTable, true));
+    return ImmutableMap.of(relationKey, new RelationWriteMetadata(relationKey, getSchema(), overwriteTable, true,
+        partitionFunction));
   }
 
   /** Updates connection information with the environment variables. */
-  protected void setupConnection(final ImmutableMap<String, Object> execEnvVars)
-      throws DbException {
+  protected void setupConnection(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     // Extract connection info from environment
     if (connectionInfo == null && execEnvVars != null) {
       connectionInfo = (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
