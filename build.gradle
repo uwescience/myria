@@ -254,7 +254,7 @@ task copyToLib(type: Copy) {
 }
 /* Hack to make code that specifies this jar in JVM options version-agnostic */
 task symlinkMetricsJar << {
-    ant.symlink(link: "${buildDir}/libs/jmxetric.jar", resource: "jmxetric-${jmxetricsVersion}.jar")
+    ant.symlink(link: "${buildDir}/libs/jmxetric.jar", resource: "jmxetric-${jmxetricsVersion}.jar", overwrite: true)
 }
 tasks.symlinkMetricsJar.dependsOn copyToLib
 tasks.jar.dependsOn symlinkMetricsJar
