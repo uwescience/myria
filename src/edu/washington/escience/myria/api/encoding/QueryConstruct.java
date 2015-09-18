@@ -413,6 +413,11 @@ public class QueryConstruct {
 
     /* 1. Honor user overrides. Note this is unchecked, but we may find constraint violations later. */
     for (PlanFragmentEncoding fragment : fragments) {
+      /*
+       * First, set it to be null since the fragment may have been instantiated in a previous iteration, but affected
+       * relations now may have different partitioning schemes than in the previous iteration.
+       */
+      fragment.workers = null;
       if (fragment.overrideWorkers != null && fragment.overrideWorkers.size() > 0) {
         /* The workers are set in the plan. */
         fragment.workers = fragment.overrideWorkers;
