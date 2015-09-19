@@ -331,7 +331,13 @@ public final class SymmetricHashJoin extends BinaryOperator {
   @Override
   protected Schema generateSchema() {
     final Schema leftSchema = getLeft().getSchema();
+    if (leftSchema == null) {
+      return null;
+    }
     final Schema rightSchema = getRight().getSchema();
+    if (rightSchema == null) {
+      return null;
+    }
     ImmutableList.Builder<Type> types = ImmutableList.builder();
     ImmutableList.Builder<String> names = ImmutableList.builder();
 
