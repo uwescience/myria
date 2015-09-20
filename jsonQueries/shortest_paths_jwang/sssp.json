@@ -1,0 +1,204 @@
+{
+	"fragments": 
+	[
+		{
+			"operators": 
+			[
+			{
+				"opId" : 1,
+				"opType" : "Consumer",
+				"argOperatorId" : 10 
+			},
+			{
+				"opId" : 2,
+				"opType" : "UnionAll",
+				"argChildren" : [1]
+			},
+			{
+				"opId" : 3,
+				"opType" : "EOSController",
+				"argChild" : 2
+			}
+			],
+			"overrideWorkers": 
+			[
+				1
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"opId" : 4,
+				"opType" : "Singleton"
+			},
+			{
+				"opId" : 5,
+				"opType" : "Apply",
+				"argChild" : 4,
+                "emitExpressions": [
+				{
+			    	"outputName": "x",
+                    "rootExpressionOperator": {
+                       "type": "CONSTANT",
+                       "valueType": "LONG_TYPE",
+                       "value": "42"
+                   	}
+                },
+				{
+			    	"outputName": "d",
+                    "rootExpressionOperator": {
+                       "type": "CONSTANT",
+                       "valueType": "LONG_TYPE",
+                       "value": "0"
+                   	}
+                }
+                ]
+			},
+			{
+				"opId" : 6,
+				"opType" : "ShuffleProducer",
+				"argChild" : 5,
+				"argPf" : {
+					"type" : "SingleFieldHash",
+					"index" : 0
+				}
+			}
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"opId" : 7,
+				"opType" : "ShuffleConsumer",
+				"argOperatorId" : 6
+			},
+			{
+				"opId" : 8,
+				"opType" : "ShuffleConsumer",
+				"argOperatorId" : 18
+			},
+			{
+				"opId" : 9,
+				"opType" : "Consumer",
+				"argOperatorId" : 3
+			},
+			{
+				"opId" : 10,
+				"opType" : "IDBController",
+				"argSelfIdbId" : "0",
+				"argInitialInput" : 7,
+				"argIterationInput" : 8,
+				"argEosControllerInput" : 9,
+				"argState" : {
+					"type" : "KeepMinValue",
+					"keyColIndices" : [0],
+					"valueColIndices" : [1]
+				},
+				"relationKey": {
+					"programName": "sssp",
+					"relationName": "result",
+					"userName": "jwang"
+				}
+			},
+			{
+				"opId" : 11,
+				"opType" : "LocalMultiwayProducer",
+				"argChild" : 10
+			}
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"opId" : 12,
+				"opType" : "TableScan",
+				"relationKey" : {
+					"userName" : "jwang",
+					"programName" : "sp",
+					"relationName" : "arc"
+				}
+			},
+			{
+				"opId" : 13,
+				"opType" : "ShuffleProducer",
+				"argChild" : 12,
+				"argPf" : {
+					"type" : "SingleFieldHash",
+					"index" : 0
+				}
+			}
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"opId" : 14,
+				"opType" : "ShuffleConsumer",
+				"argOperatorId" : 13
+			},
+			{
+				"opId" : 15,
+				"opType" : "LocalMultiwayConsumer",
+				"argOperatorId" : 11
+			},
+			{
+				"opId" : 16,
+				"opType" : "SymmetricHashJoin",
+				"argChild1" : 14,
+				"argChild2" : 15,
+				"argColumns1" : ["0"],
+				"argColumns2" : ["0"],
+				"argSelect1" : ["1","2"],
+				"argSelect2" : ["1"],
+				"argOrder" : "ALTER",
+				"argSetSemanticsLeft" : false,
+				"argSetSemanticsRight" : true
+			},
+			{
+				"opId" : 17,
+				"opType" : "Apply",
+				"argChild" : 16,
+                "emitExpressions": [
+				{
+			    	"outputName": "x",
+                    "rootExpressionOperator": {
+                       "type": "VARIABLE",
+					   "columnIdx": 0
+                   	}
+                },
+				{
+			    	"outputName": "d",
+                    "rootExpressionOperator": {
+                    	"type": "PLUS",
+                        "left": {
+                        	"type": "VARIABLE",
+                        	"columnIdx": 1
+                        },
+                        "right": {
+                        	"type": "VARIABLE",
+                        	"columnIdx": 2
+                        }
+                   	}
+                }
+                ]
+			},
+			{
+				"opId" : 18,
+				"opType" : "ShuffleProducer",
+				"argChild" : 17,
+				"argPf" : {
+					"type" : "SingleFieldHash",
+					"index" : 0
+				}
+			}
+			]
+		}
+	],
+	"logicalRa": "",
+	"rawQuery": "SSSP(Y,MIN(D)) :- Y=42, D=0; SSSP(Y,MIN(D)) :- SSSP(X,D1), arc(X,Y,D2), D=D1+D2;",
+	"language": "datalog"
+}
