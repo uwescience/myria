@@ -5,14 +5,18 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.httpclient.HttpStatus;
@@ -21,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.MyriaConstants.FTMode;
@@ -205,58 +210,66 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     assertEquals(((SubQueryEncoding) status.plan).fragments.size(), 3);
   }
 
+  public void jsonQuerySubmitWithResultCheck(final String[] ingests, final String[] queries, final String[] expected,
+      final String[] stored) throws Exception {
+    Preconditions.checkArgument(expected.length == stored.length);
+    for (String ingest : ingests) {
+      File ingestFile = new File(ingest);
+      HttpURLConnection conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestFile);
+      if (null != conn.getErrorStream()) {
+        throw new IllegalStateException(getContents(conn));
+      }
+      assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
+      conn.disconnect();
+    }
+
+    for (String query : queries) {
+      File queryJson = new File(query);
+      HttpURLConnection conn = JsonAPIUtils.submitQuery("localhost", masterDaemonPort, queryJson);
+      if (null != conn.getErrorStream()) {
+        throw new IllegalStateException(getContents(conn));
+      }
+      assertEquals(HttpURLConnection.HTTP_ACCEPTED, conn.getResponseCode());
+      long queryId = getQueryStatus(conn).queryId;
+      conn.disconnect();
+      while (!server.getQueryManager().queryCompleted(queryId)) {
+        Thread.sleep(100);
+      }
+      assertEquals(QueryStatusEncoding.Status.SUCCESS, server.getQueryManager().getQueryStatus(queryId).status);
+    }
+
+    for (int i = 0; i < expected.length; ++i) {
+      BufferedReader br = new BufferedReader(new FileReader(expected[i]));
+      Set<String> expected_result = new HashSet<String>();
+      String line;
+      while ((line = br.readLine()) != null) {
+        expected_result.add(line);
+      }
+      String[] tokens = stored[i].split(":");
+      String[] results =
+          JsonAPIUtils.download("localhost", masterDaemonPort, tokens[0], tokens[1], tokens[2], "csv").split("\\r?\\n");
+      assertEquals(expected_result.size(), results.length - 1);
+      for (int j = 1; j < results.length; ++j) {
+        assertTrue(expected_result.contains(results[j]));
+      }
+    }
+  }
+
+  @Test
+  public void partyResultTest() throws Exception {
+    jsonQuerySubmitWithResultCheck(new String[] {
+        "./jsonQueries/come_to_the_party_jwang/ingest_friend.json",
+        "./jsonQueries/come_to_the_party_jwang/ingest_organizer.json" },
+        new String[] { "./jsonQueries/come_to_the_party_jwang/party.json" },
+        new String[] { "./jsonQueries/come_to_the_party_jwang/expected_result" }, new String[] { "jwang:party:attend" });
+  }
+
   @Test
   public void joinChainResultTest() throws Exception {
-    // DeploymentUtils.ensureMasterStart("localhost", masterDaemonPort);
-
-    File ingestA0 = new File("./jsonQueries/multiIDB_jwang/ingest_a0.json");
-    File ingestB0 = new File("./jsonQueries/multiIDB_jwang/ingest_b0.json");
-    File ingestC0 = new File("./jsonQueries/multiIDB_jwang/ingest_c0.json");
-    File ingestR = new File("./jsonQueries/multiIDB_jwang/ingest_r.json");
-
-    HttpURLConnection conn;
-    conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestA0);
-    if (null != conn.getErrorStream()) {
-      throw new IllegalStateException(getContents(conn));
-    }
-    assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
-    conn.disconnect();
-
-    conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestB0);
-    if (null != conn.getErrorStream()) {
-      throw new IllegalStateException(getContents(conn));
-    }
-    assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
-    conn.disconnect();
-
-    conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestC0);
-    if (null != conn.getErrorStream()) {
-      throw new IllegalStateException(getContents(conn));
-    }
-    assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
-    conn.disconnect();
-
-    conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestR);
-    if (null != conn.getErrorStream()) {
-      throw new IllegalStateException(getContents(conn));
-    }
-    assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
-    assertEquals(QueryStatusEncoding.Status.SUCCESS, server.getQueryManager().getQueryStatus(
-        getDatasetStatus(conn).getQueryId()).status);
-    conn.disconnect();
-
-    File queryJson = new File("./jsonQueries/multiIDB_jwang/joinChain.json");
-    conn = JsonAPIUtils.submitQuery("localhost", masterDaemonPort, queryJson);
-    if (null != conn.getErrorStream()) {
-      throw new IllegalStateException(getContents(conn));
-    }
-    assertEquals(HttpURLConnection.HTTP_ACCEPTED, conn.getResponseCode());
-    long queryId = getQueryStatus(conn).queryId;
-    conn.disconnect();
-    while (!server.getQueryManager().queryCompleted(queryId)) {
-      Thread.sleep(100);
-    }
-    assertEquals(QueryStatusEncoding.Status.SUCCESS, server.getQueryManager().getQueryStatus(queryId).status);
+    jsonQuerySubmitWithResultCheck(new String[] {
+        "./jsonQueries/multiIDB_jwang/ingest_a0.json", "./jsonQueries/multiIDB_jwang/ingest_b0.json",
+        "./jsonQueries/multiIDB_jwang/ingest_c0.json", "./jsonQueries/multiIDB_jwang/ingest_r.json" },
+        new String[] { "./jsonQueries/multiIDB_jwang/joinChain.json" }, new String[] {}, new String[] {});
   }
 
   @Test
@@ -500,27 +513,8 @@ public class JsonQuerySubmitTest extends SystemTestBase {
 
   @Test
   public void jsonTestNoNullChild() throws Exception {
-    File ingestJson = new File("./jsonQueries/globalJoin_jwang/ingest_smallTable.json");
-    File queryJson = new File("./jsonQueries/nullChild_jortiz/ThreeWayLocalJoin.json");
-
-    /* ingest small table data */
-    HttpURLConnection conn = JsonAPIUtils.submitQuery("localhost", masterDaemonPort, queryJson);
-    conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestJson);
-    if (null != conn.getErrorStream()) {
-      throw new IllegalStateException(getContents(conn));
-    }
-    assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
-
-    /* run the query */
-    conn = JsonAPIUtils.submitQuery("localhost", masterDaemonPort, queryJson);
-    assertEquals(HttpURLConnection.HTTP_ACCEPTED, conn.getResponseCode());
-    long queryId = getQueryStatus(conn).queryId;
-    conn.disconnect();
-    while (!server.getQueryManager().queryCompleted(queryId)) {
-      Thread.sleep(5);
-    }
-    QueryStatusEncoding status = server.getQueryManager().getQueryStatus(queryId);
-    assertEquals(Status.SUCCESS, status.status);
+    jsonQuerySubmitWithResultCheck(new String[] { "./jsonQueries/globalJoin_jwang/ingest_smallTable.json" },
+        new String[] { "./jsonQueries/nullChild_jortiz/ThreeWayLocalJoin.json" }, new String[] {}, new String[] {});
   }
 
 }
