@@ -87,10 +87,10 @@ public class QueryConstruct {
 
     Map<Integer, Operator> allOperators = Maps.newHashMap();
     for (PlanFragmentEncoding fragment : fragments) {
-      instantiateOperators(fragment, args, allOperators);
+      instantiateFragmentOperators(fragment, args, allOperators);
     }
-    while (!setConsumerSchema(fragments, allOperators)) {
-      /* Do it iteratively until all consumers have schema. */
+    while (setConsumerSchema(fragments, allOperators)) {
+      /* Do it iteratively until no new consumer has its schema to be set. */
     }
     Map<Integer, SubQueryPlan> plan = Maps.newHashMap();
     for (PlanFragmentEncoding fragment : fragments) {
@@ -461,7 +461,7 @@ public class QueryConstruct {
    * @param args args
    * @param allOperators a map to keep instantiated operators.
    */
-  private static void instantiateOperators(final PlanFragmentEncoding planFragment, final ConstructArgs args,
+  private static void instantiateFragmentOperators(final PlanFragmentEncoding planFragment, final ConstructArgs args,
       final Map<Integer, Operator> allOperators) {
     for (OperatorEncoding<?> encoding : planFragment.operators) {
       if (allOperators.get(encoding.opId) != null) {
@@ -515,11 +515,11 @@ public class QueryConstruct {
    * 
    * @param fragments the JSON-encoded query fragments to be executed in parallel
    * @param allOperators a map to keep instantiated operators.
-   * @return if all the consumers have their schemata set.
+   * @return if any more consumer has its schema to be set.
    */
   private static boolean setConsumerSchema(final List<PlanFragmentEncoding> fragments,
       final Map<Integer, Operator> allOperators) {
-    boolean done = true;
+    boolean changed = false;
     for (PlanFragmentEncoding fragment : fragments) {
       for (OperatorEncoding<?> encoding : fragment.operators) {
         if (encoding instanceof AbstractConsumerEncoding<?>) {
@@ -535,13 +535,13 @@ public class QueryConstruct {
           } else {
             consumer.setSchema(producingOp.getSchema());
           }
-          if (consumer.getSchema() == null) {
-            done = false;
+          if (consumer.getSchema() != null) {
+            changed = true;
           }
         }
       }
     }
-    return done;
+    return changed;
   }
 
   /**

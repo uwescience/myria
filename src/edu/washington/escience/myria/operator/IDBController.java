@@ -29,8 +29,9 @@ import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 /**
- * Together with the EOSController, the IDBController controls what to serve into an iteration and when to stop an
- * iteration.
+ * An IDB in a Datalog program is a relation that will be updated. In general, it can be treated as a non-constant
+ * relation in a query. An IDBController maintains the state of an IDB: it takes tuples in, does aggregation, updates
+ * its internal state, and outputs delta. It also reports to the EOSController to help it determine termination.
  * */
 public class IDBController extends Operator implements StreamingStateful, DbWriter {
 
