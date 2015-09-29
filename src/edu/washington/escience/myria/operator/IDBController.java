@@ -1,29 +1,39 @@
 package edu.washington.escience.myria.operator;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
+import com.almworks.sqlite4java.SQLiteConnection;
+import com.almworks.sqlite4java.SQLiteException;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.accessmethod.AccessMethod;
+import edu.washington.escience.myria.accessmethod.ConnectionInfo;
+import edu.washington.escience.myria.accessmethod.SQLiteInfo;
 import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.LocalFragmentResourceManager;
+import edu.washington.escience.myria.parallel.RelationWriteMetadata;
 import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 /**
- * Together with the EOSController, the IDBController controls what to serve into an iteration and when to stop an
- * iteration.
+ * An IDB in a Datalog program is a relation that will be updated. In general, it can be treated as a non-constant
+ * relation in a query. An IDBController maintains the state of an IDB: it takes tuples in, does aggregation, updates
+ * its internal state, and outputs delta. It also reports to the EOSController to help it determine termination.
  * */
-public class IDBController extends Operator implements StreamingStateful {
+public class IDBController extends Operator implements StreamingStateful, DbWriter {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -96,6 +106,15 @@ public class IDBController extends Operator implements StreamingStateful {
 
   /** if this IDBController uses sync mode. */
   private final boolean sync;
+
+  /** the relation key to store the final state of this IDB, if specified. */
+  private RelationKey relationKey = null;
+
+  /** The connection to the database database. */
+  private AccessMethod accessMethod = null;
+
+  /** The information for the database connection. */
+  private ConnectionInfo connectionInfo = null;
 
   /**
    * The index of the initialIDBInput in children array.
@@ -284,7 +303,10 @@ public class IDBController extends Operator implements StreamingStateful {
 
   @Override
   public final Schema generateSchema() {
-    return initialIDBInput.getSchema();
+    if (!(initialIDBInput instanceof EmptyRelation)) {
+      return initialIDBInput.getSchema();
+    }
+    return iterationInput.getSchema();
   }
 
   /**
@@ -309,6 +331,31 @@ public class IDBController extends Operator implements StreamingStateful {
     state.init(execEnvVars);
     deltaTuples = new LinkedList<TupleBatch>();
     bufferedIterTBs = new ArrayList<TupleBatch>();
+
+    if (relationKey != null) {
+      if (connectionInfo == null && execEnvVars != null) {
+        connectionInfo = (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
+      }
+      if (connectionInfo == null) {
+        throw new DbException("Unable to instantiate DbInsert: connection information unknown");
+      }
+      if (connectionInfo instanceof SQLiteInfo) {
+        /* Set WAL in the beginning. */
+        final File dbFile = new File(((SQLiteInfo) connectionInfo).getDatabaseFilename());
+        SQLiteConnection conn = new SQLiteConnection(dbFile);
+        try {
+          conn.open(true);
+          conn.exec("PRAGMA journal_mode=WAL;");
+        } catch (SQLiteException e) {
+          e.printStackTrace();
+        }
+        conn.dispose();
+      }
+      /* open the database connection */
+      accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
+      accessMethod.dropTableIfExists(relationKey);
+      accessMethod.createTableIfNotExists(relationKey, state.getSchema());
+    }
   }
 
   @Override
@@ -324,6 +371,12 @@ public class IDBController extends Operator implements StreamingStateful {
 
   @Override
   protected final void cleanup() throws DbException {
+    if (relationKey != null) {
+      for (TupleBatch tb : state.exportState()) {
+        accessMethod.tupleBatchInsert(relationKey, tb);
+      }
+      accessMethod.close();
+    }
     eoiReportChannel.release();
     eoiReportChannel = null;
     resourceManager = null;
@@ -352,5 +405,21 @@ public class IDBController extends Operator implements StreamingStateful {
   @Override
   public StreamingState getStreamingState() {
     return state;
+  }
+
+  /**
+   * 
+   * @param key the relation key to store the final state to
+   */
+  public void setStoreRelationKey(final RelationKey key) {
+    relationKey = key;
+  }
+
+  @Override
+  public Map<RelationKey, RelationWriteMetadata> writeSet() {
+    if (relationKey == null) {
+      return ImmutableMap.of();
+    }
+    return ImmutableMap.of(relationKey, new RelationWriteMetadata(relationKey, getSchema(), true, false));
   }
 }

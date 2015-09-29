@@ -85,18 +85,26 @@ public class QueryConstruct {
       }
     }
 
-    Map<Integer, SubQueryPlan> plan = Maps.newHashMap();
-    Map<PlanFragmentEncoding, RootOperator> instantiatedFragments = Maps.newHashMap();
     Map<Integer, Operator> allOperators = Maps.newHashMap();
     for (PlanFragmentEncoding fragment : fragments) {
-      RootOperator op =
-          instantiateFragment(fragment, args, instantiatedFragments, op2OwnerFragmentMapping, allOperators);
+      instantiateFragmentOperators(fragment, args, allOperators);
+    }
+    int loopCount = 0;
+    while (setConsumerSchema(fragments, allOperators) && loopCount++ < allOperators.size()) {
+      /*
+       * Do it iteratively until no new consumer has its schema to be set. Add a loop count to prevent us from having an
+       * infinite loop (which should NOT happen). Since each iteration should set the schema of at least one consumer,
+       * setting the threshold to be the number of operators is enough.
+       */
+    }
+    Map<Integer, SubQueryPlan> plan = Maps.newHashMap();
+    for (PlanFragmentEncoding fragment : fragments) {
+      RootOperator op = instantiateFragment(fragment, args, allOperators);
       for (Integer worker : fragment.workers) {
-        SubQueryPlan workerPlan = plan.get(worker);
-        if (workerPlan == null) {
-          workerPlan = new SubQueryPlan();
-          plan.put(worker, workerPlan);
+        if (!plan.containsKey(worker)) {
+          plan.put(worker, new SubQueryPlan());
         }
+        SubQueryPlan workerPlan = plan.get(worker);
         workerPlan.addRootOp(op);
       }
     }
@@ -452,41 +460,47 @@ public class QueryConstruct {
   }
 
   /**
+   * Instantiate operators in the given fragment.
+   * 
+   * @param planFragment the encoded plan fragment.
+   * @param args args
+   * @param allOperators a map to keep instantiated operators.
+   */
+  private static void instantiateFragmentOperators(final PlanFragmentEncoding planFragment, final ConstructArgs args,
+      final Map<Integer, Operator> allOperators) {
+    for (OperatorEncoding<?> encoding : planFragment.operators) {
+      if (allOperators.get(encoding.opId) != null) {
+        throw new MyriaApiException(Status.BAD_REQUEST, "Multiple operators with opId = " + encoding.opId
+            + " detected in the fragment: " + planFragment.fragmentIndex);
+      }
+      Operator op = encoding.construct(args);
+      /* helpful for debugging. */
+      op.setOpName(MoreObjects.firstNonNull(encoding.opName, "Operator" + String.valueOf(encoding.opId)));
+      op.setOpId(encoding.opId);
+      op.setFragmentId(planFragment.fragmentIndex);
+      allOperators.put(encoding.opId, op);
+    }
+    for (OperatorEncoding<?> encoding : planFragment.operators) {
+      Operator op = allOperators.get(encoding.opId);
+      encoding.connect(op, allOperators);
+    }
+  }
+
+  /**
    * Given an encoding of a plan fragment, i.e., a connected list of operators, instantiate the actual plan fragment.
    * This includes instantiating the operators and connecting them together. The constraint on the plan fragments is
    * that the last operator in the fragment must be the RootOperator. There is a special exception for older plans in
    * which a CollectConsumer will automatically have a SinkRoot appended to it.
    * 
    * @param planFragment the encoded plan fragment.
+   * @param allOperators a map to keep instantiated operators.
    * @return the actual plan fragment.
    */
   private static RootOperator instantiateFragment(final PlanFragmentEncoding planFragment, final ConstructArgs args,
-      final Map<PlanFragmentEncoding, RootOperator> instantiatedFragments,
-      final Map<Integer, PlanFragmentEncoding> opOwnerFragment, final Map<Integer, Operator> allOperators) {
-    RootOperator instantiatedFragment = instantiatedFragments.get(planFragment);
-    if (instantiatedFragment != null) {
-      return instantiatedFragment;
-    }
-
+      final Map<Integer, Operator> allOperators) {
     RootOperator fragmentRoot = null;
-    Map<Integer, Operator> myOperators = Maps.newHashMap();
-    Map<Integer, AbstractConsumerEncoding<?>> nonIterativeConsumers = Maps.newHashMap();
-    Set<IDBControllerEncoding> idbs = Sets.newHashSet();
-    /* Instantiate all the operators. */
     for (OperatorEncoding<?> encoding : planFragment.operators) {
-      if (encoding instanceof IDBControllerEncoding) {
-        idbs.add((IDBControllerEncoding) encoding);
-      }
-      if (encoding instanceof AbstractConsumerEncoding<?>) {
-        nonIterativeConsumers.put(encoding.opId, (AbstractConsumerEncoding<?>) encoding);
-      }
-
-      Operator op = encoding.construct(args);
-      /* helpful for debugging. */
-      op.setOpName(MoreObjects.firstNonNull(encoding.opName, "Operator" + String.valueOf(encoding.opId)));
-      op.setOpId(encoding.opId);
-      op.setFragmentId(planFragment.fragmentIndex);
-      myOperators.put(encoding.opId, op);
+      Operator op = allOperators.get(encoding.opId);
       if (op instanceof RootOperator) {
         if (fragmentRoot != null) {
           throw new MyriaApiException(Status.BAD_REQUEST, "Multiple " + RootOperator.class.getSimpleName()
@@ -495,58 +509,44 @@ public class QueryConstruct {
         fragmentRoot = (RootOperator) op;
       }
     }
-    allOperators.putAll(myOperators);
-
-    for (IDBControllerEncoding idb : idbs) {
-      nonIterativeConsumers.remove(idb.argIterationInput);
-      nonIterativeConsumers.remove(idb.argEosControllerInput);
-    }
-
-    Set<PlanFragmentEncoding> dependantFragments = Sets.newHashSet();
-    for (AbstractConsumerEncoding<?> c : nonIterativeConsumers.values()) {
-      dependantFragments.add(opOwnerFragment.get(c.argOperatorId));
-    }
-
-    for (PlanFragmentEncoding f : dependantFragments) {
-      instantiateFragment(f, args, instantiatedFragments, opOwnerFragment, allOperators);
-    }
-
-    for (AbstractConsumerEncoding<?> c : nonIterativeConsumers.values()) {
-      Consumer consumer = (Consumer) myOperators.get(c.opId);
-      Integer producingOpName = c.argOperatorId;
-      Operator producingOp = allOperators.get(producingOpName);
-      if (producingOp instanceof IDBController) {
-        consumer.setSchema(IDBController.EOI_REPORT_SCHEMA);
-      } else {
-        consumer.setSchema(producingOp.getSchema());
-      }
-    }
-
-    /* Connect all the operators. */
-    for (OperatorEncoding<?> encoding : planFragment.operators) {
-      encoding.connect(myOperators.get(encoding.opId), myOperators);
-    }
-
-    for (IDBControllerEncoding idb : idbs) {
-      IDBController idbOp = (IDBController) myOperators.get(idb.opId);
-      Consumer eosControllerInput = (Consumer) idbOp.getChildren()[IDBController.CHILDREN_IDX_EOS_CONTROLLER_INPUT];
-      eosControllerInput.setSchema(EOSController.EOS_REPORT_SCHEMA);
-      Operator iterativeInput = idbOp.getChildren()[IDBController.CHILDREN_IDX_ITERATION_INPUT];
-      if (iterativeInput instanceof Consumer) {
-        Operator initialInput = idbOp.getChildren()[IDBController.CHILDREN_IDX_INITIAL_IDB_INPUT];
-        ((Consumer) iterativeInput).setSchema(initialInput.getSchema());
-        // Note: better to check if the producer of this iterativeInput also has the same schema, but can't find a good
-        // place to add the check given the current framework.
-      }
-    }
-
     if (fragmentRoot == null) {
       throw new MyriaApiException(Status.BAD_REQUEST, "No " + RootOperator.class.getSimpleName()
           + " detected in the fragment.");
     }
-
-    instantiatedFragments.put(planFragment, fragmentRoot);
     return fragmentRoot;
+  }
+
+  /**
+   * 
+   * @param fragments the JSON-encoded query fragments to be executed in parallel
+   * @param allOperators a map to keep instantiated operators.
+   * @return if any more consumer has its schema to be set.
+   */
+  private static boolean setConsumerSchema(final List<PlanFragmentEncoding> fragments,
+      final Map<Integer, Operator> allOperators) {
+    boolean changed = false;
+    for (PlanFragmentEncoding fragment : fragments) {
+      for (OperatorEncoding<?> encoding : fragment.operators) {
+        if (encoding instanceof AbstractConsumerEncoding<?>) {
+          Consumer consumer = (Consumer) allOperators.get(encoding.opId);
+          if (consumer.getSchema() != null) {
+            continue;
+          }
+          Operator producingOp = allOperators.get(((AbstractConsumerEncoding<?>) encoding).argOperatorId);
+          if (producingOp instanceof IDBController) {
+            consumer.setSchema(IDBController.EOI_REPORT_SCHEMA);
+          } else if (producingOp instanceof EOSController) {
+            consumer.setSchema(EOSController.EOS_REPORT_SCHEMA);
+          } else {
+            consumer.setSchema(producingOp.getSchema());
+          }
+          if (consumer.getSchema() != null) {
+            changed = true;
+          }
+        }
+      }
+    }
+    return changed;
   }
 
   /**

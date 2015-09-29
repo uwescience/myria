@@ -100,7 +100,12 @@
 					"keyColIndices" : [0],
 					"valueColIndices" : [1]
 				},
-				"argEosControllerInput" : 15
+				"argEosControllerInput" : 15,
+				"relationKey": {
+					"programName": "connected_components",
+					"relationName": "result",
+					"userName": "jwang"
+				}
 			},
 			{
 				"opId" : 6,
@@ -141,39 +146,6 @@
 				"argPf" : {
 					"type" : "SingleFieldHash",
 					"index" : 0
-				}
-			}
-			]
-		},
-		{
-			"operators": 
-			[
-			{
-				"opId" : 7,
-				"opType" : "LocalMultiwayConsumer",
-				"argOperatorId" : 6
-			},
-			{
-				"opId" : 8,
-				"opType" : "SingleGroupByAggregate",
-				"argChild" : 7,
-				"argGroupField" : "0",
-                "aggregators": [
-                {
-	                    "type": "SingleColumn",
-                        "column": 1,
-                        "aggOps" : ["MIN"]
-                }]
-			},
-			{
-				"argChild": 8,
-				"argOverwriteTable": true,
-				"opId" : 9,
-				"opType": "DbInsert",
-				"relationKey": {
-					"programName": "connected_components",
-					"relationName": "result",
-					"userName": "jwang"
 				}
 			}
 			]
