@@ -553,8 +553,15 @@ public final class LocalFragment {
   /**
    * @return if the output channels are available for writing.
    */
-  private boolean isOutputAvailable() {
+  public boolean isOutputAvailable() {
     return (executionCondition.get() & STATE_OUTPUT_AVAILABLE) == STATE_OUTPUT_AVAILABLE;
+  }
+
+  /**
+   * @return if the fragment is in execution.
+   */
+  public boolean isReady() {
+    return (executionCondition.get() & EXECUTION_READY) == EXECUTION_READY;
   }
 
   /**
@@ -863,5 +870,13 @@ public final class LocalFragment {
       ret = Math.max(ret, getMaxOpId(child));
     }
     return ret;
+  }
+
+  /**
+   * 
+   * @return the node id (worker or master) that this fragment live on.
+   */
+  public int getNodeId() {
+    return ipcEntityID;
   }
 }

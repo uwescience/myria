@@ -83,6 +83,9 @@ public final class MyriaConstants {
   /** Time interval between two resource usage reports. */
   public static final int RESOURCE_REPORT_INTERVAL = 1000;
 
+  /** Time interval between two checks of write buffer expansions. */
+  public static final int WRITE_BUFFER_EXPANSION_INTERVAL = 100;
+
   /** The identity of the master worker is current always zero. */
   public static final int MASTER_ID = 0;
 

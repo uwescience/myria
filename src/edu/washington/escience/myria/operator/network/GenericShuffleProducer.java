@@ -19,6 +19,9 @@ public class GenericShuffleProducer extends Producer {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
+  /** The logger for this class. */
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(GenericShuffleProducer.class);
+
   /**
    * the partition function.
    * */

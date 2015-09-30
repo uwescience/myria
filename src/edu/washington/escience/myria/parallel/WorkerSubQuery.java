@@ -10,6 +10,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.socket.nio.NioChannelConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,6 +25,7 @@ import edu.washington.escience.myria.operator.StreamingState;
 import edu.washington.escience.myria.operator.TupleSource;
 import edu.washington.escience.myria.operator.network.Producer;
 import edu.washington.escience.myria.operator.network.RecoverProducer;
+import edu.washington.escience.myria.parallel.ipc.StreamIOChannelID;
 import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myria.profiling.ProfilingLogger;
 import edu.washington.escience.myria.storage.TupleBatch;
@@ -79,6 +82,9 @@ public class WorkerSubQuery extends LocalSubQuery {
   /** Report resource usage at a fixed rate. Only enabled when the profiling mode has resource. */
   private Timer resourceReportTimer;
 
+  /** Check if any Netty write buffers of channels of fragments need to be expanded to avoid cyclic blocking. */
+  private Timer writeBufferExpandTimer;
+
   /**
    * The future listener for processing the complete events of the execution of all the subquery's fragments.
    */
@@ -110,6 +116,9 @@ public class WorkerSubQuery extends LocalSubQuery {
         if (LOGGER.isInfoEnabled()) {
           LOGGER.info("Query #{} executed for {}", getSubQueryId(), DateTimeUtils
               .nanoElapseToHumanReadable(getExecutionStatistics().getQueryExecutionElapse()));
+        }
+        if (writeBufferExpandTimer != null) {
+          writeBufferExpandTimer.cancel();
         }
         if (getProfilingMode().size() > 0) {
           try {
@@ -206,15 +215,77 @@ public class WorkerSubQuery extends LocalSubQuery {
 
   @Override
   public final void startExecution() {
+    if (getExecutionFuture().isDone()) {
+      /* Could be caused by an error during initialization. Don't execute it in this case. */
+      return;
+    }
     LOGGER.info("Subquery #{} start processing", getSubQueryId());
     getExecutionStatistics().markStart();
     if (getProfilingMode().contains(ProfilingMode.RESOURCE)) {
       resourceReportTimer = new Timer();
       resourceReportTimer.scheduleAtFixedRate(new ResourceUsageReporter(), 0, MyriaConstants.RESOURCE_REPORT_INTERVAL);
     }
+    writeBufferExpandTimer = new Timer();
+    writeBufferExpandTimer.scheduleAtFixedRate(new FragmentChannelWriteBufferExpander(), 0,
+        MyriaConstants.WRITE_BUFFER_EXPANSION_INTERVAL);
     startMilliseconds = System.currentTimeMillis();
     for (LocalFragment t : fragments) {
       t.start();
+    }
+  }
+
+  /**
+   * Check if any write buffer needs to be expanded. It solves the case where some fragments with recursive dependencies
+   * all have INPUT_AVAILABLE but not OUTPUT_AVAILABLE, so that none of them is ready to be executed and the query
+   * hangs. This is caused by full Netty output channel write buffers which can't be consumed by downstream fragments
+   * that are also not ready. The current solution is to increase the buffer watermarks to trigger some fragments.
+   */
+  private class FragmentChannelWriteBufferExpander extends ErrorLoggingTimerTask {
+    @Override
+    public synchronized void runInner() {
+      boolean canProceed = false;
+      List<LocalFragment> blockedFragments = new ArrayList<LocalFragment>();
+      for (LocalFragment fragment : fragments) {
+        if (!fragment.isFinished()) {
+          if (fragment.isReady()) {
+            canProceed = true;
+            break;
+          } else {
+            blockedFragments.add(fragment);
+          }
+        }
+      }
+      if (!canProceed) {
+        /*
+         * Query is not finished but no fragment is ready to be executed. Should be caused by !OUTPUT_AVAILABLE which is
+         * caused by full output channel write buffers.
+         */
+        for (LocalFragment fragment : blockedFragments) {
+          if (fragment.getRootOp() instanceof Producer && !fragment.isOutputAvailable()) {
+            StreamIOChannelID[] ids = ((Producer) fragment.getRootOp()).getOutputChannelIDs(fragment.getNodeId());
+            StreamOutputChannel<?>[] channels = ((Producer) fragment.getRootOp()).getChannels();
+            for (int i = 0; i < ids.length; ++i) {
+              Channel ch = channels[i].getIOChannel();
+              if (!ch.isWritable()) {
+                /*
+                 * Increase the write buffer watermarks. Heuristics for now: low = high, high *= 2. It's possible to get
+                 * OutOfMemory with larger write buffers, but that is a scheduling problem. The query deserves OOM in
+                 * this case.
+                 */
+                NioChannelConfig config = (NioChannelConfig) (ch.getConfig());
+                config.setWriteBufferHighWaterMark(config.getWriteBufferHighWaterMark() * 2);
+                config.setWriteBufferLowWaterMark(config.getWriteBufferLowWaterMark() * 2);
+                if (LOGGER.isDebugEnabled()) {
+                  LOGGER.debug("Expanded water marks to be low: " + config.getWriteBufferLowWaterMark() + " high: "
+                      + config.getWriteBufferHighWaterMark());
+                }
+                /* Now we have new output channels available, the fragment may get ready to be executed. */
+                fragment.notifyOutputEnabled(ids[i]);
+              }
+            }
+          }
+        }
+      }
     }
   }
 
