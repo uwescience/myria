@@ -70,6 +70,7 @@ import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbDelete;
 import edu.washington.escience.myria.operator.DbInsert;
+import edu.washington.escience.myria.operator.DbPersist;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DuplicateTBGenerator;
 import edu.washington.escience.myria.operator.EOSSource;
@@ -1052,6 +1053,44 @@ public final class Server {
     /* Deleting from the catalog */
     try {
       catalog.deleteRelationFromCatalog(relationKey);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+
+    return getDatasetStatus(relationKey);
+
+  }
+
+  /**
+   * @param relationKey the relationKey of the dataset to persist
+   * @return the status
+   * @throws DbException if there is an error
+   * @throws InterruptedException interrupted
+   */
+  public DatasetStatus persistDataset(final RelationKey relationKey) throws DbException, InterruptedException {
+
+    /* Mark the relation as is_persistent -- locks? */
+    try {
+      catalog.markRelationPersistent(relationKey);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+
+    /* Delete from postgres at each worker by calling the Persist Operator */
+    try {
+      Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
+      for (Integer workerId : getWorkersForRelation(relationKey, null)) {
+        workerPlans.put(workerId, new SubQueryPlan(new DbPersist(EmptyRelation.of(catalog.getSchema(relationKey)),
+            relationKey, null)));
+      }
+      ListenableFuture<Query> qf =
+          queryManager.submitQuery("persist " + relationKey.toString(), "persist " + relationKey.toString(), "persist "
+              + relationKey.toString(getDBMS()), new SubQueryPlan(new SinkRoot(new EOSSource())), workerPlans);
+      try {
+        qf.get();
+      } catch (ExecutionException e) {
+        throw new DbException("Error executing query", e.getCause());
+      }
     } catch (CatalogException e) {
       throw new DbException(e);
     }

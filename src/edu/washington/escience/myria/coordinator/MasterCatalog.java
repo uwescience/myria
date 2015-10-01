@@ -1454,6 +1454,48 @@ public final class MasterCatalog {
   }
 
   /**
+   * Mark a relation as is_persistent
+   *
+   * @param relation the relation to be labeled
+   * @throws CatalogException if there is an error
+   */
+  public void markRelationPersistent(@Nonnull final RelationKey relation) throws CatalogException {
+    Objects.requireNonNull(relation, "relation");
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+
+    if (isPersistentRelation(relation)) {
+      LOGGER.warn("Relation has already been deleted");
+    }
+
+    /* Do the work -- for now just mark int the catalog as persistent */
+    try {
+      queue.execute(new SQLiteJob<Void>() {
+        @Override
+        protected Void job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+          try {
+            SQLiteStatement statement =
+                sqliteConnection
+                    .prepare("UPDATE relations SET is_persistent=1 WHERE user_name=? AND program_name=? AND relation_name=?;");
+            statement.bind(1, relation.getUserName());
+            statement.bind(2, relation.getProgramName());
+            statement.bind(3, relation.getRelationName());
+            statement.stepThrough();
+            statement.dispose();
+            statement = null;
+          } catch (final SQLiteException e) {
+            throw new CatalogException(e);
+          }
+          return null;
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
    * Add the metadata for one or more relations to the catalog.
    * 
    * @param relationsCreated which relations were created.
@@ -1644,6 +1686,46 @@ public final class MasterCatalog {
             SQLiteStatement statement =
                 sqliteConnection
                     .prepare("SELECT is_deleted FROM relations WHERE user_name=? AND program_name=? AND relation_name=?;");
+            statement.bind(1, relationKey.getUserName());
+            statement.bind(2, relationKey.getProgramName());
+            statement.bind(3, relationKey.getRelationName());
+
+            if (statement.step()) {
+              ret = statement.columnInt(0);
+            }
+            statement.dispose();
+            statement = null;
+          } catch (final SQLiteException e) {
+            throw new CatalogException(e);
+          }
+          return (ret == 0) ? false : true;
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
+   * Checking whether the relation has an is_persistent status
+   *
+   * @param relationKey the relation to check is_deleted status.
+   * @return a boolean whether the relation is in a is_deleted status.
+   * @throws CatalogException if there is an error.
+   */
+  public Boolean isPersistentRelation(final RelationKey relationKey) throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+    try {
+      return queue.execute(new SQLiteJob<Boolean>() {
+        @Override
+        protected Boolean job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+          int ret = 0;
+          try {
+            SQLiteStatement statement =
+                sqliteConnection
+                    .prepare("SELECT is_persistent FROM relations WHERE user_name=? AND program_name=? AND relation_name=?;");
             statement.bind(1, relationKey.getUserName());
             statement.bind(2, relationKey.getProgramName());
             statement.bind(3, relationKey.getRelationName());

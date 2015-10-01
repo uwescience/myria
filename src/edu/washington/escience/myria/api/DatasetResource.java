@@ -366,6 +366,33 @@ public final class DatasetResource {
   }
 
   /**
+   * @param userName the user who owns the target relation.
+   * @param programName the program to which the target relation belongs.
+   * @param relationName the name of the target relation.
+   * @return metadata
+   * @throws DbException if there is an error in the database.
+   */
+  @POST
+  @Path("/persist/user-{userName}/program-{programName}/relation-{relationName}/")
+  public Response persistDataset(@PathParam("userName") final String userName,
+      @PathParam("programName") final String programName, @PathParam("relationName") final String relationName)
+      throws DbException {
+    DatasetStatus status = server.getDatasetStatus(RelationKey.of(userName, programName, relationName));
+    if (status == null) {
+      /* Dataset not found, throw a 404 (Not Found) */
+      throw new MyriaApiException(Status.NOT_FOUND, "That dataset was not found");
+    }
+    RelationKey relationKey = status.getRelationKey();
+    // run the persist command
+    try {
+      status = server.persistDataset(relationKey);
+    } catch (Exception e) {
+      throw new DbException();
+    }
+    return Response.noContent().build();
+  }
+
+  /**
    * @param dataset the dataset to be ingested.
    * @return the created dataset resource.
    * @throws DbException if there is an error in the database.
