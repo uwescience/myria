@@ -1,8 +1,9 @@
-Myria
-=====
-[![Build Status](https://travis-ci.org/uwescience/myria.svg)](https://travis-ci.org/uwescience/myria) [![Coverage Status](https://coveralls.io/repos/uwescience/myria/badge.png)](https://coveralls.io/r/uwescience/myria)
-
-Myria is a scalable Analytics-as-a-Service platform based on relational algebra. See the website at <http://myria.cs.washington.edu>. This repository is the backend engine of Myria, MyriaX.
+---
+layout: default
+title: MyriaX
+group: "docs"
+weight: 1
+---
 
 # MyriaX Engine
 
@@ -127,9 +128,9 @@ This command will output things like the following:
 
 If everything is okay, it will start the workers:
 
-	starting workers
-	2 = localhost
-	1 = localhost
+    starting workers
+    2 = localhost
+    1 = localhost
 
 #### Check the cluster status
 
@@ -176,8 +177,8 @@ You can also use it to ingest data from an URL, for example, a location in HDFS 
 The Datalog expression of this query is specified in `global_join.json`. The SQL equivalence is:
 
     Select t1.col1, t2.col2
-	From smallTable as t1, smallTable as t2
-	Where t1.col2 = t2.col1;
+    From smallTable as t1, smallTable as t2
+    Where t1.col2 = t2.col1;
 
 This query writes results back to the backend storage in a relation called `smallTable_join_smallTable`.
 You should be able to find the result tables in your
