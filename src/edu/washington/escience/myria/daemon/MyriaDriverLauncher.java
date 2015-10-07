@@ -1,0 +1,128 @@
+package edu.washington.escience.myria.daemon;
+
+import java.io.IOException;
+
+import org.apache.commons.cli.ParseException;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.reef.client.DriverConfiguration;
+import org.apache.reef.client.REEF;
+import org.apache.reef.runtime.local.client.LocalRuntimeConfiguration;
+// import org.apache.reef.runtime.yarn.client.YarnClientConfiguration;
+import org.apache.reef.tang.Configuration;
+import org.apache.reef.tang.Configurations;
+import org.apache.reef.tang.Tang;
+import org.apache.reef.tang.annotations.Name;
+import org.apache.reef.tang.annotations.NamedParameter;
+import org.apache.reef.tang.exceptions.BindException;
+import org.apache.reef.tang.exceptions.InjectionException;
+import org.apache.reef.tang.formats.AvroConfigurationSerializer;
+import org.apache.reef.tang.formats.CommandLine;
+import org.apache.reef.util.EnvironmentUtils;
+
+import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.coordinator.ConfigFileException;
+import edu.washington.escience.myria.daemon.MyriaDriver.ActiveContextHandler;
+import edu.washington.escience.myria.daemon.MyriaDriver.CompletedEvaluatorHandler;
+import edu.washington.escience.myria.daemon.MyriaDriver.CompletedTaskHandler;
+import edu.washington.escience.myria.daemon.MyriaDriver.ContextFailureHandler;
+import edu.washington.escience.myria.daemon.MyriaDriver.EvaluatorAllocatedHandler;
+import edu.washington.escience.myria.daemon.MyriaDriver.EvaluatorFailedHandler;
+import edu.washington.escience.myria.daemon.MyriaDriver.RunningTaskHandler;
+import edu.washington.escience.myria.daemon.MyriaDriver.StartHandler;
+import edu.washington.escience.myria.daemon.MyriaDriver.StopHandler;
+import edu.washington.escience.myria.daemon.MyriaDriver.TaskFailureHandler;
+import edu.washington.escience.myria.tools.MyriaConfigurationParser;
+
+public final class MyriaDriverLauncher {
+
+  private static final String USAGE_STRING = "Usage: MyriaDriverLauncher -configPath <configPath>";
+
+  /**
+   * @param args full path to the configuration directory.
+   * @throws Exception if the Driver can't start.
+   */
+  public static void main(final String[] args) throws Exception {
+    if (args.length != 2) {
+      System.err.println(USAGE_STRING);
+      System.exit(-1);
+    }
+    // final Configuration runtimeConfiguration = YarnClientConfiguration.CONF.build();
+    final Configuration runtimeConfiguration = LocalRuntimeConfiguration.CONF.build();
+    launchDriver(runtimeConfiguration, args);
+  }
+
+  /**
+   * @param configPath path to directory of containing configuration files
+   * @return Configuration object.
+   */
+  private static Configuration getMyriaGlobalConf(final String configPath) throws IOException,
+      BindException, ConfigFileException {
+    final String configFile = FilenameUtils.concat(configPath, MyriaConstants.DEPLOYMENT_CONF_FILE);
+    return MyriaConfigurationParser.loadConfiguration(configFile);
+  }
+
+  /**
+   * @return The Driver configuration.
+   */
+  private final static Configuration getDriverConf() {
+    final Configuration driverConf =
+        DriverConfiguration.CONF
+            .set(DriverConfiguration.GLOBAL_LIBRARIES,
+                EnvironmentUtils.getClassLocation(MyriaDriver.class))
+            .set(DriverConfiguration.DRIVER_IDENTIFIER, "MyriaDriver")
+            .set(DriverConfiguration.ON_DRIVER_STARTED, StartHandler.class)
+            .set(DriverConfiguration.ON_DRIVER_STOP, StopHandler.class)
+            .set(DriverConfiguration.ON_EVALUATOR_ALLOCATED, EvaluatorAllocatedHandler.class)
+            .set(DriverConfiguration.ON_EVALUATOR_COMPLETED, CompletedEvaluatorHandler.class)
+            .set(DriverConfiguration.ON_EVALUATOR_FAILED, EvaluatorFailedHandler.class)
+            .set(DriverConfiguration.ON_CONTEXT_ACTIVE, ActiveContextHandler.class)
+            .set(DriverConfiguration.ON_CONTEXT_FAILED, ContextFailureHandler.class)
+            .set(DriverConfiguration.ON_TASK_RUNNING, RunningTaskHandler.class)
+            .set(DriverConfiguration.ON_TASK_COMPLETED, CompletedTaskHandler.class)
+            .set(DriverConfiguration.ON_TASK_FAILED, TaskFailureHandler.class).build();
+    return driverConf;
+  }
+
+  /**
+   * Launch the Myria driver.
+   * 
+   * @param runtimeConf The runtime configuration (e.g. Local, YARN, etc)
+   * @param args Command line arguments.
+   * @throws InjectionException
+   * @throws java.io.IOException
+   * @throws ParseException
+   * @throws ConfigFileException
+   */
+  public static void launchDriver(final Configuration runtimeConf, final String[] args)
+      throws InjectionException, IOException, ParseException, ConfigFileException {
+    final Tang tang = Tang.Factory.getTang();
+
+    @SuppressWarnings("unchecked")
+    final Configuration commandLineConf = CommandLine.parseToConfiguration(args, ConfigPath.class);
+    final String configPath = tang.newInjector(commandLineConf).getNamedInstance(ConfigPath.class);
+    final String serializedGlobalConf =
+        new AvroConfigurationSerializer().toString(getMyriaGlobalConf(configPath));
+    final Configuration globalConfWrapper =
+        tang.newConfigurationBuilder()
+            .bindNamedParameter(SerializedGlobalConf.class, serializedGlobalConf).build();
+    final Configuration driverConf = Configurations.merge(getDriverConf(), globalConfWrapper);
+    final REEF reef = tang.newInjector(runtimeConf).getInstance(REEF.class);
+    reef.submit(driverConf);
+  }
+
+  /**
+   * Command line parameter: path to configuration file on driver launch host.
+   */
+  @NamedParameter(doc = "local configuration file directory", short_name = "configPath")
+  public static final class ConfigPath implements Name<String> {
+  }
+
+  /**
+   * Serialized Myria global configuration (which itself contains serialized configuration for each
+   * worker).
+   */
+  @NamedParameter(doc = "serialized Myria global configuration")
+  public static final class SerializedGlobalConf implements Name<String> {
+  }
+
+}

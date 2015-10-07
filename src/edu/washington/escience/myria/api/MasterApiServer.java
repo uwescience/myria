@@ -38,14 +38,13 @@ public final class MasterApiServer {
    * @param port the port the Myria API server will listen on.
    * @throws IOException if the server cannot be created.
    */
-  public MasterApiServer(final Server server, final MasterDaemon daemon, final int port) throws IOException {
+  public MasterApiServer(final Server server, final MasterDaemon daemon, final int port,
+      final String keystorePath, final String keystorePassword, final String adminPassword)
+      throws IOException {
     URI baseUri = UriBuilder.fromUri("http://0.0.0.0/").port(port).build();
-    ResourceConfig masterApplication = new MasterApplication(server, daemon);
+    ResourceConfig masterApplication = new MasterApplication(server, daemon, adminPassword);
 
     /* If the keystore path and password are both set, use SSL. */
-    String keystorePath = server.getConfig().getOptional("deployment", MyriaApiConstants.MYRIA_API_SSL_KEYSTORE);
-    String keystorePassword =
-        server.getConfig().getOptional("deployment", MyriaApiConstants.MYRIA_API_SSL_KEYSTORE_PASSWORD);
     if (keystorePath != null && keystorePassword != null) {
       LOGGER.info("Enabling SSL");
       baseUri = UriBuilder.fromUri(baseUri).scheme("https").build();
@@ -57,8 +56,8 @@ public final class MasterApiServer {
             "SSL keystore configuration did not validate. Missing or incorrect path to keystore? Wrong password?");
       }
       webServer =
-          GrizzlyHttpServerFactory.createHttpServer(baseUri, masterApplication, true, new SSLEngineConfigurator(sslCon,
-              false, false, false));
+          GrizzlyHttpServerFactory.createHttpServer(baseUri, masterApplication, true,
+              new SSLEngineConfigurator(sslCon, false, false, false));
     } else {
       LOGGER.info("Not enabling SSL");
       webServer = GrizzlyHttpServerFactory.createHttpServer(baseUri, masterApplication);

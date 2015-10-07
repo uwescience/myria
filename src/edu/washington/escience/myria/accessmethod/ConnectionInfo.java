@@ -62,7 +62,8 @@ public abstract class ConnectionInfo {
   }
 
   /**
-   * Constructs a database connection information from the input and returns its JSON string representation.
+   * Constructs a database connection information from the input and returns its JSON string
+   * representation.
    * 
    * @param dbms the database system.
    * @param hostName the host name.
@@ -73,22 +74,21 @@ public abstract class ConnectionInfo {
    * @param databasePort the port the database is using; pass null to use default port
    * @return the JSON string representation of the connection information.
    */
-  public static String toJson(@Nonnull final String dbms, final String hostName, final String dirName,
-      final int workerId, final String databaseName, final String databasePassword, final String databasePort) {
+  public static String toJson(@Nonnull final String dbms, final String hostName,
+      final String dirName, final int workerId, final String databaseName,
+      final String databasePassword, final Integer databasePort) {
     String result = "";
     String host;
     String user;
     String jdbcDriverName;
     JdbcInfo jdbcInfo;
-    Integer port = null;
-    if (databasePort != null) {
-      port = Integer.parseInt(databasePort);
-    }
+    int port;
 
     switch (dbms) {
       case MyriaConstants.STORAGE_SYSTEM_SQLITE:
         Objects.requireNonNull(workerId);
-        SQLiteInfo sqliteInfo = SQLiteInfo.of(Paths.get(dirName, "workers", workerId + "", "data.db").toString());
+        SQLiteInfo sqliteInfo =
+            SQLiteInfo.of(Paths.get(dirName, "workers", workerId + "", "data.db").toString());
         result = sqliteInfo.toJson();
         break;
       case MyriaConstants.STORAGE_SYSTEM_MONETDB:
@@ -96,11 +96,12 @@ public abstract class ConnectionInfo {
         // Now it is hardcoded to use a specific connection info, which allows only one
         // myria instance per machine in the cluster
         host = hostName;
-        port = MoreObjects.firstNonNull(port, MyriaConstants.STORAGE_MONETDB_PORT);
+        port = MoreObjects.firstNonNull(databasePort, MyriaConstants.STORAGE_MONETDB_PORT);
 
         user = MyriaConstants.STORAGE_JDBC_USERNAME;
         jdbcDriverName = "nl.cwi.monetdb.jdbc.MonetDriver";
-        jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, databasePassword);
+        jdbcInfo =
+            JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, databasePassword);
         result = jdbcInfo.toJson();
         break;
 
@@ -109,11 +110,12 @@ public abstract class ConnectionInfo {
         // Now it is hardcoded to use a specific connection info, which allows only one
         // myria instance per machine in the cluster
         host = hostName;
-        port = MoreObjects.firstNonNull(port, MyriaConstants.STORAGE_POSTGRESQL_PORT);
+        port = MoreObjects.firstNonNull(databasePort, MyriaConstants.STORAGE_POSTGRESQL_PORT);
 
         user = MyriaConstants.STORAGE_JDBC_USERNAME;
         jdbcDriverName = "org.postgresql.Driver";
-        jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, databasePassword);
+        jdbcInfo =
+            JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, databasePassword);
         result = jdbcInfo.toJson();
         break;
 
@@ -122,11 +124,12 @@ public abstract class ConnectionInfo {
         // Now it is hardcoded to use a specific connection info, which allows only one
         // myria instance per machine in the cluster
         host = hostName;
-        port = MoreObjects.firstNonNull(port, MyriaConstants.STORAGE_MYSQL_PORT);
+        port = MoreObjects.firstNonNull(databasePort, MyriaConstants.STORAGE_MYSQL_PORT);
 
         user = MyriaConstants.STORAGE_JDBC_USERNAME;
         jdbcDriverName = "com.mysql.jdbc.Driver";
-        jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, databasePassword);
+        jdbcInfo =
+            JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, databasePassword);
         result = jdbcInfo.toJson();
         break;
     }
@@ -134,7 +137,8 @@ public abstract class ConnectionInfo {
   }
 
   /**
-   * @return the DBMS, e.g., MyriaConstants.STORAGE_SYSTEM_MYSQL or MyriaConstants.STORAGE_SYSTEM_MONETDB.
+   * @return the DBMS, e.g., MyriaConstants.STORAGE_SYSTEM_MYSQL or
+   *         MyriaConstants.STORAGE_SYSTEM_MONETDB.
    */
   public abstract String getDbms();
 

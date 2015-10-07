@@ -1,9 +1,6 @@
 package edu.washington.escience.myria.parallel;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.channels.FileLock;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -11,13 +8,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
 
 import javax.annotation.concurrent.GuardedBy;
 
 import org.apache.commons.io.FilenameUtils;
+import org.apache.reef.tang.Configuration;
+import org.apache.reef.tang.Injector;
+import org.apache.reef.tang.Tang;
+import org.apache.reef.tang.annotations.Parameter;
+import org.apache.reef.tang.formats.AvroConfigurationSerializer;
+import org.apache.reef.task.Task;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
@@ -29,44 +29,57 @@ import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMode;
-import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.coordinator.ConfigFileException;
+import edu.washington.escience.myria.daemon.MyriaDriverLauncher;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.InJVMLoopbackChannelSink;
 import edu.washington.escience.myria.profiling.ProfilingLogger;
 import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myria.proto.QueryProto.QueryMessage;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
-import edu.washington.escience.myria.tools.MyriaConfiguration;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule;
+import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule;
 import edu.washington.escience.myria.util.IPCUtils;
-import edu.washington.escience.myria.util.JVMUtils;
-import edu.washington.escience.myria.util.concurrent.ErrorLoggingTimerTask;
 import edu.washington.escience.myria.util.concurrent.RenamingThreadFactory;
 import edu.washington.escience.myria.util.concurrent.ThreadAffinityFixedRoundRobinExecutionPool;
 
 /**
- * Workers do the real query execution. A query received by the server will be pre-processed and then dispatched to the
- * workers.
+ * Workers do the real query execution. A query received by the server will be pre-processed and
+ * then dispatched to the workers.
  * 
  * To execute a query on a worker, 4 steps are proceeded:
  * 
- * 1) A worker receive an Operator instance as its execution plan. The worker then stores the plan and does some
- * pre-processing, e.g. initializes the data structures which are needed during the execution of the plan.
+ * 1) A worker receive an Operator instance as its execution plan. The worker then stores the plan
+ * and does some pre-processing, e.g. initializes the data structures which are needed during the
+ * execution of the plan.
  * 
- * 2) Each worker sends back to the server a message (it's id) to notify the server that the query plan has been
- * successfully received. And then each worker waits for the server to send the "start" message.
+ * 2) Each worker sends back to the server a message (it's id) to notify the server that the query
+ * plan has been successfully received. And then each worker waits for the server to send the
+ * "start" message.
  * 
  * 3) Each worker executes its query plan after "start" is received.
  * 
- * 4) After the query plan finishes, each worker removes the query plan and related data structures, and then waits for
- * next query plan
+ * 4) After the query plan finishes, each worker removes the query plan and related data structures,
+ * and then waits for next query plan
  * 
  */
-public final class Worker {
+public final class Worker implements Task {
 
   /** The logger for this class. */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Worker.class);
+
+  /**
+   * @param memento the memento object passed down by the driver.
+   * @return the user defined return value
+   * @throws Exception whenever the Task encounters an unsolved issue. This Exception will be thrown
+   *         at the Driver's event handler.
+   */
+  @Override
+  public byte[] call(@SuppressWarnings("unused") final byte[] memento) throws Exception {
+    start();
+    return null;
+  }
 
   /**
    * Control message processor.
@@ -76,7 +89,7 @@ public final class Worker {
     public void run() {
       try {
 
-        TERMINATE_MESSAGE_PROCESSING : while (true) {
+        TERMINATE_MESSAGE_PROCESSING: while (true) {
           if (Thread.currentThread().isInterrupted()) {
             Thread.currentThread().interrupt();
             break TERMINATE_MESSAGE_PROCESSING;
@@ -114,7 +127,8 @@ public final class Worker {
                   if (LOGGER.isInfoEnabled()) {
                     LOGGER.info("received ADD_WORKER " + workerId);
                   }
-                  connectionPool.putRemote(workerId, SocketInfo.fromProtobuf(cm.getRemoteAddress()));
+                  connectionPool
+                      .putRemote(workerId, SocketInfo.fromProtobuf(cm.getRemoteAddress()));
                   sendMessageToMaster(IPCUtils.addWorkerAckTM(workerId));
                   break;
                 default:
@@ -215,58 +229,15 @@ public final class Worker {
 
   }
 
-  /** Send heartbeats to server periodically. */
-  private class HeartbeatReporter extends ErrorLoggingTimerTask {
-    @Override
-    public synchronized void runInner() {
-      LOGGER.trace("sending heartbeat to server");
-      sendMessageToMaster(IPCUtils.CONTROL_WORKER_HEARTBEAT).awaitUninterruptibly();
-    }
-  }
-
-  /**
-   * Periodically detect whether the {@link Worker} should be shutdown. 1) it detects whether the server is still alive.
-   * If the server got killed because of any reason, the workers will be terminated. 2) it detects whether a shutdown
-   * message is received.
-   */
-  private class ShutdownChecker extends ErrorLoggingTimerTask {
-    @Override
-    public final synchronized void runInner() {
-      try {
-        if (!connectionPool.isRemoteAlive(MyriaConstants.MASTER_ID)) {
-          if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("The Master has shutdown, I'll shutdown now.");
-          }
-          toShutdown = true;
-          abruptShutdown = true;
-        }
-      } catch (Throwable e) {
-        toShutdown = true;
-        abruptShutdown = true;
-        if (LOGGER.isErrorEnabled()) {
-          LOGGER.error("Unknown error in " + ShutdownChecker.class.getSimpleName(), e);
-        }
-      }
-      if (toShutdown) {
-        try {
-          shutdown();
-        } catch (Throwable e) {
-          try {
-            if (LOGGER.isErrorEnabled()) {
-              LOGGER.error("Unknown error in shutdown, halt the worker directly", e);
-            }
-          } finally {
-            JVMUtils.shutdownVM();
-          }
-        }
-      }
-    }
-  }
-
   /**
    * usage.
    */
   static final String USAGE = "Usage: worker [--conf <conf_dir>]";
+
+  /**
+   * injector for global configuration passed into constructor.
+   */
+  private final Injector globalConfInjector;
 
   /**
    * {@link ExecutorService} for query executions.
@@ -289,11 +260,6 @@ public final class Worker {
   private final Map<Long, SubQueryId> activeQueries;
   /** Currently running subqueries. {@link SubQueryId} -> {@link WorkerSubQuery}. */
   private final Map<SubQueryId, WorkerSubQuery> executingSubQueries;
-
-  /**
-   * shutdown checker executor.
-   */
-  private ScheduledExecutorService scheduledTaskExecutor;
 
   /**
    * The ID of this worker.
@@ -325,22 +291,14 @@ public final class Worker {
    */
   private final LinkedBlockingQueue<QueryCommand> queryQueue;
 
-  /** Worker configuration. */
-  private final MyriaConfiguration config;
-
-  /**
-   * Query execution mode. May remove
-   */
-  private final QueryExecutionMode queryExecutionMode;
-
   /**
    * {@link ExecutorService} for Netty pipelines.
    */
   private volatile OrderedMemoryAwareThreadPoolExecutor pipelineExecutor;
 
   /**
-   * Current working directory. It's the logical root of the worker. All the data the worker and the operators running
-   * on the worker can access should be put under this directory.
+   * Current working directory. It's the logical root of the worker. All the data the worker and the
+   * operators running on the worker can access should be put under this directory.
    */
   private final String workingDirectory;
 
@@ -350,176 +308,10 @@ public final class Worker {
   private final ConcurrentHashMap<String, Object> execEnvVars;
 
   /**
-   * The thread group of the main thread.
-   */
-  private static volatile ThreadGroup mainThreadGroup;
-
-  /**
    * The profiling logger for this worker.
    */
   @GuardedBy("this")
   private ProfilingLogger profilingLogger;
-
-  /**
-   * @param args command line arguments
-   * @return options parsed from command line.
-   */
-  private static HashMap<String, Object> processArgs(final String[] args) {
-    HashMap<String, Object> options = new HashMap<String, Object>();
-    // if (args.length > 2) {
-    // LOGGER.warn("Invalid number of arguments.\n" + USAGE);
-    // JVMUtils.shutdownVM();
-    // }
-
-    String workingDirTmp = System.getProperty("user.dir");
-    if (args.length >= 2) {
-      if (args[0].equals("--workingDir")) {
-        workingDirTmp = args[1];
-      } else {
-        if (LOGGER.isErrorEnabled()) {
-          LOGGER.error("Invalid arguments.\n" + USAGE);
-        }
-        JVMUtils.shutdownVM();
-      }
-    }
-    options.put("workingDir", workingDirTmp);
-    return options;
-  }
-
-  /**
-   * Setup system properties.
-   * 
-   * @param cmdlineOptions command line options
-   */
-  private static void systemSetup(final HashMap<String, Object> cmdlineOptions) {
-    java.util.logging.Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
-    java.util.logging.Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
-
-    Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-      @Override
-      public void uncaughtException(final Thread t, final Throwable e) {
-        if (LOGGER.isErrorEnabled()) {
-          LOGGER.error("Uncaught exception in thread: " + t, e);
-        }
-        if (e instanceof OutOfMemoryError) {
-          JVMUtils.shutdownVM();
-        }
-      }
-    });
-    Runtime.getRuntime().addShutdownHook(new Thread() {
-      @Override
-      public void run() {
-        systemCleanup();
-      }
-    });
-
-    mainThreadGroup = Thread.currentThread().getThreadGroup();
-  }
-
-  /**
-   * A file lock hold by a worker process throughout its lifetime to make sure no other worker instances start.
-   */
-  private static volatile FileLock workerInstanceLock;
-
-  /**
-   * @param cmdlineOptions command line options
-   * @return if a worker instance using the same working directory is already running
-   */
-  private static boolean workerExists(final HashMap<String, Object> cmdlineOptions) {
-    final String workingDir = (String) cmdlineOptions.get("workingDir");
-    File file = new File(workingDir + "/workerInstance.lock");
-    file.deleteOnExit();
-    try {
-      @SuppressWarnings("resource")
-      RandomAccessFile raf = new RandomAccessFile(file, "rw");
-      workerInstanceLock = raf.getChannel().tryLock();
-    } catch (Throwable e) {
-      LOGGER.error("Error in locking worker instance lock", e);
-      return true;
-    }
-    return workerInstanceLock == null;
-  }
-
-  /**
-   * Cleanup system resources.
-   */
-  private static void systemCleanup() {
-    Throwable err = null;
-    if (workerInstanceLock != null) {
-      try {
-        workerInstanceLock.release();
-      } catch (Throwable t) {
-        err = t;
-      } finally {
-        try {
-          workerInstanceLock.channel().close();
-        } catch (Throwable t) {
-          err = t;
-        }
-      }
-    }
-    if (err != null) {
-      LOGGER.error("Error in system cleanup: ", err);
-    }
-  }
-
-  /**
-   * @param cmdlineOptions command line options
-   */
-  private static void bootupWorker(final HashMap<String, Object> cmdlineOptions) {
-    final String workingDir = (String) cmdlineOptions.get("workingDir");
-    if (LOGGER.isInfoEnabled()) {
-      LOGGER.info("workingDir: " + workingDir);
-    }
-
-    ThreadGroup workerThreadGroup = new ThreadGroup(mainThreadGroup, "MyriaWorkerThreadGroup");
-    Thread myriaWorkerMain = new Thread(workerThreadGroup, "MyriaWorkerMain") {
-      @Override
-      public void run() {
-        try {
-          // Instantiate a new worker
-          final Worker w = new Worker(workingDir, QueryExecutionMode.NON_BLOCKING);
-          // int port = w.port;
-
-          // Start the actual message handler by binding
-          // the acceptor to a network socket
-          // Now the worker can accept messages
-          w.start();
-
-          if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("Worker started at:" + w.config.getHostPort(w.myID));
-          }
-        } catch (Throwable e) {
-          if (LOGGER.isErrorEnabled()) {
-            LOGGER.error("Unknown error occurs at Worker. Quit directly.", e);
-          }
-          JVMUtils.shutdownVM();
-        }
-      }
-    };
-    myriaWorkerMain.start();
-  }
-
-  /**
-   * Worker process entry point.
-   * 
-   * @param args command line arguments.
-   */
-  public static void main(final String[] args) {
-    try {
-      HashMap<String, Object> cmdlineOptions = processArgs(args);
-      if (workerExists(cmdlineOptions)) {
-        throw new Exception("Another worker instance with the same configurations already running. Exit directly.");
-      }
-      systemSetup(cmdlineOptions);
-      bootupWorker(cmdlineOptions);
-    } catch (Throwable e) {
-      if (LOGGER.isErrorEnabled()) {
-        LOGGER.error("Unknown error occurs at Worker. Quit directly.", e);
-      }
-      JVMUtils.shutdownVM();
-    }
-  }
 
   /**
    * @return my control message queue.
@@ -574,7 +366,7 @@ public final class Worker {
    * @return query execution mode.
    */
   QueryExecutionMode getQueryExecutionMode() {
-    return queryExecutionMode;
+    return QueryExecutionMode.NON_BLOCKING;
   }
 
   /**
@@ -582,43 +374,59 @@ public final class Worker {
    * @param mode my execution mode.
    * @throws ConfigFileException if there's any config file parsing error.
    */
-  public Worker(final String workingDirectory, final QueryExecutionMode mode) throws ConfigFileException {
-    queryExecutionMode = mode;
-    this.workingDirectory = workingDirectory;
+  public Worker(
+      final @Parameter(MyriaWorkerConfigurationModule.WorkerId.class) int workerID,
+      final @Parameter(MyriaWorkerConfigurationModule.WorkerHost.class) String workerHost,
+      final @Parameter(MyriaWorkerConfigurationModule.WorkerPort.class) String workerPort,
+      final @Parameter(MyriaWorkerConfigurationModule.WorkerStorageDbName.class) String dbName,
+      final @Parameter(MyriaGlobalConfigurationModule.DefaultStorageDbPassword.class) String dbPassword,
+      final @Parameter(MyriaGlobalConfigurationModule.DefaultStorageDbPort.class) int dbPort,
+      final @Parameter(MyriaWorkerConfigurationModule.WorkerFilesystemPath.class) String rootPath,
+      final @Parameter(MyriaDriverLauncher.SerializedGlobalConf.class) String serializedGlobalConf)
+      throws Exception {
+    Configuration globalConf = new AvroConfigurationSerializer().fromString(serializedGlobalConf);
+    globalConfInjector = Tang.Factory.getTang().newInjector(globalConf);
+    myID = workerID;
+    final String subDir = FilenameUtils.concat("workers", myID + "");
+    workingDirectory = FilenameUtils.concat(rootPath, subDir);
     controlMessageQueue = new LinkedBlockingQueue<ControlMessage>();
     queryQueue = new LinkedBlockingQueue<QueryCommand>();
     activeQueries = new ConcurrentHashMap<>();
     executingSubQueries = new ConcurrentHashMap<>();
     execEnvVars = new ConcurrentHashMap<String, Object>();
 
-    config = MyriaConfiguration.loadWithDefaultValues(FilenameUtils.concat(workingDirectory, "worker.cfg"));
-
-    myID = Integer.parseInt(config.getRequired("runtime", MyriaSystemConfigKeys.WORKER_IDENTIFIER));
-
     final Map<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
-    computingUnits.put(MyriaConstants.MASTER_ID, SocketInfo.valueOf(config.getHostPort(MyriaConstants.MASTER_ID)));
-    for (int id : config.getWorkerIds()) {
-      computingUnits.put(id, SocketInfo.valueOf(config.getHostPort(id)));
-    }
+    String masterHost =
+        globalConfInjector.getNamedInstance(MyriaGlobalConfigurationModule.MasterHost.class);
+    Integer masterPort =
+        globalConfInjector.getNamedInstance(MyriaGlobalConfigurationModule.MasterRpcPort.class);
+    computingUnits.put(MyriaConstants.MASTER_ID, new SocketInfo(masterHost, masterPort));
 
-    int inputBufferCapacity =
-        Integer.valueOf(config.getRequired("runtime", MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY));
-    int inputBufferRecoverTrigger =
-        Integer.valueOf(config.getRequired("runtime", MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER));
+    final int inputBufferCapacity =
+        globalConfInjector
+            .getNamedInstance(MyriaGlobalConfigurationModule.OperatorInputBufferCapacity.class);
+    final int inputBufferRecoverTrigger =
+        globalConfInjector
+            .getNamedInstance(MyriaGlobalConfigurationModule.OperatorInputBufferRecoverTrigger.class);
     connectionPool =
-        new IPCConnectionPool(myID, computingUnits, IPCConfigurations.createWorkerIPCServerBootstrap(this),
-            IPCConfigurations.createWorkerIPCClientBootstrap(this), new TransportMessageSerializer(),
-            new WorkerShortMessageProcessor(this), inputBufferCapacity, inputBufferRecoverTrigger);
+        new IPCConnectionPool(myID, computingUnits,
+            IPCConfigurations.createWorkerIPCServerBootstrap(globalConfInjector),
+            IPCConfigurations.createWorkerIPCClientBootstrap(globalConfInjector),
+            new TransportMessageSerializer(), new WorkerShortMessageProcessor(this),
+            inputBufferCapacity, inputBufferRecoverTrigger);
 
     final String databaseSystem =
-        config.getRequired("deployment", MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_SYSTEM);
+        globalConfInjector.getNamedInstance(MyriaGlobalConfigurationModule.StorageDbms.class);
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM, databaseSystem);
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_NODE_ID, getID());
-    execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE, queryExecutionMode);
+    execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE, getQueryExecutionMode());
     LOGGER.info("Worker: Database system " + databaseSystem);
-    String jsonConnInfo = config.getSelfJsonConnInfo();
+    String jsonConnInfo =
+        ConnectionInfo.toJson(databaseSystem, workerHost, workingDirectory, workerID, dbName,
+            dbPassword, dbPort);
     LOGGER.info("Worker: Connection info " + jsonConnInfo);
-    execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO, ConnectionInfo.of(databaseSystem, jsonConnInfo));
+    execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO,
+        ConnectionInfo.of(databaseSystem, jsonConnInfo));
   }
 
   /**
@@ -641,7 +449,8 @@ public final class Worker {
 
         if (future.isSuccess()) {
 
-          sendMessageToMaster(IPCUtils.queryCompleteTM(subQueryId, subQuery.getExecutionStatistics())).addListener(
+          sendMessageToMaster(
+              IPCUtils.queryCompleteTM(subQueryId, subQuery.getExecutionStatistics())).addListener(
               new ChannelFutureListener() {
 
                 @Override
@@ -660,7 +469,9 @@ public final class Worker {
 
           TransportMessage tm = null;
           try {
-            tm = IPCUtils.queryFailureTM(subQueryId, future.getCause(), subQuery.getExecutionStatistics());
+            tm =
+                IPCUtils.queryFailureTM(subQueryId, future.getCause(),
+                    subQuery.getExecutionStatistics());
           } catch (IOException e) {
             if (LOGGER.isErrorEnabled()) {
               LOGGER.error("Unknown query failure TM creation error", e);
@@ -727,12 +538,12 @@ public final class Worker {
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("shutdown IPC completed");
     }
-    // must use shutdownNow here because the query queue processor and the control message processor are both
+    // must use shutdownNow here because the query queue processor and the control message processor
+    // are both
     // blocking.
     // We have to interrupt them at shutdown.
     messageProcessingExecutor.shutdownNow();
     queryExecutor.shutdown();
-    scheduledTaskExecutor.shutdown();
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("Worker #" + myID + " shutdown completed");
     }
@@ -744,21 +555,24 @@ public final class Worker {
    * @throws Exception if any error meets.
    */
   public void start() throws Exception {
-    ExecutorService bossExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("IPC boss"));
-    ExecutorService workerExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("IPC worker"));
+    ExecutorService bossExecutor =
+        Executors.newCachedThreadPool(new RenamingThreadFactory("IPC boss"));
+    ExecutorService workerExecutor =
+        Executors.newCachedThreadPool(new RenamingThreadFactory("IPC worker"));
     pipelineExecutor = null; // Remove pipeline executors
     // new OrderedMemoryAwareThreadPoolExecutor(3, 5 * MyriaConstants.MB, 0,
-    // MyriaConstants.THREAD_POOL_KEEP_ALIVE_TIME_IN_MS, TimeUnit.MILLISECONDS, new RenamingThreadFactory(
+    // MyriaConstants.THREAD_POOL_KEEP_ALIVE_TIME_IN_MS, TimeUnit.MILLISECONDS, new
+    // RenamingThreadFactory(
     // "Pipeline executor"));
 
     ChannelFactory clientChannelFactory =
-        new NioClientSocketChannelFactory(bossExecutor, workerExecutor,
-            Runtime.getRuntime().availableProcessors() * 2 + 1);
+        new NioClientSocketChannelFactory(bossExecutor, workerExecutor, Runtime.getRuntime()
+            .availableProcessors() * 2 + 1);
 
     // Start server with Nb of active threads = 2*NB CPU + 1 as maximum.
     ChannelFactory serverChannelFactory =
-        new NioServerSocketChannelFactory(bossExecutor, workerExecutor,
-            Runtime.getRuntime().availableProcessors() * 2 + 1);
+        new NioServerSocketChannelFactory(bossExecutor, workerExecutor, Runtime.getRuntime()
+            .availableProcessors() * 2 + 1);
 
     ChannelPipelineFactory serverPipelineFactory =
         new IPCPipelineFactories.WorkerServerPipelineFactory(connectionPool, getPipelineExecutor());
@@ -767,41 +581,26 @@ public final class Worker {
     ChannelPipelineFactory workerInJVMPipelineFactory =
         new IPCPipelineFactories.WorkerInJVMPipelineFactory(connectionPool);
 
-    connectionPool.start(serverChannelFactory, serverPipelineFactory, clientChannelFactory, clientPipelineFactory,
-        workerInJVMPipelineFactory, new InJVMLoopbackChannelSink());
+    connectionPool.start(serverChannelFactory, serverPipelineFactory, clientChannelFactory,
+        clientPipelineFactory, workerInJVMPipelineFactory, new InJVMLoopbackChannelSink());
 
-    if (queryExecutionMode == QueryExecutionMode.NON_BLOCKING) {
+    if (getQueryExecutionMode() == QueryExecutionMode.NON_BLOCKING) {
       int numCPU = Runtime.getRuntime().availableProcessors();
       queryExecutor =
-      // new ThreadPoolExecutor(numCPU, numCPU, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(),
+      // new ThreadPoolExecutor(numCPU, numCPU, 0L, TimeUnit.MILLISECONDS, new
+      // LinkedBlockingQueue<Runnable>(),
       // new RenamingThreadFactory("Nonblocking query executor"));
-          new ThreadAffinityFixedRoundRobinExecutionPool(numCPU,
-              new RenamingThreadFactory("Nonblocking query executor"));
+          new ThreadAffinityFixedRoundRobinExecutionPool(numCPU, new RenamingThreadFactory(
+              "Nonblocking query executor"));
     } else {
       // blocking query execution
-      queryExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("Blocking query executor"));
+      queryExecutor =
+          Executors.newCachedThreadPool(new RenamingThreadFactory("Blocking query executor"));
     }
     messageProcessingExecutor =
         Executors.newCachedThreadPool(new RenamingThreadFactory("Control/Query message processor"));
     messageProcessingExecutor.submit(new QueryMessageProcessor());
     messageProcessingExecutor.submit(new ControlMessageProcessor());
-    // Periodically detect if the server (i.e., coordinator)
-    // is still running. IF the server goes down, the
-    // worker will stop itself
-    scheduledTaskExecutor = Executors.newScheduledThreadPool(2, new RenamingThreadFactory("Worker global timer"));
-    scheduledTaskExecutor.scheduleAtFixedRate(new ShutdownChecker(), MyriaConstants.WORKER_SHUTDOWN_CHECKER_INTERVAL,
-        MyriaConstants.WORKER_SHUTDOWN_CHECKER_INTERVAL, TimeUnit.MILLISECONDS);
-    scheduledTaskExecutor.scheduleAtFixedRate(new HeartbeatReporter(), 0, MyriaConstants.HEARTBEAT_INTERVAL,
-        TimeUnit.MILLISECONDS);
-  }
-
-  /**
-   * @param configKey config key.
-   * @return a worker runtime configuration value.
-   * @throws ConfigFileException if error occurred.
-   */
-  public String getRuntimeConfiguration(final String configKey) throws ConfigFileException {
-    return config.getRequired("runtime", configKey);
   }
 
   /**
@@ -818,7 +617,8 @@ public final class Worker {
   public synchronized ProfilingLogger getProfilingLogger() throws DbException {
     if (profilingLogger == null || !profilingLogger.isValid()) {
       profilingLogger = null;
-      ConnectionInfo connectionInfo = (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
+      ConnectionInfo connectionInfo =
+          (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
       if (connectionInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
         profilingLogger = new ProfilingLogger(connectionInfo);
       }
