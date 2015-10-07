@@ -6,14 +6,9 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
-import org.apache.commons.io.FilenameUtils;
-
-import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.api.MasterApplication.ADMIN;
 import edu.washington.escience.myria.api.encoding.VersionEncoding;
-import edu.washington.escience.myria.coordinator.ConfigFileException;
 import edu.washington.escience.myria.daemon.MasterDaemon;
-import edu.washington.escience.myria.parallel.Server;
 
 /**
  * This is the class that handles API calls that return workers.
@@ -62,24 +57,5 @@ public final class MasterResource {
   @Produces(MyriaApiConstants.JSON_UTF_8)
   public Response getVersion() {
     return Response.ok(new VersionEncoding()).build();
-  }
-
-  /**
-   * Get the path to the deployment.cfg file.
-   * 
-   * @param server the Myria {@link Server}.
-   * @return the file path.
-   */
-  @GET
-  @Path("/deployment_cfg")
-  @ADMIN
-  public Response getDeploymentCfg(@Context final Server server) {
-    try {
-      String workingDir = server.getConfig().getWorkingDirectory(MyriaConstants.MASTER_ID);
-      String deploymentFile = FilenameUtils.concat(workingDir, MyriaConstants.DEPLOYMENT_CONF_FILE);
-      return Response.ok(deploymentFile).build();
-    } catch (ConfigFileException e) {
-      return Response.ok(e.getMessage()).build();
-    }
   }
 }

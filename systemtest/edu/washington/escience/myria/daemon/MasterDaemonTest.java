@@ -98,24 +98,29 @@ public class MasterDaemonTest {
 
       /* Try to stop the master with no auth header. */
       Invocation.Builder shutdownInvocation =
-          client.target("http://localhost:" + REST_PORT + "/server/shutdown").request(MediaType.TEXT_PLAIN_TYPE);
+          client.target("http://localhost:" + REST_PORT + "/server/shutdown").request(
+              MediaType.TEXT_PLAIN_TYPE);
       assertEquals(Status.UNAUTHORIZED.getStatusCode(), shutdownInvocation.get().getStatus());
 
       client.register(HttpAuthenticationFeature.basicBuilder().build());
       shutdownInvocation =
-          client.target("http://localhost:" + REST_PORT + "/server/shutdown").request(MediaType.TEXT_PLAIN_TYPE);
+          client.target("http://localhost:" + REST_PORT + "/server/shutdown").request(
+              MediaType.TEXT_PLAIN_TYPE);
       /* Try to stop the master with a non-admin username. */
-      shutdownInvocation.property(HttpAuthenticationFeature.HTTP_AUTHENTICATION_BASIC_USERNAME, "jwang").property(
-          HttpAuthenticationFeature.HTTP_AUTHENTICATION_BASIC_PASSWORD, "somepassword");
+      shutdownInvocation.property(HttpAuthenticationFeature.HTTP_AUTHENTICATION_BASIC_USERNAME,
+          "jwang").property(HttpAuthenticationFeature.HTTP_AUTHENTICATION_BASIC_PASSWORD,
+          "somepassword");
       assertEquals(Status.FORBIDDEN.getStatusCode(), shutdownInvocation.get().getStatus());
 
       /* Try to stop the master with a wrong admin password. */
-      shutdownInvocation.property(HttpAuthenticationFeature.HTTP_AUTHENTICATION_BASIC_USERNAME, "admin").property(
-          HttpAuthenticationFeature.HTTP_AUTHENTICATION_BASIC_PASSWORD, "wrongpassword");
+      shutdownInvocation.property(HttpAuthenticationFeature.HTTP_AUTHENTICATION_BASIC_USERNAME,
+          "admin").property(HttpAuthenticationFeature.HTTP_AUTHENTICATION_BASIC_PASSWORD,
+          "wrongpassword");
       assertEquals(Status.UNAUTHORIZED.getStatusCode(), shutdownInvocation.get().getStatus());
 
       /* Provide the correct admin password and stop the master. */
-      shutdownInvocation.property(HttpAuthenticationFeature.HTTP_AUTHENTICATION_BASIC_PASSWORD, "password");
+      shutdownInvocation.property(HttpAuthenticationFeature.HTTP_AUTHENTICATION_BASIC_PASSWORD,
+          "password");
       assertEquals(Status.OK.getStatusCode(), shutdownInvocation.get().getStatus());
       client.close();
     } catch (Throwable e) {
@@ -142,7 +147,8 @@ public class MasterDaemonTest {
     md.start();
     Client client = ClientBuilder.newClient();
     Invocation.Builder invocation =
-        client.target("http://localhost:" + REST_PORT + "/server/deployment_cfg").request(MediaType.TEXT_PLAIN_TYPE);
+        client.target("http://localhost:" + REST_PORT + "/server/deployment_cfg").request(
+            MediaType.TEXT_PLAIN_TYPE);
     Response response = invocation.get();
     assertEquals(Status.OK.getStatusCode(), response.getStatus());
     String respond = response.readEntity(String.class);
