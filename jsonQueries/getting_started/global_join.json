@@ -3,7 +3,7 @@
         {
             "operators": [
                 {
-                    "opId": 6,
+                    "opId": 7,
                     "opType": "TableScan",
                     "relationKey": {
                         "programName": "global_join",
@@ -12,7 +12,7 @@
                     }
                 },
                 {
-                    "argChild": 6,
+                    "argChild": 7,
                     "argPf": {
                         "index": 0,
                         "type": "SingleFieldHash"
