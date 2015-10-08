@@ -22,6 +22,9 @@ import edu.washington.escience.myria.storage.ReadableTable;
  */
 public class CsvTupleWriter implements TupleWriter {
 
+  /** Required for Java serialization. */
+  static final long serialVersionUID = 1L;
+
   /** The CSVWriter used to write the output. */
   private final CSVPrinter csvPrinter;
 

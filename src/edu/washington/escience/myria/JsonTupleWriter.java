@@ -34,6 +34,9 @@ import edu.washington.escience.myria.util.DateTimeUtils;
  */
 public class JsonTupleWriter implements TupleWriter {
 
+  /** Required for Java serialization. */
+  static final long serialVersionUID = 1L;
+
   /** The names of the columns, escaped for JSON. */
   private ImmutableList<String> escapedColumnNames;
   /** The {@link PrintWriter} wraps the {@link OutputStream} to which we write the data. */

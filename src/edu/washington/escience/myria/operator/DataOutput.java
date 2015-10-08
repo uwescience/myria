@@ -20,6 +20,7 @@ public final class DataOutput extends RootOperator {
   private static final long serialVersionUID = 1L;
   /** The class that will serialize the tuple batches. */
   private final TupleWriter tupleWriter;
+
   /** Whether this object has finished. */
   private boolean done = false;
 
@@ -62,6 +63,7 @@ public final class DataOutput extends RootOperator {
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     try {
       tupleWriter.writeColumnHeaders(getChild().getSchema().getColumnNames());
+
     } catch (IOException e) {
       throw new DbException(e);
     }

@@ -377,18 +377,17 @@ public final class DatasetResource {
   public Response persistDataset(@PathParam("userName") final String userName,
       @PathParam("programName") final String programName, @PathParam("relationName") final String relationName)
       throws DbException {
+
     DatasetStatus status = server.getDatasetStatus(RelationKey.of(userName, programName, relationName));
-    if (status == null) {
-      /* Dataset not found, throw a 404 (Not Found) */
-      throw new MyriaApiException(Status.NOT_FOUND, "That dataset was not found");
-    }
     RelationKey relationKey = status.getRelationKey();
-    // run the persist command
+
     try {
       status = server.persistDataset(relationKey);
     } catch (Exception e) {
       throw new DbException();
     }
+
+    // return a query ID
     return Response.noContent().build();
   }
 

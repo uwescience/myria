@@ -49,6 +49,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import edu.washington.escience.myria.CsvTupleWriter;
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.HdfsWriter;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.RelationKey;
@@ -66,11 +67,12 @@ import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.MinusExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.expression.WorkerIdExpression;
+import edu.washington.escience.myria.io.DataSink;
+import edu.washington.escience.myria.io.UriSink;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbDelete;
 import edu.washington.escience.myria.operator.DbInsert;
-import edu.washington.escience.myria.operator.DbPersist;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DuplicateTBGenerator;
 import edu.washington.escience.myria.operator.EOSSource;
@@ -1058,34 +1060,38 @@ public final class Server {
     }
 
     return getDatasetStatus(relationKey);
-
   }
 
   /**
-   * @param relationKey the relationKey of the dataset to persist
+   * @param relationKey the relationKey of the dataset to delete
    * @return the status
    * @throws DbException if there is an error
    * @throws InterruptedException interrupted
    */
   public DatasetStatus persistDataset(final RelationKey relationKey) throws DbException, InterruptedException {
 
-    /* Mark the relation as is_persistent -- locks? */
-    try {
-      catalog.markRelationPersistent(relationKey);
-    } catch (CatalogException e) {
-      throw new DbException(e);
-    }
+    // Here, we tied the persist call to HDFSWriter and URISink, but should we do this choice before this call?
 
-    /* Delete from postgres at each worker by calling the Persist Operator */
+    /* create the query plan for persist */
     try {
       Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
       for (Integer workerId : getWorkersForRelation(relationKey, null)) {
-        workerPlans.put(workerId, new SubQueryPlan(new DbPersist(EmptyRelation.of(catalog.getSchema(relationKey)),
-            relationKey, null)));
+
+        try {
+
+          DataSink workerSink = new UriSink("/some/worker/address");
+          TupleWriter workerWriter = new HdfsWriter(workerSink.getOutputStream());
+
+          workerPlans.put(workerId, new SubQueryPlan(new DataOutput(
+              new DbQueryScan(relationKey, getSchema(relationKey)), workerWriter)));
+        } catch (IOException e) {
+          // TODO
+        }
       }
       ListenableFuture<Query> qf =
-          queryManager.submitQuery("persist " + relationKey.toString(), "persist " + relationKey.toString(), "persist "
-              + relationKey.toString(getDBMS()), new SubQueryPlan(new SinkRoot(new EOSSource())), workerPlans);
+          queryManager.submitQuery("persist " + relationKey.toString(), "persist " + relationKey.toString(),
+              "persisting from " + relationKey.toString(getDBMS()), new SubQueryPlan(new SinkRoot(new EOSSource())),
+              workerPlans);
       try {
         qf.get();
       } catch (ExecutionException e) {
@@ -1094,7 +1100,6 @@ public final class Server {
     } catch (CatalogException e) {
       throw new DbException(e);
     }
-
     return getDatasetStatus(relationKey);
 
   }

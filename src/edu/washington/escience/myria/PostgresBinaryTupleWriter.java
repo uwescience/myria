@@ -19,6 +19,9 @@ import edu.washington.escience.myria.storage.ReadableTable;
  */
 public class PostgresBinaryTupleWriter implements TupleWriter {
 
+  /** Required for Java serialization. */
+  static final long serialVersionUID = 1L;
+
   /** The ByteBuffer to write the output. */
   private final DataOutputStream buffer;
 
