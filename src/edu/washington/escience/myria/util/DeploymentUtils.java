@@ -25,6 +25,7 @@ import com.google.common.base.MoreObjects;
 
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
+import edu.washington.escience.myria.api.MyriaApiConstants;
 import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.coordinator.ConfigFileException;
 import edu.washington.escience.myria.coordinator.ConfigFileGenerator;
@@ -215,6 +216,7 @@ public final class DeploymentUtils {
       final boolean cleanCatalog) throws ConfigFileException {
     String workingDir = config.getWorkingDirectory(MyriaConstants.MASTER_ID);
     String hostname = config.getHostnameWithUsername(MyriaConstants.MASTER_ID);
+    String keystoreFile = config.getOptional("deployment", MyriaApiConstants.MYRIA_API_SSL_KEYSTORE);
     System.err.println("Start syncing distribution files to master @ " + hostname);
     mkdir(hostname, workingDir);
     List<String> includes = Arrays.asList("master");
@@ -222,6 +224,9 @@ public final class DeploymentUtils {
     if (!cleanCatalog) {
       excludes =
           Arrays.asList("workers", "master/master.catalog", "master/master.catalog-wal", "master/master.catalog-shm");
+      if (keystoreFile != null) {
+        excludes.add("master/" + keystoreFile);
+      }
     }
     rsyncFileToRemote(localDeployPath + "/", hostname, workingDir, includes, excludes);
   }
