@@ -225,6 +225,7 @@ public final class DeploymentUtils {
       excludes =
           Arrays.asList("workers", "master/master.catalog", "master/master.catalog-wal", "master/master.catalog-shm");
       if (keystoreFile != null) {
+        excludes = new ArrayList<>(excludes);
         excludes.add("master/" + keystoreFile);
       }
     }
