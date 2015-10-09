@@ -1,3 +1,10 @@
+---
+layout: default
+title: Architecture
+group: "extra"
+---
+
+
 # Overview of the architecture
 
 * Design philosophy?
@@ -175,7 +182,7 @@ Each LocalFragment has a long state variable recording the current execution con
 
   - STATE_EOS = (1 << 5).  As stated in the Operator section, each Operator has an EOS state variable. For an Operator tree, the EOS state of a whole true is the same as the EOS state of the root Operator. Once the EOS state of the root operator becomes true, the execution of the whole operator tree should be stopped. the STATE_EOS is set when the root operator reaches EOS.
 
-  - STATE_EXECUTION_REQUESTED = (1 << 6). This bit is to prevent multiple parallel execution of the same LocalFragment. It is because there may be multiple threads trigger the execution of a LocalFragment, for example a data input thread may trigger the execution of a LocalFragment because a new TupleBatch just arrived, and a data output thread may also trigger the execution of a LocalFragment because all the ouptput channels become available.
+  - STATE_EXECUTION_REQUESTED = (1 << 6). This bit is to prevent multiple parallel execution of the same LocalFragment. It is because there may be multiple threads trigger the execution of a LocalFragment, for example a data input thread may trigger the execution of a LocalFragment because a new TupleBatch just arrived, and a data output thread may also trigger the execution of a LocalFragment because all the output channels become available.
 
   - STATE_FAIL = (1 << 7) is set when everthere's any error raised and does not get processed by the operator tree. The LocalFragement should stop execution in these cases. And it should notify the owner SubQuery.
 
