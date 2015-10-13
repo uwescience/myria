@@ -41,6 +41,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.daemon.MyriaDriverLauncher.SerializedGlobalConf;
 import edu.washington.escience.myria.parallel.Worker;
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule;
 import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule;
@@ -55,6 +56,7 @@ public final class MyriaDriver {
   private final EvaluatorRequestor requestor;
   private final Configuration globalConf;
   private final Injector globalConfInjector;
+  private final Configuration globalConfWrapper;
   private final ImmutableSet<Configuration> workerConfs;
   private final Set<Integer> workerIdsAllocated;
   private final Map<Integer, ActiveContext> contextsById;
@@ -88,6 +90,9 @@ public final class MyriaDriver {
     this.requestor = requestor;
     globalConf = new AvroConfigurationSerializer().fromString(serializedGlobalConf);
     globalConfInjector = Tang.Factory.getTang().newInjector(globalConf);
+    globalConfWrapper =
+        Tang.Factory.getTang().newConfigurationBuilder()
+            .bindNamedParameter(SerializedGlobalConf.class, serializedGlobalConf).build();
     workerConfs = getWorkerConfs();
     workerIdsAllocated = new HashSet<>();
     contextsById = new HashMap<>();
@@ -216,7 +221,7 @@ public final class MyriaDriver {
         Configuration contextConf =
             ContextConfiguration.CONF.set(ContextConfiguration.IDENTIFIER,
                 MyriaConstants.MASTER_ID + "").build();
-        evaluator.submitContext(Configurations.merge(contextConf, globalConf));
+        evaluator.submitContext(Configurations.merge(contextConf, globalConf, globalConfWrapper));
       } else {
         Preconditions.checkState(state == State.PREPARING_WORKERS);
         // allocate the next worker ID associated with this host
@@ -228,7 +233,8 @@ public final class MyriaDriver {
               Configuration contextConf =
                   ContextConfiguration.CONF.set(ContextConfiguration.IDENTIFIER, confId + "")
                       .build();
-              evaluator.submitContext(Configurations.merge(contextConf, globalConf, workerConf));
+              evaluator.submitContext(Configurations.merge(contextConf, globalConf,
+                  globalConfWrapper, workerConf));
               workerIdsAllocated.add(confId);
               break;
             }
