@@ -121,8 +121,9 @@ public final class MyriaDriver {
   }
 
   private void requestWorkerEvaluators() throws InjectionException {
-    final int jvmHeapSizeMaxGB =
-        globalConfInjector.getNamedInstance(MyriaGlobalConfigurationModule.JvmHeapSizeMaxGB.class);
+    final int jvmHeapSizeMaxMB =
+        1024 * globalConfInjector
+            .getNamedInstance(MyriaGlobalConfigurationModule.JvmHeapSizeMaxGB.class);
     final int localFragmentWorkerThreads =
         globalConfInjector
             .getNamedInstance(MyriaGlobalConfigurationModule.LocalFragmentWorkerThreads.class);
@@ -130,7 +131,7 @@ public final class MyriaDriver {
     for (final Configuration workerConf : workerConfs) {
       String hostname = getHostFromWorkerConf(workerConf);
       final EvaluatorRequest workerRequest =
-          EvaluatorRequest.newBuilder().setNumber(1).setMemory(jvmHeapSizeMaxGB)
+          EvaluatorRequest.newBuilder().setNumber(1).setMemory(jvmHeapSizeMaxMB)
               .setNumberOfCores(localFragmentWorkerThreads).addNodeName(hostname).build();
       requestor.submit(workerRequest);
     }
@@ -140,13 +141,14 @@ public final class MyriaDriver {
     LOGGER.info("Requesting master evaluator.");
     final String masterHost =
         globalConfInjector.getNamedInstance(MyriaGlobalConfigurationModule.MasterHost.class);
-    final int jvmHeapSizeMaxGB =
-        globalConfInjector.getNamedInstance(MyriaGlobalConfigurationModule.JvmHeapSizeMaxGB.class);
+    final int jvmHeapSizeMaxMB =
+        1024 * globalConfInjector
+            .getNamedInstance(MyriaGlobalConfigurationModule.JvmHeapSizeMaxGB.class);
     final int localFragmentWorkerThreads =
         globalConfInjector
             .getNamedInstance(MyriaGlobalConfigurationModule.LocalFragmentWorkerThreads.class);
     final EvaluatorRequest masterRequest =
-        EvaluatorRequest.newBuilder().setNumber(1).setMemory(jvmHeapSizeMaxGB)
+        EvaluatorRequest.newBuilder().setNumber(1).setMemory(jvmHeapSizeMaxMB)
             .setNumberOfCores(localFragmentWorkerThreads).addNodeName(masterHost).build();
     requestor.submit(masterRequest);
   }
