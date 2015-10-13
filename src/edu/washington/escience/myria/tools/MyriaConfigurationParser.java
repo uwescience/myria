@@ -40,22 +40,23 @@ public final class MyriaConfigurationParser {
    * @throws ConfigFileException if error occurred when parsing the config file
    * */
   public static Configuration loadConfiguration(final String filename) throws ConfigFileException {
-    ConfigParser parser = new ConfigParser();
+    final ConfigParser parser = new ConfigParser();
     try {
       parser.read(new File(filename));
     } catch (IOException e) {
       throw new ConfigFileException(e);
     }
     ConfigurationModule cm = MyriaGlobalConfigurationModule.CONF;
-    setGlobalConfVariables(parser, cm);
-    setWorkerConfs(parser, cm);
+    cm = setGlobalConfVariables(parser, cm);
+    cm = setWorkerConfs(parser, cm);
     return cm.build();
   }
 
-  private static void setGlobalConfVariables(final ConfigParser parser, final ConfigurationModule cm)
-      throws ConfigFileException {
-    cm.set(MyriaGlobalConfigurationModule.INSTANCE_NAME,
-        getRequired(parser, "deployment", MyriaSystemConfigKeys.DESCRIPTION))
+  private static ConfigurationModule setGlobalConfVariables(final ConfigParser parser,
+      final ConfigurationModule cm) throws ConfigFileException {
+    return cm
+        .set(MyriaGlobalConfigurationModule.INSTANCE_NAME,
+            getRequired(parser, "deployment", MyriaSystemConfigKeys.DESCRIPTION))
         .set(MyriaGlobalConfigurationModule.DEFAULT_INSTANCE_PATH,
             getPath(parser, MyriaConstants.MASTER_ID))
         .set(MyriaGlobalConfigurationModule.STORAGE_DBMS,
@@ -118,8 +119,9 @@ public final class MyriaConfigurationParser {
             getPort(parser, MyriaConstants.MASTER_ID));
   }
 
-  private static void setWorkerConfs(final ConfigParser parser, final ConfigurationModule cm)
-      throws ConfigFileException {
+  private static ConfigurationModule setWorkerConfs(final ConfigParser parser,
+      final ConfigurationModule cm) throws ConfigFileException {
+    ConfigurationModule conf = cm;
     for (Integer workerId : getWorkerIds(parser)) {
       Configuration workerConfig =
           MyriaWorkerConfigurationModule.CONF
@@ -131,8 +133,9 @@ public final class MyriaConfigurationParser {
               .set(MyriaWorkerConfigurationModule.WORKER_FILESYSTEM_PATH, getPath(parser, workerId))
               .build();
       String serializedWorkerConfig = new AvroConfigurationSerializer().toString(workerConfig);
-      cm.set(MyriaGlobalConfigurationModule.WORKER_CONF, serializedWorkerConfig);
+      conf = conf.set(MyriaGlobalConfigurationModule.WORKER_CONF, serializedWorkerConfig);
     }
+    return conf;
   }
 
   /**

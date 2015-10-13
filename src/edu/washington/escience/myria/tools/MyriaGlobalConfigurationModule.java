@@ -32,8 +32,8 @@ public final class MyriaGlobalConfigurationModule extends ConfigurationModuleBui
   public static final OptionalParameter<String> DEFAULT_STORAGE_DB_NAME = new OptionalParameter<>();
   public static final OptionalParameter<String> DEFAULT_STORAGE_DB_USERNAME =
       new OptionalParameter<>();
-  public static final RequiredParameter<String> DEFAULT_STORAGE_DB_PASSWORD =
-      new RequiredParameter<>();
+  public static final OptionalParameter<String> DEFAULT_STORAGE_DB_PASSWORD =
+      new OptionalParameter<>();
   public static final OptionalParameter<Integer> DEFAULT_STORAGE_DB_PORT =
       new OptionalParameter<>();
   public static final OptionalParameter<Integer> REST_API_PORT = new OptionalParameter<>();
@@ -43,8 +43,8 @@ public final class MyriaGlobalConfigurationModule extends ConfigurationModuleBui
   public static final OptionalParameter<String> SSL_KEYSTORE_PASSWORD = new OptionalParameter<>();
   public static final OptionalParameter<Boolean> ENABLE_DEBUG = new OptionalParameter<>();
   public static final RequiredParameter<String> WORKER_CONF = new RequiredParameter<>();
-  public static final RequiredParameter<Integer> NUMBER_VCORES = new RequiredParameter<>();
-  public static final RequiredParameter<Integer> MEMORY_QUOTA_GB = new RequiredParameter<>();
+  public static final OptionalParameter<Integer> NUMBER_VCORES = new OptionalParameter<>();
+  public static final OptionalParameter<Integer> MEMORY_QUOTA_GB = new OptionalParameter<>();
   public static final OptionalParameter<Integer> JVM_HEAP_SIZE_MIN_GB = new OptionalParameter<>();
   public static final OptionalParameter<Integer> JVM_HEAP_SIZE_MAX_GB = new OptionalParameter<>();
   public static final OptionalParameter<String> JVM_OPTIONS = new OptionalParameter<>();
@@ -116,7 +116,7 @@ public final class MyriaGlobalConfigurationModule extends ConfigurationModuleBui
   @NamedParameter(default_value = MyriaConstants.STORAGE_JDBC_USERNAME)
   public class DefaultStorageDbUser implements Name<String> {
   }
-  @NamedParameter
+  @NamedParameter(default_value = "")
   public class DefaultStorageDbPassword implements Name<String> {
   }
   @NamedParameter(default_value = MyriaConstants.STORAGE_POSTGRESQL_PORT + "")
@@ -143,16 +143,16 @@ public final class MyriaGlobalConfigurationModule extends ConfigurationModuleBui
   @NamedParameter
   public class WorkerConf implements Name<Set<String>> {
   }
-  @NamedParameter
+  @NamedParameter(default_value = "1")
   public class NumberVCores implements Name<Integer> {
   }
-  @NamedParameter
+  @NamedParameter(default_value = "1")
   public class MemoryQuotaGB implements Name<Integer> {
   }
   @NamedParameter(default_value = "1")
   public class JvmHeapSizeMinGB implements Name<Integer> {
   }
-  @NamedParameter(default_value = "2")
+  @NamedParameter(default_value = "1")
   public class JvmHeapSizeMaxGB implements Name<Integer> {
   }
   @NamedParameter(default_value = "-XX:+UseParallelGC -XX:+UseParallelOldGC")
