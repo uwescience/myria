@@ -18,9 +18,10 @@ import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.storage.TupleUtils;
 
 /**
- * This aggregate operator computes the aggregation in streaming manner (requires input sorted on grouping column(s)).
- * This supports aggregation over multiple columns, with one or more group by columns. Intend to substitute
- * SingleGroupByAggregate and MultiGroupByAggregate when input is known to be sorted.
+ * This aggregate operator computes the aggregation in streaming manner (requires input sorted on
+ * grouping column(s)). This supports aggregation over multiple columns, with one or more group by
+ * columns. Intend to substitute SingleGroupByAggregate and MultiGroupByAggregate when input is
+ * known to be sorted.
  *
  * @see Aggregate
  * @see SingleGroupByAggregate
@@ -60,7 +61,8 @@ public class StreamingAggregate extends UnaryOperator {
   private transient TupleBatchBuffer resultBuffer;
 
   /**
-   * Groups the input tuples according to the specified grouping fields, then produces the specified aggregates.
+   * Groups the input tuples according to the specified grouping fields, then produces the specified
+   * aggregates.
    *
    * @param child The Operator that is feeding us tuples.
    * @param gfields The columns over which we are grouping the result.
@@ -72,7 +74,8 @@ public class StreamingAggregate extends UnaryOperator {
     gFields = Objects.requireNonNull(gfields, "gfields");
     this.factories = Objects.requireNonNull(factories, "factories");
     Preconditions.checkArgument(gfields.length > 0, " must have at least one group by field");
-    Preconditions.checkArgument(factories.length > 0, "to use StreamingAggregate, must specify some aggregates");
+    Preconditions.checkArgument(factories.length > 0,
+        "to use StreamingAggregate, must specify some aggregates");
     gRange = new int[gfields.length];
     for (int i = 0; i < gRange.length; ++i) {
       gRange[i] = i;
@@ -80,8 +83,8 @@ public class StreamingAggregate extends UnaryOperator {
   }
 
   /**
-   * Returns the next tuple batch containing the result of this aggregate. Grouping field(s) followed by aggregate
-   * field(s).
+   * Returns the next tuple batch containing the result of this aggregate. Grouping field(s)
+   * followed by aggregate field(s).
    *
    * @throws DbException if any error occurs.
    * @return result tuple batch
@@ -127,8 +130,8 @@ public class StreamingAggregate extends UnaryOperator {
     }
 
     /*
-     * We know that child.nextReady() has returned <code>null</code>, so we have processed all tuple we can. Child is
-     * either EOS or we have to wait for more data.
+     * We know that child.nextReady() has returned <code>null</code>, so we have processed all tuple
+     * we can. Child is either EOS or we have to wait for more data.
      */
     if (child.eos()) {
       addToResult();

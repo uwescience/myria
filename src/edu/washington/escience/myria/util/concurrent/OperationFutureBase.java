@@ -3,14 +3,16 @@
  * 
  * Copyright 2012 The Netty Project
  * 
- * The Netty Project licenses this file to you under the Apache License, version 2.0 (the "License"); you may not use
- * this file except in compliance with the License. You may obtain a copy of the License at:
+ * The Netty Project licenses this file to you under the Apache License, version 2.0 (the
+ * "License"); you may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at:
  * 
  * http://www.apache.org/licenses/LICENSE-2.0
  * 
- * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 package edu.washington.escience.myria.util.concurrent;
 
@@ -34,9 +36,10 @@ import edu.washington.escience.myria.DbException;
  * <ol>
  * <li>All listeners executed by the order they get added.</li>
  * <li>All completed state listeners are executed by the thread caused the state change.</li>
- * <li>All listeners added after the future entered into a completed state are executed by the thread adding them.</li>
- * <li>States are denoted by an integer. All odd integers denote completed states. And all even integers denote
- * uncompleted states.</li>
+ * <li>All listeners added after the future entered into a completed state are executed by the
+ * thread adding them.</li>
+ * <li>States are denoted by an integer. All odd integers denote completed states. And all even
+ * integers denote uncompleted states.</li>
  * </ol>
  * 
  * 
@@ -65,8 +68,9 @@ public abstract class OperationFutureBase<T> implements OperationFuture {
   private List<OperationFutureListener> otherListeners;
 
   /**
-   * The first pre-notify listener of all the list of listeners. A pre-notify listener will get executed right after the
-   * operation is completed and before the threads who are waiting on this future are wakedup.
+   * The first pre-notify listener of all the list of listeners. A pre-notify listener will get
+   * executed right after the operation is completed and before the threads who are waiting on this
+   * future are wakedup.
    * */
   private OperationFutureListener firstPreListener;
 
@@ -121,7 +125,8 @@ public abstract class OperationFutureBase<T> implements OperationFuture {
   }
 
   /**
-   * Atomically change state. Note that if current state is in any of done states, the set will constantly fail.
+   * Atomically change state. Note that if current state is in any of done states, the set will
+   * constantly fail.
    * 
    * @param expected expected current state
    * @param update the new state to set
@@ -206,8 +211,9 @@ public abstract class OperationFutureBase<T> implements OperationFuture {
   }
 
   /**
-   * Adds the specified listener to this future. The specified listener is notified when this future is
-   * {@linkplain #isDone() done}. If this future is already completed, the specified listener is notified immediately.
+   * Adds the specified listener to this future. The specified listener is notified when this future
+   * is {@linkplain #isDone() done}. If this future is already completed, the specified listener is
+   * notified immediately.
    * 
    * @param listener the listener.
    */
@@ -238,12 +244,12 @@ public abstract class OperationFutureBase<T> implements OperationFuture {
   }
 
   /**
-   * A pre-notify listener will get executed right after the operation is completed and before the threads who are
-   * waiting on this future are wakedup. If the future is already completed, the specified listener is notified
-   * immediately.
+   * A pre-notify listener will get executed right after the operation is completed and before the
+   * threads who are waiting on this future are wakedup. If the future is already completed, the
+   * specified listener is notified immediately.
    * 
-   * Adds the specified listener to this future. If the future is already completed, the specified listener is notified
-   * immediately.
+   * Adds the specified listener to this future. If the future is already completed, the specified
+   * listener is notified immediately.
    * 
    * @param listener the listener.
    * */
@@ -274,9 +280,9 @@ public abstract class OperationFutureBase<T> implements OperationFuture {
   }
 
   /**
-   * Removes the specified listener from this future. The specified listener is no longer notified when this future is
-   * {@linkplain #isDone() done}. If the specified listener is not associated with this future, this method does nothing
-   * and returns silently.
+   * Removes the specified listener from this future. The specified listener is no longer notified
+   * when this future is {@linkplain #isDone() done}. If the specified listener is not associated
+   * with this future, this method does nothing and returns silently.
    * 
    * @param listener the listener to be removed.
    */
@@ -302,8 +308,9 @@ public abstract class OperationFutureBase<T> implements OperationFuture {
   }
 
   /**
-   * Waits for this future until it is done, and rethrows the cause of the failure if this future failed. If the cause
-   * of the failure is a checked exception, it is wrapped with a new {@link DbException} before being thrown.
+   * Waits for this future until it is done, and rethrows the cause of the failure if this future
+   * failed. If the cause of the failure is a checked exception, it is wrapped with a new
+   * {@link DbException} before being thrown.
    * 
    * @throws InterruptedException if interrupted.
    * @throws DbException if any other error occurs.
@@ -314,8 +321,9 @@ public abstract class OperationFutureBase<T> implements OperationFuture {
   }
 
   /**
-   * Waits for this future until it is done, and rethrows the cause of the failure if this future failed. If the cause
-   * of the failure is a checked exception, it is wrapped with a new {@link DbException} before being thrown.
+   * Waits for this future until it is done, and rethrows the cause of the failure if this future
+   * failed. If the cause of the failure is a checked exception, it is wrapped with a new
+   * {@link DbException} before being thrown.
    * 
    * @throws DbException if any error occurs.
    */
@@ -374,8 +382,8 @@ public abstract class OperationFutureBase<T> implements OperationFuture {
   }
 
   /**
-   * Waits for this future to be completed without interruption. This method catches an {@link InterruptedException} and
-   * discards it silently.
+   * Waits for this future to be completed without interruption. This method catches an
+   * {@link InterruptedException} and discards it silently.
    * 
    */
   protected final void awaitUninterruptibly0() {
@@ -412,11 +420,13 @@ public abstract class OperationFutureBase<T> implements OperationFuture {
    * Wait the action to be done for at most timeoutNanos nanoseconds.
    * 
    * @param timeoutNanos timeout in nanoseconds
-   * @param interruptable true to throw the InterruptedException if interrupted, otherwise just set the interrupted bit.
+   * @param interruptable true to throw the InterruptedException if interrupted, otherwise just set
+   *        the interrupted bit.
    * @throws InterruptedException if interrupted and is interruptable.
    * @return if the action is done within timeout.
    */
-  private boolean await0(final long timeoutNanos, final boolean interruptable) throws InterruptedException {
+  private boolean await0(final long timeoutNanos, final boolean interruptable)
+      throws InterruptedException {
     if (interruptable && Thread.interrupted()) {
       throw new InterruptedException();
     }
@@ -472,8 +482,8 @@ public abstract class OperationFutureBase<T> implements OperationFuture {
    * Marks this future as a success and notifies all listeners.
    * 
    * @param result operation result, null if no result is generated
-   * @return {@code true} if and only if successfully marked this future as a success. Otherwise {@code false} because
-   *         this future is already marked as either a success or a failure.
+   * @return {@code true} if and only if successfully marked this future as a success. Otherwise
+   *         {@code false} because this future is already marked as either a success or a failure.
    */
   protected final boolean setSuccess0(final T result) {
     if (!this.setDoneState(SUCCEED)) {
@@ -495,8 +505,8 @@ public abstract class OperationFutureBase<T> implements OperationFuture {
    * Marks this future as a failure and notifies all listeners.
    * 
    * @param cause the cause.
-   * @return {@code true} if and only if successfully marked this future as a failure. Otherwise {@code false} because
-   *         this future is already marked as either a success or a failure.
+   * @return {@code true} if and only if successfully marked this future as a failure. Otherwise
+   *         {@code false} because this future is already marked as either a success or a failure.
    */
   protected final boolean setFailure0(final Throwable cause) {
     if (!this.setDoneState(FAIL)) {
@@ -583,7 +593,8 @@ public abstract class OperationFutureBase<T> implements OperationFuture {
       l.operationComplete(this);
     } catch (Throwable t) {
       if (LOGGER.isWarnEnabled()) {
-        LOGGER.warn("An exception was thrown by " + OperationFutureListener.class.getSimpleName() + '.', t);
+        LOGGER.warn("An exception was thrown by " + OperationFutureListener.class.getSimpleName()
+            + '.', t);
       }
     }
   }

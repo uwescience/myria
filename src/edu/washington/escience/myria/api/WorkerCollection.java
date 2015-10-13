@@ -41,7 +41,8 @@ public final class WorkerCollection {
   @GET
   @Path("/heartbeat")
   public Response getAliveWorkersWithLastHeartbeat() {
-    return Response.ok(server.getAliveWorkersWithLastHeartbeat()).cacheControl(MyriaApiUtils.doNotCache()).build();
+    return Response.ok(server.getAliveWorkersWithLastHeartbeat())
+        .cacheControl(MyriaApiUtils.doNotCache()).build();
   }
 
   /**

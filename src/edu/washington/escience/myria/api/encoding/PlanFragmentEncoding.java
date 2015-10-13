@@ -52,8 +52,8 @@ public final class PlanFragmentEncoding extends MyriaApiEncoding {
       if (!opNames.contains(op.opId)) {
         opNames.add(op.opId);
       } else {
-        throw new MyriaApiException(Status.BAD_REQUEST, "duplicate operator IDs in a fragment: " + op.opId
-            + ". Found on operator " + op.opName + " of type " + op.getClass());
+        throw new MyriaApiException(Status.BAD_REQUEST, "duplicate operator IDs in a fragment: "
+            + op.opId + ". Found on operator " + op.opName + " of type " + op.getClass());
       }
     }
   }

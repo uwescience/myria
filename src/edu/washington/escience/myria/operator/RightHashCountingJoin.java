@@ -42,7 +42,8 @@ public class RightHashCountingJoin extends BinaryOperator {
   private final int[] rightCompareIndx;
 
   /**
-   * A hash table for tuples from child 2. {Hashcode -> List of tuple indices with the same hash code}
+   * A hash table for tuples from child 2. {Hashcode -> List of tuple indices with the same hash
+   * code}
    */
   private transient IntObjectHashMap<IntArrayList> hashTableIndices;
 
@@ -116,7 +117,8 @@ public class RightHashCountingJoin extends BinaryOperator {
   };
 
   /**
-   * Note: If this operator is ready for EOS, this function will return true since EOS is a special EOI.
+   * Note: If this operator is ready for EOS, this function will return true since EOS is a special
+   * EOI.
    * 
    * @return whether this operator is ready to set itself EOI
    */
@@ -128,8 +130,8 @@ public class RightHashCountingJoin extends BinaryOperator {
   }
 
   /**
-   * Construct an EquiJoin operator. It returns all columns from both children when the corresponding columns in
-   * compareIndx1 and compareIndx2 match.
+   * Construct an EquiJoin operator. It returns all columns from both children when the
+   * corresponding columns in compareIndx1 and compareIndx2 match.
    * 
    * @param left the left child.
    * @param right the right child.
@@ -150,11 +152,12 @@ public class RightHashCountingJoin extends BinaryOperator {
    * @param right the right child.
    * @param compareIndx1 the columns of the left child to be compared with the right. Order matters.
    * @param compareIndx2 the columns of the right child to be compared with the left. Order matters.
-   * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>, or if
-   *        <tt>outputSchema</tt> does not have the correct number of columns and column types.
+   * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>,
+   *        or if <tt>outputSchema</tt> does not have the correct number of columns and column
+   *        types.
    */
-  public RightHashCountingJoin(final String outputColumnName, final Operator left, final Operator right,
-      final int[] compareIndx1, final int[] compareIndx2) {
+  public RightHashCountingJoin(final String outputColumnName, final Operator left,
+      final Operator right, final int[] compareIndx1, final int[] compareIndx2) {
     super(left, right);
     leftCompareIndx = compareIndx1;
     rightCompareIndx = compareIndx2;
@@ -205,7 +208,10 @@ public class RightHashCountingJoin extends BinaryOperator {
     while (!right.eos()) {
       TupleBatch rightTB = right.nextReady();
       if (rightTB == null) {
-        /* The right child may have realized it's EOS now. If so, we must move onto left child to avoid livelock. */
+        /*
+         * The right child may have realized it's EOS now. If so, we must move onto left child to
+         * avoid livelock.
+         */
         if (right.eos()) {
           break;
         }
@@ -219,8 +225,8 @@ public class RightHashCountingJoin extends BinaryOperator {
     while (!left.eos()) {
       TupleBatch leftTB = left.nextReady();
       /*
-       * Left tuple has no data, but we may need to pop partially-full existing batches if left reached EOI/EOS. Break
-       * and check for termination.
+       * Left tuple has no data, but we may need to pop partially-full existing batches if left
+       * reached EOI/EOS. Break and check for termination.
        */
       if (leftTB == null) {
         break;
@@ -231,8 +237,8 @@ public class RightHashCountingJoin extends BinaryOperator {
     }
 
     /*
-     * If the operator is ready to EOI, just set EOI since EOI will not return any data. If the operator is ready to
-     * EOS, return answer first, then at the next round set EOS
+     * If the operator is ready to EOI, just set EOI since EOI will not return any data. If the
+     * operator is ready to EOS, return answer first, then at the next round set EOS
      */
     if (isEOIReady()) {
       if (left.eos() && right.eos() && (!hasReturnedAnswer)) {
@@ -266,7 +272,8 @@ public class RightHashCountingJoin extends BinaryOperator {
     for (int row = 0; row < tb.numTuples(); ++row) {
       final int cntHashCode = HashUtils.hashSubRow(tb, rightCompareIndx, row);
       // only build hash table on two sides if none of the children is EOS
-      updateHashTableAndOccureTimes(tb, row, cntHashCode, hashTable, hashTableIndices, rightCompareIndx, occurredTimes);
+      updateHashTableAndOccureTimes(tb, row, cntHashCode, hashTable, hashTableIndices,
+          rightCompareIndx, occurredTimes);
     }
   }
 
@@ -304,15 +311,19 @@ public class RightHashCountingJoin extends BinaryOperator {
    * @param compareColumns compareColumns of input tuple
    * @param occuredTimes occuredTimes array to be updated
    * */
-  private void updateHashTableAndOccureTimes(final TupleBatch tb, final int row, final int hashCode,
-      final MutableTupleBuffer hashTable, final IntObjectHashMap<IntArrayList> hashTableIndices,
-      final int[] compareColumns, final IntArrayList occuredTimes) {
+  private void updateHashTableAndOccureTimes(final TupleBatch tb, final int row,
+      final int hashCode, final MutableTupleBuffer hashTable,
+      final IntObjectHashMap<IntArrayList> hashTableIndices, final int[] compareColumns,
+      final IntArrayList occuredTimes) {
 
     /* get the index of the tuple's hash code corresponding to */
     final int nextIndex = hashTable.numTuples();
     IntArrayList tupleIndicesList = hashTableIndices.get(hashCode);
 
-    /* create one is there is no such a index yet (there is no tuple with the same hash code has been processed ) */
+    /*
+     * create one is there is no such a index yet (there is no tuple with the same hash code has
+     * been processed )
+     */
     if (tupleIndicesList == null) {
       tupleIndicesList = new IntArrayList(1);
       hashTableIndices.put(hashCode, tupleIndicesList);
@@ -321,7 +332,10 @@ public class RightHashCountingJoin extends BinaryOperator {
     Preconditions.checkArgument(hashTable.numColumns() == compareColumns.length);
     List<? extends Column<?>> inputColumns = tb.getDataColumns();
 
-    /* find whether this tuple's comparing key has occurred before. If it is, only update occurred times */
+    /*
+     * find whether this tuple's comparing key has occurred before. If it is, only update occurred
+     * times
+     */
     boolean found = false;
     for (int i = 0; i < tupleIndicesList.size(); ++i) {
       int index = tupleIndicesList.get(i);

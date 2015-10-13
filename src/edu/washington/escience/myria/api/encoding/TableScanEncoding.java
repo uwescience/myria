@@ -27,7 +27,8 @@ public class TableScanEncoding extends LeafOperatorEncoding<DbQueryScan> {
     } catch (final CatalogException e) {
       throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, e);
     }
-    Preconditions.checkArgument(schema != null, "Specified relation %s does not exist.", relationKey);
+    Preconditions.checkArgument(schema != null, "Specified relation %s does not exist.",
+        relationKey);
     return new DbQueryScan(relationKey, schema);
   }
 }

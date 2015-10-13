@@ -20,8 +20,8 @@ import edu.washington.escience.myria.storage.ReplaceableColumn;
  * @param <T> type of the objects in this column.
  * 
  */
-public abstract class ColumnBuilder<T extends Comparable<?>> implements ReadableColumn, WritableColumn,
-    ReplaceableColumn {
+public abstract class ColumnBuilder<T extends Comparable<?>> implements ReadableColumn,
+    WritableColumn, ReplaceableColumn {
 
   @Override
   public ColumnBuilder<T> appendBoolean(final boolean value) throws BufferOverflowException {
@@ -102,8 +102,8 @@ public abstract class ColumnBuilder<T extends Comparable<?>> implements Readable
    * @throws SQLException if there are JDBC errors.
    * @throws BufferOverflowException if the column is already full
    */
-  public abstract ColumnBuilder<T> appendFromJdbc(ResultSet resultSet, int jdbcIndex) throws SQLException,
-      BufferOverflowException;
+  public abstract ColumnBuilder<T> appendFromJdbc(ResultSet resultSet, int jdbcIndex)
+      throws SQLException, BufferOverflowException;
 
   /**
    * Extracts the appropriate value from a SQLiteStatement object and appends it to this column.
@@ -114,8 +114,8 @@ public abstract class ColumnBuilder<T extends Comparable<?>> implements Readable
    * @throws SQLiteException if there are SQLite errors.
    * @throws BufferOverflowException if the column is already full
    */
-  public abstract ColumnBuilder<T> appendFromSQLite(SQLiteStatement statement, int index) throws SQLiteException,
-      BufferOverflowException;
+  public abstract ColumnBuilder<T> appendFromSQLite(SQLiteStatement statement, int index)
+      throws SQLiteException, BufferOverflowException;
 
   /**
    * @return a column with the contents built.
@@ -144,7 +144,8 @@ public abstract class ColumnBuilder<T extends Comparable<?>> implements Readable
   public abstract ColumnBuilder<T> expandAll();
 
   /**
-   * @return a new builder with the contents initialized by this builder. The two builders share no data.
+   * @return a new builder with the contents initialized by this builder. The two builders share no
+   *         data.
    */
   public abstract ColumnBuilder<T> forkNewBuilder();
 

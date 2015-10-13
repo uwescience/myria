@@ -19,8 +19,8 @@ import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.HashUtils;
 
 /**
- * Duplicate elimination. It adds newly meet unique tuples into a buffer so that the source TupleBatches are not
- * referenced. This implementation reduces memory consumption.
+ * Duplicate elimination. It adds newly meet unique tuples into a buffer so that the source
+ * TupleBatches are not referenced. This implementation reduces memory consumption.
  * */
 public final class DupElim extends StreamingState {
 

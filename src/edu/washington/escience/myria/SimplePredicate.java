@@ -89,7 +89,10 @@ public class SimplePredicate implements Serializable {
   private final Op op;
   /** Which column of the tuple this predicate tests. */
   private final int columnIndex;
-  /** The (often constant) right operand of the operator. E.g., the predicate can be "Is greater than 5". */
+  /**
+   * The (often constant) right operand of the operator. E.g., the predicate can be
+   * "Is greater than 5".
+   */
   private final String operand;
 
   /**

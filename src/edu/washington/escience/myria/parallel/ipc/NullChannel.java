@@ -9,8 +9,8 @@ import org.jboss.netty.channel.DefaultChannelPipeline;
 import org.slf4j.LoggerFactory;
 
 /**
- * This class channel is used where no meaningful channel instances can be used. Most probability it happens when a
- * channel is null but a future must be generated.
+ * This class channel is used where no meaningful channel instances can be used. Most probability it
+ * happens when a channel is null but a future must be generated.
  * */
 public final class NullChannel extends InJVMChannel {
 
@@ -30,16 +30,13 @@ public final class NullChannel extends InJVMChannel {
     PIPELINE = new DefaultChannelPipeline() {
 
       @Override
-      public void sendUpstream(final ChannelEvent e) {
-      }
+      public void sendUpstream(final ChannelEvent e) {}
 
       @Override
-      public void sendDownstream(final ChannelEvent e) {
-      }
+      public void sendDownstream(final ChannelEvent e) {}
 
       @Override
-      public void attach(final Channel channel, final ChannelSink sink) {
-      }
+      public void attach(final Channel channel, final ChannelSink sink) {}
 
       @Override
       public boolean isAttached() {

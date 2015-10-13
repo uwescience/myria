@@ -21,11 +21,12 @@ public class ShuffleProducerEncoding extends AbstractProducerEncoding<GenericShu
     Set<Integer> workerIds = getRealWorkerIds();
     argPf.setNumPartitions(workerIds.size());
     GenericShuffleProducer producer =
-        new GenericShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
-            .integerSetToIntArray(workerIds), argPf);
+        new GenericShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()),
+            MyriaUtils.integerSetToIntArray(workerIds), argPf);
     if (argBufferStateType != null) {
       if (argBufferStateType instanceof KeepMinValueStateEncoding) {
-        producer.setBackupBufferAsMin(((KeepMinValueStateEncoding) argBufferStateType).keyColIndices,
+        producer.setBackupBufferAsMin(
+            ((KeepMinValueStateEncoding) argBufferStateType).keyColIndices,
             ((KeepMinValueStateEncoding) argBufferStateType).valueColIndices);
       } else if (argBufferStateType instanceof KeepAndSortOnMinValueStateEncoding) {
         producer.setBackupBufferAsPrioritizedMin(

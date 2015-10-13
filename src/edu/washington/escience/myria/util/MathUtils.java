@@ -38,7 +38,6 @@ public final class MathUtils {
   /**
    * util classes are not instantiable.
    * */
-  private MathUtils() {
-  }
+  private MathUtils() {}
 
 }

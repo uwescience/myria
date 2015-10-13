@@ -14,8 +14,7 @@ public class NotExpression extends UnaryExpression {
    * This is not really unused, it's used automagically by Jackson deserialization.
    */
   @SuppressWarnings("unused")
-  private NotExpression() {
-  }
+  private NotExpression() {}
 
   /**
    * Negate (boolean not) the operand.

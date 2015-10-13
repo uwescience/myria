@@ -15,7 +15,8 @@ import org.jboss.netty.channel.ChannelFutureListener;
  * It works as the following: <br>
  * 1. wait until the condition is set<br>
  * 2. if condition is true, pass all the operations directly to the wrapped close future.<br>
- * 3. else set the wrapper future as done and treat it as fail by default, or succeed if specified in constructor.
+ * 3. else set the wrapper future as done and treat it as fail by default, or succeed if specified
+ * in constructor.
  * */
 public class ConditionCloseFuture implements ChannelFuture {
 
@@ -36,7 +37,8 @@ public class ConditionCloseFuture implements ChannelFuture {
    * */
   private final Object conditionSetLock = new Object();
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(ConditionCloseFuture.class);
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory
+      .getLogger(ConditionCloseFuture.class);
   /**
    * If the condition is unsatisfied, treat the future as a failure.
    * */
@@ -58,8 +60,8 @@ public class ConditionCloseFuture implements ChannelFuture {
 
   /**
    * @param channel the owner channel.
-   * @param conditionUnSatisfiedAsSucceed if the condition is unsatisfied the future should be treated as a succeed or
-   *          not
+   * @param conditionUnSatisfiedAsSucceed if the condition is unsatisfied the future should be
+   *        treated as a succeed or not
    * */
   public ConditionCloseFuture(final Channel channel, final boolean conditionUnSatisfiedAsSucceed) {
     this.channel = channel;
@@ -310,7 +312,8 @@ public class ConditionCloseFuture implements ChannelFuture {
    * @throws InterruptedException if interrupted.
    * @return the amount of waiting time remain in nanoseconds.
    * */
-  private long waitForConditionSet(final long timeoutMS, final int nanos) throws InterruptedException {
+  private long waitForConditionSet(final long timeoutMS, final int nanos)
+      throws InterruptedException {
     final long start = System.nanoTime();
     synchronized (conditionSetLock) {
       if (!conditionSetFlag) {
@@ -325,7 +328,8 @@ public class ConditionCloseFuture implements ChannelFuture {
   }
 
   /**
-   * Wait the condition to be set for at most timeoutMS milliseconds and nanos nanoseconds without interruption.
+   * Wait the condition to be set for at most timeoutMS milliseconds and nanos nanoseconds without
+   * interruption.
    * 
    * @param timeoutMS milliseconds
    * @param nanos nanoseconds.

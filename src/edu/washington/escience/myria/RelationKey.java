@@ -37,7 +37,8 @@ public final class RelationKey implements Serializable {
    */
   @JsonCreator
   public static RelationKey of(@JsonProperty("userName") final String userName,
-      @JsonProperty("programName") final String programName, @JsonProperty("relationName") final String relationName) {
+      @JsonProperty("programName") final String programName,
+      @JsonProperty("relationName") final String relationName) {
     return new RelationKey(userName, programName, relationName);
   }
 
@@ -47,13 +48,14 @@ public final class RelationKey implements Serializable {
   private static final Pattern VALID_NAME_PATTERN = Pattern.compile(VALID_NAME_REGEX);
 
   /**
-   * Validate a potential user, program, relation name for use in a Relation Key. Valid names are given by
-   * {@link #VALID_NAME_REGEX}.
+   * Validate a potential user, program, relation name for use in a Relation Key. Valid names are
+   * given by {@link #VALID_NAME_REGEX}.
    * 
    * @param name the candidate user, program, or relation name.
    * @param whichName 'user', 'program', or 'relation'.
    * @return the supplied name, if it is valid.
-   * @throws IllegalArgumentException if the name does not match the regex {@link #VALID_NAME_REGEX}.
+   * @throws IllegalArgumentException if the name does not match the regex {@link #VALID_NAME_REGEX}
+   *         .
    */
   private static String checkName(final String name, final String whichName) {
     Objects.requireNonNull(name, whichName);
@@ -114,7 +116,8 @@ public final class RelationKey implements Serializable {
    */
   private String toString(final char leftEscape, final char separate, final char rightEscape) {
     StringBuilder sb = new StringBuilder();
-    sb.append(leftEscape).append(Joiner.on(separate).join(userName, programName, relationName)).append(rightEscape);
+    sb.append(leftEscape).append(Joiner.on(separate).join(userName, programName, relationName))
+        .append(rightEscape);
     return sb.toString();
   }
 
@@ -133,8 +136,8 @@ public final class RelationKey implements Serializable {
         String ret = toString('\"', ':', '\"');
         /* Subtract 2 because of the open and close quotes. */
         Preconditions.checkArgument((ret.length() - 2) <= MAX_POSTGRESQL_IDENTIFIER_LENGTH,
-            "PostgreSQL does not allow relation names longer than %s characters: %s", MAX_POSTGRESQL_IDENTIFIER_LENGTH,
-            ret);
+            "PostgreSQL does not allow relation names longer than %s characters: %s",
+            MAX_POSTGRESQL_IDENTIFIER_LENGTH, ret);
         return ret;
       case MyriaConstants.STORAGE_SYSTEM_SQLITE:
         return toString('\"', ':', '\"');

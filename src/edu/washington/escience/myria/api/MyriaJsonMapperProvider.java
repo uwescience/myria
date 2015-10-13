@@ -14,8 +14,8 @@ import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.jaxrs.json.JacksonJaxbJsonProvider;
 
 /**
- * This class generates a custom JSON {@link ObjectMapper} that will properly convert Java CamelCase field names to JSON
- * lower_case_with_underscores field names.
+ * This class generates a custom JSON {@link ObjectMapper} that will properly convert Java CamelCase
+ * field names to JSON lower_case_with_underscores field names.
  * 
  * 
  */
@@ -65,8 +65,8 @@ public class MyriaJsonMapperProvider extends JacksonJaxbJsonProvider {
     mapper.registerModule(new GuavaModule());
 
     /*
-     * These are recommended by Swagger devs but I want to hold and see what we want. Leaving the code here for future
-     * use.
+     * These are recommended by Swagger devs but I want to hold and see what we want. Leaving the
+     * code here for future use.
      */
     // mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
     // mapper.setSerializationInclusion(JsonInclude.Include.NON_DEFAULT);

@@ -14,7 +14,8 @@ import edu.washington.escience.myria.storage.ConcatColumn;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
- * An abstract class used to make those specialized operators that only consume tuples simpler to implement.
+ * An abstract class used to make those specialized operators that only consume tuples simpler to
+ * implement.
  * 
  * 
  */
@@ -41,7 +42,8 @@ public abstract class RootOperator extends Operator {
    * Sets important parameters for successful operation.
    * 
    * @param child the source of tuples that this Root operator consumes.
-   * @param coalesce if set to a positive integer, will gather ready tuple batches until this many tuples are available.
+   * @param coalesce if set to a positive integer, will gather ready tuple batches until this many
+   *        tuples are available.
    */
   public RootOperator(final Operator child, final int coalesce) {
     this.child = child;
@@ -49,8 +51,8 @@ public abstract class RootOperator extends Operator {
   }
 
   /**
-   * Perform the function of this operator on the provided tuples. For instance, may print the tuples to the screen or
-   * write them to disk.
+   * Perform the function of this operator on the provided tuples. For instance, may print the
+   * tuples to the screen or write them to disk.
    * 
    * @param tuples the tuples to be consumed.
    * @throws DbException if there's an error in the database.
@@ -58,7 +60,8 @@ public abstract class RootOperator extends Operator {
   protected abstract void consumeTuples(TupleBatch tuples) throws DbException;
 
   /**
-   * If the child EOS is meet, the method is called back to let the root operators deal with this event.
+   * If the child EOS is meet, the method is called back to let the root operators deal with this
+   * event.
    * 
    * @throws DbException if any error occurs.
    * */
@@ -75,7 +78,8 @@ public abstract class RootOperator extends Operator {
    * Implement coalescing tuples together if necessary.
    * 
    * @param first the first, non-null tuple batch to be handled.
-   * @return a coalesced tuple batch consisting of either all ready tuples or at least {@link #threshold} tuples.
+   * @return a coalesced tuple batch consisting of either all ready tuples or at least
+   *         {@link #threshold} tuples.
    * @throws DbException if there is an error.
    */
   private TupleBatch getCoalesced(@Nonnull final TupleBatch first) throws DbException {
@@ -138,7 +142,7 @@ public abstract class RootOperator extends Operator {
 
   @Override
   public final Operator[] getChildren() {
-    return new Operator[] { child };
+    return new Operator[] {child};
   }
 
   @Override

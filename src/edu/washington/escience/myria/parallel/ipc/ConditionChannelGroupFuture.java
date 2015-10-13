@@ -15,12 +15,13 @@ import org.jboss.netty.channel.group.ChannelGroupFutureListener;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 
 /**
- * A {@link ChannelGroupFuture} that waits for a condition to be satisfied before actually do the channel group event
- * checking.
+ * A {@link ChannelGroupFuture} that waits for a condition to be satisfied before actually do the
+ * channel group event checking.
  * */
 public class ConditionChannelGroupFuture implements ChannelGroupFuture {
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(ConditionChannelGroupFuture.class);
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory
+      .getLogger(ConditionChannelGroupFuture.class);
 
   /**
    * the actual channel group future that monitors the channel group event.
@@ -288,7 +289,8 @@ public class ConditionChannelGroupFuture implements ChannelGroupFuture {
    * @param nanos remaining nanos.
    * @throws InterruptedException if interrupted.
    * */
-  private long waitForConditionSet(final long timeoutMS, final int nanos) throws InterruptedException {
+  private long waitForConditionSet(final long timeoutMS, final int nanos)
+      throws InterruptedException {
     final long start = System.nanoTime();
     synchronized (conditionSetLock) {
       if (!conditionSetFlag) {

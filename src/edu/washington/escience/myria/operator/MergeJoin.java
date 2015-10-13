@@ -18,11 +18,13 @@ import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
 
 /**
- * This is an implementation of merge join that requires the tuples from the children to come in order.
+ * This is an implementation of merge join that requires the tuples from the children to come in
+ * order.
  * 
- * The data is buffered in a linked list for each child operator. There is a main index on each list that indicates up
- * to where we have advanced in the last tuple batch. Also, there is a second index that points to the last tuple that
- * is equal. This index is valid in the first tuple batch in the linked list.
+ * The data is buffered in a linked list for each child operator. There is a main index on each list
+ * that indicates up to where we have advanced in the last tuple batch. Also, there is a second
+ * index that points to the last tuple that is equal. This index is valid in the first tuple batch
+ * in the linked list.
  */
 public final class MergeJoin extends BinaryOperator {
   /** Required for Java serialization. */
@@ -43,7 +45,8 @@ public final class MergeJoin extends BinaryOperator {
   private final int[] rightCompareIndx;
 
   /**
-   * True if column is sorted ascending in {@link #leftCompareIndx} and {@link MergeJoin#rightCompareIndx}.
+   * True if column is sorted ascending in {@link #leftCompareIndx} and
+   * {@link MergeJoin#rightCompareIndx}.
    */
   private boolean[] ascending;
 
@@ -73,8 +76,8 @@ public final class MergeJoin extends BinaryOperator {
   private int leftBeginIndex;
 
   /**
-   * A tuple batch that goes into {@link #leftBatches} but does not fit yet because {@link #leftRowIndex} should always
-   * point into the last TB in {@link #leftBatches}.
+   * A tuple batch that goes into {@link #leftBatches} but does not fit yet because
+   * {@link #leftRowIndex} should always point into the last TB in {@link #leftBatches}.
    */
   private TupleBatch leftNotProcessed;
 
@@ -91,8 +94,8 @@ public final class MergeJoin extends BinaryOperator {
   private int rightBeginIndex;
 
   /**
-   * A tuple batch that goes into {@link #rightBatches} but does not fit yet because {@link #rightRowIndex} should
-   * always point into the last TB in {@link #rightBatches}.
+   * A tuple batch that goes into {@link #rightBatches} but does not fit yet because
+   * {@link #rightRowIndex} should always point into the last TB in {@link #rightBatches}.
    */
   private TupleBatch rightNotProcessed;
 
@@ -115,8 +118,8 @@ public final class MergeJoin extends BinaryOperator {
     /** Could not advance because the next tuple is not equal to the current one on this side. **/
     NOT_EQUAL,
     /**
-     * Could not advance because we don't have enough information available (but we tried to get it). Could be because
-     * of EOS.
+     * Could not advance because we don't have enough information available (but we tried to get
+     * it). Could be because of EOS.
      **/
     NOT_ENOUGH_DATA,
     /** Nothing has been returned because method has not been called. **/
@@ -124,8 +127,8 @@ public final class MergeJoin extends BinaryOperator {
   }
 
   /**
-   * Construct an EquiJoin operator. It returns all columns from both children when the corresponding columns in
-   * compareIndx1 and compareIndx2 match.
+   * Construct an EquiJoin operator. It returns all columns from both children when the
+   * corresponding columns in compareIndx1 and compareIndx2 match.
    * 
    * @param left the left child.
    * @param right the right child.
@@ -134,14 +137,14 @@ public final class MergeJoin extends BinaryOperator {
    * @param ascending true for each column that is ordered ascending in left child
    * @throw IllegalArgumentException if there are duplicated column names from the children.
    */
-  public MergeJoin(final Operator left, final Operator right, final int[] compareIndx1, final int[] compareIndx2,
-      final boolean[] ascending) {
+  public MergeJoin(final Operator left, final Operator right, final int[] compareIndx1,
+      final int[] compareIndx2, final boolean[] ascending) {
     this(null, left, right, compareIndx1, compareIndx2, ascending);
   }
 
   /**
-   * Construct an EquiJoin operator. It returns the specified columns from both children when the corresponding columns
-   * in compareIndx1 and compareIndx2 match.
+   * Construct an EquiJoin operator. It returns the specified columns from both children when the
+   * corresponding columns in compareIndx1 and compareIndx2 match.
    * 
    * @param left the left child.
    * @param right the right child.
@@ -150,20 +153,22 @@ public final class MergeJoin extends BinaryOperator {
    * @param answerColumns1 the columns of the left child to be returned. Order matters.
    * @param answerColumns2 the columns of the right child to be returned. Order matters.
    * @param ascending true for each column that is ordered ascending in left child
-   * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>, or if
-   *        <tt>outputSchema</tt> does not have the correct number of columns and column types.
+   * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>,
+   *        or if <tt>outputSchema</tt> does not have the correct number of columns and column
+   *        types.
    */
-  public MergeJoin(final Operator left, final Operator right, final int[] compareIndx1, final int[] compareIndx2,
-      final int[] answerColumns1, final int[] answerColumns2, final boolean[] ascending) {
+  public MergeJoin(final Operator left, final Operator right, final int[] compareIndx1,
+      final int[] compareIndx2, final int[] answerColumns1, final int[] answerColumns2,
+      final boolean[] ascending) {
     this(null, left, right, compareIndx1, compareIndx2, answerColumns1, answerColumns2, ascending);
   }
 
   /**
-   * Construct an EquiJoin operator. It returns the specified columns from both children when the corresponding columns
-   * in compareIndx1 and compareIndx2 match.
+   * Construct an EquiJoin operator. It returns the specified columns from both children when the
+   * corresponding columns in compareIndx1 and compareIndx2 match.
    * 
-   * @param outputColumns the names of the columns in the output schema. If null, the corresponding columns will be
-   *          copied from the children.
+   * @param outputColumns the names of the columns in the output schema. If null, the corresponding
+   *        columns will be copied from the children.
    * @param left the left child.
    * @param right the right child.
    * @param compareIndx1 the columns of the left child to be compared with the right. Order matters.
@@ -171,18 +176,21 @@ public final class MergeJoin extends BinaryOperator {
    * @param answerColumns1 the columns of the left child to be returned. Order matters.
    * @param answerColumns2 the columns of the right child to be returned. Order matters.
    * @param ascending true for each column that is ordered ascending in left child
-   * @throw IllegalArgumentException if there are duplicated column names in <tt>outputColumns</tt>, or if
-   *        <tt>outputColumns</tt> does not have the correct number of columns and column types.
+   * @throw IllegalArgumentException if there are duplicated column names in <tt>outputColumns</tt>,
+   *        or if <tt>outputColumns</tt> does not have the correct number of columns and column
+   *        types.
    */
   public MergeJoin(final List<String> outputColumns, final Operator left, final Operator right,
-      final int[] compareIndx1, final int[] compareIndx2, final int[] answerColumns1, final int[] answerColumns2,
-      final boolean[] ascending) {
+      final int[] compareIndx1, final int[] compareIndx2, final int[] answerColumns1,
+      final int[] answerColumns2, final boolean[] ascending) {
     super(left, right);
     Preconditions.checkArgument(compareIndx1.length == compareIndx2.length);
     if (outputColumns != null) {
-      Preconditions.checkArgument(outputColumns.size() == answerColumns1.length + answerColumns2.length,
+      Preconditions.checkArgument(outputColumns.size() == answerColumns1.length
+          + answerColumns2.length,
           "length mismatch between output column names and columns selected for output");
-      Preconditions.checkArgument(ImmutableSet.copyOf(outputColumns).size() == outputColumns.size(),
+      Preconditions.checkArgument(
+          ImmutableSet.copyOf(outputColumns).size() == outputColumns.size(),
           "duplicate column names in outputColumns");
       this.outputColumns = ImmutableList.copyOf(outputColumns);
     } else {
@@ -198,23 +206,24 @@ public final class MergeJoin extends BinaryOperator {
   }
 
   /**
-   * Construct an EquiJoin operator. It returns all columns from both children when the corresponding columns in
-   * compareIndx1 and compareIndx2 match.
+   * Construct an EquiJoin operator. It returns all columns from both children when the
+   * corresponding columns in compareIndx1 and compareIndx2 match.
    * 
-   * @param outputColumns the names of the columns in the output schema. If null, the corresponding columns will be
-   *          copied from the children.
+   * @param outputColumns the names of the columns in the output schema. If null, the corresponding
+   *        columns will be copied from the children.
    * @param left the left child.
    * @param right the right child.
    * @param compareIndx1 the columns of the left child to be compared with the right. Order matters.
    * @param compareIndx2 the columns of the right child to be compared with the left. Order matters.
    * @param ascending true for each column that is ordered ascending in left child
-   * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>, or if
-   *        <tt>outputSchema</tt> does not have the correct number of columns and column types.
+   * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>,
+   *        or if <tt>outputSchema</tt> does not have the correct number of columns and column
+   *        types.
    */
   public MergeJoin(final List<String> outputColumns, final Operator left, final Operator right,
       final int[] compareIndx1, final int[] compareIndx2, final boolean[] ascending) {
-    this(outputColumns, left, right, compareIndx1, compareIndx2, range(left.getSchema().numColumns()), range(right
-        .getSchema().numColumns()), ascending);
+    this(outputColumns, left, right, compareIndx1, compareIndx2, range(left.getSchema()
+        .numColumns()), range(right.getSchema().numColumns()), ascending);
   }
 
   /**
@@ -263,15 +272,17 @@ public final class MergeJoin extends BinaryOperator {
    * @param rightTb right TB
    * @param rightRow in the right TB
    */
-  protected void addToAns(final TupleBatch leftTb, final int leftRow, final TupleBatch rightTb, final int rightRow) {
-    Preconditions.checkArgument(TupleUtils.tupleCompare(leftTb, leftCompareIndx, leftRow, rightTb, rightCompareIndx,
-        rightRow, ascending) == 0);
+  protected void addToAns(final TupleBatch leftTb, final int leftRow, final TupleBatch rightTb,
+      final int rightRow) {
+    Preconditions.checkArgument(TupleUtils.tupleCompare(leftTb, leftCompareIndx, leftRow, rightTb,
+        rightCompareIndx, rightRow, ascending) == 0);
 
     for (int i = 0; i < leftAnswerColumns.length; ++i) {
       ans.put(i, leftTb.getDataColumns().get(leftAnswerColumns[i]), leftRow);
     }
     for (int i = 0; i < rightAnswerColumns.length; ++i) {
-      ans.put(i + leftAnswerColumns.length, rightTb.getDataColumns().get(rightAnswerColumns[i]), rightRow);
+      ans.put(i + leftAnswerColumns.length, rightTb.getDataColumns().get(rightAnswerColumns[i]),
+          rightRow);
     }
   }
 
@@ -321,14 +332,16 @@ public final class MergeJoin extends BinaryOperator {
 
     while (!deferredEOS && !needData) {
       final int compared =
-          TupleUtils.tupleCompare(leftBatches.getLast(), leftCompareIndx, leftRowIndex, rightBatches.getLast(),
-              rightCompareIndx, rightRowIndex, ascending);
+          TupleUtils.tupleCompare(leftBatches.getLast(), leftCompareIndx, leftRowIndex,
+              rightBatches.getLast(), rightCompareIndx, rightRowIndex, ascending);
 
       if (compared == 0) {
-        Preconditions.checkState(TupleUtils.tupleCompare(leftBatches.getLast(), leftCompareIndx, leftRowIndex,
-            rightBatches.getLast(), rightCompareIndx, rightRowIndex, ascending) == 0);
-        Preconditions.checkState(TupleUtils.tupleCompare(leftBatches.getFirst(), leftCompareIndx, leftBeginIndex,
-            rightBatches.getFirst(), rightCompareIndx, rightBeginIndex, ascending) == 0);
+        Preconditions.checkState(TupleUtils.tupleCompare(leftBatches.getLast(), leftCompareIndx,
+            leftRowIndex, rightBatches.getLast(), rightCompareIndx, rightRowIndex, ascending) == 0);
+        Preconditions
+            .checkState(TupleUtils.tupleCompare(leftBatches.getFirst(), leftCompareIndx,
+                leftBeginIndex, rightBatches.getFirst(), rightCompareIndx, rightBeginIndex,
+                ascending) == 0);
         leftAndRightEqual();
       } else if (compared > 0) {
         rightIsLess();
@@ -367,14 +380,17 @@ public final class MergeJoin extends BinaryOperator {
     final Operator right = getRight();
 
     if (!joinedLeft & !joinedRight) {
-      addAllToAns(leftBatches.getLast(), rightBatches, leftRowIndex, leftCompareIndx, rightBeginIndex, rightRowIndex);
+      addAllToAns(leftBatches.getLast(), rightBatches, leftRowIndex, leftCompareIndx,
+          rightBeginIndex, rightRowIndex);
       joinedLeft = true;
       joinedRight = true;
     } else if (!joinedLeft) {
-      addAllToAns(leftBatches.getLast(), rightBatches, leftRowIndex, leftCompareIndx, rightBeginIndex, rightRowIndex);
+      addAllToAns(leftBatches.getLast(), rightBatches, leftRowIndex, leftCompareIndx,
+          rightBeginIndex, rightRowIndex);
       joinedLeft = true;
     } else if (!joinedRight) {
-      addAllToAns(rightBatches.getLast(), leftBatches, rightRowIndex, rightCompareIndx, leftBeginIndex, leftRowIndex);
+      addAllToAns(rightBatches.getLast(), leftBatches, rightRowIndex, rightCompareIndx,
+          leftBeginIndex, leftRowIndex);
       joinedRight = true;
     }
 
@@ -415,7 +431,8 @@ public final class MergeJoin extends BinaryOperator {
         // This cannot be done earlier because we need information about both sides.
         final boolean leftAtLast = leftRowIndex == leftBatches.getLast().numTuples() - 1;
         if (leftAtLast) {
-          Preconditions.checkState(leftNotProcessed != null, "Buffered TB should be ensured in advance.");
+          Preconditions.checkState(leftNotProcessed != null,
+              "Buffered TB should be ensured in advance.");
           leftMoveFromNotProcessed();
         } else {
           while (leftBatches.size() > 1) {
@@ -427,7 +444,8 @@ public final class MergeJoin extends BinaryOperator {
 
         final boolean rightAtLast = rightRowIndex == rightBatches.getLast().numTuples() - 1;
         if (rightAtLast) {
-          Preconditions.checkState(rightNotProcessed != null, "Buffered TB should be ensured in advance.");
+          Preconditions.checkState(rightNotProcessed != null,
+              "Buffered TB should be ensured in advance.");
           rightMoveFromNotProcessed();
         } else {
           while (rightBatches.size() > 1) {
@@ -439,11 +457,12 @@ public final class MergeJoin extends BinaryOperator {
 
         joinedLeft = false;
         joinedRight = false;
-      } else if (r1 == AdvanceResult.NOT_EQUAL && child2.eos() || r2 == AdvanceResult.NOT_EQUAL && child1.eos()
-          || left.eos() && right.eos()) {
+      } else if (r1 == AdvanceResult.NOT_EQUAL && child2.eos() || r2 == AdvanceResult.NOT_EQUAL
+          && child1.eos() || left.eos() && right.eos()) {
         deferredEOS = true;
       } else {
-        Preconditions.checkState(r1 == AdvanceResult.NOT_ENOUGH_DATA || r2 == AdvanceResult.NOT_ENOUGH_DATA);
+        Preconditions.checkState(r1 == AdvanceResult.NOT_ENOUGH_DATA
+            || r2 == AdvanceResult.NOT_ENOUGH_DATA);
         needData = true;
       }
     }
@@ -565,8 +584,8 @@ public final class MergeJoin extends BinaryOperator {
       }
 
       if (leftNotProcessed != null) {
-        if (TupleUtils.tupleCompare(leftBatches.getLast(), leftCompareIndx, leftRowIndex, leftNotProcessed,
-            leftCompareIndx, 0, ascending) == 0) {
+        if (TupleUtils.tupleCompare(leftBatches.getLast(), leftCompareIndx, leftRowIndex,
+            leftNotProcessed, leftCompareIndx, 0, ascending) == 0) {
           leftBatches.add(leftNotProcessed);
           leftNotProcessed = null;
           leftRowIndex = 0;
@@ -578,8 +597,8 @@ public final class MergeJoin extends BinaryOperator {
       } else {
         return AdvanceResult.NOT_ENOUGH_DATA;
       }
-    } else if (TupleUtils.tupleCompare(leftBatches.getLast(), leftCompareIndx, leftRowIndex, leftRowIndex + 1,
-        ascending) == 0) {
+    } else if (TupleUtils.tupleCompare(leftBatches.getLast(), leftCompareIndx, leftRowIndex,
+        leftRowIndex + 1, ascending) == 0) {
       leftRowIndex++;
       joinedLeft = false;
       return AdvanceResult.OK;
@@ -604,8 +623,8 @@ public final class MergeJoin extends BinaryOperator {
       }
 
       if (rightNotProcessed != null) {
-        if (TupleUtils.tupleCompare(rightBatches.getLast(), rightCompareIndx, rightRowIndex, rightNotProcessed,
-            rightCompareIndx, 0, ascending) == 0) {
+        if (TupleUtils.tupleCompare(rightBatches.getLast(), rightCompareIndx, rightRowIndex,
+            rightNotProcessed, rightCompareIndx, 0, ascending) == 0) {
           rightBatches.add(rightNotProcessed);
           rightNotProcessed = null;
           rightRowIndex = 0;
@@ -617,8 +636,8 @@ public final class MergeJoin extends BinaryOperator {
       } else {
         return AdvanceResult.NOT_ENOUGH_DATA;
       }
-    } else if (TupleUtils.tupleCompare(rightBatches.getLast(), rightCompareIndx, rightRowIndex, rightRowIndex + 1,
-        ascending) == 0) {
+    } else if (TupleUtils.tupleCompare(rightBatches.getLast(), rightCompareIndx, rightRowIndex,
+        rightRowIndex + 1, ascending) == 0) {
       rightRowIndex++;
       joinedRight = false;
       return AdvanceResult.OK;
@@ -633,13 +652,14 @@ public final class MergeJoin extends BinaryOperator {
    * @param firstBatch the batch that has one tuple to be joined with n others
    * @param secondBatches the batches that have n tuples to joined with one
    * @param firstBatchRow the row in which we can find the tuple to join n other with
-   * @param firstCompareIndx the compare index in the first TB. Used to determine whether the next tuple is equal to the
-   *          one under the current index.
+   * @param firstCompareIndx the compare index in the first TB. Used to determine whether the next
+   *        tuple is equal to the one under the current index.
    * @param secondBeginRow the start of the n tuples (points into first TB in linked list)
    * @param secondEndRow the end of the n tuples (points into last TB in linked list)
    */
-  protected void addAllToAns(final TupleBatch firstBatch, final LinkedList<TupleBatch> secondBatches,
-      final int firstBatchRow, final int[] firstCompareIndx, final int secondBeginRow, final int secondEndRow) {
+  protected void addAllToAns(final TupleBatch firstBatch,
+      final LinkedList<TupleBatch> secondBatches, final int firstBatchRow,
+      final int[] firstCompareIndx, final int secondBeginRow, final int secondEndRow) {
     int beginIndex = secondBeginRow;
 
     Preconditions.checkArgument(firstBatch != secondBatches.getLast());

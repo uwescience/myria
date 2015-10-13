@@ -12,9 +12,8 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
- * Implementation of a PartitionFunction that use the trivial identity hash.
- * (i.e. a --> a) The attribute to hash on must be an INT column and should
- * represent a workerID
+ * Implementation of a PartitionFunction that use the trivial identity hash. (i.e. a --> a) The
+ * attribute to hash on must be an INT column and should represent a workerID
  */
 public final class IdentityHashPartitionFunction extends PartitionFunction {
 
@@ -26,8 +25,7 @@ public final class IdentityHashPartitionFunction extends PartitionFunction {
   private final int index;
 
   /**
-   * @param index
-   *          the index of the partition field.
+   * @param index the index of the partition field.
    */
   @JsonCreator
   public IdentityHashPartitionFunction(
@@ -46,14 +44,12 @@ public final class IdentityHashPartitionFunction extends PartitionFunction {
   }
 
   /**
-   * @param tb
-   *          data.
+   * @param tb data.
    * @return partitions.
    * */
   @Override
   public int[] partition(@Nonnull final TupleBatch tb) {
-    Preconditions.checkArgument(
-        tb.getSchema().getColumnType(index) == Type.INT_TYPE,
+    Preconditions.checkArgument(tb.getSchema().getColumnType(index) == Type.INT_TYPE,
         "IdentityHash index column must be of type INT");
     final int[] result = new int[tb.numTuples()];
     for (int i = 0; i < result.length; i++) {

@@ -18,7 +18,8 @@ public class InputStreamSource implements DataSource {
    * @param stream the source of data.
    */
   public InputStreamSource(final InputStream stream) {
-    this.stream = Objects.requireNonNull(stream, "Parameter stream to InputStreamSource may not be null");
+    this.stream =
+        Objects.requireNonNull(stream, "Parameter stream to InputStreamSource may not be null");
   }
 
   @Override

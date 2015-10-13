@@ -12,8 +12,8 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
- * A poor implementation of a Limit operator, which emits the first N tuples then closes the child operator from further
- * feeding tuples.
+ * A poor implementation of a Limit operator, which emits the first N tuples then closes the child
+ * operator from further feeding tuples.
  * 
  */
 public final class Limit extends UnaryOperator {

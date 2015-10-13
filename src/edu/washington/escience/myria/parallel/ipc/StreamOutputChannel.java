@@ -19,7 +19,8 @@ import edu.washington.escience.myria.util.concurrent.ReentrantSpinLock;
 public class StreamOutputChannel<PAYLOAD> extends StreamIOChannel {
 
   /** The logger for this class. */
-  static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(StreamOutputChannel.class);
+  static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory
+      .getLogger(StreamOutputChannel.class);
 
   /**
    * Output disabled listeners.
@@ -54,7 +55,8 @@ public class StreamOutputChannel<PAYLOAD> extends StreamIOChannel {
   /**
    * @param ecID stream output channel ID
    * @param ownerPool the owner of this output channel.
-   * @param initialPhysicalChannel the physical channel associated to this output channel in the beginning
+   * @param initialPhysicalChannel the physical channel associated to this output channel in the
+   *        beginning
    * */
   StreamOutputChannel(final StreamIOChannelID ecID, final IPCConnectionPool ownerPool,
       final Channel initialPhysicalChannel) {
@@ -62,8 +64,8 @@ public class StreamOutputChannel<PAYLOAD> extends StreamIOChannel {
     outputDisableListeners = new ConcurrentLinkedQueue<IPCEventListener>();
     outputRecoverListeners = new ConcurrentLinkedQueue<IPCEventListener>();
     this.ownerPool = ownerPool;
-    ChannelContext.getChannelContext(initialPhysicalChannel).getRegisteredChannelContext().getIOPair()
-    .mapOutputChannel(this);
+    ChannelContext.getChannelContext(initialPhysicalChannel).getRegisteredChannelContext()
+        .getIOPair().mapOutputChannel(this);
   }
 
   /**
@@ -89,8 +91,8 @@ public class StreamOutputChannel<PAYLOAD> extends StreamIOChannel {
 
   @Override
   public final String toString() {
-    return "StreamOutputChannel{ ID: " + getID() + ",IOChannel: " + ChannelContext.channelToString(getIOChannel())
-        + " }";
+    return "StreamOutputChannel{ ID: " + getID() + ",IOChannel: "
+        + ChannelContext.channelToString(getIOChannel()) + " }";
   }
 
   /**
@@ -142,20 +144,21 @@ public class StreamOutputChannel<PAYLOAD> extends StreamIOChannel {
    * */
   private void fireOutputDisabled() {
     previousEvent = OUTPUT_DISABLED;
-    ownerPool.getIPCEventProcessor().execute(new OrderedExecutorService.KeyRunnable<StreamOutputChannel<PAYLOAD>>() {
+    ownerPool.getIPCEventProcessor().execute(
+        new OrderedExecutorService.KeyRunnable<StreamOutputChannel<PAYLOAD>>() {
 
-      @Override
-      public void run() {
-        for (IPCEventListener l : outputDisableListeners) {
-          l.triggered(outputDisabledEvent);
-        }
-      }
+          @Override
+          public void run() {
+            for (IPCEventListener l : outputDisableListeners) {
+              l.triggered(outputDisabledEvent);
+            }
+          }
 
-      @Override
-      public StreamOutputChannel<PAYLOAD> getKey() {
-        return StreamOutputChannel.this;
-      }
-    });
+          @Override
+          public StreamOutputChannel<PAYLOAD> getKey() {
+            return StreamOutputChannel.this;
+          }
+        });
   }
 
   /**
@@ -163,20 +166,21 @@ public class StreamOutputChannel<PAYLOAD> extends StreamIOChannel {
    * */
   private void fireOutputRecovered() {
     previousEvent = OUTPUT_RECOVERED;
-    ownerPool.getIPCEventProcessor().execute(new OrderedExecutorService.KeyRunnable<StreamOutputChannel<PAYLOAD>>() {
+    ownerPool.getIPCEventProcessor().execute(
+        new OrderedExecutorService.KeyRunnable<StreamOutputChannel<PAYLOAD>>() {
 
-      @Override
-      public void run() {
-        for (IPCEventListener l : outputRecoverListeners) {
-          l.triggered(outputRecoveredEvent);
-        }
-      }
+          @Override
+          public void run() {
+            for (IPCEventListener l : outputRecoverListeners) {
+              l.triggered(outputRecoveredEvent);
+            }
+          }
 
-      @Override
-      public StreamOutputChannel<PAYLOAD> getKey() {
-        return StreamOutputChannel.this;
-      }
-    });
+          @Override
+          public StreamOutputChannel<PAYLOAD> getKey() {
+            return StreamOutputChannel.this;
+          }
+        });
   }
 
   /**
@@ -203,7 +207,8 @@ public class StreamOutputChannel<PAYLOAD> extends StreamIOChannel {
       this.ownerPool.getShutdownLock().readLock().lock();
       try {
         if (LOGGER.isTraceEnabled()) {
-          LOGGER.trace("OutputChannel {} write a message through {}", getID(), ChannelContext.channelToString(ch));
+          LOGGER.trace("OutputChannel {} write a message through {}", getID(),
+              ChannelContext.channelToString(ch));
         }
         return ch.write(message);
       } finally {

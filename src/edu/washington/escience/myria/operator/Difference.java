@@ -18,8 +18,9 @@ import edu.washington.escience.myria.util.HashUtils;
 /**
  * Implementation of set difference. Duplicates are not preserved.
  * 
- * This implementation is similar to RightHashJoin: read the right relation into a hash table; probe the left relation's
- * tuples with this hash table; eliminate duplicates by adding the left relation to the hash table.
+ * This implementation is similar to RightHashJoin: read the right relation into a hash table; probe
+ * the left relation's tuples with this hash table; eliminate duplicates by adding the left relation
+ * to the hash table.
  * 
  * @author whitaker
  */

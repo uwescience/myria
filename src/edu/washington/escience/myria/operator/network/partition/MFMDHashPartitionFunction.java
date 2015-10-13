@@ -28,8 +28,8 @@ public final class MFMDHashPartitionFunction extends PartitionFunction {
    * @param mappedHCDimensions mapped hypercube dimensions of hashed columns.
    * 
    */
-  public MFMDHashPartitionFunction(final int numPartitions, final int[] hypercubeDimensions, final int[] hashedColumns,
-      final int[] mappedHCDimensions) {
+  public MFMDHashPartitionFunction(final int numPartitions, final int[] hypercubeDimensions,
+      final int[] hashedColumns, final int[] mappedHCDimensions) {
     super(numPartitions);
     partitionFunctions = new SingleFieldHashPartitionFunction[hashedColumns.length];
     for (int i = 0; i < hashedColumns.length; ++i) {
@@ -37,8 +37,8 @@ public final class MFMDHashPartitionFunction extends PartitionFunction {
       Preconditions.checkArgument(hashedColumns.length == mappedHCDimensions.length,
           "hashedColumns must have the same arity as mappedHCDimensions");
       partitionFunctions[i] =
-          new SingleFieldHashPartitionFunction(hypercubeDimensions[mappedHCDimensions[i]], hashedColumns[i],
-              mappedHCDimensions[i]);
+          new SingleFieldHashPartitionFunction(hypercubeDimensions[mappedHCDimensions[i]],
+              hashedColumns[i], mappedHCDimensions[i]);
     }
   }
 

@@ -47,22 +47,23 @@ public class DbInsert extends AbstractDbInsert {
   private final List<List<IndexRef>> indexes;
 
   /**
-   * Constructs an insertion operator to store the tuples from the specified child into the specified database. If the
-   * table does not exist, it will be created; if it does exist then old data will persist and new data will be
-   * inserted.
+   * Constructs an insertion operator to store the tuples from the specified child into the
+   * specified database. If the table does not exist, it will be created; if it does exist then old
+   * data will persist and new data will be inserted.
    * 
    * @param child the source of tuples to be inserted.
    * @param relationKey the key of the table the tuples should be inserted into.
    * @param connectionInfo the parameters of the database connection.
    */
-  public DbInsert(final Operator child, final RelationKey relationKey, final ConnectionInfo connectionInfo) {
+  public DbInsert(final Operator child, final RelationKey relationKey,
+      final ConnectionInfo connectionInfo) {
     this(child, relationKey, connectionInfo, false);
   }
 
   /**
-   * Constructs an insertion operator to store the tuples from the specified child into the worker's default database.
-   * If the table does not exist, it will be created. If <code>overwriteTable</code> is <code>true</code>, any existing
-   * data will be dropped.
+   * Constructs an insertion operator to store the tuples from the specified child into the worker's
+   * default database. If the table does not exist, it will be created. If
+   * <code>overwriteTable</code> is <code>true</code>, any existing data will be dropped.
    * 
    * @param child the source of tuples to be inserted.
    * @param relationKey the key of the table the tuples should be inserted into.
@@ -73,39 +74,39 @@ public class DbInsert extends AbstractDbInsert {
   }
 
   /**
-   * Constructs an insertion operator to store the tuples from the specified child into the specified database. If the
-   * table does not exist, it will be created. If <code>overwriteTable</code> is <code>true</code>, any existing data
-   * will be dropped.
+   * Constructs an insertion operator to store the tuples from the specified child into the
+   * specified database. If the table does not exist, it will be created. If
+   * <code>overwriteTable</code> is <code>true</code>, any existing data will be dropped.
    * 
    * @param child the source of tuples to be inserted.
    * @param relationKey the key of the table the tuples should be inserted into.
    * @param overwriteTable whether to overwrite a table that already exists.
    * @param indexes indexes created.
    */
-  public DbInsert(final Operator child, final RelationKey relationKey, final boolean overwriteTable,
-      final List<List<IndexRef>> indexes) {
+  public DbInsert(final Operator child, final RelationKey relationKey,
+      final boolean overwriteTable, final List<List<IndexRef>> indexes) {
     this(child, relationKey, null, overwriteTable, indexes);
   }
 
   /**
-   * Constructs an insertion operator to store the tuples from the specified child into the specified database. If the
-   * table does not exist, it will be created. If <code>overwriteTable</code> is <code>true</code>, any existing data
-   * will be dropped.
+   * Constructs an insertion operator to store the tuples from the specified child into the
+   * specified database. If the table does not exist, it will be created. If
+   * <code>overwriteTable</code> is <code>true</code>, any existing data will be dropped.
    * 
    * @param child the source of tuples to be inserted.
    * @param relationKey the key of the table the tuples should be inserted into.
    * @param connectionInfo the parameters of the database connection.
    * @param overwriteTable whether to overwrite a table that already exists.
    */
-  public DbInsert(final Operator child, final RelationKey relationKey, final ConnectionInfo connectionInfo,
-      final boolean overwriteTable) {
+  public DbInsert(final Operator child, final RelationKey relationKey,
+      final ConnectionInfo connectionInfo, final boolean overwriteTable) {
     this(child, relationKey, connectionInfo, overwriteTable, null);
   }
 
   /**
-   * Constructs an insertion operator to store the tuples from the specified child into the specified database. If the
-   * table does not exist, it will be created. If <code>overwriteTable</code> is <code>true</code>, any existing data
-   * will be dropped.
+   * Constructs an insertion operator to store the tuples from the specified child into the
+   * specified database. If the table does not exist, it will be created. If
+   * <code>overwriteTable</code> is <code>true</code>, any existing data will be dropped.
    * 
    * @param child the source of tuples to be inserted.
    * @param relationKey the key of the table the tuples should be inserted into.
@@ -113,8 +114,9 @@ public class DbInsert extends AbstractDbInsert {
    * @param overwriteTable whether to overwrite a table that already exists.
    * @param indexes the indexes to be created on the table. Each entry is a list of columns.
    */
-  public DbInsert(final Operator child, final RelationKey relationKey, final ConnectionInfo connectionInfo,
-      final boolean overwriteTable, final List<List<IndexRef>> indexes) {
+  public DbInsert(final Operator child, final RelationKey relationKey,
+      final ConnectionInfo connectionInfo, final boolean overwriteTable,
+      final List<List<IndexRef>> indexes) {
     super(child);
     Objects.requireNonNull(relationKey, "relationKey");
     this.connectionInfo = connectionInfo;
@@ -171,7 +173,8 @@ public class DbInsert extends AbstractDbInsert {
 
     /* retrieve connection information from the environment variables, if not already set */
     if (connectionInfo == null && execEnvVars != null) {
-      connectionInfo = (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
+      connectionInfo =
+          (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
     }
 
     if (connectionInfo == null) {
@@ -196,7 +199,8 @@ public class DbInsert extends AbstractDbInsert {
 
     if (overwriteTable) {
       /* If overwriting, we insert into a temp table and then on success we drop the old and rename. */
-      tempRelationKey = RelationKey.of(relationKey.getUserName(), "MyriaSysTemp", relationKey.getRelationName());
+      tempRelationKey =
+          RelationKey.of(relationKey.getUserName(), "MyriaSysTemp", relationKey.getRelationName());
       /* Drop the temp table, if it exists. */
       accessMethod.dropTableIfExists(tempRelationKey);
     } else {
@@ -212,15 +216,17 @@ public class DbInsert extends AbstractDbInsert {
 
   @Override
   protected void childEOS() throws DbException {
-    /* If the child finished, we're done too. If in overwrite mode, drop the existing table and rename. */
+    /*
+     * If the child finished, we're done too. If in overwrite mode, drop the existing table and
+     * rename.
+     */
     if (overwriteTable) {
       accessMethod.dropAndRenameTables(relationKey, tempRelationKey);
     }
   }
 
   @Override
-  protected void childEOI() throws DbException {
-  }
+  protected void childEOI() throws DbException {}
 
   /**
    * @return the name of the relation that this operator will write to.
@@ -231,7 +237,8 @@ public class DbInsert extends AbstractDbInsert {
 
   @Override
   public Map<RelationKey, RelationWriteMetadata> writeSet() {
-    return ImmutableMap.of(relationKey, new RelationWriteMetadata(relationKey, getSchema(), overwriteTable, false));
+    return ImmutableMap.of(relationKey, new RelationWriteMetadata(relationKey, getSchema(),
+        overwriteTable, false));
   }
 
 }

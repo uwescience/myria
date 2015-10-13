@@ -46,34 +46,25 @@ public class SampledDbInsertTemp extends DbInsertTemp {
   private Random rand;
 
   /** Schema that will be written to the countRelationKey. */
-  private static final Schema COUNT_SCHEMA = Schema.ofFields("WorkerID",
-      Type.INT_TYPE, "PartitionSize", Type.INT_TYPE, "PartitionSampleSize",
-      Type.INT_TYPE);
+  private static final Schema COUNT_SCHEMA = Schema.ofFields("WorkerID", Type.INT_TYPE,
+      "PartitionSize", Type.INT_TYPE, "PartitionSampleSize", Type.INT_TYPE);
 
   /**
    *
-   * @param child
-   *          the source of tuples to be inserted
-   * @param sampleSize
-   *          number of tuples to store from the stream
-   * @param sampleRelationKey
-   *          the key of the table that tuples will be inserted into
-   * @param countRelationKey
-   *          the key of the table that tuple count info will be inserted into
-   * @param connectionInfo
-   *          parameters of the database connection
-   * @param randomSeed
-   *          value to seed the random generator with. null if no specified seed
+   * @param child the source of tuples to be inserted
+   * @param sampleSize number of tuples to store from the stream
+   * @param sampleRelationKey the key of the table that tuples will be inserted into
+   * @param countRelationKey the key of the table that tuple count info will be inserted into
+   * @param connectionInfo parameters of the database connection
+   * @param randomSeed value to seed the random generator with. null if no specified seed
    */
   public SampledDbInsertTemp(final Operator child, final int sampleSize,
       final RelationKey sampleRelationKey, final RelationKey countRelationKey,
       final ConnectionInfo connectionInfo, Long randomSeed) {
     super(child, sampleRelationKey, connectionInfo, false, null);
-    Preconditions.checkArgument(sampleSize >= 0,
-        "sampleSize must be non-negative");
+    Preconditions.checkArgument(sampleSize >= 0, "sampleSize must be non-negative");
     this.sampleSize = sampleSize;
-    Preconditions.checkNotNull(countRelationKey,
-        "countRelationKey cannot be null");
+    Preconditions.checkNotNull(countRelationKey, "countRelationKey cannot be null");
     this.countRelationKey = countRelationKey;
     rand = new Random();
     if (randomSeed != null) {
@@ -128,8 +119,7 @@ public class SampledDbInsertTemp extends DbInsertTemp {
   }
 
   @Override
-  protected void init(final ImmutableMap<String, Object> execEnvVars)
-      throws DbException {
+  protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     setupConnection(execEnvVars);
 
     // Set up the reservoir table.
@@ -151,9 +141,9 @@ public class SampledDbInsertTemp extends DbInsertTemp {
 
   @Override
   public Map<RelationKey, RelationWriteMetadata> writeSet() {
-    return ImmutableMap.of(getRelationKey(), new RelationWriteMetadata(
-        getRelationKey(), getSchema(), true, true), countRelationKey,
-        new RelationWriteMetadata(countRelationKey, COUNT_SCHEMA, true, true));
+    return ImmutableMap.of(getRelationKey(), new RelationWriteMetadata(getRelationKey(),
+        getSchema(), true, true), countRelationKey, new RelationWriteMetadata(countRelationKey,
+        COUNT_SCHEMA, true, true));
   }
 
 }

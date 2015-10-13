@@ -41,8 +41,9 @@ public class BinaryFileScan extends LeafOperator {
   private transient DataInput dataInput;
 
   /**
-   * Construct a new BinaryFileScan object that reads the given binary file and create tuples from the file data that
-   * has the given schema. The endianess of the binary file is indicated by the isLittleEndian flag.
+   * Construct a new BinaryFileScan object that reads the given binary file and create tuples from
+   * the file data that has the given schema. The endianess of the binary file is indicated by the
+   * isLittleEndian flag.
    * 
    * @param schema The tuple schema to be used for creating tuple from the binary file's data.
    * @param source The source of the binary input data.
@@ -55,8 +56,8 @@ public class BinaryFileScan extends LeafOperator {
   }
 
   /**
-   * Construct a new BinaryFileScan object that reads the given binary file and creates tuples from the file data that
-   * has the given schema. The default endianess is big endian.
+   * Construct a new BinaryFileScan object that reads the given binary file and creates tuples from
+   * the file data that has the given schema. The default endianess is big endian.
    * 
    * @param schema The tuple schema to be used for creating tuple from the binary file's data.
    * @param source The source of the binary input data.

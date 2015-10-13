@@ -38,7 +38,8 @@ public class Counter extends UnaryOperator {
   }
 
   /**
-   * Instantiate a Counter operator with null child. (Must be set later by setChild() or setChildren()).
+   * Instantiate a Counter operator with null child. (Must be set later by setChild() or
+   * setChildren()).
    * 
    * @param columnName the new column name.
    */

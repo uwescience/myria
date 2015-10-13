@@ -9,8 +9,8 @@ import edu.washington.escience.myria.parallel.ExchangePairID;
 /**
  * The consumer part of the Collect Exchange operator.
  * 
- * A Collect operator collects tuples from all the workers. There is a collect producer on each worker, and a collect
- * consumer on the server and a master worker if a master worker is needed.
+ * A Collect operator collects tuples from all the workers. There is a collect producer on each
+ * worker, and a collect consumer on the server and a master worker if a master worker is needed.
  * 
  * The consumer passively collects Tuples from all the paired LocalMultiwayProducers
  * 

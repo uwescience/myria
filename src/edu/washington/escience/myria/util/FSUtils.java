@@ -52,7 +52,8 @@ public final class FSUtils {
    * @param override if to override if the dest exists.
    * @throws IOException if any error occurs.
    */
-  public static void copyFileFolder(final File source, final File dest, final boolean override) throws IOException {
+  public static void copyFileFolder(final File source, final File dest, final boolean override)
+      throws IOException {
     if (dest.exists()) {
       if (!override) {
         return;
@@ -166,6 +167,5 @@ public final class FSUtils {
   /**
    * util classes are not instantiable.
    * */
-  private FSUtils() {
-  }
+  private FSUtils() {}
 }

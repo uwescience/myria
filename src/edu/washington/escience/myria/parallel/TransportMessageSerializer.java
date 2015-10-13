@@ -18,8 +18,8 @@ import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.util.IPCUtils;
 
 /**
- * This class monitors all the input/output IPC data. It makes sure that all input data are of {@link TransportMessage}
- * type. And it does all IPC exception catching and recording.
+ * This class monitors all the input/output IPC data. It makes sure that all input data are of
+ * {@link TransportMessage} type. And it does all IPC exception catching and recording.
  * */
 @Sharable
 public class TransportMessageSerializer implements PayloadSerializer {
@@ -75,8 +75,8 @@ public class TransportMessageSerializer implements PayloadSerializer {
   }
 
   @Override
-  public final Object deSerialize(final ChannelBuffer buffer, final Object processor, final Object att)
-      throws IOException {
+  public final Object deSerialize(final ChannelBuffer buffer, final Object processor,
+      final Object att) throws IOException {
     TransportMessage tm = deSerializeTransportMessage(buffer);
     return tm;
   }

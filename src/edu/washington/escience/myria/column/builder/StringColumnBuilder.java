@@ -64,7 +64,8 @@ public final class StringColumnBuilder extends ColumnBuilder<String> {
   public static StringColumn buildFromProtobuf(final ColumnMessage message, final int numTuples) {
     Preconditions.checkArgument(message.getType().ordinal() == ColumnMessage.Type.STRING_VALUE,
         "Trying to construct StringColumn from non-STRING ColumnMessage %s", message.getType());
-    Preconditions.checkArgument(message.hasStringColumn(), "ColumnMessage has type STRING but no StringColumn");
+    Preconditions.checkArgument(message.hasStringColumn(),
+        "ColumnMessage has type STRING but no StringColumn");
     final StringColumnMessage stringColumn = message.getStringColumn();
     List<Integer> startIndices = stringColumn.getStartIndicesList();
     List<Integer> endIndices = stringColumn.getEndIndicesList();
@@ -78,7 +79,8 @@ public final class StringColumnBuilder extends ColumnBuilder<String> {
 
   @Override
   public StringColumnBuilder appendString(final String value) throws BufferOverflowException {
-    Preconditions.checkState(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkState(!built,
+        "No further changes are allowed after the builder has built the column.");
     Objects.requireNonNull(value, "value");
     if (numStrings >= TupleBatch.BATCH_SIZE) {
       throw new BufferOverflowException();
@@ -93,16 +95,18 @@ public final class StringColumnBuilder extends ColumnBuilder<String> {
   }
 
   @Override
-  public StringColumnBuilder appendFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException,
-      BufferOverflowException {
-    Preconditions.checkState(!built, "No further changes are allowed after the builder has built the column.");
+  public StringColumnBuilder appendFromJdbc(final ResultSet resultSet, final int jdbcIndex)
+      throws SQLException, BufferOverflowException {
+    Preconditions.checkState(!built,
+        "No further changes are allowed after the builder has built the column.");
     return appendString(resultSet.getString(jdbcIndex));
   }
 
   @Override
-  public StringColumnBuilder appendFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException,
-      BufferOverflowException {
-    Preconditions.checkState(!built, "No further changes are allowed after the builder has built the column.");
+  public StringColumnBuilder appendFromSQLite(final SQLiteStatement statement, final int index)
+      throws SQLiteException, BufferOverflowException {
+    Preconditions.checkState(!built,
+        "No further changes are allowed after the builder has built the column.");
     return appendString(statement.columnString(index));
   }
 
@@ -125,7 +129,8 @@ public final class StringColumnBuilder extends ColumnBuilder<String> {
 
   @Override
   public void replaceString(final String value, final int row) throws IndexOutOfBoundsException {
-    Preconditions.checkState(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkState(!built,
+        "No further changes are allowed after the builder has built the column.");
     Preconditions.checkElementIndex(row, numStrings);
     Objects.requireNonNull(value, "value");
     data[row] = value;
@@ -133,7 +138,8 @@ public final class StringColumnBuilder extends ColumnBuilder<String> {
 
   @Override
   public StringColumnBuilder expand(final int size) throws BufferOverflowException {
-    Preconditions.checkState(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkState(!built,
+        "No further changes are allowed after the builder has built the column.");
     Preconditions.checkArgument(size >= 0);
     if (numStrings + size > data.length) {
       throw new BufferOverflowException();
@@ -144,7 +150,8 @@ public final class StringColumnBuilder extends ColumnBuilder<String> {
 
   @Override
   public StringColumnBuilder expandAll() {
-    Preconditions.checkState(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkState(!built,
+        "No further changes are allowed after the builder has built the column.");
     numStrings = data.length;
     return this;
   }
@@ -163,7 +170,8 @@ public final class StringColumnBuilder extends ColumnBuilder<String> {
   @Deprecated
   @Override
   public ColumnBuilder<String> appendObject(final Object value) throws BufferOverflowException {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkArgument(!built,
+        "No further changes are allowed after the builder has built the column.");
     return appendString((String) MyriaUtils.ensureObjectIsValidType(value));
   }
 

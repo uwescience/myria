@@ -43,7 +43,8 @@ public final class SubQuery extends QueryPlan {
   private final String planEncoding;
 
   /**
-   * Construct a new {@link SubQuery} object for this {@link SubQuery}, with pending {@link SubQueryId}.
+   * Construct a new {@link SubQuery} object for this {@link SubQuery}, with pending
+   * {@link SubQueryId}.
    * 
    * @param masterPlan the master's {@link SubQueryPlan}
    * @param workerPlans the {@link SubQueryPlan} for each worker
@@ -80,7 +81,8 @@ public final class SubQuery extends QueryPlan {
     this.planEncoding = planEncoding;
     executionStats = new ExecutionStatistics();
 
-    ImmutableSet.Builder<RelationKey> read = ImmutableSet.<RelationKey> builder().addAll(masterPlan.readSet());
+    ImmutableSet.Builder<RelationKey> read =
+        ImmutableSet.<RelationKey>builder().addAll(masterPlan.readSet());
     Map<RelationKey, RelationWriteMetadata> write = Maps.newHashMap();
     read.addAll(masterPlan.readSet());
     write.putAll(masterPlan.writeSet());
@@ -138,11 +140,11 @@ public final class SubQuery extends QueryPlan {
   }
 
   /**
-   * Returns the time this {@link SubQuery} started, in ISO8601 format, or <code>null</code> if the {@link SubQuery} has
-   * not yet been started.
+   * Returns the time this {@link SubQuery} started, in ISO8601 format, or <code>null</code> if the
+   * {@link SubQuery} has not yet been started.
    * 
-   * @return the time this {@link SubQuery} started, in ISO8601 format, or <code>null</code> if the {@link SubQuery} has
-   *         not yet been started
+   * @return the time this {@link SubQuery} started, in ISO8601 format, or <code>null</code> if the
+   *         {@link SubQuery} has not yet been started
    */
   public DateTime getStartTime() {
     return executionStats.getStartTime();
@@ -163,22 +165,22 @@ public final class SubQuery extends QueryPlan {
   }
 
   /**
-   * Returns the time this {@link SubQuery} ended, in ISO8601 format, or <code>null</code> if the {@link SubQuery} has
-   * not yet ended.
+   * Returns the time this {@link SubQuery} ended, in ISO8601 format, or <code>null</code> if the
+   * {@link SubQuery} has not yet ended.
    * 
-   * @return the time this {@link SubQuery} ended, in ISO8601 format, or <code>null</code> if the {@link SubQuery} has
-   *         not yet ended
+   * @return the time this {@link SubQuery} ended, in ISO8601 format, or <code>null</code> if the
+   *         {@link SubQuery} has not yet ended
    */
   public DateTime getEndTime() {
     return executionStats.getEndTime();
   }
 
   /**
-   * Returns the time elapsed (in nanoseconds) since the {@link SubQuery} started, or <code>null</code> if the
-   * {@link SubQuery} has not yet been started.
+   * Returns the time elapsed (in nanoseconds) since the {@link SubQuery} started, or
+   * <code>null</code> if the {@link SubQuery} has not yet been started.
    * 
-   * @return the time elapsed (in nanoseconds) since the {@link SubQuery} started, or <code>null</code> if the
-   *         {@link SubQuery} has not yet been started
+   * @return the time elapsed (in nanoseconds) since the {@link SubQuery} started, or
+   *         <code>null</code> if the {@link SubQuery} has not yet been started
    */
   public Long getElapsedTime() {
     return executionStats.getQueryExecutionElapse();
@@ -191,8 +193,8 @@ public final class SubQuery extends QueryPlan {
    * @throws IllegalStateException if the {@link SubQuery}'s id has already been set
    */
   public void setSubQueryId(final SubQueryId subQueryId) {
-    Preconditions.checkState(this.subQueryId == null, "subquery id already set to %s, not changing it to %s",
-        this.subQueryId, subQueryId);
+    Preconditions.checkState(this.subQueryId == null,
+        "subquery id already set to %s, not changing it to %s", this.subQueryId, subQueryId);
     this.subQueryId = subQueryId;
   }
 
@@ -218,25 +220,28 @@ public final class SubQuery extends QueryPlan {
   public void instantiate(final LinkedList<QueryPlan> planQ, final LinkedList<SubQuery> subQueryQ,
       final ConstructArgs args) {
     QueryPlan task = planQ.peekFirst();
-    Verify.verify(task == this, "this %s should be the first object on the queue, not %s!", this, task);
+    Verify.verify(task == this, "this %s should be the first object on the queue, not %s!", this,
+        task);
     planQ.removeFirst();
     subQueryQ.addFirst(this);
   }
 
   /**
-   * Returns a mapping showing what persistent relations this subquery will write, and all the associated
-   * {@link RelationWriteMetadata} about these relations. This function is like {@link #getRelationWriteMetadata()}, but
-   * returns only those relations that are persisted.
+   * Returns a mapping showing what persistent relations this subquery will write, and all the
+   * associated {@link RelationWriteMetadata} about these relations. This function is like
+   * {@link #getRelationWriteMetadata()}, but returns only those relations that are persisted.
    * 
    * @param server the {@link Server} on which this query will be executed.
-   * @return a mapping showing what persistent relations are written and the corresponding {@link RelationWriteMetadata}
-   *         .
-   * @throws DbException if there is an error getting metadata about existing relations from the Server.
+   * @return a mapping showing what persistent relations are written and the corresponding
+   *         {@link RelationWriteMetadata} .
+   * @throws DbException if there is an error getting metadata about existing relations from the
+   *         Server.
    */
-  public Map<RelationKey, RelationWriteMetadata> getPersistentRelationWriteMetadata(final Server server)
-      throws DbException {
+  public Map<RelationKey, RelationWriteMetadata> getPersistentRelationWriteMetadata(
+      final Server server) throws DbException {
     ImmutableMap.Builder<RelationKey, RelationWriteMetadata> ret = ImmutableMap.builder();
-    for (Map.Entry<RelationKey, RelationWriteMetadata> entry : getRelationWriteMetadata(server).entrySet()) {
+    for (Map.Entry<RelationKey, RelationWriteMetadata> entry : getRelationWriteMetadata(server)
+        .entrySet()) {
       RelationWriteMetadata meta = entry.getValue();
       if (!meta.isTemporary()) {
         ret.put(entry);
@@ -251,10 +256,13 @@ public final class SubQuery extends QueryPlan {
    * 
    * @param server the {@link Server} on which this query will be executed.
    * 
-   * @return a mapping showing what relations are written and the corresponding {@link RelationWriteMetadata}.
-   * @throws DbException if there is an error getting metadata about existing relations from the Server.
+   * @return a mapping showing what relations are written and the corresponding
+   *         {@link RelationWriteMetadata}.
+   * @throws DbException if there is an error getting metadata about existing relations from the
+   *         Server.
    */
-  public Map<RelationKey, RelationWriteMetadata> getRelationWriteMetadata(final Server server) throws DbException {
+  public Map<RelationKey, RelationWriteMetadata> getRelationWriteMetadata(final Server server)
+      throws DbException {
     Map<RelationKey, RelationWriteMetadata> ret = new HashMap<>();
 
     /* Loop through each subquery plan, finding what relations it writes. */
@@ -273,18 +281,19 @@ public final class SubQuery extends QueryPlan {
         } else {
           /* We have an entry for this relation. Make sure that schema and overwrite match. */
           Preconditions.checkArgument(meta.isOverwrite() == metadata.isOverwrite(),
-              "Cannot mix overwriting and appending to %s in the same subquery %s", relation, getSubQueryId());
+              "Cannot mix overwriting and appending to %s in the same subquery %s", relation,
+              getSubQueryId());
           Preconditions.checkArgument(meta.getSchema().equals(metadata.getSchema()),
-              "Cannot write to %s with two different Schemas %s and %s in the same subquery %s", relation, meta
-                  .getSchema(), metadata.getSchema(), getSubQueryId());
+              "Cannot write to %s with two different Schemas %s and %s in the same subquery %s",
+              relation, meta.getSchema(), metadata.getSchema(), getSubQueryId());
         }
         meta.addWorker(workerId);
       }
     }
 
     /*
-     * Loop through all appending operators. Verify that the Schema does not change and ensure that the relation still
-     * contains all workers.
+     * Loop through all appending operators. Verify that the Schema does not change and ensure that
+     * the relation still contains all workers.
      */
     for (Map.Entry<RelationKey, RelationWriteMetadata> metaEntry : ret.entrySet()) {
       RelationWriteMetadata metadata = metaEntry.getValue();
@@ -306,14 +315,17 @@ public final class SubQuery extends QueryPlan {
         try {
           existingSchema = server.getSchema(relationKey);
           Preconditions.checkArgument(existingSchema != null,
-              "Attempting to append to non-existent relation %s that is not in the Catalog", relationKey);
+              "Attempting to append to non-existent relation %s that is not in the Catalog",
+              relationKey);
           existingWorkers = server.getWorkersForRelation(relationKey, null);
         } catch (CatalogException e) {
-          throw new DbException("Error verifying schema when appending to relation " + relationKey, e);
+          throw new DbException("Error verifying schema when appending to relation " + relationKey,
+              e);
         }
       }
       Preconditions.checkArgument(schema.equals(existingSchema),
-          "Cannot append to %s with changed Schema %s (old Schema: %s)", relationKey, schema, existingSchema);
+          "Cannot append to %s with changed Schema %s (old Schema: %s)", relationKey, schema,
+          existingSchema);
       for (int w : existingWorkers) {
         metadata.addWorker(w);
       }

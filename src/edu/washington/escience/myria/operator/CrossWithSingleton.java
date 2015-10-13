@@ -9,8 +9,8 @@ import edu.washington.escience.myria.column.ConstantValueColumn;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
- * Given a singleton right child, cross the left child with it in a way that minimizes state and does not construct new
- * tuples.
+ * Given a singleton right child, cross the left child with it in a way that minimizes state and
+ * does not construct new tuples.
  */
 public class CrossWithSingleton extends BinaryOperator {
 
@@ -20,7 +20,8 @@ public class CrossWithSingleton extends BinaryOperator {
   private TupleBatch rightTuple;
 
   /**
-   * Instantiate a new operator to cross all tuples in the left child with the singleton tuple from the right child.
+   * Instantiate a new operator to cross all tuples in the left child with the singleton tuple from
+   * the right child.
    * 
    * @param left the left child, which may have any number of tuples.
    * @param right the right child, which may only have one tuple.
@@ -33,21 +34,29 @@ public class CrossWithSingleton extends BinaryOperator {
   @Override
   protected TupleBatch fetchNextReady() throws Exception {
 
-    /* Before we can do anything, get the singleton tuple from the right child, and ensure that it is a singleton. */
+    /*
+     * Before we can do anything, get the singleton tuple from the right child, and ensure that it
+     * is a singleton.
+     */
     Operator right = getRight();
     while (!right.eos()) {
       TupleBatch tb = right.nextReady();
       if (tb == null) {
-        /* The right child may have realized it's EOS now. If so, we must move onto left child to avoid livelock. */
+        /*
+         * The right child may have realized it's EOS now. If so, we must move onto left child to
+         * avoid livelock.
+         */
         if (right.eos()) {
           break;
         }
         return null;
       }
       Preconditions.checkState(rightTuple == null,
-          "Expecting a singleton right child, but received a batch with %s additional tuples", tb.numTuples());
+          "Expecting a singleton right child, but received a batch with %s additional tuples",
+          tb.numTuples());
       Preconditions.checkState(tb.numTuples() == 1,
-          "Expecting a singleton right child, instead received a batch with %s tuples", tb.numTuples());
+          "Expecting a singleton right child, instead received a batch with %s tuples",
+          tb.numTuples());
       rightTuple = tb;
     }
 

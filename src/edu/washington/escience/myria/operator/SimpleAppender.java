@@ -12,7 +12,8 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
- * Used by a Producer to append outgoing messages for FTMode.REJOIN. The producer is the only modifier.
+ * Used by a Producer to append outgoing messages for FTMode.REJOIN. The producer is the only
+ * modifier.
  * */
 public final class SimpleAppender extends StreamingState {
 

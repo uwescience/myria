@@ -17,8 +17,8 @@ import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.SamplingType;
 
 /**
- * Takes in some sampling parameters from the left child and uses that to sample
- * tuples from the right child.
+ * Takes in some sampling parameters from the left child and uses that to sample tuples from the
+ * right child.
  */
 public class Sample extends BinaryOperator {
   /** Required for Java serialization. */
@@ -52,15 +52,12 @@ public class Sample extends BinaryOperator {
   private int curSampIdx = 0;
 
   /**
-   * Instantiate a Sample operator using sampling info from the left operator
-   * and the stream from the right operator.
+   * Instantiate a Sample operator using sampling info from the left operator and the stream from
+   * the right operator.
    *
-   * @param left
-   *          inputs a (WorkerID, StreamSize, SampleSize, SampleType) tuple.
-   * @param right
-   *          tuples that will be sampled from.
-   * @param randomSeed
-   *          value to seed the random generator with. null if no specified seed
+   * @param left inputs a (WorkerID, StreamSize, SampleSize, SampleType) tuple.
+   * @param right tuples that will be sampled from.
+   * @param randomSeed value to seed the random generator with. null if no specified seed
    */
   public Sample(final Operator left, final Operator right, Long randomSeed) {
     super(left, right);
@@ -84,8 +81,7 @@ public class Sample extends BinaryOperator {
       // Cannot sampleWoR more tuples than there are.
       if (sampleType == SamplingType.WithoutReplacement) {
         Preconditions.checkState(sampleSize <= streamSize,
-            "Cannot SampleWoR %s tuples from a population of size %s",
-            sampleSize, streamSize);
+            "Cannot SampleWoR %s tuples from a population of size %s", sampleSize, streamSize);
       }
 
       // Generate target indices to accept as samples.
@@ -147,8 +143,7 @@ public class Sample extends BinaryOperator {
       throw new DbException("WorkerID column must be of type INT or LONG");
     }
     Preconditions.checkState(workerID == getNodeID(),
-        "Invalid WorkerID for this worker. Expected %s, but received %s",
-        getNodeID(), workerID);
+        "Invalid WorkerID for this worker. Expected %s, but received %s", getNodeID(), workerID);
 
     Type col1Type = tb.getSchema().getColumnType(1);
     if (col1Type == Type.INT_TYPE) {
@@ -186,10 +181,8 @@ public class Sample extends BinaryOperator {
   /**
    * Generates a sorted array of random numbers to be taken as samples.
    *
-   * @param populationSize
-   *          size of the population that will be sampled from.
-   * @param sampleSize
-   *          number of samples to draw from the population.
+   * @param populationSize size of the population that will be sampled from.
+   * @param sampleSize number of samples to draw from the population.
    * @return a sorted array of indices.
    */
   private int[] generateIndicesWR(int populationSize, int sampleSize) {
@@ -202,14 +195,12 @@ public class Sample extends BinaryOperator {
   }
 
   /**
-   * Generates a sorted array of unique random numbers to be taken as samples.
-   * The implementation uses Floyd's algorithm. For an explanation:
+   * Generates a sorted array of unique random numbers to be taken as samples. The implementation
+   * uses Floyd's algorithm. For an explanation:
    * www.nowherenearithaca.com/2013/05/robert-floyds-tiny-and-beautiful.html
    *
-   * @param populationSize
-   *          size of the population that will be sampled from.
-   * @param sampleSize
-   *          number of samples to draw from the population.
+   * @param populationSize size of the population that will be sampled from.
+   * @param sampleSize number of samples to draw from the population.
    * @return a sorted array of indices.
    */
   private int[] generateIndicesWoR(int populationSize, int sampleSize) {

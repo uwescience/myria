@@ -38,15 +38,16 @@ public final class SingleFieldHashPartitionFunction extends PartitionFunction {
    * @param seedIndex the index of chosen hash seed.
    */
   @JsonCreator
-  public SingleFieldHashPartitionFunction(@JsonProperty("numPartitions") final Integer numPartitions,
-      @JsonProperty(value = "index", required = true) final Integer index,
+  public SingleFieldHashPartitionFunction(
+      @JsonProperty("numPartitions") final Integer numPartitions, @JsonProperty(value = "index",
+          required = true) final Integer index,
       @JsonProperty(value = "seedIndex") final Integer seedIndex) {
     super(numPartitions);
     /* TODO(dhalperi) once Jackson actually implements support for required, remove these checks. */
     this.index = java.util.Objects.requireNonNull(index, "missing property index");
     this.seedIndex = MoreObjects.firstNonNull(seedIndex, 0) % HashUtils.NUM_OF_HASHFUNCTIONS;
-    Preconditions.checkArgument(this.index >= 0, "SingleFieldHash field index cannot take negative value %s",
-        this.index);
+    Preconditions.checkArgument(this.index >= 0,
+        "SingleFieldHash field index cannot take negative value %s", this.index);
   }
 
   /**

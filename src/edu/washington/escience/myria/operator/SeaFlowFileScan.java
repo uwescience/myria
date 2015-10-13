@@ -22,7 +22,8 @@ import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 /**
- * Read a SeaFlow EVT/OPP file. See the formats in https://github.com/fribalet/flowPhyto/blob/master/R/Globals.R
+ * Read a SeaFlow EVT/OPP file. See the formats in
+ * https://github.com/fribalet/flowPhyto/blob/master/R/Globals.R
  * 
  * This operator implements file format version 3.
  */
@@ -55,8 +56,8 @@ public class SeaFlowFileScan extends LeafOperator {
       Type.INT_TYPE, // pe
       Type.INT_TYPE, // chl_small
       Type.INT_TYPE // chl_big
-      ), ImmutableList.of("time", "pulse_width", "D1", "D2", "fsc_small", "fsc_perp", "fsc_big", "pe", "chl_small",
-      "chl_big"));
+      ), ImmutableList.of("time", "pulse_width", "D1", "D2", "fsc_small", "fsc_perp", "fsc_big",
+      "pe", "chl_small", "chl_big"));
   /** The number of columns in the schema of a SeaFlow EVT/OPP file. */
   private static final int NUM_COLUMNS = OPP_SCHEMA.numColumns();
   /** The number of bytes in one row of a SeaFlow EVT/OPP file. */
@@ -85,8 +86,9 @@ public class SeaFlowFileScan extends LeafOperator {
     while ((lineNumber < numRows) && (buffer.numTuples() < TupleBatch.BATCH_SIZE)) {
       try {
         /*
-         * Every line but the last, including the header, is terminated with a 32-bit unsigned int with the value 10. We
-         * read the EOL for the header/previous line before the current line to simplify the EOF checking.
+         * Every line but the last, including the header, is terminated with a 32-bit unsigned int
+         * with the value 10. We read the EOL for the header/previous line before the current line
+         * to simplify the EOF checking.
          */
         Preconditions.checkState(input.readInt() == EOL);
         for (int col = 0; col < NUM_COLUMNS; ++col) {
@@ -108,7 +110,8 @@ public class SeaFlowFileScan extends LeafOperator {
       } catch (IOException e) {
         throw new DbException("Error when verifying EOF after line " + lineNumber, e);
       }
-      Preconditions.checkState(flag, "Was able to read another byte after %s rows, expected EOFException", lineNumber);
+      Preconditions.checkState(flag,
+          "Was able to read another byte after %s rows, expected EOFException", lineNumber);
     }
     return buffer.popAny();
   }
@@ -124,8 +127,8 @@ public class SeaFlowFileScan extends LeafOperator {
       if (source instanceof FileSource) {
         long length = Files.size(Paths.get(((FileSource) source).getFilename()));
         long expectedSize = 4 + numRows * COLUMN_SIZE;
-        Preconditions.checkArgument(length == expectedSize, "Given %s rows, expected a file of length %s, not %s",
-            numRows, expectedSize, length);
+        Preconditions.checkArgument(length == expectedSize,
+            "Given %s rows, expected a file of length %s, not %s", numRows, expectedSize, length);
       }
     } catch (IOException e) {
       throw new DbException(e);

@@ -14,8 +14,7 @@ import edu.washington.escience.myria.api.encoding.plan.SubPlanEncoding;
  */
 public class QueryStatusEncoding {
   /** An empty default constructor. */
-  public QueryStatusEncoding() {
-  }
+  public QueryStatusEncoding() {}
 
   /** Constructor. */
   public QueryStatusEncoding(final long queryId) {
@@ -29,8 +28,8 @@ public class QueryStatusEncoding {
    * @param logicalRa the logical plan of the query.
    * @param plan the physical execution plan.
    * @param profilingMode which profiling mode the query is executed with.
-   * @return a QueryStatusEncoding object containing the submitted query, with the submit time set to
-   *         DateTimeUtils.nowInISO8601().
+   * @return a QueryStatusEncoding object containing the submitted query, with the submit time set
+   *         to DateTimeUtils.nowInISO8601().
    */
   public static QueryStatusEncoding submitted(final QueryEncoding query) {
     QueryStatusEncoding ret = new QueryStatusEncoding();
@@ -79,7 +78,8 @@ public class QueryStatusEncoding {
     ACCEPTED, RUNNING, SUCCESS, KILLING, KILLED, ERROR, UNKNOWN;
 
     /**
-     * Return {@code true} if a query with the given status is ongoing, i.e., it can be killed or completed.
+     * Return {@code true} if a query with the given status is ongoing, i.e., it can be killed or
+     * completed.
      * 
      * @param s a status variable
      * @return {@code true} if a query with the given status is ongoing.
@@ -89,10 +89,12 @@ public class QueryStatusEncoding {
     }
 
     /**
-     * Return {@code true} if a query with the given status is completely finished and the status will not change.
+     * Return {@code true} if a query with the given status is completely finished and the status
+     * will not change.
      * 
      * @param s a status variable
-     * @return {@code true} if a query with the given status is completely finished and the status will not change.
+     * @return {@code true} if a query with the given status is completely finished and the status
+     *         will not change.
      */
     public static boolean finished(final Status s) {
       return s == SUCCESS || s == KILLED || s == ERROR || s == UNKNOWN;

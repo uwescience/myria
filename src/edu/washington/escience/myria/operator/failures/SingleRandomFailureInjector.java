@@ -16,8 +16,8 @@ import edu.washington.escience.myria.storage.TupleBatch;
  * <ul>
  * <li>At the time the operator is opened, the delay starts to count.</li>
  * <li>Do nothing before delay expires.</li>
- * <li>After delay expires, for each second, randomly decide if a failure should be injected, i.e. throw an
- * {@link InjectedFailureException}, according to the failure probability.</li>
+ * <li>After delay expires, for each second, randomly decide if a failure should be injected, i.e.
+ * throw an {@link InjectedFailureException}, according to the failure probability.</li>
  * </ul>
  * */
 public class SingleRandomFailureInjector extends UnaryOperator {
@@ -25,8 +25,8 @@ public class SingleRandomFailureInjector extends UnaryOperator {
   /**
    * Logger.
    * */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(SingleRandomFailureInjector.class
-      .getName());
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory
+      .getLogger(SingleRandomFailureInjector.class.getName());
 
   /**
    * failure probability per second.

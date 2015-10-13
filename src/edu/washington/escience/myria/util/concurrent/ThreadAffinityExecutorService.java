@@ -8,17 +8,18 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * This class provides the following service.
  * <ol>
- * <li>The same {@link Runnable} or {@link Callable} instance submitted through this class will always get executed in
- * the same {@link Thread}</li>
- * <li>A {@link ThreadAffinityExecutor} can be got by calling {@link ThreadAffinityExecutorService#nextExecutor()}. All
- * the tasks submitted through the return executor will be executed in the same thread</li>
+ * <li>The same {@link Runnable} or {@link Callable} instance submitted through this class will
+ * always get executed in the same {@link Thread}</li>
+ * <li>A {@link ThreadAffinityExecutor} can be got by calling
+ * {@link ThreadAffinityExecutorService#nextExecutor()}. All the tasks submitted through the return
+ * executor will be executed in the same thread</li>
  * </ol>
  * */
 public interface ThreadAffinityExecutorService extends ExecutorService {
 
   /**
-   * A simple thread factory for use as the default choice if no {@link ThreadFactory} is given in the implementation
-   * classes.
+   * A simple thread factory for use as the default choice if no {@link ThreadFactory} is given in
+   * the implementation classes.
    * */
   class DefaultThreadFactory implements ThreadFactory {
 
@@ -29,7 +30,8 @@ public interface ThreadAffinityExecutorService extends ExecutorService {
 
     @Override
     public Thread newThread(final Runnable r) {
-      return new Thread(ThreadAffinityExecutorService.class.getSimpleName() + "#" + ID_GENERATOR.getAndIncrement()) {
+      return new Thread(ThreadAffinityExecutorService.class.getSimpleName() + "#"
+          + ID_GENERATOR.getAndIncrement()) {
         @Override
         public void run() {
           r.run();

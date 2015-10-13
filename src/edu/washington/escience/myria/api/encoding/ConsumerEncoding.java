@@ -9,8 +9,8 @@ public class ConsumerEncoding extends AbstractConsumerEncoding<Consumer> {
 
   @Override
   public Consumer construct(ConstructArgs args) {
-    return new Consumer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
-        .integerSetToIntArray(getRealWorkerIds()));
+    return new Consumer(null, MyriaUtils.getSingleElement(getRealOperatorIds()),
+        MyriaUtils.integerSetToIntArray(getRealWorkerIds()));
   }
 
 }

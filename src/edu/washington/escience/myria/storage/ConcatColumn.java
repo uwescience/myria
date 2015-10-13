@@ -47,8 +47,8 @@ public class ConcatColumn<T extends Comparable<?>> extends Column<T> {
    */
   public void addColumn(final Column<?> column) {
     Preconditions.checkState(!readOnly, "Cannot add more data to a read only concat column");
-    Preconditions.checkArgument(column.getType() == getType(), "cannot append a type %s to a column of type %s", column
-        .getType(), getType());
+    Preconditions.checkArgument(column.getType() == getType(),
+        "cannot append a type %s to a column of type %s", column.getType(), getType());
     if (column instanceof ConcatColumn) {
       for (Column<?> c : ((ConcatColumn<?>) column).columnIds.values()) {
         addColumn(c);
@@ -70,11 +70,12 @@ public class ConcatColumn<T extends Comparable<?>> extends Column<T> {
   }
 
   /**
-   * Validates the index of the requested row and returns the necessary information to calculate get the correct row out
-   * of it.
+   * Validates the index of the requested row and returns the necessary information to calculate get
+   * the correct row out of it.
    * 
    * @param row the row of the requested value.
-   * @return the necessary information to calculate get the correct row and value out of the concatenated columns.
+   * @return the necessary information to calculate get the correct row and value out of the
+   *         concatenated columns.
    */
   private Map.Entry<Integer, Column<?>> getColumnEntry(final int row) {
     Preconditions.checkElementIndex(row, numTuples);

@@ -23,8 +23,9 @@ public final class IntegerAggregator extends PrimitiveAggregator {
   /**
    * Aggregate operations applicable for int columns.
    */
-  public static final Set<AggregationOp> AVAILABLE_AGG = ImmutableSet.of(AggregationOp.COUNT, AggregationOp.SUM,
-      AggregationOp.MAX, AggregationOp.MIN, AggregationOp.AVG, AggregationOp.STDEV);
+  public static final Set<AggregationOp> AVAILABLE_AGG = ImmutableSet.of(AggregationOp.COUNT,
+      AggregationOp.SUM, AggregationOp.MAX, AggregationOp.MIN, AggregationOp.AVG,
+      AggregationOp.STDEV);
 
   /**
    * @param aFieldName aggregate field name for use in output schema.

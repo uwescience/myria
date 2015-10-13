@@ -90,18 +90,19 @@ public class TipsyFileScan extends LeafOperator {
       Type.FLOAT_TYPE, // phi
       Type.INT_TYPE, // grp
       Type.STRING_TYPE // type
-      ), ImmutableList.of("iOrder", "mass", "x", "y", "z", "vx", "vy", "vz", "rho", "temp", "hsmooth", "metals",
-      "tform", "eps", "phi", "grp", "type"));
+      ), ImmutableList.of("iOrder", "mass", "x", "y", "z", "vx", "vy", "vz", "rho", "temp",
+      "hsmooth", "metals", "tform", "eps", "phi", "grp", "type"));
 
   /**
-   * Construct a new TipsyFileScan object using the given binary filename, iOrder filename and group number filename. By
-   * default TipsyFileScan will read the given binary file in big endian format.
+   * Construct a new TipsyFileScan object using the given binary filename, iOrder filename and group
+   * number filename. By default TipsyFileScan will read the given binary file in big endian format.
    * 
    * @param binFileName The binary file that contains the data for gas, dark, star particles.
    * @param iOrderFileName The ascii file that contains the data for iOrder.
    * @param grpFileName The ascii file that contains the data for group number.
    */
-  public TipsyFileScan(final String binFileName, final String iOrderFileName, final String grpFileName) {
+  public TipsyFileScan(final String binFileName, final String iOrderFileName,
+      final String grpFileName) {
     Objects.requireNonNull(binFileName);
     Objects.requireNonNull(iOrderFileName);
     Objects.requireNonNull(grpFileName);
@@ -155,16 +156,19 @@ public class TipsyFileScan extends LeafOperator {
       throw new DbException(e);
     }
 
-    Preconditions.checkArgument(iOrderInputStream != null, "FileScan iOrder input stream has not been set!");
-    Preconditions.checkArgument(grpInputStream != null, "FileScan group input stream has not been set!");
-    Preconditions.checkArgument(dataInputForBin != null, "FileScan binary input stream has not been set!");
+    Preconditions.checkArgument(iOrderInputStream != null,
+        "FileScan iOrder input stream has not been set!");
+    Preconditions.checkArgument(grpInputStream != null,
+        "FileScan group input stream has not been set!");
+    Preconditions.checkArgument(dataInputForBin != null,
+        "FileScan binary input stream has not been set!");
     iOrderScanner = new Scanner(new BufferedReader(new InputStreamReader(iOrderInputStream)));
     grpScanner = new Scanner(new BufferedReader(new InputStreamReader(grpInputStream)));
     int numIOrder = iOrderScanner.nextInt();
     int numGrp = grpScanner.nextInt();
     if (numIOrder != ntot) {
-      throw new DbException("number of iOrder " + numIOrder + " is different from the number of tipsy record " + ntot
-          + ".");
+      throw new DbException("number of iOrder " + numIOrder
+          + " is different from the number of tipsy record " + ntot + ".");
     }
     if (numGrp != ntot) {
       throw new DbException("number of group is different from the number of tipsy record.");
@@ -182,9 +186,9 @@ public class TipsyFileScan extends LeafOperator {
   }
 
   /**
-   * Construct tuples for gas particle records. The expected gas particles schema in the bin file is mass, x, y, z, vx,
-   * vy, vz, rho, temp, hsmooth, metals, phi. Merge the record in the binary file with iOrder and group number and fill
-   * in the each tuple column accordingly.
+   * Construct tuples for gas particle records. The expected gas particles schema in the bin file is
+   * mass, x, y, z, vx, vy, vz, rho, temp, hsmooth, metals, phi. Merge the record in the binary file
+   * with iOrder and group number and fill in the each tuple column accordingly.
    * 
    * @throws DbException if error reading from file.
    */
@@ -206,8 +210,8 @@ public class TipsyFileScan extends LeafOperator {
         buffer.putFloat(count++, dataInputForBin.readFloat());
         buffer.putFloat(count++, dataInputForBin.readFloat());
         /*
-         * TODO(leelee): Should be null for the next two columns. Put 0 for now as TupleBatchBuffer does not support
-         * null value.
+         * TODO(leelee): Should be null for the next two columns. Put 0 for now as TupleBatchBuffer
+         * does not support null value.
          */
         buffer.putFloat(count++, 0);
         buffer.putFloat(count++, 0);
@@ -219,20 +223,22 @@ public class TipsyFileScan extends LeafOperator {
       }
       final String iOrderRest = iOrderScanner.nextLine().trim();
       if (iOrderRest.length() > 0) {
-        throw new DbException("iOrderFile: Unexpected output at the end of line " + lineNumber + ": " + iOrderRest);
+        throw new DbException("iOrderFile: Unexpected output at the end of line " + lineNumber
+            + ": " + iOrderRest);
       }
       final String grpRest = grpScanner.nextLine().trim();
       if (grpRest.length() > 0) {
-        throw new DbException("grpFile: Unexpected output at the end of line " + lineNumber + ": " + grpRest);
+        throw new DbException("grpFile: Unexpected output at the end of line " + lineNumber + ": "
+            + grpRest);
       }
       ngas--;
     }
   }
 
   /**
-   * Construct tuples for gas particle records. The expected dark particles schema in the bin file is mass, x, y, z, vx,
-   * vy, vz, eps, phi. Merge the record in the binary file with iOrder and group number and fill in the each tuple
-   * column accordingly.
+   * Construct tuples for gas particle records. The expected dark particles schema in the bin file
+   * is mass, x, y, z, vx, vy, vz, eps, phi. Merge the record in the binary file with iOrder and
+   * group number and fill in the each tuple column accordingly.
    * 
    * @throws DbException if error reading from file.
    */
@@ -250,8 +256,8 @@ public class TipsyFileScan extends LeafOperator {
         buffer.putFloat(count++, dataInputForBin.readFloat());
         buffer.putFloat(count++, dataInputForBin.readFloat());
         /*
-         * TODO(leelee): Should be null for the next five columns. Put 0 for now as TupleBatchBuffer does not support
-         * null value.
+         * TODO(leelee): Should be null for the next five columns. Put 0 for now as TupleBatchBuffer
+         * does not support null value.
          */
         buffer.putFloat(count++, 0);
         buffer.putFloat(count++, 0);
@@ -267,20 +273,22 @@ public class TipsyFileScan extends LeafOperator {
       }
       final String iOrderRest = iOrderScanner.nextLine().trim();
       if (iOrderRest.length() > 0) {
-        throw new DbException("iOrderFile: Unexpected output at the end of line " + lineNumber + ": " + iOrderRest);
+        throw new DbException("iOrderFile: Unexpected output at the end of line " + lineNumber
+            + ": " + iOrderRest);
       }
       final String grpRest = grpScanner.nextLine().trim();
       if (grpRest.length() > 0) {
-        throw new DbException("grpFile: Unexpected output at the end of line " + lineNumber + ": " + grpRest);
+        throw new DbException("grpFile: Unexpected output at the end of line " + lineNumber + ": "
+            + grpRest);
       }
       ndark--;
     }
   }
 
   /**
-   * Construct tuples for gas particle records. The expected dark particles schema in the bin file is mass, x, y, z, vx,
-   * vy, vz, metals, tform, eps, phi. Merge the record in the binary file with iOrder and group number and fill in the
-   * each tuple column accordingly.
+   * Construct tuples for gas particle records. The expected dark particles schema in the bin file
+   * is mass, x, y, z, vx, vy, vz, metals, tform, eps, phi. Merge the record in the binary file with
+   * iOrder and group number and fill in the each tuple column accordingly.
    * 
    * @throws DbException if error reading from file.
    */
@@ -298,8 +306,8 @@ public class TipsyFileScan extends LeafOperator {
         buffer.putFloat(count++, dataInputForBin.readFloat());
         buffer.putFloat(count++, dataInputForBin.readFloat());
         /*
-         * TODO(leelee): Should be null for the next three columns. Put 0 for now as TupleBatchBuffer does not support
-         * null value.
+         * TODO(leelee): Should be null for the next three columns. Put 0 for now as
+         * TupleBatchBuffer does not support null value.
          */
         buffer.putFloat(count++, 0);
         buffer.putFloat(count++, 0);
@@ -315,11 +323,13 @@ public class TipsyFileScan extends LeafOperator {
       }
       final String iOrderRest = iOrderScanner.nextLine().trim();
       if (iOrderRest.length() > 0) {
-        throw new DbException("iOrderFile: Unexpected output at the end of line " + lineNumber + ": " + iOrderRest);
+        throw new DbException("iOrderFile: Unexpected output at the end of line " + lineNumber
+            + ": " + iOrderRest);
       }
       final String grpRest = grpScanner.nextLine().trim();
       if (grpRest.length() > 0) {
-        throw new DbException("grpFile: Unexpected output at the end of line " + lineNumber + ": " + grpRest);
+        throw new DbException("grpFile: Unexpected output at the end of line " + lineNumber + ": "
+            + grpRest);
       }
       nstar--;
     }

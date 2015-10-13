@@ -19,8 +19,7 @@ public final class MyriaUtils {
   /**
    * Utility classes should not be instantiated.
    */
-  private MyriaUtils() {
-  }
+  private MyriaUtils() {}
 
   /**
    * Get the only element in single-element list.
@@ -107,8 +106,8 @@ public final class MyriaUtils {
   }
 
   /**
-   * Copy all mappings from the source to the destination, ensuring that if any keys were already present, then the
-   * values match. This is sort of a "map Union" operator.
+   * Copy all mappings from the source to the destination, ensuring that if any keys were already
+   * present, then the values match. This is sort of a "map Union" operator.
    * 
    * @param <K> the type of the keys.
    * @param <V> the type of the values.
@@ -123,14 +122,15 @@ public final class MyriaUtils {
       if (oldV == null) {
         dest.put(newK, newV);
       } else {
-        Preconditions.checkArgument(oldV.equals(newV), "New value %s for key %s does not match old value %s", newV,
-            newK, oldV);
+        Preconditions.checkArgument(oldV.equals(newV),
+            "New value %s for key %s does not match old value %s", newV, newK, oldV);
       }
     }
   }
 
   /**
-   * Ensure that the given object is a valid Myria object type and can be stored in e.g., a Column or a Field.
+   * Ensure that the given object is a valid Myria object type and can be stored in e.g., a Column
+   * or a Field.
    * 
    * @param o the object to be tested.
    * @return o.
@@ -152,6 +152,7 @@ public final class MyriaUtils {
     if (o instanceof String) {
       return o;
     }
-    throw new IllegalArgumentException("Object of type " + o.getClass() + " is not a valid Myria type");
+    throw new IllegalArgumentException("Object of type " + o.getClass()
+        + " is not a valid Myria type");
   }
 }

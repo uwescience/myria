@@ -31,8 +31,9 @@ public class SingleColumnAggregatorFactory implements AggregatorFactory {
    * @param aggOps which aggregate operations are requested. See {@link PrimitiveAggregator}.
    */
   @JsonCreator
-  public SingleColumnAggregatorFactory(@JsonProperty(value = "column", required = true) final Integer column,
-      @JsonProperty(value = "aggOps", required = true) final AggregationOp... aggOps) {
+  public SingleColumnAggregatorFactory(
+      @JsonProperty(value = "column", required = true) final Integer column, @JsonProperty(
+          value = "aggOps", required = true) final AggregationOp... aggOps) {
     this.column = Objects.requireNonNull(column, "column").intValue();
     this.aggOps = Objects.requireNonNull(aggOps, "aggOps");
     Preconditions.checkArgument(aggOps.length > 0, "no aggregation operators selected");

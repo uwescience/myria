@@ -23,8 +23,8 @@ import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.HashUtils;
 
 /**
- * Keeps min value. It adds newly meet unique tuples into a buffer so that the source TupleBatches are not referenced.
- * This implementation reduces memory consumption.
+ * Keeps min value. It adds newly meet unique tuples into a buffer so that the source TupleBatches
+ * are not referenced. This implementation reduces memory consumption.
  * */
 public final class KeepMinValue extends StreamingState {
 
@@ -78,7 +78,8 @@ public final class KeepMinValue extends StreamingState {
    * @param row the row index of the given tuple
    * @return true if should be replaced by
    * */
-  private boolean shouldReplace(final int index, final List<? extends Column<?>> columns, final int row) {
+  private boolean shouldReplace(final int index, final List<? extends Column<?>> columns,
+      final int row) {
     for (int valueColIndex : valueColIndices) {
       Column<?> column = columns.get(valueColIndex);
       switch (column.getType()) {
@@ -127,7 +128,8 @@ public final class KeepMinValue extends StreamingState {
           break;
         }
         default:
-          throw new IllegalStateException("type " + column.getType() + " is not supported in KeepMinValue.replace()");
+          throw new IllegalStateException("type " + column.getType()
+              + " is not supported in KeepMinValue.replace()");
       }
     }
     return false;
@@ -227,7 +229,8 @@ public final class KeepMinValue extends StreamingState {
 
     @Override
     public void value(final int destRow) {
-      if (TupleUtils.tupleEquals(inputTB, keyColIndices, sourceRow, uniqueTuples, keyColIndices, destRow)) {
+      if (TupleUtils.tupleEquals(inputTB, keyColIndices, sourceRow, uniqueTuples, keyColIndices,
+          destRow)) {
         unique = false;
         if (shouldReplace(destRow, inputTB.getDataColumns(), sourceRow)) {
           for (int i = 0; i < uniqueTuples.numColumns(); ++i) {

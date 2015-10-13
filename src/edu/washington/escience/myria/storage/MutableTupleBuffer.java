@@ -45,7 +45,8 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
   public MutableTupleBuffer(final Schema schema) {
     this.schema = Objects.requireNonNull(schema);
     readyTuples = new ArrayList<MutableColumn<?>[]>();
-    currentBuildingColumns = ColumnFactory.allocateColumns(schema).toArray(new ColumnBuilder<?>[] {});
+    currentBuildingColumns =
+        ColumnFactory.allocateColumns(schema).toArray(new ColumnBuilder<?>[] {});
     numColumns = schema.numColumns();
     columnsReady = new BitSet(numColumns);
     numColumnsReady = 0;
@@ -76,7 +77,8 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
       buildingColumns[i++] = cb.buildMutable();
     }
     readyTuples.add(buildingColumns);
-    currentBuildingColumns = ColumnFactory.allocateColumns(schema).toArray(new ColumnBuilder<?>[] {});
+    currentBuildingColumns =
+        ColumnFactory.allocateColumns(schema).toArray(new ColumnBuilder<?>[] {});
     currentInProgressTuples = 0;
   }
 
@@ -92,7 +94,8 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
 
   @Override
   @Deprecated
-  public final Object getObject(final int colIndex, final int rowIndex) throws IndexOutOfBoundsException {
+  public final Object getObject(final int colIndex, final int rowIndex)
+      throws IndexOutOfBoundsException {
     int tupleBatchIndex = rowIndex / TupleBatch.BATCH_SIZE;
     int tupleIndex = rowIndex % TupleBatch.BATCH_SIZE;
     if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
@@ -298,12 +301,14 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
   private void checkPutIndex(final int column) {
     Preconditions.checkElementIndex(column, numColumns);
     if (columnsReady.get(column)) {
-      throw new RuntimeException("Need to fill up one row of TupleBatchBuffer before starting new one");
+      throw new RuntimeException(
+          "Need to fill up one row of TupleBatchBuffer before starting new one");
     }
   }
 
   /**
-   * Helper function to update the internal state after a value has been inserted into the specified column.
+   * Helper function to update the internal state after a value has been inserted into the specified
+   * column.
    * 
    * @param column the column in which the value was put.
    */
@@ -321,7 +326,8 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
   }
 
   /**
-   * Append the specified value to the specified destination column in this TupleBatchBuffer from the source column.
+   * Append the specified value to the specified destination column in this TupleBatchBuffer from
+   * the source column.
    * 
    * @param destColumn which column in this TB the value will be inserted.
    * @param sourceColumn the column from which data will be retrieved.
@@ -410,14 +416,16 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
   }
 
   /**
-   * Replace the specified value to the specified destination column in this TupleBuffer from the source column.
+   * Replace the specified value to the specified destination column in this TupleBuffer from the
+   * source column.
    * 
    * @param destColumn which column in this TB the value will be inserted.
    * @param destRow the row in the dest column from which data will be retrieved.
    * @param sourceColumn the column from which data will be retrieved.
    * @param sourceRow the row in the source column from which data will be retrieved.
    */
-  public final void replace(final int destColumn, final int destRow, final Column<?> sourceColumn, final int sourceRow) {
+  public final void replace(final int destColumn, final int destRow, final Column<?> sourceColumn,
+      final int sourceRow) {
     checkPutIndex(destColumn);
     int tupleBatchIndex = destRow / TupleBatch.BATCH_SIZE;
     int tupleIndex = destRow % TupleBatch.BATCH_SIZE;
@@ -460,7 +468,8 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
   /**
    * Return all tuples in this buffer. The data do not get removed.
    * 
-   * @return a List<TupleBatch> containing all complete tuples that have been inserted into this buffer.
+   * @return a List<TupleBatch> containing all complete tuples that have been inserted into this
+   *         buffer.
    */
   public final List<TupleBatch> getAll() {
     final List<TupleBatch> output = new ArrayList<TupleBatch>();

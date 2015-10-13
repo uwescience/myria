@@ -69,7 +69,8 @@ public final class IntColumnBuilder extends ColumnBuilder<Integer> {
 
   @Override
   public IntColumnBuilder appendInt(final int value) throws BufferOverflowException {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkArgument(!built,
+        "No further changes are allowed after the builder has built the column.");
     data.put(value);
     return this;
   }
@@ -77,21 +78,24 @@ public final class IntColumnBuilder extends ColumnBuilder<Integer> {
   @Deprecated
   @Override
   public IntColumnBuilder appendObject(final Object value) throws BufferOverflowException {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkArgument(!built,
+        "No further changes are allowed after the builder has built the column.");
     return appendInt((Integer) MyriaUtils.ensureObjectIsValidType(value));
   }
 
   @Override
-  public IntColumnBuilder appendFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException,
-      BufferOverflowException {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+  public IntColumnBuilder appendFromJdbc(final ResultSet resultSet, final int jdbcIndex)
+      throws SQLException, BufferOverflowException {
+    Preconditions.checkArgument(!built,
+        "No further changes are allowed after the builder has built the column.");
     return appendInt(resultSet.getInt(jdbcIndex));
   }
 
   @Override
-  public IntColumnBuilder appendFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException,
-      BufferOverflowException {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+  public IntColumnBuilder appendFromSQLite(final SQLiteStatement statement, final int index)
+      throws SQLiteException, BufferOverflowException {
+    Preconditions.checkArgument(!built,
+        "No further changes are allowed after the builder has built the column.");
     return appendInt(statement.columnInt(index));
   }
 
@@ -114,14 +118,16 @@ public final class IntColumnBuilder extends ColumnBuilder<Integer> {
 
   @Override
   public void replaceInt(final int value, final int row) throws IndexOutOfBoundsException {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkArgument(!built,
+        "No further changes are allowed after the builder has built the column.");
     Preconditions.checkElementIndex(row, data.position());
     data.put(row, value);
   }
 
   @Override
   public IntColumnBuilder expand(final int size) {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkArgument(!built,
+        "No further changes are allowed after the builder has built the column.");
     Preconditions.checkArgument(size >= 0);
     data.position(data.position() + size);
     return this;
@@ -129,7 +135,8 @@ public final class IntColumnBuilder extends ColumnBuilder<Integer> {
 
   @Override
   public IntColumnBuilder expandAll() {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkArgument(!built,
+        "No further changes are allowed after the builder has built the column.");
     data.position(data.capacity());
     return this;
   }
@@ -149,7 +156,8 @@ public final class IntColumnBuilder extends ColumnBuilder<Integer> {
   public IntColumnBuilder forkNewBuilder() {
     int[] arr = new int[data.array().length];
     System.arraycopy(data.array(), 0, arr, 0, data.position());
-    return new IntColumnBuilder((IntBuffer) IntBuffer.wrap(arr).position(data.position()).limit(data.limit()));
+    return new IntColumnBuilder((IntBuffer) IntBuffer.wrap(arr).position(data.position())
+        .limit(data.limit()));
   }
 
 }

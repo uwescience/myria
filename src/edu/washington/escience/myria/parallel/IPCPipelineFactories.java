@@ -145,11 +145,11 @@ public final class IPCPipelineFactories {
   /**
    * separate data streams to data frames.
    * */
-  static final ProtobufVarint32LengthFieldPrepender FRAME_ENCODER = new ProtobufVarint32LengthFieldPrepender();
+  static final ProtobufVarint32LengthFieldPrepender FRAME_ENCODER =
+      new ProtobufVarint32LengthFieldPrepender();
 
   /**
    * Utility class.
    * */
-  private IPCPipelineFactories() {
-  }
+  private IPCPipelineFactories() {}
 }

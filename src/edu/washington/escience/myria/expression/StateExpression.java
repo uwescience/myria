@@ -44,8 +44,9 @@ public class StateExpression extends ZeroaryExpression {
   @Override
   public String getJavaString(final ExpressionOperatorParameter parameters) {
     // We generate a variable access into the state tuple.
-    return new StringBuilder(Expression.STATE).append(".get").append(getOutputType(parameters).getName())
-        .append("(").append(getColumnIdx()).append(", 0)").toString();
+    return new StringBuilder(Expression.STATE).append(".get")
+        .append(getOutputType(parameters).getName()).append("(").append(getColumnIdx())
+        .append(", 0)").toString();
   }
 
   /**

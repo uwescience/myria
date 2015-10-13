@@ -11,8 +11,8 @@ import edu.washington.escience.myria.parallel.ipc.IPCEvent.EventType;
 import edu.washington.escience.myria.util.concurrent.ReentrantSpinLock;
 
 /**
- * A simple InputBuffer implementation using bag semantic. The number of data held in this InputBuffer can be as large
- * as {@link Integer.MAX_VALUE}.
+ * A simple InputBuffer implementation using bag semantic. The number of data held in this
+ * InputBuffer can be as large as {@link Integer.MAX_VALUE}.
  * 
  * @param <PAYLOAD> the type of application defined data the input buffer is going to hold.
  * */
@@ -82,7 +82,8 @@ public class SimpleBagInputBuffer<PAYLOAD> extends BagInputBufferAdapter<PAYLOAD
    * @param owner the owner IPC pool.
    * @param remoteChannelIDs from which channels, the data will input.
    * */
-  public SimpleBagInputBuffer(final IPCConnectionPool owner, final ImmutableSet<StreamIOChannelID> remoteChannelIDs) {
+  public SimpleBagInputBuffer(final IPCConnectionPool owner,
+      final ImmutableSet<StreamIOChannelID> remoteChannelIDs) {
     super(owner, remoteChannelIDs);
     newArrivalListeners = new ConcurrentLinkedQueue<IPCEventListener>();
   }

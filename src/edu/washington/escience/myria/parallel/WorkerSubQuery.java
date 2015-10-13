@@ -72,7 +72,8 @@ public class WorkerSubQuery extends LocalSubQuery {
   /**
    * Record milliseconds so that we can normalize the time in {@link ProfilingLogger}.
    * 
-   * TODO: why can't we put this in {@link ExecutionStatistics} and/or compute it from the nano start time there?
+   * TODO: why can't we put this in {@link ExecutionStatistics} and/or compute it from the nano
+   * start time there?
    */
   private volatile long startMilliseconds = 0;
 
@@ -80,74 +81,77 @@ public class WorkerSubQuery extends LocalSubQuery {
   private Timer resourceReportTimer;
 
   /**
-   * The future listener for processing the complete events of the execution of all the subquery's fragments.
+   * The future listener for processing the complete events of the execution of all the subquery's
+   * fragments.
    */
-  private final LocalFragmentFutureListener fragmentExecutionListener = new LocalFragmentFutureListener() {
+  private final LocalFragmentFutureListener fragmentExecutionListener =
+      new LocalFragmentFutureListener() {
 
-    @Override
-    public void operationComplete(final LocalFragmentFuture future) throws Exception {
-      LocalFragment drivingFragment = future.getFragment();
-      int currentNumFinished = numFinishedFragments.incrementAndGet();
+        @Override
+        public void operationComplete(final LocalFragmentFuture future) throws Exception {
+          LocalFragment drivingFragment = future.getFragment();
+          int currentNumFinished = numFinishedFragments.incrementAndGet();
 
-      Throwable failureReason = future.getCause();
-      if (!future.isSuccess()) {
-        failFragments.add(drivingFragment);
-        if (!(failureReason instanceof QueryKilledException)) {
-          // The fragment is a failure, not killed.
-          if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("got a failed fragment, root op = {} cause {}", drivingFragment.getRootOp().getOpName(),
-                failureReason);
-          }
-          for (LocalFragment t : fragments) {
-            // kill all the other {@link Fragment}s.
-            t.kill();
-          }
-        }
-      }
-
-      if (currentNumFinished >= fragments.size()) {
-        getExecutionStatistics().markEnd();
-        if (LOGGER.isInfoEnabled()) {
-          LOGGER.info("Query #{} executed for {}", getSubQueryId(), DateTimeUtils
-              .nanoElapseToHumanReadable(getExecutionStatistics().getQueryExecutionElapse()));
-        }
-        if (getProfilingMode().size() > 0) {
-          try {
-            if (resourceReportTimer != null) {
-              resourceReportTimer.cancel();
+          Throwable failureReason = future.getCause();
+          if (!future.isSuccess()) {
+            failFragments.add(drivingFragment);
+            if (!(failureReason instanceof QueryKilledException)) {
+              // The fragment is a failure, not killed.
+              if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("got a failed fragment, root op = {} cause {}", drivingFragment
+                    .getRootOp().getOpName(), failureReason);
+              }
+              for (LocalFragment t : fragments) {
+                // kill all the other {@link Fragment}s.
+                t.kill();
+              }
             }
-            getWorker().getProfilingLogger().flush();
-          } catch (DbException e) {
-            LOGGER.error("Error flushing profiling logger", e);
           }
-        }
-        if (failFragments.isEmpty()) {
-          executionFuture.setSuccess();
-        } else {
-          Throwable existingCause = executionFuture.getCause();
-          Throwable newCause = failFragments.peek().getExecutionFuture().getCause();
-          if (existingCause == null) {
-            executionFuture.setFailure(newCause);
-          } else {
-            existingCause.addSuppressed(newCause);
-          }
-        }
-      } else {
-        if (LOGGER.isDebugEnabled()) {
-          LOGGER.debug("New finished fragment: {}. {} remain.", drivingFragment,
-              (fragments.size() - currentNumFinished));
-        }
-      }
-    }
 
-  };
+          if (currentNumFinished >= fragments.size()) {
+            getExecutionStatistics().markEnd();
+            if (LOGGER.isInfoEnabled()) {
+              LOGGER.info("Query #{} executed for {}", getSubQueryId(), DateTimeUtils
+                  .nanoElapseToHumanReadable(getExecutionStatistics().getQueryExecutionElapse()));
+            }
+            if (getProfilingMode().size() > 0) {
+              try {
+                if (resourceReportTimer != null) {
+                  resourceReportTimer.cancel();
+                }
+                getWorker().getProfilingLogger().flush();
+              } catch (DbException e) {
+                LOGGER.error("Error flushing profiling logger", e);
+              }
+            }
+            if (failFragments.isEmpty()) {
+              executionFuture.setSuccess();
+            } else {
+              Throwable existingCause = executionFuture.getCause();
+              Throwable newCause = failFragments.peek().getExecutionFuture().getCause();
+              if (existingCause == null) {
+                executionFuture.setFailure(newCause);
+              } else {
+                existingCause.addSuppressed(newCause);
+              }
+            }
+          } else {
+            if (LOGGER.isDebugEnabled()) {
+              LOGGER.debug("New finished fragment: {}. {} remain.", drivingFragment,
+                  (fragments.size() - currentNumFinished));
+            }
+          }
+        }
+
+      };
 
   /**
    * @param plan the plan of this {@link WorkerSubQuery}.
    * @param subQueryId the id of this subquery.
    * @param ownerWorker the worker on which this {@link WorkerSubQuery} is going to run
    */
-  public WorkerSubQuery(final SubQueryPlan plan, final SubQueryId subQueryId, final Worker ownerWorker) {
+  public WorkerSubQuery(final SubQueryPlan plan, final SubQueryId subQueryId,
+      final Worker ownerWorker) {
     super(subQueryId, plan.getFTMode(), plan.getProfilingMode());
     List<RootOperator> operators = plan.getRootOps();
     fragments = new HashSet<LocalFragment>(operators.size());
@@ -210,7 +214,8 @@ public class WorkerSubQuery extends LocalSubQuery {
     getExecutionStatistics().markStart();
     if (getProfilingMode().contains(ProfilingMode.RESOURCE)) {
       resourceReportTimer = new Timer();
-      resourceReportTimer.scheduleAtFixedRate(new ResourceUsageReporter(), 0, MyriaConstants.RESOURCE_REPORT_INTERVAL);
+      resourceReportTimer.scheduleAtFixedRate(new ResourceUsageReporter(), 0,
+          MyriaConstants.RESOURCE_REPORT_INTERVAL);
     }
     startMilliseconds = System.currentTimeMillis();
     for (LocalFragment t : fragments) {
@@ -254,18 +259,26 @@ public class WorkerSubQuery extends LocalSubQuery {
           LOGGER.trace("adding recovery task for {}", fragment.getRootOp().getOpName());
         }
         List<StreamingState> buffers = ((Producer) fragment.getRootOp()).getTriedToSendTuples();
-        List<Integer> indices = ((Producer) fragment.getRootOp()).getChannelIndicesOfAWorker(workerId);
-        StreamOutputChannel<TupleBatch>[] channels = ((Producer) fragment.getRootOp()).getChannels();
+        List<Integer> indices =
+            ((Producer) fragment.getRootOp()).getChannelIndicesOfAWorker(workerId);
+        StreamOutputChannel<TupleBatch>[] channels =
+            ((Producer) fragment.getRootOp()).getChannels();
         for (int i = 0; i < indices.size(); ++i) {
           int j = indices.get(i);
-          /* buffers.get(j) might be an empty List<TupleBatch>, so need to set its schema explicitly. */
-          TupleSource scan = new TupleSource(buffers.get(j).exportState(), buffers.get(j).getSchema());
+          /*
+           * buffers.get(j) might be an empty List<TupleBatch>, so need to set its schema
+           * explicitly.
+           */
+          TupleSource scan =
+              new TupleSource(buffers.get(j).exportState(), buffers.get(j).getSchema());
           scan.setOpId(newOpId);
           newOpId++;
-          scan.setOpName("tuplesource for " + fragment.getRootOp().getOpName() + channels[j].getID());
+          scan.setOpName("tuplesource for " + fragment.getRootOp().getOpName()
+              + channels[j].getID());
           RecoverProducer rp =
-              new RecoverProducer(scan, ExchangePairID.fromExisting(channels[j].getID().getStreamID()), channels[j]
-                  .getID().getRemoteID(), (Producer) fragment.getRootOp(), j);
+              new RecoverProducer(scan, ExchangePairID.fromExisting(channels[j].getID()
+                  .getStreamID()), channels[j].getID().getRemoteID(),
+                  (Producer) fragment.getRootOp(), j);
           rp.setOpId(newOpId);
           newOpId++;
           rp.setOpName("recProducer_for_" + fragment.getRootOp().getOpName());

@@ -31,8 +31,10 @@ public class GenericShuffleConsumer extends Consumer {
    * @param operatorID my operatorID
    * @param workerIDs from which workers the data will come.
    * */
-  public GenericShuffleConsumer(final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
-    this(schema, operatorID, MyriaArrayUtils.checkSet(org.apache.commons.lang3.ArrayUtils.toObject(workerIDs)));
+  public GenericShuffleConsumer(final Schema schema, final ExchangePairID operatorID,
+      final int[] workerIDs) {
+    this(schema, operatorID, MyriaArrayUtils.checkSet(org.apache.commons.lang3.ArrayUtils
+        .toObject(workerIDs)));
   }
 
   /**

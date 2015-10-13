@@ -34,13 +34,14 @@ public class RelationWriteMetadata implements Serializable {
    * 
    * @param relationKey the relation to be written
    * @param schema the schema of the write.
-   * @param overwrite if {@code true}, then the relation will be overwritten / created. if false, the relation will be
-   *          created or appended. If appending, the schema must match the catalog schema.
-   * @param temporary if {@code true}, then the relation will be not be added to the Catalog, and its tuple count will
-   *          not be maintained.
+   * @param overwrite if {@code true}, then the relation will be overwritten / created. if false,
+   *        the relation will be created or appended. If appending, the schema must match the
+   *        catalog schema.
+   * @param temporary if {@code true}, then the relation will be not be added to the Catalog, and
+   *        its tuple count will not be maintained.
    */
-  public RelationWriteMetadata(@Nonnull final RelationKey relationKey, @Nonnull final Schema schema,
-      final boolean overwrite, final boolean temporary) {
+  public RelationWriteMetadata(@Nonnull final RelationKey relationKey,
+      @Nonnull final Schema schema, final boolean overwrite, final boolean temporary) {
     this.relationKey = Objects.requireNonNull(relationKey, "relationKey");
     this.schema = Objects.requireNonNull(schema, "schema");
     this.overwrite = overwrite;
@@ -58,19 +59,21 @@ public class RelationWriteMetadata implements Serializable {
   }
 
   /**
-   * Indicates whether the relation will be overwritten if it already exists. If {@code false} and the relation does
-   * already exist, tuples will be appended to the relation and the schema of these tuples must match the schema already
-   * in the catalog.
+   * Indicates whether the relation will be overwritten if it already exists. If {@code false} and
+   * the relation does already exist, tuples will be appended to the relation and the schema of
+   * these tuples must match the schema already in the catalog.
    * 
-   * @return {@code true} if the relation will be overwritten if it already exists, or {@code false} otherwise.
+   * @return {@code true} if the relation will be overwritten if it already exists, or {@code false}
+   *         otherwise.
    */
   public boolean isOverwrite() {
     return overwrite;
   }
 
   /**
-   * Indicates whether the relation is a temporary relation ({@code true}) or will be persisted ({@code false}). If (
-   * {@code false}), the relation will not be persisted and/or added to the catalog, reducing query overhead.
+   * Indicates whether the relation is a temporary relation ({@code true}) or will be persisted (
+   * {@code false}). If ( {@code false}), the relation will not be persisted and/or added to the
+   * catalog, reducing query overhead.
    * 
    * @return if {@code false}, the relation will be persisted and entered into the catalog.
    */

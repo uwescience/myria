@@ -30,8 +30,8 @@ import edu.washington.escience.myria.util.DateTimeUtils;
 import edu.washington.escience.myria.util.IPCUtils;
 
 /**
- * A {@link LocalSubQuery} running at the Master. Currently, a {@link MasterSubQuery} can only have a single
- * {@link LocalFragment}.
+ * A {@link LocalSubQuery} running at the Master. Currently, a {@link MasterSubQuery} can only have
+ * a single {@link LocalFragment}.
  */
 public class MasterSubQuery extends LocalSubQuery {
 
@@ -74,13 +74,17 @@ public class MasterSubQuery extends LocalSubQuery {
                 kill();
                 /* Record the reason for failure. */
                 if (cause != null) {
-                  message = MoreObjects.firstNonNull(message, "Error in worker#" + workerID + ", " + cause.toString());
+                  message =
+                      MoreObjects.firstNonNull(message, "Error in worker#" + workerID + ", "
+                          + cause.toString());
                 }
               } else if (getFTMode().equals(FTMode.ABANDON)) {
-                LOGGER.debug("(Abandon) ignoring failed subquery future on subquery #{}", getSubQueryId());
+                LOGGER.debug("(Abandon) ignoring failed subquery future on subquery #{}",
+                    getSubQueryId());
                 // do nothing
               } else if (getFTMode().equals(FTMode.REJOIN)) {
-                LOGGER.debug("(Rejoin) ignoring failed subquery future on subquery #{}", getSubQueryId());
+                LOGGER.debug("(Rejoin) ignoring failed subquery future on subquery #{}",
+                    getSubQueryId());
                 // do nothing
               }
             }
@@ -98,16 +102,20 @@ public class MasterSubQuery extends LocalSubQuery {
                 queryExecutionFuture.setFailure(new QueryKilledException());
               } else {
                 DbException composedException = null;
-                for (Entry<Integer, Throwable> workerIDCause : failedWorkerLocalSubQueries.entrySet()) {
+                for (Entry<Integer, Throwable> workerIDCause : failedWorkerLocalSubQueries
+                    .entrySet()) {
                   int failedWorkerID = workerIDCause.getKey();
                   Throwable cause = workerIDCause.getValue();
                   if (composedException == null) {
-                    composedException = new DbException("Query #" + getSubQueryId() + " failed: " + cause.getMessage());
+                    composedException =
+                        new DbException("Query #" + getSubQueryId() + " failed: "
+                            + cause.getMessage());
                   }
                   if (!(cause instanceof QueryKilledException)) {
                     // Only record non-killed exceptions
                     DbException workerException =
-                        new DbException("Worker #" + failedWorkerID + " failed: " + cause.getMessage(), cause);
+                        new DbException("Worker #" + failedWorkerID + " failed: "
+                            + cause.getMessage(), cause);
                     workerException.setStackTrace(cause.getStackTrace());
                     for (Throwable sup : cause.getSuppressed()) {
                       workerException.addSuppressed(sup);
@@ -187,23 +195,26 @@ public class MasterSubQuery extends LocalSubQuery {
   /**
    * record all failed {@link LocalSubQuery}s.
    */
-  private final ConcurrentHashMap<Integer, Throwable> failedWorkerLocalSubQueries = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<Integer, Throwable> failedWorkerLocalSubQueries =
+      new ConcurrentHashMap<>();
 
   /**
    * The future listener for processing the complete events of the execution of the master fragment.
    */
-  private final LocalFragmentFutureListener fragmentExecutionListener = new LocalFragmentFutureListener() {
+  private final LocalFragmentFutureListener fragmentExecutionListener =
+      new LocalFragmentFutureListener() {
 
-    @Override
-    public void operationComplete(final LocalFragmentFuture future) throws Exception {
-      if (future.isSuccess()) {
-        workerExecutionInfo.get(MyriaConstants.MASTER_ID).workerCompleteQuery.setSuccess();
-      } else {
-        workerExecutionInfo.get(MyriaConstants.MASTER_ID).workerCompleteQuery.setFailure(future.getCause());
-      }
-    }
+        @Override
+        public void operationComplete(final LocalFragmentFuture future) throws Exception {
+          if (future.isSuccess()) {
+            workerExecutionInfo.get(MyriaConstants.MASTER_ID).workerCompleteQuery.setSuccess();
+          } else {
+            workerExecutionInfo.get(MyriaConstants.MASTER_ID).workerCompleteQuery.setFailure(future
+                .getCause());
+          }
+        }
 
-  };
+      };
 
   /**
    * Callback when a query plan is received by a worker.
@@ -215,15 +226,16 @@ public class MasterSubQuery extends LocalSubQuery {
     LOGGER.debug("Worker #{} received query #{}", workerID, getSubQueryId());
     if (wei.workerReceiveSubQuery.isSuccess()) {
       /* a recovery worker */
-      master.getIPCConnectionPool().sendShortMessage(workerID, IPCUtils.startQueryTM(getSubQueryId()));
+      master.getIPCConnectionPool().sendShortMessage(workerID,
+          IPCUtils.startQueryTM(getSubQueryId()));
       for (Entry<Integer, WorkerExecutionInfo> e : workerExecutionInfo.entrySet()) {
         if (e.getKey() == workerID) {
           /* the new worker doesn't need to start recovery tasks */
           continue;
         }
         if (!e.getValue().workerCompleteQuery.isDone() && e.getKey() != MyriaConstants.MASTER_ID) {
-          master.getIPCConnectionPool()
-              .sendShortMessage(e.getKey(), IPCUtils.recoverQueryTM(getSubQueryId(), workerID));
+          master.getIPCConnectionPool().sendShortMessage(e.getKey(),
+              IPCUtils.recoverQueryTM(getSubQueryId(), workerID));
         }
       }
     } else {
@@ -235,7 +247,8 @@ public class MasterSubQuery extends LocalSubQuery {
    * @return worker plans.
    */
   final Map<Integer, SubQueryPlan> getWorkerPlans() {
-    Map<Integer, SubQueryPlan> result = new HashMap<Integer, SubQueryPlan>(workerExecutionInfo.size());
+    Map<Integer, SubQueryPlan> result =
+        new HashMap<Integer, SubQueryPlan>(workerExecutionInfo.size());
     for (Entry<Integer, WorkerExecutionInfo> e : workerExecutionInfo.entrySet()) {
       if (e.getKey() != MyriaConstants.MASTER_ID) {
         result.put(e.getKey(), e.getValue().workerPlan);
@@ -290,8 +303,9 @@ public class MasterSubQuery extends LocalSubQuery {
   final void workerComplete(final int workerID) {
     final WorkerExecutionInfo wei = workerExecutionInfo.get(workerID);
     if (wei == null) {
-      LOGGER.warn("Got a QUERY_COMPLETE (succeed) message from worker {} who is not assigned to query #{}", workerID,
-          getSubQueryId());
+      LOGGER.warn(
+          "Got a QUERY_COMPLETE (succeed) message from worker {} who is not assigned to query #{}",
+          workerID, getSubQueryId());
       return;
     }
     LOGGER.debug("Received query complete (succeed) message from worker: {}", workerID);
@@ -307,14 +321,19 @@ public class MasterSubQuery extends LocalSubQuery {
   final void workerFail(final int workerID, final Throwable cause) {
     final WorkerExecutionInfo wei = workerExecutionInfo.get(workerID);
     if (wei == null) {
-      LOGGER.warn("Got a QUERY_COMPLETE (fail) message from worker {} who is not assigned to query #{}", workerID,
-          getSubQueryId());
+      LOGGER.warn(
+          "Got a QUERY_COMPLETE (fail) message from worker {} who is not assigned to query #{}",
+          workerID, getSubQueryId());
       return;
     }
 
-    LOGGER.info("Received query complete (fail) message from worker: {}, cause: {}", workerID, cause);
+    LOGGER.info("Received query complete (fail) message from worker: {}, cause: {}", workerID,
+        cause);
     if (getFTMode().equals(FTMode.REJOIN) && cause.toString().endsWith("LostHeartbeatException")) {
-      /* for rejoin, don't set it to be completed since this worker is expected to be launched again. */
+      /*
+       * for rejoin, don't set it to be completed since this worker is expected to be launched
+       * again.
+       */
       return;
     }
     wei.workerCompleteQuery.setFailure(cause);
@@ -325,8 +344,9 @@ public class MasterSubQuery extends LocalSubQuery {
    * @param master the master on which the {@link SubQuery} is running.
    */
   public MasterSubQuery(final SubQuery subQuery, final Server master) {
-    super(Preconditions.checkNotNull(Preconditions.checkNotNull(subQuery, "subQuery").getSubQueryId(), "subQueryId"),
-        subQuery.getMasterPlan().getFTMode(), subQuery.getMasterPlan().getProfilingMode());
+    super(Preconditions.checkNotNull(Preconditions.checkNotNull(subQuery, "subQuery")
+        .getSubQueryId(), "subQueryId"), subQuery.getMasterPlan().getFTMode(), subQuery
+        .getMasterPlan().getProfilingMode());
     Preconditions.checkNotNull(subQuery, "subQuery");
     SubQueryPlan masterPlan = subQuery.getMasterPlan();
     Map<Integer, SubQueryPlan> workerPlans = subQuery.getWorkerPlans();
@@ -335,14 +355,16 @@ public class MasterSubQuery extends LocalSubQuery {
     workerExecutionInfo = new ConcurrentHashMap<Integer, WorkerExecutionInfo>(workerPlans.size());
 
     for (Entry<Integer, SubQueryPlan> workerInfo : workerPlans.entrySet()) {
-      workerExecutionInfo.put(workerInfo.getKey(), new WorkerExecutionInfo(workerInfo.getKey(), workerInfo.getValue()));
+      workerExecutionInfo.put(workerInfo.getKey(), new WorkerExecutionInfo(workerInfo.getKey(),
+          workerInfo.getValue()));
     }
     WorkerExecutionInfo masterPart = new WorkerExecutionInfo(MyriaConstants.MASTER_ID, masterPlan);
     workerExecutionInfo.put(MyriaConstants.MASTER_ID, masterPart);
 
     missingWorkers = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
 
-    fragment = new LocalFragment(this.master.getIPCConnectionPool(), this, root, master.getQueryExecutor());
+    fragment =
+        new LocalFragment(this.master.getIPCConnectionPool(), this, root, master.getQueryExecutor());
     fragment.getExecutionFuture().addListener(fragmentExecutionListener);
   }
 
@@ -369,7 +391,9 @@ public class MasterSubQuery extends LocalSubQuery {
     int i = 0;
     DefaultChannelGroup cg = new DefaultChannelGroup();
     for (Integer workerID : workers) {
-      cfs[i] = master.getIPCConnectionPool().sendShortMessage(workerID, IPCUtils.killQueryTM(getSubQueryId()));
+      cfs[i] =
+          master.getIPCConnectionPool().sendShortMessage(workerID,
+              IPCUtils.killQueryTM(getSubQueryId()));
       cg.add(cfs[i].getChannel());
       i++;
     }

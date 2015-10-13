@@ -14,8 +14,7 @@ public class PlusExpression extends BinaryExpression {
    * This is not really unused, it's used automagically by Jackson deserialization.
    */
   @SuppressWarnings("unused")
-  private PlusExpression() {
-  }
+  private PlusExpression() {}
 
   /**
    * Add the two operands together.

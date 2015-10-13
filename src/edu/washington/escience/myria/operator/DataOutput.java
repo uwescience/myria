@@ -9,8 +9,8 @@ import edu.washington.escience.myria.TupleWriter;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
- * DataOutput is a {@link RootOperator} that can be used to serialize data in a streaming fashion. It consumes
- * {@link TupleBatch}es from its child and passes them to a {@link TupleWriter}.
+ * DataOutput is a {@link RootOperator} that can be used to serialize data in a streaming fashion.
+ * It consumes {@link TupleBatch}es from its child and passes them to a {@link TupleWriter}.
  * 
  * 
  */
@@ -24,7 +24,8 @@ public final class DataOutput extends RootOperator {
   private boolean done = false;
 
   /**
-   * Instantiate a new DataOutput operator, which will stream its tuples to the specified {@link TupleWriter}.
+   * Instantiate a new DataOutput operator, which will stream its tuples to the specified
+   * {@link TupleWriter}.
    * 
    * @param child the source of tuples to be streamed.
    * @param writer the {@link TupleWriter} which will serialize the tuples.

@@ -93,7 +93,8 @@ public final class BooleanAggregator extends PrimitiveAggregator {
   }
 
   @Override
-  public void addRow(final ReadableTable from, final int row, final Object state) throws DbException {
+  public void addRow(final ReadableTable from, final int row, final Object state)
+      throws DbException {
     addBoolean(from.getBoolean(fromColumn, row), state);
   }
 

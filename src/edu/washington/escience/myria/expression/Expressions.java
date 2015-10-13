@@ -7,8 +7,7 @@ import edu.washington.escience.myria.operator.Operator;
  */
 public final class Expressions {
   /** Utility class cannot be constructed. */
-  private Expressions() {
-  }
+  private Expressions() {}
 
   /**
    * Construct an expression to select the specified column from the child.

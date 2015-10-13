@@ -28,8 +28,8 @@ public class TipsyDatasetEncoding extends MyriaApiEncoding {
   @Override
   public void validateExtra() {
     /*
-     * Note we can only do this because we know that the operator will be run on the master. So we can't do this e.g.
-     * for TipsyFileScan because that might be run on a worker.
+     * Note we can only do this because we know that the operator will be run on the master. So we
+     * can't do this e.g. for TipsyFileScan because that might be run on a worker.
      */
     try {
       FSUtils.checkFileReadable(tipsyFilename);

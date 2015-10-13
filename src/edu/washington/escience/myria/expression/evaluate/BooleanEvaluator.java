@@ -41,13 +41,14 @@ public class BooleanEvaluator extends Evaluator {
   @Override
   public void compile() throws DbException {
     try {
-      IExpressionEvaluator se = CompilerFactoryFactory.getDefaultCompilerFactory().newExpressionEvaluator();
+      IExpressionEvaluator se =
+          CompilerFactoryFactory.getDefaultCompilerFactory().newExpressionEvaluator();
 
       se.setDefaultImports(MyriaConstants.DEFAULT_JANINO_IMPORTS);
 
       evaluator =
-          (BooleanEvalInterface) se.createFastEvaluator(getJavaExpressionWithAppend(), BooleanEvalInterface.class, new String[] {
-              Expression.TB, Expression.ROW });
+          (BooleanEvalInterface) se.createFastEvaluator(getJavaExpressionWithAppend(),
+              BooleanEvalInterface.class, new String[] {Expression.TB, Expression.ROW});
     } catch (Exception e) {
       throw new DbException("Error when compiling expression " + this, e);
     }

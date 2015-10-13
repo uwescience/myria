@@ -50,8 +50,9 @@ public abstract class NAryExpression extends ExpressionOperator {
   }
 
   /**
-   * Returns the function call string: child + functionName. E.g, for {@code substring(int beginIndex, int endIndex)},
-   * <code>functionName</code> is <code>".substring</code>.
+   * Returns the function call string: child + functionName. E.g, for
+   * {@code substring(int beginIndex, int endIndex)}, <code>functionName</code> is
+   * <code>".substring</code>.
    * 
    * @param functionName the string representation of the Java function name.
    * @param parameters parameters that are needed to determine the java string
@@ -60,7 +61,8 @@ public abstract class NAryExpression extends ExpressionOperator {
   protected final String getDotFunctionCallString(final String functionName,
       final ExpressionOperatorParameter parameters) {
     StringBuilder callString =
-        new StringBuilder(children.get(0).getJavaString(parameters)).append(functionName).append("(");
+        new StringBuilder(children.get(0).getJavaString(parameters)).append(functionName).append(
+            "(");
     Iterator<ExpressionOperator> it = children.iterator();
     it.next(); // skip first child because it is what we call
     if (it.hasNext()) {
@@ -75,8 +77,8 @@ public abstract class NAryExpression extends ExpressionOperator {
   }
 
   /**
-   * A function that could be used as the default type checker for an expression where all operands must be numeric or
-   * have the same type.
+   * A function that could be used as the default type checker for an expression where all operands
+   * must be numeric or have the same type.
    * 
    * @param parameters parameters that are needed to determine the output type
    * @return the default numeric type, based on the types of the children and Java type precedence.
@@ -93,14 +95,15 @@ public abstract class NAryExpression extends ExpressionOperator {
     }
 
     // otherwise all types have to be numeric and we look for the dominating type
-    ImmutableList<Type> validTypes = ImmutableList.of(Type.DOUBLE_TYPE, Type.FLOAT_TYPE, Type.LONG_TYPE, Type.INT_TYPE);
+    ImmutableList<Type> validTypes =
+        ImmutableList.of(Type.DOUBLE_TYPE, Type.FLOAT_TYPE, Type.LONG_TYPE, Type.INT_TYPE);
     List<Integer> indexes = Lists.newArrayListWithCapacity(getChildren().size());
     int childIdx = 0;
     for (Type type : types) {
       final int idx = validTypes.indexOf(type);
       indexes.add(idx);
-      Preconditions.checkArgument(idx != -1, "%s cannot handle child [%s] of Type %s", getClass().getSimpleName(),
-          getChild(childIdx), type);
+      Preconditions.checkArgument(idx != -1, "%s cannot handle child [%s] of Type %s", getClass()
+          .getSimpleName(), getChild(childIdx), type);
       childIdx++;
     }
     return validTypes.get(Collections.min(indexes));

@@ -29,7 +29,7 @@ public abstract class BinaryOperator extends Operator {
 
   @Override
   public final Operator[] getChildren() {
-    return new Operator[] { left, right };
+    return new Operator[] {left, right};
   }
 
   /**
@@ -54,8 +54,10 @@ public abstract class BinaryOperator extends Operator {
     Preconditions.checkNotNull(children, "Operator opId=%s has null children", opId);
     Preconditions.checkArgument(children.length == 2,
         "Operator opId=%s setChildren() must be called with an array of length 2", opId);
-    Preconditions.checkNotNull(children[0], "Operator opId=%s has its first child to be null", opId);
-    Preconditions.checkNotNull(children[1], "Operator opId=%s has its second child to be null", opId);
+    Preconditions
+        .checkNotNull(children[0], "Operator opId=%s has its first child to be null", opId);
+    Preconditions.checkNotNull(children[1], "Operator opId=%s has its second child to be null",
+        opId);
     left = children[0];
     right = children[1];
   }

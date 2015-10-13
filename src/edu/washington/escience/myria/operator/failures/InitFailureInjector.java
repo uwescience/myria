@@ -31,8 +31,7 @@ public class InitFailureInjector extends UnaryOperator {
   }
 
   @Override
-  protected final void cleanup() throws DbException {
-  }
+  protected final void cleanup() throws DbException {}
 
   @Override
   protected final TupleBatch fetchNextReady() throws DbException {

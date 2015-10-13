@@ -55,9 +55,11 @@ public abstract class ComparisonExpression extends BinaryExpression {
     Type rightType = getRight().getOutputType(parameters);
 
     if (leftType == Type.STRING_TYPE || leftType == Type.DATETIME_TYPE) {
-      Preconditions.checkArgument(rightType == leftType,
-          "If the type of the left child is %s, %s requires right child [%s] of Type %s to be %s as well.", leftType,
-          getClass().getSimpleName(), getRight(), rightType, leftType);
+      Preconditions
+          .checkArgument(
+              rightType == leftType,
+              "If the type of the left child is %s, %s requires right child [%s] of Type %s to be %s as well.",
+              leftType, getClass().getSimpleName(), getRight(), rightType, leftType);
     } else {
       checkAndReturnDefaultNumericType(parameters);
     }

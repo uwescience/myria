@@ -4,16 +4,17 @@ import java.util.TimerTask;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
- * The Java {@link ScheduledExecutorService} suppress the subsequent execution of a {@link TimerTask} if any execution
- * of the task encounters an exception. This class captures all {@link Throwable}s and logs them. And all
- * {@link Exception}s are ignored but all {@link Error}s are re-thrown. In this way, the execution of the
- * {@link TimerTask}s will only get stopped by explicit cancel or shutdown.
+ * The Java {@link ScheduledExecutorService} suppress the subsequent execution of a
+ * {@link TimerTask} if any execution of the task encounters an exception. This class captures all
+ * {@link Throwable}s and logs them. And all {@link Exception}s are ignored but all {@link Error}s
+ * are re-thrown. In this way, the execution of the {@link TimerTask}s will only get stopped by
+ * explicit cancel or shutdown.
  * */
 public abstract class ErrorLoggingTimerTask extends TimerTask {
 
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(ErrorLoggingTimerTask.class
-      .getName());
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory
+      .getLogger(ErrorLoggingTimerTask.class.getName());
 
   /**
    * Process error.

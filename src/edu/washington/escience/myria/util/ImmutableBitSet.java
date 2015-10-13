@@ -3,7 +3,8 @@ package edu.washington.escience.myria.util;
 import java.util.BitSet;
 
 /**
- * A read only wrapper class for BitSet. In this way, exposing valid indices in TupleBatch should be safe.
+ * A read only wrapper class for BitSet. In this way, exposing valid indices in TupleBatch should be
+ * safe.
  * */
 public final class ImmutableBitSet extends BitSet {
   /**

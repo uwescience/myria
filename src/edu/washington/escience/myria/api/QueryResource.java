@@ -46,8 +46,8 @@ public final class QueryResource {
   private Server server;
 
   /**
-   * For testing purposes, simply deserialize the submitted query and instantiate it with physical parameters (specific
-   * machines, etc.). Return the result.
+   * For testing purposes, simply deserialize the submitted query and instantiate it with physical
+   * parameters (specific machines, etc.). Return the result.
    * 
    * @param query the query to be validated.
    * @param uriInfo the URI of the current request.
@@ -80,7 +80,8 @@ public final class QueryResource {
    * @throws CatalogException if there is an error in the catalog.
    */
   @POST
-  public Response postNewQuery(final QueryEncoding query, @Context final UriInfo uriInfo) throws CatalogException {
+  public Response postNewQuery(final QueryEncoding query, @Context final UriInfo uriInfo)
+      throws CatalogException {
     /* Validate the input. */
     Preconditions.checkArgument(query != null, "Missing query encoding.");
     query.validate();
@@ -101,7 +102,8 @@ public final class QueryResource {
 
     /* Check to see if the query was submitted successfully. */
     if (qf == null) {
-      throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "The server cannot accept new queries right now.");
+      throw new MyriaApiException(Status.SERVICE_UNAVAILABLE,
+          "The server cannot accept new queries right now.");
     }
 
     long queryId = qf.getQueryId();
@@ -109,8 +111,8 @@ public final class QueryResource {
     QueryStatusEncoding qs = server.getQueryManager().getQueryStatus(queryId);
     URI queryUri = getCanonicalResourcePath(uriInfo, queryId);
     qs.url = queryUri;
-    return Response.status(Status.ACCEPTED).cacheControl(MyriaApiUtils.doNotCache()).location(queryUri).entity(qs)
-        .build();
+    return Response.status(Status.ACCEPTED).cacheControl(MyriaApiUtils.doNotCache())
+        .location(queryUri).entity(qs).build();
   }
 
   /**
@@ -123,13 +125,13 @@ public final class QueryResource {
    */
   @GET
   @Path("query-{queryId:\\d+}")
-  public Response getQueryStatus(@PathParam("queryId") final long queryId, @Context final UriInfo uriInfo)
-      throws CatalogException {
+  public Response getQueryStatus(@PathParam("queryId") final long queryId,
+      @Context final UriInfo uriInfo) throws CatalogException {
     final QueryStatusEncoding queryStatus = server.getQueryManager().getQueryStatus(queryId);
     final URI uri = uriInfo.getAbsolutePath();
     if (queryStatus == null) {
-      return Response.status(Status.NOT_FOUND).contentLocation(uri).entity("Query " + queryId + " was not found")
-          .build();
+      return Response.status(Status.NOT_FOUND).contentLocation(uri)
+          .entity("Query " + queryId + " was not found").build();
     }
     queryStatus.url = uri;
     Status httpStatus = Status.INTERNAL_SERVER_ERROR;
@@ -165,12 +167,13 @@ public final class QueryResource {
   @GET
   @Path("query-{queryId:\\d+}/subquery-{subQueryId:\\d+}")
   public Response getQueryPlan(@PathParam("queryId") final long queryId,
-      @PathParam("subQueryId") final long subQueryId, @Context final UriInfo uriInfo) throws DbException {
+      @PathParam("subQueryId") final long subQueryId, @Context final UriInfo uriInfo)
+      throws DbException {
     final String queryPlan = server.getQueryPlan(new SubQueryId(queryId, subQueryId));
     final URI uri = uriInfo.getAbsolutePath();
     if (queryPlan == null) {
-      return Response.status(Status.NOT_FOUND).contentLocation(uri).entity(
-          "Query " + queryId + "." + subQueryId + " has no saved execution plan.").build();
+      return Response.status(Status.NOT_FOUND).contentLocation(uri)
+          .entity("Query " + queryId + "." + subQueryId + " has no saved execution plan.").build();
     }
     ResponseBuilder response = Response.ok().location(uri).entity(queryPlan);
     return response.build();
@@ -186,8 +189,8 @@ public final class QueryResource {
    */
   @DELETE
   @Path("query-{queryId:\\d+}")
-  public Response cancelQuery(@PathParam("queryId") final long queryId, @Context final UriInfo uriInfo)
-      throws CatalogException {
+  public Response cancelQuery(@PathParam("queryId") final long queryId,
+      @Context final UriInfo uriInfo) throws CatalogException {
     try {
       server.getQueryManager().killQuery(queryId);
     } catch (NullPointerException e) {
@@ -205,26 +208,28 @@ public final class QueryResource {
    * 
    * @param uriInfo the URL of the current request.
    * @param limit the maximum number of results to return. If null, the default of
-   *          {@link MyriaApiConstants.MYRIA_API_DEFAULT_NUM_RESULTS} is used. Any value <= 0 is interpreted as all
-   *          results.
+   *        {@link MyriaApiConstants.MYRIA_API_DEFAULT_NUM_RESULTS} is used. Any value <= 0 is
+   *        interpreted as all results.
    * @param maxId the largest query ID returned. If null or <= 0, all queries will be returned.
-   * @param minId the smallest query ID returned. If null or <= 0, all queries will be returned. Ignored if maxId is
-   *          present.
-   * @param searchTerm an optional search term on the raw query string. If present, only queries with this token will be
-   *          returned. If present, must be at least 3 characters long.
+   * @param minId the smallest query ID returned. If null or <= 0, all queries will be returned.
+   *        Ignored if maxId is present.
+   * @param searchTerm an optional search term on the raw query string. If present, only queries
+   *        with this token will be returned. If present, must be at least 3 characters long.
    * @return information about the query.
    * @throws CatalogException if there is an error in the catalog.
    */
   @GET
   public Response getQueries(@Context final UriInfo uriInfo, @QueryParam("limit") final Long limit,
-      @QueryParam("max") final Long maxId, @QueryParam("min") final Long minId, @QueryParam("q") final String searchTerm)
-      throws CatalogException {
-    long realLimit = MoreObjects.firstNonNull(limit, MyriaApiConstants.MYRIA_API_DEFAULT_NUM_RESULTS);
+      @QueryParam("max") final Long maxId, @QueryParam("min") final Long minId,
+      @QueryParam("q") final String searchTerm) throws CatalogException {
+    long realLimit =
+        MoreObjects.firstNonNull(limit, MyriaApiConstants.MYRIA_API_DEFAULT_NUM_RESULTS);
     String realSearchTerm = searchTerm;
     if ("".equals(realSearchTerm)) {
       realSearchTerm = null;
     }
-    List<QueryStatusEncoding> queries = server.getQueryManager().getQueries(realLimit, maxId, minId, realSearchTerm);
+    List<QueryStatusEncoding> queries =
+        server.getQueryManager().getQueries(realLimit, maxId, minId, realSearchTerm);
     for (QueryStatusEncoding status : queries) {
       status.url = getCanonicalResourcePath(uriInfo, status.queryId);
     }

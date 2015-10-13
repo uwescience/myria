@@ -31,7 +31,8 @@ public class ConstantExpression extends ZeroaryExpression {
    * @param value the value of this constant.
    */
   @JsonCreator
-  public ConstantExpression(@JsonProperty("valueType") final Type type, @JsonProperty("value") final String value) {
+  public ConstantExpression(@JsonProperty("valueType") final Type type,
+      @JsonProperty("value") final String value) {
     valueType = type;
     if (type == Type.LONG_TYPE && value.toUpperCase().indexOf('L') == -1) {
       this.value = value + 'L';

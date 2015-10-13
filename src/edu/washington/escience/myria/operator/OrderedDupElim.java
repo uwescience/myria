@@ -24,14 +24,14 @@ public final class OrderedDupElim extends UnaryOperator {
   private int lastTupleRow;
 
   /**
-   * The order in which columns of the input tuple are scanned. So named because we want to scan in the reverse order
-   * that columns were sorted to find differences as quickly as possible.
+   * The order in which columns of the input tuple are scanned. So named because we want to scan in
+   * the reverse order that columns were sorted to find differences as quickly as possible.
    */
   private int[] invSortColumns;
 
   /**
-   * A duplicate elimination operator that works on ordered input. This constructor assumes that the child columns were
-   * sorted in the same order in which they were input.
+   * A duplicate elimination operator that works on ordered input. This constructor assumes that the
+   * child columns were sorted in the same order in which they were input.
    * 
    * @param child the source of the tuples.
    */
@@ -40,9 +40,9 @@ public final class OrderedDupElim extends UnaryOperator {
   }
 
   /**
-   * A duplicate elimination operator that works on ordered input. If present, <code>sortColumns</code> specifies the
-   * order in which the columns of the input data were sorted, and will look for differences from the last column to the
-   * first.
+   * A duplicate elimination operator that works on ordered input. If present,
+   * <code>sortColumns</code> specifies the order in which the columns of the input data were
+   * sorted, and will look for differences from the last column to the first.
    * 
    * @param child the source of the tuples.
    * @param sortColumns the order in which the columns of the input tuples are sorted.
@@ -92,7 +92,8 @@ public final class OrderedDupElim extends UnaryOperator {
     BitSet output = new BitSet(tb.numTuples());
     for (int row = 0; row < tb.numTuples(); ++row) {
       if (lastTupleBatch == null
-          || !TupleUtils.tupleEquals(tb, invSortColumns, row, lastTupleBatch, invSortColumns, lastTupleRow)) {
+          || !TupleUtils.tupleEquals(tb, invSortColumns, row, lastTupleBatch, invSortColumns,
+              lastTupleRow)) {
         output.set(row);
         lastTupleBatch = tb;
         lastTupleRow = row;

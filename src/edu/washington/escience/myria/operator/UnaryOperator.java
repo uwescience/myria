@@ -28,7 +28,7 @@ public abstract class UnaryOperator extends Operator {
     if (child == null) {
       return null;
     }
-    return new Operator[] { child };
+    return new Operator[] {child};
   }
 
   /**
@@ -42,7 +42,7 @@ public abstract class UnaryOperator extends Operator {
    * @param child the child.
    */
   public final void setChild(final Operator child) {
-    setChildren(new Operator[] { child });
+    setChildren(new Operator[] {child});
   }
 
   @Override
@@ -53,7 +53,8 @@ public abstract class UnaryOperator extends Operator {
     Preconditions.checkNotNull(children, "Unary operator opId=%s has null children", opId);
     Preconditions.checkArgument(children.length == 1,
         "Operator opId=%s setChildren() must be called with an array of length 1", opId);
-    Preconditions.checkNotNull(children[0], "Unary operator opId=%s has its child to be null", opId);
+    Preconditions
+        .checkNotNull(children[0], "Unary operator opId=%s has its child to be null", opId);
     child = children[0];
   }
 

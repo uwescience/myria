@@ -14,8 +14,7 @@ import org.slf4j.LoggerFactory;
 public final class ThreadUtils {
 
   /** Prevent construction of utility class. */
-  private ThreadUtils() {
-  }
+  private ThreadUtils() {}
 
   /** The logger for this class. */
   private static final Logger LOGGER = LoggerFactory.getLogger(ThreadUtils.class);
@@ -59,7 +58,8 @@ public final class ThreadUtils {
       long threadId = t.getId();
       double cpuTimeInSec = threadMX.getThreadCpuTime(threadId) / NS_PER_SEC;
       if (cpuTimeInSec > THREAD_CPU_LB) {
-        sb.append('\t').append(threadId).append(":").append(t.getName()).append(' ').append(cpuTimeInSec).append('\n');
+        sb.append('\t').append(threadId).append(":").append(t.getName()).append(' ')
+            .append(cpuTimeInSec).append('\n');
       }
     }
     LOGGER.warn(sb.toString());

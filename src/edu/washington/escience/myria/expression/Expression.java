@@ -109,11 +109,12 @@ public class Expression implements Serializable {
 
   /**
    * @param parameters parameters that are needed to create the java expression
-   * @return the Java form of this expression that also writes the results to a {@link ColumnBuilder}.
+   * @return the Java form of this expression that also writes the results to a
+   *         {@link ColumnBuilder}.
    */
   public String getJavaExpressionWithAppend(final ExpressionOperatorParameter parameters) {
-    return new StringBuilder(RESULT).append(".append").append(getOutputType(parameters).getName()).append("(").append(
-        getJavaExpression(parameters)).append(")").toString();
+    return new StringBuilder(RESULT).append(".append").append(getOutputType(parameters).getName())
+        .append("(").append(getJavaExpression(parameters)).append(")").toString();
   }
 
   /**
@@ -149,8 +150,8 @@ public class Expression implements Serializable {
   }
 
   /**
-   * An expression is a constant expression when it has to be evaluated only once. This means that an expression with
-   * variables, state or random is likely not a constant.
+   * An expression is a constant expression when it has to be evaluated only once. This means that
+   * an expression with variables, state or random is likely not a constant.
    * 
    * @return if this expression evaluates to a constant
    */

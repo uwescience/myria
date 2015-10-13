@@ -20,7 +20,8 @@ public class MergeJoinEncoding extends BinaryOperatorEncoding<MergeJoin> {
 
   @Override
   public MergeJoin construct(ConstructArgs args) {
-    return new MergeJoin(argColumnNames, null, null, argColumns1, argColumns2, argSelect1, argSelect2, acending);
+    return new MergeJoin(argColumnNames, null, null, argColumns1, argColumns2, argSelect1,
+        argSelect2, acending);
   }
 
 }

@@ -34,14 +34,14 @@ public class IDBControllerEncoding extends OperatorEncoding<IDBController> {
 
   @Override
   public IDBController construct(final ConstructArgs args) {
-    return new IDBController(argSelfIdbId, realEosControllerOperatorId, realEosControllerWorkerId, null, null, null,
-        argState.construct(), MoreObjects.firstNonNull(sync, Boolean.FALSE));
+    return new IDBController(argSelfIdbId, realEosControllerOperatorId, realEosControllerWorkerId,
+        null, null, null, argState.construct(), MoreObjects.firstNonNull(sync, Boolean.FALSE));
   }
 
   @Override
   public void connect(final Operator current, final Map<Integer, Operator> operators) {
-    current.setChildren(new Operator[] {
-        operators.get(argInitialInput), operators.get(argIterationInput), operators.get(argEosControllerInput) });
+    current.setChildren(new Operator[] {operators.get(argInitialInput),
+        operators.get(argIterationInput), operators.get(argEosControllerInput)});
   }
 
   protected void setRealEosControllerOperatorID(final ExchangePairID realEosControllerOperatorId) {

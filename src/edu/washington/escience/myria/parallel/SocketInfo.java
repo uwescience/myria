@@ -84,8 +84,8 @@ public final class SocketInfo implements Serializable {
   }
 
   /**
-   * @return an InetSocketAddress that describes the given host:port address. Use this when you want a remote address to
-   *         connect to, or for printing.
+   * @return an InetSocketAddress that describes the given host:port address. Use this when you want
+   *         a remote address to connect to, or for printing.
    */
   public InetSocketAddress getConnectAddress() {
     if (connectAddress == null) {
@@ -95,8 +95,8 @@ public final class SocketInfo implements Serializable {
   }
 
   /**
-   * @return an InetSocketAddress that contains the port, but not the host. Use this when you want to bind a server that
-   *         will listen on all interfaces & hostnames.
+   * @return an InetSocketAddress that contains the port, but not the host. Use this when you want
+   *         to bind a server that will listen on all interfaces & hostnames.
    */
   public InetSocketAddress getBindAddress() {
     if (bindAddress == null) {

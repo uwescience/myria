@@ -46,9 +46,11 @@ public class HyperShuffleProducerEncoding extends AbstractProducerEncoding<Gener
 
     /* constructing a MFMDHashPartitionFunction. */
     MFMDHashPartitionFunction pf =
-        new MFMDHashPartitionFunction(cellPartition.length, hyperCubeDimensions, hashedColumns, mappedHCDimensions);
+        new MFMDHashPartitionFunction(cellPartition.length, hyperCubeDimensions, hashedColumns,
+            mappedHCDimensions);
 
-    return new GenericShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), cellPartition,
+    return new GenericShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()),
+        cellPartition,
         MyriaUtils.integerSetToIntArray(args.getServer().getRandomWorkers(numCells)), pf);
   }
 

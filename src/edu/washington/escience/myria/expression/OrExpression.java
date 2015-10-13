@@ -14,8 +14,7 @@ public class OrExpression extends BinaryExpression {
    * This is not really unused, it's used automagically by Jackson deserialization.
    */
   @SuppressWarnings("unused")
-  private OrExpression() {
-  }
+  private OrExpression() {}
 
   /**
    * True if left or right is true.

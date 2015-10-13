@@ -3,7 +3,8 @@ package edu.washington.escience.myria.parallel.ipc;
 import org.jboss.netty.channel.Channel;
 
 /**
- * A condition close future that is conditioned on the equality of the expected object and the actual object.
+ * A condition close future that is conditioned on the equality of the expected object and the
+ * actual object.
  * 
  * @param <T> type.
  * */

@@ -24,8 +24,8 @@ public final class TupleSource extends LeafOperator {
   /** The tuples that this operator serves, exactly once. */
   private List<TupleBatch> data;
   /**
-   * the current TupleBatch index of this TupleSource. Does not remove the TupleBatches in execution so that it can
-   * rewinded.
+   * the current TupleBatch index of this TupleSource. Does not remove the TupleBatches in execution
+   * so that it can rewinded.
    * */
   private int index;
   /** The Schema of the tuples that this operator serves. */
@@ -42,8 +42,8 @@ public final class TupleSource extends LeafOperator {
   }
 
   /**
-   * Constructs a TupleSource operator that will serve the tuples in the given List<TupleBatch>. Data must contain at
-   * least one TupleBatch.
+   * Constructs a TupleSource operator that will serve the tuples in the given List<TupleBatch>.
+   * Data must contain at least one TupleBatch.
    * 
    * @param data the tuples that this operator will serve.
    */
@@ -70,7 +70,9 @@ public final class TupleSource extends LeafOperator {
   public TupleSource(final List<TupleBatch> data, final Schema schema) {
     this.data = Objects.requireNonNull(data);
     if (data.size() == 0) {
-      this.schema = Objects.requireNonNull(schema, "either data.get(0) must be non-null, or schema must be supplied");
+      this.schema =
+          Objects.requireNonNull(schema,
+              "either data.get(0) must be non-null, or schema must be supplied");
     } else {
       this.schema = data.get(0).getSchema();
       if (schema != null) {

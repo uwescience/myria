@@ -17,6 +17,7 @@ public class LeapFrogJoinEncoding extends NaryOperatorEncoding<LeapFrogJoin> {
 
   @Override
   public LeapFrogJoin construct(ConstructArgs args) throws MyriaApiException {
-    return new LeapFrogJoin(null, joinFieldMapping, outputFieldMapping, argColumnNames, indexOnFirst);
+    return new LeapFrogJoin(null, joinFieldMapping, outputFieldMapping, argColumnNames,
+        indexOnFirst);
   }
 }

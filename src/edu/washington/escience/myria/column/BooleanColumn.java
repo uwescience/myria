@@ -11,7 +11,8 @@ import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.util.ImmutableBitSet;
 
 /**
- * A column of Boolean values. To save space, this implementation uses a BitSet as the internal representation.
+ * A column of Boolean values. To save space, this implementation uses a BitSet as the internal
+ * representation.
  * 
  * 
  */
@@ -59,7 +60,8 @@ public final class BooleanColumn extends Column<Boolean> {
     /* Note that we do *not* build the inner class. We pass its builder instead. */
     final BooleanColumnMessage.Builder inner =
         BooleanColumnMessage.newBuilder().setData(ByteString.copyFrom(data.toByteArray()));
-    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.BOOLEAN).setBooleanColumn(inner).build();
+    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.BOOLEAN).setBooleanColumn(inner)
+        .build();
   }
 
   @Override

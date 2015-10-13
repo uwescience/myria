@@ -14,17 +14,16 @@ import com.google.common.base.Preconditions;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
- * The ShuffleProducer class uses an instance of the PartitionFunction class to decide which worker a tuple should be
- * routed to. Typically, the ShuffleProducer class invokes {@link partition(Tuple, Schema) partition} on every tuple it
- * generates.
+ * The ShuffleProducer class uses an instance of the PartitionFunction class to decide which worker
+ * a tuple should be routed to. Typically, the ShuffleProducer class invokes {@link partition(Tuple,
+ * Schema) partition} on every tuple it generates.
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
-@JsonSubTypes({
-    @Type(value = RoundRobinPartitionFunction.class, name = "RoundRobin"),
+@JsonSubTypes({@Type(value = RoundRobinPartitionFunction.class, name = "RoundRobin"),
     @Type(value = SingleFieldHashPartitionFunction.class, name = "SingleFieldHash"),
     @Type(value = IdentityHashPartitionFunction.class, name = "IdentityHash"),
     @Type(value = MultiFieldHashPartitionFunction.class, name = "MultiFieldHash"),
-    @Type(value = WholeTupleHashPartitionFunction.class, name = "WholeTupleHash") })
+    @Type(value = WholeTupleHashPartitionFunction.class, name = "WholeTupleHash")})
 public abstract class PartitionFunction implements Serializable {
 
   /** Required for Java serialization. */
@@ -37,9 +36,9 @@ public abstract class PartitionFunction implements Serializable {
   private Integer numPartitions = null;
 
   /**
-   * @param numPartitions the number of partitions into which input tuples can be divided. Note that this is a
-   *          {@link Integer} not an {@link int} so that it can properly handle <code>null</code> values, e.g., in JSON
-   *          deserialization.
+   * @param numPartitions the number of partitions into which input tuples can be divided. Note that
+   *        this is a {@link Integer} not an {@link int} so that it can properly handle
+   *        <code>null</code> values, e.g., in JSON deserialization.
    */
   public PartitionFunction(@Nullable final Integer numPartitions) {
     Preconditions.checkArgument((numPartitions == null) || (numPartitions > 0),
@@ -56,13 +55,13 @@ public abstract class PartitionFunction implements Serializable {
   }
 
   /**
-   * Given that the TupleBatches expose only the valid tuples, partition functions using TB.get** methods should be of
-   * little overhead comparing with direct Column access.
+   * Given that the TupleBatches expose only the valid tuples, partition functions using TB.get**
+   * methods should be of little overhead comparing with direct Column access.
    * 
    * @param data the data to be partitioned.
    * 
-   * @return an int[] of length specified by <code>data.{@link TupleBatch#numTuples}</code>, specifying which partition
-   *         every tuple should be sent to.
+   * @return an int[] of length specified by <code>data.{@link TupleBatch#numTuples}</code>,
+   *         specifying which partition every tuple should be sent to.
    * 
    */
   public abstract int[] partition(@Nonnull final TupleBatch data);

@@ -3,7 +3,8 @@ package edu.washington.escience.myria.util.concurrent;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * A simple wrapper of a {@link ReentrantLock}. It can be used within Java>7 's auto resource close framework.
+ * A simple wrapper of a {@link ReentrantLock}. It can be used within Java>7 's auto resource close
+ * framework.
  */
 public class ClosableReentrantLock extends ReentrantLock implements AutoCloseable {
 

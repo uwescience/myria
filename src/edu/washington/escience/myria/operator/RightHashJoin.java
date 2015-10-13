@@ -24,8 +24,8 @@ import edu.washington.escience.myria.util.HashUtils;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
 
 /**
- * This is an implementation of unbalanced hash join. This operator only builds hash tables for its right child, thus
- * will begin to output tuples after right child EOS.
+ * This is an implementation of unbalanced hash join. This operator only builds hash tables for its
+ * right child, thus will begin to output tuples after right child EOS.
  * 
  */
 public final class RightHashJoin extends BinaryOperator {
@@ -47,7 +47,8 @@ public final class RightHashJoin extends BinaryOperator {
   private final int[] rightCompareIndx;
 
   /**
-   * A hash table for tuples from child 2. {Hashcode -> List of tuple indices with the same hash code}
+   * A hash table for tuples from child 2. {Hashcode -> List of tuple indices with the same hash
+   * code}
    */
   private transient IntObjectHashMap<IntArrayList> rightHashTableIndices;
 
@@ -98,7 +99,8 @@ public final class RightHashJoin extends BinaryOperator {
 
     @Override
     public void value(final int index) {
-      if (TupleUtils.tupleEquals(inputTB, inputCmpColumns, row, joinAgainstHashTable, joinAgainstCmpColumns, index)) {
+      if (TupleUtils.tupleEquals(inputTB, inputCmpColumns, row, joinAgainstHashTable,
+          joinAgainstCmpColumns, index)) {
         addToAns(inputTB, row, joinAgainstHashTable, index);
       }
     }
@@ -110,8 +112,8 @@ public final class RightHashJoin extends BinaryOperator {
   private transient JoinProcedure doJoin;
 
   /**
-   * Construct an EquiJoin operator. It returns all columns from both children when the corresponding columns in
-   * compareIndx1 and compareIndx2 match.
+   * Construct an EquiJoin operator. It returns all columns from both children when the
+   * corresponding columns in compareIndx1 and compareIndx2 match.
    * 
    * @param left the left child.
    * @param right the right child.
@@ -119,13 +121,14 @@ public final class RightHashJoin extends BinaryOperator {
    * @param compareIndx2 the columns of the right child to be compared with the left. Order matters.
    * @throw IllegalArgumentException if there are duplicated column names from the children.
    */
-  public RightHashJoin(final Operator left, final Operator right, final int[] compareIndx1, final int[] compareIndx2) {
+  public RightHashJoin(final Operator left, final Operator right, final int[] compareIndx1,
+      final int[] compareIndx2) {
     this(null, left, right, compareIndx1, compareIndx2);
   }
 
   /**
-   * Construct an EquiJoin operator. It returns the specified columns from both children when the corresponding columns
-   * in compareIndx1 and compareIndx2 match.
+   * Construct an EquiJoin operator. It returns the specified columns from both children when the
+   * corresponding columns in compareIndx1 and compareIndx2 match.
    * 
    * @param left the left child.
    * @param right the right child.
@@ -133,37 +136,42 @@ public final class RightHashJoin extends BinaryOperator {
    * @param compareIndx2 the columns of the right child to be compared with the left. Order matters.
    * @param answerColumns1 the columns of the left child to be returned. Order matters.
    * @param answerColumns2 the columns of the right child to be returned. Order matters.
-   * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>, or if
-   *        <tt>outputSchema</tt> does not have the correct number of columns and column types.
+   * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>,
+   *        or if <tt>outputSchema</tt> does not have the correct number of columns and column
+   *        types.
    */
-  public RightHashJoin(final Operator left, final Operator right, final int[] compareIndx1, final int[] compareIndx2,
-      final int[] answerColumns1, final int[] answerColumns2) {
+  public RightHashJoin(final Operator left, final Operator right, final int[] compareIndx1,
+      final int[] compareIndx2, final int[] answerColumns1, final int[] answerColumns2) {
     this(null, left, right, compareIndx1, compareIndx2, answerColumns1, answerColumns2);
   }
 
   /**
-   * Construct an EquiJoin operator. It returns the specified columns from both children when the corresponding columns
-   * in compareIndx1 and compareIndx2 match.
+   * Construct an EquiJoin operator. It returns the specified columns from both children when the
+   * corresponding columns in compareIndx1 and compareIndx2 match.
    * 
-   * @param outputColumns the names of the columns in the output schema. If null, the corresponding columns will be
-   *          copied from the children.
+   * @param outputColumns the names of the columns in the output schema. If null, the corresponding
+   *        columns will be copied from the children.
    * @param left the left child.
    * @param right the right child.
    * @param compareIndx1 the columns of the left child to be compared with the right. Order matters.
    * @param compareIndx2 the columns of the right child to be compared with the left. Order matters.
    * @param answerColumns1 the columns of the left child to be returned. Order matters.
    * @param answerColumns2 the columns of the right child to be returned. Order matters.
-   * @throw IllegalArgumentException if there are duplicated column names in <tt>outputColumns</tt>, or if
-   *        <tt>outputColumns</tt> does not have the correct number of columns and column types.
+   * @throw IllegalArgumentException if there are duplicated column names in <tt>outputColumns</tt>,
+   *        or if <tt>outputColumns</tt> does not have the correct number of columns and column
+   *        types.
    */
   public RightHashJoin(final List<String> outputColumns, final Operator left, final Operator right,
-      final int[] compareIndx1, final int[] compareIndx2, final int[] answerColumns1, final int[] answerColumns2) {
+      final int[] compareIndx1, final int[] compareIndx2, final int[] answerColumns1,
+      final int[] answerColumns2) {
     super(left, right);
     Preconditions.checkArgument(compareIndx1.length == compareIndx2.length);
     if (outputColumns != null) {
-      Preconditions.checkArgument(outputColumns.size() == answerColumns1.length + answerColumns2.length,
+      Preconditions.checkArgument(outputColumns.size() == answerColumns1.length
+          + answerColumns2.length,
           "length mismatch between output column names and columns selected for output");
-      Preconditions.checkArgument(ImmutableSet.copyOf(outputColumns).size() == outputColumns.size(),
+      Preconditions.checkArgument(
+          ImmutableSet.copyOf(outputColumns).size() == outputColumns.size(),
           "duplicate column names in outputColumns");
       this.outputColumns = ImmutableList.copyOf(outputColumns);
     } else {
@@ -176,22 +184,23 @@ public final class RightHashJoin extends BinaryOperator {
   }
 
   /**
-   * Construct an EquiJoin operator. It returns all columns from both children when the corresponding columns in
-   * compareIndx1 and compareIndx2 match.
+   * Construct an EquiJoin operator. It returns all columns from both children when the
+   * corresponding columns in compareIndx1 and compareIndx2 match.
    * 
-   * @param outputColumns the names of the columns in the output schema. If null, the corresponding columns will be
-   *          copied from the children.
+   * @param outputColumns the names of the columns in the output schema. If null, the corresponding
+   *        columns will be copied from the children.
    * @param left the left child.
    * @param right the right child.
    * @param compareIndx1 the columns of the left child to be compared with the right. Order matters.
    * @param compareIndx2 the columns of the right child to be compared with the left. Order matters.
-   * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>, or if
-   *        <tt>outputSchema</tt> does not have the correct number of columns and column types.
+   * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>,
+   *        or if <tt>outputSchema</tt> does not have the correct number of columns and column
+   *        types.
    */
   public RightHashJoin(final List<String> outputColumns, final Operator left, final Operator right,
       final int[] compareIndx1, final int[] compareIndx2) {
-    this(outputColumns, left, right, compareIndx1, compareIndx2, range(left.getSchema().numColumns()), range(right
-        .getSchema().numColumns()));
+    this(outputColumns, left, right, compareIndx1, compareIndx2, range(left.getSchema()
+        .numColumns()), range(right.getSchema().numColumns()));
   }
 
   /**
@@ -221,9 +230,11 @@ public final class RightHashJoin extends BinaryOperator {
       int rightIndex = rightCompareIndx[i];
       Type leftType = leftSchema.getColumnType(leftIndex);
       Type rightType = rightSchema.getColumnType(rightIndex);
-      Preconditions.checkState(leftType == rightType,
-          "column types do not match for join at index %s: left column type %s [%s] != right column type %s [%s]", i,
-          leftIndex, leftType, rightIndex, rightType);
+      Preconditions
+          .checkState(
+              leftType == rightType,
+              "column types do not match for join at index %s: left column type %s [%s] != right column type %s [%s]",
+              i, leftIndex, leftType, rightIndex, rightType);
     }
 
     for (int i : leftAnswerColumns) {
@@ -249,7 +260,8 @@ public final class RightHashJoin extends BinaryOperator {
    * @param hashTable the buffer holding the tuples to join against
    * @param index the index of hashTable, which the cntTuple is to join with
    */
-  protected void addToAns(final TupleBatch cntTB, final int row, final MutableTupleBuffer hashTable, final int index) {
+  protected void addToAns(final TupleBatch cntTB, final int row,
+      final MutableTupleBuffer hashTable, final int index) {
     List<? extends Column<?>> tbColumns = cntTB.getDataColumns();
     ReadableColumn[] hashTblColumns = hashTable.getColumns(index);
     int tupleIdx = hashTable.getTupleIndexInContainingTB(index);
@@ -294,7 +306,8 @@ public final class RightHashJoin extends BinaryOperator {
   private final boolean[] childrenEOI = new boolean[2];
 
   /**
-   * Note: If this operator is ready for EOS, this function will return true since EOS is a special EOI.
+   * Note: If this operator is ready for EOS, this function will return true since EOS is a special
+   * EOI.
    * 
    * @return whether this operator is ready to set itself EOI
    */
@@ -323,7 +336,10 @@ public final class RightHashJoin extends BinaryOperator {
     while (!right.eos()) {
       TupleBatch rightTB = right.nextReady();
       if (rightTB == null) {
-        /* The right child may have realized it's EOS now. If so, we must move onto left child to avoid livelock. */
+        /*
+         * The right child may have realized it's EOS now. If so, we must move onto left child to
+         * avoid livelock.
+         */
         if (right.eos()) {
           break;
         }
@@ -337,8 +353,8 @@ public final class RightHashJoin extends BinaryOperator {
     while (!left.eos()) {
       TupleBatch leftTB = left.nextReady();
       /*
-       * Left tuple has no data, but we may need to pop partially-full existing batches if left reached EOI/EOS. Break
-       * and check for termination.
+       * Left tuple has no data, but we may need to pop partially-full existing batches if left
+       * reached EOI/EOS. Break and check for termination.
        */
       if (leftTB == null) {
         break;
@@ -352,8 +368,8 @@ public final class RightHashJoin extends BinaryOperator {
         return nexttb;
       }
       /*
-       * We didn't time out or there is no data in ans, and there are no full tuple batches. Either way, check for more
-       * data.
+       * We didn't time out or there is no data in ans, and there are no full tuple batches. Either
+       * way, check for more data.
        */
     }
 
@@ -418,7 +434,8 @@ public final class RightHashJoin extends BinaryOperator {
    * @param hashTable1IndicesLocal hash table 1 indices local
    * @param hashCode the hashCode of the tb.
    * */
-  private void addToHashTable(final TupleBatch tb, final int row, final MutableTupleBuffer hashTable,
+  private void addToHashTable(final TupleBatch tb, final int row,
+      final MutableTupleBuffer hashTable,
       final IntObjectHashMap<IntArrayList> hashTable1IndicesLocal, final int hashCode) {
     final int nextIndex = hashTable.numTuples();
     IntArrayList tupleIndicesList = hashTable1IndicesLocal.get(hashCode);

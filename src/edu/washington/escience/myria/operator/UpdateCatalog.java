@@ -23,8 +23,9 @@ public class UpdateCatalog extends RootOperator {
   private final Server server;
 
   /**
-   * This operator will update the server's catalog with the tuple counts supplied by the child. The child schema is
-   * expected to be (userName:string, programName:string, relationName:string, count:long).
+   * This operator will update the server's catalog with the tuple counts supplied by the child. The
+   * child schema is expected to be (userName:string, programName:string, relationName:string,
+   * count:long).
    * 
    * @param child the source of tuples.
    * @param server the server whose catalog will be updated.
@@ -37,7 +38,8 @@ public class UpdateCatalog extends RootOperator {
   @Override
   protected void consumeTuples(final TupleBatch tuples) throws DbException {
     for (int i = 0; i < tuples.numTuples(); ++i) {
-      RelationKey relation = RelationKey.of(tuples.getString(0, i), tuples.getString(1, i), tuples.getString(2, i));
+      RelationKey relation =
+          RelationKey.of(tuples.getString(0, i), tuples.getString(1, i), tuples.getString(2, i));
       long count = tuples.getLong(3, i);
       server.updateRelationTupleCount(relation, count);
     }

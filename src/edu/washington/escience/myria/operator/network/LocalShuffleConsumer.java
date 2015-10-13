@@ -6,9 +6,9 @@ import edu.washington.escience.myria.parallel.ExchangePairID;
 /**
  * The consumer part of the Shuffle Exchange operator.
  * 
- * A ShuffleProducer operator sends tuples to all the workers according to some PartitionFunction, while the
- * ShuffleConsumer (this class) encapsulates the methods to collect the tuples received at the worker from multiple
- * source workers' ShuffleProducer.
+ * A ShuffleProducer operator sends tuples to all the workers according to some PartitionFunction,
+ * while the ShuffleConsumer (this class) encapsulates the methods to collect the tuples received at
+ * the worker from multiple source workers' ShuffleProducer.
  * 
  */
 public final class LocalShuffleConsumer extends Consumer {

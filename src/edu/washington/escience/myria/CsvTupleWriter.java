@@ -12,10 +12,11 @@ import org.apache.commons.csv.CSVPrinter;
 import edu.washington.escience.myria.storage.ReadableTable;
 
 /**
- * CsvTupleWriter is a {@link TupleWriter} that serializes tuples to a delimited file, usually a CSV. It uses a
- * {@link CSVPrinter} to do the underlying serialization. The fields to be output may contain special characters such as
- * newlines, because fields may be quoted (using double quotes '"'). Double quotation marks inside of fields are escaped
- * using the CSV-standard trick of replacing '"' with '""'.
+ * CsvTupleWriter is a {@link TupleWriter} that serializes tuples to a delimited file, usually a
+ * CSV. It uses a {@link CSVPrinter} to do the underlying serialization. The fields to be output may
+ * contain special characters such as newlines, because fields may be quoted (using double quotes
+ * '"'). Double quotation marks inside of fields are escaped using the CSV-standard trick of
+ * replacing '"' with '""'.
  * 
  * CSV files should be compatible with Microsoft Excel.
  * 
@@ -26,8 +27,8 @@ public class CsvTupleWriter implements TupleWriter {
   private final CSVPrinter csvPrinter;
 
   /**
-   * Constructs a {@link CsvTupleWriter} object that will produce an Excel-compatible comma-separated value (CSV) file
-   * from the provided tuples.
+   * Constructs a {@link CsvTupleWriter} object that will produce an Excel-compatible
+   * comma-separated value (CSV) file from the provided tuples.
    * 
    * @param out the {@link OutputStream} to which the data will be written.
    * @throws IOException if there is an IO exception
@@ -37,8 +38,8 @@ public class CsvTupleWriter implements TupleWriter {
   }
 
   /**
-   * Constructs a {@link CsvTupleWriter} object that will produce Excel-compatible comma-separated and tab-separated
-   * files from the tuples in the provided queue.
+   * Constructs a {@link CsvTupleWriter} object that will produce Excel-compatible comma-separated
+   * and tab-separated files from the tuples in the provided queue.
    * 
    * @param separator the character used to separate fields in a line.
    * @param out the {@link OutputStream} to which the data will be written.

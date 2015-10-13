@@ -10,8 +10,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * A data source that simply wraps a byte array. Note that this does NOT copy the specified array, so the caller MUST
- * NOT mutate it.
+ * A data source that simply wraps a byte array. Note that this does NOT copy the specified array,
+ * so the caller MUST NOT mutate it.
  */
 public class ByteArraySource implements DataSource, Serializable {
 
@@ -22,8 +22,8 @@ public class ByteArraySource implements DataSource, Serializable {
   private final byte[] bytes;
 
   /**
-   * Returns a {@link DataSource} that wraps the specified bytes in an {@link InputStream}. Note that this does NOT copy
-   * the specified array, so the caller MUST NOT mutate it.
+   * Returns a {@link DataSource} that wraps the specified bytes in an {@link InputStream}. Note
+   * that this does NOT copy the specified array, so the caller MUST NOT mutate it.
    * 
    * @param bytes the data to be produced.
    */

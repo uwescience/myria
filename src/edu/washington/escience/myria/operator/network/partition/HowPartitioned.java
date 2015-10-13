@@ -11,8 +11,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.primitives.Ints;
 
 /**
- * How a dataset is partitioned. There are two fields being recorded for now, the partition function and the sequence of
- * worker IDs. More information can be added in the future if needed.
+ * How a dataset is partitioned. There are two fields being recorded for now, the partition function
+ * and the sequence of worker IDs. More information can be added in the future if needed.
  */
 public class HowPartitioned {
 

@@ -22,8 +22,7 @@ public final class MyriaArrayUtils extends org.apache.commons.lang3.ArrayUtils {
   /**
    * Utility classes should not be instantiated.
    */
-  private MyriaArrayUtils() {
-  }
+  private MyriaArrayUtils() {}
 
   /**
    * Fill object array.
@@ -92,7 +91,7 @@ public final class MyriaArrayUtils extends org.apache.commons.lang3.ArrayUtils {
   public static int[][] create2DVerticalIndex(final int length) {
     int[][] result = new int[length][];
     for (int i = 0; i < length; i++) {
-      result[i] = new int[] { i };
+      result[i] = new int[] {i};
     }
     return result;
   }
@@ -118,7 +117,7 @@ public final class MyriaArrayUtils extends org.apache.commons.lang3.ArrayUtils {
   public static int[][] get2DArray(final int[] arr) {
     int[][] result = new int[arr.length][];
     for (int i = 0; i < arr.length; i++) {
-      result[i] = new int[] { arr[i] };
+      result[i] = new int[] {arr[i]};
     }
     return result;
   }
@@ -136,7 +135,8 @@ public final class MyriaArrayUtils extends org.apache.commons.lang3.ArrayUtils {
     }
     ImmutableSet<E> r = builder.build();
     if (r.size() != maybeSetArray.length) {
-      throw new IllegalArgumentException("The array " + Arrays.toString(maybeSetArray) + " is not a set");
+      throw new IllegalArgumentException("The array " + Arrays.toString(maybeSetArray)
+          + " is not a set");
     }
     return r;
   }
@@ -166,7 +166,8 @@ public final class MyriaArrayUtils extends org.apache.commons.lang3.ArrayUtils {
   public static int[] checkSet(final int[] maybeSetArray) {
     Set<Integer> tmp = Sets.newHashSet(Ints.asList(maybeSetArray));
     if (maybeSetArray.length != tmp.size()) {
-      throw new IllegalArgumentException("The array " + Arrays.toString(maybeSetArray) + " is not a set");
+      throw new IllegalArgumentException("The array " + Arrays.toString(maybeSetArray)
+          + " is not a set");
     }
     return maybeSetArray;
   }

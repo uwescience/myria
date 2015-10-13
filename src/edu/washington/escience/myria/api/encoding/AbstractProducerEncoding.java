@@ -6,8 +6,8 @@ import java.util.Set;
 import edu.washington.escience.myria.operator.network.Producer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 
-public abstract class AbstractProducerEncoding<P extends Producer> extends UnaryOperatorEncoding<P> implements
-    ExchangeEncoding {
+public abstract class AbstractProducerEncoding<P extends Producer> extends UnaryOperatorEncoding<P>
+    implements ExchangeEncoding {
   private Set<Integer> realWorkerIds;
   private List<ExchangePairID> realOperatorIds;
 

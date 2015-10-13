@@ -49,8 +49,8 @@ public final class Merge extends NAryOperator {
   private transient TupleBatchBuffer ans;
 
   /**
-   * Use a heap to find the smallest tuple (actually just the index in {@link #childBatches} to a child, where the
-   * pointer in {@link #childRowIndexes} points to the smallest tuple).
+   * Use a heap to find the smallest tuple (actually just the index in {@link #childBatches} to a
+   * child, where the pointer in {@link #childRowIndexes} points to the smallest tuple).
    */
   private transient Queue<Integer> heap;
 
@@ -67,7 +67,9 @@ public final class Merge extends NAryOperator {
       Preconditions.checkArgument(leftTb.numTuples() > leftPointer);
       Preconditions.checkArgument(rightTb.numTuples() > rightPointer);
       for (int columnIndex = 0; columnIndex < sortedColumns.length; columnIndex++) {
-        int compared = TupleUtils.cellCompare(leftTb, columnIndex, leftPointer, rightTb, columnIndex, rightPointer);
+        int compared =
+            TupleUtils.cellCompare(leftTb, columnIndex, leftPointer, rightTb, columnIndex,
+                rightPointer);
         if (compared != 0) {
           if (ascending[columnIndex]) {
             return compared;

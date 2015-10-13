@@ -19,7 +19,8 @@ public interface IPCMessage {
   }
 
   /**
-   * Meta IPCMessages, used inside the IPC module only. It has the following cases: EOS, BOS, CONNECT, DISCONNECT, PING.
+   * Meta IPCMessages, used inside the IPC module only. It has the following cases: EOS, BOS,
+   * CONNECT, DISCONNECT, PING.
    * */
   abstract class Meta implements IPCMessage {
 
@@ -28,8 +29,8 @@ public interface IPCMessage {
      * */
     static final Meta EOS = new Meta() {
 
-      private final ChannelBuffer serializeValue = ChannelBuffers.wrappedBuffer(new byte[] { (byte) Header.EOS
-          .ordinal() });
+      private final ChannelBuffer serializeValue = ChannelBuffers
+          .wrappedBuffer(new byte[] {(byte) Header.EOS.ordinal()});
 
       @Override
       public ChannelBuffer serialize() {
@@ -48,8 +49,8 @@ public interface IPCMessage {
      * */
     static final Meta DISCONNECT = new Meta() {
 
-      private final ChannelBuffer serializeValue = ChannelBuffers.wrappedBuffer(new byte[] { (byte) Header.DISCONNECT
-          .ordinal() });
+      private final ChannelBuffer serializeValue = ChannelBuffers
+          .wrappedBuffer(new byte[] {(byte) Header.DISCONNECT.ordinal()});
 
       @Override
       public ChannelBuffer serialize() {
@@ -169,8 +170,8 @@ public interface IPCMessage {
      * */
     static final Meta PING = new Meta() {
 
-      private final ChannelBuffer serializeValue = ChannelBuffers.wrappedBuffer(new byte[] { (byte) Header.PING
-          .ordinal() });
+      private final ChannelBuffer serializeValue = ChannelBuffers
+          .wrappedBuffer(new byte[] {(byte) Header.PING.ordinal()});
 
       @Override
       public ChannelBuffer serialize() {
@@ -217,8 +218,8 @@ public interface IPCMessage {
   /**
    * Unit of IPC transmission.
    * 
-   * @param <PAYLOAD> the type of payload. Currently, this PAYLOAD could only be: TransportMessage.QUERY,
-   *          TransportMessage.CONTROL.
+   * @param <PAYLOAD> the type of payload. Currently, this PAYLOAD could only be:
+   *        TransportMessage.QUERY, TransportMessage.CONTROL.
    * */
   public class Data<PAYLOAD> implements IPCMessage {
 
@@ -258,7 +259,7 @@ public interface IPCMessage {
      * serialize head.
      * */
     static final ChannelBuffer SERIALIZE_HEAD = ChannelBuffers
-        .wrappedBuffer(new byte[] { (byte) Header.DATA.ordinal() });
+        .wrappedBuffer(new byte[] {(byte) Header.DATA.ordinal()});
 
     /**
      * @param sourceRemote the source remote id.
@@ -348,8 +349,8 @@ public interface IPCMessage {
 
     @Override
     public String toString() {
-      return String.format("IPCMessage.StreamData(from:%1$d,stream:%2$d,payload:%3$s)", getRemoteID(), streamID,
-          getPayload());
+      return String.format("IPCMessage.StreamData(from:%1$d,stream:%2$d,payload:%3$s)",
+          getRemoteID(), streamID, getPayload());
     }
   }
 

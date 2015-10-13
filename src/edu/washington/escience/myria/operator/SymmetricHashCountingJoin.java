@@ -22,8 +22,8 @@ import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.HashUtils;
 
 /**
- * This is an implementation of hash equal join. The same as in DupElim, this implementation does not keep the
- * references to the incoming TupleBatches in order to get better memory performance.
+ * This is an implementation of hash equal join. The same as in DupElim, this implementation does
+ * not keep the references to the incoming TupleBatches in order to get better memory performance.
  */
 public final class SymmetricHashCountingJoin extends BinaryOperator {
   /** Required for Java serialization. */
@@ -33,9 +33,15 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
   private final int[] leftCompareIndx;
   /** The column indices for comparing of right child. */
   private final int[] rightCompareIndx;
-  /** A hash table for tuples from left child. {Hashcode -> List of tuple indices with the same hash code} */
+  /**
+   * A hash table for tuples from left child. {Hashcode -> List of tuple indices with the same hash
+   * code}
+   */
   private transient IntObjectHashMap<IntArrayList> leftHashTableIndices;
-  /** A hash table for tuples from right child. {Hashcode -> List of tuple indices with the same hash code} */
+  /**
+   * A hash table for tuples from right child. {Hashcode -> List of tuple indices with the same hash
+   * code}
+   */
   private transient IntObjectHashMap<IntArrayList> rightHashTableIndices;
   /** The buffer holding the valid tuples from left. */
   private transient MutableTupleBuffer leftHashTable;
@@ -100,7 +106,8 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
 
     @Override
     public void value(final int index) {
-      if (TupleUtils.tupleEquals(inputTB, inputCmpColumns, row, joinAgainstHashTable, otherCmpColumns, index)) {
+      if (TupleUtils.tupleEquals(inputTB, inputCmpColumns, row, joinAgainstHashTable,
+          otherCmpColumns, index)) {
         ans += occuredTimesOnJoinAgainstChild.get(index);
       }
     }
@@ -115,8 +122,8 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
    * @param compareIndx2 the columns of the right child to be compared with the left. Order matters.
    * @throw IllegalArgumentException if there are duplicated column names from the children.
    */
-  public SymmetricHashCountingJoin(final Operator left, final Operator right, final int[] compareIndx1,
-      final int[] compareIndx2) {
+  public SymmetricHashCountingJoin(final Operator left, final Operator right,
+      final int[] compareIndx1, final int[] compareIndx2) {
     this("count", left, right, compareIndx1, compareIndx2);
   }
 
@@ -128,11 +135,12 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
    * @param right the right child.
    * @param compareIndx1 the columns of the left child to be compared with the right. Order matters.
    * @param compareIndx2 the columns of the right child to be compared with the left. Order matters.
-   * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>, or if
-   *        <tt>outputSchema</tt> does not have the correct number of columns and column types.
+   * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>,
+   *        or if <tt>outputSchema</tt> does not have the correct number of columns and column
+   *        types.
    */
-  public SymmetricHashCountingJoin(final String outputColumnName, final Operator left, final Operator right,
-      final int[] compareIndx1, final int[] compareIndx2) {
+  public SymmetricHashCountingJoin(final String outputColumnName, final Operator left,
+      final Operator right, final int[] compareIndx1, final int[] compareIndx2) {
     super(left, right);
     leftCompareIndx = compareIndx1;
     rightCompareIndx = compareIndx2;
@@ -159,7 +167,8 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
   }
 
   /**
-   * Note: If this operator is ready for EOS, this function will return true since EOS is a special EOI.
+   * Note: If this operator is ready for EOS, this function will return true since EOS is a special
+   * EOI.
    * 
    * @return whether this operator is ready to set itself EOI
    */
@@ -191,7 +200,8 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
       return;
     }
 
-    // at the time of eos, this operator will not return any data, so it can be safely set EOI to true
+    // at the time of eos, this operator will not return any data, so it can be safely set EOI to
+    // true
     if ((childrenEOI[0] || left.eos()) && (childrenEOI[1] || right.eos()) && hasReturnedAnswer) {
       setEOI(true);
       Arrays.fill(childrenEOI, false);
@@ -218,8 +228,8 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
     while (numOfChildNoData < 2 && (!left.eos() || !right.eos())) {
 
       /*
-       * If one of the children is already EOS, we need to set numOfChildNoData to 1 since "numOfChildNoData++" for this
-       * child will not be called.
+       * If one of the children is already EOS, we need to set numOfChildNoData to 1 since
+       * "numOfChildNoData++" for this child will not be called.
        */
       if (left.eos() || right.eos()) {
         numOfChildNoData = 1;
@@ -237,8 +247,8 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
           if (left.eoi()) {
             consumeChildEOI(true);
             /*
-             * If this operator is ready to emit EOI ( reminder that it might need to clear buffer), break to EOI handle
-             * part
+             * If this operator is ready to emit EOI ( reminder that it might need to clear buffer),
+             * break to EOI handle part
              */
             if (isEOIReady()) {
               break;
@@ -258,8 +268,8 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
           if (right.eoi()) {
             consumeChildEOI(false);
             /*
-             * If this operator is ready to emit EOI ( reminder that it might need to clear buffer), break to EOI handle
-             * part
+             * If this operator is ready to emit EOI ( reminder that it might need to clear buffer),
+             * break to EOI handle part
              */
             if (isEOIReady()) {
               break;
@@ -271,8 +281,8 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
     }
 
     /*
-     * If the operator is ready to EOI, just set EOI since EOI will not return any data. If the operator is ready to
-     * EOS, return answer first, then at the next round set EOS
+     * If the operator is ready to EOI, just set EOI since EOI will not return any data. If the
+     * operator is ready to EOS, return answer first, then at the next round set EOS
      */
     if (isEOIReady()) {
       if (left.eos() && right.eos() && (!hasReturnedAnswer)) {
@@ -333,15 +343,15 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
 
     if (left.eos() && !right.eos()) {
       /*
-       * delete right child's hash table if the left child is EOS, since there will be no incoming tuples from right as
-       * it will never be probed again.
+       * delete right child's hash table if the left child is EOS, since there will be no incoming
+       * tuples from right as it will never be probed again.
        */
       rightHashTableIndices = null;
       rightHashTable = null;
     } else if (right.eos() && !left.eos()) {
       /*
-       * delete left child's hash table if the right child is EOS, since there will be no incoming tuples from left as
-       * it will never be probed again.
+       * delete left child's hash table if the right child is EOS, since there will be no incoming
+       * tuples from left as it will never be probed again.
        */
       leftHashTableIndices = null;
       leftHashTable = null;
@@ -361,8 +371,8 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
 
       if (hashTable1Local != null) {
         // only build hash table on two sides if none of the children is EOS
-        updateHashTableAndOccureTimes(tb, row, cntHashCode, hashTable1Local, hashTable1IndicesLocal,
-            doCountingJoin.inputCmpColumns, ownOccuredTimes);
+        updateHashTableAndOccureTimes(tb, row, cntHashCode, hashTable1Local,
+            hashTable1IndicesLocal, doCountingJoin.inputCmpColumns, ownOccuredTimes);
       }
 
     }
@@ -379,9 +389,11 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
       int rightIndex = rightCompareIndx[i];
       Type leftType = leftSchema.getColumnType(leftIndex);
       Type rightType = rightSchema.getColumnType(rightIndex);
-      Preconditions.checkState(leftType == rightType,
-          "column types do not match for join at index %s: left column type %s [%s] != right column type %s [%s]", i,
-          leftIndex, leftType, rightIndex, rightType);
+      Preconditions
+          .checkState(
+              leftType == rightType,
+              "column types do not match for join at index %s: left column type %s [%s] != right column type %s [%s]",
+              i, leftIndex, leftType, rightIndex, rightType);
     }
 
     return Schema.of(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of(columnName));
@@ -396,15 +408,19 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
    * @param compareColumns compareColumns of input tuple
    * @param occuredTimes occuredTimes array to be updated
    */
-  private void updateHashTableAndOccureTimes(final TupleBatch tb, final int row, final int hashCode,
-      final MutableTupleBuffer hashTable, final IntObjectHashMap<IntArrayList> hashTableIndices,
-      final int[] compareColumns, final IntArrayList occuredTimes) {
+  private void updateHashTableAndOccureTimes(final TupleBatch tb, final int row,
+      final int hashCode, final MutableTupleBuffer hashTable,
+      final IntObjectHashMap<IntArrayList> hashTableIndices, final int[] compareColumns,
+      final IntArrayList occuredTimes) {
 
     /* get the index of the tuple's hash code corresponding to */
     final int nextIndex = hashTable.numTuples();
     IntArrayList tupleIndicesList = hashTableIndices.get(hashCode);
 
-    /* create one is there is no such a index yet (there is no tuple with the same hash code has been processed ) */
+    /*
+     * create one is there is no such a index yet (there is no tuple with the same hash code has
+     * been processed )
+     */
     if (tupleIndicesList == null) {
       tupleIndicesList = new IntArrayList(1);
       hashTableIndices.put(hashCode, tupleIndicesList);
@@ -413,7 +429,10 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
     Preconditions.checkArgument(hashTable.numColumns() == compareColumns.length);
     List<? extends Column<?>> inputColumns = tb.getDataColumns();
 
-    /* find whether this tuple's comparing key has occured before. If it is, only update occurred times */
+    /*
+     * find whether this tuple's comparing key has occured before. If it is, only update occurred
+     * times
+     */
     boolean found = false;
     for (int i = 0; i < tupleIndicesList.size(); ++i) {
       int index = tupleIndicesList.get(i);

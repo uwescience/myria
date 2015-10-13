@@ -25,8 +25,8 @@ public final class DateTimeAggregator extends PrimitiveAggregator {
   /**
    * Aggregate operations applicable for string columns.
    */
-  public static final Set<AggregationOp> AVAILABLE_AGG = ImmutableSet.of(AggregationOp.COUNT, AggregationOp.MAX,
-      AggregationOp.MIN);
+  public static final Set<AggregationOp> AVAILABLE_AGG = ImmutableSet.of(AggregationOp.COUNT,
+      AggregationOp.MAX, AggregationOp.MIN);
 
   /**
    * @param aFieldName aggregate field name for use in output schema.

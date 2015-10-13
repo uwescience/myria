@@ -25,13 +25,15 @@ public final class CountAllAggregator implements Aggregator {
   }
 
   @Override
-  public void addRow(final ReadableTable from, final int row, final Object state) throws DbException {
+  public void addRow(final ReadableTable from, final int row, final Object state)
+      throws DbException {
     CountAllState c = (CountAllState) state;
     c.count = LongMath.checkedAdd(c.count, 1);
   }
 
   @Override
-  public void getResult(final AppendableTable dest, final int destColumn, final Object state) throws DbException {
+  public void getResult(final AppendableTable dest, final int destColumn, final Object state)
+      throws DbException {
     CountAllState c = (CountAllState) state;
     dest.putLong(destColumn, c.count);
   }

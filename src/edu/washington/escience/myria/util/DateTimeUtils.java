@@ -15,8 +15,7 @@ public final class DateTimeUtils {
   /**
    * util class.
    * */
-  private DateTimeUtils() {
-  }
+  private DateTimeUtils() {}
 
   /**
    * If time elapse is more than a day, use this format.
@@ -71,7 +70,8 @@ public final class DateTimeUtils {
   /**
    * SQL language defined date time format.
    * */
-  public static final DateTimeFormatter SQL_DATETIME_FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+  public static final DateTimeFormatter SQL_DATETIME_FORMAT = DateTimeFormat
+      .forPattern("yyyy-MM-dd HH:mm:ss");
 
   /**
    * SQL language defined date format.
@@ -90,7 +90,8 @@ public final class DateTimeUtils {
       try {
         return DateTime.parse(datetime, SQL_DATE_FORMAT);
       } catch (Throwable ee) {
-        throw new IllegalArgumentException("Not a valid SQL datetime/date format, caused by: " + datetime);
+        throw new IllegalArgumentException("Not a valid SQL datetime/date format, caused by: "
+            + datetime);
       }
     }
   }

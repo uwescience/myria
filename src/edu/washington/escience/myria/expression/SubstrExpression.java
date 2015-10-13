@@ -35,7 +35,8 @@ public class SubstrExpression extends NAryExpression {
 
   @Override
   public Type getOutputType(final ExpressionOperatorParameter parameters) {
-    Preconditions.checkArgument(getChildren().size() == 3, "Substr function has to take 3 arguments.");
+    Preconditions.checkArgument(getChildren().size() == 3,
+        "Substr function has to take 3 arguments.");
     Preconditions.checkArgument(getChildren().get(0).getOutputType(parameters) == Type.STRING_TYPE,
         "The first argument of substr has to be STRING.");
     Preconditions.checkArgument(getChildren().get(1).getOutputType(parameters) == Type.INT_TYPE,

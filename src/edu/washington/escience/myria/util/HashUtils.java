@@ -15,18 +15,17 @@ import edu.washington.escience.myria.storage.ReadableTable;
  */
 public final class HashUtils {
   /** Utility classes have no constructors. */
-  private HashUtils() {
-  }
+  private HashUtils() {}
 
   /** picked from http://planetmath.org/goodhashtableprimes. */
-  private static final int[] SEEDS = { 243, 402653189, 24593, 786433, 3145739, 12289, 49157, 6151, 98317, 1572869, };
+  private static final int[] SEEDS = {243, 402653189, 24593, 786433, 3145739, 12289, 49157, 6151,
+      98317, 1572869,};
 
   /** The hash functions. */
-  private static final HashFunction[] HASH_FUNCTIONS = {
-      Hashing.murmur3_128(SEEDS[0]), Hashing.murmur3_128(SEEDS[1]), Hashing.murmur3_128(SEEDS[2]),
-      Hashing.murmur3_128(SEEDS[3]), Hashing.murmur3_128(SEEDS[4]), Hashing.murmur3_128(SEEDS[5]),
-      Hashing.murmur3_128(SEEDS[6]), Hashing.murmur3_128(SEEDS[7]), Hashing.murmur3_128(SEEDS[8]),
-      Hashing.murmur3_128(SEEDS[9]) };
+  private static final HashFunction[] HASH_FUNCTIONS = {Hashing.murmur3_128(SEEDS[0]),
+      Hashing.murmur3_128(SEEDS[1]), Hashing.murmur3_128(SEEDS[2]), Hashing.murmur3_128(SEEDS[3]),
+      Hashing.murmur3_128(SEEDS[4]), Hashing.murmur3_128(SEEDS[5]), Hashing.murmur3_128(SEEDS[6]),
+      Hashing.murmur3_128(SEEDS[7]), Hashing.murmur3_128(SEEDS[8]), Hashing.murmur3_128(SEEDS[9])};
 
   /**
    * Size of the hash function pool.
@@ -63,7 +62,8 @@ public final class HashUtils {
   }
 
   /**
-   * Compute the hash code of the value in the specified column and row of the given table with specific hashcode.
+   * Compute the hash code of the value in the specified column and row of the given table with
+   * specific hashcode.
    * 
    * @param table the table containing the values to be hashed
    * @param column the column containing the value to be hashed
@@ -71,7 +71,8 @@ public final class HashUtils {
    * @param seedIndex the index of the chosen hashcode
    * @return hash code of the specified seed
    */
-  public static int hashValue(final ReadableTable table, final int column, final int row, final int seedIndex) {
+  public static int hashValue(final ReadableTable table, final int column, final int row,
+      final int seedIndex) {
     Preconditions.checkPositionIndex(seedIndex, NUM_OF_HASHFUNCTIONS);
     Hasher hasher = HASH_FUNCTIONS[seedIndex].newHasher();
     addValue(hasher, table, column, row);
@@ -105,7 +106,8 @@ public final class HashUtils {
    * @param row the row containing the value
    * @return the hasher
    */
-  private static Hasher addValue(final Hasher hasher, final ReadableTable table, final int column, final int row) {
+  private static Hasher addValue(final Hasher hasher, final ReadableTable table, final int column,
+      final int row) {
     return addValue(hasher, table.asColumn(column), row);
   }
 

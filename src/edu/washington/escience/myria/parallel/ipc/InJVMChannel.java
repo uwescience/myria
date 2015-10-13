@@ -26,13 +26,14 @@ public class InJVMChannel extends AbstractChannel implements LocalChannel {
   protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(InJVMChannel.class);
 
   /**
-   * Messages will be processed by the pipeline first and if the pipeline decides not to filter out a message, then it
-   * will finally reach the sink.
+   * Messages will be processed by the pipeline first and if the pipeline decides not to filter out
+   * a message, then it will finally reach the sink.
    * 
    * @param localInJVMPipeline the pipeline to execute when events happen on this channel.
    * @param localInJVMChannelSink the message sink
    * */
-  public InJVMChannel(final ChannelPipeline localInJVMPipeline, final ChannelSink localInJVMChannelSink) {
+  public InJVMChannel(final ChannelPipeline localInJVMPipeline,
+      final ChannelSink localInJVMChannelSink) {
     super(null, null, localInJVMPipeline, localInJVMChannelSink);
     localAddr = new LocalAddress(LocalAddress.EPHEMERAL);
     Channels.fireChannelOpen(this);

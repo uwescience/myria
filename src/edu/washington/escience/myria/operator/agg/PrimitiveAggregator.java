@@ -32,8 +32,8 @@ public abstract class PrimitiveAggregator implements Aggregator, Serializable {
     /** MAX. Applies to all types. Result is same as input type. */
     MAX,
     /**
-     * SUM. Applies to numeric types. Result is the bigger numeric type, i.e., {@link Type#INT_TYPE} ->
-     * {@link Type#LONG_TYPE} and . {@link Type#FLOAT_TYPE} -> {@link Type#DOUBLE_TYPE}.
+     * SUM. Applies to numeric types. Result is the bigger numeric type, i.e., {@link Type#INT_TYPE}
+     * -> {@link Type#LONG_TYPE} and . {@link Type#FLOAT_TYPE} -> {@link Type#DOUBLE_TYPE}.
      */
     SUM,
     /** AVG. Applies to numeric types. Result is always {@link Type#DOUBLE_TYPE}. */
@@ -55,8 +55,8 @@ public abstract class PrimitiveAggregator implements Aggregator, Serializable {
   /** Does this aggregator need to compute tuple-level stats? */
   protected final boolean needsStats;
   /**
-   * Aggregate operations. A set of all valid aggregation operations, i.e. those in {@link LongAggregator#AVAILABLE_AGG}
-   * .
+   * Aggregate operations. A set of all valid aggregation operations, i.e. those in
+   * {@link LongAggregator#AVAILABLE_AGG} .
    * 
    * Note that we use a {@link LinkedHashSet} to ensure that the iteration order is consistent!
    */

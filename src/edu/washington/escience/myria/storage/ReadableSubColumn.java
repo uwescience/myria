@@ -18,7 +18,8 @@ public final class ReadableSubColumn implements ReadableColumn {
   private final int column;
 
   /**
-   * Constructs a wrapper to present the specified column of the given table as a {@link ReadableColumn}.
+   * Constructs a wrapper to present the specified column of the given table as a
+   * {@link ReadableColumn}.
    * 
    * @param table the table to be wrapped
    * @param column which column this object represents

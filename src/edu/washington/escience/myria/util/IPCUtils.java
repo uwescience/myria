@@ -92,7 +92,8 @@ public final class IPCUtils {
   /**
    * EOI TM.
    * */
-  public static final TransportMessage EOI = TransportMessage.newBuilder().setType(TransportMessage.Type.DATA)
+  public static final TransportMessage EOI = TransportMessage.newBuilder()
+      .setType(TransportMessage.Type.DATA)
       .setDataMessage(DataMessage.newBuilder().setType(DataMessage.Type.EOI)).build();
 
   /**
@@ -109,22 +110,27 @@ public final class IPCUtils {
   /**
    * shutdown TM.
    * */
-  public static final TransportMessage CONTROL_SHUTDOWN = TransportMessage.newBuilder().setType(
-      TransportMessage.Type.CONTROL).setControlMessage(
-      ControlMessage.newBuilder().setType(ControlMessage.Type.SHUTDOWN)).build();
+  public static final TransportMessage CONTROL_SHUTDOWN = TransportMessage.newBuilder()
+      .setType(TransportMessage.Type.CONTROL)
+      .setControlMessage(ControlMessage.newBuilder().setType(ControlMessage.Type.SHUTDOWN)).build();
 
   /** Heartbeat message sent from a worker to tell the master that it is alive. */
-  public static final TransportMessage CONTROL_WORKER_HEARTBEAT = TransportMessage.newBuilder().setType(
-      TransportMessage.Type.CONTROL).setControlMessage(
-      ControlMessage.newBuilder().setType(ControlMessage.Type.WORKER_HEARTBEAT)).build();
+  public static final TransportMessage CONTROL_WORKER_HEARTBEAT = TransportMessage.newBuilder()
+      .setType(TransportMessage.Type.CONTROL)
+      .setControlMessage(ControlMessage.newBuilder().setType(ControlMessage.Type.WORKER_HEARTBEAT))
+      .build();
 
   /**
    * @param workerId the id of the worker to be removed.
    * @return the remove worker TM.
    * */
   public static TransportMessage removeWorkerTM(final int workerId) {
-    return TransportMessage.newBuilder().setType(TransportMessage.Type.CONTROL).setControlMessage(
-        ControlMessage.newBuilder().setType(ControlMessage.Type.REMOVE_WORKER).setWorkerId(workerId)).build();
+    return TransportMessage
+        .newBuilder()
+        .setType(TransportMessage.Type.CONTROL)
+        .setControlMessage(
+            ControlMessage.newBuilder().setType(ControlMessage.Type.REMOVE_WORKER)
+                .setWorkerId(workerId)).build();
   }
 
   /**
@@ -132,8 +138,12 @@ public final class IPCUtils {
    * @return the remove worker TM.
    * */
   public static TransportMessage removeWorkerAckTM(final int workerId) {
-    return TransportMessage.newBuilder().setType(TransportMessage.Type.CONTROL).setControlMessage(
-        ControlMessage.newBuilder().setType(ControlMessage.Type.REMOVE_WORKER_ACK).setWorkerId(workerId)).build();
+    return TransportMessage
+        .newBuilder()
+        .setType(TransportMessage.Type.CONTROL)
+        .setControlMessage(
+            ControlMessage.newBuilder().setType(ControlMessage.Type.REMOVE_WORKER_ACK)
+                .setWorkerId(workerId)).build();
   }
 
   /**
@@ -142,9 +152,12 @@ public final class IPCUtils {
    * @return the add worker TM.
    * */
   public static TransportMessage addWorkerTM(final int workerId, final SocketInfo socketinfo) {
-    return TransportMessage.newBuilder().setType(TransportMessage.Type.CONTROL).setControlMessage(
-        ControlMessage.newBuilder().setType(ControlMessage.Type.ADD_WORKER).setWorkerId(workerId).setRemoteAddress(
-            socketinfo.toProtobuf())).build();
+    return TransportMessage
+        .newBuilder()
+        .setType(TransportMessage.Type.CONTROL)
+        .setControlMessage(
+            ControlMessage.newBuilder().setType(ControlMessage.Type.ADD_WORKER)
+                .setWorkerId(workerId).setRemoteAddress(socketinfo.toProtobuf())).build();
   }
 
   /**
@@ -152,8 +165,12 @@ public final class IPCUtils {
    * @return the add worker TM.
    * */
   public static TransportMessage addWorkerAckTM(final int workerId) {
-    return TransportMessage.newBuilder().setType(TransportMessage.Type.CONTROL).setControlMessage(
-        ControlMessage.newBuilder().setType(ControlMessage.Type.ADD_WORKER_ACK).setWorkerId(workerId)).build();
+    return TransportMessage
+        .newBuilder()
+        .setType(TransportMessage.Type.CONTROL)
+        .setControlMessage(
+            ControlMessage.newBuilder().setType(ControlMessage.Type.ADD_WORKER_ACK)
+                .setWorkerId(workerId)).build();
   }
 
   /**
@@ -161,8 +178,8 @@ public final class IPCUtils {
    * @return a query ready TM.
    * */
   public static TransportMessage queryReadyTM(final SubQueryId taskId) {
-    return QUERY_TM_BUILDER.get().setQueryMessage(queryMessageOf(taskId, QueryMessage.Type.QUERY_READY_TO_EXECUTE))
-        .build();
+    return QUERY_TM_BUILDER.get()
+        .setQueryMessage(queryMessageOf(taskId, QueryMessage.Type.QUERY_READY_TO_EXECUTE)).build();
   }
 
   /**
@@ -171,8 +188,10 @@ public final class IPCUtils {
    * @return a query recover TM.
    * */
   public static TransportMessage recoverQueryTM(final SubQueryId taskId, final int workerId) {
-    return QUERY_TM_BUILDER.get().setQueryMessage(
-        queryMessageOf(taskId, QueryMessage.Type.QUERY_RECOVER).setWorkerId(workerId)).build();
+    return QUERY_TM_BUILDER
+        .get()
+        .setQueryMessage(
+            queryMessageOf(taskId, QueryMessage.Type.QUERY_RECOVER).setWorkerId(workerId)).build();
   }
 
   /**
@@ -180,11 +199,12 @@ public final class IPCUtils {
    * @param type the type of the message to be sent
    * @return a builder for a query message
    */
-  private static QueryMessage.Builder queryMessageOf(final SubQueryId taskId, final QueryMessage.Type type) {
+  private static QueryMessage.Builder queryMessageOf(final SubQueryId taskId,
+      final QueryMessage.Type type) {
     Objects.requireNonNull(taskId, "taskId");
     Objects.requireNonNull(type, "type");
-    return QueryMessage.newBuilder().setQueryId(taskId.getQueryId()).setSubqueryId(taskId.getSubqueryId())
-        .setType(type);
+    return QueryMessage.newBuilder().setQueryId(taskId.getQueryId())
+        .setSubqueryId(taskId.getSubqueryId()).setType(type);
   }
 
   /**
@@ -192,16 +212,21 @@ public final class IPCUtils {
    * @return a query complete TM.
    * @param statistics query execution statistics
    * */
-  public static TransportMessage queryCompleteTM(final SubQueryId taskId, final ExecutionStatistics statistics) {
-    return QUERY_TM_BUILDER.get().setQueryMessage(
-        queryMessageOf(taskId, QueryMessage.Type.QUERY_COMPLETE).setQueryReport(
-            QueryReport.newBuilder().setSuccess(true).setExecutionStatistics(statistics.toProtobuf()))).build();
+  public static TransportMessage queryCompleteTM(final SubQueryId taskId,
+      final ExecutionStatistics statistics) {
+    return QUERY_TM_BUILDER
+        .get()
+        .setQueryMessage(
+            queryMessageOf(taskId, QueryMessage.Type.QUERY_COMPLETE).setQueryReport(
+                QueryReport.newBuilder().setSuccess(true)
+                    .setExecutionStatistics(statistics.toProtobuf()))).build();
   }
 
   /**
-   * Make sure a {@link Throwable} is serializable. If any of the {@Throwable}s in the given err error
-   * hierarchy (The hierarchy formed by caused-by and suppressed) is not serializable, it will be replaced by a
-   * {@link DbException}. The stack trace of the original {@link Throwable} is kept.
+   * Make sure a {@link Throwable} is serializable. If any of the {@Throwable}s in the
+   * given err error hierarchy (The hierarchy formed by caused-by and suppressed) is not
+   * serializable, it will be replaced by a {@link DbException}. The stack trace of the original
+   * {@link Throwable} is kept.
    * 
    * @param err the {@link Throwable}
    * @return A {@link Throwable} that is guaranteed to be serializable.
@@ -250,10 +275,13 @@ public final class IPCUtils {
     oos.writeObject(wrapSerializableThrowable(cause));
     oos.flush();
     inMemBuffer.flush();
-    return QUERY_TM_BUILDER.get().setQueryMessage(
-        queryMessageOf(taskId, QueryMessage.Type.QUERY_COMPLETE).setQueryReport(
-            QueryReport.newBuilder().setSuccess(false).setExecutionStatistics(statistics.toProtobuf()).setCause(
-                ByteString.copyFrom(inMemBuffer.toByteArray())))).build();
+    return QUERY_TM_BUILDER
+        .get()
+        .setQueryMessage(
+            queryMessageOf(taskId, QueryMessage.Type.QUERY_COMPLETE).setQueryReport(
+                QueryReport.newBuilder().setSuccess(false)
+                    .setExecutionStatistics(statistics.toProtobuf())
+                    .setCause(ByteString.copyFrom(inMemBuffer.toByteArray())))).build();
   }
 
   /**
@@ -261,9 +289,11 @@ public final class IPCUtils {
    * @return a query failed (complete, !success) TM.
    * */
   public static TransportMessage simpleQueryFailureTM(final SubQueryId taskId) {
-    return QUERY_TM_BUILDER.get().setQueryMessage(
-        queryMessageOf(taskId, QueryMessage.Type.QUERY_COMPLETE).setQueryReport(
-            QueryReport.newBuilder().setSuccess(false))).build();
+    return QUERY_TM_BUILDER
+        .get()
+        .setQueryMessage(
+            queryMessageOf(taskId, QueryMessage.Type.QUERY_COMPLETE).setQueryReport(
+                QueryReport.newBuilder().setSuccess(false))).build();
   }
 
   /**
@@ -271,7 +301,8 @@ public final class IPCUtils {
    * @return the query start TM.
    * */
   public static TransportMessage startQueryTM(final SubQueryId taskId) {
-    return QUERY_TM_BUILDER.get().setQueryMessage(queryMessageOf(taskId, QueryMessage.Type.QUERY_START)).build();
+    return QUERY_TM_BUILDER.get()
+        .setQueryMessage(queryMessageOf(taskId, QueryMessage.Type.QUERY_START)).build();
   }
 
   /**
@@ -311,7 +342,8 @@ public final class IPCUtils {
    * @param numTuples number of tuples in the columns.
    * @return a data TM encoding the data columns.
    * */
-  public static TransportMessage normalDataMessage(final List<? extends Column<?>> dataColumns, final int numTuples) {
+  public static TransportMessage normalDataMessage(final List<? extends Column<?>> dataColumns,
+      final int numTuples) {
     final ColumnMessage[] columnProtos = new ColumnMessage[dataColumns.size()];
 
     int i = 0;
@@ -319,9 +351,11 @@ public final class IPCUtils {
       columnProtos[i] = c.serializeToProto();
       i++;
     }
-    return DATA_TM_BUILDER.get().setDataMessage(
-        NORMAL_DATAMESSAGE_BUILDER.get().clearColumns().addAllColumns(Arrays.asList(columnProtos)).setNumTuples(
-            numTuples)).build();
+    return DATA_TM_BUILDER
+        .get()
+        .setDataMessage(
+            NORMAL_DATAMESSAGE_BUILDER.get().clearColumns()
+                .addAllColumns(Arrays.asList(columnProtos)).setNumTuples(numTuples)).build();
   }
 
   /**
@@ -338,9 +372,12 @@ public final class IPCUtils {
       columnProtos[i] = c.serializeToProto(validIndices);
       i++;
     }
-    return DATA_TM_BUILDER.get().setDataMessage(
-        NORMAL_DATAMESSAGE_BUILDER.get().clearColumns().addAllColumns(Arrays.asList(columnProtos)).setNumTuples(
-            validIndices.length())).build();
+    return DATA_TM_BUILDER
+        .get()
+        .setDataMessage(
+            NORMAL_DATAMESSAGE_BUILDER.get().clearColumns()
+                .addAllColumns(Arrays.asList(columnProtos)).setNumTuples(validIndices.length()))
+        .build();
   }
 
   /**
@@ -372,15 +409,19 @@ public final class IPCUtils {
    * @throws IOException if error occurs in encoding the query.
    * @return an encoded query TM
    */
-  public static TransportMessage queryMessage(final SubQueryId taskId, final SubQueryPlan query) throws IOException {
+  public static TransportMessage queryMessage(final SubQueryId taskId, final SubQueryPlan query)
+      throws IOException {
     final ByteArrayOutputStream inMemBuffer = new ByteArrayOutputStream();
     final ObjectOutputStream oos = new ObjectOutputStream(inMemBuffer);
     oos.writeObject(query);
     oos.flush();
     inMemBuffer.flush();
-    return QUERY_TM_BUILDER.get().setQueryMessage(
-        queryMessageOf(taskId, QueryMessage.Type.QUERY_DISTRIBUTE).setQuery(
-            QueryProto.Query.newBuilder().setQuery(ByteString.copyFrom(inMemBuffer.toByteArray())))).build();
+    return QUERY_TM_BUILDER
+        .get()
+        .setQueryMessage(
+            queryMessageOf(taskId, QueryMessage.Type.QUERY_DISTRIBUTE).setQuery(
+                QueryProto.Query.newBuilder().setQuery(
+                    ByteString.copyFrom(inMemBuffer.toByteArray())))).build();
   }
 
   /**
@@ -388,14 +429,14 @@ public final class IPCUtils {
    * @return a query ready TM.
    * */
   public static TransportMessage killQueryTM(final SubQueryId taskId) {
-    return QUERY_TM_BUILDER.get().setQueryMessage(queryMessageOf(taskId, QueryMessage.Type.QUERY_KILL)).build();
+    return QUERY_TM_BUILDER.get()
+        .setQueryMessage(queryMessageOf(taskId, QueryMessage.Type.QUERY_KILL)).build();
   }
 
   /**
    * util classes are not instantiable.
    * */
-  private IPCUtils() {
-  }
+  private IPCUtils() {}
 
   /**
    * Resource report message sent to master.
@@ -405,10 +446,12 @@ public final class IPCUtils {
    * 
    * */
   public static TransportMessage resourceReport(final List<ResourceStats> resourceUsage) {
-    ControlMessage.Builder ret = ControlMessage.newBuilder().setType(ControlMessage.Type.RESOURCE_STATS);
+    ControlMessage.Builder ret =
+        ControlMessage.newBuilder().setType(ControlMessage.Type.RESOURCE_STATS);
     for (ResourceStats stats : resourceUsage) {
       ret.addResourceStats(stats.toProtobuf());
     }
-    return TransportMessage.newBuilder().setType(TransportMessage.Type.CONTROL).setControlMessage(ret.build()).build();
+    return TransportMessage.newBuilder().setType(TransportMessage.Type.CONTROL)
+        .setControlMessage(ret.build()).build();
   }
 }

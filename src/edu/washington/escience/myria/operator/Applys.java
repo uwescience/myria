@@ -13,8 +13,7 @@ import edu.washington.escience.myria.expression.Expressions;
  */
 public final class Applys {
   /** Utility class cannot be constructed. */
-  private Applys() {
-  }
+  private Applys() {}
 
   /**
    * Construct an Apply that selects the specified columns from the child operator.

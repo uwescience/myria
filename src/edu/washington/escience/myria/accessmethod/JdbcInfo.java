@@ -51,8 +51,8 @@ public final class JdbcInfo extends ConnectionInfo implements Serializable {
    * @param password the password.
    * @return a new JdbcInfo containing this information.
    */
-  public static JdbcInfo of(final String driverClass, final String dbms, final String host, final int port,
-      final String database, final String username, final String password) {
+  public static JdbcInfo of(final String driverClass, final String dbms, final String host,
+      final int port, final String database, final String username, final String password) {
     return new JdbcInfo(driverClass, dbms, host, port, database, username, password, null);
   }
 
@@ -73,7 +73,8 @@ public final class JdbcInfo extends ConnectionInfo implements Serializable {
   public static JdbcInfo of(@JsonProperty("driverClass") final String driverClass,
       @JsonProperty("dbms") final String dbms, @JsonProperty("host") final String host,
       @JsonProperty("port") final int port, @JsonProperty("database") final String database,
-      @JsonProperty("username") final String username, @JsonProperty("password") final String password,
+      @JsonProperty("username") final String username,
+      @JsonProperty("password") final String password,
       @JsonProperty("properties") final Properties properties) {
     return new JdbcInfo(driverClass, dbms, host, port, database, username, password, properties);
   }
@@ -91,7 +92,8 @@ public final class JdbcInfo extends ConnectionInfo implements Serializable {
    * @param properties extra properties for the JDBC connection.
    */
   private JdbcInfo(final String driverClass, final String dbms, final String host, final int port,
-      final String database, final String username, final String password, final Properties properties) {
+      final String database, final String username, final String password,
+      final Properties properties) {
     this.driverClass = Objects.requireNonNull(driverClass);
     this.dbms = Objects.requireNonNull(dbms);
     this.host = Objects.requireNonNull(host);

@@ -20,7 +20,8 @@ public final class WritableSubColumn implements WritableColumn {
   private final int column;
 
   /**
-   * Constructs a wrapper to present the specified column of the given table as a {@link WritableColumn}.
+   * Constructs a wrapper to present the specified column of the given table as a
+   * {@link WritableColumn}.
    * 
    * @param table the table to be wrapped
    * @param column which column this object represents

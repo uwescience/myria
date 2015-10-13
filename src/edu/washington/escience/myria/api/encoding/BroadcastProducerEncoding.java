@@ -20,8 +20,9 @@ public class BroadcastProducerEncoding extends AbstractProducerEncoding<GenericS
       allCells[i] = i;
     }
     cellPartition[0] = allCells;
-    return new GenericShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), cellPartition,
-        MyriaUtils.integerSetToIntArray(getRealWorkerIds()), new FixValuePartitionFunction(0));
+    return new GenericShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()),
+        cellPartition, MyriaUtils.integerSetToIntArray(getRealWorkerIds()),
+        new FixValuePartitionFunction(0));
   }
 
 }

@@ -35,8 +35,8 @@ import edu.washington.escience.myria.util.DateTimeUtils;
 import edu.washington.escience.myria.util.IPCUtils;
 
 /**
- * This class manages the queries running on Myria. It encapsulates the state outside of the Server object and handles
- * concurrency issues w.r.t. issuing, enqueuing, advance queries.
+ * This class manages the queries running on Myria. It encapsulates the state outside of the Server
+ * object and handles concurrency issues w.r.t. issuing, enqueuing, advance queries.
  */
 public class QueryManager {
   /** The logger for this class. */
@@ -63,8 +63,8 @@ public class QueryManager {
   private final Server server;
 
   /**
-   * This class encapsulates all the work of keeping track of queries. This includes dispatching query plans to workers,
-   * starting the queries, killing queries, restarting queries, etc.
+   * This class encapsulates all the work of keeping track of queries. This includes dispatching
+   * query plans to workers, starting the queries, killing queries, restarting queries, etc.
    * 
    * @param catalog the master catalog. Gets updated when queries finish, for example.
    * @param server the server on which the queries are executed.
@@ -94,7 +94,8 @@ public class QueryManager {
    */
   public void updateResourceStats(final int senderId, final ControlMessage m) {
     for (ControlProto.ResourceStats stats : m.getResourceStatsList()) {
-      runningQueries.get(stats.getQueryId()).addResourceStats(senderId, ResourceStats.fromProtobuf(stats));
+      runningQueries.get(stats.getQueryId()).addResourceStats(senderId,
+          ResourceStats.fromProtobuf(stats));
     }
   }
 
@@ -108,13 +109,15 @@ public class QueryManager {
   }
 
   /**
-   * Finish the specified query by updating its status in the Catalog and then removing it from the active queries.
+   * Finish the specified query by updating its status in the Catalog and then removing it from the
+   * active queries.
    * 
    * @param queryState the query to be finished
    * @throws DbException if there is an error updating the Catalog
    */
   private void finishQuery(final Query queryState) throws DbException {
-    LOGGER.info("Finishing query {} with status {}", queryState.getQueryId(), queryState.getStatus());
+    LOGGER.info("Finishing query {} with status {}", queryState.getQueryId(),
+        queryState.getStatus());
     try {
       catalog.queryFinished(queryState);
     } catch (CatalogException e) {
@@ -146,16 +149,19 @@ public class QueryManager {
   /**
    * Computes and returns the status of queries that have been submitted to Myria.
    * 
-   * @param limit the maximum number of results to return. Any value <= 0 is interpreted as all results.
+   * @param limit the maximum number of results to return. Any value <= 0 is interpreted as all
+   *        results.
    * @param maxId the largest query ID returned. If null or <= 0, all queries will be returned.
-   * @param minId the smallest query ID returned. If null or <= 0, all queries will be returned. Ignored if maxId is
-   *          present.
-   * @param searchTerm a token to match against the raw queries. If null, all queries will be returned.
+   * @param minId the smallest query ID returned. If null or <= 0, all queries will be returned.
+   *        Ignored if maxId is present.
+   * @param searchTerm a token to match against the raw queries. If null, all queries will be
+   *        returned.
    * @throws CatalogException if there is an error in the catalog.
    * @return a list of the status of every query that has been submitted to Myria.
    */
-  public List<QueryStatusEncoding> getQueries(@Nullable final Long limit, @Nullable final Long maxId,
-      @Nullable final Long minId, @Nullable final String searchTerm) throws CatalogException {
+  public List<QueryStatusEncoding> getQueries(@Nullable final Long limit,
+      @Nullable final Long maxId, @Nullable final Long minId, @Nullable final String searchTerm)
+      throws CatalogException {
     List<QueryStatusEncoding> ret = new LinkedList<>();
 
     /* Now add in the status for all the inactive (finished, killed, etc.) queries. */
@@ -228,8 +234,8 @@ public class QueryManager {
   }
 
   /**
-   * Submit a query for execution. The workerPlans may be removed in the future if the query compiler and schedulers are
-   * ready. Returns null if there are too many active queries.
+   * Submit a query for execution. The workerPlans may be removed in the future if the query
+   * compiler and schedulers are ready. Returns null if there are too many active queries.
    * 
    * @param queryId the catalog's assigned ID for this query.
    * @param query contains the query options (profiling, fault tolerance)
@@ -238,8 +244,8 @@ public class QueryManager {
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
    */
-  private QueryFuture submitQuery(final long queryId, final QueryEncoding query, final QueryPlan plan)
-      throws DbException, CatalogException {
+  private QueryFuture submitQuery(final long queryId, final QueryEncoding query,
+      final QueryPlan plan) throws DbException, CatalogException {
     final Query queryState = new Query(queryId, query, plan, server);
     boolean canStart = false;
     synchronized (queryQueue) {
@@ -271,13 +277,13 @@ public class QueryManager {
    */
   @Nonnull
   private MasterSubQuery getMasterSubQuery(@Nonnull final SubQueryId subQueryId) {
-    return Preconditions.checkNotNull(executingSubQueries.get(subQueryId), "MasterSubQuery for subquery {} not found",
-        subQueryId);
+    return Preconditions.checkNotNull(executingSubQueries.get(subQueryId),
+        "MasterSubQuery for subquery {} not found", subQueryId);
   }
 
   /**
-   * Inform the query manager that the specified worker has acknowledged receiving the specified subquery. Once all
-   * workers have received the subquery, the subquery may be started.
+   * Inform the query manager that the specified worker has acknowledged receiving the specified
+   * subquery. Once all workers have received the subquery, the subquery may be started.
    * 
    * @param subQueryId the subquery.
    * @param workerId the worker.
@@ -287,8 +293,8 @@ public class QueryManager {
   }
 
   /**
-   * Inform the query manager that the specified worker has successfully completed the specified subquery. Once all
-   * workers have completed the subquery, the subquery is considered successful.
+   * Inform the query manager that the specified worker has successfully completed the specified
+   * subquery. Once all workers have completed the subquery, the subquery is considered successful.
    * 
    * @param subQueryId the subquery.
    * @param workerId the worker.
@@ -304,20 +310,23 @@ public class QueryManager {
    * @param workerId the worker.
    * @param cause the cause of the worker's failure.
    */
-  public void workerFailed(@Nonnull final SubQueryId subQueryId, final int workerId, final Throwable cause) {
+  public void workerFailed(@Nonnull final SubQueryId subQueryId, final int workerId,
+      final Throwable cause) {
     getMasterSubQuery(subQueryId).workerFail(workerId, cause);
   }
 
   /**
-   * Advance the given query to the next {@link SubQuery}. If there is no next {@link SubQuery}, mark the entire query
-   * as having succeeded.
+   * Advance the given query to the next {@link SubQuery}. If there is no next {@link SubQuery},
+   * mark the entire query as having succeeded.
    * 
    * @param queryState the specified query
-   * @return the future of the next {@Link SubQuery}, or <code>null</code> if this query has succeeded.
+   * @return the future of the next {@Link SubQuery}, or <code>null</code> if this query has
+   *         succeeded.
    * @throws DbException if there is an error
    */
   private LocalSubQueryFuture advanceQuery(final Query queryState) throws DbException {
-    Verify.verify(queryState.getCurrentSubQuery() == null, "expected queryState current task is null");
+    Verify.verify(queryState.getCurrentSubQuery() == null,
+        "expected queryState current task is null");
 
     SubQuery task;
     try {
@@ -348,7 +357,8 @@ public class QueryManager {
    */
   private LocalSubQueryFuture submitSubQuery(final Query queryState) throws DbException {
     final SubQuery subQuery =
-        Verify.verifyNotNull(queryState.getCurrentSubQuery(), "query state should have a current subquery");
+        Verify.verifyNotNull(queryState.getCurrentSubQuery(),
+            "query state should have a current subquery");
     final SubQueryId subQueryId = subQuery.getSubQueryId();
     try {
       final MasterSubQuery mqp = new MasterSubQuery(subQuery, server);
@@ -367,14 +377,14 @@ public class QueryManager {
 
           final Long elapsedNanos = mqp.getExecutionStatistics().getQueryExecutionElapse();
           if (future.isSuccess()) {
-            LOGGER.info("Subquery #{} succeeded. Time elapsed: {}.", subQueryId, DateTimeUtils
-                .nanoElapseToHumanReadable(elapsedNanos));
+            LOGGER.info("Subquery #{} succeeded. Time elapsed: {}.", subQueryId,
+                DateTimeUtils.nanoElapseToHumanReadable(elapsedNanos));
             // TODO success management.
             advanceQuery(queryState);
           } else {
             Throwable cause = future.getCause();
-            LOGGER.info("Subquery #{} failed. Time elapsed: {}. Failure cause is {}.", subQueryId, DateTimeUtils
-                .nanoElapseToHumanReadable(elapsedNanos), cause);
+            LOGGER.info("Subquery #{} failed. Time elapsed: {}. Failure cause is {}.", subQueryId,
+                DateTimeUtils.nanoElapseToHumanReadable(elapsedNanos), cause);
             if (cause instanceof QueryKilledException) {
               queryState.markKilled();
             } else {
@@ -466,8 +476,8 @@ public class QueryManager {
   }
 
   /**
-   * Submit a query for execution. The workerPlans may be removed in the future if the query compiler and schedulers are
-   * ready. Returns null if there are too many active queries.
+   * Submit a query for execution. The workerPlans may be removed in the future if the query
+   * compiler and schedulers are ready. Returns null if there are too many active queries.
    * 
    * @param query the query encoding.
    * @param plan the query to be executed
@@ -475,13 +485,15 @@ public class QueryManager {
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
    */
-  public QueryFuture submitQuery(final QueryEncoding query, final QueryPlan plan) throws DbException, CatalogException {
+  public QueryFuture submitQuery(final QueryEncoding query, final QueryPlan plan)
+      throws DbException, CatalogException {
     if (!canSubmitQuery()) {
       throw new DbException("Cannot submit query");
     }
     if (!query.profilingMode.isEmpty()) {
       if (!server.getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
-        throw new DbException("Profiling mode is only supported when using Postgres as the storage system.");
+        throw new DbException(
+            "Profiling mode is only supported when using Postgres as the storage system.");
       }
     }
     final long queryID = catalog.newQuery(query);
@@ -493,7 +505,8 @@ public class QueryManager {
    * @param relationKey the key of the desired temp relation.
    * @return the list of workers that store the specified relation.
    */
-  public Set<Integer> getWorkersForTempRelation(@Nonnull final Long queryId, @Nonnull final RelationKey relationKey) {
+  public Set<Integer> getWorkersForTempRelation(@Nonnull final Long queryId,
+      @Nonnull final RelationKey relationKey) {
     return getQuery(queryId).getWorkersForTempRelation(relationKey);
   }
 
@@ -513,8 +526,8 @@ public class QueryManager {
   }
 
   /**
-   * Submit a query for execution. The workerPlans may be removed in the future if the query compiler and schedulers are
-   * ready. Returns null if there are too many active queries.
+   * Submit a query for execution. The workerPlans may be removed in the future if the query
+   * compiler and schedulers are ready. Returns null if there are too many active queries.
    * 
    * @param rawQuery the raw user-defined query. E.g., the source Datalog program.
    * @param logicalRa the logical relational algebra of the compiled plan.
@@ -525,14 +538,15 @@ public class QueryManager {
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
    */
-  public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final String physicalPlan,
-      final SubQueryPlan masterPlan, final Map<Integer, SubQueryPlan> workerPlans) throws DbException, CatalogException {
+  public QueryFuture submitQuery(final String rawQuery, final String logicalRa,
+      final String physicalPlan, final SubQueryPlan masterPlan,
+      final Map<Integer, SubQueryPlan> workerPlans) throws DbException, CatalogException {
     return submitQuery(rawQuery, logicalRa, physicalPlan, new SubQuery(masterPlan, workerPlans));
   }
 
   /**
-   * Submit a query for execution. The workerPlans may be removed in the future if the query compiler and schedulers are
-   * ready. Returns null if there are too many active queries.
+   * Submit a query for execution. The workerPlans may be removed in the future if the query
+   * compiler and schedulers are ready. Returns null if there are too many active queries.
    * 
    * @param rawQuery the raw user-defined query. E.g., the source Datalog program.
    * @param logicalRa the logical relational algebra of the compiled plan.
@@ -542,8 +556,8 @@ public class QueryManager {
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
    */
-  public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final String physicalPlan,
-      final QueryPlan plan) throws DbException, CatalogException {
+  public QueryFuture submitQuery(final String rawQuery, final String logicalRa,
+      final String physicalPlan, final QueryPlan plan) throws DbException, CatalogException {
     QueryEncoding query = new QueryEncoding();
     query.rawQuery = rawQuery;
     query.logicalRa = rawQuery;
@@ -567,14 +581,17 @@ public class QueryManager {
   }
 
   /**
-   * Inform the query manager that the specified worker has died. Depending on their fault-tolerance mode, executing
-   * queries may be killed or be told that the worker has died.
+   * Inform the query manager that the specified worker has died. Depending on their fault-tolerance
+   * mode, executing queries may be killed or be told that the worker has died.
    * 
    * @param workerId the worker that died.
    */
   protected void workerDied(final int workerId) {
     for (MasterSubQuery mqp : executingSubQueries.values()) {
-      /* for each alive query that the failed worker is assigned to, tell the query that the worker failed. */
+      /*
+       * for each alive query that the failed worker is assigned to, tell the query that the worker
+       * failed.
+       */
       if (mqp.getWorkerAssigned().contains(workerId)) {
         mqp.workerFail(workerId, new LostHeartbeatException());
       }
@@ -591,8 +608,9 @@ public class QueryManager {
   }
 
   /**
-   * Inform the query manager that the specified worker has restarted. Executing queries in REJOIN mode may be informed
-   * that the worker is alive, assuming that all workers have acknowledged its rebirth.
+   * Inform the query manager that the specified worker has restarted. Executing queries in REJOIN
+   * mode may be informed that the worker is alive, assuming that all workers have acknowledged its
+   * rebirth.
    * 
    * @param workerId the worker that has restarted.
    * @param workersAcked the workers that have acknowledged its rebirth.

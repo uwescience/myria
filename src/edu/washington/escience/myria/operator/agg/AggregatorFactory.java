@@ -15,10 +15,9 @@ import edu.washington.escience.myria.Schema;
  * Creates instances of the {@link Aggregator} class.
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
-@JsonSubTypes({
-    @Type(value = CountAllAggregatorFactory.class, name = "CountAll"),
+@JsonSubTypes({@Type(value = CountAllAggregatorFactory.class, name = "CountAll"),
     @Type(value = SingleColumnAggregatorFactory.class, name = "SingleColumn"),
-    @Type(value = UserDefinedAggregatorFactory.class, name = "UserDefined") })
+    @Type(value = UserDefinedAggregatorFactory.class, name = "UserDefined")})
 public interface AggregatorFactory extends Serializable {
   /**
    * Create a new aggregator for tuples of the specified schema.

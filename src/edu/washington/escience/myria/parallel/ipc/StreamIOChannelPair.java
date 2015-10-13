@@ -10,16 +10,17 @@ import edu.washington.escience.myria.util.concurrent.ReentrantSpinLock;
 import edu.washington.escience.myria.util.concurrent.ThreadStackDump;
 
 /**
- * The data structure recording the logical role of {@link StreamInputChannel} and {@link StreamOutputChannel} that an
- * IO channel plays.
+ * The data structure recording the logical role of {@link StreamInputChannel} and
+ * {@link StreamOutputChannel} that an IO channel plays.
  * <p>
- * An IO channel can be an input of a {@link Consumer} operator (inputChannel) and in the same time an output of a
- * {@link Producer} operator (outputChannel).
+ * An IO channel can be an input of a {@link Consumer} operator (inputChannel) and in the same time
+ * an output of a {@link Producer} operator (outputChannel).
  * */
 class StreamIOChannelPair {
 
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(StreamIOChannelPair.class);
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory
+      .getLogger(StreamIOChannelPair.class);
 
   /**
    * The lock protecting the consistency of input flow control setup.
@@ -102,14 +103,14 @@ class StreamIOChannelPair {
       inputMappingLock.unlock();
     }
     if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("Stream input channel {} associates to physical channel {}.", inputChannel, ChannelContext
-          .channelToString(ioChannel), new ThreadStackDump());
+      LOGGER.trace("Stream input channel {} associates to physical channel {}.", inputChannel,
+          ChannelContext.channelToString(ioChannel), new ThreadStackDump());
     }
   }
 
   /**
-   * Remove the link between a logical input channel and a physical IO channel. And the IO channel reading gets resumed
-   * anyway.
+   * Remove the link between a logical input channel and a physical IO channel. And the IO channel
+   * reading gets resumed anyway.
    * */
   final void deMapInputChannel() {
     Channel channel = null;
@@ -126,8 +127,8 @@ class StreamIOChannelPair {
       inputMappingLock.unlock();
     }
     if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("Stream input channel {} disassociated from physical channel {}.", old, ChannelContext
-          .channelToString(channel), new ThreadStackDump());
+      LOGGER.trace("Stream input channel {} disassociated from physical channel {}.", old,
+          ChannelContext.channelToString(channel), new ThreadStackDump());
     }
   }
 

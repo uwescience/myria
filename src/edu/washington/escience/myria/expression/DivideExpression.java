@@ -4,8 +4,8 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 
 /**
- * Divide two operands in an expression tree using floating point arithmetic. This operator returns a
- * {@link Type.DOUBLE_TYPE}.
+ * Divide two operands in an expression tree using floating point arithmetic. This operator returns
+ * a {@link Type.DOUBLE_TYPE}.
  */
 public class DivideExpression extends BinaryExpression {
 
@@ -16,8 +16,7 @@ public class DivideExpression extends BinaryExpression {
    * This is not really unused, it's used automagically by Jackson deserialization.
    */
   @SuppressWarnings("unused")
-  private DivideExpression() {
-  }
+  private DivideExpression() {}
 
   /**
    * Divide the two operands together.
@@ -36,7 +35,7 @@ public class DivideExpression extends BinaryExpression {
 
   @Override
   public String getJavaString(final ExpressionOperatorParameter parameters) {
-    return new StringBuilder("(((double)").append(getLeft().getJavaString(parameters)).append(")/").append(
-        getRight().getJavaString(parameters)).append(')').toString();
+    return new StringBuilder("(((double)").append(getLeft().getJavaString(parameters)).append(")/")
+        .append(getRight().getJavaString(parameters)).append(')').toString();
   }
 }

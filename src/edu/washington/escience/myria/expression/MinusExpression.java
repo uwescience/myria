@@ -14,8 +14,7 @@ public class MinusExpression extends BinaryExpression {
    * This is not really unused, it's used automagically by Jackson deserialization.
    */
   @SuppressWarnings("unused")
-  private MinusExpression() {
-  }
+  private MinusExpression() {}
 
   /**
    * Subtract the two operands together.
@@ -36,9 +35,11 @@ public class MinusExpression extends BinaryExpression {
   public String getJavaString(final ExpressionOperatorParameter parameters) {
     Type t = getOutputType(parameters);
     if (t == Type.INT_TYPE) {
-      return getFunctionCallBinaryString("com.google.common.math.IntMath.checkedSubtract", parameters);
+      return getFunctionCallBinaryString("com.google.common.math.IntMath.checkedSubtract",
+          parameters);
     } else if (t == Type.LONG_TYPE) {
-      return getFunctionCallBinaryString("com.google.common.math.LongMath.checkedSubtract", parameters);
+      return getFunctionCallBinaryString("com.google.common.math.LongMath.checkedSubtract",
+          parameters);
     }
     return getInfixBinaryString("-", parameters);
   }

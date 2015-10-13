@@ -13,7 +13,8 @@ public abstract class AbstractDbInsert extends RootOperator implements DbWriter 
   private static final long serialVersionUID = 1L;
 
   /**
-   * Construct this abstract database insert operator to insert tuples from its child into the database.
+   * Construct this abstract database insert operator to insert tuples from its child into the
+   * database.
    * 
    * @param child the source of tuples.
    */

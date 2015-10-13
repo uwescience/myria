@@ -6,7 +6,8 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.column.Column;
 
 /**
- * The extended TupleBatch which holds extra meta information for a batch of tuples received from other workers.
+ * The extended TupleBatch which holds extra meta information for a batch of tuples received from
+ * other workers.
  * 
  */
 public class ExchangeTupleBatch extends TupleBatch {
@@ -31,8 +32,8 @@ public class ExchangeTupleBatch extends TupleBatch {
   private final int sourceWorkerID;
 
   /**
-   * Broken-out copy constructor. Shallow copy of the schema, column list, and the number of tuples; deep copy of the
-   * valid tuples since that's what we mutate.
+   * Broken-out copy constructor. Shallow copy of the schema, column list, and the number of tuples;
+   * deep copy of the valid tuples since that's what we mutate.
    * 
    * @param schema schema of the tuples in this batch. Must match columns.
    * @param columns contains the column-stored data. Must match schema.
@@ -43,8 +44,12 @@ public class ExchangeTupleBatch extends TupleBatch {
    * @param isEOI is EOI TB
    */
   private ExchangeTupleBatch(final Schema schema, final ImmutableList<? extends Column<?>> columns,
-      final int numTuples, final long startingTupleSeqNum, final long lsn, final int sourceWorkerID, final boolean isEOI) {
-    /** For a private copy constructor, no data checks are needed. Checks are only needed in the public constructor. */
+      final int numTuples, final long startingTupleSeqNum, final long lsn,
+      final int sourceWorkerID, final boolean isEOI) {
+    /**
+     * For a private copy constructor, no data checks are needed. Checks are only needed in the
+     * public constructor.
+     */
     super(schema, columns, numTuples, isEOI);
     startingSeqNum = startingTupleSeqNum;
     this.lsn = lsn;
@@ -62,8 +67,8 @@ public class ExchangeTupleBatch extends TupleBatch {
     if (data instanceof ExchangeTupleBatch) {
       return (ExchangeTupleBatch) data;
     } else {
-      return new ExchangeTupleBatch(data.getSchema(), data.getDataColumns(), data.numTuples(), -1, -1, sourceWorkerID,
-          data.isEOI());
+      return new ExchangeTupleBatch(data.getSchema(), data.getDataColumns(), data.numTuples(), -1,
+          -1, sourceWorkerID, data.isEOI());
     }
   }
 

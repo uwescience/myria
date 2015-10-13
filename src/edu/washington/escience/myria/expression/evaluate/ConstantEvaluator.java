@@ -21,8 +21,8 @@ import edu.washington.escience.myria.storage.ReadableTable;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
- * An Expression evaluator for generic expressions that produces a constant such as the initial state in
- * {@link StatefulApply}.
+ * An Expression evaluator for generic expressions that produces a constant such as the initial
+ * state in {@link StatefulApply}.
  */
 public final class ConstantEvaluator extends GenericEvaluator {
   /** An empty object array passed to Janino as no arguments. */
@@ -42,8 +42,10 @@ public final class ConstantEvaluator extends GenericEvaluator {
   public ConstantEvaluator(final Expression expression, final ExpressionOperatorParameter parameters)
       throws DbException {
     super(expression, parameters);
-    Preconditions.checkArgument(!expression.hasOperator(VariableExpression.class)
-        && !expression.hasOperator(StateExpression.class), "Expression %s does not evaluate to a constant", expression);
+    Preconditions.checkArgument(
+        !expression.hasOperator(VariableExpression.class)
+            && !expression.hasOperator(StateExpression.class),
+        "Expression %s does not evaluate to a constant", expression);
     type = expression.getOutputType(parameters);
     String java;
     try {
@@ -73,8 +75,8 @@ public final class ConstantEvaluator extends GenericEvaluator {
   private final ExpressionEvaluator evaluator;
 
   /**
-   * Creates an {@link ExpressionEvaluator} from the {@link #javaExpression}. This does not really compile the
-   * expression and is thus faster.
+   * Creates an {@link ExpressionEvaluator} from the {@link #javaExpression}. This does not really
+   * compile the expression and is thus faster.
    */
   @Override
   public void compile() {
@@ -91,7 +93,8 @@ public final class ConstantEvaluator extends GenericEvaluator {
   }
 
   @Override
-  public void eval(final ReadableTable tb, final int rowIdx, final WritableColumn result, final ReadableTable state) {
+  public void eval(final ReadableTable tb, final int rowIdx, final WritableColumn result,
+      final ReadableTable state) {
     throw new UnsupportedOperationException("Should not be here. Should be using eval() instead");
   }
 

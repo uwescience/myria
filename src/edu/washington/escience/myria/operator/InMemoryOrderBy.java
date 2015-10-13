@@ -126,25 +126,39 @@ public final class InMemoryOrderBy extends UnaryOperator {
         int compared = 0;
         switch (getSchema().getColumnType(columnIdx)) {
           case INT_TYPE:
-            compared = Type.compareRaw(table.getInt(columnIdx, rowIdx), table.getInt(columnIdx, otherRowIdx));
+            compared =
+                Type.compareRaw(table.getInt(columnIdx, rowIdx),
+                    table.getInt(columnIdx, otherRowIdx));
             break;
           case FLOAT_TYPE:
-            compared = Type.compareRaw(table.getFloat(columnIdx, rowIdx), table.getFloat(columnIdx, otherRowIdx));
+            compared =
+                Type.compareRaw(table.getFloat(columnIdx, rowIdx),
+                    table.getFloat(columnIdx, otherRowIdx));
             break;
           case LONG_TYPE:
-            compared = Type.compareRaw(table.getLong(columnIdx, rowIdx), table.getLong(columnIdx, otherRowIdx));
+            compared =
+                Type.compareRaw(table.getLong(columnIdx, rowIdx),
+                    table.getLong(columnIdx, otherRowIdx));
             break;
           case DOUBLE_TYPE:
-            compared = Type.compareRaw(table.getDouble(columnIdx, rowIdx), table.getDouble(columnIdx, otherRowIdx));
+            compared =
+                Type.compareRaw(table.getDouble(columnIdx, rowIdx),
+                    table.getDouble(columnIdx, otherRowIdx));
             break;
           case BOOLEAN_TYPE:
-            compared = Type.compareRaw(table.getBoolean(columnIdx, rowIdx), table.getBoolean(columnIdx, otherRowIdx));
+            compared =
+                Type.compareRaw(table.getBoolean(columnIdx, rowIdx),
+                    table.getBoolean(columnIdx, otherRowIdx));
             break;
           case STRING_TYPE:
-            compared = Type.compareRaw(table.getString(columnIdx, rowIdx), table.getString(columnIdx, otherRowIdx));
+            compared =
+                Type.compareRaw(table.getString(columnIdx, rowIdx),
+                    table.getString(columnIdx, otherRowIdx));
             break;
           case DATETIME_TYPE:
-            compared = Type.compareRaw(table.getDateTime(columnIdx, rowIdx), table.getDateTime(columnIdx, otherRowIdx));
+            compared =
+                Type.compareRaw(table.getDateTime(columnIdx, rowIdx),
+                    table.getDateTime(columnIdx, otherRowIdx));
             break;
         }
         if (compared != 0) {
@@ -161,7 +175,8 @@ public final class InMemoryOrderBy extends UnaryOperator {
   }
 
   /**
-   * Sorts the tuples. First, we get an array of indexes by which we sort the data. Then we actually reorder the rows.
+   * Sorts the tuples. First, we get an array of indexes by which we sort the data. Then we actually
+   * reorder the rows.
    */
   public void sort() {
     final int numTuples = table.numTuples();

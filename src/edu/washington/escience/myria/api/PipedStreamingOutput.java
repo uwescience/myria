@@ -13,8 +13,9 @@ import org.apache.commons.io.IOUtils;
 import com.google.common.io.ByteStreams;
 
 /**
- * A {@link PipedStreamingOutput} is a {@link StreamingOutput} that simply copies a supplied {@link InputStream} to the
- * streaming {@link OutputStream}. This class is used to serialize objects to an HTTP client.
+ * A {@link PipedStreamingOutput} is a {@link StreamingOutput} that simply copies a supplied
+ * {@link InputStream} to the streaming {@link OutputStream}. This class is used to serialize
+ * objects to an HTTP client.
  * 
  * 
  */
@@ -23,8 +24,8 @@ public final class PipedStreamingOutput implements StreamingOutput {
   private final InputStream input;
 
   /**
-   * Construct a new {@StreamingOutput} that will simply stream the bytes from the supplied input to
-   * the client.
+   * Construct a new {@StreamingOutput} that will simply stream the bytes from the
+   * supplied input to the client.
    * 
    * @param input the source of the bytes to be streamed to the client.
    */

@@ -35,14 +35,14 @@ public final class UnionAll extends NAryOperator {
   }
 
   @Override
-  protected void cleanup() throws DbException {
-  }
+  protected void cleanup() throws DbException {}
 
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
     /*
-     * If this variable gets to 0, it means that we've checked every child that could have data and none currently do.
-     * At that point, we return null and sleep until one of those children gets data.
+     * If this variable gets to 0, it means that we've checked every child that could have data and
+     * none currently do. At that point, we return null and sleep until one of those children gets
+     * data.
      */
     int uncheckedChildren = childrenWithData.size();
 
@@ -84,8 +84,8 @@ public final class UnionAll extends NAryOperator {
     for (Operator child : getChildren()) {
       Preconditions.checkNotNull(child, "child");
 
-      Preconditions.checkArgument(getSchema().compatible(child.getSchema()), "Child schema %s is incompatible with %s",
-          child.getSchema(), getSchema());
+      Preconditions.checkArgument(getSchema().compatible(child.getSchema()),
+          "Child schema %s is incompatible with %s", child.getSchema(), getSchema());
       childrenWithData.add(child);
     }
   }

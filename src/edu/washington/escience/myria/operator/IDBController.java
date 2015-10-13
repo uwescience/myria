@@ -20,8 +20,8 @@ import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 /**
- * Together with the EOSController, the IDBController controls what to serve into an iteration and when to stop an
- * iteration.
+ * Together with the EOSController, the IDBController controls what to serve into an iteration and
+ * when to stop an iteration.
  * */
 public class IDBController extends Operator implements StreamingStateful {
 
@@ -29,7 +29,8 @@ public class IDBController extends Operator implements StreamingStateful {
   private static final long serialVersionUID = 1L;
 
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(IDBController.class);
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory
+      .getLogger(IDBController.class);
 
   /**
    * Initial IDB input.
@@ -57,8 +58,9 @@ public class IDBController extends Operator implements StreamingStateful {
   private final ExchangePairID controllerOpID;
 
   /**
-   * The index of this IDBController. This is to differentiate the IDBController operators in the same worker. Note that
-   * this number is the index, it must start from 0 and to (The number of IDBController operators in a worker -1)
+   * The index of this IDBController. This is to differentiate the IDBController operators in the
+   * same worker. Note that this number is the index, it must start from 0 and to (The number of
+   * IDBController operators in a worker -1)
    * */
   private final int selfIDBIdx;
 
@@ -68,8 +70,8 @@ public class IDBController extends Operator implements StreamingStateful {
   private transient boolean initialInputEnded;
 
   /**
-   * Indicating if the number of tuples received from either the initialInput child or the iteration input child is 0
-   * since last EOI.
+   * Indicating if the number of tuples received from either the initialInput child or the iteration
+   * input child is 0 since last EOI.
    * */
   private transient boolean emptyDelta;
   /**
@@ -121,11 +123,11 @@ public class IDBController extends Operator implements StreamingStateful {
    * @param eosControllerInput see the corresponding field comment.
    * @param state the internal state.
    * */
-  public IDBController(final int selfIDBIdx, final ExchangePairID controllerOpID, final int controllerWorkerID,
-      final Operator initialIDBInput, final Operator iterationInput, final Consumer eosControllerInput,
-      final StreamingState state) {
-    this(selfIDBIdx, controllerOpID, controllerWorkerID, initialIDBInput, iterationInput, eosControllerInput, state,
-        false);
+  public IDBController(final int selfIDBIdx, final ExchangePairID controllerOpID,
+      final int controllerWorkerID, final Operator initialIDBInput, final Operator iterationInput,
+      final Consumer eosControllerInput, final StreamingState state) {
+    this(selfIDBIdx, controllerOpID, controllerWorkerID, initialIDBInput, iterationInput,
+        eosControllerInput, state, false);
   }
 
   /**
@@ -138,9 +140,9 @@ public class IDBController extends Operator implements StreamingStateful {
    * @param state the internal state.
    * @param sync if it's sync or async.
    * */
-  public IDBController(final int selfIDBIdx, final ExchangePairID controllerOpID, final int controllerWorkerID,
-      final Operator initialIDBInput, final Operator iterationInput, final Consumer eosControllerInput,
-      final StreamingState state, final Boolean sync) {
+  public IDBController(final int selfIDBIdx, final ExchangePairID controllerOpID,
+      final int controllerWorkerID, final Operator initialIDBInput, final Operator iterationInput,
+      final Consumer eosControllerInput, final StreamingState state, final Boolean sync) {
     Preconditions.checkNotNull(selfIDBIdx);
     Preconditions.checkNotNull(controllerOpID);
     Preconditions.checkNotNull(controllerWorkerID);
@@ -191,9 +193,11 @@ public class IDBController extends Operator implements StreamingStateful {
    * @throws DbException if any error occurs
    */
   public final TupleBatch fetchNextReadySync() throws DbException {
-    // 1. keeps all the incoming tuples in a buffer without passing them through the streaming state.
+    // 1. keeps all the incoming tuples in a buffer without passing them through the streaming
+    // state.
     // 2. receives an EOI from iterationInput.
-    // 3. generating delta tuples of the previous iteration by passing buffered tuples through the streaming state.
+    // 3. generating delta tuples of the previous iteration by passing buffered tuples through the
+    // streaming state.
     // 4. feeding the delta tuples to the downstream operator as input.
 
     TupleBatch tb;
@@ -304,7 +308,8 @@ public class IDBController extends Operator implements StreamingStateful {
     initialInputEnded = false;
     emptyDelta = true;
     resourceManager =
-        (LocalFragmentResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER);
+        (LocalFragmentResourceManager) execEnvVars
+            .get(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER);
     eoiReportChannel = resourceManager.startAStream(controllerWorkerID, controllerOpID);
     state.init(execEnvVars);
     deltaTuples = new LinkedList<TupleBatch>();

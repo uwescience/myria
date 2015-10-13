@@ -64,94 +64,77 @@ public final class MasterCatalog {
   private static final Logger LOGGER = LoggerFactory.getLogger(MasterCatalog.class);
 
   /** CREATE TABLE statements @formatter:off */
-  private static final String CREATE_QUERIES =
-      "CREATE TABLE queries (\n"
-    + "    query_id INTEGER NOT NULL PRIMARY KEY ASC,\n"
-    + "    raw_query TEXT NOT NULL,\n"
-    + "    logical_ra TEXT NOT NULL,\n"
-    + "    plan TEXT NOT NULL,\n"
-    + "    submit_time TEXT NOT NULL, -- DATES IN ISO8601 FORMAT \n"
-    + "    start_time TEXT, -- DATES IN ISO8601 FORMAT \n"
-    + "    finish_time TEXT, -- DATES IN ISO8601 FORMAT \n"
-    + "    elapsed_nanos INTEGER,\n"
-    + "    status TEXT NOT NULL,\n"
-    + "    message TEXT,\n"
-    + "    profiling_mode TEXT,\n" 
-    + "    ft_mode TEXT,\n"
-    + "    language TEXT);";
+  private static final String CREATE_QUERIES = "CREATE TABLE queries (\n"
+      + "    query_id INTEGER NOT NULL PRIMARY KEY ASC,\n" + "    raw_query TEXT NOT NULL,\n"
+      + "    logical_ra TEXT NOT NULL,\n" + "    plan TEXT NOT NULL,\n"
+      + "    submit_time TEXT NOT NULL, -- DATES IN ISO8601 FORMAT \n"
+      + "    start_time TEXT, -- DATES IN ISO8601 FORMAT \n"
+      + "    finish_time TEXT, -- DATES IN ISO8601 FORMAT \n" + "    elapsed_nanos INTEGER,\n"
+      + "    status TEXT NOT NULL,\n" + "    message TEXT,\n" + "    profiling_mode TEXT,\n"
+      + "    ft_mode TEXT,\n" + "    language TEXT);";
   /** Create the query full-text search table. */
-  private static final String CREATE_QUERIES_FTS =
-      "CREATE VIRTUAL TABLE queries_fts USING FTS4(\n"
-    + "    query_id INTEGER NOT NULL PRIMARY KEY ASC REFERENCES queries (query_id),\n"
-    + "    raw_query_fts TEXT NOT NULL);";
+  private static final String CREATE_QUERIES_FTS = "CREATE VIRTUAL TABLE queries_fts USING FTS4(\n"
+      + "    query_id INTEGER NOT NULL PRIMARY KEY ASC REFERENCES queries (query_id),\n"
+      + "    raw_query_fts TEXT NOT NULL);";
   /** Create the query plans table. */
-  private static final String CREATE_QUERY_PLANS =
-      "CREATE TABLE query_plans (\n"
-    + "    query_id INTEGER NOT NULL,\n"
-    + "    subquery_id INTEGER NOT NULL,\n"
-    + "    plan TEXT NOT NULL,\n"
-    + "    PRIMARY KEY (query_id, subquery_id)\n"
-    + ");";
+  private static final String CREATE_QUERY_PLANS = "CREATE TABLE query_plans (\n"
+      + "    query_id INTEGER NOT NULL,\n" + "    subquery_id INTEGER NOT NULL,\n"
+      + "    plan TEXT NOT NULL,\n" + "    PRIMARY KEY (query_id, subquery_id)\n" + ");";
   /** Create the relations table. */
-  private static final String CREATE_RELATIONS =
-      "CREATE TABLE relations (\n"
-    + "    user_name TEXT NOT NULL,\n"
-    + "    program_name TEXT NOT NULL,\n"
-    + "    relation_name TEXT NOT NULL,\n"
-    + "    num_tuples INTEGER NOT NULL,\n"
-    + "    is_deleted INTEGER NOT NULL,\n"
-    + "    query_id INTEGER NOT NULL REFERENCES queries(query_id),\n"
-    + "    PRIMARY KEY (user_name,program_name,relation_name));";
+  private static final String CREATE_RELATIONS = "CREATE TABLE relations (\n"
+      + "    user_name TEXT NOT NULL,\n" + "    program_name TEXT NOT NULL,\n"
+      + "    relation_name TEXT NOT NULL,\n" + "    num_tuples INTEGER NOT NULL,\n"
+      + "    is_deleted INTEGER NOT NULL,\n"
+      + "    query_id INTEGER NOT NULL REFERENCES queries(query_id),\n"
+      + "    PRIMARY KEY (user_name,program_name,relation_name));";
   /** Create the relation_schema table. */
   private static final String CREATE_RELATION_SCHEMA =
       "CREATE TABLE relation_schema (\n"
-    + "    user_name TEXT NOT NULL,\n"
-    + "    program_name TEXT NOT NULL,\n"
-    + "    relation_name TEXT NOT NULL,\n"
-    + "    col_index INTEGER NOT NULL,\n"
-    + "    col_name TEXT,\n"
-    + "    col_type TEXT NOT NULL,\n"
-    + "    FOREIGN KEY (user_name,program_name,relation_name) REFERENCES relations ON DELETE CASCADE);";
+          + "    user_name TEXT NOT NULL,\n"
+          + "    program_name TEXT NOT NULL,\n"
+          + "    relation_name TEXT NOT NULL,\n"
+          + "    col_index INTEGER NOT NULL,\n"
+          + "    col_name TEXT,\n"
+          + "    col_type TEXT NOT NULL,\n"
+          + "    FOREIGN KEY (user_name,program_name,relation_name) REFERENCES relations ON DELETE CASCADE);";
   /** Create an index on the relation_schema table. */
   private static final String CREATE_RELATION_SCHEMA_INDEX =
       "CREATE INDEX relation_schema_idx ON relation_schema (\n"
-    + "    user_name, program_name, relation_name, col_index);";
+          + "    user_name, program_name, relation_name, col_index);";
   /** Create the stored_relations table. */
   private static final String CREATE_STORED_RELATIONS =
       "CREATE TABLE stored_relations (\n"
-    + "    stored_relation_id INTEGER PRIMARY KEY ASC,\n"
-    + "    user_name TEXT NOT NULL,\n"
-    + "    program_name TEXT NOT NULL,\n"
-    + "    relation_name TEXT NOT NULL,\n"
-    + "    num_shards INTEGER NOT NULL,\n"
-    + "    how_partitioned TEXT NOT NULL,\n"
-    + "    FOREIGN KEY (user_name,program_name,relation_name) REFERENCES relations ON DELETE CASCADE);";
+          + "    stored_relation_id INTEGER PRIMARY KEY ASC,\n"
+          + "    user_name TEXT NOT NULL,\n"
+          + "    program_name TEXT NOT NULL,\n"
+          + "    relation_name TEXT NOT NULL,\n"
+          + "    num_shards INTEGER NOT NULL,\n"
+          + "    how_partitioned TEXT NOT NULL,\n"
+          + "    FOREIGN KEY (user_name,program_name,relation_name) REFERENCES relations ON DELETE CASCADE);";
   /** Create an index on the stored_relations table. */
   private static final String CREATE_STORED_RELATIONS_INDEX =
       "CREATE INDEX stored_relations_idx ON stored_relations (\n"
-    + "    user_name, program_name, relation_name);";
+          + "    user_name, program_name, relation_name);";
   /** Create the stored_relations table. */
-  private static final String CREATE_SHARDS =
-      "CREATE TABLE shards (\n"
-    + "    stored_relation_id INTEGER NOT NULL REFERENCES stored_relations ON DELETE CASCADE,\n"
-    + "    shard_index INTEGER NOT NULL,\n"
-    + "    worker_id INTEGER NOT NULL);";
+  private static final String CREATE_SHARDS = "CREATE TABLE shards (\n"
+      + "    stored_relation_id INTEGER NOT NULL REFERENCES stored_relations ON DELETE CASCADE,\n"
+      + "    shard_index INTEGER NOT NULL,\n" + "    worker_id INTEGER NOT NULL);";
   /** Create an index on the shards table. */
   private static final String CREATE_SHARDS_INDEX =
       "CREATE INDEX shards_idx ON shards (stored_relation_id);";
   /** Create the stored_relations table. */
-  private static final String UPDATE_UNKNOWN_STATUS =
-      "UPDATE queries "
-    + "SET status = '" + QueryStatusEncoding.Status.UNKNOWN.toString() + "'"
-    + "WHERE status = '" + QueryStatusEncoding.Status.ACCEPTED.toString() + "';";
- /** CREATE TABLE statements @formatter:on */
+  private static final String UPDATE_UNKNOWN_STATUS = "UPDATE queries " + "SET status = '"
+      + QueryStatusEncoding.Status.UNKNOWN.toString() + "'" + "WHERE status = '"
+      + QueryStatusEncoding.Status.ACCEPTED.toString() + "';";
+
+  /** CREATE TABLE statements @formatter:on */
 
   /**
    * @param filename the path to the SQLite database storing the catalog.
    * @return a fresh Catalog fitting the specified description.
    * @throws CatalogException if there is an error opening the database.
    * 
-   *           TODO add some sanity checks to the filename?
+   *         TODO add some sanity checks to the filename?
    */
   public static void create(@Nonnull final String path) throws CatalogException {
     try {
@@ -164,12 +147,12 @@ public final class MasterCatalog {
 
   /**
    * 
-   * @param catalogFile a File object pointing to the SQLite database that will store the Catalog. If catalogFile is
-   *          null, this creates an in-memory SQLite database.
+   * @param catalogFile a File object pointing to the SQLite database that will store the Catalog.
+   *        If catalogFile is null, this creates an in-memory SQLite database.
    * @return a fresh Catalog fitting the specified description.
    * @throws CatalogException if there is an error opening the database.
    * 
-   *           TODO add some sanity checks to the filename?
+   *         TODO add some sanity checks to the filename?
    */
   private static MasterCatalog createFromFile(final File catalogFile) throws CatalogException {
     /* Connect to the database. */
@@ -178,7 +161,8 @@ public final class MasterCatalog {
       queue.execute(new SQLiteJob<Object>() {
 
         @Override
-        protected Object job(final SQLiteConnection sqliteConnection) throws SQLiteException, CatalogException {
+        protected Object job(final SQLiteConnection sqliteConnection) throws SQLiteException,
+            CatalogException {
           /* Create all the tables in the Catalog. */
           try {
             sqliteConnection.exec("PRAGMA journal_mode = WAL;");
@@ -225,9 +209,10 @@ public final class MasterCatalog {
    * @throws FileNotFoundException if the given file does not exist.
    * @throws CatalogException if there is an error connecting to the database.
    * 
-   *           TODO add some sanity checks to the filename?
+   *         TODO add some sanity checks to the filename?
    */
-  public static MasterCatalog open(final String filename) throws FileNotFoundException, CatalogException {
+  public static MasterCatalog open(final String filename) throws FileNotFoundException,
+      CatalogException {
     Objects.requireNonNull(filename, "filename");
 
     java.util.logging.Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
@@ -244,8 +229,8 @@ public final class MasterCatalog {
   }
 
   /**
-   * The description of the setup specified by this Catalog. For example, this could be "two node local test" or
-   * "20-node Greenplum cluster".
+   * The description of the setup specified by this Catalog. For example, this could be
+   * "two node local test" or "20-node Greenplum cluster".
    */
   private String description = null;
 
@@ -282,7 +267,8 @@ public final class MasterCatalog {
 
   /**
    * @return the list of known relations in the Catalog.
-   * @throws CatalogException if the relation is already in the catalog or there is an error in the database.
+   * @throws CatalogException if the relation is already in the catalog or there is an error in the
+   *         database.
    */
   public List<RelationKey> getRelations() throws CatalogException {
     if (isClosed) {
@@ -291,16 +277,17 @@ public final class MasterCatalog {
     try {
       return queue.execute(new SQLiteJob<List<RelationKey>>() {
         @Override
-        protected List<RelationKey> job(final SQLiteConnection sqliteConnection) throws SQLiteException,
-            CatalogException {
+        protected List<RelationKey> job(final SQLiteConnection sqliteConnection)
+            throws SQLiteException, CatalogException {
           final List<RelationKey> relations = new ArrayList<RelationKey>();
 
           try {
             final SQLiteStatement statement =
-                sqliteConnection.prepare("SELECT user_name,program_name,relation_name FROM relations;", false);
+                sqliteConnection.prepare(
+                    "SELECT user_name,program_name,relation_name FROM relations;", false);
             while (statement.step()) {
-              relations.add(RelationKey.of(statement.columnString(0), statement.columnString(1), statement
-                  .columnString(2)));
+              relations.add(RelationKey.of(statement.columnString(0), statement.columnString(1),
+                  statement.columnString(2)));
             }
             statement.dispose();
           } catch (final SQLiteException e) {
@@ -324,11 +311,12 @@ public final class MasterCatalog {
    * @param schema the schema of the relation.
    * @param numTuples the number of tuples in the relation.
    * @param queryId the query that created the relation.
-   * @throws CatalogException if the relation is already in the catalog or there is an error in the database.
+   * @throws CatalogException if the relation is already in the catalog or there is an error in the
+   *         database.
    */
   private void addRelationMetadata(@Nonnull final SQLiteConnection sqliteConnection,
-      @Nonnull final RelationKey relation, @Nonnull final Schema schema, final long numTuples, final long queryId)
-      throws CatalogException {
+      @Nonnull final RelationKey relation, @Nonnull final Schema schema, final long numTuples,
+      final long queryId) throws CatalogException {
     try {
       /* First, insert the relation name. */
       SQLiteStatement statement =
@@ -375,8 +363,9 @@ public final class MasterCatalog {
    * @param howPartitioned how this copy of the relation is partitioned.
    * @throws CatalogException if there is an error in the database.
    */
-  private void addStoredRelation(final SQLiteConnection sqliteConnection, final RelationKey relation,
-      final Set<Integer> workers, final HowPartitioned howPartitioned) throws CatalogException {
+  private void addStoredRelation(final SQLiteConnection sqliteConnection,
+      final RelationKey relation, final Set<Integer> workers, final HowPartitioned howPartitioned)
+      throws CatalogException {
     try {
       /* First, populate the stored_relation table. */
       SQLiteStatement statement =
@@ -398,7 +387,8 @@ public final class MasterCatalog {
       Long storedRelationId = sqliteConnection.getLastInsertId();
       /* Second, populate the shards table. */
       statement =
-          sqliteConnection.prepare("INSERT INTO shards(stored_relation_id,shard_index,worker_id) " + "VALUES (?,?,?);");
+          sqliteConnection.prepare("INSERT INTO shards(stored_relation_id,shard_index,worker_id) "
+              + "VALUES (?,?,?);");
       statement.bind(1, storedRelationId);
       int count = 0;
       for (int i : workers) {
@@ -416,8 +406,8 @@ public final class MasterCatalog {
   }
 
   /**
-   * Close the connection to the database that stores the Catalog. Idempotent. Calling any methods (other than close())
-   * on this Catalog will throw a CatalogException.
+   * Close the connection to the database that stores the Catalog. Idempotent. Calling any methods
+   * (other than close()) on this Catalog will throw a CatalogException.
    */
   public void close() {
     try {
@@ -439,8 +429,8 @@ public final class MasterCatalog {
    * @return the schema of the relation
    * @throws CatalogException if there is an error in the catalog.
    */
-  private Schema getSchema(@Nonnull final SQLiteConnection sqliteConnection, @Nonnull final RelationKey relationKey)
-      throws CatalogException {
+  private Schema getSchema(@Nonnull final SQLiteConnection sqliteConnection,
+      @Nonnull final RelationKey relationKey) throws CatalogException {
     try {
       SQLiteStatement statement =
           sqliteConnection
@@ -479,7 +469,8 @@ public final class MasterCatalog {
     try {
       return queue.execute(new SQLiteJob<Schema>() {
         @Override
-        protected Schema job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+        protected Schema job(final SQLiteConnection sqliteConnection) throws CatalogException,
+            SQLiteException {
           return getSchema(sqliteConnection, relationKey);
         }
       }).get();
@@ -501,8 +492,8 @@ public final class MasterCatalog {
     try {
       return queue.execute(new SQLiteJob<List<DatasetStatus>>() {
         @Override
-        protected List<DatasetStatus> job(final SQLiteConnection sqliteConnection) throws CatalogException,
-            SQLiteException {
+        protected List<DatasetStatus> job(final SQLiteConnection sqliteConnection)
+            throws CatalogException, SQLiteException {
           try {
             SQLiteStatement statement =
                 sqliteConnection
@@ -532,8 +523,8 @@ public final class MasterCatalog {
     try {
       return queue.execute(new SQLiteJob<List<DatasetStatus>>() {
         @Override
-        protected List<DatasetStatus> job(final SQLiteConnection sqliteConnection) throws CatalogException,
-            SQLiteException {
+        protected List<DatasetStatus> job(final SQLiteConnection sqliteConnection)
+            throws CatalogException, SQLiteException {
           try {
             SQLiteStatement statement =
                 sqliteConnection
@@ -566,8 +557,8 @@ public final class MasterCatalog {
     try {
       return queue.execute(new SQLiteJob<List<DatasetStatus>>() {
         @Override
-        protected List<DatasetStatus> job(final SQLiteConnection sqliteConnection) throws CatalogException,
-            SQLiteException {
+        protected List<DatasetStatus> job(final SQLiteConnection sqliteConnection)
+            throws CatalogException, SQLiteException {
           try {
             SQLiteStatement statement =
                 sqliteConnection
@@ -599,8 +590,8 @@ public final class MasterCatalog {
     try {
       return queue.execute(new SQLiteJob<List<DatasetStatus>>() {
         @Override
-        protected List<DatasetStatus> job(final SQLiteConnection sqliteConnection) throws CatalogException,
-            SQLiteException {
+        protected List<DatasetStatus> job(final SQLiteConnection sqliteConnection)
+            throws CatalogException, SQLiteException {
           try {
             SQLiteStatement statement =
                 sqliteConnection
@@ -631,20 +622,22 @@ public final class MasterCatalog {
       ImmutableList.Builder<DatasetStatus> result = ImmutableList.builder();
       while (statement.step()) {
         RelationKey relationKey =
-            RelationKey.of(statement.columnString(0), statement.columnString(1), statement.columnString(2));
+            RelationKey.of(statement.columnString(0), statement.columnString(1),
+                statement.columnString(2));
         long numTuples = statement.columnLong(3);
         long queryId = statement.columnLong(4);
         String created = statement.columnString(5);
         HowPartitioned howPartitioned;
         try {
           howPartitioned =
-              MyriaJsonMapperProvider.getMapper().readValue(statement.columnString(6), HowPartitioned.class);
+              MyriaJsonMapperProvider.getMapper().readValue(statement.columnString(6),
+                  HowPartitioned.class);
         } catch (final IOException e) {
           LOGGER.debug("Error deserializing howPartitioned for dataset #{}", relationKey, e);
           howPartitioned = new HowPartitioned(null, null);
         }
-        result.add(new DatasetStatus(relationKey, getDatasetSchema(connection, relationKey), numTuples, queryId,
-            created, howPartitioned));
+        result.add(new DatasetStatus(relationKey, getDatasetSchema(connection, relationKey),
+            numTuples, queryId, created, howPartitioned));
       }
       statement.dispose();
       return result.build();
@@ -661,8 +654,8 @@ public final class MasterCatalog {
    * @return the schema for the specified dataset.
    * @throws CatalogException if there is an error in the catalog.
    */
-  private static Schema getDatasetSchema(final SQLiteConnection sqliteConnection, final RelationKey relationKey)
-      throws CatalogException {
+  private static Schema getDatasetSchema(final SQLiteConnection sqliteConnection,
+      final RelationKey relationKey) throws CatalogException {
     try {
       SQLiteStatement statement =
           sqliteConnection
@@ -713,7 +706,8 @@ public final class MasterCatalog {
     try {
       return queue.execute(new SQLiteJob<Long>() {
         @Override
-        protected Long job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+        protected Long job(final SQLiteConnection sqliteConnection) throws CatalogException,
+            SQLiteException {
           try {
             SQLiteStatement statement =
                 sqliteConnection
@@ -740,7 +734,9 @@ public final class MasterCatalog {
             Long queryId = sqliteConnection.getLastInsertId();
 
             // Full-text search also
-            statement = sqliteConnection.prepare("INSERT INTO queries_fts (query_id, raw_query_fts) VALUES (?,?);");
+            statement =
+                sqliteConnection
+                    .prepare("INSERT INTO queries_fts (query_id, raw_query_fts) VALUES (?,?);");
             statement.bind(1, queryId);
             statement.bind(2, queryStatus.rawQuery);
             statement.stepThrough();
@@ -772,8 +768,8 @@ public final class MasterCatalog {
     try {
       return queue.execute(new SQLiteJob<QueryStatusEncoding>() {
         @Override
-        protected QueryStatusEncoding job(final SQLiteConnection sqliteConnection) throws CatalogException,
-            SQLiteException {
+        protected QueryStatusEncoding job(final SQLiteConnection sqliteConnection)
+            throws CatalogException, SQLiteException {
           try {
             SQLiteStatement statement =
                 sqliteConnection
@@ -797,14 +793,16 @@ public final class MasterCatalog {
   }
 
   /**
-   * Helper function to get a {@link QueryStatusEncoding} from a query over the <code>queries</code> table. This version
-   * expects a "simple" query status, which does not contain the logical or physical query plan.
+   * Helper function to get a {@link QueryStatusEncoding} from a query over the <code>queries</code>
+   * table. This version expects a "simple" query status, which does not contain the logical or
+   * physical query plan.
    * 
    * @param statement the query over the <code>queries</code> table. Has been stepped once.
    * @return the status of the first query in the result.
    * @throws SQLiteException if there is an error in the database.
    */
-  private static QueryStatusEncoding querySimpleStatusHelper(final SQLiteStatement statement) throws SQLiteException {
+  private static QueryStatusEncoding querySimpleStatusHelper(final SQLiteStatement statement)
+      throws SQLiteException {
     final QueryStatusEncoding queryStatus = new QueryStatusEncoding(statement.columnLong(0));
     queryStatus.rawQuery = statement.columnString(1);
     queryStatus.submitTime = parseDateTime(statement.columnString(2));
@@ -853,7 +851,8 @@ public final class MasterCatalog {
   }
 
   /**
-   * Helper function to get a {@link QueryStatusEncoding} from a query over the <code>queries</code> table..
+   * Helper function to get a {@link QueryStatusEncoding} from a query over the <code>queries</code>
+   * table..
    * 
    * @param statement the query over the <code>queries</code> table. Has been stepped once.
    * @return the status of the first query in the result.
@@ -861,15 +860,16 @@ public final class MasterCatalog {
    * @throws IOException if there is an error when deserializing physical plan.
    */
   @SuppressWarnings("checkstyle:magicnumber")
-  private static QueryStatusEncoding queryStatusHelper(final SQLiteStatement statement) throws SQLiteException,
-      IOException {
+  private static QueryStatusEncoding queryStatusHelper(final SQLiteStatement statement)
+      throws SQLiteException, IOException {
     final QueryStatusEncoding queryStatus = new QueryStatusEncoding(statement.columnLong(0));
     queryStatus.rawQuery = statement.columnString(1);
     queryStatus.logicalRa = statement.columnString(2);
     String physicalString = statement.columnString(3);
 
     try {
-      queryStatus.plan = MyriaJsonMapperProvider.getMapper().readValue(physicalString, SubPlanEncoding.class);
+      queryStatus.plan =
+          MyriaJsonMapperProvider.getMapper().readValue(physicalString, SubPlanEncoding.class);
     } catch (final IOException e) {
       LOGGER.warn("Error deserializing plan for query #{}", queryStatus.queryId, e);
       queryStatus.plan = null;
@@ -897,19 +897,21 @@ public final class MasterCatalog {
   }
 
   /**
-   * Helper function to bind arguments to their corresponding positions in a SQLite statement. Object types are used to
-   * determine which version of the {@link SQLiteStatement#bind} function is to be used.
+   * Helper function to bind arguments to their corresponding positions in a SQLite statement.
+   * Object types are used to determine which version of the {@link SQLiteStatement#bind} function
+   * is to be used.
    * 
    * @param statement the SQLite statement
    * @param args a list of the arguments to be bound
    * @param startPos the starting position at which to bind arguments in the statement
    * @throws SQLiteException if something goes wrong.
    */
-  private static void bindArgs(@Nonnull final SQLiteStatement statement, @Nonnull final List<Object> args,
-      final int startPos) throws SQLiteException {
+  private static void bindArgs(@Nonnull final SQLiteStatement statement,
+      @Nonnull final List<Object> args, final int startPos) throws SQLiteException {
     Preconditions.checkNotNull(statement, "statement");
     Preconditions.checkNotNull(args, "args");
-    Preconditions.checkArgument(startPos >= 1, "starting index position must be >= 1 [%s]", startPos);
+    Preconditions.checkArgument(startPos >= 1, "starting index position must be >= 1 [%s]",
+        startPos);
 
     int pos = startPos;
     for (Object arg : args) {
@@ -926,7 +928,8 @@ public final class MasterCatalog {
       } else if (arg instanceof String) {
         statement.bind(pos, (String) arg);
       } else {
-        throw new IllegalArgumentException("Unexpected SQLite parameter of type " + arg.getClass() + " at position pos");
+        throw new IllegalArgumentException("Unexpected SQLite parameter of type " + arg.getClass()
+            + " at position pos");
       }
       pos++;
     }
@@ -935,16 +938,20 @@ public final class MasterCatalog {
   /**
    * Get the simple status (no logical or physical plan) for all queries in the system.
    * 
-   * @param limit the maximum number of results to return. Any value <= 0 is interpreted as all results.
-   * @param maxId return only queries with queryId <= maxId. Any value <= 0 is interpreted as no maximum.
-   * @param minId return only queries with queryId >= minId. Any value <= 0 is interpreted as no minimum. Ignored if
-   *          maxId is present.
-   * @param searchTerm a token to match against the raw queries. If null, all queries will be returned.
+   * @param limit the maximum number of results to return. Any value <= 0 is interpreted as all
+   *        results.
+   * @param maxId return only queries with queryId <= maxId. Any value <= 0 is interpreted as no
+   *        maximum.
+   * @param minId return only queries with queryId >= minId. Any value <= 0 is interpreted as no
+   *        minimum. Ignored if maxId is present.
+   * @param searchTerm a token to match against the raw queries. If null, all queries will be
+   *        returned.
    * @return a list of the status of all queries.
    * @throws CatalogException if there is an error in the MasterCatalog.
    */
-  public List<QueryStatusEncoding> getQueries(@Nullable final Long limit, @Nullable final Long maxId,
-      @Nullable final Long minId, @Nullable final String searchTerm) throws CatalogException {
+  public List<QueryStatusEncoding> getQueries(@Nullable final Long limit,
+      @Nullable final Long maxId, @Nullable final Long minId, @Nullable final String searchTerm)
+      throws CatalogException {
     if (isClosed) {
       throw new CatalogException("MasterCatalog is closed.");
     }
@@ -991,7 +998,9 @@ public final class MasterCatalog {
       } else {
         coreQuery.append(" ORDER BY query_id ASC LIMIT ?");
         bindArgs.add(limit);
-        coreQuery = new StringBuilder("SELECT * FROM (").append(coreQuery).append(") ORDER BY query_id DESC");
+        coreQuery =
+            new StringBuilder("SELECT * FROM (").append(coreQuery).append(
+                ") ORDER BY query_id DESC");
       }
     } else {
       coreQuery.append(" ORDER BY query_id DESC");
@@ -1002,8 +1011,8 @@ public final class MasterCatalog {
     try {
       return queue.execute(new SQLiteJob<List<QueryStatusEncoding>>() {
         @Override
-        protected List<QueryStatusEncoding> job(final SQLiteConnection sqliteConnection) throws CatalogException,
-            SQLiteException {
+        protected List<QueryStatusEncoding> job(final SQLiteConnection sqliteConnection)
+            throws CatalogException, SQLiteException {
           try {
             /* Build it and bind any arguments present. */
             SQLiteStatement statement = sqliteConnection.prepare(query);
@@ -1036,8 +1045,8 @@ public final class MasterCatalog {
    * @return the list of workers that are involved in storing this relation.
    * @throws CatalogException if there is an error in the database.
    */
-  public Set<Integer> getWorkersForRelation(final RelationKey relationKey, final Integer storedRelationId)
-      throws CatalogException {
+  public Set<Integer> getWorkersForRelation(final RelationKey relationKey,
+      final Integer storedRelationId) throws CatalogException {
     Objects.requireNonNull(relationKey);
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
@@ -1046,7 +1055,8 @@ public final class MasterCatalog {
     try {
       return queue.execute(new SQLiteJob<Set<Integer>>() {
         @Override
-        protected Set<Integer> job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+        protected Set<Integer> job(final SQLiteConnection sqliteConnection)
+            throws CatalogException, SQLiteException {
           try {
             Integer relationId = storedRelationId;
             /* First, if the storedRelationId is null we pick the first copy of this relation. */
@@ -1066,7 +1076,8 @@ public final class MasterCatalog {
             }
             /* Get the list of associated workers. */
             SQLiteStatement statement =
-                sqliteConnection.prepare("SELECT worker_id FROM shards WHERE stored_relation_id = ?;");
+                sqliteConnection
+                    .prepare("SELECT worker_id FROM shards WHERE stored_relation_id = ?;");
             statement.bind(1, relationId);
             Set<Integer> ret = new HashSet<Integer>();
             while (statement.step()) {
@@ -1102,7 +1113,8 @@ public final class MasterCatalog {
     try {
       queue.execute(new SQLiteJob<Object>() {
         @Override
-        protected Object job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+        protected Object job(final SQLiteConnection sqliteConnection) throws CatalogException,
+            SQLiteException {
           try {
             SQLiteStatement statement =
                 sqliteConnection
@@ -1137,7 +1149,8 @@ public final class MasterCatalog {
    * @param howPartitioned how the dataset was partitioned.
    * @throws CatalogException if there is an error in the catalog.
    */
-  public void updateHowPartitioned(final RelationKey key, final HowPartitioned howPartitioned) throws CatalogException {
+  public void updateHowPartitioned(final RelationKey key, final HowPartitioned howPartitioned)
+      throws CatalogException {
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
     }
@@ -1145,13 +1158,15 @@ public final class MasterCatalog {
     try {
       queue.execute(new SQLiteJob<DatasetStatus>() {
         @Override
-        protected DatasetStatus job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+        protected DatasetStatus job(final SQLiteConnection sqliteConnection)
+            throws CatalogException, SQLiteException {
           try {
             SQLiteStatement statement =
                 sqliteConnection
                     .prepare("UPDATE stored_relations set how_partitioned=? WHERE user_name=? AND program_name=? AND relation_name=?");
             try {
-              statement.bind(1, MyriaJsonMapperProvider.getMapper().writeValueAsString(howPartitioned));
+              statement.bind(1,
+                  MyriaJsonMapperProvider.getMapper().writeValueAsString(howPartitioned));
             } catch (JsonProcessingException e) {
               throw new CatalogException(e);
             }
@@ -1188,7 +1203,8 @@ public final class MasterCatalog {
     try {
       return queue.execute(new SQLiteJob<DatasetStatus>() {
         @Override
-        protected DatasetStatus job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+        protected DatasetStatus job(final SQLiteConnection sqliteConnection)
+            throws CatalogException, SQLiteException {
           try {
             SQLiteStatement statement =
                 sqliteConnection
@@ -1206,13 +1222,16 @@ public final class MasterCatalog {
             HowPartitioned howPartitioned;
             try {
               howPartitioned =
-                  MyriaJsonMapperProvider.getMapper().readValue(statement.columnString(3), HowPartitioned.class);
+                  MyriaJsonMapperProvider.getMapper().readValue(statement.columnString(3),
+                      HowPartitioned.class);
             } catch (final IOException e) {
-              LOGGER.debug("Error deserializing howPartitioned for dataset #{}", relationKey.toString(), e);
+              LOGGER.debug("Error deserializing howPartitioned for dataset #{}",
+                  relationKey.toString(), e);
               howPartitioned = new HowPartitioned(null, null);
             }
             statement.dispose();
-            return new DatasetStatus(relationKey, schema, numTuples, queryId, created, howPartitioned);
+            return new DatasetStatus(relationKey, schema, numTuples, queryId, created,
+                howPartitioned);
           } catch (final SQLiteException e) {
             throw new CatalogException(e);
           }
@@ -1235,7 +1254,8 @@ public final class MasterCatalog {
     try {
       return queue.execute(new SQLiteJob<Long>() {
         @Override
-        protected Long job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+        protected Long job(final SQLiteConnection sqliteConnection) throws CatalogException,
+            SQLiteException {
           try {
             /* Getting this out is a simple query, which does not need to be cached. */
             final SQLiteStatement statement;
@@ -1243,7 +1263,8 @@ public final class MasterCatalog {
               statement = sqliteConnection.prepare("SELECT max(query_id) FROM queries_fts;");
             } else {
               statement =
-                  sqliteConnection.prepare("SELECT max(query_id) FROM queries_fts WHERE raw_query_fts MATCH ?;");
+                  sqliteConnection
+                      .prepare("SELECT max(query_id) FROM queries_fts WHERE raw_query_fts MATCH ?;");
               statement.bind(1, searchTerm);
             }
 
@@ -1274,7 +1295,8 @@ public final class MasterCatalog {
     try {
       return queue.execute(new SQLiteJob<Long>() {
         @Override
-        protected Long job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+        protected Long job(final SQLiteConnection sqliteConnection) throws CatalogException,
+            SQLiteException {
           try {
             /* Getting this out is a simple query, which does not need to be cached. */
             final SQLiteStatement statement;
@@ -1282,7 +1304,8 @@ public final class MasterCatalog {
               statement = sqliteConnection.prepare("SELECT min(query_id) FROM queries_fts;");
             } else {
               statement =
-                  sqliteConnection.prepare("SELECT min(query_id) FROM queries_fts WHERE raw_query_fts MATCH ?;");
+                  sqliteConnection
+                      .prepare("SELECT min(query_id) FROM queries_fts WHERE raw_query_fts MATCH ?;");
               statement.bind(1, searchTerm);
             }
 
@@ -1302,8 +1325,8 @@ public final class MasterCatalog {
   }
 
   /**
-   * Get matching relation keys. Matching means that the search term appears somewhere in the whole relation key string.
-   * Matching is fuzzy and accepts gaps in the match.
+   * Get matching relation keys. Matching means that the search term appears somewhere in the whole
+   * relation key string. Matching is fuzzy and accepts gaps in the match.
    * 
    * @param searchTerm the search term
    * @return matching relation keys or empty list
@@ -1321,12 +1344,13 @@ public final class MasterCatalog {
     try {
       return queue.execute(new SQLiteJob<List<RelationKey>>() {
         @Override
-        protected List<RelationKey> job(final SQLiteConnection sqliteConnection) throws CatalogException,
-            SQLiteException {
+        protected List<RelationKey> job(final SQLiteConnection sqliteConnection)
+            throws CatalogException, SQLiteException {
           try {
             SQLiteStatement statement =
-                sqliteConnection.prepare("SELECT user_name, program_name, relation_name FROM relations "
-                    + "WHERE lower(user_name || ':' || program_name || ':' || relation_name) LIKE ? AND is_deleted=0");
+                sqliteConnection
+                    .prepare("SELECT user_name, program_name, relation_name FROM relations "
+                        + "WHERE lower(user_name || ':' || program_name || ':' || relation_name) LIKE ? AND is_deleted=0");
             statement.bind(1, expandedSearchTerm);
 
             ImmutableList.Builder<RelationKey> result = ImmutableList.builder();
@@ -1360,8 +1384,10 @@ public final class MasterCatalog {
       @Nonnull final RelationKey relation, final boolean isOverwrite) throws CatalogException {
     try {
       String sql =
-          String.format("DELETE FROM relations WHERE user_name=? AND program_name=? AND relation_name=? AND %s;",
-              (isOverwrite ? "1=1" : "is_deleted=1"));
+          String
+              .format(
+                  "DELETE FROM relations WHERE user_name=? AND program_name=? AND relation_name=? AND %s;",
+                  (isOverwrite ? "1=1" : "is_deleted=1"));
       SQLiteStatement statement = sqliteConnection.prepare(sql);
       statement.bind(1, relation.getUserName());
       statement.bind(2, relation.getProgramName());
@@ -1389,7 +1415,8 @@ public final class MasterCatalog {
     try {
       queue.execute(new SQLiteJob<Void>() {
         @Override
-        protected Void job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+        protected Void job(final SQLiteConnection sqliteConnection) throws CatalogException,
+            SQLiteException {
           sqliteConnection.exec("BEGIN TRANSACTION;");
           try {
             deleteRelationIfExists(sqliteConnection, relationKey, false);
@@ -1431,7 +1458,8 @@ public final class MasterCatalog {
     try {
       queue.execute(new SQLiteJob<Void>() {
         @Override
-        protected Void job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+        protected Void job(final SQLiteConnection sqliteConnection) throws CatalogException,
+            SQLiteException {
           try {
             SQLiteStatement statement =
                 sqliteConnection
@@ -1460,7 +1488,8 @@ public final class MasterCatalog {
    * @param subQueryId which subquery is doing the creation.
    * @throws CatalogException if there is an error in the catalog.
    */
-  public void updateRelationMetadata(@Nonnull final Map<RelationKey, RelationWriteMetadata> relationsCreated,
+  public void updateRelationMetadata(
+      @Nonnull final Map<RelationKey, RelationWriteMetadata> relationsCreated,
       @Nonnull final SubQueryId subQueryId) throws CatalogException {
     Objects.requireNonNull(relationsCreated, "relationsCreated");
     Objects.requireNonNull(subQueryId, "subQueryId");
@@ -1472,7 +1501,8 @@ public final class MasterCatalog {
     try {
       queue.execute(new SQLiteJob<Void>() {
         @Override
-        protected Void job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+        protected Void job(final SQLiteConnection sqliteConnection) throws CatalogException,
+            SQLiteException {
           sqliteConnection.exec("BEGIN TRANSACTION;");
           try {
             for (RelationWriteMetadata meta : relationsCreated.values()) {
@@ -1485,8 +1515,10 @@ public final class MasterCatalog {
               if (meta.isOverwrite() || getSchema(sqliteConnection, relation) == null) {
                 /* Overwrite or new relation. */
                 addRelationMetadata(sqliteConnection, relation, schema, -1, subQueryId.getQueryId());
-                addStoredRelation(sqliteConnection, relation, workers, new HowPartitioned(null, null));
-                LOGGER.debug("SubQuery #{} - adding {} to store shard of {}", subQueryId, workers, relation);
+                addStoredRelation(sqliteConnection, relation, workers, new HowPartitioned(null,
+                    null));
+                LOGGER.debug("SubQuery #{} - adding {} to store shard of {}", subQueryId, workers,
+                    relation);
               }
             }
             sqliteConnection.exec("COMMIT TRANSACTION;");
@@ -1513,7 +1545,8 @@ public final class MasterCatalog {
    * @param count the number of tuples in that relation
    * @throws CatalogException if there is an error
    */
-  public void updateRelationTupleCount(final RelationKey relation, final long count) throws CatalogException {
+  public void updateRelationTupleCount(final RelationKey relation, final long count)
+      throws CatalogException {
     Objects.requireNonNull(relation, "relation");
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
@@ -1527,7 +1560,8 @@ public final class MasterCatalog {
     try {
       queue.execute(new SQLiteJob<Void>() {
         @Override
-        protected Void job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+        protected Void job(final SQLiteConnection sqliteConnection) throws CatalogException,
+            SQLiteException {
           try {
             SQLiteStatement statement =
                 sqliteConnection
@@ -1565,10 +1599,12 @@ public final class MasterCatalog {
     try {
       queue.execute(new SQLiteJob<Void>() {
         @Override
-        protected Void job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+        protected Void job(final SQLiteConnection sqliteConnection) throws CatalogException,
+            SQLiteException {
           try {
             SQLiteStatement statement =
-                sqliteConnection.prepare("INSERT INTO query_plans (query_id, subquery_id, plan) VALUES (?,?,?);");
+                sqliteConnection
+                    .prepare("INSERT INTO query_plans (query_id, subquery_id, plan) VALUES (?,?,?);");
             statement.bind(1, subQueryId.getQueryId());
             statement.bind(2, subQueryId.getSubqueryId());
             statement.bind(3, encodedPlan);
@@ -1600,11 +1636,13 @@ public final class MasterCatalog {
     try {
       return queue.execute(new SQLiteJob<String>() {
         @Override
-        protected String job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+        protected String job(final SQLiteConnection sqliteConnection) throws CatalogException,
+            SQLiteException {
           String ret = null;
           try {
             SQLiteStatement statement =
-                sqliteConnection.prepare("SELECT plan FROM query_plans WHERE query_id=? AND subquery_id=?;");
+                sqliteConnection
+                    .prepare("SELECT plan FROM query_plans WHERE query_id=? AND subquery_id=?;");
             statement.bind(1, subQueryId.getQueryId());
             statement.bind(2, subQueryId.getSubqueryId());
 
@@ -1638,7 +1676,8 @@ public final class MasterCatalog {
     try {
       return queue.execute(new SQLiteJob<Boolean>() {
         @Override
-        protected Boolean job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+        protected Boolean job(final SQLiteConnection sqliteConnection) throws CatalogException,
+            SQLiteException {
           int ret = 0;
           try {
             SQLiteStatement statement =
@@ -1672,16 +1711,17 @@ public final class MasterCatalog {
    * @return a tuple iterator over the result
    * @throws CatalogException if there is an error.
    */
-  public Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String queryString, final Schema outputSchema)
-      throws CatalogException {
+  public Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String queryString,
+      final Schema outputSchema) throws CatalogException {
     try {
       return queue.execute(new SQLiteJob<Iterator<TupleBatch>>() {
         @Override
-        protected Iterator<TupleBatch> job(final SQLiteConnection sqliteConnection) throws CatalogException,
-            SQLiteException {
+        protected Iterator<TupleBatch> job(final SQLiteConnection sqliteConnection)
+            throws CatalogException, SQLiteException {
           SQLiteStatement statement = sqliteConnection.prepare(queryString);
           List<TupleBatch> tuples = Lists.newLinkedList();
-          Iterators.addAll(tuples, new SQLiteTupleBatchIterator(statement, sqliteConnection, outputSchema));
+          Iterators.addAll(tuples, new SQLiteTupleBatchIterator(statement, sqliteConnection,
+              outputSchema));
           return tuples.iterator();
         }
       }).get();

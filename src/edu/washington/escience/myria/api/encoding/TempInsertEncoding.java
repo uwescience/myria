@@ -23,8 +23,8 @@ public class TempInsertEncoding extends UnaryOperatorEncoding<DbInsertTemp> {
   /** Indexes created. */
   public List<List<IndexRef>> indexes;
   /**
-   * The ConnectionInfo struct determines what database the data will be written to. If null, the worker's default
-   * database will be used.
+   * The ConnectionInfo struct determines what database the data will be written to. If null, the
+   * worker's default database will be used.
    */
   public ConnectionInfo connectionInfo;
 
@@ -32,7 +32,7 @@ public class TempInsertEncoding extends UnaryOperatorEncoding<DbInsertTemp> {
   public DbInsertTemp construct(ConstructArgs args) {
     /* default overwrite to {@code false}, so we append. */
     argOverwriteTable = MoreObjects.firstNonNull(argOverwriteTable, Boolean.FALSE);
-    return new DbInsertTemp(null, RelationKey.ofTemp(args.getQueryId(), table), connectionInfo, argOverwriteTable,
-        indexes);
+    return new DbInsertTemp(null, RelationKey.ofTemp(args.getQueryId(), table), connectionInfo,
+        argOverwriteTable, indexes);
   }
 }

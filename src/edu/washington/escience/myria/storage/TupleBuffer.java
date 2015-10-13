@@ -18,10 +18,11 @@ import edu.washington.escience.myria.column.builder.WritableColumn;
 import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
- * A simple collection of tuples that provides random access to the inner tuples and can be appended to. Once the user
- * is done appending, they may fetch the {@link #finalResult} of the {@link #TupleBuffer}, which finalizes it and they
- * may access its built contents as a list of {@link TupleBatch}. After finalizing, the {@link TupleBuffer} can no
- * longer have values appended to it.
+ * A simple collection of tuples that provides random access to the inner tuples and can be appended
+ * to. Once the user is done appending, they may fetch the {@link #finalResult} of the
+ * {@link #TupleBuffer}, which finalizes it and they may access its built contents as a list of
+ * {@link TupleBatch}. After finalizing, the {@link TupleBuffer} can no longer have values appended
+ * to it.
  */
 public class TupleBuffer implements ReadableTable, AppendableTable {
   /** Format of the emitted tuples. */
@@ -75,11 +76,12 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
   }
 
   /**
-   * Actually finish the batch. Does not ensure that the batch is full, and thus can only be used when finalizing.
+   * Actually finish the batch. Does not ensure that the batch is full, and thus can only be used
+   * when finalizing.
    */
   private void finishBatchEvenIfSmall() {
-    Preconditions.checkState(numColumnsReady == 0, "cannot finish a batch with with %s != 0 columns ready",
-        numColumnsReady);
+    Preconditions.checkState(numColumnsReady == 0,
+        "cannot finish a batch with with %s != 0 columns ready", numColumnsReady);
     Preconditions.checkState(!finalized, "cannot force finish a batch once finalized");
     if (currentBatchSize == 0) {
       return;
@@ -261,11 +263,13 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
   private void checkPutIndex(final int column) {
     Preconditions.checkState(!finalized, "cannot append to a TupleBuffer once finalized");
     Preconditions.checkElementIndex(column, numColumns);
-    Preconditions.checkState(!columnsReady.get(column), "need to fill up one row before starting new one");
+    Preconditions.checkState(!columnsReady.get(column),
+        "need to fill up one row before starting new one");
   }
 
   /**
-   * Helper function to update the internal state after a value has been inserted into the specified column.
+   * Helper function to update the internal state after a value has been inserted into the specified
+   * column.
    * 
    * @param column the column in which the value was put.
    */

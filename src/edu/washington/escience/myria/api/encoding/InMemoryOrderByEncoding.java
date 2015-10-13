@@ -21,7 +21,8 @@ public class InMemoryOrderByEncoding extends UnaryOperatorEncoding<InMemoryOrder
   @Override
   protected void validateExtra() {
     if (argSortColumns.length != argAscending.length) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "sort columns number should be equal to ascending orders number!");
+      throw new MyriaApiException(Status.BAD_REQUEST,
+          "sort columns number should be equal to ascending orders number!");
     }
   }
 

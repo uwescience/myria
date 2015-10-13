@@ -9,9 +9,11 @@ import org.slf4j.LoggerFactory;
 import edu.washington.escience.myria.util.AttachmentableAdapter;
 
 /**
- * The simplest implementation of {@link ShortMessageProcessor}. The messages are simply appended into a FIFO queue.
+ * The simplest implementation of {@link ShortMessageProcessor}. The messages are simply appended
+ * into a FIFO queue.
  * 
- * @param <PAYLOAD> the type of application defined data the short message processor is going to process.
+ * @param <PAYLOAD> the type of application defined data the short message processor is going to
+ *        process.
  * */
 public class QueueBasedShortMessageProcessor<PAYLOAD> extends AttachmentableAdapter implements
     ShortMessageProcessor<PAYLOAD> {

@@ -11,15 +11,15 @@ import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.util.JVMUtils;
 
 /**
- * This class cleanup all currently running user threads. It waits all these threads to finish within some given
- * timeout. If timeout, try interrupting them. If any thread is interrupted for a given number of times, stop waiting
- * and kill it directly.
+ * This class cleanup all currently running user threads. It waits all these threads to finish
+ * within some given timeout. If timeout, try interrupting them. If any thread is interrupted for a
+ * given number of times, stop waiting and kill it directly.
  * */
 public class ShutdownThreadCleaner extends Thread {
 
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(ShutdownThreadCleaner.class
-      .getName());
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory
+      .getLogger(ShutdownThreadCleaner.class.getName());
 
   /**
    * In wait state for at most 5 seconds.
@@ -75,9 +75,9 @@ public class ShutdownThreadCleaner extends Thread {
   private final HashMap<Thread, Integer> waitedForMS = new HashMap<Thread, Integer>();
 
   /**
-   * Same to watedForMS, but keyed by thread name. The SQLiteQueue threads reincarnate themselves when any error occurs.
-   * Using watedForMS won't capture the SQLiteQueue threads because the Thread instance will be recreated once they
-   * receive an InterruptedException
+   * Same to watedForMS, but keyed by thread name. The SQLiteQueue threads reincarnate themselves
+   * when any error occurs. Using watedForMS won't capture the SQLiteQueue threads because the
+   * Thread instance will be recreated once they receive an InterruptedException
    * */
   private final HashMap<String, Integer> waitedForMSThreadName = new HashMap<String, Integer>();
 
@@ -86,12 +86,14 @@ public class ShutdownThreadCleaner extends Thread {
    * */
   private final HashMap<Thread, Integer> interruptTimes = new HashMap<Thread, Integer>();
   /**
-   * The set of threads we have been waiting for the maximum MS, and so have decided to kill them directly.
+   * The set of threads we have been waiting for the maximum MS, and so have decided to kill them
+   * directly.
    * */
   private final Set<Thread> abandonThreads = Sets.newSetFromMap(new HashMap<Thread, Boolean>());
 
   /**
-   * utility method, add an integer v to the value of m[t] and return the new value. null key and value are taken ca of.
+   * utility method, add an integer v to the value of m[t] and return the new value. null key and
+   * value are taken ca of.
    * 
    * @return the new value
    * @param <KEY> the map key type
@@ -153,22 +155,26 @@ public class ShutdownThreadCleaner extends Thread {
       }
 
       for (final Thread t : nonSystemThreads.keySet()) {
-        if (addToMap(waitedForMSThreadName, t.getName(), MyriaConstants.SHORT_WAITING_INTERVAL_100_MS) >= waitBeforeInterruptMS
+        if (addToMap(waitedForMSThreadName, t.getName(),
+            MyriaConstants.SHORT_WAITING_INTERVAL_100_MS) >= waitBeforeInterruptMS
             * numInterruptBeforeKill) {
           abandonThreads.add(t);
         } else if (addToMap(waitedForMS, t, MyriaConstants.SHORT_WAITING_INTERVAL_100_MS) > waitBeforeInterruptMS) {
           waitedForMS.put(t, 0);
           if (addToMap(interruptTimes, t, 1) > numInterruptBeforeKill) {
             if (LOGGER.isDebugEnabled()) {
-              LOGGER.debug("Thread {} have been interrupted for {} times. Kill it directly.", t, getFromMap(
-                  interruptTimes, t) - 1);
+              LOGGER.debug("Thread {} have been interrupted for {} times. Kill it directly.", t,
+                  getFromMap(interruptTimes, t) - 1);
             }
             abandonThreads.add(t);
             t.stop();
           } else {
             if (LOGGER.isDebugEnabled()) {
-              LOGGER.debug("Waited Thread {} to finish for {} seconds. I'll try interrupting it.", t,
-                  TimeUnit.MILLISECONDS.toSeconds(waitBeforeInterruptMS) * getFromMap(interruptTimes, t));
+              LOGGER.debug(
+                  "Waited Thread {} to finish for {} seconds. I'll try interrupting it.",
+                  t,
+                  TimeUnit.MILLISECONDS.toSeconds(waitBeforeInterruptMS)
+                      * getFromMap(interruptTimes, t));
             }
             t.interrupt();
           }

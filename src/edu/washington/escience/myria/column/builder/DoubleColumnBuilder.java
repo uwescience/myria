@@ -53,7 +53,8 @@ public final class DoubleColumnBuilder extends ColumnBuilder<Double> {
    */
   public static DoubleColumn buildFromProtobuf(final ColumnMessage message, final int numTuples) {
     if (message.getType().ordinal() != ColumnMessage.Type.DOUBLE_VALUE) {
-      throw new IllegalArgumentException("Trying to construct DoubleColumn from non-DOUBLE ColumnMessage");
+      throw new IllegalArgumentException(
+          "Trying to construct DoubleColumn from non-DOUBLE ColumnMessage");
     }
     if (!message.hasDoubleColumn()) {
       throw new IllegalArgumentException("ColumnMessage has type DOUBLE but no DoubleColumn");
@@ -73,7 +74,8 @@ public final class DoubleColumnBuilder extends ColumnBuilder<Double> {
 
   @Override
   public DoubleColumnBuilder appendDouble(final double value) throws BufferOverflowException {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkArgument(!built,
+        "No further changes are allowed after the builder has built the column.");
     data.put(value);
     return this;
   }
@@ -81,21 +83,24 @@ public final class DoubleColumnBuilder extends ColumnBuilder<Double> {
   @Deprecated
   @Override
   public DoubleColumnBuilder appendObject(final Object value) throws BufferOverflowException {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkArgument(!built,
+        "No further changes are allowed after the builder has built the column.");
     return appendDouble((Double) MyriaUtils.ensureObjectIsValidType(value));
   }
 
   @Override
-  public DoubleColumnBuilder appendFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException,
-      BufferOverflowException {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+  public DoubleColumnBuilder appendFromJdbc(final ResultSet resultSet, final int jdbcIndex)
+      throws SQLException, BufferOverflowException {
+    Preconditions.checkArgument(!built,
+        "No further changes are allowed after the builder has built the column.");
     return appendDouble(resultSet.getDouble(jdbcIndex));
   }
 
   @Override
-  public DoubleColumnBuilder appendFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException,
-      BufferOverflowException {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+  public DoubleColumnBuilder appendFromSQLite(final SQLiteStatement statement, final int index)
+      throws SQLiteException, BufferOverflowException {
+    Preconditions.checkArgument(!built,
+        "No further changes are allowed after the builder has built the column.");
     return appendDouble(statement.columnDouble(index));
   }
 
@@ -106,14 +111,16 @@ public final class DoubleColumnBuilder extends ColumnBuilder<Double> {
 
   @Override
   public DoubleColumnBuilder expandAll() {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkArgument(!built,
+        "No further changes are allowed after the builder has built the column.");
     data.position(data.capacity());
     return this;
   }
 
   @Override
   public DoubleColumnBuilder expand(final int size) throws BufferOverflowException {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkArgument(!built,
+        "No further changes are allowed after the builder has built the column.");
     Preconditions.checkArgument(size >= 0);
     data.position(data.position() + size);
     return this;
@@ -133,7 +140,8 @@ public final class DoubleColumnBuilder extends ColumnBuilder<Double> {
 
   @Override
   public void replaceDouble(final double value, final int row) throws IndexOutOfBoundsException {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkArgument(!built,
+        "No further changes are allowed after the builder has built the column.");
     Preconditions.checkElementIndex(row, data.position());
     data.put(row, value);
   }
@@ -153,7 +161,8 @@ public final class DoubleColumnBuilder extends ColumnBuilder<Double> {
   public DoubleColumnBuilder forkNewBuilder() {
     double[] arr = new double[data.array().length];
     System.arraycopy(data.array(), 0, arr, 0, data.position());
-    return new DoubleColumnBuilder((DoubleBuffer) DoubleBuffer.wrap(arr).position(data.position()).limit(data.limit()));
+    return new DoubleColumnBuilder((DoubleBuffer) DoubleBuffer.wrap(arr).position(data.position())
+        .limit(data.limit()));
   }
 
 }

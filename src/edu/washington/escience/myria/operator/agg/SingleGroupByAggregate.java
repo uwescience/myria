@@ -25,14 +25,16 @@ import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 /**
- * The Aggregation operator that computes an aggregate (e.g., sum, avg, max, min) with a single group by column.
+ * The Aggregation operator that computes an aggregate (e.g., sum, avg, max, min) with a single
+ * group by column.
  */
 public class SingleGroupByAggregate extends UnaryOperator {
 
   /**
    * The Logger.
    */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(SingleGroupByAggregate.class);
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory
+      .getLogger(SingleGroupByAggregate.class);
 
   /**
    * default serialization ID.
@@ -55,14 +57,14 @@ public class SingleGroupByAggregate extends UnaryOperator {
   private Type gColumnType;
 
   /**
-   * The buffer storing in-progress group by results. {groupby-column-value -> Aggregator Array} when the group key is
-   * String
+   * The buffer storing in-progress group by results. {groupby-column-value -> Aggregator Array}
+   * when the group key is String
    */
   private transient HashMap<String, Object[]> stringAggState;
 
   /**
-   * The buffer storing in-progress group by results. {groupby-column-value -> Aggregator Array} when the group key is
-   * DateTime.
+   * The buffer storing in-progress group by results. {groupby-column-value -> Aggregator Array}
+   * when the group key is DateTime.
    */
   private transient HashMap<DateTime, Object[]> datetimeAggState;
 
@@ -103,7 +105,8 @@ public class SingleGroupByAggregate extends UnaryOperator {
    * @param gfield The column over which we are grouping the result.
    * @param factories Factories for the aggregation operators to use.
    */
-  public SingleGroupByAggregate(@Nullable final Operator child, final int gfield, final AggregatorFactory... factories) {
+  public SingleGroupByAggregate(@Nullable final Operator child, final int gfield,
+      final AggregatorFactory... factories) {
     super(child);
     gColumn = Objects.requireNonNull(gfield, "gfield");
     this.factories = Objects.requireNonNull(factories, "factories");
@@ -122,8 +125,8 @@ public class SingleGroupByAggregate extends UnaryOperator {
   }
 
   /**
-   * Utility function to fetch or create/initialize the aggregation state for the group corresponding to the data in the
-   * specified table and row.
+   * Utility function to fetch or create/initialize the aggregation state for the group
+   * corresponding to the data in the specified table and row.
    * 
    * @param table the data to be aggregated.
    * @param row which row of the table is to be aggregated.
@@ -218,14 +221,16 @@ public class SingleGroupByAggregate extends UnaryOperator {
   }
 
   /**
-   * Helper function for appending results to an output tuple buffer. By convention, the single-column aggregation key
-   * goes in column 0, and the aggregates are appended starting at column 1.
+   * Helper function for appending results to an output tuple buffer. By convention, the
+   * single-column aggregation key goes in column 0, and the aggregates are appended starting at
+   * column 1.
    * 
    * @param resultBuffer where the tuples will be appended.
    * @param aggState the states corresponding to all aggregators.
    * @throws DbException if there is an error.
    */
-  private void concatResults(final TupleBatchBuffer resultBuffer, final Object[] aggState) throws DbException {
+  private void concatResults(final TupleBatchBuffer resultBuffer, final Object[] aggState)
+      throws DbException {
     int index = 1;
     for (int agg = 0; agg < aggregators.length; ++agg) {
       aggregators[agg].getResult(resultBuffer, index, aggState[agg]);
@@ -369,7 +374,8 @@ public class SingleGroupByAggregate extends UnaryOperator {
 
     Preconditions.checkElementIndex(gColumn, inputSchema.numColumns(), "group column");
 
-    Schema outputSchema = Schema.ofFields(inputSchema.getColumnType(gColumn), inputSchema.getColumnName(gColumn));
+    Schema outputSchema =
+        Schema.ofFields(inputSchema.getColumnType(gColumn), inputSchema.getColumnName(gColumn));
 
     gColumnType = inputSchema.getColumnType(gColumn);
     try {

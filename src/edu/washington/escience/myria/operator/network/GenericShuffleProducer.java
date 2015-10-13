@@ -11,8 +11,8 @@ import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
 
 /**
- * GenericShuffleProducer, which support json encoding of 1. Broadcast Shuffle 2. One to one Shuffle (Shuffle) 3. Hyper
- * Cube Join Shuffle (HyperJoinShuffle)
+ * GenericShuffleProducer, which support json encoding of 1. Broadcast Shuffle 2. One to one Shuffle
+ * (Shuffle) 3. Hyper Cube Join Shuffle (HyperJoinShuffle)
  */
 public class GenericShuffleProducer extends Producer {
 
@@ -37,28 +37,29 @@ public class GenericShuffleProducer extends Producer {
    * @param workerIDs set of destination workers
    * @param pf the partition function
    */
-  public GenericShuffleProducer(final Operator child, final ExchangePairID operatorID, final int[] workerIDs,
-      final PartitionFunction pf) {
-    this(child, new ExchangePairID[] { operatorID }, MyriaArrayUtils.create2DVerticalIndex(pf.numPartition()),
-        workerIDs, pf, false);
+  public GenericShuffleProducer(final Operator child, final ExchangePairID operatorID,
+      final int[] workerIDs, final PartitionFunction pf) {
+    this(child, new ExchangePairID[] {operatorID}, MyriaArrayUtils.create2DVerticalIndex(pf
+        .numPartition()), workerIDs, pf, false);
     Preconditions.checkArgument(workerIDs.length == pf.numPartition());
   }
 
   /**
-   * First partition data, then for each partition, send it to the set of workers in cellPartition[partition_id] using
-   * the same operator ID. For BroadcastProducer and HyperShuffleProducer.
+   * First partition data, then for each partition, send it to the set of workers in
+   * cellPartition[partition_id] using the same operator ID. For BroadcastProducer and
+   * HyperShuffleProducer.
    * 
    * @param child the child who provides data for this producer to distribute.
    * @param operatorID destination operators the data goes
-   * @param cellPartition buckets of destination workers the data goes. The set of ids in cellPartition[i] means
-   *          partition i should go to these workers. Since there's only one operator ID, cellPartition is also the
-   *          mapping from partitions to ioChannels.
+   * @param cellPartition buckets of destination workers the data goes. The set of ids in
+   *        cellPartition[i] means partition i should go to these workers. Since there's only one
+   *        operator ID, cellPartition is also the mapping from partitions to ioChannels.
    * @param workerIDs set of destination workers
    * @param pf the partition function
    * */
-  public GenericShuffleProducer(final Operator child, final ExchangePairID operatorID, final int[][] cellPartition,
-      final int[] workerIDs, final PartitionFunction pf) {
-    this(child, new ExchangePairID[] { operatorID }, cellPartition, workerIDs, pf, false);
+  public GenericShuffleProducer(final Operator child, final ExchangePairID operatorID,
+      final int[][] cellPartition, final int[] workerIDs, final PartitionFunction pf) {
+    this(child, new ExchangePairID[] {operatorID}, cellPartition, workerIDs, pf, false);
     Preconditions.checkArgument(cellPartition.length == pf.numPartition());
   }
 
@@ -67,7 +68,8 @@ public class GenericShuffleProducer extends Producer {
    * 
    * @param child the child who provides data for this producer to distribute.
    * @param operatorIDs destination operators the data goes
-   * @param partitionToChannel partitionToChannel[i] indicates ioChannels that partition i should be written into.
+   * @param partitionToChannel partitionToChannel[i] indicates ioChannels that partition i should be
+   *        written into.
    * @param workerIDs set of destination workers
    * @param pf the partition function
    * @param isOneToOneMapping the same as the one in Producer
@@ -108,8 +110,8 @@ public class GenericShuffleProducer extends Producer {
   }
 
   /**
-   * call partition function to partition this tuple batch as an array of shallow copies of TupleBatch. subclasses can
-   * override this method to have smarter partition approach.
+   * call partition function to partition this tuple batch as an array of shallow copies of
+   * TupleBatch. subclasses can override this method to have smarter partition approach.
    * 
    * @param tb the tuple batch to be partitioned.
    * @return partitions.

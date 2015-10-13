@@ -51,8 +51,8 @@ public abstract class UnaryExpression extends ExpressionOperator {
   }
 
   /**
-   * Returns the function call unary string: functionName + '(' + child + ")". E.g, for {@link SqrtExpression},
-   * <code>functionName</code> is <code>"Math.sqrt"</code>.
+   * Returns the function call unary string: functionName + '(' + child + ")". E.g, for
+   * {@link SqrtExpression}, <code>functionName</code> is <code>"Math.sqrt"</code>.
    * 
    * @param functionName the string representation of the Java function name.
    * @param parameters parameters that are needed to determine the output type
@@ -60,12 +60,13 @@ public abstract class UnaryExpression extends ExpressionOperator {
    */
   protected final String getFunctionCallUnaryString(final String functionName,
       final ExpressionOperatorParameter parameters) {
-    return new StringBuilder(functionName).append('(').append(operand.getJavaString(parameters)).append(')').toString();
+    return new StringBuilder(functionName).append('(').append(operand.getJavaString(parameters))
+        .append(')').toString();
   }
 
   /**
-   * Returns the function call unary string: child + functionName. E.g, for {@link ToUpperCaseExpression},
-   * <code>functionName</code> is <code>".toUpperCase()"</code>.
+   * Returns the function call unary string: child + functionName. E.g, for
+   * {@link ToUpperCaseExpression}, <code>functionName</code> is <code>".toUpperCase()"</code>.
    * 
    * @param functionName the string representation of the Java function name.
    * @param parameters parameters that are needed to determine the output type
@@ -100,27 +101,32 @@ public abstract class UnaryExpression extends ExpressionOperator {
   }
 
   /**
-   * A function that could be used as the default type checker for a unary expression where the operand must be numeric.
+   * A function that could be used as the default type checker for a unary expression where the
+   * operand must be numeric.
    * 
    * @param parameters parameters that are needed to determine the output type
    * @return the default numeric type, based on the type of the operand and Java type precedence.
    */
   protected Type checkAndReturnDefaultNumericType(final ExpressionOperatorParameter parameters) {
     Type operandType = getOperand().getOutputType(parameters);
-    ImmutableList<Type> validTypes = ImmutableList.of(Type.DOUBLE_TYPE, Type.FLOAT_TYPE, Type.LONG_TYPE, Type.INT_TYPE);
-    Preconditions.checkArgument(validTypes.contains(operandType), "%s cannot handle operand [%s] of Type %s",
-        getClass().getSimpleName(), getOperand(), operandType);
+    ImmutableList<Type> validTypes =
+        ImmutableList.of(Type.DOUBLE_TYPE, Type.FLOAT_TYPE, Type.LONG_TYPE, Type.INT_TYPE);
+    Preconditions.checkArgument(validTypes.contains(operandType),
+        "%s cannot handle operand [%s] of Type %s", getClass().getSimpleName(), getOperand(),
+        operandType);
     return operandType;
   }
 
   /**
-   * A function that could be used as the default type checker for a unary expression where the operand must be numeric.
+   * A function that could be used as the default type checker for a unary expression where the
+   * operand must be numeric.
    * 
    * @param parameters parameters that are needed to determine the output type
    */
   protected void checkBooleanType(final ExpressionOperatorParameter parameters) {
     Type operandType = getOperand().getOutputType(parameters);
-    Preconditions.checkArgument(operandType == Type.BOOLEAN_TYPE, "%s cannot handle operand [%s] of Type %s",
-        getClass().getSimpleName(), getOperand(), operandType);
+    Preconditions.checkArgument(operandType == Type.BOOLEAN_TYPE,
+        "%s cannot handle operand [%s] of Type %s", getClass().getSimpleName(), getOperand(),
+        operandType);
   }
 }

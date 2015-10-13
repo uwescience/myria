@@ -6,8 +6,8 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
 /**
- * A simple implementation of a reentrant spin lock. A spin lock may have better performance than blocking locks if the
- * lock holding code block is very small.
+ * A simple implementation of a reentrant spin lock. A spin lock may have better performance than
+ * blocking locks if the lock holding code block is very small.
  * */
 public class ReentrantSpinLock implements Lock {
 
@@ -44,7 +44,8 @@ public class ReentrantSpinLock implements Lock {
   public final void unlock() {
     Thread currentThread = Thread.currentThread();
     if (spinLock.get() != currentThread) {
-      throw new IllegalStateException("The current thread " + currentThread + " does not hold the lock.");
+      throw new IllegalStateException("The current thread " + currentThread
+          + " does not hold the lock.");
     }
     numHoldCount--;
     if (numHoldCount <= 0) {

@@ -13,8 +13,7 @@ public class LostHeartbeatException extends InterruptedException {
   /**
    * Default constructor.
    * */
-  public LostHeartbeatException() {
-  }
+  public LostHeartbeatException() {}
 
   /**
    * @param s the message describing the detail of this Exception.

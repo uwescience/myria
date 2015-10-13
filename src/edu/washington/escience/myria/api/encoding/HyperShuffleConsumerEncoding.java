@@ -12,7 +12,7 @@ public class HyperShuffleConsumerEncoding extends AbstractConsumerEncoding<Gener
 
   @Override
   public GenericShuffleConsumer construct(ConstructArgs args) {
-    return new GenericShuffleConsumer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
-        .integerSetToIntArray(getRealWorkerIds()));
+    return new GenericShuffleConsumer(null, MyriaUtils.getSingleElement(getRealOperatorIds()),
+        MyriaUtils.integerSetToIntArray(getRealWorkerIds()));
   }
 }

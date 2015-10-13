@@ -20,8 +20,9 @@ import edu.washington.escience.myria.util.concurrent.ReentrantSpinLock;
 import edu.washington.escience.myria.util.concurrent.ThreadStackDump;
 
 /**
- * An flow control aware InputBuffer implementation. This type of InputBuffer has a soft capacity. The number of
- * messages held in this InputBuffer can be as large as {@link Integer.MAX_VALUE}. But the soft capacity is a trigger.<br>
+ * An flow control aware InputBuffer implementation. This type of InputBuffer has a soft capacity.
+ * The number of messages held in this InputBuffer can be as large as {@link Integer.MAX_VALUE}. But
+ * the soft capacity is a trigger.<br>
  * If the soft capacity is meet, an IOEvent representing the buffer full event is triggered. <br>
  * If the
  *
@@ -35,14 +36,15 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
   static final Logger LOGGER = LoggerFactory.getLogger(FlowControlBagInputBuffer.class);
 
   /**
-   * After input buffer becomes full, if the size of the input buffer reaches this number, an input buffer recover event
-   * is triggered.
+   * After input buffer becomes full, if the size of the input buffer reaches this number, an input
+   * buffer recover event is triggered.
    * */
   private final int recoverEventTrigger;
 
   /**
-   * soft capacity, if the capacity is meet, a capacity full event is triggered, but the message will still be pushed
-   * into the inner inputbuffer. It's up to the caller applications to respond to the capacity full event.
+   * soft capacity, if the capacity is meet, a capacity full event is triggered, but the message
+   * will still be pushed into the inner inputbuffer. It's up to the caller applications to respond
+   * to the capacity full event.
    * */
   private final int softCapacity;
 
@@ -76,7 +78,8 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
    *
    * */
   public FlowControlBagInputBuffer(final IPCConnectionPool owner,
-      final ImmutableSet<StreamIOChannelID> remoteChannelIDs, final int softCapacity, final int recoverEventTrigger) {
+      final ImmutableSet<StreamIOChannelID> remoteChannelIDs, final int softCapacity,
+      final int recoverEventTrigger) {
     super(owner, remoteChannelIDs);
     bufferEmptyListeners = new ConcurrentLinkedQueue<IPCEventListener>();
     bufferFullListeners = new ConcurrentLinkedQueue<IPCEventListener>();
@@ -133,10 +136,11 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
 
   /**
    *
-   * Pause read of all IO channels which are inputs of the @{link Consumer} operator with ID operatorID.
+   * Pause read of all IO channels which are inputs of the @{link Consumer} operator with ID
+   * operatorID.
    *
-   * Called by Netty Upstream IO worker threads after pushing a data into an InputBuffer which has only a single empty
-   * slot or already full.
+   * Called by Netty Upstream IO worker threads after pushing a data into an InputBuffer which has
+   * only a single empty slot or already full.
    *
    * @return ChannelGroupFuture denotes the future of the pause read action.
    * */
@@ -241,7 +245,8 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
   }
 
   @Override
-  protected void postTimeoutPoll(final long time, final TimeUnit unit, final IPCMessage.StreamData<PAYLOAD> m) {
+  protected void postTimeoutPoll(final long time, final TimeUnit unit,
+      final IPCMessage.StreamData<PAYLOAD> m) {
     if (m != null) {
       checkOutputBufferStateEvents();
     }

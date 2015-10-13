@@ -61,8 +61,8 @@ public class SQLiteSetFilter extends UnaryOperator {
     super(child);
     Preconditions.checkArgument(child.getSchema().numColumns() == 1);
     sqlTemplate =
-        String.format("select %s from %s where %s in ( ", StringUtils.join(resultColumnNames, ","), tableName,
-            setColumnName);
+        String.format("select %s from %s where %s in ( ", StringUtils.join(resultColumnNames, ","),
+            tableName, setColumnName);
     this.outputSchema = outputSchema;
   }
 
@@ -110,8 +110,8 @@ public class SQLiteSetFilter extends UnaryOperator {
         setValues.add(v);
       }
       tuples =
-          SQLiteAccessMethod.tupleBatchIteratorFromQuery(sqliteInfo, sqlTemplate + StringUtils.join(setValues, ",")
-              + ")", outputSchema);
+          SQLiteAccessMethod.tupleBatchIteratorFromQuery(sqliteInfo,
+              sqlTemplate + StringUtils.join(setValues, ",") + ")", outputSchema);
       if (tuples.hasNext()) {
         return tuples.next();
       }

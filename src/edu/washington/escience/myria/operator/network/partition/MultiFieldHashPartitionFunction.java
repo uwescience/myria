@@ -31,15 +31,19 @@ public final class MultiFieldHashPartitionFunction extends PartitionFunction {
    * @param indexes the indices used for partitioning.
    */
   @JsonCreator
-  public MultiFieldHashPartitionFunction(@Nullable @JsonProperty("numPartitions") final Integer numPartition,
-      @JsonProperty(value = "indexes", required = true) final Integer[] indexes) {
+  public MultiFieldHashPartitionFunction(
+      @Nullable @JsonProperty("numPartitions") final Integer numPartition, @JsonProperty(
+          value = "indexes", required = true) final Integer[] indexes) {
     super(numPartition);
     Objects.requireNonNull(indexes, "indexes");
-    Preconditions.checkArgument(indexes.length > 1, "MultiFieldHash requires at least 2 fields to hash");
+    Preconditions.checkArgument(indexes.length > 1,
+        "MultiFieldHash requires at least 2 fields to hash");
     this.indexes = new int[indexes.length];
     for (int i = 0; i < indexes.length; ++i) {
-      int index = Preconditions.checkNotNull(indexes[i], "MultiFieldHash field index %s cannot be null", i);
-      Preconditions.checkArgument(index >= 0, "MultiFieldHash field index %s cannot take negative value %s", i, index);
+      int index =
+          Preconditions.checkNotNull(indexes[i], "MultiFieldHash field index %s cannot be null", i);
+      Preconditions.checkArgument(index >= 0,
+          "MultiFieldHash field index %s cannot take negative value %s", i, index);
       this.indexes[i] = index;
     }
   }
@@ -50,11 +54,13 @@ public final class MultiFieldHashPartitionFunction extends PartitionFunction {
    */
   public MultiFieldHashPartitionFunction(final Integer numPartition, final int[] indexes) {
     super(numPartition);
-    Preconditions.checkArgument(indexes.length > 1, "MultiFieldHash requires at least 2 fields to hash");
+    Preconditions.checkArgument(indexes.length > 1,
+        "MultiFieldHash requires at least 2 fields to hash");
     this.indexes = indexes;
     for (int i = 0; i < indexes.length; ++i) {
       int index = indexes[i];
-      Preconditions.checkArgument(index >= 0, "MultiFieldHash field index %s cannot take negative value %s", i, index);
+      Preconditions.checkArgument(index >= 0,
+          "MultiFieldHash field index %s cannot take negative value %s", i, index);
     }
   }
 

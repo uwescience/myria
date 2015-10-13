@@ -8,7 +8,8 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 
 /**
- * Expression operator that does not have a value but just a type. Can be used with {@link CastExpression}.
+ * Expression operator that does not have a value but just a type. Can be used with
+ * {@link CastExpression}.
  */
 public class TypeExpression extends ZeroaryExpression {
   /***/
@@ -45,7 +46,8 @@ public class TypeExpression extends ZeroaryExpression {
 
   @Override
   public String getJavaString(final ExpressionOperatorParameter parameters) {
-    throw new UnsupportedOperationException("This expression operator does not have a java string representation.");
+    throw new UnsupportedOperationException(
+        "This expression operator does not have a java string representation.");
   }
 
   @Override

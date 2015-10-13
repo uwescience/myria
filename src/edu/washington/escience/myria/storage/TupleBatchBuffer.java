@@ -19,8 +19,8 @@ import edu.washington.escience.myria.column.builder.WritableColumn;
 import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
- * Used for creating TupleBatch objects on the fly. A helper class used in, e.g., the Scatter operator. Currently it
- * doesn't support random access to a specific cell. Use TupleBuffer instead.
+ * Used for creating TupleBatch objects on the fly. A helper class used in, e.g., the Scatter
+ * operator. Currently it doesn't support random access to a specific cell. Use TupleBuffer instead.
  * 
  * 
  */
@@ -69,8 +69,8 @@ public class TupleBatchBuffer implements AppendableTable {
    */
   public final void appendTB(final TupleBatch tb) {
     /*
-     * If we're currently building a batch, we better finish it before we append this one to the list. Otherwise
-     * reordering will happen.
+     * If we're currently building a batch, we better finish it before we append this one to the
+     * list. Otherwise reordering will happen.
      */
     finishBatch();
 
@@ -102,7 +102,8 @@ public class TupleBatchBuffer implements AppendableTable {
   }
 
   /**
-   * Helper function to update the internal state after a value has been inserted into the specified column.
+   * Helper function to update the internal state after a value has been inserted into the specified
+   * column.
    * 
    * @param column the column in which the value was put.
    */
@@ -128,7 +129,8 @@ public class TupleBatchBuffer implements AppendableTable {
    * @return true if any tuples were added.
    */
   private boolean finishBatch() {
-    Preconditions.checkState(numColumnsReady == 0, "Cannot finish a batch with partially-completed tuples");
+    Preconditions.checkState(numColumnsReady == 0,
+        "Cannot finish a batch with partially-completed tuples");
     if (currentInProgressTuples == 0) {
       return false;
     }
@@ -150,7 +152,8 @@ public class TupleBatchBuffer implements AppendableTable {
   /**
    * Return all tuples in this buffer. The data do not get removed.
    * 
-   * @return a List<TupleBatch> containing all complete tuples that have been inserted into this buffer.
+   * @return a List<TupleBatch> containing all complete tuples that have been inserted into this
+   *         buffer.
    */
   public final List<TupleBatch> getAll() {
     final List<TupleBatch> output = new ArrayList<TupleBatch>(readyTuples.size() + 1);
@@ -164,7 +167,8 @@ public class TupleBatchBuffer implements AppendableTable {
   /**
    * Return all tuples in this buffer. The data do not get removed.
    * 
-   * @return a List<TupleBatch> containing all complete tuples that have been inserted into this buffer.
+   * @return a List<TupleBatch> containing all complete tuples that have been inserted into this
+   *         buffer.
    */
   public final List<List<? extends Column<?>>> getAllAsRawColumn() {
     final List<List<? extends Column<?>>> output = new ArrayList<>();
@@ -344,11 +348,12 @@ public class TupleBatchBuffer implements AppendableTable {
   public final void put(final TupleBatch leftTb, final int leftIdx, final int[] leftAnswerColumns,
       final TupleBatch rightTb, final int rightIdx, final int[] rightAnswerColumns) {
     for (int i = 0; i < leftAnswerColumns.length; ++i) {
-      TupleUtils.copyValue(leftTb.getDataColumns().get(leftAnswerColumns[i]), leftIdx, currentBuildingColumns.get(i));
+      TupleUtils.copyValue(leftTb.getDataColumns().get(leftAnswerColumns[i]), leftIdx,
+          currentBuildingColumns.get(i));
     }
     for (int i = 0; i < rightAnswerColumns.length; ++i) {
-      TupleUtils.copyValue(rightTb.getDataColumns().get(rightAnswerColumns[i]), rightIdx, currentBuildingColumns.get(i
-          + leftAnswerColumns.length));
+      TupleUtils.copyValue(rightTb.getDataColumns().get(rightAnswerColumns[i]), rightIdx,
+          currentBuildingColumns.get(i + leftAnswerColumns.length));
     }
     currentInProgressTuples++;
     if (currentInProgressTuples == TupleBatch.BATCH_SIZE) {
@@ -357,7 +362,8 @@ public class TupleBatchBuffer implements AppendableTable {
   }
 
   /**
-   * Append the specified value to the specified destination column in this TupleBatchBuffer from the source column.
+   * Append the specified value to the specified destination column in this TupleBatchBuffer from
+   * the source column.
    * 
    * @param destColumn which column in this TBB the value will be inserted.
    * @param sourceColumn the column from which data will be retrieved.
@@ -445,9 +451,9 @@ public class TupleBatchBuffer implements AppendableTable {
   }
 
   /**
-   * Add the specified {@link TupleBatch} to this buffer. The implementation is O(1) when possible, i.e. if the
-   * TupleBatch is full and this buffer is not building a partially-complete TupleBatch. Otherwise, it's O(N) in the
-   * size of the TupleBatch because it is a full copy.
+   * Add the specified {@link TupleBatch} to this buffer. The implementation is O(1) when possible,
+   * i.e. if the TupleBatch is full and this buffer is not building a partially-complete TupleBatch.
+   * Otherwise, it's O(N) in the size of the TupleBatch because it is a full copy.
    * 
    * @param tupleBatch the tuple data to be added to this buffer.
    */

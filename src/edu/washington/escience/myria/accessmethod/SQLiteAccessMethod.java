@@ -62,7 +62,8 @@ public final class SQLiteAccessMethod extends AccessMethod {
   }
 
   @Override
-  public void connect(final ConnectionInfo connectionInfo, final Boolean readOnly) throws DbException {
+  public void connect(final ConnectionInfo connectionInfo, final Boolean readOnly)
+      throws DbException {
     Objects.requireNonNull(connectionInfo);
 
     this.readOnly = readOnly;
@@ -81,7 +82,8 @@ public final class SQLiteAccessMethod extends AccessMethod {
           throw new DbException("Could not create database file" + dbFile.getAbsolutePath(), e);
         }
       } else {
-        throw new DbException("Database file " + sqliteInfo.getDatabaseFilename() + " does not exist!");
+        throw new DbException("Database file " + sqliteInfo.getDatabaseFilename()
+            + " does not exist!");
       }
     }
 
@@ -114,7 +116,8 @@ public final class SQLiteAccessMethod extends AccessMethod {
   }
 
   @Override
-  public void tupleBatchInsert(final RelationKey relationKey, final TupleBatch tupleBatch) throws DbException {
+  public void tupleBatchInsert(final RelationKey relationKey, final TupleBatch tupleBatch)
+      throws DbException {
     Objects.requireNonNull(sqliteQueue);
 
     try {
@@ -140,7 +143,8 @@ public final class SQLiteAccessMethod extends AccessMethod {
                     statement.bind(col + 1, colVal);
                     break;
                   case DATETIME_TYPE:
-                    statement.bind(col + 1, tupleBatch.getDateTime(col, row).getMillis()); // SQLite long
+                    statement.bind(col + 1, tupleBatch.getDateTime(col, row).getMillis()); // SQLite
+                                                                                           // long
                     break;
                   case DOUBLE_TYPE:
                     statement.bind(col + 1, tupleBatch.getDouble(col, row));
@@ -181,22 +185,25 @@ public final class SQLiteAccessMethod extends AccessMethod {
 
   }
 
-  /** How many times to try to open a database before we give up. Normal is 2-3, outside is 10 to 20. */
+  /**
+   * How many times to try to open a database before we give up. Normal is 2-3, outside is 10 to 20.
+   */
   private static final int MAX_RETRY_ATTEMPTS = 1000;
 
   @Override
-  public Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String queryString, final Schema schema)
-      throws DbException {
+  public Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String queryString,
+      final Schema schema) throws DbException {
     Objects.requireNonNull(sqliteConnection);
     Objects.requireNonNull(schema);
 
     /* Set up and execute the query */
     SQLiteStatement statement = null;
     /*
-     * prepare() might throw an exception. My understanding is, when a connection starts in WAL mode, it will first
-     * acquire an exclusive lock to check if there is -wal file to recover from. Usually the file is empty so the lock
-     * is released pretty fast. However if another connection comes during the exclusive lock period, a
-     * "database is locked" exception will still be thrown. The following code simply tries to call prepare again.
+     * prepare() might throw an exception. My understanding is, when a connection starts in WAL
+     * mode, it will first acquire an exclusive lock to check if there is -wal file to recover from.
+     * Usually the file is empty so the lock is released pretty fast. However if another connection
+     * comes during the exclusive lock period, a "database is locked" exception will still be
+     * thrown. The following code simply tries to call prepare again.
      */
     int count = 0;
     Throwable cause = null;
@@ -210,7 +217,7 @@ public final class SQLiteAccessMethod extends AccessMethod {
           Thread.sleep(MyriaConstants.SHORT_WAITING_INTERVAL_10_MS);
         } catch (InterruptedException e1) {
           Thread.currentThread().interrupt();
-          return Collections.<TupleBatch> emptyList().iterator();
+          return Collections.<TupleBatch>emptyList().iterator();
         }
       }
     }
@@ -277,8 +284,8 @@ public final class SQLiteAccessMethod extends AccessMethod {
    * @param tupleBatch TupleBatch that contains the data to be inserted.
    * @throws DbException if there is an error in the database.
    */
-  public static synchronized void tupleBatchInsert(final SQLiteInfo sqliteInfo, final RelationKey relationKey,
-      final TupleBatch tupleBatch) throws DbException {
+  public static synchronized void tupleBatchInsert(final SQLiteInfo sqliteInfo,
+      final RelationKey relationKey, final TupleBatch tupleBatch) throws DbException {
 
     SQLiteAccessMethod sqliteAccessMethod = null;
     try {
@@ -302,8 +309,8 @@ public final class SQLiteAccessMethod extends AccessMethod {
    * @return an Iterator<TupleBatch> containing the results of the query
    * @throws DbException if there is an error in the database.
    */
-  public static Iterator<TupleBatch> tupleBatchIteratorFromQuery(final SQLiteInfo sqliteInfo, final String queryString,
-      final Schema schema) throws DbException {
+  public static Iterator<TupleBatch> tupleBatchIteratorFromQuery(final SQLiteInfo sqliteInfo,
+      final String queryString, final Schema schema) throws DbException {
 
     SQLiteAccessMethod sqliteAccessMethod = null;
     try {
@@ -320,7 +327,8 @@ public final class SQLiteAccessMethod extends AccessMethod {
   @Override
   public String insertStatementFromSchema(final Schema schema, final RelationKey relationKey) {
     final StringBuilder sb = new StringBuilder();
-    sb.append("INSERT INTO ").append(relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)).append(" ([");
+    sb.append("INSERT INTO ").append(relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE))
+        .append(" ([");
     sb.append(StringUtils.join(schema.getColumnNames(), "],["));
     sb.append("]) VALUES (");
     for (int i = 0; i < schema.numColumns(); ++i) {
@@ -334,15 +342,17 @@ public final class SQLiteAccessMethod extends AccessMethod {
   }
 
   @Override
-  public String createIfNotExistsStatementFromSchema(final Schema schema, final RelationKey relationKey) {
+  public String createIfNotExistsStatementFromSchema(final Schema schema,
+      final RelationKey relationKey) {
     final StringBuilder sb = new StringBuilder();
-    sb.append("CREATE TABLE IF NOT EXISTS ").append(relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)).append(
-        " (");
+    sb.append("CREATE TABLE IF NOT EXISTS ")
+        .append(relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)).append(" (");
     for (int i = 0; i < schema.numColumns(); ++i) {
       if (i > 0) {
         sb.append(", ");
       }
-      sb.append('[').append(schema.getColumnName(i)).append("] ").append(typeToSQLiteType(schema.getColumnType(i)));
+      sb.append('[').append(schema.getColumnName(i)).append("] ")
+          .append(typeToSQLiteType(schema.getColumnType(i)));
     }
     sb.append(");");
     return sb.toString();
@@ -374,7 +384,8 @@ public final class SQLiteAccessMethod extends AccessMethod {
   }
 
   @Override
-  public void createTableIfNotExists(final RelationKey relationKey, final Schema schema) throws DbException {
+  public void createTableIfNotExists(final RelationKey relationKey, final Schema schema)
+      throws DbException {
     Objects.requireNonNull(sqliteQueue);
     Objects.requireNonNull(sqliteInfo);
     Objects.requireNonNull(relationKey);
@@ -384,7 +395,8 @@ public final class SQLiteAccessMethod extends AccessMethod {
   }
 
   @Override
-  public void dropAndRenameTables(final RelationKey oldRelation, final RelationKey newRelation) throws DbException {
+  public void dropAndRenameTables(final RelationKey oldRelation, final RelationKey newRelation)
+      throws DbException {
     dropTableIfExists(oldRelation);
     final String oldName = oldRelation.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE);
     final String newName = newRelation.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE);
@@ -403,24 +415,28 @@ public final class SQLiteAccessMethod extends AccessMethod {
   }
 
   @Override
-  public void createIndexes(final RelationKey relationKey, final Schema schema, final List<List<IndexRef>> indexes)
-      throws DbException {
+  public void createIndexes(final RelationKey relationKey, final Schema schema,
+      final List<List<IndexRef>> indexes) throws DbException {
 
     Objects.requireNonNull(relationKey);
     Objects.requireNonNull(schema);
     Objects.requireNonNull(indexes);
 
     /*
-     * All indexes go in a separate "program" that has the name "__myria_indexes_TIMESTAMP" appended to it. We need the
-     * timestamp because SQLite doesn't have a rename indexes command.
+     * All indexes go in a separate "program" that has the name "__myria_indexes_TIMESTAMP" appended
+     * to it. We need the timestamp because SQLite doesn't have a rename indexes command.
      */
     final String indexProgramName =
-        new StringBuilder(relationKey.getProgramName()).append("__myria_indexes_").append(System.nanoTime()).toString();
+        new StringBuilder(relationKey.getProgramName()).append("__myria_indexes_")
+            .append(System.nanoTime()).toString();
 
     final String tempTableName = relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE);
     for (List<IndexRef> index : indexes) {
       Objects.requireNonNull(index);
-      /* The inner loop builds two things: the relation name for the index, and the list of columns to be indexed. */
+      /*
+       * The inner loop builds two things: the relation name for the index, and the list of columns
+       * to be indexed.
+       */
       StringBuilder name = new StringBuilder(relationKey.getRelationName());
       StringBuilder columns = new StringBuilder("(");
       boolean first = true;
@@ -441,20 +457,22 @@ public final class SQLiteAccessMethod extends AccessMethod {
       }
       columns.append(')');
 
-      RelationKey indexRelationKey = RelationKey.of(relationKey.getUserName(), indexProgramName, name.toString());
+      RelationKey indexRelationKey =
+          RelationKey.of(relationKey.getUserName(), indexProgramName, name.toString());
       final String indexName = indexRelationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE);
 
       StringBuilder statement = new StringBuilder();
-      statement.append("CREATE INDEX ").append(indexName).append(" ON ").append(tempTableName).append(
-          columns.toString());
+      statement.append("CREATE INDEX ").append(indexName).append(" ON ").append(tempTableName)
+          .append(columns.toString());
 
       execute(statement.toString());
     }
   }
 
   @Override
-  public void createIndexIfNotExists(final RelationKey relationKey, final Schema schema, final List<IndexRef> index)
-      throws DbException {
-    throw new UnsupportedOperationException("create index if not exists is not supported in sqlite yet, implement me");
+  public void createIndexIfNotExists(final RelationKey relationKey, final Schema schema,
+      final List<IndexRef> index) throws DbException {
+    throw new UnsupportedOperationException(
+        "create index if not exists is not supported in sqlite yet, implement me");
   }
 }

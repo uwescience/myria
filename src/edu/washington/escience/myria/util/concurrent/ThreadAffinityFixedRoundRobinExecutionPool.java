@@ -15,8 +15,8 @@ import org.jboss.netty.util.internal.ConcurrentIdentityWeakKeyHashMap;
 import com.google.common.base.Preconditions;
 
 /**
- * A simple implementation of the {@link ThreadAffinityExecutorService}. It is fixed-sized. It uses a simple round-robin
- * policy to assign new tasks to an executor.
+ * A simple implementation of the {@link ThreadAffinityExecutorService}. It is fixed-sized. It uses
+ * a simple round-robin policy to assign new tasks to an executor.
  * */
 public class ThreadAffinityFixedRoundRobinExecutionPool extends AbstractExecutorService implements
     ThreadAffinityExecutorService {
@@ -47,7 +47,8 @@ public class ThreadAffinityFixedRoundRobinExecutionPool extends AbstractExecutor
    * @param poolSize thread pool size
    * @param threadFactory thread factory
    * */
-  public ThreadAffinityFixedRoundRobinExecutionPool(final int poolSize, final ThreadFactory threadFactory) {
+  public ThreadAffinityFixedRoundRobinExecutionPool(final int poolSize,
+      final ThreadFactory threadFactory) {
     Preconditions.checkArgument(poolSize > 0);
     ThreadFactory tf = threadFactory;
     if (tf == null) {
@@ -98,7 +99,8 @@ public class ThreadAffinityFixedRoundRobinExecutionPool extends AbstractExecutor
   }
 
   @Override
-  public boolean awaitTermination(final long timeout, final TimeUnit unit) throws InterruptedException {
+  public boolean awaitTermination(final long timeout, final TimeUnit unit)
+      throws InterruptedException {
     long timeoutNanoLeft = unit.toNanos(timeout);
     long startNano = System.nanoTime();
     for (DefaultThreadAffinityExecutor executor : executors) {

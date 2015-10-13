@@ -38,13 +38,14 @@ public class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
   /**
    * Wraps a SQLiteStatement result set in an Iterator<TupleBatch>.
    * 
-   * @param statement the SQLiteStatement containing the results. If it has not yet stepped, this constructor will step
-   *          it. Then the Schema of the generated TupleBatchs will be extracted from the statement.
+   * @param statement the SQLiteStatement containing the results. If it has not yet stepped, this
+   *        constructor will step it. Then the Schema of the generated TupleBatchs will be extracted
+   *        from the statement.
    * @param connection the connection to the SQLite database.
    * @param schema the Schema describing the format of the TupleBatch containing these results.
    */
-  public SQLiteTupleBatchIterator(final SQLiteStatement statement, final SQLiteConnection connection,
-      final Schema schema) {
+  public SQLiteTupleBatchIterator(final SQLiteStatement statement,
+      final SQLiteConnection connection, final Schema schema) {
     this.connection = connection;
     this.statement = statement;
     try {
@@ -78,8 +79,8 @@ public class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
     final List<ColumnBuilder<?>> columnBuilders = ColumnFactory.allocateColumns(schema);
 
     /**
-     * Loop through resultSet, adding one row at a time. Stop when numTuples hits BATCH_SIZE or there are no more
-     * results.
+     * Loop through resultSet, adding one row at a time. Stop when numTuples hits BATCH_SIZE or
+     * there are no more results.
      */
     int numTuples;
     try {

@@ -23,6 +23,7 @@ public class RightHashJoinEncoding extends BinaryOperatorEncoding<RightHashJoin>
 
   @Override
   public RightHashJoin construct(ConstructArgs args) {
-    return new RightHashJoin(argColumnNames, null, null, argColumns1, argColumns2, argSelect1, argSelect2);
+    return new RightHashJoin(argColumnNames, null, null, argColumns1, argColumns2, argSelect1,
+        argSelect2);
   }
 }

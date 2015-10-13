@@ -53,7 +53,8 @@ public final class LongColumnBuilder extends ColumnBuilder<Long> {
    */
   public static LongColumn buildFromProtobuf(final ColumnMessage message, final int numTuples) {
     if (message.getType().ordinal() != ColumnMessage.Type.LONG_VALUE) {
-      throw new IllegalArgumentException("Trying to construct LongColumn from non-LONG ColumnMessage");
+      throw new IllegalArgumentException(
+          "Trying to construct LongColumn from non-LONG ColumnMessage");
     }
     if (!message.hasLongColumn()) {
       throw new IllegalArgumentException("ColumnMessage has type LONG but no LongColumn");
@@ -73,29 +74,33 @@ public final class LongColumnBuilder extends ColumnBuilder<Long> {
 
   @Override
   public LongColumnBuilder appendLong(final long value) throws BufferOverflowException {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkArgument(!built,
+        "No further changes are allowed after the builder has built the column.");
     data.put(value);
     return this;
   }
 
   @Override
-  public ColumnBuilder<Long> appendFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException,
-      BufferOverflowException {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+  public ColumnBuilder<Long> appendFromJdbc(final ResultSet resultSet, final int jdbcIndex)
+      throws SQLException, BufferOverflowException {
+    Preconditions.checkArgument(!built,
+        "No further changes are allowed after the builder has built the column.");
     return appendLong(resultSet.getLong(jdbcIndex));
   }
 
   @Override
-  public ColumnBuilder<Long> appendFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException,
-      BufferOverflowException {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+  public ColumnBuilder<Long> appendFromSQLite(final SQLiteStatement statement, final int index)
+      throws SQLiteException, BufferOverflowException {
+    Preconditions.checkArgument(!built,
+        "No further changes are allowed after the builder has built the column.");
     return appendLong(statement.columnLong(index));
   }
 
   @Deprecated
   @Override
   public ColumnBuilder<Long> appendObject(final Object value) throws BufferOverflowException {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkArgument(!built,
+        "No further changes are allowed after the builder has built the column.");
     return appendLong((Long) MyriaUtils.ensureObjectIsValidType(value));
   }
 
@@ -118,14 +123,16 @@ public final class LongColumnBuilder extends ColumnBuilder<Long> {
 
   @Override
   public void replaceLong(final long value, final int row) throws IndexOutOfBoundsException {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkArgument(!built,
+        "No further changes are allowed after the builder has built the column.");
     Preconditions.checkElementIndex(row, data.position());
     data.put(row, value);
   }
 
   @Override
   public ColumnBuilder<Long> expand(final int size) {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkArgument(!built,
+        "No further changes are allowed after the builder has built the column.");
     Preconditions.checkArgument(size >= 0);
     data.position(data.position() + size);
     return this;
@@ -133,7 +140,8 @@ public final class LongColumnBuilder extends ColumnBuilder<Long> {
 
   @Override
   public ColumnBuilder<Long> expandAll() {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkArgument(!built,
+        "No further changes are allowed after the builder has built the column.");
     data.position(data.limit());
     return this;
   }
@@ -153,7 +161,8 @@ public final class LongColumnBuilder extends ColumnBuilder<Long> {
   public LongColumnBuilder forkNewBuilder() {
     long[] arr = new long[data.array().length];
     System.arraycopy(data.array(), 0, arr, 0, arr.length);
-    return new LongColumnBuilder((LongBuffer) LongBuffer.wrap(arr).position(data.position()).limit(data.limit()));
+    return new LongColumnBuilder((LongBuffer) LongBuffer.wrap(arr).position(data.position())
+        .limit(data.limit()));
   }
 
 }

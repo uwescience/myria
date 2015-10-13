@@ -34,8 +34,8 @@ public abstract class AccessMethod {
    * @return the object of type AccessMethod
    * @throws DbException if anything goes wrong on connecting
    */
-  public static AccessMethod of(final String dbms, final ConnectionInfo connectionInfo, final Boolean readOnly)
-      throws DbException {
+  public static AccessMethod of(final String dbms, final ConnectionInfo connectionInfo,
+      final Boolean readOnly) throws DbException {
     switch (dbms) {
       case MyriaConstants.STORAGE_SYSTEM_SQLITE:
         return new SQLiteAccessMethod((SQLiteInfo) connectionInfo, readOnly);
@@ -54,7 +54,8 @@ public abstract class AccessMethod {
    * @param readOnly whether read-only connection or not
    * @throws DbException if there is an error making the connection.
    */
-  abstract void connect(final ConnectionInfo connectionInfo, final Boolean readOnly) throws DbException;
+  abstract void connect(final ConnectionInfo connectionInfo, final Boolean readOnly)
+      throws DbException;
 
   /**
    * Sets the connection to be read-only or writable.
@@ -72,18 +73,20 @@ public abstract class AccessMethod {
    * 
    * @throws DbException if there is an error inserting the tuples.
    */
-  public abstract void tupleBatchInsert(final RelationKey relationKey, final TupleBatch tupleBatch) throws DbException;
+  public abstract void tupleBatchInsert(final RelationKey relationKey, final TupleBatch tupleBatch)
+      throws DbException;
 
   /**
    * Runs a query and expose the results as an Iterator<TupleBatch>.
    * 
    * @param queryString the query
-   * @param schema the output schema (with SQLite we are not able to reconstruct the schema from the API)
+   * @param schema the output schema (with SQLite we are not able to reconstruct the schema from the
+   *        API)
    * @return an Iterator<TupleBatch> containing the results.
    * @throws DbException if there is an error getting tuples.
    */
-  public abstract Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String queryString, final Schema schema)
-      throws DbException;
+  public abstract Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String queryString,
+      final Schema schema) throws DbException;
 
   /**
    * Executes a DDL command.
@@ -105,8 +108,7 @@ public abstract class AccessMethod {
    * 
    * @throws DbException if there is an error in the database.
    */
-  public void init() throws DbException {
-  }
+  public void init() throws DbException {}
 
   /**
    * Generates the insert statement string for a relation in the database.
@@ -133,17 +135,20 @@ public abstract class AccessMethod {
    * @param schema the relation schema
    * @throws DbException if anything goes wrong
    */
-  public abstract void createTableIfNotExists(RelationKey relationKey, Schema schema) throws DbException;
+  public abstract void createTableIfNotExists(RelationKey relationKey, Schema schema)
+      throws DbException;
 
   /**
-   * Overwrite <code>oldRelation</code> with <code>newRelation</code> by dropping <code>oldRelation</code> if it exists
-   * and renaming <code>newRelation</code> to <code>oldRelation</code>.
+   * Overwrite <code>oldRelation</code> with <code>newRelation</code> by dropping
+   * <code>oldRelation</code> if it exists and renaming <code>newRelation</code> to
+   * <code>oldRelation</code>.
    * 
    * @param oldRelation the table to be overwritten.
    * @param newRelation the table replacing <code>old</code>.
    * @throws DbException if there is an error during this operation.
    */
-  public abstract void dropAndRenameTables(RelationKey oldRelation, RelationKey newRelation) throws DbException;
+  public abstract void dropAndRenameTables(RelationKey oldRelation, RelationKey newRelation)
+      throws DbException;
 
   /**
    * Drop the specified table, if it exists.
@@ -160,7 +165,8 @@ public abstract class AccessMethod {
   public abstract void dropTableIfExistsCascade(RelationKey relationKey) throws DbException;
 
   /**
-   * Creates the specified indexes on the provided temporary table, but uses the real table name for their names.
+   * Creates the specified indexes on the provided temporary table, but uses the real table name for
+   * their names.
    * 
    * @param relationKey the table on which the indexes will be created.
    * @param schema the Schema of the data in the table.

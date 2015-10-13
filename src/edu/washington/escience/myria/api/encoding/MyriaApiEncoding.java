@@ -14,8 +14,8 @@ import com.google.common.collect.Lists;
 import edu.washington.escience.myria.api.MyriaApiException;
 
 /**
- * The interface that all encodings must support. In particular, the validate function must throw an exception
- * explaining why the deserialized object is incorrect.
+ * The interface that all encodings must support. In particular, the validate function must throw an
+ * exception explaining why the deserialized object is incorrect.
  * 
  * 
  */
@@ -37,9 +37,9 @@ public abstract class MyriaApiEncoding {
   }
 
   /**
-   * Checks that this deserialized instance passes input validation. First, it enforces that all required fields
-   * (defined by the return value from getRequiredFields()) are present. Second, it calls the child's method
-   * validateExtra().
+   * Checks that this deserialized instance passes input validation. First, it enforces that all
+   * required fields (defined by the return value from getRequiredFields()) are present. Second, it
+   * calls the child's method validateExtra().
    * 
    * @throws MyriaApiException if the validation checks fail.
    */
@@ -56,8 +56,12 @@ public abstract class MyriaApiEncoding {
       throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, e);
     }
     if (!missing.isEmpty()) {
-      /* Some field is missing; throw a 400 (BAD REQUEST) exception with the list of required fields. */
-      final StringBuilder sb = new StringBuilder(getClass().getName()).append(" is missing required fields: ");
+      /*
+       * Some field is missing; throw a 400 (BAD REQUEST) exception with the list of required
+       * fields.
+       */
+      final StringBuilder sb =
+          new StringBuilder(getClass().getName()).append(" is missing required fields: ");
       sb.append(Joiner.on(", ").join(missing)).append(".\n");
       throw new MyriaApiException(Status.BAD_REQUEST, sb.toString());
     }
@@ -65,10 +69,9 @@ public abstract class MyriaApiEncoding {
   }
 
   /**
-   * Adaptor function for extending operators to use if they wish to add extra validation beyond the list of required
-   * fields.
+   * Adaptor function for extending operators to use if they wish to add extra validation beyond the
+   * list of required fields.
    */
-  protected void validateExtra() throws MyriaApiException {
-  }
+  protected void validateExtra() throws MyriaApiException {}
 
 }

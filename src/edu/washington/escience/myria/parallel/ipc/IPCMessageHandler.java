@@ -46,7 +46,8 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
   }
 
   @Override
-  public void channelConnected(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
+  public void channelConnected(final ChannelHandlerContext ctx, final ChannelStateEvent e)
+      throws Exception {
     if (ctx.getChannel().getParent() != null) {
       final ChannelContext cs = ChannelContext.getChannelContext(e.getChannel());
       if (cs != null) {
@@ -56,7 +57,8 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
   }
 
   @Override
-  public void channelDisconnected(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
+  public void channelDisconnected(final ChannelHandlerContext ctx, final ChannelStateEvent e)
+      throws Exception {
     ChannelContext cc = ChannelContext.getChannelContext(e.getChannel());
     RegisteredChannelContext rcc = cc.getRegisteredChannelContext();
     if (rcc != null) {
@@ -68,7 +70,8 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
   }
 
   @Override
-  public void channelOpen(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
+  public void channelOpen(final ChannelHandlerContext ctx, final ChannelStateEvent e)
+      throws Exception {
     if (ctx.getChannel().getParent() != null) {
       ownerConnectionPool.newAcceptedRemoteChannel(e.getChannel());
     }
@@ -80,8 +83,8 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
    * @param metaMessage the received message
    * @throws InterruptedException if interrupted.
    * */
-  private void receiveUnregisteredMeta(final Channel ch, final ChannelContext cc, final IPCMessage.Meta metaMessage)
-      throws InterruptedException {
+  private void receiveUnregisteredMeta(final Channel ch, final ChannelContext cc,
+      final IPCMessage.Meta metaMessage) throws InterruptedException {
     if (metaMessage instanceof IPCMessage.Meta.CONNECT) {
       int remoteID = ((IPCMessage.Meta.CONNECT) metaMessage).getRemoteID();
       if (!ownerConnectionPool.isRemoteValid(remoteID)) {
@@ -99,8 +102,8 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
     }
 
     if (LOGGER.isErrorEnabled()) {
-      LOGGER.error("Channel: {}. Unknown session. Send me the remote id before data transfer.", ChannelContext
-          .channelToString(ch));
+      LOGGER.error("Channel: {}. Unknown session. Send me the remote id before data transfer.",
+          ChannelContext.channelToString(ch));
     }
   }
 
@@ -109,9 +112,11 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
    * @param cc channel context of ch.
    * @param metaMessage the received message
    * */
-  private void receiveRegisteredMeta(final Channel ch, final ChannelContext cc, final IPCMessage.Meta metaMessage) {
+  private void receiveRegisteredMeta(final Channel ch, final ChannelContext cc,
+      final IPCMessage.Meta metaMessage) {
     int remoteID = cc.getRegisteredChannelContext().getRemoteID();
-    StreamInputChannel<Object> existingIChannel = cc.getRegisteredChannelContext().getIOPair().getInputChannel();
+    StreamInputChannel<Object> existingIChannel =
+        cc.getRegisteredChannelContext().getIOPair().getInputChannel();
 
     if (metaMessage instanceof IPCMessage.Meta.BOS) {
       // At the beginning of a stream, record the operator id.
@@ -121,14 +126,16 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
             .error(String
                 .format(
                     "Duplicate BOS received from a stream channel %4$s. Existing Stream: (RemoteID:%1$s, StreamID:%2$d), new BOS: (RemoteID:%1$s, StreamID:%3$d). Dropped.",
-                    remoteID, existingIChannel.getID().getStreamID(), streamID, ChannelContext.channelToString(ch)));
+                    remoteID, existingIChannel.getID().getStreamID(), streamID,
+                    ChannelContext.channelToString(ch)));
       } else {
         StreamIOChannelID ecID = new StreamIOChannelID(streamID, remoteID);
         StreamInputBuffer<Object> ib = ownerConnectionPool.getInputBuffer(ecID);
         if (ib == null) {
           if (LOGGER.isErrorEnabled()) {
-            LOGGER.error("Unknown data stream: (RemoteID {}, stream ID:{}). Received through {}. Denined.", remoteID,
-                streamID, ChannelContext.channelToString(ch));
+            LOGGER.error(
+                "Unknown data stream: (RemoteID {}, stream ID:{}). Received through {}. Denined.",
+                remoteID, streamID, ChannelContext.channelToString(ch));
           }
           return;
         }
@@ -141,38 +148,41 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
         LOGGER.error("EOS received from a non-stream channel {}. From RemoteID:{}.",
             ChannelContext.channelToString(ch), remoteID);
       } else {
-        long streamID = cc.getRegisteredChannelContext().getIOPair().getInputChannel().getID().getStreamID();
+        long streamID =
+            cc.getRegisteredChannelContext().getIOPair().getInputChannel().getID().getStreamID();
         receiveRegisteredData(ch, cc, IPCMessage.StreamData.eos(remoteID, streamID));
         cc.getRegisteredChannelContext().getIOPair().deMapInputChannel();
         ChannelContext.resumeRead(ch);
         if (LOGGER.isTraceEnabled()) {
-          LOGGER.trace("EOS received from physical channel {} Logical channel is opID:{},rmtID{}.", ChannelContext
-              .channelToString(ch), streamID, remoteID);
+          LOGGER.trace("EOS received from physical channel {} Logical channel is opID:{},rmtID{}.",
+              ChannelContext.channelToString(ch), streamID, remoteID);
         }
       }
       return;
     } else if (metaMessage == IPCMessage.Meta.DISCONNECT) {
       if (existingIChannel != null) {
-        LOGGER.error(
-            "DISCONNECT received when the channel is still in use as a stream input: {}. Physical channel: {}",
-            existingIChannel.getID(), ChannelContext.channelToString(ch));
+        LOGGER
+            .error(
+                "DISCONNECT received when the channel is still in use as a stream input: {}. Physical channel: {}",
+                existingIChannel.getID(), ChannelContext.channelToString(ch));
       } else {
         if (ch.getParent() != null) {
           // serverChannel
           ownerConnectionPool.closeChannelRequested(ch);
         } else {
           if (LOGGER.isErrorEnabled()) {
-            LOGGER.error(
-                "Disconnect should only be sent from client channel to accepted channel. Physical channel: {}",
-                ChannelContext.channelToString(ch));
+            LOGGER
+                .error(
+                    "Disconnect should only be sent from client channel to accepted channel. Physical channel: {}",
+                    ChannelContext.channelToString(ch));
           }
         }
       }
       return;
     } else if (metaMessage instanceof IPCMessage.Meta.CONNECT) {
       if (LOGGER.isErrorEnabled()) {
-        LOGGER.error("Duplicate Channel CONNECT message. Channel: {}, remoteID: {}. Dropped.", ChannelContext
-            .channelToString(ch), remoteID);
+        LOGGER.error("Duplicate Channel CONNECT message. Channel: {}, remoteID: {}. Dropped.",
+            ChannelContext.channelToString(ch), remoteID);
       }
       return;
     }
@@ -183,8 +193,8 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
    * */
   private void receiveUnregisteredData(final Channel ch) {
     if (LOGGER.isErrorEnabled()) {
-      LOGGER.error("Channel: {}. Unknown session. Send me the remote id before data transfer.", ChannelContext
-          .channelToString(ch));
+      LOGGER.error("Channel: {}. Unknown session. Send me the remote id before data transfer.",
+          ChannelContext.channelToString(ch));
     }
   }
 
@@ -203,8 +213,8 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
       ShortMessageProcessor<Object> smp = ownerConnectionPool.getShortMessageProcessor();
       smp.processMessage(ch, IPCMessage.Data.wrap(remoteID, message));
     } else {
-      while (!processStreamMessage(ch, remoteID, IPCMessage.StreamData
-          .wrap(remoteID, ic.getID().getStreamID(), message))) {
+      while (!processStreamMessage(ch, remoteID,
+          IPCMessage.StreamData.wrap(remoteID, ic.getID().getStreamID(), message))) {
         if (LOGGER.isErrorEnabled()) {
           LOGGER
               .error("Input buffer out of memory. With the flow control input buffers, it should not happen normally.");
@@ -214,7 +224,8 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
   }
 
   @Override
-  public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) throws Exception {
+  public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e)
+      throws Exception {
     final Channel ch = e.getChannel();
     Object msg = e.getMessage();
     if (msg instanceof ChannelBuffer) {
@@ -226,18 +237,22 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
         final ChannelContext cc = ChannelContext.getChannelContext(ch);
         final int remoteID = cc.getRegisteredChannelContext().getRemoteID();
 
-        TransportMessage tm = (TransportMessage) ownerConnectionPool.getPayloadSerializer().deSerialize(cb, null, null);
+        TransportMessage tm =
+            (TransportMessage) ownerConnectionPool.getPayloadSerializer().deSerialize(cb, null,
+                null);
         switch (tm.getType()) {
           case DATA:
-            StreamInputChannel<?> ic = cc.getRegisteredChannelContext().getIOPair().getInputChannel();
+            StreamInputChannel<?> ic =
+                cc.getRegisteredChannelContext().getIOPair().getInputChannel();
             if (ic != null) {
               StreamInputBuffer<?> sib = ic.getInputBuffer();
               msg = IPCUtils.tmToTupleBatch(tm.getDataMessage(), (Schema) sib.getAttachment());
             } else {
-              // got a message from a physical channel which is not bound to a logical input channel, ignore
+              // got a message from a physical channel which is not bound to a logical input
+              // channel, ignore
               // the binding may have been cleaned up due to failure
-              LOGGER.warn("Unknown data message from {} }, through {}, msg: {}", remoteID, ChannelContext
-                  .channelToString(ctx.getChannel()), tm.getDataMessage());
+              LOGGER.warn("Unknown data message from {} }, through {}, msg: {}", remoteID,
+                  ChannelContext.channelToString(ctx.getChannel()), tm.getDataMessage());
               return;
             }
             break;
@@ -255,10 +270,11 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
 
     if (LOGGER.isTraceEnabled()) {
       if (msg instanceof IPCMessage.Meta) {
-        LOGGER.trace("Received meta msg: {}, from channel {}", msg, ChannelContext.channelToString(ch));
+        LOGGER.trace("Received meta msg: {}, from channel {}", msg,
+            ChannelContext.channelToString(ch));
       } else {
-        LOGGER.trace("Received user msg of type: {}, from channel {}", msg.getClass().getName(), ChannelContext
-            .channelToString(ch));
+        LOGGER.trace("Received user msg of type: {}, from channel {}", msg.getClass().getName(),
+            ChannelContext.channelToString(ch));
       }
     }
 
@@ -298,7 +314,8 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
    * @param message the message.
    * @return true if successfully processed.
    * */
-  private boolean processStreamMessage(final Channel ch, final int remoteID, final IPCMessage.StreamData<Object> message) {
+  private boolean processStreamMessage(final Channel ch, final int remoteID,
+      final IPCMessage.StreamData<Object> message) {
     boolean pushToBufferSucceed = true;
 
     final ChannelContext cs = (ChannelContext) ch.getAttachment();
@@ -312,7 +329,8 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
 
     if (msgDestIB == null) {
       if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug("Drop Data messge because the destination operator already ends.: {}", message);
+        LOGGER
+            .debug("Drop Data messge because the destination operator already ends.: {}", message);
       }
       return true;
     }
@@ -327,7 +345,8 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
     final Throwable cause = e.getCause();
     ChannelContext cc = ChannelContext.getChannelContext(c);
     if (cc != null) {
-      LOGGER.warn("Error occur in managed Netty Channel: {}, deregistering.", ChannelContext.channelToString(c), cause);
+      LOGGER.warn("Error occur in managed Netty Channel: {}, deregistering.",
+          ChannelContext.channelToString(c), cause);
       RegisteredChannelContext rcc = cc.getRegisteredChannelContext();
       if (rcc != null) {
         StreamIOChannelPair pair = rcc.getIOPair();
@@ -336,20 +355,22 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
       }
       ownerConnectionPool.errorEncountered(c, cause);
     } else {
-      LOGGER.warn("Unknown error occur in unmanaged Netty Channel: {}, close directly.", ChannelContext
-          .channelToString(c), cause);
+      LOGGER.warn("Unknown error occur in unmanaged Netty Channel: {}, close directly.",
+          ChannelContext.channelToString(c), cause);
       c.close();
     }
   }
 
   @Override
-  public void writeComplete(final ChannelHandlerContext ctx, final WriteCompletionEvent e) throws Exception {
+  public void writeComplete(final ChannelHandlerContext ctx, final WriteCompletionEvent e)
+      throws Exception {
     final ChannelContext cs = ChannelContext.getChannelContext(e.getChannel());
     cs.updateLastIOTimestamp();
   }
 
   @Override
-  public void writeRequested(final ChannelHandlerContext ctx, final MessageEvent e) throws Exception {
+  public void writeRequested(final ChannelHandlerContext ctx, final MessageEvent e)
+      throws Exception {
     Channel ch = e.getChannel();
     ChannelContext cc = ChannelContext.getChannelContext(ch);
     cc.recordWriteFuture(e);
@@ -365,22 +386,26 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
         codedMsg = ((IPCMessage.Meta) m).serialize();
       } else {
         /*
-         * m could be: 1. a TupleBatch (corresponds to IPCMessage.StreamData), 2. TransportMessage.QUERY or a
-         * TransportMessage.CONTROL (corresponds to IPCMessage.Data but not StreamData). In both cases m is going to be
-         * serialized as an IPCMessage.Data, with the header.
+         * m could be: 1. a TupleBatch (corresponds to IPCMessage.StreamData), 2.
+         * TransportMessage.QUERY or a TransportMessage.CONTROL (corresponds to IPCMessage.Data but
+         * not StreamData). In both cases m is going to be serialized as an IPCMessage.Data, with
+         * the header.
          */
         codedMsg =
-            ChannelBuffers.wrappedBuffer(IPCMessage.Data.SERIALIZE_HEAD, ownerConnectionPool.getPayloadSerializer()
-                .serialize(m));
+            ChannelBuffers.wrappedBuffer(IPCMessage.Data.SERIALIZE_HEAD, ownerConnectionPool
+                .getPayloadSerializer().serialize(m));
       }
-      ctx.sendDownstream(new DownstreamMessageEvent(ch, e.getFuture(), codedMsg, e.getRemoteAddress()));
+      ctx.sendDownstream(new DownstreamMessageEvent(ch, e.getFuture(), codedMsg, e
+          .getRemoteAddress()));
     }
   }
 
   @Override
-  public void channelInterestChanged(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
+  public void channelInterestChanged(final ChannelHandlerContext ctx, final ChannelStateEvent e)
+      throws Exception {
     Channel ioChannel = ctx.getChannel();
-    StreamIOChannelPair p = ChannelContext.getChannelContext(ioChannel).getRegisteredChannelContext().getIOPair();
+    StreamIOChannelPair p =
+        ChannelContext.getChannelContext(ioChannel).getRegisteredChannelContext().getIOPair();
     StreamOutputChannel<?> oc = p.getOutputChannel();
     if (oc != null) {
       oc.channelInterestChangedCallback();

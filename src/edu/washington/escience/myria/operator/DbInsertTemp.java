@@ -46,9 +46,9 @@ public class DbInsertTemp extends AbstractDbInsert {
   private final List<List<IndexRef>> indexes;
 
   /**
-   * Constructs a temporary insertion operator to store the tuples from the specified child into the specified relation.
-   * If the table does not exist, it will be created. If <code>overwriteTable</code> is <code>true</code>, any existing
-   * data will be dropped.
+   * Constructs a temporary insertion operator to store the tuples from the specified child into the
+   * specified relation. If the table does not exist, it will be created. If
+   * <code>overwriteTable</code> is <code>true</code>, any existing data will be dropped.
    * 
    * @param child the source of tuples to be inserted.
    * @param relationKey the key of the table the tuples should be inserted into.
@@ -56,8 +56,9 @@ public class DbInsertTemp extends AbstractDbInsert {
    * @param overwriteTable whether to overwrite a table that already exists.
    * @param indexes the indexes to be created on the table. Each entry is a list of columns.
    */
-  public DbInsertTemp(final Operator child, final RelationKey relationKey, final ConnectionInfo connectionInfo,
-      final boolean overwriteTable, final List<List<IndexRef>> indexes) {
+  public DbInsertTemp(final Operator child, final RelationKey relationKey,
+      final ConnectionInfo connectionInfo, final boolean overwriteTable,
+      final List<List<IndexRef>> indexes) {
     super(child);
     Objects.requireNonNull(relationKey, "relationKey");
     this.connectionInfo = connectionInfo;
@@ -109,14 +110,13 @@ public class DbInsertTemp extends AbstractDbInsert {
   }
 
   @Override
-  protected void init(final ImmutableMap<String, Object> execEnvVars)
-      throws DbException {
+  protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     setupConnection(execEnvVars);
 
     if (overwriteTable) {
       stagingRelationKey =
-          RelationKey.of(relationKey.getUserName(), relationKey.getProgramName() + "__staging", relationKey
-              .getRelationName());
+          RelationKey.of(relationKey.getUserName(), relationKey.getProgramName() + "__staging",
+              relationKey.getRelationName());
       /* Drop the relation, if it exists. */
       accessMethod.dropTableIfExists(stagingRelationKey);
     } else {
@@ -131,15 +131,17 @@ public class DbInsertTemp extends AbstractDbInsert {
 
   @Override
   protected void childEOS() throws DbException {
-    /* If the child finished, we're done too. If in overwrite mode, drop the existing table and rename. */
+    /*
+     * If the child finished, we're done too. If in overwrite mode, drop the existing table and
+     * rename.
+     */
     if (overwriteTable) {
       accessMethod.dropAndRenameTables(relationKey, stagingRelationKey);
     }
   }
 
   @Override
-  protected void childEOI() throws DbException {
-  }
+  protected void childEOI() throws DbException {}
 
   /**
    * @return the name of the relation that this operator will write to.
@@ -150,15 +152,16 @@ public class DbInsertTemp extends AbstractDbInsert {
 
   @Override
   public Map<RelationKey, RelationWriteMetadata> writeSet() {
-    return ImmutableMap.of(relationKey, new RelationWriteMetadata(relationKey, getSchema(), overwriteTable, true));
+    return ImmutableMap.of(relationKey, new RelationWriteMetadata(relationKey, getSchema(),
+        overwriteTable, true));
   }
 
   /** Updates connection information with the environment variables. */
-  protected void setupConnection(final ImmutableMap<String, Object> execEnvVars)
-      throws DbException {
+  protected void setupConnection(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     // Extract connection info from environment
     if (connectionInfo == null && execEnvVars != null) {
-      connectionInfo = (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
+      connectionInfo =
+          (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
     }
 
     if (connectionInfo == null) {

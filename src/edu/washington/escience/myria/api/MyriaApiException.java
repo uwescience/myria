@@ -18,12 +18,14 @@ public final class MyriaApiException extends WebApplicationException {
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MyriaApiException.class);
 
   /**
-   * Construct a MyriaApiException from the given status and cause. The entity of the HTTP Response includes the given
-   * HTTP status code and the body is the exception cause. If the status code is 500 INTERNAL SERVER ERROR then we
-   * return the entire stack trace. Otherwise, we just return the message.
+   * Construct a MyriaApiException from the given status and cause. The entity of the HTTP Response
+   * includes the given HTTP status code and the body is the exception cause. If the status code is
+   * 500 INTERNAL SERVER ERROR then we return the entire stack trace. Otherwise, we just return the
+   * message.
    * 
    * @param status the HTTP status code used for the HTTP response.
-   * @param cause the Exception, whose message is used to explain the exception in the HTTP response.
+   * @param cause the Exception, whose message is used to explain the exception in the HTTP
+   *        response.
    */
   public MyriaApiException(final Status status, final Throwable cause) {
     super(MyriaExceptionMapper.getResponse(status, cause));
@@ -31,8 +33,8 @@ public final class MyriaApiException extends WebApplicationException {
   }
 
   /**
-   * Construct a MyriaApiException from the given status and explanation. The entity of the HTTP Response includes the
-   * given HTTP status code and the body is the provided explanation string.
+   * Construct a MyriaApiException from the given status and explanation. The entity of the HTTP
+   * Response includes the given HTTP status code and the body is the provided explanation string.
    * 
    * @param status the HTTP status code used for the HTTP response.
    * @param explanation the message is used to explain the exception in the HTTP response.

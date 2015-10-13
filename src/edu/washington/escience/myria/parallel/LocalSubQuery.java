@@ -8,9 +8,9 @@ import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 
 /**
- * A {@link LocalSubQuery} is the instantiation of the part of a distributed subquery that executes at one node. It
- * typically contains one or more {@link LocalFragment}s that represent the individual subquery fragments that make up
- * the local component of the subquery.
+ * A {@link LocalSubQuery} is the instantiation of the part of a distributed subquery that executes
+ * at one node. It typically contains one or more {@link LocalFragment}s that represent the
+ * individual subquery fragments that make up the local component of the subquery.
  */
 public abstract class LocalSubQuery implements Comparable<LocalSubQuery> {
 
@@ -50,7 +50,8 @@ public abstract class LocalSubQuery implements Comparable<LocalSubQuery> {
    * @param ftMode the fault-tolerance mode of this subquery.
    * @param profilingMode the profiling mode of this subquery.
    */
-  public LocalSubQuery(final SubQueryId subQueryId, final FTMode ftMode, @Nonnull final Set<ProfilingMode> profilingMode) {
+  public LocalSubQuery(final SubQueryId subQueryId, final FTMode ftMode,
+      @Nonnull final Set<ProfilingMode> profilingMode) {
     this.subQueryId = subQueryId;
     this.ftMode = ftMode;
     this.profilingMode = profilingMode;
@@ -76,8 +77,8 @@ public abstract class LocalSubQuery implements Comparable<LocalSubQuery> {
    */
   final int getPriority() {
     /*
-     * TODO from @dhalperi, why is any of this here? It seems to never be used anywhere, and the comments in
-     * WorkerSubQuery.java make me think this is an accurate assessment.
+     * TODO from @dhalperi, why is any of this here? It seems to never be used anywhere, and the
+     * comments in WorkerSubQuery.java make me think this is an accurate assessment.
      */
     return PRIORITY;
   }
@@ -132,8 +133,8 @@ public abstract class LocalSubQuery implements Comparable<LocalSubQuery> {
   }
 
   /**
-   * when a REMOVE_WORKER message is received, give all the {@link LocalFragment}s of this {@link LocalSubQuery} another
-   * chance to decide if they are ready to generate EOS/EOI.
+   * when a REMOVE_WORKER message is received, give all the {@link LocalFragment}s of this
+   * {@link LocalSubQuery} another chance to decide if they are ready to generate EOS/EOI.
    */
   final void triggerFragmentEosEoiChecks() {
     for (LocalFragment fragment : getFragments()) {

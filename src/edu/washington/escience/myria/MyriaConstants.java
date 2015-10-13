@@ -174,7 +174,8 @@ public final class MyriaConstants {
   public static final int STORAGE_POSTGRESQL_PORT = 5432;
 
   /**
-   * If a thread in a thread pool is idle, how long it should wait before terminates itself. Currently, 5 minutes.
+   * If a thread in a thread pool is idle, how long it should wait before terminates itself.
+   * Currently, 5 minutes.
    */
   public static final int THREAD_POOL_KEEP_ALIVE_TIME_IN_MS = 1000 * 60 * 5;
 
@@ -195,8 +196,8 @@ public final class MyriaConstants {
   public static final int WORKER_SHUTDOWN_CHECKER_INTERVAL = 1000;
 
   /**
-   * The number of bytes that can back up in a {@link java.io.PipedInputStream} before we stop writing tuples and wait
-   * for the client to read them. 16 MB.
+   * The number of bytes that can back up in a {@link java.io.PipedInputStream} before we stop
+   * writing tuples and wait for the client to read them. 16 MB.
    */
   public static final int DEFAULT_PIPED_INPUT_STREAM_SIZE = 1024 * 1024 * 16;
 
@@ -208,38 +209,41 @@ public final class MyriaConstants {
   /**
    * The relation that stores profiling information about which operators executed when.
    */
-  public static final RelationKey EVENT_PROFILING_RELATION = new RelationKey("public", "logs", "Profiling");
+  public static final RelationKey EVENT_PROFILING_RELATION = new RelationKey("public", "logs",
+      "Profiling");
 
   /**
    * The schema of the {@link #EVENT_PROFILING_RELATION}.
    */
-  public static final Schema EVENT_PROFILING_SCHEMA = Schema.ofFields("queryId", Type.LONG_TYPE, "subQueryId",
-      Type.INT_TYPE, "fragmentId", Type.INT_TYPE, "opId", Type.INT_TYPE, "startTime", Type.LONG_TYPE, "endTime",
-      Type.LONG_TYPE, "numTuples", Type.LONG_TYPE);
+  public static final Schema EVENT_PROFILING_SCHEMA = Schema.ofFields("queryId", Type.LONG_TYPE,
+      "subQueryId", Type.INT_TYPE, "fragmentId", Type.INT_TYPE, "opId", Type.INT_TYPE, "startTime",
+      Type.LONG_TYPE, "endTime", Type.LONG_TYPE, "numTuples", Type.LONG_TYPE);
 
   /**
    * The relation that stores profiling information about sent tuples.
    */
-  public static final RelationKey SENT_PROFILING_RELATION = new RelationKey("public", "logs", "Sending");
+  public static final RelationKey SENT_PROFILING_RELATION = new RelationKey("public", "logs",
+      "Sending");
 
   /**
    * The schema of the {@link #SENT_PROFILING_RELATION}.
    */
-  public static final Schema SENT_PROFILING_SCHEMA = Schema.ofFields("queryId", Type.LONG_TYPE, "subQueryId",
-      Type.INT_TYPE, "fragmentId", Type.INT_TYPE, "nanoTime", Type.LONG_TYPE, "numTuples", Type.LONG_TYPE,
-      "destWorkerId", Type.INT_TYPE);
+  public static final Schema SENT_PROFILING_SCHEMA = Schema.ofFields("queryId", Type.LONG_TYPE,
+      "subQueryId", Type.INT_TYPE, "fragmentId", Type.INT_TYPE, "nanoTime", Type.LONG_TYPE,
+      "numTuples", Type.LONG_TYPE, "destWorkerId", Type.INT_TYPE);
 
   /**
    * The relation that stores resource profiling information.
    */
-  public static final RelationKey RESOURCE_PROFILING_RELATION = new RelationKey("public", "logs", "Resource");
+  public static final RelationKey RESOURCE_PROFILING_RELATION = new RelationKey("public", "logs",
+      "Resource");
 
   /**
    * The schema of the {@link #RESOURCE_PROFILING_RELATION}.
    */
-  public static final Schema RESOURCE_PROFILING_SCHEMA = Schema.ofFields("timestamp", Type.LONG_TYPE, "opId",
-      Type.INT_TYPE, "measurement", Type.STRING_TYPE, "value", Type.LONG_TYPE, "queryId", Type.LONG_TYPE, "subqueryId",
-      Type.LONG_TYPE);
+  public static final Schema RESOURCE_PROFILING_SCHEMA = Schema.ofFields("timestamp",
+      Type.LONG_TYPE, "opId", Type.INT_TYPE, "measurement", Type.STRING_TYPE, "value",
+      Type.LONG_TYPE, "queryId", Type.LONG_TYPE, "subqueryId", Type.LONG_TYPE);
 
   /**
    * For how long cached versions of the profiling data should be valid.
@@ -247,20 +251,19 @@ public final class MyriaConstants {
   public static final long PROFILING_CACHE_AGE = TimeUnit.HOURS.toMillis(1);
 
   /**
-   * The maximum number of subqueries we will allow a query to execute before killing it. This is a safeguard against an
-   * infinite loop.
+   * The maximum number of subqueries we will allow a query to execute before killing it. This is a
+   * safeguard against an infinite loop.
    */
   public static final int MAXIMUM_NUM_SUBQUERIES = 1000;
 
   /**
    * Default imports for janino. Modules imported here can be used in expressions.
    */
-  public static final String[] DEFAULT_JANINO_IMPORTS =
-      { "com.google.common.hash.Hashing", "java.nio.charset.Charset" };
+  public static final String[] DEFAULT_JANINO_IMPORTS = {"com.google.common.hash.Hashing",
+      "java.nio.charset.Charset"};
 
   /** Private constructor to disallow building utility class. */
-  private MyriaConstants() {
-  }
+  private MyriaConstants() {}
 
   /** available fault-tolerance mode for each query in Myria. */
   public static enum FTMode {

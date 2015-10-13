@@ -22,15 +22,14 @@ public class SampledDbInsertTempEncoding extends UnaryOperatorEncoding<SampledDb
   public Long randomSeed;
 
   /**
-   * The ConnectionInfo struct determines what database the data will be written
-   * to. If null, the worker's default database will be used.
+   * The ConnectionInfo struct determines what database the data will be written to. If null, the
+   * worker's default database will be used.
    */
   public ConnectionInfo connectionInfo;
 
   @Override
   public SampledDbInsertTemp construct(ConstructArgs args) {
-    return new SampledDbInsertTemp(null, sampleSize, RelationKey.ofTemp(
-        args.getQueryId(), sampleTable), RelationKey.ofTemp(args.getQueryId(),
-        countTable), connectionInfo, randomSeed);
+    return new SampledDbInsertTemp(null, sampleSize, RelationKey.ofTemp(args.getQueryId(),
+        sampleTable), RelationKey.ofTemp(args.getQueryId(), countTable), connectionInfo, randomSeed);
   }
 }

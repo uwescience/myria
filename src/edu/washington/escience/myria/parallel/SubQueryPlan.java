@@ -23,9 +23,9 @@ import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
- * Class that contains a list of RootOperators with parameters associated with the query, for example, FT mode. We may
- * have more parameters once Myria is launched as a service, in that case a query would have parameters such as resource
- * limits.
+ * Class that contains a list of RootOperators with parameters associated with the query, for
+ * example, FT mode. We may have more parameters once Myria is launched as a service, in that case a
+ * query would have parameters such as resource limits.
  */
 public class SubQueryPlan implements Serializable, DbReader, DbWriter {
 
@@ -93,8 +93,8 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
   }
 
   /**
-   * A helper to walk various operators and compute what relations they read and write. This is for understanding query
-   * contention.
+   * A helper to walk various operators and compute what relations they read and write. This is for
+   * understanding query contention.
    * 
    * @param op a single operator, which will be recursively traversed
    * @param visited which objects have been visited already

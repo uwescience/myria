@@ -12,8 +12,9 @@ import org.joda.time.DateTime;
 import edu.washington.escience.myria.storage.ReadableTable;
 
 /**
- * PostgresBinaryTupleWriter is a {@link TupleWriter} that serializes tuples to a a binary format that can be directly
- * imported into PostgreSQL. See http://www.postgresql.org/docs/current/interactive/sql-copy.html.
+ * PostgresBinaryTupleWriter is a {@link TupleWriter} that serializes tuples to a a binary format
+ * that can be directly imported into PostgreSQL. See
+ * http://www.postgresql.org/docs/current/interactive/sql-copy.html.
  * 
  * This requires integer time stamps.
  */
@@ -42,11 +43,11 @@ public class PostgresBinaryTupleWriter implements TupleWriter {
    * No-op
    */
   @Override
-  public void writeColumnHeaders(final List<String> columnNames) throws IOException {
-  }
+  public void writeColumnHeaders(final List<String> columnNames) throws IOException {}
 
   /**
-   * Converts the given java seconds to postgresql seconds. The conversion is valid for any year 100 BC onwards.
+   * Converts the given java seconds to postgresql seconds. The conversion is valid for any year 100
+   * BC onwards.
    * 
    * from /org/postgresql/jdbc2/TimestampUtils.java
    * 

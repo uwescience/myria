@@ -43,8 +43,8 @@ public final class SQLiteInfo extends ConnectionInfo implements Serializable {
    * @return a new SQLiteInfo containing this information.
    */
   public static SQLiteInfo of(final String dbms, final String databaseFilename) {
-    Preconditions.checkArgument(dbms.equals(MyriaConstants.STORAGE_SYSTEM_SQLITE), "The dbms parameter must equal "
-        + MyriaConstants.STORAGE_SYSTEM_SQLITE);
+    Preconditions.checkArgument(dbms.equals(MyriaConstants.STORAGE_SYSTEM_SQLITE),
+        "The dbms parameter must equal " + MyriaConstants.STORAGE_SYSTEM_SQLITE);
     return new SQLiteInfo(databaseFilename);
   }
 
