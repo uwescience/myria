@@ -42,8 +42,8 @@ To test, run `ssh localhost`.
 
 You need to install [SQLite](http://www.sqlite.org/), which is already pre-installed on many systems. 
 For data storage, MyriaX uses existing single-node relational database management systems. 
-You can still use SQLite, but the preferred system is [PostgreSQL](www.postgresql.org) (current version supported: 9.4).
-Instructions can be founded [here](http://www.postgresql.org/download/).
+You can still use SQLite, but the preferred system is [PostgreSQL](http://www.postgresql.org/).
+Myria currently uses Postgres 9.4, and installation instructions can be founded [here](http://www.postgresql.org/download/).
 
 ### 2. Setting up a local MyriaX deployment
 
