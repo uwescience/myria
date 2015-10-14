@@ -12,11 +12,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import javax.annotation.concurrent.GuardedBy;
 
 import org.apache.commons.io.FilenameUtils;
-import org.apache.reef.tang.Configuration;
-import org.apache.reef.tang.Injector;
-import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.annotations.Parameter;
-import org.apache.reef.tang.formats.AvroConfigurationSerializer;
 import org.apache.reef.task.Task;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelFuture;
@@ -31,15 +27,29 @@ import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.coordinator.ConfigFileException;
-import edu.washington.escience.myria.daemon.MyriaDriverLauncher;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.InJVMLoopbackChannelSink;
 import edu.washington.escience.myria.profiling.ProfilingLogger;
 import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myria.proto.QueryProto.QueryMessage;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
-import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule;
-import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.DefaultStorageDbPassword;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.DefaultStorageDbPort;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.FlowControlWriteBufferHighMarkBytes;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.FlowControlWriteBufferLowMarkBytes;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.MasterHost;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.MasterRpcPort;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.OperatorInputBufferCapacity;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.OperatorInputBufferRecoverTrigger;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.StorageDbms;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.TcpConnectionTimeoutMillis;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.TcpReceiveBufferSizeBytes;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.TcpSendBufferSizeBytes;
+import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule.WorkerFilesystemPath;
+import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule.WorkerHost;
+import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule.WorkerId;
+import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule.WorkerPort;
+import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule.WorkerStorageDbName;
 import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.concurrent.RenamingThreadFactory;
 import edu.washington.escience.myria.util.concurrent.ThreadAffinityFixedRoundRobinExecutionPool;
@@ -235,11 +245,6 @@ public final class Worker implements Task {
   static final String USAGE = "Usage: worker [--conf <conf_dir>]";
 
   /**
-   * injector for global configuration passed into constructor.
-   */
-  private final Injector globalConfInjector;
-
-  /**
    * {@link ExecutorService} for query executions.
    */
   private volatile ExecutorService queryExecutor;
@@ -374,18 +379,25 @@ public final class Worker implements Task {
    * @param mode my execution mode.
    * @throws ConfigFileException if there's any config file parsing error.
    */
-  public Worker(
-      final @Parameter(MyriaWorkerConfigurationModule.WorkerId.class) int workerID,
-      final @Parameter(MyriaWorkerConfigurationModule.WorkerHost.class) String workerHost,
-      final @Parameter(MyriaWorkerConfigurationModule.WorkerPort.class) String workerPort,
-      final @Parameter(MyriaWorkerConfigurationModule.WorkerStorageDbName.class) String dbName,
-      final @Parameter(MyriaGlobalConfigurationModule.DefaultStorageDbPassword.class) String dbPassword,
-      final @Parameter(MyriaGlobalConfigurationModule.DefaultStorageDbPort.class) int dbPort,
-      final @Parameter(MyriaWorkerConfigurationModule.WorkerFilesystemPath.class) String rootPath,
-      final @Parameter(MyriaDriverLauncher.SerializedGlobalConf.class) String serializedGlobalConf)
+  public Worker(@Parameter(WorkerId.class) final int workerID,
+      @Parameter(WorkerHost.class) final String workerHost,
+      @Parameter(WorkerPort.class) final int workerPort,
+      @Parameter(MasterHost.class) final String masterHost,
+      @Parameter(MasterRpcPort.class) final int masterPort,
+      @Parameter(StorageDbms.class) final String databaseSystem,
+      @Parameter(WorkerStorageDbName.class) final String dbName,
+      @Parameter(DefaultStorageDbPassword.class) final String dbPassword,
+      @Parameter(DefaultStorageDbPort.class) final int dbPort,
+      @Parameter(WorkerFilesystemPath.class) final String rootPath,
+      @Parameter(TcpConnectionTimeoutMillis.class) final int connectTimeoutMillis,
+      @Parameter(TcpSendBufferSizeBytes.class) final int sendBufferSize,
+      @Parameter(TcpReceiveBufferSizeBytes.class) final int receiveBufferSize,
+      @Parameter(FlowControlWriteBufferLowMarkBytes.class) final int writeBufferLowWaterMark,
+      @Parameter(FlowControlWriteBufferHighMarkBytes.class) final int writeBufferHighWaterMark,
+      @Parameter(OperatorInputBufferCapacity.class) final int inputBufferCapacity,
+      @Parameter(OperatorInputBufferRecoverTrigger.class) final int inputBufferRecoverTrigger)
       throws Exception {
-    Configuration globalConf = new AvroConfigurationSerializer().fromString(serializedGlobalConf);
-    globalConfInjector = Tang.Factory.getTang().newInjector(globalConf);
+
     myID = workerID;
     final String subDir = FilenameUtils.concat("workers", myID + "");
     workingDirectory = FilenameUtils.concat(rootPath, subDir);
@@ -396,27 +408,17 @@ public final class Worker implements Task {
     execEnvVars = new ConcurrentHashMap<String, Object>();
 
     final Map<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
-    String masterHost =
-        globalConfInjector.getNamedInstance(MyriaGlobalConfigurationModule.MasterHost.class);
-    Integer masterPort =
-        globalConfInjector.getNamedInstance(MyriaGlobalConfigurationModule.MasterRpcPort.class);
     computingUnits.put(MyriaConstants.MASTER_ID, new SocketInfo(masterHost, masterPort));
 
-    final int inputBufferCapacity =
-        globalConfInjector
-            .getNamedInstance(MyriaGlobalConfigurationModule.OperatorInputBufferCapacity.class);
-    final int inputBufferRecoverTrigger =
-        globalConfInjector
-            .getNamedInstance(MyriaGlobalConfigurationModule.OperatorInputBufferRecoverTrigger.class);
     connectionPool =
         new IPCConnectionPool(myID, computingUnits,
-            IPCConfigurations.createWorkerIPCServerBootstrap(globalConfInjector),
-            IPCConfigurations.createWorkerIPCClientBootstrap(globalConfInjector),
+            IPCConfigurations.createWorkerIPCServerBootstrap(connectTimeoutMillis, sendBufferSize,
+                receiveBufferSize, writeBufferLowWaterMark, writeBufferHighWaterMark),
+            IPCConfigurations.createWorkerIPCClientBootstrap(connectTimeoutMillis, sendBufferSize,
+                receiveBufferSize, writeBufferLowWaterMark, writeBufferHighWaterMark),
             new TransportMessageSerializer(), new WorkerShortMessageProcessor(this),
             inputBufferCapacity, inputBufferRecoverTrigger);
 
-    final String databaseSystem =
-        globalConfInjector.getNamedInstance(MyriaGlobalConfigurationModule.StorageDbms.class);
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM, databaseSystem);
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_NODE_ID, getID());
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE, getQueryExecutionMode());

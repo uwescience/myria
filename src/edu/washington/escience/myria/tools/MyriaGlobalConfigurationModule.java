@@ -28,7 +28,7 @@ import edu.washington.escience.myria.MyriaConstants;
 public final class MyriaGlobalConfigurationModule extends ConfigurationModuleBuilder {
   public static final RequiredParameter<String> INSTANCE_NAME = new RequiredParameter<>();
   public static final RequiredParameter<String> DEFAULT_INSTANCE_PATH = new RequiredParameter<>();
-  public static final RequiredParameter<String> STORAGE_DBMS = new RequiredParameter<>();
+  public static final OptionalParameter<String> STORAGE_DBMS = new OptionalParameter<>();
   public static final OptionalParameter<String> DEFAULT_STORAGE_DB_NAME = new OptionalParameter<>();
   public static final OptionalParameter<String> DEFAULT_STORAGE_DB_USERNAME =
       new OptionalParameter<>();
@@ -64,8 +64,8 @@ public final class MyriaGlobalConfigurationModule extends ConfigurationModuleBui
       new OptionalParameter<>();
   public static final OptionalParameter<Integer> LOCAL_FRAGMENT_WORKER_THREADS =
       new OptionalParameter<>();
-  public static final OptionalParameter<String> MASTER_HOST = new OptionalParameter<>();
-  public static final OptionalParameter<Integer> MASTER_RPC_PORT = new OptionalParameter<>();
+  public static final RequiredParameter<String> MASTER_HOST = new RequiredParameter<>();
+  public static final RequiredParameter<Integer> MASTER_RPC_PORT = new RequiredParameter<>();
 
   public static final ConfigurationModule CONF = new MyriaGlobalConfigurationModule()
       .bindNamedParameter(InstanceName.class, INSTANCE_NAME)
@@ -125,16 +125,16 @@ public final class MyriaGlobalConfigurationModule extends ConfigurationModuleBui
   @NamedParameter(default_value = MyriaConstants.DEFAULT_MYRIA_API_PORT + "")
   public class RestApiPort implements Name<Integer> {
   }
-  @NamedParameter(default_value = "")
+  @NamedParameter(default_value = "admin")
   public class ApiAdminPassword implements Name<String> {
   }
   @NamedParameter(default_value = "false")
   public class UseSsl implements Name<Boolean> {
   }
-  @NamedParameter
+  @NamedParameter(default_value = "keystore")
   public class SslKeystorePath implements Name<String> {
   }
-  @NamedParameter
+  @NamedParameter(default_value = "password")
   public class SslKeystorePassword implements Name<String> {
   }
   @NamedParameter(default_value = "false")

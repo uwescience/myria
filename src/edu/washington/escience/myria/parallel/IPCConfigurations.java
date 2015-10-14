@@ -1,12 +1,9 @@
 package edu.washington.escience.myria.parallel;
 
-import org.apache.reef.tang.Injector;
-import org.apache.reef.tang.exceptions.InjectionException;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 
 import edu.washington.escience.myria.coordinator.ConfigFileException;
-import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule;
 
 /**
  * The configurations of the IPC layer.
@@ -18,27 +15,15 @@ public final class IPCConfigurations {
    * @param theMaster the master
    * @throws ConfigFileException
    */
-  public static ClientBootstrap createMasterIPCClientBootstrap(final Injector injector)
-      throws InjectionException {
+  public static ClientBootstrap createMasterIPCClientBootstrap(final int connectTimeoutMillis,
+      final int sendBufferSize, final int receiveBufferSize, final int writeBufferLowWaterMark,
+      final int writeBufferHighWaterMark) {
 
-    // Create the bootstrap
     final ClientBootstrap bootstrap = new ClientBootstrap();
+
     bootstrap.setOption("tcpNoDelay", true);
     bootstrap.setOption("keepAlive", false);
     bootstrap.setOption("reuseAddress", true);
-
-    final int connectTimeoutMillis =
-        injector.getNamedInstance(MyriaGlobalConfigurationModule.TcpConnectionTimeoutMillis.class);
-    final int sendBufferSize =
-        injector.getNamedInstance(MyriaGlobalConfigurationModule.TcpSendBufferSizeBytes.class);
-    final int receiveBufferSize =
-        injector.getNamedInstance(MyriaGlobalConfigurationModule.TcpReceiveBufferSizeBytes.class);
-    final int writeBufferLowWaterMark =
-        injector
-            .getNamedInstance(MyriaGlobalConfigurationModule.FlowControlWriteBufferLowMarkBytes.class);
-    final int writeBufferHighWaterMark =
-        injector
-            .getNamedInstance(MyriaGlobalConfigurationModule.FlowControlWriteBufferHighMarkBytes.class);
 
     bootstrap.setOption("connectTimeoutMillis", connectTimeoutMillis);
     bootstrap.setOption("sendBufferSize", sendBufferSize);
@@ -54,27 +39,15 @@ public final class IPCConfigurations {
    * @param worker the owner worker
    * @throws ConfigFileException
    */
-  public static ClientBootstrap createWorkerIPCClientBootstrap(final Injector injector)
-      throws InjectionException {
+  public static ClientBootstrap createWorkerIPCClientBootstrap(final int connectTimeoutMillis,
+      final int sendBufferSize, final int receiveBufferSize, final int writeBufferLowWaterMark,
+      final int writeBufferHighWaterMark) {
 
-    // Create the bootstrap
     final ClientBootstrap bootstrap = new ClientBootstrap();
+
     bootstrap.setOption("tcpNoDelay", true);
     bootstrap.setOption("keepAlive", false);
     bootstrap.setOption("reuseAddress", true);
-
-    final int connectTimeoutMillis =
-        injector.getNamedInstance(MyriaGlobalConfigurationModule.TcpConnectionTimeoutMillis.class);
-    final int sendBufferSize =
-        injector.getNamedInstance(MyriaGlobalConfigurationModule.TcpSendBufferSizeBytes.class);
-    final int receiveBufferSize =
-        injector.getNamedInstance(MyriaGlobalConfigurationModule.TcpReceiveBufferSizeBytes.class);
-    final int writeBufferLowWaterMark =
-        injector
-            .getNamedInstance(MyriaGlobalConfigurationModule.FlowControlWriteBufferLowMarkBytes.class);
-    final int writeBufferHighWaterMark =
-        injector
-            .getNamedInstance(MyriaGlobalConfigurationModule.FlowControlWriteBufferHighMarkBytes.class);
 
     bootstrap.setOption("connectTimeoutMillis", connectTimeoutMillis);
     bootstrap.setOption("sendBufferSize", sendBufferSize);
@@ -91,8 +64,9 @@ public final class IPCConfigurations {
    * @throws ConfigFileException
    * @throws NumberFormatException
    */
-  public static ServerBootstrap createMasterIPCServerBootstrap(final Injector injector)
-      throws InjectionException {
+  public static ServerBootstrap createMasterIPCServerBootstrap(final int connectTimeoutMillis,
+      final int sendBufferSize, final int receiveBufferSize, final int writeBufferLowWaterMark,
+      final int writeBufferHighWaterMark) {
 
     final ServerBootstrap bootstrap = new ServerBootstrap();
 
@@ -100,26 +74,13 @@ public final class IPCConfigurations {
     bootstrap.setOption("child.tcpNoDelay", true);
     bootstrap.setOption("child.keepAlive", false);
     bootstrap.setOption("child.reuseAddress", true);
-
-    final int connectTimeoutMillis =
-        injector.getNamedInstance(MyriaGlobalConfigurationModule.TcpConnectionTimeoutMillis.class);
-    final int sendBufferSize =
-        injector.getNamedInstance(MyriaGlobalConfigurationModule.TcpSendBufferSizeBytes.class);
-    final int receiveBufferSize =
-        injector.getNamedInstance(MyriaGlobalConfigurationModule.TcpReceiveBufferSizeBytes.class);
-    final int writeBufferLowWaterMark =
-        injector
-            .getNamedInstance(MyriaGlobalConfigurationModule.FlowControlWriteBufferLowMarkBytes.class);
-    final int writeBufferHighWaterMark =
-        injector
-            .getNamedInstance(MyriaGlobalConfigurationModule.FlowControlWriteBufferHighMarkBytes.class);
+    bootstrap.setOption("readWriteFair", true);
 
     bootstrap.setOption("child.connectTimeoutMillis", connectTimeoutMillis);
     bootstrap.setOption("child.sendBufferSize", sendBufferSize);
     bootstrap.setOption("child.receiveBufferSize", receiveBufferSize);
     bootstrap.setOption("child.writeBufferLowWaterMark", writeBufferLowWaterMark);
     bootstrap.setOption("child.writeBufferHighWaterMark", writeBufferHighWaterMark);
-    bootstrap.setOption("readWriteFair", true);
 
     return bootstrap;
   }
@@ -130,35 +91,23 @@ public final class IPCConfigurations {
    * @throws ConfigFileException
    * @throws NumberFormatException
    */
-  public static ServerBootstrap createWorkerIPCServerBootstrap(final Injector injector)
-      throws InjectionException {
+  public static ServerBootstrap createWorkerIPCServerBootstrap(final int connectTimeoutMillis,
+      final int sendBufferSize, final int receiveBufferSize, final int writeBufferLowWaterMark,
+      final int writeBufferHighWaterMark) {
+
     final ServerBootstrap bootstrap = new ServerBootstrap();
 
     bootstrap.setOption("reuseAddress", true);
     bootstrap.setOption("child.tcpNoDelay", true);
     bootstrap.setOption("child.keepAlive", false);
     bootstrap.setOption("child.reuseAddress", true);
-
-    final int connectTimeoutMillis =
-        injector.getNamedInstance(MyriaGlobalConfigurationModule.TcpConnectionTimeoutMillis.class);
-    final int sendBufferSize =
-        injector.getNamedInstance(MyriaGlobalConfigurationModule.TcpSendBufferSizeBytes.class);
-    final int receiveBufferSize =
-        injector.getNamedInstance(MyriaGlobalConfigurationModule.TcpReceiveBufferSizeBytes.class);
-    final int writeBufferLowWaterMark =
-        injector
-            .getNamedInstance(MyriaGlobalConfigurationModule.FlowControlWriteBufferLowMarkBytes.class);
-    final int writeBufferHighWaterMark =
-        injector
-            .getNamedInstance(MyriaGlobalConfigurationModule.FlowControlWriteBufferHighMarkBytes.class);
+    bootstrap.setOption("readWriteFair", true);
 
     bootstrap.setOption("child.connectTimeoutMillis", connectTimeoutMillis);
     bootstrap.setOption("child.sendBufferSize", sendBufferSize);
     bootstrap.setOption("child.receiveBufferSize", receiveBufferSize);
     bootstrap.setOption("child.writeBufferLowWaterMark", writeBufferLowWaterMark);
     bootstrap.setOption("child.writeBufferHighWaterMark", writeBufferHighWaterMark);
-
-    bootstrap.setOption("readWriteFair", true);
 
     return bootstrap;
   }

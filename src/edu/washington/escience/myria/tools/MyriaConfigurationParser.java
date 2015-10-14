@@ -10,10 +10,10 @@ import java.util.Map;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import org.apache.commons.io.FilenameUtils;
 import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.formats.AvroConfigurationSerializer;
 import org.apache.reef.tang.formats.ConfigurationModule;
+import org.apache.reef.tang.formats.OptionalParameter;
 import org.ini4j.ConfigParser;
 import org.ini4j.ConfigParser.InterpolationException;
 import org.ini4j.ConfigParser.InterpolationMissingOptionException;
@@ -54,67 +54,99 @@ public final class MyriaConfigurationParser {
 
   private static ConfigurationModule setGlobalConfVariables(final ConfigParser parser,
       final ConfigurationModule cm) throws ConfigFileException {
-    return cm
-        .set(MyriaGlobalConfigurationModule.INSTANCE_NAME,
+
+    // Required parameters
+    ConfigurationModule conf =
+        cm.set(MyriaGlobalConfigurationModule.INSTANCE_NAME,
             getRequired(parser, "deployment", MyriaSystemConfigKeys.DESCRIPTION))
-        .set(MyriaGlobalConfigurationModule.DEFAULT_INSTANCE_PATH,
-            getPath(parser, MyriaConstants.MASTER_ID))
-        .set(MyriaGlobalConfigurationModule.STORAGE_DBMS,
-            getOptional(parser, "deployment", MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_SYSTEM))
-        .set(MyriaGlobalConfigurationModule.DEFAULT_STORAGE_DB_NAME,
-            getOptional(parser, "deployment", MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_NAME))
-        .set(MyriaGlobalConfigurationModule.DEFAULT_STORAGE_DB_USERNAME,
-            getOptional(parser, "deployment", MyriaSystemConfigKeys.USERNAME))
-        .set(
+            .set(MyriaGlobalConfigurationModule.DEFAULT_INSTANCE_PATH,
+                getPath(parser, MyriaConstants.MASTER_ID))
+            .set(MyriaGlobalConfigurationModule.MASTER_HOST,
+                getHostname(parser, MyriaConstants.MASTER_ID))
+            .set(MyriaGlobalConfigurationModule.MASTER_RPC_PORT,
+                getPort(parser, MyriaConstants.MASTER_ID));
+
+    // Optional parameters
+    conf =
+        setOptional(conf, MyriaGlobalConfigurationModule.STORAGE_DBMS,
+            getOptional(parser, "deployment", MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_SYSTEM));
+    conf =
+        setOptional(conf, MyriaGlobalConfigurationModule.DEFAULT_STORAGE_DB_NAME,
+            getOptional(parser, "deployment", MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_NAME));
+    conf =
+        setOptional(conf, MyriaGlobalConfigurationModule.DEFAULT_STORAGE_DB_USERNAME,
+            getOptional(parser, "deployment", MyriaSystemConfigKeys.USERNAME));
+    conf =
+        setOptional(
+            conf,
             MyriaGlobalConfigurationModule.DEFAULT_STORAGE_DB_PASSWORD,
             getOptional(parser, "deployment",
-                MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_PASSWORD))
-        .set(MyriaGlobalConfigurationModule.DEFAULT_STORAGE_DB_PORT,
-            getOptional(parser, "deployment", MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_PORT))
-        .set(MyriaGlobalConfigurationModule.REST_API_PORT,
-            getOptional(parser, "deployment", MyriaSystemConfigKeys.REST_PORT))
-        .set(MyriaGlobalConfigurationModule.API_ADMIN_PASSWORD,
-            getOptional(parser, "deployment", MyriaSystemConfigKeys.ADMIN_PASSWORD))
-        .set(MyriaGlobalConfigurationModule.USE_SSL,
-            Boolean.parseBoolean(getOptional(parser, "deployment", MyriaSystemConfigKeys.SSL)))
-        .set(MyriaGlobalConfigurationModule.SSL_KEYSTORE_PATH,
-            getOptional(parser, "deployment", MyriaApiConstants.MYRIA_API_SSL_KEYSTORE))
-        .set(MyriaGlobalConfigurationModule.SSL_KEYSTORE_PASSWORD,
-            getOptional(parser, "deployment", MyriaApiConstants.MYRIA_API_SSL_KEYSTORE_PASSWORD))
-        .set(MyriaGlobalConfigurationModule.ENABLE_DEBUG,
-            Boolean.parseBoolean(getOptional(parser, "deployment", MyriaSystemConfigKeys.DEBUG)))
-        .set(MyriaGlobalConfigurationModule.NUMBER_VCORES,
-            getOptional(parser, "runtime", MyriaSystemConfigKeys.NUMBER_VCORES))
-        .set(MyriaGlobalConfigurationModule.MEMORY_QUOTA_GB,
-            getOptional(parser, "runtime", MyriaSystemConfigKeys.MEMORY_QUOTA_GB))
-        .set(MyriaGlobalConfigurationModule.JVM_HEAP_SIZE_MIN_GB,
-            getOptional(parser, "runtime", MyriaSystemConfigKeys.JVM_HEAP_SIZE_MIN_GB))
-        .set(MyriaGlobalConfigurationModule.JVM_HEAP_SIZE_MAX_GB,
-            getOptional(parser, "runtime", MyriaSystemConfigKeys.JVM_HEAP_SIZE_MAX_GB))
-        .set(
+                MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_PASSWORD));
+    conf =
+        setOptional(conf, MyriaGlobalConfigurationModule.DEFAULT_STORAGE_DB_PORT,
+            getOptional(parser, "deployment", MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_PORT));
+    conf =
+        setOptional(conf, MyriaGlobalConfigurationModule.REST_API_PORT,
+            getOptional(parser, "deployment", MyriaSystemConfigKeys.REST_PORT));
+    conf =
+        setOptional(conf, MyriaGlobalConfigurationModule.API_ADMIN_PASSWORD,
+            getOptional(parser, "deployment", MyriaSystemConfigKeys.ADMIN_PASSWORD));
+    conf =
+        setOptional(conf, MyriaGlobalConfigurationModule.USE_SSL,
+            getOptional(parser, "deployment", MyriaSystemConfigKeys.SSL));
+    conf =
+        setOptional(conf, MyriaGlobalConfigurationModule.SSL_KEYSTORE_PATH,
+            getOptional(parser, "deployment", MyriaApiConstants.MYRIA_API_SSL_KEYSTORE));
+    conf =
+        setOptional(conf, MyriaGlobalConfigurationModule.SSL_KEYSTORE_PASSWORD,
+            getOptional(parser, "deployment", MyriaApiConstants.MYRIA_API_SSL_KEYSTORE_PASSWORD));
+    conf =
+        setOptional(conf, MyriaGlobalConfigurationModule.ENABLE_DEBUG,
+            getOptional(parser, "deployment", MyriaSystemConfigKeys.DEBUG));
+    conf =
+        setOptional(conf, MyriaGlobalConfigurationModule.NUMBER_VCORES,
+            getOptional(parser, "runtime", MyriaSystemConfigKeys.NUMBER_VCORES));
+    conf =
+        setOptional(conf, MyriaGlobalConfigurationModule.MEMORY_QUOTA_GB,
+            getOptional(parser, "runtime", MyriaSystemConfigKeys.MEMORY_QUOTA_GB));
+    conf =
+        setOptional(conf, MyriaGlobalConfigurationModule.JVM_HEAP_SIZE_MIN_GB,
+            getOptional(parser, "runtime", MyriaSystemConfigKeys.JVM_HEAP_SIZE_MIN_GB));
+    conf =
+        setOptional(conf, MyriaGlobalConfigurationModule.JVM_HEAP_SIZE_MAX_GB,
+            getOptional(parser, "runtime", MyriaSystemConfigKeys.JVM_HEAP_SIZE_MAX_GB));
+    conf =
+        setOptional(
+            conf,
             MyriaGlobalConfigurationModule.FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES,
             getOptional(parser, "deployment",
-                MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES))
-        .set(
+                MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES));
+    conf =
+        setOptional(
+            conf,
             MyriaGlobalConfigurationModule.FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES,
             getOptional(parser, "deployment",
-                MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES))
-        .set(MyriaGlobalConfigurationModule.OPERATOR_INPUT_BUFFER_CAPACITY,
-            getOptional(parser, "deployment", MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY))
-        .set(
+                MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES));
+    conf =
+        setOptional(conf, MyriaGlobalConfigurationModule.OPERATOR_INPUT_BUFFER_CAPACITY,
+            getOptional(parser, "deployment", MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY));
+    conf =
+        setOptional(
+            conf,
             MyriaGlobalConfigurationModule.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER,
             getOptional(parser, "deployment",
-                MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER))
-        .set(MyriaGlobalConfigurationModule.TCP_CONNECTION_TIMEOUT_MILLIS,
-            getOptional(parser, "deployment", MyriaSystemConfigKeys.TCP_CONNECTION_TIMEOUT_MILLIS))
-        .set(MyriaGlobalConfigurationModule.TCP_SEND_BUFFER_SIZE_BYTES,
-            getOptional(parser, "deployment", MyriaSystemConfigKeys.TCP_SEND_BUFFER_SIZE_BYTES))
-        .set(MyriaGlobalConfigurationModule.TCP_RECEIVE_BUFFER_SIZE_BYTES,
-            getOptional(parser, "deployment", MyriaSystemConfigKeys.TCP_RECEIVE_BUFFER_SIZE_BYTES))
-        .set(MyriaGlobalConfigurationModule.MASTER_HOST,
-            getHostname(parser, MyriaConstants.MASTER_ID))
-        .set(MyriaGlobalConfigurationModule.MASTER_RPC_PORT,
-            getPort(parser, MyriaConstants.MASTER_ID));
+                MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER));
+    conf =
+        setOptional(conf, MyriaGlobalConfigurationModule.TCP_CONNECTION_TIMEOUT_MILLIS,
+            getOptional(parser, "deployment", MyriaSystemConfigKeys.TCP_CONNECTION_TIMEOUT_MILLIS));
+    conf =
+        setOptional(conf, MyriaGlobalConfigurationModule.TCP_SEND_BUFFER_SIZE_BYTES,
+            getOptional(parser, "deployment", MyriaSystemConfigKeys.TCP_SEND_BUFFER_SIZE_BYTES));
+    conf =
+        setOptional(conf, MyriaGlobalConfigurationModule.TCP_RECEIVE_BUFFER_SIZE_BYTES,
+            getOptional(parser, "deployment", MyriaSystemConfigKeys.TCP_RECEIVE_BUFFER_SIZE_BYTES));
+
+    return conf;
   }
 
   private static ConfigurationModule setWorkerConfs(final ConfigParser parser,
@@ -155,7 +187,7 @@ public final class MyriaConfigurationParser {
    * @return working directory
    * @throws ConfigFileException if error occurred when getting the value
    */
-  public static String getPath(final ConfigParser parser, final int nodeId)
+  private static String getPath(final ConfigParser parser, final int nodeId)
       throws ConfigFileException {
     if (nodeId != MyriaConstants.MASTER_ID) {
       // worker, check if its path is specified
@@ -169,23 +201,11 @@ public final class MyriaConfigurationParser {
 
   /**
    * 
-   * @param nodeId the node ID
-   * @return working directory
-   * @throws ConfigFileException if error occurred when getting the value
-   */
-  public static String getWorkingDirectory(final ConfigParser parser, final int nodeId)
-      throws ConfigFileException {
-    return FilenameUtils.concat(getPath(parser, nodeId),
-        getRequired(parser, "deployment", MyriaSystemConfigKeys.DESCRIPTION));
-  }
-
-  /**
-   * 
    * @param workerId the worker ID
    * @return the database name
    * @throws ConfigFileException if error occurred when getting the value
    */
-  public static String getWorkerDatabaseName(final ConfigParser parser, final int workerId)
+  private static String getWorkerDatabaseName(final ConfigParser parser, final int workerId)
       throws ConfigFileException {
     String[] tmp = getRequired(parser, "workers", workerId + "").split(":");
     if (tmp.length > 3) {
@@ -202,7 +222,7 @@ public final class MyriaConfigurationParser {
    * @return the hostname
    * @throws ConfigFileException if error occurred when getting the value
    */
-  public static String getHostname(final ConfigParser parser, final int nodeId)
+  private static String getHostname(final ConfigParser parser, final int nodeId)
       throws ConfigFileException {
     if (nodeId == MyriaConstants.MASTER_ID) {
       return getRequired(parser, "master", nodeId + "").split(":")[0];
@@ -214,37 +234,11 @@ public final class MyriaConfigurationParser {
   /**
    * 
    * @param nodeId the worker/master ID
-   * @return "username@hostname", if username is specified.
-   * @throws ConfigFileException if error occurred when getting the value
-   */
-  public static String getHostnameWithUsername(final ConfigParser parser, final int nodeId)
-      throws ConfigFileException {
-    String hostname = getHostname(parser, nodeId);
-    String username = getOptional(parser, "deployment", "username");
-    if (username != null) {
-      hostname = username + "@" + hostname;
-    }
-    return hostname;
-  }
-
-  /**
-   * 
-   * @param nodeId the worker/master ID
-   * @return a string in the format of hostname:port
-   * @throws ConfigFileException if error occurred when getting the value
-   */
-  public static String getHostPort(final ConfigParser parser, final int nodeId)
-      throws ConfigFileException {
-    return getHostname(parser, nodeId) + ":" + getPort(parser, nodeId);
-  }
-
-  /**
-   * 
-   * @param nodeId the worker/master ID
    * @return the port number
    * @throws ConfigFileException if error occurred when getting the value
    */
-  public static int getPort(final ConfigParser parser, final int nodeId) throws ConfigFileException {
+  private static int getPort(final ConfigParser parser, final int nodeId)
+      throws ConfigFileException {
     if (nodeId == MyriaConstants.MASTER_ID) {
       return Integer.parseInt(getRequired(parser, "master", nodeId + "").split(":")[1]);
     } else {
@@ -257,7 +251,7 @@ public final class MyriaConfigurationParser {
    * @return a list of worker IDs
    * @throws ConfigFileException if error occurred when getting the value
    */
-  public static List<Integer> getWorkerIds(final ConfigParser parser) throws ConfigFileException {
+  private static List<Integer> getWorkerIds(final ConfigParser parser) throws ConfigFileException {
     List<Integer> ret = new ArrayList<Integer>();
     try {
       for (Map.Entry<String, String> node : parser.items("workers")) {
@@ -277,8 +271,8 @@ public final class MyriaConfigurationParser {
    * @throws ConfigFileException if error occurred when getting the value
    */
   @Nonnull
-  public static String getRequired(final ConfigParser parser, final String section, final String key)
-      throws ConfigFileException {
+  private static String getRequired(final ConfigParser parser, final String section,
+      final String key) throws ConfigFileException {
     try {
       return parser.get(section, key);
     } catch (NoSectionException | NoOptionException | InterpolationException e) {
@@ -293,11 +287,22 @@ public final class MyriaConfigurationParser {
    * @return the value, null if not exist
    */
   @Nullable
-  public static String getOptional(final ConfigParser parser, final String section, final String key) {
+  private static String getOptional(final ConfigParser parser, final String section,
+      final String key) {
     try {
       return parser.get(section, key);
     } catch (NoSectionException | NoOptionException | InterpolationException e) {
       return null;
     }
+  }
+
+  @Nonnull
+  private static <T> ConfigurationModule setOptional(final ConfigurationModule cm,
+      final OptionalParameter<T> param, @Nullable final String optionValue) {
+    ConfigurationModule conf = cm;
+    if (optionValue != null) {
+      conf = conf.set(param, optionValue);
+    }
+    return conf;
   }
 }

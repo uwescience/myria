@@ -27,11 +27,11 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.text.StrSubstitutor;
 import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.Tang;
+import org.apache.reef.tang.annotations.Parameter;
 import org.apache.reef.tang.exceptions.BindException;
 import org.apache.reef.tang.exceptions.InjectionException;
 import org.apache.reef.tang.formats.AvroConfigurationSerializer;
@@ -104,14 +104,24 @@ import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.storage.TupleBuffer;
-import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.FlowControlWriteBufferHighMarkBytes;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.FlowControlWriteBufferLowMarkBytes;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.MasterHost;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.MasterRpcPort;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.OperatorInputBufferCapacity;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.OperatorInputBufferRecoverTrigger;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.StorageDbms;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.TcpConnectionTimeoutMillis;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.TcpReceiveBufferSizeBytes;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.TcpSendBufferSizeBytes;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.WorkerConf;
 import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule;
 import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.MyriaUtils;
 import edu.washington.escience.myria.util.concurrent.ErrorLoggingTimerTask;
 import edu.washington.escience.myria.util.concurrent.RenamingThreadFactory;
 
-/**
+/*
  * The master entrance.
  */
 public final class Server {
@@ -219,9 +229,6 @@ public final class Server {
   /** The logger for this class. */
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(Server.class);
 
-  /** Injector for Myria global configuration. */
-  private final Injector globalConfInjector;
-
   /**
    * Initial worker list.
    */
@@ -268,7 +275,7 @@ public final class Server {
   /**
    * The IPC Connection Pool.
    */
-  private final IPCConnectionPool connectionPool;
+  private IPCConnectionPool connectionPool;
 
   /**
    * {@link ExecutorService} for message processing.
@@ -333,85 +340,68 @@ public final class Server {
     return QueryExecutionMode.NON_BLOCKING;
   }
 
+  private final int connectTimeoutMillis;
+  private final int sendBufferSize;
+  private final int receiveBufferSize;
+  private final int writeBufferLowWaterMark;
+  private final int writeBufferHighWaterMark;
+  private final int inputBufferCapacity;
+  private final int inputBufferRecoverTrigger;
+  private final Injector injector;
+
   /**
    * Construct a server object, with configuration stored in the specified catalog file.
    * 
    * @param configFile the name of the config file.
    * @throws FileNotFoundException the specified file not found.
    * @throws CatalogException if there is an error reading from the Catalog.
+   * @throws IOException
+   * @throws InjectionException
+   * @throws BindException
    * @throws ConfigFileException if there is an error reading the config file.
    */
   @Inject
-  public Server(final Injector globalConfInjector) throws InjectionException, CatalogException,
+  public Server(@Parameter(MasterHost.class) final String masterHost,
+      @Parameter(MasterRpcPort.class) final int masterPort,
+      @Parameter(StorageDbms.class) final String databaseSystem,
+      @Parameter(TcpConnectionTimeoutMillis.class) final int connectTimeoutMillis,
+      @Parameter(TcpSendBufferSizeBytes.class) final int sendBufferSize,
+      @Parameter(TcpReceiveBufferSizeBytes.class) final int receiveBufferSize,
+      @Parameter(FlowControlWriteBufferLowMarkBytes.class) final int writeBufferLowWaterMark,
+      @Parameter(FlowControlWriteBufferHighMarkBytes.class) final int writeBufferHighWaterMark,
+      @Parameter(OperatorInputBufferCapacity.class) final int inputBufferCapacity,
+      @Parameter(OperatorInputBufferRecoverTrigger.class) final int inputBufferRecoverTrigger,
+      final Injector injector) throws CatalogException, BindException, InjectionException,
       IOException {
 
-    this.globalConfInjector = globalConfInjector;
-    String masterHost =
-        globalConfInjector.getNamedInstance(MyriaGlobalConfigurationModule.MasterHost.class);
-    Integer masterPort =
-        globalConfInjector.getNamedInstance(MyriaGlobalConfigurationModule.MasterRpcPort.class);
+    this.connectTimeoutMillis = connectTimeoutMillis;
+    this.sendBufferSize = sendBufferSize;
+    this.receiveBufferSize = receiveBufferSize;
+    this.writeBufferLowWaterMark = writeBufferLowWaterMark;
+    this.writeBufferHighWaterMark = writeBufferHighWaterMark;
+    this.inputBufferCapacity = inputBufferCapacity;
+    this.inputBufferRecoverTrigger = inputBufferRecoverTrigger;
+    this.injector = injector;
 
     masterSocketInfo = new SocketInfo(masterHost, masterPort);
 
     execEnvVars = new ConcurrentHashMap<>();
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_NODE_ID, MyriaConstants.MASTER_ID);
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE, getExecutionMode());
+    execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM, databaseSystem);
 
     workers = new ConcurrentHashMap<>();
-    final ImmutableSet<Configuration> workerConfs = getWorkerConfs();
-    for (Configuration workerConf : workerConfs) {
-      workers.put(getIdFromWorkerConf(workerConf), new SocketInfo(
-          getHostFromWorkerConf(workerConf), getPortFromWorkerConf(workerConf)));
-    }
-
-    final Map<Integer, SocketInfo> computingUnits = new HashMap<>(workers);
-    computingUnits.put(MyriaConstants.MASTER_ID, masterSocketInfo);
     aliveWorkers = new ConcurrentHashMap<>();
     scheduledWorkers = new ConcurrentHashMap<>();
     scheduledWorkersTime = new ConcurrentHashMap<>();
-
-    String currentDir = Paths.get(".").toAbsolutePath().normalize().toString();
-    try {
-      LOGGER.info("Attempting to open master catalog file under {}...", currentDir);
-      catalog = MasterCatalog.open(currentDir);
-    } catch (FileNotFoundException e) {
-      LOGGER.info("Failed to open master catalog file under {}, attempting to create it...\n({})",
-          currentDir, e.getMessage());
-      catalog = MasterCatalog.create(currentDir);
-    }
-
     queryManager = new QueryManager(catalog, this);
-
     messageQueue = new LinkedBlockingQueue<>();
-
-    final int inputBufferCapacity =
-        globalConfInjector
-            .getNamedInstance(MyriaGlobalConfigurationModule.OperatorInputBufferCapacity.class);
-    final int inputBufferRecoverTrigger =
-        globalConfInjector
-            .getNamedInstance(MyriaGlobalConfigurationModule.OperatorInputBufferRecoverTrigger.class);
-    connectionPool =
-        new IPCConnectionPool(MyriaConstants.MASTER_ID, computingUnits,
-            IPCConfigurations.createMasterIPCServerBootstrap(globalConfInjector),
-            IPCConfigurations.createMasterIPCClientBootstrap(globalConfInjector),
-            new TransportMessageSerializer(),
-            new QueueBasedShortMessageProcessor<TransportMessage>(messageQueue),
-            inputBufferCapacity, inputBufferRecoverTrigger);
-
-    scheduledTaskExecutor =
-        Executors
-            .newSingleThreadScheduledExecutor(new RenamingThreadFactory("Master global timer"));
-
-    final String databaseSystem =
-        globalConfInjector.getNamedInstance(MyriaGlobalConfigurationModule.StorageDbms.class);
-
-    execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM, databaseSystem);
   }
 
   /**
    * timer task executor.
    */
-  private final ScheduledExecutorService scheduledTaskExecutor;
+  private ScheduledExecutorService scheduledTaskExecutor;
 
   /**
    * This class presents only for the purpose of debugging. No other usage.
@@ -429,11 +419,10 @@ public final class Server {
     }
   }
 
-  private ImmutableSet<Configuration> getWorkerConfs() throws InjectionException, BindException,
-      IOException {
+  private ImmutableSet<Configuration> getWorkerConfs(final Injector injector)
+      throws InjectionException, BindException, IOException {
     final ImmutableSet.Builder<Configuration> workerConfsBuilder = new ImmutableSet.Builder<>();
-    final Set<String> serializedWorkerConfs =
-        globalConfInjector.getNamedInstance(MyriaGlobalConfigurationModule.WorkerConf.class);
+    final Set<String> serializedWorkerConfs = injector.getNamedInstance(WorkerConf.class);
     final ConfigurationSerializer serializer = new AvroConfigurationSerializer();
     for (final String serializedWorkerConf : serializedWorkerConfs) {
       final Configuration workerConf = serializer.fromString(serializedWorkerConf);
@@ -458,15 +447,6 @@ public final class Server {
       throws InjectionException {
     final Injector injector = Tang.Factory.getTang().newInjector(workerConf);
     return injector.getNamedInstance(MyriaWorkerConfigurationModule.WorkerPort.class);
-  }
-
-  private String getMasterCatalogRoot() throws InjectionException, CatalogException {
-    String instancePath =
-        globalConfInjector
-            .getNamedInstance(MyriaGlobalConfigurationModule.DefaultInstancePath.class);
-    String instanceName =
-        globalConfInjector.getNamedInstance(MyriaGlobalConfigurationModule.InstanceName.class);
-    return FilenameUtils.concat(instancePath, instanceName);
   }
 
   /**
@@ -551,6 +531,38 @@ public final class Server {
   public void start() throws Exception {
     LOGGER.info("Server starting on {}", masterSocketInfo);
 
+    final ImmutableSet<Configuration> workerConfs = getWorkerConfs(injector);
+    for (Configuration workerConf : workerConfs) {
+      workers.put(getIdFromWorkerConf(workerConf), new SocketInfo(
+          getHostFromWorkerConf(workerConf), getPortFromWorkerConf(workerConf)));
+    }
+
+    final Map<Integer, SocketInfo> computingUnits = new HashMap<>(workers);
+    computingUnits.put(MyriaConstants.MASTER_ID, masterSocketInfo);
+
+    String currentDir = Paths.get(".").toAbsolutePath().normalize().toString();
+    try {
+      LOGGER.info("Attempting to open master catalog file under {}...", currentDir);
+      catalog = MasterCatalog.open(currentDir);
+    } catch (FileNotFoundException e) {
+      LOGGER.info("Failed to open master catalog file under {}, attempting to create it...\n({})",
+          currentDir, e.getMessage());
+      catalog = MasterCatalog.create(currentDir);
+    }
+
+    connectionPool =
+        new IPCConnectionPool(MyriaConstants.MASTER_ID, computingUnits,
+            IPCConfigurations.createMasterIPCServerBootstrap(connectTimeoutMillis, sendBufferSize,
+                receiveBufferSize, writeBufferLowWaterMark, writeBufferHighWaterMark),
+            IPCConfigurations.createMasterIPCClientBootstrap(connectTimeoutMillis, sendBufferSize,
+                receiveBufferSize, writeBufferLowWaterMark, writeBufferHighWaterMark),
+            new TransportMessageSerializer(),
+            new QueueBasedShortMessageProcessor<TransportMessage>(messageQueue),
+            inputBufferCapacity, inputBufferRecoverTrigger);
+
+    scheduledTaskExecutor =
+        Executors
+            .newSingleThreadScheduledExecutor(new RenamingThreadFactory("Master global timer"));
     scheduledTaskExecutor.scheduleAtFixedRate(new DebugHelper(), DebugHelper.INTERVAL,
         DebugHelper.INTERVAL, TimeUnit.MILLISECONDS);
     messageProcessingExecutor =
@@ -735,6 +747,7 @@ public final class Server {
    * @param workersToIngest restrict the workers to ingest data (null for all)
    * @param indexes the indexes created.
    * @param source the source of tuples to be ingested.
+   * @param pf the PartitionFunction used to partition the ingested relation.
    * @return the status of the ingested dataset.
    * @throws InterruptedException interrupted
    * @throws DbException if there is an error
