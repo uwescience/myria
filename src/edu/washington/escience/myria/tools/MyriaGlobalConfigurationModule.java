@@ -86,7 +86,7 @@ public final class MyriaGlobalConfigurationModule extends ConfigurationModuleBui
       .bindNamedParameter(MemoryQuotaGB.class, MEMORY_QUOTA_GB)
       .bindNamedParameter(JvmHeapSizeMinGB.class, JVM_HEAP_SIZE_MIN_GB)
       .bindNamedParameter(JvmHeapSizeMaxGB.class, JVM_HEAP_SIZE_MAX_GB)
-      .bindNamedParameter(JvmOptions.class, JVM_OPTIONS)
+      .bindSetEntry(JvmOptions.class, JVM_OPTIONS)
       .bindNamedParameter(FlowControlWriteBufferHighMarkBytes.class,
           FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES)
       .bindNamedParameter(FlowControlWriteBufferLowMarkBytes.class,
@@ -155,8 +155,8 @@ public final class MyriaGlobalConfigurationModule extends ConfigurationModuleBui
   @NamedParameter(default_value = "1")
   public class JvmHeapSizeMaxGB implements Name<Integer> {
   }
-  @NamedParameter(default_value = "-XX:+UseParallelGC -XX:+UseParallelOldGC")
-  public class JvmOptions implements Name<String> {
+  @NamedParameter(default_values = {"-XX:+UseG1GC"})
+  public class JvmOptions implements Name<Set<String>> {
   }
   @NamedParameter(default_value = (5 * MyriaConstants.MB) + "")
   public class FlowControlWriteBufferHighMarkBytes implements Name<Integer> {

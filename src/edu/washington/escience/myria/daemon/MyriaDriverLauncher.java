@@ -1,6 +1,12 @@
 package edu.washington.escience.myria.daemon;
 
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.io.FilenameUtils;
@@ -10,6 +16,7 @@ import org.apache.reef.runtime.local.client.LocalRuntimeConfiguration;
 // import org.apache.reef.runtime.yarn.client.YarnClientConfiguration;
 import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.Configurations;
+import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.annotations.Name;
 import org.apache.reef.tang.annotations.NamedParameter;
@@ -17,7 +24,7 @@ import org.apache.reef.tang.exceptions.BindException;
 import org.apache.reef.tang.exceptions.InjectionException;
 import org.apache.reef.tang.formats.AvroConfigurationSerializer;
 import org.apache.reef.tang.formats.CommandLine;
-import org.apache.reef.util.EnvironmentUtils;
+import org.apache.reef.tang.formats.ConfigurationModule;
 
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.coordinator.ConfigFileException;
@@ -35,14 +42,15 @@ import edu.washington.escience.myria.tools.MyriaConfigurationParser;
 
 public final class MyriaDriverLauncher {
 
-  private static final String USAGE_STRING = "Usage: MyriaDriverLauncher -configPath <configPath>";
+  private static final String USAGE_STRING =
+      "Usage: MyriaDriverLauncher -configPath <configPath> -javaLibPath <javaLibPath> -nativeLibPath <nativeLibPath>";
 
   /**
    * @param args full path to the configuration directory.
    * @throws Exception if the Driver can't start.
    */
   public static void main(final String[] args) throws Exception {
-    if (args.length != 2) {
+    if (args.length != 6) {
       System.err.println(USAGE_STRING);
       System.exit(-1);
     }
@@ -63,13 +71,12 @@ public final class MyriaDriverLauncher {
 
   /**
    * @return The Driver configuration.
+   * @throws IOException
    */
-  private final static Configuration getDriverConf() {
-    final Configuration driverConf =
-        DriverConfiguration.CONF
-            .set(DriverConfiguration.GLOBAL_LIBRARIES,
-                EnvironmentUtils.getClassLocation(MyriaDriver.class))
-            .set(DriverConfiguration.DRIVER_IDENTIFIER, "MyriaDriver")
+  private final static Configuration getDriverConf(final String[] libPaths, final String[] filePaths)
+      throws IOException {
+    ConfigurationModule driverConf =
+        DriverConfiguration.CONF.set(DriverConfiguration.DRIVER_IDENTIFIER, "MyriaDriver")
             .set(DriverConfiguration.ON_DRIVER_STARTED, StartHandler.class)
             .set(DriverConfiguration.ON_DRIVER_STOP, StopHandler.class)
             .set(DriverConfiguration.ON_EVALUATOR_ALLOCATED, EvaluatorAllocatedHandler.class)
@@ -79,8 +86,37 @@ public final class MyriaDriverLauncher {
             .set(DriverConfiguration.ON_CONTEXT_FAILED, ContextFailureHandler.class)
             .set(DriverConfiguration.ON_TASK_RUNNING, RunningTaskHandler.class)
             .set(DriverConfiguration.ON_TASK_COMPLETED, CompletedTaskHandler.class)
-            .set(DriverConfiguration.ON_TASK_FAILED, TaskFailureHandler.class).build();
-    return driverConf;
+            .set(DriverConfiguration.ON_TASK_FAILED, TaskFailureHandler.class);
+    for (String dirPath : libPaths) {
+      for (String filePath : getFileNamesInDirectory(Paths.get(dirPath))) {
+        driverConf = driverConf.set(DriverConfiguration.GLOBAL_LIBRARIES, filePath);
+      }
+    }
+    for (String dirPath : filePaths) {
+      for (String filePath : getFileNamesInDirectory(Paths.get(dirPath))) {
+        driverConf = driverConf.set(DriverConfiguration.GLOBAL_FILES, filePath);
+      }
+    }
+    return driverConf.build();
+  }
+
+  private static List<String> getFileNamesInDirectory(final Path root) throws IOException {
+    final List<String> fileNames = new ArrayList<>();
+    getFileNamesInDirectoryHelper(root, fileNames);
+    return fileNames;
+  }
+
+  private static void getFileNamesInDirectoryHelper(final Path dir, final List<String> acc)
+      throws IOException {
+    try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
+      for (Path path : stream) {
+        if (path.toFile().isDirectory()) {
+          getFileNamesInDirectoryHelper(path, acc);
+        } else {
+          acc.add(path.toAbsolutePath().toString());
+        }
+      }
+    }
   }
 
   /**
@@ -98,23 +134,45 @@ public final class MyriaDriverLauncher {
     final Tang tang = Tang.Factory.getTang();
 
     @SuppressWarnings("unchecked")
-    final Configuration commandLineConf = CommandLine.parseToConfiguration(args, ConfigPath.class);
-    final String configPath = tang.newInjector(commandLineConf).getNamedInstance(ConfigPath.class);
+    final Configuration commandLineConf =
+        CommandLine.parseToConfiguration(args, ConfigPath.class, JavaLibPath.class,
+            NativeLibPath.class);
+    final Injector commandLineInjector = tang.newInjector(commandLineConf);
+    final String configPath = commandLineInjector.getNamedInstance(ConfigPath.class);
+    final String javaLibPath = commandLineInjector.getNamedInstance(JavaLibPath.class);
+    final String nativeLibPath = commandLineInjector.getNamedInstance(NativeLibPath.class);
     final String serializedGlobalConf =
         new AvroConfigurationSerializer().toString(getMyriaGlobalConf(configPath));
     final Configuration globalConfWrapper =
         tang.newConfigurationBuilder()
             .bindNamedParameter(SerializedGlobalConf.class, serializedGlobalConf).build();
-    final Configuration driverConf = Configurations.merge(getDriverConf(), globalConfWrapper);
+    final Configuration driverConf =
+        Configurations.merge(
+            getDriverConf(new String[] {javaLibPath}, new String[] {nativeLibPath}),
+            globalConfWrapper);
     final REEF reef = tang.newInjector(runtimeConf).getInstance(REEF.class);
     reef.submit(driverConf);
   }
 
   /**
-   * Command line parameter: path to configuration file on driver launch host.
+   * Command line parameter: directory containing configuration file on driver launch host.
    */
   @NamedParameter(doc = "local configuration file directory", short_name = "configPath")
   public static final class ConfigPath implements Name<String> {
+  }
+
+  /**
+   * Command line parameter: directory containing JAR/class files on driver launch host.
+   */
+  @NamedParameter(doc = "local JAR/class file directory", short_name = "javaLibPath")
+  public static final class JavaLibPath implements Name<String> {
+  }
+
+  /**
+   * Command line parameter: directory containing native shared libraries on driver launch host.
+   */
+  @NamedParameter(doc = "local native shared library directory", short_name = "nativeLibPath")
+  public static final class NativeLibPath implements Name<String> {
   }
 
   /**
