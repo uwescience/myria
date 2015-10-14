@@ -5,19 +5,12 @@ import java.util.logging.Logger;
 
 import javax.inject.Inject;
 
-import org.apache.reef.tang.Configuration;
-import org.apache.reef.tang.Injector;
-import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.annotations.Parameter;
-import org.apache.reef.tang.formats.AvroConfigurationSerializer;
 import org.apache.reef.task.Task;
 
 import edu.washington.escience.myria.api.MasterApiServer;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule;
-import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.ApiAdminPassword;
-import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.SslKeystorePassword;
-import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.SslKeystorePath;
 
 /**
  * This is the class for the main daemon for Myria. It manages all the various services, including
@@ -53,13 +46,17 @@ public final class MasterDaemon implements Task {
    */
   @Inject
   public MasterDaemon(
+      final Server server,
+      final MasterApiServer apiServer,
       final @Parameter(MyriaGlobalConfigurationModule.RestApiPort.class) int apiPort,
-      final @Parameter(MyriaDriverLauncher.SerializedGlobalConf.class) String serializedGlobalConf)
+      final @Parameter(MyriaGlobalConfigurationModule.UseSsl.class) boolean useSsl,
+      final @Parameter(MyriaGlobalConfigurationModule.SslKeystorePath.class) String keystorePath,
+      final @Parameter(MyriaGlobalConfigurationModule.SslKeystorePassword.class) String keystorePassword,
+      final @Parameter(MyriaGlobalConfigurationModule.ApiAdminPassword.class) String adminPassword)
       throws Exception {
-    Injector globalConfInjector;
+    this.server = server;
+    this.apiServer = apiServer;
     try {
-      Configuration globalConf = new AvroConfigurationSerializer().fromString(serializedGlobalConf);
-      globalConfInjector = Tang.Factory.getTang().newInjector(globalConf);
       final int portMin = 1;
       final int portMax = 65535;
       if ((apiPort < portMin) || (apiPort > portMax)) {
@@ -67,17 +64,6 @@ public final class MasterDaemon implements Task {
       }
     } catch (NumberFormatException e) {
       throw new IllegalArgumentException(e);
-    }
-    server = new Server(globalConfInjector);
-    try {
-      String keystorePath = globalConfInjector.getNamedInstance(SslKeystorePath.class);
-      String keystorePassword = globalConfInjector.getNamedInstance(SslKeystorePassword.class);
-      String adminPassword = globalConfInjector.getNamedInstance(ApiAdminPassword.class);
-      apiServer =
-          new MasterApiServer(server, this, apiPort, keystorePath, keystorePassword, adminPassword);
-    } catch (Exception e) {
-      server.shutdown();
-      throw e;
     }
   }
 

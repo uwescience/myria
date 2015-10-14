@@ -13,7 +13,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.internal.util.Base64;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.message.GZipEncoder;
@@ -25,7 +24,6 @@ import org.glassfish.jersey.server.filter.EncodingFilter;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.wordnik.swagger.jaxrs.config.BeanConfig;
 
-import edu.washington.escience.myria.daemon.MasterDaemon;
 import edu.washington.escience.myria.parallel.Server;
 
 /**
@@ -37,11 +35,9 @@ public final class MasterApplication extends ResourceConfig {
   /**
    * Instantiate the main application running on the Myria master.
    * 
-   * @param server the Myria server running on this master.
-   * @param daemon the Myria daemon running on this master.
+   * @param adminPassword the password for administrator access.
    */
-  public MasterApplication(final Server server, final MasterDaemon daemon,
-      final String adminPassword) {
+  public MasterApplication(final String adminPassword) {
     /*
      * Tell Jersey to look for resources inside the entire project, and also for Swagger.
      */
@@ -57,16 +53,6 @@ public final class MasterApplication extends ResourceConfig {
 
     /* Enable Multipart. */
     register(MultiPartFeature.class);
-
-    /* Register the singleton binder. */
-    register(new AbstractBinder() {
-      @Override
-      protected void configure() {
-        /* Singletons binding. */
-        bind(server).to(Server.class);
-        bind(daemon).to(MasterDaemon.class);
-      }
-    });
 
     /* Enable GZIP compression/decompression */
     register(EncodingFilter.class);

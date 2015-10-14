@@ -43,7 +43,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.daemon.MyriaDriverLauncher.SerializedGlobalConf;
 import edu.washington.escience.myria.parallel.Worker;
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule;
 import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule;
@@ -59,7 +58,6 @@ public final class MyriaDriver {
   private final JVMProcessFactory jvmProcessFactory;
   private final Configuration globalConf;
   private final Injector globalConfInjector;
-  private final Configuration globalConfWrapper;
   private final ImmutableSet<Configuration> workerConfs;
   private final Set<Integer> workerIdsAllocated;
   private final Map<Integer, ActiveContext> contextsById;
@@ -94,9 +92,6 @@ public final class MyriaDriver {
     this.jvmProcessFactory = jvmProcessFactory;
     globalConf = new AvroConfigurationSerializer().fromString(serializedGlobalConf);
     globalConfInjector = Tang.Factory.getTang().newInjector(globalConf);
-    globalConfWrapper =
-        Tang.Factory.getTang().newConfigurationBuilder()
-            .bindNamedParameter(SerializedGlobalConf.class, serializedGlobalConf).build();
     workerConfs = getWorkerConfs();
     workerIdsAllocated = new HashSet<>();
     contextsById = new HashMap<>();
@@ -133,15 +128,14 @@ public final class MyriaDriver {
     final int jvmMemoryQuotaMB =
         1024 * globalConfInjector
             .getNamedInstance(MyriaGlobalConfigurationModule.MemoryQuotaGB.class);
-    final int localFragmentWorkerThreads =
-        globalConfInjector
-            .getNamedInstance(MyriaGlobalConfigurationModule.LocalFragmentWorkerThreads.class);
-    LOGGER.info("Requesting {} worker evaluators.", localFragmentWorkerThreads);
+    final int numberVCores =
+        globalConfInjector.getNamedInstance(MyriaGlobalConfigurationModule.NumberVCores.class);
+    LOGGER.info("Requesting {} worker evaluators.", workerConfs.size());
     for (final Configuration workerConf : workerConfs) {
       String hostname = getHostFromWorkerConf(workerConf);
       final EvaluatorRequest workerRequest =
           EvaluatorRequest.newBuilder().setNumber(1).setMemory(jvmMemoryQuotaMB)
-              .setNumberOfCores(localFragmentWorkerThreads).addNodeName(hostname).build();
+              .setNumberOfCores(numberVCores).addNodeName(hostname).build();
       requestor.submit(workerRequest);
     }
   }
@@ -153,12 +147,11 @@ public final class MyriaDriver {
     final int jvmMemoryQuotaMB =
         1024 * globalConfInjector
             .getNamedInstance(MyriaGlobalConfigurationModule.MemoryQuotaGB.class);
-    final int localFragmentWorkerThreads =
-        globalConfInjector
-            .getNamedInstance(MyriaGlobalConfigurationModule.LocalFragmentWorkerThreads.class);
+    final int numberVCores =
+        globalConfInjector.getNamedInstance(MyriaGlobalConfigurationModule.NumberVCores.class);
     final EvaluatorRequest masterRequest =
         EvaluatorRequest.newBuilder().setNumber(1).setMemory(jvmMemoryQuotaMB)
-            .setNumberOfCores(localFragmentWorkerThreads).addNodeName(masterHost).build();
+            .setNumberOfCores(numberVCores).addNodeName(masterHost).build();
     requestor.submit(masterRequest);
   }
 
@@ -249,7 +242,7 @@ public final class MyriaDriver {
         } catch (InjectionException e) {
           throw new RuntimeException(e);
         }
-        evaluator.submitContext(Configurations.merge(contextConf, globalConf, globalConfWrapper));
+        evaluator.submitContext(Configurations.merge(contextConf, globalConf));
       } else {
         Preconditions.checkState(state == State.PREPARING_WORKERS);
         // allocate the next worker ID associated with this host
@@ -262,8 +255,7 @@ public final class MyriaDriver {
                   ContextConfiguration.CONF.set(ContextConfiguration.IDENTIFIER, confId + "")
                       .build();
               setJVMOptions(evaluator);
-              evaluator.submitContext(Configurations.merge(contextConf, globalConf,
-                  globalConfWrapper, workerConf));
+              evaluator.submitContext(Configurations.merge(contextConf, globalConf, workerConf));
               workerIdsAllocated.add(confId);
               break;
             }
