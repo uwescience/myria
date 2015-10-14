@@ -17,6 +17,8 @@ import org.apache.reef.driver.evaluator.CompletedEvaluator;
 import org.apache.reef.driver.evaluator.EvaluatorRequest;
 import org.apache.reef.driver.evaluator.EvaluatorRequestor;
 import org.apache.reef.driver.evaluator.FailedEvaluator;
+import org.apache.reef.driver.evaluator.JVMProcess;
+import org.apache.reef.driver.evaluator.JVMProcessFactory;
 import org.apache.reef.driver.task.CompletedTask;
 import org.apache.reef.driver.task.FailedTask;
 import org.apache.reef.driver.task.RunningTask;
@@ -54,6 +56,7 @@ import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule;
 public final class MyriaDriver {
   private static final Logger LOGGER = LoggerFactory.getLogger(MyriaDriver.class);
   private final EvaluatorRequestor requestor;
+  private final JVMProcessFactory jvmProcessFactory;
   private final Configuration globalConf;
   private final Injector globalConfInjector;
   private final Configuration globalConfWrapper;
@@ -84,10 +87,11 @@ public final class MyriaDriver {
   private volatile State state = State.INIT;
 
   @Inject
-  public MyriaDriver(final EvaluatorRequestor requestor,
+  public MyriaDriver(final EvaluatorRequestor requestor, final JVMProcessFactory jvmProcessFactory,
       final @Parameter(MyriaDriverLauncher.SerializedGlobalConf.class) String serializedGlobalConf)
       throws Exception {
     this.requestor = requestor;
+    this.jvmProcessFactory = jvmProcessFactory;
     globalConf = new AvroConfigurationSerializer().fromString(serializedGlobalConf);
     globalConfInjector = Tang.Factory.getTang().newInjector(globalConf);
     globalConfWrapper =
@@ -126,9 +130,9 @@ public final class MyriaDriver {
   }
 
   private void requestWorkerEvaluators() throws InjectionException {
-    final int jvmHeapSizeMaxMB =
+    final int jvmMemoryQuotaMB =
         1024 * globalConfInjector
-            .getNamedInstance(MyriaGlobalConfigurationModule.JvmHeapSizeMaxGB.class);
+            .getNamedInstance(MyriaGlobalConfigurationModule.MemoryQuotaGB.class);
     final int localFragmentWorkerThreads =
         globalConfInjector
             .getNamedInstance(MyriaGlobalConfigurationModule.LocalFragmentWorkerThreads.class);
@@ -136,7 +140,7 @@ public final class MyriaDriver {
     for (final Configuration workerConf : workerConfs) {
       String hostname = getHostFromWorkerConf(workerConf);
       final EvaluatorRequest workerRequest =
-          EvaluatorRequest.newBuilder().setNumber(1).setMemory(jvmHeapSizeMaxMB)
+          EvaluatorRequest.newBuilder().setNumber(1).setMemory(jvmMemoryQuotaMB)
               .setNumberOfCores(localFragmentWorkerThreads).addNodeName(hostname).build();
       requestor.submit(workerRequest);
     }
@@ -146,16 +150,35 @@ public final class MyriaDriver {
     LOGGER.info("Requesting master evaluator.");
     final String masterHost =
         globalConfInjector.getNamedInstance(MyriaGlobalConfigurationModule.MasterHost.class);
-    final int jvmHeapSizeMaxMB =
+    final int jvmMemoryQuotaMB =
         1024 * globalConfInjector
-            .getNamedInstance(MyriaGlobalConfigurationModule.JvmHeapSizeMaxGB.class);
+            .getNamedInstance(MyriaGlobalConfigurationModule.MemoryQuotaGB.class);
     final int localFragmentWorkerThreads =
         globalConfInjector
             .getNamedInstance(MyriaGlobalConfigurationModule.LocalFragmentWorkerThreads.class);
     final EvaluatorRequest masterRequest =
-        EvaluatorRequest.newBuilder().setNumber(1).setMemory(jvmHeapSizeMaxMB)
+        EvaluatorRequest.newBuilder().setNumber(1).setMemory(jvmMemoryQuotaMB)
             .setNumberOfCores(localFragmentWorkerThreads).addNodeName(masterHost).build();
     requestor.submit(masterRequest);
+  }
+
+  private void setJVMOptions(final AllocatedEvaluator evaluator) throws InjectionException {
+    final int jvmHeapSizeMinGB =
+        globalConfInjector.getNamedInstance(MyriaGlobalConfigurationModule.JvmHeapSizeMinGB.class);
+    final int jvmHeapSizeMaxGB =
+        globalConfInjector.getNamedInstance(MyriaGlobalConfigurationModule.JvmHeapSizeMaxGB.class);
+    final Set<String> jvmOptions =
+        globalConfInjector.getNamedInstance(MyriaGlobalConfigurationModule.JvmOptions.class);
+    final JVMProcess jvmProcess =
+        jvmProcessFactory.newEvaluatorProcess()
+            .addOption(String.format("-Xms%dg", jvmHeapSizeMinGB))
+            .addOption(String.format("-Xmx%dg", jvmHeapSizeMaxGB))
+            // for native libraries
+            .addOption("-Djava.library.path=./reef/global");
+    for (String option : jvmOptions) {
+      jvmProcess.addOption(option);
+    }
+    evaluator.setProcess(jvmProcess);
   }
 
   /**
@@ -221,6 +244,11 @@ public final class MyriaDriver {
         Configuration contextConf =
             ContextConfiguration.CONF.set(ContextConfiguration.IDENTIFIER,
                 MyriaConstants.MASTER_ID + "").build();
+        try {
+          setJVMOptions(evaluator);
+        } catch (InjectionException e) {
+          throw new RuntimeException(e);
+        }
         evaluator.submitContext(Configurations.merge(contextConf, globalConf, globalConfWrapper));
       } else {
         Preconditions.checkState(state == State.PREPARING_WORKERS);
@@ -233,6 +261,7 @@ public final class MyriaDriver {
               Configuration contextConf =
                   ContextConfiguration.CONF.set(ContextConfiguration.IDENTIFIER, confId + "")
                       .build();
+              setJVMOptions(evaluator);
               evaluator.submitContext(Configurations.merge(contextConf, globalConf,
                   globalConfWrapper, workerConf));
               workerIdsAllocated.add(confId);

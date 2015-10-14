@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -49,6 +48,7 @@ public final class MyriaConfigurationParser {
     ConfigurationModule cm = MyriaGlobalConfigurationModule.CONF;
     cm = setGlobalConfVariables(parser, cm);
     cm = setWorkerConfs(parser, cm);
+    cm = setJvmOptions(parser, cm);
     return cm.build();
   }
 
@@ -91,8 +91,6 @@ public final class MyriaConfigurationParser {
             getOptional(parser, "runtime", MyriaSystemConfigKeys.JVM_HEAP_SIZE_MIN_GB))
         .set(MyriaGlobalConfigurationModule.JVM_HEAP_SIZE_MAX_GB,
             getOptional(parser, "runtime", MyriaSystemConfigKeys.JVM_HEAP_SIZE_MAX_GB))
-        .set(MyriaGlobalConfigurationModule.JVM_OPTIONS,
-            getOptional(parser, "runtime", MyriaSystemConfigKeys.JVM_OPTIONS))
         .set(
             MyriaGlobalConfigurationModule.FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES,
             getOptional(parser, "deployment",
@@ -134,6 +132,19 @@ public final class MyriaConfigurationParser {
               .build();
       String serializedWorkerConfig = new AvroConfigurationSerializer().toString(workerConfig);
       conf = conf.set(MyriaGlobalConfigurationModule.WORKER_CONF, serializedWorkerConfig);
+    }
+    return conf;
+  }
+
+  private static ConfigurationModule setJvmOptions(final ConfigParser parser,
+      final ConfigurationModule cm) throws ConfigFileException {
+    ConfigurationModule conf = cm;
+    final String options = getOptional(parser, "runtime", MyriaSystemConfigKeys.JVM_OPTIONS);
+    if (options != null) {
+      final List<String> optionList = Arrays.asList(options.split(" "));
+      for (final String option : optionList) {
+        conf = conf.set(MyriaGlobalConfigurationModule.JVM_OPTIONS, option);
+      }
     }
     return conf;
   }
@@ -288,28 +299,5 @@ public final class MyriaConfigurationParser {
     } catch (NoSectionException | NoOptionException | InterpolationException e) {
       return null;
     }
-  }
-
-  /**
-   * @return the master catalog file
-   * @throws ConfigFileException if error occurred parsing the config file
-   */
-  public static String getMasterCatalogFile(final ConfigParser parser) throws ConfigFileException {
-    String path = getWorkingDirectory(parser, MyriaConstants.MASTER_ID);
-    path = FilenameUtils.concat(path, "master");
-    path = FilenameUtils.concat(path, "master.catalog");
-    return path;
-  }
-
-  /**
-   * 
-   * @return JVM options
-   */
-  public static List<String> getJvmOptions(final ConfigParser parser) {
-    String options = getOptional(parser, "runtime", MyriaSystemConfigKeys.JVM_OPTIONS);
-    if (options != null) {
-      return Arrays.asList(options.split(" "));
-    }
-    return Collections.emptyList();
   }
 }

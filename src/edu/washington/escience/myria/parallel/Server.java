@@ -4,6 +4,8 @@ import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.PipedOutputStream;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -278,7 +280,7 @@ public final class Server {
   private volatile ExecutorService messageProcessingExecutor;
 
   /** The Catalog stores the metadata about the Myria instance. */
-  private final MasterCatalog catalog;
+  private MasterCatalog catalog;
 
   /**
    * The {@link OrderedMemoryAwareThreadPoolExecutor} who gets messages from {@link workerExecutor}
@@ -377,7 +379,16 @@ public final class Server {
     scheduledWorkers = new ConcurrentHashMap<>();
     scheduledWorkersTime = new ConcurrentHashMap<>();
 
-    catalog = MasterCatalog.open(getMasterCatalogFile());
+    String currentDir = Paths.get(".").toAbsolutePath().normalize().toString();
+    try {
+      LOGGER.info("Attempting to open master catalog file under {}...", currentDir);
+      catalog = MasterCatalog.open(currentDir);
+    } catch (FileNotFoundException e) {
+      LOGGER.info("Failed to open master catalog file under {}, attempting to create it...\n({})",
+          currentDir, e.getMessage());
+      catalog = MasterCatalog.create(currentDir);
+    }
+
     queryManager = new QueryManager(catalog, this);
 
     messageQueue = new LinkedBlockingQueue<>();
@@ -459,16 +470,13 @@ public final class Server {
     return injector.getNamedInstance(MyriaWorkerConfigurationModule.WorkerPort.class);
   }
 
-  private String getMasterCatalogFile() throws InjectionException {
+  private String getMasterCatalogRoot() throws InjectionException, CatalogException {
     String instancePath =
         globalConfInjector
             .getNamedInstance(MyriaGlobalConfigurationModule.DefaultInstancePath.class);
     String instanceName =
         globalConfInjector.getNamedInstance(MyriaGlobalConfigurationModule.InstanceName.class);
-    String catalogPath = FilenameUtils.concat(instancePath, instanceName);
-    catalogPath = FilenameUtils.concat(catalogPath, "master");
-    catalogPath = FilenameUtils.concat(catalogPath, "master.catalog");
-    return catalogPath;
+    return FilenameUtils.concat(instancePath, instanceName);
   }
 
   /**
