@@ -15,7 +15,7 @@ fi
 
 # update jar
 echo "update"
-./update_myria_binaries.py $1
+./setup_cluster.py $1
 RET=$?
 if [ $RET -ne 0 ]; then
 	echo "failed code $RET"
