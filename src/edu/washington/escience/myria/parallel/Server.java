@@ -1070,16 +1070,23 @@ public final class Server {
    */
   public DatasetStatus persistDataset(final RelationKey relationKey) throws DbException, InterruptedException {
 
-    // Here, we tied the persist call to HDFSWriter and URISink, but should we do this choice before this call?
+    /* Mark the relation as is_persistent */
+    try {
+      catalog.isPersistentRelation(relationKey);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
 
     /* create the query plan for persist */
     try {
       Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
       for (Integer workerId : getWorkersForRelation(relationKey, null)) {
-
         try {
-
-          DataSink workerSink = new UriSink("/some/worker/address");
+          String partitionId = "partition" + workerId;
+          String partitionName =
+              String.format("/%s/%s/%s/%s", partitionId, relationKey.getUserName(), relationKey.getProgramName(),
+                  relationKey.getRelationName());
+          DataSink workerSink = new UriSink(partitionName);
           TupleWriter workerWriter = new HdfsWriter(workerSink.getOutputStream());
 
           workerPlans.put(workerId, new SubQueryPlan(new DataOutput(
@@ -1101,7 +1108,6 @@ public final class Server {
       throw new DbException(e);
     }
     return getDatasetStatus(relationKey);
-
   }
 
   /**
