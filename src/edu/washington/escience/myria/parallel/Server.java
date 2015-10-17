@@ -1072,7 +1072,7 @@ public final class Server {
 
     /* Mark the relation as is_persistent */
     try {
-      catalog.isPersistentRelation(relationKey);
+      catalog.markRelationPersistent(relationKey);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
