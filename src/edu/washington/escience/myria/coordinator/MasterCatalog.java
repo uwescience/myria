@@ -334,7 +334,7 @@ public final class MasterCatalog {
       /* First, insert the relation name. */
       SQLiteStatement statement =
           sqliteConnection
-              .prepare("INSERT INTO relations (user_name,program_name,relation_name,num_tuples,is_deleted,is_persistent,query_id) VALUES (?,?,?,?,?,?);");
+              .prepare("INSERT INTO relations (user_name,program_name,relation_name,num_tuples,is_deleted,is_persistent,query_id) VALUES (?,?,?,?,?,?,?);");
       statement.bind(1, relation.getUserName());
       statement.bind(2, relation.getProgramName());
       statement.bind(3, relation.getRelationName());
