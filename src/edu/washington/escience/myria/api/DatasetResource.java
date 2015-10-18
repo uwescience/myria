@@ -373,7 +373,7 @@ public final class DatasetResource {
    * @throws DbException if there is an error in the database.
    */
   @POST
-  @Path("/persist/user-{userName}/program-{programName}/relation-{relationName}/")
+  @Path("/user-{userName}/program-{programName}/relation-{relationName}/persist/")
   public Response persistDataset(@PathParam("userName") final String userName,
       @PathParam("programName") final String programName, @PathParam("relationName") final String relationName)
       throws DbException {

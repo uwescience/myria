@@ -49,7 +49,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import edu.washington.escience.myria.CsvTupleWriter;
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.HdfsWriter;
+import edu.washington.escience.myria.HdfsTupleWriter;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.RelationKey;
@@ -68,7 +68,7 @@ import edu.washington.escience.myria.expression.MinusExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.expression.WorkerIdExpression;
 import edu.washington.escience.myria.io.DataSink;
-import edu.washington.escience.myria.io.UriSink;
+import edu.washington.escience.myria.io.HdfsDataSink;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbDelete;
@@ -78,6 +78,7 @@ import edu.washington.escience.myria.operator.DuplicateTBGenerator;
 import edu.washington.escience.myria.operator.EOSSource;
 import edu.washington.escience.myria.operator.EmptyRelation;
 import edu.washington.escience.myria.operator.Operator;
+import edu.washington.escience.myria.operator.DataOutputRoot;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.agg.Aggregate;
@@ -1077,24 +1078,18 @@ public final class Server {
       throw new DbException(e);
     }
 
-    /* create the query plan for persist */
+    /* Create the query plan for persist */
     try {
       Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
       for (Integer workerId : getWorkersForRelation(relationKey, null)) {
-        try {
-          String partitionId = "partition" + workerId;
-          String partitionName =
-              String.format("/%s/%s/%s/%s", partitionId, relationKey.getUserName(), relationKey.getProgramName(),
-                  relationKey.getRelationName());
-          DataSink workerSink = new UriSink(partitionName);
-          TupleWriter workerWriter = new HdfsWriter(workerSink.getOutputStream());
-
-          workerPlans.put(workerId, new SubQueryPlan(new DataOutput(
-              new DbQueryScan(relationKey, getSchema(relationKey)), workerWriter)));
-        } catch (IOException e) {
-          // TODO
-        }
+        String partitionName =
+            String.format("/partition%s/%s/%s/%s", workerId, relationKey.getUserName(), relationKey.getProgramName(),
+                relationKey.getRelationName());
+        DataSink workerSink = new HdfsDataSink(partitionName);
+        workerPlans.put(workerId, new SubQueryPlan(new DataOutputRoot(new DbQueryScan(relationKey,
+            getSchema(relationKey)), new HdfsTupleWriter(), workerSink)));
       }
+
       ListenableFuture<Query> qf =
           queryManager.submitQuery("persist " + relationKey.toString(), "persist " + relationKey.toString(),
               "persisting from " + relationKey.toString(getDBMS()), new SubQueryPlan(new SinkRoot(new EOSSource())),

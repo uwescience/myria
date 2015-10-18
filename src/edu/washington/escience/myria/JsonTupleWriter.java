@@ -40,7 +40,7 @@ public class JsonTupleWriter implements TupleWriter {
   /** The names of the columns, escaped for JSON. */
   private ImmutableList<String> escapedColumnNames;
   /** The {@link PrintWriter} wraps the {@link OutputStream} to which we write the data. */
-  private final PrintWriter output;
+  private PrintWriter output;
   /** Whether we have output a single tuple yet. */
   private boolean haveWritten = false;
 
@@ -51,6 +51,14 @@ public class JsonTupleWriter implements TupleWriter {
    */
   public JsonTupleWriter(final OutputStream output) {
     this.output = new PrintWriter(new BufferedWriter(new OutputStreamWriter(output)));
+  }
+
+  /**
+   * ...
+   */
+  @Override
+  public void open(final OutputStream stream) throws IOException {
+    output = new PrintWriter(new BufferedWriter(new OutputStreamWriter(stream)));
   }
 
   /**

@@ -1467,10 +1467,6 @@ public final class MasterCatalog {
       throw new CatalogException("Catalog is closed.");
     }
 
-    if (isPersistentRelation(relation)) {
-      LOGGER.warn("Relation has already been deleted");
-    }
-
     /* Do the work -- for now just mark int the catalog as persistent */
     try {
       queue.execute(new SQLiteJob<Void>() {

@@ -26,7 +26,7 @@ public class CsvTupleWriter implements TupleWriter {
   static final long serialVersionUID = 1L;
 
   /** The CSVWriter used to write the output. */
-  private final CSVPrinter csvPrinter;
+  private CSVPrinter csvPrinter;
 
   /**
    * Constructs a {@link CsvTupleWriter} object that will produce an Excel-compatible comma-separated value (CSV) file
@@ -58,6 +58,11 @@ public class CsvTupleWriter implements TupleWriter {
    */
   private CsvTupleWriter(final OutputStream out, final CSVFormat csvFormat) throws IOException {
     csvPrinter = new CSVPrinter(new BufferedWriter(new OutputStreamWriter(out)), csvFormat);
+  }
+
+  @Override
+  public void open(final OutputStream stream) throws IOException {
+    csvPrinter = new CSVPrinter(new BufferedWriter(new OutputStreamWriter(stream)), CSVFormat.DEFAULT);
   }
 
   @Override
