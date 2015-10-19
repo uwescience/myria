@@ -20,6 +20,8 @@ import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule;
  */
 public final class MasterDaemon implements Task {
 
+  private static final int SLEEP_DELAY_MILLIS = 5 * 1000;
+
   /**
    * @param memento the memento object passed down by the driver.
    * @return the user defined return value
@@ -29,6 +31,14 @@ public final class MasterDaemon implements Task {
   @Override
   public byte[] call(@SuppressWarnings("unused") final byte[] memento) throws Exception {
     start();
+    while (!Thread.currentThread().isInterrupted()) {
+      try {
+        Thread.sleep(SLEEP_DELAY_MILLIS);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    }
+    stop();
     return null;
   }
 
