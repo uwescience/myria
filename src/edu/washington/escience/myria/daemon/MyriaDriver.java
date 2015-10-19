@@ -34,6 +34,7 @@ import org.apache.reef.tang.exceptions.InjectionException;
 import org.apache.reef.tang.formats.AvroConfigurationSerializer;
 import org.apache.reef.tang.formats.ConfigurationSerializer;
 import org.apache.reef.wake.EventHandler;
+import org.apache.reef.wake.remote.address.LocalAddressProvider;
 import org.apache.reef.wake.time.event.StartTime;
 import org.apache.reef.wake.time.event.StopTime;
 import org.slf4j.Logger;
@@ -54,6 +55,7 @@ import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule;
 @Unit
 public final class MyriaDriver {
   private static final Logger LOGGER = LoggerFactory.getLogger(MyriaDriver.class);
+  private final LocalAddressProvider addressProvider;
   private final EvaluatorRequestor requestor;
   private final JVMProcessFactory jvmProcessFactory;
   private final Configuration globalConf;
@@ -85,10 +87,12 @@ public final class MyriaDriver {
   private volatile State state = State.INIT;
 
   @Inject
-  public MyriaDriver(final EvaluatorRequestor requestor, final JVMProcessFactory jvmProcessFactory,
+  public MyriaDriver(final LocalAddressProvider addressProvider,
+      final EvaluatorRequestor requestor, final JVMProcessFactory jvmProcessFactory,
       final @Parameter(MyriaDriverLauncher.SerializedGlobalConf.class) String serializedGlobalConf)
       throws Exception {
     this.requestor = requestor;
+    this.addressProvider = addressProvider;
     this.jvmProcessFactory = jvmProcessFactory;
     globalConf = new AvroConfigurationSerializer().fromString(serializedGlobalConf);
     globalConfInjector = Tang.Factory.getTang().newInjector(globalConf);
@@ -97,6 +101,18 @@ public final class MyriaDriver {
     contextsById = new HashMap<>();
     masterRunning = new CountDownLatch(1);
     allWorkersRunning = new CountDownLatch(workerConfs.size());
+  }
+
+  private String getMasterHost() throws InjectionException {
+    final String masterHost =
+        globalConfInjector.getNamedInstance(MyriaGlobalConfigurationModule.MasterHost.class);
+    // REEF (org.apache.reef.wake.remote.address.HostnameBasedLocalAddressProvider) will
+    // unpredictably pick a local DNS name or IP address instead of "localhost" or 127.0.0.1
+    String reefMasterHost = masterHost;
+    if (masterHost.equals("localhost") || masterHost.equals("127.0.0.1")) {
+      reefMasterHost = addressProvider.getLocalAddress();
+    }
+    return reefMasterHost;
   }
 
   private ImmutableSet<Configuration> getWorkerConfs() throws InjectionException, BindException,
@@ -112,16 +128,21 @@ public final class MyriaDriver {
     return workerConfsBuilder.build();
   }
 
-  private static Integer getIdFromWorkerConf(final Configuration workerConf)
-      throws InjectionException {
+  private Integer getIdFromWorkerConf(final Configuration workerConf) throws InjectionException {
     final Injector injector = Tang.Factory.getTang().newInjector(workerConf);
     return injector.getNamedInstance(MyriaWorkerConfigurationModule.WorkerId.class);
   }
 
-  private static String getHostFromWorkerConf(final Configuration workerConf)
-      throws InjectionException {
+  private String getHostFromWorkerConf(final Configuration workerConf) throws InjectionException {
     final Injector injector = Tang.Factory.getTang().newInjector(workerConf);
-    return injector.getNamedInstance(MyriaWorkerConfigurationModule.WorkerHost.class);
+    String host = injector.getNamedInstance(MyriaWorkerConfigurationModule.WorkerHost.class);
+    // REEF (org.apache.reef.wake.remote.address.HostnameBasedLocalAddressProvider) will
+    // unpredictably pick a local DNS name or IP address instead of "localhost" or 127.0.0.1
+    String reefHost = host;
+    if (host.equals("localhost") || host.equals("127.0.0.1")) {
+      reefHost = addressProvider.getLocalAddress();
+    }
+    return reefHost;
   }
 
   private void requestWorkerEvaluators() throws InjectionException {
@@ -132,7 +153,7 @@ public final class MyriaDriver {
         globalConfInjector.getNamedInstance(MyriaGlobalConfigurationModule.NumberVCores.class);
     LOGGER.info("Requesting {} worker evaluators.", workerConfs.size());
     for (final Configuration workerConf : workerConfs) {
-      String hostname = getHostFromWorkerConf(workerConf);
+      final String hostname = getHostFromWorkerConf(workerConf);
       final EvaluatorRequest workerRequest =
           EvaluatorRequest.newBuilder().setNumber(1).setMemory(jvmMemoryQuotaMB)
               .setNumberOfCores(numberVCores).addNodeName(hostname).build();
@@ -142,8 +163,7 @@ public final class MyriaDriver {
 
   private void requestMasterEvaluator() throws InjectionException {
     LOGGER.info("Requesting master evaluator.");
-    final String masterHost =
-        globalConfInjector.getNamedInstance(MyriaGlobalConfigurationModule.MasterHost.class);
+    final String masterHost = getMasterHost();
     final int jvmMemoryQuotaMB =
         1024 * globalConfInjector
             .getNamedInstance(MyriaGlobalConfigurationModule.MemoryQuotaGB.class);
@@ -197,6 +217,7 @@ public final class MyriaDriver {
         Thread.currentThread().interrupt();
         throw new RuntimeException(e);
       }
+      LOGGER.info("Master is running, starting workers...");
       state = State.PREPARING_WORKERS;
       try {
         requestWorkerEvaluators();
@@ -209,6 +230,7 @@ public final class MyriaDriver {
         Thread.currentThread().interrupt();
         throw new RuntimeException(e);
       }
+      LOGGER.info("All workers running, ready for queries...");
       // We are now ready to receive requests.
       // TODO: send RPC to REST API that it can now service requests?
       state = State.READY;
@@ -231,8 +253,9 @@ public final class MyriaDriver {
   final class EvaluatorAllocatedHandler implements EventHandler<AllocatedEvaluator> {
     @Override
     public void onNext(final AllocatedEvaluator evaluator) {
-      String host = evaluator.getEvaluatorDescriptor().getNodeDescriptor().getName();
-      LOGGER.info("Allocated evaluator {} on node {}", evaluator.getId(), host);
+      String node = evaluator.getEvaluatorDescriptor().getNodeDescriptor().getName();
+      LOGGER.info("Allocated evaluator {} on node {}", evaluator.getId(), node);
+      LOGGER.info("State: " + state.toString());
       if (state == State.PREPARING_MASTER) {
         Configuration contextConf =
             ContextConfiguration.CONF.set(ContextConfiguration.IDENTIFIER,
@@ -248,15 +271,15 @@ public final class MyriaDriver {
         // allocate the next worker ID associated with this host
         try {
           for (final Configuration workerConf : workerConfs) {
-            final String confHost = getHostFromWorkerConf(workerConf);
-            final Integer confId = getIdFromWorkerConf(workerConf);
-            if (confHost.equals(host) && !workerIdsAllocated.contains(confId)) {
+            final String workerHost = getHostFromWorkerConf(workerConf);
+            final Integer workerID = getIdFromWorkerConf(workerConf);
+            if (workerHost.equals(node) && !workerIdsAllocated.contains(workerID)) {
               Configuration contextConf =
-                  ContextConfiguration.CONF.set(ContextConfiguration.IDENTIFIER, confId + "")
+                  ContextConfiguration.CONF.set(ContextConfiguration.IDENTIFIER, workerID + "")
                       .build();
               setJVMOptions(evaluator);
               evaluator.submitContext(Configurations.merge(contextConf, globalConf, workerConf));
-              workerIdsAllocated.add(confId);
+              workerIdsAllocated.add(workerID);
               break;
             }
           }
