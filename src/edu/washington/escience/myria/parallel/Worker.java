@@ -79,6 +79,8 @@ public final class Worker implements Task {
   /** The logger for this class. */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Worker.class);
 
+  private static final int SLEEP_DELAY_MILLIS = 5 * 1000;
+
   /**
    * @param memento the memento object passed down by the driver.
    * @return the user defined return value
@@ -88,6 +90,14 @@ public final class Worker implements Task {
   @Override
   public byte[] call(@SuppressWarnings("unused") final byte[] memento) throws Exception {
     start();
+    while (!Thread.currentThread().isInterrupted()) {
+      try {
+        Thread.sleep(SLEEP_DELAY_MILLIS);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    }
+    shutdown();
     return null;
   }
 
