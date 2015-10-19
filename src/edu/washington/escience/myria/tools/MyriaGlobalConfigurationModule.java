@@ -116,7 +116,7 @@ public final class MyriaGlobalConfigurationModule extends ConfigurationModuleBui
   @NamedParameter(default_value = MyriaConstants.STORAGE_JDBC_USERNAME)
   public class DefaultStorageDbUser implements Name<String> {
   }
-  @NamedParameter(default_value = "")
+  @NamedParameter(default_value = "password")
   public class DefaultStorageDbPassword implements Name<String> {
   }
   @NamedParameter(default_value = MyriaConstants.STORAGE_POSTGRESQL_PORT + "")
