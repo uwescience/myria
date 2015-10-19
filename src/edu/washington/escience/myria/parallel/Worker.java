@@ -3,6 +3,7 @@ package edu.washington.escience.myria.parallel;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -13,7 +14,14 @@ import javax.annotation.concurrent.GuardedBy;
 import javax.inject.Inject;
 
 import org.apache.commons.io.FilenameUtils;
+import org.apache.reef.tang.Configuration;
+import org.apache.reef.tang.Injector;
+import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.annotations.Parameter;
+import org.apache.reef.tang.exceptions.BindException;
+import org.apache.reef.tang.exceptions.InjectionException;
+import org.apache.reef.tang.formats.AvroConfigurationSerializer;
+import org.apache.reef.tang.formats.ConfigurationSerializer;
 import org.apache.reef.task.Task;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelFuture;
@@ -46,6 +54,8 @@ import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.Storag
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.TcpConnectionTimeoutMillis;
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.TcpReceiveBufferSizeBytes;
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.TcpSendBufferSizeBytes;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.WorkerConf;
+import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule;
 import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule.WorkerFilesystemPath;
 import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule.WorkerHost;
 import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule.WorkerId;
@@ -407,8 +417,8 @@ public final class Worker implements Task {
       @Parameter(FlowControlWriteBufferLowMarkBytes.class) final int writeBufferLowWaterMark,
       @Parameter(FlowControlWriteBufferHighMarkBytes.class) final int writeBufferHighWaterMark,
       @Parameter(OperatorInputBufferCapacity.class) final int inputBufferCapacity,
-      @Parameter(OperatorInputBufferRecoverTrigger.class) final int inputBufferRecoverTrigger)
-      throws Exception {
+      @Parameter(OperatorInputBufferRecoverTrigger.class) final int inputBufferRecoverTrigger,
+      @Parameter(WorkerConf.class) final Set<String> workerConfs) throws Exception {
 
     myID = workerID;
     final String subDir = FilenameUtils.concat("workers", myID + "");
@@ -419,8 +429,8 @@ public final class Worker implements Task {
     executingSubQueries = new ConcurrentHashMap<>();
     execEnvVars = new ConcurrentHashMap<String, Object>();
 
-    final Map<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
-    computingUnits.put(MyriaConstants.MASTER_ID, new SocketInfo(masterHost, masterPort));
+    final Map<Integer, SocketInfo> computingUnits =
+        getComputingUnits(masterHost, masterPort, workerConfs);
 
     connectionPool =
         new IPCConnectionPool(myID, computingUnits,
@@ -441,6 +451,25 @@ public final class Worker implements Task {
     LOGGER.info("Worker: Connection info " + jsonConnInfo);
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO,
         ConnectionInfo.of(databaseSystem, jsonConnInfo));
+  }
+
+  private Map<Integer, SocketInfo> getComputingUnits(final String masterHost,
+      final Integer masterPort, final Set<String> serializedWorkerConfs) throws BindException,
+      IOException, InjectionException {
+    final Map<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
+    computingUnits.put(MyriaConstants.MASTER_ID, new SocketInfo(masterHost, masterPort));
+    final ConfigurationSerializer serializer = new AvroConfigurationSerializer();
+    for (final String serializedWorkerConf : serializedWorkerConfs) {
+      final Configuration workerConf = serializer.fromString(serializedWorkerConf);
+      final Injector injector = Tang.Factory.getTang().newInjector(workerConf);
+      Integer workerID = injector.getNamedInstance(MyriaWorkerConfigurationModule.WorkerId.class);
+      String workerHost =
+          injector.getNamedInstance(MyriaWorkerConfigurationModule.WorkerHost.class);
+      Integer workerPort =
+          injector.getNamedInstance(MyriaWorkerConfigurationModule.WorkerPort.class);
+      computingUnits.put(workerID, new SocketInfo(workerHost, workerPort));
+    }
+    return computingUnits;
   }
 
   /**
