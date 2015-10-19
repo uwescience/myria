@@ -10,6 +10,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import javax.annotation.concurrent.GuardedBy;
+import javax.inject.Inject;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.reef.tang.annotations.Parameter;
@@ -389,6 +390,7 @@ public final class Worker implements Task {
    * @param mode my execution mode.
    * @throws ConfigFileException if there's any config file parsing error.
    */
+  @Inject
   public Worker(@Parameter(WorkerId.class) final int workerID,
       @Parameter(WorkerHost.class) final String workerHost,
       @Parameter(WorkerPort.class) final int workerPort,
