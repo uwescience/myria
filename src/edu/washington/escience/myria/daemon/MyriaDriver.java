@@ -1,6 +1,8 @@
 package edu.washington.escience.myria.daemon;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -110,7 +112,13 @@ public final class MyriaDriver {
     // unpredictably pick a local DNS name or IP address instead of "localhost" or 127.0.0.1
     String reefMasterHost = masterHost;
     if (masterHost.equals("localhost") || masterHost.equals("127.0.0.1")) {
-      reefMasterHost = addressProvider.getLocalAddress();
+      try {
+        reefMasterHost = InetAddress.getByName(addressProvider.getLocalAddress()).getHostName();
+        LOGGER.info("Original host: {}, HostnameBasedLocalAddressProvider returned {}", masterHost,
+            reefMasterHost);
+      } catch (UnknownHostException e) {
+        LOGGER.warn("Failed to get canonical hostname for host {}", masterHost);
+      }
     }
     return reefMasterHost;
   }
@@ -140,7 +148,13 @@ public final class MyriaDriver {
     // unpredictably pick a local DNS name or IP address instead of "localhost" or 127.0.0.1
     String reefHost = host;
     if (host.equals("localhost") || host.equals("127.0.0.1")) {
-      reefHost = addressProvider.getLocalAddress();
+      try {
+        reefHost = InetAddress.getByName(addressProvider.getLocalAddress()).getHostName();
+        LOGGER.info("Original host: {}, HostnameBasedLocalAddressProvider returned {}", host,
+            reefHost);
+      } catch (UnknownHostException e) {
+        LOGGER.warn("Failed to get canonical hostname for host {}", host);
+      }
     }
     return reefHost;
   }
