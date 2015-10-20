@@ -282,23 +282,26 @@ public final class MyriaDriver {
         evaluator.submitContext(Configurations.merge(contextConf, globalConf));
       } else {
         Preconditions.checkState(state == State.PREPARING_WORKERS);
-        // allocate the next worker ID associated with this host
-        try {
-          for (final Configuration workerConf : workerConfs) {
-            final String workerHost = getHostFromWorkerConf(workerConf);
-            final Integer workerID = getIdFromWorkerConf(workerConf);
-            if (workerHost.equals(node) && !workerIdsAllocated.contains(workerID)) {
-              Configuration contextConf =
-                  ContextConfiguration.CONF.set(ContextConfiguration.IDENTIFIER, workerID + "")
-                      .build();
-              setJVMOptions(evaluator);
-              evaluator.submitContext(Configurations.merge(contextConf, globalConf, workerConf));
-              workerIdsAllocated.add(workerID);
-              break;
+        synchronized (this) {
+          // allocate the next worker ID associated with this host
+          try {
+            for (final Configuration workerConf : workerConfs) {
+              final String workerHost = getHostFromWorkerConf(workerConf);
+              final Integer workerID = getIdFromWorkerConf(workerConf);
+              if (workerHost.equals(node) && !workerIdsAllocated.contains(workerID)) {
+                LOGGER.info("Launching context for worker ID {} on {}", workerID, workerHost);
+                Configuration contextConf =
+                    ContextConfiguration.CONF.set(ContextConfiguration.IDENTIFIER, workerID + "")
+                        .build();
+                setJVMOptions(evaluator);
+                evaluator.submitContext(Configurations.merge(contextConf, globalConf, workerConf));
+                workerIdsAllocated.add(workerID);
+                break;
+              }
             }
+          } catch (InjectionException e) {
+            throw new RuntimeException(e);
           }
-        } catch (InjectionException e) {
-          throw new RuntimeException(e);
         }
       }
     }
