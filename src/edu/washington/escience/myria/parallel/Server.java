@@ -10,9 +10,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
 import javax.inject.Inject;
 
 import org.apache.commons.lang.text.StrSubstitutor;
@@ -36,6 +39,11 @@ import org.apache.reef.tang.exceptions.BindException;
 import org.apache.reef.tang.exceptions.InjectionException;
 import org.apache.reef.tang.formats.AvroConfigurationSerializer;
 import org.apache.reef.tang.formats.ConfigurationSerializer;
+import org.apache.reef.task.TaskMessage;
+import org.apache.reef.task.TaskMessageSource;
+import org.apache.reef.task.events.DriverMessage;
+import org.apache.reef.util.Optional;
+import org.apache.reef.wake.EventHandler;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
@@ -52,6 +60,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.protobuf.InvalidProtocolBufferException;
 
 import edu.washington.escience.myria.CsvTupleWriter;
 import edu.washington.escience.myria.DbException;
@@ -128,7 +137,7 @@ import edu.washington.escience.myria.util.concurrent.RenamingThreadFactory;
 /**
  * The master entrance.
  */
-public final class Server {
+public final class Server implements TaskMessageSource, EventHandler<DriverMessage> {
 
   /**
    * Master message processor.
@@ -161,14 +170,14 @@ public final class Server {
                 case RESOURCE_STATS:
                   queryManager.updateResourceStats(senderID, controlM);
                   break;
-                case WORKER_HEARTBEAT:
-                  LOGGER.trace("received heartbeat from worker {}", controlM.getWorkerId());
-                  break;
                 case REMOVE_WORKER_ACK:
-                  LOGGER.trace("received REMOVE_WORKER_ACK from worker {}", controlM.getWorkerId());
+                  int workerID = controlM.getWorkerId();
+                  removeWorkerAckReceived.get(workerID).add(senderID);
                   break;
                 case ADD_WORKER_ACK:
-                  LOGGER.trace("received REMOVE_WORKER_ACK from worker {}", controlM.getWorkerId());
+                  workerID = controlM.getWorkerId();
+                  addWorkerAckReceived.get(workerID).add(senderID);
+                  queryManager.workerRestarted(workerID, addWorkerAckReceived.get(workerID));
                   break;
                 default:
                   LOGGER.error("Unexpected control message received at master: {}", controlM);
@@ -227,6 +236,75 @@ public final class Server {
     }
   }
 
+  @GuardedBy("this")
+  private final Queue<TaskMessage> pendingDriverMessages = new LinkedList<>();
+
+  private synchronized Optional<TaskMessage> dequeueDriverMessage() {
+    return Optional.ofNullable(pendingDriverMessages.poll());
+  }
+
+  private synchronized void enqueueDriverMessage(@Nonnull final TaskMessage msg) {
+    pendingDriverMessages.add(msg);
+  }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see org.apache.reef.task.TaskMessageSource#getMessage()
+   * 
+   * To be used to instruct the driver to launch or abort workers.
+   */
+  @Override
+  public Optional<TaskMessage> getMessage() {
+    // TODO: determine which messages should be sent to the driver
+    return dequeueDriverMessage();
+  }
+
+  /**
+   * REEF event handler for driver messages indicating worker failure.
+   */
+  @Override
+  public void onNext(final DriverMessage driverMessage) {
+    LOGGER.info("Driver message received");
+    TransportMessage m;
+    try {
+      m = TransportMessage.parseFrom(driverMessage.get().get());
+    } catch (InvalidProtocolBufferException e) {
+      LOGGER.warn("Could not parse TransportMessage from driver message", e);
+      return;
+    }
+    final ControlMessage controlM = m.getControlMessage();
+    LOGGER.info("Control message received: {}", controlM);
+
+    // We received a failed worker message from the driver.
+    Preconditions.checkState(controlM.getType() == ControlMessage.Type.REMOVE_WORKER);
+    int workerId = controlM.getWorkerId();
+    LOGGER.info("Worker {} doesn't have heartbeats, treat it as dead.", workerId);
+    aliveWorkers.remove(workerId);
+    queryManager.workerDied(workerId);
+
+    removeWorkerAckReceived.put(workerId,
+        Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>()));
+    addWorkerAckReceived.put(workerId,
+        Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>()));
+    /* for using containsAll() later */
+    addWorkerAckReceived.get(workerId).add(workerId);
+    try {
+      /* remove the failed worker from the connectionPool. */
+      connectionPool.removeRemote(workerId).await();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      return;
+    }
+    /* tell other workers to remove it too. */
+    for (int aliveWorkerId : aliveWorkers) {
+      connectionPool.sendShortMessage(aliveWorkerId, IPCUtils.removeWorkerTM(workerId));
+    }
+    // ack to the driver
+    final TransportMessage ack = IPCUtils.removeWorkerAckTM(workerId);
+    enqueueDriverMessage(TaskMessage.from(MyriaConstants.MASTER_ID + "", ack.toByteArray()));
+  }
+
   /** The usage message for this server. */
   static final String USAGE = "Usage: Server catalogFile [-explain] [-f queryFile]";
 
@@ -236,7 +314,7 @@ public final class Server {
   /**
    * Initial worker list.
    */
-  private final ConcurrentHashMap<Integer, SocketInfo> workers;
+  private ImmutableMap<Integer, SocketInfo> workers = null;
 
   /** Manages the queries executing in this instance of Myria. */
   private final QueryManager queryManager;
@@ -251,18 +329,13 @@ public final class Server {
   /**
    * Current alive worker set.
    */
-  private final ConcurrentHashMap<Integer, Long> aliveWorkers;
+  private final Set<Integer> aliveWorkers;
 
-  /**
-   * Scheduled new workers, when a scheduled worker sends the first heartbeat, it'll be removed from
-   * this set.
-   */
-  private final ConcurrentHashMap<Integer, SocketInfo> scheduledWorkers;
+  /** for each worker id, record the set of workers which REMOVE_WORKER_ACK have been received. */
+  private final Map<Integer, Set<Integer>> removeWorkerAckReceived;
 
-  /**
-   * The time when new workers were scheduled.
-   */
-  private final ConcurrentHashMap<Integer, Long> scheduledWorkersTime;
+  /** for each worker id, record the set of workers which ADD_WORKER_ACK have been received. */
+  private final Map<Integer, Set<Integer>> addWorkerAckReceived;
 
   /**
    * Execution environment variables for operators.
@@ -399,10 +472,9 @@ public final class Server {
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE, getExecutionMode());
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM, databaseSystem);
 
-    workers = new ConcurrentHashMap<>();
-    aliveWorkers = new ConcurrentHashMap<>();
-    scheduledWorkers = new ConcurrentHashMap<>();
-    scheduledWorkersTime = new ConcurrentHashMap<>();
+    aliveWorkers = Sets.newConcurrentHashSet();
+    removeWorkerAckReceived = new ConcurrentHashMap<>();
+    addWorkerAckReceived = new ConcurrentHashMap<>();
     queryManager = new QueryManager(catalog, this);
     messageQueue = new LinkedBlockingQueue<>();
   }
@@ -464,18 +536,6 @@ public final class Server {
   private void cleanup() {
     LOGGER.info("{} is going to shutdown", MyriaConstants.SYSTEM_NAME);
 
-    if (scheduledWorkers.size() > 0) {
-      LOGGER.info("Waiting for scheduled recovery workers, please wait");
-      while (scheduledWorkers.size() > 0) {
-        try {
-          Thread.sleep(MyriaConstants.WAITING_INTERVAL_1_SECOND_IN_MS);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          break;
-        }
-      }
-    }
-
     queryManager.killAll();
 
     if (messageProcessingExecutor != null && !messageProcessingExecutor.isShutdown()) {
@@ -490,30 +550,6 @@ public final class Server {
      * were triggered by IPC events.
      */
     catalog.close();
-
-    while (aliveWorkers.size() > 0) {
-      // TODO add process kill
-      LOGGER.info("Send shutdown requests to the workers, please wait");
-      for (final Integer workerId : aliveWorkers.keySet()) {
-        SocketInfo workerAddr = workers.get(workerId);
-        LOGGER.info("Shutting down #{} : {}", workerId, workerAddr);
-        connectionPool.sendShortMessage(workerId, IPCUtils.CONTROL_SHUTDOWN);
-      }
-
-      for (final int workerId : aliveWorkers.keySet()) {
-        if (!connectionPool.isRemoteAlive(workerId)) {
-          aliveWorkers.remove(workerId);
-        }
-      }
-      if (aliveWorkers.size() > 0) {
-        try {
-          Thread.sleep(MyriaConstants.WAITING_INTERVAL_1_SECOND_IN_MS);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          break;
-        }
-      }
-    }
 
     connectionPool.shutdown();
     connectionPool.releaseExternalResources();
@@ -541,10 +577,13 @@ public final class Server {
     LOGGER.info("Server starting on {}", masterSocketInfo);
 
     final ImmutableSet<Configuration> workerConfs = getWorkerConfs(injector);
+    final ImmutableMap.Builder<Integer, SocketInfo> workersBuilder = ImmutableMap.builder();
     for (Configuration workerConf : workerConfs) {
-      workers.put(getIdFromWorkerConf(workerConf), new SocketInfo(
+      workersBuilder.put(getIdFromWorkerConf(workerConf), new SocketInfo(
           getHostFromWorkerConf(workerConf), getPortFromWorkerConf(workerConf)));
     }
+    workers = workersBuilder.build();
+    aliveWorkers.addAll(workers.keySet());
 
     final Map<Integer, SocketInfo> computingUnits = new HashMap<>(workers);
     computingUnits.put(MyriaConstants.MASTER_ID, masterSocketInfo);
@@ -710,7 +749,7 @@ public final class Server {
    * @return the set of workers that are currently alive.
    */
   public Set<Integer> getAliveWorkers() {
-    return ImmutableSet.copyOf(aliveWorkers.keySet());
+    return ImmutableSet.copyOf(aliveWorkers);
   }
 
   /**
@@ -725,28 +764,16 @@ public final class Server {
     if (number == getAliveWorkers().size()) {
       return getAliveWorkers();
     }
-    List<Integer> workerList = new ArrayList<>(aliveWorkers.keySet());
+    List<Integer> workerList = new ArrayList<>(getAliveWorkers());
     Collections.shuffle(workerList);
     return ImmutableSet.copyOf(workerList.subList(0, number));
-  }
-
-  /**
-   * @return the set of workers that are currently alive with the time that the last heartbeats were
-   *         received.
-   */
-  public Map<Integer, Long> getAliveWorkersWithLastHeartbeat() {
-    Map<Integer, Long> ret = new HashMap<Integer, Long>();
-    ret.putAll(aliveWorkers);
-    // add the current master time too
-    ret.put(MyriaConstants.MASTER_ID, System.currentTimeMillis());
-    return ret;
   }
 
   /**
    * @return the set of known workers in this Master.
    */
   public Map<Integer, SocketInfo> getWorkers() {
-    return ImmutableMap.copyOf(workers);
+    return workers;
   }
 
   /**

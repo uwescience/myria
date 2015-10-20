@@ -36,15 +36,6 @@ public final class WorkerCollection {
   }
 
   /**
-   * @return the list of identifiers of workers that are currently alive with their last heartbeats.
-   */
-  @GET
-  @Path("/heartbeat")
-  public Response getAliveWorkersWithLastHeartbeat() {
-    return Response.ok(server.getAliveWorkersWithLastHeartbeat()).cacheControl(MyriaApiUtils.doNotCache()).build();
-  }
-
-  /**
    * @param workerId identifier of the worker.
    * @return the hostname and port number of the specified worker.
    */

@@ -38,6 +38,7 @@ import edu.washington.escience.myria.daemon.MyriaDriver.RunningTaskHandler;
 import edu.washington.escience.myria.daemon.MyriaDriver.StartHandler;
 import edu.washington.escience.myria.daemon.MyriaDriver.StopHandler;
 import edu.washington.escience.myria.daemon.MyriaDriver.TaskFailureHandler;
+import edu.washington.escience.myria.daemon.MyriaDriver.TaskMessageHandler;
 import edu.washington.escience.myria.tools.MyriaConfigurationParser;
 
 public final class MyriaDriverLauncher {
@@ -86,7 +87,9 @@ public final class MyriaDriverLauncher {
             .set(DriverConfiguration.ON_CONTEXT_FAILED, ContextFailureHandler.class)
             .set(DriverConfiguration.ON_TASK_RUNNING, RunningTaskHandler.class)
             .set(DriverConfiguration.ON_TASK_COMPLETED, CompletedTaskHandler.class)
-            .set(DriverConfiguration.ON_TASK_FAILED, TaskFailureHandler.class);
+            .set(DriverConfiguration.ON_TASK_FAILED, TaskFailureHandler.class)
+            .set(DriverConfiguration.ON_TASK_MESSAGE, TaskMessageHandler.class);
+
     for (String dirPath : libPaths) {
       for (String filePath : getFileNamesInDirectory(Paths.get(dirPath))) {
         driverConf = driverConf.set(DriverConfiguration.GLOBAL_LIBRARIES, filePath);

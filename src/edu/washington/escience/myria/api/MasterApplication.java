@@ -13,6 +13,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.internal.util.Base64;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.message.GZipEncoder;
@@ -37,7 +38,7 @@ public final class MasterApplication extends ResourceConfig {
    * 
    * @param adminPassword the password for administrator access.
    */
-  public MasterApplication(final String adminPassword) {
+  public MasterApplication(final Server server, final String adminPassword) {
     /*
      * Tell Jersey to look for resources inside the entire project, and also for Swagger.
      */
@@ -53,6 +54,15 @@ public final class MasterApplication extends ResourceConfig {
 
     /* Enable Multipart. */
     register(MultiPartFeature.class);
+
+    /* Register the singleton binder. */
+    register(new AbstractBinder() {
+      @Override
+      protected void configure() {
+        /* Singletons binding. */
+        bind(server).to(Server.class);
+      }
+    });
 
     /* Enable GZIP compression/decompression */
     register(EncodingFilter.class);
