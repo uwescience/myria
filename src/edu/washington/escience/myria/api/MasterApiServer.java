@@ -16,6 +16,7 @@ import org.glassfish.jersey.server.ResourceConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule;
 
 /**
@@ -41,6 +42,7 @@ public final class MasterApiServer {
    */
   @Inject
   public MasterApiServer(
+      final Server server,
       final @Parameter(MyriaGlobalConfigurationModule.RestApiPort.class) int apiPort,
       final @Parameter(MyriaGlobalConfigurationModule.UseSsl.class) boolean useSSL,
       final @Parameter(MyriaGlobalConfigurationModule.SslKeystorePath.class) String keystorePath,
@@ -48,7 +50,7 @@ public final class MasterApiServer {
       final @Parameter(MyriaGlobalConfigurationModule.ApiAdminPassword.class) String adminPassword)
       throws IOException {
     URI baseUri = UriBuilder.fromUri("http://0.0.0.0/").port(apiPort).build();
-    ResourceConfig masterApplication = new MasterApplication(adminPassword);
+    ResourceConfig masterApplication = new MasterApplication(server, adminPassword);
 
     if (useSSL) {
       LOGGER.info("Enabling SSL");

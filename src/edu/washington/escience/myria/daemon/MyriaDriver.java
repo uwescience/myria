@@ -25,6 +25,7 @@ import org.apache.reef.driver.task.CompletedTask;
 import org.apache.reef.driver.task.FailedTask;
 import org.apache.reef.driver.task.RunningTask;
 import org.apache.reef.driver.task.TaskConfiguration;
+import org.apache.reef.driver.task.TaskMessage;
 import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.Configurations;
 import org.apache.reef.tang.Injector;
@@ -35,6 +36,7 @@ import org.apache.reef.tang.exceptions.BindException;
 import org.apache.reef.tang.exceptions.InjectionException;
 import org.apache.reef.tang.formats.AvroConfigurationSerializer;
 import org.apache.reef.tang.formats.ConfigurationSerializer;
+import org.apache.reef.util.Optional;
 import org.apache.reef.wake.EventHandler;
 import org.apache.reef.wake.remote.address.LocalAddressProvider;
 import org.apache.reef.wake.time.event.StartTime;
@@ -44,11 +46,16 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
+import com.google.protobuf.InvalidProtocolBufferException;
 
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.parallel.Worker;
+import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
+import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule;
 import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule;
+import edu.washington.escience.myria.util.IPCUtils;
 
 /**
  * Driver for Myria API server/master. Each worker (including master) is mapped to an Evaluator and
@@ -64,7 +71,7 @@ public final class MyriaDriver {
   private final Injector globalConfInjector;
   private final ImmutableSet<Configuration> workerConfs;
   private final Set<Integer> workerIdsAllocated;
-  private final Map<Integer, ActiveContext> contextsById;
+  private final Map<Integer, RunningTask> tasksByWorkerId;
   private final CountDownLatch masterRunning;
   private final CountDownLatch allWorkersRunning;
 
@@ -100,7 +107,7 @@ public final class MyriaDriver {
     globalConfInjector = Tang.Factory.getTang().newInjector(globalConf);
     workerConfs = getWorkerConfs();
     workerIdsAllocated = new HashSet<>();
-    contextsById = new HashMap<>();
+    tasksByWorkerId = new HashMap<>();
     masterRunning = new CountDownLatch(1);
     allWorkersRunning = new CountDownLatch(workerConfs.size());
   }
@@ -260,8 +267,8 @@ public final class MyriaDriver {
     @Override
     public synchronized void onNext(final StopTime stopTime) {
       LOGGER.info("Driver stopped at {}", stopTime);
-      for (final ActiveContext context : contextsById.values()) {
-        context.close();
+      for (final RunningTask task : tasksByWorkerId.values()) {
+        task.getActiveContext().close();
       }
     }
   }
@@ -318,6 +325,14 @@ public final class MyriaDriver {
     @Override
     public synchronized void onNext(final FailedEvaluator failedEvaluator) {
       LOGGER.error("FailedEvaluator: {}", failedEvaluator);
+      // notify coordinator this worker has failed
+      Optional<FailedTask> ft = failedEvaluator.getFailedTask();
+      if (ft.isPresent()) {
+        final int workerId = Integer.parseInt(ft.get().getId());
+        final TransportMessage workerFailed = IPCUtils.removeWorkerTM(workerId);
+        RunningTask coordinatorTask = tasksByWorkerId.get(MyriaConstants.MASTER_ID);
+        coordinatorTask.send(workerFailed.toByteArray());
+      }
     }
   }
 
@@ -330,7 +345,9 @@ public final class MyriaDriver {
       if (context.getId().equals(MyriaConstants.MASTER_ID + "")) {
         taskConf =
             TaskConfiguration.CONF.set(TaskConfiguration.TASK, MasterDaemon.class)
-                .set(TaskConfiguration.IDENTIFIER, context.getId()).build();
+                .set(TaskConfiguration.IDENTIFIER, context.getId())
+                .set(TaskConfiguration.ON_SEND_MESSAGE, Server.class)
+                .set(TaskConfiguration.ON_MESSAGE, Server.class).build();
 
       } else {
         taskConf =
@@ -338,7 +355,6 @@ public final class MyriaDriver {
                 .set(TaskConfiguration.IDENTIFIER, context.getId()).build();
       }
       context.submitTask(taskConf);
-      contextsById.put(Integer.valueOf(context.getId()), context);
     }
   }
 
@@ -358,6 +374,7 @@ public final class MyriaDriver {
       } else {
         allWorkersRunning.countDown();
       }
+      tasksByWorkerId.put(Integer.valueOf(task.getId()), task);
     }
   }
 
@@ -373,6 +390,29 @@ public final class MyriaDriver {
     public synchronized void onNext(final FailedTask failedTask) {
       LOGGER.error("FailedTask: {}", failedTask);
       failedTask.getActiveContext().get().close();
+    }
+  }
+
+  final class TaskMessageHandler implements EventHandler<TaskMessage> {
+    @Override
+    public void onNext(final TaskMessage taskMessage) {
+      // we should only be receiving messages from the coordinator
+      Preconditions.checkState(taskMessage.getMessageSourceID().equals(
+          MyriaConstants.MASTER_ID + ""));
+      TransportMessage m;
+      try {
+        m = TransportMessage.parseFrom(taskMessage.get());
+      } catch (InvalidProtocolBufferException e) {
+        LOGGER.warn("Could not parse TransportMessage from task message", e);
+        return;
+      }
+      final ControlMessage controlM = m.getControlMessage();
+      LOGGER.info("Control message received: {}", controlM);
+      // We received a failed worker message from the driver.
+      Preconditions.checkState(controlM.getType() == ControlMessage.Type.REMOVE_WORKER_ACK);
+      int workerId = controlM.getWorkerId();
+      LOGGER.info("Received REMOVE_WORKER_ACK for worker {} from task {}", workerId,
+          taskMessage.getMessageSourceID());
     }
   }
 }
