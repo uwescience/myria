@@ -213,7 +213,9 @@ public final class MyriaDriver {
    */
   final class StartHandler implements EventHandler<StartTime> {
     @Override
-    public void onNext(final StartTime startTime) {
+    public synchronized void onNext(final StartTime startTime) {
+      // NB: because this handler blocks waiting for other handlers to run (to decrement the
+      // CountDownLatch), synchronizing on the outer object (MyriaDriver.this) will deadlock.
       LOGGER.info("Driver started at {}", startTime);
       assert (state == State.INIT);
       state = State.PREPARING_MASTER;
@@ -256,7 +258,7 @@ public final class MyriaDriver {
    */
   final class StopHandler implements EventHandler<StopTime> {
     @Override
-    public void onNext(final StopTime stopTime) {
+    public synchronized void onNext(final StopTime stopTime) {
       LOGGER.info("Driver stopped at {}", stopTime);
       for (final ActiveContext context : contextsById.values()) {
         context.close();
@@ -266,7 +268,7 @@ public final class MyriaDriver {
 
   final class EvaluatorAllocatedHandler implements EventHandler<AllocatedEvaluator> {
     @Override
-    public void onNext(final AllocatedEvaluator evaluator) {
+    public synchronized void onNext(final AllocatedEvaluator evaluator) {
       String node = evaluator.getEvaluatorDescriptor().getNodeDescriptor().getName();
       LOGGER.info("Allocated evaluator {} on node {}", evaluator.getId(), node);
       LOGGER.info("State: " + state.toString());
@@ -282,26 +284,24 @@ public final class MyriaDriver {
         evaluator.submitContext(Configurations.merge(contextConf, globalConf));
       } else {
         Preconditions.checkState(state == State.PREPARING_WORKERS);
-        synchronized (this) {
-          // allocate the next worker ID associated with this host
-          try {
-            for (final Configuration workerConf : workerConfs) {
-              final String workerHost = getHostFromWorkerConf(workerConf);
-              final Integer workerID = getIdFromWorkerConf(workerConf);
-              if (workerHost.equals(node) && !workerIdsAllocated.contains(workerID)) {
-                LOGGER.info("Launching context for worker ID {} on {}", workerID, workerHost);
-                Configuration contextConf =
-                    ContextConfiguration.CONF.set(ContextConfiguration.IDENTIFIER, workerID + "")
-                        .build();
-                setJVMOptions(evaluator);
-                evaluator.submitContext(Configurations.merge(contextConf, globalConf, workerConf));
-                workerIdsAllocated.add(workerID);
-                break;
-              }
+        // allocate the next worker ID associated with this host
+        try {
+          for (final Configuration workerConf : workerConfs) {
+            final String workerHost = getHostFromWorkerConf(workerConf);
+            final Integer workerID = getIdFromWorkerConf(workerConf);
+            if (workerHost.equals(node) && !workerIdsAllocated.contains(workerID)) {
+              LOGGER.info("Launching context for worker ID {} on {}", workerID, workerHost);
+              Configuration contextConf =
+                  ContextConfiguration.CONF.set(ContextConfiguration.IDENTIFIER, workerID + "")
+                      .build();
+              setJVMOptions(evaluator);
+              evaluator.submitContext(Configurations.merge(contextConf, globalConf, workerConf));
+              workerIdsAllocated.add(workerID);
+              break;
             }
-          } catch (InjectionException e) {
-            throw new RuntimeException(e);
           }
+        } catch (InjectionException e) {
+          throw new RuntimeException(e);
         }
       }
     }
@@ -309,21 +309,21 @@ public final class MyriaDriver {
 
   final class CompletedEvaluatorHandler implements EventHandler<CompletedEvaluator> {
     @Override
-    public void onNext(final CompletedEvaluator eval) {
+    public synchronized void onNext(final CompletedEvaluator eval) {
       LOGGER.info("CompletedEvaluator: {}", eval.getId());
     }
   }
 
   final class EvaluatorFailedHandler implements EventHandler<FailedEvaluator> {
     @Override
-    public void onNext(final FailedEvaluator failedEvaluator) {
+    public synchronized void onNext(final FailedEvaluator failedEvaluator) {
       LOGGER.error("FailedEvaluator: {}", failedEvaluator);
     }
   }
 
   final class ActiveContextHandler implements EventHandler<ActiveContext> {
     @Override
-    public void onNext(final ActiveContext context) {
+    public synchronized void onNext(final ActiveContext context) {
       String host = context.getEvaluatorDescriptor().getNodeDescriptor().getName();
       LOGGER.info("Context {} available on node {}", context.getId(), host);
       final Configuration taskConf;
@@ -344,14 +344,14 @@ public final class MyriaDriver {
 
   final class ContextFailureHandler implements EventHandler<FailedContext> {
     @Override
-    public void onNext(final FailedContext failedContext) {
+    public synchronized void onNext(final FailedContext failedContext) {
       LOGGER.error("FailedContext: {}", failedContext);
     }
   }
 
   final class RunningTaskHandler implements EventHandler<RunningTask> {
     @Override
-    public void onNext(final RunningTask task) {
+    public synchronized void onNext(final RunningTask task) {
       LOGGER.info("Running task: {}", task.getId());
       if (task.getActiveContext().getId().equals(MyriaConstants.MASTER_ID + "")) {
         masterRunning.countDown();
@@ -363,14 +363,14 @@ public final class MyriaDriver {
 
   final class CompletedTaskHandler implements EventHandler<CompletedTask> {
     @Override
-    public void onNext(final CompletedTask task) {
+    public synchronized void onNext(final CompletedTask task) {
       LOGGER.error("Unexpected CompletedTask: {}", task.getId());
     }
   }
 
   final class TaskFailureHandler implements EventHandler<FailedTask> {
     @Override
-    public void onNext(final FailedTask failedTask) {
+    public synchronized void onNext(final FailedTask failedTask) {
       LOGGER.error("FailedTask: {}", failedTask);
       failedTask.getActiveContext().get().close();
     }
