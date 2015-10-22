@@ -317,7 +317,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   private ImmutableMap<Integer, SocketInfo> workers = null;
 
   /** Manages the queries executing in this instance of Myria. */
-  private final QueryManager queryManager;
+  private QueryManager queryManager = null;
 
   /**
    * @return the query manager.
@@ -475,7 +475,6 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     aliveWorkers = Sets.newConcurrentHashSet();
     removeWorkerAckReceived = new ConcurrentHashMap<>();
     addWorkerAckReceived = new ConcurrentHashMap<>();
-    queryManager = new QueryManager(catalog, this);
     messageQueue = new LinkedBlockingQueue<>();
   }
 
@@ -597,6 +596,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
           currentDir, e.getMessage());
       catalog = MasterCatalog.create(currentDir);
     }
+    queryManager = new QueryManager(catalog, this);
 
     connectionPool =
         new IPCConnectionPool(MyriaConstants.MASTER_ID, computingUnits,
