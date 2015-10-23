@@ -152,6 +152,7 @@ public final class DeploymentUtils {
     }
     jvmOptions.add("-Djava.util.logging.config.file=logging.properties");
     jvmOptions.add("-Dlog4j.configuration=log4j.properties");
+    jvmOptions.add("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=65008");
     jvmOptions.add("-Djava.library.path=" + workingDir + "/" + "sqlite4java-392");
     String gangliaMasterHost = config.getOptional("deployment", MyriaSystemConfigKeys.GANGLIA_MASTER_HOST);
     if (gangliaMasterHost != null) {

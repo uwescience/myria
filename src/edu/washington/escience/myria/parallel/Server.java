@@ -68,7 +68,7 @@ import edu.washington.escience.myria.expression.MinusExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.expression.WorkerIdExpression;
 import edu.washington.escience.myria.io.DataSink;
-import edu.washington.escience.myria.io.HdfsDataSink;
+import edu.washington.escience.myria.io.UriSink;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbDelete;
@@ -78,7 +78,6 @@ import edu.washington.escience.myria.operator.DuplicateTBGenerator;
 import edu.washington.escience.myria.operator.EOSSource;
 import edu.washington.escience.myria.operator.EmptyRelation;
 import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.operator.DataOutputRoot;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.agg.Aggregate;
@@ -1083,11 +1082,11 @@ public final class Server {
       Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
       for (Integer workerId : getWorkersForRelation(relationKey, null)) {
         String partitionName =
-            String.format("/partition%s/%s/%s/%s", workerId, relationKey.getUserName(), relationKey.getProgramName(),
-                relationKey.getRelationName());
-        DataSink workerSink = new HdfsDataSink(partitionName);
-        workerPlans.put(workerId, new SubQueryPlan(new DataOutputRoot(new DbQueryScan(relationKey,
-            getSchema(relationKey)), new HdfsTupleWriter(), workerSink)));
+            String.format("hdfs://vega.cs.washington.edu:8020/partition%s/%s/%s/%s", workerId, relationKey
+                .getUserName(), relationKey.getProgramName(), relationKey.getRelationName());
+        DataSink workerSink = new UriSink(partitionName);
+        workerPlans.put(workerId, new SubQueryPlan(new DataOutput(new DbQueryScan(relationKey, getSchema(relationKey)),
+            new HdfsTupleWriter(), workerSink)));
       }
 
       ListenableFuture<Query> qf =

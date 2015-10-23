@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.TupleWriter;
+import edu.washington.escience.myria.io.DataSink;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
@@ -20,6 +21,7 @@ public final class DataOutput extends RootOperator {
   private static final long serialVersionUID = 1L;
   /** The class that will serialize the tuple batches. */
   private final TupleWriter tupleWriter;
+  private DataSink dataSink;
 
   /** Whether this object has finished. */
   private boolean done = false;
@@ -33,6 +35,12 @@ public final class DataOutput extends RootOperator {
   public DataOutput(final Operator child, final TupleWriter writer) {
     super(child);
     tupleWriter = writer;
+  }
+
+  public DataOutput(final Operator child, final TupleWriter tupleWriter, final DataSink dataSink) {
+    super(child);
+    this.dataSink = dataSink;
+    this.tupleWriter = tupleWriter;
   }
 
   @Override
@@ -62,6 +70,9 @@ public final class DataOutput extends RootOperator {
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     try {
+      if (tupleWriter == null) {
+        tupleWriter.open(dataSink.getOutputStream());
+      }
       tupleWriter.writeColumnHeaders(getChild().getSchema().getColumnNames());
 
     } catch (IOException e) {

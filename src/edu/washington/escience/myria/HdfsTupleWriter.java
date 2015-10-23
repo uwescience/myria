@@ -11,7 +11,6 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import edu.washington.escience.myria.coordinator.MasterCatalog;
 import edu.washington.escience.myria.storage.ReadableTable;
 
 /**
@@ -23,12 +22,11 @@ public class HdfsTupleWriter implements TupleWriter {
   static final long serialVersionUID = 1L;
 
   /** The logger for this class. */
-  private static final Logger LOGGER = LoggerFactory.getLogger(MasterCatalog.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(HdfsTupleWriter.class);
 
   private static FSDataOutputStream outStream;
 
   public HdfsTupleWriter() {
-
   }
 
   public HdfsTupleWriter(final OutputStream out) {
@@ -47,18 +45,35 @@ public class HdfsTupleWriter implements TupleWriter {
   @Override
   public void writeTuples(final ReadableTable tuples) throws IOException {
 
-    outStream.writeChars("test");
-
-    /*
-     * List<Type> columnTypes = tuples.getSchema().getColumnTypes(); for (int i = 0; i < tuples.numTuples(); ++i) { for
-     * (int j = 0; j < tuples.numColumns(); ++j) { switch (columnTypes.get(j)) { case BOOLEAN_TYPE:
-     * outStream.writeBoolean(tuples.getBoolean(j, i)); break; case DOUBLE_TYPE:
-     * outStream.writeDouble(tuples.getDouble(j, i)); break; case FLOAT_TYPE: outStream.writeFloat(tuples.getFloat(j,
-     * i)); break; case INT_TYPE: outStream.writeInt(tuples.getInt(j, i)); break; case LONG_TYPE:
-     * LOGGER.error(String.valueOf(tuples.getLong(j, i))); outStream.writeLong(tuples.getLong(j, i)); break; case
-     * DATETIME_TYPE: // outStream.writeUTF(tuples.getDateTime(j,i)); break; case STRING_TYPE:
-     * outStream.writeChars(tuples.getString(j, i)); break; } } }
-     */
+    List<Type> columnTypes = tuples.getSchema().getColumnTypes();
+    for (int i = 0; i < tuples.numTuples(); ++i) {
+      for (int j = 0; j < tuples.numColumns(); ++j) {
+        switch (columnTypes.get(j)) {
+          case BOOLEAN_TYPE:
+            outStream.writeBoolean(tuples.getBoolean(j, i));
+            break;
+          case DOUBLE_TYPE:
+            outStream.writeDouble(tuples.getDouble(j, i));
+            break;
+          case FLOAT_TYPE:
+            outStream.writeFloat(tuples.getFloat(j, i));
+            break;
+          case INT_TYPE:
+            outStream.writeInt(tuples.getInt(j, i));
+            break;
+          case LONG_TYPE:
+            outStream.writeLong(tuples.getLong(j, i));
+            break;
+          case DATETIME_TYPE: // outStream.writeUTF(tuples.getDateTime(j,i));
+            break;
+          case STRING_TYPE:
+            outStream.writeChars(tuples.getString(j, i));
+            break;
+          default:
+            break;
+        }
+      }
+    }
 
   }
 

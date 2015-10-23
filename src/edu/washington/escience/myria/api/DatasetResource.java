@@ -387,8 +387,10 @@ public final class DatasetResource {
       throw new DbException();
     }
 
-    // return a query ID
-    return Response.noContent().build();
+    /* Build the response */
+    ResponseBuilder response = Response.ok();
+
+    return response.entity(status.getQueryId()).build();
   }
 
   /**

@@ -11,21 +11,21 @@ import org.apache.hadoop.fs.Path;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class HdfsDataSink implements DataSink {
+public class UriSink implements DataSink {
 
   @JsonProperty
   private final URI uri;
 
-  public HdfsDataSink(@JsonProperty(value = "uri", required = true) final String uri) {
+  public UriSink(@JsonProperty(value = "uri", required = true) final String uri) {
     this.uri = URI.create(Objects.requireNonNull(uri, "Parameter uri cannot be null"));
   }
 
   @Override
   public OutputStream getOutputStream() throws IOException {
     Configuration conf = new Configuration();
+
     FileSystem fs = FileSystem.get(uri, conf);
     Path rootPath = new Path(uri);
-
     return fs.create(rootPath);
   }
 }

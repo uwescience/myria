@@ -5,6 +5,7 @@ package edu.washington.escience.myria.io;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.Serializable;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
@@ -18,7 +19,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 @JsonSubTypes({
     @Type(name = "Bytes", value = ByteArraySource.class), @Type(name = "File", value = FileSource.class),
     @Type(name = "URI", value = UriSource.class), @Type(name = "Empty", value = EmptySource.class) })
-public interface DataSink {
+public interface DataSink extends Serializable {
   /**
    * Returns an {@link OutputStream} providing write access to the bits in the specified data destination.
    * 
