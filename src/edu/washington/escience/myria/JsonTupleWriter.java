@@ -53,9 +53,6 @@ public class JsonTupleWriter implements TupleWriter {
     this.output = new PrintWriter(new BufferedWriter(new OutputStreamWriter(output)));
   }
 
-  /**
-   * ...
-   */
   @Override
   public void open(final OutputStream stream) throws IOException {
     output = new PrintWriter(new BufferedWriter(new OutputStreamWriter(stream)));

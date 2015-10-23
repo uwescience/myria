@@ -23,7 +23,6 @@ public final class DataOutput extends RootOperator {
   /** The class that will serialize the tuple batches. */
   private final TupleWriter tupleWriter;
   private DataSink dataSink;
-
   /** Whether this object has finished. */
   private boolean done = false;
 
@@ -75,7 +74,6 @@ public final class DataOutput extends RootOperator {
         tupleWriter.open(dataSink.getOutputStream());
       }
       tupleWriter.writeColumnHeaders(getChild().getSchema().getColumnNames());
-
     } catch (IOException e) {
       throw new DbException(e);
     }

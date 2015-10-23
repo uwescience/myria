@@ -41,9 +41,6 @@ public class PostgresBinaryTupleWriter implements TupleWriter {
     buffer.writeInt(0);
   }
 
-  /*
-   * ...
-   */
   @Override
   public void open(final OutputStream stream) throws IOException {
     buffer = new DataOutputStream(new BufferedOutputStream(stream));

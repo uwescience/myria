@@ -1,6 +1,3 @@
-/**
- *
- */
 package edu.washington.escience.myria;
 
 import java.io.IOException;
@@ -12,15 +9,19 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import edu.washington.escience.myria.storage.ReadableTable;
 
 /**
- * 
+ * HdfsTupleWriter is a {@link TupleWriter} that writes tuples to HDFS.
  */
 public class HdfsTupleWriter implements TupleWriter {
 
   /** Required for Java serialization. */
   static final long serialVersionUID = 1L;
 
-  private static FSDataOutputStream outStream;
+  /** The {@link OutputStream} to which we write the data. **/
+  private FSDataOutputStream outStream;
 
+  /**
+   * Constructs a {@link HdfsTupleWriter}.
+   */
   public HdfsTupleWriter() {
   }
 
@@ -53,6 +54,11 @@ public class HdfsTupleWriter implements TupleWriter {
 
   @Override
   public void error() throws IOException {
+    try {
+      outStream.writeUTF("There was an error writing the data");
+    } finally {
+      outStream.close();
+    }
   }
 
 }

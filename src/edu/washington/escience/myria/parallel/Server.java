@@ -1063,7 +1063,7 @@ public final class Server {
   }
 
   /**
-   * @param relationKey the relationKey of the dataset to delete
+   * @param relationKey the relationKey of the dataset to persist
    * @return the queryID
    * @throws DbException if there is an error
    * @throws InterruptedException interrupted

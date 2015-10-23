@@ -369,7 +369,7 @@ public final class DatasetResource {
    * @param userName the user who owns the target relation.
    * @param programName the program to which the target relation belongs.
    * @param relationName the name of the target relation.
-   * @return metadata
+   * @return the queryId
    * @throws DbException if there is an error in the database.
    */
   @POST
@@ -380,18 +380,17 @@ public final class DatasetResource {
 
     DatasetStatus status = server.getDatasetStatus(RelationKey.of(userName, programName, relationName));
     RelationKey relationKey = status.getRelationKey();
-    long queryID;
+    long queryId;
 
     try {
-      queryID = server.persistDataset(relationKey);
+      queryId = server.persistDataset(relationKey);
     } catch (Exception e) {
       throw new DbException();
     }
 
-    /* Build the response */
+    /* Build the response to return the queryId */
     ResponseBuilder response = Response.ok();
-
-    return response.entity(queryID).build();
+    return response.entity(queryId).build();
   }
 
   /**

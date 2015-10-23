@@ -61,7 +61,7 @@ public final class MyriaConfiguration extends ConfigParser {
     if (nodeId != MyriaConstants.MASTER_ID) {
       // worker, check if its path is specified
       String[] tmp = getRequired("workers", nodeId + "").split(":");
-      if (tmp.length > 2 && tmp[2].length() > 0) {
+      if (tmp.length > 2) {
         return tmp[2];
       }
     }

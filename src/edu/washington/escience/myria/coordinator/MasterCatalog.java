@@ -1467,7 +1467,7 @@ public final class MasterCatalog {
       throw new CatalogException("Catalog is closed.");
     }
 
-    /* Do the work -- for now just mark int the catalog as persistent */
+    /* Do the work */
     try {
       queue.execute(new SQLiteJob<Void>() {
         @Override
@@ -1707,8 +1707,8 @@ public final class MasterCatalog {
   /**
    * Checking whether the relation has an is_persistent status
    *
-   * @param relationKey the relation to check is_deleted status.
-   * @return a boolean whether the relation is in a is_deleted status.
+   * @param relationKey the relation to check is_persistent status.
+   * @return a boolean whether the relation is in a is_persistent status.
    * @throws CatalogException if there is an error.
    */
   public Boolean isPersistentRelation(final RelationKey relationKey) throws CatalogException {
