@@ -1064,11 +1064,12 @@ public final class Server {
 
   /**
    * @param relationKey the relationKey of the dataset to delete
-   * @return the status
+   * @return the queryID
    * @throws DbException if there is an error
    * @throws InterruptedException interrupted
    */
-  public DatasetStatus persistDataset(final RelationKey relationKey) throws DbException, InterruptedException {
+  public long persistDataset(final RelationKey relationKey) throws DbException, InterruptedException {
+    long queryID;
 
     /* Mark the relation as is_persistent */
     try {
@@ -1094,14 +1095,14 @@ public final class Server {
               "persisting from " + relationKey.toString(getDBMS()), new SubQueryPlan(new SinkRoot(new EOSSource())),
               workerPlans);
       try {
-        qf.get();
+        queryID = qf.get().getQueryId();
       } catch (ExecutionException e) {
         throw new DbException("Error executing query", e.getCause());
       }
     } catch (CatalogException e) {
       throw new DbException(e);
     }
-    return getDatasetStatus(relationKey);
+    return queryID;
   }
 
   /**

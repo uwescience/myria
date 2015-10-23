@@ -380,9 +380,10 @@ public final class DatasetResource {
 
     DatasetStatus status = server.getDatasetStatus(RelationKey.of(userName, programName, relationName));
     RelationKey relationKey = status.getRelationKey();
+    long queryID;
 
     try {
-      status = server.persistDataset(relationKey);
+      queryID = server.persistDataset(relationKey);
     } catch (Exception e) {
       throw new DbException();
     }
@@ -390,7 +391,7 @@ public final class DatasetResource {
     /* Build the response */
     ResponseBuilder response = Response.ok();
 
-    return response.entity(status.getQueryId()).build();
+    return response.entity(queryID).build();
   }
 
   /**
