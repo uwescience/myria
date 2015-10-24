@@ -28,7 +28,7 @@ public interface TupleWriter extends Serializable {
   static final long serialVersionUID = 1L;
 
   /**
-   * This will initialize the {@link CsvTupleWriter} {@link java.io.OutputStream}.
+   * This will initialize the {@link TupleWriter} {@link java.io.OutputStream}.
    */
   void open(OutputStream stream) throws IOException;
 
