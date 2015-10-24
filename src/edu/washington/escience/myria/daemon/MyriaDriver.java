@@ -5,6 +5,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -45,11 +46,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.InvalidProtocolBufferException;
 
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.parallel.Server;
+import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.parallel.Worker;
 import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
@@ -69,8 +71,8 @@ public final class MyriaDriver {
   private final JVMProcessFactory jvmProcessFactory;
   private final Configuration globalConf;
   private final Injector globalConfInjector;
-  private final ImmutableSet<Configuration> workerConfs;
-  private final Set<Integer> workerIdsAllocated;
+  private final ImmutableMap<Integer, Configuration> workerConfs;
+  private final Set<Integer> workerIdsWithAllocatedEvaluators;
   private final Map<Integer, RunningTask> tasksByWorkerId;
   private final CountDownLatch masterRunning;
   private final CountDownLatch allWorkersRunning;
@@ -90,7 +92,7 @@ public final class MyriaDriver {
    */
 
   private enum State {
-    INIT, PREPARING_MASTER, PREPARING_WORKERS, READY
+    INIT, PREPARING_MASTER, PREPARING_WORKERS, RECOVERING_WORKER, READY
   };
 
   private volatile State state = State.INIT;
@@ -106,7 +108,7 @@ public final class MyriaDriver {
     globalConf = new AvroConfigurationSerializer().fromString(serializedGlobalConf);
     globalConfInjector = Tang.Factory.getTang().newInjector(globalConf);
     workerConfs = getWorkerConfs();
-    workerIdsAllocated = new HashSet<>();
+    workerIdsWithAllocatedEvaluators = new HashSet<>();
     tasksByWorkerId = new HashMap<>();
     masterRunning = new CountDownLatch(1);
     allWorkersRunning = new CountDownLatch(workerConfs.size());
@@ -130,15 +132,16 @@ public final class MyriaDriver {
     return reefMasterHost;
   }
 
-  private ImmutableSet<Configuration> getWorkerConfs() throws InjectionException, BindException,
-      IOException {
-    final ImmutableSet.Builder<Configuration> workerConfsBuilder = new ImmutableSet.Builder<>();
+  private ImmutableMap<Integer, Configuration> getWorkerConfs() throws InjectionException,
+      BindException, IOException {
+    final ImmutableMap.Builder<Integer, Configuration> workerConfsBuilder =
+        new ImmutableMap.Builder<>();
     final Set<String> serializedWorkerConfs =
         globalConfInjector.getNamedInstance(MyriaGlobalConfigurationModule.WorkerConf.class);
     final ConfigurationSerializer serializer = new AvroConfigurationSerializer();
     for (final String serializedWorkerConf : serializedWorkerConfs) {
       final Configuration workerConf = serializer.fromString(serializedWorkerConf);
-      workerConfsBuilder.add(workerConf);
+      workerConfsBuilder.put(getIdFromWorkerConf(workerConf), workerConf);
     }
     return workerConfsBuilder.build();
   }
@@ -166,20 +169,28 @@ public final class MyriaDriver {
     return reefHost;
   }
 
-  private void requestWorkerEvaluators() throws InjectionException {
+  private SocketInfo getSocketInfoForWorker(final int workerId) throws InjectionException {
+    final Configuration workerConf = workerConfs.get(workerId);
+    final Injector injector = Tang.Factory.getTang().newInjector(workerConf);
+    // we don't use getHostFromWorkerConf() because we want to keep our original hostname
+    String host = injector.getNamedInstance(MyriaWorkerConfigurationModule.WorkerHost.class);
+    Integer port = injector.getNamedInstance(MyriaWorkerConfigurationModule.WorkerPort.class);
+    return new SocketInfo(host, port);
+  }
+
+  private void requestWorkerEvaluator(final int workerId) throws InjectionException {
+    LOGGER.info("Requesting evaluator for worker {}.", workerId);
     final int jvmMemoryQuotaMB =
         1024 * globalConfInjector
             .getNamedInstance(MyriaGlobalConfigurationModule.MemoryQuotaGB.class);
     final int numberVCores =
         globalConfInjector.getNamedInstance(MyriaGlobalConfigurationModule.NumberVCores.class);
-    LOGGER.info("Requesting {} worker evaluators.", workerConfs.size());
-    for (final Configuration workerConf : workerConfs) {
-      final String hostname = getHostFromWorkerConf(workerConf);
-      final EvaluatorRequest workerRequest =
-          EvaluatorRequest.newBuilder().setNumber(1).setMemory(jvmMemoryQuotaMB)
-              .setNumberOfCores(numberVCores).addNodeName(hostname).build();
-      requestor.submit(workerRequest);
-    }
+    final Configuration workerConf = workerConfs.get(workerId);
+    final String hostname = getHostFromWorkerConf(workerConf);
+    final EvaluatorRequest workerRequest =
+        EvaluatorRequest.newBuilder().setNumber(1).setMemory(jvmMemoryQuotaMB)
+            .setNumberOfCores(numberVCores).addNodeName(hostname).build();
+    requestor.submit(workerRequest);
   }
 
   private void requestMasterEvaluator() throws InjectionException {
@@ -215,6 +226,62 @@ public final class MyriaDriver {
     evaluator.setProcess(jvmProcess);
   }
 
+  private void notifyWorkerFailure(final int workerId) {
+    LOGGER.info("Sending REMOVE_WORKER for worker {} to coordinator", workerId);
+    final TransportMessage workerFailed = IPCUtils.removeWorkerTM(workerId);
+    RunningTask coordinatorTask = tasksByWorkerId.get(MyriaConstants.MASTER_ID);
+    coordinatorTask.send(workerFailed.toByteArray());
+  }
+
+  private void notifyWorkerRecovered(final int workerId) {
+    Preconditions.checkState(state == State.RECOVERING_WORKER);
+    SocketInfo si;
+    try {
+      si = getSocketInfoForWorker(workerId);
+    } catch (InjectionException e) {
+      LOGGER.error("Failed to get SocketInfo for worker {}:\n{}", workerId, e);
+      return;
+    }
+    LOGGER.info("Sending ADD_WORKER for worker {} to coordinator", workerId);
+    final TransportMessage workerFailed = IPCUtils.addWorkerTM(workerId, si);
+    RunningTask coordinatorTask = tasksByWorkerId.get(MyriaConstants.MASTER_ID);
+    coordinatorTask.send(workerFailed.toByteArray());
+  }
+
+  private void scheduleTask(final ActiveContext context) {
+    final Configuration taskConf;
+    if (context.getId().equals(MyriaConstants.MASTER_ID + "")) {
+      Preconditions.checkState(state == State.PREPARING_MASTER);
+      taskConf =
+          TaskConfiguration.CONF.set(TaskConfiguration.TASK, MasterDaemon.class)
+              .set(TaskConfiguration.IDENTIFIER, context.getId())
+              .set(TaskConfiguration.ON_SEND_MESSAGE, Server.class)
+              .set(TaskConfiguration.ON_MESSAGE, Server.class).build();
+
+    } else {
+      Preconditions
+          .checkState(state == State.PREPARING_WORKERS || state == State.RECOVERING_WORKER);
+      taskConf =
+          TaskConfiguration.CONF.set(TaskConfiguration.TASK, Worker.class)
+              .set(TaskConfiguration.IDENTIFIER, context.getId()).build();
+    }
+    context.submitTask(taskConf);
+  }
+
+  private void allocateWorkerContext(final AllocatedEvaluator evaluator, final int workerId)
+      throws InjectionException {
+    Preconditions.checkState(state == State.PREPARING_WORKERS || state == State.RECOVERING_WORKER);
+    LOGGER.info("Launching context for worker ID {} on {}", workerId, evaluator
+        .getEvaluatorDescriptor().getNodeDescriptor().getName());
+    Preconditions.checkState(!workerIdsWithAllocatedEvaluators.contains(workerId));
+    Configuration contextConf =
+        ContextConfiguration.CONF.set(ContextConfiguration.IDENTIFIER, workerId + "").build();
+    setJVMOptions(evaluator);
+    evaluator
+        .submitContext(Configurations.merge(contextConf, globalConf, workerConfs.get(workerId)));
+    workerIdsWithAllocatedEvaluators.add(workerId);
+  }
+
   /**
    * The driver is ready to run.
    */
@@ -224,7 +291,7 @@ public final class MyriaDriver {
       // NB: because this handler blocks waiting for other handlers to run (to decrement the
       // CountDownLatch), synchronizing on the outer object (MyriaDriver.this) will deadlock.
       LOGGER.info("Driver started at {}", startTime);
-      assert (state == State.INIT);
+      Preconditions.checkState(state == State.INIT);
       state = State.PREPARING_MASTER;
       try {
         requestMasterEvaluator();
@@ -240,10 +307,12 @@ public final class MyriaDriver {
         Thread.currentThread().interrupt();
         throw new RuntimeException(e);
       }
-      LOGGER.info("Master is running, starting workers...");
+      LOGGER.info("Master is running, starting {} workers...", workerConfs.size());
       state = State.PREPARING_WORKERS;
       try {
-        requestWorkerEvaluators();
+        for (final Integer workerId : workerConfs.keySet()) {
+          requestWorkerEvaluator(workerId);
+        }
       } catch (InjectionException e) {
         throw new RuntimeException(e);
       }
@@ -278,7 +347,7 @@ public final class MyriaDriver {
     public synchronized void onNext(final AllocatedEvaluator evaluator) {
       String node = evaluator.getEvaluatorDescriptor().getNodeDescriptor().getName();
       LOGGER.info("Allocated evaluator {} on node {}", evaluator.getId(), node);
-      LOGGER.info("State: " + state.toString());
+      LOGGER.info("State: {}", state);
       if (state == State.PREPARING_MASTER) {
         Configuration contextConf =
             ContextConfiguration.CONF.set(ContextConfiguration.IDENTIFIER,
@@ -290,20 +359,15 @@ public final class MyriaDriver {
         }
         evaluator.submitContext(Configurations.merge(contextConf, globalConf));
       } else {
-        Preconditions.checkState(state == State.PREPARING_WORKERS);
+        Preconditions.checkState(state == State.PREPARING_WORKERS
+            || state == State.RECOVERING_WORKER);
         // allocate the next worker ID associated with this host
         try {
-          for (final Configuration workerConf : workerConfs) {
+          for (final Configuration workerConf : workerConfs.values()) {
             final String workerHost = getHostFromWorkerConf(workerConf);
-            final Integer workerID = getIdFromWorkerConf(workerConf);
-            if (workerHost.equals(node) && !workerIdsAllocated.contains(workerID)) {
-              LOGGER.info("Launching context for worker ID {} on {}", workerID, workerHost);
-              Configuration contextConf =
-                  ContextConfiguration.CONF.set(ContextConfiguration.IDENTIFIER, workerID + "")
-                      .build();
-              setJVMOptions(evaluator);
-              evaluator.submitContext(Configurations.merge(contextConf, globalConf, workerConf));
-              workerIdsAllocated.add(workerID);
+            final Integer workerId = getIdFromWorkerConf(workerConf);
+            if (workerHost.equals(node) && !workerIdsWithAllocatedEvaluators.contains(workerId)) {
+              allocateWorkerContext(evaluator, workerId);
               break;
             }
           }
@@ -325,13 +389,29 @@ public final class MyriaDriver {
     @Override
     public synchronized void onNext(final FailedEvaluator failedEvaluator) {
       LOGGER.error("FailedEvaluator: {}", failedEvaluator);
-      // notify coordinator this worker has failed
-      Optional<FailedTask> ft = failedEvaluator.getFailedTask();
-      if (ft.isPresent()) {
-        final int workerId = Integer.parseInt(ft.get().getId());
-        final TransportMessage workerFailed = IPCUtils.removeWorkerTM(workerId);
-        RunningTask coordinatorTask = tasksByWorkerId.get(MyriaConstants.MASTER_ID);
-        coordinatorTask.send(workerFailed.toByteArray());
+      // respawn evaluator and reschedule task if configured
+      List<FailedContext> failedContexts = failedEvaluator.getFailedContextList();
+      // we should have at most one context in the list (since we only allocate the root context)
+      if (failedContexts.size() > 0) {
+        FailedContext failedContext = failedContexts.get(0);
+        int workerId = Integer.valueOf(failedContext.getId());
+        // we don't handle coordinator failure yet
+        if (workerId != MyriaConstants.MASTER_ID) {
+          tasksByWorkerId.remove(workerId);
+          workerIdsWithAllocatedEvaluators.remove(workerId);
+          // notify coordinator this worker has failed
+          notifyWorkerFailure(workerId);
+          // allocate new evaluator
+          LOGGER.info("Attempting to reallocate evaluator for worker {}", workerId);
+          state = State.RECOVERING_WORKER;
+          try {
+            requestWorkerEvaluator(workerId);
+          } catch (InjectionException e) {
+            LOGGER.error("Failed to reallocate evaluator for worker {}:\n{}", workerId, e);
+            state = State.READY;
+          }
+        }
+
       }
     }
   }
@@ -341,20 +421,7 @@ public final class MyriaDriver {
     public synchronized void onNext(final ActiveContext context) {
       String host = context.getEvaluatorDescriptor().getNodeDescriptor().getName();
       LOGGER.info("Context {} available on node {}", context.getId(), host);
-      final Configuration taskConf;
-      if (context.getId().equals(MyriaConstants.MASTER_ID + "")) {
-        taskConf =
-            TaskConfiguration.CONF.set(TaskConfiguration.TASK, MasterDaemon.class)
-                .set(TaskConfiguration.IDENTIFIER, context.getId())
-                .set(TaskConfiguration.ON_SEND_MESSAGE, Server.class)
-                .set(TaskConfiguration.ON_MESSAGE, Server.class).build();
-
-      } else {
-        taskConf =
-            TaskConfiguration.CONF.set(TaskConfiguration.TASK, Worker.class)
-                .set(TaskConfiguration.IDENTIFIER, context.getId()).build();
-      }
-      context.submitTask(taskConf);
+      scheduleTask(context);
     }
   }
 
@@ -369,12 +436,20 @@ public final class MyriaDriver {
     @Override
     public synchronized void onNext(final RunningTask task) {
       LOGGER.info("Running task: {}", task.getId());
-      if (task.getActiveContext().getId().equals(MyriaConstants.MASTER_ID + "")) {
+      int workerId = Integer.valueOf(task.getId());
+      Preconditions.checkState(!tasksByWorkerId.containsKey(workerId));
+      if (state == State.PREPARING_MASTER) {
+        Preconditions.checkState(workerId == MyriaConstants.MASTER_ID);
         masterRunning.countDown();
-      } else {
+      } else if (state == State.PREPARING_WORKERS) {
         allWorkersRunning.countDown();
+      } else if (state == State.RECOVERING_WORKER) {
+        LOGGER.info("Task for worker {} successfully rescheduled", workerId);
+        notifyWorkerRecovered(workerId);
+      } else {
+        throw new IllegalStateException("Should not be scheduling new task in state " + state);
       }
-      tasksByWorkerId.put(Integer.valueOf(task.getId()), task);
+      tasksByWorkerId.put(workerId, task);
     }
   }
 
@@ -389,7 +464,20 @@ public final class MyriaDriver {
     @Override
     public synchronized void onNext(final FailedTask failedTask) {
       LOGGER.error("FailedTask: {}", failedTask);
-      failedTask.getActiveContext().get().close();
+      int workerId = Integer.valueOf(failedTask.getId());
+      // we don't handle coordinator failure yet
+      if (workerId != MyriaConstants.MASTER_ID) {
+        tasksByWorkerId.remove(workerId);
+        // notify coordinator this worker has failed
+        notifyWorkerFailure(workerId);
+        // attempt to reschedule task on the same evaluator
+        Optional<ActiveContext> context = failedTask.getActiveContext();
+        if (context.isPresent()) {
+          LOGGER.info("Attempting to reschedule failed task for worker {}", workerId);
+          state = State.RECOVERING_WORKER;
+          scheduleTask(context.get());
+        }
+      }
     }
   }
 
@@ -408,11 +496,16 @@ public final class MyriaDriver {
       }
       final ControlMessage controlM = m.getControlMessage();
       LOGGER.info("Control message received: {}", controlM);
-      // We received a failed worker message from the driver.
-      Preconditions.checkState(controlM.getType() == ControlMessage.Type.REMOVE_WORKER_ACK);
+      // We received a failed worker ack or recovered worker ack from the coordinator.
+      Preconditions.checkState(controlM.getType() == ControlMessage.Type.REMOVE_WORKER_ACK
+          || controlM.getType() == ControlMessage.Type.ADD_WORKER_ACK);
       int workerId = controlM.getWorkerId();
-      LOGGER.info("Received REMOVE_WORKER_ACK for worker {} from task {}", workerId,
+      LOGGER.info("Received {} for worker {} from task {}", controlM.getType(), workerId,
           taskMessage.getMessageSourceID());
+      if (controlM.getType() == ControlMessage.Type.ADD_WORKER_ACK) {
+        Preconditions.checkState(state == State.RECOVERING_WORKER);
+        state = State.READY;
+      }
     }
   }
 }
