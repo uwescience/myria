@@ -30,15 +30,18 @@ public final class MasterDaemon implements Task {
    */
   @Override
   public byte[] call(@SuppressWarnings("unused") final byte[] memento) throws Exception {
-    start();
-    while (!Thread.currentThread().isInterrupted()) {
-      try {
-        Thread.sleep(SLEEP_DELAY_MILLIS);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
+    try {
+      start();
+      while (!Thread.currentThread().isInterrupted()) {
+        try {
+          Thread.sleep(SLEEP_DELAY_MILLIS);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
       }
+    } finally {
+      stop();
     }
-    stop();
     return null;
   }
 

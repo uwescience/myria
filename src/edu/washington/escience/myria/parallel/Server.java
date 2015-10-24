@@ -55,9 +55,12 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Multimaps;
+import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -166,14 +169,58 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
                 case RESOURCE_STATS:
                   queryManager.updateResourceStats(senderID, controlM);
                   break;
-                case REMOVE_WORKER_ACK:
+                case REMOVE_WORKER_ACK: {
                   int workerID = controlM.getWorkerId();
-                  removeWorkerAckReceived.get(workerID).add(senderID);
+                  LOGGER.info(
+                      "Workers to be notified for current remove operation for worker {}: {}",
+                      workerID, removeWorkerWorkersToNotify.get(workerID).toString());
+                  Preconditions.checkState(
+                      removeWorkerWorkersToNotify.containsEntry(workerID, senderID),
+                      "Worker %s should not have received a REMOVE_WORKER message for worker %s",
+                      senderID, workerID);
+                  removeWorkerAckedWorkers.put(workerID, senderID);
+                  // if this worker has a pending ADD_WORKER message for the same worker ID, then
+                  // send that now (we delayed sending it until this REMOVE_WORKER_ACK).
+                  if (addWorkerWorkersToNotify.containsEntry(workerID, senderID)) {
+                    connectionPool.sendShortMessage(senderID,
+                        IPCUtils.addWorkerTM(workerID, workers.get(workerID)));
+                  }
+                  // if all alive workers have acked the REMOVE_WORKER message for this worker, then
+                  // ack it to the driver.
+                  Set<Integer> removeWorkersToAck =
+                      Sets.intersection(removeWorkerWorkersToNotify.get(workerID), aliveWorkers);
+                  if (removeWorkerAckedWorkers.get(workerID).containsAll(removeWorkersToAck)) {
+                    // ensure that no further acks are accepted for this REMOVE_WORKER message
+                    removeWorkerWorkersToNotify.removeAll(workerID);
+                    final TransportMessage ack = IPCUtils.removeWorkerAckTM(workerID);
+                    enqueueDriverMessage(TaskMessage.from(MyriaConstants.MASTER_ID + "",
+                        ack.toByteArray()));
+                  }
+                }
                   break;
-                case ADD_WORKER_ACK:
-                  workerID = controlM.getWorkerId();
-                  addWorkerAckReceived.get(workerID).add(senderID);
-                  queryManager.workerRestarted(workerID, addWorkerAckReceived.get(workerID));
+                case ADD_WORKER_ACK: {
+                  int workerID = controlM.getWorkerId();
+                  Preconditions.checkState(
+                      addWorkerWorkersToNotify.containsEntry(workerID, senderID),
+                      "Worker {} should not have received an ADD_WORKER message for worker {}",
+                      senderID, workerID);
+                  addWorkerAckedWorkers.put(workerID, senderID);
+                  queryManager.workerRestarted(workerID, addWorkerAckedWorkers.get(workerID));
+                  // if all alive workers have acked the ADD_WORKER message for this worker, then
+                  // add the worker to the set of alive workers and ack it to the driver.
+                  Set<Integer> addWorkersToAck =
+                      Sets.intersection(addWorkerWorkersToNotify.get(workerID), aliveWorkers);
+                  if (addWorkerAckedWorkers.get(workerID).containsAll(addWorkersToAck)) {
+                    // we need to clear addWorkerWorkersToNotify for this worker so that subsequent
+                    // REMOVE_WORKER_ACK messages don't force a spurious ADD_WORKER message to be
+                    // sent to the sender.
+                    addWorkerWorkersToNotify.removeAll(workerID);
+                    aliveWorkers.add(workerID);
+                    final TransportMessage ack = IPCUtils.addWorkerAckTM(workerID);
+                    enqueueDriverMessage(TaskMessage.from(MyriaConstants.MASTER_ID + "",
+                        ack.toByteArray()));
+                  }
+                }
                   break;
                 default:
                   LOGGER.error("Unexpected control message received at master: {}", controlM);
@@ -273,32 +320,71 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     LOGGER.info("Control message received: {}", controlM);
 
     // We received a failed worker message from the driver.
-    Preconditions.checkState(controlM.getType() == ControlMessage.Type.REMOVE_WORKER);
     int workerId = controlM.getWorkerId();
-    LOGGER.info("Worker {} doesn't have heartbeats, treat it as dead.", workerId);
-    aliveWorkers.remove(workerId);
-    queryManager.workerDied(workerId);
+    switch (controlM.getType()) {
+      case REMOVE_WORKER: {
+        LOGGER.info("Driver reported worker {} as dead, removing from alive workers.", workerId);
+        aliveWorkers.remove(workerId);
+        queryManager.workerDied(workerId);
 
-    removeWorkerAckReceived.put(workerId,
-        Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>()));
-    addWorkerAckReceived.put(workerId,
-        Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>()));
-    /* for using containsAll() later */
-    addWorkerAckReceived.get(workerId).add(workerId);
-    try {
-      /* remove the failed worker from the connectionPool. */
-      connectionPool.removeRemote(workerId).await();
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      return;
+        // take snapshot of workers alive when this message was received
+        removeWorkerWorkersToNotify.putAll(workerId, ImmutableSet.copyOf(aliveWorkers));
+        try {
+          /* remove the failed worker from the connectionPool. */
+          connectionPool.removeRemote(workerId).await();
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          return;
+        }
+        // immediately notify all workers
+        for (int removeNotifyWorkerId : removeWorkerWorkersToNotify.get(workerId)) {
+          connectionPool.sendShortMessage(removeNotifyWorkerId, IPCUtils.removeWorkerTM(workerId));
+        }
+        // We must ack to the driver in the REMOVE_WORKER_ACK message handler, after we have
+        // received all expected acks. Note that we check for liveness when we determine the
+        // outstanding acks, so a dead worker cannot delay acking REMOVE_WORKER to the driver
+        // indefinitely.
+      }
+        break;
+
+      case ADD_WORKER: {
+        Preconditions.checkState(!aliveWorkers.contains(workerId));
+        LOGGER.info("Driver wants to add worker {} to alive workers.", workerId);
+        // We must take a snapshot of workers who acked the last REMOVE_WORKER for this worker
+        // before we install addWorkerWorkersToNotify, so that we do not send ADD_WORKER for this
+        // worker to any worker which might have been sent ADD_WORKER for this worker in the
+        // REMOVE_WORKER_ACK message handler.
+        Set<Integer> removeWorkersAcked = removeWorkerAckedWorkers.get(workerId);
+        // Take snapshot of workers alive when this message was received (this also installs a set
+        // of workers to send an ADD_WORKER message for this worker in the REMOVE_MESSAGE_ACK
+        // message handler).
+        addWorkerWorkersToNotify.putAll(workerId, ImmutableSet.copyOf(aliveWorkers));
+        // we always reuse the host/port for a recovered worker
+        connectionPool.putRemote(workerId, workers.get(workerId));
+        // This excludes from immediate notification all workers which acked REMOVE_WORKER for this
+        // worker before we installed addWorkerWorkersToNotify for this worker. This guarantees that
+        // no worker which was sent ADD_WORKER for this worker in the REMOVE_WORKER_ACK message
+        // handler will be sent ADD_WORKER for this worker again.
+        Set<Integer> removeWorkersPendingAck =
+            Sets.difference(removeWorkerWorkersToNotify.get(workerId), removeWorkersAcked);
+        Set<Integer> addWorkersToNotifyImmediately =
+            Sets.difference(addWorkerWorkersToNotify.get(workerId), removeWorkersPendingAck);
+        for (Integer workerToNotifyId : addWorkersToNotifyImmediately) {
+          connectionPool.sendShortMessage(workerToNotifyId,
+              IPCUtils.addWorkerTM(workerId, workers.get(workerId)));
+        }
+        // Even if we were able to notify all workers immediately, we must still wait for all acks
+        // before we can mark the new worker as alive and ack to the driver, so this must be done in
+        // the ADD_WORKER_ACK message handler. Note that we check for liveness when we determine the
+        // outstanding acks, so a dead worker cannot delay adding the new worker indefinitely.
+      }
+        break;
+
+      default:
+        throw new IllegalStateException("Unexpected driver control message type: "
+            + controlM.getType());
     }
-    /* tell other workers to remove it too. */
-    for (int aliveWorkerId : aliveWorkers) {
-      connectionPool.sendShortMessage(aliveWorkerId, IPCUtils.removeWorkerTM(workerId));
-    }
-    // ack to the driver
-    final TransportMessage ack = IPCUtils.removeWorkerAckTM(workerId);
-    enqueueDriverMessage(TaskMessage.from(MyriaConstants.MASTER_ID + "", ack.toByteArray()));
+
   }
 
   /** The usage message for this server. */
@@ -327,11 +413,31 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
    */
   private final Set<Integer> aliveWorkers;
 
-  /** for each worker id, record the set of workers which REMOVE_WORKER_ACK have been received. */
-  private final Map<Integer, Set<Integer>> removeWorkerAckReceived;
+  /**
+   * for each worker id, record the set of alive workers when REMOVE_WORKER messages for that worker
+   * were sent.
+   */
+  private final SetMultimap<Integer, Integer> removeWorkerWorkersToNotify = Multimaps
+      .synchronizedSetMultimap(HashMultimap.<Integer, Integer>create());
 
-  /** for each worker id, record the set of workers which ADD_WORKER_ACK have been received. */
-  private final Map<Integer, Set<Integer>> addWorkerAckReceived;
+  /**
+   * for each worker id, record the set of alive workers when ADD_WORKER messages for that worker
+   * were sent.
+   */
+  private final SetMultimap<Integer, Integer> addWorkerWorkersToNotify = Multimaps
+      .synchronizedSetMultimap(HashMultimap.<Integer, Integer>create());
+
+  /**
+   * for each worker id, record the set of workers from which REMOVE_WORKER_ACK has been received.
+   */
+  private final SetMultimap<Integer, Integer> removeWorkerAckedWorkers = Multimaps
+      .synchronizedSetMultimap(HashMultimap.<Integer, Integer>create());
+
+  /**
+   * for each worker id, record the set of workers from which ADD_WORKER_ACK has been received.
+   */
+  private final SetMultimap<Integer, Integer> addWorkerAckedWorkers = Multimaps
+      .synchronizedSetMultimap(HashMultimap.<Integer, Integer>create());
 
   /**
    * Execution environment variables for operators.
@@ -464,8 +570,6 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM, databaseSystem);
 
     aliveWorkers = Sets.newConcurrentHashSet();
-    removeWorkerAckReceived = new ConcurrentHashMap<>();
-    addWorkerAckReceived = new ConcurrentHashMap<>();
     messageQueue = new LinkedBlockingQueue<>();
   }
 
