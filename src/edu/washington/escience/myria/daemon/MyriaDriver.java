@@ -8,7 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.inject.Inject;
 
@@ -74,8 +74,7 @@ public final class MyriaDriver {
   private final ImmutableMap<Integer, Configuration> workerConfs;
   private final Set<Integer> workerIdsWithAllocatedEvaluators;
   private final Map<Integer, RunningTask> tasksByWorkerId;
-  private final CountDownLatch masterRunning;
-  private final CountDownLatch allWorkersRunning;
+  private final AtomicInteger numberWorkersPending;
 
   /**
    * Possible states of the Myria driver. Can be one of:
@@ -110,8 +109,7 @@ public final class MyriaDriver {
     workerConfs = getWorkerConfs();
     workerIdsWithAllocatedEvaluators = new HashSet<>();
     tasksByWorkerId = new HashMap<>();
-    masterRunning = new CountDownLatch(1);
-    allWorkersRunning = new CountDownLatch(workerConfs.size());
+    numberWorkersPending = new AtomicInteger(workerConfs.size());
   }
 
   private String getMasterHost() throws InjectionException {
@@ -282,50 +280,36 @@ public final class MyriaDriver {
     workerIdsWithAllocatedEvaluators.add(workerId);
   }
 
+  private void launchMaster() {
+    Preconditions.checkState(state == State.PREPARING_MASTER);
+    try {
+      requestMasterEvaluator();
+    } catch (InjectionException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private void launchWorkers() {
+    Preconditions.checkState(state == State.PREPARING_WORKERS);
+    try {
+      for (final Integer workerId : workerConfs.keySet()) {
+        requestWorkerEvaluator(workerId);
+      }
+    } catch (InjectionException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   /**
    * The driver is ready to run.
    */
   final class StartHandler implements EventHandler<StartTime> {
     @Override
     public synchronized void onNext(final StartTime startTime) {
-      // NB: because this handler blocks waiting for other handlers to run (to decrement the
-      // CountDownLatch), synchronizing on the outer object (MyriaDriver.this) will deadlock.
       LOGGER.info("Driver started at {}", startTime);
       Preconditions.checkState(state == State.INIT);
       state = State.PREPARING_MASTER;
-      try {
-        requestMasterEvaluator();
-      } catch (InjectionException e) {
-        throw new RuntimeException(e);
-      }
-      // We need to wait for the master to be allocated before we request evaluators for the
-      // workers, otherwise we can't tell which evaluator is which (because REEF doesn't let us
-      // submit a client token with the evaluator requests).
-      try {
-        masterRunning.await();
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new RuntimeException(e);
-      }
-      LOGGER.info("Master is running, starting {} workers...", workerConfs.size());
-      state = State.PREPARING_WORKERS;
-      try {
-        for (final Integer workerId : workerConfs.keySet()) {
-          requestWorkerEvaluator(workerId);
-        }
-      } catch (InjectionException e) {
-        throw new RuntimeException(e);
-      }
-      try {
-        allWorkersRunning.await();
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new RuntimeException(e);
-      }
-      LOGGER.info("All workers running, ready for queries...");
-      // We are now ready to receive requests.
-      // TODO: send RPC to REST API that it can now service requests?
-      state = State.READY;
+      launchMaster();
     }
   }
 
@@ -440,9 +424,15 @@ public final class MyriaDriver {
       Preconditions.checkState(!tasksByWorkerId.containsKey(workerId));
       if (state == State.PREPARING_MASTER) {
         Preconditions.checkState(workerId == MyriaConstants.MASTER_ID);
-        masterRunning.countDown();
+        LOGGER.info("Master is running, starting {} workers...", workerConfs.size());
+        state = State.PREPARING_WORKERS;
+        launchWorkers();
       } else if (state == State.PREPARING_WORKERS) {
-        allWorkersRunning.countDown();
+        Preconditions.checkState(workerId != MyriaConstants.MASTER_ID);
+        if (numberWorkersPending.decrementAndGet() == 0) {
+          LOGGER.info("All {} workers running, ready for queries...", workerConfs.size());
+          state = State.READY;
+        }
       } else if (state == State.RECOVERING_WORKER) {
         LOGGER.info("Task for worker {} successfully rescheduled", workerId);
         notifyWorkerRecovered(workerId);
