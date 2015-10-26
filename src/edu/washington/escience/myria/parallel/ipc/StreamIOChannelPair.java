@@ -7,7 +7,6 @@ import com.google.common.base.Preconditions;
 import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.operator.network.Producer;
 import edu.washington.escience.myria.util.concurrent.ReentrantSpinLock;
-import edu.washington.escience.myria.util.concurrent.ThreadStackDump;
 
 /**
  * The data structure recording the logical role of {@link StreamInputChannel} and {@link StreamOutputChannel} that an
@@ -83,7 +82,7 @@ class StreamIOChannelPair {
 
   /**
    * Link the logical inputChannel with the physical ioChannel.
-   *
+   * 
    * @param inputChannel the logical channel.
    * */
   final void mapInputChannel(final StreamInputChannel<?> inputChannel) {
@@ -103,7 +102,7 @@ class StreamIOChannelPair {
     }
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace("Stream input channel {} associates to physical channel {}.", inputChannel, ChannelContext
-          .channelToString(ioChannel), new ThreadStackDump());
+          .channelToString(ioChannel));
     }
   }
 
@@ -112,28 +111,29 @@ class StreamIOChannelPair {
    * anyway.
    * */
   final void deMapInputChannel() {
-    Channel channel = null;
-    StreamInputChannel<?> old = null;
+    String oldChannel = "null";
+    if (inputStreamChannel != null) {
+      oldChannel = inputStreamChannel.toString();
+    }
 
     inputMappingLock.lock();
     try {
       if (inputStreamChannel != null) {
-        old = inputStreamChannel;
-        old.release();
+        inputStreamChannel.release();
         inputStreamChannel = null;
       }
     } finally {
       inputMappingLock.unlock();
     }
     if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("Stream input channel {} disassociated from physical channel {}.", old, ChannelContext
-          .channelToString(channel), new ThreadStackDump());
+      LOGGER.trace("Stream input channel {} disassociated from physical channel {}.", oldChannel, ChannelContext
+          .channelToString(ownerChannelContext.getChannel()));
     }
   }
 
   /**
    * Link the logical outputChannel with the physical ioChannel.
-   *
+   * 
    * @param outputChannel the logical channel.
    * */
   final void mapOutputChannel(final StreamOutputChannel<?> outputChannel) {

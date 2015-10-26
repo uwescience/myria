@@ -138,10 +138,13 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
       return;
     } else if (metaMessage == IPCMessage.Meta.EOS) {
       if (existingIChannel == null) {
-        LOGGER.error("EOS received from a non-stream channel {}. From RemoteID:{}.",
-            ChannelContext.channelToString(ch), remoteID);
+        // This EOS is for a finished fragment (should contain IDBController)
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace("EOS received from a non-stream channel {}. From RemoteID:{}.", ChannelContext
+              .channelToString(ch), remoteID);
+        }
       } else {
-        long streamID = cc.getRegisteredChannelContext().getIOPair().getInputChannel().getID().getStreamID();
+        long streamID = existingIChannel.getID().getStreamID();
         receiveRegisteredData(ch, cc, IPCMessage.StreamData.eos(remoteID, streamID));
         cc.getRegisteredChannelContext().getIOPair().deMapInputChannel();
         ChannelContext.resumeRead(ch);
