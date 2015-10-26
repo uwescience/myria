@@ -1,1 +1,1 @@
-docs/myriaX.markdown
+docs/index.markdown
