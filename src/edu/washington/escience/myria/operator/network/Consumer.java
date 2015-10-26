@@ -130,7 +130,6 @@ public class Consumer extends LeafOperator {
 
   @Override
   public final void cleanup() {
-    taskResourceManager.releaseInputBuffer(this);
     inputBuffer = null;
     workerEOS.clear();
     workerEOI.clear();
