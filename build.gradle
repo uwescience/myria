@@ -15,9 +15,9 @@ task wrapper(type: Wrapper) {
     gradleVersion = '2.3'
 }
 
-/* We use Java 1.7 */
-sourceCompatibility = 1.7
-targetCompatibility = 1.7
+/* We use Java 1.8 */
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 /* Gradle's build script */
 buildscript {
