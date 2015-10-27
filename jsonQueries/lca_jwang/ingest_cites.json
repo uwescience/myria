@@ -1,0 +1,17 @@
+{
+  "relationKey" : {
+    "userName" : "jwang",
+    "programName" : "lca",
+    "relationName" : "cites"
+  },
+  "schema" : {
+    "columnTypes" : ["LONG_TYPE", "LONG_TYPE"],
+    "columnNames" : ["pid1", "pid2"]
+  },
+  "source" : {
+    "dataType" : "Bytes",
+    "bytes": "MzUgMjIKOCAwCjEyIDI4CjM1IDMKMjUgMTEKNDIgMTgKMTMgMTcKMzcgNDkKNCAxNQozMiAzOAo2IDQxCjAgMQo1IDMwCjIyIDYKMjcgNDgKMzMgMzUKMTYgNQo0MyAzMwo0NyAwCjExIDIwCjM0IDE2CjI4IDIxCjMyIDQwCjQ4IDQ3CjM4IDUKMTYgMjIKMjAgMjQKMzEgOQozOCAxMAoyMCAyMQozMCAyMAoxNSAzMwoyMCA0NgoyOSA3CjI0IDMwCjM5IDQyCjMwIDE4CjQxIDMxCjQgMwozMSA0MAoxOSAxMAoyMiAyMgo0IDI3CjIgNwo0MSAxOQoxMiAxMQoxOCAyNgoxMCA1CjkgMjEKNDMgMTQK"
+  },
+  "overwrite": true,
+  "delimiter": " "
+}

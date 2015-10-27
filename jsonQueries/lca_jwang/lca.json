@@ -1,0 +1,527 @@
+{
+    "fragments": 
+    [
+        {
+            "operators": 
+            [
+            {
+                "opId" : 1,
+                "opName" : "eoiReceiverL",
+                "opType" : "Consumer",
+                "argOperatorId" : 25
+            },
+            {
+                "opId" : 2,
+                "opName" : "eoiReceiverA",
+                "opType" : "Consumer",
+                "argOperatorId" : 20
+            },
+            {
+                "opId" : 3,
+                "opName" : "merge",
+                "opType" : "UnionAll",
+                "argChildren" : [1, 2]
+            },
+            {
+                "opId" : 4,
+                "opName" : "eosController",
+                "opType" : "EOSController",
+                "argChild" : 3
+            }
+            ],
+            "overrideWorkers": 
+            [
+                1
+            ]
+        },
+        {
+            "operators": 
+            [
+            {
+                "opId" : 5,
+                "opName" : "scanP",
+                "opType" : "TableScan",
+                "relationKey" : {
+                    "userName" : "jwang",
+                    "programName" : "lca",
+                    "relationName" : "papers"
+                }
+            },
+            {
+                "opId" : 58,
+                "opName" : "spP",
+                "opType" : "ShuffleProducer",
+                "argChild" : 5,
+                "argPf" : {
+                    "type" : "SingleFieldHash",
+                    "index" : 0
+                }
+            }
+            ]
+        },
+        {
+            "operators": 
+            [
+            {
+                "opId" : 11,
+                "opName" : "scanC",
+                "opType" : "TableScan",
+                "relationKey" : {
+                    "userName" : "jwang",
+                    "programName" : "lca",
+                    "relationName" : "cites"
+                }
+            },
+            {
+                "opId" : 6,
+                "opName" : "mpC",
+                "opType" : "LocalMultiwayProducer",
+                "argChild" : 11
+            }
+            ]
+        },
+        {
+            "operators": 
+            [
+            {
+                "opId" : 9,
+                "opName" : "mcC1",
+                "opType" : "LocalMultiwayConsumer",
+                "argOperatorId" : 6
+            },
+            {
+                "opId" : 12,
+                "opName" : "spC1",
+                "opType" : "ShuffleProducer",
+                "argChild" : 9,
+                "argPf" : {
+                    "type" : "SingleFieldHash",
+                    "index" : 0
+                }
+            }
+            ]
+        },
+        {
+            "operators": 
+            [
+            {
+                "opId" : 10,
+                "opName" : "mcC2",
+                "opType" : "LocalMultiwayConsumer",
+                "argOperatorId" : 6
+            },
+                        {
+                                "opId" : 18,
+                                "opName" : "applyC",
+                                "opType" : "Apply",
+                                "argChild" : 10,
+                                "emitExpressions": [
+                                {
+                                        "outputName": "p",
+                                        "rootExpressionOperator":
+                                        {
+                                        "type": "VARIABLE",
+                                        "columnIdx": 0
+                                        }
+                                },
+                                {
+                                        "outputName": "a",
+                                        "rootExpressionOperator":
+                                        {
+                                        "type": "VARIABLE",
+                                        "columnIdx": 1
+                                        }
+                                },
+                                {
+                                        "outputName": "depth",
+                                        "rootExpressionOperator": 
+                                        {
+                                        "value": "1",
+                                        "type": "CONSTANT",
+                                        "valueType": "LONG_TYPE"
+                                        }
+                                }]
+            },
+            {
+                "opId" : 59,
+                "opName" : "spC2",
+                "opType" : "ShuffleProducer",
+                "argChild" : 18,
+                "argPf" : {
+                    "type" : "MultiFieldHash",
+                    "indexes" : [0,1]
+                }
+            }
+            ]
+        },
+        {
+            "operators": 
+            [
+            {
+                "opId" : 57,
+                "opName" : "scC2",
+                "opType" : "ShuffleConsumer",
+                "argOperatorId" : 59
+            },
+            {
+                "opId" : 41,
+                "opName" : "scJoinA",
+                "opType" : "ShuffleConsumer",
+                "argOperatorId" : 16
+            },
+            {
+                "opId" : 19,
+                "opName" : "eosA",
+                "opType" : "Consumer",
+                "argOperatorId" : 4
+            },
+            {
+                "opId" : 20,
+                "opName" : "idbA",
+                "opType" : "IDBController",
+                "argSelfIdbId" : "0",
+                "argInitialInput" : 57,
+                "argIterationInput" : 41,
+                "argState" : {
+                    "type" : "KeepMinValue",
+                    "keyColIndices": [0,1],
+                    "valueColIndices": [2]
+                },
+                "argEosControllerInput" : 19
+            },
+            {
+                "opId" : 27,
+                "opName" : "spA",
+                "opType" : "ShuffleProducer",
+                "argChild" : 20,
+                "argPf" : {
+                    "type" : "SingleFieldHash",
+                    "index" : 1
+                }
+            }
+            ]
+        },
+        {
+            "operators": 
+            [
+            {
+                "opId" : 28,
+                "opName" : "scA",
+                "opType" : "ShuffleConsumer",
+                "argOperatorId" : 27
+            },
+            {
+                "opId" : 21,
+                "opName" : "mpA",
+                "opType" : "LocalMultiwayProducer",
+                "argChild" : 28
+            }
+            ]
+        },
+        {
+            "operators": 
+            [
+            {
+                "opId": 22,
+                "opType": "Empty",
+                "schema" : {
+                    "columnTypes" : ["LONG_TYPE", "LONG_TYPE", "LONG_TYPE", "LONG_TYPE", "LONG_TYPE"],
+                    "columnNames" : ["p1", "p2", "a", "depth", "year"]
+                }
+            },
+            {
+                "opId" : 23,
+                "opName" : "scJoinL2",
+                "opType" : "ShuffleConsumer",
+                "argOperatorId" : 46
+            },
+            {
+                "opId" : 24,
+                "opName" : "eosL",
+                "opType" : "Consumer",
+                "argOperatorId" : 4
+            },
+            {
+                "opId" : 25,
+                "opName" : "idbL",
+                "opType" : "IDBController",
+                "argSelfIdbId" : "1",
+                "argInitialInput" : 22,
+                "argIterationInput" : 23,
+                "argState" : {
+                    "type" : "KeepMinValue",
+                    "keyColIndices": [0,1],
+                    "valueColIndices": [3,4,2]
+                },
+                "relationKey": {
+                    "programName": "lca",
+                    "relationName": "result",
+                    "userName": "jwang"
+                },
+                "argEosControllerInput" : 24
+            },
+            {
+                "opId" : 26,
+                "opName" : "sinkroot",
+                "opType" : "SinkRoot",
+                "argChild" : 25
+            }
+            ]
+        },
+        {
+                        "operators":
+                        [
+                        {
+                                "opId" : 13,
+                                "opName" : "mcA1",
+                                "opType" : "LocalMultiwayConsumer",
+                                "argOperatorId" : 21
+                        },
+                        {
+                                "opId" : 14,
+                                "opName" : "scC1",
+                                "opType" : "ShuffleConsumer",
+                                "argOperatorId" : 12
+                        },
+                        {
+                                "opId" : 15,
+                                "opName" : "joinA",
+                                "opType" : "SymmetricHashJoin",
+                                "argChild1" : 13,
+                                "argChild2" : 14,
+                                "argColumns1" : [1],
+                                "argColumns2" : [0],
+                                "argSelect1" : [0,2],
+                                "argSelect2" : [1],
+                                "argOrder" : "ALTER",
+                                "argSetSemanticsLeft" : false,
+                                "argSetSemanticsRight" : false
+                        },
+                        {
+                                "opId" : 40,
+                                "opName" : "applyA",
+                                "opType" : "Apply",
+                                "argChild" : 15,
+                                "emitExpressions": [
+                                {
+                                        "outputName": "p",
+                                        "rootExpressionOperator":
+                                        {
+                                        "type": "VARIABLE",
+                                        "columnIdx": 0
+                                        }
+                                },
+                                {
+                                        "outputName": "a",
+                                        "rootExpressionOperator":
+                                        {
+                                        "type": "VARIABLE",
+                                        "columnIdx": 2
+                                        }
+                                },
+                                {
+                                        "outputName": "depth",
+                                        "rootExpressionOperator": 
+                                        {
+                                                "type": "PLUS",
+                                                "left": {
+                                                "type": "VARIABLE",
+                                                "columnIdx": 1
+                                                },
+                                                "right": {
+                                                "value": "1",
+                                                "type": "CONSTANT",
+                                                "valueType": "LONG_TYPE"
+                                                }
+                                        }
+                                }]
+            },
+                        {
+                                "opId" : 16,
+                                "opName" : "spJoinA",
+                                "opType" : "ShuffleProducer",
+                                "argChild" : 40,
+                                "argPf" : {
+                                        "type" : "MultiFieldHash",
+                                        "indexes" : [0,1]
+                                }
+                        }
+                        ]
+        },
+        {
+                        "operators":
+                        [
+                        {
+                                "opId" : 33,
+                                "opName" : "mcA2",
+                                "opType" : "LocalMultiwayConsumer",
+                                "argOperatorId" : 21
+                        },
+                        {
+                                "opId" : 34,
+                                "opName" : "mcA3",
+                                "opType" : "LocalMultiwayConsumer",
+                                "argOperatorId" : 21
+                        },
+                        {
+                                "opId" : 38,
+                                "opName" : "renameA",
+                                "opType" : "Apply",
+                                "argChild" : 34,
+                                "emitExpressions": [
+                                {
+                                        "outputName": "p1",
+                                        "rootExpressionOperator":
+                                        {
+                                        "type": "VARIABLE",
+                                        "columnIdx": 0
+                                        }
+                                },
+                                {
+                                        "outputName": "a1",
+                                        "rootExpressionOperator":
+                                        {
+                                        "type": "VARIABLE",
+                                        "columnIdx": 1
+                                        }
+                                },
+                                {
+                                        "outputName": "depth1",
+                                        "rootExpressionOperator":
+                                        {
+                                        "type": "VARIABLE",
+                                        "columnIdx": 2
+                                        }
+                                }]
+            },
+                        {
+                                "opId" : 32,
+                                "opName" : "joinL1",
+                                "opType" : "SymmetricHashJoin",
+                                "argChild1" : 33,
+                                "argChild2" : 38,
+                                "argColumns1" : [1],
+                                "argColumns2" : [1],
+                                "argSelect1" : [0,1,2],
+                                "argSelect2" : [0,2],
+                                "argSetSemanticsLeft" : false,
+                                "argSetSemanticsRight" : false
+                        },
+                        {
+                                "opId" : 35,
+                                "opName" : "applyL",
+                                "opType" : "Apply",
+                                "argChild" : 32,
+                                "emitExpressions": [
+                                {
+                                        "outputName": "p1",
+                                        "rootExpressionOperator":
+                                        {
+                                        "type": "VARIABLE",
+                                        "columnIdx": 0
+                                        }
+                                },
+                                {
+                                        "outputName": "p2",
+                                        "rootExpressionOperator":
+                                        {
+                                        "type": "VARIABLE",
+                                        "columnIdx": 3
+                                        }
+                                },
+                                {
+                                        "outputName": "a",
+                                        "rootExpressionOperator": 
+                                        {
+                                        "type": "VARIABLE",
+                                        "columnIdx": 1
+                                        }
+                                },
+                                {
+                                        "outputName": "depth",
+                                        "rootExpressionOperator": 
+                                        {
+                                        "type": "GREATER",
+                    "left": {
+                        "type": "VARIABLE",
+                        "columnIdx": 2
+                    },
+                    "right": {
+                        "type": "VARIABLE",
+                        "columnIdx": 4
+                    }
+                                        }
+                                }]
+            },
+            {
+                "opId" : 37,
+                "opName" : "single",
+                "opType" : "Filter",
+                "argChild" : 35,
+                "argPredicate": {
+                "rootExpressionOperator": {
+                    "type": "LT",
+                    "left": {
+                        "type": "VARIABLE",
+                        "columnIdx": 0
+                    },
+                    "right": {
+                        "type": "VARIABLE",
+                        "columnIdx": 1
+                    }
+                }
+                }
+            },
+                        {
+                                "opId" : 36,
+                                "opName" : "mpJoinL1",
+                                "opType" : "LocalMultiwayProducer",
+                                "argChild" : 37
+                        }
+                        ]
+        },
+        {
+                        "operators":
+                        [
+                        {
+                                "opId" : 43,
+                                "opName" : "mcJoinL1",
+                                "opType" : "LocalMultiwayConsumer",
+                                "argOperatorId" : 36
+                        },
+                        {
+                                "opId" : 44,
+                                "opName" : "scP",
+                                "opType" : "ShuffleConsumer",
+                                "argOperatorId" : 58
+                        },
+                        {
+                                "opId" : 45,
+                                "opName" : "joinL2",
+                                "opType" : "SymmetricHashJoin",
+                                "argChild1" : 43,
+                                "argChild2" : 44,
+                                "argColumns1" : [2],
+                                "argColumns2" : [0],
+                                "argSelect1" : [0,1,2,3],
+                                "argSelect2" : [1],
+                                "argOrder" : "ALTER",
+                                "argSetSemanticsLeft" : false,
+                                "argSetSemanticsRight" : false
+                        },
+                        {
+                                "opId" : 46,
+                                "opName" : "spJoinL2",
+                                "opType" : "ShuffleProducer",
+                                "argChild" : 45,
+                                "argPf" : {
+                                        "type" : "MultiFieldHash",
+                                        "indexes" : [0,1]
+                                }
+                        }
+                        ]
+        }
+    ],
+    "logicalRa": "",
+    "rawQuery": "Anc(b,a,1) :- Cite(b,a); Anc(b,a,$Min(depth+1)) :- Anc(p,b,depth),Cite(b,a); LCA(p1,p2,$Min(greater(d1,d2),year,a)) :- Anc(p1,a,d1), Anc(p2,a,d2), Paper(a,year), p1<p2;"
+}
