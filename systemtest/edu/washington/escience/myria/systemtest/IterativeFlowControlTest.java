@@ -52,22 +52,15 @@ public class IterativeFlowControlTest extends SystemTestBase {
   private final int numTbl1Worker2 = 200;
 
   @Override
-  public Map<String, String> getMasterConfigurations() {
-    HashMap<String, String> masterConfigurations = new HashMap<String, String>();
-    masterConfigurations.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY, "2");
-    masterConfigurations.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER, "1");
-    return masterConfigurations;
+  public Map<String, String> getRuntimeConfigurations() {
+    HashMap<String, String> configurations = new HashMap<String, String>();
+    configurations.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY, "2");
+    configurations.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER, "1");
+    return configurations;
   }
 
-  @Override
-  public Map<String, String> getWorkerConfigurations() {
-    HashMap<String, String> workerConfigurations = new HashMap<String, String>();
-    workerConfigurations.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY, "2");
-    workerConfigurations.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER, "1");
-    return workerConfigurations;
-  }
-
-  public TupleBatchBuffer getAJoinResult(TupleBatchBuffer startWith, TupleBatchBuffer multiWith, Schema schema) {
+  public TupleBatchBuffer getAJoinResult(final TupleBatchBuffer startWith, final TupleBatchBuffer multiWith,
+      final Schema schema) {
 
     final Iterator<List<? extends Column<?>>> iter1 = startWith.getAllAsRawColumn().iterator();
     boolean s[][] = new boolean[MaxID][MaxID];
@@ -363,8 +356,8 @@ public class IterativeFlowControlTest extends SystemTestBase {
 
   }
 
-  public TupleBatchBuffer getCircularJoinResult(TupleBatchBuffer a, TupleBatchBuffer b, TupleBatchBuffer c,
-      Schema schema) {
+  public TupleBatchBuffer getCircularJoinResult(final TupleBatchBuffer a, final TupleBatchBuffer b,
+      final TupleBatchBuffer c, final Schema schema) {
 
     final Iterator<List<? extends Column<?>>> iter1 = a.getAllAsRawColumn().iterator();
     boolean s1[][] = new boolean[MaxID][MaxID];

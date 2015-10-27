@@ -28,19 +28,11 @@ import edu.washington.escience.myria.util.TestUtils;
 public class FlowControlTest extends SystemTestBase {
 
   @Override
-  public Map<String, String> getMasterConfigurations() {
-    HashMap<String, String> masterConfigurations = new HashMap<String, String>();
-    masterConfigurations.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY, "2");
-    masterConfigurations.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER, "1");
-    return masterConfigurations;
-  }
-
-  @Override
-  public Map<String, String> getWorkerConfigurations() {
-    HashMap<String, String> workerConfigurations = new HashMap<String, String>();
-    workerConfigurations.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY, "2");
-    workerConfigurations.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER, "1");
-    return workerConfigurations;
+  public Map<String, String> getRuntimeConfigurations() {
+    HashMap<String, String> configurations = new HashMap<String, String>();
+    configurations.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY, "2");
+    configurations.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER, "1");
+    return configurations;
   }
 
   @Test

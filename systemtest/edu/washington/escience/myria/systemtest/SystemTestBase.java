@@ -260,11 +260,7 @@ public class SystemTestBase {
     after();
   }
 
-  public Map<String, String> getMasterConfigurations() {
-    return Collections.<String, String> emptyMap();
-  }
-
-  public Map<String, String> getWorkerConfigurations() {
+  public Map<String, String> getRuntimeConfigurations() {
     return Collections.<String, String> emptyMap();
   }
 
@@ -290,10 +286,11 @@ public class SystemTestBase {
 
   /**
    * 
+   * @param runtimeConfs runtime configurations
    * @return the path to the config file
    * @throws IOException IOException
    */
-  private static String generateTestConfFile(final String directoryName) throws IOException {
+  private static String generateTestConfFile(final Map<String, String> runtimeConfs) throws IOException {
     MyriaConfiguration config = MyriaConfiguration.newConfiguration();
     config.setValue("deployment", MyriaSystemConfigKeys.DEPLOYMENT_PATH, testBaseFolder);
     config.setValue("deployment", MyriaSystemConfigKeys.DESCRIPTION, DESCRIPTION);
@@ -302,6 +299,9 @@ public class SystemTestBase {
     config.setValue("master", MyriaConstants.MASTER_ID + "", "localhost:8001");
     config.setValue("workers", workerIDs[0] + "", "localhost:" + workerPorts[0]);
     config.setValue("workers", workerIDs[1] + "", "localhost:" + workerPorts[1]);
+    for (Map.Entry<String, String> conf : runtimeConfs.entrySet()) {
+      config.setValue("runtime", conf.getKey(), conf.getValue());
+    }
     Files.createDirectories(Paths.get(workingDir));
     File configFile = Paths.get(workingDir, MyriaConstants.DEPLOYMENT_CONF_FILE).toFile();
     config.write(configFile);
@@ -336,7 +336,7 @@ public class SystemTestBase {
       createPathToWorkerDir(workerIDs[i]);
       i++;
     }
-    final String configFile = generateTestConfFile(testBaseFolder);
+    final String configFile = generateTestConfFile(getRuntimeConfigurations());
     ConfigFileGenerator.makeWorkerConfigFiles(configFile, workingDir);
 
     if (!AvailablePortFinder.available(masterPort)) {
