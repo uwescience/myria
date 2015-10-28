@@ -96,7 +96,7 @@ ext.jerseyVersion = "2.14"
 ext.swaggerVersion = "2.11"
 ext.swaggerMinorVersion = "1.3.11"
 ext.jmxetricsVersion = "1.0.8"
-ext.reefVersion = "0.12.0-incubating"
+ext.reefVersion = "0.13.0-incubating"
 
 dependencies {
   compile ("org.apache.hadoop:hadoop-core:1.2.1") {
