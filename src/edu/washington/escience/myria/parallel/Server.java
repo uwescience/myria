@@ -336,47 +336,67 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
           Thread.currentThread().interrupt();
           return;
         }
-        // immediately notify all workers
-        for (int removeNotifyWorkerId : removeWorkerWorkersToNotify.get(workerId)) {
-          connectionPool.sendShortMessage(removeNotifyWorkerId, IPCUtils.removeWorkerTM(workerId));
+        // if all workers are dead, immediately send REMOVE_WORKER_ACK to driver to avoid deadlock
+        if (aliveWorkers.size() == 0) {
+          LOGGER
+              .warn("Driver reported all workers as dead, immediately sending REMOVE_WORKER_ACK to driver without waiting for workers to acknowledge.");
+          final TransportMessage ack = IPCUtils.removeWorkerAckTM(workerId);
+          enqueueDriverMessage(TaskMessage.from(MyriaConstants.MASTER_ID + "", ack.toByteArray()));
+        } else {
+          // We must ack to the driver in the REMOVE_WORKER_ACK message handler, after we have
+          // received all expected acks. Note that we check for liveness when we determine the
+          // outstanding acks, so a dead worker cannot delay acking REMOVE_WORKER to the driver
+          // indefinitely.
+          for (int removeNotifyWorkerId : removeWorkerWorkersToNotify.get(workerId)) {
+            connectionPool
+                .sendShortMessage(removeNotifyWorkerId, IPCUtils.removeWorkerTM(workerId));
+          }
         }
-        // We must ack to the driver in the REMOVE_WORKER_ACK message handler, after we have
-        // received all expected acks. Note that we check for liveness when we determine the
-        // outstanding acks, so a dead worker cannot delay acking REMOVE_WORKER to the driver
-        // indefinitely.
+
       }
         break;
 
       case ADD_WORKER: {
         Preconditions.checkState(!aliveWorkers.contains(workerId));
         LOGGER.info("Driver wants to add worker {} to alive workers.", workerId);
-        // We must take a snapshot of workers who acked the last REMOVE_WORKER for this worker
-        // before we install addWorkerWorkersToNotify, so that we do not send ADD_WORKER for this
-        // worker to any worker which might have been sent ADD_WORKER for this worker in the
-        // REMOVE_WORKER_ACK message handler.
-        Set<Integer> removeWorkersAcked = removeWorkerAckedWorkers.get(workerId);
-        // Take snapshot of workers alive when this message was received (this also installs a set
-        // of workers to send an ADD_WORKER message for this worker in the REMOVE_MESSAGE_ACK
-        // message handler).
-        addWorkerWorkersToNotify.putAll(workerId, ImmutableSet.copyOf(aliveWorkers));
-        // we always reuse the host/port for a recovered worker
-        connectionPool.putRemote(workerId, workers.get(workerId));
-        // This excludes from immediate notification all workers which acked REMOVE_WORKER for this
-        // worker before we installed addWorkerWorkersToNotify for this worker. This guarantees that
-        // no worker which was sent ADD_WORKER for this worker in the REMOVE_WORKER_ACK message
-        // handler will be sent ADD_WORKER for this worker again.
-        Set<Integer> removeWorkersPendingAck =
-            Sets.difference(removeWorkerWorkersToNotify.get(workerId), removeWorkersAcked);
-        Set<Integer> addWorkersToNotifyImmediately =
-            Sets.difference(addWorkerWorkersToNotify.get(workerId), removeWorkersPendingAck);
-        for (Integer workerToNotifyId : addWorkersToNotifyImmediately) {
-          connectionPool.sendShortMessage(workerToNotifyId,
-              IPCUtils.addWorkerTM(workerId, workers.get(workerId)));
+        // if all workers are dead, immediately send ADD_WORKER_ACK to driver to avoid deadlock
+        if (aliveWorkers.size() == 0) {
+          LOGGER
+              .warn("Driver reported all workers as dead, immediately sending ADD_WORKER_ACK to driver without waiting for workers to acknowledge.");
+          final TransportMessage ack = IPCUtils.addWorkerAckTM(workerId);
+          enqueueDriverMessage(TaskMessage.from(MyriaConstants.MASTER_ID + "", ack.toByteArray()));
+        } else {
+          // We must take a snapshot of workers who acked the last REMOVE_WORKER for this worker
+          // before we install addWorkerWorkersToNotify, so that we do not send ADD_WORKER for this
+          // worker to any worker which might have been sent ADD_WORKER for this worker in the
+          // REMOVE_WORKER_ACK message handler.
+          Set<Integer> removeWorkersAcked = removeWorkerAckedWorkers.get(workerId);
+          // Take snapshot of workers alive when this message was received (this also installs a set
+          // of workers to send an ADD_WORKER message for this worker in the REMOVE_MESSAGE_ACK
+          // message handler).
+          addWorkerWorkersToNotify.putAll(workerId, ImmutableSet.copyOf(aliveWorkers));
+          // we always reuse the host/port for a recovered worker
+          connectionPool.putRemote(workerId, workers.get(workerId));
+          // This excludes from immediate notification all workers which acked REMOVE_WORKER for
+          // this
+          // worker before we installed addWorkerWorkersToNotify for this worker. This guarantees
+          // that
+          // no worker which was sent ADD_WORKER for this worker in the REMOVE_WORKER_ACK message
+          // handler will be sent ADD_WORKER for this worker again.
+          Set<Integer> removeWorkersPendingAck =
+              Sets.difference(removeWorkerWorkersToNotify.get(workerId), removeWorkersAcked);
+          Set<Integer> addWorkersToNotifyImmediately =
+              Sets.difference(addWorkerWorkersToNotify.get(workerId), removeWorkersPendingAck);
+          for (Integer workerToNotifyId : addWorkersToNotifyImmediately) {
+            connectionPool.sendShortMessage(workerToNotifyId,
+                IPCUtils.addWorkerTM(workerId, workers.get(workerId)));
+          }
+          // Even if we were able to notify all workers immediately, we must still wait for all acks
+          // before we can mark the new worker as alive and ack to the driver, so this must be done
+          // in the ADD_WORKER_ACK message handler. Note that we check for liveness when we
+          // determine the outstanding acks, so a dead worker cannot delay adding the new worker
+          // indefinitely.
         }
-        // Even if we were able to notify all workers immediately, we must still wait for all acks
-        // before we can mark the new worker as alive and ack to the driver, so this must be done in
-        // the ADD_WORKER_ACK message handler. Note that we check for liveness when we determine the
-        // outstanding acks, so a dead worker cannot delay adding the new worker indefinitely.
       }
         break;
 
