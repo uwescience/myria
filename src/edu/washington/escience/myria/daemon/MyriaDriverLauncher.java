@@ -33,7 +33,7 @@ import edu.washington.escience.myria.daemon.MyriaDriver.CompletedEvaluatorHandle
 import edu.washington.escience.myria.daemon.MyriaDriver.CompletedTaskHandler;
 import edu.washington.escience.myria.daemon.MyriaDriver.ContextFailureHandler;
 import edu.washington.escience.myria.daemon.MyriaDriver.EvaluatorAllocatedHandler;
-import edu.washington.escience.myria.daemon.MyriaDriver.EvaluatorFailedHandler;
+import edu.washington.escience.myria.daemon.MyriaDriver.EvaluatorFailureHandler;
 import edu.washington.escience.myria.daemon.MyriaDriver.RunningTaskHandler;
 import edu.washington.escience.myria.daemon.MyriaDriver.StartHandler;
 import edu.washington.escience.myria.daemon.MyriaDriver.StopHandler;
@@ -82,7 +82,7 @@ public final class MyriaDriverLauncher {
             .set(DriverConfiguration.ON_DRIVER_STOP, StopHandler.class)
             .set(DriverConfiguration.ON_EVALUATOR_ALLOCATED, EvaluatorAllocatedHandler.class)
             .set(DriverConfiguration.ON_EVALUATOR_COMPLETED, CompletedEvaluatorHandler.class)
-            .set(DriverConfiguration.ON_EVALUATOR_FAILED, EvaluatorFailedHandler.class)
+            .set(DriverConfiguration.ON_EVALUATOR_FAILED, EvaluatorFailureHandler.class)
             .set(DriverConfiguration.ON_CONTEXT_ACTIVE, ActiveContextHandler.class)
             .set(DriverConfiguration.ON_CONTEXT_FAILED, ContextFailureHandler.class)
             .set(DriverConfiguration.ON_TASK_RUNNING, RunningTaskHandler.class)

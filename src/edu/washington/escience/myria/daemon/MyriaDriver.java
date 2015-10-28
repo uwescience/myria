@@ -366,7 +366,7 @@ public final class MyriaDriver {
 
   private ConcurrentMap<Integer, TaskState> getWorkerStates() {
     final ConcurrentMap<Integer, TaskState> workerStates =
-        new ConcurrentHashMap<>(workerConfs.size());
+        new ConcurrentHashMap<>(workerConfs.size() + 1);
     workerStates.put(MyriaConstants.MASTER_ID, TaskState.PENDING_EVALUATOR_REQUEST);
     for (Integer workerId : workerConfs.keySet()) {
       workerStates.put(workerId, TaskState.PENDING_EVALUATOR_REQUEST);
@@ -499,7 +499,6 @@ public final class MyriaDriver {
 
   private void updateFailedWorkerState(final int workerId) {
     if (workerId == MyriaConstants.MASTER_ID) {
-      LOGGER.error("Cannot recover from coordinator failure, shutting down...");
       throw new RuntimeException("Shutting down driver on coordinator failure");
     } else if (state == DriverState.PREPARING_WORKERS) {
       int pendingWorkers = numberWorkersPending.incrementAndGet();
@@ -579,12 +578,11 @@ public final class MyriaDriver {
   final class CompletedEvaluatorHandler implements EventHandler<CompletedEvaluator> {
     @Override
     public void onNext(final CompletedEvaluator eval) {
-      LOGGER.error("Unexpected CompletedTask: {}", eval.getId());
-      throw new IllegalStateException();
+      throw new IllegalStateException("Unexpected CompletedEvaluator: " + eval.getId());
     }
   }
 
-  final class EvaluatorFailedHandler implements EventHandler<FailedEvaluator> {
+  final class EvaluatorFailureHandler implements EventHandler<FailedEvaluator> {
     @Override
     public void onNext(final FailedEvaluator failedEvaluator) {
       LOGGER.warn("FailedEvaluator: {}", failedEvaluator);
@@ -597,8 +595,8 @@ public final class MyriaDriver {
         int workerId = Integer.valueOf(failedContext.getId());
         doTransition(workerId, TaskStateEvent.EVALUATOR_FAILED, failedEvaluator);
       } else {
-        LOGGER.error("Could not find worker ID for failed evaluator: {}", failedEvaluator);
-        throw new IllegalStateException();
+        throw new IllegalStateException("Could not find worker ID for failed evaluator: "
+            + failedEvaluator);
       }
     }
   }
@@ -634,8 +632,7 @@ public final class MyriaDriver {
   final class CompletedTaskHandler implements EventHandler<CompletedTask> {
     @Override
     public void onNext(final CompletedTask task) {
-      LOGGER.error("Unexpected CompletedTask: {}", task.getId());
-      throw new IllegalStateException();
+      throw new IllegalStateException("Unexpected CompletedTask: " + task.getId());
     }
   }
 
