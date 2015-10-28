@@ -540,7 +540,7 @@ public final class MyriaDriver {
    */
   final class StartHandler implements EventHandler<StartTime> {
     @Override
-    public synchronized void onNext(final StartTime startTime) {
+    public void onNext(final StartTime startTime) {
       LOGGER.info("Driver started at {}", startTime);
       Preconditions.checkState(state == DriverState.INIT);
       state = DriverState.PREPARING_MASTER;
@@ -557,7 +557,7 @@ public final class MyriaDriver {
    */
   final class StopHandler implements EventHandler<StopTime> {
     @Override
-    public synchronized void onNext(final StopTime stopTime) {
+    public void onNext(final StopTime stopTime) {
       LOGGER.info("Driver stopped at {}", stopTime);
       for (final RunningTask task : tasksByWorkerId.values()) {
         task.getActiveContext().close();
@@ -567,7 +567,7 @@ public final class MyriaDriver {
 
   final class EvaluatorAllocatedHandler implements EventHandler<AllocatedEvaluator> {
     @Override
-    public synchronized void onNext(final AllocatedEvaluator evaluator) {
+    public void onNext(final AllocatedEvaluator evaluator) {
       String node = evaluator.getEvaluatorDescriptor().getNodeDescriptor().getName();
       LOGGER.info("Allocated evaluator {} on node {}", evaluator.getId(), node);
       Integer workerId = workerIdsPendingEvaluatorAllocation.poll();
@@ -578,7 +578,7 @@ public final class MyriaDriver {
 
   final class CompletedEvaluatorHandler implements EventHandler<CompletedEvaluator> {
     @Override
-    public synchronized void onNext(final CompletedEvaluator eval) {
+    public void onNext(final CompletedEvaluator eval) {
       LOGGER.error("Unexpected CompletedTask: {}", eval.getId());
       throw new IllegalStateException();
     }
@@ -586,7 +586,7 @@ public final class MyriaDriver {
 
   final class EvaluatorFailedHandler implements EventHandler<FailedEvaluator> {
     @Override
-    public synchronized void onNext(final FailedEvaluator failedEvaluator) {
+    public void onNext(final FailedEvaluator failedEvaluator) {
       LOGGER.warn("FailedEvaluator: {}", failedEvaluator);
       // respawn evaluator and reschedule task if configured
       List<FailedContext> failedContexts = failedEvaluator.getFailedContextList();
@@ -605,7 +605,7 @@ public final class MyriaDriver {
 
   final class ActiveContextHandler implements EventHandler<ActiveContext> {
     @Override
-    public synchronized void onNext(final ActiveContext context) {
+    public void onNext(final ActiveContext context) {
       String host = context.getEvaluatorDescriptor().getNodeDescriptor().getName();
       LOGGER.info("Context {} available on node {}", context.getId(), host);
       int workerId = Integer.valueOf(context.getId());
@@ -615,7 +615,7 @@ public final class MyriaDriver {
 
   final class ContextFailureHandler implements EventHandler<FailedContext> {
     @Override
-    public synchronized void onNext(final FailedContext failedContext) {
+    public void onNext(final FailedContext failedContext) {
       LOGGER.error("FailedContext: {}", failedContext);
       int workerId = Integer.valueOf(failedContext.getId());
       doTransition(workerId, TaskStateEvent.CONTEXT_FAILED, failedContext);
@@ -624,7 +624,7 @@ public final class MyriaDriver {
 
   final class RunningTaskHandler implements EventHandler<RunningTask> {
     @Override
-    public synchronized void onNext(final RunningTask task) {
+    public void onNext(final RunningTask task) {
       LOGGER.info("Running task: {}", task.getId());
       int workerId = Integer.valueOf(task.getId());
       doTransition(workerId, TaskStateEvent.TASK_RUNNING, task);
@@ -633,7 +633,7 @@ public final class MyriaDriver {
 
   final class CompletedTaskHandler implements EventHandler<CompletedTask> {
     @Override
-    public synchronized void onNext(final CompletedTask task) {
+    public void onNext(final CompletedTask task) {
       LOGGER.error("Unexpected CompletedTask: {}", task.getId());
       throw new IllegalStateException();
     }
@@ -641,7 +641,7 @@ public final class MyriaDriver {
 
   final class TaskFailureHandler implements EventHandler<FailedTask> {
     @Override
-    public synchronized void onNext(final FailedTask failedTask) {
+    public void onNext(final FailedTask failedTask) {
       LOGGER.warn("FailedTask (ID {}): {}\n{}", failedTask.getId(), failedTask.getMessage(),
           failedTask.getReason());
       int workerId = Integer.valueOf(failedTask.getId());
