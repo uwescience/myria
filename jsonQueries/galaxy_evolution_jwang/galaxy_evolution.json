@@ -1,0 +1,415 @@
+{
+	"fragments": 
+	[
+		{
+			"operators": 
+			[
+			{
+				"opId" : 1,
+				"opName" : "eoiReceiverG",
+				"opType" : "Consumer",
+				"argOperatorId" : 25
+			},
+			{
+				"opId" : 2,
+				"opName" : "eoiReceiverE",
+				"opType" : "Consumer",
+				"argOperatorId" : 20
+			},
+			{
+				"opId" : 3,
+				"opName" : "merge",
+				"opType" : "UnionAll",
+				"argChildren" : [1, 2]
+			},
+			{
+				"opId" : 4,
+				"opName" : "eosController",
+				"opType" : "EOSController",
+				"argChild" : 3
+			}
+			],
+			"overrideWorkers": 
+			[
+				1
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"opId" : 5,
+				"opName" : "scanG",
+				"opType" : "TableScan",
+				"relationKey" : {
+					"userName" : "jwang",
+					"programName" : "galaxy_evolution",
+					"relationName" : "galaxies_of_interest"
+				}
+			},
+			{
+				"opId" : 6,
+				"opName" : "spG",
+				"opType" : "ShuffleProducer",
+				"argChild" : 5,
+				"argPf" : {
+					"type" : "MultiFieldHash",
+					"indexes" : [0, 1]
+				}
+			}
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"opId" : 11,
+				"opName" : "scanP",
+				"opType" : "TableScan",
+				"relationKey" : {
+					"userName" : "jwang",
+					"programName" : "galaxy_evolution",
+					"relationName" : "particles"
+				}
+			},
+			{
+				"opId" : 12,
+				"opName" : "mpP",
+				"opType" : "LocalMultiwayProducer",
+				"argChild" : 11
+			}
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"opId" : 13,
+				"opName" : "mcP1",
+				"opType" : "LocalMultiwayConsumer",
+				"argOperatorId" : 12
+			},
+			{
+				"opId" : 14,
+				"opName" : "spP1",
+				"opType" : "ShuffleProducer",
+				"argChild" : 13,
+				"argPf" : {
+					"type" : "MultiFieldHash",
+					"indexes" : [2, 1]
+				}
+			}
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"opId" : 15,
+				"opName" : "mcP2",
+				"opType" : "LocalMultiwayConsumer",
+				"argOperatorId" : 12
+			},
+			{
+				"opId" : 35,
+				"opName" : "applyE",
+				"opType" : "Apply",
+				"argChild" : 15,
+                "emitExpressions": [
+        	    {
+        	      	"outputName": "pid",
+       		       	"rootExpressionOperator": 
+					{
+	                   	"type": "VARIABLE",
+               	       	"columnIdx": 0
+           		  	}
+   		        },
+        	    {
+        	      	"outputName": "gid",
+       		       	"rootExpressionOperator": 
+					{
+	                   	"type": "VARIABLE",
+               	       	"columnIdx": 1
+           		  	}
+   		        },
+   				{
+       				"outputName": "time",
+		      	    "rootExpressionOperator": 
+					{
+   			       		"type": "MINUS",
+						"left": {
+							"type": "VARIABLE",
+							"columnIdx": 2
+						},
+				        "right": {
+							"value": "1",
+							"type": "CONSTANT",
+							"valueType": "INT_TYPE"
+						}
+					}
+	            }
+				]
+			},
+			{
+				"opId" : 16,
+				"opName" : "spP2",
+				"opType" : "ShuffleProducer",
+				"argChild" : 35,
+				"argPf" : {
+					"type" : "MultiFieldHash",
+					"indexes" : [2, 0]
+				}
+			}
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"opId" : 17,
+				"opType" : "Empty",
+				"schema" : {
+      				"columnTypes" : ["LONG_TYPE", "LONG_TYPE", "LONG_TYPE", "LONG_TYPE"],
+	      			"columnNames" : ["time", "gid1", "gid2", "pid"]
+		    	}
+			},
+			{
+				"opId" : 41,
+				"opName" : "scJoinE2",
+				"opType" : "ShuffleConsumer",
+				"argOperatorId" : 40
+			},
+			{
+				"opId" : 19,
+				"opName" : "eosE",
+				"opType" : "Consumer",
+				"argOperatorId" : 4
+			},
+			{
+				"opId" : 20,
+				"opName" : "idbE",
+				"opType" : "IDBController",
+				"argSelfIdbId" : "0",
+				"argInitialInput" : 17,
+				"argIterationInput" : 41,
+				"argState" : {
+					"type" : "CountFilter",
+					"keyColIndices": [0,1,2],
+					"threshold": 4
+				},
+                "relationKey": {
+                    "programName": "galaxy_evolution",
+                    "relationName": "result",
+                    "userName": "jwang"
+                },
+				"argEosControllerInput" : 19
+			},
+			{
+				"opId" : 21,
+				"opName" : "spE",
+				"opType" : "ShuffleProducer",
+				"argChild" : 20,
+				"argPf" : {
+					"type" : "MultiFieldHash",
+					"indexes" : [0,1]
+				}
+			}
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"opId" : 22,
+				"opName" : "scG",
+				"opType" : "ShuffleConsumer",
+				"argOperatorId" : 6
+			},
+			{
+				"opId" : 23,
+				"opName" : "scJoinG",
+				"opType" : "ShuffleConsumer",
+				"argOperatorId" : 33
+			},
+			{
+				"opId" : 24,
+				"opName" : "eosG",
+				"opType" : "Consumer",
+				"argOperatorId" : 4
+			},
+			{
+				"opId" : 25,
+				"opName" : "idbG",
+				"opType" : "IDBController",
+				"argSelfIdbId" : "1",
+				"argInitialInput" : 22,
+				"argIterationInput" : 23,
+				"argState" : {
+					"type" : "DupElim"
+				},
+				"argEosControllerInput" : 24
+			},
+			{
+				"opId" : 26,
+				"opName" : "mpG",
+				"opType" : "LocalMultiwayProducer",
+				"argChild" : 25
+			}
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"opId" : 27,
+				"opName" : "mcG1",
+				"opType" : "LocalMultiwayConsumer",
+				"argOperatorId" : 26
+			},
+			{
+				"opId" : 28,
+				"opName" : "scE",
+				"opType" : "ShuffleConsumer",
+				"argOperatorId" : 21
+			},
+			{
+				"opId" : 31,
+				"opName" : "joinG",
+				"opType" : "SymmetricHashJoin",
+				"argChild1" : 27,
+				"argChild2" : 28,
+				"argColumns1" : [0,1],
+				"argColumns2" : [0,1],
+				"argSelect1" : [0],
+				"argSelect2" : [2],
+				"argSetSemanticsLeft" : false,
+				"argSetSemanticsRight" : false
+			},
+			{
+				"opId" : 32,
+				"opName" : "applyG",
+				"opType" : "Apply",
+				"argChild" : 31,
+	                "emitExpressions": [
+       				{
+   	       				"outputName": "time",
+			      	    "rootExpressionOperator": 
+						{
+       			       		"type": "PLUS",
+							"left": {
+								"type": "VARIABLE",
+								"columnIdx": 0
+							},
+					        "right": {
+								"value": "1",
+								"type": "CONSTANT",
+								"valueType": "INT_TYPE"
+							}
+						}
+		            },
+	        	    {
+	        	      	"outputName": "grpid",
+        		       	"rootExpressionOperator": 
+						{
+		                   	"type": "VARIABLE",
+                	       	"columnIdx": 1
+               		  	}
+      		        }
+				]
+			},
+			{
+				"opId" : 33,
+				"opName" : "spJoinG",
+				"opType" : "ShuffleProducer",
+				"argChild" : 32,
+				"argPf" : {
+					"type" : "MultiFieldHash",
+					"indexes" : [0,1]
+				}
+			}
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"opId" : 29,
+				"opName" : "mcG2",
+				"opType" : "LocalMultiwayConsumer",
+				"argOperatorId" : 26
+			},
+			{
+				"opId" : 30,
+				"opName" : "scP1",
+				"opType" : "ShuffleConsumer",
+				"argOperatorId" : 14
+			},
+			{
+				"opId" : 34,
+				"opName" : "joinE1",
+				"opType" : "SymmetricHashJoin",
+				"argChild1" : 29,
+				"argChild2" : 30,
+				"argColumns1" : [0,1],
+				"argColumns2" : [2,1],
+				"argSelect1" : [0,1],
+				"argSelect2" : [0],
+				"argSetSemanticsLeft" : false,
+				"argSetSemanticsRight" : false
+			},
+			{
+				"opId" : 36,
+				"opName" : "spJoinE1",
+				"opType" : "ShuffleProducer",
+				"argChild" : 34,
+				"argPf" : {
+					"type" : "MultiFieldHash",
+					"indexes" : [0,2]
+				}
+			}
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"opId" : 37,
+				"opName" : "scJoinE1",
+				"opType" : "ShuffleConsumer",
+				"argOperatorId" : 36
+			},
+			{
+				"opId" : 38,
+				"opName" : "scP2",
+				"opType" : "ShuffleConsumer",
+				"argOperatorId" : 16
+			},
+			{
+				"opId" : 39,
+				"opName" : "joinE2",
+				"opType" : "SymmetricHashJoin",
+				"argChild1" : 37,
+				"argChild2" : 38,
+				"argColumns1" : [0,2],
+				"argColumns2" : [2,0],
+				"argSelect1" : [0,1],
+				"argSelect2" : [1,0],
+				"argSetSemanticsLeft" : false,
+				"argSetSemanticsRight" : false
+			},
+			{
+				"opId" : 40,
+				"opName" : "spJoinE2",
+				"opType" : "ShuffleProducer",
+				"argChild" : 39,
+				"argPf" : {
+					"type" : "MultiFieldHash",
+					"indexes" : [0,1,2]
+				}
+			}
+			]
+		}
+	],
+	"logicalRa": "",
+	"rawQuery": "G(1,gid) :- GOfInterest(gid); G(t+1,gid2) :- G(t,gid1), E(t,gid1,gid2,c), c>=threshold; E(t,gid1,gid2,$Count(*)) :- G(t,gid1),P(pid,gid1,t),P(pid,gid2,t+1);"
+}
