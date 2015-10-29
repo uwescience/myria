@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.operator;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
@@ -113,7 +114,7 @@ public final class CountFilter extends StreamingState {
         toRemove.set(i);
       }
     }
-    return tb.filterOut(toRemove);
+    return tb.filterOut(toRemove).selectColumns(keyColIndices);
   }
 
   @Override
@@ -146,7 +147,20 @@ public final class CountFilter extends StreamingState {
 
   @Override
   public List<TupleBatch> exportState() {
-    return uniqueTuples.getAll();
+    List<TupleBatch> tbs = uniqueTuples.getAll();
+    List<TupleBatch> ret = new ArrayList<TupleBatch>();
+    int row = 0;
+    for (TupleBatch tb : tbs) {
+      final BitSet toRemove = new BitSet(tb.numTuples());
+      for (int i = 0; i < tb.numTuples(); ++i) {
+        if (tupleCounts.getInt(0, row) < threshold) {
+          toRemove.set(i);
+        }
+        row++;
+      }
+      ret.add(tb.filterOut(toRemove));
+    }
+    return ret;
   }
 
   /**

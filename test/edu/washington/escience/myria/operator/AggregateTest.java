@@ -177,7 +177,7 @@ public class AggregateTest {
     for (int i = 0; i < colsToKeep.length; ++i) {
       colsToKeep[i] = i + 1;
     }
-    return tb.selectColumns(colsToKeep, tb.getSchema().getSubSchema(colsToKeep));
+    return tb.selectColumns(colsToKeep);
   }
 
   @Test

@@ -109,12 +109,8 @@ public class TupleBatch implements ReadableTable, Serializable {
         "Number of columns in data must equal the number of fields in schema");
     for (int i = 0; i < columns.size(); i++) {
       Column<?> column = columns.get(i);
-      Preconditions.checkArgument(
-          numTuples == column.size(),
-          "Incorrect size for column %s. Expected %s tuples, but found %s tuples.",
-          i,
-          numTuples,
-          column.size());
+      Preconditions.checkArgument(numTuples == column.size(),
+          "Incorrect size for column %s. Expected %s tuples, but found %s tuples.", i, numTuples, column.size());
     }
     this.numTuples = numTuples;
     this.isEOI = isEOI;
@@ -283,16 +279,15 @@ public class TupleBatch implements ReadableTable, Serializable {
    * Internal implementation of a (non-duplicate-eliminating) PROJECT statement.
    *
    * @param remainingColumns zero-indexed array of columns to retain.
-   * @param resultSchema computing a schema every time is usually not necessary
    * @return a projected TupleBatch.
    */
-  public final TupleBatch selectColumns(final int[] remainingColumns, final Schema resultSchema) {
+  public final TupleBatch selectColumns(final int[] remainingColumns) {
     Objects.requireNonNull(remainingColumns);
     final ImmutableList.Builder<Column<?>> newColumns = new ImmutableList.Builder<Column<?>>();
     for (final int i : remainingColumns) {
       newColumns.add(columns.get(i));
     }
-    return new TupleBatch(resultSchema, newColumns.build(), numTuples, isEOI);
+    return new TupleBatch(getSchema().getSubSchema(remainingColumns), newColumns.build(), numTuples, isEOI);
   }
 
   /**
