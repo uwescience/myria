@@ -1,20 +1,22 @@
 package edu.washington.escience.myria.operator;
 
+import java.util.List;
+
 import edu.washington.escience.myria.Schema;
 
 /**
  */
 public interface StreamingStateful {
   /**
-   * set its streaming state.
-   *
-   * @param state the streaming state.
+   * set its streaming states.
+   * 
+   * @param states the streaming states.
    * */
-  void setStreamingState(final StreamingState state);
+  void setStreamingStates(final List<StreamingState> states);
 
-  /** @return its state. */
-  StreamingState getStreamingState();
+  /** @return its states. */
+  List<StreamingState> getStreamingStates();
 
-  /** @return the output schema. */
-  Schema getSchema();
+  /** @return the schema of the input to the streaming state. */
+  Schema getInputSchema();
 }

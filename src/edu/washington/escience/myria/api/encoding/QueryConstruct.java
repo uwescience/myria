@@ -99,6 +99,7 @@ public class QueryConstruct {
        * setting the threshold to be the number of operators is enough.
        */
     }
+    Preconditions.checkArgument(loopCount < allOperators.size());
     Map<Integer, SubQueryPlan> plan = Maps.newHashMap();
     for (PlanFragmentEncoding fragment : fragments) {
       RootOperator op = instantiateFragment(fragment, args, allOperators);

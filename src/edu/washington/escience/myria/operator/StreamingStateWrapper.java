@@ -1,5 +1,8 @@
 package edu.washington.escience.myria.operator;
 
+import java.util.List;
+
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.Schema;
@@ -21,19 +24,19 @@ public class StreamingStateWrapper extends UnaryOperator implements StreamingSta
   public StreamingStateWrapper(final Operator child, final StreamingState state) {
     super(child);
     if (state != null) {
-      setStreamingState(state);
-      state.setAttachedOperator(this);
+      setStreamingStates(ImmutableList.of(state));
     }
   }
 
   @Override
-  public void setStreamingState(final StreamingState state) {
-    this.state = state;
+  public void setStreamingStates(final List<StreamingState> states) {
+    state = states.get(0);
+    state.setAttachedOperator(this);
   }
 
   @Override
-  public StreamingState getStreamingState() {
-    return state;
+  public List<StreamingState> getStreamingStates() {
+    return ImmutableList.of(state);
   }
 
   @Override
@@ -60,10 +63,15 @@ public class StreamingStateWrapper extends UnaryOperator implements StreamingSta
   }
 
   @Override
-  public Schema generateSchema() {
+  public Schema getInputSchema() {
     if (getChild() == null) {
       return null;
     }
     return getChild().getSchema();
+  }
+
+  @Override
+  public Schema generateSchema() {
+    return state.getSchema();
   }
 }

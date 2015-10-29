@@ -90,7 +90,7 @@ public final class DupElim extends StreamingState {
 
   @Override
   public Schema getSchema() {
-    return getOp().getSchema();
+    return getOp().getInputSchema();
   }
 
   @Override

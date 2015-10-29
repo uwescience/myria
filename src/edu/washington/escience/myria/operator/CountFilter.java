@@ -53,12 +53,17 @@ public final class CountFilter extends StreamingState {
   /** threshold of the count. */
   public final int threshold;
 
+  /** column indices of the key. */
+  private final int[] keyColIndices;
+
   /**
    * @param threshold threshold
+   * @param keyColIndices key column indices.
    */
-  public CountFilter(final int threshold) {
+  public CountFilter(final int threshold, final int[] keyColIndices) {
     Preconditions.checkArgument(threshold >= 0, "threshold needs to be greater than or equal to 0");
     this.threshold = threshold;
+    this.keyColIndices = Arrays.copyOf(keyColIndices, keyColIndices.length);
   }
 
   @Override
@@ -79,13 +84,12 @@ public final class CountFilter extends StreamingState {
     if (numTuples <= 0) {
       return tb;
     }
-    System.out.println(tb);
     doCount.inputTB = tb;
     final List<? extends Column<?>> columns = tb.getDataColumns();
     final BitSet toRemove = new BitSet(numTuples);
     for (int i = 0; i < numTuples; ++i) {
       final int nextIndex = uniqueTuples.numTuples();
-      final int cntHashCode = HashUtils.hashRow(tb, i);
+      final int cntHashCode = HashUtils.hashSubRow(tb, keyColIndices, i);
       IntArrayList tupleIndexList = uniqueTupleIndices.get(cntHashCode);
       if (tupleIndexList == null) {
         tupleIndexList = new IntArrayList();
@@ -96,7 +100,7 @@ public final class CountFilter extends StreamingState {
       doCount.sourceRow = i;
       tupleIndexList.forEach(doCount);
       if (!doCount.found) {
-        for (int j = 0; j < columns.size(); ++j) {
+        for (int j : keyColIndices) {
           uniqueTuples.put(j, columns.get(j), i);
         }
         tupleCounts.put(0, new IntArrayColumn(new int[] { 1 }, 1), 0);
@@ -109,14 +113,16 @@ public final class CountFilter extends StreamingState {
         toRemove.set(i);
       }
     }
-    System.out.println("return");
-    System.out.println(tb.filterOut(toRemove));
     return tb.filterOut(toRemove);
   }
 
   @Override
   public Schema getSchema() {
-    return getOp().getSchema();
+    Schema schema = getOp().getInputSchema();
+    if (schema == null) {
+      return null;
+    }
+    return schema.getSubSchema(keyColIndices);
   }
 
   @Override
@@ -167,7 +173,7 @@ public final class CountFilter extends StreamingState {
 
     @Override
     public void value(final int destRow) {
-      if (TupleUtils.tupleEquals(inputTB, sourceRow, uniqueTuples, destRow)) {
+      if (TupleUtils.tupleEquals(inputTB, keyColIndices, sourceRow, uniqueTuples, destRow)) {
         found = true;
         int oldcount = tupleCounts.getInt(0, destRow);
         if (oldcount < threshold) {
@@ -189,6 +195,6 @@ public final class CountFilter extends StreamingState {
 
   @Override
   public StreamingState newInstanceFromMyself() {
-    return new CountFilter(threshold);
+    return new CountFilter(threshold, keyColIndices);
   }
 }

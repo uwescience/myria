@@ -183,7 +183,7 @@ public final class KeepAndSortOnMinValue extends StreamingState {
 
   @Override
   public Schema getSchema() {
-    return getOp().getSchema();
+    return getOp().getInputSchema();
   }
 
   @Override

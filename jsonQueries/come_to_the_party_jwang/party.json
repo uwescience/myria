@@ -172,6 +172,7 @@
                     "argState":
                     {
                         "type": "CountFilter",
+						"keyColIndices": [0],
 						"threshold": 3
                     },
                     "argIterationInput": 19,

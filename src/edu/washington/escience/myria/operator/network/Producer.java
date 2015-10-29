@@ -12,6 +12,7 @@ import com.google.common.collect.ImmutableMap;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMode;
+import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.KeepAndSortOnMinValue;
 import edu.washington.escience.myria.operator.KeepMinValue;
@@ -19,6 +20,7 @@ import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SimpleAppender;
 import edu.washington.escience.myria.operator.StreamingState;
+import edu.washington.escience.myria.operator.StreamingStateful;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.LocalFragmentResourceManager;
 import edu.washington.escience.myria.parallel.QueryExecutionMode;
@@ -35,7 +37,7 @@ import edu.washington.escience.myria.util.MyriaArrayUtils;
  * A Producer is the counterpart of a consumer. It dispatch data using IPC channels to Consumers. Like network socket,
  * Each (workerID, operatorID) pair is a logical destination.
  * */
-public abstract class Producer extends RootOperator {
+public abstract class Producer extends RootOperator implements StreamingStateful {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -270,6 +272,27 @@ public abstract class Producer extends RootOperator {
     ioChannelsAvail[i] = true;
   }
 
+  @Override
+  public Schema getInputSchema() {
+    if (getChild() != null) {
+      return getChild().getSchema();
+    }
+    return null;
+  }
+
+  @Override
+  public List<StreamingState> getStreamingStates() {
+    return triedToSendTuples;
+  }
+
+  @Override
+  public void setStreamingStates(final List<StreamingState> states) {
+    triedToSendTuples = states;
+    for (StreamingState state : states) {
+      state.setAttachedOperator(this);
+    }
+  }
+
   /**
    * set backup buffers as KeepMinValue.
    *
@@ -277,11 +300,11 @@ public abstract class Producer extends RootOperator {
    * @param valueColIndices the same as the one in KeepMinValue
    */
   public void setBackupBufferAsMin(final int[] keyColIndices, final int[] valueColIndices) {
-    triedToSendTuples = new ArrayList<StreamingState>();
+    List<StreamingState> states = new ArrayList<StreamingState>();
     for (int i = 0; i < outputIDs.length; i++) {
-      triedToSendTuples.add(i, new KeepMinValue(keyColIndices, valueColIndices));
-      triedToSendTuples.get(i).setAttachedOperator(this);
+      states.add(i, new KeepMinValue(keyColIndices, valueColIndices));
     }
+    setStreamingStates(states);
   }
 
   /**
@@ -290,31 +313,30 @@ public abstract class Producer extends RootOperator {
    * @param keyColIndices the same as the one in KeepAndSortOnMinValue
    * @param valueColindices the same as the one in KeepAndSortOnMinValue
    */
-  public void setBackupBufferAsPrioritizedMin(
-      final int[] keyColIndices, final int[] valueColIndices) {
-    triedToSendTuples = new ArrayList<StreamingState>();
+  public void setBackupBufferAsPrioritizedMin(final int[] keyColIndices, final int[] valueColIndices) {
+    List<StreamingState> states = new ArrayList<StreamingState>();
     for (int i = 0; i < outputIDs.length; i++) {
-      triedToSendTuples.add(i, new KeepAndSortOnMinValue(keyColIndices, valueColIndices));
-      triedToSendTuples.get(i).setAttachedOperator(this);
+      states.add(i, new KeepAndSortOnMinValue(keyColIndices, valueColIndices));
     }
+    setStreamingStates(states);
   }
 
   /** set backup buffers as DupElim. */
   public void setBackupBufferAsDupElim() {
-    triedToSendTuples = new ArrayList<StreamingState>();
+    List<StreamingState> states = new ArrayList<StreamingState>();
     for (int i = 0; i < outputIDs.length; i++) {
-      triedToSendTuples.add(i, new DupElim());
-      triedToSendTuples.get(i).setAttachedOperator(this);
+      states.add(i, new DupElim());
     }
+    setStreamingStates(states);
   }
 
   /** set backup buffers as SimpleAppender. */
   public void setBackupBufferAsAppender() {
-    triedToSendTuples = new ArrayList<StreamingState>();
+    List<StreamingState> states = new ArrayList<StreamingState>();
     for (int i = 0; i < outputIDs.length; i++) {
-      triedToSendTuples.add(i, new SimpleAppender());
-      triedToSendTuples.get(i).setAttachedOperator(this);
+      states.add(i, new SimpleAppender());
     }
+    setStreamingStates(states);
   }
 
   /** the number of tuples written to channels. */
