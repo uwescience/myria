@@ -20,6 +20,8 @@ import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.api.encoding.KeepAndSortOnMinValueStateEncoding;
+import edu.washington.escience.myria.api.encoding.KeepMinValueStateEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.operator.DbQueryScan;
@@ -131,10 +133,17 @@ public class ConnectedComponentTest extends SystemTestBase {
         new SingleGroupByAggregate(mc2, 0, new SingleColumnAggregatorFactory(1, AggregationOp.MIN));
     final CollectProducer cp = new CollectProducer(agg, serverOpId, MASTER_ID);
     final GenericShuffleProducer sp3 = new GenericShuffleProducer(join, joinArrayId3, workerIDs, pf0);
+
     if (prioritized) {
-      sp3.setBackupBufferAsPrioritizedMin(new int[] { 0 }, new int[] { 1 });
+      KeepAndSortOnMinValueStateEncoding state = new KeepAndSortOnMinValueStateEncoding();
+      state.keyColIndices = new int[] { 0 };
+      state.valueColIndices = new int[] { 1 };
+      sp3.setBackupBuffer(state);
     } else {
-      sp3.setBackupBufferAsMin(new int[] { 0 }, new int[] { 1 });
+      KeepMinValueStateEncoding state = new KeepMinValueStateEncoding();
+      state.keyColIndices = new int[] { 0 };
+      state.valueColIndices = new int[] { 1 };
+      sp3.setBackupBuffer(state);
     }
 
     List<RootOperator> ret = new ArrayList<RootOperator>();

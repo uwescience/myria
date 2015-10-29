@@ -13,6 +13,13 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.api.encoding.CountFilterStateEncoding;
+import edu.washington.escience.myria.api.encoding.DupElimStateEncoding;
+import edu.washington.escience.myria.api.encoding.KeepAndSortOnMinValueStateEncoding;
+import edu.washington.escience.myria.api.encoding.KeepMinValueStateEncoding;
+import edu.washington.escience.myria.api.encoding.SimpleAppenderStateEncoding;
+import edu.washington.escience.myria.api.encoding.StreamingStateEncoding;
+import edu.washington.escience.myria.operator.CountFilter;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.KeepAndSortOnMinValue;
 import edu.washington.escience.myria.operator.KeepMinValue;
@@ -200,7 +207,7 @@ public abstract class Producer extends RootOperator implements StreamingStateful
       }
     }
     // the default choice.
-    setBackupBufferAsAppender();
+    setBackupBuffer(new SimpleAppenderStateEncoding());
   }
 
   /**
@@ -294,47 +301,33 @@ public abstract class Producer extends RootOperator implements StreamingStateful
   }
 
   /**
-   * set backup buffers as KeepMinValue.
-   *
-   * @param keyColIndices the same as the one in KeepMinValue
-   * @param valueColIndices the same as the one in KeepMinValue
-   */
-  public void setBackupBufferAsMin(final int[] keyColIndices, final int[] valueColIndices) {
-    List<StreamingState> states = new ArrayList<StreamingState>();
-    for (int i = 0; i < outputIDs.length; i++) {
-      states.add(i, new KeepMinValue(keyColIndices, valueColIndices));
+   * set backup buffers.
+   * 
+   * @param stateEncoding the streaming state encoding.
+   * 
+   * */
+  public void setBackupBuffer(final StreamingStateEncoding<?> stateEncoding) {
+    StreamingState state = null;
+    if (stateEncoding instanceof KeepMinValueStateEncoding) {
+      state =
+          new KeepMinValue(((KeepMinValueStateEncoding) stateEncoding).keyColIndices,
+              ((KeepMinValueStateEncoding) stateEncoding).valueColIndices);
+    } else if (stateEncoding instanceof KeepAndSortOnMinValueStateEncoding) {
+      state =
+          new KeepAndSortOnMinValue(((KeepAndSortOnMinValueStateEncoding) stateEncoding).keyColIndices,
+              ((KeepAndSortOnMinValueStateEncoding) stateEncoding).valueColIndices);
+    } else if (stateEncoding instanceof DupElimStateEncoding) {
+      state = new DupElim();
+    } else if (stateEncoding instanceof SimpleAppenderStateEncoding) {
+      state = new SimpleAppender();
+    } else {
+      state =
+          new CountFilter(((CountFilterStateEncoding) stateEncoding).threshold,
+              ((CountFilterStateEncoding) stateEncoding).keyColIndices);
     }
-    setStreamingStates(states);
-  }
-
-  /**
-   * set backup buffers as KeepAndSortOnMinValue.
-   *
-   * @param keyColIndices the same as the one in KeepAndSortOnMinValue
-   * @param valueColindices the same as the one in KeepAndSortOnMinValue
-   */
-  public void setBackupBufferAsPrioritizedMin(final int[] keyColIndices, final int[] valueColIndices) {
     List<StreamingState> states = new ArrayList<StreamingState>();
     for (int i = 0; i < outputIDs.length; i++) {
-      states.add(i, new KeepAndSortOnMinValue(keyColIndices, valueColIndices));
-    }
-    setStreamingStates(states);
-  }
-
-  /** set backup buffers as DupElim. */
-  public void setBackupBufferAsDupElim() {
-    List<StreamingState> states = new ArrayList<StreamingState>();
-    for (int i = 0; i < outputIDs.length; i++) {
-      states.add(i, new DupElim());
-    }
-    setStreamingStates(states);
-  }
-
-  /** set backup buffers as SimpleAppender. */
-  public void setBackupBufferAsAppender() {
-    List<StreamingState> states = new ArrayList<StreamingState>();
-    for (int i = 0; i < outputIDs.length; i++) {
-      states.add(i, new SimpleAppender());
+      states.add(i, state.newInstanceFromMyself());
     }
     setStreamingStates(states);
   }
