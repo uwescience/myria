@@ -3,13 +3,17 @@ package edu.washington.escience.myria.daemon;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
 
 import javax.inject.Inject;
 
@@ -40,14 +44,21 @@ import org.apache.reef.tang.formats.AvroConfigurationSerializer;
 import org.apache.reef.tang.formats.ConfigurationSerializer;
 import org.apache.reef.wake.EventHandler;
 import org.apache.reef.wake.remote.address.LocalAddressProvider;
+import org.apache.reef.wake.time.Clock;
+import org.apache.reef.wake.time.event.Alarm;
 import org.apache.reef.wake.time.event.StartTime;
 import org.apache.reef.wake.time.event.StopTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableTable;
+import com.google.common.collect.Multimaps;
+import com.google.common.collect.SetMultimap;
+import com.google.common.util.concurrent.Striped;
 import com.google.protobuf.InvalidProtocolBufferException;
 
 import edu.washington.escience.myria.MyriaConstants;
@@ -73,11 +84,25 @@ public final class MyriaDriver {
   private final Configuration globalConf;
   private final Injector globalConfInjector;
   private final ImmutableMap<Integer, Configuration> workerConfs;
+  /**
+   * This is a workaround for the fact that YARN (and therefore REEF) doesn't allow you to associate
+   * an identifier with a container request, so we can't tell which EvaluatorRequest an
+   * AllocatedEvaluator corresponds to. Therefore, we assign worker IDs to AllocatedEvaluators in
+   * FIFO request order.
+   */
   private final Queue<Integer> workerIdsPendingEvaluatorAllocation;
   private final ConcurrentMap<Integer, RunningTask> tasksByWorkerId;
   private final ConcurrentMap<Integer, ActiveContext> contextsByWorkerId;
   private final ConcurrentMap<Integer, AllocatedEvaluator> evaluatorsByWorkerId;
   private final AtomicInteger numberWorkersPending;
+  private final ConcurrentMap<Integer, CountDownLatch> workerAddAcksPending;
+  private final ConcurrentMap<Integer, CountDownLatch> workerRemoveAcksPending;
+  private final ConcurrentMap<Integer, CountDownLatch> coordinatorAddAckPending;
+  private final ConcurrentMap<Integer, CountDownLatch> coordinatorRemoveAckPending;
+  private final SetMultimap<Integer, Integer> workerAddAcksReceived;
+  private final SetMultimap<Integer, Integer> workerRemoveAcksReceived;
+  private final Clock clock;
+  private static final int WORKER_ACK_TIMEOUT_MILLIS = 5000;
 
   /**
    * Possible states of the Myria driver. Can be one of:
@@ -100,13 +125,14 @@ public final class MyriaDriver {
   private volatile DriverState state = DriverState.INIT;
 
   private enum TaskState {
-    PENDING_EVALUATOR_REQUEST, PENDING_EVALUATOR, PENDING_CONTEXT, PENDING_TASK, FAILED_PENDING_EVALUATOR_REQUEST, FAILED_PENDING_EVALUATOR, FAILED_PENDING_CONTEXT, FAILED_PENDING_TASK, READY, FAILED_EVALUATOR_PENDING_REMOVE_ACK, FAILED_CONTEXT_PENDING_REMOVE_ACK, FAILED_TASK_PENDING_REMOVE_ACK, FAILED_EVALUATOR_PENDING_ADD_ACK, FAILED_CONTEXT_PENDING_ADD_ACK, FAILED_TASK_PENDING_ADD_ACK, RUNNING_PENDING_ADD_ACK
+    PENDING_EVALUATOR_REQUEST, PENDING_EVALUATOR, PENDING_CONTEXT, PENDING_TASK, PENDING_TASK_RUNNING_ACK, READY, FAILED_EVALUATOR_PENDING_TASK_FAILED_ACK, FAILED_CONTEXT_PENDING_TASK_FAILED_ACK, FAILED_TASK_PENDING_TASK_FAILED_ACK
   };
 
+  private final Striped<Lock> workerStateTransitionLocks;
   private final ConcurrentMap<Integer, TaskState> workerStates;
 
   private enum TaskStateEvent {
-    EVALUATOR_SUBMITTED, EVALUATOR_ALLOCATED, CONTEXT_ALLOCATED, TASK_RUNNING, TASK_FAILED, CONTEXT_FAILED, EVALUATOR_FAILED, REMOVE_WORKER_ACK, ADD_WORKER_ACK
+    EVALUATOR_SUBMITTED, EVALUATOR_ALLOCATED, CONTEXT_ALLOCATED, TASK_RUNNING, TASK_RUNNING_ACK, TASK_FAILED, TASK_FAILED_ACK, CONTEXT_FAILED, EVALUATOR_FAILED
   }
 
   private static class TaskStateTransition {
@@ -131,6 +157,7 @@ public final class MyriaDriver {
 
   private final ImmutableTable<TaskState, TaskStateEvent, TaskStateTransition> taskStateTransitions;
 
+  @SuppressWarnings("unchecked")
   private ImmutableTable<TaskState, TaskStateEvent, TaskStateTransition> getTaskStateTransitions() {
     return new ImmutableTable.Builder<TaskState, TaskStateEvent, TaskStateTransition>()
         .put(TaskState.PENDING_EVALUATOR_REQUEST, TaskStateEvent.EVALUATOR_SUBMITTED,
@@ -151,152 +178,140 @@ public final class MyriaDriver {
         .put(TaskState.PENDING_CONTEXT, TaskStateEvent.EVALUATOR_FAILED,
             TaskStateTransition.of(TaskState.PENDING_EVALUATOR, (wid, ctx) -> {
               evaluatorsByWorkerId.remove(wid);
-              updateFailedWorkerState(wid);
+              updateDriverStateOnWorkerFailure(wid);
               requestWorkerEvaluator(wid);
             }))
         .put(TaskState.PENDING_TASK, TaskStateEvent.TASK_RUNNING,
-            TaskStateTransition.of(TaskState.READY, (wid, ctx) -> {
+            TaskStateTransition.of(TaskState.PENDING_TASK_RUNNING_ACK, (wid, ctx) -> {
               tasksByWorkerId.put(wid, (RunningTask) ctx);
-              updateRunningWorkerState(wid);
+              recoverWorker(wid);
             }))
         .put(TaskState.PENDING_TASK, TaskStateEvent.CONTEXT_FAILED,
             TaskStateTransition.of(TaskState.PENDING_CONTEXT, (wid, ctx) -> {
               contextsByWorkerId.remove(wid);
-              updateFailedWorkerState(wid);
+              updateDriverStateOnWorkerFailure(wid);
               allocateWorkerContext(wid);
             }))
         .put(TaskState.PENDING_TASK, TaskStateEvent.EVALUATOR_FAILED,
             TaskStateTransition.of(TaskState.PENDING_EVALUATOR_REQUEST, (wid, ctx) -> {
               contextsByWorkerId.remove(wid);
               evaluatorsByWorkerId.remove(wid);
-              updateFailedWorkerState(wid);
+              updateDriverStateOnWorkerFailure(wid);
               requestWorkerEvaluator(wid);
             }))
+        .put(
+            TaskState.PENDING_TASK_RUNNING_ACK,
+            TaskStateEvent.TASK_RUNNING_ACK,
+            TaskStateTransition.of(TaskState.READY,
+                (wid, ctx) -> updateDriverStateOnWorkerReady(wid)))
+        .put(TaskState.PENDING_TASK_RUNNING_ACK, TaskStateEvent.TASK_FAILED,
+            TaskStateTransition.of(TaskState.FAILED_TASK_PENDING_TASK_FAILED_ACK, (wid, ctx) -> {
+              tasksByWorkerId.remove(wid);
+              updateDriverStateOnWorkerFailure(wid);
+              removeWorker(wid);
+            }))
+        .put(
+            TaskState.PENDING_TASK_RUNNING_ACK,
+            TaskStateEvent.CONTEXT_FAILED,
+            TaskStateTransition.of(TaskState.FAILED_CONTEXT_PENDING_TASK_FAILED_ACK,
+                (wid, ctx) -> {
+                  contextsByWorkerId.remove(wid);
+                  updateDriverStateOnWorkerFailure(wid);
+                  removeWorker(wid);
+                }))
+        .put(
+            TaskState.PENDING_TASK_RUNNING_ACK,
+            TaskStateEvent.EVALUATOR_FAILED,
+            TaskStateTransition.of(TaskState.FAILED_EVALUATOR_PENDING_TASK_FAILED_ACK,
+                (wid, ctx) -> {
+                  contextsByWorkerId.remove(wid);
+                  evaluatorsByWorkerId.remove(wid);
+                  updateDriverStateOnWorkerFailure(wid);
+                  removeWorker(wid);
+                }))
         .put(TaskState.READY, TaskStateEvent.TASK_FAILED,
-            TaskStateTransition.of(TaskState.FAILED_TASK_PENDING_REMOVE_ACK, (wid, ctx) -> {
+            TaskStateTransition.of(TaskState.FAILED_TASK_PENDING_TASK_FAILED_ACK, (wid, ctx) -> {
               tasksByWorkerId.remove(wid);
-              updateFailedWorkerState(wid);
-              notifyWorkerFailure(wid);
-            }))
-        .put(TaskState.READY, TaskStateEvent.CONTEXT_FAILED,
-            TaskStateTransition.of(TaskState.FAILED_CONTEXT_PENDING_REMOVE_ACK, (wid, ctx) -> {
-              tasksByWorkerId.remove(wid);
-              contextsByWorkerId.remove(wid);
-              updateFailedWorkerState(wid);
-              notifyWorkerFailure(wid);
-            }))
-        .put(TaskState.READY, TaskStateEvent.EVALUATOR_FAILED,
-            TaskStateTransition.of(TaskState.FAILED_EVALUATOR_PENDING_REMOVE_ACK, (wid, ctx) -> {
-              tasksByWorkerId.remove(wid);
-              contextsByWorkerId.remove(wid);
-              evaluatorsByWorkerId.remove(wid);
-              updateFailedWorkerState(wid);
-              notifyWorkerFailure(wid);
+              updateDriverStateOnWorkerFailure(wid);
+              removeWorker(wid);
             }))
         .put(
-            TaskState.FAILED_EVALUATOR_PENDING_REMOVE_ACK,
-            TaskStateEvent.REMOVE_WORKER_ACK,
-            TaskStateTransition.of(TaskState.FAILED_PENDING_EVALUATOR_REQUEST,
-                (wid, ctx) -> requestWorkerEvaluator(wid)))
+            TaskState.READY,
+            TaskStateEvent.CONTEXT_FAILED,
+            TaskStateTransition.of(TaskState.FAILED_CONTEXT_PENDING_TASK_FAILED_ACK,
+                (wid, ctx) -> {
+                  tasksByWorkerId.remove(wid);
+                  contextsByWorkerId.remove(wid);
+                  updateDriverStateOnWorkerFailure(wid);
+                  removeWorker(wid);
+                }))
         .put(
-            TaskState.FAILED_CONTEXT_PENDING_REMOVE_ACK,
-            TaskStateEvent.REMOVE_WORKER_ACK,
-            TaskStateTransition.of(TaskState.FAILED_PENDING_CONTEXT,
-                (wid, ctx) -> allocateWorkerContext(wid)))
-        .put(TaskState.FAILED_TASK_PENDING_REMOVE_ACK, TaskStateEvent.REMOVE_WORKER_ACK,
-            TaskStateTransition.of(TaskState.FAILED_PENDING_TASK, (wid, ctx) -> scheduleTask(wid)))
-        .put(TaskState.FAILED_PENDING_EVALUATOR_REQUEST, TaskStateEvent.EVALUATOR_SUBMITTED,
-            TaskStateTransition.of(TaskState.FAILED_PENDING_EVALUATOR, (wid, ctx) -> {
-              workerIdsPendingEvaluatorAllocation.add(wid);
-              requestor.submit((EvaluatorRequest) ctx);
-            }))
-        .put(TaskState.FAILED_PENDING_EVALUATOR, TaskStateEvent.EVALUATOR_ALLOCATED,
-            TaskStateTransition.of(TaskState.FAILED_PENDING_CONTEXT, (wid, ctx) -> {
-              evaluatorsByWorkerId.put(wid, (AllocatedEvaluator) ctx);
-              allocateWorkerContext(wid);
-            }))
-        .put(TaskState.FAILED_PENDING_CONTEXT, TaskStateEvent.CONTEXT_ALLOCATED,
-            TaskStateTransition.of(TaskState.FAILED_PENDING_TASK, (wid, ctx) -> {
-              contextsByWorkerId.put(wid, (ActiveContext) ctx);
+            TaskState.READY,
+            TaskStateEvent.EVALUATOR_FAILED,
+            TaskStateTransition.of(TaskState.FAILED_EVALUATOR_PENDING_TASK_FAILED_ACK,
+                (wid, ctx) -> {
+                  tasksByWorkerId.remove(wid);
+                  contextsByWorkerId.remove(wid);
+                  evaluatorsByWorkerId.remove(wid);
+                  updateDriverStateOnWorkerFailure(wid);
+                  removeWorker(wid);
+                }))
+        .put(TaskState.FAILED_TASK_PENDING_TASK_FAILED_ACK, TaskStateEvent.TASK_FAILED_ACK,
+            TaskStateTransition.of(TaskState.PENDING_TASK, (wid, ctx) -> {
               scheduleTask(wid);
             }))
-        .put(TaskState.FAILED_PENDING_TASK, TaskStateEvent.TASK_RUNNING,
-            TaskStateTransition.of(TaskState.RUNNING_PENDING_ADD_ACK, (wid, ctx) -> {
-              tasksByWorkerId.put(wid, (RunningTask) ctx);
-              notifyWorkerRecovered(wid);
+        .put(TaskState.FAILED_CONTEXT_PENDING_TASK_FAILED_ACK, TaskStateEvent.TASK_FAILED_ACK,
+            TaskStateTransition.of(TaskState.PENDING_CONTEXT, (wid, ctx) -> {
+              allocateWorkerContext(wid);
             }))
-        .put(TaskState.RUNNING_PENDING_ADD_ACK, TaskStateEvent.ADD_WORKER_ACK,
-            TaskStateTransition.of(TaskState.READY, (wid, ctx) -> updateRunningWorkerState(wid)))
-        .put(TaskState.RUNNING_PENDING_ADD_ACK, TaskStateEvent.TASK_FAILED,
-            TaskStateTransition.of(TaskState.FAILED_TASK_PENDING_ADD_ACK, (wid, ctx) -> {
-              tasksByWorkerId.remove(wid);
-              updateFailedWorkerState(wid);
-            }))
-        .put(TaskState.RUNNING_PENDING_ADD_ACK, TaskStateEvent.CONTEXT_FAILED,
-            TaskStateTransition.of(TaskState.FAILED_CONTEXT_PENDING_ADD_ACK, (wid, ctx) -> {
-              tasksByWorkerId.remove(wid);
-              contextsByWorkerId.remove(wid);
-              updateFailedWorkerState(wid);
-            }))
-        .put(TaskState.RUNNING_PENDING_ADD_ACK, TaskStateEvent.EVALUATOR_FAILED,
-            TaskStateTransition.of(TaskState.FAILED_EVALUATOR_PENDING_ADD_ACK, (wid, ctx) -> {
-              tasksByWorkerId.remove(wid);
-              contextsByWorkerId.remove(wid);
-              evaluatorsByWorkerId.remove(wid);
-              updateFailedWorkerState(wid);
-            }))
-        .put(
-            TaskState.FAILED_EVALUATOR_PENDING_ADD_ACK,
-            TaskStateEvent.ADD_WORKER_ACK,
-            TaskStateTransition.of(TaskState.FAILED_EVALUATOR_PENDING_REMOVE_ACK,
-                (wid, ctx) -> notifyWorkerFailure(wid)))
-        .put(
-            TaskState.FAILED_CONTEXT_PENDING_ADD_ACK,
-            TaskStateEvent.ADD_WORKER_ACK,
-            TaskStateTransition.of(TaskState.FAILED_CONTEXT_PENDING_REMOVE_ACK,
-                (wid, ctx) -> notifyWorkerFailure(wid)))
-        .put(
-            TaskState.FAILED_TASK_PENDING_ADD_ACK,
-            TaskStateEvent.ADD_WORKER_ACK,
-            TaskStateTransition.of(TaskState.FAILED_TASK_PENDING_REMOVE_ACK,
-                (wid, ctx) -> notifyWorkerFailure(wid))).build();
+        .put(TaskState.FAILED_EVALUATOR_PENDING_TASK_FAILED_ACK, TaskStateEvent.TASK_FAILED_ACK,
+            TaskStateTransition.of(TaskState.PENDING_EVALUATOR_REQUEST, (wid, ctx) -> {
+              requestWorkerEvaluator(wid);
+            })).build();
   }
 
   public void doTransition(final int workerId, final TaskStateEvent event, final Object context) {
-    // loop until workerStates.replace() succeeds (it will fail if the state has been replaced
-    // between our getting and setting of the state for this worker)
-    while (true) {
+    // NB: this lock is reentrant, so any transitions induced by the transition handler will not
+    // deadlock the thread.
+    Lock workerLock = workerStateTransitionLocks.get(workerId);
+    workerLock.lock();
+    try {
       TaskState workerState = workerStates.get(workerId);
       TaskStateTransition transition = taskStateTransitions.get(workerState, event);
       if (transition != null) {
-        if (workerStates.replace(workerId, workerState, transition.newState)) {
-          try {
-            LOGGER
-                .info(
-                    "Performing transition on event {} from state {} to state {} (worker ID {}, context {})",
-                    event, workerState, transition.newState, workerId, context);
-            transition.handler.onTransition(workerId, context);
-          } catch (Exception e) {
-            throw new RuntimeException(e);
-          }
-          break;
+        workerStates.replace(workerId, transition.newState);
+        LOGGER
+            .info(
+                "Performing transition on event {} from state {} to state {} (worker ID {}, context {})",
+                event, workerState, transition.newState, workerId, context);
+        try {
+          transition.handler.onTransition(workerId, context);
+        } catch (Exception e) {
+          throw new RuntimeException(e);
         }
       } else {
         throw new IllegalStateException(String.format(
             "No transition defined for state %s and event %s (worker ID %s)", workerState, event,
             workerId));
       }
+    } finally {
+      workerLock.unlock();
     }
   }
 
+  // TODO: inject JobMessageObserver so we can send messages to the driver launcher (using
+  // JobMessageObserver.sendMessageToClient() in handler registered with
+  // DriverConfiguration.ON_CLIENT_MESSAGE)
   @Inject
   public MyriaDriver(final LocalAddressProvider addressProvider,
       final EvaluatorRequestor requestor, final JVMProcessFactory jvmProcessFactory,
+      final Clock clock,
       final @Parameter(MyriaDriverLauncher.SerializedGlobalConf.class) String serializedGlobalConf)
       throws Exception {
     this.requestor = requestor;
     this.addressProvider = addressProvider;
     this.jvmProcessFactory = jvmProcessFactory;
+    this.clock = clock;
     globalConf = new AvroConfigurationSerializer().fromString(serializedGlobalConf);
     globalConfInjector = Tang.Factory.getTang().newInjector(globalConf);
     workerConfs = getWorkerConfs();
@@ -305,8 +320,17 @@ public final class MyriaDriver {
     contextsByWorkerId = new ConcurrentHashMap<>();
     evaluatorsByWorkerId = new ConcurrentHashMap<>();
     numberWorkersPending = new AtomicInteger(workerConfs.size());
+    workerAddAcksPending = new ConcurrentHashMap<>();
+    workerRemoveAcksPending = new ConcurrentHashMap<>();
+    coordinatorAddAckPending = new ConcurrentHashMap<>();
+    coordinatorRemoveAckPending = new ConcurrentHashMap<>();
+    workerAddAcksReceived =
+        Multimaps.synchronizedSetMultimap(HashMultimap.<Integer, Integer>create());
+    workerRemoveAcksReceived =
+        Multimaps.synchronizedSetMultimap(HashMultimap.<Integer, Integer>create());
     workerStates = getWorkerStates();
     taskStateTransitions = getTaskStateTransitions();
+    workerStateTransitionLocks = Striped.lock(workerConfs.size() + 1); // +1 for coordinator
   }
 
   private String getMasterHost() throws InjectionException {
@@ -432,29 +456,31 @@ public final class MyriaDriver {
     evaluator.setProcess(jvmProcess);
   }
 
-  private void notifyWorkerFailure(final int workerId) {
-    if (workerId != MyriaConstants.MASTER_ID) {
-      LOGGER.info("Sending REMOVE_WORKER for worker {} to coordinator", workerId);
-      final TransportMessage workerFailed = IPCUtils.removeWorkerTM(workerId);
-      RunningTask coordinatorTask = tasksByWorkerId.get(MyriaConstants.MASTER_ID);
-      coordinatorTask.send(workerFailed.toByteArray());
+  private void launchMaster() throws InjectionException {
+    Preconditions.checkState(state == DriverState.PREPARING_MASTER);
+    requestMasterEvaluator();
+  }
+
+  private void launchWorkers() throws InjectionException {
+    Preconditions.checkState(state == DriverState.PREPARING_WORKERS);
+    for (final Integer workerId : workerConfs.keySet()) {
+      requestWorkerEvaluator(workerId);
     }
   }
 
-  private void notifyWorkerRecovered(final int workerId) {
+  private void allocateWorkerContext(final int workerId) throws InjectionException {
+    Preconditions.checkState(evaluatorsByWorkerId.containsKey(workerId));
+    AllocatedEvaluator evaluator = evaluatorsByWorkerId.get(workerId);
+    LOGGER.info("Launching context for worker ID {} on {}", workerId, evaluator
+        .getEvaluatorDescriptor().getNodeDescriptor().getName());
+    Preconditions.checkState(!contextsByWorkerId.containsKey(workerId));
+    Configuration contextConf =
+        ContextConfiguration.CONF.set(ContextConfiguration.IDENTIFIER, workerId + "").build();
+    setJVMOptions(evaluator);
     if (workerId != MyriaConstants.MASTER_ID) {
-      SocketInfo si;
-      try {
-        si = getSocketInfoForWorker(workerId);
-      } catch (InjectionException e) {
-        LOGGER.error("Failed to get SocketInfo for worker {}:\n{}", workerId, e);
-        return;
-      }
-      LOGGER.info("Sending ADD_WORKER for worker {} to coordinator", workerId);
-      final TransportMessage workerFailed = IPCUtils.addWorkerTM(workerId, si);
-      RunningTask coordinatorTask = tasksByWorkerId.get(MyriaConstants.MASTER_ID);
-      coordinatorTask.send(workerFailed.toByteArray());
+      contextConf = Configurations.merge(contextConf, workerConfs.get(workerId));
     }
+    evaluator.submitContext(Configurations.merge(contextConf, globalConf));
   }
 
   private void scheduleTask(final int workerId) {
@@ -476,12 +502,169 @@ public final class MyriaDriver {
           .checkState(state == DriverState.PREPARING_WORKERS || state == DriverState.READY);
       taskConf =
           TaskConfiguration.CONF.set(TaskConfiguration.TASK, Worker.class)
-              .set(TaskConfiguration.IDENTIFIER, workerId + "").build();
+              .set(TaskConfiguration.IDENTIFIER, workerId + "")
+              .set(TaskConfiguration.ON_SEND_MESSAGE, Worker.class)
+              .set(TaskConfiguration.ON_MESSAGE, Worker.class).build();
     }
     context.submitTask(taskConf);
   }
 
-  private void updateRunningWorkerState(final int workerId) throws InjectionException {
+  private ImmutableSet<Integer> getAliveWorkers(final boolean includeMaster) {
+    Set<Integer> aliveWorkers = new HashSet<>();
+    workerStates
+        .forEach((wid, state) -> {
+          if ((!wid.equals(MyriaConstants.MASTER_ID) || includeMaster)
+              && state.equals(TaskState.READY)) {
+            aliveWorkers.add(wid);
+          }
+        });
+    return ImmutableSet.copyOf(aliveWorkers);
+  }
+
+  private boolean sendMessageToWorker(final int workerId, final TransportMessage message) {
+    boolean messageSent = false;
+    // if the worker we're sending to is in the middle of a state transition, we abort
+    if (workerStateTransitionLocks.get(workerId).tryLock()) {
+      try {
+        RunningTask workerToNotifyTask = tasksByWorkerId.get(workerId);
+        if (workerToNotifyTask != null) {
+          workerToNotifyTask.send(message.toByteArray());
+          messageSent = true;
+        }
+      } finally {
+        workerStateTransitionLocks.get(workerId).unlock();
+      }
+    }
+    return messageSent;
+  }
+
+  private void scheduleAction(final int delayMillis, final Runnable action) {
+    clock.scheduleAlarm(delayMillis, new EventHandler<Alarm>() {
+      @Override
+      public void onNext(final Alarm alarm) {
+        action.run();
+      }
+    });
+  }
+
+  private void recoverWorker(final int workerId) throws InterruptedException {
+    if (workerId != MyriaConstants.MASTER_ID) {
+      // this is obviously racy but it doesn't matter since we timeout on acks
+      ImmutableSet<Integer> aliveWorkers = getAliveWorkers(false);
+      CountDownLatch acksPending = new CountDownLatch(aliveWorkers.size());
+      workerAddAcksPending.put(workerId, acksPending);
+      for (Integer aliveWorkerId : aliveWorkers) {
+        notifyWorkerOnRecovery(workerId, aliveWorkerId);
+      }
+      acksPending.await(WORKER_ACK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+      workerAddAcksPending.remove(workerId);
+      Set<Integer> ackedWorkers = workerAddAcksReceived.removeAll(workerId);
+      LOGGER.info("Received {} of expected {} acks for ADD_WORKER on worker {}",
+          ackedWorkers.size(), aliveWorkers.size(), workerId);
+      CountDownLatch coordinatorAcked = new CountDownLatch(1);
+      coordinatorAddAckPending.put(workerId, coordinatorAcked);
+      notifyCoordinatorOnRecovery(workerId, ackedWorkers);
+      coordinatorAcked.await();
+    } else {
+      // coordinator can't get any acks when it starts
+      doTransition(workerId, TaskStateEvent.TASK_RUNNING_ACK, ImmutableSet.of());
+    }
+  }
+
+  private void removeWorker(final int workerId) throws InterruptedException {
+    Preconditions.checkState(workerId != MyriaConstants.MASTER_ID);
+    // this is obviously racy but it doesn't matter since we timeout on acks
+    ImmutableSet<Integer> aliveWorkers = getAliveWorkers(false);
+    CountDownLatch acksPending = new CountDownLatch(aliveWorkers.size());
+    workerRemoveAcksPending.put(workerId, acksPending);
+    for (Integer aliveWorkerId : aliveWorkers) {
+      notifyWorkerOnFailure(workerId, aliveWorkerId);
+    }
+    acksPending.await(WORKER_ACK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+    workerRemoveAcksPending.remove(workerId);
+    Set<Integer> ackedWorkers = workerRemoveAcksReceived.removeAll(workerId);
+    LOGGER.info("Received {} of expected {} acks for REMOVE_WORKER on worker {}",
+        ackedWorkers.size(), aliveWorkers.size(), workerId);
+    CountDownLatch coordinatorAcked = new CountDownLatch(1);
+    coordinatorRemoveAckPending.put(workerId, coordinatorAcked);
+    notifyCoordinatorOnFailure(workerId, ackedWorkers);
+    coordinatorAcked.await();
+  }
+
+  private void notifyWorkerOnFailure(final int workerId, final int workerToNotifyId) {
+    // we should never get here on coordinator failure
+    Preconditions.checkArgument(workerId != MyriaConstants.MASTER_ID);
+    SocketInfo si;
+    try {
+      si = getSocketInfoForWorker(workerId);
+    } catch (InjectionException e) {
+      LOGGER.error("Failed to get SocketInfo for worker {}:\n{}", workerId, e);
+      return;
+    }
+    LOGGER.info("Sending ADD_WORKER for worker {} to all alive workers (excluding coordinator)",
+        workerId);
+    final TransportMessage workerRecovered = IPCUtils.removeWorkerTM(workerId, null);
+    sendMessageToWorker(workerToNotifyId, workerRecovered);
+  }
+
+  private void notifyWorkerOnRecovery(final int workerId, final int workerToNotifyId) {
+    // we should never get here on coordinator failure
+    Preconditions.checkArgument(workerId != MyriaConstants.MASTER_ID);
+    SocketInfo si;
+    try {
+      si = getSocketInfoForWorker(workerId);
+    } catch (InjectionException e) {
+      LOGGER.error("Failed to get SocketInfo for worker {}:\n{}", workerId, e);
+      return;
+    }
+    LOGGER.info("Sending ADD_WORKER for worker {} to all alive workers (excluding coordinator)",
+        workerId);
+    final TransportMessage workerRecovered = IPCUtils.addWorkerTM(workerId, si, null);
+    sendMessageToWorker(workerToNotifyId, workerRecovered);
+  }
+
+  private void onRemoveAckFromWorker(final int workerId, final int senderId) {
+    workerRemoveAcksReceived.put(workerId, senderId);
+    workerRemoveAcksPending.get(workerId).countDown();
+  }
+
+  private void onRemoveAckFromCoordinator(final int workerId) {
+    coordinatorRemoveAckPending.get(workerId).countDown();
+    doTransition(workerId, TaskStateEvent.TASK_FAILED_ACK, null);
+  }
+
+  private void onAddAckFromWorker(final int workerId, final int senderId) {
+    workerAddAcksReceived.put(workerId, senderId);
+    workerAddAcksPending.get(workerId).countDown();
+  }
+
+  private void onAddAckFromCoordinator(final int workerId) {
+    coordinatorAddAckPending.get(workerId).countDown();
+    doTransition(workerId, TaskStateEvent.TASK_RUNNING_ACK, null);
+  }
+
+  private void notifyCoordinatorOnFailure(final int workerId, final Set<Integer> ackedWorkers) {
+    Preconditions.checkState(workerId != MyriaConstants.MASTER_ID);
+    LOGGER.info("Sending REMOVE_WORKER for worker {} to coordinator", workerId);
+    final TransportMessage workerFailed = IPCUtils.removeWorkerTM(workerId, ackedWorkers);
+    sendMessageToWorker(MyriaConstants.MASTER_ID, workerFailed);
+  }
+
+  private void notifyCoordinatorOnRecovery(final int workerId, final Set<Integer> ackedWorkers) {
+    Preconditions.checkState(workerId != MyriaConstants.MASTER_ID);
+    SocketInfo si;
+    try {
+      si = getSocketInfoForWorker(workerId);
+    } catch (InjectionException e) {
+      LOGGER.error("Failed to get SocketInfo for worker {}:\n{}", workerId, e);
+      return;
+    }
+    LOGGER.info("Sending ADD_WORKER for worker {} to coordinator", workerId);
+    final TransportMessage workerRecovered = IPCUtils.addWorkerTM(workerId, si, ackedWorkers);
+    sendMessageToWorker(MyriaConstants.MASTER_ID, workerRecovered);
+  }
+
+  private void updateDriverStateOnWorkerReady(final int workerId) throws InjectionException {
     Preconditions.checkState(tasksByWorkerId.containsKey(workerId));
     if (state == DriverState.PREPARING_MASTER) {
       Preconditions.checkState(workerId == MyriaConstants.MASTER_ID);
@@ -497,40 +680,12 @@ public final class MyriaDriver {
     }
   }
 
-  private void updateFailedWorkerState(final int workerId) {
+  private void updateDriverStateOnWorkerFailure(final int workerId) {
     if (workerId == MyriaConstants.MASTER_ID) {
       throw new RuntimeException("Shutting down driver on coordinator failure");
     } else if (state == DriverState.PREPARING_WORKERS) {
-      int pendingWorkers = numberWorkersPending.incrementAndGet();
-      LOGGER
-          .warn("Worker failed in PREPARING_WORKERS phase, {} workers pending...", pendingWorkers);
-    }
-  }
-
-  private void allocateWorkerContext(final int workerId) throws InjectionException {
-    Preconditions.checkState(evaluatorsByWorkerId.containsKey(workerId));
-    AllocatedEvaluator evaluator = evaluatorsByWorkerId.get(workerId);
-    LOGGER.info("Launching context for worker ID {} on {}", workerId, evaluator
-        .getEvaluatorDescriptor().getNodeDescriptor().getName());
-    Preconditions.checkState(!contextsByWorkerId.containsKey(workerId));
-    Configuration contextConf =
-        ContextConfiguration.CONF.set(ContextConfiguration.IDENTIFIER, workerId + "").build();
-    setJVMOptions(evaluator);
-    if (workerId != MyriaConstants.MASTER_ID) {
-      contextConf = Configurations.merge(contextConf, workerConfs.get(workerId));
-    }
-    evaluator.submitContext(Configurations.merge(contextConf, globalConf));
-  }
-
-  private void launchMaster() throws InjectionException {
-    Preconditions.checkState(state == DriverState.PREPARING_MASTER);
-    requestMasterEvaluator();
-  }
-
-  private void launchWorkers() throws InjectionException {
-    Preconditions.checkState(state == DriverState.PREPARING_WORKERS);
-    for (final Integer workerId : workerConfs.keySet()) {
-      requestWorkerEvaluator(workerId);
+      LOGGER.warn("Worker failed in PREPARING_WORKERS phase, {} workers pending...",
+          numberWorkersPending.get());
     }
   }
 
@@ -649,9 +804,7 @@ public final class MyriaDriver {
   final class TaskMessageHandler implements EventHandler<TaskMessage> {
     @Override
     public void onNext(final TaskMessage taskMessage) {
-      // we should only be receiving messages from the coordinator
-      Preconditions.checkState(taskMessage.getMessageSourceID().equals(
-          MyriaConstants.MASTER_ID + ""));
+      final int senderId = Integer.valueOf(taskMessage.getMessageSourceID());
       TransportMessage m;
       try {
         m = TransportMessage.parseFrom(taskMessage.get());
@@ -662,15 +815,23 @@ public final class MyriaDriver {
       final ControlMessage controlM = m.getControlMessage();
       // We received a failed worker ack or recovered worker ack from the coordinator.
       int workerId = controlM.getWorkerId();
-      LOGGER.info("Received {} for worker {} from task {}", controlM.getType(), workerId,
-          taskMessage.getMessageSourceID());
+      LOGGER.info("Received {} for worker {} from worker {}", controlM.getType(), workerId,
+          senderId);
       if (controlM.getType() == ControlMessage.Type.REMOVE_WORKER_ACK) {
-        doTransition(workerId, TaskStateEvent.REMOVE_WORKER_ACK, null);
+        if (senderId == MyriaConstants.MASTER_ID) {
+          onRemoveAckFromCoordinator(workerId);
+        } else {
+          onRemoveAckFromWorker(workerId, senderId);
+        }
       } else if (controlM.getType() == ControlMessage.Type.ADD_WORKER_ACK) {
-        doTransition(workerId, TaskStateEvent.ADD_WORKER_ACK, null);
+        if (senderId == MyriaConstants.MASTER_ID) {
+          onAddAckFromCoordinator(workerId);
+        } else {
+          onAddAckFromWorker(workerId, senderId);
+        }
       } else {
         throw new IllegalStateException(
-            "Expected control message from coordinator to be ADD_WORKER_ACK or REMOVE_WORKER_ACK, got "
+            "Expected control message to be ADD_WORKER_ACK or REMOVE_WORKER_ACK, got "
                 + controlM.getType());
       }
     }

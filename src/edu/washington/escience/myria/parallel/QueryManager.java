@@ -572,7 +572,7 @@ public class QueryManager {
    * 
    * @param workerId the worker that died.
    */
-  protected void workerDied(final int workerId) {
+  protected synchronized void workerDied(final int workerId) {
     for (MasterSubQuery mqp : executingSubQueries.values()) {
       /* for each alive query that the failed worker is assigned to, tell the query that the worker failed. */
       if (mqp.getWorkerAssigned().contains(workerId)) {
@@ -597,7 +597,7 @@ public class QueryManager {
    * @param workerId the worker that has restarted.
    * @param workersAcked the workers that have acknowledged its rebirth.
    */
-  protected void workerRestarted(final int workerId, final Set<Integer> workersAcked) {
+  protected synchronized void workerRestarted(final int workerId, final Set<Integer> workersAcked) {
     for (MasterSubQuery mqp : executingSubQueries.values()) {
       if (mqp.getFTMode().equals(FTMode.REJOIN) && mqp.getMissingWorkers().contains(workerId)
           && workersAcked.containsAll(mqp.getWorkerAssigned())) {

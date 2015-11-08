@@ -16,6 +16,7 @@ message ControlMessage {
   optional int32 worker_id = 2;
   optional SocketInfo remote_address = 3;
   repeated ResourceStats resource_stats = 4;
+  repeated int32 acked_worker_ids = 5;
 }
 
 message SocketInfo {
