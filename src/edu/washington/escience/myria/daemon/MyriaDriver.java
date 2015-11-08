@@ -541,6 +541,8 @@ public final class MyriaDriver {
       ImmutableSet<Integer> aliveWorkers = getAliveWorkers();
       CountDownLatch acksPending = new CountDownLatch(aliveWorkers.size());
       workerAddAcksPending.put(workerId, acksPending);
+      LOGGER.info("Sending ADD_WORKER for worker {} to all {} alive workers", workerId,
+          aliveWorkers.size());
       for (Integer aliveWorkerId : aliveWorkers) {
         notifyWorkerOnRecovery(workerId, aliveWorkerId);
       }
@@ -568,6 +570,8 @@ public final class MyriaDriver {
     ImmutableSet<Integer> aliveWorkers = getAliveWorkers();
     CountDownLatch acksPending = new CountDownLatch(aliveWorkers.size());
     workerRemoveAcksPending.put(workerId, acksPending);
+    LOGGER.info("Sending REMOVE_WORKER for worker {} to all {} alive workers", workerId,
+        aliveWorkers.size());
     for (Integer aliveWorkerId : aliveWorkers) {
       notifyWorkerOnFailure(workerId, aliveWorkerId);
     }
@@ -588,8 +592,7 @@ public final class MyriaDriver {
   private void notifyWorkerOnFailure(final int workerId, final int workerToNotifyId) {
     // we should never get here on coordinator failure
     Preconditions.checkArgument(workerId != MyriaConstants.MASTER_ID);
-    LOGGER.info("Sending ADD_WORKER for worker {} to all alive workers (excluding coordinator)",
-        workerId);
+    LOGGER.info("Sending REMOVE_WORKER for worker {} to worker {}", workerId, workerToNotifyId);
     final TransportMessage workerRecovered = IPCUtils.removeWorkerTM(workerId, null);
     sendMessageToWorker(workerToNotifyId, workerRecovered);
   }
@@ -604,8 +607,7 @@ public final class MyriaDriver {
       LOGGER.error("Failed to get SocketInfo for worker {}:\n{}", workerId, e);
       return;
     }
-    LOGGER.info("Sending ADD_WORKER for worker {} to all alive workers (excluding coordinator)",
-        workerId);
+    LOGGER.info("Sending ADD_WORKER for worker {} to worker {}", workerId, workerToNotifyId);
     final TransportMessage workerRecovered = IPCUtils.addWorkerTM(workerId, si, null);
     sendMessageToWorker(workerToNotifyId, workerRecovered);
   }
