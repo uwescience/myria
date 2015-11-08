@@ -182,6 +182,11 @@ public final class MyriaDriver {
               tasksByWorkerId.put(wid, (RunningTask) ctx);
               recoverWorker(wid);
             }))
+        .put(TaskState.PENDING_TASK, TaskStateEvent.TASK_FAILED,
+            TaskStateTransition.of(TaskState.PENDING_TASK, (wid, ctx) -> {
+              updateDriverStateOnWorkerFailure(wid);
+              scheduleTask(wid);
+            }))
         .put(TaskState.PENDING_TASK, TaskStateEvent.CONTEXT_FAILED,
             TaskStateTransition.of(TaskState.PENDING_CONTEXT, (wid, ctx) -> {
               contextsByWorkerId.remove(wid);
