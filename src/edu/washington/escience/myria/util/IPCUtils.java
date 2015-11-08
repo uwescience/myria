@@ -7,6 +7,9 @@ import java.io.ObjectOutputStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+
+import javax.annotation.Nullable;
 
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
@@ -124,13 +127,16 @@ public final class IPCUtils {
    * @param workerId the id of the worker to be removed.
    * @return the remove worker TM.
    * */
-  public static TransportMessage removeWorkerTM(final int workerId) {
-    return TransportMessage
-        .newBuilder()
-        .setType(TransportMessage.Type.CONTROL)
-        .setControlMessage(
-            ControlMessage.newBuilder().setType(ControlMessage.Type.REMOVE_WORKER)
-                .setWorkerId(workerId)).build();
+  public static TransportMessage removeWorkerTM(final int workerId,
+      @Nullable final Set<Integer> ackedWorkerIds) {
+    ControlMessage.Builder cmBuilder =
+        ControlMessage.newBuilder().setType(ControlMessage.Type.REMOVE_WORKER)
+            .setWorkerId(workerId);
+    if (ackedWorkerIds != null) {
+      cmBuilder.addAllAckedWorkerIds(ackedWorkerIds);
+    }
+    return TransportMessage.newBuilder().setType(TransportMessage.Type.CONTROL)
+        .setControlMessage(cmBuilder.build()).build();
   }
 
   /**
@@ -138,12 +144,11 @@ public final class IPCUtils {
    * @return the remove worker TM.
    * */
   public static TransportMessage removeWorkerAckTM(final int workerId) {
-    return TransportMessage
-        .newBuilder()
-        .setType(TransportMessage.Type.CONTROL)
-        .setControlMessage(
-            ControlMessage.newBuilder().setType(ControlMessage.Type.REMOVE_WORKER_ACK)
-                .setWorkerId(workerId)).build();
+    ControlMessage.Builder cmBuilder =
+        ControlMessage.newBuilder().setType(ControlMessage.Type.REMOVE_WORKER_ACK)
+            .setWorkerId(workerId);
+    return TransportMessage.newBuilder().setType(TransportMessage.Type.CONTROL)
+        .setControlMessage(cmBuilder.build()).build();
   }
 
   /**
@@ -151,13 +156,16 @@ public final class IPCUtils {
    * @param socketinfo the SocketInfo of the worker to be added.
    * @return the add worker TM.
    * */
-  public static TransportMessage addWorkerTM(final int workerId, final SocketInfo socketinfo) {
-    return TransportMessage
-        .newBuilder()
-        .setType(TransportMessage.Type.CONTROL)
-        .setControlMessage(
-            ControlMessage.newBuilder().setType(ControlMessage.Type.ADD_WORKER)
-                .setWorkerId(workerId).setRemoteAddress(socketinfo.toProtobuf())).build();
+  public static TransportMessage addWorkerTM(final int workerId, final SocketInfo socketinfo,
+      @Nullable final Set<Integer> ackedWorkerIds) {
+    ControlMessage.Builder cmBuilder =
+        ControlMessage.newBuilder().setType(ControlMessage.Type.ADD_WORKER).setWorkerId(workerId)
+            .setRemoteAddress(socketinfo.toProtobuf());
+    if (ackedWorkerIds != null) {
+      cmBuilder.addAllAckedWorkerIds(ackedWorkerIds);
+    }
+    return TransportMessage.newBuilder().setType(TransportMessage.Type.CONTROL)
+        .setControlMessage(cmBuilder.build()).build();
   }
 
   /**
@@ -165,12 +173,11 @@ public final class IPCUtils {
    * @return the add worker TM.
    * */
   public static TransportMessage addWorkerAckTM(final int workerId) {
-    return TransportMessage
-        .newBuilder()
-        .setType(TransportMessage.Type.CONTROL)
-        .setControlMessage(
-            ControlMessage.newBuilder().setType(ControlMessage.Type.ADD_WORKER_ACK)
-                .setWorkerId(workerId)).build();
+    ControlMessage.Builder cmBuilder =
+        ControlMessage.newBuilder().setType(ControlMessage.Type.ADD_WORKER_ACK)
+            .setWorkerId(workerId);
+    return TransportMessage.newBuilder().setType(TransportMessage.Type.CONTROL)
+        .setControlMessage(cmBuilder.build()).build();
   }
 
   /**

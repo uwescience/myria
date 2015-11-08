@@ -135,7 +135,7 @@ public final class MyriaDriverLauncher {
   public static void launchDriver(final Configuration runtimeConf, final String[] args)
       throws InjectionException, IOException, ParseException, ConfigFileException {
     final Tang tang = Tang.Factory.getTang();
-
+    // TODO: implement ClientConfiguration event handlers so we can get messages from the Driver
     @SuppressWarnings("unchecked")
     final Configuration commandLineConf =
         CommandLine.parseToConfiguration(args, ConfigPath.class, JavaLibPath.class,

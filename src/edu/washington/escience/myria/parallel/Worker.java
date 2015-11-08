@@ -3,13 +3,17 @@ package edu.washington.escience.myria.parallel;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.locks.Lock;
 
+import javax.annotation.Nonnull;
 import javax.annotation.concurrent.GuardedBy;
 import javax.inject.Inject;
 
@@ -23,13 +27,23 @@ import org.apache.reef.tang.exceptions.InjectionException;
 import org.apache.reef.tang.formats.AvroConfigurationSerializer;
 import org.apache.reef.tang.formats.ConfigurationSerializer;
 import org.apache.reef.task.Task;
+import org.apache.reef.task.TaskMessage;
+import org.apache.reef.task.TaskMessageSource;
+import org.apache.reef.task.events.DriverMessage;
+import org.apache.reef.util.Optional;
+import org.apache.reef.wake.EventHandler;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelPipelineFactory;
+import org.jboss.netty.channel.group.ChannelGroupFuture;
+import org.jboss.netty.channel.group.ChannelGroupFutureListener;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
+
+import com.google.common.util.concurrent.Striped;
+import com.google.protobuf.InvalidProtocolBufferException;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
@@ -85,7 +99,7 @@ import edu.washington.escience.myria.util.concurrent.ThreadAffinityFixedRoundRob
  * and then waits for next query plan
  * 
  */
-public final class Worker implements Task {
+public final class Worker implements Task, TaskMessageSource, EventHandler<DriverMessage> {
 
   /** The logger for this class. */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Worker.class);
@@ -140,30 +154,6 @@ public final class Worker implements Task {
                   }
                   toShutdown = true;
                   abruptShutdown = false;
-                  break;
-                case REMOVE_WORKER:
-                  if (LOGGER.isInfoEnabled()) {
-                    LOGGER.info("received REMOVE_WORKER " + workerId);
-                  }
-                  connectionPool.removeRemote(workerId).await();
-                  sendMessageToMaster(IPCUtils.removeWorkerAckTM(workerId));
-                  for (WorkerSubQuery wqp : executingSubQueries.values()) {
-                    if (wqp.getFTMode().equals(FTMode.ABANDON)) {
-                      wqp.getMissingWorkers().add(workerId);
-                      wqp.updateProducerChannels(workerId, false);
-                      wqp.triggerFragmentEosEoiChecks();
-                    } else if (wqp.getFTMode().equals(FTMode.REJOIN)) {
-                      wqp.getMissingWorkers().add(workerId);
-                    }
-                  }
-                  break;
-                case ADD_WORKER:
-                  if (LOGGER.isInfoEnabled()) {
-                    LOGGER.info("received ADD_WORKER " + workerId);
-                  }
-                  connectionPool
-                      .putRemote(workerId, SocketInfo.fromProtobuf(cm.getRemoteAddress()));
-                  sendMessageToMaster(IPCUtils.addWorkerAckTM(workerId));
                   break;
                 default:
                   if (LOGGER.isErrorEnabled()) {
@@ -261,6 +251,98 @@ public final class Worker implements Task {
       }
     }
 
+  }
+
+  private final Queue<TaskMessage> pendingDriverMessages = new ConcurrentLinkedQueue<>();
+
+  private Optional<TaskMessage> dequeueDriverMessage() {
+    return Optional.ofNullable(pendingDriverMessages.poll());
+  }
+
+  private void enqueueDriverMessage(@Nonnull final TransportMessage msg) {
+    final TaskMessage driverMsg = TaskMessage.from(myID + "", msg.toByteArray());
+    pendingDriverMessages.add(driverMsg);
+  }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see org.apache.reef.task.TaskMessageSource#getMessage()
+   * 
+   * To be used to instruct the driver to launch or abort workers.
+   */
+  @Override
+  public Optional<TaskMessage> getMessage() {
+    // TODO: determine which messages should be sent to the driver
+    return dequeueDriverMessage();
+  }
+
+  private final Striped<Lock> workerAddRemoveLock;
+
+  /**
+   * REEF event handler for driver messages indicating worker failure.
+   */
+  @Override
+  public void onNext(final DriverMessage driverMessage) {
+    LOGGER.info("Driver message received");
+    TransportMessage m;
+    try {
+      m = TransportMessage.parseFrom(driverMessage.get().get());
+    } catch (InvalidProtocolBufferException e) {
+      LOGGER.warn("Could not parse TransportMessage from driver message", e);
+      return;
+    }
+    final ControlMessage controlM = m.getControlMessage();
+    LOGGER.info("Control message received: {}", controlM);
+    int workerId = controlM.getWorkerId();
+    Lock workerLock = workerAddRemoveLock.get(workerId);
+    workerLock.lock();
+    try {
+      switch (controlM.getType()) {
+        case REMOVE_WORKER: {
+          if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("received REMOVE_WORKER for worker " + workerId);
+          }
+          connectionPool.removeRemote(workerId).addListener(new ChannelGroupFutureListener() {
+            @Override
+            public void operationComplete(final ChannelGroupFuture future) {
+              if (future.isCompleteSuccess()) {
+                LOGGER.info("removed connection for remote worker {} from connection pool",
+                    workerId);
+              } else {
+                LOGGER.info(
+                    "failed to remove connection for remote worker {} from connection pool",
+                    workerId);
+              }
+            }
+          });
+          for (WorkerSubQuery wqp : executingSubQueries.values()) {
+            if (wqp.getFTMode().equals(FTMode.ABANDON)) {
+              wqp.getMissingWorkers().add(workerId);
+              wqp.updateProducerChannels(workerId, false);
+              wqp.triggerFragmentEosEoiChecks();
+            } else if (wqp.getFTMode().equals(FTMode.REJOIN)) {
+              wqp.getMissingWorkers().add(workerId);
+            }
+          }
+          enqueueDriverMessage(IPCUtils.removeWorkerAckTM(workerId));
+        }
+          break;
+        case ADD_WORKER: {
+          if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("received ADD_WORKER " + workerId);
+          }
+          connectionPool.putRemote(workerId, SocketInfo.fromProtobuf(controlM.getRemoteAddress()));
+          enqueueDriverMessage(IPCUtils.addWorkerAckTM(workerId));
+        }
+          break;
+        default:
+          throw new IllegalStateException("Unexpected driver control message type: "
+              + controlM.getType());
+      }
+    } finally {
+      workerLock.unlock();
+    }
   }
 
   /**
@@ -435,6 +517,7 @@ public final class Worker implements Task {
     final Map<Integer, SocketInfo> computingUnits =
         getComputingUnits(masterHost, masterPort, workerConfs);
 
+    workerAddRemoveLock = Striped.lock(workerConfs.size());
     connectionPool =
         new IPCConnectionPool(myID, computingUnits,
             IPCConfigurations.createWorkerIPCServerBootstrap(connectTimeoutMillis, sendBufferSize,
