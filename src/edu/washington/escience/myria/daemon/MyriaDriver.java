@@ -44,8 +44,6 @@ import org.apache.reef.tang.formats.AvroConfigurationSerializer;
 import org.apache.reef.tang.formats.ConfigurationSerializer;
 import org.apache.reef.wake.EventHandler;
 import org.apache.reef.wake.remote.address.LocalAddressProvider;
-import org.apache.reef.wake.time.Clock;
-import org.apache.reef.wake.time.event.Alarm;
 import org.apache.reef.wake.time.event.StartTime;
 import org.apache.reef.wake.time.event.StopTime;
 import org.slf4j.Logger;
@@ -101,7 +99,6 @@ public final class MyriaDriver {
   private final ConcurrentMap<Integer, CountDownLatch> coordinatorRemoveAckPending;
   private final SetMultimap<Integer, Integer> workerAddAcksReceived;
   private final SetMultimap<Integer, Integer> workerRemoveAcksReceived;
-  private final Clock clock;
   private static final int WORKER_ACK_TIMEOUT_MILLIS = 5000;
 
   /**
@@ -305,13 +302,11 @@ public final class MyriaDriver {
   @Inject
   public MyriaDriver(final LocalAddressProvider addressProvider,
       final EvaluatorRequestor requestor, final JVMProcessFactory jvmProcessFactory,
-      final Clock clock,
       final @Parameter(MyriaDriverLauncher.SerializedGlobalConf.class) String serializedGlobalConf)
       throws Exception {
     this.requestor = requestor;
     this.addressProvider = addressProvider;
     this.jvmProcessFactory = jvmProcessFactory;
-    this.clock = clock;
     globalConf = new AvroConfigurationSerializer().fromString(serializedGlobalConf);
     globalConfInjector = Tang.Factory.getTang().newInjector(globalConf);
     workerConfs = getWorkerConfs();
@@ -538,15 +533,6 @@ public final class MyriaDriver {
     return messageSent;
   }
 
-  private void scheduleAction(final int delayMillis, final Runnable action) {
-    clock.scheduleAlarm(delayMillis, new EventHandler<Alarm>() {
-      @Override
-      public void onNext(final Alarm alarm) {
-        action.run();
-      }
-    });
-  }
-
   private void recoverWorker(final int workerId) throws InterruptedException {
     if (workerId != MyriaConstants.MASTER_ID) {
       // this is obviously racy but it doesn't matter since we timeout on acks
@@ -556,8 +542,11 @@ public final class MyriaDriver {
       for (Integer aliveWorkerId : aliveWorkers) {
         notifyWorkerOnRecovery(workerId, aliveWorkerId);
       }
-      acksPending.await(WORKER_ACK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
-      workerAddAcksPending.remove(workerId);
+      boolean timedOut = !acksPending.await(WORKER_ACK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+      if (timedOut) {
+        LOGGER.info("Timed out after {} ms while waiting for {} acks for ADD_WORKER on worker {}",
+            WORKER_ACK_TIMEOUT_MILLIS, aliveWorkers.size(), workerId);
+      }
       Set<Integer> ackedWorkers = workerAddAcksReceived.removeAll(workerId);
       LOGGER.info("Received {} of expected {} acks for ADD_WORKER on worker {}",
           ackedWorkers.size(), aliveWorkers.size(), workerId);
@@ -580,8 +569,11 @@ public final class MyriaDriver {
     for (Integer aliveWorkerId : aliveWorkers) {
       notifyWorkerOnFailure(workerId, aliveWorkerId);
     }
-    acksPending.await(WORKER_ACK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
-    workerRemoveAcksPending.remove(workerId);
+    boolean timedOut = !acksPending.await(WORKER_ACK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+    if (timedOut) {
+      LOGGER.info("Timed out after {} ms while waiting for {} acks for REMOVE_WORKER on worker {}",
+          WORKER_ACK_TIMEOUT_MILLIS, aliveWorkers.size(), workerId);
+    }
     Set<Integer> ackedWorkers = workerRemoveAcksReceived.removeAll(workerId);
     LOGGER.info("Received {} of expected {} acks for REMOVE_WORKER on worker {}",
         ackedWorkers.size(), aliveWorkers.size(), workerId);
@@ -594,13 +586,6 @@ public final class MyriaDriver {
   private void notifyWorkerOnFailure(final int workerId, final int workerToNotifyId) {
     // we should never get here on coordinator failure
     Preconditions.checkArgument(workerId != MyriaConstants.MASTER_ID);
-    SocketInfo si;
-    try {
-      si = getSocketInfoForWorker(workerId);
-    } catch (InjectionException e) {
-      LOGGER.error("Failed to get SocketInfo for worker {}:\n{}", workerId, e);
-      return;
-    }
     LOGGER.info("Sending ADD_WORKER for worker {} to all alive workers (excluding coordinator)",
         workerId);
     final TransportMessage workerRecovered = IPCUtils.removeWorkerTM(workerId, null);
