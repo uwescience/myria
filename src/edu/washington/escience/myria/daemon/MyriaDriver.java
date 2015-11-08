@@ -3,7 +3,6 @@ package edu.washington.escience.myria.daemon;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
@@ -155,7 +154,7 @@ public final class MyriaDriver {
   private final ImmutableTable<TaskState, TaskStateEvent, TaskStateTransition> taskStateTransitions;
 
   @SuppressWarnings("unchecked")
-  private ImmutableTable<TaskState, TaskStateEvent, TaskStateTransition> getTaskStateTransitions() {
+  private ImmutableTable<TaskState, TaskStateEvent, TaskStateTransition> initializeTaskStateTransitions() {
     return new ImmutableTable.Builder<TaskState, TaskStateEvent, TaskStateTransition>()
         .put(TaskState.PENDING_EVALUATOR_REQUEST, TaskStateEvent.EVALUATOR_SUBMITTED,
             TaskStateTransition.of(TaskState.PENDING_EVALUATOR, (wid, ctx) -> {
@@ -309,7 +308,7 @@ public final class MyriaDriver {
     this.jvmProcessFactory = jvmProcessFactory;
     globalConf = new AvroConfigurationSerializer().fromString(serializedGlobalConf);
     globalConfInjector = Tang.Factory.getTang().newInjector(globalConf);
-    workerConfs = getWorkerConfs();
+    workerConfs = initializeWorkerConfs();
     workerIdsPendingEvaluatorAllocation = new ConcurrentLinkedQueue<>();
     tasksByWorkerId = new ConcurrentHashMap<>();
     contextsByWorkerId = new ConcurrentHashMap<>();
@@ -323,8 +322,8 @@ public final class MyriaDriver {
         Multimaps.synchronizedSetMultimap(HashMultimap.<Integer, Integer>create());
     workerRemoveAcksReceived =
         Multimaps.synchronizedSetMultimap(HashMultimap.<Integer, Integer>create());
-    workerStates = getWorkerStates();
-    taskStateTransitions = getTaskStateTransitions();
+    workerStates = initializeWorkerStates();
+    taskStateTransitions = initializeTaskStateTransitions();
     workerStateTransitionLocks = Striped.lock(workerConfs.size() + 1); // +1 for coordinator
   }
 
@@ -346,7 +345,7 @@ public final class MyriaDriver {
     return reefMasterHost;
   }
 
-  private ImmutableMap<Integer, Configuration> getWorkerConfs() throws InjectionException,
+  private ImmutableMap<Integer, Configuration> initializeWorkerConfs() throws InjectionException,
       BindException, IOException {
     final ImmutableMap.Builder<Integer, Configuration> workerConfsBuilder =
         new ImmutableMap.Builder<>();
@@ -383,7 +382,7 @@ public final class MyriaDriver {
     return reefHost;
   }
 
-  private ConcurrentMap<Integer, TaskState> getWorkerStates() {
+  private ConcurrentMap<Integer, TaskState> initializeWorkerStates() {
     final ConcurrentMap<Integer, TaskState> workerStates =
         new ConcurrentHashMap<>(workerConfs.size() + 1);
     workerStates.put(MyriaConstants.MASTER_ID, TaskState.PENDING_EVALUATOR_REQUEST);
@@ -504,16 +503,14 @@ public final class MyriaDriver {
     context.submitTask(taskConf);
   }
 
-  private ImmutableSet<Integer> getAliveWorkers(final boolean includeMaster) {
-    Set<Integer> aliveWorkers = new HashSet<>();
-    workerStates
-        .forEach((wid, state) -> {
-          if ((!wid.equals(MyriaConstants.MASTER_ID) || includeMaster)
-              && state.equals(TaskState.READY)) {
-            aliveWorkers.add(wid);
-          }
-        });
-    return ImmutableSet.copyOf(aliveWorkers);
+  private ImmutableSet<Integer> getAliveWorkers() {
+    ImmutableSet.Builder<Integer> builder = ImmutableSet.builder();
+    workerStates.forEach((wid, state) -> {
+      if (!wid.equals(MyriaConstants.MASTER_ID) && state.equals(TaskState.READY)) {
+        builder.add(wid);
+      }
+    });
+    return builder.build();
   }
 
   private boolean sendMessageToWorker(final int workerId, final TransportMessage message) {
@@ -536,7 +533,7 @@ public final class MyriaDriver {
   private void recoverWorker(final int workerId) throws InterruptedException {
     if (workerId != MyriaConstants.MASTER_ID) {
       // this is obviously racy but it doesn't matter since we timeout on acks
-      ImmutableSet<Integer> aliveWorkers = getAliveWorkers(false);
+      ImmutableSet<Integer> aliveWorkers = getAliveWorkers();
       CountDownLatch acksPending = new CountDownLatch(aliveWorkers.size());
       workerAddAcksPending.put(workerId, acksPending);
       for (Integer aliveWorkerId : aliveWorkers) {
@@ -563,7 +560,7 @@ public final class MyriaDriver {
   private void removeWorker(final int workerId) throws InterruptedException {
     Preconditions.checkState(workerId != MyriaConstants.MASTER_ID);
     // this is obviously racy but it doesn't matter since we timeout on acks
-    ImmutableSet<Integer> aliveWorkers = getAliveWorkers(false);
+    ImmutableSet<Integer> aliveWorkers = getAliveWorkers();
     CountDownLatch acksPending = new CountDownLatch(aliveWorkers.size());
     workerRemoveAcksPending.put(workerId, acksPending);
     for (Integer aliveWorkerId : aliveWorkers) {
