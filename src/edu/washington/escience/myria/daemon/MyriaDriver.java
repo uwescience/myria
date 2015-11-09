@@ -283,7 +283,7 @@ public final class MyriaDriver {
                 event, workerState, transition.newState, workerId, context);
         try {
           transition.handler.onTransition(workerId, context);
-        } catch (Exception e) {
+        } catch (final Exception e) {
           throw new RuntimeException(e);
         }
       } else {
@@ -345,7 +345,7 @@ public final class MyriaDriver {
         reefMasterHost = InetAddress.getByName(addressProvider.getLocalAddress()).getHostName();
         LOGGER.info("Original host: {}, HostnameBasedLocalAddressProvider returned {}", masterHost,
             reefMasterHost);
-      } catch (UnknownHostException e) {
+      } catch (final UnknownHostException e) {
         LOGGER.warn("Failed to get canonical hostname for host {}", masterHost);
       }
     }
@@ -382,7 +382,7 @@ public final class MyriaDriver {
         reefHost = InetAddress.getByName(addressProvider.getLocalAddress()).getHostName();
         LOGGER.info("Original host: {}, HostnameBasedLocalAddressProvider returned {}", host,
             reefHost);
-      } catch (UnknownHostException e) {
+      } catch (final UnknownHostException e) {
         LOGGER.warn("Failed to get canonical hostname for host {}", host);
       }
     }
@@ -601,11 +601,12 @@ public final class MyriaDriver {
       final CountDownLatch coordinatorAcked = new CountDownLatch(1);
       registerCoordinatorAddAckHandler(workerId, (wid) -> {
         coordinatorAcked.countDown();
-        doTransition(workerId, TaskStateEvent.TASK_RUNNING_ACK, ackedWorkers);
       });
       notifyCoordinatorOnRecovery(workerId, ackedWorkers);
       coordinatorAcked.await();
       unregisterCoordinatorAddAckHandler(workerId);
+      // we need to perform the transition in our own thread or we can't re-enter the lock
+      doTransition(workerId, TaskStateEvent.TASK_RUNNING_ACK, ackedWorkers);
     } else {
       // coordinator can't get any acks when it starts
       doTransition(workerId, TaskStateEvent.TASK_RUNNING_ACK, ImmutableSet.of());
@@ -642,11 +643,12 @@ public final class MyriaDriver {
     final CountDownLatch coordinatorAcked = new CountDownLatch(1);
     registerCoordinatorRemoveAckHandler(workerId, (wid) -> {
       coordinatorAcked.countDown();
-      doTransition(workerId, TaskStateEvent.TASK_FAILED_ACK, ackedWorkers);
     });
     notifyCoordinatorOnFailure(workerId, ackedWorkers);
     coordinatorAcked.await();
     unregisterCoordinatorRemoveAckHandler(workerId);
+    // we need to perform the transition in our own thread or we can't re-enter the lock
+    doTransition(workerId, TaskStateEvent.TASK_FAILED_ACK, ackedWorkers);
   }
 
   private void notifyWorkerOnFailure(final int workerId, final int workerToNotifyId) {
@@ -663,7 +665,7 @@ public final class MyriaDriver {
     SocketInfo si;
     try {
       si = getSocketInfoForWorker(workerId);
-    } catch (InjectionException e) {
+    } catch (final InjectionException e) {
       LOGGER.error("Failed to get SocketInfo for worker {}:\n{}", workerId, e);
       return;
     }
@@ -684,7 +686,7 @@ public final class MyriaDriver {
     SocketInfo si;
     try {
       si = getSocketInfoForWorker(workerId);
-    } catch (InjectionException e) {
+    } catch (final InjectionException e) {
       LOGGER.error("Failed to get SocketInfo for worker {}:\n{}", workerId, e);
       return;
     }
@@ -700,7 +702,7 @@ public final class MyriaDriver {
             sid));
     try {
       ackHandler.onAck(workerId, senderId);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new RuntimeException(e);
     }
   }
@@ -712,7 +714,7 @@ public final class MyriaDriver {
             sid));
     try {
       ackHandler.onAck(workerId, senderId);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new RuntimeException(e);
     }
   }
@@ -723,7 +725,7 @@ public final class MyriaDriver {
             "No coordinator handler registered for ADD_WORKER_ACK (worker ID {})", wid));
     try {
       ackHandler.onAck(workerId);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new RuntimeException(e);
     }
   }
@@ -734,7 +736,7 @@ public final class MyriaDriver {
             "No coordinator handler registered for REMOVE_WORKER_ACK (worker ID {})", wid));
     try {
       ackHandler.onAck(workerId);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new RuntimeException(e);
     }
   }
@@ -775,7 +777,7 @@ public final class MyriaDriver {
       state = DriverState.PREPARING_MASTER;
       try {
         launchMaster();
-      } catch (InjectionException e) {
+      } catch (final InjectionException e) {
         throw new RuntimeException(e);
       }
     }
@@ -817,12 +819,12 @@ public final class MyriaDriver {
     public void onNext(final FailedEvaluator failedEvaluator) {
       LOGGER.warn("FailedEvaluator: {}", failedEvaluator);
       // respawn evaluator and reschedule task if configured
-      List<FailedContext> failedContexts = failedEvaluator.getFailedContextList();
+      final List<FailedContext> failedContexts = failedEvaluator.getFailedContextList();
       // we should have at most one context in the list (since we only allocate the root context)
       if (failedContexts.size() > 0) {
         Preconditions.checkState(failedContexts.size() == 1);
-        FailedContext failedContext = failedContexts.get(0);
-        int workerId = Integer.valueOf(failedContext.getId());
+        final FailedContext failedContext = failedContexts.get(0);
+        final int workerId = Integer.valueOf(failedContext.getId());
         doTransition(workerId, TaskStateEvent.EVALUATOR_FAILED, failedEvaluator);
       } else {
         throw new IllegalStateException("Could not find worker ID for failed evaluator: "
@@ -834,7 +836,7 @@ public final class MyriaDriver {
   final class ActiveContextHandler implements EventHandler<ActiveContext> {
     @Override
     public void onNext(final ActiveContext context) {
-      String host = context.getEvaluatorDescriptor().getNodeDescriptor().getName();
+      final String host = context.getEvaluatorDescriptor().getNodeDescriptor().getName();
       LOGGER.info("Context {} available on node {}", context.getId(), host);
       final int workerId = Integer.valueOf(context.getId());
       doTransition(workerId, TaskStateEvent.CONTEXT_ALLOCATED, context);
@@ -876,6 +878,8 @@ public final class MyriaDriver {
     }
   }
 
+  // NB: REEF only uses a single TaskMessage dispatch thread per Evaluator, so TaskMessage handlers
+  // should never block!
   final class TaskMessageHandler implements EventHandler<TaskMessage> {
     @Override
     public void onNext(final TaskMessage taskMessage) {
@@ -883,7 +887,7 @@ public final class MyriaDriver {
       TransportMessage m;
       try {
         m = TransportMessage.parseFrom(taskMessage.get());
-      } catch (InvalidProtocolBufferException e) {
+      } catch (final InvalidProtocolBufferException e) {
         LOGGER.warn("Could not parse TransportMessage from task message", e);
         return;
       }
