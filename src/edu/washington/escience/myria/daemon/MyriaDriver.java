@@ -49,12 +49,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableTable;
-import com.google.common.collect.Multimaps;
-import com.google.common.collect.SetMultimap;
+import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Striped;
 import com.google.protobuf.InvalidProtocolBufferException;
 
@@ -92,12 +90,10 @@ public final class MyriaDriver {
   private final ConcurrentMap<Integer, ActiveContext> contextsByWorkerId;
   private final ConcurrentMap<Integer, AllocatedEvaluator> evaluatorsByWorkerId;
   private final AtomicInteger numberWorkersPending;
-  private final ConcurrentMap<Integer, CountDownLatch> workerAddAcksPending;
-  private final ConcurrentMap<Integer, CountDownLatch> workerRemoveAcksPending;
-  private final ConcurrentMap<Integer, CountDownLatch> coordinatorAddAckPending;
-  private final ConcurrentMap<Integer, CountDownLatch> coordinatorRemoveAckPending;
-  private final SetMultimap<Integer, Integer> workerAddAcksReceived;
-  private final SetMultimap<Integer, Integer> workerRemoveAcksReceived;
+  private final ConcurrentMap<Integer, WorkerAckHandler> addWorkerAckHandlers;
+  private final ConcurrentMap<Integer, WorkerAckHandler> removeWorkerAckHandlers;
+  private final ConcurrentMap<Integer, CoordinatorAckHandler> addCoordinatorAckHandlers;
+  private final ConcurrentMap<Integer, CoordinatorAckHandler> removeCoordinatorAckHandlers;
   private static final int WORKER_ACK_TIMEOUT_MILLIS = 5000;
 
   /**
@@ -274,11 +270,11 @@ public final class MyriaDriver {
   public void doTransition(final int workerId, final TaskStateEvent event, final Object context) {
     // NB: this lock is reentrant, so any transitions induced by the transition handler will not
     // deadlock the thread.
-    Lock workerLock = workerStateTransitionLocks.get(workerId);
+    final Lock workerLock = workerStateTransitionLocks.get(workerId);
     workerLock.lock();
     try {
-      TaskState workerState = workerStates.get(workerId);
-      TaskStateTransition transition = taskStateTransitions.get(workerState, event);
+      final TaskState workerState = workerStates.get(workerId);
+      final TaskStateTransition transition = taskStateTransitions.get(workerState, event);
       if (transition != null) {
         workerStates.replace(workerId, transition.newState);
         LOGGER
@@ -300,6 +296,16 @@ public final class MyriaDriver {
     }
   }
 
+  @FunctionalInterface
+  private interface WorkerAckHandler {
+    public void onAck(final int workerId, final int senderId) throws Exception;
+  }
+
+  @FunctionalInterface
+  private interface CoordinatorAckHandler {
+    public void onAck(final int workerId) throws Exception;
+  }
+
   // TODO: inject JobMessageObserver so we can send messages to the driver launcher (using
   // JobMessageObserver.sendMessageToClient() in handler registered with
   // DriverConfiguration.ON_CLIENT_MESSAGE)
@@ -319,14 +325,10 @@ public final class MyriaDriver {
     contextsByWorkerId = new ConcurrentHashMap<>();
     evaluatorsByWorkerId = new ConcurrentHashMap<>();
     numberWorkersPending = new AtomicInteger(workerConfs.size());
-    workerAddAcksPending = new ConcurrentHashMap<>();
-    workerRemoveAcksPending = new ConcurrentHashMap<>();
-    coordinatorAddAckPending = new ConcurrentHashMap<>();
-    coordinatorRemoveAckPending = new ConcurrentHashMap<>();
-    workerAddAcksReceived =
-        Multimaps.synchronizedSetMultimap(HashMultimap.<Integer, Integer>create());
-    workerRemoveAcksReceived =
-        Multimaps.synchronizedSetMultimap(HashMultimap.<Integer, Integer>create());
+    addWorkerAckHandlers = new ConcurrentHashMap<>();
+    removeWorkerAckHandlers = new ConcurrentHashMap<>();
+    addCoordinatorAckHandlers = new ConcurrentHashMap<>();
+    removeCoordinatorAckHandlers = new ConcurrentHashMap<>();
     workerStates = initializeWorkerStates();
     taskStateTransitions = initializeTaskStateTransitions();
     workerStateTransitionLocks = Striped.lock(workerConfs.size() + 1); // +1 for coordinator
@@ -371,7 +373,7 @@ public final class MyriaDriver {
 
   private String getHostFromWorkerConf(final Configuration workerConf) throws InjectionException {
     final Injector injector = Tang.Factory.getTang().newInjector(workerConf);
-    String host = injector.getNamedInstance(MyriaWorkerConfigurationModule.WorkerHost.class);
+    final String host = injector.getNamedInstance(MyriaWorkerConfigurationModule.WorkerHost.class);
     // REEF (org.apache.reef.wake.remote.address.HostnameBasedLocalAddressProvider) will
     // unpredictably pick a local DNS name or IP address instead of "localhost" or 127.0.0.1
     String reefHost = host;
@@ -391,7 +393,7 @@ public final class MyriaDriver {
     final ConcurrentMap<Integer, TaskState> workerStates =
         new ConcurrentHashMap<>(workerConfs.size() + 1);
     workerStates.put(MyriaConstants.MASTER_ID, TaskState.PENDING_EVALUATOR_REQUEST);
-    for (Integer workerId : workerConfs.keySet()) {
+    for (final Integer workerId : workerConfs.keySet()) {
       workerStates.put(workerId, TaskState.PENDING_EVALUATOR_REQUEST);
     }
     return workerStates;
@@ -401,8 +403,8 @@ public final class MyriaDriver {
     final Configuration workerConf = workerConfs.get(workerId);
     final Injector injector = Tang.Factory.getTang().newInjector(workerConf);
     // we don't use getHostFromWorkerConf() because we want to keep our original hostname
-    String host = injector.getNamedInstance(MyriaWorkerConfigurationModule.WorkerHost.class);
-    Integer port = injector.getNamedInstance(MyriaWorkerConfigurationModule.WorkerPort.class);
+    final String host = injector.getNamedInstance(MyriaWorkerConfigurationModule.WorkerHost.class);
+    final Integer port = injector.getNamedInstance(MyriaWorkerConfigurationModule.WorkerPort.class);
     return new SocketInfo(host, port);
   }
 
@@ -449,7 +451,7 @@ public final class MyriaDriver {
             .addOption(String.format("-Xmx%dg", jvmHeapSizeMaxGB))
             // for native libraries
             .addOption("-Djava.library.path=./reef/global");
-    for (String option : jvmOptions) {
+    for (final String option : jvmOptions) {
       jvmProcess.addOption(option);
     }
     evaluator.setProcess(jvmProcess);
@@ -469,7 +471,7 @@ public final class MyriaDriver {
 
   private void allocateWorkerContext(final int workerId) throws InjectionException {
     Preconditions.checkState(evaluatorsByWorkerId.containsKey(workerId));
-    AllocatedEvaluator evaluator = evaluatorsByWorkerId.get(workerId);
+    final AllocatedEvaluator evaluator = evaluatorsByWorkerId.get(workerId);
     LOGGER.info("Launching context for worker ID {} on {}", workerId, evaluator
         .getEvaluatorDescriptor().getNodeDescriptor().getName());
     Preconditions.checkState(!contextsByWorkerId.containsKey(workerId));
@@ -484,10 +486,10 @@ public final class MyriaDriver {
 
   private void scheduleTask(final int workerId) {
     Preconditions.checkState(contextsByWorkerId.containsKey(workerId));
-    ActiveContext context = contextsByWorkerId.get(workerId);
+    final ActiveContext context = contextsByWorkerId.get(workerId);
     LOGGER.info("Scheduling task for worker ID {} on context {}, evaluator {}", workerId,
         context.getId(), context.getEvaluatorId());
-    final Configuration taskConf;
+    Configuration taskConf;
     if (workerId == MyriaConstants.MASTER_ID) {
       Preconditions.checkState(state == DriverState.PREPARING_MASTER);
       taskConf =
@@ -509,7 +511,7 @@ public final class MyriaDriver {
   }
 
   private ImmutableSet<Integer> getAliveWorkers() {
-    ImmutableSet.Builder<Integer> builder = ImmutableSet.builder();
+    final ImmutableSet.Builder<Integer> builder = ImmutableSet.builder();
     workerStates.forEach((wid, state) -> {
       if (!wid.equals(MyriaConstants.MASTER_ID) && state.equals(TaskState.READY)) {
         builder.add(wid);
@@ -523,7 +525,7 @@ public final class MyriaDriver {
     // if the worker we're sending to is in the middle of a state transition, we abort
     if (workerStateTransitionLocks.get(workerId).tryLock()) {
       try {
-        RunningTask workerToNotifyTask = tasksByWorkerId.get(workerId);
+        final RunningTask workerToNotifyTask = tasksByWorkerId.get(workerId);
         if (workerToNotifyTask != null) {
           workerToNotifyTask.send(message.toByteArray());
           messageSent = true;
@@ -535,29 +537,75 @@ public final class MyriaDriver {
     return messageSent;
   }
 
+  private void registerWorkerAddAckHandler(final int workerId, final WorkerAckHandler handler) {
+    addWorkerAckHandlers.put(workerId, handler);
+  }
+
+  private void registerWorkerRemoveAckHandler(final int workerId, final WorkerAckHandler handler) {
+    removeWorkerAckHandlers.put(workerId, handler);
+  }
+
+  private void registerCoordinatorAddAckHandler(final int workerId,
+      final CoordinatorAckHandler handler) {
+    addCoordinatorAckHandlers.put(workerId, handler);
+  }
+
+  private void registerCoordinatorRemoveAckHandler(final int workerId,
+      final CoordinatorAckHandler handler) {
+    removeCoordinatorAckHandlers.put(workerId, handler);
+  }
+
+  private void unregisterWorkerAddAckHandler(final int workerId) {
+    addWorkerAckHandlers.remove(workerId);
+  }
+
+  private void unregisterWorkerRemoveAckHandler(final int workerId) {
+    removeWorkerAckHandlers.remove(workerId);
+  }
+
+  private void unregisterCoordinatorAddAckHandler(final int workerId) {
+    addCoordinatorAckHandlers.remove(workerId);
+  }
+
+  private void unregisterCoordinatorRemoveAckHandler(final int workerId) {
+    removeCoordinatorAckHandlers.remove(workerId);
+  }
+
   private void recoverWorker(final int workerId) throws InterruptedException {
     if (workerId != MyriaConstants.MASTER_ID) {
       // this is obviously racy but it doesn't matter since we timeout on acks
-      ImmutableSet<Integer> aliveWorkers = getAliveWorkers();
-      CountDownLatch acksPending = new CountDownLatch(aliveWorkers.size());
-      workerAddAcksPending.put(workerId, acksPending);
+      final ImmutableSet<Integer> aliveWorkers = getAliveWorkers();
+      final CountDownLatch acksPending = new CountDownLatch(aliveWorkers.size());
+      final Set<Integer> ackedWorkers = Sets.newConcurrentHashSet();
+      registerWorkerAddAckHandler(workerId, (wid, sid) -> {
+        ackedWorkers.add(sid);
+        acksPending.countDown();
+      });
       LOGGER.info("Sending ADD_WORKER for worker {} to all {} alive workers", workerId,
           aliveWorkers.size());
-      for (Integer aliveWorkerId : aliveWorkers) {
+      for (final Integer aliveWorkerId : aliveWorkers) {
         notifyWorkerOnRecovery(workerId, aliveWorkerId);
       }
-      boolean timedOut = !acksPending.await(WORKER_ACK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+      final boolean timedOut = !acksPending.await(WORKER_ACK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
       if (timedOut) {
         LOGGER.info("Timed out after {} ms while waiting for {} acks for ADD_WORKER on worker {}",
             WORKER_ACK_TIMEOUT_MILLIS, aliveWorkers.size(), workerId);
       }
-      Set<Integer> ackedWorkers = workerAddAcksReceived.removeAll(workerId);
+      // Strictly speaking, this is incorrect since a stale ack could arrive during the next phase
+      // in this state. We would need per-worker epoch counters to prevent this (advance the epoch
+      // on each state transition, check the epoch of an ack message when it arrives and reject it
+      // if stale). If this sort of bug ever shows up in tests, we'll consider this solution.
+      unregisterWorkerAddAckHandler(workerId);
       LOGGER.info("Received {} of expected {} acks for ADD_WORKER on worker {}",
           ackedWorkers.size(), aliveWorkers.size(), workerId);
-      CountDownLatch coordinatorAcked = new CountDownLatch(1);
-      coordinatorAddAckPending.put(workerId, coordinatorAcked);
+      final CountDownLatch coordinatorAcked = new CountDownLatch(1);
+      registerCoordinatorAddAckHandler(workerId, (wid) -> {
+        coordinatorAcked.countDown();
+        doTransition(workerId, TaskStateEvent.TASK_RUNNING_ACK, ackedWorkers);
+      });
       notifyCoordinatorOnRecovery(workerId, ackedWorkers);
       coordinatorAcked.await();
+      unregisterCoordinatorAddAckHandler(workerId);
     } else {
       // coordinator can't get any acks when it starts
       doTransition(workerId, TaskStateEvent.TASK_RUNNING_ACK, ImmutableSet.of());
@@ -567,26 +615,38 @@ public final class MyriaDriver {
   private void removeWorker(final int workerId) throws InterruptedException {
     Preconditions.checkState(workerId != MyriaConstants.MASTER_ID);
     // this is obviously racy but it doesn't matter since we timeout on acks
-    ImmutableSet<Integer> aliveWorkers = getAliveWorkers();
-    CountDownLatch acksPending = new CountDownLatch(aliveWorkers.size());
-    workerRemoveAcksPending.put(workerId, acksPending);
+    final ImmutableSet<Integer> aliveWorkers = getAliveWorkers();
+    final CountDownLatch acksPending = new CountDownLatch(aliveWorkers.size());
+    final Set<Integer> ackedWorkers = Sets.newConcurrentHashSet();
+    registerWorkerRemoveAckHandler(workerId, (wid, sid) -> {
+      ackedWorkers.add(sid);
+      acksPending.countDown();
+    });
     LOGGER.info("Sending REMOVE_WORKER for worker {} to all {} alive workers", workerId,
         aliveWorkers.size());
-    for (Integer aliveWorkerId : aliveWorkers) {
+    for (final Integer aliveWorkerId : aliveWorkers) {
       notifyWorkerOnFailure(workerId, aliveWorkerId);
     }
-    boolean timedOut = !acksPending.await(WORKER_ACK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+    final boolean timedOut = !acksPending.await(WORKER_ACK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
     if (timedOut) {
       LOGGER.info("Timed out after {} ms while waiting for {} acks for REMOVE_WORKER on worker {}",
           WORKER_ACK_TIMEOUT_MILLIS, aliveWorkers.size(), workerId);
     }
-    Set<Integer> ackedWorkers = workerRemoveAcksReceived.removeAll(workerId);
+    // Strictly speaking, this is incorrect since a stale ack could arrive during the next phase
+    // in this state. We would need per-worker epoch counters to prevent this (advance the epoch
+    // on each state transition, check the epoch of an ack message when it arrives and reject it
+    // if stale). If this sort of bug ever shows up in tests, we'll consider this solution.
+    unregisterWorkerRemoveAckHandler(workerId);
     LOGGER.info("Received {} of expected {} acks for REMOVE_WORKER on worker {}",
         ackedWorkers.size(), aliveWorkers.size(), workerId);
-    CountDownLatch coordinatorAcked = new CountDownLatch(1);
-    coordinatorRemoveAckPending.put(workerId, coordinatorAcked);
+    final CountDownLatch coordinatorAcked = new CountDownLatch(1);
+    registerCoordinatorRemoveAckHandler(workerId, (wid) -> {
+      coordinatorAcked.countDown();
+      doTransition(workerId, TaskStateEvent.TASK_FAILED_ACK, ackedWorkers);
+    });
     notifyCoordinatorOnFailure(workerId, ackedWorkers);
     coordinatorAcked.await();
+    unregisterCoordinatorRemoveAckHandler(workerId);
   }
 
   private void notifyWorkerOnFailure(final int workerId, final int workerToNotifyId) {
@@ -612,26 +672,6 @@ public final class MyriaDriver {
     sendMessageToWorker(workerToNotifyId, workerRecovered);
   }
 
-  private void onRemoveAckFromWorker(final int workerId, final int senderId) {
-    workerRemoveAcksReceived.put(workerId, senderId);
-    workerRemoveAcksPending.get(workerId).countDown();
-  }
-
-  private void onRemoveAckFromCoordinator(final int workerId) {
-    coordinatorRemoveAckPending.get(workerId).countDown();
-    doTransition(workerId, TaskStateEvent.TASK_FAILED_ACK, null);
-  }
-
-  private void onAddAckFromWorker(final int workerId, final int senderId) {
-    workerAddAcksReceived.put(workerId, senderId);
-    workerAddAcksPending.get(workerId).countDown();
-  }
-
-  private void onAddAckFromCoordinator(final int workerId) {
-    coordinatorAddAckPending.get(workerId).countDown();
-    doTransition(workerId, TaskStateEvent.TASK_RUNNING_ACK, null);
-  }
-
   private void notifyCoordinatorOnFailure(final int workerId, final Set<Integer> ackedWorkers) {
     Preconditions.checkState(workerId != MyriaConstants.MASTER_ID);
     LOGGER.info("Sending REMOVE_WORKER for worker {} to coordinator", workerId);
@@ -651,6 +691,52 @@ public final class MyriaDriver {
     LOGGER.info("Sending ADD_WORKER for worker {} to coordinator", workerId);
     final TransportMessage workerRecovered = IPCUtils.addWorkerTM(workerId, si, ackedWorkers);
     sendMessageToWorker(MyriaConstants.MASTER_ID, workerRecovered);
+  }
+
+  private void onWorkerAddAck(final int workerId, final int senderId) {
+    final WorkerAckHandler ackHandler =
+        addWorkerAckHandlers.getOrDefault(workerId, (wid, sid) -> LOGGER.warn(
+            "No worker handler registered for ADD_WORKER_ACK (worker ID {}, sender ID {})", wid,
+            sid));
+    try {
+      ackHandler.onAck(workerId, senderId);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private void onWorkerRemoveAck(final int workerId, final int senderId) {
+    final WorkerAckHandler ackHandler =
+        removeWorkerAckHandlers.getOrDefault(workerId, (wid, sid) -> LOGGER.warn(
+            "No worker handler registered for REMOVE_WORKER_ACK (worker ID {}, sender ID {})", wid,
+            sid));
+    try {
+      ackHandler.onAck(workerId, senderId);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private void onCoordinatorAddAck(final int workerId) {
+    final CoordinatorAckHandler ackHandler =
+        addCoordinatorAckHandlers.getOrDefault(workerId, (wid) -> LOGGER.warn(
+            "No coordinator handler registered for ADD_WORKER_ACK (worker ID {})", wid));
+    try {
+      ackHandler.onAck(workerId);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private void onCoordinatorRemoveAck(final int workerId) {
+    final CoordinatorAckHandler ackHandler =
+        removeCoordinatorAckHandlers.getOrDefault(workerId, (wid) -> LOGGER.warn(
+            "No coordinator handler registered for REMOVE_WORKER_ACK (worker ID {})", wid));
+    try {
+      ackHandler.onAck(workerId);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private void updateDriverStateOnWorkerReady(final int workerId) throws InjectionException {
@@ -711,9 +797,9 @@ public final class MyriaDriver {
   final class EvaluatorAllocatedHandler implements EventHandler<AllocatedEvaluator> {
     @Override
     public void onNext(final AllocatedEvaluator evaluator) {
-      String node = evaluator.getEvaluatorDescriptor().getNodeDescriptor().getName();
+      final String node = evaluator.getEvaluatorDescriptor().getNodeDescriptor().getName();
       LOGGER.info("Allocated evaluator {} on node {}", evaluator.getId(), node);
-      Integer workerId = workerIdsPendingEvaluatorAllocation.poll();
+      final Integer workerId = workerIdsPendingEvaluatorAllocation.poll();
       Preconditions.checkState(workerId != null, "No worker ID waiting for an evaluator!");
       doTransition(workerId, TaskStateEvent.EVALUATOR_ALLOCATED, evaluator);
     }
@@ -750,7 +836,7 @@ public final class MyriaDriver {
     public void onNext(final ActiveContext context) {
       String host = context.getEvaluatorDescriptor().getNodeDescriptor().getName();
       LOGGER.info("Context {} available on node {}", context.getId(), host);
-      int workerId = Integer.valueOf(context.getId());
+      final int workerId = Integer.valueOf(context.getId());
       doTransition(workerId, TaskStateEvent.CONTEXT_ALLOCATED, context);
     }
   }
@@ -759,7 +845,7 @@ public final class MyriaDriver {
     @Override
     public void onNext(final FailedContext failedContext) {
       LOGGER.error("FailedContext: {}", failedContext);
-      int workerId = Integer.valueOf(failedContext.getId());
+      final int workerId = Integer.valueOf(failedContext.getId());
       doTransition(workerId, TaskStateEvent.CONTEXT_FAILED, failedContext);
     }
   }
@@ -768,7 +854,7 @@ public final class MyriaDriver {
     @Override
     public void onNext(final RunningTask task) {
       LOGGER.info("Running task: {}", task.getId());
-      int workerId = Integer.valueOf(task.getId());
+      final int workerId = Integer.valueOf(task.getId());
       doTransition(workerId, TaskStateEvent.TASK_RUNNING, task);
     }
   }
@@ -785,7 +871,7 @@ public final class MyriaDriver {
     public void onNext(final FailedTask failedTask) {
       LOGGER.warn("FailedTask (ID {}): {}\n{}", failedTask.getId(), failedTask.getMessage(),
           failedTask.getReason());
-      int workerId = Integer.valueOf(failedTask.getId());
+      final int workerId = Integer.valueOf(failedTask.getId());
       doTransition(workerId, TaskStateEvent.TASK_FAILED, failedTask);
     }
   }
@@ -803,20 +889,20 @@ public final class MyriaDriver {
       }
       final ControlMessage controlM = m.getControlMessage();
       // We received a failed worker ack or recovered worker ack from the coordinator.
-      int workerId = controlM.getWorkerId();
+      final int workerId = controlM.getWorkerId();
       LOGGER.info("Received {} for worker {} from worker {}", controlM.getType(), workerId,
           senderId);
       if (controlM.getType() == ControlMessage.Type.REMOVE_WORKER_ACK) {
         if (senderId == MyriaConstants.MASTER_ID) {
-          onRemoveAckFromCoordinator(workerId);
+          onCoordinatorRemoveAck(workerId);
         } else {
-          onRemoveAckFromWorker(workerId, senderId);
+          onWorkerRemoveAck(workerId, senderId);
         }
       } else if (controlM.getType() == ControlMessage.Type.ADD_WORKER_ACK) {
         if (senderId == MyriaConstants.MASTER_ID) {
-          onAddAckFromCoordinator(workerId);
+          onCoordinatorAddAck(workerId);
         } else {
-          onAddAckFromWorker(workerId, senderId);
+          onWorkerAddAck(workerId, senderId);
         }
       } else {
         throw new IllegalStateException(
