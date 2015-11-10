@@ -522,7 +522,7 @@ public final class MyriaDriver {
 
   private boolean sendMessageToWorker(final int workerId, final TransportMessage message) {
     boolean messageSent = false;
-    // if the worker we're sending to is in the middle of a state transition, we abort
+    // if the worker we're sending this message to is in a state transition, we abort
     if (workerStateTransitionLocks.get(workerId).tryLock()) {
       try {
         final RunningTask workerToNotifyTask = tasksByWorkerId.get(workerId);
@@ -533,8 +533,20 @@ public final class MyriaDriver {
       } finally {
         workerStateTransitionLocks.get(workerId).unlock();
       }
+    } else {
+      LOGGER.warn(
+          "worker {} is in a state transition (current state: {}), aborting send of message: {}",
+          workerId, workerStates.get(workerId), message);
     }
     return messageSent;
+  }
+
+  private void sendMessageToCoordinator(final TransportMessage message) {
+    // The coordinator can never be in a state transition after it comes up, so it should always be
+    // safe to send it messages concurrently.
+    Preconditions.checkState(workerStates.get(MyriaConstants.MASTER_ID).equals(TaskState.READY));
+    final RunningTask coordinatorTask = tasksByWorkerId.get(MyriaConstants.MASTER_ID);
+    coordinatorTask.send(message.toByteArray());
   }
 
   private void registerWorkerAddAckHandler(final int workerId, final WorkerAckHandler handler) {
@@ -655,8 +667,11 @@ public final class MyriaDriver {
     // we should never get here on coordinator failure
     Preconditions.checkArgument(workerId != MyriaConstants.MASTER_ID);
     LOGGER.info("Sending REMOVE_WORKER for worker {} to worker {}", workerId, workerToNotifyId);
-    final TransportMessage workerRecovered = IPCUtils.removeWorkerTM(workerId, null);
-    sendMessageToWorker(workerToNotifyId, workerRecovered);
+    final TransportMessage workerFailed = IPCUtils.removeWorkerTM(workerId, null);
+    if (!sendMessageToWorker(workerToNotifyId, workerFailed)) {
+      LOGGER.warn("Unable to send REMOVE_WORKER for worker {} to worker {}", workerId,
+          workerToNotifyId);
+    }
   }
 
   private void notifyWorkerOnRecovery(final int workerId, final int workerToNotifyId) {
@@ -671,14 +686,17 @@ public final class MyriaDriver {
     }
     LOGGER.info("Sending ADD_WORKER for worker {} to worker {}", workerId, workerToNotifyId);
     final TransportMessage workerRecovered = IPCUtils.addWorkerTM(workerId, si, null);
-    sendMessageToWorker(workerToNotifyId, workerRecovered);
+    if (!sendMessageToWorker(workerToNotifyId, workerRecovered)) {
+      LOGGER.warn("Unable to send ADD_WORKER for worker {} to worker {}", workerId,
+          workerToNotifyId);
+    }
   }
 
   private void notifyCoordinatorOnFailure(final int workerId, final Set<Integer> ackedWorkers) {
     Preconditions.checkState(workerId != MyriaConstants.MASTER_ID);
     LOGGER.info("Sending REMOVE_WORKER for worker {} to coordinator", workerId);
     final TransportMessage workerFailed = IPCUtils.removeWorkerTM(workerId, ackedWorkers);
-    sendMessageToWorker(MyriaConstants.MASTER_ID, workerFailed);
+    sendMessageToCoordinator(workerFailed);
   }
 
   private void notifyCoordinatorOnRecovery(final int workerId, final Set<Integer> ackedWorkers) {
@@ -692,7 +710,7 @@ public final class MyriaDriver {
     }
     LOGGER.info("Sending ADD_WORKER for worker {} to coordinator", workerId);
     final TransportMessage workerRecovered = IPCUtils.addWorkerTM(workerId, si, ackedWorkers);
-    sendMessageToWorker(MyriaConstants.MASTER_ID, workerRecovered);
+    sendMessageToCoordinator(workerRecovered);
   }
 
   private void onWorkerAddAck(final int workerId, final int senderId) {
