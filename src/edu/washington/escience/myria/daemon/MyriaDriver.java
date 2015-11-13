@@ -10,6 +10,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
@@ -65,6 +67,7 @@ import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule;
 import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule;
 import edu.washington.escience.myria.util.IPCUtils;
+import edu.washington.escience.myria.util.concurrent.RenamingThreadFactory;
 
 /**
  * Driver for Myria API server/master. Each worker (including master) is mapped to an Evaluator and
@@ -94,6 +97,8 @@ public final class MyriaDriver {
   private final ConcurrentMap<Integer, WorkerAckHandler> removeWorkerAckHandlers;
   private final ConcurrentMap<Integer, CoordinatorAckHandler> addCoordinatorAckHandlers;
   private final ConcurrentMap<Integer, CoordinatorAckHandler> removeCoordinatorAckHandlers;
+  private final ExecutorService transitionExecutor;
+
   private static final int WORKER_ACK_TIMEOUT_MILLIS = 5000;
 
   /**
@@ -296,6 +301,18 @@ public final class MyriaDriver {
     }
   }
 
+  /**
+   * Schedules a worker transition and its handler to be executed on a separate thread pool.
+   * 
+   * @param workerId
+   * @param event
+   * @param context
+   */
+  public void scheduleTransition(final int workerId, final TaskStateEvent event,
+      final Object context) {
+    transitionExecutor.execute(() -> doTransition(workerId, event, context));
+  }
+
   @FunctionalInterface
   private interface WorkerAckHandler {
     public void onAck(final int workerId, final int senderId) throws Exception;
@@ -332,6 +349,11 @@ public final class MyriaDriver {
     workerStates = initializeWorkerStates();
     taskStateTransitions = initializeTaskStateTransitions();
     workerStateTransitionLocks = Striped.lock(workerConfs.size() + 1); // +1 for coordinator
+    // Since all worker transitions acquire a per-worker lock, concurrency is limited to the number
+    // of workers.
+    transitionExecutor =
+        Executors.newFixedThreadPool(workerConfs.size() + 1, new RenamingThreadFactory(
+            "WorkerTransitionThreadPool"));
   }
 
   private String getMasterHost() throws InjectionException {
@@ -821,7 +843,7 @@ public final class MyriaDriver {
       LOGGER.info("Allocated evaluator {} on node {}", evaluator.getId(), node);
       final Integer workerId = workerIdsPendingEvaluatorAllocation.poll();
       Preconditions.checkState(workerId != null, "No worker ID waiting for an evaluator!");
-      doTransition(workerId, TaskStateEvent.EVALUATOR_ALLOCATED, evaluator);
+      scheduleTransition(workerId, TaskStateEvent.EVALUATOR_ALLOCATED, evaluator);
     }
   }
 
@@ -843,7 +865,7 @@ public final class MyriaDriver {
         Preconditions.checkState(failedContexts.size() == 1);
         final FailedContext failedContext = failedContexts.get(0);
         final int workerId = Integer.valueOf(failedContext.getId());
-        doTransition(workerId, TaskStateEvent.EVALUATOR_FAILED, failedEvaluator);
+        scheduleTransition(workerId, TaskStateEvent.EVALUATOR_FAILED, failedEvaluator);
       } else {
         throw new IllegalStateException("Could not find worker ID for failed evaluator: "
             + failedEvaluator);
@@ -857,7 +879,7 @@ public final class MyriaDriver {
       final String host = context.getEvaluatorDescriptor().getNodeDescriptor().getName();
       LOGGER.info("Context {} available on node {}", context.getId(), host);
       final int workerId = Integer.valueOf(context.getId());
-      doTransition(workerId, TaskStateEvent.CONTEXT_ALLOCATED, context);
+      scheduleTransition(workerId, TaskStateEvent.CONTEXT_ALLOCATED, context);
     }
   }
 
@@ -866,7 +888,7 @@ public final class MyriaDriver {
     public void onNext(final FailedContext failedContext) {
       LOGGER.error("FailedContext: {}", failedContext);
       final int workerId = Integer.valueOf(failedContext.getId());
-      doTransition(workerId, TaskStateEvent.CONTEXT_FAILED, failedContext);
+      scheduleTransition(workerId, TaskStateEvent.CONTEXT_FAILED, failedContext);
     }
   }
 
@@ -875,7 +897,7 @@ public final class MyriaDriver {
     public void onNext(final RunningTask task) {
       LOGGER.info("Running task: {}", task.getId());
       final int workerId = Integer.valueOf(task.getId());
-      doTransition(workerId, TaskStateEvent.TASK_RUNNING, task);
+      scheduleTransition(workerId, TaskStateEvent.TASK_RUNNING, task);
     }
   }
 
@@ -892,7 +914,7 @@ public final class MyriaDriver {
       LOGGER.warn("FailedTask (ID {}): {}\n{}", failedTask.getId(), failedTask.getMessage(),
           failedTask.getReason());
       final int workerId = Integer.valueOf(failedTask.getId());
-      doTransition(workerId, TaskStateEvent.TASK_FAILED, failedTask);
+      scheduleTransition(workerId, TaskStateEvent.TASK_FAILED, failedTask);
     }
   }
 
