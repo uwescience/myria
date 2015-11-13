@@ -5,20 +5,6 @@
 			"operators":
 			[
 			{
-			  "opId" : 0,
-			  "opType" : "CollectConsumer",
-			  "argOperatorId" : 16
-			}
-			],
-			"overrideWorkers":
-			[
-				0
-			]
-		},
-		{
-			"operators":
-			[
-			{
 				"opId" : 1,
 				"opType" : "Consumer",
 				"argOperatorId" : 8
@@ -113,6 +99,11 @@
 				{
 					"type" : "DupElim"
 				},
+				"relationKey" : {
+					"userName" : "jwang",
+					"programName" : "reachability",
+					"relationName" : "result"
+				},
 				"argEosControllerInput" : 7
 			},
 			{
@@ -153,30 +144,6 @@
 					"type" : "SingleFieldHash",
 					"index" : 0
 				}
-			}
-			]
-		},
-		{
-			"operators":
-			[
-			{
-				"opId" : 14,
-				"opType" : "LocalMultiwayConsumer",
-				"argOperatorId" : 13
-			},
-			{
-				"opId" : 15,
-				"opType" : "Aggregate",
-				"argChild" : 14,
-                "aggregators": [
-                {
-	                "type": "CountAll"
-                }]
-			},
-			{
-				"opId" : 16,
-				"opType" : "CollectProducer",
-				"argChild" : 15
 			}
 			]
 		}
