@@ -3,6 +3,7 @@ package edu.washington.escience.myria.daemon;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
@@ -18,6 +19,7 @@ import java.util.concurrent.locks.Lock;
 
 import javax.inject.Inject;
 
+import org.apache.reef.driver.client.JobMessageObserver;
 import org.apache.reef.driver.context.ActiveContext;
 import org.apache.reef.driver.context.ContextConfiguration;
 import org.apache.reef.driver.context.FailedContext;
@@ -79,6 +81,7 @@ public final class MyriaDriver {
   private final LocalAddressProvider addressProvider;
   private final EvaluatorRequestor requestor;
   private final JVMProcessFactory jvmProcessFactory;
+  private final JobMessageObserver launcher;
   private final Configuration globalConf;
   private final Injector globalConfInjector;
   private final ImmutableMap<Integer, Configuration> workerConfs;
@@ -100,6 +103,8 @@ public final class MyriaDriver {
   private final ExecutorService transitionExecutor;
 
   private static final int WORKER_ACK_TIMEOUT_MILLIS = 5000;
+  static final String DRIVER_PING_MSG = "PING";
+  static final String DRIVER_PING_ACK_MSG = "PONG";
 
   /**
    * Possible states of the Myria driver. Can be one of:
@@ -323,17 +328,16 @@ public final class MyriaDriver {
     public void onAck(final int workerId) throws Exception;
   }
 
-  // TODO: inject JobMessageObserver so we can send messages to the driver launcher (using
-  // JobMessageObserver.sendMessageToClient() in handler registered with
-  // DriverConfiguration.ON_CLIENT_MESSAGE)
   @Inject
   public MyriaDriver(final LocalAddressProvider addressProvider,
       final EvaluatorRequestor requestor, final JVMProcessFactory jvmProcessFactory,
+      final JobMessageObserver launcher,
       final @Parameter(MyriaDriverLauncher.SerializedGlobalConf.class) String serializedGlobalConf)
       throws Exception {
     this.requestor = requestor;
     this.addressProvider = addressProvider;
     this.jvmProcessFactory = jvmProcessFactory;
+    this.launcher = launcher;
     globalConf = new AvroConfigurationSerializer().fromString(serializedGlobalConf);
     globalConfInjector = Tang.Factory.getTang().newInjector(globalConf);
     workerConfs = initializeWorkerConfs();
@@ -785,13 +789,19 @@ public final class MyriaDriver {
     Preconditions.checkState(tasksByWorkerId.containsKey(workerId));
     if (state == DriverState.PREPARING_MASTER) {
       Preconditions.checkState(workerId == MyriaConstants.MASTER_ID);
-      LOGGER.info("Master is running, starting {} workers...", workerConfs.size());
+      String message =
+          String.format("Master is running, starting %s workers...", workerConfs.size());
+      LOGGER.info(message);
+      launcher.sendMessageToClient(message.getBytes(StandardCharsets.UTF_8));
       state = DriverState.PREPARING_WORKERS;
       launchWorkers();
     } else if (state == DriverState.PREPARING_WORKERS) {
       Preconditions.checkState(workerId != MyriaConstants.MASTER_ID);
       if (numberWorkersPending.decrementAndGet() == 0) {
-        LOGGER.info("All {} workers running, ready for queries...", workerConfs.size());
+        String message =
+            String.format("All %s workers running, ready for queries...", workerConfs.size());
+        LOGGER.info(message);
+        launcher.sendMessageToClient(message.getBytes(StandardCharsets.UTF_8));
         state = DriverState.READY;
       }
     }
@@ -953,6 +963,17 @@ public final class MyriaDriver {
             "Expected control message to be ADD_WORKER_ACK or REMOVE_WORKER_ACK, got "
                 + controlM.getType());
       }
+    }
+  }
+
+  final class ClientMessageHandler implements EventHandler<byte[]> {
+    @Override
+    public void onNext(final byte[] message) {
+      final String msgStr = new String(message, StandardCharsets.UTF_8);
+      Preconditions.checkArgument(msgStr.equals(MyriaDriver.DRIVER_PING_MSG));
+      LOGGER.info("Message from Myria launcher: {}", msgStr);
+      launcher
+          .sendMessageToClient(MyriaDriver.DRIVER_PING_ACK_MSG.getBytes(StandardCharsets.UTF_8));
     }
   }
 }
