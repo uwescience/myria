@@ -198,7 +198,6 @@ public final class MyriaDriverLauncher {
 
     synchronized (this) {
       while (!status.isDone()) {
-        LOGGER.info("Waiting for Myria driver to finish...");
         try {
           this.wait(DRIVER_PING_TIMEOUT_MILLIS);
           if (driver.isPresent()) {

@@ -787,10 +787,11 @@ public final class MyriaDriver {
 
   private void updateDriverStateOnWorkerReady(final int workerId) throws InjectionException {
     Preconditions.checkState(tasksByWorkerId.containsKey(workerId));
+    String message = String.format("Worker %s ready", workerId);
+    launcher.sendMessageToClient(message.getBytes(StandardCharsets.UTF_8));
     if (state == DriverState.PREPARING_MASTER) {
       Preconditions.checkState(workerId == MyriaConstants.MASTER_ID);
-      String message =
-          String.format("Master is running, starting %s workers...", workerConfs.size());
+      message = String.format("Master is running, starting %s workers...", workerConfs.size());
       LOGGER.info(message);
       launcher.sendMessageToClient(message.getBytes(StandardCharsets.UTF_8));
       state = DriverState.PREPARING_WORKERS;
@@ -798,8 +799,7 @@ public final class MyriaDriver {
     } else if (state == DriverState.PREPARING_WORKERS) {
       Preconditions.checkState(workerId != MyriaConstants.MASTER_ID);
       if (numberWorkersPending.decrementAndGet() == 0) {
-        String message =
-            String.format("All %s workers running, ready for queries...", workerConfs.size());
+        message = String.format("All %s workers running, ready for queries...", workerConfs.size());
         LOGGER.info(message);
         launcher.sendMessageToClient(message.getBytes(StandardCharsets.UTF_8));
         state = DriverState.READY;
@@ -808,6 +808,8 @@ public final class MyriaDriver {
   }
 
   private void updateDriverStateOnWorkerFailure(final int workerId) {
+    final String message = String.format("Worker %s failed", workerId);
+    launcher.sendMessageToClient(message.getBytes(StandardCharsets.UTF_8));
     if (workerId == MyriaConstants.MASTER_ID) {
       throw new RuntimeException("Shutting down driver on coordinator failure");
     } else if (state == DriverState.PREPARING_WORKERS) {
