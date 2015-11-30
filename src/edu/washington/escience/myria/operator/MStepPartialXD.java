@@ -785,7 +785,7 @@ public final class MStepPartialXD extends BinaryOperator {
 				jama_mu_k_partial = jama_mu_k_partial.plus(b.times(r_ik));
 				// difference
 				Matrix b_cross = b.times(b.transpose());
-				Matrix b_diff = b_cross.minus(B);
+				Matrix b_diff = b_cross.plus(B);
 				jama_sigma_k_partial = jama_sigma_k_partial.plus(b_diff
 						.times(r_ik));
 			} else {

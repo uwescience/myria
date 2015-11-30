@@ -96,7 +96,10 @@ def upload_components():
 
 def create_test_data(n_iterations=1):
     subprocess.call("python ./GMM_Python_Comparison.py %s" % n_iterations, shell=True)
+    upload_test_data()
 
+
+def upload_test_data():
     # Upload the test data
     subprocess.call(upload_string("PointsOnly"), shell=True)
     subprocess.call(upload_string("ComponentsOnly"), shell=True)

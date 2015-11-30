@@ -552,11 +552,14 @@ public final class EStepXD extends BinaryOperator {
 			for (int i = 0; i < numComponents; i++) {
 				// Modification for XD, get partial responsibilities with T
 				// instead of V
-				// //Matrix sigma_j = new Matrix(sigmas.get(i));
-				// //Matrix T = xSigma.plus(sigma_j);
+				Matrix sigma_j = new Matrix(sigmas.get(i));
+				Matrix T = xSigma.plus(sigma_j);
 				// Plug T into the gaussian evaluator T.getarray()
+				double[][] test = mus.get(i);
+				double[][] test2 = sigmas.get(i);
+				double test3 = pis.get(i);
 				partialResponsibilities[i] = getPartialResponsibility(xArray,
-						pis.get(i), mus.get(i), sigmas.get(i));
+						pis.get(i), mus.get(i), T.getArray());
 			}
 
 			double logNormalization = logsumexp(partialResponsibilities);
@@ -599,8 +602,8 @@ public final class EStepXD extends BinaryOperator {
 
 				Matrix Tinv = T.inverse();
 
-				Matrix b = mu_j.plus(sigma_j.times(Tinv).times(w_m));
-				Matrix B = sigma_j.minus(sigma_j.times(Tinv).times(sigma_j));
+				Matrix b = mu_j.plus(sigma_j.times(Tinv.times(w_m)));
+				Matrix B = sigma_j.minus(sigma_j.times(Tinv.times(sigma_j)));
 
 				bs.add(b);
 				Bs.add(B);
