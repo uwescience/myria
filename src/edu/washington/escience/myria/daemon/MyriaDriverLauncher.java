@@ -23,8 +23,9 @@ import org.apache.reef.client.JobMessage;
 import org.apache.reef.client.LauncherStatus;
 import org.apache.reef.client.REEF;
 import org.apache.reef.client.RunningJob;
-import org.apache.reef.runtime.local.client.LocalRuntimeConfiguration;
-// import org.apache.reef.runtime.yarn.client.YarnClientConfiguration;
+// import org.apache.reef.runtime.local.client.LocalRuntimeConfiguration;
+import org.apache.reef.runtime.yarn.client.YarnClientConfiguration;
+import org.apache.reef.runtime.yarn.driver.parameters.JobSubmissionDirectoryPrefix;
 import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.Configurations;
 import org.apache.reef.tang.Injector;
@@ -45,6 +46,7 @@ import org.slf4j.LoggerFactory;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.coordinator.ConfigFileException;
 import edu.washington.escience.myria.tools.MyriaConfigurationParser;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.DefaultInstancePath;
 
 @Unit
 public final class MyriaDriverLauncher {
@@ -65,9 +67,7 @@ public final class MyriaDriverLauncher {
       System.err.println(USAGE_STRING);
       System.exit(-1);
     }
-    // final Configuration runtimeConfiguration = YarnClientConfiguration.CONF.build();
-    final Configuration runtimeConfiguration = LocalRuntimeConfiguration.CONF.build();
-    run(runtimeConfiguration, args);
+    run(args);
   }
 
   private final REEF reef;
@@ -79,6 +79,11 @@ public final class MyriaDriverLauncher {
   @Inject
   private MyriaDriverLauncher(final REEF reef) {
     this.reef = reef;
+  }
+
+  private final static Configuration getRuntimeConf() {
+    // return LocalRuntimeConfiguration.CONF.build();
+    return YarnClientConfiguration.CONF.build();
   }
 
   private final static Configuration getClientConf() {
@@ -166,8 +171,8 @@ public final class MyriaDriverLauncher {
    * @throws ParseException
    * @throws ConfigFileException
    */
-  public static LauncherStatus run(final Configuration runtimeConf, final String[] args)
-      throws InjectionException, IOException, ParseException, ConfigFileException {
+  public static LauncherStatus run(final String[] args) throws InjectionException, IOException,
+      ParseException, ConfigFileException {
     final Tang tang = Tang.Factory.getTang();
     // TODO: implement ClientConfiguration event handlers so we can get messages from the Driver
     @SuppressWarnings("unchecked")
@@ -178,11 +183,17 @@ public final class MyriaDriverLauncher {
     final String configPath = commandLineInjector.getNamedInstance(ConfigPath.class);
     final String javaLibPath = commandLineInjector.getNamedInstance(JavaLibPath.class);
     final String nativeLibPath = commandLineInjector.getNamedInstance(NativeLibPath.class);
-    final String serializedGlobalConf =
-        new AvroConfigurationSerializer().toString(getMyriaGlobalConf(configPath));
+    final Configuration globalConf = getMyriaGlobalConf(configPath);
+    final String serializedGlobalConf = new AvroConfigurationSerializer().toString(globalConf);
     final Configuration globalConfWrapper =
         tang.newConfigurationBuilder()
             .bindNamedParameter(SerializedGlobalConf.class, serializedGlobalConf).build();
+    final String jobSubmissionDirectory =
+        tang.newInjector(globalConf).getNamedInstance(DefaultInstancePath.class);
+    final Configuration extraRuntimeConf =
+        tang.newConfigurationBuilder()
+            .bindNamedParameter(JobSubmissionDirectoryPrefix.class, jobSubmissionDirectory).build();
+    final Configuration runtimeConf = Configurations.merge(getRuntimeConf(), extraRuntimeConf);
     final Configuration driverConf =
         Configurations.merge(
             getDriverConf(new String[] {javaLibPath}, new String[] {nativeLibPath}),
