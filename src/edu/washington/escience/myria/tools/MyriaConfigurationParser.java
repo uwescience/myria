@@ -153,6 +153,12 @@ public final class MyriaConfigurationParser {
       final ConfigurationModule cm) throws ConfigFileException {
     ConfigurationModule conf = cm;
     for (Integer workerId : getWorkerIds(parser)) {
+      
+     System.out.println("Hostname: " + getHostname(parser, workerId));
+     System.out.println("Port: " + getPort(parser, workerId));
+     System.out.println("Database name: " + getWorkerDatabaseName(parser, workerId));
+     System.out.println("Path: " + getPath(parser, workerId));
+
       Configuration workerConfig =
           MyriaWorkerConfigurationModule.CONF
               .set(MyriaWorkerConfigurationModule.WORKER_ID, workerId + "")
