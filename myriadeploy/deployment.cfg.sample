@@ -35,13 +35,15 @@ rest_port = 8753
 
 [runtime]
 # Uncomment to set number of virtual CPU cores used by the worker processes
-#jvm.vcores.number = 2
+#container.vcores.number = 2
 # Uncomment to set the minimum heap size of the worker processes
 #jvm.heap.size.min.gb = 1
 # Uncomment to set the maximum heap size of the worker processes
 #jvm.heap.size.max.gb = 2
+# Uncomment to set the requested container memory
+#container.memory.size.gb = 2
 # Uncomment to set other JVM options, separate them with space
-#jvm.options = -XX:+UseParallelGC
+#jvm.options = -XX:+UseG1GC
 
 [persist]
 persist_uri = hdfs://vega.cs.washington.edu:8020
