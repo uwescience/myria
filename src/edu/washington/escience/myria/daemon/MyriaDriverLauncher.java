@@ -23,8 +23,6 @@ import org.apache.reef.client.JobMessage;
 import org.apache.reef.client.LauncherStatus;
 import org.apache.reef.client.REEF;
 import org.apache.reef.client.RunningJob;
-import org.apache.reef.runtime.local.client.LocalRuntimeConfiguration;
-import org.apache.reef.runtime.yarn.client.YarnClientConfiguration;
 import org.apache.reef.runtime.yarn.driver.parameters.JobSubmissionDirectoryPrefix;
 import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.Configurations;
@@ -81,14 +79,12 @@ public final class MyriaDriverLauncher {
     this.reef = reef;
   }
 
-  private final static Configuration getRuntimeConf(final boolean useYarn) {
-    if (useYarn) {
-      LOGGER.info("Running on YARN");
-      return YarnClientConfiguration.CONF.build();
-    } else {
-      LOGGER.info("Running on the local runtime");
-      return LocalRuntimeConfiguration.CONF.build();
-    }
+  private final static Configuration getRuntimeConf(final String runtimeClassName)
+      throws ClassNotFoundException, IllegalArgumentException, IllegalAccessException,
+      NoSuchFieldException, SecurityException {
+    final Class<?> runtimeClass = Class.forName(runtimeClassName);
+    ConfigurationModule cm = (ConfigurationModule) runtimeClass.getField("CONF").get(null);
+    return cm.build();
   }
 
   private final static Configuration getClientConf() {
@@ -175,17 +171,23 @@ public final class MyriaDriverLauncher {
    * @throws java.io.IOException
    * @throws ParseException
    * @throws ConfigFileException
+   * @throws SecurityException
+   * @throws NoSuchFieldException
+   * @throws IllegalAccessException
+   * @throws IllegalArgumentException
+   * @throws ClassNotFoundException
    */
   public static LauncherStatus run(final String[] args) throws InjectionException, IOException,
-      ParseException, ConfigFileException {
+      ParseException, ConfigFileException, ClassNotFoundException, IllegalArgumentException,
+      IllegalAccessException, NoSuchFieldException, SecurityException {
     final Tang tang = Tang.Factory.getTang();
     // TODO: implement ClientConfiguration event handlers so we can get messages from the Driver
     @SuppressWarnings("unchecked")
     final Configuration commandLineConf =
-        CommandLine.parseToConfiguration(args, UseYarn.class, ConfigPath.class, JavaLibPath.class,
-            NativeLibPath.class);
+        CommandLine.parseToConfiguration(args, RuntimeClassName.class, ConfigPath.class,
+            JavaLibPath.class, NativeLibPath.class);
     final Injector commandLineInjector = tang.newInjector(commandLineConf);
-    final boolean useYarn = commandLineInjector.getNamedInstance(UseYarn.class);
+    final String runtimeClassName = commandLineInjector.getNamedInstance(RuntimeClassName.class);
     final String configPath = commandLineInjector.getNamedInstance(ConfigPath.class);
     final String javaLibPath = commandLineInjector.getNamedInstance(JavaLibPath.class);
     final String nativeLibPath = commandLineInjector.getNamedInstance(NativeLibPath.class);
@@ -201,7 +203,7 @@ public final class MyriaDriverLauncher {
         tang.newConfigurationBuilder()
             .bindNamedParameter(JobSubmissionDirectoryPrefix.class, jobSubmissionDirectory).build();
     final Configuration runtimeConf =
-        Configurations.merge(getRuntimeConf(useYarn), extraRuntimeConf);
+        Configurations.merge(getRuntimeConf(runtimeClassName), extraRuntimeConf);
     final Configuration driverConf =
         Configurations.merge(
             getDriverConf(new String[] {javaLibPath}, new String[] {nativeLibPath}),
@@ -246,11 +248,12 @@ public final class MyriaDriverLauncher {
   }
 
   /**
-   * Command line parameter: use YARN runtime if present.
+   * Command line parameter: runtime configuration class to use (defaults to local runtime).
    */
-  @NamedParameter(doc = "Use the YARN runtime instead of the local runtime", short_name = "yarn",
-      default_value = "false")
-  public static final class UseYarn implements Name<Boolean> {
+  @NamedParameter(doc = "Fully qualified name of runtime configuration class",
+      short_name = "runtimeClass",
+      default_value = "org.apache.reef.runtime.local.client.LocalRuntimeConfiguration")
+  public static final class RuntimeClassName implements Name<String> {
   }
 
   /**
