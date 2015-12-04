@@ -11,6 +11,7 @@ import org.joda.time.DateTime;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
+import edu.washington.escience.myria.MyriaMatrix;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.mutable.MutableColumn;
 import edu.washington.escience.myria.storage.ReadableColumn;
@@ -20,8 +21,8 @@ import edu.washington.escience.myria.storage.ReplaceableColumn;
  * @param <T> type of the objects in this column.
  * 
  */
-public abstract class ColumnBuilder<T extends Comparable<?>> implements ReadableColumn,
-    WritableColumn, ReplaceableColumn {
+public abstract class ColumnBuilder<T extends Comparable<?>>
+    implements ReadableColumn, WritableColumn, ReplaceableColumn {
 
   @Override
   public ColumnBuilder<T> appendBoolean(final boolean value) throws BufferOverflowException {
@@ -69,6 +70,11 @@ public abstract class ColumnBuilder<T extends Comparable<?>> implements Readable
   }
 
   @Override
+  public MyriaMatrix getMyriaMatrix(final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
   public ColumnBuilder<T> appendDouble(final double value) throws BufferOverflowException {
     throw new UnsupportedOperationException(getClass().getName());
   }
@@ -90,6 +96,15 @@ public abstract class ColumnBuilder<T extends Comparable<?>> implements Readable
 
   @Override
   public ColumnBuilder<T> appendString(final String value) throws BufferOverflowException {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  /**
+   * @param value
+   */
+  @Override
+  public ColumnBuilder<T> appendMyriaMatrix(final MyriaMatrix value)
+      throws BufferOverflowException {
     throw new UnsupportedOperationException(getClass().getName());
   }
 
@@ -160,6 +175,11 @@ public abstract class ColumnBuilder<T extends Comparable<?>> implements Readable
   }
 
   @Override
+  public void replaceMyriaMatrix(@Nonnull final MyriaMatrix value, final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
   public void replaceDouble(final double value, final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }
@@ -183,4 +203,5 @@ public abstract class ColumnBuilder<T extends Comparable<?>> implements Readable
   public void replaceString(@Nonnull final String value, final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }
+
 }

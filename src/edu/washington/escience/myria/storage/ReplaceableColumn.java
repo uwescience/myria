@@ -4,6 +4,8 @@ import javax.annotation.Nonnull;
 
 import org.joda.time.DateTime;
 
+import edu.washington.escience.myria.MyriaMatrix;
+
 /**
  * An interface for a column in which values can be replaced or read.
  */
@@ -70,5 +72,14 @@ public interface ReplaceableColumn extends ReadableColumn {
    * @throws UnsupportedOperationException if this column does not support this type.
    */
   void replaceString(@Nonnull final String value, final int row);
+
+  /**
+   * Replaces the value at the specified row in this column.
+   * 
+   * @param value the new value.
+   * @param row row of element to replace.
+   * @throws UnsupportedOperationException if this column does not support this type.
+   */
+  void replaceMyriaMatrix(@Nonnull final MyriaMatrix value, final int row);
 
 }

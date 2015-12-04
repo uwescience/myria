@@ -4,6 +4,8 @@ import java.nio.BufferOverflowException;
 
 import org.joda.time.DateTime;
 
+import edu.washington.escience.myria.MyriaMatrix;
+
 /**
  * 
  * An interface for column that can be written.
@@ -82,5 +84,14 @@ public interface WritableColumn {
    * @throws BufferOverflowException if exceeds buffer up bound.
    */
   WritableColumn appendString(final String value) throws BufferOverflowException;
+
+  /**
+   * Inserts the specified element at end of this column.
+   * 
+   * @param value element to be inserted.
+   * @return this column.
+   * @throws BufferOverflowException if exceeds buffer up bound.
+   */
+  WritableColumn appendMyriaMatrix(final MyriaMatrix value) throws BufferOverflowException;
 
 }

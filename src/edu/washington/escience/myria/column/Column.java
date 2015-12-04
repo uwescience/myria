@@ -8,6 +8,7 @@ import org.joda.time.DateTime;
 
 import com.google.protobuf.ByteString;
 
+import edu.washington.escience.myria.MyriaMatrix;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.proto.DataProto.BooleanColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
@@ -67,6 +68,11 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
 
   @Override
   public String getString(final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public MyriaMatrix getMyriaMatrix(final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }
 
@@ -150,7 +156,9 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
         b = 0;
       }
     }
-    /* Note that we do *not* build the inner class. We pass its builder instead. */
+    /*
+     * Note that we do *not* build the inner class. We pass its builder instead.
+     */
     final BooleanColumnMessage.Builder inner =
         BooleanColumnMessage.newBuilder().setData(bytes.toByteString());
     return ColumnMessage.newBuilder().setType(ColumnMessage.Type.BOOLEAN).setBooleanColumn(inner)

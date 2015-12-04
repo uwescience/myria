@@ -7,6 +7,7 @@ import org.joda.time.DateTime;
 
 import com.google.common.base.Preconditions;
 
+import edu.washington.escience.myria.MyriaMatrix;
 import edu.washington.escience.myria.column.builder.WritableColumn;
 import edu.washington.escience.myria.util.MyriaUtils;
 
@@ -78,6 +79,12 @@ public final class WritableSubColumn implements WritableColumn {
   @Override
   public WritableColumn appendString(final String value) throws BufferOverflowException {
     inner.putString(column, value);
+    return this;
+  }
+
+  @Override
+  public WritableColumn appendMyriaMatrix(final MyriaMatrix value) throws BufferOverflowException {
+    inner.putMyriaMatrix(column, value);
     return this;
   }
 

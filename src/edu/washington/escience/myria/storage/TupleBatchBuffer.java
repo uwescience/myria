@@ -11,6 +11,7 @@ import org.joda.time.DateTime;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.MyriaMatrix;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
@@ -27,17 +28,25 @@ import edu.washington.escience.myria.util.MyriaUtils;
 public class TupleBatchBuffer implements AppendableTable {
   /** Format of the emitted tuples. */
   private final Schema schema;
-  /** Convenience constant; must match schema.numColumns() and currentColumns.size(). */
+  /**
+   * Convenience constant; must match schema.numColumns() and currentColumns.size().
+   */
   private final int numColumns;
   /** List of completed TupleBatch objects. */
   private final List<TupleBatch> readyTuples;
   /** Internal state used to build up a TupleBatch. */
   private List<ColumnBuilder<?>> currentBuildingColumns;
-  /** Internal state representing which columns are ready in the current tuple. */
+  /**
+   * Internal state representing which columns are ready in the current tuple.
+   */
   private final BitSet columnsReady;
-  /** Internal state representing the number of columns that are ready in the current tuple. */
+  /**
+   * Internal state representing the number of columns that are ready in the current tuple.
+   */
   private int numColumnsReady;
-  /** Internal state representing the number of tuples in the in-progress TupleBatch. */
+  /**
+   * Internal state representing the number of tuples in the in-progress TupleBatch.
+   */
   private int currentInProgressTuples;
 
   /** The last time this operator returned a TupleBatch. */
@@ -369,7 +378,8 @@ public class TupleBatchBuffer implements AppendableTable {
    * @param sourceColumn the column from which data will be retrieved.
    * @param sourceRow the row in the source column from which data will be retrieved.
    */
-  public final void put(final int destColumn, final ReadableColumn sourceColumn, final int sourceRow) {
+  public final void put(final int destColumn, final ReadableColumn sourceColumn,
+      final int sourceRow) {
     TupleUtils.copyValue(sourceColumn, sourceRow, this, destColumn);
   }
 
@@ -440,6 +450,16 @@ public class TupleBatchBuffer implements AppendableTable {
   public final void putString(final int column, final String value) {
     checkPutIndex(column);
     currentBuildingColumns.get(column).appendString(value);
+    columnPut(column);
+  }
+
+  /**
+   * @param respMatrix
+   */
+  @Override
+  public void putMyriaMatrix(final int column, final MyriaMatrix value) {
+    checkPutIndex(column);
+    currentBuildingColumns.get(column).appendMyriaMatrix(value);
     columnPut(column);
   }
 

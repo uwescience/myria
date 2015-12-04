@@ -4,6 +4,7 @@ import javax.annotation.Nonnull;
 
 import org.joda.time.DateTime;
 
+import edu.washington.escience.myria.MyriaMatrix;
 import edu.washington.escience.myria.column.builder.WritableColumn;
 
 /**
@@ -72,6 +73,14 @@ public interface AppendableTable extends TupleTable {
    * @param column index of the column.
    * @param value value to be appended.
    */
+  void putMyriaMatrix(final int column, @Nonnull final MyriaMatrix value);
+
+  /**
+   * Append the specified value to the specified column.
+   * 
+   * @param column index of the column.
+   * @param value value to be appended.
+   */
   @Deprecated
   void putObject(final int column, @Nonnull final Object value);
 
@@ -81,4 +90,5 @@ public interface AppendableTable extends TupleTable {
    */
   @Nonnull
   WritableColumn asWritableColumn(final int column);
+
 }

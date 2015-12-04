@@ -6,6 +6,7 @@ import org.joda.time.DateTime;
 
 import com.google.common.base.Preconditions;
 
+import edu.washington.escience.myria.MyriaMatrix;
 import edu.washington.escience.myria.Type;
 
 /**
@@ -78,5 +79,10 @@ public final class ReadableSubColumn implements ReadableColumn {
   @Override
   public String getString(final int row) {
     return inner.getString(column, row);
+  }
+
+  @Override
+  public MyriaMatrix getMyriaMatrix(final int row) {
+    return inner.getMyriaMatrix(column, row);
   }
 }

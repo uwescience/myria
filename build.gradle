@@ -146,6 +146,17 @@ dependencies {
 
   compile "org.apache.commons:commons-csv:1.1"
   
+  // Java blas library for GMM
+  compile "org.jblas:jblas:1.2.3"
+
+  // Java matrix package for GMM
+  compile "gov.nist.math:jama:1.0.3"
+  
+  // Trove required for old GMM operators
+  compile "net.sf.trove4j:trove4j:3.0.3"
+  
+  
+  
   // Expression compiler
   compile "org.codehaus.janino:janino:2.7.7"
 

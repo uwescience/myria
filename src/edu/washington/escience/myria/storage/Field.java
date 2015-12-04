@@ -5,6 +5,7 @@ import java.nio.BufferOverflowException;
 
 import org.joda.time.DateTime;
 
+import edu.washington.escience.myria.MyriaMatrix;
 import edu.washington.escience.myria.column.builder.WritableColumn;
 import edu.washington.escience.myria.util.MyriaUtils;
 
@@ -66,6 +67,12 @@ public class Field<T extends Comparable<?>> implements WritableColumn, Serializa
 
   @Override
   public WritableColumn appendString(final String value) throws BufferOverflowException {
+    this.value = value;
+    return this;
+  }
+
+  @Override
+  public WritableColumn appendMyriaMatrix(final MyriaMatrix value) throws BufferOverflowException {
     this.value = value;
     return this;
   }

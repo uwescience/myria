@@ -10,6 +10,7 @@ import org.joda.time.DateTime;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
+import edu.washington.escience.myria.MyriaMatrix;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
@@ -27,17 +28,25 @@ import edu.washington.escience.myria.util.MyriaUtils;
 public class TupleBuffer implements ReadableTable, AppendableTable {
   /** Format of the emitted tuples. */
   private final Schema schema;
-  /** Convenience constant; must match schema.numColumns() and currentColumns.size(). */
+  /**
+   * Convenience constant; must match schema.numColumns() and currentColumns.size().
+   */
   private final int numColumns;
   /** List of completed TupleBatch objects. */
   private final List<TupleBatch> readyBatches;
   /** Internal state used to build up a TupleBatch. */
   private List<ColumnBuilder<?>> currentBatch;
-  /** Internal state representing the number of columns that are ready in the current tuple. */
+  /**
+   * Internal state representing the number of columns that are ready in the current tuple.
+   */
   private int numColumnsReady;
-  /** Internal state representing which columns are ready in the current tuple. */
+  /**
+   * Internal state representing which columns are ready in the current tuple.
+   */
   private final BitSet columnsReady;
-  /** Internal state representing the number of tuples in the in-progress TupleBatch. */
+  /**
+   * Internal state representing the number of tuples in the in-progress TupleBatch.
+   */
   private int currentBatchSize;
   /** Whether this buffer has been finalized. */
   private boolean finalized;
@@ -194,6 +203,17 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
   }
 
   @Override
+  public final MyriaMatrix getMyriaMatrix(final int column, final int row) {
+    Preconditions.checkElementIndex(row, numTuples());
+    int batchIndex = row / TupleBatch.BATCH_SIZE;
+    int localRow = row % TupleBatch.BATCH_SIZE;
+    if (batchIndex < readyBatches.size()) {
+      return readyBatches.get(batchIndex).getMyriaMatrix(column, localRow);
+    }
+    return currentBatch.get(column).getMyriaMatrix(localRow);
+  }
+
+  @Override
   public final int numColumns() {
     return numColumns;
   }
@@ -252,6 +272,13 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
   public final void putString(final int column, final String value) {
     checkPutIndex(column);
     currentBatch.get(column).appendString(value);
+    columnPut(column);
+  }
+
+  @Override
+  public final void putMyriaMatrix(final int column, final MyriaMatrix value) {
+    checkPutIndex(column);
+    currentBatch.get(column).appendMyriaMatrix(value);
     columnPut(column);
   }
 

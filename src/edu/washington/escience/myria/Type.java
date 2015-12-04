@@ -13,7 +13,7 @@ import edu.washington.escience.myria.column.Column;
 public enum Type implements Serializable {
   /**
    * int type.
-   * */
+   */
   INT_TYPE() {
     @Override
     public boolean filter(final SimplePredicate.Op op, final Column<?> intColumn,
@@ -50,7 +50,7 @@ public enum Type implements Serializable {
 
   /**
    * float type.
-   * */
+   */
   FLOAT_TYPE() {
     @Override
     public boolean filter(final SimplePredicate.Op op, final Column<?> floatColumn,
@@ -87,7 +87,7 @@ public enum Type implements Serializable {
 
   /**
    * Double type.
-   * */
+   */
   DOUBLE_TYPE() {
     @Override
     public boolean filter(final SimplePredicate.Op op, final Column<?> doubleColumn,
@@ -124,7 +124,7 @@ public enum Type implements Serializable {
 
   /**
    * Boolean type.
-   * */
+   */
   BOOLEAN_TYPE() {
     @Override
     public boolean filter(final SimplePredicate.Op op, final Column<?> booleanColumn,
@@ -161,7 +161,7 @@ public enum Type implements Serializable {
 
   /**
    * String type.
-   * */
+   */
   STRING_TYPE() {
     @Override
     public boolean filter(final SimplePredicate.Op op, final Column<?> stringColumn,
@@ -198,7 +198,7 @@ public enum Type implements Serializable {
 
   /**
    * Long type.
-   * */
+   */
   LONG_TYPE() {
     @Override
     public boolean filter(final SimplePredicate.Op op, final Column<?> longColumn,
@@ -234,8 +234,46 @@ public enum Type implements Serializable {
   },
 
   /**
+   * MyriaMatrix type, wrapper around Matrix class.
+   */
+  MYRIAMATRIX_TYPE() {
+    @Override
+    public boolean filter(final SimplePredicate.Op op, final Column<?> floatColumn,
+        final int tupleIndex, final Object operand) {
+      final float v = floatColumn.getFloat(tupleIndex);
+      return compare(op, v, (Float) operand);
+    }
+
+    @Override
+    public String toString(final Column<?> column, final int tupleIndex) {
+      return "" + column.getFloat(tupleIndex);
+    }
+
+    @Override
+    public Float fromString(final String str) {
+      return Float.valueOf(str);
+    }
+
+    @Override
+    public Class<?> toJavaType() {
+      return float.class;
+    }
+
+    @Override
+    public Class<?> toJavaObjectType() {
+      return Float.class;
+    }
+
+    @Override
+    public String getName() {
+      return "Float";
+    }
+  },
+
+
+  /**
    * date type.
-   * */
+   */
   DATETIME_TYPE() {
     @Override
     public boolean filter(final SimplePredicate.Op op, final Column<?> dateColumn,
@@ -276,7 +314,7 @@ public enum Type implements Serializable {
    * @param tupleIndex the index.
    * @param operand the operand constant.
    * @return true if the #tupleIndex tuple in column satisfy the predicate, else false.
-   * */
+   */
   public abstract boolean filter(SimplePredicate.Op op, Column<?> column, int tupleIndex,
       Object operand);
 
@@ -284,7 +322,7 @@ public enum Type implements Serializable {
    * @return A string representation of the #tupleIndex value in column.
    * @param column the columns
    * @param tupleIndex the index
-   * */
+   */
   public abstract String toString(final Column<?> column, final int tupleIndex);
 
   /**
@@ -303,7 +341,7 @@ public enum Type implements Serializable {
    *         otherwise.
    * @param x the value to be compared in a tuple
    * @param y the operand
-   * */
+   */
   public static final int compareRaw(final int x, final int y) {
     return Integer.compare(x, y);
   }
@@ -313,7 +351,7 @@ public enum Type implements Serializable {
    *         && !y.
    * @param x the value to be compared in a tuple
    * @param y the operand
-   * */
+   */
   public static final int compareRaw(final boolean x, final boolean y) {
     return Boolean.compare(x, y);
   }
@@ -322,7 +360,7 @@ public enum Type implements Serializable {
    * @return negative value if this is less, 0 if equal, or positive value if greater.
    * @param x the value to be compared in a tuple
    * @param y the operand
-   * */
+   */
   public static final int compareRaw(final DateTime x, final DateTime y) {
     return x.compareTo(y);
   }
@@ -333,7 +371,7 @@ public enum Type implements Serializable {
    *         otherwise.
    * @param x the value to be compared in a tuple
    * @param y the operand
-   * */
+   */
   public static final int compareRaw(final double x, final double y) {
     return Double.compare(x, y);
   }
@@ -344,7 +382,7 @@ public enum Type implements Serializable {
    *         otherwise.
    * @param x the value to be compared in a tuple
    * @param y the operand
-   * */
+   */
   public static final int compareRaw(final float x, final float y) {
     return Float.compare(x, y);
   }
@@ -355,7 +393,7 @@ public enum Type implements Serializable {
    *         otherwise.
    * @param x the value to be compared in a tuple
    * @param y the operand
-   * */
+   */
   public static final int compareRaw(final long x, final long y) {
     return Long.compare(x, y);
   }
@@ -366,7 +404,7 @@ public enum Type implements Serializable {
    *         0 if this string is otherwise.
    * @param x the value to be compared in a tuple
    * @param y the operand
-   * */
+   */
   public static final int compareRaw(final String x, final String y) {
     return x.compareTo(y);
   }

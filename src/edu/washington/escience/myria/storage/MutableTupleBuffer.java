@@ -9,6 +9,7 @@ import org.joda.time.DateTime;
 
 import com.google.common.base.Preconditions;
 
+import edu.washington.escience.myria.MyriaMatrix;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
@@ -19,22 +20,32 @@ import edu.washington.escience.myria.column.builder.WritableColumn;
 import edu.washington.escience.myria.column.mutable.MutableColumn;
 import edu.washington.escience.myria.util.MyriaUtils;
 
-/** A simplified TupleBatchBuffer which supports random access. Designed for hash tables to use. */
+/**
+ * A simplified TupleBatchBuffer which supports random access. Designed for hash tables to use.
+ */
 
 public class MutableTupleBuffer implements ReadableTable, AppendableTable, Cloneable {
   /** Format of the emitted tuples. */
   private final Schema schema;
-  /** Convenience constant; must match schema.numColumns() and currentColumns.size(). */
+  /**
+   * Convenience constant; must match schema.numColumns() and currentColumns.size().
+   */
   private final int numColumns;
   /** List of completed TupleBatch objects. */
   private final List<MutableColumn<?>[]> readyTuples;
   /** Internal state used to build up a TupleBatch. */
   private ColumnBuilder<?>[] currentBuildingColumns;
-  /** Internal state representing which columns are ready in the current tuple. */
+  /**
+   * Internal state representing which columns are ready in the current tuple.
+   */
   private BitSet columnsReady;
-  /** Internal state representing the number of columns that are ready in the current tuple. */
+  /**
+   * Internal state representing the number of columns that are ready in the current tuple.
+   */
   private int numColumnsReady;
-  /** Internal state representing the number of tuples in the in-progress TupleBatch. */
+  /**
+   * Internal state representing the number of tuples in the in-progress TupleBatch.
+   */
   private int currentInProgressTuples;
 
   /**
@@ -55,7 +66,7 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
 
   /**
    * clear this TBB.
-   * */
+   */
   public final void clear() {
     columnsReady.clear();
     currentBuildingColumns = null;
@@ -98,8 +109,8 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
       throws IndexOutOfBoundsException {
     int tupleBatchIndex = rowIndex / TupleBatch.BATCH_SIZE;
     int tupleIndex = rowIndex % TupleBatch.BATCH_SIZE;
-    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
-        && tupleIndex >= currentInProgressTuples) {
+    if (tupleBatchIndex > readyTuples.size()
+        || tupleBatchIndex == readyTuples.size() && tupleIndex >= currentInProgressTuples) {
       throw new IndexOutOfBoundsException();
     }
     if (tupleBatchIndex < readyTuples.size()) {
@@ -112,8 +123,8 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
   public final boolean getBoolean(final int column, final int row) {
     int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
     int tupleIndex = row % TupleBatch.BATCH_SIZE;
-    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
-        && tupleIndex >= currentInProgressTuples) {
+    if (tupleBatchIndex > readyTuples.size()
+        || tupleBatchIndex == readyTuples.size() && tupleIndex >= currentInProgressTuples) {
       throw new IndexOutOfBoundsException();
     }
     if (tupleBatchIndex < readyTuples.size()) {
@@ -126,8 +137,8 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
   public final double getDouble(final int column, final int row) {
     int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
     int tupleIndex = row % TupleBatch.BATCH_SIZE;
-    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
-        && tupleIndex >= currentInProgressTuples) {
+    if (tupleBatchIndex > readyTuples.size()
+        || tupleBatchIndex == readyTuples.size() && tupleIndex >= currentInProgressTuples) {
       throw new IndexOutOfBoundsException();
     }
     if (tupleBatchIndex < readyTuples.size()) {
@@ -140,8 +151,8 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
   public final float getFloat(final int column, final int row) {
     int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
     int tupleIndex = row % TupleBatch.BATCH_SIZE;
-    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
-        && tupleIndex >= currentInProgressTuples) {
+    if (tupleBatchIndex > readyTuples.size()
+        || tupleBatchIndex == readyTuples.size() && tupleIndex >= currentInProgressTuples) {
       throw new IndexOutOfBoundsException();
     }
     if (tupleBatchIndex < readyTuples.size()) {
@@ -154,8 +165,8 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
   public final long getLong(final int column, final int row) {
     int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
     int tupleIndex = row % TupleBatch.BATCH_SIZE;
-    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
-        && tupleIndex >= currentInProgressTuples) {
+    if (tupleBatchIndex > readyTuples.size()
+        || tupleBatchIndex == readyTuples.size() && tupleIndex >= currentInProgressTuples) {
       throw new IndexOutOfBoundsException();
     }
     if (tupleBatchIndex < readyTuples.size()) {
@@ -168,8 +179,8 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
   public final int getInt(final int column, final int row) {
     int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
     int tupleIndex = row % TupleBatch.BATCH_SIZE;
-    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
-        && tupleIndex >= currentInProgressTuples) {
+    if (tupleBatchIndex > readyTuples.size()
+        || tupleBatchIndex == readyTuples.size() && tupleIndex >= currentInProgressTuples) {
       throw new IndexOutOfBoundsException();
     }
     if (tupleBatchIndex < readyTuples.size()) {
@@ -182,8 +193,8 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
   public final String getString(final int column, final int row) {
     int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
     int tupleIndex = row % TupleBatch.BATCH_SIZE;
-    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
-        && tupleIndex >= currentInProgressTuples) {
+    if (tupleBatchIndex > readyTuples.size()
+        || tupleBatchIndex == readyTuples.size() && tupleIndex >= currentInProgressTuples) {
       throw new IndexOutOfBoundsException();
     }
     if (tupleBatchIndex < readyTuples.size()) {
@@ -193,11 +204,25 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
   }
 
   @Override
+  public final MyriaMatrix getMyriaMatrix(final int column, final int row) {
+    int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
+    int tupleIndex = row % TupleBatch.BATCH_SIZE;
+    if (tupleBatchIndex > readyTuples.size()
+        || tupleBatchIndex == readyTuples.size() && tupleIndex >= currentInProgressTuples) {
+      throw new IndexOutOfBoundsException();
+    }
+    if (tupleBatchIndex < readyTuples.size()) {
+      return readyTuples.get(tupleBatchIndex)[column].getMyriaMatrix(tupleIndex);
+    }
+    return currentBuildingColumns[column].getMyriaMatrix(tupleIndex);
+  }
+
+  @Override
   public final DateTime getDateTime(final int column, final int row) {
     int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
     int tupleIndex = row % TupleBatch.BATCH_SIZE;
-    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
-        && tupleIndex >= currentInProgressTuples) {
+    if (tupleBatchIndex > readyTuples.size()
+        || tupleBatchIndex == readyTuples.size() && tupleIndex >= currentInProgressTuples) {
       throw new IndexOutOfBoundsException();
     }
     if (tupleBatchIndex < readyTuples.size()) {
@@ -209,7 +234,7 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
   /**
    * @param row the row number
    * @return the index of the row in the containing TB.
-   * */
+   */
   public final int getTupleIndexInContainingTB(final int row) {
     return row % TupleBatch.BATCH_SIZE;
   }
@@ -283,6 +308,13 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
   public final void putObject(final int column, final Object value) {
     checkPutIndex(column);
     currentBuildingColumns[column].appendObject(MyriaUtils.ensureObjectIsValidType(value));
+    columnPut(column);
+  }
+
+  @Override
+  public final void putMyriaMatrix(final int column, final MyriaMatrix value) {
+    checkPutIndex(column);
+    currentBuildingColumns[column].appendMyriaMatrix(value);
     columnPut(column);
   }
 
@@ -406,6 +438,12 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
         sourceColumn.replaceString(string2, sourceBatchRow);
         destColumn.replaceString(string1, destBatchRow);
         break;
+      case MYRIAMATRIX_TYPE:
+        MyriaMatrix matrix1 = sourceColumn.getMyriaMatrix(sourceBatchRow);
+        MyriaMatrix matrix2 = destColumn.getMyriaMatrix(destBatchRow);
+        sourceColumn.replaceMyriaMatrix(matrix2, sourceBatchRow);
+        destColumn.replaceMyriaMatrix(matrix1, destBatchRow);
+        break;
       case DATETIME_TYPE:
         DateTime date1 = sourceColumn.getDateTime(sourceBatchRow);
         DateTime date2 = destColumn.getDateTime(destBatchRow);
@@ -429,8 +467,8 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
     checkPutIndex(destColumn);
     int tupleBatchIndex = destRow / TupleBatch.BATCH_SIZE;
     int tupleIndex = destRow % TupleBatch.BATCH_SIZE;
-    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
-        && tupleIndex >= currentInProgressTuples) {
+    if (tupleBatchIndex > readyTuples.size()
+        || tupleBatchIndex == readyTuples.size() && tupleIndex >= currentInProgressTuples) {
       throw new IndexOutOfBoundsException();
     }
     ReplaceableColumn dest;
@@ -462,6 +500,9 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
       case STRING_TYPE:
         dest.replaceString(sourceColumn.getString(sourceRow), tupleIndex);
         break;
+      case MYRIAMATRIX_TYPE:
+        dest.replaceMyriaMatrix(sourceColumn.getMyriaMatrix(sourceRow), tupleIndex);
+        break;
     }
   }
 
@@ -490,7 +531,7 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
    * Build the in progress columns. The builders' states are untouched. They can keep building.
    * 
    * @return the built in progress columns.
-   * */
+   */
   private List<Column<?>> getInProgressColumns() {
     List<Column<?>> newColumns = new ArrayList<Column<?>>(currentBuildingColumns.length);
     for (ColumnBuilder<?> cb : currentBuildingColumns) {

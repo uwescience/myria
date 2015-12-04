@@ -4,6 +4,8 @@ import javax.annotation.Nonnull;
 
 import org.joda.time.DateTime;
 
+import edu.washington.escience.myria.MyriaMatrix;
+
 /**
  * An interface for objects that contain a table (2-D) of tuples that is readable.
  */
@@ -66,6 +68,14 @@ public interface ReadableTable extends TupleTable {
    */
   @Nonnull
   String getString(final int column, final int row);
+
+  /**
+   * @param column the column of the desired value.
+   * @param row the row of the desired value.
+   * @return the value in the specified column and row.
+   */
+  @Nonnull
+  MyriaMatrix getMyriaMatrix(final int column, final int row);
 
   /**
    * @param column the index of the column to be returned.

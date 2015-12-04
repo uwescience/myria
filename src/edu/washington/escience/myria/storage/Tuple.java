@@ -3,22 +3,20 @@ package edu.washington.escience.myria.storage;
 import java.io.Serializable;
 import java.util.List;
 
-import javax.annotation.Nonnull;
-
 import org.joda.time.DateTime;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 
+import edu.washington.escience.myria.MyriaMatrix;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.column.builder.WritableColumn;
 import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * A single row relation.
  */
-public class Tuple implements Cloneable, AppendableTable, ReadableTable, Serializable {
+public class Tuple implements Cloneable, ReadableTable, Serializable {
   /***/
   private static final long serialVersionUID = 1L;
 
@@ -101,6 +99,12 @@ public class Tuple implements Cloneable, AppendableTable, ReadableTable, Seriali
   }
 
   @Override
+  public MyriaMatrix getMyriaMatrix(final int column, final int row) {
+    Preconditions.checkArgument(getSchema().getColumnType(column) == Type.MYRIAMATRIX_TYPE);
+    return (MyriaMatrix) getValue(column, row);
+  }
+
+  @Override
   public DateTime getDateTime(final int column, final int row) {
     Preconditions.checkArgument(getSchema().getColumnType(column) == Type.DATETIME_TYPE);
     return (DateTime) getValue(column, row);
@@ -141,7 +145,8 @@ public class Tuple implements Cloneable, AppendableTable, ReadableTable, Seriali
 
   @Override
   public ReadableColumn asColumn(final int column) {
-    return new ReadableSubColumn(this, Preconditions.checkElementIndex(column, schema.numColumns()));
+    return new ReadableSubColumn(this,
+        Preconditions.checkElementIndex(column, schema.numColumns()));
   }
 
   @Override
@@ -151,50 +156,5 @@ public class Tuple implements Cloneable, AppendableTable, ReadableTable, Seriali
       t.set(i, getObject(i, 0));
     }
     return t;
-  }
-
-  @Override
-  public void putBoolean(final int column, final boolean value) {
-    set(column, value);
-  }
-
-  @Override
-  public void putDateTime(final int column, @Nonnull final DateTime value) {
-    set(column, value);
-  }
-
-  @Override
-  public void putDouble(final int column, final double value) {
-    set(column, value);
-  }
-
-  @Override
-  public void putFloat(final int column, final float value) {
-    set(column, value);
-  }
-
-  @Override
-  public void putInt(final int column, final int value) {
-    set(column, value);
-  }
-
-  @Override
-  public void putLong(final int column, final long value) {
-    set(column, value);
-  }
-
-  @Override
-  public void putString(final int column, final @Nonnull String value) {
-    set(column, value);
-  }
-
-  @Override
-  public void putObject(final int column, final @Nonnull Object value) {
-    set(column, value);
-  }
-
-  @Override
-  public WritableColumn asWritableColumn(final int column) {
-    return data.get(column);
   }
 }

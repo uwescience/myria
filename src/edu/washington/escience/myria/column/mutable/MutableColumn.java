@@ -6,6 +6,7 @@ import javax.annotation.Nonnull;
 
 import org.joda.time.DateTime;
 
+import edu.washington.escience.myria.MyriaMatrix;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.storage.ReadableColumn;
@@ -17,8 +18,8 @@ import edu.washington.escience.myria.storage.ReplaceableColumn;
  * @param <T> type of the objects in this column.
  * 
  */
-public abstract class MutableColumn<T extends Comparable<?>> implements Cloneable, ReadableColumn,
-    ReplaceableColumn, Serializable {
+public abstract class MutableColumn<T extends Comparable<?>>
+    implements Cloneable, ReadableColumn, ReplaceableColumn, Serializable {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -63,6 +64,11 @@ public abstract class MutableColumn<T extends Comparable<?>> implements Cloneabl
   }
 
   @Override
+  public MyriaMatrix getMyriaMatrix(final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
   public abstract Type getType();
 
   @Override
@@ -100,6 +106,11 @@ public abstract class MutableColumn<T extends Comparable<?>> implements Cloneabl
 
   @Override
   public void replaceString(@Nonnull final String value, final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public void replaceMyriaMatrix(@Nonnull final MyriaMatrix value, final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }
 
