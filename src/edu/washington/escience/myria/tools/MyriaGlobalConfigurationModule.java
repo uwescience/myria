@@ -44,9 +44,9 @@ public final class MyriaGlobalConfigurationModule extends ConfigurationModuleBui
   public static final OptionalParameter<Boolean> ENABLE_DEBUG = new OptionalParameter<>();
   public static final RequiredParameter<String> WORKER_CONF = new RequiredParameter<>();
   public static final OptionalParameter<Integer> NUMBER_VCORES = new OptionalParameter<>();
-  public static final OptionalParameter<Integer> MEMORY_QUOTA_GB = new OptionalParameter<>();
-  public static final OptionalParameter<Integer> JVM_HEAP_SIZE_MIN_GB = new OptionalParameter<>();
-  public static final OptionalParameter<Integer> JVM_HEAP_SIZE_MAX_GB = new OptionalParameter<>();
+  public static final OptionalParameter<Float> MEMORY_QUOTA_GB = new OptionalParameter<>();
+  public static final OptionalParameter<Float> JVM_HEAP_SIZE_MIN_GB = new OptionalParameter<>();
+  public static final OptionalParameter<Float> JVM_HEAP_SIZE_MAX_GB = new OptionalParameter<>();
   public static final OptionalParameter<String> JVM_OPTIONS = new OptionalParameter<>();
   public static final OptionalParameter<Integer> FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES =
       new OptionalParameter<>();
@@ -143,17 +143,17 @@ public final class MyriaGlobalConfigurationModule extends ConfigurationModuleBui
   @NamedParameter
   public class WorkerConf implements Name<Set<String>> {
   }
-  @NamedParameter(default_value = "1")
+  @NamedParameter(default_value = "2")
   public class NumberVCores implements Name<Integer> {
   }
-  @NamedParameter(default_value = "1")
-  public class MemoryQuotaGB implements Name<Integer> {
+  @NamedParameter(default_value = "2.0")
+  public class MemoryQuotaGB implements Name<Float> {
   }
-  @NamedParameter(default_value = "1")
-  public class JvmHeapSizeMinGB implements Name<Integer> {
+  @NamedParameter(default_value = "1.0")
+  public class JvmHeapSizeMinGB implements Name<Float> {
   }
-  @NamedParameter(default_value = "1")
-  public class JvmHeapSizeMaxGB implements Name<Integer> {
+  @NamedParameter(default_value = "2.0")
+  public class JvmHeapSizeMaxGB implements Name<Float> {
   }
   @NamedParameter(default_values = {"-XX:+UseG1GC"})
   public class JvmOptions implements Name<Set<String>> {
