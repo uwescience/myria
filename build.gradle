@@ -121,6 +121,7 @@ dependencies {
   compile "com.almworks.sqlite4java:sqlite4java:1.0.392"
 
   compile "com.google.guava:guava:18.0"
+  /* this version is required for compatibility with REEF */
   compile "com.google.protobuf:protobuf-java:2.5.0"
 
   compile "io.netty:netty:3.9.6.Final"
