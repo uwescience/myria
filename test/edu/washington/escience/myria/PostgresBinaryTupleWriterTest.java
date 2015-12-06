@@ -21,7 +21,8 @@ public class PostgresBinaryTupleWriterTest {
   public void testBinaryOutput() throws IOException {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-    PostgresBinaryTupleWriter writer = new PostgresBinaryTupleWriter(out);
+    PostgresBinaryTupleWriter writer = new PostgresBinaryTupleWriter();
+    writer.open(out);
 
     TupleBuffer tuples =
         new TupleBuffer(new Schema(ImmutableList.of(Type.BOOLEAN_TYPE, Type.INT_TYPE, Type.LONG_TYPE, Type.FLOAT_TYPE,

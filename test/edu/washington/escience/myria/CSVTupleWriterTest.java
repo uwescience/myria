@@ -18,7 +18,8 @@ public class CSVTupleWriterTest {
   public void testConstructionWithNoNames() throws IOException {
     OutputStream out = new ByteArrayOutputStream();
 
-    CsvTupleWriter writer = new CsvTupleWriter(out);
+    CsvTupleWriter writer = new CsvTupleWriter();
+    writer.open(out);
     writer.writeColumnHeaders(ImmutableList.of("foo", "bar", "baz"));
 
     TupleBuffer tuples =
@@ -40,7 +41,8 @@ public class CSVTupleWriterTest {
   public void testDelimiter() throws IOException {
     OutputStream out = new ByteArrayOutputStream();
     // use an uncommon one for testing
-    CsvTupleWriter writer = new CsvTupleWriter('_', out);
+    CsvTupleWriter writer = new CsvTupleWriter();
+    writer.open('_', out);
     writer.writeColumnHeaders(ImmutableList.of("foo", "bar"));
     TupleBuffer tuples = new TupleBuffer(new Schema(ImmutableList.of(Type.STRING_TYPE, Type.INT_TYPE)));
     tuples.putString(0, "a");

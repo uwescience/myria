@@ -49,9 +49,9 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import edu.washington.escience.myria.CsvTupleWriter;
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.HdfsTupleWriter;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
+import edu.washington.escience.myria.PostgresBinaryTupleWriter;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleWriter;
@@ -284,6 +284,11 @@ public final class Server {
   private volatile ExecutorService serverQueryExecutor;
 
   /**
+   * The URI to persist relations
+   */
+  private final String persistURI;
+
+  /**
    * @return the query executor used in this worker.
    */
   ExecutorService getQueryExecutor() {
@@ -463,6 +468,7 @@ public final class Server {
     final String databaseSystem =
         CONFIG.getRequired("deployment", MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_SYSTEM);
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM, databaseSystem);
+    persistURI = CONFIG.getRequired("persist", MyriaSystemConfigKeys.PERSIST_URI);
   }
 
   /**
@@ -1080,16 +1086,18 @@ public final class Server {
 
     /* Create the query plan for persist */
     try {
-      Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
+      ImmutableMap<Integer, SubQueryPlan> workerPlans = null;
       for (Integer workerId : getWorkersForRelation(relationKey, null)) {
         String partitionName =
-            String.format("hdfs://vega.cs.washington.edu:8020/partition%s/%s/%s/%s", workerId, relationKey
-                .getUserName(), relationKey.getProgramName(), relationKey.getRelationName());
+            String.format(persistURI + "/partition-%s/%s/%s/%s", workerId, relationKey.getUserName(), relationKey
+                .getProgramName(), relationKey.getRelationName());
         DataSink workerSink = new UriSink(partitionName);
-        workerPlans.put(workerId, new SubQueryPlan(new DataOutput(new DbQueryScan(relationKey, getSchema(relationKey)),
-            new HdfsTupleWriter(), workerSink)));
+        workerPlans =
+            ImmutableMap.<Integer, SubQueryPlan> builder().put(
+                workerId,
+                new SubQueryPlan(new DataOutput(new DbQueryScan(relationKey, getSchema(relationKey)),
+                    new PostgresBinaryTupleWriter(), workerSink))).build();
       }
-
       ListenableFuture<Query> qf =
           queryManager.submitQuery("persist " + relationKey.toString(), "persist " + relationKey.toString(),
               "persisting from " + relationKey.toString(getDBMS()), new SubQueryPlan(new SinkRoot(new EOSSource())),
@@ -1930,7 +1938,8 @@ public final class Server {
   public void getResourceUsage(final long queryId, final PipedOutputStream writerOutput) throws DbException {
     Schema schema = Schema.appendColumn(MyriaConstants.RESOURCE_PROFILING_SCHEMA, Type.INT_TYPE, "workerId");
     try {
-      TupleWriter writer = new CsvTupleWriter(writerOutput);
+      TupleWriter writer = new CsvTupleWriter();
+      writer.open(writerOutput);
       TupleBuffer tb = queryManager.getResourceUsage(queryId);
       if (tb != null) {
         writer.writeColumnHeaders(schema.getColumnNames());

@@ -23,27 +23,15 @@ public class PostgresBinaryTupleWriter implements TupleWriter {
   static final long serialVersionUID = 1L;
 
   /** The ByteBuffer to write the output. */
-  private DataOutputStream buffer;
+  private transient DataOutputStream buffer;
 
   /**
-   * Constructs a {@link PostgresBinaryTupleWriter} object.
-   * 
    * @param out the {@link OutputStream} to which the data will be written.
    * @throws IOException if there is an IO exception
    */
-  public PostgresBinaryTupleWriter(final OutputStream out) throws IOException {
-    buffer = new DataOutputStream(new BufferedOutputStream(out));
-    // 11 bytes required header
-    buffer.writeBytes("PGCOPY\n\377\r\n\0");
-    // 32 bit integer indicating no OID
-    buffer.writeInt(0);
-    // 32 bit header extension area length
-    buffer.writeInt(0);
-  }
-
   @Override
-  public void open(final OutputStream stream) throws IOException {
-    buffer = new DataOutputStream(new BufferedOutputStream(stream));
+  public void open(final OutputStream out) throws IOException {
+    buffer = new DataOutputStream(new BufferedOutputStream(out));
     // 11 bytes required header
     buffer.writeBytes("PGCOPY\n\377\r\n\0");
     // 32 bit integer indicating no OID

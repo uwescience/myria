@@ -191,9 +191,11 @@ public final class DatasetResource {
       /* CSV or TSV : set application/octet-stream, attachment, and filename. */
       try {
         if (validFormat.equals("csv")) {
-          writer = new CsvTupleWriter(writerOutput);
+          writer = new CsvTupleWriter();
+          writer.open(writerOutput);
         } else {
-          writer = new CsvTupleWriter('\t', writerOutput);
+          writer = new CsvTupleWriter();
+          ((CsvTupleWriter) writer).open('\t', writerOutput);
         }
       } catch (IOException e) {
         throw new DbException(e);
@@ -206,7 +208,12 @@ public final class DatasetResource {
     } else if (validFormat.equals("json")) {
       /* JSON: set application/json. */
       response.type(MyriaApiConstants.JSON_UTF_8);
-      writer = new JsonTupleWriter(writerOutput);
+      writer = new JsonTupleWriter();
+      try {
+        writer.open(writerOutput);
+      } catch (IOException e) {
+        throw new DbException(e);
+      }
     } else {
       /* Should not be possible to get here. */
       throw new IllegalStateException("format should have been validated by now, and yet we got here");
@@ -259,9 +266,11 @@ public final class DatasetResource {
       /* CSV or TSV : set application/octet-stream, attachment, and filename. */
       try {
         if (validFormat.equals("csv")) {
-          writer = new CsvTupleWriter(writerOutput);
+          writer = new CsvTupleWriter();
+          writer.open(writerOutput);
         } else {
-          writer = new CsvTupleWriter('\t', writerOutput);
+          writer = new CsvTupleWriter();
+          ((CsvTupleWriter) writer).open('\t', writerOutput);
         }
       } catch (IOException e) {
         throw new DbException(e);
@@ -274,7 +283,12 @@ public final class DatasetResource {
     } else if (validFormat.equals("json")) {
       /* JSON: set application/json. */
       response.type(MyriaApiConstants.JSON_UTF_8);
-      writer = new JsonTupleWriter(writerOutput);
+      writer = new JsonTupleWriter();
+      try {
+        writer.open(writerOutput);
+      } catch (IOException e) {
+        throw new DbException(e);
+      }
     } else {
       /* Should not be possible to get here. */
       throw new IllegalStateException("format should have been validated by now, and yet we got here");

@@ -96,6 +96,8 @@ public final class MyriaSystemConfigKeys {
   public static final String GANGLIA_MASTER_HOST = "ganglia.master.host";
   /** */
   public static final String GANGLIA_MASTER_PORT = "ganglia.master.port";
+  /** */
+  public static final String PERSIST_URI = "persist_uri";
 
   /**
    * Default value for {@link MyriaSystemConfigKeys#FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES}.

@@ -23,3 +23,5 @@ rest_port = 8753
 # Uncomment to set other JVM options, separate them with space
 #jvm.options = -XX:+UseParallelGC
 
+[persist]
+persist_uri = hdfs://vega.cs.washington.edu:8020

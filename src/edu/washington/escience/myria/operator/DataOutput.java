@@ -5,7 +5,6 @@ import java.io.IOException;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.HdfsTupleWriter;
 import edu.washington.escience.myria.TupleWriter;
 import edu.washington.escience.myria.io.DataSink;
 import edu.washington.escience.myria.storage.TupleBatch;
@@ -70,9 +69,7 @@ public final class DataOutput extends RootOperator {
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     try {
-      if (tupleWriter instanceof HdfsTupleWriter) {
-        tupleWriter.open(dataSink.getOutputStream());
-      }
+      tupleWriter.open(dataSink.getOutputStream());
       tupleWriter.writeColumnHeaders(getChild().getSchema().getColumnNames());
     } catch (IOException e) {
       throw new DbException(e);

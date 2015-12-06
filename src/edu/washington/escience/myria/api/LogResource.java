@@ -84,7 +84,8 @@ public final class LogResource {
     TupleWriter writer;
     try {
       input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
-      writer = new CsvTupleWriter(writerOutput);
+      writer = new CsvTupleWriter();
+      writer.open(writerOutput);
     } catch (IOException e) {
       throw new DbException(e);
     }
@@ -131,7 +132,8 @@ public final class LogResource {
     TupleWriter writer;
     try {
       input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
-      writer = new CsvTupleWriter(writerOutput);
+      writer = new CsvTupleWriter();
+      writer.open(writerOutput);
     } catch (IOException e) {
       throw new DbException(e);
     }
@@ -178,7 +180,8 @@ public final class LogResource {
     TupleWriter writer;
     try {
       input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
-      writer = new CsvTupleWriter(writerOutput);
+      writer = new CsvTupleWriter();
+      writer.open(writerOutput);
     } catch (IOException e) {
       throw new DbException(e);
     }
@@ -223,7 +226,8 @@ public final class LogResource {
     TupleWriter writer;
     try {
       input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
-      writer = new CsvTupleWriter(writerOutput);
+      writer = new CsvTupleWriter();
+      writer.open(writerOutput);
     } catch (IOException e) {
       throw new DbException(e);
     }
@@ -268,7 +272,8 @@ public final class LogResource {
     TupleWriter writer;
     try {
       input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
-      writer = new CsvTupleWriter(writerOutput);
+      writer = new CsvTupleWriter();
+      writer.open(writerOutput);
     } catch (IOException e) {
       throw new DbException(e);
     }
@@ -327,7 +332,8 @@ public final class LogResource {
     TupleWriter writer;
     try {
       input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
-      writer = new CsvTupleWriter(writerOutput);
+      writer = new CsvTupleWriter();
+      writer.open(writerOutput);
     } catch (IOException e) {
       throw new DbException(e);
     }
