@@ -468,7 +468,7 @@ public final class Server {
     final String databaseSystem =
         CONFIG.getRequired("deployment", MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_SYSTEM);
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM, databaseSystem);
-    persistURI = CONFIG.getRequired("persist", MyriaSystemConfigKeys.PERSIST_URI);
+    persistURI = CONFIG.getOptional("persist", MyriaSystemConfigKeys.PERSIST_URI);
   }
 
   /**
