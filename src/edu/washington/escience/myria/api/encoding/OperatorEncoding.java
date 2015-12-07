@@ -11,7 +11,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import edu.washington.escience.myria.api.MyriaApiException;
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.operator.SampledDbInsertTemp;
 
 /**
  * A JSON-able wrapper for the expected wire message for an operator. To add a new operator, two
@@ -38,18 +37,24 @@ import edu.washington.escience.myria.operator.SampledDbInsertTemp;
     @Type(name = "DupElim", value = DupElimEncoding.class),
     @Type(name = "Empty", value = EmptyRelationEncoding.class),
     @Type(name = "EOSController", value = EOSControllerEncoding.class),
+    @Type(name = "EStepXD", value = EStepXDEncoding.class),
     @Type(name = "FileScan", value = FileScanEncoding.class),
     @Type(name = "Filter", value = FilterEncoding.class),
     @Type(name = "HyperShuffleProducer", value = HyperShuffleProducerEncoding.class),
     @Type(name = "HyperShuffleConsumer", value = HyperShuffleConsumerEncoding.class),
     @Type(name = "IDBController", value = IDBControllerEncoding.class),
     @Type(name = "InMemoryOrderBy", value = InMemoryOrderByEncoding.class),
+    @Type(name = "JoinEStep", value = JoinEStepEncoding.class),
+    @Type(name = "JoinEStepNewType", value = JoinEStepNewTypeEncoding.class),
+    @Type(name = "JoinMStepAggregate", value = JoinMStepAggregateEncoding.class),
+    @Type(name = "JoinMStepPartialNewType", value = JoinMStepPartialNewTypeEncoding.class),
     @Type(name = "LeapFrogJoin", value = LeapFrogJoinEncoding.class),
     @Type(name = "Limit", value = LimitEncoding.class),
     @Type(name = "LocalMultiwayConsumer", value = LocalMultiwayConsumerEncoding.class),
     @Type(name = "LocalMultiwayProducer", value = LocalMultiwayProducerEncoding.class),
     @Type(name = "Merge", value = MergeEncoding.class),
     @Type(name = "MergeJoin", value = MergeJoinEncoding.class),
+    @Type(name = "MStepPartialXD", value = MStepPartialXDEncoding.class),
     @Type(name = "MultiGroupByAggregate", value = MultiGroupByAggregateEncoding.class),
     @Type(name = "NChiladaFileScan", value = NChiladaFileScanEncoding.class),
     @Type(name = "RightHashCountingJoin", value = RightHashCountingJoinEncoding.class),

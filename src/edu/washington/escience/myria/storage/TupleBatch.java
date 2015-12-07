@@ -15,6 +15,7 @@ import edu.washington.escience.myria.MyriaMatrix;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.column.PrefixColumn;
 import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myria.util.IPCUtils;
@@ -156,6 +157,24 @@ public class TupleBatch implements ReadableTable, Serializable {
       newColumns.add(column.filter(filter));
     }
     return new TupleBatch(schema, newColumns.build(), newNumTuples, isEOI);
+  }
+
+
+  /**
+   * Return a new TupleBatch that contains only first <code>prefix</code> rows of this batch.
+   * 
+   * @param prefix the number of rows in the prefix to be retained.
+   * @return a TupleBatch that contains only the filtered rows of the current dataset.
+   */
+  @SuppressWarnings({"rawtypes", "unchecked"})
+  public final TupleBatch prefix(final int prefix) {
+    Preconditions.checkArgument(prefix <= numTuples(),
+        "Error: cannot take a prefix of length %s from a batch of length %s", prefix, numTuples());
+    ImmutableList.Builder<Column<?>> newColumns = ImmutableList.builder();
+    for (Column<?> column : columns) {
+      newColumns.add(new PrefixColumn(column, prefix));
+    }
+    return new TupleBatch(schema, newColumns.build(), prefix, isEOI);
   }
 
   @Override

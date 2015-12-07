@@ -410,6 +410,17 @@ public enum Type implements Serializable {
   }
 
   /**
+   * @return value 0 if the <code>x</code> is equal to <code>y</code>; a value less than 0 if
+   *         <code>x</code> is lexicographically less than <code>y</code>; and a value greater than
+   *         0 if this string is otherwise.
+   * @param x the value to be compared in a tuple
+   * @param y the operand
+   */
+  public static final int compareRaw(final MyriaMatrix x, final MyriaMatrix y) {
+    return x.compareTo(y);
+  }
+
+  /**
    * @param op the operation
    * @param valueInTuple the value to be compared in a tuple
    * @param operand the operand

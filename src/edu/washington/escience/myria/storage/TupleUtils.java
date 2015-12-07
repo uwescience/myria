@@ -44,6 +44,9 @@ public final class TupleUtils {
       case STRING_TYPE:
         to.appendString(from.getString(fromRow));
         break;
+      case MYRIAMATRIX_TYPE:
+        to.appendMyriaMatrix(from.getMyriaMatrix(fromRow));
+        break;
     }
   }
 
@@ -79,6 +82,9 @@ public final class TupleUtils {
         break;
       case STRING_TYPE:
         to.putString(toColumn, from.getString(fromRow));
+        break;
+      case MYRIAMATRIX_TYPE:
+        to.putMyriaMatrix(toColumn, from.getMyriaMatrix(fromRow));
         break;
     }
   }
@@ -117,6 +123,9 @@ public final class TupleUtils {
       case STRING_TYPE:
         to.appendString(from.getString(fromColumn, fromRow));
         break;
+      case MYRIAMATRIX_TYPE:
+        to.appendMyriaMatrix(from.getMyriaMatrix(fromColumn, fromRow));
+        break;
     }
   }
 
@@ -154,6 +163,9 @@ public final class TupleUtils {
       case STRING_TYPE:
         to.putString(toColumn, from.getString(fromColumn, fromRow));
         break;
+      case MYRIAMATRIX_TYPE:
+        to.putMyriaMatrix(toColumn, from.getMyriaMatrix(fromColumn, fromRow));
+        break;
     }
   }
 
@@ -168,11 +180,9 @@ public final class TupleUtils {
    */
   public static int cellCompare(final ReadableTable table1, final int column1, final int row1,
       final ReadableTable table2, final int column2, final int row2) {
-    Preconditions
-        .checkArgument(
-            table1.getSchema().getColumnType(column1)
-                .equals(table2.getSchema().getColumnType(column2)),
-            "The types of comparing cells are not matched.");
+    Preconditions.checkArgument(
+        table1.getSchema().getColumnType(column1).equals(table2.getSchema().getColumnType(column2)),
+        "The types of comparing cells are not matched.");
     switch (table1.getSchema().getColumnType(column1)) {
       case BOOLEAN_TYPE:
         return Type.compareRaw(table1.getBoolean(column1, row1), table2.getBoolean(column2, row2));
@@ -187,10 +197,12 @@ public final class TupleUtils {
       case STRING_TYPE:
         return Type.compareRaw(table1.getString(column1, row1), table2.getString(column2, row2));
       case DATETIME_TYPE:
-        return Type
-            .compareRaw(table1.getDateTime(column1, row1), table2.getDateTime(column2, row2));
+        return Type.compareRaw(table1.getDateTime(column1, row1),
+            table2.getDateTime(column2, row2));
+      case MYRIAMATRIX_TYPE:
+        return Type.compareRaw(table1.getMyriaMatrix(column1, row1),
+            table2.getMyriaMatrix(column2, row2));
     }
-
     throw new IllegalStateException("Invalid type.");
   }
 
@@ -211,12 +223,11 @@ public final class TupleUtils {
    *         equal to, or greater than the second
    */
   public static int tupleCompare(final ReadableTable table1, final int[] compareIndexes1,
-      final int rowIdx1, final ReadableTable table2, final int[] compareIndexes2,
-      final int rowIdx2, final boolean[] ascending) {
+      final int rowIdx1, final ReadableTable table2, final int[] compareIndexes2, final int rowIdx2,
+      final boolean[] ascending) {
     for (int i = 0; i < compareIndexes1.length; i++) {
-      int compared =
-          TupleUtils.cellCompare(table1, compareIndexes1[i], rowIdx1, table2, compareIndexes2[i],
-              rowIdx2);
+      int compared = TupleUtils.cellCompare(table1, compareIndexes1[i], rowIdx1, table2,
+          compareIndexes2[i], rowIdx2);
       if (compared != 0) {
         if (!ascending[i]) {
           return -compared;
@@ -279,8 +290,8 @@ public final class TupleUtils {
           }
           break;
         case FLOAT_TYPE:
-          if (table1.getFloat(compareColumns1[i], row1) != table2
-              .getFloat(compareColumns2[i], row2)) {
+          if (table1.getFloat(compareColumns1[i], row1) != table2.getFloat(compareColumns2[i],
+              row2)) {
             return false;
           }
           break;
@@ -290,19 +301,26 @@ public final class TupleUtils {
           }
           break;
         case LONG_TYPE:
-          if (table1.getLong(compareColumns1[i], row1) != table2.getLong(compareColumns2[i], row2)) {
+          if (table1.getLong(compareColumns1[i], row1) != table2.getLong(compareColumns2[i],
+              row2)) {
             return false;
           }
           break;
         case STRING_TYPE:
-          if (!table1.getString(compareColumns1[i], row1).equals(
-              table2.getString(compareColumns2[i], row2))) {
+          if (!table1.getString(compareColumns1[i], row1)
+              .equals(table2.getString(compareColumns2[i], row2))) {
             return false;
           }
           break;
         case DATETIME_TYPE:
-          if (!table1.getDateTime(compareColumns1[i], row1).equals(
-              table2.getDateTime(compareColumns2[i], row2))) {
+          if (!table1.getDateTime(compareColumns1[i], row1)
+              .equals(table2.getDateTime(compareColumns2[i], row2))) {
+            return false;
+          }
+          break;
+        case MYRIAMATRIX_TYPE:
+          if (!table1.getMyriaMatrix(compareColumns1[i], row1)
+              .equals(table2.getMyriaMatrix(compareColumns2[i], row2))) {
             return false;
           }
           break;
@@ -362,6 +380,11 @@ public final class TupleUtils {
             return false;
           }
           break;
+        case MYRIAMATRIX_TYPE:
+          if (!table1.getMyriaMatrix(i, row1).equals(table2.getMyriaMatrix(i, row2))) {
+            return false;
+          }
+          break;
       }
     }
     return true;
@@ -417,6 +440,12 @@ public final class TupleUtils {
           break;
         case DATETIME_TYPE:
           if (!table1.getDateTime(compareColumns[i], row1).equals(table2.getDateTime(i, index))) {
+            return false;
+          }
+          break;
+        case MYRIAMATRIX_TYPE:
+          if (!table1.getMyriaMatrix(compareColumns[i], row1)
+              .equals(table2.getMyriaMatrix(i, index))) {
             return false;
           }
           break;
