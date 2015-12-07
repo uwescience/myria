@@ -23,8 +23,7 @@ import org.apache.reef.client.JobMessage;
 import org.apache.reef.client.LauncherStatus;
 import org.apache.reef.client.REEF;
 import org.apache.reef.client.RunningJob;
-import org.apache.reef.runtime.local.client.LocalRuntimeConfiguration;
-// import org.apache.reef.runtime.yarn.client.YarnClientConfiguration;
+import org.apache.reef.runtime.yarn.driver.parameters.JobSubmissionDirectoryPrefix;
 import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.Configurations;
 import org.apache.reef.tang.Injector;
@@ -45,6 +44,7 @@ import org.slf4j.LoggerFactory;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.coordinator.ConfigFileException;
 import edu.washington.escience.myria.tools.MyriaConfigurationParser;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.DefaultInstancePath;
 
 @Unit
 public final class MyriaDriverLauncher {
@@ -52,7 +52,7 @@ public final class MyriaDriverLauncher {
   private static final Logger LOGGER = LoggerFactory.getLogger(MyriaDriverLauncher.class);
 
   private static final String USAGE_STRING =
-      "Usage: MyriaDriverLauncher -configPath <configPath> -javaLibPath <javaLibPath> -nativeLibPath <nativeLibPath>";
+      "Usage: MyriaDriverLauncher [-yarn true|false] -configPath <configPath> -javaLibPath <javaLibPath> -nativeLibPath <nativeLibPath>";
 
   private static final long DRIVER_PING_TIMEOUT_MILLIS = 60 * 1000;
 
@@ -61,13 +61,11 @@ public final class MyriaDriverLauncher {
    * @throws Exception if the Driver can't start.
    */
   public static void main(final String[] args) throws Exception {
-    if (args.length != 6) {
+    if (!(args.length == 6 || args.length == 8)) {
       System.err.println(USAGE_STRING);
       System.exit(-1);
     }
-    // final Configuration runtimeConfiguration = YarnClientConfiguration.CONF.build();
-    final Configuration runtimeConfiguration = LocalRuntimeConfiguration.CONF.build();
-    run(runtimeConfiguration, args);
+    run(args);
   }
 
   private final REEF reef;
@@ -79,6 +77,14 @@ public final class MyriaDriverLauncher {
   @Inject
   private MyriaDriverLauncher(final REEF reef) {
     this.reef = reef;
+  }
+
+  private final static Configuration getRuntimeConf(final String runtimeClassName)
+      throws ClassNotFoundException, IllegalArgumentException, IllegalAccessException,
+      NoSuchFieldException, SecurityException {
+    final Class<?> runtimeClass = Class.forName(runtimeClassName);
+    ConfigurationModule cm = (ConfigurationModule) runtimeClass.getField("CONF").get(null);
+    return cm.build();
   }
 
   private final static Configuration getClientConf() {
@@ -165,24 +171,39 @@ public final class MyriaDriverLauncher {
    * @throws java.io.IOException
    * @throws ParseException
    * @throws ConfigFileException
+   * @throws SecurityException
+   * @throws NoSuchFieldException
+   * @throws IllegalAccessException
+   * @throws IllegalArgumentException
+   * @throws ClassNotFoundException
    */
-  public static LauncherStatus run(final Configuration runtimeConf, final String[] args)
-      throws InjectionException, IOException, ParseException, ConfigFileException {
+  public static LauncherStatus run(final String[] args) throws InjectionException, IOException,
+      ParseException, ConfigFileException, ClassNotFoundException, IllegalArgumentException,
+      IllegalAccessException, NoSuchFieldException, SecurityException {
     final Tang tang = Tang.Factory.getTang();
     // TODO: implement ClientConfiguration event handlers so we can get messages from the Driver
     @SuppressWarnings("unchecked")
     final Configuration commandLineConf =
-        CommandLine.parseToConfiguration(args, ConfigPath.class, JavaLibPath.class,
-            NativeLibPath.class);
+        CommandLine.parseToConfiguration(args, RuntimeClassName.class, ConfigPath.class,
+            JavaLibPath.class, NativeLibPath.class);
     final Injector commandLineInjector = tang.newInjector(commandLineConf);
+    final String runtimeClassName = commandLineInjector.getNamedInstance(RuntimeClassName.class);
     final String configPath = commandLineInjector.getNamedInstance(ConfigPath.class);
     final String javaLibPath = commandLineInjector.getNamedInstance(JavaLibPath.class);
     final String nativeLibPath = commandLineInjector.getNamedInstance(NativeLibPath.class);
-    final String serializedGlobalConf =
-        new AvroConfigurationSerializer().toString(getMyriaGlobalConf(configPath));
+    final Configuration globalConf = getMyriaGlobalConf(configPath);
+    final String serializedGlobalConf = new AvroConfigurationSerializer().toString(globalConf);
     final Configuration globalConfWrapper =
         tang.newConfigurationBuilder()
             .bindNamedParameter(SerializedGlobalConf.class, serializedGlobalConf).build();
+    final String jobSubmissionDirectory =
+        tang.newInjector(globalConf).getNamedInstance(DefaultInstancePath.class);
+    // TODO: remove this when REEF-1034 is resolved
+    final Configuration extraRuntimeConf =
+        tang.newConfigurationBuilder()
+            .bindNamedParameter(JobSubmissionDirectoryPrefix.class, jobSubmissionDirectory).build();
+    final Configuration runtimeConf =
+        Configurations.merge(getRuntimeConf(runtimeClassName), extraRuntimeConf);
     final Configuration driverConf =
         Configurations.merge(
             getDriverConf(new String[] {javaLibPath}, new String[] {nativeLibPath}),
@@ -224,6 +245,15 @@ public final class MyriaDriverLauncher {
       driver.get().close();
     }
     notify();
+  }
+
+  /**
+   * Command line parameter: runtime configuration class to use (defaults to local runtime).
+   */
+  @NamedParameter(doc = "Fully qualified name of runtime configuration class",
+      short_name = "runtimeClass",
+      default_value = "org.apache.reef.runtime.local.client.LocalRuntimeConfiguration")
+  public static final class RuntimeClassName implements Name<String> {
   }
 
   /**

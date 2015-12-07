@@ -436,12 +436,13 @@ public final class MyriaDriver {
 
   private void requestWorkerEvaluator(final int workerId) throws InjectionException {
     Preconditions.checkArgument(workerId != MyriaConstants.MASTER_ID);
-    LOGGER.info("Requesting evaluator for worker {}.", workerId);
     final int jvmMemoryQuotaMB =
-        1024 * globalConfInjector
-            .getNamedInstance(MyriaGlobalConfigurationModule.MemoryQuotaGB.class);
+        (int) (1024 * globalConfInjector
+            .getNamedInstance(MyriaGlobalConfigurationModule.MemoryQuotaGB.class));
     final int numberVCores =
         globalConfInjector.getNamedInstance(MyriaGlobalConfigurationModule.NumberVCores.class);
+    LOGGER.info("Requesting evaluator for worker {} with {} vcores, {} MB memory.", workerId,
+        numberVCores, jvmMemoryQuotaMB);
     final Configuration workerConf = workerConfs.get(workerId);
     final String hostname = getHostFromWorkerConf(workerConf);
     final EvaluatorRequest workerRequest =
@@ -451,13 +452,14 @@ public final class MyriaDriver {
   }
 
   private void requestMasterEvaluator() throws InjectionException {
-    LOGGER.info("Requesting master evaluator.");
     final String masterHost = getMasterHost();
     final int jvmMemoryQuotaMB =
-        1024 * globalConfInjector
-            .getNamedInstance(MyriaGlobalConfigurationModule.MemoryQuotaGB.class);
+        (int) (1024 * globalConfInjector
+            .getNamedInstance(MyriaGlobalConfigurationModule.MemoryQuotaGB.class));
     final int numberVCores =
         globalConfInjector.getNamedInstance(MyriaGlobalConfigurationModule.NumberVCores.class);
+    LOGGER.info("Requesting master evaluator with {} vcores, {} MB memory.", numberVCores,
+        jvmMemoryQuotaMB);
     final EvaluatorRequest masterRequest =
         EvaluatorRequest.newBuilder().setNumber(1).setMemory(jvmMemoryQuotaMB)
             .setNumberOfCores(numberVCores).addNodeName(masterHost).build();
@@ -465,16 +467,18 @@ public final class MyriaDriver {
   }
 
   private void setJVMOptions(final AllocatedEvaluator evaluator) throws InjectionException {
-    final int jvmHeapSizeMinGB =
-        globalConfInjector.getNamedInstance(MyriaGlobalConfigurationModule.JvmHeapSizeMinGB.class);
-    final int jvmHeapSizeMaxGB =
-        globalConfInjector.getNamedInstance(MyriaGlobalConfigurationModule.JvmHeapSizeMaxGB.class);
+    final int jvmHeapSizeMinMB =
+        (int) (1024 * globalConfInjector
+            .getNamedInstance(MyriaGlobalConfigurationModule.JvmHeapSizeMinGB.class));
+    final int jvmHeapSizeMaxMB =
+        (int) (1024 * globalConfInjector
+            .getNamedInstance(MyriaGlobalConfigurationModule.JvmHeapSizeMaxGB.class));
     final Set<String> jvmOptions =
         globalConfInjector.getNamedInstance(MyriaGlobalConfigurationModule.JvmOptions.class);
     final JVMProcess jvmProcess =
         jvmProcessFactory.newEvaluatorProcess()
-            .addOption(String.format("-Xms%dg", jvmHeapSizeMinGB))
-            .addOption(String.format("-Xmx%dg", jvmHeapSizeMaxGB))
+            .addOption(String.format("-Xms%dm", jvmHeapSizeMinMB))
+            .addOption(String.format("-Xmx%dm", jvmHeapSizeMaxMB))
             // for native libraries
             .addOption("-Djava.library.path=./reef/global");
     for (final String option : jvmOptions) {
