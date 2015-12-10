@@ -415,8 +415,18 @@ public final class DeploymentUtils {
    * 
    * @param cmd cmd[0] is the command name, from cmd[1] are arguments.
    */
-  private static void startAProcess(final String[] cmd) {
-    startAProcess(cmd, true);
+  public static Process startAProcess(final String[] cmd) {
+    return startAProcess(cmd, true, true);
+  }
+
+  /**
+   * start a process by ProcessBuilder, wait for the process to finish.
+   * 
+   * @param cmd cmd[0] is the command name, from cmd[1] are arguments.
+   * @param waitFor do we wait for the process to finish.
+   */
+  public static Process startAProcess(final String[] cmd, final boolean waitFor) {
+    return startAProcess(cmd, waitFor, true);
   }
 
   /**
@@ -424,11 +434,17 @@ public final class DeploymentUtils {
    * 
    * @param cmd cmd[0] is the command name, from cmd[1] are arguments.
    * @param waitFor do we wait for the process to finish.
+   * @param inheritIO inherit all file descriptors from the parent process.
    */
-  private static void startAProcess(final String[] cmd, final boolean waitFor) {
+  public static Process startAProcess(final String[] cmd, final boolean waitFor, final boolean inheritIO) {
     LOGGER.debug(StringUtils.join(cmd, " "));
+    Process p;
     try {
-      Process p = new ProcessBuilder().inheritIO().command(cmd).start();
+      if (inheritIO) {
+        p = new ProcessBuilder().inheritIO().command(cmd).start();
+      } else {
+        p = new ProcessBuilder().command(cmd).start();
+      }
       if (waitFor) {
         int ret = p.waitFor();
         if (ret != 0) {
@@ -439,6 +455,7 @@ public final class DeploymentUtils {
       e.printStackTrace();
       throw new RuntimeException(e);
     }
+    return p;
   }
 
   /**
