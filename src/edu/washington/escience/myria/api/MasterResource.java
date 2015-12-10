@@ -70,7 +70,7 @@ public final class MasterResource {
     shutdownThread.start();
   }
 
-  private static int getProcessPid() throws Exception {
+  private static int getProcessPid() {
     // HACK: in the Oracle JVM, we can get the current process's PID as the first component of the value returned by
     // ManagementFactory.getRuntimeMXBean().getName().
     // This method is documented "Returns the name representing the running Java virtual machine."
@@ -79,7 +79,7 @@ public final class MasterResource {
     if (pidStr.contains("@")) {
       return Integer.parseInt(pidStr.split("@")[0]);
     } else {
-      throw new Exception("Cannot find pid from string: " + pidStr);
+      throw new RuntimeException("Cannot find pid from string: " + pidStr);
     }
   }
 
@@ -98,12 +98,12 @@ public final class MasterResource {
    * 
    * @param server the Myria {@link Server} to be restarted.
    * @return a success message.
-   * @throws Exception
+   * @throws ConfigFileException
    */
   @GET
   @Path("/restart")
   @ADMIN
-  public Response restart(@Context final MasterDaemon daemon) throws Exception {
+  public Response restart(@Context final MasterDaemon daemon) throws ConfigFileException {
     String workingDir = daemon.getClusterMaster().getConfig().getWorkingDirectory(MyriaConstants.MASTER_ID);
     String deploymentFile = FilenameUtils.concat(workingDir, MyriaConstants.DEPLOYMENT_CONF_FILE);
     int pid = getProcessPid();
