@@ -23,7 +23,6 @@ import org.apache.reef.client.JobMessage;
 import org.apache.reef.client.LauncherStatus;
 import org.apache.reef.client.REEF;
 import org.apache.reef.client.RunningJob;
-import org.apache.reef.runtime.yarn.driver.parameters.JobSubmissionDirectoryPrefix;
 import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.Configurations;
 import org.apache.reef.tang.Injector;
@@ -44,7 +43,6 @@ import org.slf4j.LoggerFactory;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.coordinator.ConfigFileException;
 import edu.washington.escience.myria.tools.MyriaConfigurationParser;
-import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.DefaultInstancePath;
 
 @Unit
 public final class MyriaDriverLauncher {
@@ -196,21 +194,13 @@ public final class MyriaDriverLauncher {
     final Configuration globalConfWrapper =
         tang.newConfigurationBuilder()
             .bindNamedParameter(SerializedGlobalConf.class, serializedGlobalConf).build();
-    final String jobSubmissionDirectory =
-        tang.newInjector(globalConf).getNamedInstance(DefaultInstancePath.class);
-    // TODO: remove this when REEF-1034 is resolved
-    final Configuration extraRuntimeConf =
-        tang.newConfigurationBuilder()
-            .bindNamedParameter(JobSubmissionDirectoryPrefix.class, jobSubmissionDirectory).build();
-    final Configuration runtimeConf =
-        Configurations.merge(getRuntimeConf(runtimeClassName), extraRuntimeConf);
     final Configuration driverConf =
         Configurations.merge(
             getDriverConf(new String[] {javaLibPath}, new String[] {nativeLibPath}),
             globalConfWrapper);
 
-    return tang.newInjector(runtimeConf, getClientConf()).getInstance(MyriaDriverLauncher.class)
-        .run(driverConf);
+    return tang.newInjector(getRuntimeConf(runtimeClassName), getClientConf())
+        .getInstance(MyriaDriverLauncher.class).run(driverConf);
   }
 
   private LauncherStatus run(final Configuration driverConf) {
