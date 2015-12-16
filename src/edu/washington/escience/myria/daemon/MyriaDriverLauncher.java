@@ -205,6 +205,7 @@ public final class MyriaDriverLauncher {
   }
 
   private LauncherStatus run(final Configuration driverConf) {
+    // Most UNIX signals will not throw an exception, so need to be trapped here.
     Runtime.getRuntime().addShutdownHook(new Thread(() -> close()));
     LOGGER.info("Submitting Myria driver to REEF...");
     reef.submit(driverConf);

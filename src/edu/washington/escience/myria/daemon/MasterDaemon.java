@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.daemon;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -7,6 +8,8 @@ import javax.inject.Inject;
 
 import org.apache.reef.tang.annotations.Parameter;
 import org.apache.reef.task.Task;
+import org.apache.reef.task.events.CloseEvent;
+import org.apache.reef.wake.EventHandler;
 
 import edu.washington.escience.myria.api.MasterApiServer;
 import edu.washington.escience.myria.parallel.Server;
@@ -18,31 +21,40 @@ import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule;
  * 
  * 
  */
-public final class MasterDaemon implements Task {
+public final class MasterDaemon implements Task, EventHandler<CloseEvent> {
 
-  private static final int SLEEP_DELAY_MILLIS = 5 * 1000;
+  /** The logger for this class. */
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory
+      .getLogger(MasterDaemon.class);
+
+  private final CountDownLatch terminated = new CountDownLatch(1);
 
   /**
    * @param memento the memento object passed down by the driver.
    * @return the user defined return value
-   * @throws Exception whenever the Task encounters an unresolved issue. This Exception will be
-   *         thrown at the Driver's event handler.
+   * @throws Exception whenever the Task encounters an unsolved issue. This Exception will be thrown
+   *         at the Driver's event handler.
    */
   @Override
   public byte[] call(@SuppressWarnings("unused") final byte[] memento) throws Exception {
     try {
       start();
-      while (!Thread.currentThread().isInterrupted()) {
-        try {
-          Thread.sleep(SLEEP_DELAY_MILLIS);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-        }
-      }
+      terminated.await();
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
     } finally {
       stop();
     }
     return null;
+  }
+
+  /**
+   * Shut down this worker.
+   */
+  @Override
+  public void onNext(final CloseEvent closeEvent) {
+    LOGGER.info("CloseEvent received, shutting down...");
+    terminated.countDown();
   }
 
   /** The Myria server. */

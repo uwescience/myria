@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -22,6 +23,7 @@ import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.annotations.Parameter;
+import org.apache.reef.tang.annotations.Unit;
 import org.apache.reef.tang.exceptions.BindException;
 import org.apache.reef.tang.exceptions.InjectionException;
 import org.apache.reef.tang.formats.AvroConfigurationSerializer;
@@ -29,6 +31,7 @@ import org.apache.reef.tang.formats.ConfigurationSerializer;
 import org.apache.reef.task.Task;
 import org.apache.reef.task.TaskMessage;
 import org.apache.reef.task.TaskMessageSource;
+import org.apache.reef.task.events.CloseEvent;
 import org.apache.reef.task.events.DriverMessage;
 import org.apache.reef.util.Optional;
 import org.apache.reef.wake.EventHandler;
@@ -99,12 +102,16 @@ import edu.washington.escience.myria.util.concurrent.ThreadAffinityFixedRoundRob
  * and then waits for next query plan
  * 
  */
-public final class Worker implements Task, TaskMessageSource, EventHandler<DriverMessage> {
+/**
+ * 
+ */
+@Unit
+public final class Worker implements Task, TaskMessageSource {
 
   /** The logger for this class. */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Worker.class);
 
-  private static final int SLEEP_DELAY_MILLIS = 5 * 1000;
+  private final CountDownLatch terminated = new CountDownLatch(1);
 
   /**
    * @param memento the memento object passed down by the driver.
@@ -116,13 +123,9 @@ public final class Worker implements Task, TaskMessageSource, EventHandler<Drive
   public byte[] call(@SuppressWarnings("unused") final byte[] memento) throws Exception {
     try {
       start();
-      while (!Thread.currentThread().isInterrupted()) {
-        try {
-          Thread.sleep(SLEEP_DELAY_MILLIS);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-        }
-      }
+      terminated.await();
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
     } finally {
       shutdown();
     }
@@ -282,66 +285,80 @@ public final class Worker implements Task, TaskMessageSource, EventHandler<Drive
   /**
    * REEF event handler for driver messages indicating worker failure.
    */
-  @Override
-  public void onNext(final DriverMessage driverMessage) {
-    LOGGER.info("Driver message received");
-    TransportMessage m;
-    try {
-      m = TransportMessage.parseFrom(driverMessage.get().get());
-    } catch (InvalidProtocolBufferException e) {
-      LOGGER.warn("Could not parse TransportMessage from driver message", e);
-      return;
-    }
-    final ControlMessage controlM = m.getControlMessage();
-    LOGGER.info("Control message received: {}", controlM);
-    int workerId = controlM.getWorkerId();
-    Lock workerLock = workerAddRemoveLock.get(workerId);
-    workerLock.lock();
-    try {
-      switch (controlM.getType()) {
-        case REMOVE_WORKER: {
-          if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("received REMOVE_WORKER for worker " + workerId);
-          }
-          connectionPool.removeRemote(workerId).addListener(new ChannelGroupFutureListener() {
-            @Override
-            public void operationComplete(final ChannelGroupFuture future) {
-              if (future.isCompleteSuccess()) {
-                LOGGER.info("removed connection for remote worker {} from connection pool",
-                    workerId);
-              } else {
-                LOGGER.info(
-                    "failed to remove connection for remote worker {} from connection pool",
-                    workerId);
+  public final class DriverMessageHandler implements EventHandler<DriverMessage> {
+    @Override
+    public void onNext(final DriverMessage driverMessage) {
+      LOGGER.info("Driver message received");
+      TransportMessage m;
+      try {
+        m = TransportMessage.parseFrom(driverMessage.get().get());
+      } catch (InvalidProtocolBufferException e) {
+        LOGGER.warn("Could not parse TransportMessage from driver message", e);
+        return;
+      }
+      final ControlMessage controlM = m.getControlMessage();
+      LOGGER.info("Control message received: {}", controlM);
+      int workerId = controlM.getWorkerId();
+      Lock workerLock = workerAddRemoveLock.get(workerId);
+      workerLock.lock();
+      try {
+        switch (controlM.getType()) {
+          case REMOVE_WORKER: {
+            if (LOGGER.isInfoEnabled()) {
+              LOGGER.info("received REMOVE_WORKER for worker " + workerId);
+            }
+            connectionPool.removeRemote(workerId).addListener(new ChannelGroupFutureListener() {
+              @Override
+              public void operationComplete(final ChannelGroupFuture future) {
+                if (future.isCompleteSuccess()) {
+                  LOGGER.info("removed connection for remote worker {} from connection pool",
+                      workerId);
+                } else {
+                  LOGGER.info(
+                      "failed to remove connection for remote worker {} from connection pool",
+                      workerId);
+                }
+              }
+            });
+            for (WorkerSubQuery wqp : executingSubQueries.values()) {
+              if (wqp.getFTMode().equals(FTMode.ABANDON)) {
+                wqp.getMissingWorkers().add(workerId);
+                wqp.updateProducerChannels(workerId, false);
+                wqp.triggerFragmentEosEoiChecks();
+              } else if (wqp.getFTMode().equals(FTMode.REJOIN)) {
+                wqp.getMissingWorkers().add(workerId);
               }
             }
-          });
-          for (WorkerSubQuery wqp : executingSubQueries.values()) {
-            if (wqp.getFTMode().equals(FTMode.ABANDON)) {
-              wqp.getMissingWorkers().add(workerId);
-              wqp.updateProducerChannels(workerId, false);
-              wqp.triggerFragmentEosEoiChecks();
-            } else if (wqp.getFTMode().equals(FTMode.REJOIN)) {
-              wqp.getMissingWorkers().add(workerId);
+            enqueueDriverMessage(IPCUtils.removeWorkerAckTM(workerId));
+          }
+            break;
+          case ADD_WORKER: {
+            if (LOGGER.isInfoEnabled()) {
+              LOGGER.info("received ADD_WORKER " + workerId);
             }
+            connectionPool
+                .putRemote(workerId, SocketInfo.fromProtobuf(controlM.getRemoteAddress()));
+            enqueueDriverMessage(IPCUtils.addWorkerAckTM(workerId));
           }
-          enqueueDriverMessage(IPCUtils.removeWorkerAckTM(workerId));
+            break;
+          default:
+            throw new IllegalStateException("Unexpected driver control message type: "
+                + controlM.getType());
         }
-          break;
-        case ADD_WORKER: {
-          if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("received ADD_WORKER " + workerId);
-          }
-          connectionPool.putRemote(workerId, SocketInfo.fromProtobuf(controlM.getRemoteAddress()));
-          enqueueDriverMessage(IPCUtils.addWorkerAckTM(workerId));
-        }
-          break;
-        default:
-          throw new IllegalStateException("Unexpected driver control message type: "
-              + controlM.getType());
+      } finally {
+        workerLock.unlock();
       }
-    } finally {
-      workerLock.unlock();
+    }
+  }
+
+  /**
+   * Shut down this worker.
+   */
+  public final class TaskCloseHandler implements EventHandler<CloseEvent> {
+    @Override
+    public void onNext(final CloseEvent closeEvent) {
+      LOGGER.info("CloseEvent received, shutting down...");
+      terminated.countDown();
     }
   }
 
@@ -371,6 +388,11 @@ public final class Worker implements Task, TaskMessageSource, EventHandler<Drive
   private final Map<Long, SubQueryId> activeQueries;
   /** Currently running subqueries. {@link SubQueryId} -> {@link WorkerSubQuery}. */
   private final Map<SubQueryId, WorkerSubQuery> executingSubQueries;
+
+  /**
+   * For instantiating nested classes (Tang won't let us use constructors).
+   */
+  private final Injector injector;
 
   /**
    * The ID of this worker.
@@ -486,7 +508,7 @@ public final class Worker implements Task, TaskMessageSource, EventHandler<Drive
    * @throws ConfigFileException if there's any config file parsing error.
    */
   @Inject
-  public Worker(@Parameter(WorkerId.class) final int workerID,
+  public Worker(final Injector injector, @Parameter(WorkerId.class) final int workerID,
       @Parameter(WorkerHost.class) final String workerHost,
       @Parameter(WorkerPort.class) final int workerPort,
       @Parameter(MasterHost.class) final String masterHost,
@@ -505,6 +527,7 @@ public final class Worker implements Task, TaskMessageSource, EventHandler<Drive
       @Parameter(OperatorInputBufferRecoverTrigger.class) final int inputBufferRecoverTrigger,
       @Parameter(WorkerConf.class) final Set<String> workerConfs) throws Exception {
 
+    this.injector = injector;
     myID = workerID;
     final String subDir = FilenameUtils.concat("workers", myID + "");
     workingDirectory = FilenameUtils.concat(rootPath, subDir);
@@ -728,8 +751,8 @@ public final class Worker implements Task, TaskMessageSource, EventHandler<Drive
     }
     messageProcessingExecutor =
         Executors.newCachedThreadPool(new RenamingThreadFactory("Control/Query message processor"));
-    messageProcessingExecutor.submit(new QueryMessageProcessor());
-    messageProcessingExecutor.submit(new ControlMessageProcessor());
+    messageProcessingExecutor.submit(injector.getInstance(QueryMessageProcessor.class));
+    messageProcessingExecutor.submit(injector.getInstance(ControlMessageProcessor.class));
   }
 
   /**

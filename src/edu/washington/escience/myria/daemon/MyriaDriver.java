@@ -526,7 +526,8 @@ public final class MyriaDriver {
           TaskConfiguration.CONF.set(TaskConfiguration.TASK, MasterDaemon.class)
               .set(TaskConfiguration.IDENTIFIER, workerId + "")
               .set(TaskConfiguration.ON_SEND_MESSAGE, Server.class)
-              .set(TaskConfiguration.ON_MESSAGE, Server.class).build();
+              .set(TaskConfiguration.ON_MESSAGE, Server.class)
+              .set(TaskConfiguration.ON_CLOSE, MasterDaemon.class).build();
 
     } else {
       Preconditions
@@ -535,7 +536,8 @@ public final class MyriaDriver {
           TaskConfiguration.CONF.set(TaskConfiguration.TASK, Worker.class)
               .set(TaskConfiguration.IDENTIFIER, workerId + "")
               .set(TaskConfiguration.ON_SEND_MESSAGE, Worker.class)
-              .set(TaskConfiguration.ON_MESSAGE, Worker.class).build();
+              .set(TaskConfiguration.ON_MESSAGE, Worker.DriverMessageHandler.class)
+              .set(TaskConfiguration.ON_CLOSE, Worker.TaskCloseHandler.class).build();
     }
     context.submitTask(taskConf);
   }
