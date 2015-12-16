@@ -116,7 +116,8 @@ public final class MyriaDriverLauncher {
             .set(DriverConfiguration.ON_TASK_COMPLETED, MyriaDriver.CompletedTaskHandler.class)
             .set(DriverConfiguration.ON_TASK_FAILED, MyriaDriver.TaskFailureHandler.class)
             .set(DriverConfiguration.ON_TASK_MESSAGE, MyriaDriver.TaskMessageHandler.class)
-            .set(DriverConfiguration.ON_CLIENT_MESSAGE, MyriaDriver.ClientMessageHandler.class);
+            .set(DriverConfiguration.ON_CLIENT_MESSAGE, MyriaDriver.ClientMessageHandler.class)
+            .set(DriverConfiguration.ON_CLIENT_CLOSED, MyriaDriver.ClientCloseHandler.class);
 
     for (String dirPath : libPaths) {
       for (String filePath : getFileNamesInDirectory(Paths.get(dirPath))) {
@@ -204,6 +205,7 @@ public final class MyriaDriverLauncher {
   }
 
   private LauncherStatus run(final Configuration driverConf) {
+    Runtime.getRuntime().addShutdownHook(new Thread(() -> close()));
     LOGGER.info("Submitting Myria driver to REEF...");
     reef.submit(driverConf);
 

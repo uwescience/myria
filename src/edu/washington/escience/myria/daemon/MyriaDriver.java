@@ -982,4 +982,14 @@ public final class MyriaDriver {
           .sendMessageToClient(MyriaDriver.DRIVER_PING_ACK_MSG.getBytes(StandardCharsets.UTF_8));
     }
   }
+
+  final class ClientCloseHandler implements EventHandler<Void> {
+    @Override
+    public void onNext(final Void aVoid) {
+      LOGGER.info("Driver forcibly closed, shutting down evaluators...");
+      for (final AllocatedEvaluator evaluator : evaluatorsByWorkerId.values()) {
+        evaluator.close();
+      }
+    }
+  }
 }
