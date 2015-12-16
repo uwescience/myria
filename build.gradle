@@ -103,9 +103,9 @@ ext.jerseyVersion = "2.14"
 ext.swaggerVersion = "2.11"
 ext.swaggerMinorVersion = "1.3.11"
 ext.jmxetricsVersion = "1.0.8"
-ext.reefVersion = "0.13.0-incubating"
+/* ext.reefVersion = "0.13.0-incubating" */
 /* for local REEF builds */
-/* ext.reefVersion = "0.14.0-incubating-SNAPSHOT" */
+ext.reefVersion = "0.14.0-incubating-SNAPSHOT"
 
 dependencies {
   compile ("org.apache.hadoop:hadoop-client:2.6.0") {
