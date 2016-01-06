@@ -180,7 +180,6 @@ public final class MyriaDriverLauncher {
       ParseException, ConfigFileException, ClassNotFoundException, IllegalArgumentException,
       IllegalAccessException, NoSuchFieldException, SecurityException {
     final Tang tang = Tang.Factory.getTang();
-    // TODO: implement ClientConfiguration event handlers so we can get messages from the Driver
     @SuppressWarnings("unchecked")
     final Configuration commandLineConf =
         CommandLine.parseToConfiguration(args, RuntimeClassName.class, ConfigPath.class,
