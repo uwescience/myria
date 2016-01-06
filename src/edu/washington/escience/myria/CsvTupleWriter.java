@@ -28,23 +28,24 @@ public class CsvTupleWriter implements TupleWriter {
   /** The CSVWriter used to write the output. */
   private transient CSVPrinter csvPrinter;
 
-  /**
-   * @param out the {@link OutputStream} to which the data will be written.
-   * @throws IOException if there is an IO exception
-   */
-  @Override
-  public void open(final OutputStream stream) throws IOException {
-    csvPrinter = new CSVPrinter(new BufferedWriter(new OutputStreamWriter(stream)), CSVFormat.DEFAULT);
+  /** The CSV format **/
+  CSVFormat csvFormat;
+
+  public CsvTupleWriter() {
+    csvFormat = CSVFormat.DEFAULT;
   }
 
-  /**
-   * @param separator the character used to separate fields in a line.
-   * @param out the {@link OutputStream} to which the data will be written.
-   * @throws IOException if there is an IO exception
-   */
-  public void open(final char separator, final OutputStream out) throws IOException {
-    csvPrinter =
-        new CSVPrinter(new BufferedWriter(new OutputStreamWriter(out)), CSVFormat.DEFAULT.withDelimiter(separator));
+  public CsvTupleWriter(final char separator) {
+    csvFormat = CSVFormat.DEFAULT.withDelimiter(separator);
+  }
+
+  public CsvTupleWriter(final CSVFormat format) {
+    csvFormat = format;
+  }
+
+  @Override
+  public void open(final OutputStream out) throws IOException {
+    csvPrinter = new CSVPrinter(new BufferedWriter(new OutputStreamWriter(out)), csvFormat);
   }
 
   @Override

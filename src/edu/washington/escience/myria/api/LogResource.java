@@ -27,6 +27,8 @@ import edu.washington.escience.myria.CsvTupleWriter;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.TupleWriter;
+import edu.washington.escience.myria.io.DataSink;
+import edu.washington.escience.myria.io.PipeSink;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.parallel.SubQueryId;
 
@@ -53,6 +55,7 @@ public final class LogResource {
    * @param request the current request.
    * @return the profiling logs of the query across all workers
    * @throws DbException if there is an error in the database.
+   * @throws IOException
    */
   @GET
   @Path("profiling")
@@ -61,7 +64,7 @@ public final class LogResource {
       @QueryParam("fragmentId") final Long fragmentId, @QueryParam("start") final Long start,
       @QueryParam("end") final Long end, @DefaultValue("0") @QueryParam("minLength") final Long minLength,
       @DefaultValue("false") @QueryParam("onlyRootOp") final boolean onlyRootOp, @Context final Request request)
-      throws DbException {
+      throws DbException, IOException {
 
     Preconditions.checkArgument(queryId != null, "Missing required field queryId.");
     Preconditions.checkArgument(fragmentId != null, "Missing required field fragmentId.");
@@ -79,22 +82,14 @@ public final class LogResource {
 
     response.type(MediaType.TEXT_PLAIN);
 
-    PipedOutputStream writerOutput = new PipedOutputStream();
-    PipedInputStream input;
-    TupleWriter writer;
-    try {
-      input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
-      writer = new CsvTupleWriter();
-      writer.open(writerOutput);
-    } catch (IOException e) {
-      throw new DbException(e);
-    }
+    DataSink dataSink = new PipeSink();
+    response.entity(((PipeSink) dataSink).getResponse());
 
-    PipedStreamingOutput entity = new PipedStreamingOutput(input);
-    response.entity(entity);
+    TupleWriter writer;
+    writer = new CsvTupleWriter();
 
     server.startLogDataStream(new SubQueryId(queryId, subqueryId), fragmentId, start, end, minLength, onlyRootOp,
-        writer);
+        writer, dataSink);
     return response.build();
   }
 
@@ -107,13 +102,14 @@ public final class LogResource {
    * @param request the current request.
    * @return the contributions across all workers
    * @throws DbException if there is an error in the database.
+   * @throws IOException
    */
   @GET
   @Path("contribution")
   public Response getContributions(@QueryParam("queryId") final Long queryId,
       @DefaultValue("0") @QueryParam("subqueryId") final long subqueryId,
       @DefaultValue("-1") @QueryParam("fragmentId") final Long fragmentId, @Context final Request request)
-      throws DbException {
+      throws DbException, IOException {
 
     Preconditions.checkArgument(queryId != null, "Missing required field queryId.");
 
@@ -127,21 +123,13 @@ public final class LogResource {
 
     response.type(MediaType.TEXT_PLAIN);
 
-    PipedOutputStream writerOutput = new PipedOutputStream();
-    PipedInputStream input;
+    DataSink dataSink = new PipeSink();
+    response.entity(((PipeSink) dataSink).getResponse());
+
     TupleWriter writer;
-    try {
-      input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
-      writer = new CsvTupleWriter();
-      writer.open(writerOutput);
-    } catch (IOException e) {
-      throw new DbException(e);
-    }
+    writer = new CsvTupleWriter();
 
-    PipedStreamingOutput entity = new PipedStreamingOutput(input);
-    response.entity(entity);
-
-    server.startContributionsStream(new SubQueryId(queryId, subqueryId), fragmentId, writer);
+    server.startContributionsStream(new SubQueryId(queryId, subqueryId), fragmentId, writer, dataSink);
 
     return response.build();
   }
@@ -155,13 +143,14 @@ public final class LogResource {
    * @param request the current request.
    * @return the profiling logs of the query across all workers
    * @throws DbException if there is an error in the database.
+   * @throws IOException
    */
   @GET
   @Path("sent")
   public Response getSentLogs(@QueryParam("queryId") final Long queryId,
       @DefaultValue("0") @QueryParam("subqueryId") final long subqueryId,
       @DefaultValue("-1") @QueryParam("fragmentId") final long fragmentId, @Context final Request request)
-      throws DbException {
+      throws DbException, IOException {
 
     Preconditions.checkArgument(queryId != null, "Missing required field queryId.");
 
@@ -175,21 +164,13 @@ public final class LogResource {
 
     response.type(MediaType.TEXT_PLAIN);
 
-    PipedOutputStream writerOutput = new PipedOutputStream();
-    PipedInputStream input;
+    DataSink dataSink = new PipeSink();
+    response.entity(((PipeSink) dataSink).getResponse());
+
     TupleWriter writer;
-    try {
-      input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
-      writer = new CsvTupleWriter();
-      writer.open(writerOutput);
-    } catch (IOException e) {
-      throw new DbException(e);
-    }
+    writer = new CsvTupleWriter();
 
-    PipedStreamingOutput entity = new PipedStreamingOutput(input);
-    response.entity(entity);
-
-    server.startSentLogDataStream(new SubQueryId(queryId, subqueryId), fragmentId, writer);
+    server.startSentLogDataStream(new SubQueryId(queryId, subqueryId), fragmentId, writer, dataSink);
 
     return response.build();
   }
@@ -202,12 +183,13 @@ public final class LogResource {
    * @param request the current request.
    * @return the profiling logs of the query across all workers
    * @throws DbException if there is an error in the database.
+   * @throws IOException
    */
   @GET
   @Path("aggregated_sent")
   public Response getAggregatedSentLogs(@QueryParam("queryId") final Long queryId,
       @DefaultValue("0") @QueryParam("subqueryId") final long subqueryId, @Context final Request request)
-      throws DbException {
+      throws DbException, IOException {
 
     Preconditions.checkArgument(queryId != null, "Missing required field queryId.");
 
@@ -221,21 +203,13 @@ public final class LogResource {
 
     response.type(MediaType.TEXT_PLAIN);
 
-    PipedOutputStream writerOutput = new PipedOutputStream();
-    PipedInputStream input;
+    DataSink dataSink = new PipeSink();
+    response.entity(((PipeSink) dataSink).getResponse());
+
     TupleWriter writer;
-    try {
-      input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
-      writer = new CsvTupleWriter();
-      writer.open(writerOutput);
-    } catch (IOException e) {
-      throw new DbException(e);
-    }
+    writer = new CsvTupleWriter();
 
-    PipedStreamingOutput entity = new PipedStreamingOutput(input);
-    response.entity(entity);
-
-    server.startAggregatedSentLogDataStream(new SubQueryId(queryId, subqueryId), writer);
+    server.startAggregatedSentLogDataStream(new SubQueryId(queryId, subqueryId), writer, dataSink);
 
     return response.build();
   }
@@ -247,12 +221,13 @@ public final class LogResource {
    * @param request the current request.
    * @return the range for which we have profiling info
    * @throws DbException if there is an error in the database.
+   * @throws IOException
    */
   @GET
   @Path("range")
   public Response getRange(@QueryParam("queryId") final Long queryId,
       @DefaultValue("0") @QueryParam("subqueryId") final long subqueryId,
-      @QueryParam("fragmentId") final Long fragmentId, @Context final Request request) throws DbException {
+      @QueryParam("fragmentId") final Long fragmentId, @Context final Request request) throws DbException, IOException {
 
     Preconditions.checkArgument(queryId != null, "Missing required field queryId.");
     Preconditions.checkArgument(fragmentId != null, "Missing required field fragmentId.");
@@ -267,21 +242,13 @@ public final class LogResource {
 
     response.type(MediaType.TEXT_PLAIN);
 
-    PipedOutputStream writerOutput = new PipedOutputStream();
-    PipedInputStream input;
+    DataSink dataSink = new PipeSink();
+    response.entity(((PipeSink) dataSink).getResponse());
+
     TupleWriter writer;
-    try {
-      input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
-      writer = new CsvTupleWriter();
-      writer.open(writerOutput);
-    } catch (IOException e) {
-      throw new DbException(e);
-    }
+    writer = new CsvTupleWriter();
 
-    PipedStreamingOutput entity = new PipedStreamingOutput(input);
-    response.entity(entity);
-
-    server.startRangeDataStream(new SubQueryId(queryId, subqueryId), fragmentId, writer);
+    server.startRangeDataStream(new SubQueryId(queryId, subqueryId), fragmentId, writer, dataSink);
 
     return response.build();
   }
@@ -299,6 +266,7 @@ public final class LogResource {
    * @param request the current request.
    * @return the profiling logs of the query across all workers
    * @throws DbException if there is an error in the database.
+   * @throws IOException
    */
   @GET
   @Path("histogram")
@@ -307,7 +275,7 @@ public final class LogResource {
       @QueryParam("fragmentId") final Long fragmentId, @QueryParam("start") final Long start,
       @QueryParam("end") final Long end, @QueryParam("step") final Long step,
       @DefaultValue("true") @QueryParam("onlyRootOp") final boolean onlyRootOp, @Context final Request request)
-      throws DbException {
+      throws DbException, IOException {
 
     Preconditions.checkArgument(queryId != null, "Missing required field queryId.");
     Preconditions.checkArgument(fragmentId != null, "Missing required field fragmentId.");
@@ -327,22 +295,14 @@ public final class LogResource {
 
     response.type(MediaType.TEXT_PLAIN);
 
-    PipedOutputStream writerOutput = new PipedOutputStream();
-    PipedInputStream input;
-    TupleWriter writer;
-    try {
-      input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
-      writer = new CsvTupleWriter();
-      writer.open(writerOutput);
-    } catch (IOException e) {
-      throw new DbException(e);
-    }
+    DataSink dataSink = new PipeSink();
+    response.entity(((PipeSink) dataSink).getResponse());
 
-    PipedStreamingOutput entity = new PipedStreamingOutput(input);
-    response.entity(entity);
+    TupleWriter writer;
+    writer = new CsvTupleWriter();
 
     server.startHistogramDataStream(new SubQueryId(queryId, subqueryId), fragmentId, start, end, step, onlyRootOp,
-        writer);
+        writer, dataSink);
 
     return response.build();
   }

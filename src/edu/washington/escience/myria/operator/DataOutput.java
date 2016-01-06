@@ -21,7 +21,7 @@ public final class DataOutput extends RootOperator {
   private static final long serialVersionUID = 1L;
   /** The class that will serialize the tuple batches. */
   private final TupleWriter tupleWriter;
-  private DataSink dataSink;
+  private final DataSink dataSink;
   /** Whether this object has finished. */
   private boolean done = false;
 
@@ -34,6 +34,7 @@ public final class DataOutput extends RootOperator {
   public DataOutput(final Operator child, final TupleWriter writer) {
     super(child);
     tupleWriter = writer;
+    dataSink = null;
   }
 
   public DataOutput(final Operator child, final TupleWriter tupleWriter, final DataSink dataSink) {
@@ -69,9 +70,7 @@ public final class DataOutput extends RootOperator {
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     try {
-      if (dataSink != null) {
-        tupleWriter.open(dataSink.getOutputStream());
-      }
+      tupleWriter.open(dataSink.getOutputStream());
       tupleWriter.writeColumnHeaders(getChild().getSchema().getColumnNames());
     } catch (IOException e) {
       throw new DbException(e);

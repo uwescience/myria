@@ -23,10 +23,6 @@ import edu.washington.escience.myria.storage.ReadableTable;
  * 
  */
 public interface TupleWriter extends Serializable {
-
-  /** Required for Java serialization. */
-  static final long serialVersionUID = 1L;
-
   /**
    * This will initialize the {@link TupleWriter} {@link java.io.OutputStream}.
    */
