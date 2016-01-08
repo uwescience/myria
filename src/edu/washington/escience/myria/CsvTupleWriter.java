@@ -29,14 +29,14 @@ public class CsvTupleWriter implements TupleWriter {
   private transient CSVPrinter csvPrinter;
 
   /** The CSV format **/
-  CSVFormat csvFormat;
+  final CSVFormat csvFormat;
 
   public CsvTupleWriter() {
-    csvFormat = CSVFormat.DEFAULT;
+    this(CSVFormat.DEFAULT);
   }
 
   public CsvTupleWriter(final char separator) {
-    csvFormat = CSVFormat.DEFAULT.withDelimiter(separator);
+    this(CSVFormat.DEFAULT.withDelimiter(separator));
   }
 
   public CsvTupleWriter(final CSVFormat format) {

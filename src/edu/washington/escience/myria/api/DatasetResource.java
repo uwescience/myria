@@ -47,7 +47,6 @@ import edu.washington.escience.myria.api.encoding.DatasetEncoding;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.TipsyDatasetEncoding;
 import edu.washington.escience.myria.coordinator.CatalogException;
-import edu.washington.escience.myria.io.DataSink;
 import edu.washington.escience.myria.io.InputStreamSource;
 import edu.washington.escience.myria.io.PipeSink;
 import edu.washington.escience.myria.operator.BinaryFileScan;
@@ -173,10 +172,10 @@ public final class DatasetResource {
      * Allocate the pipes by which the {@link DataOutput} operator will talk to the {@link StreamingOutput} object that
      * will stream data to the client.
      */
-    DataSink dataSink = new PipeSink();
+    PipeSink dataSink = new PipeSink();
 
     /* .. and make it the entity of the response. */
-    response.entity(((PipeSink) dataSink).getResponse());
+    response.entity(dataSink.getResponse());
 
     /* Set up the TupleWriter and the Response MediaType based on the format choices. */
     TupleWriter writer;
@@ -184,8 +183,10 @@ public final class DatasetResource {
       /* CSV or TSV : set application/octet-stream, attachment, and filename. */
       if (validFormat.equals("csv")) {
         writer = new CsvTupleWriter();
-      } else {
+      } else if (validFormat.equals("tsv")) {
         writer = new CsvTupleWriter('\t');
+      } else {
+        throw new IllegalStateException("format should have been validated by now, and yet we got here");
       }
       ContentDisposition contentDisposition =
           ContentDisposition.type("attachment").fileName(relationKey.toString() + '.' + validFormat).build();
@@ -230,10 +231,10 @@ public final class DatasetResource {
      * Allocate the pipes by which the {@link DataOutput} operator will talk to the {@link StreamingOutput} object that
      * will stream data to the client.
      */
-    DataSink dataSink = new PipeSink();
+    PipeSink dataSink = new PipeSink();
 
     /* .. and make it the entity of the response. */
-    response.entity(((PipeSink) dataSink).getResponse());
+    response.entity(dataSink.getResponse());
 
     /* Set up the TupleWriter and the Response MediaType based on the format choices. */
     TupleWriter writer;
@@ -241,8 +242,10 @@ public final class DatasetResource {
       /* CSV or TSV : set application/octet-stream, attachment, and filename. */
       if (validFormat.equals("csv")) {
         writer = new CsvTupleWriter();
-      } else {
+      } else if (validFormat.equals("tsv")) {
         writer = new CsvTupleWriter('\t');
+      } else {
+        throw new IllegalStateException("format should have been validated by now, and yet we got here");
       }
       ContentDisposition contentDisposition =
           ContentDisposition.type("attachment").fileName("test" + '.' + validFormat).build();

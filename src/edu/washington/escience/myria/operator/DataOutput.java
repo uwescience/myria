@@ -30,13 +30,8 @@ public final class DataOutput extends RootOperator {
    * 
    * @param child the source of tuples to be streamed.
    * @param writer the {@link TupleWriter} which will serialize the tuples.
+   * @param dataSink the {@link DataSink} for the tuple destination
    */
-  public DataOutput(final Operator child, final TupleWriter writer) {
-    super(child);
-    tupleWriter = writer;
-    dataSink = null;
-  }
-
   public DataOutput(final Operator child, final TupleWriter tupleWriter, final DataSink dataSink) {
     super(child);
     this.dataSink = dataSink;

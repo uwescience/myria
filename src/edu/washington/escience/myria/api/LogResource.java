@@ -1,8 +1,6 @@
 package edu.washington.escience.myria.api;
 
 import java.io.IOException;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
 import java.util.Date;
 
 import javax.ws.rs.DefaultValue;
@@ -27,7 +25,6 @@ import edu.washington.escience.myria.CsvTupleWriter;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.TupleWriter;
-import edu.washington.escience.myria.io.DataSink;
 import edu.washington.escience.myria.io.PipeSink;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.parallel.SubQueryId;
@@ -82,11 +79,10 @@ public final class LogResource {
 
     response.type(MediaType.TEXT_PLAIN);
 
-    DataSink dataSink = new PipeSink();
-    response.entity(((PipeSink) dataSink).getResponse());
+    PipeSink dataSink = new PipeSink();
+    response.entity(dataSink.getResponse());
 
-    TupleWriter writer;
-    writer = new CsvTupleWriter();
+    TupleWriter writer = new CsvTupleWriter();
 
     server.startLogDataStream(new SubQueryId(queryId, subqueryId), fragmentId, start, end, minLength, onlyRootOp,
         writer, dataSink);
@@ -123,11 +119,10 @@ public final class LogResource {
 
     response.type(MediaType.TEXT_PLAIN);
 
-    DataSink dataSink = new PipeSink();
-    response.entity(((PipeSink) dataSink).getResponse());
+    PipeSink dataSink = new PipeSink();
+    response.entity(dataSink.getResponse());
 
-    TupleWriter writer;
-    writer = new CsvTupleWriter();
+    TupleWriter writer = new CsvTupleWriter();
 
     server.startContributionsStream(new SubQueryId(queryId, subqueryId), fragmentId, writer, dataSink);
 
@@ -164,11 +159,10 @@ public final class LogResource {
 
     response.type(MediaType.TEXT_PLAIN);
 
-    DataSink dataSink = new PipeSink();
-    response.entity(((PipeSink) dataSink).getResponse());
+    PipeSink dataSink = new PipeSink();
+    response.entity(dataSink.getResponse());
 
-    TupleWriter writer;
-    writer = new CsvTupleWriter();
+    TupleWriter writer = new CsvTupleWriter();
 
     server.startSentLogDataStream(new SubQueryId(queryId, subqueryId), fragmentId, writer, dataSink);
 
@@ -203,11 +197,10 @@ public final class LogResource {
 
     response.type(MediaType.TEXT_PLAIN);
 
-    DataSink dataSink = new PipeSink();
-    response.entity(((PipeSink) dataSink).getResponse());
+    PipeSink dataSink = new PipeSink();
+    response.entity(dataSink.getResponse());
 
-    TupleWriter writer;
-    writer = new CsvTupleWriter();
+    TupleWriter writer = new CsvTupleWriter();
 
     server.startAggregatedSentLogDataStream(new SubQueryId(queryId, subqueryId), writer, dataSink);
 
@@ -242,11 +235,10 @@ public final class LogResource {
 
     response.type(MediaType.TEXT_PLAIN);
 
-    DataSink dataSink = new PipeSink();
-    response.entity(((PipeSink) dataSink).getResponse());
+    PipeSink dataSink = new PipeSink();
+    response.entity(dataSink.getResponse());
 
-    TupleWriter writer;
-    writer = new CsvTupleWriter();
+    TupleWriter writer = new CsvTupleWriter();
 
     server.startRangeDataStream(new SubQueryId(queryId, subqueryId), fragmentId, writer, dataSink);
 
@@ -295,11 +287,10 @@ public final class LogResource {
 
     response.type(MediaType.TEXT_PLAIN);
 
-    DataSink dataSink = new PipeSink();
-    response.entity(((PipeSink) dataSink).getResponse());
+    PipeSink dataSink = new PipeSink();
+    response.entity(dataSink.getResponse());
 
-    TupleWriter writer;
-    writer = new CsvTupleWriter();
+    TupleWriter writer = new CsvTupleWriter();
 
     server.startHistogramDataStream(new SubQueryId(queryId, subqueryId), fragmentId, start, end, step, onlyRootOp,
         writer, dataSink);
@@ -312,28 +303,22 @@ public final class LogResource {
    * @param request the current request.
    * @return the resource usage of the query.
    * @throws DbException if there is an error in the database.
+   * @throws IOException
    */
   @GET
   @Path("/resource-{queryId:\\d+}")
   public Response getResourceUsage(@PathParam("queryId") final Long queryId, @Context final Request request)
-      throws DbException {
+      throws DbException, IOException {
 
     Preconditions.checkArgument(queryId != null, "Missing required field queryId.");
 
     ResponseBuilder response = Response.ok().cacheControl(MyriaApiUtils.doNotCache());
     response.type(MediaType.TEXT_PLAIN);
 
-    PipedOutputStream writerOutput = new PipedOutputStream();
-    PipedInputStream input;
-    try {
-      input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
-    } catch (IOException e) {
-      throw new DbException(e);
-    }
-    PipedStreamingOutput entity = new PipedStreamingOutput(input);
-    response.entity(entity);
+    PipeSink dataSink = new PipeSink();
+    response.entity(dataSink.getResponse());
 
-    server.getResourceUsage(queryId, writerOutput);
+    server.getResourceUsage(queryId, dataSink);
     return response.build();
   }
 

@@ -18,14 +18,14 @@ public class PipeSink implements DataSink {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  PipedOutputStream writerOutput;
-  PipedInputStream input;
-  PipedStreamingOutput reponseEntity;
+  final PipedOutputStream writerOutput;
+  final PipedInputStream input;
+  final PipedStreamingOutput responseEntity;
 
   public PipeSink() throws IOException {
     writerOutput = new PipedOutputStream();
     input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
-    reponseEntity = new PipedStreamingOutput(input);
+    responseEntity = new PipedStreamingOutput(input);
   }
 
   @Override
@@ -34,6 +34,6 @@ public class PipeSink implements DataSink {
   }
 
   public PipedStreamingOutput getResponse() {
-    return reponseEntity;
+    return responseEntity;
   }
 }

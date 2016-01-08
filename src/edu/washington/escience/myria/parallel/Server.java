@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.PipedOutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -1095,11 +1094,10 @@ public final class Server {
         workerPlans.put(workerId, new SubQueryPlan(new DataOutput(new DbQueryScan(relationKey, getSchema(relationKey)),
             new PostgresBinaryTupleWriter(), workerSink)));
       }
-      ImmutableMap<Integer, SubQueryPlan> resultingPlans = workerPlans.build();
       ListenableFuture<Query> qf =
           queryManager.submitQuery("persist " + relationKey.toString(), "persist " + relationKey.toString(),
               "persisting from " + relationKey.toString(getDBMS()), new SubQueryPlan(new SinkRoot(new EOSSource())),
-              resultingPlans);
+              workerPlans.build());
       try {
         queryID = qf.get().getQueryId();
       } catch (ExecutionException e) {
@@ -1943,19 +1941,19 @@ public final class Server {
    * @param writerOutput the output stream to write results to.
    * @throws DbException if there is an error in the database.
    */
-  public void getResourceUsage(final long queryId, final PipedOutputStream writerOutput) throws DbException {
+  public void getResourceUsage(final long queryId, final DataSink dataSink) throws DbException {
     Schema schema = Schema.appendColumn(MyriaConstants.RESOURCE_PROFILING_SCHEMA, Type.INT_TYPE, "workerId");
     try {
       TupleWriter writer = new CsvTupleWriter();
-      writer.open(writerOutput);
       TupleBuffer tb = queryManager.getResourceUsage(queryId);
       if (tb != null) {
+        writer.open(dataSink.getOutputStream());
         writer.writeColumnHeaders(schema.getColumnNames());
         writer.writeTuples(tb);
         writer.done();
         return;
       }
-      getResourceLog(queryId, writer);
+      getResourceLog(queryId, writer, dataSink);
     } catch (IOException e) {
       throw new DbException(e);
     }
@@ -1967,7 +1965,8 @@ public final class Server {
    * @return resource logs for the query.
    * @throws DbException if there is an error when accessing profiling logs.
    */
-  public ListenableFuture<Query> getResourceLog(final long queryId, final TupleWriter writer) throws DbException {
+  public ListenableFuture<Query> getResourceLog(final long queryId, final TupleWriter writer, final DataSink dataSink)
+      throws DbException {
     SubQueryId sqId = new SubQueryId(queryId, 0);
     String serializedPlan;
     try {
@@ -2002,7 +2001,7 @@ public final class Server {
     final CollectConsumer consumer =
         new CollectConsumer(addWorkerId.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
 
-    DataOutput output = new DataOutput(consumer, writer);
+    DataOutput output = new DataOutput(consumer, writer, dataSink);
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
     /* Submit the plan for the download. */
