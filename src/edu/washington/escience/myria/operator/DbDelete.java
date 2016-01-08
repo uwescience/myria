@@ -17,6 +17,9 @@ import edu.washington.escience.myria.storage.TupleBatch;
  */
 public class DbDelete extends RootOperator {
 
+  /** Required for Java serialization. */
+  private static final long serialVersionUID = 1L;
+
   /** The connection to the database database. */
   private AccessMethod accessMethod;
   /** The information for the database connection. */

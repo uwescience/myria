@@ -1,6 +1,8 @@
 package edu.washington.escience.myria;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.Serializable;
 import java.util.List;
 
 import edu.washington.escience.myria.storage.ReadableTable;
@@ -20,7 +22,11 @@ import edu.washington.escience.myria.storage.ReadableTable;
  * 
  * 
  */
-public interface TupleWriter {
+public interface TupleWriter extends Serializable {
+  /**
+   * This will initialize the {@link TupleWriter} {@link java.io.OutputStream}.
+   */
+  void open(OutputStream stream) throws IOException;
 
   /**
    * Inform the {@link TupleWriter} of the column headers. In the standard case (CSV output, see {@link CsvTupleWriter}

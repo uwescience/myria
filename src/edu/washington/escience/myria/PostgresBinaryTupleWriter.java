@@ -19,16 +19,18 @@ import edu.washington.escience.myria.storage.ReadableTable;
  */
 public class PostgresBinaryTupleWriter implements TupleWriter {
 
+  /** Required for Java serialization. */
+  static final long serialVersionUID = 1L;
+
   /** The ByteBuffer to write the output. */
-  private final DataOutputStream buffer;
+  private transient DataOutputStream buffer;
 
   /**
-   * Constructs a {@link PostgresBinaryTupleWriter} object.
-   * 
    * @param out the {@link OutputStream} to which the data will be written.
    * @throws IOException if there is an IO exception
    */
-  public PostgresBinaryTupleWriter(final OutputStream out) throws IOException {
+  @Override
+  public void open(final OutputStream out) throws IOException {
     buffer = new DataOutputStream(new BufferedOutputStream(out));
     // 11 bytes required header
     buffer.writeBytes("PGCOPY\n\377\r\n\0");

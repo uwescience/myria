@@ -34,20 +34,23 @@ import edu.washington.escience.myria.util.DateTimeUtils;
  */
 public class JsonTupleWriter implements TupleWriter {
 
+  /** Required for Java serialization. */
+  static final long serialVersionUID = 1L;
+
   /** The names of the columns, escaped for JSON. */
   private ImmutableList<String> escapedColumnNames;
   /** The {@link PrintWriter} wraps the {@link OutputStream} to which we write the data. */
-  private final PrintWriter output;
+  private transient PrintWriter output;
   /** Whether we have output a single tuple yet. */
   private boolean haveWritten = false;
 
   /**
-   * Constructs a {@link JsonTupleWriter}.
-   * 
-   * @param output the {@link OutputStream} to which the data will be written.
+   * @param out the {@link OutputStream} to which the data will be written.
+   * @throws IOException if there is an IO exception
    */
-  public JsonTupleWriter(final OutputStream output) {
-    this.output = new PrintWriter(new BufferedWriter(new OutputStreamWriter(output)));
+  @Override
+  public void open(final OutputStream stream) throws IOException {
+    output = new PrintWriter(new BufferedWriter(new OutputStreamWriter(stream)));
   }
 
   /**

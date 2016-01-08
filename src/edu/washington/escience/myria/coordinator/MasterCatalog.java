@@ -101,6 +101,7 @@ public final class MasterCatalog {
     + "    relation_name TEXT NOT NULL,\n"
     + "    num_tuples INTEGER NOT NULL,\n"
     + "    is_deleted INTEGER NOT NULL,\n"
+    + "    is_persistent INTEGER NOT NULL,\n"
     + "    query_id INTEGER NOT NULL REFERENCES queries(query_id),\n"
     + "    PRIMARY KEY (user_name,program_name,relation_name));";
   /** Create the relation_schema table. */
@@ -334,13 +335,14 @@ public final class MasterCatalog {
       /* First, insert the relation name. */
       SQLiteStatement statement =
           sqliteConnection
-              .prepare("INSERT INTO relations (user_name,program_name,relation_name,num_tuples,is_deleted,query_id) VALUES (?,?,?,?,?,?);");
+              .prepare("INSERT INTO relations (user_name,program_name,relation_name,num_tuples,is_deleted,is_persistent,query_id) VALUES (?,?,?,?,?,?,?);");
       statement.bind(1, relation.getUserName());
       statement.bind(2, relation.getProgramName());
       statement.bind(3, relation.getRelationName());
       statement.bind(4, numTuples);
       statement.bind(5, 0);
-      statement.bind(6, queryId);
+      statement.bind(6, 0);
+      statement.bind(7, queryId);
       statement.stepThrough();
       statement.dispose();
       statement = null;
@@ -1455,6 +1457,44 @@ public final class MasterCatalog {
   }
 
   /**
+   * Mark a relation as is_persistent
+   *
+   * @param relation the relation to be labeled
+   * @throws CatalogException if there is an error
+   */
+  public void markRelationPersistent(@Nonnull final RelationKey relation) throws CatalogException {
+    Objects.requireNonNull(relation, "relation");
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+
+    /* Do the work */
+    try {
+      queue.execute(new SQLiteJob<Void>() {
+        @Override
+        protected Void job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+          try {
+            SQLiteStatement statement =
+                sqliteConnection
+                    .prepare("UPDATE relations SET is_persistent=1 WHERE user_name=? AND program_name=? AND relation_name=?;");
+            statement.bind(1, relation.getUserName());
+            statement.bind(2, relation.getProgramName());
+            statement.bind(3, relation.getRelationName());
+            statement.stepThrough();
+            statement.dispose();
+            statement = null;
+          } catch (final SQLiteException e) {
+            throw new CatalogException(e);
+          }
+          return null;
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
    * Add the metadata for one or more relations to the catalog.
    * 
    * @param relationsCreated which relations were created.
@@ -1646,6 +1686,46 @@ public final class MasterCatalog {
             SQLiteStatement statement =
                 sqliteConnection
                     .prepare("SELECT is_deleted FROM relations WHERE user_name=? AND program_name=? AND relation_name=?;");
+            statement.bind(1, relationKey.getUserName());
+            statement.bind(2, relationKey.getProgramName());
+            statement.bind(3, relationKey.getRelationName());
+
+            if (statement.step()) {
+              ret = statement.columnInt(0);
+            }
+            statement.dispose();
+            statement = null;
+          } catch (final SQLiteException e) {
+            throw new CatalogException(e);
+          }
+          return (ret == 0) ? false : true;
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
+   * Checking whether the relation has an is_persistent status
+   *
+   * @param relationKey the relation to check is_persistent status.
+   * @return a boolean whether the relation is in a is_persistent status.
+   * @throws CatalogException if there is an error.
+   */
+  public Boolean isPersistentRelation(final RelationKey relationKey) throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+    try {
+      return queue.execute(new SQLiteJob<Boolean>() {
+        @Override
+        protected Boolean job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+          int ret = 0;
+          try {
+            SQLiteStatement statement =
+                sqliteConnection
+                    .prepare("SELECT is_persistent FROM relations WHERE user_name=? AND program_name=? AND relation_name=?;");
             statement.bind(1, relationKey.getUserName());
             statement.bind(2, relationKey.getProgramName());
             statement.bind(3, relationKey.getRelationName());

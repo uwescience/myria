@@ -122,7 +122,8 @@ public final class JdbcAccessMethod extends AccessMethod {
           new StringBuilder().append("COPY ").append(quote(relationKey)).append(" FROM STDIN WITH BINARY");
       CopyIn copyIn = cpManager.copyIn(copyString.toString());
 
-      TupleWriter tw = new PostgresBinaryTupleWriter(new PGCopyOutputStream(copyIn));
+      TupleWriter tw = new PostgresBinaryTupleWriter();
+      tw.open(new PGCopyOutputStream(copyIn));
       tw.writeTuples(tupleBatch);
       tw.done();
 

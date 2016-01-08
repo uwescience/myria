@@ -2,8 +2,6 @@ package edu.washington.escience.myria.api;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
 import java.net.URI;
 import java.util.List;
 import java.util.Set;
@@ -41,7 +39,6 @@ import com.wordnik.swagger.annotations.ApiResponses;
 import edu.washington.escience.myria.CsvTupleWriter;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.JsonTupleWriter;
-import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleWriter;
@@ -51,6 +48,7 @@ import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.TipsyDatasetEncoding;
 import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.io.InputStreamSource;
+import edu.washington.escience.myria.io.PipeSink;
 import edu.washington.escience.myria.operator.BinaryFileScan;
 import edu.washington.escience.myria.operator.FileScan;
 import edu.washington.escience.myria.operator.Operator;
@@ -151,13 +149,15 @@ public final class DatasetResource {
    * @param format the format of the output data. Valid options are (case-insensitive) "csv", "tsv", and "json".
    * @return metadata about the specified relation.
    * @throws DbException if there is an error in the database.
+   * @throws IOException
+   * @throws CatalogException
    */
   @GET
   @Produces({ MediaType.APPLICATION_OCTET_STREAM, MyriaApiConstants.JSON_UTF_8 })
   @Path("/user-{userName}/program-{programName}/relation-{relationName}/data")
   public Response getDatasetData(@PathParam("userName") final String userName,
       @PathParam("programName") final String programName, @PathParam("relationName") final String relationName,
-      @QueryParam("format") final String format) throws DbException {
+      @QueryParam("format") final String format) throws DbException, IOException {
 
     /* Start building the response. */
     ResponseBuilder response = Response.ok();
@@ -172,31 +172,21 @@ public final class DatasetResource {
      * Allocate the pipes by which the {@link DataOutput} operator will talk to the {@link StreamingOutput} object that
      * will stream data to the client.
      */
-    PipedOutputStream writerOutput = new PipedOutputStream();
-    PipedInputStream input;
-    try {
-      input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
-    } catch (IOException e) {
-      throw new DbException(e);
-    }
+    PipeSink dataSink = new PipeSink();
 
-    /* Create a {@link PipedStreamingOutput} object that will stream the serialized results to the client. */
-    PipedStreamingOutput entity = new PipedStreamingOutput(input);
     /* .. and make it the entity of the response. */
-    response.entity(entity);
+    response.entity(dataSink.getResponse());
 
     /* Set up the TupleWriter and the Response MediaType based on the format choices. */
     TupleWriter writer;
     if (validFormat.equals("csv") || validFormat.equals("tsv")) {
       /* CSV or TSV : set application/octet-stream, attachment, and filename. */
-      try {
-        if (validFormat.equals("csv")) {
-          writer = new CsvTupleWriter(writerOutput);
-        } else {
-          writer = new CsvTupleWriter('\t', writerOutput);
-        }
-      } catch (IOException e) {
-        throw new DbException(e);
+      if (validFormat.equals("csv")) {
+        writer = new CsvTupleWriter();
+      } else if (validFormat.equals("tsv")) {
+        writer = new CsvTupleWriter('\t');
+      } else {
+        throw new IllegalStateException("format should have been validated by now, and yet we got here");
       }
       ContentDisposition contentDisposition =
           ContentDisposition.type("attachment").fileName(relationKey.toString() + '.' + validFormat).build();
@@ -206,14 +196,14 @@ public final class DatasetResource {
     } else if (validFormat.equals("json")) {
       /* JSON: set application/json. */
       response.type(MyriaApiConstants.JSON_UTF_8);
-      writer = new JsonTupleWriter(writerOutput);
+      writer = new JsonTupleWriter();
     } else {
       /* Should not be possible to get here. */
       throw new IllegalStateException("format should have been validated by now, and yet we got here");
     }
 
     /* Start streaming tuples into the TupleWriter, and through the pipes to the PipedStreamingOutput. */
-    server.startDataStream(relationKey, writer);
+    server.startDataStream(relationKey, writer, dataSink);
 
     /* Yay, worked! Ensure the file has the correct filename. */
     return response.build();
@@ -224,12 +214,13 @@ public final class DatasetResource {
    * @param format the format of the output data. Valid options are (case-insensitive) "csv", "tsv", and "json".
    * @return metadata about the specified relation.
    * @throws DbException if there is an error in the database.
+   * @throws IOException
    */
   @GET
   @Produces({ MediaType.APPLICATION_OCTET_STREAM, MyriaApiConstants.JSON_UTF_8 })
   @Path("/download_test")
   public Response getQueryData(@QueryParam("num_tb") final int numTB, @QueryParam("format") final String format)
-      throws DbException {
+      throws DbException, IOException {
     /* Start building the response. */
     ResponseBuilder response = Response.ok();
 
@@ -240,31 +231,21 @@ public final class DatasetResource {
      * Allocate the pipes by which the {@link DataOutput} operator will talk to the {@link StreamingOutput} object that
      * will stream data to the client.
      */
-    PipedOutputStream writerOutput = new PipedOutputStream();
-    PipedInputStream input;
-    try {
-      input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
-    } catch (IOException e) {
-      throw new DbException(e);
-    }
+    PipeSink dataSink = new PipeSink();
 
-    /* Create a {@link PipedStreamingOutput} object that will stream the serialized results to the client. */
-    PipedStreamingOutput entity = new PipedStreamingOutput(input);
     /* .. and make it the entity of the response. */
-    response.entity(entity);
+    response.entity(dataSink.getResponse());
 
     /* Set up the TupleWriter and the Response MediaType based on the format choices. */
     TupleWriter writer;
     if (validFormat.equals("csv") || validFormat.equals("tsv")) {
       /* CSV or TSV : set application/octet-stream, attachment, and filename. */
-      try {
-        if (validFormat.equals("csv")) {
-          writer = new CsvTupleWriter(writerOutput);
-        } else {
-          writer = new CsvTupleWriter('\t', writerOutput);
-        }
-      } catch (IOException e) {
-        throw new DbException(e);
+      if (validFormat.equals("csv")) {
+        writer = new CsvTupleWriter();
+      } else if (validFormat.equals("tsv")) {
+        writer = new CsvTupleWriter('\t');
+      } else {
+        throw new IllegalStateException("format should have been validated by now, and yet we got here");
       }
       ContentDisposition contentDisposition =
           ContentDisposition.type("attachment").fileName("test" + '.' + validFormat).build();
@@ -274,14 +255,14 @@ public final class DatasetResource {
     } else if (validFormat.equals("json")) {
       /* JSON: set application/json. */
       response.type(MyriaApiConstants.JSON_UTF_8);
-      writer = new JsonTupleWriter(writerOutput);
+      writer = new JsonTupleWriter();
     } else {
       /* Should not be possible to get here. */
       throw new IllegalStateException("format should have been validated by now, and yet we got here");
     }
 
     /* Start streaming tuples into the TupleWriter, and through the pipes to the PipedStreamingOutput. */
-    server.startTestDataStream(numTB, writer);
+    server.startTestDataStream(numTB, writer, dataSink);
 
     /* Yay, worked! Ensure the file has the correct filename. */
     return response.build();
@@ -363,6 +344,34 @@ public final class DatasetResource {
       throw new DbException();
     }
     return Response.noContent().build();
+  }
+
+  /**
+   * @param userName the user who owns the target relation.
+   * @param programName the program to which the target relation belongs.
+   * @param relationName the name of the target relation.
+   * @return the queryId
+   * @throws DbException if there is an error in the database.
+   */
+  @POST
+  @Path("/user-{userName}/program-{programName}/relation-{relationName}/persist/")
+  public Response persistDataset(@PathParam("userName") final String userName,
+      @PathParam("programName") final String programName, @PathParam("relationName") final String relationName)
+      throws DbException {
+
+    DatasetStatus status = server.getDatasetStatus(RelationKey.of(userName, programName, relationName));
+    RelationKey relationKey = status.getRelationKey();
+    long queryId;
+
+    try {
+      queryId = server.persistDataset(relationKey);
+    } catch (Exception e) {
+      throw new DbException();
+    }
+
+    /* Build the response to return the queryId */
+    ResponseBuilder response = Response.ok();
+    return response.entity(queryId).build();
   }
 
   /**

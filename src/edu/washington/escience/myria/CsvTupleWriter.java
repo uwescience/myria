@@ -22,38 +22,29 @@ import edu.washington.escience.myria.storage.ReadableTable;
  */
 public class CsvTupleWriter implements TupleWriter {
 
+  /** Required for Java serialization. */
+  static final long serialVersionUID = 1L;
+
   /** The CSVWriter used to write the output. */
-  private final CSVPrinter csvPrinter;
+  private transient CSVPrinter csvPrinter;
 
-  /**
-   * Constructs a {@link CsvTupleWriter} object that will produce an Excel-compatible comma-separated value (CSV) file
-   * from the provided tuples.
-   * 
-   * @param out the {@link OutputStream} to which the data will be written.
-   * @throws IOException if there is an IO exception
-   */
-  public CsvTupleWriter(final OutputStream out) throws IOException {
-    this(out, CSVFormat.DEFAULT);
+  /** The CSV format **/
+  final CSVFormat csvFormat;
+
+  public CsvTupleWriter() {
+    this(CSVFormat.DEFAULT);
   }
 
-  /**
-   * Constructs a {@link CsvTupleWriter} object that will produce Excel-compatible comma-separated and tab-separated
-   * files from the tuples in the provided queue.
-   * 
-   * @param separator the character used to separate fields in a line.
-   * @param out the {@link OutputStream} to which the data will be written.
-   * @throws IOException if there is an IO exception
-   */
-  public CsvTupleWriter(final char separator, final OutputStream out) throws IOException {
-    this(out, CSVFormat.DEFAULT.withDelimiter(separator));
+  public CsvTupleWriter(final char separator) {
+    this(CSVFormat.DEFAULT.withDelimiter(separator));
   }
 
-  /**
-   * @param out the {@link OutputStream} to which the data will be written.
-   * @param csvFormat the CSV format.
-   * @throws IOException if there is an IO exception
-   */
-  private CsvTupleWriter(final OutputStream out, final CSVFormat csvFormat) throws IOException {
+  public CsvTupleWriter(final CSVFormat format) {
+    csvFormat = format;
+  }
+
+  @Override
+  public void open(final OutputStream out) throws IOException {
     csvPrinter = new CSVPrinter(new BufferedWriter(new OutputStreamWriter(out)), csvFormat);
   }
 

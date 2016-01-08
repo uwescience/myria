@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.PipedOutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -51,6 +50,7 @@ import edu.washington.escience.myria.CsvTupleWriter;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
+import edu.washington.escience.myria.PostgresBinaryTupleWriter;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleWriter;
@@ -66,6 +66,8 @@ import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.MinusExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.expression.WorkerIdExpression;
+import edu.washington.escience.myria.io.DataSink;
+import edu.washington.escience.myria.io.UriSink;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbDelete;
@@ -281,6 +283,11 @@ public final class Server {
   private volatile ExecutorService serverQueryExecutor;
 
   /**
+   * The URI to persist relations
+   */
+  private final String persistURI;
+
+  /**
    * @return the query executor used in this worker.
    */
   ExecutorService getQueryExecutor() {
@@ -460,6 +467,7 @@ public final class Server {
     final String databaseSystem =
         CONFIG.getRequired("deployment", MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_SYSTEM);
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM, databaseSystem);
+    persistURI = CONFIG.getOptional("persist", MyriaSystemConfigKeys.PERSIST_URI);
   }
 
   /**
@@ -1057,7 +1065,48 @@ public final class Server {
     }
 
     return getDatasetStatus(relationKey);
+  }
 
+  /**
+   * @param relationKey the relationKey of the dataset to persist
+   * @return the queryID
+   * @throws DbException if there is an error
+   * @throws InterruptedException interrupted
+   */
+  public long persistDataset(final RelationKey relationKey) throws DbException, InterruptedException {
+    long queryID;
+
+    /* Mark the relation as is_persistent */
+    try {
+      catalog.markRelationPersistent(relationKey);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+
+    /* Create the query plan for persist */
+    try {
+      ImmutableMap.Builder<Integer, SubQueryPlan> workerPlans = new ImmutableMap.Builder<Integer, SubQueryPlan>();
+      for (Integer workerId : getWorkersForRelation(relationKey, null)) {
+        String partitionName =
+            String.format(persistURI + "/myria-system/partition-%s/%s/%s/%s", workerId, relationKey.getUserName(),
+                relationKey.getProgramName(), relationKey.getRelationName());
+        DataSink workerSink = new UriSink(partitionName);
+        workerPlans.put(workerId, new SubQueryPlan(new DataOutput(new DbQueryScan(relationKey, getSchema(relationKey)),
+            new PostgresBinaryTupleWriter(), workerSink)));
+      }
+      ListenableFuture<Query> qf =
+          queryManager.submitQuery("persist " + relationKey.toString(), "persist " + relationKey.toString(),
+              "persisting from " + relationKey.toString(getDBMS()), new SubQueryPlan(new SinkRoot(new EOSSource())),
+              workerPlans.build());
+      try {
+        queryID = qf.get().getQueryId();
+      } catch (ExecutionException e) {
+        throw new DbException("Error executing query", e.getCause());
+      }
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+    return queryID;
   }
 
   /**
@@ -1221,11 +1270,12 @@ public final class Server {
    * 
    * @param relationKey the relation to be downloaded.
    * @param writer the {@link TupleWriter} which will serialize the tuples.
+   * @param dataSink the {@link DataSink} for the tuple destination
    * @return the query future from which the query status can be looked up.
    * @throws DbException if there is an error in the system.
    */
-  public ListenableFuture<Query> startDataStream(final RelationKey relationKey, final TupleWriter writer)
-      throws DbException {
+  public ListenableFuture<Query> startDataStream(final RelationKey relationKey, final TupleWriter writer,
+      final DataSink dataSink) throws DbException {
     /* Get the relation's schema, to make sure it exists. */
     final Schema schema;
     try {
@@ -1256,7 +1306,7 @@ public final class Server {
 
     /* Construct the master plan. */
     final CollectConsumer consumer = new CollectConsumer(schema, operatorId, ImmutableSet.copyOf(scanWorkers));
-    DataOutput output = new DataOutput(consumer, writer);
+    DataOutput output = new DataOutput(consumer, writer, dataSink);
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
     /* Submit the plan for the download. */
@@ -1273,10 +1323,12 @@ public final class Server {
    * 
    * @param numTB the number of {@link TupleBatch}es to download from each worker.
    * @param writer the {@link TupleWriter} which will serialize the tuples.
+   * @param dataSink the {@link DataSink} for the tuple destination
    * @return the query future from which the query status can be looked up.
    * @throws DbException if there is an error in the system.
    */
-  public ListenableFuture<Query> startTestDataStream(final int numTB, final TupleWriter writer) throws DbException {
+  public ListenableFuture<Query> startTestDataStream(final int numTB, final TupleWriter writer, final DataSink dataSink)
+      throws DbException {
 
     final Schema schema =
         new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
@@ -1307,7 +1359,7 @@ public final class Server {
 
     /* Construct the master plan. */
     final CollectConsumer consumer = new CollectConsumer(schema, operatorId, ImmutableSet.copyOf(scanWorkers));
-    DataOutput output = new DataOutput(consumer, writer);
+    DataOutput output = new DataOutput(consumer, writer, dataSink);
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
     /* Submit the plan for the download. */
@@ -1323,11 +1375,12 @@ public final class Server {
    * @param subqueryId the subquery id.
    * @param fragmentId the fragment id to return data for. All fragments, if < 0.
    * @param writer writer to get data.
+   * @param dataSink the {@link DataSink} for the tuple destination
    * @return profiling logs for the query.
    * @throws DbException if there is an error when accessing profiling logs.
    */
   public ListenableFuture<Query> startSentLogDataStream(final SubQueryId subqueryId, final long fragmentId,
-      final TupleWriter writer) throws DbException {
+      final TupleWriter writer, final DataSink dataSink) throws DbException {
     Set<Integer> actualWorkers = getWorkersForSubQuery(subqueryId);
 
     String fragmentWhere = "";
@@ -1381,7 +1434,7 @@ public final class Server {
     renameExpressions.add(new Expression("numTuples", new VariableExpression(3)));
     final Apply rename = new Apply(aggregate, renameExpressions.build());
 
-    DataOutput output = new DataOutput(rename, writer);
+    DataOutput output = new DataOutput(rename, writer, dataSink);
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
     /* Submit the plan for the download. */
@@ -1458,11 +1511,12 @@ public final class Server {
   /**
    * @param subqueryId the subquery id.
    * @param writer writer to get data.
+   * @param dataSink the {@link DataSink} for the tuple destination
    * @return profiling logs for the query.
    * @throws DbException if there is an error when accessing profiling logs.
    */
-  public ListenableFuture<Query> startAggregatedSentLogDataStream(final SubQueryId subqueryId, final TupleWriter writer)
-      throws DbException {
+  public ListenableFuture<Query> startAggregatedSentLogDataStream(final SubQueryId subqueryId,
+      final TupleWriter writer, final DataSink dataSink) throws DbException {
     Set<Integer> actualWorkers = getWorkersForSubQuery(subqueryId);
 
     final Schema schema =
@@ -1504,7 +1558,7 @@ public final class Server {
         new VariableExpression(2))));
     final Apply rename = new Apply(aggregate, renameExpressions.build());
 
-    DataOutput output = new DataOutput(rename, writer);
+    DataOutput output = new DataOutput(rename, writer, dataSink);
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
     /* Submit the plan for the download. */
@@ -1526,13 +1580,14 @@ public final class Server {
    * @param minSpanLength minimum length of a span to be returned
    * @param onlyRootOperator only return data for root operator
    * @param writer writer to get data.
+   * @param dataSink the {@link DataSink} for the tuple destination
    * @return profiling logs for the query.
    * 
    * @throws DbException if there is an error when accessing profiling logs.
    */
   public QueryFuture startLogDataStream(final SubQueryId subqueryId, final long fragmentId, final long start,
-      final long end, final long minSpanLength, final boolean onlyRootOperator, final TupleWriter writer)
-      throws DbException {
+      final long end, final long minSpanLength, final boolean onlyRootOperator, final TupleWriter writer,
+      final DataSink dataSink) throws DbException {
     Preconditions.checkArgument(start < end, "range cannot be negative");
 
     final Schema schema =
@@ -1588,7 +1643,7 @@ public final class Server {
     final CollectConsumer consumer =
         new CollectConsumer(addWorkerId.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
 
-    DataOutput output = new DataOutput(consumer, writer);
+    DataOutput output = new DataOutput(consumer, writer, dataSink);
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
     /* Submit the plan for the download. */
@@ -1614,12 +1669,14 @@ public final class Server {
    * @param step the step size between min and max
    * @param onlyRootOp return histogram only for root operator
    * @param writer writer to get data.
+   * @param dataSink the {@link DataSink} for the tuple destination
    * @return profiling logs for the query.
    * 
    * @throws DbException if there is an error when accessing profiling logs.
    */
   public QueryFuture startHistogramDataStream(final SubQueryId subqueryId, final long fragmentId, final long start,
-      final long end, final long step, final boolean onlyRootOp, final TupleWriter writer) throws DbException {
+      final long end, final long step, final boolean onlyRootOp, final TupleWriter writer, final DataSink dataSink)
+      throws DbException {
 
     Preconditions.checkArgument(start < end, "range cannot be negative");
     Preconditions.checkArgument(step > 0, "step has to be greater than 0");
@@ -1693,7 +1750,7 @@ public final class Server {
     renameExpressions.add(new Expression("numWorkers", new VariableExpression(2)));
     final Apply rename = new Apply(sumAggregate, renameExpressions.build());
 
-    DataOutput output = new DataOutput(rename, writer);
+    DataOutput output = new DataOutput(rename, writer, dataSink);
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
     /* Submit the plan for the download. */
@@ -1712,11 +1769,12 @@ public final class Server {
    * @param subqueryId the subquery id.
    * @param fragmentId the fragment id
    * @param writer writer to get data
+   * @param dataSink the {@link DataSink} for the tuple destination
    * @return profiling logs for the query.
    * @throws DbException if there is an error when accessing profiling logs.
    */
-  public QueryFuture startRangeDataStream(final SubQueryId subqueryId, final long fragmentId, final TupleWriter writer)
-      throws DbException {
+  public QueryFuture startRangeDataStream(final SubQueryId subqueryId, final long fragmentId, final TupleWriter writer,
+      final DataSink dataSink) throws DbException {
     final Schema schema = Schema.ofFields("startTime", Type.LONG_TYPE, "endTime", Type.LONG_TYPE);
     final RelationKey relationKey = MyriaConstants.EVENT_PROFILING_RELATION;
 
@@ -1747,7 +1805,7 @@ public final class Server {
         new Aggregate(consumer, new SingleColumnAggregatorFactory(0, AggregationOp.MIN),
             new SingleColumnAggregatorFactory(1, AggregationOp.MAX));
 
-    DataOutput output = new DataOutput(sumAggregate, writer);
+    DataOutput output = new DataOutput(sumAggregate, writer, dataSink);
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
     /* Submit the plan for the download. */
@@ -1765,12 +1823,13 @@ public final class Server {
    * @param subqueryId subquery id.
    * @param fragmentId the fragment id to return data for. All fragments, if < 0.
    * @param writer writer to get data.
+   * @param dataSink the {@link DataSink} for the tuple destination
    * @return contributions for operator.
    * 
    * @throws DbException if there is an error when accessing profiling logs.
    */
   public QueryFuture startContributionsStream(final SubQueryId subqueryId, final long fragmentId,
-      final TupleWriter writer) throws DbException {
+      final TupleWriter writer, final DataSink dataSink) throws DbException {
     final Schema schema = Schema.ofFields("opId", Type.INT_TYPE, "nanoTime", Type.LONG_TYPE);
     final RelationKey relationKey = MyriaConstants.EVENT_PROFILING_RELATION;
 
@@ -1811,7 +1870,7 @@ public final class Server {
     renameExpressions.add(new Expression("nanoTime", new VariableExpression(1)));
     final Apply rename = new Apply(sumAggregate, renameExpressions.build());
 
-    DataOutput output = new DataOutput(rename, writer);
+    DataOutput output = new DataOutput(rename, writer, dataSink);
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
     /* Submit the plan for the download. */
@@ -1882,18 +1941,19 @@ public final class Server {
    * @param writerOutput the output stream to write results to.
    * @throws DbException if there is an error in the database.
    */
-  public void getResourceUsage(final long queryId, final PipedOutputStream writerOutput) throws DbException {
+  public void getResourceUsage(final long queryId, final DataSink dataSink) throws DbException {
     Schema schema = Schema.appendColumn(MyriaConstants.RESOURCE_PROFILING_SCHEMA, Type.INT_TYPE, "workerId");
     try {
-      TupleWriter writer = new CsvTupleWriter(writerOutput);
+      TupleWriter writer = new CsvTupleWriter();
       TupleBuffer tb = queryManager.getResourceUsage(queryId);
       if (tb != null) {
+        writer.open(dataSink.getOutputStream());
         writer.writeColumnHeaders(schema.getColumnNames());
         writer.writeTuples(tb);
         writer.done();
         return;
       }
-      getResourceLog(queryId, writer);
+      getResourceLog(queryId, writer, dataSink);
     } catch (IOException e) {
       throw new DbException(e);
     }
@@ -1905,7 +1965,8 @@ public final class Server {
    * @return resource logs for the query.
    * @throws DbException if there is an error when accessing profiling logs.
    */
-  public ListenableFuture<Query> getResourceLog(final long queryId, final TupleWriter writer) throws DbException {
+  public ListenableFuture<Query> getResourceLog(final long queryId, final TupleWriter writer, final DataSink dataSink)
+      throws DbException {
     SubQueryId sqId = new SubQueryId(queryId, 0);
     String serializedPlan;
     try {
@@ -1940,7 +2001,7 @@ public final class Server {
     final CollectConsumer consumer =
         new CollectConsumer(addWorkerId.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
 
-    DataOutput output = new DataOutput(consumer, writer);
+    DataOutput output = new DataOutput(consumer, writer, dataSink);
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
     /* Submit the plan for the download. */
