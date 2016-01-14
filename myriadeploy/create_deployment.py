@@ -63,7 +63,6 @@ def _get_runtime(heap=None, cores=None):
         runtime += 'container.vcores.number = %s\n' % cores
     if not heap and not cores:
         runtime += '# No runtime options specified\n'
-    runtime += "jvm.options = -XX:+UseG1GC -Djava.util.logging.config.class=org.apache.reef.util.logging.Config\n"
     return runtime + '\n'
 
 
