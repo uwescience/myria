@@ -66,6 +66,7 @@ public final class MyriaGlobalConfigurationModule extends ConfigurationModuleBui
       new OptionalParameter<>();
   public static final RequiredParameter<String> MASTER_HOST = new RequiredParameter<>();
   public static final RequiredParameter<Integer> MASTER_RPC_PORT = new RequiredParameter<>();
+  public static final RequiredParameter<String> PERSIST_URI = new RequiredParameter<>();
 
   public static final ConfigurationModule CONF = new MyriaGlobalConfigurationModule()
       .bindNamedParameter(InstanceName.class, INSTANCE_NAME)
@@ -99,7 +100,9 @@ public final class MyriaGlobalConfigurationModule extends ConfigurationModuleBui
       .bindNamedParameter(TcpSendBufferSizeBytes.class, TCP_SEND_BUFFER_SIZE_BYTES)
       .bindNamedParameter(LocalFragmentWorkerThreads.class, LOCAL_FRAGMENT_WORKER_THREADS)
       .bindNamedParameter(MasterHost.class, MASTER_HOST)
-      .bindNamedParameter(MasterRpcPort.class, MASTER_RPC_PORT).build();
+      .bindNamedParameter(MasterRpcPort.class, MASTER_RPC_PORT)
+      .bindNamedParameter(PersistUri.class, PERSIST_URI)
+      .build();
 
   @NamedParameter
   public class InstanceName implements Name<String> {
@@ -187,5 +190,8 @@ public final class MyriaGlobalConfigurationModule extends ConfigurationModuleBui
   }
   @NamedParameter
   public class MasterRpcPort implements Name<Integer> {
+  }
+  @NamedParameter
+  public class PersistUri implements Name<String> {
   }
 }
