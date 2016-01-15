@@ -309,9 +309,10 @@ shadowJar {
   transform(ApacheLicenseResourceTransformer)
 }
 
-/* Guava conflicts with old versions in Hadoop distro */
+/* Some of our deps conflict with old versions in Hadoop distro */
 shadowJar {
   relocate 'com.google.common.collect', 'myriadeps.com.google.common.collect'
+  relocate 'javax.ws.rs.core', 'myriadeps.javax.ws.rs.core'
 }
 
 /* Coveralls */
