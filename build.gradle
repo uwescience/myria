@@ -311,7 +311,7 @@ shadowJar {
 
 /* Some of our deps conflict with old versions in Hadoop distro */
 shadowJar {
-  relocate 'com.google.common.collect', 'myriadeps.com.google.common.collect'
+  relocate 'com.google.common', 'myriadeps.com.google.common'
   relocate 'javax.ws.rs', 'myriadeps.javax.ws.rs'
 }
 
