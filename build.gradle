@@ -309,6 +309,11 @@ shadowJar {
   transform(ApacheLicenseResourceTransformer)
 }
 
+/* Guava conflicts with old versions in Hadoop distro */
+shadowJar {
+  relocate 'com.google.common.collect', 'myriadeps.com.google.common.collect'
+}
+
 /* Coveralls */
 jacocoTestReport {
   executionData(test, systemtest)
