@@ -7,13 +7,13 @@ import argparse
 from itertools import groupby
 
 
-def get_deployment(path, coordinator_hostname, worker_hostnames, name='myria',
-                   rest_port=8753, database_type='postgresql',
+def get_deployment(path, coordinator_hostname, worker_hostnames, persist_uri,
+                    name='myria', rest_port=8753, database_type='postgresql',
                    database_port=5432, heap=None, cores=None, debug=False,
                    database_username=None, database_password=None,
                    coordinator_port=9001, worker_ports=None,
                    worker_base_port=8001, worker_directories=None,
-                   worker_databases=None, persist_uri):
+                   worker_databases=None):
     """ Generates a Myria deployment file with the given configuration """
     return (_get_header(path, name, rest_port, database_type, database_port,
                         debug, database_username, database_password) +
