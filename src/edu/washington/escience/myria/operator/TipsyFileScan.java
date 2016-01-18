@@ -327,12 +327,13 @@ public class TipsyFileScan extends LeafOperator {
   private static InputStream openFileOrUrlInputStream(String filenameOrUrl) throws DbException {
     try {
       URI uri = new URI(filenameOrUrl);
-      if (uri.getScheme() == null)
+      if (uri.getScheme() == null) {
         return openFileInputStream(filenameOrUrl);
-      else if (uri.getScheme().equals("hdfs"))
+      } else if (uri.getScheme().equals("hdfs")) {
         return openHdfsInputStream(uri);
-      else
-        return uri.toURL().openConnection().getInputStream();
+      } else {
+        return openFileInputStream(filenameOrUrl);
+      }
     } catch (IllegalArgumentException e) {
       return openFileInputStream(filenameOrUrl);
     } catch (URISyntaxException e) {
