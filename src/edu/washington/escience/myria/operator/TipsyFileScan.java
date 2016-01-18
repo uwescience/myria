@@ -9,6 +9,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Objects;
 import java.util.Scanner;
 
@@ -42,18 +45,10 @@ public class TipsyFileScan extends LeafOperator {
   private static final int S_SIZE = 44;
   /** The data input for bin file. */
   private transient DataInput dataInputForBin;
-  /** The file stream for bin file. */
-  private transient FileInputStream fStreamForBin;
-  /** A buffer for the bin file. */
-  private transient BufferedInputStream bufferedStreamForBin;
   /** Scanner used to parse the iOrder file. */
   private transient Scanner iOrderScanner = null;
   /** Scanner used to parse the group number file. */
   private transient Scanner grpScanner = null;
-  /** InputStream for iOrder file. */
-  private transient InputStream iOrderInputStream = null;
-  /** InputStream for group number file. */
-  private transient InputStream grpInputStream = null;
   /** Holds the tuples that are ready for release. */
   private transient TupleBatchBuffer buffer;
 
@@ -121,18 +116,14 @@ public class TipsyFileScan extends LeafOperator {
   @Override
   protected final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     buffer = new TupleBatchBuffer(getSchema());
+    InputStream iOrderInputStream = openFileOrUrlInputStream(iOrderFileName);
+    InputStream grpInputStream = openFileOrUrlInputStream(grpFileName);
+    int ntot;
 
     try {
-      iOrderInputStream = new FileInputStream(iOrderFileName);
-      grpInputStream = new FileInputStream(grpFileName);
-    } catch (FileNotFoundException e) {
-      throw new DbException(e);
-    }
-    int ntot = -1;
-    try {
       // Create a fileInputStream for the bin file
-      fStreamForBin = new FileInputStream(binFileName);
-      bufferedStreamForBin = new BufferedInputStream(fStreamForBin);
+      InputStream fStreamForBin = openFileOrUrlInputStream(binFileName);
+      BufferedInputStream bufferedStreamForBin = new BufferedInputStream(fStreamForBin);
       dataInputForBin = new DataInputStream(bufferedStreamForBin);
 
       dataInputForBin.readDouble(); // time
@@ -146,11 +137,10 @@ public class TipsyFileScan extends LeafOperator {
       if (ntot != ngas + ndark + nstar) {
         throw new DbException("header info incorrect");
       }
-      if (proposed != fStreamForBin.getChannel().size()) {
+      if (fStreamForBin instanceof FileInputStream &&
+              proposed != ((FileInputStream)fStreamForBin).getChannel().size()) {
         throw new DbException("binary file size incorrect");
       }
-    } catch (FileNotFoundException e) {
-      throw new DbException(e);
     } catch (IOException e) {
       throw new DbException(e);
     }
@@ -328,5 +318,25 @@ public class TipsyFileScan extends LeafOperator {
   @Override
   protected Schema generateSchema() {
     return TIPSY_SCHEMA;
+  }
+
+  private static InputStream openFileOrUrlInputStream(String filenameOrUrl) throws DbException {
+    try {
+      return new URI(filenameOrUrl).toURL().openConnection().getInputStream();
+    } catch(URISyntaxException e) {
+      return openFileInputStream(filenameOrUrl);
+    } catch(MalformedURLException e) {
+      return openFileInputStream(filenameOrUrl);
+    } catch(IOException e) {
+      throw new DbException(e);
+    }
+  }
+
+  private static InputStream openFileInputStream(String filename) throws DbException {
+    try {
+      return new FileInputStream(filename);
+    } catch(FileNotFoundException e) {
+      throw new DbException(e);
+    }
   }
 }
