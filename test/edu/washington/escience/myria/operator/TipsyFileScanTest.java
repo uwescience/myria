@@ -96,6 +96,18 @@ public class TipsyFileScanTest {
     assertEquals(4, getRowCount(filter));
   }
 
+  @Test
+  public void testRelativeFileUrl() throws IOException, DbException {
+    String binFilename = "file:./testdata/tipsyfilescan/tipsy3";
+    String iOrderFilename = "file:./testdata/tipsyfilescan/iOrder3.iord";
+    String grpFilename = "file:./testdata/tipsyfilescan/grp3.amiga.grp";
+    TipsyFileScan fileScan = new TipsyFileScan(binFilename, iOrderFilename, grpFilename);
+    ExpressionOperator expr =
+            new EqualsExpression(new VariableExpression(16), new ConstantExpression(Type.STRING_TYPE, "gas"));
+    Filter filter = new Filter(new Expression(null, expr), fileScan);
+    assertEquals(4, getRowCount(filter));
+  }
+
   // @Test
   // the data is stored in /projects/db8/dataset_astro_2011/
   // this test took 161796 ms which is about 2.7 minutes on a i7 processor 8gb ram machine
