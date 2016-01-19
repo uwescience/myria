@@ -323,6 +323,8 @@ public class TipsyFileScan extends LeafOperator {
   private static InputStream openFileOrUrlInputStream(String filenameOrUrl) throws DbException {
     try {
       return new URI(filenameOrUrl).toURL().openConnection().getInputStream();
+    } catch(IllegalArgumentException e) {
+      return openFileInputStream(filenameOrUrl);
     } catch(URISyntaxException e) {
       return openFileInputStream(filenameOrUrl);
     } catch(MalformedURLException e) {
