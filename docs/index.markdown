@@ -3,6 +3,7 @@ layout: default
 title: MyriaX
 group: "docs"
 weight: 1
+section: 2
 ---
 
 # MyriaX Engine
@@ -40,8 +41,8 @@ To test, run `ssh localhost`.
 
 #### Storage
 
-You need to install [SQLite](http://www.sqlite.org/), which is already pre-installed on many systems. 
-For data storage, MyriaX uses existing single-node relational database management systems. 
+You need to install [SQLite](http://www.sqlite.org/), which is already pre-installed on many systems.
+For data storage, MyriaX uses existing single-node relational database management systems.
 You can still use SQLite, but the preferred system is [PostgreSQL](http://www.postgresql.org/).
 Myria currently uses Postgres 9.4, and installation instructions can be founded [here](http://www.postgresql.org/download/).
 
@@ -60,7 +61,7 @@ you may need to run `./gradlew clean` before `./gradlew jar`. This is for cleani
 
 If the build succeeded, you should be able to see jars in `build/libs` including `myria-0.1.jar`.
 
-#### Deployment configuration file 
+#### Deployment configuration file
 
 A MyriaX deployment needs a deployment config file. It specifies the details of the
 deployment to start with, such as the worker hostnames and port numbers.
@@ -134,7 +135,7 @@ If everything is okay, it will start the workers:
 
 #### Check the cluster status
 
-- Query which workers the master knows about. 
+- Query which workers the master knows about.
 
     curl -i localhost:8753/workers
 
