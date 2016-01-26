@@ -1,6 +1,6 @@
 ---
 layout: default
-title: MyriaX
+title: Local Installation
 group: "docs"
 weight: 1
 section: 2
