@@ -15,6 +15,10 @@ import java.net.URISyntaxException;
 import java.util.Objects;
 import java.util.Scanner;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -322,7 +326,13 @@ public class TipsyFileScan extends LeafOperator {
 
   private static InputStream openFileOrUrlInputStream(String filenameOrUrl) throws DbException {
     try {
-      return new URI(filenameOrUrl).toURL().openConnection().getInputStream();
+      URI uri = new URI(filenameOrUrl);
+      if(uri.getScheme() == null)
+        return openFileInputStream(filenameOrUrl);
+      else if(uri.getScheme().equals("hdfs"))
+        return openHDFSInputStream(uri);
+      else
+        return uri.toURL().openConnection().getInputStream();
     } catch(IllegalArgumentException e) {
       return openFileInputStream(filenameOrUrl);
     } catch(URISyntaxException e) {
@@ -338,6 +348,16 @@ public class TipsyFileScan extends LeafOperator {
     try {
       return new FileInputStream(filename);
     } catch(FileNotFoundException e) {
+      throw new DbException(e);
+    }
+  }
+
+  private static InputStream openHDFSInputStream(final URI uri) throws DbException {
+    try {
+      FileSystem fs = FileSystem.get(uri, new Configuration());
+      Path path = new Path(uri);
+      return fs.open(path);
+    } catch (IOException e) {
       throw new DbException(e);
     }
   }
