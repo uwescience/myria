@@ -1,7 +1,8 @@
 ---
 layout: default
 title: Architecture
-group: "extra"
+group: "docs"
+section: 5
 ---
 
 
