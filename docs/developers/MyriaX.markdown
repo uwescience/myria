@@ -14,23 +14,23 @@ The MyriaX execution layer is modeled after the [Actor Model](http://en.wikipedi
 
 # Components
 
-* [[MyriaX REST API]]
+* MyriaX REST API
 
-* [[MyriaX Query Plans]]
+* MyriaX Query Plans
 
-* [[Special Features]]
-    * [[Expression library]]
-    * [[Profiler]]
-    * [[StatefulApply]]
-    * [[UserDefinedAggregates]]
+* Special Features
+    * Expression library
+    * Profiler
+    * StatefulApply
+    * UserDefinedAggregates
 
-* [[MyriaX Query Execution]]
-    * [[Tuple batches]]
-    * [[Control flow]]
-    * [[EOS/EOI semantics]]
-    * [[Memory management]]
-    * [[Networking layer]]
-    * [[Failure handling]]
+* MyriaX Query Execution
+    * Tuple batches
+    * Control flow
+    * EOS/EOI semantics
+    * Memory management
+    * Networking layer
+    * Failure handling
 
 Query Execution
 -------------
