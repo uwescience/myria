@@ -212,13 +212,17 @@ public final class DeploymentUtils {
    * @param cleanCatalog if deploying with a clean master catalog.
    * @throws ConfigFileException if error occurred parsing config file.
    */
-  public static void deployMaster(final String localDeployPath, final MyriaConfiguration config,
-      final boolean cleanCatalog) throws ConfigFileException {
+  public static void deployMaster(final String localDeployPath, final MyriaConfiguration config, boolean cleanCatalog)
+      throws ConfigFileException {
     String workingDir = config.getWorkingDirectory(MyriaConstants.MASTER_ID);
     String hostname = config.getHostnameWithUsername(MyriaConstants.MASTER_ID);
     String keystoreFile = config.getOptional("deployment", MyriaApiConstants.MYRIA_API_SSL_KEYSTORE);
     System.err.println("Start syncing distribution files to master @ " + hostname);
     mkdir(hostname, workingDir);
+    if (!catalogExists(hostname, workingDir)) {
+      /* always create a clean catalog if there is no one */
+      cleanCatalog = true;
+    }
     List<String> includes = Arrays.asList("master");
     List<String> excludes = Arrays.asList("workers");
     if (!cleanCatalog) {
@@ -408,6 +412,24 @@ public final class DeploymentUtils {
    */
   public static void rmFile(final String address, final String path) {
     startAProcess(new String[] { "ssh", address, "rm -rf " + path });
+  }
+
+  /**
+   * check if the catalog already exists.
+   * 
+   * @param address remote host.
+   * @param workingDir master working directory.
+   * @return if the catalog exists.
+   */
+  public static boolean catalogExists(final String address, final String workingDir) {
+    Process p =
+        startAProcess(new String[] { "ssh", address, "test -f " + workingDir + "/master/master.catalog" }, false);
+    try {
+      p.waitFor();
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    }
+    return p.exitValue() == 0;
   }
 
   /**
