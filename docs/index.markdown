@@ -94,7 +94,7 @@ You can replace `myria1` and `myria2` with your own databases.
 
 - (Optional) Should you wish Myria to connect via an alternate port, add the
 following key/value pair to the `[deployment]` section of your Myria deployment file:
-    ```ini
+    ```
     database_port = [custom_port_number]
     ```
 
@@ -182,14 +182,14 @@ The Datalog expression of this query is specified in `global_join.json`. The SQL
     Where t1.col2 = t2.col1;
 
 This query writes results back to the backend storage in a relation called `smallTable_join_smallTable`.
-You should be able to find the result tables in your
-databases. The table name is specified in the `DbInsert` operator, change it if you want.
+You should be able to find the resulting tables in your databases. The table name is specified in the 
+`DbInsert` operator, which you can modify.
 
 #### Download a dataset.
 
     curl -i localhost:8753/dataset/user-jwang/program-global_join/relation-smallTable_join_smallTable/data
 
-This will download the table `smallTable_join_smallTable` in CSV format. JSON and TSV are also supported, to do that, specify the format like this:
+This will download the table `smallTable_join_smallTable` in CSV format. JSON and TSV are also supported, to do that, specify the format as the following:
 
     curl -i localhost:8753/dataset/user-jwang/program-global_join/relation-smallTable_join_smallTable/data?format=json
 
@@ -207,8 +207,9 @@ force-quit all machines:
 
     ./stop_all_by_force deployment.cfg.local
 
-This will go to all the nodes, find the master/worker processes under your username, and kill them.
+This will go to all the nodes, find the master/worker processes under your username, and kill them. Alternatively, you can also restart the cluster with the following REST call:
 
+    curl -i localhost:8753/server/restart
 
 ## Using a shared-nothing cluster
 
