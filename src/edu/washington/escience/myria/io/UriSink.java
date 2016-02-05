@@ -20,10 +20,13 @@ public class UriSink implements DataSink {
   @JsonProperty
   private final URI uri;
 
-  public UriSink(@JsonProperty(value = "uri", required = true) final String uri) throws CatalogException {
+  public UriSink(@JsonProperty(value = "uri", required = true) String uri) throws CatalogException {
+    if (uri.contains("s3")) {
+      uri = uri.replace("s3", "s3a");
+    }
     this.uri = URI.create(Objects.requireNonNull(uri, "Parameter uri cannot be null"));
-    if (!this.uri.getScheme().equals("hdfs")) {
-      throw new CatalogException("URI must be an HDFS URI");
+    if (!this.uri.getScheme().equals("hdfs") && !this.uri.getScheme().equals("s3a")) {
+      throw new CatalogException("URI must be an HDFS or S3 URI");
     }
   }
 
