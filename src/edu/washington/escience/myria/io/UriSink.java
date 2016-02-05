@@ -22,9 +22,9 @@ public class UriSink implements DataSink {
 
   public UriSink(@JsonProperty(value = "uri", required = true) final String uri) throws CatalogException {
     this.uri = URI.create(Objects.requireNonNull(uri, "Parameter uri cannot be null"));
-    if (!this.uri.getScheme().equals("hdfs")) {
-      throw new CatalogException("URI must be an HDFS URI");
-    }
+//    if (!this.uri.getScheme().equals("hdfs")) {
+//      throw new CatalogException("URI must be an HDFS URI");
+//    }
   }
 
   @Override

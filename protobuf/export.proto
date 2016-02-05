@@ -1,0 +1,19 @@
+package edu.washington.escience.myria.proto;
+
+option java_outer_classname = "Graph";
+
+message Vertex {
+    required int32 id = 1;
+    required double value = 2;
+
+    message Edge {
+        required int32 destination_id = 3;
+        required double value = 4;
+    }
+
+    repeated Edge edge = 5;
+}
+
+message Vertices {
+    repeated Vertex vertices = 6;
+}
