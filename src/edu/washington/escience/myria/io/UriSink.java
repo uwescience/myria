@@ -24,6 +24,7 @@ public class UriSink implements DataSink {
   public UriSink(@JsonProperty(value = "uri", required = true) final String uri) throws CatalogException,
       URISyntaxException {
     this.uri = URI.create(Objects.requireNonNull(uri, "Parameter uri cannot be null"));
+    /* Force using the Hadoop S3A FileSystem */
     if (this.uri.getScheme().equals("s3")) {
       this.uri =
           new URI("s3a", this.uri.getUserInfo(), this.uri.getHost(), this.uri.getPort(), this.uri.getPath(), this.uri
