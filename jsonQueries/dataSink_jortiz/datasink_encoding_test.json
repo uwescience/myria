@@ -1,0 +1,28 @@
+{
+    "rawQuery": "Persist Query Test",
+    "logicalRa": "Persist Query Test",
+    "fragments": [
+        {
+            "operators": [
+                {
+                    "opId": 0,
+                    "opType": "TableScan",
+                    "relationKey": {
+                        "userName": "public",
+                        "programName": "adhoc",
+                        "relationName": "TwitterK"
+                    }
+                },
+                {
+                    "opId": 1,
+                    "argChild": 0,
+                    "opType": "Persist",
+                    "sink": {
+                        "dataType": "URI",
+                        "uri": "hdfs://vega.cs.washington.edu:8020"
+                    }
+                }
+            ]
+        }
+    ]
+}

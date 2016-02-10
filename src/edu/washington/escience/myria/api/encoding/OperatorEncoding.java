@@ -11,7 +11,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import edu.washington.escience.myria.api.MyriaApiException;
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.operator.SampledDbInsertTemp;
 
 /**
  * A JSON-able wrapper for the expected wire message for an operator. To add a new operator, two things need to be done.
@@ -47,6 +46,7 @@ import edu.washington.escience.myria.operator.SampledDbInsertTemp;
     @Type(name = "Merge", value = MergeEncoding.class), @Type(name = "MergeJoin", value = MergeJoinEncoding.class),
     @Type(name = "MultiGroupByAggregate", value = MultiGroupByAggregateEncoding.class),
     @Type(name = "NChiladaFileScan", value = NChiladaFileScanEncoding.class),
+    @Type(name = "Persist", value = PersistEncoding.class),
     @Type(name = "RightHashCountingJoin", value = RightHashCountingJoinEncoding.class),
     @Type(name = "RightHashJoin", value = RightHashJoinEncoding.class),
     @Type(name = "SampledDbInsertTemp", value = SampledDbInsertTempEncoding.class),
