@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -1072,8 +1073,10 @@ public final class Server {
    * @return the queryID
    * @throws DbException if there is an error
    * @throws InterruptedException interrupted
+   * @throws URISyntaxException
    */
-  public long persistDataset(final RelationKey relationKey) throws DbException, InterruptedException {
+  public long persistDataset(final RelationKey relationKey) throws DbException, InterruptedException,
+      URISyntaxException {
     long queryID;
 
     /* Mark the relation as is_persistent */
