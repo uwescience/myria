@@ -35,6 +35,9 @@ public class DataOutputTest {
     DataOutput dataOutput = new DataOutput(scanCSV, new CsvTupleWriter(), byteSink);
 
     dataOutput.open(TestEnvVars.get());
+
+    /* Read the data */
+    String result = null;
     int actualTupleCount = 0;
     while (!dataOutput.eos()) {
       TupleBatch tb = dataOutput.nextReady();

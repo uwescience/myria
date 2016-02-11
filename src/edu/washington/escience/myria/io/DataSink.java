@@ -14,8 +14,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "dataType")
 @JsonSubTypes({
-    @Type(name = "Bytes", value = ByteArraySource.class), @Type(name = "File", value = FileSource.class),
-    @Type(name = "URI", value = UriSource.class), @Type(name = "Empty", value = EmptySource.class) })
+    @Type(name = "URI", value = UriSink.class), @Type(name = "Pipe", value = PipeSink.class),
+    @Type(name = "Bytes", value = ByteSink.class) })
 public interface DataSink extends Serializable {
   /**
    * Returns an {@link OutputStream} providing write access to the specified data destination.
