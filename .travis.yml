@@ -20,5 +20,6 @@ cache:
 
 # encrypted AWS credentials for travis-ci IAM user under myria account
 env:
-  - secure: "djjW9ThHbafN5TUFGQi+mFkc4uQ8w6pQuSIT3kLOT8u78LuKSJ2LeO3kpqHbiIPwobJrwnFs8TrfWWro7HQVsrmPyJIxjgsu1oMGZYwacAsO47v+UuCBXYcu3JtjdRyub2+L65SNCh299eXDTxjPq0GkzZUHOHoj/lWYe/CCJgA="
-  - secure: "CZ4RE0N0N/yeGnZZUf+ndN+vVzkLAgn2easCxExkOmvLqXmPNN9igKEaRAQ8sQ+YsAXuffyw2uxmo/paDUoVAcBpp/u/ZqdowdHHPcV13Upfqz70iQidsFU55zvF2CprmeHxNM1BLcbmVGY/tfeIrfosFSqb6gEOnSH/KfDsL6Y="
+  global:
+    - secure: "djjW9ThHbafN5TUFGQi+mFkc4uQ8w6pQuSIT3kLOT8u78LuKSJ2LeO3kpqHbiIPwobJrwnFs8TrfWWro7HQVsrmPyJIxjgsu1oMGZYwacAsO47v+UuCBXYcu3JtjdRyub2+L65SNCh299eXDTxjPq0GkzZUHOHoj/lWYe/CCJgA="
+    - secure: "CZ4RE0N0N/yeGnZZUf+ndN+vVzkLAgn2easCxExkOmvLqXmPNN9igKEaRAQ8sQ+YsAXuffyw2uxmo/paDUoVAcBpp/u/ZqdowdHHPcV13Upfqz70iQidsFU55zvF2CprmeHxNM1BLcbmVGY/tfeIrfosFSqb6gEOnSH/KfDsL6Y="
