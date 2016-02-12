@@ -6,7 +6,6 @@ jdk:
 addons:
   postgresql: 9.3
 before_install:
-- pip install --user boto
 - sh travis/before_install.sh
 - export TERM=dumb
 after_success:
