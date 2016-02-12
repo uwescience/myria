@@ -14,9 +14,7 @@ import edu.washington.escience.myria.operator.Operator;
 
 /**
  * A JSON-able wrapper for the expected wire message for an operator. To add a new operator, two things need to be done.
- *
  * 1. Create an Encoding class that extends OperatorEncoding.
- *
  * 2. Add the operator to the list of (alphabetically sorted) JsonSubTypes below.
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "opType")
@@ -42,8 +40,8 @@ import edu.washington.escience.myria.operator.Operator;
   @Type(name = "EmptySink", value = EmptySinkEncoding.class),
   @Type(name = "EOSController", value = EOSControllerEncoding.class),
   @Type(name = "Filter", value = FilterEncoding.class),
-  @Type(name = "HyperShuffleProducer", value = HyperShuffleProducerEncoding.class),
-  @Type(name = "HyperShuffleConsumer", value = HyperShuffleConsumerEncoding.class),
+  @Type(name = "HyperCubeShuffleProducer", value = HyperCubeShuffleProducerEncoding.class),
+  @Type(name = "HyperCubeShuffleConsumer", value = HyperCubeShuffleConsumerEncoding.class),
   @Type(name = "IDBController", value = IDBControllerEncoding.class),
   @Type(name = "InMemoryOrderBy", value = InMemoryOrderByEncoding.class),
   @Type(name = "LeapFrogJoin", value = LeapFrogJoinEncoding.class),
@@ -61,8 +59,8 @@ import edu.washington.escience.myria.operator.Operator;
   @Type(name = "SamplingDistribution", value = SamplingDistributionEncoding.class),
   @Type(name = "SeaFlowScan", value = SeaFlowFileScanEncoding.class),
   @Type(name = "SetGlobal", value = SetGlobalEncoding.class),
-  @Type(name = "ShuffleConsumer", value = ShuffleConsumerEncoding.class),
-  @Type(name = "ShuffleProducer", value = ShuffleProducerEncoding.class),
+  @Type(name = "ShuffleConsumer", value = GenericShuffleConsumerEncoding.class),
+  @Type(name = "ShuffleProducer", value = GenericShuffleProducerEncoding.class),
   @Type(name = "SingleGroupByAggregate", value = SingleGroupByAggregateEncoding.class),
   @Type(name = "Singleton", value = SingletonEncoding.class),
   @Type(name = "StatefulApply", value = StatefulApplyEncoding.class),
@@ -82,13 +80,11 @@ public abstract class OperatorEncoding<T extends Operator> extends MyriaApiEncod
 
   public String opName;
 
-  /**
-   * Connect any operators to this one.
-   */
+  /** Connect any operators to this one. */
   public abstract void connect(Operator operator, Map<Integer, Operator> operators);
 
   /**
-   * @param args TODO
+   * @param args construct args containing the server and query ID.
    * @return an instantiated operator.
    */
   public abstract T construct(@Nonnull ConstructArgs args) throws MyriaApiException;

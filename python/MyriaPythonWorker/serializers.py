@@ -4,7 +4,6 @@ import types
 import struct
 import cPickle
 import itertools
-import cloud
 import base64
 
 
@@ -111,7 +110,7 @@ class PickleSerializer(object):
             obj = read_float(stream)
         elif(itemType == DataType.DOUBLE):
             obj = read_double(stream)
-        elif(itemType == DataType.BYTES):
+        elif(itemType == DataType.BLOB):
             obj = self.loads(stream.read(length))
         return obj
 

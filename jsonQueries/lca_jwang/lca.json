@@ -52,9 +52,9 @@
                 "opName" : "spP",
                 "opType" : "ShuffleProducer",
                 "argChild" : 5,
-                "argPf" : {
-                    "type" : "SingleFieldHash",
-                    "index" : 0
+                "distributeFunction" : {
+                    "type" : "Hash",
+                    "indexes" : [0]
                 }
             }
             ]
@@ -94,9 +94,9 @@
                 "opName" : "spC1",
                 "opType" : "ShuffleProducer",
                 "argChild" : 9,
-                "argPf" : {
-                    "type" : "SingleFieldHash",
-                    "index" : 0
+                "distributeFunction" : {
+                    "type" : "Hash",
+                    "indexes" : [0]
                 }
             }
             ]
@@ -147,8 +147,8 @@
                 "opName" : "spC2",
                 "opType" : "ShuffleProducer",
                 "argChild" : 18,
-                "argPf" : {
-                    "type" : "MultiFieldHash",
+                "distributeFunction" : {
+                    "type" : "Hash",
                     "indexes" : [0,1]
                 }
             }
@@ -194,9 +194,9 @@
                 "opName" : "spA",
                 "opType" : "ShuffleProducer",
                 "argChild" : 20,
-                "argPf" : {
-                    "type" : "SingleFieldHash",
-                    "index" : 1
+                "distributeFunction" : {
+                    "type" : "Hash",
+                    "indexes" : [1]
                 }
             }
             ]
@@ -341,8 +341,8 @@
                                 "opName" : "spJoinA",
                                 "opType" : "ShuffleProducer",
                                 "argChild" : 40,
-                                "argPf" : {
-                                        "type" : "MultiFieldHash",
+                                "distributeFunction" : {
+                                        "type" : "Hash",
                                         "indexes" : [0,1]
                                 }
                         }
@@ -514,8 +514,8 @@
                                 "opName" : "spJoinL2",
                                 "opType" : "ShuffleProducer",
                                 "argChild" : 45,
-                                "argPf" : {
-                                        "type" : "MultiFieldHash",
+                                "distributeFunction" : {
+                                        "type" : "Hash",
                                         "indexes" : [0,1]
                                 }
                         }

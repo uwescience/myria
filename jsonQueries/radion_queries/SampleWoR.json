@@ -80,9 +80,9 @@
                             {
                                   "argChild":8,
                                   "opId":9,
-                                  "argPf":{
-                                     "index":0,
-                                     "type":"IdentityHash"
+                                  "distributeFunction":{
+                                     "indexes":[0],
+                                     "type":"Identity"
                                   },
                                   "opType":"ShuffleProducer",
                                   "opName":"MyriaShuffleProducer($0)"

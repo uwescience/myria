@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.List;
-import java.util.Set;
 
 import javax.annotation.Nonnull;
 import javax.ws.rs.Consumes;
@@ -60,16 +59,13 @@ import edu.washington.escience.myria.io.PipeSink;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.TipsyFileScan;
 import edu.washington.escience.myria.operator.TupleSource;
-import edu.washington.escience.myria.operator.network.partition.HowPartitioned;
-import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
-import edu.washington.escience.myria.operator.network.partition.RoundRobinPartitionFunction;
+import edu.washington.escience.myria.operator.network.distribute.DistributeFunction;
+import edu.washington.escience.myria.operator.network.distribute.HowDistributed;
+import edu.washington.escience.myria.operator.network.distribute.RoundRobinDistributeFunction;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.storage.TupleBatch;
 
-/**
- * This is the class that handles API calls to create or fetch datasets.
- *
- */
+/** This is the class that handles API calls to create or fetch datasets. */
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MyriaApiConstants.JSON_UTF_8)
 @Path("/dataset")
@@ -77,6 +73,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 public final class DatasetResource {
   /** The Myria server running on the master. */
   @Context private Server server;
+
   /** Information about the URL of the request. */
   @Context private UriInfo uriInfo;
 
@@ -187,10 +184,8 @@ public final class DatasetResource {
     /* Validate the request format. This will throw a MyriaApiException if format is invalid. */
     String validFormat = validateFormat(format);
 
-    /*
-     * Allocate the pipes by which the {@link DataOutput} operator will talk to the {@link StreamingOutput} object that
-     * will stream data to the client.
-     */
+    /* Allocate the pipes by which the {@link DataOutput} operator will talk to the {@link StreamingOutput} object that
+     * will stream data to the client. */
     PipeSink dataSink = new PipeSink();
 
     /* .. and make it the entity of the response. */
@@ -251,10 +246,8 @@ public final class DatasetResource {
     /* Validate the request format. This will throw a MyriaApiException if format is invalid. */
     String validFormat = validateFormat(format);
 
-    /*
-     * Allocate the pipes by which the {@link DataOutput} operator will talk to the {@link StreamingOutput} object that
-     * will stream data to the client.
-     */
+    /* Allocate the pipes by which the {@link DataOutput} operator will talk to the {@link StreamingOutput} object that
+     * will stream data to the client. */
     PipeSink dataSink = new PipeSink();
 
     /* .. and make it the entity of the response. */
@@ -343,12 +336,10 @@ public final class DatasetResource {
         new TupleSource(new CsvTupleReader(schema, delimiter), new InputStreamSource(is));
 
     ResponseBuilder builder = Response.ok();
-    HowPartitioned howPartitioned = server.getDatasetStatus(relationKey).getHowPartitioned();
-    PartitionFunction pf = howPartitioned.getPf();
-    if (pf == null) {
-      pf = new RoundRobinPartitionFunction(null);
-    }
-    return doIngest(relationKey, source, howPartitioned.getWorkers(), null, true, builder, pf);
+    HowDistributed howDistributed = server.getDatasetStatus(relationKey).getHowDistributed();
+    DistributeFunction df =
+        MoreObjects.firstNonNull(howDistributed.getDf(), new RoundRobinDistributeFunction());
+    return doIngest(relationKey, source, howDistributed.getWorkers(), null, true, builder, df);
   }
 
   /**
@@ -412,9 +403,7 @@ public final class DatasetResource {
     return response.entity(queryId).build();
   }
 
-  /**
-   * Creates an index based on the DbCreateIndexEncoding
-   */
+  /** Creates an index based on the DbCreateIndexEncoding */
   @POST
   @Path("/createIndex/")
   @Consumes(MediaType.APPLICATION_JSON)
@@ -431,9 +420,7 @@ public final class DatasetResource {
     return response.entity(queryId).build();
   }
 
-  /**
-   * Creates an view based on the DbCreateViewEncoding
-   */
+  /** Creates an view based on the DbCreateViewEncoding */
   @POST
   @Path("/createView/")
   @Consumes(MediaType.APPLICATION_JSON)
@@ -475,7 +462,7 @@ public final class DatasetResource {
         dataset.indexes,
         dataset.overwrite,
         builder,
-        dataset.partitionFunction);
+        dataset.distributeFunction);
   }
 
   /**
@@ -484,15 +471,15 @@ public final class DatasetResource {
    * @param relationKey the name of the dataset to be ingested.
    * @param schema the {@link Schema} of the data.
    * @param binary optional: if <code>true</code>, indicates that supplied data should be interpreted as a packed binary
-   *          object. (default, <code>false</code>)
+   *        object. (default, <code>false</code>)
    * @param delimiter optional: the delimiter of the data, if a plaintext file is ingested. (<code>binary</code> is
-   *          missing or false).
+   *        missing or false).
    * @param isLittleEndian optional: indicates whether the data is in big-Endian (default, <code>false</code>) or
-   *          little-Endian format. Only applicable when <code>binary</code> is set.
+   *        little-Endian format. Only applicable when <code>binary</code> is set.
    * @param overwrite optional: indicates that an existing relation should be overwritten. If <code>false</code>, then a
-   *          409 Conflict response will be thrown if <code>relationKey</code> already exists in the catalog.
+   *        409 Conflict response will be thrown if <code>relationKey</code> already exists in the catalog.
    * @param data optional: the source of bytes to be loaded.
-   * @param partitionFunction optional: how the data will be partitioned, using RoundRobin by default.
+   * @param distributeFunction optional: how the data will be distributed, using RoundRobin by default.
    * @return the created dataset resource.
    * @throws DbException if there is an error in the database.
    */
@@ -506,7 +493,7 @@ public final class DatasetResource {
       @FormDataParam("isLittleEndian") final Boolean isLittleEndian,
       @FormDataParam("overwrite") final Boolean overwrite,
       @FormDataParam("data") final InputStream data,
-      @FormDataParam("partitionFunction") final PartitionFunction partitionFunction)
+      @FormDataParam("distributeFunction") final DistributeFunction distributeFunction)
       throws DbException {
 
     Preconditions.checkArgument(relationKey != null, "Missing required field relationKey.");
@@ -534,7 +521,7 @@ public final class DatasetResource {
         null,
         overwrite,
         builder,
-        MoreObjects.firstNonNull(partitionFunction, new RoundRobinPartitionFunction(null)));
+        MoreObjects.firstNonNull(distributeFunction, new RoundRobinDistributeFunction()));
   }
 
   /**
@@ -546,18 +533,18 @@ public final class DatasetResource {
    * @param indexes any user-requested indexes to be created
    * @param overwrite whether an existing relation should be overwritten
    * @param builder the template response
-   * @param pf the partition function.
+   * @param df the distribute function
    * @return the created dataset resource
    * @throws DbException on any error
    */
   private Response doIngest(
       final RelationKey relationKey,
       final Operator source,
-      final Set<Integer> workers,
+      final List<Integer> workers,
       final List<List<IndexRef>> indexes,
       final Boolean overwrite,
       final ResponseBuilder builder,
-      @Nonnull final PartitionFunction pf)
+      @Nonnull final DistributeFunction df)
       throws DbException {
 
     /* Validate the workers that will ingest this dataset. */
@@ -575,7 +562,6 @@ public final class DatasetResource {
             Status.SERVICE_UNAVAILABLE, "Not all requested workers are alive");
       }
     }
-    Set<Integer> actualWorkers = MoreObjects.firstNonNull(workers, server.getAliveWorkers());
 
     /* Check overwriting existing dataset. */
     try {
@@ -589,7 +575,7 @@ public final class DatasetResource {
     /* Do the ingest, blocking until complete. */
     DatasetStatus status;
     try {
-      status = server.ingestDataset(relationKey, actualWorkers, indexes, source, pf);
+      status = server.ingestDataset(relationKey, workers, indexes, source, df);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       return Response.status(Status.SERVICE_UNAVAILABLE).entity("Interrupted").build();
@@ -630,7 +616,7 @@ public final class DatasetResource {
             dataset.numberOfSkippedLines,
             dataset.s3Source,
             dataset.workers,
-            dataset.partitionFunction);
+            dataset.distributeFunction);
 
     /* In the response, tell the client the path to the relation. */
     URI datasetUri = getCanonicalResourcePath(uriInfo, dataset.relationKey);
@@ -703,7 +689,7 @@ public final class DatasetResource {
         dataset.indexes,
         false,
         builder,
-        dataset.partitionFunction);
+        dataset.distributeFunction);
   }
 
   /**

@@ -49,9 +49,9 @@
                 },
                 {
                     "argChild": 6,
-                    "argPf": {
-                        "index": "0",
-                        "type": "SingleFieldHash"
+                    "distributeFunction": {
+                        "indexes": [0],
+                        "type": "Hash"
                     },
                     "opId": 7,
                     "opType": "ShuffleProducer"
@@ -107,9 +107,9 @@
                 },
                 {
                     "argChild": 12,
-                    "argPf": {
-                        "index": "1",
-                        "type": "SingleFieldHash"
+                    "distributeFunction": {
+                        "indexes": [1],
+                        "type": "Hash"
                     },
                     "opId": 13,
                     "opType": "ShuffleProducer"
@@ -148,9 +148,9 @@
                 },
                 {
                     "argChild": 16,
-                    "argPf": {
-                        "index": "0",
-                        "type": "SingleFieldHash"
+                    "distributeFunction": {
+                        "indexes": [0],
+                        "type": "Hash"
                     },
                     "opId": 17,
                     "opType": "ShuffleProducer"
@@ -166,9 +166,9 @@
                 },
                 {
                     "argChild": 19,
-                    "argPf": {
-                        "index": "1",
-                        "type": "SingleFieldHash"
+                    "distributeFunction": {
+                        "indexes": [1],
+                        "type": "Hash"
                     },
                     "opId": 20,
                     "opType": "ShuffleProducer"
@@ -188,9 +188,9 @@
                 },
                 {
                     "argChild": 25,
-                    "argPf": {
-                        "index": "0",
-                        "type": "SingleFieldHash"
+                    "distributeFunction": {
+                        "indexes": [0],
+                        "type": "Hash"
                     },
                     "opId": 26,
                     "opType": "ShuffleProducer"
@@ -265,9 +265,9 @@
                 },
                 {
                     "argChild": 30,
-                    "argPf": {
-                        "index": "0",
-                        "type": "SingleFieldHash"
+                    "distributeFunction": {
+                        "indexes": [0],
+                        "type": "Hash"
                     },
                     "opId": 47,
                     "opType": "ShuffleProducer"
@@ -283,9 +283,9 @@
                 },
                 {
                     "argChild": 31,
-                    "argPf": {
-                        "index": "1",
-                        "type": "SingleFieldHash"
+                    "distributeFunction": {
+                        "indexes": [1],
+                        "type": "Hash"
                     },
                     "opId": 32,
                     "opType": "ShuffleProducer"
@@ -305,9 +305,9 @@
                 },
                 {
                     "argChild": 33,
-                    "argPf": {
-                        "index": "0",
-                        "type": "SingleFieldHash"
+                    "distributeFunction": {
+                        "indexes": [0],
+                        "type": "Hash"
                     },
                     "opId": 34,
                     "opType": "ShuffleProducer"
@@ -387,9 +387,9 @@
                 },
                 {
                     "argChild": 40,
-                    "argPf": {
-                        "index": "0",
-                        "type": "SingleFieldHash"
+                    "distributeFunction": {
+                        "indexes": [0],
+                        "type": "Hash"
                     },
                     "opId": 41,
                     "opType": "ShuffleProducer"

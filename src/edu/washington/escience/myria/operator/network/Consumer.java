@@ -29,10 +29,8 @@ import edu.washington.escience.myria.storage.ExchangeTupleBatch;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
 
-/**
- * A Consumer is the counterpart of a producer. It collects data from Producers through IPC. A Consumer can have a
- * single Producer data source or multiple Producer data sources.
- * */
+/** A Consumer is the counterpart of a producer. It collects data from Producers through IPC. A Consumer can have a
+ * single Producer data source or multiple Producer data sources. */
 public class Consumer extends LeafOperator {
 
   /** The logger for this class. */
@@ -41,52 +39,31 @@ public class Consumer extends LeafOperator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  /**
-   * The buffer for receiving input data.
-   */
+  /** The buffer for receiving input data. */
   private transient volatile StreamInputBuffer<TupleBatch> inputBuffer;
 
-  /**
-   * The operatorID of this Consumer.
-   * */
+  /** The operatorID of this Consumer. */
   private final ExchangePairID operatorID;
 
-  /**
-   * The output schema.
-   */
+  /** The output schema. */
   private Schema schema;
-  /**
-   * Recording the worker EOS status.
-   * */
+  /** Recording the worker EOS status. */
   private transient BitSet workerEOS;
-  /**
-   * Recording the worker EOI status.
-   * */
+  /** Recording the worker EOI status. */
   private transient BitSet workerEOI;
-  /**
-   * workerID to index.
-   * */
+  /** workerID to index. */
   private transient IntIntHashMap workerIdToIndex;
-  /**
-   * From which workers to receive data.
-   * */
+  /** From which workers to receive data. */
   private final ImmutableSet<Integer> sourceWorkers;
 
-  /**
-   * if current query execution is in non-blocking mode.
-   * */
+  /** if current query execution is in non-blocking mode. */
   private transient boolean nonBlockingExecution;
 
-  /**
-   * The worker this operator is located at.
-   *
-   */
+  /** The worker this operator is located at. */
   private transient LocalFragmentResourceManager taskResourceManager;
 
-  /**
-   * @return my exchange channels.
-   * @param myWorkerID for parsing self-references.
-   */
+  /** @return my exchange channels.
+   * @param myWorkerID for parsing self-references. */
   public final ImmutableSet<StreamIOChannelID> getInputChannelIDs(final int myWorkerID) {
     ImmutableSet.Builder<StreamIOChannelID> ecB = ImmutableSet.builder();
     for (int wID : sourceWorkers) {
@@ -99,11 +76,9 @@ public class Consumer extends LeafOperator {
     return ecB.build();
   }
 
-  /**
-   * @param schema output schema.
+  /** @param schema output schema.
    * @param operatorID {@link Consumer#operatorID}
-   * @param workerIDs {@link Consumer#sourceWorkers}
-   * */
+   * @param workerIDs {@link Consumer#sourceWorkers} */
   public Consumer(final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
     this(
         schema,
@@ -111,25 +86,15 @@ public class Consumer extends LeafOperator {
         MyriaArrayUtils.checkSet(org.apache.commons.lang3.ArrayUtils.toObject(workerIDs)));
   }
 
-  /**
-   * @param schema output schema.
+  /** @param schema output schema.
    * @param operatorID {@link Consumer#operatorID}
-   * @param workerIDs {@link Consumer#sourceWorkers}
-   * */
+   * @param workerIDs {@link Consumer#sourceWorkers} */
   public Consumer(
       final Schema schema, final ExchangePairID operatorID, final Set<Integer> workerIDs) {
     this.operatorID = operatorID;
     this.schema = schema;
     sourceWorkers = ImmutableSet.copyOf(workerIDs);
     LOGGER.trace("created Consumer for ExchangePairId=" + operatorID);
-  }
-
-  /**
-   * @param schema output schema.
-   * @param operatorID {@link Consumer#operatorID}
-   * */
-  public Consumer(final Schema schema, final ExchangePairID operatorID) {
-    this(schema, operatorID, ImmutableSet.of(IPCConnectionPool.SELF_IPC_ID));
   }
 
   @Override
@@ -161,18 +126,13 @@ public class Consumer extends LeafOperator {
     inputBuffer = taskResourceManager.getInputBuffer(this);
   }
 
-  /**
-   *
-   * Retrieve a batch of tuples from the buffer of ExchangeMessages. Wait if the buffer is empty.
+  /** Retrieve a batch of tuples from the buffer of ExchangeMessages. Wait if the buffer is empty.
    *
    * @param blocking if blocking then return only if there's actually a TupleBatch to return or null if EOS. If not
-   *          blocking then return null immediately if there's no data in the input buffer.
-   *
+   *        blocking then return null immediately if there's no data in the input buffer.
    * @return Iterator over the new tuples received from the source workers. Return <code>null</code> if all source
    *         workers have sent an end of file message.
-   *
-   * @throws InterruptedException a
-   */
+   * @throws InterruptedException a */
   final TupleBatch getTuplesNormal(final boolean blocking) throws InterruptedException {
     int timeToWait = -1;
     if (!blocking) {
@@ -236,17 +196,13 @@ public class Consumer extends LeafOperator {
     }
   }
 
-  /**
-   * @return my IPC operatorID.
-   * */
+  /** @return my IPC operatorID. */
   public final ExchangePairID getOperatorID() {
     return operatorID;
   }
 
-  /**
-   * @param myWorkerID for parsing self-references.
-   * @return source worker IDs with self-reference parsed.
-   * */
+  /** @param myWorkerID for parsing self-references.
+   * @return source worker IDs with self-reference parsed. */
   public final int[] getSourceWorkers(final int myWorkerID) {
     int[] result = new int[sourceWorkers.size()];
     int idx = 0;
@@ -261,20 +217,16 @@ public class Consumer extends LeafOperator {
     return result;
   }
 
-  /**
-   * @return my input buffer.
-   * */
+  /** @return my input buffer. */
   public final StreamInputBuffer<TupleBatch> getInputBuffer() {
     return inputBuffer;
   }
 
-  /**
-   * Read a single ExchangeMessage from the queue that buffers incoming ExchangeMessages.
+  /** Read a single ExchangeMessage from the queue that buffers incoming ExchangeMessages.
    *
    * @param timeout Wait for at most timeout milliseconds. If the timeout is negative, wait until an element arrives.
    * @return received data.
-   * @throws InterruptedException if interrupted.
-   */
+   * @throws InterruptedException if interrupted. */
   private IPCMessage.StreamData<TupleBatch> take(final int timeout) throws InterruptedException {
     IPCMessage.StreamData<TupleBatch> result = null;
     Verify.verifyNotNull(inputBuffer, "inputBuffer should not be null");
@@ -289,9 +241,7 @@ public class Consumer extends LeafOperator {
     return result;
   }
 
-  /**
-   * @return if there's any message buffered.
-   * */
+  /** @return if there's any message buffered. */
   public final boolean hasNext() {
     return !inputBuffer.isEmpty();
   }
@@ -311,9 +261,7 @@ public class Consumer extends LeafOperator {
     return schema;
   }
 
-  /**
-   * @param schema the schema to set
-   * */
+  /** @param schema the schema to set */
   public final void setSchema(final Schema schema) {
     this.schema = schema;
   }

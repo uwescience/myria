@@ -13,12 +13,9 @@
                 },
                 {
                     "argChild": 1,
-                    "argPf": {
-                        "indexes": [
-                            "0",
-                            "1"
-                        ],
-                        "type": "MultiFieldHash"
+                    "distributeFunction": {
+                        "indexes": [0,1],
+                        "type": "Hash"
                     },
                     "opId": 3,
                     "opType": "ShuffleProducer"
@@ -43,12 +40,9 @@
                 },
                 {
                     "argChild": 2,
-                    "argPf": {
-                        "indexes": [
-                            "0",
-                            "1"
-                        ],
-                        "type": "MultiFieldHash"
+                    "distributeFunction": {
+                        "indexes": [0,1],
+                        "type": "Hash"
                     },
                     "opId": 7,
                     "opType": "ShuffleProducer"

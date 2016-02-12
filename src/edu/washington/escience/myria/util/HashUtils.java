@@ -65,9 +65,7 @@ public final class HashUtils {
    * @return the hash code of the specified value
    */
   public static int hashValue(final ReadableTable table, final int column, final int row) {
-    Hasher hasher = HASH_FUNCTIONS[0].newHasher();
-    addValue(hasher, table, column, row);
-    return hasher.hash().asInt();
+    return hashValue(table, column, row, 0);
   }
 
   /**
@@ -76,7 +74,7 @@ public final class HashUtils {
    * @param table the table containing the values to be hashed
    * @param column the column containing the value to be hashed
    * @param row the row containing the value to be hashed
-   * @param seedIndex the index of the chosen hashcode
+   * @param seedIndex the index of the chosen hash function
    * @return hash code of the specified seed
    */
   public static int hashValue(
@@ -96,9 +94,23 @@ public final class HashUtils {
    * @return the hash code of the specified columns in the specified row of the given table
    */
   public static int hashSubRow(final ReadableTable table, final int[] hashColumns, final int row) {
+    return hashSubRow(table, hashColumns, row, 0);
+  }
+
+  /**
+   * Compute the hash code of the specified columns in the specified row of the given table.
+   *
+   * @param table the table containing the values to be hashed
+   * @param hashColumns the columns to be hashed. Order matters
+   * @param row the row containing the values to be hashed
+   * @param seedIndex the index of the chosen hash function
+   * @return the hash code of the specified columns in the specified row of the given table
+   */
+  public static int hashSubRow(
+      final ReadableTable table, final int[] hashColumns, final int row, final int seedIndex) {
     Objects.requireNonNull(table, "table");
     Objects.requireNonNull(hashColumns, "hashColumns");
-    Hasher hasher = HASH_FUNCTIONS[0].newHasher();
+    Hasher hasher = HASH_FUNCTIONS[seedIndex].newHasher();
     for (int column : hashColumns) {
       addValue(hasher, table, column, row);
     }

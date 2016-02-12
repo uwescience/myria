@@ -151,10 +151,10 @@ def scan_R_then_partition():
         "opId" : "Shuffle(R)",
         "argChild" : "Scan(R)",
         "argOperatorId" : "hash(followee)",
-        "argPf" : 
+        "distributeFunction" : 
             {
-                "type" : "SingleFieldHash",
-                "index" : 1
+                "type" : "Hash",
+                "indexes" : [1]
             }        
     }  
     fragment = {
@@ -175,10 +175,10 @@ def scan_S_then_partition():
         "opId" : "Shuffle(S)",
         "argChild" : "Scan(S)",
         "argOperatorId" : "hash(follower)",
-        "argPf" : 
+        "distributeFunction" : 
             {
-                "type" : "SingleFieldHash",
-                "index" : 0
+                "type" : "Hash",
+                "indexes" : [0]
             }        
     }
     fragment = {

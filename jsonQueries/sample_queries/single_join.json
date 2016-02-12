@@ -13,9 +13,9 @@
                 },
                 {
                     "argChild": 6,
-                    "argPf": {
-                        "index": 0,
-                        "type": "SingleFieldHash"
+                    "distributeFunction": {
+                        "indexes": [0],
+                        "type": "Hash"
                     },
                     "opId": 0,
                     "opType": "ShuffleProducer"
@@ -35,9 +35,9 @@
                 },
                 {
                     "argChild": 1,
-                    "argPf": {
-                        "index": 1,
-                        "type": "SingleFieldHash"
+                    "distributeFunction": {
+                        "indexes": [1],
+                        "type": "Hash"
                     },
                     "opId": 7,
                     "opType": "ShuffleProducer"

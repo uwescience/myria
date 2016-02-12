@@ -18,7 +18,7 @@ def main(infile, outfile):
         outputType = read_int(infile)
         isFlatmap = read_int(infile)
 
-        if tuplesize < 1:
+        if tupleSize < 1:
             raise ValueError("size of tuple should not be less than 1 ")
 
         while True:
