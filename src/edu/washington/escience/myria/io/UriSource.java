@@ -6,7 +6,7 @@ import java.io.InputStream;
 import java.io.SequenceInputStream;
 import java.io.Serializable;
 import java.net.URI;
-import java.net.URL;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -44,19 +44,26 @@ public class UriSource implements DataSource, Serializable {
    * {@link InputStream}.
    *
    * @param uri the Uniform Resource Indicator (URI) of the data source.
+   * @throws URISyntaxException
    */
   @JsonCreator
-  public UriSource(@JsonProperty(value = "uri", required = true) final String uri) {
-    this.uri = Objects.requireNonNull(uri, "Parameter uri to UriSource may not be null");
+  public UriSource(@JsonProperty(value = "uri", required = true) final String uri) throws URISyntaxException {
+    URI parsedUri = URI.create(Objects.requireNonNull(uri, "Parameter uri to UriSource may not be null"));
+    /* Force using the Hadoop S3A FileSystem */
+    if (parsedUri.getScheme().equals("s3")) {
+      parsedUri =
+          new URI("s3a", parsedUri.getUserInfo(), parsedUri.getHost(), parsedUri.getPort(), parsedUri.getPath(),
+              parsedUri.getQuery(), parsedUri.getFragment());
+    }
+    this.uri = parsedUri.toString();
   }
 
   @Override
   public InputStream getInputStream() throws IOException {
     URI parsedUri = URI.create(uri);
 
-    return (parsedUri.getScheme().equals("http") || parsedUri.getScheme().equals("https"))
-      ? parsedUri.toURL().openConnection().getInputStream()
-      : getHadoopFileSystemInputStream(parsedUri);
+    return (parsedUri.getScheme().equals("http") || parsedUri.getScheme().equals("https")) ? parsedUri.toURL()
+        .openConnection().getInputStream() : getHadoopFileSystemInputStream(parsedUri);
   }
 
   /**
