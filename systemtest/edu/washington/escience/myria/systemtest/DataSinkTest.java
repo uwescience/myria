@@ -21,11 +21,12 @@ import edu.washington.escience.myria.io.UriSink;
 import edu.washington.escience.myria.io.UriSource;
 import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbQueryScan;
-import edu.washington.escience.myria.operator.EOSSource;
 import edu.washington.escience.myria.operator.FileScan;
 import edu.washington.escience.myria.operator.RootOperator;
-import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.network.CollectConsumer;
+import edu.washington.escience.myria.operator.network.CollectProducer;
 import edu.washington.escience.myria.operator.network.partition.RoundRobinPartitionFunction;
+import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.util.JsonAPIUtils;
 import edu.washington.escience.myria.util.TestEnvVars;
@@ -43,37 +44,37 @@ public class DataSinkTest extends SystemTestBase {
     JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingest(relationKey, relationSchema, relationSource, ' ',
         new RoundRobinPartitionFunction(workerIDs.length)));
 
+    /* File to upload and download */
+    String fileName = String.format("s3://myria-test/test.txt");
+
     /* Construct the query and upload data */
+    ExchangePairID serverReceiveID = ExchangePairID.newID();
     DbQueryScan dbScan = new DbQueryScan(relationKey, relationSchema);
-    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
+    CollectProducer dbCollect = new CollectProducer(dbScan, serverReceiveID, MASTER_ID);
+    HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     for (int workerID : workerIDs) {
-      String partitionName = String.format("s3://myria-test/test-%d.txt", workerID);
-      DataSink dataSink = new UriSink(partitionName);
-      DataOutput dataOutput = new DataOutput(dbScan, new CsvTupleWriter(), dataSink);
-      workerPlans.put(workerID, new RootOperator[] { dataOutput });
+      workerPlans.put(workerID, new RootOperator[] { dbCollect });
     }
-    SinkRoot serverPlan = new SinkRoot(new EOSSource());
-    server.submitQueryPlan(serverPlan, workerPlans).get();
+    CollectConsumer serverCollect = new CollectConsumer(relationSchema, serverReceiveID, workerIDs);
+    DataSink dataSink = new UriSink(fileName);
+    DataOutput masterRoot = new DataOutput(serverCollect, new CsvTupleWriter(), dataSink);
+    server.submitQueryPlan(masterRoot, workerPlans).get();
 
     /* Read the data back in from S3 for each chunk and verify */
     int totalTupleCount = 0;
-    for (int workerID : workerIDs) {
-      String partitionName = String.format("s3://myria-test/test-%d.txt", workerID);
-      DataSource relationSourceS3 = new UriSource(partitionName);
-      FileScan scan = new FileScan(relationSource, relationSchema, ' ');
+    DataSource relationSourceS3 = new UriSource(fileName);
+    FileScan scan = new FileScan(relationSource, relationSchema, ' ');
 
-      scan.open(TestEnvVars.get());
-      while (!scan.eos()) {
-        TupleBatch tb = scan.nextReady();
-        if (tb != null) {
-          totalTupleCount += tb.numTuples();
-        }
+    scan.open(TestEnvVars.get());
+    while (!scan.eos()) {
+      TupleBatch tb = scan.nextReady();
+      if (tb != null) {
+        totalTupleCount += tb.numTuples();
       }
-      scan.close();
     }
+    scan.close();
 
     int expectedTupleCount = 7;
     assertEquals(totalTupleCount, expectedTupleCount);
-
   }
 }
