@@ -119,7 +119,9 @@ dependencies {
      * Classloader picking the wrong version of Jersey classes. */
     exclude group: "com.sun.jersey"
   }
-  compile "org.apache.hadoop:hadoop-aws:${hadoopVersion}"
+  /* compile "org.apache.hadoop:hadoop-aws:${hadoopVersion}" */
+  /* workaround to include our patch for HADOOP-12807 */
+  runtime files('lib/hadoop-aws-${hadoopVersion}.jar')
 
   compile "xerces:xercesImpl:2.11.0"
   compile "xalan:xalan:2.7.2"
