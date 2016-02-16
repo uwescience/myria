@@ -128,8 +128,12 @@ dependencies {
   runtime 'com.amazonaws:aws-java-sdk:1.7.4'
   runtime 'com.jamesmurty.utils:java-xmlbuilder:0.4'
   runtime 'com.sun.xml.bind:jaxb-impl:2.2.3-1'
-  runtime 'com.sun.jersey:jersey-core:1.9'
-  runtime 'com.sun.jersey:jersey-json:1.9'
+  /* CONFLICT */
+  /* runtime 'com.sun.jersey:jersey-core:1.9' */
+  runtime "com.sun.jersey:jersey-core:${jerseyVersion}"
+  /* CONFLICT */
+  /* runtime 'com.sun.jersey:jersey-json:1.9' */
+  runtime "com.sun.jersey:jersey-json:${jerseyVersion}"
   /* CONFLICT */
   /* runtime 'com.sun.jersey:jersey-server:1.9' */
   runtime 'net.java.dev.jets3t:jets3t:0.9.0'
