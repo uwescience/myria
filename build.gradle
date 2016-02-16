@@ -327,6 +327,7 @@ jar {
 
 /* Apache license files will cause weird issues on case-insensitive filesystems like Mac HFS */
 shadowJar {
+  zip64 true
   exclude "LICENSE", "META-INF/*.RSA", "META-INF/*.SF","META-INF/*.DSA", "META-INF/license"
   transform(ApacheLicenseResourceTransformer)
 }
