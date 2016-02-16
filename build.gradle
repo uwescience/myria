@@ -115,10 +115,8 @@ dependencies {
   runtime 'com.sun.xml.bind:jaxb-impl:2.2.3-1'
   /* CONFLICT */
   /* runtime 'com.sun.jersey:jersey-core:1.9' */
-  runtime "com.sun.jersey:jersey-core:${jerseyVersion}"
   /* CONFLICT */
   /* runtime 'com.sun.jersey:jersey-json:1.9' */
-  runtime "com.sun.jersey:jersey-json:${jerseyVersion}"
   /* CONFLICT */
   /* runtime 'com.sun.jersey:jersey-server:1.9' */
   runtime 'net.java.dev.jets3t:jets3t:0.9.0'
