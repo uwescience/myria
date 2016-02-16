@@ -45,32 +45,35 @@ public class DataSinkTest extends SystemTestBase {
 
     /* Construct the query and upload data */
     DbQueryScan dbScan = new DbQueryScan(relationKey, relationSchema);
-    DataSink dataSink = new UriSink("s3://myria-test/test.txt");
-    DataOutput dataOutput = new DataOutput(dbScan, new CsvTupleWriter(), dataSink);
-
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     for (int workerID : workerIDs) {
+      String partitionName = String.format("s3://myria-test/test-%d.txt", workerID);
+      DataSink dataSink = new UriSink(partitionName);
+      DataOutput dataOutput = new DataOutput(dbScan, new CsvTupleWriter(), dataSink);
       workerPlans.put(workerID, new RootOperator[] { dataOutput });
     }
     SinkRoot serverPlan = new SinkRoot(new EOSSource());
     server.submitQueryPlan(serverPlan, workerPlans).get();
 
-    /* Read the data back in from S3 and verify */
-    DataSource relationSourceS3 = new UriSource("s3://myria-test/test.txt");
-    FileScan scan = new FileScan(relationSource, relationSchema, ' ');
-    int actualTupleCount = 0;
+    /* Read the data back in from S3 for each chunk and verify */
+    int totalTupleCount = 0;
+    for (int workerID : workerIDs) {
+      String partitionName = String.format("s3://myria-test/test-%d.txt", workerID);
+      DataSource relationSourceS3 = new UriSource(partitionName);
+      FileScan scan = new FileScan(relationSource, relationSchema, ' ');
 
-    scan.open(TestEnvVars.get());
-    while (!scan.eos()) {
-      TupleBatch tb = scan.nextReady();
-      if (tb != null) {
-        actualTupleCount += tb.numTuples();
+      scan.open(TestEnvVars.get());
+      while (!scan.eos()) {
+        TupleBatch tb = scan.nextReady();
+        if (tb != null) {
+          totalTupleCount += tb.numTuples();
+        }
       }
+      scan.close();
     }
-    scan.close();
 
     int expectedTupleCount = 7;
-    assertEquals(actualTupleCount, expectedTupleCount);
+    assertEquals(totalTupleCount, expectedTupleCount);
 
   }
 }
