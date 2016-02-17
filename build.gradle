@@ -83,6 +83,8 @@ tasks.eclipseClasspath.dependsOn cleanEclipseClasspath
 
 /* Where we will fetch external JAR files from. */
 repositories {
+  /* We need to override the official Apache repo for our custom Hadoop jars */
+  maven { url "https://raw.github.com/uwescience/hadoop/mvn-repo" }
   mavenCentral() /* The standard Java Maven repository. */
   maven { url "http://clojars.org/repo" } /* Clojars, for MonetDB */
   flatDir {
@@ -119,27 +121,8 @@ dependencies {
      * Classloader picking the wrong version of Jersey classes. */
     exclude group: "com.sun.jersey"
   }
-  /* UNCOMMENT WHEN HADOOP-12807 WORKAROUND IS REMOVED */
-  /* compile "org.apache.hadoop:hadoop-aws:${hadoopVersion}" */
-  /* REMOVE BELOW ENTRIES WHEN HADOOP-12807 WORKAROUND IS REMOVED */
-  /* workaround to include our patched jar for HADOOP-12807 */
-  runtime files("lib/hadoop-aws-${hadoopVersion}.jar")
-  /* runtime deps needed by hadoop-aws jar that are normally pulled in through maven */
-  runtime 'com.amazonaws:aws-java-sdk:1.7.4'
-  runtime 'com.jamesmurty.utils:java-xmlbuilder:0.4'
-  runtime 'com.sun.xml.bind:jaxb-impl:2.2.3-1'
-  /* CONFLICT */
-  /* runtime 'com.sun.jersey:jersey-core:1.9' */
-  /* CONFLICT */
-  /* runtime 'com.sun.jersey:jersey-json:1.9' */
-  /* CONFLICT */
-  /* runtime 'com.sun.jersey:jersey-server:1.9' */
-  runtime 'net.java.dev.jets3t:jets3t:0.9.0'
-  runtime 'org.mortbay.jetty:jetty:6.1.26'
-  /* CONFLICT */
-  /* runtime 'joda-time:joda-time:2.9.2' */
-  runtime 'com.jcraft:jsch:0.1.42'
-  /* END REMOVE */
+  /* Note this jar is fetched from our private Maven repo (patched for HADOOP-12807) */
+  compile "org.apache.hadoop:hadoop-aws:${hadoopVersion}"
 
   compile "xerces:xercesImpl:2.11.0"
   compile "xalan:xalan:2.7.2"
