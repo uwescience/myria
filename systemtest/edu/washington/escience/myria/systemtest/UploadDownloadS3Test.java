@@ -20,6 +20,7 @@ import edu.washington.escience.myria.io.FileSource;
 import edu.washington.escience.myria.io.UriSink;
 import edu.washington.escience.myria.io.UriSource;
 import edu.washington.escience.myria.operator.DataOutput;
+import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.FileScan;
 import edu.washington.escience.myria.operator.RootOperator;
@@ -27,18 +28,18 @@ import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
 import edu.washington.escience.myria.operator.network.partition.RoundRobinPartitionFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
-import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.util.JsonAPIUtils;
-import edu.washington.escience.myria.util.TestEnvVars;
 
 /**
  */
-public class DataSinkTest extends SystemTestBase {
+public class UploadDownloadS3Test extends SystemTestBase {
 
   @Test
   public void s3UploadTest() throws Exception {
+
     /* Ingest test data */
-    DataSource relationSource = new FileSource(Paths.get("testdata", "filescan", "simple_two_col_int.txt").toString());
+    String filePath = Paths.get("testdata", "filescan", "simple_two_col_int.txt").toString();
+    DataSource relationSource = new FileSource(filePath);
     RelationKey relationKey = RelationKey.of("public", "adhoc", "testIngest");
     Schema relationSchema = Schema.ofFields("x", Type.INT_TYPE, "y", Type.INT_TYPE);
     JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingest(relationKey, relationSchema, relationSource, ' ',
@@ -49,7 +50,7 @@ public class DataSinkTest extends SystemTestBase {
 
     /* Construct the query and upload data */
     ExchangePairID serverReceiveID = ExchangePairID.newID();
-    DbQueryScan dbScan = new DbQueryScan(relationKey, relationSchema);
+    DbQueryScan dbScan = new DbQueryScan(relationKey, relationSchema, new int[] { 0, 1 }, new boolean[] { true, true });
     CollectProducer dbCollect = new CollectProducer(dbScan, serverReceiveID, MASTER_ID);
     HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     for (int workerID : workerIDs) {
@@ -60,21 +61,19 @@ public class DataSinkTest extends SystemTestBase {
     DataOutput masterRoot = new DataOutput(serverCollect, new CsvTupleWriter(), dataSink);
     server.submitQueryPlan(masterRoot, workerPlans).get();
 
-    /* Read the data back in from S3 for each chunk and verify */
-    int totalTupleCount = 0;
+    /* Read the data back in from S3 and override the table */
     DataSource relationSourceS3 = new UriSource(fileName);
-    FileScan scan = new FileScan(relationSource, relationSchema, ' ');
+    FileScan fileScan = new FileScan(relationSourceS3, relationSchema, ' ');
+    DbInsert dbInsert = new DbInsert(fileScan, relationKey, true);
 
-    scan.open(TestEnvVars.get());
-    while (!scan.eos()) {
-      TupleBatch tb = scan.nextReady();
-      if (tb != null) {
-        totalTupleCount += tb.numTuples();
-      }
-    }
-    scan.close();
+    String dstData =
+        JsonAPIUtils.download("localhost", masterDaemonPort, relationKey.getUserName(), relationKey.getProgramName(),
+            relationKey.getRelationName(), "json");
 
-    int expectedTupleCount = 7;
-    assertEquals(totalTupleCount, expectedTupleCount);
+    String srcData =
+        "[{\"x\":3,\"y\":4},{\"x\":7,\"y\":8},{\"x\":11,\"y\":12},{\"x\":1,\"y\":2},{\"x\":5,\"y\":6},{\"x\":9,\"y\":10},{\"x\":1,\"y\":2}]";
+
+    assertEquals(srcData, dstData);
+
   }
 }

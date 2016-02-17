@@ -14,8 +14,14 @@ public class ByteSink implements DataSink {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
+  ByteArrayOutputStream writerOutput;
+
+  public ByteSink() {
+    writerOutput = new ByteArrayOutputStream();
+  }
+
   @Override
   public OutputStream getOutputStream() throws IOException {
-    return new ByteArrayOutputStream();
+    return writerOutput;
   }
 }
