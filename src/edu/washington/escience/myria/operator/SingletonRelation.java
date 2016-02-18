@@ -9,7 +9,7 @@ import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 /**
  * A relation of exactly one row. In principle, it should have no columns, but we require there to be at least one.
- * 
+ *
  */
 public final class SingletonRelation extends LeafOperator {
   /** Required for Java serialization. */

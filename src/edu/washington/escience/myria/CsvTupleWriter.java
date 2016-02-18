@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
 
+import edu.washington.escience.myria.storage.TupleBatch;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 
@@ -72,6 +73,12 @@ public class CsvTupleWriter implements TupleWriter {
               .addEdge(Graph.Vertex.Edge.newBuilder()
                                    .setDestinationId((int)tuples.getLong(6, row))
                                    .setValue(tuples.getDouble(7, row))));
+
+      if(row % TupleBatch.BATCH_SIZE == 0 && row > 0) {
+        outputStream.write(builder.build().toByteArray());
+        builder = Graph.Vertices.newBuilder();
+        throw new RuntimeException("foo" + tuples.numTuples());
+      }
     }
 
     outputStream.write(builder.build().toByteArray());

@@ -2,7 +2,9 @@
 [deployment]
 path = /tmp/myria
 name = twoNodeLocalParallel
-dbms = sqlite
+dbms = postgresql
+database_name = myria
+database_password = foobar
 rest_port = 8753
 # Uncomment if need to set a specific username; does not work for localhost
 #username = dhalperi
@@ -13,7 +15,6 @@ rest_port = 8753
 
 [workers]
 1 = localhost:9001
-2 = localhost:9002
 
 [runtime]
 # Uncomment to set the minimum heap size of the worker processes
