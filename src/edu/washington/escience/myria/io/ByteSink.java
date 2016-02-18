@@ -7,14 +7,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
-/**
- * 
- */
 public class ByteSink implements DataSink {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  ByteArrayOutputStream writerOutput;
+  final ByteArrayOutputStream writerOutput;
 
   public ByteSink() {
     writerOutput = new ByteArrayOutputStream();

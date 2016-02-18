@@ -20,9 +20,8 @@ import edu.washington.escience.myria.io.FileSource;
 import edu.washington.escience.myria.io.UriSink;
 import edu.washington.escience.myria.io.UriSource;
 import edu.washington.escience.myria.operator.DataOutput;
-import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
-import edu.washington.escience.myria.operator.FileScan;
+import edu.washington.escience.myria.operator.InMemoryOrderBy;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
@@ -50,30 +49,31 @@ public class UploadDownloadS3Test extends SystemTestBase {
 
     /* Construct the query and upload data */
     ExchangePairID serverReceiveID = ExchangePairID.newID();
-    DbQueryScan dbScan = new DbQueryScan(relationKey, relationSchema, new int[] { 0, 1 }, new boolean[] { true, true });
-    CollectProducer dbCollect = new CollectProducer(dbScan, serverReceiveID, MASTER_ID);
+    DbQueryScan workerScan = new DbQueryScan(relationKey, relationSchema);
+    CollectProducer workerProduce = new CollectProducer(workerScan, serverReceiveID, MASTER_ID);
+
     HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     for (int workerID : workerIDs) {
-      workerPlans.put(workerID, new RootOperator[] { dbCollect });
+      workerPlans.put(workerID, new RootOperator[] { workerProduce });
     }
+
     CollectConsumer serverCollect = new CollectConsumer(relationSchema, serverReceiveID, workerIDs);
+    InMemoryOrderBy sortOperator = new InMemoryOrderBy(serverCollect, new int[] { 0 }, new boolean[] { true });
     DataSink dataSink = new UriSink(fileName);
-    DataOutput masterRoot = new DataOutput(serverCollect, new CsvTupleWriter(), dataSink);
+    DataOutput masterRoot = new DataOutput(sortOperator, new CsvTupleWriter(), dataSink);
     server.submitQueryPlan(masterRoot, workerPlans).get();
 
-    /* Read the data back in from S3 and override the table */
+    /* Read the data back in from S3 into one worker */
     DataSource relationSourceS3 = new UriSource(fileName);
-    FileScan fileScan = new FileScan(relationSourceS3, relationSchema, ' ');
-    DbInsert dbInsert = new DbInsert(fileScan, relationKey, true);
-
+    JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingest(relationKey, relationSchema, relationSourceS3, ' ',
+        new RoundRobinPartitionFunction(1)));
     String dstData =
         JsonAPIUtils.download("localhost", masterDaemonPort, relationKey.getUserName(), relationKey.getProgramName(),
             relationKey.getRelationName(), "json");
 
     String srcData =
-        "[{\"x\":3,\"y\":4},{\"x\":7,\"y\":8},{\"x\":11,\"y\":12},{\"x\":1,\"y\":2},{\"x\":5,\"y\":6},{\"x\":9,\"y\":10},{\"x\":1,\"y\":2}]";
+        "[{\"x\":1,\"y\":2},{\"x\":1,\"y\":2},{\"x\":3,\"y\":4},{\"x\":5,\"y\":6},{\"x\":7,\"y\":8},{\"x\":9,\"y\":10},{\"x\":11,\"y\":12}]";
 
     assertEquals(srcData, dstData);
-
   }
 }
