@@ -21,10 +21,11 @@ import edu.washington.escience.myria.io.UriSink;
 import edu.washington.escience.myria.io.UriSource;
 import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbQueryScan;
+import edu.washington.escience.myria.operator.InMemoryOrderBy;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
-import edu.washington.escience.myria.operator.network.partition.RoundRobinPartitionFunction;
+import edu.washington.escience.myria.operator.network.partition.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.util.JsonAPIUtils;
 
@@ -36,39 +37,43 @@ public class UploadDownloadS3Test extends SystemTestBase {
   public void s3UploadTest() throws Exception {
 
     /* Ingest test data */
-    String filePath = Paths.get("testdata", "filescan", "simple_two_col_int.txt").toString();
+    String filePath = Paths.get("testdata", "filescan", "simple_two_col_int_to_hash.txt").toString();
     DataSource relationSource = new FileSource(filePath);
-    RelationKey relationKey = RelationKey.of("public", "adhoc", "testIngest");
+    RelationKey relationKeyUpload = RelationKey.of("public", "adhoc", "upload");
     Schema relationSchema = Schema.ofFields("x", Type.INT_TYPE, "y", Type.INT_TYPE);
-    JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingest(relationKey, relationSchema, relationSource, ' ',
-        new RoundRobinPartitionFunction(1)));
+    JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingest(relationKeyUpload, relationSchema, relationSource,
+        ' ', new SingleFieldHashPartitionFunction(1, 0, 0)));
 
     /* File to upload and download */
     String fileName = String.format("s3://myria-test/test.txt");
 
     /* Construct the query and upload data */
     ExchangePairID serverReceiveID = ExchangePairID.newID();
-    DbQueryScan workerScan = new DbQueryScan(relationKey, relationSchema, new int[] { 0 }, new boolean[] { true });
+    DbQueryScan workerScan = new DbQueryScan(relationKeyUpload, relationSchema);
     CollectProducer workerProduce = new CollectProducer(workerScan, serverReceiveID, MASTER_ID);
 
     HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    workerPlans.put(0, new RootOperator[] { workerProduce });
-
+    for (int workerID : workerIDs) {
+      workerPlans.put(workerID, new RootOperator[] { workerProduce });
+    }
     CollectConsumer serverCollect = new CollectConsumer(relationSchema, serverReceiveID, workerIDs);
+    InMemoryOrderBy sortOperator = new InMemoryOrderBy(serverCollect, new int[] { 1 }, new boolean[] { true });
     DataSink dataSink = new UriSink(fileName);
-    DataOutput masterRoot = new DataOutput(serverCollect, new CsvTupleWriter(), dataSink);
+    DataOutput masterRoot = new DataOutput(sortOperator, new CsvTupleWriter(), dataSink);
     server.submitQueryPlan(masterRoot, workerPlans).get();
 
     /* Read the data back in from S3 into one worker */
+    RelationKey relationKeyDownload = RelationKey.of("public", "adhoc", "download");
     DataSource relationSourceS3 = new UriSource(fileName);
-    JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingest(relationKey, relationSchema, relationSourceS3, ' ',
-        new RoundRobinPartitionFunction(1)));
+    JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingest(relationKeyDownload, relationSchema,
+        relationSourceS3, ' ', new SingleFieldHashPartitionFunction(1, 0, 0)));
+
     String dstData =
-        JsonAPIUtils.download("localhost", masterDaemonPort, relationKey.getUserName(), relationKey.getProgramName(),
-            relationKey.getRelationName(), "json");
+        JsonAPIUtils.download("localhost", masterDaemonPort, relationKeyDownload.getUserName(), relationKeyDownload
+            .getProgramName(), relationKeyDownload.getRelationName(), "json");
 
     String srcData =
-        "[{\"x\":1,\"y\":2},{\"x\":1,\"y\":2},{\"x\":3,\"y\":4},{\"x\":5,\"y\":6},{\"x\":7,\"y\":8},{\"x\":9,\"y\":10},{\"x\":11,\"y\":12}]";
+        "[{\"x\":1,\"y\":2},{\"x\":1,\"y\":2},{\"x\":1,\"y\":4},{\"x\":1,\"y\":4},{\"x\":1,\"y\":6},{\"x\":1,\"y\":6}]";
 
     assertEquals(srcData, dstData);
   }
