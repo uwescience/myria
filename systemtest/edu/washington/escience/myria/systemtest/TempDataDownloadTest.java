@@ -22,10 +22,11 @@ public class TempDataDownloadTest extends SystemTestBase {
   public void test() throws Exception {
     /* Read the data back in from S3 into one worker */
     RelationKey relationKeyDownload = RelationKey.of("public", "adhoc", "download");
-    DataSource relationSourceS3 = new UriSource("s3://myria-test/test.txt");
+    DataSource relationSourceS3 = new UriSource("s3://myria-test/test_noheader.txt");
     Schema relationSchema = Schema.ofFields("x", Type.INT_TYPE, "y", Type.INT_TYPE);
+
     JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingest(relationKeyDownload, relationSchema,
-        relationSourceS3, ' ', new RoundRobinPartitionFunction(2)));
+        relationSourceS3, ',', new RoundRobinPartitionFunction(workerIDs.length)));
 
     String dstData =
         JsonAPIUtils.download("localhost", masterDaemonPort, relationKeyDownload.getUserName(), relationKeyDownload

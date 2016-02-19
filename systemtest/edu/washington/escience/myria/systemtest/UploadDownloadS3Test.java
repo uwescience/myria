@@ -5,6 +5,7 @@ package edu.washington.escience.myria.systemtest;
 
 import static org.junit.Assert.assertEquals;
 
+import java.io.File;
 import java.nio.file.Paths;
 import java.util.HashMap;
 
@@ -20,11 +21,16 @@ import edu.washington.escience.myria.io.FileSource;
 import edu.washington.escience.myria.io.UriSink;
 import edu.washington.escience.myria.io.UriSource;
 import edu.washington.escience.myria.operator.DataOutput;
+import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
+import edu.washington.escience.myria.operator.FileScan;
 import edu.washington.escience.myria.operator.InMemoryOrderBy;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
+import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
+import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
+import edu.washington.escience.myria.operator.network.partition.RoundRobinPartitionFunction;
 import edu.washington.escience.myria.operator.network.partition.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.util.JsonAPIUtils;
@@ -37,12 +43,14 @@ public class UploadDownloadS3Test extends SystemTestBase {
   public void s3UploadTest() throws Exception {
 
     /* Ingest test data */
-    String filePath = Paths.get("testdata", "filescan", "simple_two_col_int_to_hash.txt").toString();
+    File currentDir = new File(".");
+    String filePath = Paths.get(currentDir.getAbsolutePath(), "filescan", "simple_two_col_int_to_hash.txt").toString();
     DataSource relationSource = new FileSource(filePath);
     RelationKey relationKeyUpload = RelationKey.of("public", "adhoc", "upload");
     Schema relationSchema = Schema.ofFields("x", Type.INT_TYPE, "y", Type.INT_TYPE);
+
     JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingest(relationKeyUpload, relationSchema, relationSource,
-        ' ', new SingleFieldHashPartitionFunction(1, 0, 0)));
+        ' ', new RoundRobinPartitionFunction(workerIDs.length)));
 
     /* File to upload and download */
     String fileName = String.format("s3://myria-test/test.txt");
@@ -59,14 +67,25 @@ public class UploadDownloadS3Test extends SystemTestBase {
     CollectConsumer serverCollect = new CollectConsumer(relationSchema, serverReceiveID, workerIDs);
     InMemoryOrderBy sortOperator = new InMemoryOrderBy(serverCollect, new int[] { 1 }, new boolean[] { true });
     DataSink dataSink = new UriSink(fileName);
-    DataOutput masterRoot = new DataOutput(sortOperator, new CsvTupleWriter(), dataSink);
+    DataOutput masterRoot = new DataOutput(sortOperator, new CsvTupleWriter('\t'), dataSink);
     server.submitQueryPlan(masterRoot, workerPlans).get();
 
     /* Read the data back in from S3 into one worker */
     RelationKey relationKeyDownload = RelationKey.of("public", "adhoc", "download");
     DataSource relationSourceS3 = new UriSource(fileName);
-    JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingest(relationKeyDownload, relationSchema,
-        relationSourceS3, ' ', new SingleFieldHashPartitionFunction(1, 0, 0)));
+
+    ExchangePairID workerReceiveID = ExchangePairID.newID();
+    FileScan serverFileScan = new FileScan(relationSourceS3, relationSchema, ' ', null, null, 1);
+    GenericShuffleProducer serverProduce =
+        new GenericShuffleProducer(serverFileScan, workerReceiveID, workerIDs, new SingleFieldHashPartitionFunction(1,
+            0, 0));
+    GenericShuffleConsumer workerConsumer = new GenericShuffleConsumer(relationSchema, workerReceiveID, workerIDs);
+    DbInsert workerInsert = new DbInsert(workerConsumer, relationKeyUpload, true);
+    HashMap<Integer, RootOperator[]> workerPlansInsert = new HashMap<Integer, RootOperator[]>();
+    for (int workerID : workerIDs) {
+      workerPlansInsert.put(workerID, new RootOperator[] { workerInsert });
+    }
+    server.submitQueryPlan(serverProduce, workerPlansInsert).get();
 
     String dstData =
         JsonAPIUtils.download("localhost", masterDaemonPort, relationKeyDownload.getUserName(), relationKeyDownload
