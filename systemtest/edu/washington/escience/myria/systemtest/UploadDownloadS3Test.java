@@ -69,8 +69,8 @@ public class UploadDownloadS3Test extends SystemTestBase {
         relationSourceS3, ' ', new SingleFieldHashPartitionFunction(1, 0, 0)));
 
     String dstData =
-        JsonAPIUtils.download("localhost", masterDaemonPort, relationKeyUpload.getUserName(), relationKeyUpload
-            .getProgramName(), relationKeyUpload.getRelationName(), "json");
+        JsonAPIUtils.download("localhost", masterDaemonPort, relationKeyDownload.getUserName(), relationKeyDownload
+            .getProgramName(), relationKeyDownload.getRelationName(), "json");
 
     String srcData =
         "[{\"x\":1,\"y\":2},{\"x\":1,\"y\":2},{\"x\":1,\"y\":4},{\"x\":1,\"y\":4},{\"x\":1,\"y\":6},{\"x\":1,\"y\":6}]";
