@@ -5,7 +5,6 @@ package edu.washington.escience.myria.systemtest;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.File;
 import java.nio.file.Paths;
 import java.util.HashMap;
 
@@ -43,8 +42,7 @@ public class UploadDownloadS3Test extends SystemTestBase {
   public void s3UploadTest() throws Exception {
 
     /* Ingest test data */
-    File currentDir = new File(".");
-    String filePath = Paths.get(currentDir.getAbsolutePath(), "filescan", "simple_two_col_int_to_hash.txt").toString();
+    String filePath = Paths.get("testdata", "filescan", "simple_two_col_int_to_hash.txt").toString();
     DataSource relationSource = new FileSource(filePath);
     RelationKey relationKeyUpload = RelationKey.of("public", "adhoc", "upload");
     Schema relationSchema = Schema.ofFields("x", Type.INT_TYPE, "y", Type.INT_TYPE);
