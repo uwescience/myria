@@ -67,7 +67,7 @@ public class UploadDownloadS3Test extends SystemTestBase {
     CollectConsumer serverCollect = new CollectConsumer(relationSchema, serverReceiveID, workerIDs);
     InMemoryOrderBy sortOperator = new InMemoryOrderBy(serverCollect, new int[] { 1 }, new boolean[] { true });
     DataSink dataSink = new UriSink(fileName);
-    DataOutput masterRoot = new DataOutput(sortOperator, new CsvTupleWriter('\t'), dataSink);
+    DataOutput masterRoot = new DataOutput(sortOperator, new CsvTupleWriter(), dataSink);
     server.submitQueryPlan(masterRoot, workerPlans).get();
 
     /* Read the data back in from S3 into one worker */
@@ -75,12 +75,12 @@ public class UploadDownloadS3Test extends SystemTestBase {
     DataSource relationSourceS3 = new UriSource(fileName);
 
     ExchangePairID workerReceiveID = ExchangePairID.newID();
-    FileScan serverFileScan = new FileScan(relationSourceS3, relationSchema, ' ', null, null, 1);
+    FileScan serverFileScan = new FileScan(relationSourceS3, relationSchema, ',', null, null, 1);
     GenericShuffleProducer serverProduce =
         new GenericShuffleProducer(serverFileScan, workerReceiveID, workerIDs, new SingleFieldHashPartitionFunction(1,
             0, 0));
     GenericShuffleConsumer workerConsumer = new GenericShuffleConsumer(relationSchema, workerReceiveID, workerIDs);
-    DbInsert workerInsert = new DbInsert(workerConsumer, relationKeyUpload, true);
+    DbInsert workerInsert = new DbInsert(workerConsumer, relationKeyDownload, true);
     HashMap<Integer, RootOperator[]> workerPlansInsert = new HashMap<Integer, RootOperator[]>();
     for (int workerID : workerIDs) {
       workerPlansInsert.put(workerID, new RootOperator[] { workerInsert });
