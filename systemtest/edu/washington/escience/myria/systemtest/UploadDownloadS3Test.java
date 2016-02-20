@@ -68,16 +68,17 @@ public class UploadDownloadS3Test extends SystemTestBase {
     DataOutput masterRoot = new DataOutput(sortOperator, new CsvTupleWriter(), dataSink);
     server.submitQueryPlan(masterRoot, workerPlans).get();
 
-    /* Read the data back in from S3 into one worker */
+    /* Read the data back in from S3 and shuffle to one worker */
     RelationKey relationKeyDownload = RelationKey.of("public", "adhoc", "download");
     DataSource relationSourceS3 = new UriSource(fileName);
 
     ExchangePairID workerReceiveID = ExchangePairID.newID();
     FileScan serverFileScan = new FileScan(relationSourceS3, relationSchema, ',', null, null, 1);
     GenericShuffleProducer serverProduce =
-        new GenericShuffleProducer(serverFileScan, workerReceiveID, workerIDs, new SingleFieldHashPartitionFunction(1,
-            0, 0));
-    GenericShuffleConsumer workerConsumer = new GenericShuffleConsumer(relationSchema, workerReceiveID, workerIDs);
+        new GenericShuffleProducer(serverFileScan, workerReceiveID, workerIDs, new SingleFieldHashPartitionFunction(
+            workerIDs.length, 0));
+    GenericShuffleConsumer workerConsumer =
+        new GenericShuffleConsumer(relationSchema, workerReceiveID, new int[] { MASTER_ID });
     DbInsert workerInsert = new DbInsert(workerConsumer, relationKeyDownload, true);
     HashMap<Integer, RootOperator[]> workerPlansInsert = new HashMap<Integer, RootOperator[]>();
     for (int workerID : workerIDs) {
