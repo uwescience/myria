@@ -104,6 +104,11 @@ dependencies {
     exclude group: "com.sun.jersey"
   }
 
+  compile files('lib/org.apache.arrow.vector/vector-0.1-SNAPSHOT.jar')
+  compile files('lib/org.apache.arrow.memory/arrow-memory-0.1-SNAPSHOT.jar')
+  compile "io.netty:netty-buffer:4.0.27.Final"
+  compile "com.codahale.metrics:metrics-core:3.0.1"
+
   compile "xerces:xercesImpl:2.11.0"
   compile "xalan:xalan:2.7.2"
   compile "com.google.code.findbugs:annotations:3.0.0"
@@ -115,6 +120,7 @@ dependencies {
   compile "com.google.protobuf:protobuf-java:2.6.1"
 
   compile "io.netty:netty:3.9.6.Final"
+  compile "io.netty:netty-buffer:3.9.6.Final"
 
   compile "com.goldmansachs:gs-collections:5.1.0"
   compile "com.goldmansachs:gs-collections-api:5.1.0"
@@ -147,7 +153,7 @@ dependencies {
   runtime "info.ganglia.jmxetric:jmxetric:${jmxetricsVersion}"
 
   compile "org.apache.commons:commons-csv:1.1"
-  
+
   // Expression compiler
   compile "org.codehaus.janino:janino:2.7.7"
 
@@ -215,8 +221,8 @@ eclipse.classpath {
 
   /* Ugly hack to stick the JNI pointer for sqlite into the .classpath file. */
     withXml {
-      provider -> 
-      provider.asNode().findAll { it.@path.contains("sqlite") }.each { 
+      provider ->
+      provider.asNode().findAll { it.@path.contains("sqlite") }.each {
         it.children().each {
           it.appendNode('attribute', [name: 'org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY', value:'myria/lib/sqlite4java-392'])
         }

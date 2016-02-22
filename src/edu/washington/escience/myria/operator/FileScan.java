@@ -165,7 +165,7 @@ public final class FileScan extends LeafOperator {
   }
 
   private int currentBatch = 0;
-  private int totalBatches = 300;
+  private int totalBatches = 15;
   private int maxTuples = TupleBatch.BATCH_SIZE * totalBatches;
   private Random random = new Random();
 
@@ -174,16 +174,16 @@ public final class FileScan extends LeafOperator {
     if(currentBatch++ < totalBatches)
       while (buffer.numTuples() < TupleBatch.BATCH_SIZE) {
           buffer.putLong(  0, lineNumber);
-          buffer.putDouble(1, random.nextDouble());
+          buffer.putDouble(1, 0); //random.nextDouble());
 
-          buffer.putLong(  2, random.nextInt(maxTuples));
-          buffer.putDouble(3, random.nextDouble());
+          buffer.putLong(  2, lineNumber / 2); //random.nextInt(maxTuples));
+          buffer.putDouble(3, 0); //random.nextDouble());
 
-          buffer.putLong(  4, random.nextInt(maxTuples));
-          buffer.putDouble(5, random.nextDouble());
+          buffer.putLong(  4, lineNumber / 4); //random.nextInt(maxTuples));
+          buffer.putDouble(5, 0); //random.nextDouble());
 
-          buffer.putLong(  6, random.nextInt(maxTuples));
-          buffer.putDouble(7, random.nextDouble());
+          buffer.putLong(  6, lineNumber / 8); //random.nextInt(maxTuples));
+          buffer.putDouble(7, 0); //random.nextDouble());
 
           lineNumber++;
       }

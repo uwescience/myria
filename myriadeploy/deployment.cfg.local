@@ -20,7 +20,7 @@ rest_port = 8753
 # Uncomment to set the minimum heap size of the worker processes
 #jvm.heap.size.min.gb = 1
 # Uncomment to set the maximum heap size of the worker processes
-#jvm.heap.size.max.gb = 2
+jvm.heap.size.max.gb = 12
 # Uncomment to set other JVM options, separate them with space
 #jvm.options = -XX:+UseParallelGC
 
