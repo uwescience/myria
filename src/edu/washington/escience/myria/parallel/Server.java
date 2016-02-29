@@ -4,7 +4,6 @@ import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -117,6 +116,7 @@ import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.storage.TupleBuffer;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.DefaultInstancePath;
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.FlowControlWriteBufferHighMarkBytes;
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.FlowControlWriteBufferLowMarkBytes;
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.MasterHost;
@@ -369,6 +369,11 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   private volatile ExecutorService serverQueryExecutor;
 
   /**
+   * Absolute path of the directory containing the master catalog files
+   */
+  private final String catalogPath;
+
+  /**
    * The URI to persist relations
    */
   private final String persistURI;
@@ -430,6 +435,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
    * 
    * @param masterHost hostname of the master
    * @param masterPort RPC port of the master
+   * @param catalogPath absolute path of the directory containing the master catalog files
    * @param databaseSystem name of the storage DB system
    * @param connectTimeoutMillis connect timeout for worker IPC
    * @param sendBufferSize send buffer size in bytes for worker IPC
@@ -443,7 +449,9 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
    */
   @Inject
   public Server(@Parameter(MasterHost.class) final String masterHost,
-      @Parameter(MasterRpcPort.class) final int masterPort, @Parameter(StorageDbms.class) final String databaseSystem,
+      @Parameter(MasterRpcPort.class) final int masterPort,
+      @Parameter(DefaultInstancePath.class) final String catalogPath,
+      @Parameter(StorageDbms.class) final String databaseSystem,
       @Parameter(TcpConnectionTimeoutMillis.class) final int connectTimeoutMillis,
       @Parameter(TcpSendBufferSizeBytes.class) final int sendBufferSize,
       @Parameter(TcpReceiveBufferSizeBytes.class) final int receiveBufferSize,
@@ -464,6 +472,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     this.injector = injector;
 
     masterSocketInfo = new SocketInfo(masterHost, masterPort);
+    this.catalogPath = catalogPath;
 
     execEnvVars = new ConcurrentHashMap<>();
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_NODE_ID, MyriaConstants.MASTER_ID);
@@ -581,14 +590,13 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     final Map<Integer, SocketInfo> computingUnits = new HashMap<>(workers);
     computingUnits.put(MyriaConstants.MASTER_ID, masterSocketInfo);
 
-    String currentDir = Paths.get(".").toAbsolutePath().normalize().toString();
     try {
-      LOGGER.info("Attempting to open master catalog file under {}...", currentDir);
-      catalog = MasterCatalog.open(currentDir);
+      LOGGER.info("Attempting to open master catalog file under {}...", catalogPath);
+      catalog = MasterCatalog.open(catalogPath);
     } catch (FileNotFoundException e) {
-      LOGGER.info("Failed to open master catalog file under {}, attempting to create it...\n({})", currentDir, e
+      LOGGER.info("Failed to open master catalog file under {}, attempting to create it...\n({})", catalogPath, e
           .getMessage());
-      catalog = MasterCatalog.create(currentDir);
+      catalog = MasterCatalog.create(catalogPath);
     }
     queryManager = new QueryManager(catalog, this);
 
