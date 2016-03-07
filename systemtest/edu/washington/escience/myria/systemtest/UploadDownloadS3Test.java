@@ -7,6 +7,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.Map;
 
 import org.junit.Test;
 
@@ -51,19 +52,19 @@ public class UploadDownloadS3Test extends SystemTestBase {
         ' ', new RoundRobinPartitionFunction(workerIDs.length)));
 
     /* File to upload and download */
-    String fileName = String.format("s3://myria-test/test.txt");
+    String fileName = String.format("s3://myria-test/test%d.txt", System.currentTimeMillis());
 
     /* Construct the query and upload data */
     ExchangePairID serverReceiveID = ExchangePairID.newID();
     DbQueryScan workerScan = new DbQueryScan(relationKeyUpload, relationSchema);
-    CollectProducer workerProduce = new CollectProducer(workerScan, serverReceiveID, MASTER_ID);
+    CollectProducer workerProducer = new CollectProducer(workerScan, serverReceiveID, MASTER_ID);
 
-    HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
+    Map<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     for (int workerID : workerIDs) {
-      workerPlans.put(workerID, new RootOperator[] { workerProduce });
+      workerPlans.put(workerID, new RootOperator[] { workerProducer });
     }
-    CollectConsumer serverCollect = new CollectConsumer(relationSchema, serverReceiveID, workerIDs);
-    InMemoryOrderBy sortOperator = new InMemoryOrderBy(serverCollect, new int[] { 1 }, new boolean[] { true });
+    CollectConsumer serverConsumer = new CollectConsumer(relationSchema, serverReceiveID, workerIDs);
+    InMemoryOrderBy sortOperator = new InMemoryOrderBy(serverConsumer, new int[] { 1 }, new boolean[] { true });
     DataSink dataSink = new UriSink(fileName);
     DataOutput masterRoot = new DataOutput(sortOperator, new CsvTupleWriter(), dataSink);
     server.submitQueryPlan(masterRoot, workerPlans).get();
@@ -80,7 +81,7 @@ public class UploadDownloadS3Test extends SystemTestBase {
     GenericShuffleConsumer workerConsumer =
         new GenericShuffleConsumer(relationSchema, workerReceiveID, new int[] { MASTER_ID });
     DbInsert workerInsert = new DbInsert(workerConsumer, relationKeyDownload, true);
-    HashMap<Integer, RootOperator[]> workerPlansInsert = new HashMap<Integer, RootOperator[]>();
+    Map<Integer, RootOperator[]> workerPlansInsert = new HashMap<Integer, RootOperator[]>();
     for (int workerID : workerIDs) {
       workerPlansInsert.put(workerID, new RootOperator[] { workerInsert });
     }
