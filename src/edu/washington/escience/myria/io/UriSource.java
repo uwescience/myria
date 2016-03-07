@@ -33,7 +33,6 @@ public class UriSource implements DataSource, Serializable {
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(UriSource.class);
 
   /** The Uniform Resource Indicator (URI) of the data source. */
-  @JsonProperty
   transient URI parsedUri;
 
   /**

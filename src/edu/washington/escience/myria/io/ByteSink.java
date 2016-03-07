@@ -15,6 +15,9 @@ public class ByteSink implements DataSink {
 
   @Override
   public OutputStream getOutputStream() throws IOException {
-    return new ByteArrayOutputStream();
+    if (writerOutput == null) {
+      writerOutput = new ByteArrayOutputStream();
+    }
+    return writerOutput;
   }
 }

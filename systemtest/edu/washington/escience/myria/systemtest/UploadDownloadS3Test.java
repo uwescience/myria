@@ -52,7 +52,7 @@ public class UploadDownloadS3Test extends SystemTestBase {
         ' ', new RoundRobinPartitionFunction(workerIDs.length)));
 
     /* File to upload and download */
-    String fileName = String.format("s3://myria-test/test%d.txt", System.currentTimeMillis());
+    String fileName = String.format("s3://myria-test/test-%d.txt", System.currentTimeMillis());
 
     /* Construct the query and upload data */
     ExchangePairID serverReceiveID = ExchangePairID.newID();
