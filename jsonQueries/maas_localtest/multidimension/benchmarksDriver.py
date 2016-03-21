@@ -72,7 +72,7 @@ def query_myria(query_string, args=None):
 
 # In[46]:
 
-hostname = 'localhost'
+hostname = 'ec2-54-226-68-109.compute-1.amazonaws.com'
 port = 8753
 connection = myria.MyriaConnection(hostname=hostname, port=port)
 
