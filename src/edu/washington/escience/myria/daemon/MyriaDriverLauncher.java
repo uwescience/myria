@@ -206,27 +206,31 @@ public final class MyriaDriverLauncher {
   private LauncherStatus run(final Configuration driverConf) {
     // Most UNIX signals will not throw an exception, so need to be trapped here.
     Runtime.getRuntime().addShutdownHook(new Thread(() -> close()));
-    LOGGER.info("Submitting Myria driver to REEF...");
-    reef.submit(driverConf);
+    try {
+      LOGGER.info("Submitting Myria driver to REEF...");
+      reef.submit(driverConf);
 
-    synchronized (this) {
-      while (!status.isDone()) {
-        try {
-          this.wait(DRIVER_PING_TIMEOUT_MILLIS);
-          if (driver.isPresent()) {
-            final byte[] driverMsg = MyriaDriver.DRIVER_PING_MSG.getBytes(StandardCharsets.UTF_8);
-            LOGGER.info("Sending message to Myria driver: {}", MyriaDriver.DRIVER_PING_MSG);
-            driver.get().send(driverMsg);
+      synchronized (this) {
+        while (!status.isDone()) {
+          try {
+            this.wait(DRIVER_PING_TIMEOUT_MILLIS);
+            if (driver.isPresent()) {
+              final byte[] driverMsg = MyriaDriver.DRIVER_PING_MSG.getBytes(StandardCharsets.UTF_8);
+              LOGGER.info("Sending message to Myria driver: {}", MyriaDriver.DRIVER_PING_MSG);
+              driver.get().send(driverMsg);
+            }
+          } catch (final InterruptedException ex) {
+            LOGGER.info("Interrupted while waiting for Myria driver to finish, exiting...");
+            close(); // this sets status to FORCE_CLOSED
           }
-        } catch (final InterruptedException ex) {
-          LOGGER.info("Interrupted while waiting for Myria driver to finish, exiting...");
-          close(); // this sets status to FORCE_CLOSED
         }
       }
-    }
 
-    reef.close();
-    return status;
+      return status;
+    }
+    finally {
+      reef.close();
+    }
   }
 
   public synchronized void close() {
