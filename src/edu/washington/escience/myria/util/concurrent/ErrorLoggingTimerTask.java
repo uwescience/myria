@@ -3,6 +3,8 @@ package edu.washington.escience.myria.util.concurrent;
 import java.util.TimerTask;
 import java.util.concurrent.ScheduledExecutorService;
 
+import edu.washington.escience.myria.util.JVMUtils;
+
 /**
  * The Java {@link ScheduledExecutorService} suppress the subsequent execution of a {@link TimerTask} if any execution
  * of the task encounters an exception. This class captures all {@link Throwable}s and logs them. And all
@@ -35,7 +37,12 @@ public abstract class ErrorLoggingTimerTask extends TimerTask {
       if (e instanceof InterruptedException) {
         Thread.currentThread().interrupt();
       } else if (e instanceof Error) {
+        if (e instanceof OutOfMemoryError) {
+          JVMUtils.shutdownVM(e);
+        }
         throw (Error) e;
+      } else if (e instanceof RuntimeException) {
+        throw (RuntimeException) e;
       }
     }
   }
