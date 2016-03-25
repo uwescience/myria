@@ -581,10 +581,13 @@ public abstract class OperationFutureBase<T> implements OperationFuture {
   private void notifyListener(final OperationFutureListener l) {
     try {
       l.operationComplete(this);
-    } catch (Throwable t) {
+    } catch (Exception t) {
       if (LOGGER.isWarnEnabled()) {
         LOGGER.warn("An exception was thrown by " + OperationFutureListener.class.getSimpleName() + '.', t);
       }
+    } catch (Throwable t) {
+      LOGGER.info("A throwable was thrown by " + OperationFutureListener.class.getSimpleName() + '.', t);
+      throw t;
     }
   }
 }

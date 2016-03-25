@@ -33,6 +33,7 @@ import edu.washington.escience.myria.parallel.ipc.StreamIOChannelID;
 import edu.washington.escience.myria.profiling.ProfilingLogger;
 import edu.washington.escience.myria.util.AtomicUtils;
 import edu.washington.escience.myria.util.IPCUtils;
+import edu.washington.escience.myria.util.JVMUtils;
 import edu.washington.escience.myria.util.concurrent.ReentrantSpinLock;
 
 /**
@@ -198,9 +199,15 @@ public final class LocalFragment {
           synchronized (executionLock) {
             LocalFragment.this.executeActually();
           }
-        } catch (RuntimeException ee) {
-          LOGGER.error("Unexpected Error: ", ee);
-          throw ee;
+        } catch (Error e) {
+          if (e instanceof OutOfMemoryError) {
+            JVMUtils.shutdownVM(e);
+          }
+          LOGGER.error("Unexpected Error: ", e);
+          throw e;
+        } catch (RuntimeException e) {
+          LOGGER.error("Unexpected RuntimeException: ", e);
+          throw e;
         } finally {
           executionHandle = null;
         }
@@ -231,6 +238,8 @@ public final class LocalFragment {
           LOGGER.error("Fragment failed to open because of exception:", e);
           if (e instanceof InterruptedException) {
             Thread.currentThread().interrupt();
+          } else if (e instanceof OutOfMemoryError) {
+            JVMUtils.shutdownVM(e);
           }
           AtomicUtils.setBitByValue(executionCondition, STATE_FAIL);
           if (fragmentExecutionFuture.setFailure(e)) {
@@ -481,6 +490,9 @@ public final class LocalFragment {
             }
             failureCause = e;
             AtomicUtils.setBitByValue(executionCondition, STATE_FAIL);
+            if (e instanceof OutOfMemoryError) {
+              JVMUtils.shutdownVM(e);
+            }
           }
 
           if (breakByOutputUnavailable) {
@@ -659,7 +671,6 @@ public final class LocalFragment {
     }
 
     myExecutor.submit(executionPlan);
-
   }
 
   /**

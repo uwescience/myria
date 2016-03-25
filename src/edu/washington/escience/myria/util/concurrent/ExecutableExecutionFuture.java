@@ -10,6 +10,7 @@ import java.util.concurrent.TimeoutException;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.util.JVMUtils;
 
 /**
  * The {@link ExecutionFuture} implementation that is Callable and Runnable. The state of the future is set
@@ -210,6 +211,9 @@ public class ExecutableExecutionFuture<T> extends OperationFutureBase<T> impleme
       }
     } catch (Throwable e) {
       setFailure0(e);
+      if (e instanceof OutOfMemoryError) {
+        JVMUtils.shutdownVM(e);
+      }
       if (e instanceof Exception) {
         throw e;
       }
