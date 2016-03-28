@@ -107,7 +107,7 @@ dependencies {
     exclude group: "com.sun.jersey"
   }
 
-  compile ("org.apache.hadoop:hadoop-common:${hadoopVersion}") {
+  compile ("org.apache.hadoop:hadoop-client:${hadoopVersion}") {
     /* Hadoop depends on Jersey 1 but we don't need it. Exclude it to prevent
      * Classloader picking the wrong version of Jersey classes. */
     exclude group: "com.sun.jersey"
