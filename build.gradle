@@ -101,13 +101,17 @@ ext.jmxetricsVersion = "1.0.8"
 ext.hadoopVersion = "2.7.2"
 
 dependencies {
+
+  /* Note this jar is fetched from our private Maven repo (patched for HADOOP-12807) */
+  compile ("org.apache.hadoop:hadoop-aws:${hadoopVersion}") {
+    exclude group: "com.sun.jersey"
+  }
+
   compile ("org.apache.hadoop:hadoop-client:${hadoopVersion}") {
     /* Hadoop depends on Jersey 1 but we don't need it. Exclude it to prevent
      * Classloader picking the wrong version of Jersey classes. */
     exclude group: "com.sun.jersey"
   }
-  /* Note this jar is fetched from our private Maven repo (patched for HADOOP-12807) */
-  compile "org.apache.hadoop:hadoop-aws:${hadoopVersion}"
 
   compile "xerces:xercesImpl:2.11.0"
   compile "xalan:xalan:2.7.2"
