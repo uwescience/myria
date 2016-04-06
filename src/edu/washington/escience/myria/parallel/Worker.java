@@ -37,24 +37,16 @@ import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
-
 import edu.washington.escience.myria.coordinator.ConfigFileException;
-
-import edu.washington.escience.myria.coordinator.catalog.CatalogException;
-import edu.washington.escience.myria.coordinator.catalog.WorkerCatalog;
 import edu.washington.escience.myria.operator.CacheInsert;
-
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.InJVMLoopbackChannelSink;
 import edu.washington.escience.myria.profiling.ProfilingLogger;
 import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myria.proto.QueryProto.QueryMessage;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
-
-import edu.washington.escience.myria.tools.MyriaConfiguration;
-
 import edu.washington.escience.myria.storage.Tuple;
-
+import edu.washington.escience.myria.tools.MyriaConfiguration;
 import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.JVMUtils;
 import edu.washington.escience.myria.util.concurrent.ErrorLoggingTimerTask;
@@ -651,15 +643,10 @@ public final class Worker {
             IPCConfigurations.createWorkerIPCClientBootstrap(this), new TransportMessageSerializer(),
             new WorkerShortMessageProcessor(this), inputBufferCapacity, inputBufferRecoverTrigger);
 
-
     final String databaseSystem =
         config.getRequired("deployment", MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_SYSTEM);
-    workerCacheController = new CacheController(this);
-
-    execEnvVars = new ConcurrentHashMap<String, Object>();
 
     workerCache = new Cache(this);
-
 
     /*
      * This should really be declared as a myria constant elsewhere
@@ -693,11 +680,6 @@ public final class Worker {
 
     localBF = BloomFilter.create(tupleFunnel, expectedNumberOfElements);
 
-    for (Entry<String, String> cE : catalog.getAllConfigurations().entrySet()) {
-      execEnvVars.put(cE.getKey(), cE.getValue());
-    }
-    final String databaseSystem = catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_SYSTEM);
-    
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM, databaseSystem);
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_NODE_ID, getID());
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE, queryExecutionMode);

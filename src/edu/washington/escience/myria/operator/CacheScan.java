@@ -12,6 +12,9 @@ import edu.washington.escience.myria.storage.TupleBatch;
  */
 public class CacheScan extends LeafOperator {
 
+  /** Required for Java serialization. */
+  private static final long serialVersionUID = 1L;
+
   /** The schema for the relation stored in the cache. */
   private final Schema outputSchema;
 

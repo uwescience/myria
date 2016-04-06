@@ -11,7 +11,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import edu.washington.escience.myria.api.MyriaApiException;
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.operator.SampledDbInsertTemp;
 
 /**
  * A JSON-able wrapper for the expected wire message for an operator. To add a new operator, two things need to be done.
@@ -27,8 +26,6 @@ import edu.washington.escience.myria.operator.SampledDbInsertTemp;
     @Type(name = "BroadcastConsumer", value = BroadcastConsumerEncoding.class),
     @Type(name = "BroadcastProducer", value = BroadcastProducerEncoding.class),
     @Type(name = "CatalogScan", value = CatalogScanEncoding.class),
-    @Type(name = "CacheLeaf", value = CacheLeafEncoding.class),
-    @Type(name = "CacheRoot", value = CacheRootEncoding.class),
     @Type(name = "CacheScan", value = CacheScanEncoding.class),
     @Type(name = "CacheInsert", value = CacheInsertEncoding.class),
     @Type(name = "CacheShuffleConsumer", value = CacheShuffleConsumerEncoding.class),
