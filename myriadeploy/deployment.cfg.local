@@ -1,7 +1,7 @@
 # Deployment configuration
 [deployment]
 path = /tmp/myria
-name = twoNodeLocalParallel
+name = twoNodeCache
 dbms = sqlite
 rest_port = 8753
 # Uncomment if need to set a specific username; does not work for localhost

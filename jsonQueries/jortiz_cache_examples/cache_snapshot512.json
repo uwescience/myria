@@ -1,0 +1,73 @@
+{
+    "rawQuery": "T1 = scan(public:adhoc:cosmo512);\n\nT3 = [from T1 where T1.grp > 0 emit *];\n\nstore(T3, test);\n ",
+    "logicalRa": "Store(public:adhoc:test)[Select((grp > 0))[Scan(public:adhoc:cosmo512)]]",
+    "profilingMode": [],
+    "plan": {
+        "fragments": [
+            {
+                "operators": [
+                    {
+                        "opType": "DbQueryScan",
+                        "sql": "SELECT input.\"iOrder\", input.mass, input.x, input.y, input.z, input.vx, input.vy, input.vz, input.rho, input.temp, input.hsmooth, input.metals, input.tform, input.eps, input.phi, input.grp, input.type \nFROM (SELECT \"public:adhoc:cosmo512\".\"iOrder\" AS \"iOrder\", \"public:adhoc:cosmo512\".mass AS mass, \"public:adhoc:cosmo512\".x AS x, \"public:adhoc:cosmo512\".y AS y, \"public:adhoc:cosmo512\".z AS z, \"public:adhoc:cosmo512\".vx AS vx, \"public:adhoc:cosmo512\".vy AS vy, \"public:adhoc:cosmo512\".vz AS vz, \"public:adhoc:cosmo512\".rho AS rho, \"public:adhoc:cosmo512\".temp AS temp, \"public:adhoc:cosmo512\".hsmooth AS hsmooth, \"public:adhoc:cosmo512\".metals AS metals, \"public:adhoc:cosmo512\".tform AS tform, \"public:adhoc:cosmo512\".eps AS eps, \"public:adhoc:cosmo512\".phi AS phi, \"public:adhoc:cosmo512\".grp AS grp, \"public:adhoc:cosmo512\".type AS type \nFROM \"public:adhoc:cosmo512\") AS input \nWHERE input.grp > 0",
+                        "opName": "MyriaQueryScan('SELECT input.\"iOrder\", input.mass, input.x, input.y, input.z, input.vx, input.vy, input.vz, input.rho, input.temp, input.hsmooth, input.metals, input.tform, input.eps, input.phi, input.grp, input.type \\nFROM (SELECT \"public:adhoc:cosmo512\".\"iOrder\" AS \"iOrder\", \"public:adhoc:cosmo512\".mass AS mass, \"public:adhoc:cosmo512\".x AS x, \"public:adhoc:cosmo512\".y AS y, \"public:adhoc:cosmo512\".z AS z, \"public:adhoc:cosmo512\".vx AS vx, \"public:adhoc:cosmo512\".vy AS vy, \"public:adhoc:cosmo512\".vz AS vz, \"public:adhoc:cosmo512\".rho AS rho, \"public:adhoc:cosmo512\".temp AS temp, \"public:adhoc:cosmo512\".hsmooth AS hsmooth, \"public:adhoc:cosmo512\".metals AS metals, \"public:adhoc:cosmo512\".tform AS tform, \"public:adhoc:cosmo512\".eps AS eps, \"public:adhoc:cosmo512\".phi AS phi, \"public:adhoc:cosmo512\".grp AS grp, \"public:adhoc:cosmo512\".type AS type \\nFROM \"public:adhoc:cosmo512\") AS input \\nWHERE input.grp > 0')",
+                        "opId": 0,
+                        "schema": {
+                            "columnTypes": [
+                                "LONG_TYPE",
+                                "DOUBLE_TYPE",
+                                "DOUBLE_TYPE",
+                                "DOUBLE_TYPE",
+                                "DOUBLE_TYPE",
+                                "DOUBLE_TYPE",
+                                "DOUBLE_TYPE",
+                                "DOUBLE_TYPE",
+                                "DOUBLE_TYPE",
+                                "DOUBLE_TYPE",
+                                "DOUBLE_TYPE",
+                                "DOUBLE_TYPE",
+                                "DOUBLE_TYPE",
+                                "DOUBLE_TYPE",
+                                "DOUBLE_TYPE",
+                                "LONG_TYPE",
+                                "STRING_TYPE"
+                            ],
+                            "columnNames": [
+                                "iOrder",
+                                "mass",
+                                "x",
+                                "y",
+                                "z",
+                                "vx",
+                                "vy",
+                                "vz",
+                                "rho",
+                                "temp",
+                                "hsmooth",
+                                "metals",
+                                "tform",
+                                "eps",
+                                "phi",
+                                "grp",
+                                "type"
+                            ]
+                        }
+                    },
+                    {
+                        "relationKey": {
+                            "programName": "adhoc",
+                            "userName": "public",
+                            "relationName": "test"
+                        },
+                        "opType": "DbInsert",
+                        "argOverwriteTable": true,
+                        "opName": "MyriaStore(public:adhoc:test)",
+                        "argChild": 0,
+                        "opId": 1
+                    }
+                ]
+            }
+        ],
+        "type": "SubQuery"
+    },
+    "language": "myrial"
+}

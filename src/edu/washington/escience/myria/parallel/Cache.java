@@ -3,8 +3,8 @@
  */
 package edu.washington.escience.myria.parallel;
 
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 
 import org.slf4j.Logger;
@@ -70,7 +70,6 @@ public final class Cache {
    */
   public void addTupleBatch(final TupleBatch tb) {
     if (tb != null) {
-      ownerWorker.LOGGER.info("Inserting batch at sequence " + (latest_sequence));
       cache.put(latest_sequence, tb);
     }
   }
@@ -82,7 +81,6 @@ public final class Cache {
    */
   public TupleBatch readTupleBatch() {
     if (iterator.hasNext()) {
-      ownerWorker.LOGGER.info("Reading from " + (latest_sequence - 1));
       return (TupleBatch) iterator.next();
     }
     return null;
@@ -120,8 +118,7 @@ public final class Cache {
     /**
      * At this point, we should know which TupleBatches we're reading from
      */
-    Collection<TupleBatch> keys_to_read = new ArrayList<TupleBatch>();
-    ownerWorker.LOGGER.info("Available Keys" + (cache.keys()));
+    Collection<TupleBatch> keys_to_read = new HashSet<TupleBatch>();
     for (Integer currentKey : cache.keys()) {
       if (currentKey <= latest_sequence) {
         Collection<TupleBatch> tbCollection = cache.get(currentKey);
