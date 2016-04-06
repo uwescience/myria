@@ -37,7 +37,12 @@ import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
+<<<<<<< HEAD
 import edu.washington.escience.myria.coordinator.ConfigFileException;
+=======
+import edu.washington.escience.myria.coordinator.catalog.CatalogException;
+import edu.washington.escience.myria.coordinator.catalog.WorkerCatalog;
+>>>>>>> 61eef34aa65de0e637ddec07841c938a92e3556b
 import edu.washington.escience.myria.operator.CacheInsert;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.InJVMLoopbackChannelSink;
@@ -46,7 +51,10 @@ import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myria.proto.QueryProto.QueryMessage;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myria.storage.Tuple;
+<<<<<<< HEAD
 import edu.washington.escience.myria.tools.MyriaConfiguration;
+=======
+>>>>>>> 61eef34aa65de0e637ddec07841c938a92e3556b
 import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.JVMUtils;
 import edu.washington.escience.myria.util.concurrent.ErrorLoggingTimerTask;
@@ -73,8 +81,8 @@ import edu.washington.escience.myria.util.concurrent.ThreadAffinityFixedRoundRob
  */
 public final class Worker {
 
-  /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Worker.class);
+  /** The logger for this class.--- TEMP. MAKE PUBLIC */
+  public static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Worker.class);
 
   /**
    * Control message processor.

@@ -25,7 +25,10 @@ import edu.washington.escience.myria.operator.Operator;
     @Type(name = "BinaryFileScan", value = BinaryFileScanEncoding.class),
     @Type(name = "BroadcastConsumer", value = BroadcastConsumerEncoding.class),
     @Type(name = "BroadcastProducer", value = BroadcastProducerEncoding.class),
+<<<<<<< HEAD
     @Type(name = "CatalogScan", value = CatalogScanEncoding.class),
+=======
+>>>>>>> 61eef34aa65de0e637ddec07841c938a92e3556b
     @Type(name = "CacheScan", value = CacheScanEncoding.class),
     @Type(name = "CacheInsert", value = CacheInsertEncoding.class),
     @Type(name = "CacheShuffleConsumer", value = CacheShuffleConsumerEncoding.class),
