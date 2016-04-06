@@ -1,0 +1,23 @@
+{
+    "fragments": [
+        {
+            "operators": [
+                 {
+                     "opName": "V1", 
+                     "opType": "SinkRoot", 
+                     "argChild": 0,
+                     "opId": 1
+
+                },
+                {
+                        "opName": "V0", 
+                        "opType": "CacheScan", 
+                        "schema":{"columnTypes":["LONG_TYPE","DOUBLE_TYPE","DOUBLE_TYPE","DOUBLE_TYPE","DOUBLE_TYPE","DOUBLE_TYPE","DOUBLE_TYPE","DOUBLE_TYPE","DOUBLE_TYPE","DOUBLE_TYPE","DOUBLE_TYPE","DOUBLE_TYPE","DOUBLE_TYPE","DOUBLE_TYPE","DOUBLE_TYPE","LONG_TYPE","STRING_TYPE"],"columnNames":["iOrder","mass","x","y","z","vx","vy","vz","rho","temp","hsmooth","metals","tform","eps","phi","grp","type"]},
+                        "opId": 0
+                }
+            ]
+        }
+    ],
+    "logicalRa": "cache flush",
+    "rawQuery": "cache flush"
+}

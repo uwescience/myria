@@ -10,7 +10,7 @@
   },
   "source" : {
     "dataType" : "File",
-    "filename" : "/path/to/your/myria/jsonQueries/getting_started/smallTable"
+    "filename" : "/Users/jortiz16/Documents/cacheMyria/myria/jsonQueries/getting_started/smallTable"
   },
   "overwrite" : true,
   "delimiter": ","

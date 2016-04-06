@@ -30,7 +30,6 @@ public class CacheScan extends LeafOperator {
   @Override
   protected TupleBatch fetchNextReady() throws Exception {
     workerCache = getWorker().getCache();
-    getWorker().LOGGER.info("Iterator HasNext " + (workerCache.cacheIteratorHasNext()));
     if (workerCache.cacheIteratorHasNext()) {
       return workerCache.readTupleBatch();
     }

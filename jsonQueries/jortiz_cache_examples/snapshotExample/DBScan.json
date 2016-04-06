@@ -1,0 +1,68 @@
+{
+    "fragments": [
+        {
+            "operators": [
+                {
+                    "opType": "DbQueryScan",
+                    "opName": "Scan",
+                    "opId": 1,
+                       "schema": {
+                            "columnTypes": [
+                                "LONG_TYPE",
+                                "DOUBLE_TYPE",
+                                "DOUBLE_TYPE",
+                                "DOUBLE_TYPE",
+                                "DOUBLE_TYPE",
+                                "DOUBLE_TYPE",
+                                "DOUBLE_TYPE",
+                                "DOUBLE_TYPE",
+                                "DOUBLE_TYPE",
+                                "DOUBLE_TYPE",
+                                "DOUBLE_TYPE",
+                                "DOUBLE_TYPE",
+                                "DOUBLE_TYPE",
+                                "DOUBLE_TYPE",
+                                "DOUBLE_TYPE",
+                                "LONG_TYPE",
+                                "STRING_TYPE"
+                            ],
+                            "columnNames": [
+                                "iOrder",
+                                "mass",
+                                "x",
+                                "y",
+                                "z",
+                                "vx",
+                                "vy",
+                                "vz",
+                                "rho",
+                                "temp",
+                                "hsmooth",
+                                "metals",
+                                "tform",
+                                "eps",
+                                "phi",
+                                "grp",
+                                "type"
+                            ]
+                        },
+                    "sql": "select * from \"public:adhoc:cosmo512\" where \"iOrder\" < 3941800;"
+                },
+                {
+                    "opName": "V0",
+                    "opType": "DbInsert",
+                    "argOverwriteTable": true,
+                    "relationKey": {
+                        "userName": "public",
+                        "relationName": "lessthan10",
+                        "programName": "adhoc"
+                    },
+                    "argChild": 1,
+                    "opId": 2
+                }
+            ]
+        }
+    ],
+    "logicalRa": "query",
+    "rawQuery": "query"
+}
