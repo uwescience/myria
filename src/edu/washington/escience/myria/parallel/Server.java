@@ -829,6 +829,56 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   }
 
   /**
+   * Ingest the given dataset in parallel from S3
+   * 
+   * @param relationKey the name of the dataset.
+   * @param workersToIngest restrict the workers to ingest data (null for all)
+   * @param indexes the indexes created.
+   * @param source the source of tuples to be ingested. Must be an S3 source.
+   * @return the status of the ingested dataset.
+   * @throws InterruptedException interrupted
+   * @throws DbException if there is an error
+   * @throws URISyntaxException
+   * @throws IOException
+   */
+  public DatasetStatus ingestDatasetParallel(final RelationKey relationKey, final Set<Integer> workersToIngest,
+      final List<List<IndexRef>> indexes, final Operator source, final PartitionFunction pf)
+      throws InterruptedException, DbException, URISyntaxException, IOException {
+
+    /* Figure out the workers we will use. If workersToIngest is null, use all active workers. */
+    Set<Integer> actualWorkers = workersToIngest;
+    if (workersToIngest == null) {
+      actualWorkers = getAliveWorkers();
+    }
+    Preconditions.checkArgument(actualWorkers.size() > 0, "Must use > 0 workers");
+    int[] workersArray = MyriaUtils.integerSetToIntArray(actualWorkers);
+
+    Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
+    for (Integer workerId : workersArray) {
+
+      // workerPlans.put(workerId, new SubQueryPlan(new DbInsert(source), relationKey, true, indexes));
+    }
+
+    ListenableFuture<Query> qf;
+    try {
+      qf =
+          queryManager.submitQuery("ingest " + relationKey.toString(), "ingest " + relationKey.toString(), "ingest "
+              + relationKey.toString(getDBMS()), new SubQueryPlan(new SinkRoot(new EOSSource())), workerPlans);
+    } catch (CatalogException e) {
+      throw new DbException("Error submitting query", e);
+    }
+    try {
+      qf.get();
+    } catch (ExecutionException e) {
+      throw new DbException("Error executing query", e.getCause());
+    }
+
+    // updating the partition function only after it's successfully ingested.
+    updateHowPartitioned(relationKey, new HowPartitioned(pf, workersArray));
+    return getDatasetStatus(relationKey);
+  }
+
+  /**
    * @param relationKey the relationalKey of the dataset to import
    * @param schema the schema of the dataset to import
    * @param workersToImportFrom the set of workers
