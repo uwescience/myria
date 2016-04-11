@@ -327,19 +327,19 @@ public class TipsyFileScan extends LeafOperator {
   private static InputStream openFileOrUrlInputStream(String filenameOrUrl) throws DbException {
     try {
       URI uri = new URI(filenameOrUrl);
-      if(uri.getScheme() == null)
+      if (uri.getScheme() == null)
         return openFileInputStream(filenameOrUrl);
-      else if(uri.getScheme().equals("hdfs"))
-        return openHDFSInputStream(uri);
+      else if (uri.getScheme().equals("hdfs"))
+        return openHdfsInputStream(uri);
       else
         return uri.toURL().openConnection().getInputStream();
-    } catch(IllegalArgumentException e) {
+    } catch (IllegalArgumentException e) {
       return openFileInputStream(filenameOrUrl);
-    } catch(URISyntaxException e) {
+    } catch (URISyntaxException e) {
       return openFileInputStream(filenameOrUrl);
-    } catch(MalformedURLException e) {
+    } catch (MalformedURLException e) {
       return openFileInputStream(filenameOrUrl);
-    } catch(IOException e) {
+    } catch (IOException e) {
       throw new DbException(e);
     }
   }
@@ -347,12 +347,12 @@ public class TipsyFileScan extends LeafOperator {
   private static InputStream openFileInputStream(String filename) throws DbException {
     try {
       return new FileInputStream(filename);
-    } catch(FileNotFoundException e) {
+    } catch (FileNotFoundException e) {
       throw new DbException(e);
     }
   }
 
-  private static InputStream openHDFSInputStream(final URI uri) throws DbException {
+  private static InputStream openHdfsInputStream(final URI uri) throws DbException {
     try {
       FileSystem fs = FileSystem.get(uri, new Configuration());
       Path path = new Path(uri);
