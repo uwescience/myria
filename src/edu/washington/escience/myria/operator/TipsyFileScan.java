@@ -338,9 +338,9 @@ public class TipsyFileScan extends LeafOperator {
       return openFileInputStream(filenameOrUrl);
     } catch (URISyntaxException e) {
       return openFileInputStream(filenameOrUrl);
-    } catch(MalformedURLException e) {
+    } catch (MalformedURLException e) {
       return openFileInputStream(filenameOrUrl);
-    } catch(IOException e) {
+    } catch (IOException e) {
       throw new DbException(e);
     }
   }
