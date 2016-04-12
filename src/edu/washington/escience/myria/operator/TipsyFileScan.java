@@ -15,6 +15,10 @@ import java.net.URISyntaxException;
 import java.util.Objects;
 import java.util.Scanner;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -322,14 +326,21 @@ public class TipsyFileScan extends LeafOperator {
 
   private static InputStream openFileOrUrlInputStream(String filenameOrUrl) throws DbException {
     try {
-      return new URI(filenameOrUrl).toURL().openConnection().getInputStream();
-    } catch(IllegalArgumentException e) {
+      URI uri = new URI(filenameOrUrl);
+      if (uri.getScheme() == null) {
+        return openFileInputStream(filenameOrUrl);
+      } else if (uri.getScheme().equals("hdfs")) {
+        return openHdfsInputStream(uri);
+      } else {
+        return uri.toURL().openStream();
+      }
+    } catch (IllegalArgumentException e) {
       return openFileInputStream(filenameOrUrl);
-    } catch(URISyntaxException e) {
+    } catch (URISyntaxException e) {
       return openFileInputStream(filenameOrUrl);
-    } catch(MalformedURLException e) {
+    } catch (MalformedURLException e) {
       return openFileInputStream(filenameOrUrl);
-    } catch(IOException e) {
+    } catch (IOException e) {
       throw new DbException(e);
     }
   }
@@ -337,7 +348,17 @@ public class TipsyFileScan extends LeafOperator {
   private static InputStream openFileInputStream(String filename) throws DbException {
     try {
       return new FileInputStream(filename);
-    } catch(FileNotFoundException e) {
+    } catch (FileNotFoundException e) {
+      throw new DbException(e);
+    }
+  }
+
+  private static InputStream openHdfsInputStream(final URI uri) throws DbException {
+    try {
+      FileSystem fs = FileSystem.get(uri, new Configuration());
+      Path path = new Path(uri);
+      return fs.open(path);
+    } catch (IOException e) {
       throw new DbException(e);
     }
   }
