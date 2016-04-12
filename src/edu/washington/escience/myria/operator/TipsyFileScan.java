@@ -332,12 +332,16 @@ public class TipsyFileScan extends LeafOperator {
       } else if (uri.getScheme().equals("hdfs")) {
         return openHdfsInputStream(uri);
       } else {
-        return openFileInputStream(filenameOrUrl);
+        return uri.toURL().openStream();
       }
     } catch (IllegalArgumentException e) {
       return openFileInputStream(filenameOrUrl);
     } catch (URISyntaxException e) {
       return openFileInputStream(filenameOrUrl);
+    } catch(MalformedURLException e) {
+      return openFileInputStream(filenameOrUrl);
+    } catch(IOException e) {
+      throw new DbException(e);
     }
   }
 
