@@ -1,0 +1,36 @@
+{
+  "plan": {
+    "type": "SubQuery",
+    "fragments": [
+      {
+        "operators": [
+          {
+            "opId": 0,
+            "grpFilename": "https://s3-us-west-2.amazonaws.com/uwdb/sampleData/sampleTipsy/cosmo8.33PLK.256g3bwK1C52.000970.amiga.grp",
+            "opName": "MyriaFileScan(https://s3-us-west-2.amazonaws.com/uwdb/sampleData/sampleTipsy/cosmo8.33PLK.256g3bwK1C52.000970)",
+            "iorderFilename": "https://s3-us-west-2.amazonaws.com/uwdb/sampleData/sampleTipsy/cosmo8.33PLK.256g3bwK1C52.000970.iord",
+            "tipsyFilename": "https://s3-us-west-2.amazonaws.com/uwdb/sampleData/sampleTipsy/cosmo8.33PLK.256g3bwK1C52.000970",
+            "opType": "TipsyFileScan"
+          },
+          {
+            "partitionFunction": null,
+            "opName": "MyriaStore(public:adhoc:t)",
+            "relationKey": {
+              "programName": "adhoc",
+              "relationName": "t",
+              "userName": "public"
+            },
+            "argOverwriteTable": true,
+            "argChild": 0,
+            "opId": 1,
+            "opType": "DbInsert"
+          }
+        ]
+      }
+    ]
+  },
+  "rawQuery": "t = load(\"https://s3-us-west-2.amazonaws.com/uwdb/sampleData/sampleTipsy/cosmo8.33PLK.256g3bwK1C52.000970\", tipsy(group=\"amiga\"));\nstore(t, t);",
+  "language": "myrial",
+  "logicalRa": "Store(public:adhoc:t)[FileScan(https://s3-us-west-2.amazonaws.com/uwdb/sampleData/sampleTipsy/cosmo8.33PLK.256g3bwK1C52.000970)]",
+  "profilingMode": []
+}

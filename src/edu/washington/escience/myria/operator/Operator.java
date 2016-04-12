@@ -42,7 +42,7 @@ public abstract class Operator implements Serializable {
   /**
    * logger for this class.
    */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Operator.class);
+  protected static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Operator.class);
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -181,8 +181,8 @@ public abstract class Operator implements Serializable {
       return ImmutableSet.of();
     }
     if (profilingMode == null) {
-      LocalFragmentResourceManager lfrm =
-          (LocalFragmentResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER);
+      LocalFragmentResourceManager lfrm = (LocalFragmentResourceManager) execEnvVars.get(
+          MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER);
       if (lfrm == null) {
         return ImmutableSet.of();
       }

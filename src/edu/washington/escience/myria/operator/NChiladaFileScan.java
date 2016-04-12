@@ -2,12 +2,16 @@ package edu.washington.escience.myria.operator;
 
 import java.io.BufferedReader;
 import java.io.DataInput;
+import java.io.DataInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,9 +20,6 @@ import java.util.Scanner;
 import java.util.regex.Pattern;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -31,8 +32,8 @@ import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 /**
- * Parse NChilada file formats. See <a
- * href="http://librarian.phys.washington.edu/astro/index.php/Research:NChilada_File_Format">NChilada wiki</a>
+ * Parse NChilada file formats. See
+ * <a href="http://librarian.phys.washington.edu/astro/index.php/Research:NChilada_File_Format">NChilada wiki</a>
  * 
  * @author leelee
  * 
@@ -224,14 +225,10 @@ public class NChiladaFileScan extends LeafOperator {
    */
   private InputStream getGroupFileStream(final String groupFilePath) throws DbException {
     InputStream groupInputStreamLocal;
-    try {
-      Configuration conf = new Configuration();
-      FileSystem fs = FileSystem.get(URI.create(groupFilePath), conf);
-      Path rootPath = new Path(groupFilePath);
-      groupInputStreamLocal = fs.open(rootPath);
-    } catch (IOException e) {
-      throw new DbException(e);
-    }
+    Configuration conf = new Configuration();
+    // FileSystem fs = FileSystem.get(URI.create(groupFilePath), conf);
+    // Path rootPath = new Path(groupFilePath);
+    groupInputStreamLocal = openFileOrUrlInputStream(groupFilePath);
     return groupInputStreamLocal;
   }
 
@@ -242,28 +239,42 @@ public class NChiladaFileScan extends LeafOperator {
    * @return a mapping from filename to DataInput object.
    * @throws DbException The DbException.
    */
-  private Map<String, DataInput> getFilesToDataInput(final String path) throws DbException {
-    Configuration conf = new Configuration();
-    FileSystem fs;
-    Map<String, DataInput> map = new HashMap<>();
-    try {
-      fs = FileSystem.get(URI.create(path), conf);
-      Path rootPath = new Path(path + File.separator);
-      FileStatus[] statii = fs.listStatus(rootPath);
-      if (statii == null || statii.length == 0) {
-        throw new FileNotFoundException(path);
-      }
-      for (FileStatus status : statii) {
-        Path p = status.getPath();
-        String[] pNameTokens = p.getName().split(Pattern.quote(File.separator));
-        String fileName = pNameTokens[pNameTokens.length - 1];
-        DataInput dataInputStream = fs.open(p);
-        map.put(fileName, dataInputStream);
-      }
-    } catch (IOException e) {
-      throw new DbException(e);
-    }
-    return map;
+  private void getFilesToDataInput(final String path) throws DbException {
+
+    String[] pNameTokens = path.split(Pattern.quote(File.separator));
+    String fileName = pNameTokens[pNameTokens.length - 1];
+    DataInput dataInputStream = new DataInputStream(openFileOrUrlInputStream(path));
+
+    // map.put(fileName, dataInputStream);
+
+    /// Configuration conf = new Configuration();
+    // FileSystem fs;
+    // try {
+    // fs = FileSystem.get(URI.create(path), conf);
+    // Path rootPath = new Path(path + File.separator);
+    // FileStatus[] statii = fs.listStatus(rootPath);
+
+    // if (statii == null || statii.length == 0) {
+    // throw new FileNotFoundException(path);
+    // }
+    // for (FileStatus status : statii) {
+    // Path p = status.getPath();
+    // String[] pNameTokens = p.getName().split(Pattern.quote(File.separator));
+    // String fileName = pNameTokens[pNameTokens.length - 1];
+    // DataInput dataInputStream = (DataInput) openFileOrUrlInputStream(fileName);
+    // map.put(fileName, dataInputStream);
+    // }
+    // } catch (IOException e) {
+    // throw new DbException(e);
+    // }
+
+    // return map;
+  }
+
+  public String pathHelperNames(final String s) {
+    String[] pNameTokens = s.split(Pattern.quote(File.separator));
+    String fileName = pNameTokens[pNameTokens.length - 1];
+    return fileName;
   }
 
   @Override
@@ -271,19 +282,105 @@ public class NChiladaFileScan extends LeafOperator {
     numDark = -1;
     numGas = -1;
     numStar = -1;
+    String path = "";
+
+    // Quick work around . Should read from the S3 directory to find the files in the bucket
+
     if (darkAttributeFilesToDataInput == null) {
-      darkAttributeFilesToDataInput = getFilesToDataInput(particleDirectoryPath + DARK_DIR);
+      darkAttributeFilesToDataInput = new HashMap<String, DataInput>();
+      path = particleDirectoryPath + DARK_DIR + "/mass";
+      darkAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + DARK_DIR + "/pos";
+      darkAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + DARK_DIR + "/pot";
+      darkAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + DARK_DIR + "/smoothlength";
+      darkAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + DARK_DIR + "/soft";
+      darkAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + DARK_DIR + "/vel";
+      darkAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
     }
     if (gasAttributeFilesToDataInput == null) {
-      gasAttributeFilesToDataInput = getFilesToDataInput(particleDirectoryPath + GAS_DIR);
+      gasAttributeFilesToDataInput = new HashMap<String, DataInput>();
+      path = particleDirectoryPath + GAS_DIR + "/ESNRate";
+      gasAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + GAS_DIR + "/FeMassFrac";
+      gasAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + GAS_DIR + "/FeMassFracdot";
+      gasAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + GAS_DIR + "/GasDensity";
+      gasAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + GAS_DIR + "/HI";
+      gasAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + GAS_DIR + "/HeI";
+      gasAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + GAS_DIR + "/HeII";
+      gasAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + GAS_DIR + "/Metalsdot";
+      gasAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + GAS_DIR + "/OxMassFrac";
+      gasAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + GAS_DIR + "/OxMassFracdot";
+      gasAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + GAS_DIR + "/coolontime";
+      gasAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + GAS_DIR + "/den";
+      gasAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + GAS_DIR + "/iord";
+      gasAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + GAS_DIR + "/mass";
+      gasAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + GAS_DIR + "/metals";
+      gasAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + GAS_DIR + "/pos";
+      gasAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + GAS_DIR + "/pot";
+      gasAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + GAS_DIR + "/smoothlength";
+      gasAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + GAS_DIR + "/temperature";
+      gasAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + GAS_DIR + "/vel";
+      gasAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+
     }
     if (starAttributeFilesToDataInput == null) {
-      starAttributeFilesToDataInput = getFilesToDataInput(particleDirectoryPath + STAR_DIR);
+      starAttributeFilesToDataInput = new HashMap<String, DataInput>();
+      path = particleDirectoryPath + STAR_DIR + "/ESNRate";
+      starAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + STAR_DIR + "/FeMassFrac";
+      starAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + STAR_DIR + "/OxMassFrac";
+      starAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + STAR_DIR + "/den";
+      starAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + STAR_DIR + "/igasord";
+      starAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + STAR_DIR + "/iord";
+      starAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + STAR_DIR + "/mass";
+      starAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + STAR_DIR + "/massform";
+      starAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + STAR_DIR + "/metals";
+      starAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + STAR_DIR + "/pos";
+      starAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + STAR_DIR + "/pot";
+      starAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + STAR_DIR + "/smoothlength";
+      starAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + STAR_DIR + "/soft";
+      starAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));
+      path = particleDirectoryPath + STAR_DIR + "/tform";
+      starAttributeFilesToDataInput.put(pathHelperNames(path), new DataInputStream(openFileOrUrlInputStream(path)));;
+      path = particleDirectoryPath + STAR_DIR + "/vel";
     }
-    Preconditions
-        .checkArgument(darkAttributeFilesToDataInput != null, "darkAttributeFilesToDataInput has not been set");
-    Preconditions
-        .checkArgument(starAttributeFilesToDataInput != null, "starAttributeFilesToDataInput has not been set");
+    Preconditions.checkArgument(darkAttributeFilesToDataInput != null,
+        "darkAttributeFilesToDataInput has not been set");
+    Preconditions.checkArgument(starAttributeFilesToDataInput != null,
+        "starAttributeFilesToDataInput has not been set");
     Preconditions.checkArgument(gasAttributeFilesToDataInput != null, "gasAttributeFilesToDataInput has not been set");
     buffer = new TupleBatchBuffer(getSchema());
     initBasedOnParticleType(ParticleType.GAS);
@@ -331,6 +428,7 @@ public class NChiladaFileScan extends LeafOperator {
 
     try {
       for (String fileName : fileNameToDataInput.keySet()) {
+
         DataInput dataInputStream = fileNameToDataInput.get(fileName);
         // Read header of the file. (magic, time, iHighWord, nbodies, ndim, code)
         Preconditions.checkArgument(dataInputStream.readInt() == NCHILADA_FORMAT, fileName
@@ -484,6 +582,28 @@ public class NChiladaFileScan extends LeafOperator {
   @Override
   protected Schema generateSchema() {
     return NCHILADA_SCHEMA;
+  }
+
+  private static InputStream openFileOrUrlInputStream(final String filenameOrUrl) throws DbException {
+    try {
+      return new URI(filenameOrUrl).toURL().openConnection().getInputStream();
+    } catch (IllegalArgumentException e) {
+      return openFileInputStream(filenameOrUrl);
+    } catch (URISyntaxException e) {
+      return openFileInputStream(filenameOrUrl);
+    } catch (MalformedURLException e) {
+      return openFileInputStream(filenameOrUrl);
+    } catch (IOException e) {
+      throw new DbException(e);
+    }
+  }
+
+  private static InputStream openFileInputStream(final String filename) throws DbException {
+    try {
+      return new FileInputStream(filename);
+    } catch (FileNotFoundException e) {
+      throw new DbException(e);
+    }
   }
 
   @Override

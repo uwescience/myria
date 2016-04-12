@@ -1,0 +1,56 @@
+{
+  "plan": {
+    "type": "SubQuery",
+    "fragments": [
+      {
+        "overrideWorkers": [
+          12
+        ],
+        "operators": [
+          {
+            "opId": 0,
+            "opName": "Scan",
+            "groupFileName": "https://s3-us-west-2.amazonaws.com/uwdb/cosmoVulcan/cosmo25p.768sg1bwK1C52.001818.rockstar.grp",
+            "nchiladaDirectoryName": "https://s3-us-west-2.amazonaws.com/uwdb/cosmoVulcan/cosmo25p.768sg1bwK1C52.001818",
+            "opType": "NChiladaFileScan"
+          },
+          {
+            "opId": 1,
+            "opType": "ShuffleProducer",
+            "argChild": 0,
+            "argPf": {
+              "index": 0,
+              "type": "SingleFieldHash"
+            }
+          }
+        ]
+      },
+      {
+        "operators": [
+          {
+            "opId": 2,
+            "opType": "ShuffleConsumer",
+            "argOperatorId": 1
+          },
+          {
+            "partitionFunction": null,
+            "opName": "MyriaStore",
+            "relationKey": {
+              "programName": "adhoc",
+              "relationName": "cosmoVulcan1818",
+              "userName": "public"
+            },
+            "argOverwriteTable": true,
+            "argChild": 2,
+            "opId": 3,
+            "opType": "DbInsert"
+          }
+        ]
+      }
+    ]
+  },
+  "rawQuery": "load nchilada",
+  "language": "myrial",
+  "logicalRa": "",
+  "profilingMode": []
+}
