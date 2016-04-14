@@ -16,6 +16,12 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.AmazonS3URI;
+import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.S3Object;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -33,7 +39,8 @@ public class UriSource implements DataSource, Serializable {
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(UriSource.class);
 
   /** The Uniform Resource Indicator (URI) of the data source. */
-  transient URI parsedUri;
+  URI parsedUri;
+  long fileSize;
 
   /**
    * Construct a source of data from the specified URI. The URI may be: a path on the local file system; an HDFS link; a
@@ -49,17 +56,20 @@ public class UriSource implements DataSource, Serializable {
   public UriSource(@JsonProperty(value = "uri", required = true) final String uri) throws URISyntaxException {
     parsedUri = URI.create(Objects.requireNonNull(uri, "Parameter uri to UriSource may not be null"));
     /* Force using the Hadoop S3A FileSystem */
-    if (parsedUri.getScheme().equals("s3")) {
-      parsedUri =
-          new URI("s3a", parsedUri.getUserInfo(), parsedUri.getHost(), parsedUri.getPort(), parsedUri.getPath(),
-              parsedUri.getQuery(), parsedUri.getFragment());
-    }
+    // if (parsedUri.getScheme().equals("s3")) {
+    // parsedUri = new URI("s3a", parsedUri.getUserInfo(), parsedUri.getHost(), parsedUri.getPort(),
+    // parsedUri.getPath(),
+    // parsedUri.getQuery(), parsedUri.getFragment());
+    // }
   }
 
   @Override
   public InputStream getInputStream() throws IOException {
-    return (parsedUri.getScheme().equals("http") || parsedUri.getScheme().equals("https")) ? parsedUri.toURL()
-        .openConnection().getInputStream() : getHadoopFileSystemInputStream(parsedUri);
+    if (parsedUri.getScheme().equals("http") || parsedUri.getScheme().equals("https")) {
+      return parsedUri.toURL().openConnection().getInputStream();
+    } else {
+      return getHadoopFileSystemInputStream(parsedUri);
+    }
   }
 
   /**
@@ -84,5 +94,31 @@ public class UriSource implements DataSource, Serializable {
     }
 
     return new SequenceInputStream(java.util.Collections.enumeration(streams));
+  }
+
+  /**
+   * Modifies the request to get the input stream
+   */
+  public InputStream getChunkInputStream(final long startRange, final long endRange, final boolean lastWorker)
+      throws IOException {
+    AmazonS3URI s3URI = new AmazonS3URI(parsedUri);
+    AmazonS3 s3Client = new AmazonS3Client(new DefaultAWSCredentialsProviderChain());
+    GetObjectRequest s3Request = new GetObjectRequest(s3URI.getBucket(), s3URI.getKey());
+    S3Object s3Object = s3Client.getObject(s3Request);
+    if (lastWorker) {
+      s3Request.setRange(startRange);
+    } else {
+      s3Request.setRange(startRange, endRange);
+    }
+    s3Object = s3Client.getObject(s3Request);
+    return s3Object.getObjectContent();
+  }
+
+  public long getFileSize() {
+    AmazonS3URI s3URI = new AmazonS3URI(parsedUri);
+    AmazonS3 s3Client = new AmazonS3Client(new DefaultAWSCredentialsProviderChain());
+    GetObjectRequest s3Request = new GetObjectRequest(s3URI.getBucket(), s3URI.getKey());
+    S3Object s3Object = s3Client.getObject(s3Request);
+    return s3Object.getObjectMetadata().getContentLength();
   }
 }
