@@ -19,7 +19,6 @@ import org.apache.hadoop.fs.Path;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.AmazonS3URI;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -40,6 +39,7 @@ public class UriSource implements DataSource, Serializable {
 
   /** The Uniform Resource Indicator (URI) of the data source. */
   private URI parsedUri;
+  private long fileSize;
 
   /**
    * Construct a source of data from the specified URI. The URI may be: a path on the local file system; an HDFS link; a
@@ -57,20 +57,16 @@ public class UriSource implements DataSource, Serializable {
     parsedUri =
         URI.create(Objects.requireNonNull(uri, "Parameter uri to UriSource may not be null"));
     /* Force using the Hadoop S3A FileSystem */
-    // if (parsedUri.getScheme().equals("s3")) {
-    // parsedUri = new URI("s3a", parsedUri.getUserInfo(), parsedUri.getHost(), parsedUri.getPort(),
-    // parsedUri.getPath(),
-    // parsedUri.getQuery(), parsedUri.getFragment());
-    // }
+    if (parsedUri.getScheme().equals("s3")) {
+      parsedUri = new URI("s3a", parsedUri.getUserInfo(), parsedUri.getHost(), parsedUri.getPort(), parsedUri.getPath(),
+          parsedUri.getQuery(), parsedUri.getFragment());
+    }
   }
 
   @Override
   public InputStream getInputStream() throws IOException {
-    if (parsedUri.getScheme().equals("http") || parsedUri.getScheme().equals("https")) {
-      return parsedUri.toURL().openConnection().getInputStream();
-    } else {
-      return getHadoopFileSystemInputStream(parsedUri);
-    }
+    return (parsedUri.getScheme().equals("http") || parsedUri.getScheme().equals("https")) ? parsedUri.toURL()
+        .openConnection().getInputStream() : getHadoopFileSystemInputStream(parsedUri);
   }
 
   /**
@@ -102,23 +98,25 @@ public class UriSource implements DataSource, Serializable {
    */
   public InputStream getChunkInputStream(final long startRange, final long endRange, final boolean lastWorker)
       throws IOException {
-    AmazonS3URI s3URI = new AmazonS3URI(parsedUri);
     AmazonS3 s3Client = new AmazonS3Client(new DefaultAWSCredentialsProviderChain());
-    GetObjectRequest s3Request = new GetObjectRequest(s3URI.getBucket(), s3URI.getKey());
+    String uriString = parsedUri.toString();
+    String removedScheme = uriString.substring(6);
+    String bucket = removedScheme.substring(0, removedScheme.indexOf('/'));
+    String key = removedScheme.substring(removedScheme.indexOf('/') + 1);
+    GetObjectRequest s3Request = new GetObjectRequest(bucket, key);
     S3Object s3Object = s3Client.getObject(s3Request);
-    if (lastWorker) {
-      s3Request.setRange(startRange);
-    } else {
-      s3Request.setRange(startRange, endRange);
-    }
+    s3Request.setRange(startRange, endRange);
     s3Object = s3Client.getObject(s3Request);
     return s3Object.getObjectContent();
   }
 
   public long getFileSize() {
-    AmazonS3URI s3URI = new AmazonS3URI(parsedUri);
     AmazonS3 s3Client = new AmazonS3Client(new DefaultAWSCredentialsProviderChain());
-    GetObjectRequest s3Request = new GetObjectRequest(s3URI.getBucket(), s3URI.getKey());
+    String uriString = parsedUri.toString();
+    String removedScheme = uriString.substring(6);
+    String bucket = removedScheme.substring(0, removedScheme.indexOf('/'));
+    String key = removedScheme.substring(removedScheme.indexOf('/') + 1);
+    GetObjectRequest s3Request = new GetObjectRequest(bucket, key);
     S3Object s3Object = s3Client.getObject(s3Request);
     return s3Object.getObjectMetadata().getContentLength();
   }
