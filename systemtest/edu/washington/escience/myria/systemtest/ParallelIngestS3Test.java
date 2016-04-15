@@ -44,7 +44,7 @@ public class ParallelIngestS3Test extends SystemTestBase {
     for (int workerID : workerIDs) {
       UriSource uriSource = new UriSource(s3Address);
       CSVFileScanFragment scanFragment = new CSVFileScanFragment(uriSource, relationSchema, workerCounterID,
-          workerIDs.length, (workerCounterID == workerIDs.length), '|', null, null, 0);
+          workerIDs.length, '|', null, null, 0);
       workerPlans.put(workerID, new RootOperator[] { new DbInsert(scanFragment, relationKey, true) });
       workerCounterID++;
     }

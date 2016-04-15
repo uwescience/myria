@@ -73,36 +73,33 @@ public class CSVFileScanFragment extends LeafOperator {
    */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(CSVFileScanFragment.class);
 
-  public CSVFileScanFragment(final String filename, final Schema schema, final int workerID, final int totalWorkers,
-      final boolean lastWorker) {
-    this(filename, schema, workerID, totalWorkers, lastWorker, null, null, null, null);
+  public CSVFileScanFragment(final String filename, final Schema schema, final int workerID, final int totalWorkers) {
+    this(filename, schema, workerID, totalWorkers, null, null, null, null);
   }
 
-  public CSVFileScanFragment(final DataSource source, final Schema schema, final int workerID, final int totalWorkers,
-      final boolean lastWorker) {
-    this(source, schema, workerID, totalWorkers, lastWorker, null, null, null, null);
-  }
-
-  public CSVFileScanFragment(final String filename, final Schema schema, final int workerID, final int totalWorkers,
-      final boolean lastWorker, final Character delimiter) {
-    this(new FileSource(filename), schema, workerID, totalWorkers, lastWorker, delimiter, null, null, null);
-  }
-
-  public CSVFileScanFragment(final DataSource source, final Schema schema, final int workerID, final int totalWorkers,
-      final boolean lastWorker, final Character delimiter) {
-    this(source, schema, workerID, totalWorkers, lastWorker, delimiter, null, null, null);
+  public CSVFileScanFragment(final DataSource source, final Schema schema, final int workerID, final int totalWorkers) {
+    this(source, schema, workerID, totalWorkers, null, null, null, null);
   }
 
   public CSVFileScanFragment(final String filename, final Schema schema, final int workerID, final int totalWorkers,
-      final boolean lastWorker, @Nullable final Character delimiter, @Nullable final Character quote,
-      @Nullable final Character escape, @Nullable final Integer numberOfSkippedLines) {
-    this(new FileSource(filename), schema, workerID, totalWorkers, lastWorker, delimiter, quote, escape,
-        numberOfSkippedLines);
+      final Character delimiter) {
+    this(new FileSource(filename), schema, workerID, totalWorkers, delimiter, null, null, null);
   }
 
   public CSVFileScanFragment(final DataSource source, final Schema schema, final int workerID, final int totalWorkers,
-      final boolean lastWorker, @Nullable final Character delimiter, @Nullable final Character quote,
-      @Nullable final Character escape, @Nullable final Integer numberOfSkippedLines) {
+      final Character delimiter) {
+    this(source, schema, workerID, totalWorkers, delimiter, null, null, null);
+  }
+
+  public CSVFileScanFragment(final String filename, final Schema schema, final int workerID, final int totalWorkers,
+      @Nullable final Character delimiter, @Nullable final Character quote, @Nullable final Character escape,
+      @Nullable final Integer numberOfSkippedLines) {
+    this(new FileSource(filename), schema, workerID, totalWorkers, delimiter, quote, escape, numberOfSkippedLines);
+  }
+
+  public CSVFileScanFragment(final DataSource source, final Schema schema, final int workerID, final int totalWorkers,
+      @Nullable final Character delimiter, @Nullable final Character quote, @Nullable final Character escape,
+      @Nullable final Integer numberOfSkippedLines) {
     this.source = (UriSource) Preconditions.checkNotNull(source, "source");
     this.schema = Preconditions.checkNotNull(schema, "schema");
 
@@ -113,7 +110,7 @@ public class CSVFileScanFragment extends LeafOperator {
 
     this.workerID = workerID;
     this.totalWorkers = totalWorkers;
-    this.lastWorker = lastWorker;
+    lastWorker = workerID == totalWorkers;
 
     fileSize = ((UriSource) source).getFileSize();
     partitionSize = fileSize / totalWorkers;
@@ -141,16 +138,18 @@ public class CSVFileScanFragment extends LeafOperator {
       }
       CSVRecord record = iterator.next();
       if (record.size() != schema.numColumns()) {
-        if (lineNumber != 0 && !lastWorker) {
+        if (lineNumber - 1 != 0 && !lastWorker) {
           long byteAtBeginning = record.getCharacterPosition();
-          LOGGER.warn("BYTE " + byteAtBeginning);
+          LOGGER.warn("LN " + workerID + " " + lineNumber);
+          LOGGER.warn("BYTE " + workerID + " " + byteAtBeginning);
+          LOGGER.warn("FIRST " + workerID + " " + first);
           if (first) {
             first = false;
-            start = byteAtBeginning;
+            start += byteAtBeginning;
           }
           end = end + OVERLAP;
-          LOGGER.warn("NEW START " + start);
-          LOGGER.warn("NEW END " + end);
+          LOGGER.warn("NEW START " + workerID + " " + start);
+          LOGGER.warn("NEW END " + workerID + " " + end);
 
           parser = new CSVParser(new BufferedReader(new InputStreamReader(source.getChunkInputStream(start, end,
               lastWorker))), CSVFormat.newFormat(delimiter).withQuote(quote).withEscape(escape));
