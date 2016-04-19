@@ -53,9 +53,9 @@ public class MultiwayJoinTest extends SystemTestBase {
     /* Step 1: generate test data */
     final HashMap<Tuple, Integer> expectedResult = simpleRandomJoinTestBase();
 
-    server.importDataset(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA, new HashSet<Integer>(Arrays.asList(workerIDs[0],
+    server.addDatasetToCatalog(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA, new HashSet<Integer>(Arrays.asList(workerIDs[0],
         workerIDs[1])));
-    server.importDataset(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA, new HashSet<Integer>(Arrays.asList(workerIDs[0],
+    server.addDatasetToCatalog(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA, new HashSet<Integer>(Arrays.asList(workerIDs[0],
         workerIDs[1])));
 
     /* Step 2: submit JSON query plan */
@@ -180,9 +180,9 @@ public class MultiwayJoinTest extends SystemTestBase {
     }
 
     /* import dataset to catalog */
-    server.importDataset(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA, new HashSet<Integer>(Arrays.asList(workerIDs[0],
+    server.addDatasetToCatalog(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA, new HashSet<Integer>(Arrays.asList(workerIDs[0],
         workerIDs[1])));
-    server.importDataset(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA, new HashSet<Integer>(Arrays.asList(workerIDs[0],
+    server.addDatasetToCatalog(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA, new HashSet<Integer>(Arrays.asList(workerIDs[0],
         workerIDs[1])));
 
     /* Step 2: do the query */
