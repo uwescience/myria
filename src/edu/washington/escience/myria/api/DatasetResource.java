@@ -540,9 +540,9 @@ public final class DatasetResource {
    * @throws DbException if there is an error in the database.
    */
   @POST
-  @Path("/importDataset")
+  @Path("/addDatasetToCatalog")
   @Consumes(MediaType.APPLICATION_JSON)
-  public Response importDataset(final DatasetEncoding dataset, @Context final UriInfo uriInfo) throws DbException {
+  public Response addDatasetToCatalog(final DatasetEncoding dataset, @Context final UriInfo uriInfo) throws DbException {
 
     /* If we already have a dataset by this name, tell the user there's a conflict. */
     try {
@@ -554,14 +554,14 @@ public final class DatasetResource {
       throw new DbException(e);
     }
 
-    /* For import, force the user to supply the workers. */
+    /* When adding a dataset to the catalog, force the user to supply the workers. */
     if (dataset.workers == null) {
       throw new MyriaApiException(Status.BAD_REQUEST,
-          "When importing, you need to specify which workers have the dataset.");
+          "When adding a dataset to the catalog, you need to specify which workers have the dataset.");
     }
 
     try {
-      server.importDataset(dataset.relationKey, dataset.schema, dataset.workers);
+      server.addDatasetToCatalog(dataset.relationKey, dataset.schema, dataset.workers);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
     }

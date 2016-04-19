@@ -884,14 +884,14 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   }
 
   /**
-   * @param relationKey the relationalKey of the dataset to import
-   * @param schema the schema of the dataset to import
+   * @param relationKey the relationalKey of the dataset to add
+   * @param schema the schema of the dataset to add
    * @param workersToImportFrom the set of workers
    * @throws DbException if there is an error
    * @throws InterruptedException interrupted
-   */
-  public void importDataset(final RelationKey relationKey, final Schema schema, final Set<Integer> workersToImportFrom)
-      throws DbException, InterruptedException {
+   **/
+  public void addDatasetToCatalog(final RelationKey relationKey, final Schema schema,
+      final Set<Integer> workersToImportFrom) throws DbException, InterruptedException {
 
     /* Figure out the workers we will use. If workersToImportFrom is null, use all active workers. */
     Set<Integer> actualWorkers = workersToImportFrom;
@@ -907,8 +907,9 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
         workerPlans.put(workerId, new SubQueryPlan(new DbInsert(EmptyRelation.of(schema), relationKey, false)));
       }
       ListenableFuture<Query> qf =
-          queryManager.submitQuery("import " + relationKey.toString(), "import " + relationKey.toString(), "import "
-              + relationKey.toString(getDBMS()), new SubQueryPlan(new SinkRoot(new EOSSource())), workerPlans);
+          queryManager.submitQuery("add to catalog " + relationKey.toString(), "add to catalog "
+              + relationKey.toString(), "add to catalog " + relationKey.toString(getDBMS()), new SubQueryPlan(
+              new SinkRoot(new EOSSource())), workerPlans);
       try {
         qf.get();
       } catch (ExecutionException e) {
