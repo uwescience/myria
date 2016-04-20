@@ -282,10 +282,11 @@ public class SystemTestBase {
   public Map<Integer, SocketInfo> getWorkers() {
     HashMap<Integer, SocketInfo> m = new HashMap<Integer, SocketInfo>();
     Random r = new Random();
-    m.put(MyriaConstants.MASTER_ID + r.nextInt(100) + 1, new SocketInfo(
-        DEFAULT_WORKER_STARTING_PORT));
-    m.put(MyriaConstants.MASTER_ID + r.nextInt(100) + 101, new SocketInfo(
-        DEFAULT_WORKER_STARTING_PORT + 1));
+    m.put(MyriaConstants.MASTER_ID + r.nextInt(100) + 1, new SocketInfo(DEFAULT_WORKER_STARTING_PORT));
+    m.put(MyriaConstants.MASTER_ID + r.nextInt(100) + 101, new SocketInfo(DEFAULT_WORKER_STARTING_PORT + 1));
+    m.put(MyriaConstants.MASTER_ID + r.nextInt(100) + 101, new SocketInfo(DEFAULT_WORKER_STARTING_PORT + 2));
+    m.put(MyriaConstants.MASTER_ID + r.nextInt(100) + 101, new SocketInfo(DEFAULT_WORKER_STARTING_PORT + 3));
+    m.put(MyriaConstants.MASTER_ID + r.nextInt(100) + 101, new SocketInfo(DEFAULT_WORKER_STARTING_PORT + 4));
     return m;
   }
 
@@ -309,6 +310,9 @@ public class SystemTestBase {
     config.setValue("master", MyriaConstants.MASTER_ID + "", "localhost:8001");
     config.setValue("workers", workerIDs[0] + "", "localhost:" + workerPorts[0]);
     config.setValue("workers", workerIDs[1] + "", "localhost:" + workerPorts[1]);
+    config.setValue("workers", workerIDs[2] + "", "localhost:" + workerPorts[2]);
+    config.setValue("workers", workerIDs[3] + "", "localhost:" + workerPorts[3]);
+    config.setValue("workers", workerIDs[4] + "", "localhost:" + workerPorts[4]);
     Files.createDirectories(Paths.get(workingDir));
     File configFile = Paths.get(workingDir, MyriaConstants.DEPLOYMENT_CONF_FILE).toFile();
     config.write(configFile);
