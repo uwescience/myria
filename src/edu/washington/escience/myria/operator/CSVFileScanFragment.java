@@ -61,7 +61,7 @@ public class CSVFileScanFragment extends LeafOperator {
 
   private final long fileSize;
   private final long partitionSize;
-  private final long OVERLAP = 1;
+  private long OVERLAP = 10;
   long start;
   long end;
 
@@ -121,15 +121,20 @@ public class CSVFileScanFragment extends LeafOperator {
   @Override
   protected TupleBatch fetchNextReady() throws IOException, DbException {
     long lineNumberBegin = lineNumber;
-    boolean first = true;
+
+    boolean fixedStartByte = false;
+
+    boolean onLastRow = false;
 
     while ((buffer.numTuples() < TupleBatch.BATCH_SIZE)) {
       lineNumber++;
       if (parser.isClosed()) {
+        LOGGER.warn("PARSER CLOSED");
         break;
       }
       try {
         if (!iterator.hasNext()) {
+          LOGGER.warn("ITERATOR NO NEXT");
           parser.close();
           break;
         }
@@ -137,27 +142,21 @@ public class CSVFileScanFragment extends LeafOperator {
         throw new DbException("Error parsing row " + lineNumber, e);
       }
       CSVRecord record = iterator.next();
-      if (record.size() != schema.numColumns()) {
-        if (lineNumber - 1 != 0 && !lastWorker) {
+      if (record.size() < schema.numColumns()) {
+        if (lineNumber - 1 != 0) {
+          onLastRow = true;
           long byteAtBeginning = record.getCharacterPosition();
-          LOGGER.warn("LN " + workerID + " " + lineNumber);
-          LOGGER.warn("BYTE " + workerID + " " + byteAtBeginning);
-          LOGGER.warn("FIRST " + workerID + " " + first);
-          if (first) {
-            first = false;
+          if (!fixedStartByte) {
+            fixedStartByte = true;
             start += byteAtBeginning;
           }
+          OVERLAP = (long) Math.pow(OVERLAP, 2);
           end = end + OVERLAP;
-          LOGGER.warn("NEW START " + workerID + " " + start);
-          LOGGER.warn("NEW END " + workerID + " " + end);
-
-          parser = new CSVParser(new BufferedReader(new InputStreamReader(source.getChunkInputStream(start, end,
-              lastWorker))), CSVFormat.newFormat(delimiter).withQuote(quote).withEscape(escape));
-          // FLAG
+          parser =
+              new CSVParser(new BufferedReader(
+                  new InputStreamReader(source.getChunkInputStream(start, end, lastWorker))), CSVFormat.newFormat(
+                  delimiter).withQuote(quote).withEscape(escape));
           iterator = parser.iterator();
-
-        } else {
-          LOGGER.warn("IGNORE THIS CASE ");
         }
       } else {
         for (int column = 0; column < schema.numColumns(); ++column) {
@@ -194,6 +193,9 @@ public class CSVFileScanFragment extends LeafOperator {
             throw new DbException("Error parsing column " + column + " of row " + lineNumber + ", expected type: "
                 + schema.getColumnType(column) + ", scanned value: " + cell, e);
           }
+          if (onLastRow) {
+            parser.close();
+          }
         }
       }
 
@@ -214,8 +216,9 @@ public class CSVFileScanFragment extends LeafOperator {
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     buffer = new TupleBatchBuffer(getSchema());
     try {
-      parser = new CSVParser(new BufferedReader(new InputStreamReader(source.getChunkInputStream(start, end,
-          lastWorker))), CSVFormat.newFormat(delimiter).withQuote(quote).withEscape(escape));
+      parser =
+          new CSVParser(new BufferedReader(new InputStreamReader(source.getChunkInputStream(start, end, lastWorker))),
+              CSVFormat.newFormat(delimiter).withQuote(quote).withEscape(escape));
       iterator = parser.iterator();
       for (int i = 0; i < numberOfSkippedLines; i++) {
         iterator.next();
