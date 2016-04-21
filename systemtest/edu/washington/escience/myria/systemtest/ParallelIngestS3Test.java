@@ -15,6 +15,7 @@ import java.util.concurrent.ExecutionException;
 import org.junit.Test;
 
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -30,6 +31,8 @@ import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
+import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
+import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
 import edu.washington.escience.myria.operator.network.partition.RoundRobinPartitionFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.util.JsonAPIUtils;
@@ -39,8 +42,6 @@ import edu.washington.escience.myria.util.JsonAPIUtils;
  */
 public class ParallelIngestS3Test extends SystemTestBase {
 
-  String dateTableAddress = "s3://myria-test/dateOUT.csv";
-
   Schema dateSchema = Schema.ofFields("d_datekey", Type.LONG_TYPE, "d_date", Type.STRING_TYPE, "d_dayofweek",
       Type.STRING_TYPE, "d_month", Type.STRING_TYPE, "d_year", Type.LONG_TYPE, "d_yearmonthnum", Type.LONG_TYPE,
       "d_yearmonth", Type.STRING_TYPE, "d_daynuminweek", Type.LONG_TYPE, "d_daynuminmonth", Type.LONG_TYPE,
@@ -48,23 +49,36 @@ public class ParallelIngestS3Test extends SystemTestBase {
       "d_sellingseason", Type.STRING_TYPE, "d_lastdayinweekfl", Type.STRING_TYPE, "d_lastdayinmonthfl",
       Type.STRING_TYPE, "d_holidayfl", Type.STRING_TYPE, "d_weekdayfl", Type.STRING_TYPE);
 
+  Schema customerSchema = Schema.ofFields("c_custkey", Type.LONG_TYPE, "c_name", Type.STRING_TYPE, "c_address",
+      Type.STRING_TYPE, "c_city", Type.STRING_TYPE, "c_nation_prefix", Type.STRING_TYPE, "c_nation", Type.STRING_TYPE,
+      "c_region", Type.STRING_TYPE, "c_phone", Type.STRING_TYPE, "c_mktsegment", Type.STRING_TYPE);
+
+  Schema lineorderSchema = Schema.ofFields("l_orderkey", Type.LONG_TYPE, "l_linenumber", Type.LONG_TYPE, "l_custkey",
+      Type.LONG_TYPE, "l_partkey", Type.LONG_TYPE, "l_suppkey", Type.LONG_TYPE, "l_orderdate", Type.STRING_TYPE,
+      "l_orderpriority", Type.STRING_TYPE, "l_shippriority", Type.LONG_TYPE, "l_quantity", Type.FLOAT_TYPE,
+      "l_extendedprice", Type.FLOAT_TYPE, "l_ordtotalprice", Type.FLOAT_TYPE, "l_discount", Type.FLOAT_TYPE,
+      "l_revenue", Type.LONG_TYPE, "l_supplycost", Type.LONG_TYPE, "l_tax", Type.FLOAT_TYPE, "l_commitdate",
+      Type.LONG_TYPE, "l_shipmode", Type.STRING_TYPE);
+
+  String dateTableAddress = "s3a://myria-test/dateOUT.csv";
+  String customerTableAddress = "s3a://myria-test/customerOUT.txt";
+  String lineorderTableAddress = "s3a://myria-test/lineorderOUT.txt";
+
   @Test
   public void parallelIngestTest() throws Exception {
     /* Read Source Data from S3 and invoke Server */
     RelationKey relationKey = RelationKey.of("public", "adhoc", "testParallel");
 
-    Map<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
+    Map<Integer, RootOperator[]> workerPlansParallelIngest = new HashMap<Integer, RootOperator[]>();
     int workerCounterID = 1;
     for (int workerID : workerIDs) {
       UriSource uriSource = new UriSource(dateTableAddress);
       CSVFileScanFragment scanFragment =
           new CSVFileScanFragment(uriSource, dateSchema, workerCounterID, workerIDs.length, '|', null, null, 0);
-      workerPlans.put(workerID, new RootOperator[] { new DbInsert(scanFragment, relationKey, true) });
+      workerPlansParallelIngest.put(workerID, new RootOperator[] { new DbInsert(scanFragment, relationKey, true) });
       workerCounterID++;
     }
-
-    SinkRoot masterRoot = new SinkRoot(new EOSSource());
-    server.submitQueryPlan(masterRoot, workerPlans).get();
+    server.submitQueryPlan(new SinkRoot(new EOSSource()), workerPlansParallelIngest).get();
     assertEquals(2556, server.getDatasetStatus(relationKey).getNumTuples());
   }
 
@@ -74,63 +88,55 @@ public class ParallelIngestS3Test extends SystemTestBase {
 
     /* Ingest in parallel */
     RelationKey relationKeyParallel = RelationKey.of("public", "adhoc", "ingestParallel");
-    Map<Integer, RootOperator[]> workerPlansParallel = new HashMap<Integer, RootOperator[]>();
+    Map<Integer, RootOperator[]> workerPlansParallelIngest = new HashMap<Integer, RootOperator[]>();
     int workerCounterID = 1;
     for (int workerID : workerIDs) {
-      UriSource uriSource = new UriSource(dateTableAddress);
+      UriSource uriSource = new UriSource(customerTableAddress);
       CSVFileScanFragment scanFragment =
-          new CSVFileScanFragment(uriSource, dateSchema, workerCounterID, workerIDs.length, '|', null, null, 0);
-      workerPlansParallel.put(workerID, new RootOperator[] { new DbInsert(scanFragment, relationKeyParallel, true) });
+          new CSVFileScanFragment(uriSource, customerSchema, workerCounterID, workerIDs.length, ',', null, null, 0);
+      workerPlansParallelIngest.put(workerID,
+          new RootOperator[] { new DbInsert(scanFragment, relationKeyParallel, true) });
       workerCounterID++;
     }
-    SinkRoot masterEmptyRoot = new SinkRoot(new EOSSource());
-    server.submitQueryPlan(masterEmptyRoot, workerPlansParallel).get();
-    assertEquals(2556, server.getDatasetStatus(relationKeyParallel).getNumTuples());
-
-    String dataOne =
-        JsonAPIUtils.download("localhost", masterDaemonPort, relationKeyParallel.getUserName(), relationKeyParallel
-            .getProgramName(), relationKeyParallel.getRelationName(), "json");
-
-    LOGGER.warn(dataOne);
+    server.submitQueryPlan(new SinkRoot(new EOSSource()), workerPlansParallelIngest).get();
+    assertEquals(300000, server.getDatasetStatus(relationKeyParallel).getNumTuples());
 
     /* Ingest the through the coordinator */
     RelationKey relationKeyCoordinator = RelationKey.of("public", "adhoc", "ingestCoordinator");
     server.ingestDataset(relationKeyCoordinator, server.getAliveWorkers(), null, new FileScan(new UriSource(
-        dateTableAddress), dateSchema, '|', null, null, 0), new RoundRobinPartitionFunction(workerIDs.length));
-    assertEquals(2556, server.getDatasetStatus(relationKeyCoordinator).getNumTuples());
+        customerTableAddress), customerSchema, ',', null, null, 0), new RoundRobinPartitionFunction(workerIDs.length));
+    assertEquals(300000, server.getDatasetStatus(relationKeyCoordinator).getNumTuples());
 
     /* do the diff at the first worker */
-    final Map<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
+    final Map<Integer, RootOperator[]> workerPlansDiff = new HashMap<Integer, RootOperator[]>();
 
-    DbQueryScan scanParallelIngest = new DbQueryScan(relationKeyParallel, dateSchema);
-    ExchangePairID masterReceiveParallelIngest = ExchangePairID.newID();
-    CollectProducer sendToMasterParallelIngest =
-        new CollectProducer(scanParallelIngest, masterReceiveParallelIngest, workerIDs[0]);
+    DbQueryScan scanParallelIngest = new DbQueryScan(relationKeyParallel, customerSchema);
+    ExchangePairID receiveParallelIngest = ExchangePairID.newID();
+    CollectProducer sendToWorkerParallelIngest =
+        new CollectProducer(scanParallelIngest, receiveParallelIngest, workerIDs[0]);
 
-    DbQueryScan scanCoordinatorIngest = new DbQueryScan(relationKeyCoordinator, dateSchema);
-    ExchangePairID masterReceiveCoordinatorIngest = ExchangePairID.newID();
-    CollectProducer workerProduceCoordinatorIngest =
-        new CollectProducer(scanCoordinatorIngest, masterReceiveCoordinatorIngest, workerIDs[0]);
+    DbQueryScan scanCoordinatorIngest = new DbQueryScan(relationKeyCoordinator, customerSchema);
+    ExchangePairID receiveCoordinatorIngest = ExchangePairID.newID();
+    CollectProducer sendToWorkerCoordinatorIngest =
+        new CollectProducer(scanCoordinatorIngest, receiveCoordinatorIngest, workerIDs[0]);
 
     CollectConsumer workerConsumerParallelIngest =
-        new CollectConsumer(dateSchema, masterReceiveParallelIngest, workerIDs);
-    CollectConsumer masterConsumerCoordinatorIngest =
-        new CollectConsumer(dateSchema, masterReceiveCoordinatorIngest, workerIDs);
+        new CollectConsumer(customerSchema, receiveParallelIngest, workerIDs);
+    CollectConsumer workerConsumerCoordinatorIngest =
+        new CollectConsumer(customerSchema, receiveCoordinatorIngest, workerIDs);
     RelationKey diffRelationKey = new RelationKey("public", "adhoc", "diffResult");
-    Difference diff = new Difference(workerConsumerParallelIngest, masterConsumerCoordinatorIngest);
-    DbInsert workerRoot = new DbInsert(diff, diffRelationKey, true);
+    Difference diff = new Difference(workerConsumerParallelIngest, workerConsumerCoordinatorIngest);
+    DbInsert workerIngest = new DbInsert(diff, diffRelationKey, true);
 
-    workerPlans.put(workerIDs[0], new RootOperator[] {
-        sendToMasterParallelIngest, workerProduceCoordinatorIngest, workerRoot });
-    workerPlans.put(workerIDs[1], new RootOperator[] { sendToMasterParallelIngest, workerProduceCoordinatorIngest });
+    workerPlansDiff.put(workerIDs[0], new RootOperator[] {
+        sendToWorkerParallelIngest, sendToWorkerCoordinatorIngest, workerIngest });
+    workerPlansDiff.put(workerIDs[1], new RootOperator[] { sendToWorkerParallelIngest, sendToWorkerCoordinatorIngest });
 
-    server.submitQueryPlan(masterEmptyRoot, workerPlans).get();
+    server.submitQueryPlan(new SinkRoot(new EOSSource()), workerPlansDiff).get();
 
     String data =
         JsonAPIUtils.download("localhost", masterDaemonPort, diffRelationKey.getUserName(), diffRelationKey
             .getProgramName(), diffRelationKey.getRelationName(), "json");
-
-    LOGGER.warn(data);
 
     assertEquals("[]", data);
   }
@@ -138,39 +144,37 @@ public class ParallelIngestS3Test extends SystemTestBase {
   @Test
   public void speedTest() throws URISyntaxException, DbException, InterruptedException, ExecutionException,
       CatalogException, IOException {
-
-    Schema customerSchema =
-        Schema.ofFields("c_custkey", Type.LONG_TYPE, "c_name", Type.STRING_TYPE, "c_address", Type.STRING_TYPE,
-            "c_city", Type.STRING_TYPE, "c_nation_prefix", Type.STRING_TYPE, "c_nation", Type.STRING_TYPE, "c_region",
-            Type.STRING_TYPE, "c_phone", Type.STRING_TYPE, "c_mktsegment", Type.STRING_TYPE);
-
-    String customerTableAddress = "s3://myria-test/customerOUT.txt";
-
-    /* Ingest in parallel */
-    RelationKey relationKeyParallel = RelationKey.of("public", "adhoc", "ingestParallel");
-    Map<Integer, RootOperator[]> workerPlansParallel = new HashMap<Integer, RootOperator[]>();
+    /* Read in parallel and sink */
+    Map<Integer, RootOperator[]> workerPlansParallelIngest = new HashMap<Integer, RootOperator[]>();
     int workerCounterID = 1;
     for (int workerID : workerIDs) {
-      UriSource uriSource = new UriSource(customerTableAddress);
+      UriSource uriSource = new UriSource(lineorderTableAddress);
       CSVFileScanFragment scanFragment =
-          new CSVFileScanFragment(uriSource, customerSchema, workerCounterID, workerIDs.length, ',', null, null, 0);
-      workerPlansParallel.put(workerID, new RootOperator[] { new DbInsert(scanFragment, relationKeyParallel, true) });
+          new CSVFileScanFragment(uriSource, lineorderSchema, workerCounterID, workerIDs.length, '|', null, null, 0);
+      workerPlansParallelIngest.put(workerID, new RootOperator[] { new SinkRoot(scanFragment) });
       workerCounterID++;
     }
-    SinkRoot masterEmptyRoot = new SinkRoot(new EOSSource());
-    final Date startParallel = new Date();
-    server.submitQueryPlan(masterEmptyRoot, workerPlansParallel).get();
-    final double elapsedParallel = (new Date().getTime() - startParallel.getTime()) / 1000.0;
+    final Date startParallelTimer = new Date();
+    server.submitQueryPlan(new SinkRoot(new EOSSource()), workerPlansParallelIngest).get();
+    final double elapsedParallel = (new Date().getTime() - startParallelTimer.getTime()) / 1000.0;
 
-    /* Ingest the through the coordinator */
-    RelationKey relationKeyCoordinator = RelationKey.of("public", "adhoc", "ingestCoordinator");
+    /* Read through the coordinator and sink */
+    FileScan scan = new FileScan(new UriSource(lineorderTableAddress), lineorderSchema, '|', null, null, 0);
+    ExchangePairID scatterId = ExchangePairID.newID();
+    GenericShuffleProducer masterScatter =
+        new GenericShuffleProducer(scan, scatterId, workerIDs, new RoundRobinPartitionFunction(workerIDs.length));
+    GenericShuffleConsumer workersGather =
+        new GenericShuffleConsumer(lineorderSchema, scatterId, new int[] { MyriaConstants.MASTER_ID });
+    Map<Integer, RootOperator[]> workerPlansCoordinatorIngest = new HashMap<Integer, RootOperator[]>();
+    for (Integer workerId : workerIDs) {
+      workerPlansCoordinatorIngest.put(workerId, new RootOperator[] { new SinkRoot(workersGather) });
+    }
     final Date startCoordinator = new Date();
-    server.ingestDataset(relationKeyCoordinator, server.getAliveWorkers(), null, new FileScan(new UriSource(
-        customerTableAddress), customerSchema, ',', null, null, 0), new RoundRobinPartitionFunction(workerIDs.length));
+    server.submitQueryPlan(masterScatter, workerPlansCoordinatorIngest).get();
     final double elapsedCoordinator = (new Date().getTime() - startCoordinator.getTime()) / 1000.0;
 
-    LOGGER.warn("TIME SPENT " + elapsedParallel);
-    LOGGER.warn("TIME SPENT " + elapsedCoordinator);
+    LOGGER.warn("TIME SPENT PARALLEL " + elapsedParallel);
+    LOGGER.warn("TIME SPENT COORDINATOR " + elapsedCoordinator);
 
   }
 }
