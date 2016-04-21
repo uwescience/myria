@@ -85,10 +85,8 @@ import edu.washington.escience.myria.expression.MinusExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.expression.WorkerIdExpression;
 import edu.washington.escience.myria.io.DataSink;
-import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.io.UriSink;
 import edu.washington.escience.myria.operator.Apply;
-import edu.washington.escience.myria.operator.CSVFileScanFragment;
 import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbCreateIndex;
 import edu.washington.escience.myria.operator.DbCreateView;
@@ -916,48 +914,6 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
 
     // updating the partition function only after it's successfully ingested.
     updateHowPartitioned(relationKey, new HowPartitioned(pf, workersArray));
-    return getDatasetStatus(relationKey);
-  }
-
-  /**
-   * Ingest the given CSV dataset in parallel.
-   * 
-   * @param relationKey the name of the dataset.
-   * @param workersToIngest restrict the workers to ingest data (null for all)
-   * @param csvFileScan the specialized filescan for parallel reads
-   * @return the status of the ingested dataset.
-   * @throws DbException
-   * @throws InterruptedException
-   */
-  public DatasetStatus ingestCSVDatasetInParallel(final RelationKey relationKey, final DataSource source,
-      final Schema schema) throws DbException, InterruptedException {
-
-    Set<Integer> actualWorkers = getAliveWorkers();;
-
-    Preconditions.checkArgument(actualWorkers.size() > 0, "Must use > 0 workers");
-    int[] workersArray = MyriaUtils.integerSetToIntArray(actualWorkers);
-
-    Map<Integer, SubQueryPlan> workerPlansParallelIngest = new HashMap<>();
-    for (int workerID : workersArray) {
-      CSVFileScanFragment csvFileScan = new CSVFileScanFragment(source, schema, workerID, actualWorkers.size());
-      workerPlansParallelIngest.put(workerID, new SubQueryPlan(new DbInsert(csvFileScan, relationKey, true)));
-    }
-
-    ListenableFuture<Query> qf;
-    try {
-      qf =
-          queryManager.submitQuery("parallel ingest " + relationKey.toString(), "parallel ingest "
-              + relationKey.toString(), "parallel ingest " + relationKey.toString(getDBMS()), new SubQueryPlan(
-              new SinkRoot(new EOSSource())), workerPlansParallelIngest);
-    } catch (CatalogException e) {
-      throw new DbException("Error submitting query", e);
-    }
-    try {
-      qf.get();
-    } catch (ExecutionException e) {
-      throw new DbException("Error executing query", e.getCause());
-    }
-
     return getDatasetStatus(relationKey);
   }
 

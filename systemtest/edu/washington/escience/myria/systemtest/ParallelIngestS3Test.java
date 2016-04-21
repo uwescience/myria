@@ -5,21 +5,14 @@ package edu.washington.escience.myria.systemtest;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 
 import org.junit.Test;
 
-import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.io.UriSource;
 import edu.washington.escience.myria.operator.CSVFileScanFragment;
 import edu.washington.escience.myria.operator.DbInsert;
@@ -31,8 +24,6 @@ import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
-import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
-import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
 import edu.washington.escience.myria.operator.network.partition.RoundRobinPartitionFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.util.JsonAPIUtils;
@@ -141,40 +132,4 @@ public class ParallelIngestS3Test extends SystemTestBase {
     assertEquals("[]", data);
   }
 
-  @Test
-  public void speedTest() throws URISyntaxException, DbException, InterruptedException, ExecutionException,
-      CatalogException, IOException {
-    /* Read in parallel and sink */
-    Map<Integer, RootOperator[]> workerPlansParallelIngest = new HashMap<Integer, RootOperator[]>();
-    int workerCounterID = 1;
-    for (int workerID : workerIDs) {
-      UriSource uriSource = new UriSource(lineorderTableAddress);
-      CSVFileScanFragment scanFragment =
-          new CSVFileScanFragment(uriSource, lineorderSchema, workerCounterID, workerIDs.length, '|', null, null, 0);
-      workerPlansParallelIngest.put(workerID, new RootOperator[] { new SinkRoot(scanFragment) });
-      workerCounterID++;
-    }
-    final Date startParallelTimer = new Date();
-    server.submitQueryPlan(new SinkRoot(new EOSSource()), workerPlansParallelIngest).get();
-    final double elapsedParallel = (new Date().getTime() - startParallelTimer.getTime()) / 1000.0;
-
-    /* Read through the coordinator and sink */
-    FileScan scan = new FileScan(new UriSource(lineorderTableAddress), lineorderSchema, '|', null, null, 0);
-    ExchangePairID scatterId = ExchangePairID.newID();
-    GenericShuffleProducer masterScatter =
-        new GenericShuffleProducer(scan, scatterId, workerIDs, new RoundRobinPartitionFunction(workerIDs.length));
-    GenericShuffleConsumer workersGather =
-        new GenericShuffleConsumer(lineorderSchema, scatterId, new int[] { MyriaConstants.MASTER_ID });
-    Map<Integer, RootOperator[]> workerPlansCoordinatorIngest = new HashMap<Integer, RootOperator[]>();
-    for (Integer workerId : workerIDs) {
-      workerPlansCoordinatorIngest.put(workerId, new RootOperator[] { new SinkRoot(workersGather) });
-    }
-    final Date startCoordinator = new Date();
-    server.submitQueryPlan(masterScatter, workerPlansCoordinatorIngest).get();
-    final double elapsedCoordinator = (new Date().getTime() - startCoordinator.getTime()) / 1000.0;
-
-    LOGGER.warn("TIME SPENT PARALLEL " + elapsedParallel);
-    LOGGER.warn("TIME SPENT COORDINATOR " + elapsedCoordinator);
-
-  }
 }
