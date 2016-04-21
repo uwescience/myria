@@ -45,6 +45,7 @@ import edu.washington.escience.myria.TupleWriter;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.api.encoding.DatasetEncoding;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
+import edu.washington.escience.myria.api.encoding.ParallelIngestEncoding;
 import edu.washington.escience.myria.api.encoding.TipsyDatasetEncoding;
 import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.io.InputStreamSource;
@@ -489,6 +490,24 @@ public final class DatasetResource {
     URI datasetUri = getCanonicalResourcePath(uriInfo, relationKey);
     status.setUri(datasetUri);
     return builder.entity(status).build();
+  }
+
+  /**
+   */
+  @POST
+  @Path("/parallelIngest")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public Response parallelIngest(final ParallelIngestEncoding dataset) throws DbException {
+
+    try {
+      server.ingestCSVDatasetInParallel(dataset.relationKey, dataset.source, dataset.schema);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
+
+    /* In the response, tell the client the path to the relation. */
+    return Response.created(getCanonicalResourcePath(uriInfo, dataset.relationKey)).build();
+
   }
 
   /**
