@@ -55,15 +55,13 @@ public class CSVFileScanFragment extends LeafOperator {
   /** Which line of the file the scanner is currently on. */
   private long lineNumber = 0;
 
-  private final int workerID;
-  private final int totalWorkers;
-  private final boolean lastWorker;
-
+  private final boolean isLastWorker;
   private final long fileSize;
   private final long partitionSize;
-  private long OVERLAP = 10;
-  long start;
-  long end;
+  private long byteOverlap = 10;
+  private long startByteRange;
+  private long endByteRange;
+  long workerID;
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -107,34 +105,30 @@ public class CSVFileScanFragment extends LeafOperator {
     this.quote = MoreObjects.firstNonNull(quote, CSVFormat.DEFAULT.getQuoteCharacter());
     this.escape = escape != null ? escape : CSVFormat.DEFAULT.getEscapeCharacter();
     this.numberOfSkippedLines = MoreObjects.firstNonNull(numberOfSkippedLines, 0);
-
     this.workerID = workerID;
-    this.totalWorkers = totalWorkers;
-    lastWorker = workerID == totalWorkers;
 
+    isLastWorker = workerID == totalWorkers;
     fileSize = ((UriSource) source).getFileSize();
+
     partitionSize = fileSize / totalWorkers;
-    start = partitionSize * (workerID - 1);
-    end = start + partitionSize;
+    startByteRange = partitionSize * (workerID - 1);
+    endByteRange = startByteRange + partitionSize;
+
   }
 
   @Override
   protected TupleBatch fetchNextReady() throws IOException, DbException {
     long lineNumberBegin = lineNumber;
-
     boolean fixedStartByte = false;
-
     boolean onLastRow = false;
 
     while ((buffer.numTuples() < TupleBatch.BATCH_SIZE)) {
       lineNumber++;
       if (parser.isClosed()) {
-        LOGGER.warn("PARSER CLOSED");
         break;
       }
       try {
         if (!iterator.hasNext()) {
-          LOGGER.warn("ITERATOR NO NEXT");
           parser.close();
           break;
         }
@@ -143,19 +137,18 @@ public class CSVFileScanFragment extends LeafOperator {
       }
       CSVRecord record = iterator.next();
       if (record.size() < schema.numColumns()) {
-        if (lineNumber - 1 != 0) {
+        if (lineNumber - 1 != 0 && !isLastWorker) {
           onLastRow = true;
           long byteAtBeginning = record.getCharacterPosition();
           if (!fixedStartByte) {
             fixedStartByte = true;
-            start += byteAtBeginning;
+            startByteRange += byteAtBeginning;
           }
-          OVERLAP = (long) Math.pow(OVERLAP, 2);
-          end = end + OVERLAP;
+          byteOverlap = (long) Math.pow(byteOverlap, 2);
+          endByteRange = endByteRange + byteOverlap;
           parser =
-              new CSVParser(new BufferedReader(
-                  new InputStreamReader(source.getChunkInputStream(start, end, lastWorker))), CSVFormat.newFormat(
-                  delimiter).withQuote(quote).withEscape(escape));
+              new CSVParser(new BufferedReader(new InputStreamReader(source.getChunkInputStream(startByteRange,
+                  endByteRange, isLastWorker))), CSVFormat.newFormat(delimiter).withQuote(quote).withEscape(escape));
           iterator = parser.iterator();
         }
       } else {
@@ -217,8 +210,8 @@ public class CSVFileScanFragment extends LeafOperator {
     buffer = new TupleBatchBuffer(getSchema());
     try {
       parser =
-          new CSVParser(new BufferedReader(new InputStreamReader(source.getChunkInputStream(start, end, lastWorker))),
-              CSVFormat.newFormat(delimiter).withQuote(quote).withEscape(escape));
+          new CSVParser(new BufferedReader(new InputStreamReader(source.getChunkInputStream(startByteRange,
+              endByteRange, isLastWorker))), CSVFormat.newFormat(delimiter).withQuote(quote).withEscape(escape));
       iterator = parser.iterator();
       for (int i = 0; i < numberOfSkippedLines; i++) {
         iterator.next();

@@ -18,6 +18,7 @@ import edu.washington.escience.myria.api.encoding.CreateIndexEncoding;
 import edu.washington.escience.myria.api.encoding.CreateViewEncoding;
 import edu.washington.escience.myria.api.encoding.DatasetEncoding;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
+import edu.washington.escience.myria.api.encoding.ParallelIngestEncoding;
 import edu.washington.escience.myria.api.encoding.TipsyDatasetEncoding;
 import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.io.InputStreamSource;
@@ -619,7 +620,25 @@ public final class DatasetResource {
   }
 
   /**
-   * @param dataset the dataset to be added.
+   */
+  @POST
+  @Path("/parallelIngest")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public Response parallelIngest(final ParallelIngestEncoding dataset) throws DbException {
+
+    try {
+      server.ingestCSVDatasetInParallel(dataset.relationKey, dataset.source, dataset.schema);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
+
+    /* In the response, tell the client the path to the relation. */
+    return Response.created(getCanonicalResourcePath(uriInfo, dataset.relationKey)).build();
+
+  }
+
+  /**
+   * @param dataset the dataset to be imported.
    * @param uriInfo information about the current URL.
    * @return created dataset resource.
    * @throws DbException if there is an error in the database.
