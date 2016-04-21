@@ -44,16 +44,8 @@ public class ParallelIngestS3Test extends SystemTestBase {
       Type.STRING_TYPE, "c_city", Type.STRING_TYPE, "c_nation_prefix", Type.STRING_TYPE, "c_nation", Type.STRING_TYPE,
       "c_region", Type.STRING_TYPE, "c_phone", Type.STRING_TYPE, "c_mktsegment", Type.STRING_TYPE);
 
-  Schema lineorderSchema = Schema.ofFields("l_orderkey", Type.LONG_TYPE, "l_linenumber", Type.LONG_TYPE, "l_custkey",
-      Type.LONG_TYPE, "l_partkey", Type.LONG_TYPE, "l_suppkey", Type.LONG_TYPE, "l_orderdate", Type.STRING_TYPE,
-      "l_orderpriority", Type.STRING_TYPE, "l_shippriority", Type.LONG_TYPE, "l_quantity", Type.FLOAT_TYPE,
-      "l_extendedprice", Type.FLOAT_TYPE, "l_ordtotalprice", Type.FLOAT_TYPE, "l_discount", Type.FLOAT_TYPE,
-      "l_revenue", Type.LONG_TYPE, "l_supplycost", Type.LONG_TYPE, "l_tax", Type.FLOAT_TYPE, "l_commitdate",
-      Type.LONG_TYPE, "l_shipmode", Type.STRING_TYPE);
-
-  String dateTableAddress = "s3a://myria-test/dateOUT.csv";
-  String customerTableAddress = "s3a://myria-test/customerOUT.txt";
-  String lineorderTableAddress = "s3a://myria-test/lineorderOUT.txt";
+  String dateTableAddress = "s3://myria-test/dateOUT.csv";
+  String customerTableAddress = "s3://myria-test/customerOUT.txt";
 
   @Test
   public void parallelIngestTest() throws Exception {
@@ -78,35 +70,35 @@ public class ParallelIngestS3Test extends SystemTestBase {
     /* Read Source Data from S3 and invoke Server */
 
     /* Ingest in parallel */
-    RelationKey relationKeyParallel = RelationKey.of("public", "adhoc", "ingestParallel");
+    RelationKey relationKeyParallelIngest = RelationKey.of("public", "adhoc", "ingestParallel");
     Map<Integer, RootOperator[]> workerPlansParallelIngest = new HashMap<Integer, RootOperator[]>();
     int workerCounterID = 1;
     for (int workerID : workerIDs) {
       UriSource uriSource = new UriSource(customerTableAddress);
       CSVFileScanFragment scanFragment =
           new CSVFileScanFragment(uriSource, customerSchema, workerCounterID, workerIDs.length, ',', null, null, 0);
-      workerPlansParallelIngest.put(workerID,
-          new RootOperator[] { new DbInsert(scanFragment, relationKeyParallel, true) });
+      workerPlansParallelIngest.put(workerID, new RootOperator[] { new DbInsert(scanFragment,
+          relationKeyParallelIngest, true) });
       workerCounterID++;
     }
     server.submitQueryPlan(new SinkRoot(new EOSSource()), workerPlansParallelIngest).get();
-    assertEquals(300000, server.getDatasetStatus(relationKeyParallel).getNumTuples());
+    assertEquals(300000, server.getDatasetStatus(relationKeyParallelIngest).getNumTuples());
 
     /* Ingest the through the coordinator */
-    RelationKey relationKeyCoordinator = RelationKey.of("public", "adhoc", "ingestCoordinator");
-    server.ingestDataset(relationKeyCoordinator, server.getAliveWorkers(), null, new FileScan(new UriSource(
+    RelationKey relationKeyCoordinatorIngest = RelationKey.of("public", "adhoc", "ingestCoordinator");
+    server.ingestDataset(relationKeyCoordinatorIngest, server.getAliveWorkers(), null, new FileScan(new UriSource(
         customerTableAddress), customerSchema, ',', null, null, 0), new RoundRobinPartitionFunction(workerIDs.length));
-    assertEquals(300000, server.getDatasetStatus(relationKeyCoordinator).getNumTuples());
+    assertEquals(300000, server.getDatasetStatus(relationKeyCoordinatorIngest).getNumTuples());
 
     /* do the diff at the first worker */
     final Map<Integer, RootOperator[]> workerPlansDiff = new HashMap<Integer, RootOperator[]>();
 
-    DbQueryScan scanParallelIngest = new DbQueryScan(relationKeyParallel, customerSchema);
+    DbQueryScan scanParallelIngest = new DbQueryScan(relationKeyParallelIngest, customerSchema);
     ExchangePairID receiveParallelIngest = ExchangePairID.newID();
     CollectProducer sendToWorkerParallelIngest =
         new CollectProducer(scanParallelIngest, receiveParallelIngest, workerIDs[0]);
 
-    DbQueryScan scanCoordinatorIngest = new DbQueryScan(relationKeyCoordinator, customerSchema);
+    DbQueryScan scanCoordinatorIngest = new DbQueryScan(relationKeyCoordinatorIngest, customerSchema);
     ExchangePairID receiveCoordinatorIngest = ExchangePairID.newID();
     CollectProducer sendToWorkerCoordinatorIngest =
         new CollectProducer(scanCoordinatorIngest, receiveCoordinatorIngest, workerIDs[0]);
@@ -115,6 +107,7 @@ public class ParallelIngestS3Test extends SystemTestBase {
         new CollectConsumer(customerSchema, receiveParallelIngest, workerIDs);
     CollectConsumer workerConsumerCoordinatorIngest =
         new CollectConsumer(customerSchema, receiveCoordinatorIngest, workerIDs);
+
     RelationKey diffRelationKey = new RelationKey("public", "adhoc", "diffResult");
     Difference diff = new Difference(workerConsumerParallelIngest, workerConsumerCoordinatorIngest);
     DbInsert workerIngest = new DbInsert(diff, diffRelationKey, true);
