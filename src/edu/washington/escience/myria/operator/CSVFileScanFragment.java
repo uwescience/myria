@@ -119,7 +119,7 @@ public class CSVFileScanFragment extends LeafOperator {
   @Override
   protected TupleBatch fetchNextReady() throws IOException, DbException {
     long lineNumberBegin = lineNumber;
-    boolean fixedStartByte = false;
+    boolean fixingStartByte = false;
     boolean onLastRow = false;
 
     while ((buffer.numTuples() < TupleBatch.BATCH_SIZE)) {
@@ -139,10 +139,10 @@ public class CSVFileScanFragment extends LeafOperator {
       if (record.size() < schema.numColumns()) {
         if (lineNumber - 1 != 0 && !isLastWorker) {
           onLastRow = true;
-          long byteAtBeginning = record.getCharacterPosition();
-          if (!fixedStartByte) {
-            fixedStartByte = true;
-            startByteRange += byteAtBeginning;
+          long byteAtBeginningOfRecord = record.getCharacterPosition();
+          if (!fixingStartByte) {
+            fixingStartByte = true;
+            startByteRange += byteAtBeginningOfRecord;
           }
           byteOverlap = (long) Math.pow(byteOverlap, 2);
           endByteRange = endByteRange + byteOverlap;

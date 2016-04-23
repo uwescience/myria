@@ -500,7 +500,8 @@ public final class DatasetResource {
   public Response parallelIngest(final ParallelIngestEncoding dataset) throws DbException {
 
     try {
-      server.ingestCSVDatasetInParallel(dataset.relationKey, dataset.source, dataset.schema);
+      server.ingestCSVDatasetInParallel(dataset.relationKey, dataset.source, dataset.schema, dataset.delimiter,
+          dataset.workers);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
     }
