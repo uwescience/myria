@@ -16,7 +16,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.auth.AnonymousAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
@@ -39,7 +39,7 @@ public class UriSource implements DataSource, Serializable {
 
   /** The Uniform Resource Indicator (URI) of the data source. */
   private URI parsedUri;
-  private static final AmazonS3 s3Client = new AmazonS3Client(new DefaultAWSCredentialsProviderChain());
+  private static final AmazonS3 s3Client = new AmazonS3Client(new AnonymousAWSCredentials());
 
   /**
    * Construct a source of data from the specified URI. The URI may be: a path on the local file system; an HDFS link; a
