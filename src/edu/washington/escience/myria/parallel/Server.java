@@ -1000,16 +1000,21 @@ public final class Server {
    * @throws InterruptedException
    */
   public DatasetStatus ingestCSVDatasetInParallel(final RelationKey relationKey, final DataSource source,
-      final Schema schema) throws DbException, InterruptedException {
+      final Schema schema, final Character delimiter, final Set<Integer> workersToIngest) throws DbException,
+      InterruptedException {
 
-    Set<Integer> actualWorkers = getAliveWorkers();;
-
+    /* Figure out the workers we will use. If workersToIngest is null, use all active workers. */
+    Set<Integer> actualWorkers = workersToIngest;
+    if (workersToIngest == null) {
+      actualWorkers = getAliveWorkers();
+    }
     Preconditions.checkArgument(actualWorkers.size() > 0, "Must use > 0 workers");
     int[] workersArray = MyriaUtils.integerSetToIntArray(actualWorkers);
 
     Map<Integer, SubQueryPlan> workerPlansParallelIngest = new HashMap<>();
     for (int workerID : workersArray) {
-      CSVFileScanFragment csvFileScan = new CSVFileScanFragment(source, schema, workerID, actualWorkers.size());
+      CSVFileScanFragment csvFileScan =
+          new CSVFileScanFragment(source, schema, workerID, workersArray.length, delimiter);
       workerPlansParallelIngest.put(workerID, new SubQueryPlan(new DbInsert(csvFileScan, relationKey, true)));
     }
 
