@@ -5,21 +5,14 @@ package edu.washington.escience.myria.systemtest;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 
 import org.junit.Test;
 
-import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.io.UriSource;
 import edu.washington.escience.myria.operator.CSVFileScanFragment;
 import edu.washington.escience.myria.operator.DbInsert;
@@ -31,8 +24,6 @@ import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
-import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
-import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
 import edu.washington.escience.myria.operator.network.partition.RoundRobinPartitionFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.util.JsonAPIUtils;
@@ -53,16 +44,8 @@ public class ParallelIngestS3Test extends SystemTestBase {
       Type.STRING_TYPE, "c_city", Type.STRING_TYPE, "c_nation_prefix", Type.STRING_TYPE, "c_nation", Type.STRING_TYPE,
       "c_region", Type.STRING_TYPE, "c_phone", Type.STRING_TYPE, "c_mktsegment", Type.STRING_TYPE);
 
-  Schema lineorderSchema = Schema.ofFields("l_orderkey", Type.LONG_TYPE, "l_linenumber", Type.LONG_TYPE, "l_custkey",
-      Type.LONG_TYPE, "l_partkey", Type.LONG_TYPE, "l_suppkey", Type.LONG_TYPE, "l_orderdate", Type.STRING_TYPE,
-      "l_orderpriority", Type.STRING_TYPE, "l_shippriority", Type.LONG_TYPE, "l_quantity", Type.FLOAT_TYPE,
-      "l_extendedprice", Type.FLOAT_TYPE, "l_ordtotalprice", Type.FLOAT_TYPE, "l_discount", Type.FLOAT_TYPE,
-      "l_revenue", Type.LONG_TYPE, "l_supplycost", Type.LONG_TYPE, "l_tax", Type.FLOAT_TYPE, "l_commitdate",
-      Type.LONG_TYPE, "l_shipmode", Type.STRING_TYPE);
-
   String dateTableAddress = "s3a://myria-test/dateOUT.csv";
   String customerTableAddress = "s3a://myria-test/customerOUT.txt";
-  String lineorderTableAddress = "s3a://myria-test/lineorderOUT.txt";
 
   @Test
   public void parallelIngestTest() throws Exception {
@@ -139,42 +122,5 @@ public class ParallelIngestS3Test extends SystemTestBase {
             .getProgramName(), diffRelationKey.getRelationName(), "json");
 
     assertEquals("[]", data);
-  }
-
-  @Test
-  public void speedTest() throws URISyntaxException, DbException, InterruptedException, ExecutionException,
-      CatalogException, IOException {
-    /* Read in parallel and sink */
-    Map<Integer, RootOperator[]> workerPlansParallelIngest = new HashMap<Integer, RootOperator[]>();
-    int workerCounterID = 1;
-    for (int workerID : workerIDs) {
-      UriSource uriSource = new UriSource(lineorderTableAddress);
-      CSVFileScanFragment scanFragment =
-          new CSVFileScanFragment(uriSource, lineorderSchema, workerCounterID, workerIDs.length, '|', null, null, 0);
-      workerPlansParallelIngest.put(workerID, new RootOperator[] { new SinkRoot(scanFragment) });
-      workerCounterID++;
-    }
-    final Date startParallelTimer = new Date();
-    server.submitQueryPlan(new SinkRoot(new EOSSource()), workerPlansParallelIngest).get();
-    final double elapsedParallel = (new Date().getTime() - startParallelTimer.getTime()) / 1000.0;
-
-    /* Read through the coordinator and sink */
-    FileScan scan = new FileScan(new UriSource(lineorderTableAddress), lineorderSchema, '|', null, null, 0);
-    ExchangePairID scatterId = ExchangePairID.newID();
-    GenericShuffleProducer masterScatter =
-        new GenericShuffleProducer(scan, scatterId, workerIDs, new RoundRobinPartitionFunction(workerIDs.length));
-    GenericShuffleConsumer workersGather =
-        new GenericShuffleConsumer(lineorderSchema, scatterId, new int[] { MyriaConstants.MASTER_ID });
-    Map<Integer, RootOperator[]> workerPlansCoordinatorIngest = new HashMap<Integer, RootOperator[]>();
-    for (Integer workerId : workerIDs) {
-      workerPlansCoordinatorIngest.put(workerId, new RootOperator[] { new SinkRoot(workersGather) });
-    }
-    final Date startCoordinator = new Date();
-    server.submitQueryPlan(masterScatter, workerPlansCoordinatorIngest).get();
-    final double elapsedCoordinator = (new Date().getTime() - startCoordinator.getTime()) / 1000.0;
-
-    LOGGER.warn("TIME SPENT PARALLEL " + elapsedParallel);
-    LOGGER.warn("TIME SPENT COORDINATOR " + elapsedCoordinator);
-
   }
 }

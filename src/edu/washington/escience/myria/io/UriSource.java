@@ -94,7 +94,6 @@ public class UriSource implements DataSource, Serializable {
   /**
    * Modifies the request to get the input stream
    */
-
   public InputStream getChunkInputStream(final long startRange, final long endRange, final boolean lastWorker)
       throws IOException {
     String uriString = parsedUri.toString();
