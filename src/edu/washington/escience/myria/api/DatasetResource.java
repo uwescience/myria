@@ -3,7 +3,7 @@ package edu.washington.escience.myria.api;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -528,16 +528,17 @@ public final class DatasetResource {
 
   public Set<Integer> getRangeSet(final int limit) {
     Set<Integer> seq = new HashSet<Integer>();
-    for (int i = 0; i < limit; i++) {
+    for (int i = 1; i <= limit; i++) {
       seq.add(i);
     }
     return seq;
   }
 
-  public int[] getRange(final int min, final int max) {
-    int[] intArray = new int[max - min];
-    for (int i = min; i <= max; i++) {
-      intArray[i] = i;
+  public int[] getRangeInclusive(final int min, final int max) {
+    int numberElements = (max - min) + 1;
+    int[] intArray = new int[numberElements];
+    for (int i = 0; i < numberElements; i++) {
+      intArray[i] = min + i;
     }
     return intArray;
   }
@@ -550,62 +551,64 @@ public final class DatasetResource {
   @Path("/parallelIngestSequence")
   @Consumes(MediaType.APPLICATION_JSON)
   public Response parallelIngestSequence(final ParallelIngestSequenceEncoding dataset) throws DbException,
-      ExecutionException, CatalogException {
+      ExecutionException, CatalogException, InterruptedException {
 
-    try {
-      Integer[] configs = (Integer[]) dataset.configurations.toArray();
-      Arrays.sort(configs, Collections.reverseOrder());
+    ArrayList<Integer> configs = new ArrayList<Integer>(dataset.configurations);
+    Collections.sort(configs, Collections.reverseOrder());
 
-      // Create a sequence for the largest cluster size
-      int maxConfig = configs[0];
-      Set<Integer> rangeMax = getRangeSet(maxConfig);
+    // Create a sequence for the largest cluster size
+    int maxConfig = configs.get(0);
+    Set<Integer> rangeMax = getRangeSet(maxConfig);
 
-      // Ingest for the largest cluster
-      RelationKey maxConfigRelationKey =
-          new RelationKey(dataset.relationKey.getProgramName(), dataset.relationKey.getUserName(), dataset.relationKey
+    // Ingest for the largest cluster
+    RelationKey maxConfigRelationKey =
+        new RelationKey(dataset.relationKey.getUserName(), dataset.relationKey.getProgramName(), dataset.relationKey
+            .getRelationName()
+            + maxConfig);
+    server
+        .ingestCSVDatasetInParallel(maxConfigRelationKey, dataset.source, dataset.schema, dataset.delimiter, rangeMax);
+
+    // Iterate for moving and set parameters
+    Set<Integer> previousSequence = rangeMax;
+    RelationKey previousRelationKey = maxConfigRelationKey;
+    for (int c = 1; c < configs.size(); c++) {
+      // get the new worker sequence
+      int currentSize = configs.get(c);
+      Set<Integer> currentSequence = getRangeSet(currentSize);
+
+      // get the worker diff
+      Set<Integer> diff = com.google.common.collect.Sets.difference(previousSequence, currentSequence);
+
+      // get the new relation key
+      RelationKey currentRelationKey =
+          new RelationKey(dataset.relationKey.getUserName(), dataset.relationKey.getProgramName(), dataset.relationKey
               .getRelationName()
-              + maxConfig);
-      server.ingestCSVDatasetInParallel(maxConfigRelationKey, dataset.source, dataset.schema, dataset.delimiter,
-          getRangeSet(maxConfig));
+              + currentSize);
 
-      // Iterate for moving and set parameters
-      Set<Integer> previousSequence = rangeMax;
-      RelationKey previousRelationKey = maxConfigRelationKey;
-      for (int c = 1; c < configs.length; c++) {
-        // get the new worker sequence
-        int currentSize = configs[c];
-        Set<Integer> currentSequence = getRangeSet(currentSize);
+      // shuffle the diffs (from previous relation key) to the rest
+      final ExchangePairID shuffleId = ExchangePairID.newID();
+      DbQueryScan scan = new DbQueryScan(previousRelationKey, dataset.schema);
 
-        // get the worker diff
-        Set<Integer> diff = com.google.common.collect.Sets.difference(previousSequence, currentSequence);
+      int[] producingWorkers = getRangeInclusive(Collections.min(diff), Collections.max(diff));
+      int[] receivingWorkers = getRangeInclusive(1, Collections.max(currentSequence));
 
-        // get the new relation key
-        RelationKey currentRelationKey =
-            new RelationKey(dataset.relationKey.getProgramName(), dataset.relationKey.getUserName(),
-                dataset.relationKey.getRelationName() + currentSize);
+      GenericShuffleProducer producer =
+          new GenericShuffleProducer(scan, shuffleId, receivingWorkers, new RoundRobinPartitionFunction(
+              receivingWorkers.length));
+      GenericShuffleConsumer consumer = new GenericShuffleConsumer(dataset.schema, shuffleId, producingWorkers);
+      DbInsert insert = new DbInsert(consumer, currentRelationKey, true);
 
-        // shuffle the diffs (from previous relation key) to the rest
-        final ExchangePairID shuffleId = ExchangePairID.newID();
-        DbQueryScan scan = new DbQueryScan(previousRelationKey, dataset.schema);
-        int[] producingWorkers = getRange(Collections.min(diff), Collections.max(diff));
-        GenericShuffleProducer producer =
-            new GenericShuffleProducer(scan, shuffleId, producingWorkers, new RoundRobinPartitionFunction(
-                producingWorkers.length));
-        int[] receivingWorkers = getRange(1, Collections.max(currentSequence));
-        GenericShuffleConsumer consumer = new GenericShuffleConsumer(dataset.schema, shuffleId, receivingWorkers);
-        DbInsert insert = new DbInsert(consumer, currentRelationKey, true);
-
-        Map<Integer, RootOperator[]> workerPlans = new HashMap<>(currentSize);
-        for (Integer workerID : diff) {
-          workerPlans.put(workerID, new RootOperator[] { producer, insert });
-        }
-        server.submitQueryPlan(new SinkRoot(new EOSSource()), workerPlans).get();
-
-        previousSequence = currentSequence;
-        previousRelationKey = currentRelationKey;
+      Map<Integer, RootOperator[]> workerPlans = new HashMap<>(currentSize);
+      for (Integer workerID : producingWorkers) {
+        workerPlans.put(workerID, new RootOperator[] { producer });
       }
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
+      for (Integer workerID : receivingWorkers) {
+        workerPlans.put(workerID, new RootOperator[] { insert });
+      }
+      server.submitQueryPlan(new SinkRoot(new EOSSource()), workerPlans).get();
+
+      previousSequence = currentSequence;
+      previousRelationKey = currentRelationKey;
     }
     /* In the response, tell the client the path to the relation. */
     return Response.created(getCanonicalResourcePath(uriInfo, dataset.relationKey)).build();
