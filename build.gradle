@@ -318,6 +318,7 @@ shadowJar {
 shadowJar {
   relocate 'com.google.common', 'myriadeps.com.google.common'
   relocate 'javax.ws.rs', 'myriadeps.javax.ws.rs'
+  zip64 true
 }
 
 /* Coveralls */
