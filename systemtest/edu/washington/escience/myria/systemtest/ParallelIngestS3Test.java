@@ -5,14 +5,22 @@ package edu.washington.escience.myria.systemtest;
 
 import static org.junit.Assert.assertEquals;
 
+import java.net.URISyntaxException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
 import org.junit.Test;
 
+import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.api.DatasetResource;
+import edu.washington.escience.myria.api.encoding.ParallelIngestSequenceEncoding;
+import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.io.UriSource;
 import edu.washington.escience.myria.operator.CSVFileScanFragment;
 import edu.washington.escience.myria.operator.DbInsert;
@@ -44,8 +52,16 @@ public class ParallelIngestS3Test extends SystemTestBase {
       Type.STRING_TYPE, "c_city", Type.STRING_TYPE, "c_nation_prefix", Type.STRING_TYPE, "c_nation", Type.STRING_TYPE,
       "c_region", Type.STRING_TYPE, "c_phone", Type.STRING_TYPE, "c_mktsegment", Type.STRING_TYPE);
 
+  Schema lineorderSchema = Schema.ofFields("l_orderkey", Type.LONG_TYPE, "l_linenumber", Type.LONG_TYPE, "l_custkey",
+      Type.LONG_TYPE, "l_partkey", Type.LONG_TYPE, "l_suppkey", Type.LONG_TYPE, "l_orderdate", Type.STRING_TYPE,
+      "l_orderpriority", Type.STRING_TYPE, "l_shippriority", Type.LONG_TYPE, "l_quantity", Type.FLOAT_TYPE,
+      "l_extendedprice", Type.FLOAT_TYPE, "l_ordtotalprice", Type.FLOAT_TYPE, "l_discount", Type.FLOAT_TYPE,
+      "l_revenue", Type.LONG_TYPE, "l_supplycost", Type.LONG_TYPE, "l_tax", Type.FLOAT_TYPE, "l_commitdate",
+      Type.LONG_TYPE, "l_shipmode", Type.STRING_TYPE);
+
   String dateTableAddress = "s3a://myria-test/dateOUT.csv";
   String customerTableAddress = "s3a://myria-test/customerOUT.txt";
+  String lineorderTableAddress = "s3a://myria-test/lineorderOUT.txt";
 
   @Test
   public void parallelIngestTest() throws Exception {
@@ -122,5 +138,26 @@ public class ParallelIngestS3Test extends SystemTestBase {
             .getProgramName(), diffRelationKey.getRelationName(), "json");
 
     assertEquals("[]", data);
+  }
+
+  @Test
+  public void sequenceIngestTest() throws URISyntaxException, DbException, ExecutionException, CatalogException,
+      InterruptedException {
+    ParallelIngestSequenceEncoding parallelEncoding = new ParallelIngestSequenceEncoding();
+
+    Set<Integer> configs = new HashSet<Integer>();
+    configs.add(10);
+    configs.add(12);
+    RelationKey relationKeyParallel = RelationKey.of("public", "adhoc", "ingestParallel");
+    UriSource uriSource = new UriSource(dateTableAddress);
+
+    parallelEncoding.configurations = configs;
+    parallelEncoding.relationKey = relationKeyParallel;
+    parallelEncoding.schema = dateSchema;
+    parallelEncoding.source = uriSource;
+    parallelEncoding.delimiter = '|';
+
+    DatasetResource resource = new DatasetResource();
+    resource.parallelIngestSequence(parallelEncoding);
   }
 }
