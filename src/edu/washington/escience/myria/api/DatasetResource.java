@@ -588,17 +588,22 @@ public final class DatasetResource {
       // shuffle the diffs (from previous relation key) to the rest
       final ExchangePairID shuffleId = ExchangePairID.newID();
       DbQueryScan scan = new DbQueryScan(previousRelationKey, dataset.schema);
+
       int[] producingWorkers = getRangeInclusive(Collections.min(diff), Collections.max(diff));
-      GenericShuffleProducer producer =
-          new GenericShuffleProducer(scan, shuffleId, producingWorkers, new RoundRobinPartitionFunction(
-              producingWorkers.length));
       int[] receivingWorkers = getRangeInclusive(1, Collections.max(currentSequence));
-      GenericShuffleConsumer consumer = new GenericShuffleConsumer(dataset.schema, shuffleId, receivingWorkers);
+
+      GenericShuffleProducer producer =
+          new GenericShuffleProducer(scan, shuffleId, receivingWorkers, new RoundRobinPartitionFunction(
+              receivingWorkers.length));
+      GenericShuffleConsumer consumer = new GenericShuffleConsumer(dataset.schema, shuffleId, producingWorkers);
       DbInsert insert = new DbInsert(consumer, currentRelationKey, true);
 
       Map<Integer, RootOperator[]> workerPlans = new HashMap<>(currentSize);
-      for (Integer workerID : server.getAliveWorkers()) {
-        workerPlans.put(workerID, new RootOperator[] { producer, insert });
+      for (Integer workerID : producingWorkers) {
+        workerPlans.put(workerID, new RootOperator[] { producer });
+      }
+      for (Integer workerID : receivingWorkers) {
+        workerPlans.put(workerID, new RootOperator[] { insert });
       }
       server.submitQueryPlan(new SinkRoot(new EOSSource()), workerPlans).get();
 
