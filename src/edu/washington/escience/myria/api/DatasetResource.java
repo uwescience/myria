@@ -3,8 +3,14 @@ package edu.washington.escience.myria.api;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
 import javax.annotation.Nonnull;
 import javax.ws.rs.Consumes;
@@ -46,17 +52,26 @@ import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.api.encoding.DatasetEncoding;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.ParallelIngestEncoding;
+import edu.washington.escience.myria.api.encoding.ParallelIngestSequenceEncoding;
 import edu.washington.escience.myria.api.encoding.TipsyDatasetEncoding;
 import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.io.InputStreamSource;
 import edu.washington.escience.myria.io.PipeSink;
 import edu.washington.escience.myria.operator.BinaryFileScan;
+import edu.washington.escience.myria.operator.DbInsert;
+import edu.washington.escience.myria.operator.DbQueryScan;
+import edu.washington.escience.myria.operator.EOSSource;
 import edu.washington.escience.myria.operator.FileScan;
 import edu.washington.escience.myria.operator.Operator;
+import edu.washington.escience.myria.operator.RootOperator;
+import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.TipsyFileScan;
+import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
+import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
 import edu.washington.escience.myria.operator.network.partition.HowPartitioned;
 import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
 import edu.washington.escience.myria.operator.network.partition.RoundRobinPartitionFunction;
+import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.storage.TupleBatch;
 
@@ -506,6 +521,92 @@ public final class DatasetResource {
       Thread.currentThread().interrupt();
     }
 
+    /* In the response, tell the client the path to the relation. */
+    return Response.created(getCanonicalResourcePath(uriInfo, dataset.relationKey)).build();
+
+  }
+
+  public Set<Integer> getRangeSet(final int limit) {
+    Set<Integer> seq = new HashSet<Integer>();
+    for (int i = 0; i < limit; i++) {
+      seq.add(i);
+    }
+    return seq;
+  }
+
+  public int[] getRange(final int min, final int max) {
+    int[] intArray = new int[max - min];
+    for (int i = min; i <= max; i++) {
+      intArray[i] = i;
+    }
+    return intArray;
+  }
+
+  /**
+   * @throws CatalogException
+   * @throws ExecutionException
+   */
+  @POST
+  @Path("/parallelIngestSequence")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public Response parallelIngestSequence(final ParallelIngestSequenceEncoding dataset) throws DbException,
+      ExecutionException, CatalogException {
+
+    try {
+      Integer[] configs = (Integer[]) dataset.configurations.toArray();
+      Arrays.sort(configs, Collections.reverseOrder());
+
+      // Create a sequence for the largest cluster size
+      int maxConfig = configs[0];
+      Set<Integer> rangeMax = getRangeSet(maxConfig);
+
+      // Ingest for the largest cluster
+      RelationKey maxConfigRelationKey =
+          new RelationKey(dataset.relationKey.getProgramName(), dataset.relationKey.getUserName(), dataset.relationKey
+              .getRelationName()
+              + maxConfig);
+      server.ingestCSVDatasetInParallel(maxConfigRelationKey, dataset.source, dataset.schema, dataset.delimiter,
+          getRangeSet(maxConfig));
+
+      // Iterate for moving and set parameters
+      Set<Integer> previousSequence = rangeMax;
+      RelationKey previousRelationKey = maxConfigRelationKey;
+      for (int c = 1; c < configs.length; c++) {
+        // get the new worker sequence
+        int currentSize = configs[c];
+        Set<Integer> currentSequence = getRangeSet(currentSize);
+
+        // get the worker diff
+        Set<Integer> diff = com.google.common.collect.Sets.difference(previousSequence, currentSequence);
+
+        // get the new relation key
+        RelationKey currentRelationKey =
+            new RelationKey(dataset.relationKey.getProgramName(), dataset.relationKey.getUserName(),
+                dataset.relationKey.getRelationName() + currentSize);
+
+        // shuffle the diffs (from previous relation key) to the rest
+        final ExchangePairID shuffleId = ExchangePairID.newID();
+        DbQueryScan scan = new DbQueryScan(previousRelationKey, dataset.schema);
+        int[] producingWorkers = getRange(Collections.min(diff), Collections.max(diff));
+        GenericShuffleProducer producer =
+            new GenericShuffleProducer(scan, shuffleId, producingWorkers, new RoundRobinPartitionFunction(
+                producingWorkers.length));
+        int[] receivingWorkers = getRange(1, Collections.max(currentSequence));
+        GenericShuffleConsumer consumer = new GenericShuffleConsumer(dataset.schema, shuffleId, receivingWorkers);
+        DbInsert insert = new DbInsert(consumer, currentRelationKey, true);
+
+        Map<Integer, RootOperator[]> workerPlans = new HashMap<>(currentSize);
+        for (Integer workerID : diff) {
+          workerPlans.put(workerID, new RootOperator[] { producer, insert });
+        }
+        server.submitQueryPlan(new SinkRoot(new EOSSource()), workerPlans).get();
+
+        previousSequence = currentSequence;
+        previousRelationKey = currentRelationKey;
+      }
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
     /* In the response, tell the client the path to the relation. */
     return Response.created(getCanonicalResourcePath(uriInfo, dataset.relationKey)).build();
 

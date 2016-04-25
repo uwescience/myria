@@ -113,6 +113,11 @@ ext.jmxetricsVersion = "1.0.8"
 ext.reefVersion = "0.14.0-SNAPSHOT"
 
 dependencies {
+  /* Note this jar is fetched from our private Maven repo (patched for HADOOP-12807) */
+  compile ("org.apache.hadoop:hadoop-aws:2.7.2") {
+    exclude group: "com.sun.jersey"
+  }
+
   compile ("org.apache.hadoop:hadoop-client:2.6.0") {
     /* Hadoop depends on Jersey 1 but we don't need it. Exclude it to prevent
      * Classloader picking the wrong version of Jersey classes. */
