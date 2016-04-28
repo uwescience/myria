@@ -17,7 +17,8 @@ import edu.washington.escience.myria.storage.TupleBatch;
  * 
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "readerType")
-@JsonSubTypes({ @Type(name = "Csv", value = CsvTupleReader.class) })
+@JsonSubTypes({
+    @Type(name = "Csv", value = CsvTupleReader.class), @Type(name = "Binary", value = BinaryTupleReader.class) })
 public interface TupleReader extends Serializable {
 
   void open(InputStream stream) throws IOException, DbException;

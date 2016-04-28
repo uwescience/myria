@@ -22,7 +22,6 @@ import edu.washington.escience.myria.operator.Operator;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "opType")
 @JsonSubTypes({
     @Type(name = "Aggregate", value = AggregateEncoding.class), @Type(name = "Apply", value = ApplyEncoding.class),
-    @Type(name = "BinaryFileScan", value = BinaryFileScanEncoding.class),
     @Type(name = "BroadcastConsumer", value = BroadcastConsumerEncoding.class),
     @Type(name = "BroadcastProducer", value = BroadcastProducerEncoding.class),
     @Type(name = "CatalogScan", value = CatalogScanEncoding.class),
