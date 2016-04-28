@@ -361,8 +361,8 @@ public class QueryConstruct {
       for (OperatorEncoding<?> operator : fragment.operators) {
         if (operator instanceof CollectConsumerEncoding || operator instanceof SingletonEncoding
             || operator instanceof EOSControllerEncoding || operator instanceof BinaryFileScanEncoding
-            || operator instanceof NChiladaFileScanEncoding || operator instanceof SeaFlowFileScanEncoding
-            || operator instanceof TipsyFileScanEncoding) {
+            || operator instanceof DataInputEncoding || operator instanceof NChiladaFileScanEncoding
+            || operator instanceof SeaFlowFileScanEncoding || operator instanceof TipsyFileScanEncoding) {
           if (fragment.workers == null) {
             String encodingTypeName = operator.getClass().getSimpleName();
             String operatorTypeName =

@@ -27,6 +27,7 @@ import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
 import edu.washington.escience.myria.api.encoding.SingletonEncoding;
+import edu.washington.escience.myria.api.encoding.SplitEncoding;
 import edu.washington.escience.myria.api.encoding.plan.SubQueryEncoding;
 import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.io.FileSource;
@@ -89,18 +90,18 @@ public class JsonOperatorTests extends SystemTestBase {
     input.reader = reader;
     input.source = source;
     input.opId = 0;
-    // SplitEncoding split = new SplitEncoding();
-    // split.splitColumnIndex = 0;
-    // split.regex = ":";
-    // split.argChild = input.opId;
-    // split.opId = 1;
+    SplitEncoding split = new SplitEncoding();
+    split.splitColumnIndex = 0;
+    split.regex = ":";
+    split.argChild = input.opId;
+    split.opId = 1;
     RelationKey outputRelation = RelationKey.of("test", "split", "output");
     DbInsertEncoding insert = new DbInsertEncoding();
     insert.opId = 2;
-    insert.argChild = input.opId;
+    insert.argChild = split.opId;
     insert.relationKey = outputRelation;
     insert.argOverwriteTable = true;
-    PlanFragmentEncoding frag = PlanFragmentEncoding.of(input, insert);
+    PlanFragmentEncoding frag = PlanFragmentEncoding.of(input, split, insert);
 
     QueryEncoding query = new QueryEncoding();
     query.plan = new SubQueryEncoding(ImmutableList.of(frag));
@@ -122,6 +123,6 @@ public class JsonOperatorTests extends SystemTestBase {
             .getProgramName(), outputRelation.getRelationName(), "json");
     String expectedData =
         "[{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"a\"},{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"b\"},{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"c\"},{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"d\"},{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"e\"},{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"f\"}]";
-    assertEquals(expectedData, data);
+    assertEquals(data, expectedData);
   }
 }
