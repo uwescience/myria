@@ -18,9 +18,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.api.DatasetResource;
-import edu.washington.escience.myria.api.encoding.ParallelIngestSequenceEncoding;
-import edu.washington.escience.myria.coordinator.CatalogException;
+import edu.washington.escience.myria.io.AmazonS3Source;
 import edu.washington.escience.myria.io.UriSource;
 import edu.washington.escience.myria.operator.CSVFileScanFragment;
 import edu.washington.escience.myria.operator.DbInsert;
@@ -65,15 +63,14 @@ public class ParallelIngestS3Test extends SystemTestBase {
 
   @Test
   public void parallelIngestTest() throws Exception {
-    /* Read Source Data from S3 and invoke Server */
     RelationKey relationKey = RelationKey.of("public", "adhoc", "testParallel");
 
     Map<Integer, RootOperator[]> workerPlansParallelIngest = new HashMap<Integer, RootOperator[]>();
     int workerCounterID = 1;
     for (int workerID : workerIDs) {
-      UriSource uriSource = new UriSource(dateTableAddress);
+      AmazonS3Source s3Source = new AmazonS3Source(dateTableAddress);
       CSVFileScanFragment scanFragment =
-          new CSVFileScanFragment(uriSource, dateSchema, workerCounterID, workerIDs.length, '|', null, null, 0);
+          new CSVFileScanFragment(s3Source, dateSchema, workerCounterID, workerIDs.length, '|', null, null, 0);
       workerPlansParallelIngest.put(workerID, new RootOperator[] { new DbInsert(scanFragment, relationKey, true) });
       workerCounterID++;
     }
@@ -83,18 +80,17 @@ public class ParallelIngestS3Test extends SystemTestBase {
 
   @Test
   public void diffParallelIngestTest() throws Exception {
-    /* Read Source Data from S3 and invoke Server */
 
     /* Ingest in parallel */
     RelationKey relationKeyParallel = RelationKey.of("public", "adhoc", "ingestParallel");
     Map<Integer, RootOperator[]> workerPlansParallelIngest = new HashMap<Integer, RootOperator[]>();
     int workerCounterID = 1;
     for (int workerID : workerIDs) {
-      UriSource uriSource = new UriSource(customerTableAddress);
+      AmazonS3Source s3Source = new AmazonS3Source(customerTableAddress);
       CSVFileScanFragment scanFragment =
-          new CSVFileScanFragment(uriSource, customerSchema, workerCounterID, workerIDs.length, ',', null, null, 0);
-      workerPlansParallelIngest.put(workerID,
-          new RootOperator[] { new DbInsert(scanFragment, relationKeyParallel, true) });
+          new CSVFileScanFragment(s3Source, customerSchema, workerCounterID, workerIDs.length, ',', null, null, 0);
+      workerPlansParallelIngest.put(workerID, new RootOperator[] { new DbInsert(scanFragment,
+          relationKeyParallelIngest, true) });
       workerCounterID++;
     }
     server.submitQueryPlan(new SinkRoot(new EOSSource()), workerPlansParallelIngest).get();
@@ -141,23 +137,25 @@ public class ParallelIngestS3Test extends SystemTestBase {
   }
 
   @Test
-  public void sequenceIngestTest() throws URISyntaxException, DbException, ExecutionException, CatalogException,
-      InterruptedException {
-    ParallelIngestSequenceEncoding parallelEncoding = new ParallelIngestSequenceEncoding();
+  public void oneTupleTest() throws Exception {
+    String oneTupleAddress = "s3://myria-test/sample-parallel-one-tuple.txt";
+    Schema oneTupleSchema =
+        Schema.ofFields("w", Type.INT_TYPE, "x", Type.INT_TYPE, "y", Type.INT_TYPE, "z", Type.INT_TYPE, "a",
+            Type.INT_TYPE);
 
-    Set<Integer> configs = new HashSet<Integer>();
-    configs.add(10);
-    configs.add(12);
-    RelationKey relationKeyParallel = RelationKey.of("public", "adhoc", "ingestParallel");
-    UriSource uriSource = new UriSource(dateTableAddress);
+    RelationKey relationKey = RelationKey.of("public", "adhoc", "testParallelOneTuple");
 
-    parallelEncoding.configurations = configs;
-    parallelEncoding.relationKey = relationKeyParallel;
-    parallelEncoding.schema = dateSchema;
-    parallelEncoding.source = uriSource;
-    parallelEncoding.delimiter = '|';
-
-    DatasetResource resource = new DatasetResource();
-    resource.parallelIngestSequence(parallelEncoding);
+    Map<Integer, RootOperator[]> workerPlansParallelIngest = new HashMap<Integer, RootOperator[]>();
+    int workerCounterID = 1;
+    for (int workerID : workerIDs) {
+      AmazonS3Source s3Source = new AmazonS3Source(oneTupleAddress);
+      CSVFileScanFragment scanFragment =
+          new CSVFileScanFragment(s3Source, oneTupleSchema, workerCounterID, workerIDs.length, ',', null, null, 0);
+      workerPlansParallelIngest.put(workerID, new RootOperator[] { new DbInsert(scanFragment, relationKey, true) });
+      workerCounterID++;
+    }
+    server.submitQueryPlan(new SinkRoot(new EOSSource()), workerPlansParallelIngest).get();
+    assertEquals(1, server.getDatasetStatus(relationKey).getNumTuples());
   }
+
 }

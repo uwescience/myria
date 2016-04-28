@@ -21,9 +21,9 @@ import com.google.common.primitives.Floats;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.io.AmazonS3Source;
 import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.io.FileSource;
-import edu.washington.escience.myria.io.UriSource;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.DateTimeUtils;
@@ -46,7 +46,7 @@ public class CSVFileScanFragment extends LeafOperator {
   /** A user-provided escape character to escape quote and itself, if null, the system uses '/'. */
   private final Character escape;
   /** The data source that will generate the input stream to be read at initialization. */
-  private final UriSource source;
+  private final AmazonS3Source source;
   /** Number of skipped lines on the head. */
   private final Integer numberOfSkippedLines;
   /** Holds the tuples that are ready for release. */
@@ -54,9 +54,9 @@ public class CSVFileScanFragment extends LeafOperator {
   /** Which line of the file the scanner is currently on. */
   private long lineNumber = 0;
 
-  private boolean isLastWorker;
-  private long fileSize;
-  private long partitionSize;
+  private final boolean isLastWorker;
+  private final long fileSize;
+
   private long byteOverlap = 10;
   private long startByteRange;
   private long endByteRange;
@@ -100,13 +100,26 @@ public class CSVFileScanFragment extends LeafOperator {
   public CSVFileScanFragment(final DataSource source, final Schema schema, final int totalWorkers,
       @Nullable final Character delimiter, @Nullable final Character quote, @Nullable final Character escape,
       @Nullable final Integer numberOfSkippedLines) {
-    this.source = (UriSource) Preconditions.checkNotNull(source, "source");
+    this.source = (AmazonS3Source) Preconditions.checkNotNull(source, "source");
     this.schema = Preconditions.checkNotNull(schema, "schema");
 
     this.delimiter = MoreObjects.firstNonNull(delimiter, CSVFormat.DEFAULT.getDelimiter());
     this.quote = MoreObjects.firstNonNull(quote, CSVFormat.DEFAULT.getQuoteCharacter());
     this.escape = escape != null ? escape : CSVFormat.DEFAULT.getEscapeCharacter();
     this.numberOfSkippedLines = MoreObjects.firstNonNull(numberOfSkippedLines, 0);
+    this.workerID = workerID;
+
+    isLastWorker = workerID == totalWorkers;
+    fileSize = ((AmazonS3Source) source).getFileSize();
+
+    if (fileSize < 10 && workerID == 1) {
+      startByteRange = 0;
+      endByteRange = fileSize;
+    } else {
+      long partitionSize = fileSize / totalWorkers;
+      startByteRange = (partitionSize) * (workerID - 1);
+      endByteRange = startByteRange + partitionSize;
+    }
 
     this.totalWorkers = totalWorkers;
   }
@@ -145,9 +158,12 @@ public class CSVFileScanFragment extends LeafOperator {
           }
           byteOverlap = (long) Math.pow(byteOverlap, 2);
           endByteRange = endByteRange + byteOverlap;
+
+          source.setStartRange(startByteRange);
+          source.setEndRange(endByteRange);
           parser =
-              new CSVParser(new BufferedReader(new InputStreamReader(source.getChunkInputStream(startByteRange,
-                  endByteRange, isLastWorker))), CSVFormat.newFormat(delimiter).withQuote(quote).withEscape(escape));
+              new CSVParser(new BufferedReader(new InputStreamReader(source.getInputStream())), CSVFormat.newFormat(
+                  delimiter).withQuote(quote).withEscape(escape));
           iterator = parser.iterator();
         }
       } else {
@@ -211,9 +227,11 @@ public class CSVFileScanFragment extends LeafOperator {
 
     buffer = new TupleBatchBuffer(getSchema());
     try {
+      source.setStartRange(startByteRange);
+      source.setEndRange(endByteRange);
       parser =
-          new CSVParser(new BufferedReader(new InputStreamReader(source.getChunkInputStream(startByteRange,
-              endByteRange, isLastWorker))), CSVFormat.newFormat(delimiter).withQuote(quote).withEscape(escape));
+          new CSVParser(new BufferedReader(new InputStreamReader(source.getInputStream())), CSVFormat.newFormat(
+              delimiter).withQuote(quote).withEscape(escape));
       iterator = parser.iterator();
       for (int i = 0; i < numberOfSkippedLines; i++) {
         iterator.next();
@@ -227,5 +245,4 @@ public class CSVFileScanFragment extends LeafOperator {
   protected Schema generateSchema() {
     return schema;
   }
-
 }

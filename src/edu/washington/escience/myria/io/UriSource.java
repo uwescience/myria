@@ -16,11 +16,6 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
-import com.amazonaws.auth.AnonymousAWSCredentials;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.S3Object;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -39,7 +34,6 @@ public class UriSource implements DataSource, Serializable {
 
   /** The Uniform Resource Indicator (URI) of the data source. */
   private URI parsedUri;
-  private static final AmazonS3 s3Client = new AmazonS3Client(new AnonymousAWSCredentials());
 
   /**
    * Construct a source of data from the specified URI. The URI may be: a path on the local file system; an HDFS link; a
@@ -92,28 +86,4 @@ public class UriSource implements DataSource, Serializable {
     return new SequenceInputStream(java.util.Collections.enumeration(streams));
   }
 
-  /**
-   * Modifies the request to get the input stream
-   */
-  public InputStream getChunkInputStream(final long startRange, final long endRange, final boolean lastWorker)
-      throws IOException {
-    String uriString = parsedUri.toString();
-    String removedScheme = uriString.substring(6);
-    String bucket = removedScheme.substring(0, removedScheme.indexOf('/'));
-    String key = removedScheme.substring(removedScheme.indexOf('/') + 1);
-
-    GetObjectRequest s3Request = new GetObjectRequest(bucket, key);
-    s3Request.setRange(startRange, endRange);
-    S3Object s3Object = s3Client.getObject(s3Request);
-    return s3Object.getObjectContent();
-  }
-
-  public long getFileSize() {
-    String uriString = parsedUri.toString();
-    String removedScheme = uriString.substring(6);
-    String bucket = removedScheme.substring(0, removedScheme.indexOf('/'));
-    String key = removedScheme.substring(removedScheme.indexOf('/') + 1);
-
-    return s3Client.getObjectMetadata(bucket, key).getContentLength();
-  }
 }
