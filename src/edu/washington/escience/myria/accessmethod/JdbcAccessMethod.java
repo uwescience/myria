@@ -579,6 +579,42 @@ public final class JdbcAccessMethod extends AccessMethod {
     execute(statement);
   }
 
+  @Override
+  public void createViewIfNotExists(final String viewName, final String viewQuery) throws DbException {
+    if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
+      createViewIfNotExistPostgres(viewName, viewQuery);
+    } else {
+      throw new UnsupportedOperationException("create index if not exists is not supported in " + jdbcInfo.getDbms()
+          + ", implement me");
+    }
+  }
+
+  /**
+   * Create a view in postgres if no view with the same name exists
+   * 
+   * @param viewName the name of the views
+   * @param viewQuery the view to be created
+   * @throws DbException if there is an error in the DBMS.
+   */
+  public void createViewIfNotExistPostgres(final String viewName, final String viewQuery) throws DbException {
+    String statement =
+        Joiner.on(' ').join("DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relkind = 'v' AND relname=",
+            viewName, ") THEN CREATE VIEW", viewName, "AS", viewQuery, "; END IF; END$$;");
+    execute(statement);
+  }
+
+  /**
+   * Run arbitrary DDLs on Postgres
+   * 
+   * @param relationKey the table on which the indexes will be created.
+   * @param schema the Schema of the data in the table.
+   * @param runDDL the DDL to run on Postgres
+   * @throws DbException if there is an error in the DBMS.
+   */
+  public void runDDLPostgres(final String runDDL) throws DbException {
+    execute(runDDL);
+  }
+
   /**
    * Returns the quoted name of the given relation for use in SQL statements.
    * 
