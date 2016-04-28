@@ -8,9 +8,11 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
+import edu.washington.escience.myria.CsvTupleReader;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.io.FileSource;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestEnvVars;
@@ -73,16 +75,13 @@ public class LeapFrogJoinTest {
             ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("t_z", "t_x"));
     /* read data from files. */
     final String realFilename = Paths.get("testdata", "twitter", "TwitterK.csv").toString();
-    FileScan fileScanR = new FileScan(realFilename, r_schema);
-    FileScan fileScanS = new FileScan(realFilename, s_schema);
-    FileScan fileScanT = new FileScan(realFilename, t_schema);
+    DataInput dataInputR = new DataInput(new CsvTupleReader(r_schema), new FileSource(realFilename));
+    DataInput dataInputS = new DataInput(new CsvTupleReader(s_schema), new FileSource(realFilename));
+    DataInput dataInputT = new DataInput(new CsvTupleReader(t_schema), new FileSource(realFilename));
     /* order the tables. */
-    InMemoryOrderBy orderR =
-        new InMemoryOrderBy(fileScanR, new int[] {0, 1}, new boolean[] {true, true});
-    InMemoryOrderBy orderS =
-        new InMemoryOrderBy(fileScanS, new int[] {0, 1}, new boolean[] {true, true});
-    InMemoryOrderBy orderT =
-        new InMemoryOrderBy(fileScanT, new int[] {1, 0}, new boolean[] {true, true});
+    InMemoryOrderBy orderR = new InMemoryOrderBy(dataInputR, new int[] { 0, 1 }, new boolean[] { true, true });
+    InMemoryOrderBy orderS = new InMemoryOrderBy(dataInputS, new int[] { 0, 1 }, new boolean[] { true, true });
+    InMemoryOrderBy orderT = new InMemoryOrderBy(dataInputT, new int[] { 1, 0 }, new boolean[] { true, true });
     /* leapfrog join. */
     int[][][] fieldMap = new int[][][] {{{0, 0}, {2, 1}}, {{0, 1}, {1, 0}}, {{1, 1}, {2, 0}}};
     int[][] outputMap = new int[][] {{0, 0}, {0, 1}, {1, 1}};
@@ -123,13 +122,11 @@ public class LeapFrogJoinTest {
     /* read data from files. */
     final String r_path = Paths.get("testdata", "multiwayjoin", "R.csv").toString();
     final String t_path = Paths.get("testdata", "multiwayjoin", "T.csv").toString();
-    FileScan fileScanR = new FileScan(r_path, r_schema);
-    FileScan fileScanT = new FileScan(t_path, t_schema);
+    DataInput dataInputR = new DataInput(new CsvTupleReader(r_schema), new FileSource(r_path));
+    DataInput dataInputT = new DataInput(new CsvTupleReader(t_schema), new FileSource(t_path));
     /* order the tables. */
-    InMemoryOrderBy orderR =
-        new InMemoryOrderBy(fileScanR, new int[] {0, 1}, new boolean[] {true, true});
-    InMemoryOrderBy orderT =
-        new InMemoryOrderBy(fileScanT, new int[] {0, 1}, new boolean[] {true, true});
+    InMemoryOrderBy orderR = new InMemoryOrderBy(dataInputR, new int[] { 0, 1 }, new boolean[] { true, true });
+    InMemoryOrderBy orderT = new InMemoryOrderBy(dataInputT, new int[] { 0, 1 }, new boolean[] { true, true });
     /* leapfrog join. */
     int[][][] fieldMap = new int[][][] {{{0, 0}, {1, 0}}, {{0, 1}, {1, 2}}};
     int[][] outputMap = new int[][] {{0, 0}, {0, 1}};
@@ -173,16 +170,13 @@ public class LeapFrogJoinTest {
     final String r_path = Paths.get("testdata", "multiwayjoin", "R.csv").toString();
     final String s_path = Paths.get("testdata", "multiwayjoin", "S.csv").toString();
     final String t_path = Paths.get("testdata", "multiwayjoin", "T.csv").toString();
-    FileScan fileScanR = new FileScan(r_path, r_schema);
-    FileScan fileScanS = new FileScan(s_path, s_schema);
-    FileScan fileScanT = new FileScan(t_path, t_schema);
+    DataInput dataInputR = new DataInput(new CsvTupleReader(r_schema), new FileSource(r_path));
+    DataInput dataInputS = new DataInput(new CsvTupleReader(s_schema), new FileSource(s_path));
+    DataInput dataInputT = new DataInput(new CsvTupleReader(t_schema), new FileSource(t_path));
     /* order the tables. */
-    InMemoryOrderBy orderR =
-        new InMemoryOrderBy(fileScanR, new int[] {0, 1}, new boolean[] {true, true});
-    InMemoryOrderBy orderS =
-        new InMemoryOrderBy(fileScanS, new int[] {0, 1}, new boolean[] {true, true});
-    InMemoryOrderBy orderT =
-        new InMemoryOrderBy(fileScanT, new int[] {0, 1, 2}, new boolean[] {true, true, true});
+    InMemoryOrderBy orderR = new InMemoryOrderBy(dataInputR, new int[] { 0, 1 }, new boolean[] { true, true });
+    InMemoryOrderBy orderS = new InMemoryOrderBy(dataInputS, new int[] { 0, 1 }, new boolean[] { true, true });
+    InMemoryOrderBy orderT = new InMemoryOrderBy(dataInputT, new int[] { 0, 1, 2 }, new boolean[] { true, true, true });
     /* leapfrog join. */
     int[][][] fieldMap =
         new int[][][] {{{0, 0}, {2, 0}}, {{0, 1}, {1, 0}, {2, 1}}, {{1, 1}, {2, 2}}};
@@ -233,22 +227,17 @@ public class LeapFrogJoinTest {
     /* read data from files. */
     final String r_path = Paths.get("testdata", "multiwayjoin", "rectangles.csv").toString();
     final String m_path = Paths.get("testdata", "multiwayjoin", "rec_2_hop.csv").toString();
-    FileScan fileScanR = new FileScan(r_path, r_schema);
-    FileScan fileScanS = new FileScan(r_path, s_schema);
-    FileScan fileScanT = new FileScan(r_path, t_schema);
-    FileScan fileScanK = new FileScan(r_path, k_schema);
-    FileScan fileScanM = new FileScan(m_path, m_schema);
+    DataInput dataInputR = new DataInput(new CsvTupleReader(r_schema), new FileSource(r_path));
+    DataInput dataInputS = new DataInput(new CsvTupleReader(s_schema), new FileSource(r_path));
+    DataInput dataInputT = new DataInput(new CsvTupleReader(t_schema), new FileSource(r_path));
+    DataInput dataInputK = new DataInput(new CsvTupleReader(k_schema), new FileSource(r_path));
+    DataInput dataInputM = new DataInput(new CsvTupleReader(m_schema), new FileSource(m_path));
     /* order the tables. */
-    InMemoryOrderBy orderR =
-        new InMemoryOrderBy(fileScanR, new int[] {0, 1}, new boolean[] {true, true});
-    InMemoryOrderBy orderS =
-        new InMemoryOrderBy(fileScanS, new int[] {0, 1}, new boolean[] {true, true});
-    InMemoryOrderBy orderT =
-        new InMemoryOrderBy(fileScanT, new int[] {0, 1}, new boolean[] {true, true});
-    InMemoryOrderBy orderK =
-        new InMemoryOrderBy(fileScanK, new int[] {1, 0}, new boolean[] {true, true});
-    InMemoryOrderBy orderM =
-        new InMemoryOrderBy(fileScanM, new int[] {0, 1, 2}, new boolean[] {true, true, true});
+    InMemoryOrderBy orderR = new InMemoryOrderBy(dataInputR, new int[] { 0, 1 }, new boolean[] { true, true });
+    InMemoryOrderBy orderS = new InMemoryOrderBy(dataInputS, new int[] { 0, 1 }, new boolean[] { true, true });
+    InMemoryOrderBy orderT = new InMemoryOrderBy(dataInputT, new int[] { 0, 1 }, new boolean[] { true, true });
+    InMemoryOrderBy orderK = new InMemoryOrderBy(dataInputK, new int[] { 1, 0 }, new boolean[] { true, true });
+    InMemoryOrderBy orderM = new InMemoryOrderBy(dataInputM, new int[] { 0, 1, 2 }, new boolean[] { true, true, true });
 
     /* leapfrog join, Rectangle(x,y,z,p) :- R(x,y),S(y,z),T(z,p),K(p,x),M(x,y,z). */
     int[][][] fieldMap =
@@ -299,13 +288,13 @@ public class LeapFrogJoinTest {
     final String r_path = Paths.get("testdata", "multiwayjoin", "fa.csv").toString();
     final String s_path = Paths.get("testdata", "multiwayjoin", "fb.csv").toString();
     final String t_path = Paths.get("testdata", "multiwayjoin", "pf.csv").toString();
-    FileScan fileScanR = new FileScan(r_path, r_schema);
-    FileScan fileScanS = new FileScan(s_path, s_schema);
-    FileScan fileScanT = new FileScan(t_path, t_schema);
+    DataInput dataInputR = new DataInput(new CsvTupleReader(r_schema), new FileSource(r_path));
+    DataInput dataInputS = new DataInput(new CsvTupleReader(s_schema), new FileSource(s_path));
+    DataInput dataInputT = new DataInput(new CsvTupleReader(t_schema), new FileSource(t_path));
     /* order the tables. */
-    InMemoryOrderBy orderR = new InMemoryOrderBy(fileScanR, new int[] {0}, new boolean[] {true});
-    InMemoryOrderBy orderS = new InMemoryOrderBy(fileScanS, new int[] {0}, new boolean[] {true});
-    InMemoryOrderBy orderT = new InMemoryOrderBy(fileScanT, new int[] {1}, new boolean[] {true});
+    InMemoryOrderBy orderR = new InMemoryOrderBy(dataInputR, new int[] { 0 }, new boolean[] { true });
+    InMemoryOrderBy orderS = new InMemoryOrderBy(dataInputS, new int[] { 0 }, new boolean[] { true });
+    InMemoryOrderBy orderT = new InMemoryOrderBy(dataInputT, new int[] { 1 }, new boolean[] { true });
     /* leapfrog join. */
     int[][][] fieldMap = new int[][][] {{{0, 0}, {1, 0}, {2, 1}}};
     int[][] outputMap = new int[][] {{0, 0}, {2, 0}};
@@ -342,13 +331,13 @@ public class LeapFrogJoinTest {
     final String a_path = Paths.get("testdata", "multiwayjoin", "a.csv").toString();
     final String b_path = Paths.get("testdata", "multiwayjoin", "b.csv").toString();
     final String c_path = Paths.get("testdata", "multiwayjoin", "c.csv").toString();
-    FileScan fileScanA = new FileScan(a_path, a_schema);
-    FileScan fileScanB = new FileScan(b_path, b_schema);
-    FileScan fileScanC = new FileScan(c_path, c_schema);
+    DataInput dataInputA = new DataInput(new CsvTupleReader(a_schema), new FileSource(a_path));
+    DataInput dataInputB = new DataInput(new CsvTupleReader(b_schema), new FileSource(b_path));
+    DataInput dataInputC = new DataInput(new CsvTupleReader(c_schema), new FileSource(c_path));
     /* order the tables. */
-    InMemoryOrderBy orderA = new InMemoryOrderBy(fileScanA, new int[] {0}, new boolean[] {true});
-    InMemoryOrderBy orderB = new InMemoryOrderBy(fileScanB, new int[] {0}, new boolean[] {true});
-    InMemoryOrderBy orderC = new InMemoryOrderBy(fileScanC, new int[] {0}, new boolean[] {true});
+    InMemoryOrderBy orderA = new InMemoryOrderBy(dataInputA, new int[] { 0 }, new boolean[] { true });
+    InMemoryOrderBy orderB = new InMemoryOrderBy(dataInputB, new int[] { 0 }, new boolean[] { true });
+    InMemoryOrderBy orderC = new InMemoryOrderBy(dataInputC, new int[] { 0 }, new boolean[] { true });
     /* leapfrog join. */
     int[][][] fieldMap = new int[][][] {{{0, 0}, {1, 0}, {2, 0}}};
     int[][] outputMap = new int[][] {{0, 0}};
@@ -390,13 +379,12 @@ public class LeapFrogJoinTest {
     final String o_path = Paths.get("testdata", "multiwayjoin", "o.csv").toString();
     final String p_path = Paths.get("testdata", "multiwayjoin", "p.csv").toString();
     final String q_path = Paths.get("testdata", "multiwayjoin", "q.csv").toString();
-    FileScan fileScanO = new FileScan(o_path, o_schema);
-    FileScan fileScanP = new FileScan(p_path, p_schema);
-    FileScan fileScanQ = new FileScan(q_path, q_schema);
-    InMemoryOrderBy orderO = new InMemoryOrderBy(fileScanO, new int[] {1}, new boolean[] {true});
-    InMemoryOrderBy orderP =
-        new InMemoryOrderBy(fileScanP, new int[] {0, 1}, new boolean[] {true, true});
-    InMemoryOrderBy orderQ = new InMemoryOrderBy(fileScanQ, new int[] {0}, new boolean[] {true});
+    DataInput dataInputO = new DataInput(new CsvTupleReader(o_schema), new FileSource(o_path));
+    DataInput dataInputP = new DataInput(new CsvTupleReader(p_schema), new FileSource(p_path));
+    DataInput dataInputQ = new DataInput(new CsvTupleReader(q_schema), new FileSource(q_path));
+    InMemoryOrderBy orderO = new InMemoryOrderBy(dataInputO, new int[] { 1 }, new boolean[] { true });
+    InMemoryOrderBy orderP = new InMemoryOrderBy(dataInputP, new int[] { 0, 1 }, new boolean[] { true, true });
+    InMemoryOrderBy orderQ = new InMemoryOrderBy(dataInputQ, new int[] { 0 }, new boolean[] { true });
     /* leapfrog join. */
     int[][][] fieldMap = new int[][][] {{{0, 1}, {1, 0}}, {{1, 1}, {2, 0}}};
     int[][] outputMap = new int[][] {{0, 0}};

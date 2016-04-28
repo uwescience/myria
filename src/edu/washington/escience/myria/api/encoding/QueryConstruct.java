@@ -345,7 +345,7 @@ public class QueryConstruct {
   /**
    * Use the Catalog to set the workers for fragments that have scans, and verify that the workers are consistent with
    * existing constraints.
-   *
+   * 
    * @see #assignWorkersToFragments(List, ConstructArgs)
    *
    * @param fragments the fragments of the plan
@@ -359,13 +359,9 @@ public class QueryConstruct {
 
     for (PlanFragmentEncoding fragment : fragments) {
       for (OperatorEncoding<?> operator : fragment.operators) {
-        if (operator instanceof CollectConsumerEncoding
-            || operator instanceof SingletonEncoding
-            || operator instanceof EOSControllerEncoding
-            || operator instanceof BinaryFileScanEncoding
-            || operator instanceof FileScanEncoding
-            || operator instanceof NChiladaFileScanEncoding
-            || operator instanceof SeaFlowFileScanEncoding
+        if (operator instanceof CollectConsumerEncoding || operator instanceof SingletonEncoding
+            || operator instanceof EOSControllerEncoding || operator instanceof BinaryFileScanEncoding
+            || operator instanceof NChiladaFileScanEncoding || operator instanceof SeaFlowFileScanEncoding
             || operator instanceof TipsyFileScanEncoding) {
           if (fragment.workers == null) {
             String encodingTypeName = operator.getClass().getSimpleName();
