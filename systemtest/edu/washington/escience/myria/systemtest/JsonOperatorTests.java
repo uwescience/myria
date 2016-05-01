@@ -19,7 +19,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleReader;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.api.encoding.CrossWithSingletonEncoding;
-import edu.washington.escience.myria.api.encoding.DataInputEncoding;
+import edu.washington.escience.myria.api.encoding.TupleSourceEncoding;
 import edu.washington.escience.myria.api.encoding.DbInsertEncoding;
 import edu.washington.escience.myria.api.encoding.EmptyRelationEncoding;
 import edu.washington.escience.myria.api.encoding.PlanFragmentEncoding;
@@ -86,7 +86,7 @@ public class JsonOperatorTests extends SystemTestBase {
         new FileSource(Paths.get(currentDir.getAbsolutePath(), "testdata", "filescan", "one_col_string_array.txt")
             .toString());
 
-    DataInputEncoding input = new DataInputEncoding();
+    TupleSourceEncoding input = new TupleSourceEncoding();
     input.reader = reader;
     input.source = source;
     input.opId = 0;

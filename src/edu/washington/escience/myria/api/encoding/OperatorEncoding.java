@@ -28,7 +28,6 @@ import edu.washington.escience.myria.operator.Operator;
     @Type(name = "CollectConsumer", value = CollectConsumerEncoding.class),
     @Type(name = "CollectProducer", value = CollectProducerEncoding.class),
     @Type(name = "Consumer", value = ConsumerEncoding.class), @Type(name = "Counter", value = CounterEncoding.class),
-    @Type(name = "DataInput", value = DataInputEncoding.class),
     @Type(name = "DbInsert", value = DbInsertEncoding.class),
     @Type(name = "DbQueryScan", value = QueryScanEncoding.class),
     @Type(name = "Difference", value = DifferenceEncoding.class),
@@ -66,6 +65,7 @@ import edu.washington.escience.myria.operator.Operator;
     @Type(name = "TempInsert", value = TempInsertEncoding.class),
     @Type(name = "TempTableScan", value = TempTableScanEncoding.class),
     @Type(name = "TipsyFileScan", value = TipsyFileScanEncoding.class),
+    @Type(name = "TupleSource", value = TupleSourceEncoding.class),
     @Type(name = "UnionAll", value = UnionAllEncoding.class) })
 public abstract class OperatorEncoding<T extends Operator> extends MyriaApiEncoding {
 

@@ -5,7 +5,7 @@ import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.operator.TupleSource;
 
-public class DataInputEncoding extends LeafOperatorEncoding<TupleSource> {
+public class TupleSourceEncoding extends LeafOperatorEncoding<TupleSource> {
   @Required
   public TupleReader reader;
   @Required
