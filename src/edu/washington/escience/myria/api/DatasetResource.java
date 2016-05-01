@@ -50,10 +50,14 @@ import edu.washington.escience.myria.api.encoding.TipsyDatasetEncoding;
 import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.io.InputStreamSource;
 import edu.washington.escience.myria.io.PipeSink;
+<<<<<<< HEAD
 import edu.washington.escience.myria.operator.BinaryFileScan;
 import edu.washington.escience.myria.operator.DataInput;
+=======
+>>>>>>> clean up and renaming
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.TipsyFileScan;
+import edu.washington.escience.myria.operator.TupleSource;
 import edu.washington.escience.myria.operator.network.partition.HowPartitioned;
 import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
 import edu.washington.escience.myria.operator.network.partition.RoundRobinPartitionFunction;
@@ -333,7 +337,7 @@ public final class DatasetResource {
       throw new MyriaApiException(Status.BAD_REQUEST, "format must be 'csv', 'tsv'");
     }
 
-    Operator source = new DataInput(new CsvTupleReader(schema, delimiter), new InputStreamSource(is));
+    Operator source = new TupleSource(new CsvTupleReader(schema, delimiter), new InputStreamSource(is));
 
     ResponseBuilder builder = Response.ok();
     HowPartitioned howPartitioned = server.getDatasetStatus(relationKey).getHowPartitioned();
@@ -417,7 +421,7 @@ public final class DatasetResource {
 
     URI datasetUri = getCanonicalResourcePath(uriInfo, dataset.relationKey);
     ResponseBuilder builder = Response.created(datasetUri);
-    return doIngest(dataset.relationKey, new DataInput(new CsvTupleReader(dataset.schema, dataset.delimiter,
+    return doIngest(dataset.relationKey, new TupleSource(new CsvTupleReader(dataset.schema, dataset.delimiter,
         dataset.quote, dataset.escape, dataset.numberOfSkippedLines), dataset.source), dataset.workers,
         dataset.indexes, dataset.overwrite, builder, dataset.partitionFunction);
   }
@@ -460,10 +464,15 @@ public final class DatasetResource {
     Operator scan;
     if (MoreObjects.firstNonNull(binary, false)) {
       scan =
+<<<<<<< HEAD
           new BinaryFileScan(
               schema, new InputStreamSource(data), MoreObjects.firstNonNull(isLittleEndian, false));
+=======
+          new TupleSource(new BinaryTupleReader(schema, MoreObjects.firstNonNull(isLittleEndian, false)),
+              new InputStreamSource(data));
+>>>>>>> clean up and renaming
     } else {
-      scan = new DataInput(new CsvTupleReader(schema, delimiter), new InputStreamSource(data));
+      scan = new TupleSource(new CsvTupleReader(schema, delimiter), new InputStreamSource(data));
     }
 
     /* In the response, tell the client the path to the relation. */

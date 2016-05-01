@@ -13,7 +13,7 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.operator.TupleSource;
+import edu.washington.escience.myria.operator.BatchTupleSource;
 import edu.washington.escience.myria.operator.network.partition.MultiFieldHashPartitionFunction;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
@@ -34,7 +34,7 @@ public class MultiFieldHashPartitionFunctionTest {
         new MultiFieldHashPartitionFunction(NUM_PARTITIONS, new int[] {0, 1});
     int numGroups = rand.nextInt(10) + 1;
     int tuplesPerGroup = rand.nextInt(10) + 1;
-    TupleSource source = generateTupleBatchSource(numGroups, tuplesPerGroup);
+    BatchTupleSource source = generateTupleBatchSource(numGroups, tuplesPerGroup);
     try {
       source.open(null);
       TupleBatch tb = source.nextReady();
@@ -55,7 +55,7 @@ public class MultiFieldHashPartitionFunctionTest {
   /*
    * Generates a tuple batch source with the following schema: a (int), b (int), c (int)
    */
-  private TupleSource generateTupleBatchSource(int numGroups, int tuplesPerGroup) {
+  private BatchTupleSource generateTupleBatchSource(int numGroups, int tuplesPerGroup) {
     final Schema schema =
         new Schema(
             ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE, Type.INT_TYPE),
@@ -68,6 +68,6 @@ public class MultiFieldHashPartitionFunctionTest {
         tbb.putInt(2, rand.nextInt());
       }
     }
-    return new TupleSource(tbb);
+    return new BatchTupleSource(tbb);
   }
 }

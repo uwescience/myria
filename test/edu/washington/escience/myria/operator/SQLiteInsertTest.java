@@ -67,10 +67,8 @@ public class SQLiteInsertTest {
   public void test() throws Exception {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     final RelationKey tuplesKey = RelationKey.of("test", "test", "my_tuples");
-
-    final TupleSource source = new TupleSource(data);
-    final DbInsert insert =
-        new DbInsert(source, tuplesKey, SQLiteInfo.of(tempFile.getAbsolutePath()));
+    final BatchTupleSource source = new BatchTupleSource(data);
+    final DbInsert insert = new DbInsert(source, tuplesKey, SQLiteInfo.of(tempFile.getAbsolutePath()));
     insert.open(null);
     while (!insert.eos()) {
       insert.nextReady();

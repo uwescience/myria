@@ -85,16 +85,16 @@ import edu.washington.escience.myria.expression.WorkerIdExpression;
 import edu.washington.escience.myria.io.DataSink;
 import edu.washington.escience.myria.io.UriSink;
 import edu.washington.escience.myria.operator.Apply;
-import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbDelete;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DuplicateTBGenerator;
 import edu.washington.escience.myria.operator.EOSSource;
 import edu.washington.escience.myria.operator.EmptyRelation;
+import edu.washington.escience.myria.operator.EmptySink;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
-import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.TupleSink;
 import edu.washington.escience.myria.operator.agg.Aggregate;
 import edu.washington.escience.myria.operator.agg.MultiGroupByAggregate;
 import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
@@ -758,13 +758,8 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       long queryId = catalog.newQuery(query);
 
       final Query queryState =
-          new Query(
-              queryId,
-              query,
-              new SubQuery(
-                  new SubQueryPlan(new SinkRoot(new EOSSource())),
-                  new HashMap<Integer, SubQueryPlan>()),
-              this);
+          new Query(queryId, query, new SubQuery(new SubQueryPlan(new EmptySink(new EOSSource())),
+              new HashMap<Integer, SubQueryPlan>()), this);
       queryState.markSuccess();
       catalog.queryFinished(queryState);
 
@@ -938,12 +933,9 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
             workerId, new SubQueryPlan(new DbInsert(EmptyRelation.of(schema), relationKey, false)));
       }
       ListenableFuture<Query> qf =
-          queryManager.submitQuery(
-              "add to catalog " + relationKey.toString(),
-              "add to catalog " + relationKey.toString(),
-              "add to catalog " + relationKey.toString(getDBMS()),
-              new SubQueryPlan(new SinkRoot(new EOSSource())),
-              workerPlans);
+          queryManager.submitQuery("add to catalog " + relationKey.toString(), "add to catalog "
+              + relationKey.toString(), "add to catalog " + relationKey.toString(getDBMS()), new SubQueryPlan(
+              new EmptySink(new EOSSource())), workerPlans);
       try {
         qf.get();
       } catch (ExecutionException e) {
@@ -980,11 +972,16 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
                 new DbDelete(EmptyRelation.of(catalog.getSchema(relationKey)), relationKey, null)));
       }
       ListenableFuture<Query> qf =
+<<<<<<< HEAD
           queryManager.submitQuery(
               "delete " + relationKey.toString(),
               "delete " + relationKey.toString(),
               "deleting from " + relationKey.toString(getDBMS()),
               new SubQueryPlan(new SinkRoot(new EOSSource())),
+=======
+          queryManager.submitQuery("delete " + relationKey.toString(), "delete " + relationKey.toString(),
+              "deleting from " + relationKey.toString(getDBMS()), new SubQueryPlan(new EmptySink(new EOSSource())),
+>>>>>>> clean up and renaming
               workerPlans);
       try {
         qf.get();
@@ -1035,6 +1032,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
                 relationKey.getProgramName(),
                 relationKey.getRelationName());
         DataSink workerSink = new UriSink(partitionName);
+<<<<<<< HEAD
         workerPlans.put(
             workerId,
             new SubQueryPlan(
@@ -1049,6 +1047,14 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
               "persist " + relationKey.toString(),
               "persisting from " + relationKey.toString(getDBMS()),
               new SubQueryPlan(new SinkRoot(new EOSSource())),
+=======
+        workerPlans.put(workerId, new SubQueryPlan(new TupleSink(new DbQueryScan(relationKey, getSchema(relationKey)),
+            new PostgresBinaryTupleWriter(), workerSink)));
+      }
+      ListenableFuture<Query> qf =
+          queryManager.submitQuery("persist " + relationKey.toString(), "persist " + relationKey.toString(),
+              "persisting from " + relationKey.toString(getDBMS()), new SubQueryPlan(new EmptySink(new EOSSource())),
+>>>>>>> clean up and renaming
               workerPlans.build());
       try {
         queryID = qf.get().getQueryId();
@@ -1252,9 +1258,14 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
 
     /* Construct the master plan. */
+<<<<<<< HEAD
     final CollectConsumer consumer =
         new CollectConsumer(schema, operatorId, ImmutableSet.copyOf(scanWorkers));
     final DataOutput output = new DataOutput(consumer, writer, dataSink);
+=======
+    final CollectConsumer consumer = new CollectConsumer(schema, operatorId, ImmutableSet.copyOf(scanWorkers));
+    TupleSink output = new TupleSink(consumer, writer, dataSink);
+>>>>>>> clean up and renaming
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
     /* Submit the plan for the download. */
@@ -1307,9 +1318,14 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
 
     /* Construct the master plan. */
+<<<<<<< HEAD
     final CollectConsumer consumer =
         new CollectConsumer(schema, operatorId, ImmutableSet.copyOf(scanWorkers));
     DataOutput output = new DataOutput(consumer, writer, dataSink);
+=======
+    final CollectConsumer consumer = new CollectConsumer(schema, operatorId, ImmutableSet.copyOf(scanWorkers));
+    TupleSink output = new TupleSink(consumer, writer, dataSink);
+>>>>>>> clean up and renaming
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
     /* Submit the plan for the download. */
@@ -1397,7 +1413,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     renameExpressions.add(new Expression("numTuples", new VariableExpression(3)));
     final Apply rename = new Apply(aggregate, renameExpressions.build());
 
-    DataOutput output = new DataOutput(rename, writer, dataSink);
+    TupleSink output = new TupleSink(rename, writer, dataSink);
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
     /* Submit the plan for the download. */
@@ -1546,7 +1562,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
             "duration", new MinusExpression(new VariableExpression(3), new VariableExpression(2))));
     final Apply rename = new Apply(aggregate, renameExpressions.build());
 
-    DataOutput output = new DataOutput(rename, writer, dataSink);
+    TupleSink output = new TupleSink(rename, writer, dataSink);
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
     /* Submit the plan for the download. */
@@ -1671,7 +1687,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
         new CollectConsumer(
             addWorkerId.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
 
-    DataOutput output = new DataOutput(consumer, writer, dataSink);
+    TupleSink output = new TupleSink(consumer, writer, dataSink);
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
     /* Submit the plan for the download. */
@@ -1797,7 +1813,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     renameExpressions.add(new Expression("numWorkers", new VariableExpression(2)));
     final Apply rename = new Apply(sumAggregate, renameExpressions.build());
 
-    DataOutput output = new DataOutput(rename, writer, dataSink);
+    TupleSink output = new TupleSink(rename, writer, dataSink);
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
     /* Submit the plan for the download. */
@@ -1874,7 +1890,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
             new SingleColumnAggregatorFactory(0, AggregationOp.MIN),
             new SingleColumnAggregatorFactory(1, AggregationOp.MAX));
 
-    DataOutput output = new DataOutput(sumAggregate, writer, dataSink);
+    TupleSink output = new TupleSink(sumAggregate, writer, dataSink);
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
     /* Submit the plan for the download. */
@@ -1958,7 +1974,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     renameExpressions.add(new Expression("nanoTime", new VariableExpression(1)));
     final Apply rename = new Apply(sumAggregate, renameExpressions.build());
 
-    DataOutput output = new DataOutput(rename, writer, dataSink);
+    TupleSink output = new TupleSink(rename, writer, dataSink);
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
     /* Submit the plan for the download. */
@@ -2106,7 +2122,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
         new CollectConsumer(
             addWorkerId.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
 
-    DataOutput output = new DataOutput(consumer, writer, dataSink);
+    TupleSink output = new TupleSink(consumer, writer, dataSink);
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
     /* Submit the plan for the download. */

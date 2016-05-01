@@ -55,7 +55,7 @@ public class BinaryTupleReader implements TupleReader {
 
   @Override
   public void open(final InputStream stream) throws IOException, DbException {
-    buffer = new TupleBatchBuffer(getSchema());
+    buffer = new TupleBatchBuffer(schema);
     InputStream inputStream;
     inputStream = new BufferedInputStream(stream);
 

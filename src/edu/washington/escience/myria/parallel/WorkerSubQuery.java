@@ -20,7 +20,7 @@ import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.StreamingState;
-import edu.washington.escience.myria.operator.TupleSource;
+import edu.washington.escience.myria.operator.BatchTupleSource;
 import edu.washington.escience.myria.operator.network.Producer;
 import edu.washington.escience.myria.operator.network.RecoverProducer;
 import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
@@ -270,8 +270,7 @@ public class WorkerSubQuery extends LocalSubQuery {
         for (int i = 0; i < indices.size(); ++i) {
           int j = indices.get(i);
           /* buffers.get(j) might be an empty List<TupleBatch>, so need to set its schema explicitly. */
-          TupleSource scan =
-              new TupleSource(buffers.get(j).exportState(), buffers.get(j).getSchema());
+          BatchTupleSource scan = new BatchTupleSource(buffers.get(j).exportState(), buffers.get(j).getSchema());
           scan.setOpId(newOpId);
           newOpId++;
           scan.setOpName(

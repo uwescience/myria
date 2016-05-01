@@ -55,9 +55,9 @@ public class MergeJoinTest {
       }
     }
 
-    TupleSource[] children = new TupleSource[2];
-    children[0] = new TupleSource(leftTbb);
-    children[1] = new TupleSource(rightTbb);
+    BatchTupleSource[] children = new BatchTupleSource[2];
+    children[0] = new BatchTupleSource(leftTbb);
+    children[1] = new BatchTupleSource(rightTbb);
 
     BinaryOperator join =
         new MergeJoin(children[0], children[1], new int[] {0}, new int[] {0}, new boolean[] {true});
@@ -96,9 +96,9 @@ public class MergeJoinTest {
     sb.addAll(schema.getColumnNames());
     sb.add("id2");
     sb.add("value2");
-    TupleSource[] children = new TupleSource[2];
-    children[0] = new TupleSource(randomTuples[0]);
-    children[1] = new TupleSource(randomTuples[1]);
+    BatchTupleSource[] children = new BatchTupleSource[2];
+    children[0] = new BatchTupleSource(randomTuples[0]);
+    children[1] = new BatchTupleSource(randomTuples[1]);
 
     BinaryOperator join =
         new MergeJoin(
@@ -146,9 +146,9 @@ public class MergeJoinTest {
     sb.add("name");
     sb.add("id2");
     sb.add("name2");
-    TupleSource[] children = new TupleSource[2];
-    children[0] = new TupleSource(randomTuples[0]);
-    children[1] = new TupleSource(randomTuples[1]);
+    BatchTupleSource[] children = new BatchTupleSource[2];
+    children[0] = new BatchTupleSource(randomTuples[0]);
+    children[1] = new BatchTupleSource(randomTuples[1]);
 
     BinaryOperator join =
         new MergeJoin(
@@ -215,9 +215,9 @@ public class MergeJoinTest {
       }
     }
 
-    TupleSource[] children = new TupleSource[2];
-    children[0] = new TupleSource(leftTbb);
-    children[1] = new TupleSource(rightTbb);
+    BatchTupleSource[] children = new BatchTupleSource[2];
+    children[0] = new BatchTupleSource(leftTbb);
+    children[1] = new BatchTupleSource(rightTbb);
 
     BinaryOperator join =
         new MergeJoin(
@@ -274,9 +274,9 @@ public class MergeJoinTest {
       }
     }
 
-    TupleSource[] children = new TupleSource[2];
-    children[0] = new TupleSource(leftTbb);
-    children[1] = new TupleSource(rightTbb);
+    BatchTupleSource[] children = new BatchTupleSource[2];
+    children[0] = new BatchTupleSource(leftTbb);
+    children[1] = new BatchTupleSource(rightTbb);
 
     InMemoryOrderBy sort0 = new InMemoryOrderBy(children[0], new int[] {0}, new boolean[] {false});
     InMemoryOrderBy sort1 = new InMemoryOrderBy(children[1], new int[] {0}, new boolean[] {false});

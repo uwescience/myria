@@ -37,7 +37,7 @@ public class BinaryTupleReaderTest {
   public void testSimple() throws DbException {
     Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
     String filename = "testdata" + File.separatorChar + "binaryfilescan" + File.separatorChar + "testSimple";
-    DataInput bfs = new DataInput(new BinaryTupleReader(schema), new FileSource(filename));
+    TupleSource bfs = new TupleSource(new BinaryTupleReader(schema), new FileSource(filename));
     assertEquals(2, getRowCount(bfs));
   }
 
@@ -70,7 +70,7 @@ public class BinaryTupleReaderTest {
     Schema schema = new Schema(Arrays.asList(typeAr));
     String filename =
         "testdata" + File.separatorChar + "binaryfilescan" + File.separatorChar + "testWithAstronomySchema";
-    DataInput bfs = new DataInput(new BinaryTupleReader(schema), new FileSource(filename));
+    TupleSource bfs = new TupleSource(new BinaryTupleReader(schema), new FileSource(filename));
     assertEquals(8, getRowCount(bfs));
   }
 
@@ -96,7 +96,7 @@ public class BinaryTupleReaderTest {
     Schema schema = new Schema(Arrays.asList(typeAr));
     String filename =
         "testdata" + File.separatorChar + "binaryfilescan" + File.separatorChar + "cosmo50cmb.256g2bwK.00024.star.bin";
-    DataInput bfs = new DataInput(new BinaryTupleReader(schema, true), new FileSource(filename));
+    TupleSource bfs = new TupleSource(new BinaryTupleReader(schema, true), new FileSource(filename));
     assertEquals(1291, getRowCount(bfs));
   }
 
@@ -173,7 +173,7 @@ public class BinaryTupleReaderTest {
    * @return the number of rows in the file.
    * @throws DbException if the file does not match the given Schema.
    */
-  private static int getRowCount(final DataInput input) throws DbException {
+  private static int getRowCount(final TupleSource input) throws DbException {
     input.open(null);
 
     int count = 0;

@@ -18,7 +18,7 @@ public class OrderedDupElimTest {
   @Test
   public void testOrderedDupElim() throws DbException {
     TupleBatchBuffer randomTuples = TestUtils.generateRandomTuples(52300, 5000, true);
-    TupleSource child = new TupleSource(randomTuples);
+    BatchTupleSource child = new BatchTupleSource(randomTuples);
     OrderedDupElim dupElim = new OrderedDupElim(child);
     int count = 0;
 

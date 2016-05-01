@@ -32,9 +32,9 @@ public class DataSinkTest {
     byte[] srcBytes = dataSrc.getBytes(Charset.forName("UTF-8"));
     Schema relationSchema = Schema.ofFields("x", Type.INT_TYPE, "y", Type.INT_TYPE);
     DataSource byteSource = new ByteArraySource(srcBytes);
-    DataInput dataInput = new DataInput(new CsvTupleReader(relationSchema, ',', null, null, 1), byteSource);
+    TupleSource dataInput = new TupleSource(new CsvTupleReader(relationSchema, ',', null, null, 1), byteSource);
     ByteSink byteSink = new ByteSink();
-    DataOutput dataOutput = new DataOutput(dataInput, new CsvTupleWriter(), byteSink);
+    TupleSink dataOutput = new TupleSink(dataInput, new CsvTupleWriter(), byteSink);
 
     dataOutput.open(TestEnvVars.get());
     while (!dataOutput.eos()) {

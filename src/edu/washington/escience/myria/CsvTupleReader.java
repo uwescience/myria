@@ -85,7 +85,7 @@ public class CsvTupleReader implements TupleReader {
 
   @Override
   public void open(final InputStream stream) throws IOException, DbException {
-    buffer = new TupleBatchBuffer(getSchema());
+    buffer = new TupleBatchBuffer(schema);
     try {
       parser =
           new CSVParser(new BufferedReader(new InputStreamReader(stream)), CSVFormat.newFormat(delimiter).withQuote(

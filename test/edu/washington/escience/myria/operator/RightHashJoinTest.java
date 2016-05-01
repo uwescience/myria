@@ -14,9 +14,9 @@ public class RightHashJoinTest {
 
   @Test
   public void testRightHashJoin() throws DbException {
-    TupleSource left = new TupleSource(JoinTestUtils.leftInput);
-    TupleSource right = new TupleSource(JoinTestUtils.rightInput);
-    Operator join = new RightHashJoin(left, right, new int[] {0, 1, 2}, new int[] {1, 2, 0});
+    BatchTupleSource left = new BatchTupleSource(JoinTestUtils.leftInput);
+    BatchTupleSource right = new BatchTupleSource(JoinTestUtils.rightInput);
+    Operator join = new RightHashJoin(left, right, new int[] { 0, 1, 2 }, new int[] { 1, 2, 0 });
     join.open(TestEnvVars.get());
     assertEquals(
         Schema.merge(JoinTestUtils.leftSchema, JoinTestUtils.rightSchema), join.getSchema());
@@ -34,9 +34,9 @@ public class RightHashJoinTest {
 
   @Test(expected = IllegalStateException.class)
   public void testIncompatibleJoinKeys() throws DbException {
-    TupleSource left = new TupleSource(JoinTestUtils.leftInput);
-    TupleSource right = new TupleSource(JoinTestUtils.rightInput);
-    Operator join = new RightHashJoin(left, right, new int[] {0}, new int[] {0});
+    BatchTupleSource left = new BatchTupleSource(JoinTestUtils.leftInput);
+    BatchTupleSource right = new BatchTupleSource(JoinTestUtils.rightInput);
+    Operator join = new RightHashJoin(left, right, new int[] { 0 }, new int[] { 0 });
     join.open(TestEnvVars.get());
   }
 }

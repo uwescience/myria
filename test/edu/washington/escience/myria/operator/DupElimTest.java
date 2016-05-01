@@ -93,7 +93,7 @@ public class DupElimTest {
 
   @Test
   public void testDupElim() throws DbException {
-    TupleSource src = new TupleSource(makeTestData());
+    BatchTupleSource src = new BatchTupleSource(makeTestData());
     StreamingStateWrapper dupElim = new StreamingStateWrapper(src, new DupElim());
 
     List<TupleBatch> ans = Lists.newLinkedList();

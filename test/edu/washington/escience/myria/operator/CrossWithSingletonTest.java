@@ -21,7 +21,7 @@ import edu.washington.escience.myria.util.TestEnvVars;
  */
 public class CrossWithSingletonTest {
   private final int NUM_TUPLES = TupleBatch.BATCH_SIZE * 3 + 3;
-  private TupleSource dataSource = null;
+  private BatchTupleSource dataSource = null;
   private TupleBatch singleton = null;
 
   @Before
@@ -32,7 +32,7 @@ public class CrossWithSingletonTest {
       tbb.putLong(0, i);
       tbb.putString(1, "" + i);
     }
-    dataSource = new TupleSource(tbb.getAll());
+    dataSource = new BatchTupleSource(tbb.getAll());
 
     tbb = new TupleBatchBuffer(Schema.ofFields(Type.DATETIME_TYPE, Type.BOOLEAN_TYPE));
     tbb.putDateTime(0, DateTime.now());
@@ -63,7 +63,7 @@ public class CrossWithSingletonTest {
 
   @Test
   public void testWithSingleton() throws DbException {
-    TupleSource singletonSource = new TupleSource(singleton);
+    BatchTupleSource singletonSource = new BatchTupleSource(singleton);
     CrossWithSingleton cross = new CrossWithSingleton(dataSource, singletonSource);
     assertEquals(Schema.merge(dataSource.getSchema(), singleton.getSchema()), cross.getSchema());
     verifyMatch(cross);
@@ -71,7 +71,7 @@ public class CrossWithSingletonTest {
 
   @Test(expected = IllegalStateException.class)
   public void testWithSingletonWrongSide() throws DbException {
-    TupleSource singletonSource = new TupleSource(singleton);
+    BatchTupleSource singletonSource = new BatchTupleSource(singleton);
     CrossWithSingleton cross = new CrossWithSingleton(singletonSource, dataSource);
     assertEquals(Schema.merge(singleton.getSchema(), dataSource.getSchema()), cross.getSchema());
     verifyMatch(cross);
@@ -82,7 +82,7 @@ public class CrossWithSingletonTest {
     TupleBatchBuffer tbb = new TupleBatchBuffer(singleton.getSchema());
     tbb.appendTB(singleton);
     tbb.appendTB(singleton);
-    TupleSource source = new TupleSource(tbb.getAll());
+    BatchTupleSource source = new BatchTupleSource(tbb.getAll());
     CrossWithSingleton cross = new CrossWithSingleton(dataSource, source);
     assertEquals(Schema.merge(dataSource.getSchema(), singleton.getSchema()), cross.getSchema());
     verifyMatch(cross);
