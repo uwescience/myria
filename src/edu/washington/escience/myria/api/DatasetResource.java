@@ -526,6 +526,25 @@ public final class DatasetResource {
 
   }
 
+  /**
+   */
+  @POST
+  @Path("/parallelIngestCache")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public Response parallelIngestCache(final ParallelIngestEncoding dataset) throws DbException {
+
+    try {
+      server.ingestCSVDatasetInParallelCache(dataset.relationKey, dataset.source, dataset.schema, dataset.delimiter,
+          dataset.workers);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
+
+    /* In the response, tell the client the path to the relation. */
+    return Response.created(getCanonicalResourcePath(uriInfo, dataset.relationKey)).build();
+
+  }
+
   public Set<Integer> getRangeSet(final int limit) {
     Set<Integer> seq = new HashSet<Integer>();
     for (int i = 1; i <= limit; i++) {
