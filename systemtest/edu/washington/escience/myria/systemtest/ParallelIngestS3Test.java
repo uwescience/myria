@@ -23,9 +23,9 @@ import edu.washington.escience.myria.operator.EOSSource;
 import edu.washington.escience.myria.operator.FileScan;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
-import edu.washington.escience.myria.operator.network.CollectConsumer;
-import edu.washington.escience.myria.operator.network.CollectProducer;
-import edu.washington.escience.myria.operator.network.partition.RoundRobinPartitionFunction;
+import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
+import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
+import edu.washington.escience.myria.operator.network.partition.WholeTupleHashPartitionFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.util.JsonAPIUtils;
 
@@ -83,38 +83,38 @@ public class ParallelIngestS3Test extends SystemTestBase {
     server.submitQueryPlan(new SinkRoot(new EOSSource()), workerPlansParallelIngest).get();
     assertEquals(300000, server.getDatasetStatus(relationKeyParallelIngest).getNumTuples());
 
+    /* WholeTupleHashPartition the tuples from the parallel ingest */
+    DbQueryScan scanIngest = new DbQueryScan(relationKeyParallelIngest, customerSchema);
+    ExchangePairID receiveParallelIngest = ExchangePairID.newID();
+    GenericShuffleProducer sendToWorkerParallelIngest =
+        new GenericShuffleProducer(scanIngest, receiveParallelIngest, workerIDs, new WholeTupleHashPartitionFunction(
+            workerIDs.length));
+    GenericShuffleConsumer workerConsumerParallelIngest =
+        new GenericShuffleConsumer(customerSchema, receiveParallelIngest, workerIDs);
+    DbInsert workerIngest = new DbInsert(workerConsumerParallelIngest, relationKeyParallelIngest, true);
+    Map<Integer, RootOperator[]> workerPlansHashParallelIngest = new HashMap<Integer, RootOperator[]>();
+    for (int workerID : workerIDs) {
+      workerPlansHashParallelIngest.put(workerID, new RootOperator[] { sendToWorkerParallelIngest, workerIngest });
+    }
+    server.submitQueryPlan(new SinkRoot(new EOSSource()), workerPlansHashParallelIngest).get();
+
     /* Ingest the through the coordinator */
     RelationKey relationKeyCoordinatorIngest = RelationKey.of("public", "adhoc", "ingestCoordinator");
     server.ingestDataset(relationKeyCoordinatorIngest, server.getAliveWorkers(), null, new FileScan(new UriSource(
-        customerTableAddress), customerSchema, ',', null, null, 0), new RoundRobinPartitionFunction(workerIDs.length));
+        customerTableAddress), customerSchema, ',', null, null, 0), new WholeTupleHashPartitionFunction(
+        workerIDs.length));
     assertEquals(300000, server.getDatasetStatus(relationKeyCoordinatorIngest).getNumTuples());
 
-    /* do the diff at the first worker */
-    final Map<Integer, RootOperator[]> workerPlansDiff = new HashMap<Integer, RootOperator[]>();
-
+    /* do the diff at each worker */
     DbQueryScan scanParallelIngest = new DbQueryScan(relationKeyParallelIngest, customerSchema);
-    ExchangePairID receiveParallelIngest = ExchangePairID.newID();
-    CollectProducer sendToWorkerParallelIngest =
-        new CollectProducer(scanParallelIngest, receiveParallelIngest, workerIDs[0]);
-
     DbQueryScan scanCoordinatorIngest = new DbQueryScan(relationKeyCoordinatorIngest, customerSchema);
-    ExchangePairID receiveCoordinatorIngest = ExchangePairID.newID();
-    CollectProducer sendToWorkerCoordinatorIngest =
-        new CollectProducer(scanCoordinatorIngest, receiveCoordinatorIngest, workerIDs[0]);
-
-    CollectConsumer workerConsumerParallelIngest =
-        new CollectConsumer(customerSchema, receiveParallelIngest, workerIDs);
-    CollectConsumer workerConsumerCoordinatorIngest =
-        new CollectConsumer(customerSchema, receiveCoordinatorIngest, workerIDs);
-
     RelationKey diffRelationKey = new RelationKey("public", "adhoc", "diffResult");
-    Difference diff = new Difference(workerConsumerParallelIngest, workerConsumerCoordinatorIngest);
-    DbInsert workerIngest = new DbInsert(diff, diffRelationKey, true);
-
-    workerPlansDiff.put(workerIDs[0], new RootOperator[] {
-        sendToWorkerParallelIngest, sendToWorkerCoordinatorIngest, workerIngest });
-    workerPlansDiff.put(workerIDs[1], new RootOperator[] { sendToWorkerParallelIngest, sendToWorkerCoordinatorIngest });
-
+    Difference diff = new Difference(scanParallelIngest, scanCoordinatorIngest);
+    DbInsert diffResult = new DbInsert(diff, diffRelationKey, true);
+    final Map<Integer, RootOperator[]> workerPlansDiff = new HashMap<Integer, RootOperator[]>();
+    for (int workerID : workerIDs) {
+      workerPlansDiff.put(workerID, new RootOperator[] { diffResult });
+    }
     server.submitQueryPlan(new SinkRoot(new EOSSource()), workerPlansDiff).get();
 
     String data =

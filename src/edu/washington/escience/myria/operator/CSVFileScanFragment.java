@@ -143,13 +143,15 @@ public class CSVFileScanFragment extends LeafOperator {
       CSVRecord record = iterator.next();
       if (record.size() < schema.numColumns()) {
         if (lineNumber - 1 != 0 && !isLastWorker) {
+          LOGGER.warn("ON LAST ROW");
           onLastRow = true;
           long byteAtBeginningOfRecord = record.getCharacterPosition();
           if (!fixingStartByte) {
             fixingStartByte = true;
             startByteRange += byteAtBeginningOfRecord;
           }
-          byteOverlap = (long) Math.pow(byteOverlap, 2);
+          byteOverlap = byteOverlap * 2;
+
           endByteRange = endByteRange + byteOverlap;
 
           source.setStartRange(startByteRange);
@@ -158,8 +160,12 @@ public class CSVFileScanFragment extends LeafOperator {
               new CSVParser(new BufferedReader(new InputStreamReader(source.getInputStream())), CSVFormat.newFormat(
                   delimiter).withQuote(quote).withEscape(escape));
           iterator = parser.iterator();
+
         }
       } else {
+        if (onLastRow) {
+          LOGGER.warn("IM READING LAST ROW");
+        }
         for (int column = 0; column < schema.numColumns(); ++column) {
           String cell = record.get(column);
           try {
@@ -229,7 +235,5 @@ public class CSVFileScanFragment extends LeafOperator {
     } catch (IOException e) {
       throw new DbException(e);
     }
-
-    lineNumber = 0;
   }
 }
