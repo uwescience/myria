@@ -7,8 +7,7 @@
     },
     "type": "fact",
     "source": {
-      "dataType": "URI",
-      "uri": "s3://tpchssb/lineorderOUT.csv"
+      "s3Uri": "s3://tpchssb/lineorderOUT.csv"
     },
     "delimiter": "|",
     "schema": {
@@ -64,8 +63,7 @@
     },
     "type": "dimension",
     "source": {
-      "dataType": "URI",
-      "uri": "s3://tpchssb/partOUT.csv"
+      "s3Uri": "s3://tpchssb/partOUT.csv"
     },
     "schema": {
       "columnNames": [
@@ -104,8 +102,7 @@
     },
     "type": "dimension",
     "source": {
-      "dataType": "URI",
-      "uri": "s3://tpchssb/customerOUT.csv"
+      "s3Uri": "s3://tpchssb/customerOUT.csv"
     },
     "schema": {
       "columnNames": [

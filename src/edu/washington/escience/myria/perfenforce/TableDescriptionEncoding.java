@@ -8,18 +8,18 @@ import java.util.Set;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.api.encoding.Required;
-import edu.washington.escience.myria.io.UriSource;
+import edu.washington.escience.myria.io.AmazonS3Source;
 
 /**
  * Table Description Encoding
  */
 public class TableDescriptionEncoding {
   @Required
-  public RelationKey relationkey;
+  public RelationKey relationKey;
   @Required
   public String type;
   @Required
-  public UriSource source;
+  public AmazonS3Source source;
   @Required
   public Schema schema;
   @Required

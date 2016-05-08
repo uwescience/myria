@@ -28,6 +28,7 @@ public class AmazonS3Source implements DataSource, Serializable {
   /** The logger for debug, trace, etc. messages in this class. */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(AmazonS3Source.class);
 
+  @JsonProperty
   private final URI s3Uri;
   private transient ClientConfiguration clientConfig;
   private transient AmazonS3Client s3Client;

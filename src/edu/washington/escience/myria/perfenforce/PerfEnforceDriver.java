@@ -61,7 +61,7 @@ public class PerfEnforceDriver {
     // find all fact tables from the parsed config file
     for (int i = 0; i < factTables.size(); i++) {
       TableDescriptionEncoding currentTable = factTables.get(i);
-      ingestFact(currentTable.relationkey, currentTable.source, currentTable.schema, currentTable.delimiter,
+      ingestFact(currentTable.relationKey, currentTable.source, currentTable.schema, currentTable.delimiter,
           configurations);
     }
 
@@ -69,7 +69,7 @@ public class PerfEnforceDriver {
     List<TableDescriptionEncoding> dimensionTables = configParser.getTablesOfType("dimension");
     for (int i = 0; i < dimensionTables.size(); i++) {
       TableDescriptionEncoding currentTable = dimensionTables.get(i);
-      ingestDimension(currentTable.relationkey, currentTable.source, currentTable.schema, currentTable.delimiter,
+      ingestDimension(currentTable.relationKey, currentTable.source, currentTable.schema, currentTable.delimiter,
           configurations);
     }
 
@@ -206,10 +206,10 @@ public class PerfEnforceDriver {
    */
   public void runPostgresStatistics(final TableDescriptionEncoding t) {
     for (int i = 0; i < t.schema.getColumnNames().size(); i++) {
-      server.executeSQLCommand(String.format("ALTER TABLE %s ALTER COLUMN $s SET STATISTICS 500;", t.relationkey
+      server.executeSQLCommand(String.format("ALTER TABLE %s ALTER COLUMN $s SET STATISTICS 500;", t.relationKey
           .toString(configFilePath), t.schema.getColumnName(i)));
     }
-    server.executeSQLCommand(String.format("ANALYZE %s;", t.relationkey.toString(configFilePath)));
+    server.executeSQLCommand(String.format("ANALYZE %s;", t.relationKey.toString(configFilePath)));
   }
 
   public void collectPostgresFeatures() {
