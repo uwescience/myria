@@ -523,11 +523,11 @@ public final class DatasetResource {
    */
   @POST
   @Path("/perfenforce_enable")
-  @Consumes(MediaType.APPLICATION_JSON)
-  public Response enablePerfEnforce(final String filePath) throws DbException, JSONException, IOException,
-      InterruptedException, ExecutionException, CatalogException {
+  @Consumes(MediaType.MULTIPART_FORM_DATA)
+  public Response enablePerfEnforce(@FormDataParam("filename") final String filename) throws DbException,
+      JSONException, IOException, InterruptedException, ExecutionException, CatalogException {
 
-    server.enablePerfEnforce(filePath);
+    server.enablePerfEnforce(filename);
 
     /* response */
     return Response.noContent().build();

@@ -462,4 +462,9 @@ public final class SQLiteAccessMethod extends AccessMethod {
   public void createViewIfNotExists(final String viewName, final String viewQuery) throws DbException {
     throw new UnsupportedOperationException("create view if not exists is not supported in sqlite yet, implement me");
   }
+
+  @Override
+  public void executeCommand(final String sqlString) throws DbException {
+    throw new UnsupportedOperationException("execute command is not supported in sqlite yet, implement me");
+  }
 }

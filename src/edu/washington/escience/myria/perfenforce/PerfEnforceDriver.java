@@ -1,7 +1,7 @@
 /**
  *
  */
-package edu.washington.edu.escience.myria.perfenforce;
+package edu.washington.escience.myria.perfenforce;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -73,9 +73,10 @@ public class PerfEnforceDriver {
           configurations);
     }
 
-    // run the views and add them to the catalog
-
     // run statistics on all columns
+    for (TableDescriptionEncoding t : factTables) {
+      runPostgresStatistics(t);
+    }
 
     // generate queries (dependent on query generation from PSLAManager)
 
@@ -200,12 +201,15 @@ public class PerfEnforceDriver {
     server.submitQueryPlan(new SinkRoot(new EOSSource()), workerPlans).get();
   }
 
-  public void createPostgresViews() {
-    //
-  }
-
-  public void runPostgresStatistics() {
-
+  /*
+   * Run Statistics on the table by extending statistics space for each column and running analyze on the table
+   */
+  public void runPostgresStatistics(final TableDescriptionEncoding t) {
+    for (int i = 0; i < t.schema.getColumnNames().size(); i++) {
+      server.executeSQLCommand(String.format("ALTER TABLE %s ALTER COLUMN $s SET STATISTICS 500;", t.relationkey
+          .toString(configFilePath), t.schema.getColumnName(i)));
+    }
+    server.executeSQLCommand(String.format("ANALYZE %s;", t.relationkey.toString(configFilePath)));
   }
 
   public void collectPostgresFeatures() {
@@ -215,6 +219,7 @@ public class PerfEnforceDriver {
 
   public void generatePSLA() {
     // calls the C# program via mono and gets the PSLA
+    // provides the PSLA program with the query data
   }
 
   public void beginQueryMonitoring() {

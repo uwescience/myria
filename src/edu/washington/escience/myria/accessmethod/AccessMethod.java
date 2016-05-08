@@ -191,6 +191,15 @@ public abstract class AccessMethod {
   public abstract void createViewIfNotExists(String viewName, String viewQuery) throws DbException;
 
   /**
+   * Executes a sql statement
+   * 
+   * @param viewName
+   * @param viewQuery
+   * @throws DbException
+   */
+  public abstract void executeCommand(String sqlString) throws DbException;
+
+  /**
    * Holds a reference to a column and whether it is ascending or descending.
    */
   public static final class IndexRef implements Serializable {

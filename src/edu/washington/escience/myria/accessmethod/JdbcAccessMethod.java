@@ -604,15 +604,11 @@ public final class JdbcAccessMethod extends AccessMethod {
   }
 
   /**
-   * Run arbitrary DDLs on Postgres
-   * 
-   * @param relationKey the table on which the indexes will be created.
-   * @param schema the Schema of the data in the table.
-   * @param runDDL the DDL to run on Postgres
-   * @throws DbException if there is an error in the DBMS.
+   * Execute a SQL command
    */
-  public void runDDLPostgres(final String runDDL) throws DbException {
-    execute(runDDL);
+  @Override
+  public void executeCommand(final String sqlString) throws DbException {
+    execute(sqlString);
   }
 
   /**

@@ -1,7 +1,7 @@
 /**
  *
  */
-package edu.washington.edu.escience.myria.perfenforce;
+package edu.washington.escience.myria.perfenforce;
 
 import java.util.HashSet;
 import java.util.List;

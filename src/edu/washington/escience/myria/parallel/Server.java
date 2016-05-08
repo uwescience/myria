@@ -64,7 +64,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.Striped;
 import com.google.protobuf.InvalidProtocolBufferException;
 
-import edu.washington.edu.escience.myria.perfenforce.PerfEnforceDriver;
 import edu.washington.escience.myria.CsvTupleWriter;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
@@ -91,6 +90,7 @@ import edu.washington.escience.myria.operator.CSVFileScanFragment;
 import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbCreateView;
 import edu.washington.escience.myria.operator.DbDelete;
+import edu.washington.escience.myria.operator.DbExecute;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DuplicateTBGenerator;
@@ -114,6 +114,7 @@ import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.IPCMessage;
 import edu.washington.escience.myria.parallel.ipc.InJVMLoopbackChannelSink;
 import edu.washington.escience.myria.parallel.ipc.QueueBasedShortMessageProcessor;
+import edu.washington.escience.myria.perfenforce.PerfEnforceDriver;
 import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myria.proto.QueryProto.QueryMessage;
 import edu.washington.escience.myria.proto.QueryProto.QueryReport;
@@ -980,6 +981,27 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       qf =
           queryManager.submitQuery("create view", "create view", "create view", new SubQueryPlan(new SinkRoot(
               new EOSSource())), workerPlans);
+      qf.get();
+    } catch (DbException | CatalogException | InterruptedException | ExecutionException e) {
+      e.printStackTrace();
+    }
+  }
+
+  /**
+   * Execute a SQL Statement
+   */
+  public void executeSQLCommand(final String sqlString) {
+    Set<Integer> actualWorkers = getWorkers().keySet();
+
+    Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
+    for (Integer workerId : actualWorkers) {
+      workerPlans.put(workerId, new SubQueryPlan(new DbExecute(null, sqlString, null)));
+    }
+    ListenableFuture<Query> qf;
+    try {
+      qf =
+          queryManager.submitQuery("execute sql command", "execute sql command", "execute sql command",
+              new SubQueryPlan(new SinkRoot(new EOSSource())), workerPlans);
       qf.get();
     } catch (DbException | CatalogException | InterruptedException | ExecutionException e) {
       e.printStackTrace();
