@@ -51,6 +51,7 @@ import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 import org.slf4j.LoggerFactory;
 
+import com.amazonaws.util.json.JSONException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
@@ -63,6 +64,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.Striped;
 import com.google.protobuf.InvalidProtocolBufferException;
 
+import edu.washington.edu.escience.myria.perfenforce.PerfEnforceDriver;
 import edu.washington.escience.myria.CsvTupleWriter;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
@@ -431,6 +433,9 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   private final int inputBufferCapacity;
   private final int inputBufferRecoverTrigger;
   private final Injector injector;
+
+  /* PerfEnforceDriver */
+  private PerfEnforceDriver perfEnforceDriver;
 
   /**
    * Construct a server object, with configuration stored in the specified catalog file.
@@ -1931,4 +1936,11 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     return catalog;
   }
 
+  public void enablePerfEnforce(final String tableConfigFile) throws JSONException, IOException {
+    perfEnforceDriver = new PerfEnforceDriver(tableConfigFile, this);
+    perfEnforceDriver.beginSetup();
+
+    // we might need to add the perfenforce driver to the query manager here
+    // queryManager.addPerfEnforceDriver(perfEnforceDriver);
+  }
 }

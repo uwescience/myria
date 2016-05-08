@@ -3,14 +3,8 @@ package edu.washington.escience.myria.api;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 
 import javax.annotation.Nonnull;
 import javax.ws.rs.Consumes;
@@ -35,6 +29,7 @@ import org.glassfish.jersey.media.multipart.ContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.slf4j.LoggerFactory;
 
+import com.amazonaws.util.json.JSONException;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.wordnik.swagger.annotations.Api;
@@ -52,26 +47,17 @@ import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.api.encoding.DatasetEncoding;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.ParallelIngestEncoding;
-import edu.washington.escience.myria.api.encoding.ParallelIngestSequenceEncoding;
 import edu.washington.escience.myria.api.encoding.TipsyDatasetEncoding;
 import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.io.InputStreamSource;
 import edu.washington.escience.myria.io.PipeSink;
 import edu.washington.escience.myria.operator.BinaryFileScan;
-import edu.washington.escience.myria.operator.DbInsert;
-import edu.washington.escience.myria.operator.DbQueryScan;
-import edu.washington.escience.myria.operator.EOSSource;
 import edu.washington.escience.myria.operator.FileScan;
 import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.operator.RootOperator;
-import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.TipsyFileScan;
-import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
-import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
 import edu.washington.escience.myria.operator.network.partition.HowPartitioned;
 import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
 import edu.washington.escience.myria.operator.network.partition.RoundRobinPartitionFunction;
-import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.storage.TupleBatch;
 
@@ -523,96 +509,23 @@ public final class DatasetResource {
 
     /* In the response, tell the client the path to the relation. */
     return Response.created(getCanonicalResourcePath(uriInfo, dataset.relationKey)).build();
-
-  }
-
-  public Set<Integer> getRangeSet(final int limit) {
-    Set<Integer> seq = new HashSet<Integer>();
-    for (int i = 1; i <= limit; i++) {
-      seq.add(i);
-    }
-    return seq;
-  }
-
-  public int[] getRangeInclusive(final int min, final int max) {
-    int numberElements = (max - min) + 1;
-    int[] intArray = new int[numberElements];
-    for (int i = 0; i < numberElements; i++) {
-      intArray[i] = min + i;
-    }
-    return intArray;
   }
 
   /**
-   * @throws CatalogException
-   * @throws ExecutionException
+   * Current entry point for PerfEnforce
+   * 
+   * @throws IOException
+   * @throws JSONException
    */
   @POST
-  @Path("/parallelIngestSequence")
+  @Path("/perfenforce_enable")
   @Consumes(MediaType.APPLICATION_JSON)
-  public Response parallelIngestSequence(final ParallelIngestSequenceEncoding dataset) throws DbException,
-      ExecutionException, CatalogException, InterruptedException {
+  public Response enablePerfEnforce(final String filePath) throws DbException, JSONException, IOException {
 
-    ArrayList<Integer> configs = new ArrayList<Integer>(dataset.configurations);
-    Collections.sort(configs, Collections.reverseOrder());
+    server.enablePerfEnforce(filePath);
 
-    // Create a sequence for the largest cluster size
-    int maxConfig = configs.get(0);
-    Set<Integer> rangeMax = getRangeSet(maxConfig);
-
-    // Ingest for the largest cluster
-    RelationKey maxConfigRelationKey =
-        new RelationKey(dataset.relationKey.getUserName(), dataset.relationKey.getProgramName(), dataset.relationKey
-            .getRelationName()
-            + maxConfig);
-    server
-        .ingestCSVDatasetInParallel(maxConfigRelationKey, dataset.source, dataset.schema, dataset.delimiter, rangeMax);
-
-    // Iterate for moving and set parameters
-    Set<Integer> previousSequence = rangeMax;
-    RelationKey previousRelationKey = maxConfigRelationKey;
-    for (int c = 1; c < configs.size(); c++) {
-      // get the new worker sequence
-      int currentSize = configs.get(c);
-      Set<Integer> currentSequence = getRangeSet(currentSize);
-
-      // get the worker diff
-      Set<Integer> diff = com.google.common.collect.Sets.difference(previousSequence, currentSequence);
-
-      // get the new relation key
-      RelationKey currentRelationKey =
-          new RelationKey(dataset.relationKey.getUserName(), dataset.relationKey.getProgramName(), dataset.relationKey
-              .getRelationName()
-              + currentSize);
-
-      // shuffle the diffs (from previous relation key) to the rest
-      final ExchangePairID shuffleId = ExchangePairID.newID();
-      DbQueryScan scan = new DbQueryScan(previousRelationKey, dataset.schema);
-
-      int[] producingWorkers = getRangeInclusive(Collections.min(diff), Collections.max(diff));
-      int[] receivingWorkers = getRangeInclusive(1, Collections.max(currentSequence));
-
-      GenericShuffleProducer producer =
-          new GenericShuffleProducer(scan, shuffleId, receivingWorkers, new RoundRobinPartitionFunction(
-              receivingWorkers.length));
-      GenericShuffleConsumer consumer = new GenericShuffleConsumer(dataset.schema, shuffleId, producingWorkers);
-      DbInsert insert = new DbInsert(consumer, currentRelationKey, true);
-
-      Map<Integer, RootOperator[]> workerPlans = new HashMap<>(currentSize);
-      for (Integer workerID : producingWorkers) {
-        workerPlans.put(workerID, new RootOperator[] { producer });
-      }
-      for (Integer workerID : receivingWorkers) {
-        workerPlans.put(workerID, new RootOperator[] { insert });
-      }
-      server.submitQueryPlan(new SinkRoot(new EOSSource()), workerPlans).get();
-
-      previousSequence = currentSequence;
-      previousRelationKey = currentRelationKey;
-    }
-    /* In the response, tell the client the path to the relation. */
-    return Response.created(getCanonicalResourcePath(uriInfo, dataset.relationKey)).build();
-
+    /* response */
+    return Response.noContent().build();
   }
 
   /**

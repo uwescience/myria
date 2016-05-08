@@ -1,0 +1,139 @@
+[
+  {
+    "relationKey": {
+      "userName": "public",
+      "programName": "adhoc",
+      "relationName": "lineitem"
+    },
+    "type": "fact",
+    "source": {
+      "dataType": "URI",
+      "uri": "s3://tpchssb/lineorderOUT.csv"
+    },
+    "delimiter": "|",
+    "schema": {
+      "columnTypes": [
+        "LONG_TYPE",
+        "LONG_TYPE",
+        "LONG_TYPE",
+        "LONG_TYPE",
+        "LONG_TYPE",
+        "STRING_TYPE",
+        "STRING_TYPE",
+        "LONG_TYPE",
+        "FLOAT_TYPE",
+        "FLOAT_TYPE",
+        "FLOAT_TYPE",
+        "FLOAT_TYPE",
+        "LONG_TYPE",
+        "LONG_TYPE",
+        "FLOAT_TYPE",
+        "LONG_TYPE",
+        "STRING_TYPE"
+      ],
+      "columnNames": [
+        "l_orderkey",
+        "l_linenumber",
+        "l_custkey",
+        "l_partkey",
+        "l_suppkey",
+        "l_orderdate",
+        "l_orderpriority",
+        "l_shippriority",
+        "l_quantity",
+        "l_extendedprice",
+        "l_ordtotalprice",
+        "l_discount",
+        "l_revenue",
+        "l_supplycost",
+        "l_tax",
+        "l_commitdate",
+        "l_shipmode"
+      ]
+    },
+    "keys": [
+      0,
+      1
+    ]
+  },
+  {
+    "relationKey": {
+      "userName": "public",
+      "programName": "adhoc",
+      "relationName": "part"
+    },
+    "type": "dimension",
+    "source": {
+      "dataType": "URI",
+      "uri": "s3://tpchssb/partOUT.csv"
+    },
+    "schema": {
+      "columnNames": [
+        "p_partkey",
+        "p_name",
+        "p_mfgr",
+        "p_category",
+        "p_brand",
+        "p_color",
+        "p_type",
+        "p_size",
+        "p_container"
+      ],
+      "columnTypes": [
+        "LONG_TYPE",
+        "STRING_TYPE",
+        "STRING_TYPE",
+        "STRING_TYPE",
+        "STRING_TYPE",
+        "STRING_TYPE",
+        "STRING_TYPE",
+        "LONG_TYPE",
+        "STRING_TYPE"
+      ]
+    },
+    "delimiter": "|",
+    "keys": [
+      0
+    ]
+  },
+  {
+    "relationKey": {
+      "userName": "public",
+      "programName": "adhoc",
+      "relationName": "customer"
+    },
+    "type": "dimension",
+    "source": {
+      "dataType": "URI",
+      "uri": "s3://tpchssb/customerOUT.csv"
+    },
+    "schema": {
+      "columnNames": [
+        "c_custkey",
+        "c_name",
+        "c_address",
+        "c_city",
+        "c_nation_prefix",
+        "c_nation",
+        "c_region",
+        "c_phone",
+        "c_mktsegment"
+      ],
+      "columnTypes": [
+        "LONG_TYPE",
+        "STRING_TYPE",
+        "STRING_TYPE",
+        "STRING_TYPE",
+        "STRING_TYPE",
+        "STRING_TYPE",
+        "STRING_TYPE",
+        "STRING_TYPE",
+        "STRING_TYPE"
+      ]
+    },
+    "delimiter": "|",
+    "keys": [
+      0
+    ]
+  }
+]
