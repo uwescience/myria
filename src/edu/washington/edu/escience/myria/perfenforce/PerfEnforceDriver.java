@@ -98,34 +98,37 @@ public class PerfEnforceDriver {
     Set<Integer> rangeMax = PerfEnforceUtils.getRangeSet(maxConfig);
 
     // Ingest for the largest cluster size
-    RelationKey maxConfigRelationKey =
+    RelationKey maxConfigRelationKeyToUnion =
         new RelationKey(relationKey.getUserName(), relationKey.getProgramName(), relationKey.getRelationName()
             + maxConfig + "_U");
 
     try {
-      server.ingestCSVDatasetInParallel(maxConfigRelationKey, source, schema, delimiter, rangeMax);
+      server.ingestCSVDatasetInParallel(maxConfigRelationKeyToUnion, source, schema, delimiter, rangeMax);
+      relationKeysToUnion.add(maxConfigRelationKeyToUnion);
 
-      relationKeysToUnion.add(maxConfigRelationKey);
-      server.createView(relationKey.getRelationName() + maxConfig, PerfEnforceUtils
+      RelationKey maxConfigRelationKey =
+          new RelationKey(relationKey.getUserName(), relationKey.getProgramName(), relationKey.getRelationName()
+              + maxConfig);
+      server.createView(maxConfigRelationKey.toString(configFilePath), PerfEnforceUtils
           .createUnionQuery(relationKeysToUnion));
-
+      server.addDatasetToCatalog(maxConfigRelationKey, schema, rangeMax);
     } catch (DbException | InterruptedException e1) {
       e1.printStackTrace();
     }
 
     // Iterate for moving and set parameters
-    Set<Integer> previousSequence = rangeMax;
-    RelationKey previousRelationKey = maxConfigRelationKey;
+    Set<Integer> previousRange = rangeMax;
+    RelationKey previousRelationKey = maxConfigRelationKeyToUnion;
     for (int c = 1; c < configs.size(); c++) {
       // get the new worker sequence
       int currentSize = configs.get(c);
-      Set<Integer> currentSequence = PerfEnforceUtils.getRangeSet(currentSize);
+      Set<Integer> currentRange = PerfEnforceUtils.getRangeSet(currentSize);
 
       // get the worker diff
-      Set<Integer> diff = com.google.common.collect.Sets.difference(previousSequence, currentSequence);
+      Set<Integer> diff = com.google.common.collect.Sets.difference(previousRange, currentRange);
 
       // get the new relation key
-      RelationKey currentRelationKey =
+      RelationKey currentRelationKeyToUnion =
           new RelationKey(relationKey.getUserName(), relationKey.getProgramName(), relationKey.getRelationName()
               + currentSize + "_U");
 
@@ -134,13 +137,13 @@ public class PerfEnforceDriver {
       DbQueryScan scan = new DbQueryScan(previousRelationKey, schema);
 
       int[] producingWorkers = PerfEnforceUtils.getRangeInclusiveArray(Collections.min(diff), Collections.max(diff));
-      int[] receivingWorkers = PerfEnforceUtils.getRangeInclusiveArray(1, Collections.max(currentSequence));
+      int[] receivingWorkers = PerfEnforceUtils.getRangeInclusiveArray(1, Collections.max(currentRange));
 
       GenericShuffleProducer producer =
           new GenericShuffleProducer(scan, shuffleId, receivingWorkers, new RoundRobinPartitionFunction(
               receivingWorkers.length));
       GenericShuffleConsumer consumer = new GenericShuffleConsumer(schema, shuffleId, producingWorkers);
-      DbInsert insert = new DbInsert(consumer, currentRelationKey, true);
+      DbInsert insert = new DbInsert(consumer, currentRelationKeyToUnion, true);
 
       Map<Integer, RootOperator[]> workerPlans = new HashMap<>(currentSize);
       for (Integer workerID : producingWorkers) {
@@ -151,16 +154,20 @@ public class PerfEnforceDriver {
       }
       try {
         server.submitQueryPlan(new SinkRoot(new EOSSource()), workerPlans).get();
+        relationKeysToUnion.add(currentRelationKeyToUnion);
 
-        relationKeysToUnion.add(currentRelationKey);
-        server.createView(relationKey.getRelationName() + currentSize, PerfEnforceUtils
+        RelationKey currentConfigRelationKey =
+            new RelationKey(relationKey.getUserName(), relationKey.getProgramName(), relationKey.getRelationName()
+                + maxConfig);
+        server.createView(currentConfigRelationKey.toString(configFilePath), PerfEnforceUtils
             .createUnionQuery(relationKeysToUnion));
+        server.addDatasetToCatalog(currentConfigRelationKey, schema, currentRange);
       } catch (InterruptedException | ExecutionException | DbException | CatalogException e) {
         e.printStackTrace();
       }
 
-      previousSequence = currentSequence;
-      previousRelationKey = currentRelationKey;
+      previousRange = currentRange;
+      previousRelationKey = currentRelationKeyToUnion;
     }
   }
 
