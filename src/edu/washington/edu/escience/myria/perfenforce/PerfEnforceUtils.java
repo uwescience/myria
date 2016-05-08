@@ -4,7 +4,10 @@
 package edu.washington.edu.escience.myria.perfenforce;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+
+import edu.washington.escience.myria.RelationKey;
 
 /**
  * Helper Methods
@@ -18,12 +21,30 @@ public class PerfEnforceUtils {
     return seq;
   }
 
-  public static int[] getRangeInclusive(final int min, final int max) {
+  public static int[] getRangeInclusiveArray(final int min, final int max) {
     int numberElements = (max - min) + 1;
     int[] intArray = new int[numberElements];
     for (int i = 0; i < numberElements; i++) {
       intArray[i] = min + i;
     }
     return intArray;
+  }
+
+  /*
+   * Construct UNION view
+   */
+  public static String createUnionQuery(final List<RelationKey> keysToUnion) {
+    String sql = "";
+    for (RelationKey table : keysToUnion) {
+      sql +=
+          String.format("select * from \"%s:%s:%s\"", table.getUserName(), table.getProgramName(), table
+              .getRelationName());
+      if (table != keysToUnion.get(keysToUnion.size() - 1)) {
+        sql += " UNION ALL ";
+      } else {
+        sql += ";";
+      }
+    }
+    return sql;
   }
 }

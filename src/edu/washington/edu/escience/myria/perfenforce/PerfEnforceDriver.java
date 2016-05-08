@@ -75,9 +75,13 @@ public class PerfEnforceDriver {
 
     // run the views and add them to the catalog
 
-    // scan and collect statistics on tables for all columns
+    // run statistics on all columns
 
-    // collect and record all postgres features from one worker
+    // generate queries (dependent on query generation from PSLAManager)
+
+    // collect features from one worker
+
+    // provide PSLAManager with features
   }
 
   /*
@@ -85,6 +89,7 @@ public class PerfEnforceDriver {
    */
   public void ingestFact(final RelationKey relationKey, final DataSource source, final Schema schema,
       final Character delimiter, final Set<Integer> configurations) {
+    ArrayList<RelationKey> relationKeysToUnion = new ArrayList<RelationKey>();
     ArrayList<Integer> configs = new ArrayList<Integer>(configurations);
     Collections.sort(configs, Collections.reverseOrder());
 
@@ -95,10 +100,15 @@ public class PerfEnforceDriver {
     // Ingest for the largest cluster size
     RelationKey maxConfigRelationKey =
         new RelationKey(relationKey.getUserName(), relationKey.getProgramName(), relationKey.getRelationName()
-            + maxConfig);
+            + maxConfig + "_U");
 
     try {
       server.ingestCSVDatasetInParallel(maxConfigRelationKey, source, schema, delimiter, rangeMax);
+
+      relationKeysToUnion.add(maxConfigRelationKey);
+      server.createView(relationKey.getRelationName() + maxConfig, PerfEnforceUtils
+          .createUnionQuery(relationKeysToUnion));
+
     } catch (DbException | InterruptedException e1) {
       e1.printStackTrace();
     }
@@ -117,14 +127,14 @@ public class PerfEnforceDriver {
       // get the new relation key
       RelationKey currentRelationKey =
           new RelationKey(relationKey.getUserName(), relationKey.getProgramName(), relationKey.getRelationName()
-              + currentSize);
+              + currentSize + "_U");
 
       // shuffle the diffs (from previous relation key) to the rest
       final ExchangePairID shuffleId = ExchangePairID.newID();
       DbQueryScan scan = new DbQueryScan(previousRelationKey, schema);
 
-      int[] producingWorkers = PerfEnforceUtils.getRangeInclusive(Collections.min(diff), Collections.max(diff));
-      int[] receivingWorkers = PerfEnforceUtils.getRangeInclusive(1, Collections.max(currentSequence));
+      int[] producingWorkers = PerfEnforceUtils.getRangeInclusiveArray(Collections.min(diff), Collections.max(diff));
+      int[] receivingWorkers = PerfEnforceUtils.getRangeInclusiveArray(1, Collections.max(currentSequence));
 
       GenericShuffleProducer producer =
           new GenericShuffleProducer(scan, shuffleId, receivingWorkers, new RoundRobinPartitionFunction(
@@ -141,6 +151,10 @@ public class PerfEnforceDriver {
       }
       try {
         server.submitQueryPlan(new SinkRoot(new EOSSource()), workerPlans).get();
+
+        relationKeysToUnion.add(currentRelationKey);
+        server.createView(relationKey.getRelationName() + currentSize, PerfEnforceUtils
+            .createUnionQuery(relationKeysToUnion));
       } catch (InterruptedException | ExecutionException | DbException | CatalogException e) {
         e.printStackTrace();
       }
@@ -180,6 +194,10 @@ public class PerfEnforceDriver {
   }
 
   public void createPostgresViews() {
+    //
+  }
+
+  public void runPostgresStatistics() {
 
   }
 

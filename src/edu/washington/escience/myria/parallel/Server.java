@@ -89,6 +89,7 @@ import edu.washington.escience.myria.io.UriSink;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.CSVFileScanFragment;
 import edu.washington.escience.myria.operator.DataOutput;
+import edu.washington.escience.myria.operator.DbCreateView;
 import edu.washington.escience.myria.operator.DbDelete;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
@@ -961,6 +962,27 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
 
     return getDatasetStatus(relationKey);
+  }
+
+  /**
+   * Create a view
+   */
+  public void createView(final String viewName, final String sqlString) {
+    Set<Integer> actualWorkers = getWorkers().keySet();
+
+    Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
+    for (Integer workerId : actualWorkers) {
+      workerPlans.put(workerId, new SubQueryPlan(new DbCreateView(null, viewName, sqlString, null)));
+    }
+    ListenableFuture<Query> qf;
+    try {
+      qf =
+          queryManager.submitQuery("create view", "create view", "create view", new SubQueryPlan(new SinkRoot(
+              new EOSSource())), workerPlans);
+      qf.get();
+    } catch (DbException | CatalogException | InterruptedException | ExecutionException e) {
+      e.printStackTrace();
+    }
   }
 
   /**
@@ -1936,7 +1958,8 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     return catalog;
   }
 
-  public void enablePerfEnforce(final String tableConfigFile) throws JSONException, IOException {
+  public void enablePerfEnforce(final String tableConfigFile) throws JSONException, IOException, InterruptedException,
+      ExecutionException, DbException, CatalogException {
     perfEnforceDriver = new PerfEnforceDriver(tableConfigFile, this);
     perfEnforceDriver.beginSetup();
 

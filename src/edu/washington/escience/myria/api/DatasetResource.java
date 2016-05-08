@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
 import javax.annotation.Nonnull;
 import javax.ws.rs.Consumes;
@@ -516,11 +517,15 @@ public final class DatasetResource {
    * 
    * @throws IOException
    * @throws JSONException
+   * @throws CatalogException
+   * @throws ExecutionException
+   * @throws InterruptedException
    */
   @POST
   @Path("/perfenforce_enable")
   @Consumes(MediaType.APPLICATION_JSON)
-  public Response enablePerfEnforce(final String filePath) throws DbException, JSONException, IOException {
+  public Response enablePerfEnforce(final String filePath) throws DbException, JSONException, IOException,
+      InterruptedException, ExecutionException, CatalogException {
 
     server.enablePerfEnforce(filePath);
 
