@@ -41,8 +41,6 @@ public class PerfEnforceUtils {
               .getRelationName());
       if (table != keysToUnion.get(keysToUnion.size() - 1)) {
         sql += " UNION ALL ";
-      } else {
-        sql += ";";
       }
     }
     return sql;

@@ -968,13 +968,16 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
 
   /**
    * Create a view
+   * 
+   * @throws CatalogException
    */
-  public void createView(final String viewName, final String sqlString) {
+  public void createView(final String viewName, final String sqlString) throws CatalogException {
     Set<Integer> actualWorkers = getWorkers().keySet();
 
     Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
     for (Integer workerId : actualWorkers) {
-      workerPlans.put(workerId, new SubQueryPlan(new DbCreateView(null, viewName, sqlString, null)));
+      workerPlans.put(workerId, new SubQueryPlan(new DbCreateView(EmptyRelation.of(Schema.EMPTY_SCHEMA), viewName,
+          sqlString, null)));
     }
     ListenableFuture<Query> qf;
     try {

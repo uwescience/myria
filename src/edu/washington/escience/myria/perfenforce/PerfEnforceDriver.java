@@ -18,6 +18,7 @@ import com.amazonaws.util.json.JSONException;
 import com.google.common.primitives.Ints;
 
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.coordinator.CatalogException;
@@ -89,7 +90,7 @@ public class PerfEnforceDriver {
    * Ingesting the fact table in a parallel sequence
    */
   public void ingestFact(final RelationKey relationKey, final DataSource source, final Schema schema,
-      final Character delimiter, final Set<Integer> configurations) {
+      final Character delimiter, final Set<Integer> configurations) throws CatalogException {
     ArrayList<RelationKey> relationKeysToUnion = new ArrayList<RelationKey>();
     ArrayList<Integer> configs = new ArrayList<Integer>(configurations);
     Collections.sort(configs, Collections.reverseOrder());
@@ -110,7 +111,7 @@ public class PerfEnforceDriver {
       RelationKey maxConfigRelationKey =
           new RelationKey(relationKey.getUserName(), relationKey.getProgramName(), relationKey.getRelationName()
               + maxConfig);
-      server.createView(maxConfigRelationKey.toString(configFilePath), PerfEnforceUtils
+      server.createView(maxConfigRelationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), PerfEnforceUtils
           .createUnionQuery(relationKeysToUnion));
       server.addDatasetToCatalog(maxConfigRelationKey, schema, rangeMax);
     } catch (DbException | InterruptedException e1) {
@@ -159,8 +160,8 @@ public class PerfEnforceDriver {
 
         RelationKey currentConfigRelationKey =
             new RelationKey(relationKey.getUserName(), relationKey.getProgramName(), relationKey.getRelationName()
-                + maxConfig);
-        server.createView(currentConfigRelationKey.toString(configFilePath), PerfEnforceUtils
+                + currentSize);
+        server.createView(currentConfigRelationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), PerfEnforceUtils
             .createUnionQuery(relationKeysToUnion));
         server.addDatasetToCatalog(currentConfigRelationKey, schema, currentRange);
       } catch (InterruptedException | ExecutionException | DbException | CatalogException e) {
@@ -207,9 +208,10 @@ public class PerfEnforceDriver {
   public void runPostgresStatistics(final TableDescriptionEncoding t) {
     for (int i = 0; i < t.schema.getColumnNames().size(); i++) {
       server.executeSQLCommand(String.format("ALTER TABLE %s ALTER COLUMN $s SET STATISTICS 500;", t.relationKey
-          .toString(configFilePath), t.schema.getColumnName(i)));
+          .toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), t.schema.getColumnName(i)));
     }
-    server.executeSQLCommand(String.format("ANALYZE %s;", t.relationKey.toString(configFilePath)));
+    server.executeSQLCommand(String.format("ANALYZE %s;", t.relationKey
+        .toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)));
   }
 
   public void collectPostgresFeatures() {
