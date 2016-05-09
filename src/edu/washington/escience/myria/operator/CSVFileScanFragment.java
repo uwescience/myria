@@ -71,31 +71,31 @@ public class CSVFileScanFragment extends LeafOperator {
    */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(CSVFileScanFragment.class);
 
-  public CSVFileScanFragment(final String filename, final Schema schema, final int workerID, final int totalWorkers) {
-    this(filename, schema, workerID, totalWorkers, null, null, null, null);
+  public CSVFileScanFragment(final String filename, final Schema schema, final int totalWorkers) {
+    this(filename, schema, totalWorkers, null, null, null, null);
   }
 
-  public CSVFileScanFragment(final DataSource source, final Schema schema, final int workerID, final int totalWorkers) {
-    this(source, schema, workerID, totalWorkers, null, null, null, null);
+  public CSVFileScanFragment(final DataSource source, final Schema schema, final int totalWorkers) {
+    this(source, schema, totalWorkers, null, null, null, null);
   }
 
-  public CSVFileScanFragment(final String filename, final Schema schema, final int workerID, final int totalWorkers,
+  public CSVFileScanFragment(final String filename, final Schema schema, final int totalWorkers,
       final Character delimiter) {
-    this(new FileSource(filename), schema, workerID, totalWorkers, delimiter, null, null, null);
+    this(new FileSource(filename), schema, totalWorkers, delimiter, null, null, null);
   }
 
-  public CSVFileScanFragment(final DataSource source, final Schema schema, final int workerID, final int totalWorkers,
+  public CSVFileScanFragment(final DataSource source, final Schema schema, final int totalWorkers,
       final Character delimiter) {
-    this(source, schema, workerID, totalWorkers, delimiter, null, null, null);
+    this(source, schema, totalWorkers, delimiter, null, null, null);
   }
 
-  public CSVFileScanFragment(final String filename, final Schema schema, final int workerID, final int totalWorkers,
+  public CSVFileScanFragment(final String filename, final Schema schema, final int totalWorkers,
       @Nullable final Character delimiter, @Nullable final Character quote, @Nullable final Character escape,
       @Nullable final Integer numberOfSkippedLines) {
-    this(new FileSource(filename), schema, workerID, totalWorkers, delimiter, quote, escape, numberOfSkippedLines);
+    this(new FileSource(filename), schema, totalWorkers, delimiter, quote, escape, numberOfSkippedLines);
   }
 
-  public CSVFileScanFragment(final DataSource source, final Schema schema, final int workerID, final int totalWorkers,
+  public CSVFileScanFragment(final DataSource source, final Schema schema, final int totalWorkers,
       @Nullable final Character delimiter, @Nullable final Character quote, @Nullable final Character escape,
       @Nullable final Integer numberOfSkippedLines) {
     this.source = (UriSource) Preconditions.checkNotNull(source, "source");
@@ -105,7 +105,7 @@ public class CSVFileScanFragment extends LeafOperator {
     this.quote = MoreObjects.firstNonNull(quote, CSVFormat.DEFAULT.getQuoteCharacter());
     this.escape = escape != null ? escape : CSVFormat.DEFAULT.getEscapeCharacter();
     this.numberOfSkippedLines = MoreObjects.firstNonNull(numberOfSkippedLines, 0);
-    this.workerID = workerID;
+    workerID = getNodeID();
 
     isLastWorker = workerID == totalWorkers;
     fileSize = ((UriSource) source).getFileSize();

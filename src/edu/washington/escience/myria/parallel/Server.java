@@ -1014,8 +1014,7 @@ public final class Server {
 
     Map<Integer, SubQueryPlan> workerPlansParallelIngest = new HashMap<>();
     for (int workerID : workersArray) {
-      CSVFileScanFragment csvFileScan =
-          new CSVFileScanFragment(source, schema, workerID, workersArray.length, delimiter);
+      CSVFileScanFragment csvFileScan = new CSVFileScanFragment(source, schema, workersArray.length, delimiter);
       workerPlansParallelIngest.put(workerID, new SubQueryPlan(new DbInsert(csvFileScan, relationKey, true)));
     }
 
@@ -1061,8 +1060,7 @@ public final class Server {
 
     Map<Integer, SubQueryPlan> workerPlansParallelIngest = new HashMap<>();
     for (int workerID : workersArray) {
-      CSVFileScanFragment csvFileScan =
-          new CSVFileScanFragment(source, schema, workerID, workersArray.length, delimiter);
+      CSVFileScanFragment csvFileScan = new CSVFileScanFragment(source, schema, workersArray.length, delimiter);
       workerPlansParallelIngest.put(workerID, new SubQueryPlan(new CacheInsert(csvFileScan)));
     }
 
