@@ -16,6 +16,7 @@ import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
@@ -28,7 +29,6 @@ public class AmazonS3Source implements DataSource, Serializable {
   /** The logger for debug, trace, etc. messages in this class. */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(AmazonS3Source.class);
 
-  @JsonProperty
   private final URI s3Uri;
   private transient ClientConfiguration clientConfig;
   private transient AmazonS3Client s3Client;
@@ -36,6 +36,7 @@ public class AmazonS3Source implements DataSource, Serializable {
   private long startRange;
   private long endRange;
 
+  @JsonCreator
   public AmazonS3Source(@JsonProperty(value = "uri", required = true) final String uri) throws URIException {
     s3Uri = URI.create(Objects.requireNonNull(uri, "Parameter uri to UriSource may not be null"));
     /* Force using the Hadoop S3A FileSystem */

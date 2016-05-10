@@ -30,7 +30,7 @@ import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
 import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
-import edu.washington.escience.myria.operator.network.partition.IdentityHashPartitionFunction;
+import edu.washington.escience.myria.operator.network.partition.FixValuePartitionFunction;
 import edu.washington.escience.myria.operator.network.partition.RoundRobinPartitionFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.Server;
@@ -112,7 +112,7 @@ public class PerfEnforceDriver {
           new RelationKey(relationKey.getUserName(), relationKey.getProgramName(), relationKey.getRelationName()
               + maxConfig);
       server.createView(maxConfigRelationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), PerfEnforceUtils
-          .createUnionQuery(relationKeysToUnion));
+          .createUnionQuery(relationKeysToUnion), rangeMax);
       server.addDatasetToCatalog(maxConfigRelationKey, schema, rangeMax);
     } catch (DbException | InterruptedException e1) {
       e1.printStackTrace();
@@ -162,7 +162,7 @@ public class PerfEnforceDriver {
             new RelationKey(relationKey.getUserName(), relationKey.getProgramName(), relationKey.getRelationName()
                 + currentSize);
         server.createView(currentConfigRelationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), PerfEnforceUtils
-            .createUnionQuery(relationKeysToUnion));
+            .createUnionQuery(relationKeysToUnion), currentRange);
         server.addDatasetToCatalog(currentConfigRelationKey, schema, currentRange);
       } catch (InterruptedException | ExecutionException | DbException | CatalogException e) {
         e.printStackTrace();
@@ -191,8 +191,8 @@ public class PerfEnforceDriver {
     DbQueryScan dbscan = new DbQueryScan(relationKey, schema);
     final ExchangePairID broadcastID = ExchangePairID.newID();
     GenericShuffleProducer producer =
-        new GenericShuffleProducer(dbscan, broadcastID, Ints.toArray(totalWorkers), new IdentityHashPartitionFunction(
-            totalWorkers.size()));
+        new GenericShuffleProducer(dbscan, broadcastID, Ints.toArray(totalWorkers), new FixValuePartitionFunction(0));
+
     GenericShuffleConsumer consumer = new GenericShuffleConsumer(schema, broadcastID, Ints.toArray(totalWorkers));
     DbInsert insert = new DbInsert(consumer, relationKey, true);
     Map<Integer, RootOperator[]> workerPlans = new HashMap<>(totalWorkers.size());

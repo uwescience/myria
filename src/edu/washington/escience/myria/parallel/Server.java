@@ -971,8 +971,12 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
    * 
    * @throws CatalogException
    */
-  public void createView(final String viewName, final String sqlString) throws CatalogException {
-    Set<Integer> actualWorkers = getWorkers().keySet();
+  public void createView(final String viewName, final String sqlString, final Set<Integer> workersToCreateView)
+      throws CatalogException {
+    Set<Integer> actualWorkers = workersToCreateView;
+    if (workersToCreateView == null) {
+      actualWorkers = getWorkers().keySet();
+    }
 
     Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
     for (Integer workerId : actualWorkers) {
