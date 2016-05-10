@@ -17,7 +17,6 @@ import org.apache.commons.lang.BooleanUtils;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Floats;
 
 import edu.washington.escience.myria.DbException;
@@ -55,13 +54,16 @@ public class CSVFileScanFragment extends LeafOperator {
   /** Which line of the file the scanner is currently on. */
   private long lineNumber = 0;
 
-  private final boolean isLastWorker;
-  private final long fileSize;
-  private final long partitionSize;
+  private boolean isLastWorker;
+  private long fileSize;
+  private long partitionSize;
   private long byteOverlap = 10;
   private long startByteRange;
   private long endByteRange;
-  long workerID;
+  private final long totalWorkers;
+  private long workerID;
+
+  boolean initializedPartition = false;
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -105,19 +107,16 @@ public class CSVFileScanFragment extends LeafOperator {
     this.quote = MoreObjects.firstNonNull(quote, CSVFormat.DEFAULT.getQuoteCharacter());
     this.escape = escape != null ? escape : CSVFormat.DEFAULT.getEscapeCharacter();
     this.numberOfSkippedLines = MoreObjects.firstNonNull(numberOfSkippedLines, 0);
-    workerID = getNodeID();
 
-    isLastWorker = workerID == totalWorkers;
-    fileSize = ((UriSource) source).getFileSize();
-
-    partitionSize = fileSize / totalWorkers;
-    startByteRange = partitionSize * (workerID - 1);
-    endByteRange = startByteRange + partitionSize;
-
+    this.totalWorkers = totalWorkers;
   }
 
   @Override
   protected TupleBatch fetchNextReady() throws IOException, DbException {
+    if (!initializedPartition) {
+      setupWorkerPartition();
+      initializedPartition = true;
+    }
     long lineNumberBegin = lineNumber;
     boolean fixingStartByte = false;
     boolean onLastRow = false;
@@ -200,13 +199,16 @@ public class CSVFileScanFragment extends LeafOperator {
 
   }
 
-  @Override
-  protected Schema generateSchema() {
-    return schema;
-  }
+  public void setupWorkerPartition() throws DbException {
+    workerID = getWorker().getID();
 
-  @Override
-  protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+    isLastWorker = workerID == totalWorkers;
+    fileSize = source.getFileSize();
+
+    partitionSize = fileSize / totalWorkers;
+    startByteRange = partitionSize * (workerID - 1);
+    endByteRange = startByteRange + partitionSize;
+
     buffer = new TupleBatchBuffer(getSchema());
     try {
       parser =
@@ -219,7 +221,11 @@ public class CSVFileScanFragment extends LeafOperator {
     } catch (IOException e) {
       throw new DbException(e);
     }
-
-    lineNumber = 0;
   }
+
+  @Override
+  protected Schema generateSchema() {
+    return schema;
+  }
+
 }
