@@ -12,7 +12,7 @@ import java.util.Objects;
 import org.apache.commons.httpclient.URIException;
 
 import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.auth.AnonymousAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
@@ -60,7 +60,7 @@ public class AmazonS3Source implements DataSource, Serializable {
   public void initializeClient() {
     clientConfig = new ClientConfiguration();
     clientConfig.setMaxErrorRetry(3);
-    s3Client = new AmazonS3Client(new DefaultAWSCredentialsProviderChain());
+    s3Client = new AmazonS3Client(new AnonymousAWSCredentials());
   }
 
   @Override

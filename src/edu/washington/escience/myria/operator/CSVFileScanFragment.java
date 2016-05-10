@@ -54,8 +54,8 @@ public class CSVFileScanFragment extends LeafOperator {
   /** Which line of the file the scanner is currently on. */
   private long lineNumber = 0;
 
-  private final boolean isLastWorker;
-  private final long fileSize;
+  private boolean isLastWorker;
+  private long fileSize;
 
   private long byteOverlap = 10;
   private long startByteRange;
@@ -107,19 +107,6 @@ public class CSVFileScanFragment extends LeafOperator {
     this.quote = MoreObjects.firstNonNull(quote, CSVFormat.DEFAULT.getQuoteCharacter());
     this.escape = escape != null ? escape : CSVFormat.DEFAULT.getEscapeCharacter();
     this.numberOfSkippedLines = MoreObjects.firstNonNull(numberOfSkippedLines, 0);
-    this.workerID = workerID;
-
-    isLastWorker = workerID == totalWorkers;
-    fileSize = ((AmazonS3Source) source).getFileSize();
-
-    if (fileSize < 10 && workerID == 1) {
-      startByteRange = 0;
-      endByteRange = fileSize;
-    } else {
-      long partitionSize = fileSize / totalWorkers;
-      startByteRange = (partitionSize) * (workerID - 1);
-      endByteRange = startByteRange + partitionSize;
-    }
 
     this.totalWorkers = totalWorkers;
   }
@@ -221,7 +208,7 @@ public class CSVFileScanFragment extends LeafOperator {
     isLastWorker = workerID == totalWorkers;
     fileSize = source.getFileSize();
 
-    partitionSize = fileSize / totalWorkers;
+    long partitionSize = fileSize / totalWorkers;
     startByteRange = partitionSize * (workerID - 1);
     endByteRange = startByteRange + partitionSize;
 
