@@ -1988,10 +1988,10 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     return catalog;
   }
 
-  public void enablePerfEnforce(final String tableConfigFile) throws JSONException, IOException, InterruptedException,
+  public void preparePerfEnforce(final String schemaFile) throws JSONException, IOException, InterruptedException,
       ExecutionException, DbException, CatalogException {
-    perfEnforceDriver = new PerfEnforceDriver(tableConfigFile, this);
-    perfEnforceDriver.beginSetup();
+    perfEnforceDriver = new PerfEnforceDriver(schemaFile);
+    perfEnforceDriver.beginDataPreparation(this);
 
     // we might need to add the perfenforce driver to the query manager here
     // queryManager.addPerfEnforceDriver(perfEnforceDriver);

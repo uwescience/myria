@@ -527,7 +527,7 @@ public final class DatasetResource {
   public Response enablePerfEnforce(@FormDataParam("filename") final String filename) throws DbException,
       JSONException, IOException, InterruptedException, ExecutionException, CatalogException {
 
-    server.enablePerfEnforce(filename);
+    server.preparePerfEnforce(filename);
 
     /* response */
     return Response.noContent().build();

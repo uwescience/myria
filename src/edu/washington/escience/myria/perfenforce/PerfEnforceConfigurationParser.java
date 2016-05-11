@@ -21,23 +21,21 @@ public class PerfEnforceConfigurationParser {
   /** Logger. */
   protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(PerfEnforceConfigurationParser.class);
 
-  String configFilePath;
-
-  public PerfEnforceConfigurationParser(final String configFilePath) {
-    this.configFilePath = configFilePath;
-  }
-
-  public List<TableDescriptionEncoding> getTablesOfType(final String type) throws IOException {
+  public static List<TableDescriptionEncoding> getTablesOfType(final String type, final String configFilePath) {
     List<TableDescriptionEncoding> listTablesOfType = new ArrayList<TableDescriptionEncoding>();
     Gson gson = new Gson();
-    String stringFromFile = Files.toString(new File(configFilePath), Charsets.UTF_8);
-    LOGGER.warn("FILE " + stringFromFile);
-    TableDescriptionEncoding[] tableList = gson.fromJson(stringFromFile, TableDescriptionEncoding[].class);
+    String stringFromFile;
+    try {
+      stringFromFile = Files.toString(new File(configFilePath), Charsets.UTF_8);
+      TableDescriptionEncoding[] tableList = gson.fromJson(stringFromFile, TableDescriptionEncoding[].class);
 
-    for (TableDescriptionEncoding currentTable : tableList) {
-      if (currentTable.type.equals(type)) {
-        listTablesOfType.add(currentTable);
+      for (TableDescriptionEncoding currentTable : tableList) {
+        if (currentTable.type.equals(type)) {
+          listTablesOfType.add(currentTable);
+        }
       }
+    } catch (IOException e) {
+      e.printStackTrace();
     }
     return listTablesOfType;
   }
