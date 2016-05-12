@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Floats;
 
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.io.AmazonS3Source;
 import edu.washington.escience.myria.io.DataSource;
@@ -56,9 +57,8 @@ public class CSVFileScanFragment extends LeafOperator {
   private long lineNumber = 0;
 
   private final boolean isLastWorker;
-  private final long fileSize;
 
-  private long byteOverlap = 10;
+  private long byteOverlap = MyriaConstants.BYTE_OVERLAP_PARALLEL_INGEST;
   private long startByteRange;
   private long endByteRange;
   long workerID;
@@ -71,33 +71,36 @@ public class CSVFileScanFragment extends LeafOperator {
    */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(CSVFileScanFragment.class);
 
-  public CSVFileScanFragment(final String filename, final Schema schema, final int workerID, final int totalWorkers) {
-    this(filename, schema, workerID, totalWorkers, null, null, null, null);
+  public CSVFileScanFragment(final String filename, final Schema schema, final long startByteRange,
+      final long endByteRange, final boolean isLastWorker) {
+    this(filename, schema, startByteRange, endByteRange, isLastWorker, null, null, null, null);
   }
 
-  public CSVFileScanFragment(final DataSource source, final Schema schema, final int workerID, final int totalWorkers) {
-    this(source, schema, workerID, totalWorkers, null, null, null, null);
+  public CSVFileScanFragment(final DataSource source, final Schema schema, final long startByteRange,
+      final long endByteRange, final boolean isLastWorker) {
+    this(source, schema, startByteRange, endByteRange, isLastWorker, null, null, null, null);
   }
 
-  public CSVFileScanFragment(final String filename, final Schema schema, final int workerID, final int totalWorkers,
-      final Character delimiter) {
-    this(new FileSource(filename), schema, workerID, totalWorkers, delimiter, null, null, null);
+  public CSVFileScanFragment(final String filename, final Schema schema, final long startByteRange,
+      final long endByteRange, final boolean isLastWorker, final Character delimiter) {
+    this(new FileSource(filename), schema, startByteRange, endByteRange, isLastWorker, delimiter, null, null, null);
   }
 
-  public CSVFileScanFragment(final DataSource source, final Schema schema, final int workerID, final int totalWorkers,
-      final Character delimiter) {
-    this(source, schema, workerID, totalWorkers, delimiter, null, null, null);
+  public CSVFileScanFragment(final DataSource source, final Schema schema, final long startByteRange,
+      final long endByteRange, final boolean isLastWorker, final Character delimiter) {
+    this(source, schema, startByteRange, endByteRange, isLastWorker, delimiter, null, null, null);
   }
 
-  public CSVFileScanFragment(final String filename, final Schema schema, final int workerID, final int totalWorkers,
-      @Nullable final Character delimiter, @Nullable final Character quote, @Nullable final Character escape,
-      @Nullable final Integer numberOfSkippedLines) {
-    this(new FileSource(filename), schema, workerID, totalWorkers, delimiter, quote, escape, numberOfSkippedLines);
+  public CSVFileScanFragment(final String filename, final Schema schema, final long startByteRange,
+      final long endByteRange, final boolean isLastWorker, @Nullable final Character delimiter,
+      @Nullable final Character quote, @Nullable final Character escape, @Nullable final Integer numberOfSkippedLines) {
+    this(new FileSource(filename), schema, startByteRange, endByteRange, isLastWorker, delimiter, quote, escape,
+        numberOfSkippedLines);
   }
 
-  public CSVFileScanFragment(final DataSource source, final Schema schema, final int workerID, final int totalWorkers,
-      @Nullable final Character delimiter, @Nullable final Character quote, @Nullable final Character escape,
-      @Nullable final Integer numberOfSkippedLines) {
+  public CSVFileScanFragment(final DataSource source, final Schema schema, final long startByteRange,
+      final long endByteRange, final boolean isLastWorker, @Nullable final Character delimiter,
+      @Nullable final Character quote, @Nullable final Character escape, @Nullable final Integer numberOfSkippedLines) {
     this.source = (AmazonS3Source) Preconditions.checkNotNull(source, "source");
     this.schema = Preconditions.checkNotNull(schema, "schema");
 
@@ -105,19 +108,10 @@ public class CSVFileScanFragment extends LeafOperator {
     this.quote = MoreObjects.firstNonNull(quote, CSVFormat.DEFAULT.getQuoteCharacter());
     this.escape = escape != null ? escape : CSVFormat.DEFAULT.getEscapeCharacter();
     this.numberOfSkippedLines = MoreObjects.firstNonNull(numberOfSkippedLines, 0);
-    this.workerID = workerID;
 
-    isLastWorker = workerID == totalWorkers;
-    fileSize = ((AmazonS3Source) source).getFileSize();
-
-    if (fileSize < 10 && workerID == 1) {
-      startByteRange = 0;
-      endByteRange = fileSize;
-    } else {
-      long partitionSize = fileSize / totalWorkers;
-      startByteRange = (partitionSize) * (workerID - 1);
-      endByteRange = startByteRange + partitionSize;
-    }
+    this.startByteRange = startByteRange;
+    this.endByteRange = endByteRange;
+    this.isLastWorker = isLastWorker;
 
   }
 
@@ -143,14 +137,13 @@ public class CSVFileScanFragment extends LeafOperator {
       CSVRecord record = iterator.next();
       if (record.size() < schema.numColumns()) {
         if (lineNumber - 1 != 0 && !isLastWorker) {
-          LOGGER.warn("ON LAST ROW");
           onLastRow = true;
           long byteAtBeginningOfRecord = record.getCharacterPosition();
           if (!fixingStartByte) {
             fixingStartByte = true;
             startByteRange += byteAtBeginningOfRecord;
           }
-          byteOverlap = byteOverlap * 2;
+          byteOverlap *= 2;
 
           endByteRange = endByteRange + byteOverlap;
 
@@ -160,12 +153,8 @@ public class CSVFileScanFragment extends LeafOperator {
               new CSVParser(new BufferedReader(new InputStreamReader(source.getInputStream())), CSVFormat.newFormat(
                   delimiter).withQuote(quote).withEscape(escape));
           iterator = parser.iterator();
-
         }
       } else {
-        if (onLastRow) {
-          LOGGER.warn("IM READING LAST ROW");
-        }
         for (int column = 0; column < schema.numColumns(); ++column) {
           String cell = record.get(column);
           try {

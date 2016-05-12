@@ -18,7 +18,7 @@ import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.S3Object;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.MoreObjects;
 
@@ -37,7 +37,6 @@ public class AmazonS3Source implements DataSource, Serializable {
   private transient ClientConfiguration clientConfig;
   private transient AmazonS3Client s3Client;
   private transient GetObjectRequest s3Request;
-  private transient S3Object s3Object;
 
   private long startRange;
   private long endRange;
@@ -45,10 +44,12 @@ public class AmazonS3Source implements DataSource, Serializable {
   private final String bucket;
   private final String key;
 
+  @JsonCreator
   public AmazonS3Source(@JsonProperty(value = "uri", required = true) final String uri) throws URIException {
     this(uri, null, null);
   }
 
+  @JsonCreator
   public AmazonS3Source(@JsonProperty(value = "uri", required = true) final String uri,
       @Nullable @JsonProperty(value = "startRange", required = false) final Long startRange,
       @Nullable @JsonProperty(value = "endRange", required = false) final Long endRange) throws URIException {
@@ -56,7 +57,6 @@ public class AmazonS3Source implements DataSource, Serializable {
     if (!s3Uri.getScheme().equals("s3")) {
       throw new URIException("URI must contain an S3 scheme");
     }
-
     String uriString = s3Uri.toString();
     String removedScheme = uriString.substring(5);
     bucket = removedScheme.substring(0, removedScheme.indexOf('/'));

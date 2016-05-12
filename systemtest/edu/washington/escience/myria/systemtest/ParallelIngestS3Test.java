@@ -13,9 +13,7 @@ import org.junit.Test;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.io.AmazonS3Source;
 import edu.washington.escience.myria.io.UriSource;
-import edu.washington.escience.myria.operator.CSVFileScanFragment;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.Difference;
@@ -50,19 +48,9 @@ public class ParallelIngestS3Test extends SystemTestBase {
 
   @Test
   public void parallelIngestTest() throws Exception {
-    RelationKey relationKey = RelationKey.of("public", "adhoc", "testParallel");
-
-    Map<Integer, RootOperator[]> workerPlansParallelIngest = new HashMap<Integer, RootOperator[]>();
-    int workerCounterID = 1;
-    for (int workerID : workerIDs) {
-      AmazonS3Source s3Source = new AmazonS3Source(dateTableAddress);
-      CSVFileScanFragment scanFragment =
-          new CSVFileScanFragment(s3Source, dateSchema, workerCounterID, workerIDs.length, '|', null, null, 0);
-      workerPlansParallelIngest.put(workerID, new RootOperator[] { new DbInsert(scanFragment, relationKey, true) });
-      workerCounterID++;
-    }
-    server.submitQueryPlan(new SinkRoot(new EOSSource()), workerPlansParallelIngest).get();
-    assertEquals(2556, server.getDatasetStatus(relationKey).getNumTuples());
+    RelationKey dateRelationKey = RelationKey.of("public", "adhoc", "testParallel");
+    server.parallelIngestDataset(dateRelationKey, dateSchema, '|', null, null, 0, dateTableAddress, null);
+    assertEquals(2556, server.getDatasetStatus(dateRelationKey).getNumTuples());
   }
 
   @Test
@@ -70,17 +58,8 @@ public class ParallelIngestS3Test extends SystemTestBase {
 
     /* Ingest in parallel */
     RelationKey relationKeyParallelIngest = RelationKey.of("public", "adhoc", "ingestParallel");
-    Map<Integer, RootOperator[]> workerPlansParallelIngest = new HashMap<Integer, RootOperator[]>();
-    int workerCounterID = 1;
-    for (int workerID : workerIDs) {
-      AmazonS3Source s3Source = new AmazonS3Source(customerTableAddress);
-      CSVFileScanFragment scanFragment =
-          new CSVFileScanFragment(s3Source, customerSchema, workerCounterID, workerIDs.length, ',', null, null, 0);
-      workerPlansParallelIngest.put(workerID, new RootOperator[] { new DbInsert(scanFragment,
-          relationKeyParallelIngest, true) });
-      workerCounterID++;
-    }
-    server.submitQueryPlan(new SinkRoot(new EOSSource()), workerPlansParallelIngest).get();
+    server.parallelIngestDataset(relationKeyParallelIngest, customerSchema, ',', null, null, 0, customerTableAddress,
+        server.getAliveWorkers());
     assertEquals(300000, server.getDatasetStatus(relationKeyParallelIngest).getNumTuples());
 
     /* WholeTupleHashPartition the tuples from the parallel ingest */
@@ -98,14 +77,14 @@ public class ParallelIngestS3Test extends SystemTestBase {
     }
     server.submitQueryPlan(new SinkRoot(new EOSSource()), workerPlansHashParallelIngest).get();
 
-    /* Ingest the through the coordinator */
+    /* Ingest the through the coordinator and WholeTupleHashPartition the result */
     RelationKey relationKeyCoordinatorIngest = RelationKey.of("public", "adhoc", "ingestCoordinator");
     server.ingestDataset(relationKeyCoordinatorIngest, server.getAliveWorkers(), null, new FileScan(new UriSource(
         customerTableAddress), customerSchema, ',', null, null, 0), new WholeTupleHashPartitionFunction(
         workerIDs.length));
     assertEquals(300000, server.getDatasetStatus(relationKeyCoordinatorIngest).getNumTuples());
 
-    /* do the diff at each worker */
+    /* Run the diff at each worker */
     DbQueryScan scanParallelIngest = new DbQueryScan(relationKeyParallelIngest, customerSchema);
     DbQueryScan scanCoordinatorIngest = new DbQueryScan(relationKeyCoordinatorIngest, customerSchema);
     RelationKey diffRelationKey = new RelationKey("public", "adhoc", "diffResult");
@@ -132,18 +111,7 @@ public class ParallelIngestS3Test extends SystemTestBase {
             Type.INT_TYPE);
 
     RelationKey relationKey = RelationKey.of("public", "adhoc", "testParallelOneTuple");
-
-    Map<Integer, RootOperator[]> workerPlansParallelIngest = new HashMap<Integer, RootOperator[]>();
-    int workerCounterID = 1;
-    for (int workerID : workerIDs) {
-      AmazonS3Source s3Source = new AmazonS3Source(oneTupleAddress);
-      CSVFileScanFragment scanFragment =
-          new CSVFileScanFragment(s3Source, oneTupleSchema, workerCounterID, workerIDs.length, ',', null, null, 0);
-      workerPlansParallelIngest.put(workerID, new RootOperator[] { new DbInsert(scanFragment, relationKey, true) });
-      workerCounterID++;
-    }
-    server.submitQueryPlan(new SinkRoot(new EOSSource()), workerPlansParallelIngest).get();
+    server.parallelIngestDataset(relationKey, oneTupleSchema, ',', null, null, 0, oneTupleAddress, null);
     assertEquals(1, server.getDatasetStatus(relationKey).getNumTuples());
   }
-
 }
