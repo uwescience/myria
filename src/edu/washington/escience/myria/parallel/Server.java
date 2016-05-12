@@ -997,12 +997,16 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   /**
    * Execute a SQL Statement
    */
-  public void executeSQLCommand(final String sqlString) {
-    Set<Integer> actualWorkers = getWorkers().keySet();
+  public void executeSQLCommand(final String sqlString, final Set<Integer> workersToExecuteStatement) {
+    Set<Integer> actualWorkers = workersToExecuteStatement;
+    if (workersToExecuteStatement == null) {
+      actualWorkers = getWorkers().keySet();
+    }
 
     Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
     for (Integer workerId : actualWorkers) {
-      workerPlans.put(workerId, new SubQueryPlan(new DbExecute(null, sqlString, null)));
+      workerPlans
+          .put(workerId, new SubQueryPlan(new DbExecute(EmptyRelation.of(Schema.EMPTY_SCHEMA), sqlString, null)));
     }
     ListenableFuture<Query> qf;
     try {

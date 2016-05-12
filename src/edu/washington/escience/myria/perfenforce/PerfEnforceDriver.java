@@ -45,7 +45,7 @@ public class PerfEnforceDriver {
           currentTable.delimiter, configurations);
     }
 
-    // run statistics on all columns for all tables
+    // run statistics on all columns for all tables for worker #1
     for (TableDescriptionEncoding t : factTables) {
       dataPrepare.runPostgresStatistics(t);
     }
@@ -61,7 +61,6 @@ public class PerfEnforceDriver {
   }
 
   public void beginQueryMonitoring() {
-
   }
 
 }

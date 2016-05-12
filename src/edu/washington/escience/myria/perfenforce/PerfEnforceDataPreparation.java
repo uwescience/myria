@@ -4,8 +4,10 @@
 package edu.washington.escience.myria.perfenforce;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -172,15 +174,24 @@ public class PerfEnforceDataPreparation {
   }
 
   /*
-   * Run Statistics on the table by extending statistics space for each column and running analyze on the table
+   * Run Statistics on the table by extending statistics space for each column and running analyze on the table on
+   * worker #1
    */
   public void runPostgresStatistics(final TableDescriptionEncoding t) {
     for (int i = 0; i < t.schema.getColumnNames().size(); i++) {
-      server.executeSQLCommand(String.format("ALTER TABLE %s ALTER COLUMN $s SET STATISTICS 500;", t.relationKey
-          .toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), t.schema.getColumnName(i)));
+      server.executeSQLCommand(String.format("ALTER TABLE %s ALTER COLUMN %s SET STATISTICS 500;", t.relationKey
+          .toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), t.schema.getColumnName(i)), new HashSet<Integer>(Arrays
+          .asList(1)));
     }
     server.executeSQLCommand(String.format("ANALYZE %s;", t.relationKey
-        .toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)));
+        .toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)), new HashSet<Integer>(Arrays.asList(1)));
+  }
+
+  /*
+   * For each primary, determine the rank
+   */
+  public void runTableRanking(final double selectivity) {
+
   }
 
   public void generatePostgresFeatures(final String queryFilePath) {
