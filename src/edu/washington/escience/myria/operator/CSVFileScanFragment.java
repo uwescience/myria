@@ -5,7 +5,9 @@ package edu.washington.escience.myria.operator;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.SequenceInputStream;
 import java.util.Iterator;
 
 import javax.annotation.Nullable;
@@ -61,7 +63,7 @@ public class CSVFileScanFragment extends LeafOperator {
   private long byteOverlap = MyriaConstants.BYTE_OVERLAP_PARALLEL_INGEST;
   private long startByteRange;
   private long endByteRange;
-  long workerID;
+  private InputStream sourceInputStream;
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -122,6 +124,7 @@ public class CSVFileScanFragment extends LeafOperator {
     boolean onLastRow = false;
 
     while ((buffer.numTuples() < TupleBatch.BATCH_SIZE)) {
+
       lineNumber++;
       if (parser.isClosed()) {
         break;
@@ -143,15 +146,20 @@ public class CSVFileScanFragment extends LeafOperator {
             fixingStartByte = true;
             startByteRange += byteAtBeginningOfRecord;
           }
-          byteOverlap *= 2;
 
+          byteOverlap *= 2;
           endByteRange = endByteRange + byteOverlap;
 
           source.setStartRange(startByteRange);
           source.setEndRange(endByteRange);
+          InputStream overlapStream = source.getInputStream();
+
+          sourceInputStream = new SequenceInputStream(sourceInputStream, overlapStream);
+
           parser =
-              new CSVParser(new BufferedReader(new InputStreamReader(source.getInputStream())), CSVFormat.newFormat(
-                  delimiter).withQuote(quote).withEscape(escape));
+              new CSVParser(new BufferedReader(new InputStreamReader(sourceInputStream)), CSVFormat
+                  .newFormat(delimiter).withQuote(quote).withEscape(escape));
+
           iterator = parser.iterator();
         }
       } else {
@@ -214,9 +222,10 @@ public class CSVFileScanFragment extends LeafOperator {
     try {
       source.setStartRange(startByteRange);
       source.setEndRange(endByteRange);
+      sourceInputStream = source.getInputStream();
       parser =
-          new CSVParser(new BufferedReader(new InputStreamReader(source.getInputStream())), CSVFormat.newFormat(
-              delimiter).withQuote(quote).withEscape(escape));
+          new CSVParser(new BufferedReader(new InputStreamReader(sourceInputStream)), CSVFormat.newFormat(delimiter)
+              .withQuote(quote).withEscape(escape));
       iterator = parser.iterator();
       for (int i = 0; i < numberOfSkippedLines; i++) {
         iterator.next();
