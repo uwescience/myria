@@ -39,12 +39,7 @@ public class ParallelIngestS3Test extends SystemTestBase {
       "d_sellingseason", Type.STRING_TYPE, "d_lastdayinweekfl", Type.STRING_TYPE, "d_lastdayinmonthfl",
       Type.STRING_TYPE, "d_holidayfl", Type.STRING_TYPE, "d_weekdayfl", Type.STRING_TYPE);
 
-  Schema customerSchema = Schema.ofFields("c_custkey", Type.LONG_TYPE, "c_name", Type.STRING_TYPE, "c_address",
-      Type.STRING_TYPE, "c_city", Type.STRING_TYPE, "c_nation_prefix", Type.STRING_TYPE, "c_nation", Type.STRING_TYPE,
-      "c_region", Type.STRING_TYPE, "c_phone", Type.STRING_TYPE, "c_mktsegment", Type.STRING_TYPE);
-
   String dateTableAddress = "s3://myria-test/dateOUT.csv";
-  String customerTableAddress = "s3://myria-test/customerOUT.txt";
 
   @Test
   public void parallelIngestTest() throws Exception {
@@ -53,23 +48,17 @@ public class ParallelIngestS3Test extends SystemTestBase {
     assertEquals(2556, server.getDatasetStatus(dateRelationKey).getNumTuples());
   }
 
-  @Test
-  public void diffParallelIngestTest() throws Exception {
-
-    /* Ingest in parallel */
-    RelationKey relationKeyParallelIngest = RelationKey.of("public", "adhoc", "ingestParallel");
-    server.parallelIngestDataset(relationKeyParallelIngest, customerSchema, ',', null, null, 0, customerTableAddress,
-        server.getAliveWorkers());
-    assertEquals(300000, server.getDatasetStatus(relationKeyParallelIngest).getNumTuples());
+  public void diffHelperMethod(final RelationKey relationKeyParallelIngest,
+      final RelationKey relationKeyCoordinatorIngest, final Schema schema) throws Exception {
 
     /* WholeTupleHashPartition the tuples from the parallel ingest */
-    DbQueryScan scanIngest = new DbQueryScan(relationKeyParallelIngest, customerSchema);
+    DbQueryScan scanIngest = new DbQueryScan(relationKeyParallelIngest, schema);
     ExchangePairID receiveParallelIngest = ExchangePairID.newID();
     GenericShuffleProducer sendToWorkerParallelIngest =
         new GenericShuffleProducer(scanIngest, receiveParallelIngest, workerIDs, new WholeTupleHashPartitionFunction(
             workerIDs.length));
     GenericShuffleConsumer workerConsumerParallelIngest =
-        new GenericShuffleConsumer(customerSchema, receiveParallelIngest, workerIDs);
+        new GenericShuffleConsumer(schema, receiveParallelIngest, workerIDs);
     DbInsert workerIngest = new DbInsert(workerConsumerParallelIngest, relationKeyParallelIngest, true);
     Map<Integer, RootOperator[]> workerPlansHashParallelIngest = new HashMap<Integer, RootOperator[]>();
     for (int workerID : workerIDs) {
@@ -77,16 +66,9 @@ public class ParallelIngestS3Test extends SystemTestBase {
     }
     server.submitQueryPlan(new SinkRoot(new EOSSource()), workerPlansHashParallelIngest).get();
 
-    /* Ingest the through the coordinator and WholeTupleHashPartition the result */
-    RelationKey relationKeyCoordinatorIngest = RelationKey.of("public", "adhoc", "ingestCoordinator");
-    server.ingestDataset(relationKeyCoordinatorIngest, server.getAliveWorkers(), null, new FileScan(new UriSource(
-        customerTableAddress), customerSchema, ',', null, null, 0), new WholeTupleHashPartitionFunction(
-        workerIDs.length));
-    assertEquals(300000, server.getDatasetStatus(relationKeyCoordinatorIngest).getNumTuples());
-
     /* Run the diff at each worker */
-    DbQueryScan scanParallelIngest = new DbQueryScan(relationKeyParallelIngest, customerSchema);
-    DbQueryScan scanCoordinatorIngest = new DbQueryScan(relationKeyCoordinatorIngest, customerSchema);
+    DbQueryScan scanParallelIngest = new DbQueryScan(relationKeyParallelIngest, schema);
+    DbQueryScan scanCoordinatorIngest = new DbQueryScan(relationKeyCoordinatorIngest, schema);
     RelationKey diffRelationKey = new RelationKey("public", "adhoc", "diffResult");
     Difference diff = new Difference(scanParallelIngest, scanCoordinatorIngest);
     DbInsert diffResult = new DbInsert(diff, diffRelationKey, true);
@@ -104,6 +86,23 @@ public class ParallelIngestS3Test extends SystemTestBase {
   }
 
   @Test
+  public void parallelIngestSimpleDiff() throws Exception {
+    /* Ingest in parallel */
+    RelationKey relationKeyParallelIngest = RelationKey.of("public", "adhoc", "ingestParallel");
+    server.parallelIngestDataset(relationKeyParallelIngest, dateSchema, '|', null, null, 0, dateTableAddress, server
+        .getAliveWorkers());
+    assertEquals(2556, server.getDatasetStatus(relationKeyParallelIngest).getNumTuples());
+
+    /* Ingest the through the coordinator and WholeTupleHashPartition the result */
+    RelationKey relationKeyCoordinatorIngest = RelationKey.of("public", "adhoc", "ingestCoordinator");
+    server.ingestDataset(relationKeyCoordinatorIngest, server.getAliveWorkers(), null, new FileScan(new UriSource(
+        dateTableAddress), dateSchema, '|', null, null, 0), new WholeTupleHashPartitionFunction(workerIDs.length));
+    assertEquals(2556, server.getDatasetStatus(relationKeyCoordinatorIngest).getNumTuples());
+
+    diffHelperMethod(relationKeyParallelIngest, relationKeyCoordinatorIngest, dateSchema);
+  }
+
+  @Test
   public void oneTupleTest() throws Exception {
     String oneTupleAddress = "s3://myria-test/sample-parallel-one-tuple.txt";
     Schema oneTupleSchema =
@@ -113,5 +112,82 @@ public class ParallelIngestS3Test extends SystemTestBase {
     RelationKey relationKey = RelationKey.of("public", "adhoc", "testParallelOneTuple");
     server.parallelIngestDataset(relationKey, oneTupleSchema, ',', null, null, 0, oneTupleAddress, null);
     assertEquals(1, server.getDatasetStatus(relationKey).getNumTuples());
+  }
+
+  @Test
+  /**
+   * With two workers, this covers the case where Worker #2 has a long string on the first row -- which should be discarded by Worker#2
+   * The file from S3 is as follows:
+     short,2,3,8,6
+     short,86,85,37,95
+     thisisareallylongstringfortesting,96,93,95,94
+     short,30,81,60,93
+   **/
+  public void truncatedBeginningFragmentTest() throws Exception {
+    String beginningTrailAddress = "s3://myria-test/TestLongBeginningTrail.txt";
+    Schema beginningTrailSchema =
+        Schema.ofFields("w", Type.STRING_TYPE, "x", Type.INT_TYPE, "y", Type.INT_TYPE, "z", Type.INT_TYPE, "a",
+            Type.INT_TYPE);
+
+    RelationKey relationKeyParallelIngest = RelationKey.of("public", "adhoc", "beginningParallel");
+    server.parallelIngestDataset(relationKeyParallelIngest, beginningTrailSchema, ',', null, null, 0,
+        beginningTrailAddress, server.getAliveWorkers());
+    assertEquals(4, server.getDatasetStatus(relationKeyParallelIngest).getNumTuples());
+
+    /* Ingest the through the coordinator and WholeTupleHashPartition the result */
+    RelationKey relationKeyCoordinatorIngest = RelationKey.of("public", "adhoc", "beginningCoordinator");
+    server.ingestDataset(relationKeyCoordinatorIngest, server.getAliveWorkers(), null, new FileScan(new UriSource(
+        beginningTrailAddress), beginningTrailSchema, ',', null, null, 0), new WholeTupleHashPartitionFunction(
+        workerIDs.length));
+    assertEquals(4, server.getDatasetStatus(relationKeyCoordinatorIngest).getNumTuples());
+    diffHelperMethod(relationKeyParallelIngest, relationKeyCoordinatorIngest, beginningTrailSchema);
+  }
+
+  @Test
+  /**
+   * With two workers, this covers the case where Worker #1 has a long string on the last row
+   * The file from S3 is as follows:
+  8,4,92,23,shortOne
+  7,2,94,82,thisisareallylongstringfortesting
+  245,223,286,243,shortTwo
+  149,938,843,532,shortThree
+   **/
+  public void truncatedEndFragmentTest() throws Exception {
+    String endTrailAddress = "s3://myria-test/TestLongEndTrail.txt";
+    Schema endTrailSchema =
+        Schema.ofFields("x", Type.INT_TYPE, "y", Type.INT_TYPE, "z", Type.INT_TYPE, "a", Type.INT_TYPE, "w",
+            Type.STRING_TYPE);
+    RelationKey relationKeyParallelIngest = RelationKey.of("public", "adhoc", "endParallel");
+    server.parallelIngestDataset(relationKeyParallelIngest, endTrailSchema, ',', null, null, 0, endTrailAddress, server
+        .getAliveWorkers());
+    assertEquals(4, server.getDatasetStatus(relationKeyParallelIngest).getNumTuples());
+
+    /* Ingest the through the coordinator and WholeTupleHashPartition the result */
+    RelationKey relationKeyCoordinatorIngest = RelationKey.of("public", "adhoc", "endCoordinator");
+    server.ingestDataset(relationKeyCoordinatorIngest, server.getAliveWorkers(), null, new FileScan(new UriSource(
+        endTrailAddress), endTrailSchema, ',', null, null, 0), new WholeTupleHashPartitionFunction(workerIDs.length));
+    assertEquals(4, server.getDatasetStatus(relationKeyCoordinatorIngest).getNumTuples());
+    diffHelperMethod(relationKeyParallelIngest, relationKeyCoordinatorIngest, endTrailSchema);
+  }
+
+  @Test
+  /**
+   * This is not tested correctly yet....
+   **/
+  public void perfectRowSplit() throws Exception {
+    String perfectSplitAddress = "s3://myria-test/PerfectSplit.txt";
+    Schema perfectSplitSchema = Schema.ofFields("x", Type.INT_TYPE, "w", Type.STRING_TYPE);
+    RelationKey relationKeyParallelIngest = RelationKey.of("public", "adhoc", "endParallel");
+    server.parallelIngestDataset(relationKeyParallelIngest, perfectSplitSchema, ',', null, null, 0,
+        perfectSplitAddress, server.getAliveWorkers());
+    assertEquals(4, server.getDatasetStatus(relationKeyParallelIngest).getNumTuples());
+
+    /* Ingest the through the coordinator and WholeTupleHashPartition the result */
+    RelationKey relationKeyCoordinatorIngest = RelationKey.of("public", "adhoc", "endCoordinator");
+    server.ingestDataset(relationKeyCoordinatorIngest, server.getAliveWorkers(), null, new FileScan(new UriSource(
+        perfectSplitAddress), perfectSplitSchema, ',', null, null, 0), new WholeTupleHashPartitionFunction(
+        workerIDs.length));
+    assertEquals(4, server.getDatasetStatus(relationKeyCoordinatorIngest).getNumTuples());
+    diffHelperMethod(relationKeyParallelIngest, relationKeyCoordinatorIngest, perfectSplitSchema);
   }
 }

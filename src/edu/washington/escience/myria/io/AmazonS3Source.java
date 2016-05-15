@@ -79,6 +79,12 @@ public class AmazonS3Source implements DataSource, Serializable {
     return getS3Client().getObjectMetadata(bucket, key).getContentLength();
   }
 
+  public InputStream getInputStream(final long start, final long end) throws IOException {
+    setStartRange(start);
+    setEndRange(end);
+    return getInputStream();
+  }
+
   @Override
   public InputStream getInputStream() throws IOException {
     s3Request = new GetObjectRequest(bucket, key);

@@ -970,7 +970,10 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     int workerCounterID = 1;
     for (int workerID : workersArray) {
       boolean isLastWorker = workerCounterID == workersArray.length;
-      long startRange = (partitionSize) * (workerCounterID - 1);
+      long startRange = ((partitionSize) * (workerCounterID - 1));
+      if (workerCounterID != 1) {
+        startRange++;
+      }
       long endRange = startRange + partitionSize;
 
       CSVFileScanFragment scanFragment =
