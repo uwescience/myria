@@ -381,9 +381,9 @@ public final class MasterCatalog {
 
       /* Second, populate the Schema table. */
       statement =
-          sqliteConnection.prepare(
-              "INSERT INTO relation_schema(user_name,program_name,relation_name,col_index,col_name,col_type) "
-                  + "VALUES (?,?,?,?,?,?);");
+          sqliteConnection
+              .prepare("INSERT INTO relation_schema(user_name,program_name,relation_name,col_index,col_name,col_type,is_indexed) "
+                  + "VALUES (?,?,?,?,?,?,?);");
       statement.bind(1, relation.getUserName());
       statement.bind(2, relation.getProgramName());
       statement.bind(3, relation.getRelationName());
@@ -391,6 +391,7 @@ public final class MasterCatalog {
         statement.bind(4, i);
         statement.bind(5, schema.getColumnName(i));
         statement.bind(6, schema.getColumnType(i).toString());
+        statement.bind(7, 0);
         statement.step();
         statement.reset(false);
       }

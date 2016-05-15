@@ -14,7 +14,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 /**
 * 
 */
-public class DbExecute extends RootOperator {
+public class DbCreateUDF extends RootOperator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
@@ -23,17 +23,17 @@ public class DbExecute extends RootOperator {
   /** The information for the database connection. */
   private ConnectionInfo connectionInfo;
 
-  private final String sqlString;
+  private final String udfDefinition;
 
   /**
    * @param child the source of tuples to be inserted.
    * @param relationKey the key of the table the tuples should be inserted into.
    * @param connectionInfo the parameters of the database connection.
    */
-  public DbExecute(final Operator child, final String sqlString, final ConnectionInfo connectionInfo) {
+  public DbCreateUDF(final Operator child, final String sqlString, final ConnectionInfo connectionInfo) {
     super(child);
     this.connectionInfo = connectionInfo;
-    this.sqlString = sqlString;
+    udfDefinition = sqlString;
   }
 
   @Override
@@ -46,7 +46,7 @@ public class DbExecute extends RootOperator {
     accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
 
     /* Drop the table */
-    accessMethod.executeSQLCommand(sqlString);
+    accessMethod.executeSQLCommand(udfDefinition);
   }
 
   @Override

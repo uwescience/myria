@@ -43,6 +43,9 @@ import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleWriter;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
+import edu.washington.escience.myria.api.encoding.CreateIndexEncoding;
+import edu.washington.escience.myria.api.encoding.CreateUDFEncoding;
+import edu.washington.escience.myria.api.encoding.CreateViewEncoding;
 import edu.washington.escience.myria.api.encoding.DatasetEncoding;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.TipsyDatasetEncoding;
@@ -399,6 +402,60 @@ public final class DatasetResource {
       throw new DbException();
     }
 
+    /* Build the response to return the queryId */
+    ResponseBuilder response = Response.ok();
+    return response.entity(queryId).build();
+  }
+
+  /**
+   * Creates an index based on the DbCreateIndexEncoding
+   */
+  @POST
+  @Path("/createIndex/")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public Response createIndex(final CreateIndexEncoding encoding) throws DbException {
+    long queryId;
+    try {
+      queryId = server.addIndexesToRelation(encoding.relationKey, encoding.schema, encoding.indexes);
+    } catch (Exception e) {
+      throw new DbException();
+    }
+    /* Build the response to return the queryId */
+    ResponseBuilder response = Response.ok();
+    return response.entity(queryId).build();
+  }
+
+  /**
+   * Creates an view based on the DbCreateViewEncoding
+   */
+  @POST
+  @Path("/createView/")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public Response createView(final CreateViewEncoding encoding) throws DbException {
+    long queryId;
+    try {
+      queryId = server.createView(encoding.viewName, encoding.viewDefinition, encoding.workers);
+    } catch (Exception e) {
+      throw new DbException();
+    }
+    /* Build the response to return the queryId */
+    ResponseBuilder response = Response.ok();
+    return response.entity(queryId).build();
+  }
+
+  /**
+   * Creates an UDF based on DbCreateUDFEncoding
+   */
+  @POST
+  @Path("/createUDF/")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public Response createUDF(final CreateUDFEncoding encoding) throws DbException {
+    long queryId;
+    try {
+      queryId = server.createUDF(encoding.udfName, encoding.udfDefinition, encoding.workers);
+    } catch (Exception e) {
+      throw new DbException();
+    }
     /* Build the response to return the queryId */
     ResponseBuilder response = Response.ok();
     return response.entity(queryId).build();
