@@ -72,9 +72,9 @@ import edu.washington.escience.myria.io.UriSink;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbCreateIndex;
+import edu.washington.escience.myria.operator.DbCreateUDF;
 import edu.washington.escience.myria.operator.DbCreateView;
 import edu.washington.escience.myria.operator.DbDelete;
-import edu.washington.escience.myria.operator.DbExecute;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DuplicateTBGenerator;
@@ -1227,8 +1227,8 @@ public final class Server {
   /**
    * Create a udf and register it in the catalog
    */
-  public long createUDFs(final String udfName, final String udfCommand, final Set<Integer> workers) throws DbException,
-      InterruptedException {
+  public long createUDF(final String udfName, final String udfDefinition, final Set<Integer> workers)
+      throws DbException, InterruptedException {
     long queryID;
     Set<Integer> actualWorkers = workers;
     if (workers == null) {
@@ -1239,8 +1239,8 @@ public final class Server {
     try {
       Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
       for (Integer workerId : actualWorkers) {
-        workerPlans.put(workerId, new SubQueryPlan(new DbExecute(EmptyRelation.of(Schema.EMPTY_SCHEMA), udfCommand,
-            null)));
+        workerPlans.put(workerId, new SubQueryPlan(new DbCreateUDF(EmptyRelation.of(Schema.EMPTY_SCHEMA),
+            udfDefinition, null)));
       }
       ListenableFuture<Query> qf =
           queryManager.submitQuery("create UDF", "create UDF", "create UDF", new SubQueryPlan(new SinkRoot(
@@ -1256,7 +1256,7 @@ public final class Server {
 
     /* Register the UDF to the catalog */
     try {
-      catalog.registerUDFs(udfName, udfCommand);
+      catalog.registerUDFs(udfName, udfDefinition);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
