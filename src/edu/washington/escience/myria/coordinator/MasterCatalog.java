@@ -43,6 +43,7 @@ import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.accessmethod.SQLiteTupleBatchIterator;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
@@ -107,13 +108,14 @@ public final class MasterCatalog {
   /** Create the relation_schema table. */
   private static final String CREATE_RELATION_SCHEMA =
       "CREATE TABLE relation_schema (\n"
-          + "    user_name TEXT NOT NULL,\n"
-          + "    program_name TEXT NOT NULL,\n"
-          + "    relation_name TEXT NOT NULL,\n"
-          + "    col_index INTEGER NOT NULL,\n"
-          + "    col_name TEXT,\n"
-          + "    col_type TEXT NOT NULL,\n"
-          + "    FOREIGN KEY (user_name,program_name,relation_name) REFERENCES relations ON DELETE CASCADE);";
+    + "    user_name TEXT NOT NULL,\n"
+    + "    program_name TEXT NOT NULL,\n"
+    + "    relation_name TEXT NOT NULL,\n"
+    + "    col_index INTEGER NOT NULL,\n"
+    + "    col_name TEXT,\n"
+    + "    col_type TEXT NOT NULL,\n"
+    + "    is_indexed INTEGER NOT NULL, \n" 
+    + "    FOREIGN KEY (user_name,program_name,relation_name) REFERENCES relations ON DELETE CASCADE);";
   /** Create an index on the relation_schema table. */
   private static final String CREATE_RELATION_SCHEMA_INDEX =
       "CREATE INDEX relation_schema_idx ON relation_schema (\n"
@@ -144,13 +146,15 @@ public final class MasterCatalog {
   /** Create the stored_relations table. */
   private static final String UPDATE_UNKNOWN_STATUS =
       "UPDATE queries "
-          + "SET status = '"
-          + QueryStatusEncoding.Status.UNKNOWN.toString()
-          + "'"
-          + "WHERE status = '"
-          + QueryStatusEncoding.Status.ACCEPTED.toString()
-          + "';";
-  /** CREATE TABLE statements @formatter:on */
+    + "SET status = '" + QueryStatusEncoding.Status.UNKNOWN.toString() + "'"
+    + "WHERE status = '" + QueryStatusEncoding.Status.ACCEPTED.toString() + "';";
+  private static final String CREATE_REGISTERED_UDFS =
+      "CREATE TABLE registered_udfs (\n"
+          + "    udf_id INTEGER NOT NULL, \n"
+          + "    udf_name INTEGER NOT NULL, \n" 
+          + "    udf_definition TEXT NOT NULL);";
+  
+ /** CREATE TABLE statements @formatter:on */
 
   /**
    * @param filename the path to the SQLite database storing the catalog.
@@ -181,38 +185,34 @@ public final class MasterCatalog {
     /* Connect to the database. */
     final SQLiteQueue queue = new SQLiteQueue(catalogFile).start();
     try {
-      queue
-          .execute(
-              new SQLiteJob<Object>() {
+      queue.execute(new SQLiteJob<Object>() {
 
-                @Override
-                protected Object job(final SQLiteConnection sqliteConnection)
-                    throws SQLiteException, CatalogException {
-                  /* Create all the tables in the Catalog. */
-                  try {
-                    sqliteConnection.exec("PRAGMA journal_mode = WAL;");
-                    sqliteConnection.exec("BEGIN TRANSACTION");
-                    sqliteConnection.exec(CREATE_QUERIES);
-                    sqliteConnection.exec(CREATE_QUERIES_FTS);
-                    sqliteConnection.exec(CREATE_QUERY_PLANS);
-                    sqliteConnection.exec(CREATE_RELATIONS);
-                    sqliteConnection.exec(CREATE_RELATION_SCHEMA);
-                    sqliteConnection.exec(CREATE_RELATION_SCHEMA_INDEX);
-                    sqliteConnection.exec(CREATE_STORED_RELATIONS);
-                    sqliteConnection.exec(CREATE_STORED_RELATIONS_INDEX);
-                    sqliteConnection.exec(CREATE_SHARDS);
-                    sqliteConnection.exec(CREATE_SHARDS_INDEX);
-                    sqliteConnection.exec("END TRANSACTION");
-                  } catch (final SQLiteException e) {
-                    sqliteConnection.exec("ROLLBACK TRANSACTION");
-                    LOGGER.error("Creating catalog tables", e);
-                    throw new CatalogException(
-                        "SQLiteException while creating new Catalog tables", e);
-                  }
-                  return null;
-                }
-              })
-          .get();
+        @Override
+        protected Object job(final SQLiteConnection sqliteConnection) throws SQLiteException, CatalogException {
+          /* Create all the tables in the Catalog. */
+          try {
+            sqliteConnection.exec("PRAGMA journal_mode = WAL;");
+            sqliteConnection.exec("BEGIN TRANSACTION");
+            sqliteConnection.exec(CREATE_QUERIES);
+            sqliteConnection.exec(CREATE_QUERIES_FTS);
+            sqliteConnection.exec(CREATE_QUERY_PLANS);
+            sqliteConnection.exec(CREATE_RELATIONS);
+            sqliteConnection.exec(CREATE_RELATION_SCHEMA);
+            sqliteConnection.exec(CREATE_RELATION_SCHEMA_INDEX);
+            sqliteConnection.exec(CREATE_STORED_RELATIONS);
+            sqliteConnection.exec(CREATE_STORED_RELATIONS_INDEX);
+            sqliteConnection.exec(CREATE_SHARDS);
+            sqliteConnection.exec(CREATE_SHARDS_INDEX);
+            sqliteConnection.exec(CREATE_REGISTERED_UDFS);
+            sqliteConnection.exec("END TRANSACTION");
+          } catch (final SQLiteException e) {
+            sqliteConnection.exec("ROLLBACK TRANSACTION");
+            LOGGER.error("Creating catalog tables", e);
+            throw new CatalogException("SQLiteException while creating new Catalog tables", e);
+          }
+          return null;
+        }
+      }).get();
     } catch (InterruptedException | ExecutionException e) {
       throw new CatalogException(e);
     }
@@ -1635,6 +1635,88 @@ public final class MasterCatalog {
                 }
               })
           .get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /*
+   * Mark indexes in the catalog
+   */
+
+  public void markIndexesInCatalog(@Nonnull final RelationKey relation, @Nonnull final List<IndexRef> indexes)
+      throws CatalogException {
+    Objects.requireNonNull(relation, "relation");
+    Objects.requireNonNull(indexes, "indexes");
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+
+    /* Do the work */
+    for (int i = 0; i < indexes.size(); i++) {
+      final int indexID = i;
+      try {
+        queue.execute(new SQLiteJob<Void>() {
+          @Override
+          protected Void job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+            try {
+              SQLiteStatement statement =
+                  sqliteConnection
+                      .prepare("UPDATE relations_schema SET is_indexed=1 WHERE user_name=? AND program_name=? AND relation_name=? AND col_index=?;");
+              statement.bind(1, relation.getUserName());
+              statement.bind(2, relation.getProgramName());
+              statement.bind(3, relation.getRelationName());
+              statement.bind(4, indexes.get(indexID).getColumn());
+              statement.stepThrough();
+              statement.dispose();
+              statement = null;
+
+            } catch (final SQLiteException e) {
+              throw new CatalogException(e);
+            }
+            return null;
+          }
+        }).get();
+      } catch (InterruptedException | ExecutionException e) {
+        throw new CatalogException(e);
+      }
+    }
+  }
+
+  /*
+   * Register UDFs in the catalog
+   */
+
+  public void registerUDFs(@Nonnull final String udfName, @Nonnull final String udfDefinition) throws CatalogException {
+    Objects.requireNonNull(udfName, "udf name");
+    Objects.requireNonNull(udfDefinition, "udf definition");
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+
+    /* Do the work */
+    try {
+      queue.execute(new SQLiteJob<Void>() {
+        @Override
+        protected Void job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+          try {
+            long udf_id = sqliteConnection.getLastInsertId();
+            SQLiteStatement statement =
+                sqliteConnection
+                    .prepare("INSERT INTO registered_udfs (udf_id, udf_name, udf_definition) VALUES (?,?,?);");
+
+            statement.bind(1, udf_id);
+            statement.bind(2, udfName);
+            statement.bind(3, udfDefinition);
+            statement.stepThrough();
+            statement.dispose();
+
+          } catch (final SQLiteException e) {
+            throw new CatalogException(e);
+          }
+          return null;
+        }
+      }).get();
     } catch (InterruptedException | ExecutionException e) {
       throw new CatalogException(e);
     }

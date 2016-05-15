@@ -71,7 +71,10 @@ import edu.washington.escience.myria.io.DataSink;
 import edu.washington.escience.myria.io.UriSink;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.DataOutput;
+import edu.washington.escience.myria.operator.DbCreateIndex;
+import edu.washington.escience.myria.operator.DbCreateView;
 import edu.washington.escience.myria.operator.DbDelete;
+import edu.washington.escience.myria.operator.DbExecute;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DuplicateTBGenerator;
@@ -1150,6 +1153,115 @@ public final class Server {
     }
 
     return getDatasetStatus(relationKey);
+  }
+
+  /**
+   * Create indexes and add the metadata to the catalog
+   */
+  public long addIndexesToRelation(final RelationKey relationKey, final Schema schema, final List<IndexRef> indexes)
+      throws DbException, InterruptedException {
+    long queryID;
+    /* Add indexes to relations */
+    try {
+      Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
+      for (Integer workerId : getWorkersForRelation(relationKey, null)) {
+        workerPlans.put(workerId, new SubQueryPlan(new DbCreateIndex(EmptyRelation.of(catalog.getSchema(relationKey)),
+            relationKey, schema, indexes, null)));
+      }
+      ListenableFuture<Query> qf =
+          queryManager.submitQuery("add indexes to " + relationKey.toString(), "add indexes to  "
+              + relationKey.toString(), "add indexes to " + relationKey.toString(getDBMS()), new SubQueryPlan(
+              new SinkRoot(new EOSSource())), workerPlans);
+      try {
+        queryID = qf.get().getQueryId();
+      } catch (ExecutionException e) {
+        throw new DbException("Error executing query", e.getCause());
+      }
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+
+    /* Add index to catalog */
+    try {
+      catalog.markIndexesInCatalog(relationKey, indexes);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+
+    return queryID;
+  }
+
+  /**
+   * Create a view
+   */
+  public long createView(final String viewName, final String viewDefinition, final Set<Integer> workers)
+      throws DbException, InterruptedException {
+    long queryID;
+    Set<Integer> actualWorkers = workers;
+    if (workers == null) {
+      actualWorkers = getWorkers().keySet();
+    }
+
+    /* Create the view */
+    try {
+      Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
+      for (Integer workerId : actualWorkers) {
+        workerPlans.put(workerId, new SubQueryPlan(new DbCreateView(EmptyRelation.of(Schema.EMPTY_SCHEMA), viewName,
+            viewDefinition, null)));
+      }
+      ListenableFuture<Query> qf =
+          queryManager.submitQuery("create view", "create view", "create view", new SubQueryPlan(new SinkRoot(
+              new EOSSource())), workerPlans);
+      try {
+        queryID = qf.get().getQueryId();
+      } catch (ExecutionException e) {
+        throw new DbException("Error executing query", e.getCause());
+      }
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+
+    return queryID;
+  }
+
+  /**
+   * Create a udf and register it in the catalog
+   */
+  public long createUDFs(final String udfName, final String udfCommand, final Set<Integer> workers) throws DbException,
+      InterruptedException {
+    long queryID;
+    Set<Integer> actualWorkers = workers;
+    if (workers == null) {
+      actualWorkers = getWorkers().keySet();
+    }
+
+    /* Create the UDF */
+    try {
+      Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
+      for (Integer workerId : actualWorkers) {
+        workerPlans.put(workerId, new SubQueryPlan(new DbExecute(EmptyRelation.of(Schema.EMPTY_SCHEMA), udfCommand,
+            null)));
+      }
+      ListenableFuture<Query> qf =
+          queryManager.submitQuery("create UDF", "create UDF", "create UDF", new SubQueryPlan(new SinkRoot(
+              new EOSSource())), workerPlans);
+      try {
+        queryID = qf.get().getQueryId();
+      } catch (ExecutionException e) {
+        throw new DbException("Error executing query", e.getCause());
+      }
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+
+    /* Register the UDF to the catalog */
+    try {
+      catalog.registerUDFs(udfName, udfCommand);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+
+    return queryID;
   }
 
   /**

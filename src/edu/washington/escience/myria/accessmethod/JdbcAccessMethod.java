@@ -636,9 +636,19 @@ public final class JdbcAccessMethod extends AccessMethod {
    */
   public void createViewIfNotExistPostgres(final String viewName, final String viewQuery) throws DbException {
     String statement =
-        Joiner.on(' ').join("DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relkind = 'v' AND relname=",
-            viewName, ") THEN CREATE VIEW", viewName, "AS", viewQuery, "; END IF; END$$;");
+        Joiner.on(' ').join("DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relkind = 'v' AND relname='",
+            viewName, "') THEN CREATE VIEW", viewName, "AS", viewQuery, "; END IF; END$$;");
     execute(statement);
+  }
+
+  @Override
+  public void executeSQLCommand(final String command) throws DbException {
+    if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
+      execute(command);
+    } else {
+      throw new UnsupportedOperationException("run sql command is not supported in " + jdbcInfo.getDbms()
+          + ", implement me");
+    }
   }
 
   /**
