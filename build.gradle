@@ -2,11 +2,14 @@
 buildscript {
   dependencies {
     classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.0.0'
+    classpath 'gradle.plugin.com.github.sherter.google-java-format:google-java-format-gradle-plugin:0.2'
   }
 }
 
 import org.gradle.plugins.ide.eclipse.model.SourceFolder
 import com.github.jengelman.gradle.plugins.shadow.transformers.ApacheLicenseResourceTransformer
+import com.github.sherter.googlejavaformatgradleplugin.GoogleJavaFormat
+import com.github.sherter.googlejavaformatgradleplugin.VerifyGoogleJavaFormat
 
 plugins {
   id 'java' // or 'groovy' Must be explicitly applied
@@ -20,6 +23,7 @@ apply plugin: 'jacoco'
 apply plugin: 'com.github.kt3k.coveralls'
 /* Maven shade plugin equivalent */
 apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'com.github.sherter.google-java-format'
 
 /* Set up group and version info for myria */
 archivesBaseName = "myria"
@@ -55,6 +59,20 @@ sourceSets {
  * we'll want to use Eclipse to debug it. */
 test.dependsOn eclipseClasspath
 tasks.eclipseClasspath.dependsOn cleanEclipseClasspath
+
+task format(type: GoogleJavaFormat) {
+  source 'src'
+  source 'test'
+  include '**/*.java'
+}
+
+task verifyFormatting(type: VerifyGoogleJavaFormat) {
+  source 'src'
+  source 'test'
+  include '**/*.java'
+}
+/* Test if all *.java have been formatted. Run ./gradlew format to format all */
+test.dependsOn verifyFormatting
 
 /*
  * List the compile and runtime dependencies of all the tests.
