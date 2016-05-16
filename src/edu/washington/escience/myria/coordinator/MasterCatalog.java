@@ -1670,7 +1670,7 @@ public final class MasterCatalog {
             try {
               SQLiteStatement statement =
                   sqliteConnection
-                      .prepare("UPDATE relations_schema SET is_indexed=1 WHERE user_name=? AND program_name=? AND relation_name=? AND col_index=?;");
+                      .prepare("UPDATE relation_schema SET is_indexed=1 WHERE user_name=? AND program_name=? AND relation_name=? AND col_index=?;");
               statement.bind(1, relation.getUserName());
               statement.bind(2, relation.getProgramName());
               statement.bind(3, relation.getRelationName());

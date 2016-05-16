@@ -637,7 +637,7 @@ public final class JdbcAccessMethod extends AccessMethod {
   public void createViewIfNotExistPostgres(final String viewName, final String viewQuery) throws DbException {
     String statement =
         Joiner.on(' ').join("DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relkind = 'v' AND relname='",
-            viewName, "') THEN CREATE VIEW", viewName, "AS", viewQuery, "; END IF; END$$;");
+            viewName, "') THEN CREATE OR REPLACE VIEW", viewName, "AS", viewQuery, "; END IF; END$$;");
     execute(statement);
   }
 

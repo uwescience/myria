@@ -13,6 +13,5 @@ public class CreateUDFEncoding extends MyriaApiEncoding {
   public String udfName;
   @Required
   public String udfDefinition;
-  @Required
   public Set<Integer> workers;
 }
