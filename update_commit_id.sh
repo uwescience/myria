@@ -10,8 +10,7 @@ echo "package edu.washington.escience.myria;
  */
 public final class MyriaCommit {
   /** Utility class cannot be constructed. */
-  private MyriaCommit() {
-  }
+  private MyriaCommit() {}
 
   /** The git commit id at build time. */
   public static final String COMMIT = \"$cur_commit\";
