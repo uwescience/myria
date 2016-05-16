@@ -1,10 +1,14 @@
 /* This project uses Java and Eclipse. */
 import org.gradle.plugins.ide.eclipse.model.SourceFolder
+import com.github.sherter.googlejavaformatgradleplugin.GoogleJavaFormat
+import com.github.sherter.googlejavaformatgradleplugin.VerifyGoogleJavaFormat
+
 apply plugin: "java"
 apply plugin: "eclipse"
 /* Coveralls with JaCoCo */
 apply plugin: 'jacoco'
 apply plugin: 'com.github.kt3k.coveralls'
+apply plugin: "com.github.sherter.google-java-format"
 
 /* Set up group and version info for myria */
 archivesBaseName = "myria"
@@ -23,12 +27,17 @@ targetCompatibility = 1.7
 buildscript {
   repositories {
     mavenCentral()
+    maven {
+      url "https://plugins.gradle.org/m2/"
+    }
   }
 
   dependencies {
     classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.0.0'
+    classpath "gradle.plugin.com.github.sherter.google-java-format:google-java-format-gradle-plugin:0.2"
   }
 }
+
 /* Tell gradle where the source code is located. */
 sourceSets {
   /* Code for main */
@@ -69,7 +78,25 @@ check.dependsOn testsuitesClasses
 /* Build the Eclipse .classpath file first, because if Gradle's build fails
  * we'll want to use Eclipse to debug it. */
 test.dependsOn eclipseClasspath
+/* Test if all *.java have been formatted. Run ./gradlew format to format all */
 tasks.eclipseClasspath.dependsOn cleanEclipseClasspath
+
+task format(type: GoogleJavaFormat) {
+  source 'src'
+  source 'test'
+  source 'systemtest'
+  source 'speedtest'
+  include '**/*.java'
+}
+
+task verifyFormatting(type: VerifyGoogleJavaFormat) {
+  source 'src'
+  source 'test'
+  source 'systemtest'
+  source 'speedtest'
+  include '**/*.java'
+}
+test.dependsOn verifyFormatting
 
 /*
  * List the compile and runtime dependencies of all the tests.
