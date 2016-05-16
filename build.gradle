@@ -78,6 +78,7 @@ check.dependsOn testsuitesClasses
 /* Build the Eclipse .classpath file first, because if Gradle's build fails
  * we'll want to use Eclipse to debug it. */
 test.dependsOn eclipseClasspath
+/* Test if all *.java have been formatted. Run ./gradlew format to format all */
 tasks.eclipseClasspath.dependsOn cleanEclipseClasspath
 
 task format(type: GoogleJavaFormat) {
@@ -95,7 +96,6 @@ task verifyFormatting(type: VerifyGoogleJavaFormat) {
   source 'speedtest'
   include '**/*.java'
 }
-/* Test if all *.java have been formatted. Run ./gradlew format to format all */
 test.dependsOn verifyFormatting
 
 /*
